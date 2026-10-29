@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { createApiClient } from '@bone/shared-services';
 import type { ApiResponse } from '@bone/shared-types';
-import type { FlowDoc, Violation } from '@bone/workflow-dsl';
+import { parse, type FlowDoc, type Violation, type WorkflowDefinitionJson } from '@bone/workflow-dsl';
 
 const api = createApiClient('/api/v1', { headers: { 'Content-Type': 'application/json' } });
 
@@ -223,11 +223,26 @@ export function toWorkflowFailure(error: unknown): WorkflowApiFailure {
 }
 
 /** 把后端定义 JSON 里的 ui.flowDoc 解析回文档树（fast path，无损）。解析失败回退空文档。 */
-export function docFromDefinitionJson(definitionJson: string): FlowDoc | null {
+/**
+ * 定义原文 → 文档树。
+ *
+ * <p>两条路径：带 `ui.flowDoc` 的定义直接取回原文（无损）；**种子数据 / 迁移导入的旧定义没有这一段**，
+ * 早先的实现只读 `ui.flowDoc`，于是这些流程在设计器里一律显示成「空画布 + 有损还原」——明明是
+ * 已发布的流程，打开却什么都没有。这里补上 `parse()` 的结构重建（按可达性推断分支汇合点），
+ * 让画布至少能显示出真实骨架，并按 `lossy` 告知用户「结构是推断的，保存前请核对」。
+ */
+export function docFromDefinitionJson(definitionJson: string): {
+  doc: FlowDoc | null;
+  lossy: boolean;
+  warnings: string[];
+} {
   try {
-    const def = JSON.parse(definitionJson) as { ui?: { flowDoc?: FlowDoc } };
-    return def.ui?.flowDoc ?? null;
+    const def = JSON.parse(definitionJson) as WorkflowDefinitionJson;
+    if (def?.ui?.flowDoc) return { doc: def.ui.flowDoc, lossy: false, warnings: [] };
+    if (!Array.isArray(def?.nodes)) return { doc: null, lossy: false, warnings: [] };
+    const parsed = parse(def);
+    return { doc: parsed.doc, lossy: parsed.lossy, warnings: parsed.warnings };
   } catch {
-    return null;
+    return { doc: null, lossy: false, warnings: [] };
   }
 }

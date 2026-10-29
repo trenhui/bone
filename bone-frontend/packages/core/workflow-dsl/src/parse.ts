@@ -76,17 +76,41 @@ export function parse(definition: WorkflowDefinitionJson): ParseResult {
     context.outEdges.set(edge.from, list);
   }
 
-  const start = context.nodes.get(START_CODE);
-  if (!start) {
+  const startCode = resolveStartCode(context);
+  if (!startCode) {
     throw new FlowDocParseError('流程定义缺少发起节点（START），无法确定入口');
   }
-  const first = singleTarget(context, START_CODE);
-  const steps = first ? parseChain(context, first, new Set([END_CODE])) : [];
+  const first = singleTarget(context, startCode);
+  const steps = first ? parseChain(context, first, terminalCodes(context)) : [];
   context.warnings.push(
     '该定义由旧数据重建（未携带 ui.flowDoc），分支结构按图推断、可能不精确；保存前请逐节点核对',
   );
   context.lossy = true;
   return { doc: { key: context.key, name: context.name, steps }, lossy: context.lossy, warnings: context.warnings };
+}
+
+/**
+ * 定位发起节点。
+ *
+ * <p>编译器的约定是 code 恰好为 `START`，但**种子数据与手写迁移**里常见 `start` / `begin`
+ * 这类小写或自定义命名（引擎只按 `type` 认节点）。旧实现直接 `nodes.get('START')`，于是这些
+ * 「运行时能跑」的流程在设计器里一律报「缺少发起节点」，整条流程打不开。按 `type` 兜底即可兼容。
+ */
+function resolveStartCode(context: ParseContext): string | null {
+  if (context.nodes.has(START_CODE)) return START_CODE;
+  for (const node of context.nodes.values()) {
+    if ((node.type ?? '').toUpperCase() === 'START') return node.code;
+  }
+  return null;
+}
+
+/** 终结点集合：`END` 只是缺省命名，旧定义可能是 `end` 或业务化的名字。 */
+function terminalCodes(context: ParseContext): Set<string> {
+  const codes = new Set<string>([END_CODE]);
+  for (const node of context.nodes.values()) {
+    if ((node.type ?? '').toUpperCase() === 'END') codes.add(node.code);
+  }
+  return codes;
 }
 
 /** 沿单出口链还原一段序列，遇到 `stopCodes` 中的节点即停。 */
@@ -153,7 +177,8 @@ function parseCondition(
 
   const heads = outs.map((edge) => edge.to);
   const rejoin = findRejoin(context, heads);
-  const stop = new Set<string>([END_CODE]);
+  // 停在这里的集合必须包含**真实**终结点（旧定义可能是 `end`），否则分支体会把结束节点当审批节点继续解析。
+  const stop = terminalCodes(context);
   if (rejoin) {
     stop.add(rejoin);
   }

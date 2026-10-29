@@ -12,13 +12,14 @@ import {
   Empty,
   Alert,
   Typography,
-  Popconfirm,
   Tooltip,
   message,
   Switch,
   Divider,
   Badge,
   Modal,
+  Spin,
+  Dropdown,
 } from 'antd';
 import {
   PlusOutlined,
@@ -37,6 +38,17 @@ import {
   CheckCircleOutlined,
   PlayCircleOutlined,
   StopOutlined,
+  UndoOutlined,
+  RedoOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  ZoomInOutlined,
+  ZoomOutOutlined,
+  ThunderboltOutlined,
+  SettingOutlined,
+  AimOutlined,
+  InboxOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import {
   compile,
@@ -51,6 +63,8 @@ import {
   type ApprovalMode,
   type LayoutPoint,
   type Violation,
+  type DefinitionNode,
+  type DefinitionEdge,
   PARAM_KEY_BY_STRATEGY,
   groupViolationsByNode,
   hintOf,
@@ -64,15 +78,26 @@ import {
   type WorkflowPublished,
 } from '@/services/workflowApi';
 import { BonePermissionCodes, hasPermission } from '../auth/permission';
-import { colors, spacing } from '@bone/ui';
+import { colors } from '@bone/ui';
 
 const { Sider, Content } = Layout;
-const { Text, Title, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
 
-const NODE_W = 200;
-const NODE_H = 64;
-const ROW_GAP = 110;
-const COL_GAP = 240;
+const NODE_W = 216;
+const NODE_H = 76;
+const ROW_GAP = 118;
+const COL_GAP = 260;
+/** 画布四周留白：让「适应画布」不会把节点贴死在容器边缘。 */
+const CANVAS_PAD = 180;
+/** 只读预览的行列间距：留足分支标签的位置，比编辑态宽一档。 */
+const PREVIEW_COL_GAP = 300;
+const PREVIEW_ROW_GAP = 132;
+/** 左上角给浮动节点库让出的空间：否则坐标原点上的发起节点会被浮层压住。 */
+const CANVAS_INSET_X = 140;
+const CANVAS_INSET_Y = 12;
+const ZOOM_MIN = 0.4;
+const ZOOM_MAX = 1.6;
+const ZOOM_STEP = 0.1;
 
 let codeSeq = 0;
 const genCode = (prefix: string) => `${prefix}_${(++codeSeq).toString(36)}_${Date.now().toString(36).slice(-4)}`;
@@ -148,22 +173,188 @@ function removeStep(doc: FlowDoc, code: string): FlowDoc {
   return { ...doc, steps: filter(doc.steps) };
 }
 
-/** 把 step 追加到主链或某条件节点的某分支 body。 */
-function appendStep(doc: FlowDoc, step: Step, targetBranchId: string | null): FlowDoc {
-  if (targetBranchId == null) return { ...doc, steps: [...doc.steps, step] };
-  const map = (steps: Step[]): Step[] =>
-    steps.map((s) => {
-      if (s.kind !== 'condition') return s;
-      const branches = s.branches.map((b) =>
-        b.id === targetBranchId ? { ...b, body: [...b.body, step] } : b,
-      );
-      const defaultBranch =
-        s.defaultBranch.id === targetBranchId
-          ? { ...s.defaultBranch, body: [...s.defaultBranch.body, step] }
-          : s.defaultBranch;
-      return { ...s, branches, defaultBranch };
-    });
-  return { ...doc, steps: map(doc.steps) };
+/**
+ * 把 step 插到指定节点**之后**（同一层级）。
+ *
+ * <p>为什么不是「追加到末尾」：界面上新增节点的心理模型是「我选中了某一步，要在这步后面加一步」。
+ * 旧实现一律 append 到主链末尾，于是想在第 1 步后插一个审批，得先加、再拖动、再删掉错位的那个——
+ * 这是同类编辑器（n8n / 飞书审批）里最先被骂的交互。
+ *
+ * <p>{@code code == null} 表示没有选中任何节点：此时追加到主链末尾（与旧行为一致）。
+ */
+function insertAfter(doc: FlowDoc, code: string | null, step: Step): FlowDoc {
+  if (code == null) return { ...doc, steps: [...doc.steps, step] };
+  let done = false;
+  const map = (steps: Step[]): Step[] => {
+    const out: Step[] = [];
+    for (const s of steps) {
+      if (done) {
+        out.push(s);
+        continue;
+      }
+      if (s.code === code) {
+        out.push(s, step);
+        done = true;
+        continue;
+      }
+      if (s.kind === 'condition') {
+        // 注意顺序：先递归子分支，再落本节点——否则 done 标记会早于子分支生效。
+        const branches = s.branches.map((b) => ({ ...b, body: map(b.body) }));
+        const defaultBranch = { ...s.defaultBranch, body: map(s.defaultBranch.body) };
+        out.push({ ...s, branches, defaultBranch });
+        continue;
+      }
+      out.push(s);
+    }
+    return out;
+  };
+  const steps = map(doc.steps);
+  // 目标节点不存在（并发改写 / 陈旧 selected）时兜底追加，不能让这次点击静默丢节点。
+  return { ...doc, steps: done ? steps : [...steps, step] };
+}
+
+/** 收集文档树里全部 step 的 code（含条件分支内部）。 */
+function collectStepCodes(steps: Step[]): string[] {
+  const codes: string[] = [];
+  for (const step of steps) {
+    codes.push(step.code);
+    if (step.kind === 'condition') {
+      for (const branch of step.branches) codes.push(...collectStepCodes(branch.body));
+      codes.push(...collectStepCodes(step.defaultBranch.body));
+    }
+  }
+  return codes;
+}
+
+/** 结构统计：给右栏「流程设置」用，让用户一眼看到这个流程的复杂度。 */
+function countSteps(steps: Step[]): { approve: number; cc: number; condition: number } {
+  const acc = { approve: 0, cc: 0, condition: 0 };
+  for (const s of steps) {
+    if (s.kind === 'approve') acc.approve += 1;
+    else if (s.kind === 'cc') acc.cc += 1;
+    else {
+      acc.condition += 1;
+      const inner = countSteps([...s.branches.flatMap((b) => b.body), ...s.defaultBranch.body]);
+      acc.approve += inner.approve;
+      acc.cc += inner.cc;
+      acc.condition += inner.condition;
+    }
+  }
+  return acc;
+}
+
+/**
+ * 正交折线路径：竖 → 横 → 竖，带圆角。
+ *
+ * <p>直线斜连在「分支汇合」的画法里会横穿其他节点卡片，节点一多就完全读不出层级。
+ * 正交线是流程图（BPMN / 飞书审批）的默认视觉语言，且拐点位置可预测，便于在水平段挂分支标签。
+ */
+function edgePath(a: LayoutPoint, b: LayoutPoint): { d: string; mid: LayoutPoint } {
+  // 同级节点之间的边（例如条件分支直接指向旁边的审批节点）：从右侧出、左侧入，走「横-竖-横」。
+  // 若按上下走线，起点和终点在同一水平线上，只能画斜线或让标签压在节点上——实测就是这么糊成一团的。
+  if (Math.abs(a.y - b.y) < 24 && Math.abs(a.x - b.x) > 1) {
+    const dir = b.x > a.x ? 1 : -1;
+    const x1 = dir > 0 ? a.x + NODE_W : a.x;
+    const y1 = a.y + NODE_H / 2;
+    const x2 = dir > 0 ? b.x : b.x + NODE_W;
+    const y2 = b.y + NODE_H / 2;
+    const mx = x1 + dir * 26;
+    const r = Math.min(8, Math.abs(y2 - y1) / 2);
+    const d =
+      `M${x1},${y1} L${mx},${y1} L${mx},${y2 - r} Q${mx},${y2} ${mx + dir * r},${y2} L${x2},${y2}`;
+    return { d, mid: { x: (x1 + x2) / 2, y: y1 } };
+  }
+  const x1 = a.x + NODE_W / 2;
+  const y1 = a.y + NODE_H;
+  const x2 = b.x + NODE_W / 2;
+  const y2 = b.y;
+  // 同一列（主链）：直接竖线，不引入无意义的折角。
+  if (Math.abs(x1 - x2) < 1) return { d: `M${x1},${y1} L${x2},${y2}`, mid: { x: x1, y: (y1 + y2) / 2 } };
+  // 行距太小（节点贴得太近）时退回直连，避免圆角半径算成负数画出畸形。
+  if (y2 - y1 < 36) return { d: `M${x1},${y1} L${x2},${y2}`, mid: { x: (x1 + x2) / 2, y: (y1 + y2) / 2 } };
+  const my = y1 + (y2 - y1) / 2;
+  const dir = x2 > x1 ? 1 : -1;
+  const r = Math.min(10, Math.abs(x2 - x1) / 2, (y2 - y1) / 2);
+  const d =
+    `M${x1},${y1} L${x1},${my - r} Q${x1},${my} ${x1 + dir * r},${my} ` +
+    `L${x2 - dir * r},${my} Q${x2},${my} ${x2},${my + r} L${x2},${y2}`;
+  return { d, mid: { x: (x1 + x2) / 2, y: my } };
+}
+
+/**
+ * 只读预览用的分层布局。
+ *
+ * <p>为什么需要它：有些定义（多分支汇入同一节点）**无法**还原成文档树——树模型里同一个节点只能出现
+ * 一次，而这类图里 `finance` 同时是两条分支的目标。硬还原会得到重复编码，编译直接失败，
+ * 画布于是完全空白（比「显示得不准」糟得多）。这里退化为按 BFS 层级排布的真实图，只读展示。
+ */
+function layeredLayout(nodes: DefinitionNode[], edges: DefinitionEdge[]): Record<string, LayoutPoint> {
+  const outs = new Map<string, string[]>();
+  for (const e of edges) {
+    const list = outs.get(e.from) ?? [];
+    list.push(e.to);
+    outs.set(e.from, list);
+  }
+  const startCode =
+    nodes.find((n) => (n.type ?? '').toUpperCase() === 'START')?.code ?? nodes[0]?.code ?? null;
+  const level = new Map<string, number>();
+  if (startCode) {
+    level.set(startCode, 0);
+    const queue: string[] = [startCode];
+    while (queue.length > 0) {
+      const code = queue.shift() as string;
+      const next = (level.get(code) ?? 0) + 1;
+      for (const to of outs.get(code) ?? []) {
+        if (!level.has(to)) {
+          level.set(to, next);
+          queue.push(to);
+        }
+      }
+    }
+  }
+  const maxLevel = level.size > 0 ? Math.max(...level.values()) : 0;
+  const rowOf = new Map<number, number>();
+  const pos: Record<string, LayoutPoint> = {};
+  for (const n of nodes) {
+    const lv = level.get(n.code) ?? maxLevel + 1;
+    const row = rowOf.get(lv) ?? 0;
+    rowOf.set(lv, row + 1);
+    // 间距比编辑态更宽：分支标签（胶囊）要能完整落在两列之间的缝里，否则会压住节点文字。
+    pos[n.code] = { x: row * PREVIEW_COL_GAP, y: lv * PREVIEW_ROW_GAP };
+  }
+  return pos;
+}
+
+/**
+ * 让设计器填满**宿主内容区**的可用高度。
+ *
+ * <p>实测（1600×1000 视口）：qiankun 里 {@code #root} 是 100vh，但祖先链上没有任何一层给子应用
+ * 确定高度，{@code height:100%} 一路解析成 auto ⇒ 左栏 6 张模板卡把整页撑到 1160px，
+ * 页面出现滚动条，而画布只分到 148px。设计器这类「工作台」页面必须自己占满视口、内部滚动，
+ * 否则永远在跟宿主的文档流抢空间。
+ */
+function useFillHeight(rootRef: React.RefObject<HTMLElement | null>): number | undefined {
+  const [height, setHeight] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    const measure = () => {
+      const el = rootRef.current;
+      if (!el) return;
+      // rect.top 会随页面滚动变化，加上 scrollY 换算回「文档坐标」，避免先滚后测算出偏大的高度。
+      const docTop = el.getBoundingClientRect().top + window.scrollY;
+      const parent = el.parentElement;
+      const pb = parent ? parseFloat(getComputedStyle(parent).paddingBottom) || 0 : 0;
+      setHeight(Math.max(460, Math.floor(window.innerHeight - docTop - (pb > 0 ? pb : 8))));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    // 宿主（shell 侧栏折叠、卡片挂载）布局稳定后会改变可用高度，补测一次。
+    const timer = window.setTimeout(measure, 160);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.clearTimeout(timer);
+    };
+  }, [rootRef]);
+  return height;
 }
 
 /** 试运行报告的前端投影（与后端 {@code SimulationReport} 镜像的界面所需字段）。 */
@@ -347,6 +538,93 @@ const TEMPLATES: WorkflowTemplate[] = [
   },
 ];
 
+/**
+ * 流程库列表项。
+ *
+ * <p>独立成组件而不是内联 map：hover 态需要本地 state，写在内联 map 里就只能靠 CSS 类，
+ * 而本项目没有为该页引入样式文件（antd + inline style 的既有风格）。
+ */
+const FlowListItem: React.FC<{
+  item: WorkflowDefinitionSummary;
+  active: boolean;
+  onOpen: () => void;
+}> = ({ item, active, onOpen }) => {
+  const [hover, setHover] = useState(false);
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') onOpen();
+      }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      title={`${item.defName || item.defKey}（${item.defKey}）`}
+      style={{
+        padding: '8px 10px',
+        borderRadius: 8,
+        cursor: 'pointer',
+        marginBottom: 2,
+        background: active ? colors.primary[50] : hover ? colors.gray[100] : 'transparent',
+        border: `1px solid ${active ? colors.primary[200] : 'transparent'}`,
+        outline: 'none',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            flexShrink: 0,
+            background: item.enabled ? colors.semantic.success : colors.gray[400],
+          }}
+        />
+        <span
+          style={{
+            flex: 1,
+            minWidth: 0,
+            fontSize: 13,
+            fontWeight: active ? 600 : 500,
+            lineHeight: '18px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {item.defName || item.defKey}
+        </span>
+        {item.version > 0 ? (
+          <Tag style={{ marginInlineEnd: 0, fontSize: 11, lineHeight: '16px' }} color={active ? 'blue' : undefined}>
+            v{item.version}
+          </Tag>
+        ) : (
+          <Tag style={{ marginInlineEnd: 0, fontSize: 11, lineHeight: '16px' }} color="orange">
+            草稿
+          </Tag>
+        )}
+      </div>
+      <div
+        style={{
+          fontSize: 11,
+          color: colors.gray[500],
+          paddingLeft: 12,
+          marginTop: 2,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {item.defKey}
+        {item.version > 0 && !item.enabled && (
+          <span style={{ marginLeft: 6, color: colors.gray[400] }}>· 已下线</span>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ====================== 组件 ======================
 
 const WorkflowDesigner: React.FC = () => {
@@ -360,14 +638,36 @@ const WorkflowDesigner: React.FC = () => {
   /** 上一次「读入 / 保存」时的画布快照，与当前快照比对即得 dirty。 */
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
   const [lossy, setLossy] = useState(false);
+  /** 旧定义结构重建时的告警（来自 {@code parse()}），要在界面上明确告诉用户「结构是推断的」。 */
+  const [loadWarnings, setLoadWarnings] = useState<string[]>([]);
+  /** 服务端定义原文里的 nodes/edges：树还原失败时用它做只读图预览，避免空白画布。 */
+  const [rawDefinition, setRawDefinition] = useState<{
+    nodes: DefinitionNode[];
+    edges: DefinitionEdge[];
+  } | null>(null);
   const [violations, setViolations] = useState<Violation[]>([]);
   const [simReport, setSimReport] = useState<SimReport | null>(null);
   const [defList, setDefList] = useState<WorkflowDefinitionSummary[]>([]);
+  /**
+   * 本次会话里「新建但还没发布」的 key。
+   *
+   * <p>服务端 `/definitions` 只返回**已发布**的定义，于是刚从模板创建的流程在流程库里根本没有条目——
+   * 用户一离开页面就再也点不回来（只能靠记住 key 重新输入）。这里把会话内新建的 key 合进列表并标注「草稿」，
+   * 至少让当前会话内的操作是自洽的。
+   */
+  const [sessionKeys, setSessionKeys] = useState<string[]>([]);
   const [versions, setVersions] = useState<WorkflowPublished[]>([]);
   const [versionDrawer, setVersionDrawer] = useState(false);
   const [filterText, setFilterText] = useState('');
-  const [, setLoading] = useState(false);
-  const [drag, setDrag] = useState<{ code: string; dx: number; dy: number } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [drag, setDrag] = useState<{
+    code: string;
+    originX: number;
+    originY: number;
+    px: number;
+    py: number;
+    moved: boolean;
+  } | null>(null);
   const [tplModal, setTplModal] = useState<{ open: boolean; tpl: WorkflowTemplate | null; key: string; name: string }>({
     open: false,
     tpl: null,
@@ -375,7 +675,43 @@ const WorkflowDesigner: React.FC = () => {
     name: '',
   });
   const [exportJson, setExportJson] = useState<string | null>(null);
+  /** 模板画廊 / 新建流程：把「从模板开始」与「空流程」两种入口从常驻侧栏里拆出来。 */
+  const [tplGallery, setTplGallery] = useState(false);
+  const [createModal, setCreateModal] = useState<{ open: boolean; key: string; name: string }>({
+    open: false,
+    key: '',
+    name: '',
+  });
+  const [siderCollapsed, setSiderCollapsed] = useState(false);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
+  /**
+   * 窄屏收敛（<1500）：1440 笔记本上 8 个动作 + 流程名 + 草稿标签已经互相挤压（实测流程名被截）。
+   * 收敛后次要动作收进「更多」菜单，主操作（保存 / 发布）保留文案，侧栏宽度同步让位给画布。
+   */
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const sync = () => setCompact(window.innerWidth < 1500);
+    sync();
+    window.addEventListener('resize', sync);
+    return () => window.removeEventListener('resize', sync);
+  }, []);
+  /** 画布缩放：同类编辑器（Figma / n8n / Camunda）标配，没有它超过 6 个节点就只能靠滚轮找。 */
+  const [scale, setScale] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  /** 拖拽开始前的版式：mouseup 时作为撤销目标（拖动过程中每帧都改 layout，不能逐帧留痕）。 */
+  const beforeDragRef = useRef<Record<string, LayoutPoint>>({});
+  const fillHeight = useFillHeight(rootRef);
+
+  // ---- 撤销 / 重做 ----
+  /** 历史栈只存「文档 + 版式 + 选中」，三者共同决定画布呈现；60 步足够覆盖一次完整编排。 */
+  type Snap = { doc: FlowDoc | null; layout: Record<string, LayoutPoint>; selected: string | null };
+  const pastRef = useRef<Snap[]>([]);
+  const futureRef = useRef<Snap[]>([]);
+  /** 属性面板连续打字时合并历史，否则一次改名会灌进十几个撤销步。 */
+  const lastEditRef = useRef<{ key: string; at: number } | null>(null);
+  /** 撤销/重做按钮的可用态（历史栈在 ref 里，改完需要主动同步一次渲染）。 */
+  const [histState, setHistState] = useState({ canUndo: false, canRedo: false });
 
   /**
    * 写权限（UX 门禁）：没有 workflow:definitions:write 时，保存/发布/丢弃/上下线全部禁用，
@@ -386,17 +722,6 @@ const WorkflowDesigner: React.FC = () => {
     () => hasPermission(BonePermissionCodes.WORKFLOW_DEFINITIONS_WRITE),
     [],
   );
-
-  const compiled = useMemo(() => {
-    if (!doc) return null;
-    try {
-      return compile(doc, { layout: Object.keys(layout).length ? layout : undefined });
-    } catch {
-      return null;
-    }
-  }, [doc, layout]);
-
-  const violationByNode = useMemo(() => groupViolationsByNode(violations), [violations]);
 
   /**
    * 默认坐标（只依赖文档结构，与拖拽覆盖无关）。
@@ -409,9 +734,102 @@ const WorkflowDesigner: React.FC = () => {
     [doc],
   );
 
+  /**
+   * 生效版式 = 默认版式（按文档结构算）+ 用户拖拽覆盖。
+   *
+   * <p>必须在这里合并，而不是在渲染时各取一次：`layout` 只记录「拖过的节点」，一旦把这张**局部**表
+   * 原样序列化（保存）再读回来，未拖过的节点位置就冻在旧结构上——实测症状是「新增一个节点后保存重开，
+   * 结束节点压在别的节点身上」。合并后编译/保存/渲染共用同一份完整坐标。
+   */
+  const effectiveLayout = useMemo<Record<string, LayoutPoint>>(
+    () => ({ ...defaultLayout, ...layout }),
+    [defaultLayout, layout],
+  );
+
+  const compiled = useMemo(() => {
+    if (!doc) return null;
+    try {
+      return compile(doc, { layout: effectiveLayout });
+    } catch {
+      return null;
+    }
+  }, [doc, effectiveLayout]);
+
+  const violationByNode = useMemo(() => groupViolationsByNode(violations), [violations]);
+
   /** 画布当前快照 / 未保存标记（比的是编译产物，见 {@link snapshotOf}）。 */
-  const currentSnapshot = useMemo(() => (doc ? snapshotOf(doc, layout) : null), [doc, layout]);
+  const currentSnapshot = useMemo(() => (doc ? snapshotOf(doc, effectiveLayout) : null), [doc, effectiveLayout]);
   const dirty = currentSnapshot !== null && currentSnapshot !== savedSnapshot;
+
+  // ---------- 历史栈 ----------
+  const snap = useCallback<() => Snap>(() => ({ doc, layout, selected }), [doc, layout, selected]);
+
+  const syncHist = useCallback(() => {
+    setHistState({ canUndo: pastRef.current.length > 0, canRedo: futureRef.current.length > 0 });
+  }, []);
+
+  const pushPast = useCallback(
+    (s: Snap) => {
+      pastRef.current.push(s);
+      if (pastRef.current.length > 60) pastRef.current.shift();
+      // 新改动一定让「重做」失效——否则重做会把用户刚做的编辑覆盖回旧分支。
+      futureRef.current = [];
+      syncHist();
+    },
+    [syncHist],
+  );
+
+  /**
+   * 统一的文档变更入口：留痕 + 落状态。
+   *
+   * <p>为什么强制走这里：旧代码里 {@code setDoc} 散落在 6 处，撤销/重做只能在每处补一遍，
+   * 漏一处就出现「这个操作撤不回去」的诡异体验。收敛成一个入口后，「哪些操作可撤销」是结构性的，不靠自觉。
+   */
+  const applyDoc = useCallback(
+    (
+      next: FlowDoc,
+      opts?: { layout?: Record<string, LayoutPoint>; select?: string | null; coalesce?: string },
+    ) => {
+      const now = Date.now();
+      const key = opts?.coalesce;
+      const merging = !!key && !!lastEditRef.current && lastEditRef.current.key === key && now - lastEditRef.current.at < 700;
+      if (!merging) pushPast(snap());
+      lastEditRef.current = key ? { key, at: now } : null;
+      setDoc(next);
+      if (opts?.layout) setLayout(opts.layout);
+      if (opts?.select !== undefined) setSelected(opts.select);
+    },
+    [snap, pushPast],
+  );
+
+  const resetHistory = useCallback(() => {
+    pastRef.current = [];
+    futureRef.current = [];
+    lastEditRef.current = null;
+    syncHist();
+  }, [syncHist]);
+
+  const undo = useCallback(() => {
+    const prev = pastRef.current.pop();
+    if (!prev) return;
+    futureRef.current.push(snap());
+    lastEditRef.current = null;
+    setDoc(prev.doc);
+    setLayout(prev.layout);
+    setSelected(prev.selected);
+    syncHist();
+  }, [snap, syncHist]);
+
+  const redo = useCallback(() => {
+    const next = futureRef.current.pop();
+    if (!next) return;
+    pastRef.current.push(snap());
+    lastEditRef.current = null;
+    setDoc(next.doc);
+    setLayout(next.layout);
+    setSelected(next.selected);
+    syncHist();
+  }, [snap, syncHist]);
 
   /**
    * 失败统一呈现（联调实测：拦截器在非 2xx 时 reject，不 catch 就完全没有反馈）。
@@ -469,23 +887,60 @@ const WorkflowDesigner: React.FC = () => {
    */
   const applyLoaded = useCallback(
     (key: string, definitionJson: string, fallbackName: string) => {
-      const parsed = docFromDefinitionJson(definitionJson);
+      const loaded = docFromDefinitionJson(definitionJson);
+      const parsed = loaded.doc;
       let uiLayout: Record<string, LayoutPoint> | undefined;
       try {
-        uiLayout = (JSON.parse(definitionJson) as { ui?: { layout?: Record<string, LayoutPoint> } }).ui
-          ?.layout;
+        const raw = JSON.parse(definitionJson) as {
+          ui?: { layout?: Record<string, LayoutPoint> };
+          nodes?: DefinitionNode[];
+          edges?: DefinitionEdge[];
+        };
+        uiLayout = raw.ui?.layout;
+        setRawDefinition(
+          Array.isArray(raw.nodes) && raw.nodes.length > 0
+            ? { nodes: raw.nodes, edges: raw.edges ?? [] }
+            : null,
+        );
       } catch {
         // 原文不可解析：由 parsed == null 的有损分支兜住
       }
       const nextDoc = parsed ?? blankDoc(key, fallbackName);
-      const nextLayout = uiLayout ?? computeDefaultLayout(nextDoc);
+      /**
+       * 坐标只在「与结构一一对应」时才可信。
+       *
+       * <p>`ui.layout` 是保存那一刻的**完整**快照；之后只要增删过节点，这份表就过期了——旧实现在这里
+       * 无条件采用，于是结束节点停在中途、新节点被压在别人身上（本次实测的真实缺陷）。
+       * 判据很直接：坐标表的 key 集合必须恰好等于当前结构的 key 集合。
+       */
+      const structCodes = new Set(['START', 'END', ...collectStepCodes(nextDoc.steps)]);
+      const layoutCodes = Object.keys(uiLayout ?? {});
+      // 光「key 集合一致」还不够：结束节点必须位于最下方，否则就是旧快照（结束停在中途）。
+      const endBelowAll =
+        !!uiLayout?.END &&
+        layoutCodes.every(
+          (c) => c === 'END' || (uiLayout as Record<string, LayoutPoint>)[c].y < (uiLayout as Record<string, LayoutPoint>).END.y,
+        );
+      const layoutFresh =
+        !!uiLayout &&
+        layoutCodes.length === structCodes.size &&
+        layoutCodes.every((c) => structCodes.has(c)) &&
+        endBelowAll;
+      const nextLayout = layoutFresh ? (uiLayout as Record<string, LayoutPoint>) : computeDefaultLayout(nextDoc);
       setDoc(nextDoc);
       setLayout(nextLayout);
-      setSavedSnapshot(snapshotOf(nextDoc, nextLayout));
-      setLossy(!parsed);
+      /**
+       * 基线必须按**渲染时实际用的版式**算：`dirty` 比的是 `{...defaultLayout, ...layout}`，
+       * 这里若只拿 `nextLayout` 建基线，只要 `ui.layout` 少一个 key（旧快照），一打开就恒显示「未保存」。
+       */
+      setSavedSnapshot(snapshotOf(nextDoc, { ...computeDefaultLayout(nextDoc), ...nextLayout }));
+      setLossy(loaded.lossy || !parsed);
+      setLoadWarnings(loaded.warnings);
       setSelected(null);
+      // 换了一份文档，历史栈必须清空：跨文档撤销会把 A 流程的节点贴进 B 流程，属于数据损坏而非「撤销」。
+      resetHistory();
     },
-    [],
+    [resetHistory],
   );
 
   const openKey = useCallback(
@@ -529,8 +984,11 @@ const WorkflowDesigner: React.FC = () => {
         setLayout(freshLayout);
         setSavedSnapshot(snapshotOf(fresh, freshLayout));
         setLossy(false);
+        setLoadWarnings([]);
+        setRawDefinition(null);
         setDraftExists(false);
         setRevision(null);
+        resetHistory();
       } catch (error) {
         // 读不到草稿/版本时不能把界面留在空白态：给出空文档让人可继续编辑，同时说明原因。
         reportFailure(error, '打开流程定义');
@@ -540,13 +998,16 @@ const WorkflowDesigner: React.FC = () => {
         setLayout(freshLayout);
         setSavedSnapshot(snapshotOf(fresh, freshLayout));
         setLossy(false);
+        setLoadWarnings([]);
+        setRawDefinition(null);
         setDraftExists(false);
         setRevision(null);
+        resetHistory();
       } finally {
         setLoading(false);
       }
     },
-    [applyLoaded, dirty, reportFailure],
+    [applyLoaded, dirty, reportFailure, resetHistory],
   );
 
   /** 只把 revision 基线对齐到服务端，**不动画布**——用户选择「保留本地修改」时用。 */
@@ -629,7 +1090,7 @@ const WorkflowDesigner: React.FC = () => {
       message.error('当前为旧数据有损还原，请补全节点后再保存');
       return;
     }
-    const def = compile(doc, { layout: Object.keys(layout).length ? layout : undefined });
+    const def = compile(doc, { layout: effectiveLayout });
     try {
       const res = await workflowDesignerApi.saveDraft(defKey, JSON.stringify(def), revision);
       if (res.code === 200 && res.data) {
@@ -644,7 +1105,55 @@ const WorkflowDesigner: React.FC = () => {
       // 409 = 别人的 revision 更新了：交给 handleConflict 让用户选「载入服务器版本」还是「保留本地」。
       reportFailure(error, '保存草稿', () => void handleConflict(defKey));
     }
-  }, [doc, defKey, lossy, layout, revision, reportFailure, handleConflict]);
+  }, [doc, defKey, lossy, effectiveLayout, revision, reportFailure, handleConflict]);
+
+  /**
+   * 「有损还原」的出路：把按图推断出来的结构**显式**固化成草稿。
+   *
+   * <p>为什么需要它：种子数据 / 迁移导入的定义没有 `ui.flowDoc`，只能靠可达性推断分支结构。推断结果可能有偏差，
+   * 所以默认禁止保存（否则一次随手保存就把分支抹平）。但如果没有出口，这类流程就永远无法在设计器里编辑——
+   * 用户只能看着它、不能改它。这里让用户「核对后确认」，把推断结果落成草稿，从此走无损路径。
+   */
+  const onAdoptLossy = useCallback(async () => {
+    if (!doc || !defKey) return;
+    const ok = await new Promise<boolean>((resolve) => {
+      Modal.confirm({
+        title: '以当前结构重建草稿？',
+        content:
+          '当前结构是从旧定义按图推断的（原定义未携带可视化信息）。确认前请在画布上核对分支与审批人配置；' +
+          '重建后会存成新草稿并补齐可视化信息，之后即可正常编辑与发布。',
+        okText: '核对无误，重建草稿',
+        cancelText: '再看看',
+        okButtonProps: { danger: true },
+        onOk: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+    if (!ok) return;
+    try {
+      const def = compile(doc, { layout: effectiveLayout });
+      const res = await workflowDesignerApi.saveDraft(
+        defKey,
+        JSON.stringify(def),
+        draftExists ? revision : null,
+      );
+      if (res.code === 200 && res.data) {
+        setRevision(res.data.draft.revision);
+        setDraftExists(true);
+        setViolations(res.data.violations ?? []);
+        setSavedSnapshot(JSON.stringify(def));
+        setLossy(false);
+        setLoadWarnings([]);
+        message.success('已按当前结构重建草稿，现在可以正常编辑与发布');
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'FlowDocCompileError') {
+        message.error(`无法重建：${error.message}（该结构不能表达为流程树）`);
+        return;
+      }
+      reportFailure(error, '重建草稿', () => void handleConflict(defKey));
+    }
+  }, [doc, defKey, effectiveLayout, draftExists, revision, reportFailure, handleConflict]);
 
   const onPublish = useCallback(async () => {
     if (!doc || !defKey) return;
@@ -654,7 +1163,7 @@ const WorkflowDesigner: React.FC = () => {
       message.warning('画布内容还没有存成草稿，请先点「保存草稿」再发布');
       return;
     }
-    const def = compile(doc, { layout: Object.keys(layout).length ? layout : undefined });
+    const def = compile(doc, { layout: effectiveLayout });
     try {
       // 前端预检只为省一次往返，最终以服务端 fail-closed 结论为准（下面 422 分支会接收后端回传的违规）。
       const vRes = await workflowDesignerApi.validate(JSON.stringify(def));
@@ -677,7 +1186,7 @@ const WorkflowDesigner: React.FC = () => {
     } catch (error) {
       reportFailure(error, '发布', () => void handleConflict(defKey));
     }
-  }, [doc, defKey, draftExists, layout, revision, refreshList, reportFailure, handleConflict]);
+  }, [doc, defKey, draftExists, effectiveLayout, revision, refreshList, reportFailure, handleConflict]);
 
   const onSimulate = useCallback(async () => {
     if (!compiled) return;
@@ -758,40 +1267,84 @@ const WorkflowDesigner: React.FC = () => {
     [applyLoaded, dirty],
   );
 
+  /** 新增节点：插到选中节点之后（同一层级），未选中则追加到主链末尾。 */
+  /**
+   * 结构变更后重建版式。
+   *
+   * <p>保留「还活着」的节点的手工位置（用户拖过就别动他），新节点与结束节点按新结构重算——
+   * 否则 END 会停在中途、新节点会与已有节点重叠。
+   */
+  const rebuildLayout = (nextDoc: FlowDoc): Record<string, LayoutPoint> => {
+    const auto = computeDefaultLayout(nextDoc);
+    const next: Record<string, LayoutPoint> = {};
+    for (const [code, point] of Object.entries(auto)) {
+      // END 必须**永远**重算：它代表「最后一步之后」，结构一变它的旧坐标就落到了中途。
+      next[code] = code === 'END' ? point : layout[code] ?? point;
+    }
+    return next;
+  };
+
   const onAdd = (kind: 'approve' | 'cc' | 'condition') => {
     if (!doc) return;
     const code = genCode(kind);
     const step: Step =
       kind === 'approve' ? emptyApprove(code) : kind === 'cc' ? emptyCc(code) : emptyCondition(code);
-    const targetBranch = selected ? findBranchId(doc, selected) : null;
-    setDoc(appendStep(doc, step, targetBranch));
-    setSelected(code);
+    const nextDoc = insertAfter(doc, selected, step);
+    applyDoc(nextDoc, { select: code, layout: rebuildLayout(nextDoc) });
+    // 新节点可能在视口之外（长流程），主动滚过去，避免「点了没反应」的错觉。
+    window.requestAnimationFrame(() => {
+      const pos = layout[code] ?? computeDefaultLayout(insertAfter(doc, selected, step))[code];
+      const el = containerRef.current;
+      if (!pos || !el) return;
+      el.scrollTo({
+        left: Math.max(0, pos.x * scale + CANVAS_INSET_X - 120),
+        top: Math.max(0, pos.y * scale + CANVAS_INSET_Y - 80),
+        behavior: 'smooth',
+      });
+    });
   };
 
   const onDelete = (code: string) => {
     if (!doc) return;
-    setDoc(removeStep(doc, code));
-    setSelected(null);
+    const nextDoc = removeStep(doc, code);
+    applyDoc(nextDoc, { select: null, layout: rebuildLayout(nextDoc) });
   };
 
   const onMouseDown = (e: React.MouseEvent, code: string) => {
+    if (e.button !== 0) return;
     e.preventDefault();
-    const start = layout[code] ?? { x: 0, y: 0 };
-    setDrag({ code, dx: e.clientX - start.x, dy: e.clientY - start.y });
+    e.stopPropagation();
+    setSelected(code);
+    const start = layout[code] ?? defaultLayout[code] ?? { x: 0, y: 0 };
+    beforeDragRef.current = layout;
+    setDrag({ code, originX: start.x, originY: start.y, px: e.clientX, py: e.clientY, moved: false });
   };
   useEffect(() => {
     if (!drag) return;
     const move = (e: MouseEvent) => {
-      setLayout((prev) => ({ ...prev, [drag.code]: { x: e.clientX - drag.dx, y: e.clientY - drag.dy } }));
+      const dx = (e.clientX - drag.px) / scale;
+      const dy = (e.clientY - drag.py) / scale;
+      if (!drag.moved && Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
+      if (!drag.moved) setDrag((d) => (d ? { ...d, moved: true } : d));
+      setLayout((prev) => ({ ...prev, [drag.code]: { x: drag.originX + dx, y: drag.originY + dy } }));
     };
-    const up = () => setDrag(null);
+    const up = () => {
+      // 只有真的移动过才产生一步历史：点一下节点只是选中，不该占用撤销位。
+      if (drag.moved) {
+        pastRef.current.push({ doc, layout: beforeDragRef.current, selected });
+        if (pastRef.current.length > 60) pastRef.current.shift();
+        futureRef.current = [];
+        syncHist();
+      }
+      setDrag(null);
+    };
     window.addEventListener('mousemove', move);
     window.addEventListener('mouseup', up);
     return () => {
       window.removeEventListener('mousemove', move);
       window.removeEventListener('mouseup', up);
     };
-  }, [drag]);
+  }, [drag, scale, doc, selected, syncHist]);
 
   /**
    * 关闭 / 刷新页面时拦一下。
@@ -810,18 +1363,53 @@ const WorkflowDesigner: React.FC = () => {
     return () => window.removeEventListener('beforeunload', handler);
   }, [dirty]);
 
-  // ---- 模板：从模板创建并落库 ----
-  const onUseTemplate = useCallback(
-    (tpl: WorkflowTemplate) => {
-      if (!canWrite) {
-        message.warning('当前账号无 workflow:definitions:write，无法创建');
+  /**
+   * 快捷键。
+   *
+   * <p>设计器是高频编辑场景，纯鼠标操作（选中→点删除→再选中）在真实使用里非常耗人。这里对齐同类工具的最小集：
+   * ⌘/Ctrl+S 保存、⌘/Ctrl+Z 撤销、⌘/Ctrl+Shift+Z（或 ⌘/Ctrl+Y）重做、Delete 删除选中节点、Esc 取消选中。
+   *
+   * <p>**输入框内一律放行**：用户在属性面板里按 ⌘Z 期望的是撤销这行文字，而不是把整个画布回滚一步。
+   */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const typing =
+        !!t &&
+        (t.tagName === 'INPUT' ||
+          t.tagName === 'TEXTAREA' ||
+          t.isContentEditable ||
+          !!t.closest('.ant-select, .ant-input-number'));
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (doc && canWrite && !lossy) void onSaveDraft();
         return;
       }
-      setTplModal({ open: true, tpl, key: '', name: tpl.name });
-    },
-    [canWrite],
-  );
+      if (typing) return;
+      if (mod && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+        return;
+      }
+      if (mod && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redo();
+        return;
+      }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selected && canWrite) {
+        e.preventDefault();
+        onDelete(selected);
+        return;
+      }
+      if (e.key === 'Escape') setSelected(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [doc, canWrite, lossy, onSaveDraft, undo, redo, selected, onDelete]);
 
+  // ---- 模板：从模板创建并落库 ----
   const confirmCreateFromTemplate = useCallback(async () => {
     const { tpl, key, name } = tplModal;
     if (!tpl) return;
@@ -839,6 +1427,12 @@ const WorkflowDesigner: React.FC = () => {
     const def = compile(nextDoc, { layout: lay });
     setLoading(true);
     try {
+      // 先探一次：key 已存在时后端会回 409，把它翻译成「换个 key」而不是抛一个并发冲突给用户。
+      const existing = await workflowDesignerApi.findDraft(key.trim());
+      if (existing.code === 200 && existing.data) {
+        message.error(`流程 key「${key.trim()}」已存在，请换一个 key，或直接从流程库打开它`);
+        return;
+      }
       const res = await workflowDesignerApi.saveDraft(key.trim(), JSON.stringify(def), null);
       if (res.code === 200 && res.data) {
         setDoc(nextDoc);
@@ -852,13 +1446,21 @@ const WorkflowDesigner: React.FC = () => {
         setViolations(res.data.violations ?? []);
         setLossy(false);
         setTplModal({ open: false, tpl: null, key: '', name: '' });
+        setTplGallery(false);
+        setSessionKeys((keys) => (keys.includes(key.trim()) ? keys : [...keys, key.trim()]));
+        resetHistory();
         void refreshList();
         message.success(`已从模板「${tpl.name}」创建并保存草稿`);
       } else {
         reportFailure({ kind: 'unknown', message: `保存失败（code=${res.code}）` } as never, '从模板创建');
       }
     } catch (error) {
-      reportFailure(error, '从模板创建');
+      const failure = toWorkflowFailure(error);
+      if (failure.kind === 'conflict') {
+        message.error(`流程 key「${key.trim()}」已存在，请换一个 key`);
+      } else {
+        reportFailure(error, '从模板创建');
+      }
     } finally {
       setLoading(false);
     }
@@ -886,442 +1488,1208 @@ const WorkflowDesigner: React.FC = () => {
 
   const filteredList = useMemo(() => {
     const t = filterText.trim().toLowerCase();
-    if (!t) return defList;
-    return defList.filter(
+    const draftOnly = sessionKeys
+      .filter((k) => !defList.some((d) => d.defKey === k))
+      .map<WorkflowDefinitionSummary>((k) => ({
+        defKey: k,
+        defName: k === defKey && defName ? defName : k,
+        version: 0,
+        enabled: false,
+      }));
+    const all = [...defList, ...draftOnly];
+    if (!t) return all;
+    return all.filter(
       (d) => (d.defKey ?? '').toLowerCase().includes(t) || (d.defName ?? '').toLowerCase().includes(t),
     );
-  }, [defList, filterText]);
+  }, [defList, sessionKeys, defKey, defName, filterText]);
+
+  // ---- 画布几何 ----
+  /**
+   * 画布数据源：优先用「文档树编译产物」（可编辑），编译失败时退化为服务端原始图（只读预览）。
+   *
+   * <p>两者节点/边结构一致（code/type/label、from/to/label），渲染层因此只认一套形状。
+   */
+  const canvas = useMemo(() => {
+    if (compiled) {
+      return {
+        nodes: compiled.nodes as DefinitionNode[],
+        edges: compiled.edges as DefinitionEdge[],
+        pos: null as Record<string, LayoutPoint> | null,
+        editable: true,
+      };
+    }
+    if (rawDefinition && rawDefinition.nodes.length > 0) {
+      return {
+        nodes: rawDefinition.nodes,
+        edges: rawDefinition.edges,
+        pos: layeredLayout(rawDefinition.nodes, rawDefinition.edges),
+        editable: false,
+      };
+    }
+    return null;
+  }, [compiled, rawDefinition]);
+
+  const posOf = useCallback(
+    (code: string): LayoutPoint | undefined =>
+      canvas?.pos ? canvas.pos[code] : effectiveLayout[code],
+    [canvas, effectiveLayout],
+  );
+
+  /** 画布内容外框：决定滚动区域大小与「适应画布」的基准。 */
+  const bounds = useMemo(() => {
+    let maxX = 0;
+    let maxY = 0;
+    for (const n of canvas?.nodes ?? []) {
+      const p = posOf(n.code);
+      if (!p) continue;
+      maxX = Math.max(maxX, p.x + NODE_W);
+      maxY = Math.max(maxY, p.y + NODE_H);
+    }
+    return { w: Math.max(maxX + CANVAS_PAD, 900), h: Math.max(maxY + CANVAS_PAD, 560) };
+  }, [canvas, posOf]);
+
+  const zoomBy = useCallback((delta: number) => {
+    setScale((s) => Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Number((s + delta).toFixed(2)))));
+  }, []);
+
+  const fitToView = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const { width, height } = el.getBoundingClientRect();
+    const s = Math.min((width - 100) / bounds.w, (height - 100) / bounds.h, 1);
+    setScale(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Number(s.toFixed(2)))));
+    el.scrollTo({ left: 0, top: 0 });
+  }, [bounds]);
+
+  /** Ctrl/⌘ + 滚轮缩放（与 Figma / Camunda 一致）。非 passive 才能 preventDefault 掉浏览器整页缩放。 */
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      zoomBy(e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [zoomBy]);
+
+  /**
+   * 换文档时回到 100% 并滚回起点。
+   *
+   * <p>为什么**不**自动「适应画布」：分支图动辄 5-8 层，塞进 700×500 的面板需要缩到 40%，
+   * 节点标题只有 6-7px、完全不可读——「看全」远不如「看清」。适应画布保留为显式按钮。
+   */
+  const canvasKey = `${defKey}|${canvas?.editable ? 'edit' : 'preview'}|${canvas?.nodes.length ?? 0}|${defName}`;
+  useEffect(() => {
+    if (!canvas) return;
+    setScale(1);
+    containerRef.current?.scrollTo({ left: 0, top: 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasKey]);
+
+  /** 选中并滚到视野内：右栏点违规项、列表里选节点时用，避免「高亮在屏幕外」。 */
+  const selectAndReveal = useCallback(
+    (code: string) => {
+      setSelected(code);
+      const pos = effectiveLayout[code];
+      const el = containerRef.current;
+      if (!pos || !el) return;
+      el.scrollTo({
+        left: Math.max(0, pos.x * scale + CANVAS_INSET_X - 120),
+        top: Math.max(0, pos.y * scale + CANVAS_INSET_Y - 80),
+        behavior: 'smooth',
+      });
+    },
+    [effectiveLayout, scale],
+  );
+
+  /** 改名要同时改文档（compile 用 doc.name 作为定义名），只改界面状态会发布出旧名字。 */
+  const renameFlow = useCallback(
+    (name: string) => {
+      setDefName(name);
+      if (doc) applyDoc({ ...doc, name }, { coalesce: 'flow:name' });
+    },
+    [doc, applyDoc],
+  );
+
+  const confirmDiscardDraft = useCallback(() => {
+    Modal.confirm({
+      title: '确认丢弃草稿？',
+      content: '画布内容会保留，但服务端这份草稿会被删除；未发布的修改将不存在于服务端。',
+      okText: '丢弃草稿',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: () => void onDiscardDraft(),
+    });
+  }, [onDiscardDraft]);
+
+  const stats = useMemo(
+    () => (doc ? countSteps(doc.steps) : { approve: 0, cc: 0, condition: 0 }),
+    [doc],
+  );
+  const publishable = isPublishable(violations);
+  const nodeCount = stats.approve + stats.cc + stats.condition;
+  const startCreate = (tpl: WorkflowTemplate) => {
+    if (!canWrite) {
+      message.warning('当前账号无 workflow:definitions:write，无法创建');
+      return;
+    }
+    setTplModal({ open: true, tpl, key: `${tpl.id}_approval`, name: tpl.name });
+  };
 
   return (
-    <Layout style={{ height: '100%' }}>
-      <Sider
-        width={328}
-        theme="light"
-        style={{
-          borderRight: `1px solid ${colors.gray[200]}`,
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-        }}
-      >
-        <div
+    <div ref={rootRef} style={{ height: fillHeight ?? '100%', display: 'flex', minHeight: 0 }}>
+      <Layout style={{ height: '100%', width: '100%', overflow: 'hidden', background: colors.gray[150] }}>
+        {/* ============ 左：流程库 ============ */}
+        <Sider
+          width={compact ? 268 : 296}
+          collapsedWidth={0}
+          collapsed={siderCollapsed}
+          trigger={null}
+          theme="light"
           style={{
-            padding: `${spacing[4]} ${spacing[4]} ${spacing[3]}`,
-            borderBottom: `1px solid ${colors.gray[200]}`,
+            borderRight: `1px solid ${colors.gray[200]}`,
+            height: '100%',
+            background: '#fff',
           }}
         >
-          <Space align="center" size={8}>
-            <AppstoreOutlined style={{ color: colors.primary[500], fontSize: 18 }} />
-            <Title level={5} style={{ margin: 0 }}>
-              工作流设计器
-            </Title>
-          </Space>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            可视化编排企业审批流，支持模板复用与跨环境导出
-          </Text>
-        </div>
-
-        <div style={{ flex: 1, overflow: 'auto', padding: spacing[4] }}>
-          {/* 新建 / 打开 */}
-          <Space direction="vertical" style={{ width: '100%' }} size={8}>
-            <Input
-              placeholder="流程 key，如 expense_approval"
-              value={defKey}
-              onChange={(e) => setDefKey(e.target.value)}
-              addonBefore="key"
-              maxLength={64}
-            />
-            <Input
-              placeholder="流程名称，如 费用报销审批"
-              value={defName}
-              onChange={(e) => setDefName(e.target.value)}
-              maxLength={64}
-            />
-            <Button block icon={<FileTextOutlined />} onClick={() => void openKey(defKey, defName)}>
-              打开 / 新建
-            </Button>
-          </Space>
-
-          <Divider orientation="left" style={{ margin: `${spacing[4]} 0 ${spacing[3]}` }}>
-            模板中心
-          </Divider>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            选择场景模板，一键生成可复用审批流
-          </Text>
-          <Space direction="vertical" style={{ width: '100%', marginTop: spacing[2] }}>
-            {TEMPLATES.map((tpl) => (
-              <Card key={tpl.id} size="small" hoverable styles={{ body: { padding: spacing[3] } }}>
-                <Space style={{ width: '100%', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ minWidth: 0 }}>
-                    <Space size={4} wrap>
-                      <Text strong>{tpl.name}</Text>
-                      {tpl.tags.map((tg) => (
-                        <Tag key={tg} color="blue" style={{ marginInlineEnd: 0 }}>
-                          {tg}
-                        </Tag>
-                      ))}
-                    </Space>
-                    <Paragraph
-                      type="secondary"
-                      style={{ fontSize: 12, margin: '4px 0 0', lineHeight: 1.5 }}
-                      ellipsis={{ rows: 2 }}
-                    >
-                      {tpl.desc}
-                    </Paragraph>
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+            <div style={{ padding: '12px 12px 10px', borderBottom: `1px solid ${colors.gray[200]}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 8,
+                    background: colors.primary[50],
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <AppstoreOutlined style={{ color: colors.primary[500], fontSize: 15 }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, lineHeight: '18px' }}>流程库</div>
+                  <div style={{ fontSize: 11, color: colors.gray[500], lineHeight: '15px' }}>
+                    {defList.length} 个流程 · {canWrite ? '可编辑' : '只读'}
                   </div>
+                </div>
+                <Tooltip title="新建空白流程">
                   <Button
+                    type="text"
                     size="small"
-                    type="primary"
+                    icon={<PlusOutlined />}
+                    aria-label="新建空白流程"
                     disabled={!canWrite}
-                    onClick={() => onUseTemplate(tpl)}
-                  >
-                    使用
-                  </Button>
-                </Space>
-              </Card>
-            ))}
-          </Space>
-
-          <Divider orientation="left" style={{ margin: `${spacing[4]} 0 ${spacing[3]}` }}>
-            我的流程（{defList.length}）
-          </Divider>
-          <Input
-            allowClear
-            prefix={<SearchOutlined style={{ color: colors.gray[400] }} />}
-            placeholder="搜索 key 或名称"
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-            style={{ marginBottom: spacing[2] }}
-          />
-          <Space direction="vertical" style={{ width: '100%' }} size={8}>
-            {filteredList.map((d) => {
-              const active = d.defKey === defKey;
-              return (
-                <Tooltip key={d.defKey} title={d.defName || d.defKey}>
-                  <Button
-                    block
-                    type={active ? 'primary' : 'default'}
-                    onClick={() => void openKey(d.defKey, d.defName)}
-                    style={{
-                      textAlign: 'left',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        maxWidth: '70%',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        verticalAlign: 'middle',
-                      }}
-                    >
-                      {d.defName || d.defKey}
-                    </span>
-                    <Tag
-                      color={d.enabled ? 'green' : 'default'}
-                      style={{ marginInlineStart: 4, marginInlineEnd: 0 }}
-                    >
-                      v{d.version}
-                    </Tag>
-                  </Button>
+                    onClick={() => setCreateModal({ open: true, key: '', name: '' })}
+                  />
                 </Tooltip>
-              );
-            })}
-            {filteredList.length === 0 && (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={filterText ? '无匹配流程' : '暂无流程'} />
-            )}
-          </Space>
-        </div>
-      </Sider>
+                <Tooltip title="收起流程库">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<MenuFoldOutlined />}
+                    aria-label="收起流程库"
+                    onClick={() => setSiderCollapsed(true)}
+                  />
+                </Tooltip>
+              </div>
+              <Input
+                allowClear
+                size="small"
+                prefix={<SearchOutlined style={{ color: colors.gray[400] }} />}
+                placeholder="搜索名称或 key"
+                value={filterText}
+                onChange={(e) => setFilterText(e.target.value)}
+                style={{ marginTop: 10 }}
+              />
+            </div>
 
-      <Content style={{ display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0 }}>
-        {/* 工具栏 */}
-        <div
-          style={{
-            padding: spacing[3],
-            borderBottom: `1px solid ${colors.gray[200]}`,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: spacing[3],
-            flexWrap: 'wrap',
-            background: colors.gray[50],
-          }}
-        >
-          <Space wrap size={8} align="center">
-            <Space size={6}>
-              <FileTextOutlined style={{ color: colors.primary[500] }} />
-              <Text strong>{defName || defKey || '未选择流程'}</Text>
-              {defKey && (
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  ({defKey})
+            <div style={{ flex: 1, overflow: 'auto', minHeight: 0, padding: 8 }}>
+              {filteredList.map((d) => (
+                <FlowListItem
+                  key={d.defKey}
+                  item={d}
+                  active={d.defKey === defKey}
+                  onOpen={() => void openKey(d.defKey, d.defName)}
+                />
+              ))}
+              {filteredList.length === 0 && (
+                <div style={{ padding: '48px 8px' }}>
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={filterText ? '没有匹配的流程' : '还没有流程定义'}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div style={{ padding: 10, borderTop: `1px solid ${colors.gray[200]}` }}>
+              <Button
+                block
+                icon={<ThunderboltOutlined />}
+                onClick={() => setTplGallery(true)}
+                disabled={!canWrite}
+              >
+                从模板创建
+              </Button>
+            </div>
+          </div>
+        </Sider>
+
+        <Content style={{ display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0, background: '#fff' }}>
+          {/* ============ 工具栏 ============ */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 12px',
+              borderBottom: `1px solid ${colors.gray[200]}`,
+              background: '#fff',
+              flexShrink: 0,
+              minHeight: 54,
+            }}
+          >
+            {siderCollapsed && (
+              <Tooltip title="展开流程库">
+                <Button
+                  type="text"
+                  icon={<MenuUnfoldOutlined />}
+                  aria-label="展开流程库"
+                  onClick={() => setSiderCollapsed(false)}
+                />
+              </Tooltip>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+              <FileTextOutlined style={{ color: colors.primary[500], flexShrink: 0 }} />
+              <Text
+                strong
+                style={{
+                  fontSize: 14,
+                  maxWidth: compact ? 140 : 220,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+                title={defName || undefined}
+              >
+                {defName || '未选择流程'}
+              </Text>
+              {defKey && !compact && (
+                <Text code style={{ fontSize: 11, flexShrink: 0 }}>
+                  {defKey}
                 </Text>
               )}
-            </Space>
-            <Divider type="vertical" />
-            {draftExists && <Tag color="orange">草稿 rev {revision}</Tag>}
-            {dirty && (
-              <Tooltip title="画布内容与上次保存/载入不一致，关闭页面前请先保存草稿">
-                <Tag color="red">未保存</Tag>
-              </Tooltip>
-            )}
-            {lossy && <Tag color="red">有损还原</Tag>}
-            {!canWrite && (
-              <Tooltip title="缺少 workflow:definitions:write，仅可查看 / 校验 / 试运行">
-                <Tag color="default">只读</Tag>
-              </Tooltip>
-            )}
-          </Space>
+              <Space size={4} style={{ flexShrink: 0 }}>
+                {draftExists && (
+                  <Tooltip title={`草稿修订号 ${revision}；发布会把它固化成新版本`}>
+                    <Tag color="orange" style={{ marginInlineEnd: 0 }}>
+                      草稿 rev {revision}
+                    </Tag>
+                  </Tooltip>
+                )}
+                {dirty && (
+                  <Tooltip title="画布内容与上次保存 / 载入不一致，关闭页面前请先保存">
+                    <Tag color="red" style={{ marginInlineEnd: 0 }}>
+                      未保存
+                    </Tag>
+                  </Tooltip>
+                )}
+                {lossy && (
+                  <Tooltip title="旧数据无法完整反解析为节点树，补全后才能保存">
+                    <Tag color="red" style={{ marginInlineEnd: 0 }}>
+                      有损还原
+                    </Tag>
+                  </Tooltip>
+                )}
+                {!canWrite && (
+                  <Tooltip title="缺少 workflow:definitions:write，仅可查看 / 校验 / 试运行">
+                    <Tag style={{ marginInlineEnd: 0 }}>只读</Tag>
+                  </Tooltip>
+                )}
+              </Space>
+            </div>
 
-          <Space wrap size={8}>
-            <Space size={4} wrap>
-              <Button icon={<SaveOutlined />} onClick={onSaveDraft} disabled={!doc || !canWrite || lossy}>
+            <Space size={4} style={{ flexShrink: 0 }}>
+              <Tooltip title="撤销（⌘/Ctrl + Z）">
+                <Button
+                  type="text"
+                  icon={<UndoOutlined />}
+                  aria-label="撤销"
+                  disabled={!histState.canUndo}
+                  onClick={undo}
+                />
+              </Tooltip>
+              <Tooltip title="重做（⌘/Ctrl + Shift + Z）">
+                <Button
+                  type="text"
+                  icon={<RedoOutlined />}
+                  aria-label="重做"
+                  disabled={!histState.canRedo}
+                  onClick={redo}
+                />
+              </Tooltip>
+              <Divider type="vertical" style={{ margin: '0 2px' }} />
+              {compact ? (
+                <Dropdown
+                  trigger={['click']}
+                  placement="bottomRight"
+                  menu={{
+                    items: [
+                      { key: 'validate', icon: <EyeOutlined />, label: '校验定义', disabled: !doc },
+                      { key: 'simulate', icon: <ExperimentOutlined />, label: '试运行', disabled: !doc },
+                      { key: 'versions', icon: <AuditOutlined />, label: '版本历史' },
+                      { key: 'export', icon: <ExportOutlined />, label: '导出 JSON', disabled: !compiled },
+                      ...(draftExists
+                        ? [
+                            { type: 'divider' as const },
+                            { key: 'discard', icon: <DeleteOutlined />, label: '丢弃服务端草稿', danger: true },
+                          ]
+                        : []),
+                    ],
+                    onClick: ({ key }) => {
+                      if (key === 'validate') void onValidate();
+                      else if (key === 'simulate') void onSimulate();
+                      else if (key === 'versions') void onOpenVersions();
+                      else if (key === 'export') onExport();
+                      else if (key === 'discard') confirmDiscardDraft();
+                    },
+                  }}
+                >
+                  <Tooltip title="校验 / 试运行 / 版本 / 导出">
+                    <Button icon={<MoreOutlined />} aria-label="更多操作">
+                      更多
+                    </Button>
+                  </Tooltip>
+                </Dropdown>
+              ) : (
+                <>
+                  <Button icon={<EyeOutlined />} onClick={() => void onValidate()} disabled={!doc}>
+                    校验
+                  </Button>
+                  <Button icon={<ExperimentOutlined />} onClick={() => void onSimulate()} disabled={!doc}>
+                    试运行
+                  </Button>
+                  <Button icon={<AuditOutlined />} onClick={() => void onOpenVersions()}>
+                    版本
+                  </Button>
+                  <Tooltip title="导出定义 JSON（跨环境 / 跨租户复用）">
+                    <Button icon={<ExportOutlined />} aria-label="导出" onClick={onExport} disabled={!compiled} />
+                  </Tooltip>
+                  {draftExists && (
+                    <Tooltip title="丢弃服务端草稿（画布内容保留）">
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        aria-label="丢弃草稿"
+                        onClick={confirmDiscardDraft}
+                      />
+                    </Tooltip>
+                  )}
+                </>
+              )}
+              <Divider type="vertical" style={{ margin: '0 2px' }} />
+              <Button icon={<SaveOutlined />} onClick={() => void onSaveDraft()} disabled={!doc || !canWrite || lossy}>
                 保存草稿
               </Button>
-              <Button icon={<SendOutlined />} type="primary" onClick={onPublish} disabled={!doc || !canWrite || lossy}>
+              <Button
+                type="primary"
+                icon={<SendOutlined />}
+                onClick={() => void onPublish()}
+                disabled={!doc || !canWrite || lossy}
+              >
                 发布
               </Button>
-              <Button icon={<EyeOutlined />} onClick={onValidate} disabled={!doc}>
-                校验
-              </Button>
-              <Button icon={<ExperimentOutlined />} onClick={onSimulate} disabled={!doc}>
-                试运行
-              </Button>
-              <Popconfirm title="确认丢弃草稿？" onConfirm={() => void onDiscardDraft()}>
-                <Button icon={<DeleteOutlined />} danger disabled={!draftExists || !canWrite}>
-                  丢弃草稿
-                </Button>
-              </Popconfirm>
-              <Button icon={<AuditOutlined />} onClick={() => void onOpenVersions()}>
-                版本
-              </Button>
-              <Button icon={<ExportOutlined />} onClick={onExport} disabled={!compiled}>
-                导出
-              </Button>
             </Space>
-            <Divider type="vertical" />
-            <Space size={4}>
-              <Tooltip title="向主链或选中条件分支添加审批节点">
-                <Button icon={<PlusOutlined />} onClick={() => onAdd('approve')} disabled={!canWrite || !doc}>
-                  审批
-                </Button>
-              </Tooltip>
-              <Button icon={<PlusOutlined />} onClick={() => onAdd('cc')} disabled={!canWrite || !doc}>
-                抄送
-              </Button>
-              <Button
-                icon={<BranchesOutlined />}
-                onClick={() => onAdd('condition')}
-                disabled={!canWrite || !doc}
-              >
-                条件
-              </Button>
-            </Space>
-          </Space>
-        </div>
+          </div>
 
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
-          {/* 画布 */}
-          <div
-            ref={containerRef}
-            style={{
-              flex: 1,
-              position: 'relative',
-              overflow: 'auto',
-              background: colors.gray[100],
-              backgroundImage:
-                'linear-gradient(#ececec 1px, transparent 1px), linear-gradient(90deg, #ececec 1px, transparent 1px)',
-              backgroundSize: '24px 24px',
-            }}
-          >
-            {!doc && (
+          <div style={{ flex: 1, display: 'flex', minHeight: 0, position: 'relative' }}>
+            {/* ============ 画布 ============ */}
+            <div style={{ position: 'relative', flex: 1, minWidth: 0, display: 'flex' }}>
               <div
+                ref={containerRef}
+                onMouseDown={() => setSelected(null)}
                 style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: colors.gray[500],
-                  gap: spacing[3],
+                  flex: 1,
+                  position: 'relative',
+                  overflow: 'auto',
+                  background: colors.gray[150],
+                  backgroundImage: `radial-gradient(${colors.gray[300]} 1px, transparent 1px)`,
+                  backgroundSize: `${20 * scale}px ${20 * scale}px`,
                 }}
               >
-                <AppstoreOutlined style={{ fontSize: 48, color: colors.gray[300] }} />
-                <div style={{ fontSize: 15 }}>指定流程 key 或从左侧模板开始设计</div>
-                <Text type="secondary">模板可一键生成常见审批流，导出 JSON 可在任意环境复用</Text>
-              </div>
-            )}
-            {doc && compiled && (
-              <svg
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
-              >
-                {compiled.edges.map((e, i) => {
-                  const a = layout[e.from] ?? defaultLayout[e.from];
-                  const b = layout[e.to] ?? defaultLayout[e.to];
-                  if (!a || !b) return null;
-                  return (
-                    <line
-                      key={i}
-                      x1={a.x + NODE_W / 2}
-                      y1={a.y + NODE_H}
-                      x2={b.x + NODE_W / 2}
-                      y2={b.y}
-                      stroke={colors.gray[400]}
-                      strokeWidth={1.5}
-                    />
-                  );
-                })}
-              </svg>
-            )}
-            {doc && compiled &&
-              compiled.nodes.map((n) => {
-                const pos = layout[n.code] ?? defaultLayout[n.code] ?? { x: 0, y: 0 };
-                const vs = violationByNode.get(n.code) ?? [];
-                const isStartEnd = n.type === 'START' || n.type === 'END';
-                const meta = NODE_META[n.type as NodeType] ?? NODE_META.APPROVE;
-                const { Icon } = meta;
-                return (
+                {!doc && (
                   <div
-                    key={n.code}
-                    onMouseDown={(e) => onMouseDown(e, n.code)}
-                    onClick={() => setSelected(n.code)}
                     style={{
                       position: 'absolute',
-                      left: pos.x,
-                      top: pos.y,
-                      width: NODE_W,
-                      height: NODE_H,
-                      cursor: 'grab',
-                      border: `2px solid ${selected === n.code ? colors.semantic.warning : meta.color}`,
-                      borderRadius: 10,
-                      background: meta.bg,
-                      boxShadow:
-                        selected === n.code
-                          ? `0 0 0 3px ${colors.semantic.warningBg}`
-                          : '0 1px 4px rgba(0,0,0,.1)',
-                      padding: '6px 10px',
-                      userSelect: 'none',
+                      inset: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 12,
                     }}
                   >
-                    <Space size={6} style={{ marginBottom: 2 }}>
-                      <Icon style={{ color: meta.color, fontSize: 14 }} />
-                      <span style={{ fontSize: 11, color: meta.color, fontWeight: 600 }}>
-                        {meta.label}
-                      </span>
-                    </Space>
                     <div
                       style={{
-                        fontWeight: 600,
-                        fontSize: 13,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
+                        width: 56,
+                        height: 56,
+                        borderRadius: 16,
+                        background: '#fff',
+                        border: `1px solid ${colors.gray[200]}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
-                      {n.label}
+                      <BranchesOutlined style={{ fontSize: 24, color: colors.primary[400] }} />
                     </div>
-                    {!isStartEnd && (
-                      <div style={{ fontSize: 11, color: colors.gray[500] }}>
-                        {nodeSummary(findStep(doc, n.code))}
-                      </div>
-                    )}
-                    {vs.length > 0 && (
-                      <Badge
-                        count={vs.length}
-                        size="small"
-                        style={{ position: 'absolute', top: -8, right: -8 }}
-                      />
-                    )}
+                    <div style={{ fontSize: 15, fontWeight: 600 }}>开始设计一条审批流</div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      从场景模板一键生成，或新建空白流程后逐个添加节点
+                    </Text>
+                    <Space size={8} style={{ marginTop: 4 }}>
+                      <Button
+                        type="primary"
+                        icon={<ThunderboltOutlined />}
+                        disabled={!canWrite}
+                        onClick={() => setTplGallery(true)}
+                      >
+                        从模板创建
+                      </Button>
+                      <Button
+                        icon={<PlusOutlined />}
+                        disabled={!canWrite}
+                        onClick={() => setCreateModal({ open: true, key: '', name: '' })}
+                      >
+                        新建空白流程
+                      </Button>
+                    </Space>
                   </div>
-                );
-              })}
-          </div>
+                )}
 
-          {/* 属性面板 */}
-          <div
-            style={{
-              width: 340,
-              borderLeft: `1px solid ${colors.gray[200]}`,
-              padding: spacing[4],
-              overflow: 'auto',
-              background: colors.gray[50],
-            }}
-          >
-            {!selectedStep && (
+                {canvas && (
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: bounds.w * scale + CANVAS_INSET_X,
+                      height: bounds.h * scale + CANVAS_INSET_Y,
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: CANVAS_INSET_X,
+                        top: CANVAS_INSET_Y,
+                        width: bounds.w,
+                        height: bounds.h,
+                        transform: `scale(${scale})`,
+                        transformOrigin: '0 0',
+                      }}
+                    >
+                      <svg
+                        width={bounds.w}
+                        height={bounds.h}
+                        style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'visible' }}
+                      >
+                        <defs>
+                          <marker
+                            id="wf-arrow"
+                            viewBox="0 0 10 10"
+                            refX="9"
+                            refY="5"
+                            markerWidth="6"
+                            markerHeight="6"
+                            orient="auto-start-reverse"
+                          >
+                            <path d="M0,0 L10,5 L0,10 z" fill={colors.gray[400]} />
+                          </marker>
+                          <marker
+                            id="wf-arrow-active"
+                            viewBox="0 0 10 10"
+                            refX="9"
+                            refY="5"
+                            markerWidth="6"
+                            markerHeight="6"
+                            orient="auto-start-reverse"
+                          >
+                            <path d="M0,0 L10,5 L0,10 z" fill={colors.primary[500]} />
+                          </marker>
+                        </defs>
+                        {(canvas?.edges ?? []).map((e, i) => {
+                          const a = posOf(e.from);
+                          const b = posOf(e.to);
+                          if (!a || !b) return null;
+                          const { d, mid } = edgePath(a, b);
+                          const active = selected === e.from || selected === e.to;
+                          const label = e.label ?? '';
+                          const labelW = Math.max(30, label.length * 11.5 + 12);
+                          return (
+                            <g key={`${e.from}-${e.to}-${i}`}>
+                              <path
+                                d={d}
+                                fill="none"
+                                stroke={active ? colors.primary[400] : colors.gray[300]}
+                                strokeWidth={1.5}
+                                markerEnd={`url(#${active ? 'wf-arrow-active' : 'wf-arrow'})`}
+                              />
+                              {label && (
+                                <g>
+                                  <rect
+                                    x={mid.x - labelW / 2}
+                                    y={mid.y - 9}
+                                    width={labelW}
+                                    height={18}
+                                    rx={9}
+                                    fill="#fff"
+                                    stroke={colors.gray[200]}
+                                  />
+                                  <text
+                                    x={mid.x}
+                                    y={mid.y + 4}
+                                    textAnchor="middle"
+                                    fontSize={11}
+                                    fill={colors.gray[600]}
+                                  >
+                                    {label}
+                                  </text>
+                                </g>
+                              )}
+                            </g>
+                          );
+                        })}
+                      </svg>
+
+                      {(canvas?.nodes ?? []).map((n) => {
+                        const pos = posOf(n.code) ?? { x: 0, y: 0 };
+                        const vs = violationByNode.get(n.code) ?? [];
+                        const meta = NODE_META[n.type as NodeType] ?? NODE_META.APPROVE;
+                        const { Icon } = meta;
+                        const isStartEnd = n.type === 'START' || n.type === 'END';
+                        const isSel = selected === n.code;
+                        return (
+                          <div
+                            key={n.code}
+                            data-wf-node={n.code}
+                            onMouseDown={(e) => {
+                              if (canvas?.editable) onMouseDown(e, n.code);
+                            }}
+                            onClick={(e) => {
+                              if (!canvas?.editable) return;
+                              e.stopPropagation();
+                              setSelected(n.code);
+                            }}
+                            title={n.label ?? n.code}
+                            style={{
+                              position: 'absolute',
+                              left: pos.x,
+                              top: pos.y,
+                              width: NODE_W,
+                              height: NODE_H,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                              padding: '0 12px',
+                              background: '#fff',
+                              border: `1.5px solid ${isSel ? colors.primary[500] : colors.gray[300]}`,
+                              borderRadius: 10,
+                              boxShadow: isSel
+                                ? `0 0 0 3px ${colors.primary[100]}, 0 8px 20px rgba(0,0,0,.08)`
+                                : '0 1px 3px rgba(0,0,0,.06)',
+                              cursor: canvas?.editable
+                                ? drag?.code === n.code
+                                  ? 'grabbing'
+                                  : 'grab'
+                                : 'default',
+                              userSelect: 'none',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: 8,
+                                background: meta.bg,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <Icon style={{ color: meta.color, fontSize: 15 }} />
+                            </div>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 600,
+                                  color: meta.color,
+                                  letterSpacing: 0.5,
+                                  lineHeight: '13px',
+                                }}
+                              >
+                                {meta.label}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  lineHeight: '18px',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                }}
+                              >
+                                {n.label}
+                              </div>
+                              {!isStartEnd && (
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: colors.gray[500],
+                                    lineHeight: '15px',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                  }}
+                                >
+                                  {nodeSummary(doc ? findStep(doc, n.code) : null)}
+                                </div>
+                              )}
+                            </div>
+                            {vs.length > 0 && (
+                              <Badge
+                                count={vs.length}
+                                size="small"
+                                style={{ position: 'absolute', top: 6, right: 6 }}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {canvas?.editable && nodeCount === 0 && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      top: 320,
+                      display: 'flex',
+                      justifyContent: 'center',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    <div
+                      style={{
+                        background: '#fff',
+                        border: `1px dashed ${colors.primary[200]}`,
+                        borderRadius: 10,
+                        padding: '10px 16px',
+                        fontSize: 12,
+                        color: colors.gray[600],
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                      }}
+                    >
+                      <AimOutlined style={{ color: colors.primary[500] }} />
+                      流程还是空的：从左上角节点库添加第一个节点
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {loading && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(255,255,255,.6)',
+                    zIndex: 6,
+                  }}
+                >
+                  <Spin />
+                </div>
+              )}
+
+              {canvas && !canvas.editable && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    bottom: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    background: colors.semantic.warningBg,
+                    border: `1px solid ${colors.semantic.warningBorder}`,
+                    borderRadius: 8,
+                    padding: '6px 12px',
+                    fontSize: 12,
+                    color: colors.gray[700],
+                    maxWidth: 520,
+                  }}
+                >
+                  <EyeOutlined style={{ color: colors.semantic.warning }} />
+                  只读预览：该定义含共享节点（多个分支汇入同一节点），无法还原为可编辑树
+                </div>
+              )}
+
+              {/* 浮动节点库：把「加节点」从文件工具栏里拆出来，放回它语义上属于的画布 */}
+              {canvas?.editable && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 12,
+                    top: 12,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                    background: '#fff',
+                    border: `1px solid ${colors.gray[200]}`,
+                    borderRadius: 10,
+                    padding: 4,
+                    boxShadow: '0 4px 16px rgba(0,0,0,.08)',
+                  }}
+                >
+                  <Tooltip title={selected ? '在选中节点之后插入审批节点' : '在主链末尾添加审批节点'} placement="right">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<PlusOutlined />}
+                      aria-label="添加审批节点"
+                      disabled={!canWrite}
+                      onClick={() => onAdd('approve')}
+                    >
+                      审批
+                    </Button>
+                  </Tooltip>
+                  <Tooltip title="添加抄送节点（不阻塞流程）" placement="right">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<SendOutlined />}
+                      aria-label="添加抄送节点"
+                      disabled={!canWrite}
+                      onClick={() => onAdd('cc')}
+                    >
+                      抄送
+                    </Button>
+                  </Tooltip>
+                  <Tooltip title="添加条件分支（按字段值分流）" placement="right">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<BranchesOutlined />}
+                      aria-label="添加条件分支"
+                      disabled={!canWrite}
+                      onClick={() => onAdd('condition')}
+                    >
+                      条件
+                    </Button>
+                  </Tooltip>
+                </div>
+              )}
+
+              {/* 缩放条 */}
+              {canvas && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    bottom: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    background: '#fff',
+                    border: `1px solid ${colors.gray[200]}`,
+                    borderRadius: 8,
+                    padding: 2,
+                    boxShadow: '0 2px 10px rgba(0,0,0,.08)',
+                  }}
+                >
+                  <Tooltip title="缩小">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<ZoomOutOutlined />}
+                      aria-label="缩小"
+                      onClick={() => zoomBy(-ZOOM_STEP)}
+                    />
+                  </Tooltip>
+                  <button
+                    type="button"
+                    onClick={() => setScale(1)}
+                    title="恢复 100%"
+                    style={{
+                      border: 0,
+                      background: 'transparent',
+                      fontSize: 12,
+                      width: 48,
+                      cursor: 'pointer',
+                      color: colors.gray[700],
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  >
+                    {Math.round(scale * 100)}%
+                  </button>
+                  <Tooltip title="放大">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<ZoomInOutlined />}
+                      aria-label="放大"
+                      onClick={() => zoomBy(ZOOM_STEP)}
+                    />
+                  </Tooltip>
+                  <Divider type="vertical" style={{ margin: '0 2px' }} />
+                  <Tooltip title="适应画布">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<AimOutlined />}
+                      aria-label="适应画布"
+                      onClick={fitToView}
+                    />
+                  </Tooltip>
+                </div>
+              )}
+
+              {/* 画布左下角提示：节点数与快捷键，降低学习成本（窄屏只留计数，避免压到右下角缩放条） */}
+              {canvas && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 12,
+                    bottom: 12,
+                    maxWidth: 'calc(100% - 168px)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    fontSize: 11,
+                    color: colors.gray[500],
+                    background: 'rgba(255,255,255,.9)',
+                    border: `1px solid ${colors.gray[200]}`,
+                    borderRadius: 6,
+                    padding: '4px 8px',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {canvas.editable
+                    ? compact
+                      ? `${canvas.nodes.length} 个节点 / ${nodeCount} 个步骤`
+                      : `${canvas.nodes.length} 个节点 / ${nodeCount} 个步骤 · 拖拽移动 · Delete 删除 · ⌘/Ctrl 滚轮缩放`
+                    : `${canvas.nodes.length} 个节点 · 只读预览`}
+                </div>
+              )}
+            </div>
+
+            {/* ============ 右：属性 / 流程设置 ============ */}
+            {panelCollapsed ? (
+              <Tooltip title="展开属性面板" placement="left">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setPanelCollapsed(false)}
+                  onKeyDown={(e) => e.key === 'Enter' && setPanelCollapsed(false)}
+                  style={{
+                    width: 34,
+                    borderLeft: `1px solid ${colors.gray[200]}`,
+                    background: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <MenuUnfoldOutlined style={{ color: colors.gray[500], transform: 'rotate(180deg)' }} />
+                </div>
+              </Tooltip>
+            ) : (
               <div
                 style={{
-                  height: '100%',
+                  width: compact ? 308 : 344,
+                  flexShrink: 0,
+                  borderLeft: `1px solid ${colors.gray[200]}`,
+                  background: '#fff',
                   display: 'flex',
                   flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: colors.gray[500],
-                  gap: spacing[2],
+                  minHeight: 0,
                 }}
               >
-                <FileTextOutlined style={{ fontSize: 40, color: colors.gray[300] }} />
-                <div>选中画布节点以编辑属性</div>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  未选中时可在画布拖拽节点、点击「审批 / 抄送 / 条件」新增
-                </Text>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '10px 12px',
+                    borderBottom: `1px solid ${colors.gray[200]}`,
+                    flexShrink: 0,
+                  }}
+                >
+                  {selectedStep ? (
+                    <>
+                      <selectedMeta.Icon style={{ color: selectedMeta.color, fontSize: 15 }} />
+                      <Text strong style={{ fontSize: 13 }}>
+                        {selectedMeta.label}节点
+                      </Text>
+                      <Tag color={selectedMeta.color} style={{ marginInlineEnd: 0 }}>
+                        {MODE_LABEL[(selectedStep as ApproveStep).mode] ?? selectedStep.kind}
+                      </Tag>
+                    </>
+                  ) : (
+                    <>
+                      <SettingOutlined style={{ color: colors.gray[600], fontSize: 15 }} />
+                      <Text strong style={{ fontSize: 13 }}>
+                        流程设置
+                      </Text>
+                    </>
+                  )}
+                  <div style={{ flex: 1 }} />
+                  {selectedStep && (
+                    <Tooltip title="返回流程设置">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<SettingOutlined />}
+                        aria-label="返回流程设置"
+                        onClick={() => setSelected(null)}
+                      />
+                    </Tooltip>
+                  )}
+                  <Tooltip title="收起属性面板">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<MenuFoldOutlined style={{ transform: 'rotate(180deg)' }} />}
+                      aria-label="收起属性面板"
+                      onClick={() => setPanelCollapsed(true)}
+                    />
+                  </Tooltip>
+                </div>
+
+                <div style={{ flex: 1, overflow: 'auto', minHeight: 0, padding: 12 }}>
+                  {selectedStep ? (
+                    <StepPropertyPanel
+                      step={selectedStep}
+                      onChange={(next) =>
+                        applyDoc(updateStep(doc as FlowDoc, selectedStep.code, () => next), {
+                          coalesce: `step:${selectedStep.code}`,
+                        })
+                      }
+                      onDelete={() => onDelete(selectedStep.code)}
+                      violations={violationByNode.get(selectedStep.code) ?? []}
+                      readOnly={!canWrite}
+                    />
+                  ) : (
+                    <Space direction="vertical" style={{ width: '100%' }} size={16}>
+                      {!doc && (
+                        <div style={{ textAlign: 'center', padding: '32px 8px', color: colors.gray[500] }}>
+                          <InboxOutlined style={{ fontSize: 32, color: colors.gray[300] }} />
+                          <div style={{ marginTop: 8, fontSize: 13 }}>未打开任何流程</div>
+                          <div style={{ fontSize: 12, marginTop: 4 }}>从左侧选择流程，或新建一个</div>
+                        </div>
+                      )}
+
+                      {doc && (
+                        <>
+                          {lossy && (
+                            <Alert
+                              type="warning"
+                              showIcon
+                              message="该定义由旧数据重建"
+                              description={
+                                compiled
+                                  ? loadWarnings[0] ??
+                                    '原定义未携带可视化信息，节点结构按图推断，可能有偏差；保存已禁用，核对无误后可重建为可编辑草稿。'
+                                  : '原定义未携带可视化信息，且含共享节点（多个分支汇入同一节点），无法还原为可编辑的流程树。当前按真实结构只读展示；如需可视化编辑，需先把该流程调整为树形分支结构。'
+                              }
+                              action={
+                                canWrite && compiled ? (
+                                  <Button size="small" type="primary" onClick={() => void onAdoptLossy()}>
+                                    重建草稿
+                                  </Button>
+                                ) : null
+                              }
+                            />
+                          )}
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              流程名称
+                            </Text>
+                            <Input
+                              value={defName}
+                              maxLength={64}
+                              disabled={!canWrite}
+                              onChange={(e) => renameFlow(e.target.value)}
+                              placeholder="如 费用报销审批"
+                              style={{ marginTop: 4 }}
+                            />
+                          </div>
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              流程标识（创建后不建议修改）
+                            </Text>
+                            <Input
+                              value={defKey}
+                              readOnly
+                              suffix={
+                                <Tooltip title="复制 key">
+                                  <CopyOutlined
+                                    style={{ color: colors.gray[400], cursor: 'pointer' }}
+                                    onClick={() => {
+                                      void navigator.clipboard
+                                        ?.writeText(defKey)
+                                        .then(() => message.success('已复制流程 key'))
+                                        .catch(() => message.warning('当前环境禁止剪贴板'));
+                                    }}
+                                  />
+                                </Tooltip>
+                              }
+                              style={{ marginTop: 4, fontFamily: 'monospace', fontSize: 12 }}
+                            />
+                          </div>
+
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              结构统计
+                            </Text>
+                            <div
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                gap: 8,
+                                marginTop: 6,
+                              }}
+                            >
+                              {[
+                                { label: '审批', value: stats.approve, color: colors.primary[500] },
+                                { label: '抄送', value: stats.cc, color: '#13c2c2' },
+                                { label: '条件', value: stats.condition, color: colors.primary[700] },
+                              ].map((s) => (
+                                <div
+                                  key={s.label}
+                                  style={{
+                                    border: `1px solid ${colors.gray[200]}`,
+                                    borderRadius: 8,
+                                    padding: '8px 10px',
+                                    textAlign: 'center',
+                                  }}
+                                >
+                                  <div style={{ fontSize: 18, fontWeight: 600, color: s.color, lineHeight: '24px' }}>
+                                    {s.value}
+                                  </div>
+                                  <div style={{ fontSize: 11, color: colors.gray[500] }}>{s.label}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                校验结果
+                              </Text>
+                              <Button size="small" type="link" onClick={() => void onValidate()} disabled={!compiled}>
+                                立即校验
+                              </Button>
+                            </div>
+                            {publishable ? (
+                              <div
+                                style={{
+                                  marginTop: 4,
+                                  fontSize: 12,
+                                  color: colors.gray[500],
+                                  border: `1px dashed ${colors.gray[200]}`,
+                                  borderRadius: 8,
+                                  padding: '10px 12px',
+                                }}
+                              >
+                                {violations.length === 0 ? '尚未校验。发布前会自动校验，存在违规会拒绝发布。' : '没有阻断性问题，可发布。'}
+                              </div>
+                            ) : (
+                              <div style={{ marginTop: 4, fontSize: 12, color: colors.semantic.error }}>
+                                存在 {violations.length} 处问题，发布会被拒绝（fail-closed）
+                              </div>
+                            )}
+                          </div>
+
+                          <Divider style={{ margin: 0 }} />
+
+                          <Space wrap size={8}>
+                            <Button size="small" icon={<ExperimentOutlined />} onClick={() => void onSimulate()}>
+                              试运行
+                            </Button>
+                            <Button size="small" icon={<AuditOutlined />} onClick={() => void onOpenVersions()}>
+                              版本历史
+                            </Button>
+                            <Button size="small" icon={<ExportOutlined />} onClick={onExport} disabled={!compiled}>
+                              导出 JSON
+                            </Button>
+                          </Space>
+                        </>
+                      )}
+
+                      {violations.length > 0 && (
+                        <>
+                          <Divider style={{ margin: 0 }}>校验问题</Divider>
+                          <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                            {violations.map((v, i) => (
+                              <Alert
+                                key={i}
+                                type="error"
+                                showIcon
+                                message={`${v.code}${v.locator ? ` @${v.locator}` : ''}`}
+                                description={hintOf(v).suggestion ?? v.message}
+                                onClick={() => v.locator && selectAndReveal(v.locator)}
+                                style={{ cursor: v.locator ? 'pointer' : 'default', fontSize: 12 }}
+                              />
+                            ))}
+                          </Space>
+                        </>
+                      )}
+
+                      {simReport && (
+                        <>
+                          <Divider style={{ margin: 0 }}>试运行结果</Divider>
+                          <SimReportView report={simReport} />
+                        </>
+                      )}
+                    </Space>
+                  )}
+
+                  {selectedStep && violations.length > 0 && violationByNode.get(selectedStep.code)?.length === 0 && (
+                    <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 8 }}>
+                      其他节点还有 {violations.length} 处问题，收起选中可查看全部
+                    </Text>
+                  )}
+                </div>
               </div>
             )}
-            {selectedStep && (
-              <Space direction="vertical" style={{ width: '100%' }} size={8}>
-                <Space align="center" size={6}>
-                  <selectedMeta.Icon style={{ color: selectedMeta.color, fontSize: 16 }} />
-                  <Text strong>{selectedMeta.label}节点</Text>
-                  <Tag color={selectedMeta.color} style={{ marginInlineEnd: 0 }}>
-                    {selectedStep.kind}
-                  </Tag>
-                </Space>
-                <StepPropertyPanel
-                  step={selectedStep}
-                  onChange={(next) => setDoc((d) => (d ? updateStep(d, selectedStep.code, () => next) : d))}
-                  onDelete={() => onDelete(selectedStep.code)}
-                  violations={violationByNode.get(selectedStep.code) ?? []}
-                  readOnly={!canWrite}
-                />
-              </Space>
-            )}
-            {violations.length > 0 && (
-              <>
-                <Divider>校验问题</Divider>
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  {violations.map((v, i) => (
-                    <Alert
-                      key={i}
-                      type="error"
-                      showIcon
-                      message={`${v.code}${v.locator ? ` @${v.locator}` : ''}`}
-                      description={hintOf(v).suggestion ?? v.message}
-                      onClick={() => v.locator && setSelected(v.locator)}
-                      style={{ cursor: v.locator ? 'pointer' : 'default' }}
-                    />
-                  ))}
-                </Space>
-              </>
-            )}
-            {simReport && (
-              <>
-                <Divider>试运行</Divider>
-                <SimReportView report={simReport} />
-              </>
-            )}
           </div>
-        </div>
-      </Content>
+        </Content>
+      </Layout>
 
+      {/* ============ 抽屉 / 弹窗 ============ */}
       <Drawer
         title={`版本管理 · ${defKey}`}
         open={versionDrawer}
         onClose={() => setVersionDrawer(false)}
-        width={420}
+        width={440}
       >
         <Space direction="vertical" style={{ width: '100%' }}>
           {versions.map((v) => (
@@ -1349,6 +2717,111 @@ const WorkflowDesigner: React.FC = () => {
         </Space>
       </Drawer>
 
+      {/* 模板画廊：常驻侧栏里最占纵向空间的一块，独立成弹窗后「我的流程」才回到首屏 */}
+      <Modal
+        title="从模板创建流程"
+        open={tplGallery}
+        onCancel={() => setTplGallery(false)}
+        footer={null}
+        width={760}
+        destroyOnHidden
+      >
+        <Paragraph type="secondary" style={{ fontSize: 12, marginTop: -4 }}>
+          模板只提供结构骨架与指派策略，创建后可在画布上按需调整；导出 JSON 可注册到任意环境复用。
+        </Paragraph>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+          {TEMPLATES.map((tpl) => (
+            <Card
+              key={tpl.id}
+              size="small"
+              hoverable
+              onClick={() => startCreate(tpl)}
+              style={{ cursor: canWrite ? 'pointer' : 'not-allowed' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    background: colors.primary[50],
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <BranchesOutlined style={{ color: colors.primary[500] }} />
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <Text strong style={{ fontSize: 13 }}>
+                      {tpl.name}
+                    </Text>
+                    {tpl.tags.map((tg) => (
+                      <Tag key={tg} color="blue" style={{ marginInlineEnd: 0, fontSize: 11 }}>
+                        {tg}
+                      </Tag>
+                    ))}
+                  </div>
+                  <Paragraph type="secondary" style={{ fontSize: 12, margin: '4px 0 0', lineHeight: 1.5 }}>
+                    {tpl.desc}
+                  </Paragraph>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </Modal>
+
+      {/* 新建空白流程 */}
+      <Modal
+        title="新建空白流程"
+        open={createModal.open}
+        onCancel={() => setCreateModal({ open: false, key: '', name: '' })}
+        onOk={() => {
+          const key = createModal.key.trim();
+          if (!/^[A-Za-z][A-Za-z0-9_]{2,63}$/.test(key)) {
+            message.error('流程 key 需以字母开头，仅含字母 / 数字 / 下划线，长度 3-64');
+            return;
+          }
+          setCreateModal({ open: false, key: '', name: '' });
+          setSessionKeys((keys) => (keys.includes(key) ? keys : [...keys, key]));
+          void openKey(key, createModal.name.trim() || key);
+        }}
+        okText="创建并打开"
+        cancelText="取消"
+        okButtonProps={{ disabled: !canWrite }}
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+          <div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              流程 key（唯一标识，创建后不建议修改）
+            </Text>
+            <Input
+              value={createModal.key}
+              maxLength={64}
+              placeholder="如 expense_approval"
+              onChange={(e) => setCreateModal((p) => ({ ...p, key: e.target.value }))}
+              onPressEnter={() => undefined}
+              style={{ marginTop: 4 }}
+            />
+          </div>
+          <div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              流程名称
+            </Text>
+            <Input
+              value={createModal.name}
+              maxLength={64}
+              placeholder="如 费用报销审批"
+              onChange={(e) => setCreateModal((p) => ({ ...p, name: e.target.value }))}
+              style={{ marginTop: 4 }}
+            />
+          </div>
+        </Space>
+      </Modal>
+
       {/* 从模板创建 */}
       <Modal
         title={`从模板创建 · ${tplModal.tpl?.name ?? ''}`}
@@ -1362,8 +2835,10 @@ const WorkflowDesigner: React.FC = () => {
         <Paragraph type="secondary" style={{ fontSize: 12 }}>
           {tplModal.tpl?.desc}
         </Paragraph>
-        <div style={{ marginBottom: spacing[3] }}>
-          <Text type="secondary">流程 key（唯一标识，字母 / 数字 / 下划线）</Text>
+        <div style={{ marginBottom: 12 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            流程 key（唯一标识，字母 / 数字 / 下划线）
+          </Text>
           <Input
             value={tplModal.key}
             onChange={(e) => setTplModal((p) => ({ ...p, key: e.target.value }))}
@@ -1372,7 +2847,9 @@ const WorkflowDesigner: React.FC = () => {
           />
         </div>
         <div>
-          <Text type="secondary">流程名称</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            流程名称
+          </Text>
           <Input
             value={tplModal.name}
             onChange={(e) => setTplModal((p) => ({ ...p, name: e.target.value }))}
@@ -1393,7 +2870,7 @@ const WorkflowDesigner: React.FC = () => {
         cancelButtonProps={{ icon: <CopyOutlined />, onClick: () => void copyExport() }}
       >
         <Paragraph type="secondary" style={{ fontSize: 12 }}>
-          把以下 JSON 注册到任意租户 / 环境，即可快速复用该审批流（跨环境集成）。
+          把以下 JSON 注册到任意租户 / 环境，即可复用该审批流（跨环境集成）。
         </Paragraph>
         <Input.TextArea
           readOnly
@@ -1402,7 +2879,7 @@ const WorkflowDesigner: React.FC = () => {
           style={{ fontFamily: 'monospace', fontSize: 12 }}
         />
       </Modal>
-    </Layout>
+    </div>
   );
 };
 
@@ -1419,25 +2896,6 @@ function findStep(doc: FlowDoc, code: string): Step | null {
         const d = walk(s.defaultBranch.body);
         if (d) return d;
       }
-    }
-    return null;
-  };
-  return walk(doc.steps);
-}
-
-/** 若选中节点在某个条件分支体内，返回该分支 id（用于向其追加子节点）。 */
-function findBranchId(doc: FlowDoc, code: string): string | null {
-  const walk = (steps: Step[]): string | null => {
-    for (const s of steps) {
-      if (s.kind !== 'condition') continue;
-      for (const b of s.branches) {
-        if (b.body.some((x) => x.code === code)) return b.id;
-        const r = walk(b.body);
-        if (r) return r;
-      }
-      if (s.defaultBranch.body.some((x) => x.code === code)) return s.defaultBranch.id;
-      const d = walk(s.defaultBranch.body);
-      if (d) return d;
     }
     return null;
   };

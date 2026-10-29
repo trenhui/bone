@@ -267,6 +267,71 @@ describe('parse：引擎定义 → 文档树', () => {
     const result = parse(legacy);
     expect(compile(result.doc, { keepFlowDoc: false })).toEqual(legacy);
   });
+
+  /**
+   * 回归：种子数据 / 手写迁移里的发起节点常写成小写 `start`、结束写成 `end`。
+   * 旧实现直接 `nodes.get('START')`，于是这些**运行时能跑**的流程在设计器里一律打不开（画布空白 + 有损还原）。
+   */
+  it('旧定义用小写 start/end 命名：仍能解析出结构', () => {
+    const legacy = {
+      key: 'legacy_lowercase',
+      name: '小写节点',
+      version: 1,
+      engineSchemaVersion: 1,
+      nodes: [
+        { code: 'start', type: 'START', label: '提交' },
+        { code: 'approve', type: 'APPROVE', mode: 'SINGLE', label: '采购审批' },
+        { code: 'end', type: 'END', label: '结束' },
+      ],
+      edges: [
+        { from: 'start', to: 'approve', when: null, label: null },
+        { from: 'approve', to: 'end', when: null, label: null },
+      ],
+      assignments: { approve: [{ strategy: 'DEPT_HEAD', params: {} }] },
+    } as unknown as WorkflowDefinitionJson;
+
+    const result = parse(legacy);
+    expect(result.lossy).toBe(true);
+    expect(result.doc.steps).toHaveLength(1);
+    expect(result.doc.steps[0].code).toBe('approve');
+    // 规范化：重建结果再编译，节点收敛为 START/END 常量，步骤语义不变。
+    const recompiled = compile(result.doc);
+    expect(recompiled.nodes.map((n) => n.type)).toEqual(['START', 'APPROVE', 'END']);
+  });
+
+  /**
+   * 边界：多分支汇入**同一节点**的图无法表达为文档树（树里同一节点只能出现一次）。
+   * 约定是「parse 不抛、compile 显式报错」，由设计器降级为只读图预览——而不是把画布留空白。
+   */
+  it('共享节点的图：parse 不抛，compile 明确报节点重复', () => {
+    const legacy = {
+      key: 'shared',
+      name: '共享节点',
+      version: 1,
+      engineSchemaVersion: 1,
+      nodes: [
+        { code: 'start', type: 'START', label: '提交' },
+        { code: 'c1', type: 'CONDITION', label: '金额缺失' },
+        { code: 'c2', type: 'CONDITION', label: '金额>5000' },
+        { code: 'finance', type: 'APPROVE', mode: 'SINGLE', label: '财务' },
+        { code: 'end', type: 'END', label: '结束' },
+      ],
+      edges: [
+        { from: 'start', to: 'c1', when: null, label: null },
+        { from: 'c1', to: 'finance', when: { fieldCode: 'amount', operator: 'eq', value: null }, label: '缺失' },
+        { from: 'c1', to: 'c2', when: null, label: null },
+        { from: 'c2', to: 'finance', when: { fieldCode: 'amount', operator: 'gt', value: 5000 }, label: '大额' },
+        { from: 'c2', to: 'end', when: null, label: null },
+        { from: 'finance', to: 'end', when: null, label: null },
+      ],
+      assignments: { finance: [{ strategy: 'ROLE', params: { roleCode: 'FINANCE' } }] },
+    } as unknown as WorkflowDefinitionJson;
+
+    const result = parse(legacy);
+    expect(result.lossy).toBe(true);
+    expect(() => compile(result.doc)).toThrow(FlowDocCompileError);
+    expect(() => compile(result.doc)).toThrow(/节点编码重复/);
+  });
 });
 
 describe('validation：只投影、不重写规则', () => {
