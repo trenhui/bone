@@ -35,8 +35,10 @@ import {
   errorMessage,
   metadataEntityApi,
   metadataFieldApi,
+  runtimeApprovalApi,
   runtimeRecordApi,
 } from '../services/metadataApi';
+import type { ApprovalDescribe } from '../services/metadataApi';
 import type {
   MetaEntity,
   MetaField,
@@ -69,6 +71,7 @@ import { listRecent } from '../utils/recent';
 import CommandPalette from '../components/CommandPalette';
 import { BoneDynamicForm, type DisplayMode } from '../components/BoneDynamicForm';
 import { RuntimeDetailView, detailValueOf } from '../components/RuntimeDetailView';
+import ApprovalProgress from '../components/ApprovalProgress';
 import PersonalViewBar from '../components/PersonalViewBar';
 import ContractScopeCard from '../components/ContractScopeCard';
 import { useBoneUiSchema } from '../hooks/useBoneUiSchema';
@@ -291,6 +294,12 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   }>({ open: false, record: null });
   const [executions, setExecutions] = useState<RuntimeActionExecution[]>([]);
   const [executionsLoading, setExecutionsLoading] = useState(false);
+  /**
+   * 审批进度（引擎真源）：`GET /approval/records/{entity}/{record}` 的实例 + 待办 + 轨迹投影。
+   * 只在详情抽屉按需拉取（列表逐行调用即成 N+1）；绝大多数记录 started=false，组件对空实例不占位。
+   */
+  const [approvalInfo, setApprovalInfo] = useState<ApprovalDescribe | null>(null);
+  const [approvalLoading, setApprovalLoading] = useState(false);
 
   /** 子表（CHILD_TABLE）编辑弹窗状态：当前主记录 + 声明字段 */
   const [childModal, setChildModal] = useState<{
@@ -924,6 +933,19 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       } catch { /* 拉取失败用行数据兜底，不阻断详情打开 */ }
     }
     setDetailDrawer({ open: true, record: full });
+    // 审批进度与动作时间线并行拉取：两者互不依赖，串行会让抽屉第一屏多等一个 RTT。
+    setApprovalLoading(true);
+    setApprovalInfo(null);
+    void (async () => {
+      try {
+        const res = await runtimeApprovalApi.describe(entityCode, String(record.id));
+        if (res.code === 200 && res.data) setApprovalInfo(res.data);
+      } catch {
+        // 未进审批流 / 无实体读权限：不展示审批段，也不打断详情（降级不阻断）
+      } finally {
+        setApprovalLoading(false);
+      }
+    })();
     setExecutionsLoading(true);
     try {
       const res = await runtimeRecordApi.actionExecutions(entityCode, String(record.id));
@@ -2127,6 +2149,9 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
                   }))}
               />
             )}
+            {/* 审批进度（引擎真源）：单据提交后「卡在谁那里 / 为什么退回」的唯一可查入口。
+                放在动作时间线之上——用户先关心流程到哪一步，再看技术性执行留痕。 */}
+            <ApprovalProgress data={approvalInfo} loading={approvalLoading} />
             <div>
               <Typography.Title level={5} style={{ marginTop: 0 }}>
                 动作执行时间线

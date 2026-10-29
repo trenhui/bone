@@ -482,6 +482,50 @@ export interface ApprovalDescribe {
   instance?: Record<string, unknown>;
   pendingTasks?: ApprovalTaskRow[];
   trail?: ApprovalTaskRow[];
+  /**
+   * 挂起原因（仅 `phase=SUSPENDED` 且服务端能读到告警正文时返回）。
+   *
+   * <p>挂起时引擎不派单，详情页只看到「挂起 + 零待办」；不带原因就无法区分
+   * 「审批人未填」「审批人就是发起人本人（职责分离）」「组织信息缺失」——现场只能翻日志。
+   * 服务端读不到时该字段缺省，前端降级为通用指引。
+   */
+  suspendReason?: string;
+}
+
+/** 站内信行（`GET /approval/inbox` 投影，接收人恒为当前登录人）。 */
+export interface ApprovalInboxRow {
+  id: string;
+  type?: string;
+  instanceId?: string;
+  entityCode?: string;
+  recordId?: string;
+  nodeCode?: string;
+  title?: string;
+  body?: string;
+  read?: boolean;
+  createdAt?: string;
+}
+
+/** 流程实例行（`GET /approval/instances?phase=` 问题单据投影）。 */
+export interface ApprovalInstanceRow {
+  instanceId: string;
+  entityCode?: string;
+  recordId?: string;
+  definitionKey?: string;
+  phase: string;
+  currentNode?: string;
+  startedBy?: string;
+  startedAt?: string;
+  updatedAt?: string;
+  suspended?: boolean;
+  terminated?: boolean;
+}
+
+/** 问题单据响应：只截断不计数（`truncated=true` 表示该阶段问题单不止这些，上限 200）。 */
+export interface ApprovalProblemList {
+  phase: string;
+  truncated: boolean;
+  instances: ApprovalInstanceRow[];
 }
 
 /**
@@ -531,6 +575,45 @@ export const runtimeApprovalApi = {
       `${RUNTIME}/approval/instances/${encodeURIComponent(instanceId)}/terminate`,
       { reason },
     ),
+
+  /**
+   * 转办：办理人把**自己的**待办转给他人（引擎校验操作人 == 当前办理人）。
+   * 与 reassign（管理员改派）语义区分：转办是自助交接，改派是干预。
+   */
+  transfer: (taskId: string, assigneeId: string, comment?: string) =>
+    api.post<unknown, ApiResponse<Record<string, unknown>>>(
+      `${RUNTIME}/approval/tasks/${encodeURIComponent(taskId)}/transfer`,
+      { assigneeId, comment },
+    ),
+
+  /** 加签：拉人会办当前节点，被加签人拿到同节点 PENDING（节点完成判定自动计入）。 */
+  addSign: (taskId: string, assigneeId: string, comment?: string) =>
+    api.post<unknown, ApiResponse<Record<string, unknown>>>(
+      `${RUNTIME}/approval/tasks/${encodeURIComponent(taskId)}/addSign`,
+      { assigneeId, comment },
+    ),
+
+  /**
+   * 恢复挂起实例：组织数据修复后重跑审批人解析（与 assign 分工——assign 直接注入人，resume 按原规则重解析）。
+   * 解析仍不出人时引擎保持挂起并报错。
+   */
+  resume: (instanceId: string, reason?: string) =>
+    api.post<unknown, ApiResponse<Record<string, unknown>>>(
+      `${RUNTIME}/approval/instances/${encodeURIComponent(instanceId)}/resume`,
+      { reason },
+    ),
+
+  /** 我的站内信（收件箱）；`unreadOnly=true` 只看未读。接收人恒为当前登录人。 */
+  inbox: (unreadOnly = false): Promise<ApiResponse<ApprovalInboxRow[]>> =>
+    api.get<never, ApiResponse<ApprovalInboxRow[]>>(`${RUNTIME}/approval/inbox`, {
+      params: { unreadOnly },
+    }),
+
+  /** 问题单据：按阶段列举实例（SUSPENDED 挂起死单 / REJECTED 驳回单…），更新时间倒序，上限 200 只截断不计数。 */
+  instancesByPhase: (phase: string, limit = 50): Promise<ApiResponse<ApprovalProblemList>> =>
+    api.get<never, ApiResponse<ApprovalProblemList>>(`${RUNTIME}/approval/instances`, {
+      params: { phase, limit },
+    }),
 };
 
 /**
