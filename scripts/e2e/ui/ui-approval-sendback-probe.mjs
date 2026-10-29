@@ -131,7 +131,7 @@ const visibleModal = (page) =>
     await dropdown.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
     const options = dropdown.locator('.ant-select-item-option');
     const optCount = await options.count();
-    check('退回节点候选非空（由审批轨迹历史节点推导）', optCount > 0, `候选数=${optCount}`);
+    check('退回节点候选非空（服务端按流程定义给出）', optCount > 0, `候选数=${optCount}`);
     if (optCount === 0) throw new Error('退回节点无候选，无法验证原地返工');
     const optTexts = await options.allInnerTexts();
     check(
@@ -145,10 +145,23 @@ const visibleModal = (page) =>
     await ta.fill('发票信息不全，退回发起节点补正后重提');
     await modal.locator('.ant-modal-footer button.ant-btn-primary').first().click();
 
-    // 等 toast 落地（文案是本次修复的重点：动词必须与「单据仍在审批中」对齐）
-    const toast = ap.locator('.ant-message-notice-content').last();
-    await toast.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
-    const toastText = (await toast.count()) ? (await toast.innerText()).replace(/\s+/g, '') : '';
+    // 等**业务** toast 落地。不能直接取 `.ant-message-notice-content` 的最后一条：
+    // 登录成功的 toast 可能还挂在 DOM 里（antd 约 3s 自动消失），取最后一条会读到「登录成功」而误判。
+    // 故按文案特征轮询，把整批 notice 文本拼起来判。
+    const toastText = await ap
+      .waitForFunction(
+        () => {
+          const all = [...document.querySelectorAll('.ant-message-notice-content')]
+            .map((e) => e.textContent || '')
+            .join('|');
+          return /已退回|已驳回|操作失败|成功 \d+ 条/.test(all) ? all : null;
+        },
+        null,
+        { timeout: 15000 },
+      )
+      .then((h) => h.jsonValue())
+      .then((v) => String(v || '').replace(/\s+/g, ''))
+      .catch(() => '');
     check('toast 文案为「已退回节点」（不是「已驳回」）', toastText.includes('已退回节点'), `toast=${toastText}`);
     check('toast 未误报「已驳回」', !toastText.includes('已驳回'), `toast=${toastText}`);
     await shot(ap, 'approval-sendback-toast');
