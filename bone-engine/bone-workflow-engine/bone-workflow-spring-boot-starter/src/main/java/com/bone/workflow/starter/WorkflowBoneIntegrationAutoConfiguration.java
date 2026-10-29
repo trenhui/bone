@@ -18,6 +18,7 @@ import com.bone.workflow.starter.adapter.SdkWorkflowDefinitionRepository;
 import com.bone.workflow.starter.adapter.SdkWorkflowInstanceRepository;
 import com.bone.workflow.starter.binding.WorkflowBindingRepository;
 import com.bone.workflow.starter.metrics.WorkflowMetrics;
+import com.bone.workflow.starter.outbox.OutboxDeadLetterSweep;
 import com.bone.workflow.starter.outbox.OutboxStatusPort;
 import com.bone.workflow.starter.outbox.RuntimeActionIntentExecutor;
 import com.bone.workflow.starter.outbox.RuntimeActionInvoker;
@@ -34,11 +35,13 @@ import com.bone.workflow.starter.spi.OrgHierarchyProvider;
 import com.bone.workflow.starter.spi.RoleMemberProvider;
 import com.bone.workflow.starter.spi.WorkflowActionIdempotencyPolicy;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -177,6 +180,46 @@ public class WorkflowBoneIntegrationAutoConfiguration {
       StatusIntentExecutor executor,
       WorkflowMetrics metrics) {
     return new StatusProjectionRelay(outbox, executor, 100, 8, metrics);
+  }
+
+  /**
+   * 死信积压巡检（P0-2 完善，opt-in）：周期统计终态 FAILED 存量，刷新 {@code dead_letter_depth} Gauge 并告警。
+   * 让「转人工」成为可见存量而非一句空话。
+   *
+   * <p>默认关闭：{@code bone.workflow.outbox.dead-letter-sweep.enabled=true} 开启。
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  @ConditionalOnProperty(
+      prefix = "bone.workflow.outbox.dead-letter-sweep",
+      name = "enabled",
+      havingValue = "true")
+  public OutboxDeadLetterSweep outboxDeadLetterSweep(
+      WorkflowStatusOutboxRepository outbox, WorkflowMetrics metrics) {
+    return new OutboxDeadLetterSweep(outbox, metrics);
+  }
+
+  /**
+   * 卡死实例看门狗（§11.4 决策 #2 落地，opt-in）：周期扫描 RUNNING 且节点停留超阈值且无待办的实例， 刷新 {@code instance.stuck} Gauge
+   * 并告警。
+   *
+   * <p>默认关闭：{@code bone.workflow.instance-watchdog.enabled=true} 开启；停留阈值 {@code
+   * bone.workflow.instance-watchdog.stuck-threshold-minutes}（默认 60）。
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  @ConditionalOnProperty(
+      prefix = "bone.workflow.instance-watchdog",
+      name = "enabled",
+      havingValue = "true")
+  public WorkflowInstanceWatchdog workflowInstanceWatchdog(
+      WorkflowInstanceRepository instances,
+      WorkflowMetrics metrics,
+      @org.springframework.beans.factory.annotation.Value(
+              "${bone.workflow.instance-watchdog.stuck-threshold-minutes:60}")
+          long stuckThresholdMinutes) {
+    return new WorkflowInstanceWatchdog(
+        instances, metrics, Duration.ofMinutes(stuckThresholdMinutes));
   }
 
   /**

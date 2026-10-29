@@ -333,6 +333,13 @@ public class SdkWorkflowInstanceRepository implements WorkflowInstanceRepository
   }
 
   @Override
+  public List<String> findStuckInstances(Instant cutoff) {
+    // 跨租户只读检测（看门狗）：不补 tenant_id 谓词，与中继的跨租户查询同口径（调度线程无 TenantContext）。
+    // 仅返回 id 列表，不触达任何业务动作。
+    return instances.findStuckInstanceIds(cutoff);
+  }
+
+  @Override
   public boolean compareAndSetTaskStatus(
       String taskId,
       WorkflowTask.Status expected,

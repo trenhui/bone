@@ -81,6 +81,28 @@ public interface WfStatusOutboxSdkRepository extends Repository<WfStatusOutboxRo
       @Param("staleCutoff") Instant staleCutoff,
       @Param("limit") int limit);
 
+  /**
+   * 待处理积压计数（与 {@link #pollDueStatusIntents} 同判据：NEW / 已到退避的 FAILED / 超时的 CLAIMED）。
+   *
+   * <p>跨租户（与 {@code pollDue} 一致）；用于 {@code pending_depth} Gauge，让「中继是否跟得上」可被观测。
+   */
+  @Sql(
+      "SELECT COUNT(*) FROM wf_status_outbox"
+          + " WHERE deleted = 0 AND tenant_id IS NOT NULL"
+          + "   AND (state = 'NEW'"
+          + "        OR (state = 'FAILED' AND (next_retry_at IS NULL OR next_retry_at <= #{now}))"
+          + "        OR (state = 'CLAIMED' AND updated_at <= #{staleCutoff}))")
+  long countPendingDue(@Param("now") Instant now, @Param("staleCutoff") Instant staleCutoff);
+
+  /**
+   * 死信积压计数：终态失败（P0-2）的行被设为 {@code FAILED} 且 {@code next_retry_at} 推到远未来， 因而 {@code > now}——
+   * 与「正常重投中（{@code next_retry_at <= now} 或 NULL）」的 FAILED 行区分。用于 {@code dead_letter_depth} Gauge。
+   */
+  @Sql(
+      "SELECT COUNT(*) FROM wf_status_outbox"
+          + " WHERE deleted = 0 AND tenant_id IS NOT NULL AND state = 'FAILED' AND next_retry_at > #{now}")
+  long countTerminallyFailed(@Param("now") Instant now);
+
   @Sql(
       "UPDATE wf_status_outbox SET state = 'DONE', updated_at = #{now}"
           + " WHERE id = #{id} AND tenant_id = #{tenantId} AND deleted = 0")

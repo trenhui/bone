@@ -76,6 +76,8 @@ public class StatusProjectionRelay {
   /** 跑一轮：取一批到期意图，按序执行。返回本轮成功落地条数。 */
   public int runOnce(int limit) {
     List<StatusIntent> due = outbox.pollDue(Math.max(1, limit));
+    // 积压深度 Gauge：本轮实际取到的到期意图数即当前中继待消费深度；持续上涨 = 中继卡死/宿主动作慢的最早信号。
+    metrics.outboxPendingDepth(due.size());
     if (due.isEmpty()) {
       return 0;
     }
@@ -96,7 +98,9 @@ public class StatusProjectionRelay {
         if (!outbox.claim(intent.id())) {
           continue;
         }
+        long intentStart = System.currentTimeMillis();
         executor.execute(intent);
+        metrics.relayIntentDuration(System.currentTimeMillis() - intentStart);
         outbox.markDone(intent.id());
         done++;
         metrics.relayIntentExecuted();

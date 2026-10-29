@@ -225,4 +225,22 @@ public interface WfInstanceSdkRepository extends Repository<WfInstanceRow, Strin
       "SELECT reject_rounds FROM wf_instance"
           + " WHERE id = #{id} AND tenant_id = #{tenantId} AND deleted = 0")
   Integer findRejectRounds(@Param("id") String id, @Param("tenantId") Long tenantId);
+
+  /**
+   * 卡死实例检测（看门狗）：RUNNING 且当前节点停留超过 cutoff、且无任何 PENDING 任务的实例 id。
+   *
+   * <p><b>跨租户</b>：与 {@code pollDueStatusIntents} / {@code findTerminalMissingProjection}
+   * 同口径——看门狗跑在无 TenantContext 的调度线程， 租户由行内 {@code tenant_id}
+   * 携带；此处刻意<b>不</b>按单租户过滤（漏上下文线程要么抛错要么只扫一个租户）。仅做只读检测，不触达业务动作。
+   *
+   * <p>判据排除「有 PENDING 任务」的实例——那是人迟迟不审的正常等待，不是死实例。
+   */
+  @Sql(
+      "SELECT i.id FROM wf_instance i"
+          + " WHERE i.deleted = 0 AND i.phase = 'RUNNING'"
+          + "   AND i.node_entered_at <= #{cutoff}"
+          + "   AND NOT EXISTS (SELECT 1 FROM wf_task t"
+          + "       WHERE t.instance_id = i.id AND t.tenant_id = i.tenant_id"
+          + "         AND t.deleted = 0 AND t.status = 'PENDING')")
+  List<String> findStuckInstanceIds(@Param("cutoff") Instant cutoff);
 }

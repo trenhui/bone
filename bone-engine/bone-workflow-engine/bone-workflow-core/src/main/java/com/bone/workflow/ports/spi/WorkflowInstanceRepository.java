@@ -3,6 +3,7 @@ package com.bone.workflow.ports.spi;
 import com.bone.workflow.domain.WorkflowDefinition;
 import com.bone.workflow.domain.WorkflowInstance;
 import com.bone.workflow.domain.WorkflowTask;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -243,6 +244,22 @@ public interface WorkflowInstanceRepository {
    * <p>与 {@link #listPendingTasks}（只取 PENDING）不同，此处取全部，用以还原「谁在何时批了什么、走了哪步」 的完整历史。
    */
   List<WorkflowTask> listTasks(String instanceId);
+
+  /**
+   * 卡死实例检测（看门狗）：返回「仍处于 {@code RUNNING}、但当前节点已停留超过 {@code cutoff}、且<b>没有任何 PENDING 任务</b>」的实例 id。
+   *
+   * <p><b>典型成因</b>：节点推进后派单失败（任务 CAS 后崩溃）、或 {@code assignTask} 异常导致节点永远等不齐——
+   * 这类实例<b>不会自愈</b>，会一直占着活动指针、挡住同一单据重新提交（陈旧指针把门焊死）。
+   *
+   * <p><b>判据特意排除「有 PENDING 任务」的实例</b>：后者是「人迟迟不审」的正常业务等待（SLA 范畴，由挂起/催办处理），
+   * 看门狗不应把慢审批当成死实例告警。只报「节点停留超阈值却连一个待办都没有」的实例。
+   *
+   * <p><b>调用方纪律</b>：看门狗作业（{@code WorkflowInstanceWatchdog}）跨租户调用本方法，由调度线程周期性触发；
+   * 本方法不得触达任何业务动作，只做只读检测。
+   *
+   * @param cutoff 节点进入时间（{@code node_entered_at}）不晚于此刻的实例才被视为「停留过久」
+   */
+  List<String> findStuckInstances(Instant cutoff);
 
   /**
    * 改派待办任务（管理员干预）：仅当任务仍为 {@code PENDING} 时才改办理人。

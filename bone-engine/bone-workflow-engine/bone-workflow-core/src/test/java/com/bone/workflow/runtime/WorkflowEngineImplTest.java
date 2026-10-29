@@ -104,6 +104,11 @@ class WorkflowEngineImplTest {
         }
 
         @Override
+        public List<String> findStuckInstances(Instant cutoff) {
+          return List.of();
+        }
+
+        @Override
         public boolean claimAndSaveInstance(WorkflowInstance instance) {
           if (!claimActiveInstance(instance)) {
             return false;

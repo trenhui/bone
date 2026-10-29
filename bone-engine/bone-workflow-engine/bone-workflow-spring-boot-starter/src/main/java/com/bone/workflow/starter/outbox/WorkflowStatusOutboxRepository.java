@@ -83,6 +83,17 @@ public class WorkflowStatusOutboxRepository {
         .toList();
   }
 
+  /** 待处理积压计数（与 {@link #pollDue} 同判据）。用于 {@code pending_depth} Gauge—— 让「中继是否跟得上生产速率」可被观测。 */
+  public long countPendingDue() {
+    Instant now = Instant.now();
+    return outbox.countPendingDue(now, now.minus(CLAIM_TIMEOUT));
+  }
+
+  /** 死信积压计数（终态 FAILED 的存量）。用于 {@code dead_letter_depth} Gauge—— 让「转人工」真正成为可见存量而非一句空话。 */
+  public long countTerminallyFailed() {
+    return outbox.countTerminallyFailed(Instant.now());
+  }
+
   public void markDone(String intentId) {
     outbox.markStatusIntentDone(intentId, requireTenant(), Instant.now());
   }

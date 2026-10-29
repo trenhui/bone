@@ -333,10 +333,11 @@
     {
       "symbol": "DecisionHandler",
       "docs": [
-        "design/lowcode/cases/费用报销系统-设计文档.md"
+        "doc/design/lowcode/cases/费用报销系统-设计文档.md",
+        "doc/design/modules/12. 工作流引擎设计.md"
       ],
-      "reason": "history",
-      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+      "reason": "workflow-sample",
+      "note": "费用报销系统-设计文档.md 与 12. 工作流引擎设计.md 均以 `*DecisionHandler` 通配指代报销/采购各自的决策处理器实现，属通配示意命名，非独立类名"
     },
     {
       "symbol": "DefaultMetadataVersionController",
@@ -752,10 +753,11 @@
     {
       "symbol": "WithdrawHandler",
       "docs": [
-        "design/lowcode/cases/费用报销系统-设计文档.md"
+        "doc/design/lowcode/cases/费用报销系统-设计文档.md",
+        "doc/design/modules/12. 工作流引擎设计.md"
       ],
-      "reason": "history",
-      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+      "reason": "workflow-sample",
+      "note": "费用报销系统-设计文档.md 与 12. 工作流引擎设计.md 均以 `*WithdrawHandler` 通配指代报销/采购各自的撤回处理器实现，属通配示意命名，非独立类名"
     },
     {
       "symbol": "XxxByIdQueryHandler",
@@ -828,6 +830,22 @@
       ],
       "reason": "tobe-named",
       "note": "BONE-AI 架构决策记录 ADR 包 §4.1 裁决人容量配置落地清单中列出的目标态配置类名（D/C/O 可配），实现尚未落地；与同文档已登记的 VersionController（tobe-named）同口径，属方案示意 To-Be 命名，登记豁免以免门禁误报"
+    },
+    {
+      "symbol": "WorkflowDecisionHandler",
+      "docs": [
+        "doc/design/modules/12. 工作流引擎设计.md"
+      ],
+      "reason": "workflow-sample",
+      "note": "文档 §4.4 以 `*WorkflowDecisionHandler` 通配指代报销/采购各自的决策处理器实现（真实类 ExpenseWorkflowDecisionHandler / PurchaseWorkflowDecisionHandler），属带星号通配的示意命名，非独立类名；改文档会丢失方案示意信息"
+    },
+    {
+      "symbol": "SubmitHandler",
+      "docs": [
+        "doc/design/modules/12. 工作流引擎设计.md"
+      ],
+      "reason": "workflow-sample",
+      "note": "文档 §9.2 以 `*SubmitHandler` 通配指代报销/采购各自的提交处理器实现（真实类为各模块 WorkflowSubmitHandler，实现 RuntimeActionHandler），属通配示意命名，非独立类名"
     }
   ]
 }

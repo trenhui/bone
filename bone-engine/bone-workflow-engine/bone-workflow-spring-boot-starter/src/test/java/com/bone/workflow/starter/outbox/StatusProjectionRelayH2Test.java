@@ -372,6 +372,55 @@ class StatusProjectionRelayH2Test {
         "正常落地须计入 executed");
   }
 
+  @Test
+  @DisplayName("P1-1 完善：积压深度 Gauge 反映待处理意图数；单条意图耗时 Timer 被记录")
+  void metrics_pendingDepthGaugeAndIntentDurationTimer() {
+    io.micrometer.core.instrument.simple.SimpleMeterRegistry registry =
+        new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+    WorkflowMetrics metrics = new WorkflowMetrics(registry);
+    StatusIntentExecutor recording = intent -> {};
+    StatusProjectionRelay relay = new StatusProjectionRelay(outbox, recording, 100, 3, metrics);
+
+    enqueue("g1", "APPROVED", "approve", null);
+    enqueue("g2", "REJECTED", "reject", null);
+    assertEquals(2, outbox.countPendingDue(), "前置：两条待处理");
+
+    relay.runOnce(10);
+
+    assertEquals(
+        2.0,
+        gaugeValue(registry, "bone.workflow.outbox.pending_depth"),
+        0.001,
+        "积压深度 Gauge 须反映本轮取到的到期意图数");
+    assertTrue(
+        timerCount(registry, "bone.workflow.relay.intent.duration") >= 1,
+        "至少一条意图执行，单条耗时 Timer 须被记录");
+  }
+
+  @Test
+  @DisplayName("P1-1 完善：countPendingDue 与 pollDue 同判据（DONE 后不再计入积压）")
+  void countPendingDue_matchesPollDue() {
+    enqueue("c1", "APPROVED", "approve", null);
+    assertEquals(1, outbox.countPendingDue(), "入箱后积压须为 1");
+    relay.runOnce(10);
+    assertEquals(0, outbox.countPendingDue(), "DONE 后不再计入积压");
+    assertEquals(0, outbox.pollDue(10).size());
+  }
+
+  @Test
+  @DisplayName("P0-2 完善：countTerminallyFailed 反映死信存量（拒执后被终态落库）")
+  void deadLetterDepth_reflectsTerminallyFailed() {
+    assertEquals(0, outbox.countTerminallyFailed(), "前置：无死信");
+    com.bone.workflow.starter.spi.WorkflowActionIdempotencyPolicy policy = (e, t, a) -> false;
+    RuntimeActionIntentExecutor refused =
+        new RuntimeActionIntentExecutor(
+            (e, t, r, a, p, o, k, v) -> {}, policy, WorkflowMetrics.NOOP);
+    StatusProjectionRelay relay = new StatusProjectionRelay(outbox, refused, 100, 3);
+    enqueue("dl1", "APPROVED", "approve", null);
+    relay.runOnce(10);
+    assertEquals(1, outbox.countTerminallyFailed(), "终态拒绝后死信存量须为 1");
+  }
+
   private double counterValue(
       io.micrometer.core.instrument.simple.SimpleMeterRegistry registry,
       String name,
@@ -380,6 +429,18 @@ class StatusProjectionRelayH2Test {
     io.micrometer.core.instrument.Counter counter =
         registry.find(name).tag(tagKey, tagValue).counter();
     return counter == null ? 0.0 : counter.count();
+  }
+
+  private double gaugeValue(
+      io.micrometer.core.instrument.simple.SimpleMeterRegistry registry, String name) {
+    io.micrometer.core.instrument.Gauge gauge = registry.find(name).gauge();
+    return gauge == null ? -1.0 : gauge.value();
+  }
+
+  private double timerCount(
+      io.micrometer.core.instrument.simple.SimpleMeterRegistry registry, String name) {
+    io.micrometer.core.instrument.Timer timer = registry.find(name).timer();
+    return timer == null ? 0.0 : timer.count();
   }
 
   private void enqueue(String instanceId, String intent, String actionCode, String paramsJson) {
