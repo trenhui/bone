@@ -183,6 +183,26 @@ class ExpenseWorkflowDecisionHandlerTest {
   }
 
   @Test
+  @DisplayName("通过后下一节点解析不出审批人（实例挂起）⇒ 声明 KEEP，绝不把单据误标为已通过")
+  void approveThenNextNodeSuspended_keepsStatus() {
+    stubRunningWithTask("u-manager");
+    // 主管通过后，下一节点（如财务）解析不出人 ⇒ 引擎 fail-closed 挂起。
+    // 若此处照旧把单据推到 APPROVED，就出现「单据已通过、流程还有一道没人做」的**假通过**，
+    // 且挂起解除后再审批会因 from_status 不再匹配而恒 409 —— 比死单更严重。
+    when(engine.completeTask(
+            eq("task-1"), eq(WorkflowTask.Decision.APPROVE), any(), eq("u-manager"), any()))
+        .thenReturn(instance("SUSPENDED"));
+
+    Map<String, Object> result =
+        handler.execute(ctx("approve", "u-manager", Map.of("comment", "同意")));
+
+    assertThat(result)
+        .containsEntry(
+            RuntimeActionContext.OUTCOME_PLATFORM_STATUS, RuntimeActionContext.PLATFORM_STATUS_KEEP)
+        .containsEntry("workflowPhase", "SUSPENDED");
+  }
+
+  @Test
   @DisplayName("单签节点通过：实例 APPROVED 终态 ⇒ 不声明 KEEP，状态照常推进")
   void approveTerminal_doesNotKeepStatus() {
     stubRunningWithTask("u-manager");
