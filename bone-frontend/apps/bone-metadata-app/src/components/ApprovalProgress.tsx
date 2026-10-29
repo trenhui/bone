@@ -79,6 +79,8 @@ const ApprovalProgress: React.FC<{ data: ApprovalDescribe | null; loading?: bool
   const startedAt = asText(instance.startedAt);
   const pendingTasks = data.pendingTasks ?? [];
   const trail = (data.trail ?? []).filter((t) => !t.pending);
+  // 实例是否仍在流转：用于区分「终态驳回」与「退回指定节点后的原地返工」（两者的任务决策都是 REJECT）。
+  const instanceAlive = phase === 'RUNNING' || phase === 'SUSPENDED';
 
   return (
     <div>
@@ -155,14 +157,18 @@ const ApprovalProgress: React.FC<{ data: ApprovalDescribe | null; loading?: bool
             const decision = asText(t.decision);
             const dMeta = decision ? DECISION_META[decision] : undefined;
             const cancelled = asText(t.status) === 'CANCELLED';
+            // 驳回且实例仍在流转 =「退回指定节点」的原地返工，不是终态驳回。
+            // 照旧渲染红色的「驳回」会让发起人以为单子已经废了，而实际正等着上游节点重新处理。
+            const sentBack = decision === 'REJECT' && instanceAlive;
+            const rowMeta = sentBack ? { color: 'orange', label: '退回返工' } : dMeta;
             return {
-              color: dMeta?.color ?? (cancelled ? 'gray' : 'blue'),
+              color: rowMeta?.color ?? (cancelled ? 'gray' : 'blue'),
               children: (
                 <div>
                   <Space size={8} wrap>
                     <Text strong>{t.nodeCode}</Text>
-                    <Tag color={dMeta?.color ?? (cancelled ? 'default' : 'blue')}>
-                      {dMeta?.label ?? STATUS_LABEL[asText(t.status) ?? ''] ?? '—'}
+                    <Tag color={rowMeta?.color ?? (cancelled ? 'default' : 'blue')}>
+                      {rowMeta?.label ?? STATUS_LABEL[asText(t.status) ?? ''] ?? '—'}
                     </Tag>
                     <Text type="secondary" style={{ fontSize: 12 }}>
                       办理人 {t.assigneeId || '—'}

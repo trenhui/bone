@@ -678,6 +678,70 @@ class WorkflowEngineImplTest {
   }
 
   @Test
+  @DisplayName("退回候选·单级审批：第一个审批人就能退回发起节点（候选不依赖运行历史）")
+  void listReturnableNodes_singleApproval_offersStart() {
+    givenLinearSingleApproval();
+    WorkflowEngineImpl engine = newEngine();
+    WorkflowInstance started = engine.start("expense_reimbursement", "r1", "expense", "u1");
+    // 实例刚进入第一个审批节点：此刻历史里只有「发起」一步。
+    // 若候选由历史推（旧实现），这里必然为空 ⇒ 最高频的「退回发起人补正」在界面上不可用。
+    List<String> codes =
+        engine.listReturnableNodes(started.id()).stream().map(n -> n.code()).toList();
+    assertTrue(codes.contains("start"), "单级审批必须能退回发起节点，实际=" + codes);
+    assertFalse(codes.contains("end"), "结束节点不可退回（退回=直接通过，语义错误）：" + codes);
+    assertFalse(codes.contains("mgr"), "当前节点不可退回（自身循环无意义）：" + codes);
+  }
+
+  @Test
+  @DisplayName("退回候选·多级：上游审批节点与发起节点都在候选里，只剩当前节点与结束节点被排除")
+  void listReturnableNodes_multiLevel_excludesCurrentAndEnd() {
+    definitions.put(
+        "expense",
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(
+                new WorkflowDefinition.Node("start", WorkflowDefinition.NodeType.START, null, "发起"),
+                new WorkflowDefinition.Node(
+                    "mgr",
+                    WorkflowDefinition.NodeType.APPROVE,
+                    WorkflowDefinition.ApprovalMode.SINGLE,
+                    "主管"),
+                new WorkflowDefinition.Node(
+                    "cfo",
+                    WorkflowDefinition.NodeType.APPROVE,
+                    WorkflowDefinition.ApprovalMode.SINGLE,
+                    "财务总监"),
+                new WorkflowDefinition.Node("end", WorkflowDefinition.NodeType.END, null, "结束")),
+            List.of(
+                new WorkflowDefinition.Edge("start", "mgr", null, "提交"),
+                new WorkflowDefinition.Edge("mgr", "cfo", null, "通过"),
+                new WorkflowDefinition.Edge("cfo", "end", null, "通过")),
+            Map.of(
+                "mgr", List.of(new WorkflowDefinition.AssignmentRule("LINE_MANAGER", Map.of())),
+                "cfo", List.of(new WorkflowDefinition.AssignmentRule("LINE_MANAGER", Map.of())))));
+    WorkflowEngineImpl engine = newEngine();
+    WorkflowInstance started = engine.start("expense_reimbursement", "r1", "expense", "u1");
+    String mgrTask = pendingTasks().get(0).id();
+    engine.completeTask(mgrTask, WorkflowTask.Decision.APPROVE, "同意", "mgr1");
+
+    List<String> codes =
+        engine.listReturnableNodes(started.id()).stream().map(n -> n.code()).toList();
+    // 现在停在 cfo：上游的 mgr 与发起 start 都可退回，cfo 自身与 end 必须排除
+    assertEquals(List.of("start", "mgr"), codes);
+  }
+
+  @Test
+  @DisplayName("退回候选·实例不存在时 fail-closed（不返回空列表冒充「没有候选」）")
+  void listReturnableNodes_unknownInstance_throws() {
+    WorkflowEngineImpl engine = newEngine();
+    WorkflowEngineException error =
+        assertThrows(
+            WorkflowEngineException.class, () -> engine.listReturnableNodes("no-such-instance"));
+    assertEquals(WorkflowErrorCode.INSTANCE_NOT_FOUND, error.code());
+  }
+
+  @Test
   @DisplayName("管理员干预·催办：只留痕与通知，不改变任务与流程状态")
   void urge_doesNotChangeState() {
     givenLinearSingleApproval();

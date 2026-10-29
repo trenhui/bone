@@ -490,6 +490,20 @@ export interface ApprovalDescribe {
    * 服务端读不到时该字段缺省，前端降级为通用指引。
    */
   suspendReason?: string;
+  /**
+   * 驳回可退回的候选节点（引擎按**流程定义**给出，不是运行历史）。
+   *
+   * <p>为什么不能由前端从 `trail` 推：最需要退回的场景是单级审批（第一个审批人退回发起人），
+   * 此时轨迹里只有发起一步，按轨迹推候选恒为空 ⇒ 退回入口不可用。候选的权威来源是定义。
+   */
+  returnableNodes?: ApprovalNodeOption[];
+}
+
+/** 退回候选节点（`code` 为引擎跳转标识，`label` 用于展示）。 */
+export interface ApprovalNodeOption {
+  code: string;
+  label: string;
+  type?: string;
 }
 
 /** 站内信行（`GET /approval/inbox` 投影，接收人恒为当前登录人）。 */

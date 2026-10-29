@@ -189,6 +189,53 @@ class RuntimeApprovalApplicationServiceTest {
     }
   }
 
+  /**
+   * 退回候选节点必须随 describe 返回（引擎按流程定义给出 code/label/type）。
+   *
+   * <p>为什么钉在服务层：候选缺失时界面只是「退回节点下拉为空」，退回按钮静默不可用—— 这条链路任何一环丢了（引擎不返回 / 服务层不投影 / 键名不一致），API 都照常
+   * 200，只有真点界面才发现。
+   */
+  @Test
+  void describe_exposesReturnableNodes() {
+    when(engine.findInstance("expense_reimbursement", "9001")).thenReturn(Optional.of(instance()));
+    when(engine.listPendingTasks("inst-1")).thenReturn(List.of());
+    when(engine.listInstanceHistory("inst-1")).thenReturn(List.of());
+    when(engine.listReturnableNodes("inst-1"))
+        .thenReturn(
+            List.of(
+                new com.bone.workflow.domain.WorkflowDefinition.Node(
+                    "start",
+                    com.bone.workflow.domain.WorkflowDefinition.NodeType.START,
+                    null,
+                    "发起")));
+
+    Map<String, Object> result = service.describe("expense_reimbursement", "9001");
+
+    @SuppressWarnings("unchecked")
+    List<Map<String, Object>> nodes = (List<Map<String, Object>>) result.get("returnableNodes");
+    assertEquals(1, nodes.size());
+    assertEquals("start", nodes.get(0).get("code"));
+    assertEquals("发起", nodes.get(0).get("label"));
+    assertEquals("START", nodes.get(0).get("type"));
+  }
+
+  /** 候选读取失败只能降级为空列表：审批进度（实例/待办/轨迹）不能因为「退回下拉」不可用而整页 500。 */
+  @Test
+  void describe_returnableNodesFailure_degradesToEmpty() {
+    when(engine.findInstance("expense_reimbursement", "9001")).thenReturn(Optional.of(instance()));
+    when(engine.listPendingTasks("inst-1")).thenReturn(List.of());
+    when(engine.listInstanceHistory("inst-1")).thenReturn(List.of());
+    when(engine.listReturnableNodes("inst-1"))
+        .thenThrow(
+            new com.bone.workflow.domain.WorkflowEngineException(
+                com.bone.workflow.domain.WorkflowErrorCode.DEFINITION_NOT_FOUND, "定义缺失"));
+
+    Map<String, Object> result = service.describe("expense_reimbursement", "9001");
+
+    assertEquals(List.of(), result.get("returnableNodes"));
+    assertEquals("RUNNING", ((Map<?, ?>) result.get("instance")).get("phase"));
+  }
+
   /** 通知走 IM/邮件（不落本地表）时端口缺省返回空：describe 必须照常返回，只是没有原因字段。 */
   @Test
   void describe_omitsSuspendReasonWhenInboxCannotTell() {

@@ -40,21 +40,25 @@ const PWD_PH_SEL = 'input[placeholder*="密码"]';
  * → 等密码框从 DOM 消失作为登录成功信号。
  *
  * @param {import('playwright').Page} page 已打开的浏览器页面
- * @param {{route?: string, timeout?: number}} [opts]
+ * @param {{route?: string, timeout?: number, user?: string, pwd?: string}} [opts]
  *   route   登录前跳转的入口（默认 `${UI_BASE}/`，即 shell 根，会自动呈现登录页）；
  *           个别探针需要直达 `/iam#/accounts` 时传入覆盖。
  *   timeout 等待「密码框消失」的超时（默认 30000ms）。
+ *   user/pwd 覆盖登录身份（默认取 client.cjs 的种子账号）。职责分离（SoD）类场景必须用
+ *           第二个账号登录（审批人 ≠ 发起人），否则引擎按设计挂起、界面永远看不到待办。
  * @returns {Promise<boolean>} 登录成功为 true
  */
 async function uiLogin(page, opts = {}) {
   const route = opts.route || `${UI_BASE}/`;
   const timeout = opts.timeout || 30000;
+  const user = opts.user || USER;
+  const pwd = opts.pwd || PWD;
   await page.goto(route, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector(`${PASS_SEL}, ${PWD_PH_SEL}`, { timeout: 20000 });
   const u = page.locator(USER_SEL).first();
-  if (await u.count()) await u.fill(USER);
+  if (await u.count()) await u.fill(user);
   const p = page.locator(PASS_SEL).first();
-  await p.fill(PWD);
+  await p.fill(pwd);
   await p.press('Enter');
   await page.waitForTimeout(1200);
   // 回车未触发提交（部分登录表单只在按钮 click 上挂 handler）时兜底点提交按钮：

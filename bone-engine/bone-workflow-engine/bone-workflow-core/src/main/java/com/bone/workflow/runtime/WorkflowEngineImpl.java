@@ -1053,6 +1053,26 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     return unitOfWork.execute(() -> terminateInstanceInTransaction(instanceId, operatorId, reason));
   }
 
+  @Override
+  public List<WorkflowDefinition.Node> listReturnableNodes(String instanceId) {
+    WorkflowInstance instance =
+        instanceRepository
+            .findInstance(instanceId)
+            .orElseThrow(
+                () ->
+                    new WorkflowEngineException(
+                        WorkflowErrorCode.INSTANCE_NOT_FOUND, "流程实例不存在：" + instanceId));
+    // 候选来自定义（权威），不来自运行历史：单级审批时历史里只有发起，按历史推会得到空列表，
+    // 而「退回发起人补正」正是最高频的退回场景（见接口 javadoc）。
+    return definitionOf(instance).nodes().stream()
+        .filter(
+            node ->
+                node.type() == WorkflowDefinition.NodeType.START
+                    || node.type() == WorkflowDefinition.NodeType.APPROVE)
+        .filter(node -> !node.code().equals(instance.currentNodeCode()))
+        .toList();
+  }
+
   private WorkflowInstance terminateInstanceInTransaction(
       String instanceId, String operatorId, String reason) {
     WorkflowInstance instance =

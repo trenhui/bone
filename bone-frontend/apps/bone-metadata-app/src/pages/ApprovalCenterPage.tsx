@@ -62,7 +62,7 @@ const ApprovalCenterPage: React.FC = () => {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [decisionTarget, setDecisionTarget] =
     useState<{ kind: DecisionKind; rows: ApprovalTaskRow[] } | null>(null);
-  /** 驳回退回节点候选（由单据审批轨迹推出的历史节点；空 = 只能整单驳回）。 */
+  /** 驳回退回节点候选（服务端按流程定义给出；空 = 只能整单驳回）。 */
   const [backNodeOptions, setBackNodeOptions] = useState<{ value: string; label: string }[]>([]);
   const [failures, setFailures] = useState<DecisionFailure[] | null>(null);
   const [trail, setTrail] = useState<ApprovalDescribe | null>(null);
@@ -165,8 +165,11 @@ const ApprovalCenterPage: React.FC = () => {
   };
 
   /**
-   * 打开决策弹窗。驳回且单条时顺带拉取审批轨迹 → 历史节点作为「退回指定节点」候选
-   * （批量驳回不逐单拉轨迹，保持整单驳回口径，避免 N 次 describe）。
+   * 打开决策弹窗。驳回且单条时顺带拉取审批概况 → 服务端给出的「可退回节点」作为候选
+   * （批量驳回不逐单拉概况，保持整单驳回口径，避免 N 次 describe）。
+   *
+   * <p>候选必须来自服务端定义（`returnableNodes`）：从 `trail` 里推历史节点在**单级审批**下恒为空，
+   * 而「第一个审批人退回发起人补正」正是最高频的退回场景（实测下拉 0 候选、退回入口不可用）。
    */
   const openDecision = async (kind: DecisionKind, targets: ApprovalTaskRow[]) => {
     setDecisionTarget({ kind, rows: targets });
@@ -178,19 +181,13 @@ const ApprovalCenterPage: React.FC = () => {
     try {
       const res = await runtimeApprovalApi.describe(row.entityCode, row.recordId);
       if (res.code !== 200 || !res.data?.started) return;
-      const current = String(
-        (res.data.instance as Record<string, unknown> | undefined)?.currentNode ?? row.nodeCode,
-      );
-      const seen = new Set<string>();
-      const options: { value: string; label: string }[] = [];
-      for (const t of res.data.trail ?? []) {
-        if (!t.nodeCode || t.nodeCode === current || seen.has(t.nodeCode)) continue;
-        seen.add(t.nodeCode);
-        options.push({ value: t.nodeCode, label: `退回节点：${t.nodeCode}` });
-      }
+      const options = (res.data.returnableNodes ?? []).map((n) => ({
+        value: n.code,
+        label: n.label && n.label !== n.code ? `退回：${n.label}（${n.code}）` : `退回节点：${n.code}`,
+      }));
       setBackNodeOptions(options);
     } catch {
-      // 轨迹拉不到不阻断驳回：退回候选留空 = 退回按钮不可用，走整单驳回
+      // 概况拉不到不阻断驳回：候选留空 = 退回不可选，走整单驳回
     }
   };
 
@@ -232,7 +229,10 @@ const ApprovalCenterPage: React.FC = () => {
       setFailures(failed);
       message.warning(`成功 ${ok} 条，失败 ${failed.length} 条`);
     } else {
-      message.success(`已${kind === 'approve' ? '通过' : '驳回'} ${ok} 条`);
+      // 动词必须与真实语义对齐：带回退节点时单据仍是审批中（原地返工），
+      // 报「已驳回」会让审批人以为单子已经结了，而实际又回到了上游节点等人处理。
+      const verb = kind === 'approve' ? '通过' : backToNodeCode ? '退回节点' : '驳回';
+      message.success(`已${verb} ${ok} 条`);
     }
     setDecisionTarget(null);
     form.resetFields();
@@ -686,7 +686,7 @@ const ApprovalCenterPage: React.FC = () => {
             <Form.Item
               name="backToNodeCode"
               label="退回节点"
-              extra="不选 = 整单驳回（单据回到发起前状态）；选中则由该节点重新派单继续走。批量驳回仅支持整单驳回。"
+              extra="不选 = 整单驳回（流程终结，单据置为已驳回）；选中则退回该节点重新派单，单据继续处于审批中。批量驳回仅支持整单驳回。"
             >
               <Select
                 allowClear

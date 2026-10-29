@@ -66,6 +66,10 @@ public class ExpenseWorkflowDecisionHandler implements RuntimeActionHandler {
     result.put("currentNode", after.currentNodeCode());
     if (!approve && backToNodeCode != null && !backToNodeCode.isBlank()) {
       result.put("backToNode", backToNodeCode);
+      // 退回节点 = 原地返工：实例已退回上游节点并重新派单，单据仍在审批中。
+      // 若平台照常把 status 推到 REJECTED（终态），审批人再点「通过」恒 409、待办永远清不掉 —— 死单。
+      result.put(
+          RuntimeActionContext.OUTCOME_PLATFORM_STATUS, RuntimeActionContext.PLATFORM_STATUS_KEEP);
     }
     return result;
   }

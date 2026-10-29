@@ -1,5 +1,6 @@
 package com.bone.workflow.domain;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -266,4 +267,20 @@ public interface WorkflowEngine {
    * @return 终止后的流程实例
    */
   WorkflowInstance terminateInstance(String instanceId, String operatorId, String reason);
+
+  /**
+   * 列出「驳回可退回」的候选节点（审批界面「退回节点」下拉的真源）。
+   *
+   * <p><b>为什么必须由引擎给，而不是让界面从运行历史推</b>：最需要退回的场景恰恰是<b>单级审批</b>——第一个审批人把单据退回发起人补正。
+   * 此刻实例刚进入第一个审批节点，历史轨迹里只有发起这一步，按「轨迹里出现过的节点」推候选会得到<b>空列表</b>，退回入口直接不可用 （2026-10-29 UI 实测：下拉 0 候选，而
+   * API 层退回功能本身是好的）。候选的权威来源是<b>流程定义</b>，运行历史只是它的一个很窄的子集。
+   *
+   * <p><b>候选口径</b>：定义中存在、类型为 {@link WorkflowDefinition.NodeType#START} 或 {@link
+   * WorkflowDefinition.NodeType#APPROVE}、且不等于实例当前节点（自身循环无意义）。引擎对 {@code backToNodeCode} 的准入校验比这里更宽松
+   * （另允许条件 / 抄送节点，只要不是结束节点），故本方法返回的集合是准入集合的子集——<b>界面上能选的，引擎一定接受</b>，不会出现「选了却被拒」。
+   *
+   * @param instanceId 流程实例 id
+   * @return 候选节点（定义顺序；实例不存在抛 {@code INSTANCE_NOT_FOUND}）
+   */
+  List<WorkflowDefinition.Node> listReturnableNodes(String instanceId);
 }

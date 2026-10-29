@@ -120,6 +120,9 @@ public class RuntimeApprovalApplicationService {
         engine.listPendingTasks(instance.id()).stream().map(this::snapshot).toList());
     result.put(
         "trail", engine.listInstanceHistory(instance.id()).stream().map(this::snapshot).toList());
+    // 驳回可退回的候选节点（引擎按流程定义给出）。此前界面用「轨迹里出现过的节点」推候选，
+    // 在**单级审批**（第一个审批人退回发起人，最高频场景）下轨迹里只有发起一步，候选恒为空 ⇒ 退回入口不可用。
+    result.put("returnableNodes", returnableNodes(engine, instance));
     // 挂起原因（诊断）：挂起时引擎不派单，详情页只看到「挂起 + 零待办」时，发起人/审批人无法判断
     // 是「审批人解析不出」「审批人就是发起人本人」还是「组织信息缺失」。原因真源是挂起告警正文，
     // 读回来一并返回；查不到就不返回该字段（前端降级为通用指引），不让诊断信息缺失影响整个详情。
@@ -127,6 +130,29 @@ public class RuntimeApprovalApplicationService {
       suspendReason(instance).ifPresent(reason -> result.put("suspendReason", reason));
     }
     return result;
+  }
+
+  /**
+   * 驳回可退回的候选节点投影（{@code code/label/type}）。
+   *
+   * <p>读失败降级为空列表而不是抛错：候选节点只服务「驳回」弹窗的下拉，缺了顶多是退回入口不可用， 不该让整张单据的审批进度（实例 / 待办 / 轨迹）跟着 500。
+   */
+  private List<Map<String, Object>> returnableNodes(
+      WorkflowEngine engine, WorkflowInstance instance) {
+    try {
+      return engine.listReturnableNodes(instance.id()).stream()
+          .map(
+              node -> {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("code", node.code());
+                row.put("label", node.label() == null ? node.code() : node.label());
+                row.put("type", node.type() == null ? null : node.type().name());
+                return row;
+              })
+          .toList();
+    } catch (RuntimeException ex) {
+      return List.of();
+    }
   }
 
   /** 挂起原因：来自通知端口（缺省实现 = 空，宿主把通知接 IM/邮件时不落本地表）。 */

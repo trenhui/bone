@@ -123,6 +123,47 @@ class ExpenseWorkflowDecisionHandlerTest {
         .containsEntry("workflowPhase", "REJECTED");
   }
 
+  /**
+   * 退回指定节点 = 原地返工：实例退回上游节点后仍在 RUNNING，单据必须保持原状态。
+   *
+   * <p>不声明 KEEP 的后果是实测过的死单：平台把 status 推到 REJECTED（终态），而实例还在等审批， 审批人再点通过恒 409
+   * ILLEGAL_TRANSITION，待办永远清不掉。
+   */
+  @Test
+  @DisplayName("reject 带 backToNodeCode → 回显退回节点并要求平台不推进状态（KEEP）")
+  void rejectToNode_declaresKeepStatus() {
+    stubRunningWithTask("u-manager");
+    when(engine.completeTask(
+            eq("task-1"),
+            eq(WorkflowTask.Decision.REJECT),
+            eq("退回改金额"),
+            eq("u-manager"),
+            eq("start")))
+        .thenReturn(instance("RUNNING"));
+
+    Map<String, Object> result =
+        handler.execute(
+            ctx("reject", "u-manager", Map.of("reason", "退回改金额", "backToNodeCode", "start")));
+
+    assertThat(result)
+        .containsEntry("backToNode", "start")
+        .containsEntry(
+            RuntimeActionContext.OUTCOME_PLATFORM_STATUS, RuntimeActionContext.PLATFORM_STATUS_KEEP)
+        .containsEntry("workflowPhase", "RUNNING");
+  }
+
+  @Test
+  @DisplayName("整单驳回（无 backToNodeCode）不声明 KEEP：状态照常推进到 REJECTED")
+  void plainReject_doesNotKeepStatus() {
+    stubRunningWithTask("u-manager");
+    when(engine.completeTask(any(), any(), any(), any(), any())).thenReturn(instance("REJECTED"));
+
+    Map<String, Object> result =
+        handler.execute(ctx("reject", "u-manager", Map.of("reason", "缺发票")));
+
+    assertThat(result).doesNotContainKey(RuntimeActionContext.OUTCOME_PLATFORM_STATUS);
+  }
+
   @Test
   @DisplayName("非当前审批人调 approve → 403（任务级 SoD：决策权收敛到指派冻结时的审批人）")
   void nonAssignee_forbidden() {

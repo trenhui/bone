@@ -23,6 +23,8 @@
   S4 报销 撤回 → 回到 DRAFT、实例 WITHDRAWN → 可重新提交（不被死单锁死）
   S5 报销 自审批触发挂起 → 管理员强制指派 → 恢复 → 通过（挂起死单的人工出口）
   S6 采购 建单（含行项目）→ 提交 → 派单 → 通过 → 单据 APPROVED
+  S7 报销 驳回**退回指定节点**（原地返工）→ 单据仍 SUBMITTED → 可继续审批通过（不死单）
+  S8 采购 退回指定节点 → 单据不落 REJECTED → 可继续审批通过
 
 用法：
   python3 scripts/e2e/expense-purchase-approval-integration-e2e.py
@@ -138,9 +140,9 @@ def make_expense(title, amount, approver_id):
     })
 
 
-def make_purchase(amount=1200, budget=2000):
+def make_purchase(amount=1200, budget=2000, tag=""):
     s, d = rec_create(PO, {
-        "po_no": "PO-" + SUFFIX,
+        "po_no": "PO-" + SUFFIX + tag,
         "title": "联调-采购订单审批",
         "vendor": "联调供应商",
         "vendor_code": "V-LIAN-01",
@@ -287,5 +289,55 @@ if po1:
           f"status={rec(PO, po1).get('status')}")
     desc, _ = describe(PO, po1)
     check("采购实例终态 APPROVED", phase(desc) == "APPROVED", f"phase={phase(desc)}")
+
+# ---------------------------------------------------------------- S7 退回指定节点（报销）
+# 为什么必须单独一段：这段钉住的是「原地返工 vs 整单驳回」的语义分叉。接入前实测到的缺陷形态是——
+# 退回节点后实例已回到上游节点并重新派单（RUNNING/pending≥1），但平台照常把单据 status 推到
+# REJECTED 终态 ⇒ 审批人再点「通过」恒 409 ILLEGAL_TRANSITION、待办永远清不掉（死单）。
+# 只断言「动作 200」会漏掉它，必须同时断言**单据真源状态**与**后续能否走通**。
+section("S7 报销：驳回退回指定节点（原地返工）→ 单据仍 SUBMITTED → 仍可审批通过")
+s, d = make_expense("联调-报销-退回节点", 700, APPROVER_ID)
+exp7 = d_(d, "id")
+if exp7:
+    act_as(http.default().headers(), EXP, exp7, "submit")
+    s, d = act_as(APPROVER_HDR, EXP, exp7, "reject",
+                  {"reason": "发票信息不全，退回补正后重提", "backToNodeCode": "start"})
+    check("退回指定节点成功", s == 200, f"{s} {ecode(d)} {d.get('message')}")
+    check("动作响应如实回「状态未变」（不谎报已驳回）", d_(d, "toStatus") == "SUBMITTED",
+          f"toStatus={d_(d, 'toStatus')!r}")
+    check("单据仍为 SUBMITTED（原地返工，不落 REJECTED 终态）",
+          rec(EXP, exp7).get("status") == "SUBMITTED", f"status={rec(EXP, exp7).get('status')}")
+    desc, _ = describe(EXP, exp7)
+    check("实例仍在 RUNNING", phase(desc) == "RUNNING", f"phase={phase(desc)}")
+    check("返工待办仍在（未被清空）",
+          any(str(t.get("assigneeId")) == str(APPROVER_ID) for t in pending(desc)),
+          f"pending={pending(desc)}")
+    s, d = act_as(APPROVER_HDR, EXP, exp7, "approve", {"comment": "补正后同意"})
+    check("退回后仍可审批通过（不死单）", s == 200, f"{s} {ecode(d)} {d.get('message')}")
+    check("单据最终 APPROVED", wait_status(EXP, exp7, "APPROVED") == "APPROVED",
+          f"status={rec(EXP, exp7).get('status')}")
+    desc, _ = describe(EXP, exp7)
+    check("实例终态 APPROVED 且无遗留待办", phase(desc) == "APPROVED" and not pending(desc),
+          f"phase={phase(desc)} pending={pending(desc)}")
+
+# ---------------------------------------------------------------- S8 退回指定节点（采购）
+section("S8 采购订单：退回指定节点 → 不落 REJECTED → 仍可审批通过")
+s, d, po2 = make_purchase(amount=800, budget=1500, tag="-R")
+check("采购建单（退回场景）成功", po2 is not None, f"{s} {ecode(d)} {d.get('message')}")
+if po2:
+    act_as(http.default().headers(), PO, po2, "submit")
+    s, d = act_as(APPROVER_HDR, PO, po2, "reject",
+                  {"reason": "预算科目需复核，退回修改", "backToNodeCode": "start"})
+    check("采购退回指定节点成功", s == 200, f"{s} {ecode(d)} {d.get('message')}")
+    check("采购单据仍为 SUBMITTED", rec(PO, po2).get("status") == "SUBMITTED",
+          f"status={rec(PO, po2).get('status')}")
+    desc, _ = describe(PO, po2)
+    check("采购实例仍在 RUNNING 且有返工待办",
+          phase(desc) == "RUNNING" and bool(pending(desc)),
+          f"phase={phase(desc)} pending={pending(desc)}")
+    s, d = act_as(APPROVER_HDR, PO, po2, "approve", {"comment": "复核后同意"})
+    check("采购退回后仍可审批通过（不死单）", s == 200, f"{s} {ecode(d)} {d.get('message')}")
+    check("采购单最终 APPROVED", wait_status(PO, po2, "APPROVED") == "APPROVED",
+          f"status={rec(PO, po2).get('status')}")
 
 finish("报销/采购审批集成")

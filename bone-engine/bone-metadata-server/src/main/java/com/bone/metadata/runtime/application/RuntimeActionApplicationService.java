@@ -194,19 +194,32 @@ public class RuntimeActionApplicationService {
       // 8. 统一状态流转（平台负责，调用方无法绕过状态机）。
       //    走 updateState 而非 update：后者对 state_field 一律 422；前者是状态机唯一合法推进入口，
       //    内部落记录级审计（RC-009：who 在何时把 status 从 from 改到 to）。
+      //
+      //    ⚠ 「不推进」分支（原地返工类动作，如驳回退回指定节点）：引擎把实例退回上游节点并重新派单，
+      //    单据仍在审批中。若这里照常推到 to_status（REJECTED 终态），就会出现
+      //    「单据已驳回 + 实例仍 RUNNING + 待办还在」——审批人再点通过恒 409，待办永远清不掉的死单（实测复现）。
+      //    故处理器可显式声明 KEEP；声明权只在服务端处理器（sideEffect 由 handler 产出，非调用方入参）。
+      boolean keepStatus = RuntimeActionContext.keepsPlatformStatus(sideEffect);
       Map<String, Object> updated =
-          runtimeRecordService.updateState(
-              entityCode,
-              tenantId,
-              recordId,
-              def.getStatusField(),
-              def.getToStatus(),
-              expectedVersion,
-              operatorId,
-              actionCode,
-              null,
-              // 动作响应同样按角色裁剪：动作端点是用户面路径，与 CRUD 同一套字段级约束
-              currentRoleProvider.currentRoleCodesOrNull());
+          keepStatus
+              ? runtimeRecordService.getById(
+                  entityCode,
+                  tenantId,
+                  recordId,
+                  null,
+                  // 动作响应同样按角色裁剪：动作端点是用户面路径，与 CRUD 同一套字段级约束
+                  currentRoleProvider.currentRoleCodesOrNull())
+              : runtimeRecordService.updateState(
+                  entityCode,
+                  tenantId,
+                  recordId,
+                  def.getStatusField(),
+                  def.getToStatus(),
+                  expectedVersion,
+                  operatorId,
+                  actionCode,
+                  null,
+                  currentRoleProvider.currentRoleCodesOrNull());
 
       if (executionId != null) {
         executionRepository.markSucceeded(executionId, encode(sideEffect));
@@ -220,7 +233,8 @@ public class RuntimeActionApplicationService {
       result.put("orphaned", false);
       result.put("action", actionCode);
       result.put("fromStatus", current);
-      result.put("toStatus", def.getToStatus());
+      // 未推进状态时 toStatus 必须如实回「未变」，否则前端 toast 会宣称「已驳回」而单据其实还在审批中。
+      result.put("toStatus", keepStatus ? current : def.getToStatus());
       return result;
     } catch (RuntimeException e) {
       if (executionId != null) {
