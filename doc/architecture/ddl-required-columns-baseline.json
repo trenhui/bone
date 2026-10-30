@@ -24,6 +24,13 @@
       "classification": "by-design",
       "note": "最近访问记录：只追加，时间列名用 accessed_at（未用 created_at）"
     },
+    "column_allocation": {
+      "missing": [
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "SDK ColumnAllocator 预留列池：回收语义由 recycled_at + status=RECYCLED 表达，不叠加 deleted"
+    },
     "exts_audit_log": {
       "missing": [
         "updated_at",
@@ -186,6 +193,31 @@
       ],
       "classification": "by-design",
       "note": "域模板版本快照：TemplateVersion 语义为『发布时冻结当时的 schema』，一经发布不可变（无 update 路径，AggregateRoot 无仓储更新调用）。追加写 + 不可变，故不需要 updated_at/deleted。列名仍为 created_at。"
+    },
+    "meta_model_template_ui_history": {
+      "missing": [
+        "created_at",
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "模板 UI 历史快照：只追加的版本链，发布时刻用 published_at"
+    },
+    "meta_runtime_action_execution": {
+      "missing": [
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "运行时动作执行记录：生命周期由 status/pending_at/settled_at 表达，不软删"
+    },
+    "meta_runtime_record_audit": {
+      "missing": [
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "字段级审计流水：append-only，不可改不可删"
     },
     "meta_runtime_sequence": {
       "missing": [

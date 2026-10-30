@@ -1,161 +1,37 @@
 {
-  "_comment": "init-coverage 基线：迁移脚本建过、但 bone-init.sql 未包含的结构表。**只可收缩**：表并入全量后必须从此处删除（否则判红）；新迁移建表未并入全量则直接判红、不得进基线。2026-10-30 实测：本地 dev 库 6 张关键表（wf_task / wf_instance / wf_status_outbox / t_claim_case_track / t_claim_inspection / meta_runtime_record_audit）在 init 命中 0、在 dev 命中 6。",
+  "_comment": "init-coverage 基线：谁还需要从**迁移集**并入 bone-init.sql。两个域语义互斥——`tables` 是待并入的欠账（**只可收缩**：并入后必须删除，否则判红）；`blocked` 是明确决定不并入的表（须 reason + evidence），它不是欠账而是决定，但决定会被现实推翻：一旦该表出现在活库，就说明脚本已执行、必须并入。2026-10-30 收口：原 31 项缺口里 25 张已由 scripts/sync-init-from-live.py 从活库导出并入（逐列逐索引与 dev 零差异），1 张 t_claim_case_item 经终态解析确认是废弃表（0047 建、0058 DROP），剩余 5 张 fin_* 属 L3 未批准，转入 blocked。",
   "generatedAt": "2026-10-30",
-  "tables": [
-    {
-      "table": "column_allocation",
-      "from": "0013_blueprint_reserved_columns.sql",
-      "reason": "0013_blueprint_reserved_columns.sql 建此表；疑为演示/运行时结构，待裁决：并入全量，或从迁移中移除"
-    },
-    {
-      "table": "field_metadata",
-      "from": "0013_blueprint_reserved_columns.sql",
-      "reason": "0013_blueprint_reserved_columns.sql 建此表；疑为演示/运行时结构，待裁决：并入全量，或从迁移中移除"
-    },
-    {
-      "table": "fin_account_mapping",
-      "from": "0067_fin_voucher.sql",
-      "reason": "0067_fin_voucher.sql 建此表，但本地 dev 库与全量基线都没有它 ⇒ 该脚本很可能从未成功执行过（账本要发现的正是这种情况）"
-    },
+  "tables": [],
+  "blocked": [
     {
       "table": "fin_voucher",
       "from": "0067_fin_voucher.sql",
-      "reason": "0067_fin_voucher.sql 建此表，但本地 dev 库与全量基线都没有它 ⇒ 该脚本很可能从未成功执行过（账本要发现的正是这种情况）"
+      "reason": "会计引擎凭证物理表：脚本头部自标「⚠ L3 待架构师审批执行」，尚未获批准落地",
+      "evidence": "本地 dev 库与任何环境均无此表；bone-apps/doc 全库 grep `fin_voucher` 零命中（功能未接入）"
     },
     {
       "table": "fin_voucher_entry",
       "from": "0067_fin_voucher.sql",
-      "reason": "0067_fin_voucher.sql 建此表，但本地 dev 库与全量基线都没有它 ⇒ 该脚本很可能从未成功执行过（账本要发现的正是这种情况）"
+      "reason": "会计引擎凭证物理表：脚本头部自标「⚠ L3 待架构师审批执行」，尚未获批准落地",
+      "evidence": "本地 dev 库与任何环境均无此表；bone-apps/doc 全库 grep `fin_voucher` 零命中（功能未接入）"
     },
     {
       "table": "fin_voucher_entry_dim",
       "from": "0067_fin_voucher.sql",
-      "reason": "0067_fin_voucher.sql 建此表，但本地 dev 库与全量基线都没有它 ⇒ 该脚本很可能从未成功执行过（账本要发现的正是这种情况）"
+      "reason": "会计引擎凭证物理表：脚本头部自标「⚠ L3 待架构师审批执行」，尚未获批准落地",
+      "evidence": "本地 dev 库与任何环境均无此表；bone-apps/doc 全库 grep `fin_voucher` 零命中（功能未接入）"
     },
     {
       "table": "fin_voucher_template",
       "from": "0067_fin_voucher.sql",
-      "reason": "0067_fin_voucher.sql 建此表，但本地 dev 库与全量基线都没有它 ⇒ 该脚本很可能从未成功执行过（账本要发现的正是这种情况）"
+      "reason": "会计引擎凭证物理表：脚本头部自标「⚠ L3 待架构师审批执行」，尚未获批准落地",
+      "evidence": "本地 dev 库与任何环境均无此表；bone-apps/doc 全库 grep `fin_voucher` 零命中（功能未接入）"
     },
     {
-      "table": "meta_entity_action_def",
-      "from": "0032_runtime_action_spi.sql",
-      "reason": "0032_runtime_action_spi.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "meta_entity_ui_schema",
-      "from": "0046_entity_ui_schema.sql",
-      "reason": "0046_entity_ui_schema.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "meta_model_template_action",
-      "from": "0040_template_action_state_machine.sql",
-      "reason": "0040_template_action_state_machine.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "meta_model_template_ui_history",
-      "from": "0046_entity_ui_schema.sql",
-      "reason": "0046_entity_ui_schema.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "meta_runtime_action_execution",
-      "from": "0032_runtime_action_spi.sql",
-      "reason": "0032_runtime_action_spi.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "meta_runtime_record_audit",
-      "from": "0033_runtime_data_safety.sql",
-      "reason": "0033_runtime_data_safety.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "t_claim_case_item",
-      "from": "0047_ui_schema_demo_seed.sql",
-      "reason": "0047_ui_schema_demo_seed.sql 建此表，但本地 dev 库与全量基线都没有它 ⇒ 该脚本很可能从未成功执行过（账本要发现的正是这种情况）"
-    },
-    {
-      "table": "t_claim_case_sla",
-      "from": "0072_synap_claim_missing_tables.sql",
-      "reason": "0072_synap_claim_missing_tables.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "t_claim_case_track",
-      "from": "0072_synap_claim_missing_tables.sql",
-      "reason": "0072_synap_claim_missing_tables.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "t_claim_inspection",
-      "from": "0072_synap_claim_missing_tables.sql",
-      "reason": "0072_synap_claim_missing_tables.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "t_domain_event_outbox",
-      "from": "0072_synap_claim_missing_tables.sql",
-      "reason": "0072_synap_claim_missing_tables.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "t_expense_category",
-      "from": "0037_runtime_expense_l1_relations.sql",
-      "reason": "0037_runtime_expense_l1_relations.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "t_expense_reimbursement",
-      "from": "0037_runtime_expense_l1_relations.sql",
-      "reason": "0037_runtime_expense_l1_relations.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "t_expense_reimbursement_item",
-      "from": "0037_runtime_expense_l1_relations.sql",
-      "reason": "0037_runtime_expense_l1_relations.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "t_reconciliation_diff",
-      "from": "0072_synap_claim_missing_tables.sql",
-      "reason": "0072_synap_claim_missing_tables.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "t_reconciliation_report",
-      "from": "0072_synap_claim_missing_tables.sql",
-      "reason": "0072_synap_claim_missing_tables.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "wf_active_instance",
-      "from": "0056_wf_workflow_tables.sql",
-      "reason": "0056_wf_workflow_tables.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "wf_binding",
-      "from": "0056_wf_workflow_tables.sql",
-      "reason": "0056_wf_workflow_tables.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "wf_instance",
-      "from": "0056_wf_workflow_tables.sql",
-      "reason": "0056_wf_workflow_tables.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "wf_notification",
-      "from": "0056_wf_workflow_tables.sql",
-      "reason": "0056_wf_workflow_tables.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "wf_process_def",
-      "from": "0056_wf_workflow_tables.sql",
-      "reason": "0056_wf_workflow_tables.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "wf_process_draft",
-      "from": "0065_wf_process_draft.sql",
-      "reason": "0065_wf_process_draft.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "wf_status_outbox",
-      "from": "0056_wf_workflow_tables.sql",
-      "reason": "0056_wf_workflow_tables.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
-    },
-    {
-      "table": "wf_task",
-      "from": "0056_wf_workflow_tables.sql",
-      "reason": "0056_wf_workflow_tables.sql 建此表，全量基线 bone-init.sql 未并入 ⇒ 新环境灌 init 后缺此表，与已迁移环境不等价"
+      "table": "fin_account_mapping",
+      "from": "0067_fin_voucher.sql",
+      "reason": "会计引擎凭证物理表：脚本头部自标「⚠ L3 待架构师审批执行」，尚未获批准落地",
+      "evidence": "本地 dev 库与任何环境均无此表；bone-apps/doc 全库 grep `fin_voucher` 零命中（功能未接入）"
     }
   ]
 }

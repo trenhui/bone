@@ -1,0 +1,34 @@
+{
+  "_comment": "bootstrap 种子的行数下限清单。由 scripts/seed-bootstrap.py 生成；--verify 用它判断「灌完 init+seed 的库是否还是空壳」。",
+  "generatedAt": "2026-10-30 22:53:34",
+  "tables": {
+    "iam_permission": {
+      "rows": 126,
+      "source_rows": 146,
+      "excluded": 20,
+      "where": "deleted = 0",
+      "why": "权限点：接口 @PreAuthorize 与菜单 permission 都按码匹配，缺码即 403 / 菜单被剪"
+    },
+    "iam_menu": {
+      "rows": 288,
+      "source_rows": 321,
+      "excluded": 33,
+      "where": "tenant_id IN (0, 1001) AND deleted = 0 AND name NOT REGEXP 'E2E|测试' AND IFNULL(path, '') NOT REGEXP 'e2e|test'",
+      "why": "菜单树：tenant 0 为平台模板、1001 为默认租户；已排除 E2E 联调残留菜单"
+    },
+    "sys_dict_type": {
+      "rows": 81,
+      "source_rows": 91,
+      "excluded": 10,
+      "where": "deleted = 0",
+      "why": "字典类型：下拉/枚举的取值域定义"
+    },
+    "sys_dict_item": {
+      "rows": 237,
+      "source_rows": 252,
+      "excluded": 15,
+      "where": "deleted = 0",
+      "why": "字典项：有类型无项等于没有字典"
+    }
+  }
+}

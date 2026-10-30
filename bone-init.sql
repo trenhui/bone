@@ -2,12 +2,24 @@
 -- Bone 数据库初始化脚本（最终版）
 -- 规范: doc/architecture/数据库开发规范.md
 -- 使用: mysql -u root -p < bone-init.sql
--- 说明: 本文件是**当前全量结构**（含 CREATE DATABASE / USE），新环境只需灌它。
+-- 说明: 本文件是**当前全量结构**（含 CREATE DATABASE / USE）。
+--       新环境 = 本文件（结构）+ 种子（数据），两步都要走，只灌本文件会得到一个「有表没数据」的空壳：
+--         mysql -u root -p < bone-init.sql
+--         mysql -u root -p bone < scripts/seed/bootstrap/10_bootstrap_seed.sql
+--       本文件自带**最小引导数据**（admin 账号 / 默认租户 / 内置角色 / 基础权限 / 系统配置），
+--       保证「灌完能登录」；但**菜单树、完整权限点、字典**在种子里，缺了的表现是：
+--       登录后侧栏空白、下拉无值、部分接口 403（菜单按 permission 过滤，码不在持有集即被剪掉）。
+--       种子由 scripts/seed-bootstrap.py 生成，幂等（REPLACE INTO），可重复执行；
+--       它与本文件的基础权限有重叠，重复灌入不会产生重复行。
 --       已经存在的旧库不走全量重建，而是按 scripts/migration/migration-manifest.json
 --       的 order 应用增量并由 scripts/migrate.py 记账（账本表 schema_migration_journal）。
 --       内部开发库仍可 DROP DATABASE 后全量重建——重建后账本随之清空，需重跑一次
 --       `python3 scripts/migrate.py --baseline` 才可以继续用 --status 判断待办。
 --       重新生成本文件时请排除 schema_migration_journal：那是**环境状态**，不是结构。
+--
+--       文件末尾「6. 迁移并入的结构」是托管区块：由 scripts/sync-init-from-live.py 从活库导出，
+--       内容 = 迁移脚本建过且已落地的表（wf_* 工作流、t_claim_* 理赔、meta_* 运行时等）。
+--       该区块禁止手工编辑——`sync-init-from-live.py --check` 会逐字节比对，改了即红。
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS bone
@@ -3072,3 +3084,594 @@ CREATE TABLE claim_idempotency_record (
     UNIQUE KEY uk_claim_idem_tenant_scope (tenant_id, scope_key),
     KEY idx_claim_idem_expires_at (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='理赔幂等请求快照（Idempotency-Key）';
+
+-- ============================================================
+-- 6. 迁移并入的结构（机器生成，勿手工编辑）
+-- ============================================================
+
+-- >>> BEGIN managed: migration-merged
+-- 本区块由 scripts/sync-init-from-live.py 从活库导出，禁止手工编辑（改了 --check 即红）。
+-- 内容 = 迁移脚本建过、且已在活库落地的结构表；新环境只需灌本文件。
+-- 唯一规范化：剥离 AUTO_INCREMENT=<n>（数据状态，非结构）。
+
+-- ── column_allocation（建自 0013_blueprint_reserved_columns.sql） ──
+DROP TABLE IF EXISTS `column_allocation`;
+CREATE TABLE `column_allocation` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `tenant_id` bigint NOT NULL,
+  `app_code` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `biz_identity_code` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `entity_type` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `data_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `column_name` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `column_index` int NOT NULL,
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `version` int NOT NULL DEFAULT '0' COMMENT '乐观锁版本号',
+  `created_at` timestamp(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `created_by` bigint DEFAULT NULL COMMENT '创建人',
+  `updated_at` timestamp(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  `updated_by` bigint DEFAULT NULL COMMENT '更新人',
+  `recycled_at` timestamp(3) NULL DEFAULT NULL COMMENT '回收时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_allocation` (`tenant_id`,`app_code`,`biz_identity_code`,`entity_type`,`data_type`,`column_index`),
+  UNIQUE KEY `uq_column_name` (`tenant_id`,`app_code`,`biz_identity_code`,`entity_type`,`column_name`),
+  CONSTRAINT `column_allocation_chk_1` CHECK ((`data_type` in (_utf8mb4'STRING',_utf8mb4'NUMBER',_utf8mb4'TEXT',_utf8mb4'DATE',_utf8mb4'BOOLEAN',_utf8mb4'INTEGER',_utf8mb4'JSON',_utf8mb4'XML',_utf8mb4'GEO'))),
+  CONSTRAINT `column_allocation_chk_2` CHECK ((`status` in (_utf8mb4'AVAILABLE',_utf8mb4'IN_USE',_utf8mb4'RECYCLED')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='扩展列分配表（SDK ColumnAllocator 维护的预留列池状态）';
+
+-- ── field_metadata（建自 0013_blueprint_reserved_columns.sql） ──
+DROP TABLE IF EXISTS `field_metadata`;
+CREATE TABLE `field_metadata` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `tenant_id` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '租户ID',
+  `app_code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '应用编码',
+  `biz_identity_code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '业务身份编码',
+  `entity_type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '实体类型（物理表名）',
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '字段名称',
+  `column_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '列名称（ext_*）',
+  `data_type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '数据类型',
+  `is_primary_key` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否为主键',
+  `is_nullable` tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否可为空',
+  `default_value` text COLLATE utf8mb4_unicode_ci COMMENT '默认值',
+  `constraints` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '约束条件',
+  `is_virtual` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否为虚拟字段',
+  `is_extension` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否为扩展字段',
+  `deleted` tinyint(1) DEFAULT '0' COMMENT '逻辑删除标识',
+  `created_by` bigint DEFAULT NULL COMMENT '创建者ID',
+  `updated_by` bigint DEFAULT NULL COMMENT '更新者ID',
+  `created_at` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
+  `updated_at` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_field_metadata` (`entity_type`,`name`),
+  KEY `idx_field_data_type` (`data_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字段元数据表，记录所有字段（含预留列分配）的结构化信息';
+
+-- ── meta_entity_action_def（建自 0032_runtime_action_spi.sql） ──
+DROP TABLE IF EXISTS `meta_entity_action_def`;
+CREATE TABLE `meta_entity_action_def` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `tenant_id` bigint NOT NULL DEFAULT '0',
+  `entity_code` varchar(128) NOT NULL,
+  `action_code` varchar(128) NOT NULL,
+  `label` varchar(128) NOT NULL,
+  `from_status` varchar(64) DEFAULT NULL,
+  `to_status` varchar(64) DEFAULT NULL,
+  `status_field` varchar(64) NOT NULL DEFAULT 'status',
+  `is_escape` tinyint NOT NULL DEFAULT '0',
+  `handler_bean` varchar(255) DEFAULT NULL,
+  `params_schema` varchar(2048) DEFAULT NULL,
+  `permission_code` varchar(128) DEFAULT NULL,
+  `requires_idempotency` tinyint NOT NULL DEFAULT '0',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `is_entry` tinyint NOT NULL DEFAULT '0',
+  `created_at` datetime(3) DEFAULT NULL,
+  `updated_at` datetime(3) DEFAULT NULL,
+  `deleted` tinyint NOT NULL DEFAULT '0',
+  `version` bigint NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_action_tenant_entity_code` (`tenant_id`,`entity_code`,`action_code`),
+  KEY `idx_action_entity_from` (`tenant_id`,`entity_code`,`from_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='RUNTIME 实体状态机动作定义';
+
+-- ── meta_entity_ui_schema（建自 0046_entity_ui_schema.sql） ──
+DROP TABLE IF EXISTS `meta_entity_ui_schema`;
+CREATE TABLE `meta_entity_ui_schema` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '自增ID（schema 为轻量团队资产，无需雪花业务语义）',
+  `tenant_id` bigint NOT NULL COMMENT '租户（与 meta_entity 同链路）',
+  `entity_id` bigint NOT NULL COMMENT 'meta_entity.id（逻辑外键，不建物理 FK，防删实体级联惊动）',
+  `schema_json` mediumtext NOT NULL COMMENT 'BoneUiSchema 草稿（schemaVersion=1）',
+  `schema_version` int NOT NULL DEFAULT '1' COMMENT '协议大版本（const 1）',
+  `schema_minor` int NOT NULL DEFAULT '1' COMMENT '协议增量版本（版本协商：未知 minor 只告警不拒绝）',
+  `published_schema_json` mediumtext COMMENT '随实体发布打的快照（§发布联动）',
+  `published_version` int DEFAULT NULL COMMENT '快照时的实体 version（对账用）',
+  `base_template_code` varchar(128) DEFAULT NULL COMMENT '实例化来源模板 code（base 指针）',
+  `base_version` varchar(32) DEFAULT NULL COMMENT '实例化时的模板版本',
+  `follow_mode` varchar(16) NOT NULL DEFAULT 'pinned' COMMENT 'pinned/notify（永不自动推送）',
+  `lock_version` bigint NOT NULL DEFAULT '0' COMMENT 'SDK @Version 乐观锁（禁 FOR UPDATE，ADR-0031）',
+  `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `created_by` bigint DEFAULT NULL,
+  `updated_by` bigint DEFAULT NULL,
+  `deleted` tinyint NOT NULL DEFAULT '0' COMMENT '0-在用 1-已删',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_uischema_tenant_entity` (`tenant_id`,`entity_id`),
+  KEY `idx_uischema_entity` (`entity_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='业务对象界面 schema（团队级，协议驱动渲染）';
+
+-- ── meta_model_template_action（建自 0040_template_action_state_machine.sql） ──
+DROP TABLE IF EXISTS `meta_model_template_action`;
+CREATE TABLE `meta_model_template_action` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `tenant_id` bigint NOT NULL DEFAULT '0',
+  `template_id` bigint NOT NULL,
+  `action_code` varchar(128) NOT NULL,
+  `label` varchar(128) NOT NULL,
+  `from_status` varchar(64) NOT NULL,
+  `to_status` varchar(64) NOT NULL,
+  `status_field` varchar(64) NOT NULL DEFAULT 'status',
+  `is_escape` tinyint NOT NULL DEFAULT '0',
+  `handler_bean` varchar(255) DEFAULT NULL,
+  `params_schema` varchar(2048) DEFAULT NULL,
+  `requires_idempotency` tinyint NOT NULL DEFAULT '0',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `is_entry` tinyint NOT NULL DEFAULT '0',
+  `created_at` datetime(3) DEFAULT NULL,
+  `updated_at` datetime(3) DEFAULT NULL,
+  `deleted` tinyint NOT NULL DEFAULT '0',
+  `version` bigint NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tpl_action_code` (`tenant_id`,`template_id`,`action_code`),
+  KEY `idx_tpl_action_from` (`tenant_id`,`template_id`,`from_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模型模板状态机动作定义（实例化时展开为 meta_entity_action_def）';
+
+-- ── meta_model_template_ui_history（建自 0046_entity_ui_schema.sql） ──
+DROP TABLE IF EXISTS `meta_model_template_ui_history`;
+CREATE TABLE `meta_model_template_ui_history` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '自增ID',
+  `tenant_id` bigint NOT NULL COMMENT '租户（平台模板为 0）',
+  `template_code` varchar(128) NOT NULL COMMENT '模板 code',
+  `version` varchar(32) NOT NULL COMMENT '模板界面版本',
+  `schema_json` mediumtext NOT NULL COMMENT '该版本的 baseUiSchema 全量',
+  `published_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '快照时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tmpl_ui_hist` (`tenant_id`,`template_code`,`version`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模板界面版本快照（归并基线）';
+
+-- ── meta_runtime_action_execution（建自 0032_runtime_action_spi.sql） ──
+DROP TABLE IF EXISTS `meta_runtime_action_execution`;
+CREATE TABLE `meta_runtime_action_execution` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `tenant_id` bigint NOT NULL DEFAULT '0',
+  `entity_code` varchar(128) NOT NULL,
+  `record_id` varchar(64) NOT NULL,
+  `action_code` varchar(128) NOT NULL,
+  `idempotency_key` varchar(255) DEFAULT NULL,
+  `status` tinyint NOT NULL DEFAULT '1' COMMENT '1=成功(终态), 2=失败(终态), 3=pending(begin已写未定论), 4=orphaned(副作用成功但状态未流转,终态)',
+  `result_json` varchar(2048) DEFAULT NULL,
+  `operator_id` varchar(64) DEFAULT NULL,
+  `created_at` datetime(3) DEFAULT NULL,
+  `handler_bean` varchar(255) DEFAULT NULL COMMENT '逃逸处理器 bean 名（dispatch 前快照）',
+  `is_escape` tinyint NOT NULL DEFAULT '0' COMMENT '是否逃逸动作（有无外部副作用）',
+  `params_json` varchar(2048) DEFAULT NULL COMMENT '动作入参快照（对账复原现场用）',
+  `pending_at` datetime(3) DEFAULT NULL COMMENT 'begin 落行时间',
+  `settled_at` datetime(3) DEFAULT NULL COMMENT '终态落定时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_exec_tenant_entity_record_action_idem` (`tenant_id`,`entity_code`,`record_id`,`action_code`,`idempotency_key`),
+  KEY `idx_exec_tenant_entity_record` (`tenant_id`,`entity_code`,`record_id`),
+  KEY `idx_exec_pending` (`status`,`pending_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='RUNTIME 动作执行日志（幂等去重 + 记录级变更审计）';
+
+-- ── meta_runtime_record_audit（建自 0033_runtime_data_safety.sql） ──
+DROP TABLE IF EXISTS `meta_runtime_record_audit`;
+CREATE TABLE `meta_runtime_record_audit` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `tenant_id` bigint NOT NULL DEFAULT '0',
+  `entity_code` varchar(128) NOT NULL,
+  `record_id` varchar(64) NOT NULL,
+  `field_code` varchar(128) NOT NULL,
+  `from_value` varchar(512) DEFAULT NULL,
+  `to_value` varchar(512) DEFAULT NULL,
+  `operator_id` varchar(64) DEFAULT NULL,
+  `reason` varchar(512) DEFAULT NULL,
+  `source` varchar(32) NOT NULL DEFAULT 'action' COMMENT 'action|api|admin-fix|delete|restore',
+  `action_code` varchar(128) DEFAULT NULL,
+  `trace_id` varchar(64) DEFAULT NULL,
+  `created_at` datetime(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_audit_tenant_entity_record` (`tenant_id`,`entity_code`,`record_id`),
+  KEY `idx_audit_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='运行时记录级变更审计（RC-009，append-only）';
+
+-- ── t_claim_case_sla（建自 0072_synap_claim_missing_tables.sql） ──
+DROP TABLE IF EXISTS `t_claim_case_sla`;
+CREATE TABLE `t_claim_case_sla` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `claim_id` bigint NOT NULL COMMENT '案件ID',
+  `current_status` varchar(32) NOT NULL COMMENT '当前状态(枚举name)',
+  `current_stage` varchar(32) NOT NULL COMMENT '当前阶段码',
+  `stage_entered_at` datetime(3) NOT NULL COMMENT '进入当前阶段时间(track 末次跃迁)',
+  `legal_due_at` datetime(3) DEFAULT NULL COMMENT '法定时限截止(自然日)',
+  `sla_due_at` datetime(3) DEFAULT NULL COMMENT '内部作业SLA截止',
+  `remaining_work_hours` decimal(12,2) NOT NULL DEFAULT '0.00' COMMENT '剩余工作小时(下限0)',
+  `hang_accum_seconds` bigint NOT NULL DEFAULT '0' COMMENT '累计挂起秒数(工作日口径)',
+  `last_refresh_at` datetime(3) NOT NULL COMMENT '最近物化时间',
+  `version` bigint NOT NULL DEFAULT '0' COMMENT '乐观锁版本(SDK @Version 维护)',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `deleted` tinyint NOT NULL DEFAULT '0' COMMENT '软删标记',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_claim` (`tenant_id`,`claim_id`),
+  KEY `idx_tenant_sla_due` (`tenant_id`,`sla_due_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='案件SLA计时物化读模型';
+
+-- ── t_claim_case_track（建自 0072_synap_claim_missing_tables.sql） ──
+DROP TABLE IF EXISTS `t_claim_case_track`;
+CREATE TABLE `t_claim_case_track` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `claim_id` bigint NOT NULL COMMENT '案件ID',
+  `from_status` varchar(32) NOT NULL COMMENT '跃迁前状态(枚举name; 建案为DRAFT)',
+  `to_status` varchar(32) NOT NULL COMMENT '跃迁后状态(枚举name)',
+  `stage` varchar(32) NOT NULL COMMENT '业务阶段码(与status正交)',
+  `action_code` varchar(32) NOT NULL COMMENT '动作码(ACCEPT/ALLOCATE/PRE_EXAM_START/...)',
+  `operator_id` varchar(64) NOT NULL COMMENT '操作人ID(取自已验签token)',
+  `operator_name` varchar(64) DEFAULT NULL COMMENT '操作人名称(展示用快照)',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '发生时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `deleted` tinyint NOT NULL DEFAULT '0' COMMENT '软删标记',
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_claim` (`tenant_id`,`claim_id`,`created_at`),
+  KEY `idx_tenant_to_status` (`tenant_id`,`to_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='案件状态流转流水(append-only)';
+
+-- ── t_claim_inspection（建自 0072_synap_claim_missing_tables.sql） ──
+DROP TABLE IF EXISTS `t_claim_inspection`;
+CREATE TABLE `t_claim_inspection` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `inspection_no` varchar(64) NOT NULL COMMENT '抽检单号(租户内唯一)',
+  `claim_id` bigint NOT NULL COMMENT '案件ID',
+  `claim_no` varchar(64) NOT NULL DEFAULT '' COMMENT '案件号(冗余快照，列表免联查)',
+  `dimension` varchar(16) NOT NULL COMMENT '抽检维度(AMOUNT/DOCUMENT/MEDICAL/PROCESS)',
+  `sample_stratum` varchar(64) NOT NULL DEFAULT '' COMMENT '分层抽样标识',
+  `inspect_type` varchar(8) NOT NULL COMMENT '发起方式(AUTO/MANUAL)',
+  `status` varchar(16) NOT NULL COMMENT 'PENDING/IN_PROGRESS/CONCLUDED',
+  `inspector_id` varchar(64) NOT NULL DEFAULT '' COMMENT '质检人ID',
+  `inspected_at` datetime(3) DEFAULT NULL COMMENT '结论时间',
+  `result` varchar(8) NOT NULL DEFAULT '' COMMENT '结论(PASS/DIFF; 未结论为空)',
+  `diff_type` varchar(32) NOT NULL DEFAULT 'NONE' COMMENT '差异类型(ADJUST_MISMATCH/RULE_MISS/AI_MISJUDGE/QUOTA_ABNORMAL/NONE)',
+  `diff_detail` varchar(1000) DEFAULT NULL COMMENT '差异明细JSON(字段->本方值/复核值; DIFF必填)',
+  `action_taken` varchar(16) NOT NULL DEFAULT 'NONE' COMMENT '处置意图(RECALCULATE/REVIEW/REFUND/CLOSE/NONE)',
+  `target_status` varchar(32) NOT NULL DEFAULT '' COMMENT '处置目标状态(§6.2枚举名或质检段30/31/32; 一期只登记)',
+  `version` bigint NOT NULL DEFAULT '0' COMMENT '乐观锁版本(SDK @Version 维护)',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `deleted` tinyint NOT NULL DEFAULT '0' COMMENT '软删标记',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_inspection_no` (`tenant_id`,`inspection_no`),
+  KEY `idx_tenant_claim` (`tenant_id`,`claim_id`,`created_at`),
+  KEY `idx_tenant_status` (`tenant_id`,`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='后督抽检单(任务+结论同表)';
+
+-- ── t_domain_event_outbox（建自 0072_synap_claim_missing_tables.sql） ──
+DROP TABLE IF EXISTS `t_domain_event_outbox`;
+CREATE TABLE `t_domain_event_outbox` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `aggregate` varchar(64) NOT NULL COMMENT '聚合类型(ClaimCase/Evidence/...)',
+  `aggregate_id` bigint NOT NULL COMMENT '聚合ID',
+  `event_type` varchar(128) NOT NULL COMMENT '事件类型(全限定类名或短名)',
+  `payload` text NOT NULL COMMENT '事件载荷(JSON)',
+  `status` varchar(16) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/SENT/FAILED',
+  `retry_count` int NOT NULL DEFAULT '0' COMMENT '重试次数',
+  `next_retry_at` datetime(3) DEFAULT NULL COMMENT '下次重试时间(退避)',
+  `version` bigint NOT NULL DEFAULT '0' COMMENT '乐观锁版本(SDK @Version 维护)',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `deleted` tinyint NOT NULL DEFAULT '0' COMMENT '软删标记',
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_status_retry` (`tenant_id`,`status`,`next_retry_at`),
+  KEY `idx_tenant_aggregate` (`tenant_id`,`aggregate`,`aggregate_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='领域事件出箱(Outbox)';
+
+-- ── t_expense_category（建自 0037_runtime_expense_l1_relations.sql） ──
+DROP TABLE IF EXISTS `t_expense_category`;
+CREATE TABLE `t_expense_category` (
+  `id` bigint NOT NULL COMMENT '主键（Snowflake）',
+  `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+  `code` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '类别编码',
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '类别名称（REFERENCE labelField）',
+  `enabled` tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否启用',
+  `sort_order` int NOT NULL DEFAULT '0' COMMENT '排序',
+  `version` int NOT NULL DEFAULT '0' COMMENT '乐观锁',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_expense_category_tenant_code` (`tenant_id`,`code`,`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='费用报销类别主数据（REFERENCE 目标实体）';
+
+-- ── t_expense_reimbursement（建自 0037_runtime_expense_l1_relations.sql） ──
+DROP TABLE IF EXISTS `t_expense_reimbursement`;
+CREATE TABLE `t_expense_reimbursement` (
+  `id` bigint NOT NULL COMMENT '主键（Snowflake）',
+  `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+  `claim_no` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '报销单号（L0 模板同构）',
+  `title` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '报销事由',
+  `amount` decimal(20,6) NOT NULL COMMENT '报销金额（G20 精度路线未动，演示口径诚实化注记）',
+  `category_id` bigint DEFAULT NULL COMMENT '消费类别（REFERENCE → t_expense_category，L1 演进替代 ENUM 码表）',
+  `expense_date` date DEFAULT NULL COMMENT '消费日期',
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DRAFT' COMMENT '状态机（meta_entity_action_def 的 from/to_status 驱动）',
+  `applicant` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '申请人',
+  `remark` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
+  `cost_center` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '成本中心',
+  `attachment` text COLLATE utf8mb4_unicode_ci COMMENT '附件清单（ATTACHMENT 关系，JSON 数组串：[{"name","url","size"}]）',
+  `version` int NOT NULL DEFAULT '0' COMMENT '乐观锁',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
+  `ext_str_01` bigint DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_expense_reimbursement_tenant_no` (`tenant_id`,`claim_no`,`deleted`),
+  KEY `idx_expense_reimbursement_tenant_status` (`tenant_id`,`status`),
+  KEY `idx_expense_reimbursement_tenant_category` (`tenant_id`,`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='费用报销单（L1：头，1—N 明细，REFERENCE 类别，ATTACHMENT 附件）';
+
+-- ── t_expense_reimbursement_item（建自 0037_runtime_expense_l1_relations.sql） ──
+DROP TABLE IF EXISTS `t_expense_reimbursement_item`;
+CREATE TABLE `t_expense_reimbursement_item` (
+  `id` bigint NOT NULL,
+  `tenant_id` bigint NOT NULL,
+  `amount` decimal(20,6) DEFAULT NULL,
+  `category_id` varchar(255) DEFAULT NULL,
+  `claim_id` bigint DEFAULT NULL,
+  `expense_date` varchar(255) DEFAULT NULL,
+  `remark` varchar(255) DEFAULT NULL,
+  `sort_order` int DEFAULT NULL,
+  `version` int NOT NULL DEFAULT '0',
+  `deleted` smallint NOT NULL DEFAULT '0',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `created_by` varchar(64) DEFAULT NULL,
+  `updated_by` varchar(64) DEFAULT NULL,
+  `ext_str_01` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ── t_reconciliation_diff（建自 0072_synap_claim_missing_tables.sql） ──
+DROP TABLE IF EXISTS `t_reconciliation_diff`;
+CREATE TABLE `t_reconciliation_diff` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `report_id` bigint NOT NULL COMMENT '报表ID',
+  `claim_no` varchar(64) NOT NULL COMMENT '案件号',
+  `settlement_no` varchar(64) NOT NULL COMMENT '结算单号',
+  `diff_type` varchar(32) NOT NULL COMMENT '差异类型(AMOUNT_MISMATCH/STATUS_MISMATCH/ONLY_LOCAL/ONLY_REMOTE)',
+  `local_amount` decimal(12,2) DEFAULT NULL COMMENT '本方金额',
+  `remote_amount` decimal(12,2) DEFAULT NULL COMMENT '对方金额',
+  `local_stage` varchar(32) NOT NULL COMMENT '本方资金阶段',
+  `remote_status` varchar(32) NOT NULL COMMENT '对方状态',
+  `resolution` varchar(16) NOT NULL COMMENT '处理状态(PENDING/...)',
+  `resolved_by` varchar(64) NOT NULL DEFAULT '' COMMENT '处理人',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `deleted` tinyint NOT NULL DEFAULT '0' COMMENT '软删标记',
+  PRIMARY KEY (`id`),
+  KEY `idx_report` (`report_id`),
+  KEY `idx_tenant_resolution` (`tenant_id`,`resolution`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='对账差异明细';
+
+-- ── t_reconciliation_report（建自 0072_synap_claim_missing_tables.sql） ──
+DROP TABLE IF EXISTS `t_reconciliation_report`;
+CREATE TABLE `t_reconciliation_report` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `biz_date` date NOT NULL COMMENT '业务日期',
+  `channel` varchar(32) NOT NULL COMMENT '对账渠道(QUOTA 等)',
+  `total_count` int NOT NULL DEFAULT '0' COMMENT '总笔数',
+  `balanced_count` int NOT NULL DEFAULT '0' COMMENT '平账笔数',
+  `diff_count` int NOT NULL DEFAULT '0' COMMENT '差异笔数',
+  `total_amount` decimal(12,2) NOT NULL DEFAULT '0.00' COMMENT '本方总金额',
+  `counter_amount` decimal(12,2) NOT NULL DEFAULT '0.00' COMMENT '对方总金额',
+  `status` varchar(16) NOT NULL COMMENT '报表状态',
+  `checked_at` datetime(3) NOT NULL COMMENT '对账执行时间',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `deleted` tinyint NOT NULL DEFAULT '0' COMMENT '软删标记',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_date_channel` (`tenant_id`,`biz_date`,`channel`),
+  KEY `idx_tenant_checked` (`tenant_id`,`checked_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='对账报表';
+
+-- ── wf_active_instance（建自 0056_wf_workflow_tables.sql） ──
+DROP TABLE IF EXISTS `wf_active_instance`;
+CREATE TABLE `wf_active_instance` (
+  `tenant_id` bigint NOT NULL,
+  `entity_code` varchar(128) NOT NULL,
+  `record_id` varchar(128) NOT NULL,
+  `instance_id` varchar(64) NOT NULL,
+  `created_at` timestamp NOT NULL,
+  `updated_at` timestamp NOT NULL,
+  `deleted` bit(1) NOT NULL DEFAULT b'0',
+  PRIMARY KEY (`tenant_id`,`entity_code`,`record_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='一单据一活动实例指针（start 同事务插撞 PK ⇒ 幂等复用）';
+
+-- ── wf_binding（建自 0056_wf_workflow_tables.sql） ──
+DROP TABLE IF EXISTS `wf_binding`;
+CREATE TABLE `wf_binding` (
+  `id` varchar(64) NOT NULL,
+  `tenant_id` bigint NOT NULL,
+  `entity_code` varchar(128) NOT NULL,
+  `def_key` varchar(128) NOT NULL,
+  `start_action` varchar(64) NOT NULL DEFAULT 'submit',
+  `enabled` bit(1) NOT NULL DEFAULT b'1',
+  `created_by` varchar(64) NOT NULL,
+  `created_at` timestamp NOT NULL,
+  `updated_by` varchar(64) DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted` bit(1) NOT NULL DEFAULT b'0',
+  `version` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_binding` (`tenant_id`,`entity_code`,`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='实体 → 流程定义绑定（v1 handler 硬编码 def_key，本表为运营侧真源预告）';
+
+-- ── wf_instance（建自 0056_wf_workflow_tables.sql） ──
+DROP TABLE IF EXISTS `wf_instance`;
+CREATE TABLE `wf_instance` (
+  `id` varchar(64) NOT NULL,
+  `tenant_id` bigint NOT NULL,
+  `entity_code` varchar(128) NOT NULL,
+  `record_id` varchar(128) NOT NULL,
+  `def_key` varchar(128) NOT NULL,
+  `def_version` int NOT NULL,
+  `current_node_code` varchar(128) NOT NULL,
+  `phase` varchar(32) NOT NULL,
+  `started_by` varchar(64) NOT NULL,
+  `started_at` timestamp NOT NULL,
+  `node_round` int NOT NULL DEFAULT '0' COMMENT '节点轮次（每次推进自增，会签判据按轮次过滤）',
+  `node_entered_at` datetime(3) NOT NULL COMMENT '进入当前节点的时刻（SLA / 卡死看门狗依据，不参与推进判据）',
+  `reject_rounds` int NOT NULL DEFAULT '0' COMMENT '累计驳回退回次数（循环防护计数，一次退回=一轮）',
+  `finished_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NOT NULL,
+  `created_by` varchar(64) NOT NULL,
+  `created_at` timestamp NOT NULL,
+  `updated_by` varchar(64) DEFAULT NULL,
+  `deleted` bit(1) NOT NULL DEFAULT b'0',
+  `version` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_entity_record` (`tenant_id`,`entity_code`,`record_id`,`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='审批流实例（phase 是流程进度权威；业务 status 是对外投影）';
+
+-- ── wf_notification（建自 0056_wf_workflow_tables.sql） ──
+DROP TABLE IF EXISTS `wf_notification`;
+CREATE TABLE `wf_notification` (
+  `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '通知主键（平台分布式ID）',
+  `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+  `recipient_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '接收人账户ID（办理人 / 管理员）',
+  `type` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '通知类型（TASK_CREATED/URGED/REASSIGNED/SUSPENDED/TERMINATED）',
+  `instance_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '关联流程实例',
+  `entity_code` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '业务实体编码',
+  `record_id` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '业务单据记录ID',
+  `node_code` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '关联节点编码',
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '通知标题',
+  `body` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '通知正文',
+  `read_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '已读标记（0未读/1已读）',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `created_by` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '创建人（通知发起方账户ID）',
+  `updated_by` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '更新人',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记',
+  `version` int NOT NULL DEFAULT '0' COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  KEY `idx_wf_notification_inbox` (`tenant_id`,`recipient_id`,`read_flag`,`deleted`),
+  KEY `idx_wf_notification_instance` (`tenant_id`,`instance_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工作流站内信通知';
+
+-- ── wf_process_def（建自 0056_wf_workflow_tables.sql） ──
+DROP TABLE IF EXISTS `wf_process_def`;
+CREATE TABLE `wf_process_def` (
+  `id` varchar(64) NOT NULL,
+  `tenant_id` bigint NOT NULL,
+  `def_key` varchar(128) NOT NULL,
+  `def_name` varchar(255) NOT NULL,
+  `def_version` int NOT NULL,
+  `status` varchar(32) NOT NULL,
+  `enabled` bit(1) NOT NULL DEFAULT b'1',
+  `definition_json` mediumtext NOT NULL,
+  `created_by` varchar(64) NOT NULL,
+  `created_at` timestamp NOT NULL,
+  `updated_by` varchar(64) DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted` bit(1) NOT NULL DEFAULT b'0',
+  `version` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_def_key_version` (`tenant_id`,`def_key`,`def_version`,`deleted`),
+  UNIQUE KEY `uk_wf_def_ver` (`tenant_id`,`def_key`,`def_version`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='审批流流程定义（整图 JSON 快照，不拆节点表）';
+
+-- ── wf_process_draft（建自 0065_wf_process_draft.sql） ──
+DROP TABLE IF EXISTS `wf_process_draft`;
+CREATE TABLE `wf_process_draft` (
+  `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '草稿主键',
+  `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+  `def_key` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '流程定义KEY（一 key 一稿）',
+  `def_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '流程名称',
+  `definition_json` json NOT NULL COMMENT '流程定义JSON原文（含引擎不读的 ui 段：画布坐标）',
+  `revision` int NOT NULL DEFAULT '0' COMMENT '乐观锁（前端读到的值作下一次覆盖的谓词）',
+  `created_by` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '创建人',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '更新人',
+  `updated_at` datetime(3) DEFAULT NULL COMMENT '更新时间',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记（实际丢弃走物理删除，见仓储注释）',
+  `version` int NOT NULL DEFAULT '0' COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_wf_draft_key` (`tenant_id`,`def_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工作流流程定义草稿（设计态，可变）';
+
+-- ── wf_status_outbox（建自 0056_wf_workflow_tables.sql） ──
+DROP TABLE IF EXISTS `wf_status_outbox`;
+CREATE TABLE `wf_status_outbox` (
+  `id` varchar(64) NOT NULL,
+  `tenant_id` bigint NOT NULL,
+  `instance_id` varchar(64) NOT NULL,
+  `entity_code` varchar(128) NOT NULL,
+  `record_id` varchar(128) NOT NULL,
+  `operator_id` varchar(64) DEFAULT NULL COMMENT '真实操作人（决策人）；对账补投的行为 NULL',
+  `intent` varchar(32) NOT NULL,
+  `action_code` varchar(64) DEFAULT NULL,
+  `params_json` text,
+  `state` varchar(16) NOT NULL,
+  `retry_count` int NOT NULL DEFAULT '0',
+  `next_retry_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL,
+  `updated_at` timestamp NOT NULL,
+  `deleted` bit(1) NOT NULL DEFAULT b'0',
+  PRIMARY KEY (`id`),
+  KEY `idx_poll` (`state`,`next_retry_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='状态投影发件箱（引擎意图 → 中继落地；多副本 CLAIMED 原子抢占）';
+
+-- ── wf_task（建自 0056_wf_workflow_tables.sql） ──
+DROP TABLE IF EXISTS `wf_task`;
+CREATE TABLE `wf_task` (
+  `id` varchar(64) NOT NULL,
+  `tenant_id` bigint NOT NULL,
+  `instance_id` varchar(64) NOT NULL,
+  `node_code` varchar(128) NOT NULL,
+  `assignee_id` varchar(64) NOT NULL,
+  `status` varchar(32) NOT NULL,
+  `decision` varchar(32) DEFAULT NULL,
+  `comment` varchar(1024) DEFAULT NULL,
+  `due_at` timestamp NULL DEFAULT NULL,
+  `node_round` int NOT NULL DEFAULT '0' COMMENT '所属节点轮次（写入时取自 wf_instance.node_round）',
+  `decided_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL,
+  `updated_at` timestamp NOT NULL,
+  `created_by` varchar(64) NOT NULL,
+  `updated_by` varchar(64) DEFAULT NULL,
+  `deleted` bit(1) NOT NULL DEFAULT b'0',
+  `version` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_assignee_status` (`tenant_id`,`assignee_id`,`status`,`deleted`),
+  KEY `idx_instance` (`tenant_id`,`instance_id`,`deleted`),
+  KEY `idx_wf_task_node_round` (`tenant_id`,`instance_id`,`node_code`,`node_round`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='审批任务（办理人在节点进入时一次性解析并冻结）';
+
+-- <<< END managed: migration-merged

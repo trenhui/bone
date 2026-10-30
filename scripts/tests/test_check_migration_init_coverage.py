@@ -57,10 +57,14 @@ class InitCoverageGateTest(unittest.TestCase):
     def write_baseline(self, rows) -> None:
         self.baseline.write_text(json.dumps({"tables": rows}, ensure_ascii=False), encoding="utf-8")
 
+    def write_baseline_doc(self, doc) -> None:
+        self.baseline.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+
     def run_gate(self) -> int:
+        # --no-live：本文件只验静态判据，不依赖本机是否有库（有库时活库判据会引入噪音）。
         argv = ["check-migration-init-coverage.py", "--init", str(self.init),
                 "--migration-dir", str(self.mig), "--manifest", str(self.manifest),
-                "--baseline", str(self.baseline)]
+                "--baseline", str(self.baseline), "--no-live"]
         buf = io.StringIO()
         old = sys.argv
         try:
@@ -117,6 +121,72 @@ class InitCoverageGateTest(unittest.TestCase):
         self.write_manifest(["0001_x.sql"])
         self.write_baseline([])
         self.assertEqual(self.run_gate(), 1, "空集合恒过是门禁最常见的假绿，必须判红")
+
+    # ---- 终态解析：建了又被删的表不是欠账 ----
+    def test_建后又删的表不算缺口(self):
+        """t_claim_case_item 的实证：0047 建、0058 DROP（早期原型，现行名为 t_claim_item）。
+        只看 CREATE 的判据会把它报成缺口，而它终态不存在才是正确的。误报比漏报更伤门禁信誉。"""
+        self.write_init("t_a")
+        (self.mig / "0001_x.sql").write_text(
+            "CREATE TABLE IF NOT EXISTS `t_a` (`id` INT);\n"
+            "CREATE TABLE IF NOT EXISTS `t_old` (`id` INT);\n", encoding="utf-8")
+        (self.mig / "0002_y.sql").write_text(
+            "DROP TABLE IF EXISTS `t_old`;\n", encoding="utf-8")
+        self.write_manifest(["0001_x.sql", "0002_y.sql"])
+        self.write_baseline([])
+        self.assertEqual(self.run_gate(), 0, "终态已不存在的表不是缺口，判红即为误报")
+
+    def test_删了又建的仍算存活(self):
+        """同文件内先 DROP 再 CREATE（重建表）必须按文本顺序处理，否则会误判为已删。"""
+        self.write_init("t_a")
+        (self.mig / "0001_x.sql").write_text(
+            "DROP TABLE IF EXISTS `t_rebuilt`;\n"
+            "CREATE TABLE IF NOT EXISTS `t_rebuilt` (`id` INT);\n", encoding="utf-8")
+        self.write_manifest(["0001_x.sql"])
+        self.write_baseline([])
+        self.assertEqual(self.run_gate(), 1, "重建后的表终态仍存活，缺它必须报缺口")
+
+    # ---- blocked：明确决定不并入的表 ----
+    def test_blocked登记后放行(self):
+        self.write_init("t_a")
+        self.write_migration("0001_x.sql", "t_a", "t_pending_l3")
+        self.write_manifest(["0001_x.sql"])
+        self.write_baseline_doc({"tables": [], "blocked": [
+            {"table": "t_pending_l3", "from": "0001_x.sql",
+             "reason": "L3 待架构师审批，尚未落地",
+             "evidence": "任何环境均无此表；代码全库 grep 零命中"}]})
+        self.assertEqual(self.run_gate(), 0)
+
+    def test_blocked表已并入init必须判红(self):
+        """「不并入」的决定与事实相反时必须暴露——否则这条会掩盖下一次真缺口。"""
+        self.write_init("t_a", "t_pending_l3")
+        self.write_migration("0001_x.sql", "t_a", "t_pending_l3")
+        self.write_manifest(["0001_x.sql"])
+        self.write_baseline_doc({"tables": [], "blocked": [
+            {"table": "t_pending_l3", "from": "0001_x.sql",
+             "reason": "L3 待架构师审批，尚未落地",
+             "evidence": "任何环境均无此表；代码全库 grep 零命中"}]})
+        self.assertEqual(self.run_gate(), 1)
+
+    def test_blocked缺证据必须判红(self):
+        """只有理由没有证据 = 一句无法核实的断言，blocked 就会变成「不想做」的挡箭牌。"""
+        self.write_init("t_a")
+        self.write_migration("0001_x.sql", "t_a", "t_pending_l3")
+        self.write_manifest(["0001_x.sql"])
+        self.write_baseline_doc({"tables": [], "blocked": [
+            {"table": "t_pending_l3", "from": "0001_x.sql", "reason": "暂时不并入"}]})
+        self.assertEqual(self.run_gate(), 1)
+
+    def test_同一表不得同时在tables与blocked(self):
+        self.write_init("t_a")
+        self.write_migration("0001_x.sql", "t_a", "t_dup")
+        self.write_manifest(["0001_x.sql"])
+        self.write_baseline_doc({"tables": [
+            {"table": "t_dup", "from": "0001_x.sql", "reason": "待并入的存量缺口，等评审"}],
+            "blocked": [
+            {"table": "t_dup", "from": "0001_x.sql", "reason": "L3 待架构师审批，尚未落地",
+             "evidence": "任何环境均无此表；代码全库 grep 零命中"}]})
+        self.assertEqual(self.run_gate(), 1)
 
 
 if __name__ == "__main__":

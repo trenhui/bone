@@ -549,6 +549,12 @@
       "file": "init-coverage-baseline.json",
       "kind": "tool",
       "summary": "G39 覆盖率基线：迁移建表但 bone-init.sql 未并入的 31 张表（23 待并入 / 2 待裁决 / 6 疑未执行，只可收缩）"
+    },
+    {
+      "order": null,
+      "file": "README.md",
+      "kind": "doc",
+      "summary": "scripts/migration 总索引：三条路径、并入全量的闭环、下线与归档纪律"
     }
   ],
   "ordinalConflicts": [

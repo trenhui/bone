@@ -76,10 +76,13 @@ MySQL 的 DDL 不能回滚，脚本中途失败会留下**半截状态**（已�
   MYSQL_HOST / MYSQL_PORT / MYSQL_USER / MYSQL_PASSWORD / MYSQL_DB
 """
 import argparse
+import fcntl
 import hashlib
 import json
 import os
+import re
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -339,6 +342,45 @@ def cmd_status(cli, items, doc, manifest_path, mig_dir):
     return 1 if bad else 0
 
 
+# 锁的文件对象必须被**某个存活引用**持有：CPython 的引用计数一旦归零就会 close fd，
+# flock 随之释放，锁等于没加。调用方写 `acquire_lock(db)` 不接返回值是很容易犯的错
+# （本函数第一版就踩了：测试脚本里丢了返回值，锁瞬间失效，而调用点看起来一切正常），
+# 所以这里自己留一份强引用，调用方接不接都不影响。
+_LOCK_FH = None
+
+
+def acquire_lock(db):
+    """apply/baseline 的互斥锁。
+
+    为什么不是 MySQL 的 GET_LOCK：本工具的每次 query 都是**独立的 mysql 进程**
+    （Client.query → subprocess），GET_LOCK 会随进程退出立刻释放，等于没锁。
+    真正的并发风险是「同机开两个终端同时 apply」，用 flock 正好覆盖；跨机并发不在
+    本工具范围内（红线：apply 只对本机库执行，--force-nonlocal 需人工复核）。
+    锁文件放临时目录并带库名，避免不同库互相阻塞；持有者信息写进文件，报错时能看出是谁。
+    """
+    global _LOCK_FH
+    safe = re.sub(r"[^A-Za-z0-9_.-]", "_", db)
+    path = os.path.join(tempfile.gettempdir(), "bone-migrate-%s.lock" % safe)
+    fh = open(path, "a+")
+    try:
+        fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        fh.seek(0)
+        holder = fh.read().strip() or "未知"
+        fh.close()
+        sys.exit(
+            "❌ 另一个 migrate.py 正在对 `{}` 执行（锁 {}，持有者 {}）。\n"
+            "   两个进程同时 apply 会让账本与 DDL 交叉写入，结果不可预期；等它结束后重试。\n"
+            "   若确认是崩溃残留（进程已不存在），删掉该锁文件即可。".format(db, path, holder)
+        )
+    fh.seek(0)
+    fh.truncate()
+    fh.write("{}:{}".format(socket.gethostname(), os.getpid()))
+    fh.flush()
+    _LOCK_FH = fh
+    return fh
+
+
 def cmd_apply(cli, items, upto, allow_nonlocal, manifest_path, mig_dir):
     if cli.conn["host"] not in LOCAL_HOSTS and not allow_nonlocal:
         sys.exit(
@@ -350,6 +392,7 @@ def cmd_apply(cli, items, upto, allow_nonlocal, manifest_path, mig_dir):
         sys.exit("❌ 清单未通过 G38 校验，拒绝按其 order 改库：\n" + out)
     if ok_gate is None:
         print("⚠ " + out + "，无法校验清单，仅按现有 entries 的 order 执行")
+    acquire_lock(cli.conn["db"])
     ensure_journal(cli)
     journal, _ = read_journal(cli)
     todo = []
@@ -427,6 +470,7 @@ def cmd_baseline(cli, items, manifest_path, mig_dir):
     ok_gate, out = run_gate(manifest_path, mig_dir)
     if ok_gate is False:
         sys.exit("❌ 清单未通过 G38 校验，拒绝据此登记（登记的是顺序，清单错了登记也错）：\n" + out)
+    acquire_lock(cli.conn["db"])
     ensure_journal(cli)
     rows, _ = read_journal(cli)
     recorded = 0

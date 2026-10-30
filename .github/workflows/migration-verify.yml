@@ -7,24 +7,34 @@ on:
   push:
     paths:
       - 'scripts/migration/**'
+      - 'scripts/seed/**'
       - 'bone-init.sql'
       - 'scripts/check-migration-manifest.py'
       - 'scripts/check-migration-init-coverage.py'
       - 'scripts/migrate.py'
+      - 'scripts/sync-init-from-live.py'
+      - 'scripts/seed-bootstrap.py'
       - 'scripts/tests/test_check_migration_manifest.py'
       - 'scripts/tests/test_check_migration_init_coverage.py'
       - 'scripts/tests/test_migrate_journal.py'
+      - 'scripts/tests/test_sync_init_from_live.py'
+      - 'scripts/tests/test_seed_and_lock.py'
       - '.github/workflows/migration-verify.yml'
   pull_request:
     paths:
       - 'scripts/migration/**'
+      - 'scripts/seed/**'
       - 'bone-init.sql'
       - 'scripts/check-migration-manifest.py'
       - 'scripts/check-migration-init-coverage.py'
       - 'scripts/migrate.py'
+      - 'scripts/sync-init-from-live.py'
+      - 'scripts/seed-bootstrap.py'
       - 'scripts/tests/test_check_migration_manifest.py'
       - 'scripts/tests/test_check_migration_init_coverage.py'
       - 'scripts/tests/test_migrate_journal.py'
+      - 'scripts/tests/test_sync_init_from_live.py'
+      - 'scripts/tests/test_seed_and_lock.py'
       - '.github/workflows/migration-verify.yml'
 
 jobs:
@@ -71,6 +81,8 @@ jobs:
           python3 scripts/tests/test_check_migration_manifest.py -v
           python3 scripts/tests/test_check_migration_init_coverage.py -v
           python3 scripts/tests/test_migrate_journal.py -v
+          python3 scripts/tests/test_sync_init_from_live.py -v
+          python3 scripts/tests/test_seed_and_lock.py -v
 
       # 账本功能自测。**不跑「空库全量 apply」**：bone-init.sql 已是当前全量结构，
       # 84 个脚本面向存量环境，空库全量必然失败（2026-10-30 实测 65 成功 / 19 失败，
@@ -121,6 +133,77 @@ jobs:
           fi
           grep -q "执行失败 1" /tmp/s4.txt
           grep -q "待应用 0" /tmp/s4.txt    # 失败行不得被算成「从未执行」
+
+  fresh-env:
+    name: Fresh env — init + seed 能建出可用库
+    runs-on: ubuntu-latest
+    # 这条是「新环境只需 init」这个说法的唯一机器判据。2026-10-30 实测这句原本**不成立**：
+    # init 建出 121 张表，而有 25 张结构表只存在于迁移脚本里（wf_* 8 / t_claim_* 6 / meta_* 6 …），
+    # 灌完 init 工作流引擎与理赔轨迹直接缺表；数据侧更糟：iam_menu = 0 行、sys_dict_type = 0 行。
+    # 两个方向都已补齐（init 并入托管区块、种子单独入口），这里把它固定住。
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: bone_ci_only
+        ports:
+          - '3306:3306'
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pbone_ci_only"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install mysql client
+        run: |
+          command -v mysql >/dev/null 2>&1 || {
+            sudo apt-get update -qq && sudo apt-get install -y -qq mysql-client
+          }
+
+      - name: Apply full schema
+        run: mysql -h127.0.0.1 -uroot -pbone_ci_only --default-character-set=utf8mb4 < bone-init.sql
+
+      # 表数从 init 自身数出来，而不是写死 146：新增表时判据跟着走，不需要有人记得改这里。
+      - name: Assert schema is complete
+        run: |
+          set -euo pipefail
+          expected=$(grep -c '^CREATE TABLE' bone-init.sql)
+          actual=$(mysql -h127.0.0.1 -uroot -pbone_ci_only -N -B -e \
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='bone' AND table_type='BASE TABLE'")
+          echo "init 声明 $expected 张表，库里有 $actual 张"
+          [ "$actual" = "$expected" ] || { echo "❌ 表数不符：灌 init 后缺 $((expected-actual)) 张"; exit 1; }
+          # 6 张双证表：这 6 张曾经 init 命中 0、dev 命中 6，就是「代码上线、DDL 没跟上」的现场。
+          for t in wf_task wf_instance wf_status_outbox t_claim_case_track t_claim_inspection meta_runtime_record_audit; do
+            n=$(mysql -h127.0.0.1 -uroot -pbone_ci_only -N -B -e \
+              "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='bone' AND table_name='$t'")
+            [ "$n" = "1" ] || { echo "❌ 缺表 $t（新环境会在这里静默失败）"; exit 1; }
+          done
+
+      - name: Apply bootstrap seed
+        env:
+          BONE_DB_HOST: 127.0.0.1
+          BONE_DB_PORT: '3306'
+          BONE_DB_USER: root
+          BONE_DB_PASSWORD: bone_ci_only
+        run: python3 scripts/seed-bootstrap.py --apply --db bone
+
+      # 结构齐了但数据是空的 —— 这就是「空壳」：登录后侧栏空白、下拉无值、接口 403，
+      # 而所有只看结构的门禁全绿。所以这一条必须单独断言，不能靠 seed 清单自证。
+      - name: Assert not a shell (menu / dict / permission)
+        run: |
+          set -euo pipefail
+          # 不用 `set -- $pair` 分词：zsh 默认不做变量分词，本地跑同一段脚本会静默失败，
+          # 而 CI 是 bash 又能过 —— 这种「只在本地/只在 CI 出问题」的写法迟早埋雷。
+          for pair in "iam_menu:288" "iam_permission:126" "sys_dict_type:81" "sys_dict_item:237"; do
+            name="${pair%%:*}"; min="${pair##*:}"
+            n=$(mysql -h127.0.0.1 -uroot -pbone_ci_only -N -B bone -e "SELECT COUNT(*) FROM $name")
+            echo "$name = $n（下限 $min）"
+            [ "$n" -ge "$min" ] || { echo "❌ $name 只有 $n 行，低于下限 $min —— 新环境是空壳"; exit 1; }
+          done
 
   verify-0052:
     name: Verify 0052 rename migration
