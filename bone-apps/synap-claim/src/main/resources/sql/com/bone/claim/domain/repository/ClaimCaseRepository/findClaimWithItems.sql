@@ -34,6 +34,7 @@ SELECT
        i.self_pay_1     AS item_self_pay_1,
        i.self_pay_2     AS item_self_pay_2,
        i.self_pay_c     AS item_self_pay_c,
+       i.third_party_paid AS item_third_party_paid,
        i.valid_amount   AS item_valid_amount,
        i.invalid_amount AS item_invalid_amount
 FROM t_claim_case c

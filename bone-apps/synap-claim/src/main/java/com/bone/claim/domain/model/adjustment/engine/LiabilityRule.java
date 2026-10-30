@@ -1,0 +1,337 @@
+package com.bone.claim.domain.model.adjustment.engine;
+
+import java.math.BigDecimal;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * 责任规则（V1 §2 十一维的可执行子集）。
+ *
+ * <p><b>V1 的边界是设计决策，不是实现欠账</b>：原文明确"多责任组合情形"四个小节全空、 "先赔后赔三种关系的金额推导公式全部缺失"。在这种语料上猜一个多责任算法，做出来的必然是一份
+ * 看起来完整、实则无法与保司对账的实现。故本类把<b>能确定的</b>（费用补偿型单责任闭环）做成绝对准确， 把<b>不能确定的</b>（定额给付、津贴给付、共享保额、先赔后赔、外部控额、日限额）
+ * 一律 {@link #validate()} 期显式拒绝并给出受控原因码，由编排转人工——而不是配了不生效。
+ *
+ * <p><b>十一维落点</b>：
+ *
+ * <table>
+ *   <caption>V1 §2 配置要素 → 本类字段</caption>
+ *   <tr><th>要素<th>落点
+ *   <tr><td>1 责任形式<td>{@link #form}（仅费用补偿型通过校验）
+ *   <tr><td>2 保额形式<td>{@link LimitSet}（固定保额 / 固定+个人 / 个单额度）
+ *   <tr><td>3 适用对象<td>前置校验由编排处理（本类只带等待期）
+ *   <tr><td>4 适用情形<td>{@link #coveredBuckets} + {@link #socialOnly}
+ *   <tr><td>5 医疗适用<td>{@link PayRatioTable} 的医保维度
+ *   <tr><td>6 适用限定<td>{@link #limitedConditions}（不符即拒，前置校验）
+ *   <tr><td>7 等待期<td>{@link #waitingPeriodDays}
+ *   <tr><td>8 免赔设置<td>{@link DeductibleRule}
+ *   <tr><td>9 赔付比例<td>{@link PayRatioTable}
+ *   <tr><td>10 保额设置<td>{@link LimitSet}
+ *   <tr><td>11 控额规则<td>{@link QuotaPolicy} + {@link LimitSet#occurrenceLimit()}
+ * </table>
+ */
+public record LiabilityRule(
+    String liabilityUuid,
+    String liabilityVersion,
+    LiabilityForm form,
+    boolean socialOnly,
+    Set<FeePools.Bucket> coveredBuckets,
+    int waitingPeriodDays,
+    DeductibleRule deductible,
+    PayRatioTable ratios,
+    LimitSet limits,
+    QuotaPolicy quota,
+    OccurrenceSpec occurrences,
+    Relation relation,
+    LimitedConditions limitedConditions) {
+
+  /** 责任形式（V1 §2 要素 1）。 */
+  public enum LiabilityForm {
+    /** 费用补偿型（V1 唯一支持）。 */
+    REIMBURSEMENT,
+    /** 定额给付型（V1 无规则）。 */
+    FIXED_AMOUNT,
+    /** 津贴给付型（V1 无规则）。 */
+    ALLOWANCE
+  }
+
+  /** 保额形式（V1 §2 要素 2）。 */
+  public enum InsuredForm {
+    /** 固定保额：赔付限额。 */
+    FIXED,
+    /** 固定保额 + 个人额度：双重控额。 */
+    FIXED_PLUS_PERSONAL,
+    /** 基础保额。 */
+    BASE,
+    /** 个单额度：额度由客户保单提供，责任不设保额。 */
+    POLICY_AMOUNT
+  }
+
+  /** 账户类型（V1 §1.3）：个账 / 公账；直付与保司属外部额度（V1 未定义，见 Q-07）。 */
+  public enum AccountType {
+    /** 个账：单被保险人在所涉责任上的可赔额度。 */
+    PERSONAL,
+    /** 公账：全保单共享（挂在直付保单上，V1 未定义额度来源）。 */
+    PUBLIC,
+    /** 直付控额：额度来自直付接口（外部系统实时余额）。 */
+    DIRECT_PAY,
+    /** 保司三方控额：额度来自保司接口。 */
+    INSURER
+  }
+
+  /** 额度集合（V1 §2 要素 10 + §7）。 */
+  public record LimitSet(
+      InsuredForm insuredForm,
+      BigDecimal personalLimit,
+      BigDecimal liabilityLimit,
+      BigDecimal productLimit,
+      BigDecimal planLimit,
+      BigDecimal sharedLimit,
+      BigDecimal occurrenceLimit,
+      BigDecimal dailyLimit) {
+
+    public LimitSet {
+      personalLimit = Money.nz(personalLimit);
+      liabilityLimit = Money.nz(liabilityLimit);
+      productLimit = Money.nz(productLimit);
+      planLimit = Money.nz(planLimit);
+      sharedLimit = Money.nz(sharedLimit);
+      occurrenceLimit = Money.nz(occurrenceLimit);
+      dailyLimit = Money.nz(dailyLimit);
+    }
+
+    /** 仅责任额度（旧配置 {@code liability_limit} 的等价映射；0 = 不封顶）。 */
+    public static LimitSet liabilityOnly(BigDecimal liabilityLimit) {
+      return new LimitSet(
+          InsuredForm.FIXED,
+          Money.ZERO,
+          liabilityLimit,
+          Money.ZERO,
+          Money.ZERO,
+          Money.ZERO,
+          Money.ZERO,
+          Money.ZERO);
+    }
+
+    /** 责任额度是否不封顶（{@code 0} 或负 ⇒ 不封顶，对齐 reference-impl S25）。 */
+    public boolean liabilityUncapped() {
+      return liabilityLimit.signum() <= 0;
+    }
+
+    public boolean hasOccurrenceLimit() {
+      return occurrenceLimit.signum() > 0;
+    }
+
+    public boolean hasDailyLimit() {
+      return dailyLimit.signum() > 0;
+    }
+  }
+
+  /** 控额策略（V1 §7.1 控额类型 + §7.2 扣减方式）。 */
+  public record QuotaPolicy(AccountType accountType, QuotaStack.DeductionMode mode) {
+
+    public QuotaPolicy {
+      accountType = accountType == null ? AccountType.PERSONAL : accountType;
+      mode = mode == null ? QuotaStack.DeductionMode.LIABILITY_ONLY : mode;
+    }
+
+    public static QuotaPolicy defaults() {
+      return new QuotaPolicy(AccountType.PERSONAL, QuotaStack.DeductionMode.LIABILITY_ONLY);
+    }
+  }
+
+  /** 次限额规格（V1 §7.3）。 */
+  public record OccurrenceSpec(OccurrenceGrouper.Basis basis, BigDecimal limit) {
+
+    public OccurrenceSpec {
+      basis = basis == null ? OccurrenceGrouper.Basis.NONE : basis;
+      limit = Money.nz(limit);
+    }
+
+    public static OccurrenceSpec none() {
+      return new OccurrenceSpec(OccurrenceGrouper.Basis.NONE, Money.ZERO);
+    }
+  }
+
+  /**
+   * 责任间关系（V1 §8）：共享保额（共保代码）与先赔后赔。
+   *
+   * <p>两者在 V1 里都只有名称、没有金额公式。此处保留字段是为了<b>识别并拒绝</b>—— 配置里出现了就必须让人看到"这条责任不能自动理算"，而不是让引擎假装它是独立责任照算一遍。
+   */
+  public record Relation(String sharedCode, String priorLiabilityUuid) {
+
+    public static Relation none() {
+      return new Relation("", "");
+    }
+
+    public boolean hasAny() {
+      return (sharedCode != null && !sharedCode.isBlank())
+          || (priorLiabilityUuid != null && !priorLiabilityUuid.isBlank());
+    }
+  }
+
+  /** 适用限定（V1 §2 要素 6）：前置校验，不符即不赔。 */
+  public record LimitedConditions(boolean enabled, String hospitalCode, String diseaseCode) {
+
+    public static LimitedConditions disabled() {
+      return new LimitedConditions(false, "", "");
+    }
+  }
+
+  public LiabilityRule {
+    coveredBuckets =
+        coveredBuckets == null || coveredBuckets.isEmpty()
+            ? EnumSet.allOf(FeePools.Bucket.class)
+            : Set.copyOf(coveredBuckets);
+    deductible = deductible == null ? DeductibleRule.none() : deductible;
+    limits = limits == null ? LimitSet.liabilityOnly(Money.ZERO) : limits;
+    quota = quota == null ? QuotaPolicy.defaults() : quota;
+    occurrences = occurrences == null ? OccurrenceSpec.none() : occurrences;
+    relation = relation == null ? Relation.none() : relation;
+    limitedConditions =
+        limitedConditions == null ? LimitedConditions.disabled() : limitedConditions;
+  }
+
+  /**
+   * V1 默认规则：由最小标量集构造，免赔对象取<b>理算金额</b>（§6.3 默认，先乘比例再减免赔）。
+   *
+   * <p>发票 1000、比例 80%、免赔 200 时为 {@code 1000×80% − 200 = 600}。
+   */
+  public static LiabilityRule simple(
+      String liabilityUuid,
+      String liabilityVersion,
+      BigDecimal payPercent,
+      BigDecimal deductibleAmount,
+      BigDecimal liabilityLimit,
+      boolean socialOnly) {
+    return build(
+        liabilityUuid,
+        liabilityVersion,
+        payPercent,
+        deductibleAmount,
+        liabilityLimit,
+        socialOnly,
+        DeductibleRule.Target.CALCULATED_AMOUNT);
+  }
+
+  /**
+   * 由<b>旧责任配置</b>（{@code t_adj_liability} 的 {@code pay_percent}/{@code liability_deduct}/ {@code
+   * liability_limit}/{@code social_only}）映射。
+   *
+   * <p><b>为什么免赔对象是「发票费用」而不是 V1 默认的「理算金额」</b>：这四列是历史配置模型，它在原系统 （reference-impl
+   * P16「免赔先于比例作用于费用基数」）里的语义就是"先减免赔再乘比例"。把旧数据按 V1 默认解释会 <b>改变所有存续保单的赔付金额</b>（发票 1000、比例 80%、免赔 200：旧
+   * 640、V1 600）——这是资金口径变更，必须走条款报批， 不能由代码升级顺手完成。
+   *
+   * <p>因此本方法<b>忠实还原旧语义</b>；新配置请直接用 {@link #simple} 或显式构造 {@link DeductibleRule}。
+   * 同一条责任只允许有一个映射入口，避免"新旧两套算法"。
+   */
+  public static LiabilityRule fromLegacy(
+      String liabilityUuid,
+      String liabilityVersion,
+      BigDecimal payPercent,
+      BigDecimal deductibleAmount,
+      BigDecimal liabilityLimit,
+      boolean socialOnly) {
+    return build(
+        liabilityUuid,
+        liabilityVersion,
+        payPercent,
+        deductibleAmount,
+        liabilityLimit,
+        socialOnly,
+        DeductibleRule.Target.INVOICE_AMOUNT);
+  }
+
+  private static LiabilityRule build(
+      String liabilityUuid,
+      String liabilityVersion,
+      BigDecimal payPercent,
+      BigDecimal deductibleAmount,
+      BigDecimal liabilityLimit,
+      boolean socialOnly,
+      DeductibleRule.Target target) {
+    DeductibleRule deductible =
+        deductibleAmount == null || deductibleAmount.signum() <= 0
+            ? DeductibleRule.none()
+            : new DeductibleRule(
+                true,
+                DeductibleRule.Kind.ABSOLUTE,
+                DeductibleRule.Basis.ANNUAL,
+                DeductibleRule.Form.AMOUNT,
+                DeductibleRule.Offset.MEDICAL_AND_THIRD_PARTY,
+                target,
+                DeductibleRule.Granularity.LIABILITY,
+                deductibleAmount,
+                Money.ZERO,
+                0,
+                Map.of());
+    return new LiabilityRule(
+        liabilityUuid,
+        liabilityVersion,
+        LiabilityForm.REIMBURSEMENT,
+        socialOnly,
+        EnumSet.allOf(FeePools.Bucket.class),
+        0,
+        deductible,
+        PayRatioTable.uniform(payPercent),
+        LimitSet.liabilityOnly(liabilityLimit),
+        QuotaPolicy.defaults(),
+        OccurrenceSpec.none(),
+        Relation.none(),
+        LimitedConditions.disabled());
+  }
+
+  /**
+   * 装载期自检：把"V1 无法自动理算"的配置拦在算钱之前。
+   *
+   * <p>每一条拒绝都对应文档里一个明确的〔缺〕，注释里带 Q 编号，便于业务补齐后逐条放开（放开时请同时把 该条从"拒绝"改为"实现"，并补对应不变量测试）。
+   */
+  public void validate() {
+    if (form != LiabilityForm.REIMBURSEMENT) {
+      throw RuleGap.of(
+          RuleGap.Code.LIABILITY_FORM_UNSUPPORTED, "责任形式 %s 在 V1 无规则（Q-11：定额给付型/津贴给付型整章空白）", form);
+    }
+    if (limits.hasDailyLimit()) {
+      throw RuleGap.of(
+          RuleGap.Code.DAILY_LIMIT_UNSUPPORTED,
+          "配置了日限额 %s 但主流程无判定点（Q-05：配了不生效 ⇒ 超赔）",
+          limits.dailyLimit().toPlainString());
+    }
+    if (relation.sharedCode != null && !relation.sharedCode.isBlank()) {
+      throw RuleGap.of(
+          RuleGap.Code.SHARED_LIMIT_UNSUPPORTED,
+          "责任配置了共享保额（共保代码 %s）：池额度来源、耗尽回落、多池截断顺序均未定义（Q-02）",
+          relation.sharedCode);
+    }
+    if (relation.priorLiabilityUuid != null && !relation.priorLiabilityUuid.isBlank()) {
+      throw RuleGap.of(
+          RuleGap.Code.PRIORITY_CHAIN_UNSUPPORTED,
+          "责任配置了先赔后赔（前序责任 %s）：三种关系的金额推导公式缺失（Q-01）",
+          relation.priorLiabilityUuid);
+    }
+    if (quota.accountType() == AccountType.DIRECT_PAY
+        || quota.accountType() == AccountType.INSURER) {
+      throw RuleGap.of(
+          RuleGap.Code.EXTERNAL_QUOTA_UNSUPPORTED,
+          "控额类型 %s 依赖外部实时余额：超时/幂等/对账口径未定义（Q-07）",
+          quota.accountType());
+    }
+    if (quota.accountType() == AccountType.PUBLIC) {
+      throw RuleGap.of(
+          RuleGap.Code.LIMIT_LAYER_UNDEFINED, "公账控额：一保单仅一个公账且挂直付保单，V1 未定义本地账本读取口径（§1.3〔缺〕）");
+    }
+    OccurrenceGrouper.requireConsistent(occurrences.basis(), occurrences.limit());
+    deductible.validate();
+    ratios.validate();
+  }
+
+  /** 承担该费用类型。 */
+  public boolean covers(FeePools.Bucket bucket) {
+    return coveredBuckets.contains(bucket);
+  }
+
+  /** 责任额度是否封顶。 */
+  public boolean liabilityCapped() {
+    return !limits.liabilityUncapped();
+  }
+}

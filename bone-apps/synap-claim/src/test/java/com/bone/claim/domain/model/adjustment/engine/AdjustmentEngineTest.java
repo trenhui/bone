@@ -1,0 +1,789 @@
+package com.bone.claim.domain.model.adjustment.engine;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.bone.claim.domain.model.adjustment.Accumulation;
+import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
+import java.math.BigDecimal;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+/**
+ * 理算引擎 V1 语义测试（九步主流程 · 附录 A 数值复算 · fail-closed 边界）。
+ *
+ * <p><b>验收准则（V1 附录 A 的教训）</b>：原文三个示例最终赔付都被 {@code min(…, 责任额度 1000)} 截断成 1000， 所以"总自费误用 90% 而非
+ * 70%"这个错误在示例里<b>不产生任何可见差异</b>——用这些示例做验收，算错了也会通过。
+ * 故本类的所有用例<b>一律把责任/险种/计划额度设到不成为瓶颈</b>（1e8），只让被断言的那一环生效。
+ */
+class AdjustmentEngineTest {
+
+  private static final BigDecimal NO_CAP = new BigDecimal("100000000");
+
+  // ===================== 附录 A：三个示例的数值复算 =====================
+
+  @Nested
+  @DisplayName("附录 A 数值复算（示例 A1/A2/A3）")
+  class AppendixA {
+
+    /**
+     * A(1) 无免赔：合理 1925.33×90% + 总自费 631.88×90%。
+     *
+     * <p>原文合计 2301.49（其中 568.70 是笔误，正确 568.69）。
+     */
+    @Test
+    @DisplayName("A(1) 无免赔：1732.80 + 568.69 = 2301.49")
+    void exampleA1() {
+      LiabilityRule rule =
+          rule(
+              "90",
+              ratios(
+                  entry(FeePools.Bucket.REASONABLE, "90", null),
+                  entry(FeePools.Bucket.TOTAL_SELF_PAY, "90", null)),
+              DeductibleRule.none(),
+              NO_CAP);
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, rows("1925.33", "0", "631.88"), rule, Accumulation.FIRST));
+
+      assertThat(line(outcome, "REASONABLE").feePayout()).isEqualByComparingTo("1732.80");
+      assertThat(line(outcome, "TOTAL_SELF_PAY").feePayout()).isEqualByComparingTo("568.69");
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("2301.49");
+    }
+
+    /**
+     * A(2) 责任级免赔 100：先按比例算出各类理算金额、<b>相加后</b>再减一次免赔。
+     *
+     * <p>原文用 90% 算总自费（配置是 70%），得 2201.50；按配置应为 1732.80 + 442.32 − 100 = 2075.12。 这个差额在原文示例里被「责任额度
+     * 1000」截断掩盖了——本用例不设瓶颈才看得见。
+     */
+    @Test
+    @DisplayName("A(2) 责任级免赔：1732.80 + 442.32 − 100 = 2075.12（原文误用 90% 得 2201.50）")
+    void exampleA2() {
+      LiabilityRule rule =
+          rule(
+              "90",
+              ratios(
+                  entry(FeePools.Bucket.REASONABLE, "90", null),
+                  entry(FeePools.Bucket.TOTAL_SELF_PAY, "70", null)),
+              DeductibleRule.annualAbsolute(new BigDecimal("100")),
+              NO_CAP);
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, rows("1925.33", "0", "631.88"), rule, Accumulation.FIRST));
+
+      assertThat(line(outcome, "REASONABLE").ratioPayout()).isEqualByComparingTo("1732.80");
+      assertThat(line(outcome, "TOTAL_SELF_PAY").ratioPayout()).isEqualByComparingTo("442.32");
+      assertThat(outcome.totalAmount())
+          .as("若此处为 2201.50，说明总自费误用了 90%（配置是 70%）= 原文的错误被复现")
+          .isEqualByComparingTo("2075.12");
+      assertThat(outcome.deductibleApplied()).isEqualByComparingTo("100.00");
+    }
+
+    /**
+     * A(3) 费用类型级免赔（合理 200 / 自付二 100 / 总自费 100）：各类<b>各自</b>扣对应免赔。
+     *
+     * <p>(1925.33×90% − 200) + (273.42×80% − 100) + (631.88×70% − 100) = 1532.80 + 118.74 + 342.32
+     * = 1993.86。
+     */
+    @Test
+    @DisplayName("A(3) 费用类型级免赔：1532.80 + 118.74 + 342.32 = 1993.86")
+    void exampleA3() {
+      DeductibleRule perType =
+          DeductibleRule.perFeeType(
+              Map.of(
+                  FeePools.Bucket.REASONABLE,
+                  new BigDecimal("200"),
+                  FeePools.Bucket.SELF_PAY_2,
+                  new BigDecimal("100"),
+                  FeePools.Bucket.TOTAL_SELF_PAY,
+                  new BigDecimal("100")),
+              DeductibleRule.Target.CALCULATED_AMOUNT);
+      LiabilityRule rule =
+          rule(
+              "90",
+              ratios(
+                  entry(FeePools.Bucket.REASONABLE, "90", null),
+                  entry(FeePools.Bucket.SELF_PAY_2, "80", null),
+                  entry(FeePools.Bucket.TOTAL_SELF_PAY, "70", null)),
+              perType,
+              NO_CAP);
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, rows("1925.33", "273.42", "631.88"), rule, Accumulation.FIRST));
+
+      assertThat(line(outcome, "REASONABLE").feePayout()).isEqualByComparingTo("1532.80");
+      assertThat(line(outcome, "SELF_PAY_2").feePayout()).isEqualByComparingTo("118.74");
+      assertThat(line(outcome, "TOTAL_SELF_PAY").feePayout()).isEqualByComparingTo("342.32");
+      assertThat(outcome.totalAmount())
+          .as("若为 2120.24，说明总自费误用 90%；若为 2175.12，说明按责任级扣了一次而非按类型各扣")
+          .isEqualByComparingTo("1993.86");
+    }
+  }
+
+  // ===================== 免赔六维 =====================
+
+  @Nested
+  @DisplayName("免赔：类型 × 对象 × 粒度（V1 §6）")
+  class Deductible {
+
+    /** I5：相对免赔「够了就一分不减」，与绝对免赔的区别必须在门槛两侧都能看见。 */
+    @Test
+    @DisplayName("I5 相对免赔跨门槛不减少赔付（1500 费用、1000 免赔：相对赔 1500，绝对赔 500）")
+    void relativeDeductibleSkipsInsteadOfSubtracting() {
+      LiabilityRule relative =
+          rule(
+              "100",
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.relativeAnnual(new BigDecimal("1000")),
+              NO_CAP);
+      LiabilityRule absolute =
+          rule(
+              "100",
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.annualAbsolute(new BigDecimal("1000")),
+              NO_CAP);
+
+      assertThat(payout(relative, "1500.00"))
+          .as("相对免赔：应赔 1500 > 门槛 1000 ⇒ 一分不减")
+          .isEqualByComparingTo("1500.00");
+      assertThat(payout(absolute, "1500.00"))
+          .as("绝对免赔：应赔 1500 − 门槛 1000 = 500")
+          .isEqualByComparingTo("500.00");
+    }
+
+    @Test
+    @DisplayName("I5 门槛下方：相对与绝对都全免赔（800 ≤ 1000 → 赔 0，消抵 800）")
+    void belowThresholdBothZero() {
+      for (DeductibleRule rule :
+          List.of(
+              DeductibleRule.relativeAnnual(new BigDecimal("1000")),
+              DeductibleRule.annualAbsolute(new BigDecimal("1000")))) {
+        AdjustmentEngine.Outcome outcome =
+            AdjustmentEngine.calculate(
+                AdjustmentEngine.Request.of(
+                    1L,
+                    rows("800.00", "0", "0"),
+                    rule(
+                        "100",
+                        ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+                        rule,
+                        NO_CAP),
+                    Accumulation.FIRST));
+        assertThat(outcome.totalAmount()).isEqualByComparingTo("0.00");
+        assertThat(outcome.deductibleApplied()).isEqualByComparingTo("800.00");
+      }
+    }
+
+    /**
+     * 免赔对象决定运算顺序（§6.3）：同一份输入，两个对象算出不同金额。
+     *
+     * <p>费用 1000、比例 80%、免赔 200：理算金额口径 = 800−200 = 600；发票费用口径 = (1000−200)×80% = 640。
+     */
+    @Test
+    @DisplayName("免赔对象：理算金额口径 600 vs 发票费用口径 640，差 40 必须可辨")
+    void deductibleTargetChangesOrder() {
+      LiabilityRule calculatedTarget =
+          rule(
+              "80",
+              ratios(entry(FeePools.Bucket.REASONABLE, "80", null)),
+              targetAbsolute("200", DeductibleRule.Target.CALCULATED_AMOUNT),
+              NO_CAP);
+      LiabilityRule invoiceTarget =
+          rule(
+              "80",
+              ratios(entry(FeePools.Bucket.REASONABLE, "80", null)),
+              targetAbsolute("200", DeductibleRule.Target.INVOICE_AMOUNT),
+              NO_CAP);
+
+      assertThat(payout(calculatedTarget, "1000.00")).isEqualByComparingTo("600.00");
+      assertThat(payout(invoiceTarget, "1000.00")).isEqualByComparingTo("640.00");
+    }
+  }
+
+  // ===================== 控额七层 =====================
+
+  @Nested
+  @DisplayName("控额：七层逐层截断（V1 §1.2 / §4.3）")
+  class Quota {
+
+    @Test
+    @DisplayName("§4.3 两个 Min 嵌套：各类费用额度互不侵占（总自费额度用尽不影响合理金额）")
+    void perBucketCapDoesNotSwallowOtherBuckets() {
+      PayRatioTable table =
+          ratios(
+              entry(FeePools.Bucket.REASONABLE, "100", null),
+              entry(FeePools.Bucket.TOTAL_SELF_PAY, "100", "300"));
+      LiabilityRule rule = rule("100", table, DeductibleRule.none(), NO_CAP);
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, rows("1000.00", "0", "800.00"), rule, Accumulation.FIRST));
+
+      assertThat(line(outcome, "REASONABLE").feePayout()).isEqualByComparingTo("1000.00");
+      assertThat(line(outcome, "TOTAL_SELF_PAY").feePayout())
+          .as("总自费受本格费用限额 300 截断，但不得吞掉合理金额的可用额")
+          .isEqualByComparingTo("300.00");
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("1300.00");
+    }
+
+    @Test
+    @DisplayName("险种额度与计划额度逐层生效：取最紧的一层（1200 责任内、险种 900、计划 500 → 500）")
+    void productAndPlanLayersBind() {
+      LiabilityRule rule =
+          rule(
+              "100",
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none(),
+              NO_CAP);
+      AdjustmentEngine.Request request =
+          AdjustmentEngine.Request.of(1L, rows("1200.00", "0", "0"), rule, Accumulation.FIRST)
+              .withExtraLayers(
+                  List.of(
+                      new QuotaStack.LayerQuota(
+                          QuotaStack.Layer.PRODUCT, "PROD-1", new BigDecimal("900")),
+                      new QuotaStack.LayerQuota(
+                          QuotaStack.Layer.PLAN, "PLAN-1", new BigDecimal("500"))));
+
+      AdjustmentEngine.Outcome outcome = AdjustmentEngine.calculate(request);
+
+      assertThat(outcome.totalAmount())
+          .as("责任额度不封顶 ⇒ 由计划层 500 兜底，而不是取险种 900")
+          .isEqualByComparingTo("500.00");
+    }
+
+    @Test
+    @DisplayName("跨案已用额度：责任额度 1 万已用 9000 ⇒ 本案最多赔 1000")
+    void crossCaseLiabilityUsage() {
+      LiabilityRule rule =
+          rule(
+              "100",
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none(),
+              "10000");
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L,
+                  rows("5000.00", "0", "0"),
+                  rule,
+                  Accumulation.of(BigDecimal.ZERO, new BigDecimal("9000"), true)));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("1000.00");
+    }
+  }
+
+  // ===================== 比例查表 =====================
+
+  @Nested
+  @DisplayName("赔付比例：多维查表与 fail-closed（V1 §5）")
+  class Ratio {
+
+    @Test
+    @DisplayName("累计区间：历史 1500 + 本票 600 = 2100 落入 [2000,∞) 档，取 70%")
+    void accumulationRangeSelectsRatio() {
+      PayRatioTable table =
+          PayRatioTable.of(
+              List.of(
+                  new PayRatioTable.Entry(
+                      "[0,1000)",
+                      new PayRatioTable.RatioSelector(
+                          FeePools.Bucket.REASONABLE,
+                          null,
+                          AmountRange.of("0", "1000"),
+                          null,
+                          null,
+                          null),
+                      new BigDecimal("90"),
+                      null),
+                  new PayRatioTable.Entry(
+                      "[1000,2000)",
+                      new PayRatioTable.RatioSelector(
+                          FeePools.Bucket.REASONABLE,
+                          null,
+                          AmountRange.of("1000", "2000"),
+                          null,
+                          null,
+                          null),
+                      new BigDecimal("80"),
+                      null),
+                  new PayRatioTable.Entry(
+                      "[2000,∞)",
+                      new PayRatioTable.RatioSelector(
+                          FeePools.Bucket.REASONABLE,
+                          null,
+                          AmountRange.atLeast("2000"),
+                          null,
+                          null,
+                          null),
+                      new BigDecimal("70"),
+                      null)));
+      LiabilityRule rule = rule("90", table, DeductibleRule.none(), NO_CAP);
+      AdjustmentEngine.Request request =
+          new AdjustmentEngine.Request(
+              1L,
+              rows("600.00", "0", "0"),
+              rule,
+              Accumulation.FIRST,
+              "v1",
+              Map.of(FeePools.Bucket.REASONABLE, new BigDecimal("1500")),
+              new BigDecimal("600"),
+              null,
+              null,
+              null,
+              List.of());
+
+      AdjustmentEngine.Outcome outcome = AdjustmentEngine.calculate(request);
+
+      assertThat(outcome.totalAmount())
+          .as("累计 2100 命中 70% 档；若得 540 说明错取了 90% 档（累计口径没加历史）")
+          .isEqualByComparingTo("420.00");
+    }
+
+    @Test
+    @DisplayName("未命中不回落默认值：比例表缺该费用类型 ⇒ RATIO_NOT_MATCHED（fail-closed）")
+    void unmatchedRatioFailsClosed() {
+      LiabilityRule rule =
+          rule(
+              "90",
+              ratios(entry(FeePools.Bucket.REASONABLE, "90", null)),
+              DeductibleRule.none(),
+              NO_CAP);
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L, rows("0", "0", "500.00"), rule, Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("RATIO_NOT_MATCHED");
+    }
+
+    @Test
+    @DisplayName("区间重叠视为配置错误：装载期即拒绝（I3）")
+    void overlappingRangesRejected() {
+      PayRatioTable table =
+          PayRatioTable.of(
+              List.of(
+                  new PayRatioTable.Entry(
+                      "A",
+                      new PayRatioTable.RatioSelector(
+                          FeePools.Bucket.REASONABLE,
+                          null,
+                          AmountRange.of("0", "2000"),
+                          null,
+                          null,
+                          null),
+                      new BigDecimal("90"),
+                      null),
+                  new PayRatioTable.Entry(
+                      "B",
+                      new PayRatioTable.RatioSelector(
+                          FeePools.Bucket.REASONABLE,
+                          null,
+                          AmountRange.of("1000", "3000"),
+                          null,
+                          null,
+                          null),
+                      new BigDecimal("80"),
+                      null)));
+
+      assertThatThrownBy(table::validate)
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("RATIO_AMBIGUOUS");
+      assertThat(
+              AmountRange.pairwiseDisjoint(
+                  List.of(AmountRange.of("0", "1000"), AmountRange.of("1000", "2000"))))
+          .as("相邻半开区间 [0,1000) 与 [1000,2000) 不重叠")
+          .isTrue();
+    }
+  }
+
+  // ===================== 次限额 =====================
+
+  @Nested
+  @DisplayName("次限额：先分组、各组独立理算（V1 §7.3）")
+  class Occurrence {
+
+    @Test
+    @DisplayName("分组键：同日同院同科室为一组，跨日拆两组（不得总额取 min）")
+    void groupingSplitsByDay() {
+      List<OccurrenceGrouper.Fact> facts =
+          List.of(
+              new OccurrenceGrouper.Fact(
+                  "CL1", java.time.LocalDate.of(2026, 1, 1), "H1", "D1", null),
+              new OccurrenceGrouper.Fact(
+                  "CL1", java.time.LocalDate.of(2026, 1, 1), "H1", "D1", null),
+              new OccurrenceGrouper.Fact(
+                  "CL1", java.time.LocalDate.of(2026, 1, 2), "H1", "D1", null));
+
+      assertThat(OccurrenceGrouper.group(OccurrenceGrouper.Basis.SAME_DAY, facts)).hasSize(2);
+      assertThat(OccurrenceGrouper.group(OccurrenceGrouper.Basis.SAME_DAY_HOSPITAL_DEPT, facts))
+          .hasSize(2);
+      assertThat(OccurrenceGrouper.group(OccurrenceGrouper.Basis.PER_CLAIM, facts)).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("配了次限额却没配「次」的定义 ⇒ 装载期拒绝（V1 Q-04：配了不生效）")
+    void occurrenceLimitWithoutBasisRejected() {
+      assertThatThrownBy(
+              () ->
+                  OccurrenceGrouper.requireConsistent(
+                      OccurrenceGrouper.Basis.NONE, new BigDecimal("300")))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("永远不会生效");
+    }
+  }
+
+  // ===================== V1 边界：显式拒绝 =====================
+
+  @Nested
+  @DisplayName("V1 边界：能力缺失一律 fail-closed，不猜算法")
+  class Boundaries {
+
+    @Test
+    @DisplayName("定额给付型 / 津贴给付型：V1 无规则 ⇒ LIABILITY_FORM_UNSUPPORTED")
+    void nonReimbursementFormRejected() {
+      for (LiabilityRule.LiabilityForm form :
+          List.of(
+              LiabilityRule.LiabilityForm.FIXED_AMOUNT, LiabilityRule.LiabilityForm.ALLOWANCE)) {
+        LiabilityRule rule =
+            new LiabilityRule(
+                "L",
+                "v1",
+                form,
+                false,
+                EnumSet.allOf(FeePools.Bucket.class),
+                0,
+                DeductibleRule.none(),
+                ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+                LiabilityRule.LimitSet.liabilityOnly(NO_CAP),
+                LiabilityRule.QuotaPolicy.defaults(),
+                LiabilityRule.OccurrenceSpec.none(),
+                LiabilityRule.Relation.none(),
+                LiabilityRule.LimitedConditions.disabled());
+        assertThatThrownBy(rule::validate)
+            .isInstanceOf(RuleGap.class)
+            .hasMessageContaining("LIABILITY_FORM_UNSUPPORTED");
+      }
+    }
+
+    @Test
+    @DisplayName("共享保额 / 先赔后赔 / 日限额 / 外部控额：各自给出专属原因码，不静默照算")
+    void unsupportedRelationsRejected() {
+      assertThatThrownBy(() -> ruleWithRelation("SHARED-1", "").validate())
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("SHARED_LIMIT_UNSUPPORTED");
+      assertThatThrownBy(() -> ruleWithRelation("", "L-PRIOR").validate())
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("PRIORITY_CHAIN_UNSUPPORTED");
+      assertThatThrownBy(
+              () ->
+                  new LiabilityRule(
+                          "L",
+                          "v1",
+                          LiabilityRule.LiabilityForm.REIMBURSEMENT,
+                          false,
+                          EnumSet.allOf(FeePools.Bucket.class),
+                          0,
+                          DeductibleRule.none(),
+                          ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+                          new LiabilityRule.LimitSet(
+                              LiabilityRule.InsuredForm.FIXED,
+                              BigDecimal.ZERO,
+                              NO_CAP,
+                              BigDecimal.ZERO,
+                              BigDecimal.ZERO,
+                              BigDecimal.ZERO,
+                              BigDecimal.ZERO,
+                              new BigDecimal("500")),
+                          LiabilityRule.QuotaPolicy.defaults(),
+                          LiabilityRule.OccurrenceSpec.none(),
+                          LiabilityRule.Relation.none(),
+                          LiabilityRule.LimitedConditions.disabled())
+                      .validate())
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("DAILY_LIMIT_UNSUPPORTED");
+      assertThatThrownBy(
+              () ->
+                  new LiabilityRule(
+                          "L",
+                          "v1",
+                          LiabilityRule.LiabilityForm.REIMBURSEMENT,
+                          false,
+                          EnumSet.allOf(FeePools.Bucket.class),
+                          0,
+                          DeductibleRule.none(),
+                          ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+                          LiabilityRule.LimitSet.liabilityOnly(NO_CAP),
+                          new LiabilityRule.QuotaPolicy(
+                              LiabilityRule.AccountType.INSURER,
+                              QuotaStack.DeductionMode.LIABILITY_ONLY),
+                          LiabilityRule.OccurrenceSpec.none(),
+                          LiabilityRule.Relation.none(),
+                          LiabilityRule.LimitedConditions.disabled())
+                      .validate())
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("EXTERNAL_QUOTA_UNSUPPORTED");
+    }
+
+    @Test
+    @DisplayName("等待期内出险：不进理算（§4.1 前置校验）")
+    void waitingPeriodBlocks() {
+      LiabilityRule rule =
+          new LiabilityRule(
+              "L",
+              "v1",
+              LiabilityRule.LiabilityForm.REIMBURSEMENT,
+              false,
+              EnumSet.allOf(FeePools.Bucket.class),
+              30,
+              DeductibleRule.none(),
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              LiabilityRule.LimitSet.liabilityOnly(NO_CAP),
+              LiabilityRule.QuotaPolicy.defaults(),
+              LiabilityRule.OccurrenceSpec.none(),
+              LiabilityRule.Relation.none(),
+              LiabilityRule.LimitedConditions.disabled());
+      AdjustmentEngine.Request request =
+          new AdjustmentEngine.Request(
+              1L,
+              rows("500.00", "0", "0"),
+              rule,
+              Accumulation.FIRST,
+              "v1",
+              Map.of(),
+              null,
+              null,
+              null,
+              10,
+              List.of());
+
+      assertThatThrownBy(() -> AdjustmentEngine.calculate(request))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("WAITING_PERIOD_NOT_MET");
+    }
+  }
+
+  // ===================== 归因与不变量 =====================
+
+  @Nested
+  @DisplayName("归因与不变量（V1 §9）")
+  class Invariants {
+
+    @Test
+    @DisplayName("I1 分位守恒：Σ 明细实付 ≡ 总额（多费用池也不丢分）")
+    void linesSumToTotal() {
+      PayRatioTable table =
+          ratios(
+              entry(FeePools.Bucket.REASONABLE, "90", null),
+              entry(FeePools.Bucket.SELF_PAY_2, "80", null),
+              entry(FeePools.Bucket.TOTAL_SELF_PAY, "70", null));
+      LiabilityRule rule =
+          rule("90", table, DeductibleRule.annualAbsolute(new BigDecimal("33")), NO_CAP);
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, rows("111.11", "222.22", "333.33"), rule, Accumulation.FIRST));
+
+      BigDecimal sum = Money.ZERO;
+      for (AdjustmentEngine.Line line : outcome.lines()) {
+        sum = sum.add(line.feePayout());
+      }
+      assertThat(sum).isEqualByComparingTo(outcome.totalAmount());
+    }
+
+    @Test
+    @DisplayName("零赔付归因：责任额度年度用尽 ⇒ ZERO_LIMIT_EXHAUSTED（区别于单次超限）")
+    void zeroReasonDistinguishesExhausted() {
+      LiabilityRule rule =
+          rule(
+              "100",
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none(),
+              "5000");
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L,
+                  rows("3000.00", "0", "0"),
+                  rule,
+                  Accumulation.of(BigDecimal.ZERO, new BigDecimal("5000"), true)));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("0.00");
+      assertThat(outcome.zeroReason()).isEqualTo("ZERO_LIMIT_EXHAUSTED");
+      assertThat(outcome.rejectType()).isEqualTo("09");
+    }
+
+    @Test
+    @DisplayName("入参校验：全是赔案头行（无费用明细）必须拒绝，不得按 0 算出一个「合法」结果")
+    void headOnlyRowsRejected() {
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L,
+                          List.of(headOnlyRow()),
+                          rule(
+                              "100",
+                              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+                              DeductibleRule.none(),
+                              NO_CAP),
+                          Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("INVALID_INPUT");
+    }
+
+    @Test
+    @DisplayName("快照自包含：物化累计前值、比例命中、免赔分支、控额步骤（I7/I8 可复算）")
+    void snapshotMaterializesInputs() {
+      LiabilityRule rule =
+          rule(
+              "90",
+              ratios(entry(FeePools.Bucket.REASONABLE, "90", null)),
+              DeductibleRule.none(),
+              "10000");
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L,
+                  rows("1000.00", "0", "0"),
+                  rule,
+                  Accumulation.of(new BigDecimal("0"), new BigDecimal("1000"), true)));
+
+      assertThat(outcome.snapshot())
+          .contains(
+              "\"deductibleUsedBefore\"",
+              "\"limitUsedBefore\"",
+              "\"ratioHits\"",
+              "\"deductibleBranches\"",
+              "\"pools\"");
+      assertThat(outcome.snapshot()).contains("\"limitUsedBefore\":1000");
+    }
+  }
+
+  // ===================== 夹具 =====================
+
+  private static BigDecimal payout(LiabilityRule rule, String valid) {
+    return AdjustmentEngine.calculate(
+            AdjustmentEngine.Request.of(1L, rows(valid, "0", "0"), rule, Accumulation.FIRST))
+        .totalAmount();
+  }
+
+  private static AdjustmentEngine.Line line(AdjustmentEngine.Outcome outcome, String bucket) {
+    return outcome.lines().stream()
+        .filter(l -> l.bucket().equals(bucket))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("缺少费用池归因行：" + bucket + "，实际 " + outcome.lines()));
+  }
+
+  private static LiabilityRule rule(
+      String payPercent, PayRatioTable ratios, DeductibleRule deductible, String liabilityLimit) {
+    return rule(payPercent, ratios, deductible, new BigDecimal(liabilityLimit));
+  }
+
+  private static LiabilityRule rule(
+      String payPercent,
+      PayRatioTable ratios,
+      DeductibleRule deductible,
+      BigDecimal liabilityLimit) {
+    return new LiabilityRule(
+        "L-TEST",
+        "v1",
+        LiabilityRule.LiabilityForm.REIMBURSEMENT,
+        false,
+        EnumSet.allOf(FeePools.Bucket.class),
+        0,
+        deductible,
+        ratios,
+        LiabilityRule.LimitSet.liabilityOnly(liabilityLimit),
+        LiabilityRule.QuotaPolicy.defaults(),
+        LiabilityRule.OccurrenceSpec.none(),
+        LiabilityRule.Relation.none(),
+        LiabilityRule.LimitedConditions.disabled());
+  }
+
+  private static LiabilityRule ruleWithRelation(String sharedCode, String priorUuid) {
+    return new LiabilityRule(
+        "L",
+        "v1",
+        LiabilityRule.LiabilityForm.REIMBURSEMENT,
+        false,
+        EnumSet.allOf(FeePools.Bucket.class),
+        0,
+        DeductibleRule.none(),
+        ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+        LiabilityRule.LimitSet.liabilityOnly(NO_CAP),
+        LiabilityRule.QuotaPolicy.defaults(),
+        LiabilityRule.OccurrenceSpec.none(),
+        new LiabilityRule.Relation(sharedCode, priorUuid),
+        LiabilityRule.LimitedConditions.disabled());
+  }
+
+  private static DeductibleRule targetAbsolute(String amount, DeductibleRule.Target target) {
+    return new DeductibleRule(
+        true,
+        DeductibleRule.Kind.ABSOLUTE,
+        DeductibleRule.Basis.ANNUAL,
+        DeductibleRule.Form.AMOUNT,
+        DeductibleRule.Offset.MEDICAL_AND_THIRD_PARTY,
+        target,
+        DeductibleRule.Granularity.LIABILITY,
+        new BigDecimal(amount),
+        Money.ZERO,
+        0,
+        Map.of());
+  }
+
+  private static PayRatioTable ratios(PayRatioTable.Entry... entries) {
+    return PayRatioTable.of(List.of(entries));
+  }
+
+  private static PayRatioTable.Entry entry(
+      FeePools.Bucket bucket, String percent, String feeLimit) {
+    return new PayRatioTable.Entry(
+        bucket.name(),
+        new PayRatioTable.RatioSelector(bucket, null, null, null, null, null),
+        new BigDecimal(percent),
+        feeLimit == null ? null : new BigDecimal(feeLimit));
+  }
+
+  /** 三条明细：合理金额 / 自付二 / 总自费（对应附录 A 的三列）。 */
+  private static List<ClaimWithItemsProjection> rows(
+      String reasonable, String selfPay2, String totalSelfPay) {
+    return List.of(row(2001L, "IN", reasonable, selfPay2, totalSelfPay));
+  }
+
+  /** 单行携带三个费用池的金额（贴近真实票面：一张发票的三类费用在一次明细里）。 */
+  private static ClaimWithItemsProjection row(
+      long itemId, String socialFlag, String reasonable, String selfPay2, String totalSelfPay) {
+    ClaimWithItemsProjection p = new ClaimWithItemsProjection();
+    p.setClaimId(1L);
+    p.setClaimNo("CL001");
+    p.setItemId(itemId);
+    p.setItemName("费用" + itemId);
+    p.setItemSocialFlag(socialFlag);
+    p.setItemAmount(
+        new BigDecimal(reasonable).add(new BigDecimal(selfPay2)).add(new BigDecimal(totalSelfPay)));
+    p.setItemValidAmount(new BigDecimal(reasonable));
+    p.setItemSelfPay1(new BigDecimal(reasonable));
+    p.setItemSelfPay2(new BigDecimal(selfPay2));
+    p.setItemSelfPayC(new BigDecimal(totalSelfPay));
+    return p;
+  }
+
+  private static ClaimWithItemsProjection headOnlyRow() {
+    ClaimWithItemsProjection p = new ClaimWithItemsProjection();
+    p.setClaimId(1L);
+    p.setItemId(null);
+    p.setItemValidAmount(new BigDecimal("100.00"));
+    return p;
+  }
+}

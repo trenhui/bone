@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
 import com.bone.claim.domain.model.liability.AdjLiability;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -36,46 +35,21 @@ class SettlementGuardContractTest {
   private static final long TENANT = 42L;
   private static final long CLAIM = 1001L;
 
+  /** 造明细行（setter 风格：投影加列时不破坏本夹具，只写理算关心的字段）。 */
   private static ClaimWithItemsProjection row(
       String name, String socialFlag, BigDecimal valid, BigDecimal selfPay1) {
-    return new ClaimWithItemsProjection(
-        CLAIM,
-        "CL001",
-        "P1",
-        7L,
-        "h",
-        "OUTPATIENT",
-        "ACCEPTED",
-        "SIGNING",
-        0,
-        "",
-        "",
-        Instant.now(),
-        "self",
-        "self",
-        new BigDecimal("100.00"),
-        null,
-        "",
-        "",
-        "",
-        "",
-        "v3",
-        Instant.now(),
-        2001L,
-        name,
-        "",
-        "SERVICE",
-        BigDecimal.ONE,
-        valid,
-        valid,
-        socialFlag,
-        "",
-        BigDecimal.ZERO,
-        selfPay1,
-        BigDecimal.ZERO,
-        BigDecimal.ZERO,
-        valid,
-        BigDecimal.ZERO);
+    ClaimWithItemsProjection p = new ClaimWithItemsProjection();
+    p.setClaimId(CLAIM);
+    p.setClaimNo("CL001");
+    p.setPolicyNo("P1");
+    p.setPlanId(7L);
+    p.setInsuredIdHash("h");
+    p.setItemId(2001L);
+    p.setItemName(name);
+    p.setItemSocialFlag(socialFlag);
+    p.setItemValidAmount(valid);
+    p.setItemSelfPay1(selfPay1);
+    return p;
   }
 
   private static AdjLiability liability(

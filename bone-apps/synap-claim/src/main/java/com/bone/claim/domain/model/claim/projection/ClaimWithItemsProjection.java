@@ -63,6 +63,10 @@ public class ClaimWithItemsProjection {
   private BigDecimal itemSelfPay1;
   private BigDecimal itemSelfPay2;
   private BigDecimal itemSelfPayC;
+
+  /** 第三方已赔付（社保统筹之外：商保/公账/其他基金）。理算的"不可获利"护栏依赖此列。 */
+  private BigDecimal itemThirdPartyPaid;
+
   private BigDecimal itemValidAmount;
   private BigDecimal itemInvalidAmount;
 

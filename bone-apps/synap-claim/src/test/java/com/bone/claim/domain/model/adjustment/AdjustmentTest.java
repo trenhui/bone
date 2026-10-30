@@ -7,7 +7,6 @@ import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
 import com.bone.claim.domain.model.liability.AdjLiability;
 import com.bone.core.exception.DomainException;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,47 +22,27 @@ class AdjustmentTest {
   private static final long TENANT = 42L;
   private static final long CLAIM = 1001L;
 
-  /** 造一条明细行（三段拆分已就绪）。 */
+  /**
+   * 造一条明细行（三段拆分已就绪）。
+   *
+   * <p><b>用 setter 而不是 38 参全构造</b>：全构造在字段增加时会静默错位（参数顺序一改，编译期不报、运行期串列）， 且每次给投影加列都要改一堆测试。setter
+   * 只写本用例关心的字段，其余保持 null → 引擎按 0 处理。
+   */
   private static ClaimWithItemsProjection row(
       String name, String socialFlag, BigDecimal valid, BigDecimal selfPay1) {
-    return new ClaimWithItemsProjection(
-        CLAIM,
-        "CL001",
-        "P1",
-        7L,
-        "h",
-        "OUTPATIENT",
-        "ACCEPTED",
-        "SIGNING",
-        0,
-        "",
-        "",
-        Instant.now(),
-        "self",
-        "self",
-        new BigDecimal("100.00"),
-        null,
-        "",
-        "",
-        "",
-        "",
-        "v3",
-        Instant.now(),
-        2001L,
-        name,
-        "",
-        "SERVICE",
-        BigDecimal.ONE,
-        valid,
-        valid,
-        socialFlag,
-        "",
-        BigDecimal.ZERO,
-        selfPay1,
-        BigDecimal.ZERO,
-        BigDecimal.ZERO,
-        valid,
-        BigDecimal.ZERO);
+    ClaimWithItemsProjection p = new ClaimWithItemsProjection();
+    p.setClaimId(CLAIM);
+    p.setClaimNo("CL001");
+    p.setPolicyNo("P1");
+    p.setPlanId(7L);
+    p.setInsuredIdHash("h");
+    p.setClaimType("OUTPATIENT");
+    p.setItemId(2001L);
+    p.setItemName(name);
+    p.setItemSocialFlag(socialFlag);
+    p.setItemValidAmount(valid);
+    p.setItemSelfPay1(selfPay1);
+    return p;
   }
 
   private static AdjLiability liability(
@@ -89,9 +68,9 @@ class AdjustmentTest {
   }
 
   @Test
-  @DisplayName("主链路：基准 → 免赔 → 比例 → 限额截断")
+  @DisplayName("主链路：基准 → 比例 → 免赔 → 限额截断（旧配置口径：免赔对象=发票费用）")
   void calculateChain() {
-    // 基准 200，免赔 50，比例 90% → 135，限额 100 → 截断为 100
+    // 基准 200，免赔 50，比例 90% → (200−50)×90% = 135，限额 100 → 截断为 100
     Adjustment adjustment =
         adjust(
             List.of(row("诊查费", "IN", new BigDecimal("200.00"), new BigDecimal("200.00"))),
@@ -111,6 +90,9 @@ class AdjustmentTest {
             List.of(row("诊查费", "IN", new BigDecimal("200.00"), new BigDecimal("200.00"))),
             liability("90", "50", "10000", 1));
 
+    // 旧配置（t_adj_liability 的 pay_percent/liability_deduct）的免赔对象是**发票费用**：
+    // (200 − 50) × 90% = 135。V1 默认的"理算金额"口径（200×90%−50=130）由
+    // LiabilityRule.simple 表达，见 AdjustmentEngineTest#deductibleTargetChangesOrder。
     assertThat(adjustment.getTotalAmount()).isEqualByComparingTo("135.00");
   }
 
