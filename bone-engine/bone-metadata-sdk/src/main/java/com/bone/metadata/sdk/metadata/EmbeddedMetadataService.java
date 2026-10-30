@@ -38,6 +38,10 @@ public class EmbeddedMetadataService implements MetadataService {
     if (logicalNames == null || logicalNames.isEmpty()) {
       return List.of();
     }
+    // 纵深防御：Web 层的 @Valid 只能挡住 HTTP 入站，而本类是 SDK 公共 API，
+    // 进程内调用方同样可能传残缺上下文。缺 tenantId 时下面拼缓存键会 NPE ⇒ 500，
+    // 故在这里以明确的契约错误失败，而不是让空指针泄漏成内部错误。
+    requireUsableContext(ctx);
 
     List<String> sortedNames = logicalNames.stream().sorted().toList();
     String key =
@@ -119,6 +123,28 @@ public class EmbeddedMetadataService implements MetadataService {
     // 3. 批量保存
     fieldMetadataRepository.batchSave(results);
     return results;
+  }
+
+  /**
+   * 校验上下文足以构成缓存键与查询路由：tenantId / appCode / entityType 三个分区键缺一不可。
+   *
+   * <p>{@code bizIdentityCode} 允许为空（{@code AllocationContext.of(appCode, entityType)} 的两参工厂本就不带它，且
+   * {@code String.join} 对 null 元素无 NPE）。tenantId 是唯一会被 {@code .toString()} 直接解引用的键，缺它会当场
+   * NPE；appCode/entityType 缺失虽然不会抛异常， 但会让缓存键退化成 {@code "null.null"}——不同实体互串缓存，属更隐蔽的正确性问题，一并挡掉。
+   */
+  private static void requireUsableContext(AllocationContext ctx) {
+    if (ctx == null || ctx.getTenantId() == null) {
+      throw new IllegalArgumentException(
+          "findExtensionFieldsByNames 需要 AllocationContext.tenantId（缓存键与查询分区依赖它）");
+    }
+    if (ctx.getAppCode() == null || ctx.getAppCode().isBlank()) {
+      throw new IllegalArgumentException(
+          "findExtensionFieldsByNames 需要 AllocationContext.appCode（缓存键与查询分区依赖它）");
+    }
+    if (ctx.getEntityType() == null || ctx.getEntityType().isBlank()) {
+      throw new IllegalArgumentException(
+          "findExtensionFieldsByNames 需要 AllocationContext.entityType（缓存键与查询分区依赖它）");
+    }
   }
 
   private void validateField(FieldMetadata field) {
