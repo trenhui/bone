@@ -505,6 +505,12 @@ class ExpenseWorkflowDefinitionTest {
     }
 
     @Override
+    public List<String> findStuckInstances(Instant cutoff) {
+      // 领域单测桩不模拟看门狗卡死扫描；生产 SQL 判据由 starter 的 H2 回归覆盖。
+      return List.of();
+    }
+
+    @Override
     public void saveTask(WorkflowTask task, String operatorId) {
       tasks.add(task);
     }

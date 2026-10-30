@@ -28,6 +28,13 @@ public record SubmitClaimReq(
     @Schema(description = "险种（一期仅 OUTPATIENT）", defaultValue = "OUTPATIENT") String claimType,
     @Schema(description = "发票代码") String invoiceCode,
     @Schema(description = "发票号码") String invoiceNo,
+    @Schema(
+            description =
+                "发票开票日期（「次」分组维度）。与出险时间不同：出险日是就医发生日，开票日是结算日。"
+                    + "缺省时，配置了「同日」次限额的责任仅在可证单票时才降级处理，否则转人工")
+        java.time.LocalDate invoiceDate,
+    @Schema(description = "医院编码（按编码比对，不按名称）") String hospitalCode,
+    @Schema(description = "病种/诊断编码（一次就诊一个主要诊断）") String diagnosisCode,
     @Schema(description = "出险时间", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull(message = "出险时间不能为空")
         Instant outInsureTime,
@@ -51,5 +58,6 @@ public record SubmitClaimReq(
       @Schema(description = "金额", requiredMode = Schema.RequiredMode.REQUIRED)
           @NotNull(message = "金额不能为空")
           @DecimalMin(value = "0", message = "金额不能为负")
-          BigDecimal amount) {}
+          BigDecimal amount,
+      @Schema(description = "就诊科室（行级「次」分组维度；一张发票可跨科室）") String department) {}
 }

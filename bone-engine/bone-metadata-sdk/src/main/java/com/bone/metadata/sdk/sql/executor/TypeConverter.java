@@ -19,6 +19,10 @@ public final class TypeConverter {
   private static final Map<Class<?>, Converter<?>> CONVERTERS = new ConcurrentHashMap<>(64);
   private static final List<DateTimeFormatter> DATE_FORMATTERS =
       Arrays.asList(
+          // 纯日期必须排在首位：DATE 列以字符串形式到达时（JDBC 4.2 之前驱动、CSV 导入、
+          // 或 JSON 里的 "2026-03-10"）只有 ISO_LOCAL_DATE 能解析，原列表缺它会让
+          // "最标准的那种写法"反而解析失败。
+          DateTimeFormatter.ISO_LOCAL_DATE,
           DateTimeFormatter.ISO_LOCAL_DATE_TIME,
           DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
           DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"));
@@ -256,6 +260,11 @@ public final class TypeConverter {
   static class LocalDateConverter implements Converter<LocalDate> {
     @Override
     public LocalDate convert(Object value, Class<LocalDate> targetType) {
+      // 身份转换必须显式处理：Connector/J 8 的 getObject() 在部分版本/参数下对 DATE 列直接返回
+      // LocalDate，若不认领会抛 Unsupported LocalDate conversion —— 而该类异常发生在读取阶段，
+      // 表现为"某个带 DATE 列的表整体读不出来"，与列本身是否为空无关，排查成本极高。
+      if (value instanceof LocalDate localDate) return localDate;
+      if (value instanceof LocalDateTime dateTime) return dateTime.toLocalDate();
       if (value instanceof String) return parseLocalDate((String) value);
       if (value instanceof java.sql.Date) return ((java.sql.Date) value).toLocalDate();
       throw new TypeConversionException("Unsupported LocalDate conversion: " + value);

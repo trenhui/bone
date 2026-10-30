@@ -51,7 +51,21 @@ public class SettlementApplicationService {
       return toResult(latest); // 幂等返回首次
     }
 
-    BigDecimal amount = resolveAmount(claimId);
+    // 资金路径 fail-closed：先于任何写入判定「账实是否可读」。
+    // 理算侧不直接 422，是因为结果还要给人看；但占额是把钱从账本上划走的动作，账实不明时记账即超赔风险。
+    //
+    // 为什么不能只靠下游 loadLiability 的「找不到账户」兜底：那一步发生在 settlementOrder 落库与个人账软占
+    // 之后，而软占是 REQUIRES_NEW 独立事务（已提交），异常回溯会把结算单回滚掉、却留下一条没有责任账对应的预占。
+    // 在写第一行之前失败，才谈得上「要么全有要么全无」。
+    IndemnityApplicationService.AdjustmentResult adj = indemnityApplicationService.latest(claimId);
+    if (adj == null) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_ADJUST_NOT_FOUND, claimId);
+    }
+    if (!adj.accumulationAvailable()) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_QUOTA_NOT_FOUND, claimId);
+    }
+
+    BigDecimal amount = adj.totalAmount();
     ClaimWithItemsProjection ctx = claimCaseApplicationService.getClaimWithItems(claimId).get(0);
     String settlementNo = "SO" + claimId + "-" + attempt;
 
@@ -67,7 +81,7 @@ public class SettlementApplicationService {
             attempt);
     settlementRepository.insert(order);
 
-    // 额度软占（独立事务）
+    // ① 个人账软占（独立事务）
     quotaApplicationService.reserve(
         tenantId,
         ctx.getInsuredIdHash(),
@@ -76,6 +90,22 @@ public class SettlementApplicationService {
         claimId,
         ctx.getClaimNo(),
         amount,
+        settlementNo,
+        attempt);
+
+    // ② 责任账软占 + 免赔消抵回写（独立事务，第二个聚合）。
+    //    只做 ① 不做 ② ⇒ 责任限额永远是配置常量、免赔永远从全额重扣：一案一满额、一案一免赔。
+    quotaApplicationService.reserveLiability(
+        tenantId,
+        ctx.getInsuredIdHash(),
+        ctx.getPolicyNo(),
+        ctx.getPlanId(),
+        java.time.Year.now().getValue(),
+        adj.liabilityUuid(),
+        claimId,
+        ctx.getClaimNo(),
+        amount,
+        adj.deductibleApplied(),
         settlementNo,
         attempt);
 
@@ -139,6 +169,20 @@ public class SettlementApplicationService {
         order.getSettlementNo(),
         attempt);
 
+    // 责任账 frozen→claimed（第二个聚合，独立事务）
+    quotaApplicationService.confirmLiabilityPay(
+        order.getTenantId(),
+        ctx.getInsuredIdHash(),
+        ctx.getPolicyNo(),
+        ctx.getPlanId(),
+        java.time.Year.now().getValue(),
+        adjustment(claimId).liabilityUuid(),
+        claimId,
+        order.getClaimNo(),
+        amount,
+        order.getSettlementNo(),
+        attempt);
+
     // 小额直付结案（42 → 50）：大额案在双人复核通过时已终态（44→50），此处按状态幂等跳过。
     // 没有这一步，<1 万案件支付完成后永远停在 ADJUSTED——不能结案、进不了后督抽检样本。
     com.bone.claim.domain.model.claim.ClaimCase claim =
@@ -172,6 +216,22 @@ public class SettlementApplicationService {
         order.getSettlementNo(),
         order.getAttempt());
 
+    // 责任账：frozen 归还 + 已消抵免赔回退（不回退免赔 ⇒ 客户下一案要重新消化一笔没赔出去的免赔）
+    IndemnityApplicationService.AdjustmentResult adj = adjustment(claimId);
+    quotaApplicationService.releaseLiability(
+        order.getTenantId(),
+        ctx.getInsuredIdHash(),
+        ctx.getPolicyNo(),
+        ctx.getPlanId(),
+        java.time.Year.now().getValue(),
+        adj.liabilityUuid(),
+        claimId,
+        order.getClaimNo(),
+        amount,
+        adj.deductibleApplied(),
+        order.getSettlementNo(),
+        order.getAttempt());
+
     domainEventPublisher.publishFrom(order);
     return toResult(order);
   }
@@ -199,6 +259,21 @@ public class SettlementApplicationService {
         order.getSettlementNo(),
         order.getAttempt());
 
+    IndemnityApplicationService.AdjustmentResult adj = adjustment(claimId);
+    quotaApplicationService.refundLiability(
+        order.getTenantId(),
+        ctx.getInsuredIdHash(),
+        ctx.getPolicyNo(),
+        ctx.getPlanId(),
+        java.time.Year.now().getValue(),
+        adj.liabilityUuid(),
+        claimId,
+        order.getClaimNo(),
+        amount,
+        adj.deductibleApplied(),
+        order.getSettlementNo(),
+        order.getAttempt());
+
     domainEventPublisher.publishFrom(order);
     return toResult(order);
   }
@@ -212,11 +287,16 @@ public class SettlementApplicationService {
   // ===================== 内部 =====================
 
   private BigDecimal resolveAmount(long claimId) {
+    return adjustment(claimId).totalAmount();
+  }
+
+  /** 当前生效理算（责任账接线需要 liabilityUuid 与 deductibleApplied，缺一无法定位账本）。 */
+  private IndemnityApplicationService.AdjustmentResult adjustment(long claimId) {
     IndemnityApplicationService.AdjustmentResult adj = indemnityApplicationService.latest(claimId);
     if (adj == null) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_ADJUST_NOT_FOUND, claimId);
     }
-    return adj.totalAmount();
+    return adj;
   }
 
   private SettlementOrder requireMutable(long claimId) {

@@ -58,7 +58,9 @@ class AutoApprovalApplicationServiceTest {
     ReflectionTestUtils.setField(service, "enabled", true);
     ReflectionTestUtils.setField(service, "maxAmount", new BigDecimal("1000"));
     when(indemnityApplicationService.latest(CLAIM))
-        .thenReturn(new IndemnityApplicationService.AdjustmentResult(null, AMOUNT, "h", "s", null));
+        .thenReturn(
+            new IndemnityApplicationService.AdjustmentResult(
+                null, AMOUNT, "h", "s", null, "", BigDecimal.ZERO, true));
   }
 
   @Test
@@ -115,7 +117,7 @@ class AutoApprovalApplicationServiceTest {
     when(indemnityApplicationService.latest(CLAIM))
         .thenReturn(
             new IndemnityApplicationService.AdjustmentResult(
-                null, new BigDecimal("1000.01"), "h", "s", null));
+                null, new BigDecimal("1000.01"), "h", "s", null, "", BigDecimal.ZERO, true));
 
     assertThat(service.applyAutoDecision(CLAIM).reason()).isEqualTo("CAP_EXCEEDED");
     verify(claimCaseApplicationService, never()).autoApprove(anyLong(), anyString());
@@ -132,7 +134,7 @@ class AutoApprovalApplicationServiceTest {
     when(indemnityApplicationService.latest(CLAIM))
         .thenReturn(
             new IndemnityApplicationService.AdjustmentResult(
-                null, new BigDecimal("1000.00"), "h", "s", null));
+                null, new BigDecimal("1000.00"), "h", "s", null, "", BigDecimal.ZERO, true));
     when(settlementApplicationService.create(anyLong(), anyInt(), any(), anyString()))
         .thenReturn(settlementResult);
 

@@ -75,6 +75,21 @@ public class ClaimItem extends TenantAbstractEntity<Long> {
   @Column(name = "invalid_amount", nullable = false)
   private BigDecimal invalidAmount = BigDecimal.ZERO;
 
+  /**
+   * 就诊科室（<b>行级</b>「次」分组维度，V1 §7.3）。
+   *
+   * <p>必须落在明细上：一张发票可含同日多科室的费用（如挂号两个科），科室是行级事实。 空串表示未提供——引擎对"要求按科室分组却缺科室"必须
+   * fail-closed（并成一组会少赔一次次限额）。
+   */
+  @Column(name = "department", nullable = false)
+  private String department = "";
+
+  /** 补录就诊科室（报案/OCR 回填；空白按未提供处理，不保留脏串）。 */
+  public void assignDepartment(String department) {
+    this.department = department == null ? "" : department.trim();
+    setUpdatedAt(new java.util.Date());
+  }
+
   /** 费用类别枚举。 */
   public ItemCategory categoryEnum() {
     return category == null ? ItemCategory.SERVICE : ItemCategory.ofName(category);

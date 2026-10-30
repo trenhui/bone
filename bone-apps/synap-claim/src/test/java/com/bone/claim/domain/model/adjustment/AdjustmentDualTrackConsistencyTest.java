@@ -119,6 +119,7 @@ class AdjustmentDualTrackConsistencyTest {
         AdjustmentDualTrackFixture.CLAIM,
         rows,
         liability,
-        "r1");
+        "r1",
+        Accumulation.FIRST);
   }
 }

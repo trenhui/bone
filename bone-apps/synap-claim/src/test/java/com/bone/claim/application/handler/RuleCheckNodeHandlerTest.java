@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
  *       否则核赔员无法判断该案件是"没查"还是"查出了问题"。
  * </ol>
  *
- * <p><b>口径边界</b>：规则路可用性当前只做标注、不参与硬闸（ADR-002 一期豁免允许 C2 为桩）；把它并入硬闸会使 AUTO_APPROVE
- * 策略整体翻转为人工，属资金路径策略变更，须签核后另起改动。本类不锁定该策略，只锁定"信号可见"。
+ * <p><b>口径（2026-10-29 收敛）</b>：规则路可用性已<b>并入</b>硬闸——ADR-002 一期豁免的前提是"E1/E2 未接入 ⇒ 闸本就恒不通过"， 该前提在 E1/E2
+ * 先于 C2 接入时自动失效，届时不带规则路的闸会放行"没核责"的案件。现按"不可用绝不等同于无冲突"一次收敛： {@code AUTO_APPROVE} 以 C2 真实交付为前置。
  */
 class RuleCheckNodeHandlerTest {
 
@@ -104,7 +104,7 @@ class RuleCheckNodeHandlerTest {
   // ===================== 用例 =====================
 
   @Test
-  @DisplayName("规则桩（未执行任何规则）→ 显式标注 ruleAvailable=false + 原因码，不得伪装成已核责")
+  @DisplayName("规则桩（未执行任何规则）→ 显式标注 ruleAvailable=false + 闸不过（没核责就不放款）")
   void ruleStubIsFlaggedUnavailable() {
     Map<String, Object> out =
         run(handler(stubRule(true), visual(true, false), graph(true, false), true));
@@ -113,6 +113,12 @@ class RuleCheckNodeHandlerTest {
     assertThat(out.get("ruleUnavailableReason")).isEqualTo("RULE_ENGINE_STUB");
     // 桩给出的 riskHit=false 是默认值，仍不得据此宣称命中风险
     assertThat(out.get("riskHit")).isEqualTo(false);
+    // 即便视觉/图计算都可用且干净，规则没跑过 ⇒ 闸不过，且原因码指向规则路（不是"验真未过"这种误导结论）
+    assertThat(out.get("fraudGatePassed")).isEqualTo(false);
+    assertThat(out.get("fraudGateReason")).isEqualTo("RULE_ENGINE_UNAVAILABLE");
+    // "无法判定"与"真实命中风险"分属两种安全态
+    assertThat(out.get("capabilityMissing")).isEqualTo(true);
+    assertThat(out.get("capabilityReason")).isEqualTo("CAPABILITY_MISSING:RULE_ENGINE");
   }
 
   @Test
@@ -127,6 +133,7 @@ class RuleCheckNodeHandlerTest {
     assertThat(out.get("fraudGatePassed")).isEqualTo(true);
     assertThat(out.get("fraudGateReason")).isEqualTo("PASSED");
     assertThat(out.get("ruleUnavailableReason")).isEqualTo("");
+    assertThat(out.get("capabilityMissing")).isEqualTo(false);
   }
 
   @Test

@@ -22,7 +22,10 @@ import org.springframework.scheduling.annotation.Scheduled;
  *       同实例存在更早的在途意图时本条不返回。若某条失败，本批次内<b>跳过该实例的后续意图</b>—— 否则会先落地后写的 REJECTED 再落地先写的
  *       APPROVED，把终态投影颠倒。
  *   <li><b>失败指数退避、有上限</b>：重试间隔 1s→2s→4s…封顶 5 分钟；达到上限不再排期，留在 FAILED
- *       交由对账/人工。不能无限重试——一个永久失败的动作（如动作定义被删）会让中继永久空转。
+ *       交由对账/人工。不能无限重试——一个永久失败的动作（如动作定义被删）会让中继永久空转。 <b>达上限时必须显式 {@code markTerminallyFailed}
+ *       落终态</b>：单纯「不排期」是不够的——执行前 {@code claim()} 已把该行写成 CLAIMED，而 CLAIMED 行超时 5 分钟会被「超时抢占」路径重新取回，
+ *       于是永久失败的动作仍会被每 5 分钟执行一次（真实事故：意图行永久停在 CLAIMED、ERROR 每 5 分钟 刷一次、且因不是 FAILED 而死信存量恒为 0）。终态 =
+ *       FAILED + {@code next_retry_at} 推到远未来， 才能同时满足「pollDue 不再取回」与「countTerminallyFailed 可见」两条。
  *   <li><b>不跨实例互堵</b>：一个实例卡住不影响其它实例的投影（本批次跳过的只是同一 instanceId）。
  *   <li><b>对账补投 + 定期清理</b>：{@link #runReconcile(int)} 补救「phase CAS 已写终态、意图行根本没落库」的丢失窗口；{@link
  *       #purgeDone()} 按保留期物理清理 DONE 行防表无限增长（保留期 &gt; 对账窗口，两者共同保证被清行不会被重投影）。
@@ -119,8 +122,8 @@ public class StatusProjectionRelay {
         boolean rescheduled =
             outbox.markFailed(intent.id(), intent.retryCount(), maxRetries, backoffOf(intent));
         blockedInstances.add(intent.instanceId());
-        metrics.relayIntentFailed();
         if (rescheduled) {
+          metrics.relayIntentFailed();
           log.warn(
               "[workflow] 状态投影失败，将按退避重试：intent={} instance={} attempt={}",
               intent.id(),
@@ -128,10 +131,20 @@ public class StatusProjectionRelay {
               intent.retryCount() + 1,
               ex);
         } else {
+          // 已达重试上限：必须**显式落终态死信**——把 state 写成 FAILED 且 next_retry_at 推到远未来
+          // （{@code markTerminallyFailed}）。否则该行停留在 claim() 刚写入的 CLAIMED 状态，会被
+          // 「超时 CLAIMED 抢占」路径每 CLAIM_TIMEOUT 重新取回、重复执行这个永久失败的动作 ⇒
+          // 与「达到上限不再排期 / 不能无限重试·不能永久空转」的正确性纪律相悖；且停留在 CLAIMED 时
+          // countTerminallyFailed 恒为 0，死信存量监控对这类死信完全失明，「转人工」沦为一句空话。
+          boolean terminal =
+              outbox.markTerminallyFailed(intent.id(), "重试已达上限：" + ex.getClass().getSimpleName());
+          metrics.relayIntentTerminallyFailed();
           log.error(
-              "[workflow] 状态投影重试已达上限，留在 FAILED 待人工介入：intent={} instance={}",
+              "[workflow] 状态投影重试已达上限，已落终态 FAILED 待人工介入：intent={} instance={} action={} terminal={}",
               intent.id(),
               intent.instanceId(),
+              intent.actionCode(),
+              terminal,
               ex);
         }
       } finally {

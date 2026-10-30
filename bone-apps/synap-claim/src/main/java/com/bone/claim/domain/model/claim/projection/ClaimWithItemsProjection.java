@@ -63,8 +63,29 @@ public class ClaimWithItemsProjection {
   private BigDecimal itemSelfPay1;
   private BigDecimal itemSelfPay2;
   private BigDecimal itemSelfPayC;
+
+  /** 第三方已赔付（社保统筹之外：商保/公账/其他基金）。理算的"不可获利"护栏依赖此列。 */
+  private BigDecimal itemThirdPartyPaid;
+
   private BigDecimal itemValidAmount;
   private BigDecimal itemInvalidAmount;
+
+  // ---- 「次」分组维度（V1 §7.3；发票级三列一案一值，科室为行级）----
+  /**
+   * 发票开票日期（<b>发票级</b>：一赔案一发票，故案内恒定）。
+   *
+   * <p>历史案件为 {@code null}——不得用 {@code outInsureTime} 顶替：出险日与开票日可以不同， 顶替会让"同日"分组按错误日期切分，且错误不可见。
+   */
+  private java.time.LocalDate invoiceDate;
+
+  /** 医院编码（发票级；按编码而非名称比对，名称可改、编码是身份）。 */
+  private String hospitalCode;
+
+  /** 病种/诊断编码（发票级；一次就诊一个主要诊断）。 */
+  private String diagnosisCode;
+
+  /** 就诊科室（<b>行级</b>：一张发票可跨科室，这是"同院同科室"档唯一能拆分的维度）。 */
+  private String itemDepartment;
 
   /** 对外状态码（pk-tpa 口径）；{@code status} 非枚举名时返回 null，不抛异常污染读链路。 */
   @JsonProperty("externalStatus")

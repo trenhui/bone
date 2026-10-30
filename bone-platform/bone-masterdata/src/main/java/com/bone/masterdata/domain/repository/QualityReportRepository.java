@@ -22,6 +22,16 @@ public interface QualityReportRepository extends Repository<QualityReport, Long>
         .list();
   }
 
+  /**
+   * 查询全部质量报告（读模型，ADR-0030）。
+   *
+   * <p>「不传 qualityCheckId = 查全部」的唯一正确出口：上层若直接把 {@code null} 喂给 {@link #findByQualityCheckId}，DSL
+   * 会落成 {@code quality_check_id = NULL}，SQL 三值逻辑下永不命中 ⇒ 即使库里有报告，列表也恒为空。故必须与「有筛选」分支显式分开。
+   */
+  default List<QualityReport> findAllReports() {
+    return QueryBuilder.from(QualityReport.class).list();
+  }
+
   /** 按质量检查 ID 批量查询（读模型，ADR-0030）：避免逐个检查查询造成 N+1。 */
   default List<QualityReport> findByQualityCheckIds(Collection<Long> qualityCheckIds) {
     if (qualityCheckIds == null || qualityCheckIds.isEmpty()) {

@@ -159,12 +159,16 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
   }
 
   /**
-   * 冻结（理算完成后占额，计入 frozen 不扣 claimed）。
+   * 软占（SOFT，§5.3：{@code SettlementOrder} 创建即冻结，计入 {@code frozen} 不扣 {@code claimed}）。
+   *
+   * <p>流水 {@code direction=OCCUPY / txn_type=SOFT}——<b>软占与硬冻必须是两种 txn_type</b>：流水是 append-only 的
+   * 事实表（账户只是投影），若软占也记 {@code HARD}，下游按 txn_type 统计软/硬占用、以及对账"SOFT→HARD 阶段单调"
+   * 都会失真，同一笔钱会在两个阶段各被计一次占用（双冻结）。
    *
    * @param amount 冻结金额
    * @return 本次流水（append-only）
    */
-  public QuotaTransaction freeze(
+  public QuotaTransaction reserveSoft(
       long txnId, BigDecimal amount, Long claimId, String settlementNo, String idempotencyKey) {
     requirePositive(amount, "冻结金额");
     if (available().compareTo(amount) < 0) {
@@ -178,9 +182,36 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
         claimId,
         settlementNo,
         "OCCUPY",
-        "HARD",
+        "SOFT",
         amount,
         before,
+        quotaFrozen,
+        idempotencyKey);
+  }
+
+  /**
+   * 硬冻升级（HARD，§5.3：{@code HARD_RESERVED} 沿用软占已记的 {@code frozen}，<b>不新增占用</b>，仅记录硬预占状态）。
+   *
+   * <p>流水 {@code direction=OCCUPY / txn_type=HARD}，{@code before == after}（额度未变动）。<b>禁止</b>在此再
+   * {@code frozen += amount}：那会让同一笔钱被软占与硬冻各计一次，直接造成"可用额度凭空蒸发"。
+   *
+   * @param amount 本次升级为硬冻的金额（不得超过已冻结额）
+   * @return 本次流水（append-only）
+   */
+  public QuotaTransaction upgradeToHard(
+      long txnId, BigDecimal amount, Long claimId, String settlementNo, String idempotencyKey) {
+    requirePositive(amount, "硬冻金额");
+    if (quotaFrozen.compareTo(amount) < 0) {
+      throw new DomainException("已冻结额度小于硬冻金额，硬冻升级不得新增占用");
+    }
+    return append(
+        txnId,
+        claimId,
+        settlementNo,
+        "OCCUPY",
+        "HARD",
+        amount,
+        quotaFrozen,
         quotaFrozen,
         idempotencyKey);
   }
@@ -254,12 +285,60 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
         idempotencyKey);
   }
 
-  /** 累计年免赔（R-DED-03）。 */
-  public void accumulateDeductible(BigDecimal amount) {
+  /**
+   * 累计年免赔（R-DED-03）并落流水。
+   *
+   * <p><b>必须落 {@code txn_type=DEDUCTIBLE} 的流水</b>：{@code deductible_used} 是账户投影，流水才是事实。 不落流水就无法按
+   * {@code idempotencyKey} 判重（重复提交会把免赔消抵两次 ⇒ 系统性少赔）， 撤件/重算时也没有可据以回退的依据。金额为 0 时不落流水（免赔未消抵，无需记账）。
+   *
+   * @return 本次流水；{@code amount <= 0} 时返回 {@code null}
+   */
+  public QuotaTransaction accumulateDeductible(
+      long txnId, BigDecimal amount, Long claimId, String settlementNo, String idempotencyKey) {
     if (amount == null || amount.signum() <= 0) {
-      return;
+      return null;
     }
+    BigDecimal before = deductibleUsed;
     this.deductibleUsed = deductibleUsed.add(amount).setScale(2, java.math.RoundingMode.HALF_UP);
+    this.updatedAt = Instant.now();
+    return append(
+        txnId,
+        claimId,
+        settlementNo,
+        "OCCUPY",
+        "DEDUCTIBLE",
+        amount,
+        before,
+        deductibleUsed,
+        idempotencyKey);
+  }
+
+  /**
+   * 回退年免赔（撤件 / 拒赔 / 冲正：本案消抵的免赔须归还，否则后续案件会重复"消化"同一笔免赔 ⇒ 系统性少赔）。
+   *
+   * <p>与 {@link #accumulateDeductible} 严格对称：方向 {@code ROLLBACK}，且钳到 0（历史上限保护）。
+   *
+   * @return 本次流水；{@code amount <= 0} 时返回 {@code null}
+   */
+  public QuotaTransaction reduceDeductible(
+      long txnId, BigDecimal amount, Long claimId, String settlementNo, String idempotencyKey) {
+    if (amount == null || amount.signum() <= 0) {
+      return null;
+    }
+    BigDecimal before = deductibleUsed;
+    this.deductibleUsed =
+        deductibleUsed.subtract(amount).max(ZERO).setScale(2, java.math.RoundingMode.HALF_UP);
+    this.updatedAt = Instant.now();
+    return append(
+        txnId,
+        claimId,
+        settlementNo,
+        "ROLLBACK",
+        "DEDUCTIBLE",
+        amount,
+        before,
+        deductibleUsed,
+        idempotencyKey);
   }
 
   /** 减人（不再参与额度累计）。 */

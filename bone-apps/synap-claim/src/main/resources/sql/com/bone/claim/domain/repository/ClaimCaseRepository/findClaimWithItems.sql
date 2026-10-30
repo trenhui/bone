@@ -21,6 +21,9 @@ SELECT
        c.reject_type,
        c.plan_version,
        c.created_at,
+       c.invoice_date,
+       c.hospital_code,
+       c.diagnosis_code,
        i.id             AS item_id,
        i.item_name,
        i.item_code,
@@ -34,8 +37,10 @@ SELECT
        i.self_pay_1     AS item_self_pay_1,
        i.self_pay_2     AS item_self_pay_2,
        i.self_pay_c     AS item_self_pay_c,
+       i.third_party_paid AS item_third_party_paid,
        i.valid_amount   AS item_valid_amount,
-       i.invalid_amount AS item_invalid_amount
+       i.invalid_amount AS item_invalid_amount,
+       i.department     AS item_department
 FROM t_claim_case c
        LEFT JOIN t_claim_item i ON i.claim_id = c.id AND i.deleted = 0
 WHERE c.id = :claimId AND

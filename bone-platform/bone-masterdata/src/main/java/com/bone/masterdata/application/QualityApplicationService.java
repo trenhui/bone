@@ -497,12 +497,20 @@ public class QualityApplicationService {
     return checks.stream().map(this::toCheckDto).toList();
   }
 
-  /** 按质量检查 ID 查询报告列表。 */
+  /**
+   * 查询报告列表：传 qualityCheckId → 该次检查的报告；不传 → 全部报告。
+   *
+   * <p><b>为何必须分支</b>：把 {@code null} 直接交给 {@code findByQualityCheckId} 会生成 {@code quality_check_id =
+   * NULL}，SQL 三值逻辑下永不命中 ⇒ 报告列表恒为空（此前 {@code GET /quality/reports} 正是此症状：已完成的上百次检查、报告确实落库且按 checkId
+   * 能取到，但列表永远返回 {@code []}）。与 {@link #listChecks} 的 {@code findAllChecks()} 分支保持同一口径。
+   */
   @Transactional(readOnly = true)
   public List<QualityReportDTO> listReports(Long qualityCheckId) {
-    return qualityReportRepository.findByQualityCheckId(qualityCheckId).stream()
-        .map(this::toReportDto)
-        .toList();
+    List<QualityReport> reports =
+        qualityCheckId != null
+            ? qualityReportRepository.findByQualityCheckId(qualityCheckId)
+            : qualityReportRepository.findAllReports();
+    return reports.stream().map(this::toReportDto).toList();
   }
 
   /**

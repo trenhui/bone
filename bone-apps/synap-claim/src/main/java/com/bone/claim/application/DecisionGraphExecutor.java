@@ -129,7 +129,13 @@ public class DecisionGraphExecutor {
     Map<String, Object> outputs = new HashMap<>();
     BigDecimal confidence = null;
     boolean fallback = false;
+    // 结构性缺能力：确定性节点根本没有处理器（装配不全），此时任何下游结论都不可信 → 一刀切转人工。
+    boolean structuralMissing = false;
+    // 节点自报"无法判定"：依赖能力未接入（知识/规则/视觉/图计算），节点仍产出了其余字段 → 只兜"本会自动放款"。
     boolean capabilityMissing = false;
+    // 能力缺失的受控原因码：节点自报优先（如 KNOWLEDGE_UNAVAILABLE / CAPABILITY_MISSING:RULE_ENGINE），
+    // 缺省为处理器未装配的通用码。只进 trace/审计，不参与金额计算。
+    String capabilityReason = "CAPABILITY_MISSING";
     boolean evidenceMissing = false;
     int seq = 0;
 
@@ -154,7 +160,7 @@ public class DecisionGraphExecutor {
           continue;
         }
         // 确定性节点能力缺失：链路不完整 → fail-safe 转人工
-        capabilityMissing = true;
+        structuralMissing = true;
         execution.recordTrace(
             seq, node.type(), node.name(), "", null, DecisionNodeStatus.SKIPPED, "NO_HANDLER", 0);
         decisionMetricsPort.recordNode(node.name(), DecisionNodeStatus.SKIPPED.name(), 0);
@@ -177,6 +183,15 @@ public class DecisionGraphExecutor {
             cost);
         decisionMetricsPort.recordNode(node.name(), outcome.status().name(), cost);
         outputs.putAll(outcome.output());
+        // 节点自报"无法判定"（knowledge/rule/vision/graph 任一能力缺失）：并入统一的 fail-safe 通道。
+        // 与 rejectSuggested 严格分离——前者转人工，后者才是不利决定（见 AiAssessNodeHandler）。
+        if (Boolean.TRUE.equals(outcome.output().get("capabilityMissing"))) {
+          capabilityMissing = true;
+          Object reason = outcome.output().get("capabilityReason");
+          if (reason instanceof String s && !s.isBlank()) {
+            capabilityReason = s;
+          }
+        }
         if (outcome.confidence() != null) {
           confidence = outcome.confidence();
         }
@@ -232,24 +247,38 @@ public class DecisionGraphExecutor {
       }
     }
 
-    DecisionTriage.Outcome outcome =
-        evidenceMissing
-            ? new DecisionTriage.Outcome(
-                DecisionResult.NEED_MORE_EVIDENCE, DecisionTier.MANUAL, "EVIDENCE_MISSING")
-            : capabilityMissing
-                ? new DecisionTriage.Outcome(
-                    DecisionResult.MANUAL_REQUIRED, DecisionTier.MANUAL, "CAPABILITY_MISSING")
-                : DecisionTriage.evaluate(
-                    new DecisionTriage.Input(
-                        asBoolean(outputs.get("hasEvidence")),
-                        !Boolean.FALSE.equals(outputs.get("evidenceParsed")),
-                        asBoolean(outputs.get("ruleConflict")),
-                        asDecimal(outputs.get("amount")),
-                        confidence,
-                        asDecimal(outputs.get("ocrConfidence")),
-                        asBoolean(outputs.get("riskHit")),
-                        asBoolean(outputs.get("fraudGatePassed")),
-                        asBoolean(outputs.get("rejectSuggested"))));
+    DecisionTriage.Outcome outcome;
+    if (evidenceMissing) {
+      outcome =
+          new DecisionTriage.Outcome(
+              DecisionResult.NEED_MORE_EVIDENCE, DecisionTier.MANUAL, "EVIDENCE_MISSING");
+    } else if (structuralMissing) {
+      // 装配不全（节点无处理器）：输出全部来自缺省值，连"是否缺件"都不可信 → 不得误判为补件
+      outcome =
+          new DecisionTriage.Outcome(
+              DecisionResult.MANUAL_REQUIRED, DecisionTier.MANUAL, "CAPABILITY_MISSING");
+    } else {
+      outcome =
+          DecisionTriage.evaluate(
+              new DecisionTriage.Input(
+                  asBoolean(outputs.get("hasEvidence")),
+                  !Boolean.FALSE.equals(outputs.get("evidenceParsed")),
+                  asBoolean(outputs.get("ruleConflict")),
+                  asDecimal(outputs.get("amount")),
+                  confidence,
+                  asDecimal(outputs.get("ocrConfidence")),
+                  asBoolean(outputs.get("riskHit")),
+                  asBoolean(outputs.get("fraudGatePassed")),
+                  asBoolean(outputs.get("rejectSuggested"))));
+      // 能力缺失只兜"唯一危险态"：本会 AUTO_APPROVE（自动放款）但存在"无法判定"的能力环节。
+      // 其余结论本就走人工/复核档，且带更精确的原因码（大额复核档位、风控命中、验真未过等），不得被本兜底覆盖，
+      // 否则会把"大额双人复核"降级成"普通人工"，或把"有依据的拒赔建议"抹成"无法判定"。
+      if (capabilityMissing && outcome.result() == DecisionResult.AUTO_APPROVE) {
+        outcome =
+            new DecisionTriage.Outcome(
+                DecisionResult.MANUAL_REQUIRED, DecisionTier.MANUAL, capabilityReason);
+      }
+    }
     // AI 溯源回填：调用方漏传 model/prompt 版本时，用 AI 节点自报的真实上游模型与提示词契约版本兜底
     // （显式传入优先，见 DecisionExecution#backfillAiVersions）——避免"回放与复算必需"的字段静默为空。
     execution.backfillAiVersions(

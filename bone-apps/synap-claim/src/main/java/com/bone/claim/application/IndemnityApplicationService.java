@@ -1,8 +1,10 @@
 package com.bone.claim.application;
 
+import com.bone.claim.application.port.out.AccumulationPort;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
+import com.bone.claim.domain.model.adjustment.Accumulation;
 import com.bone.claim.domain.model.adjustment.Adjustment;
 import com.bone.claim.domain.model.adjustment.AdjustmentLine;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
@@ -34,16 +36,26 @@ public class IndemnityApplicationService {
   private final LiabilityRepository liabilityRepository;
   private final EvidenceRepository evidenceRepository;
   private final ClaimCaseApplicationService claimCaseApplicationService;
+  private final AccumulationPort accumulationPort;
   private final TenantPort tenantPort;
   private final DomainEventPublisher domainEventPublisher;
 
-  /** 理算结果（含逐行归因，供拒赔五要素「事实认定」引用）。 */
+  /**
+   * 理算结果（含逐行归因，供拒赔五要素「事实认定」引用）。
+   *
+   * @param deductibleApplied 本次实际消抵的年度免赔（⑩ 写侧增量）：A7 结算须把它累加进责任账 {@code
+   *     deductible_used}，否则次案仍会重扣全额免赔——护栏只装一半等于没装。
+   * @param accumulationAvailable 累计读侧是否解析到责任账；{@code false} 时 A7 必须拒绝占额（账实不明不记账）
+   */
   public record AdjustmentResult(
       Long calculationId,
       BigDecimal totalAmount,
       String formulaHash,
       String snapshot,
-      List<AdjustmentLine> lines) {}
+      List<AdjustmentLine> lines,
+      String liabilityUuid,
+      BigDecimal deductibleApplied,
+      boolean accumulationAvailable) {}
 
   /**
    * 执行理算（产出即 {@code FROZEN}）。
@@ -66,6 +78,7 @@ public class IndemnityApplicationService {
 
     List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
     AdjLiability liability = resolveLiability(rows);
+    Accumulation accumulation = accumulate(rows, liability);
 
     Adjustment adjustment;
     try {
@@ -76,18 +89,14 @@ public class IndemnityApplicationService {
               claimId,
               rows,
               liability,
-              ruleVersion);
+              ruleVersion,
+              accumulation);
     } catch (DomainException ex) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_LIABILITY_NOT_FOUND, claimId, ex);
     }
     adjustmentRepository.insert(adjustment);
     domainEventPublisher.publishFrom(adjustment);
-    return new AdjustmentResult(
-        adjustment.getId(),
-        adjustment.getTotalAmount(),
-        adjustment.getFormulaHash(),
-        adjustment.getFormulaSnapshot(),
-        adjustmentRepository.findLinesByCalculationId(adjustment.getId()));
+    return toResult(adjustment);
   }
 
   /** 重算（规则/责任版本变更后；已 CONFIRMED 拒绝，由聚合抛领域异常）。 */
@@ -99,15 +108,10 @@ public class IndemnityApplicationService {
     }
     List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
     AdjLiability liability = resolveLiability(rows);
-    latest.recalculate(rows, liability);
+    latest.recalculate(rows, liability, accumulate(rows, liability));
     adjustmentRepository.save(latest);
     domainEventPublisher.publishFrom(latest);
-    return new AdjustmentResult(
-        latest.getId(),
-        latest.getTotalAmount(),
-        latest.getFormulaHash(),
-        latest.getFormulaSnapshot(),
-        adjustmentRepository.findLinesByCalculationId(latest.getId()));
+    return toResult(latest);
   }
 
   /** 核赔确认（frozen 语义：理算结果锁定，等 A7 资金阶段真正占额）。 */
@@ -125,15 +129,46 @@ public class IndemnityApplicationService {
   @Transactional(readOnly = true)
   public AdjustmentResult latest(long claimId) {
     Adjustment latest = adjustmentRepository.findLatestByClaimId(claimId);
-    if (latest == null) {
-      return null;
+    return latest == null ? null : toResult(latest);
+  }
+
+  /**
+   * 读取跨案累计（⑩）。
+   *
+   * <p><b>缺账本不阻断理算</b>：理算结果还要给人看，直接 422 会让整条链路在缺数据时完全不可用。 改为在快照里落 {@code
+   * accumulationAvailable=false} 并告警，由 A7 资金路径 fail-closed—— 结算是真正把钱占出去的动作，账实不明时不允许记账。
+   *
+   * <p><b>年度口径</b>：与 {@code QuotaApplicationService#loadPersonal} 同为 {@code Year.now()}。
+   * 严格来说应为<b>保单年度</b>（DDL 注释即"按保单年度"），保单生效月非 1 月时两者不等； 此处刻意与既有写侧保持一致——读写两侧若用不同口径，两本账立刻对不上，
+   * 那比"用错年度"更糟。保单年度口径作为独立改动（需保单快照提供生效日）另行推进。
+   */
+  private Accumulation accumulate(List<ClaimWithItemsProjection> rows, AdjLiability liability) {
+    if (rows.isEmpty()) {
+      return Accumulation.MISSING;
     }
+    ClaimWithItemsProjection head = rows.get(0);
+    if (head.getPolicyNo() == null || head.getInsuredIdHash() == null || head.getPlanId() == null) {
+      return Accumulation.MISSING;
+    }
+    return accumulationPort.load(
+        tenantPort.currentTenantId(),
+        head.getInsuredIdHash(),
+        head.getPolicyNo(),
+        head.getPlanId(),
+        java.time.Year.now().getValue(),
+        liability.getLiabilityUuid());
+  }
+
+  private AdjustmentResult toResult(Adjustment adjustment) {
     return new AdjustmentResult(
-        latest.getId(),
-        latest.getTotalAmount(),
-        latest.getFormulaHash(),
-        latest.getFormulaSnapshot(),
-        adjustmentRepository.findLinesByCalculationId(latest.getId()));
+        adjustment.getId(),
+        adjustment.getTotalAmount(),
+        adjustment.getFormulaHash(),
+        adjustment.getFormulaSnapshot(),
+        adjustmentRepository.findLinesByCalculationId(adjustment.getId()),
+        adjustment.getLiabilityUuid(),
+        adjustment.getDeductibleApplied(),
+        adjustment.isAccumulationAvailable());
   }
 
   /**

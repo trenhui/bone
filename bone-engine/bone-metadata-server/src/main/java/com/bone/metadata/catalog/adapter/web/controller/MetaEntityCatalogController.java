@@ -1,5 +1,6 @@
 package com.bone.metadata.catalog.adapter.web.controller;
 
+import com.bone.core.exception.DomainException;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.application.MetaEntityApplicationService;
@@ -252,9 +253,24 @@ public class MetaEntityCatalogController {
   public ApiResponse<Void> saveUiOverlay(
       @PathVariable String entityCode,
       @RequestBody com.fasterxml.jackson.databind.JsonNode overlay) {
-    uiOverlayApplicationService.saveOverlayJson(
-        entityCode, overlay == null ? null : overlay.toString());
+    uiOverlayApplicationService.saveOverlayJson(entityCode, requireOverlayJson(overlay));
     return ApiResponse.success();
+  }
+
+  /**
+   * 覆盖体必须是<b>非空 JSON 对象</b>——本端点是 UPSERT 全量替换语义。
+   *
+   * <p><b>为什么必须在入站边界挡掉</b>：{@code {}} 序列化后是字符串 {@code "{}"}，既非 null 也非空白， 能顺利绕过适配器的空值守卫直接 UPSERT ⇒
+   * 「前端误发一个空对象」就把用户已保存的列偏好<b>静默抹掉</b>， 而接口仍返回 200「操作成功」——典型的谎报成功 + 数据丢失。
+   *
+   * <p>清空有专属出口 {@link #clearUiOverlay}（DELETE），PUT 空对象没有任何合法语义：前端 {@code persistOverlay} 恒传完整
+   * bundle，「恢复默认」走 {@code resetOverlay} → DELETE。
+   */
+  private static String requireOverlayJson(com.fasterxml.jackson.databind.JsonNode overlay) {
+    if (overlay == null || overlay.isNull() || !overlay.isObject() || overlay.isEmpty()) {
+      throw new DomainException("界面列投影覆盖不能为空对象；如需恢复默认请调用 DELETE /ui-overlay");
+    }
+    return overlay.toString();
   }
 
   /** 重置为默认投影（软删；localStorage 缓存由前端同步清除）。 */

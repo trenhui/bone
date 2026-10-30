@@ -17,6 +17,7 @@ import com.bone.claim.domain.model.claim.ClaimItem;
 import com.bone.claim.domain.model.claim.valueobject.Decision;
 import com.bone.claim.domain.model.claim.valueobject.ItemCategory;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
+import com.bone.claim.domain.repository.ClaimItemRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
@@ -39,6 +40,7 @@ class ClaimCaseApplicationServiceTest {
   private static final Instant OUT_INSURE = Instant.parse("2026-03-12T10:00:00Z");
 
   @Mock private ClaimCaseRepository claimCaseRepository;
+  @Mock private ClaimItemRepository claimItemRepository;
   @Mock private PolicyQueryPort policyQueryPort;
   @Mock private TenantPort tenantPort;
   @Mock private DomainEventPublisher domainEventPublisher;
@@ -68,6 +70,9 @@ class ClaimCaseApplicationServiceTest {
         "OUTPATIENT",
         "04400001",
         "12345678",
+        null,
+        null,
+        null,
         OUT_INSURE,
         "B1",
         List.of(
@@ -77,7 +82,8 @@ class ClaimCaseApplicationServiceTest {
                 ItemCategory.SERVICE,
                 BigDecimal.ONE,
                 BigDecimal.TEN,
-                new BigDecimal("10.00"))));
+                new BigDecimal("10.00"),
+                null)));
   }
 
   @Test
@@ -92,6 +98,52 @@ class ClaimCaseApplicationServiceTest {
     assertThat(claimId.claimNo()).startsWith("CL");
     verify(claimCaseRepository).insert(any(ClaimCase.class));
     verify(domainEventPublisher).publishFrom(any(ClaimCase.class));
+  }
+
+  @Test
+  @DisplayName("报案落库：发票维度与明细科室必须落进聚合（只加列不写入 = 配了不生效）")
+  void submitPersistsInvoiceContext() {
+    when(policyQueryPort.findActivePolicy("EG20260001", 7L)).thenReturn(Optional.of(snapshot));
+    when(claimCaseRepository.findByIdempotencyKey(TENANT_ID, "idem-ctx")).thenReturn(null);
+
+    SubmitClaim command =
+        new SubmitClaim(
+            "idem-ctx",
+            "EG20260001",
+            7L,
+            "hash-abc",
+            "OUTPATIENT",
+            "04400001",
+            "12345678",
+            java.time.LocalDate.of(2026, 3, 10),
+            "H-001",
+            "DX-01",
+            OUT_INSURE,
+            "B1",
+            List.of(
+                new SubmitClaim.ClaimItemDto(
+                    "诊查费",
+                    "",
+                    ItemCategory.SERVICE,
+                    BigDecimal.ONE,
+                    BigDecimal.TEN,
+                    new BigDecimal("10.00"),
+                    "内科")));
+
+    service.submit(command);
+
+    org.mockito.ArgumentCaptor<ClaimCase> captor =
+        org.mockito.ArgumentCaptor.forClass(ClaimCase.class);
+    verify(claimCaseRepository).insert(captor.capture());
+    ClaimCase saved = captor.getValue();
+    assertThat(saved.getInvoiceDate()).isEqualTo(java.time.LocalDate.of(2026, 3, 10));
+    assertThat(saved.getHospitalCode()).isEqualTo("H-001");
+    assertThat(saved.getDiagnosisCode()).isEqualTo("DX-01");
+    assertThat(saved.singleInvoiceProvable()).as("有发票号才能证明『案内只有一张票』，这是发票级维度缺失时允许降级的唯一依据").isTrue();
+    assertThat(saved.getItems())
+        .as("科室是行级分组维度，必须随明细落库")
+        .extracting(ClaimItem::getDepartment)
+        .containsExactly("内科");
   }
 
   @Test

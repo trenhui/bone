@@ -638,7 +638,8 @@ final class AdjustmentDualTrackFixture {
             s.socialOnly() ? 1 : 0,
             0,
             "ACTIVE");
-    return Adjustment.calculate(9001L, TENANT, CLAIM, rows, liability, "r1").getTotalAmount();
+    return Adjustment.calculate(9001L, TENANT, CLAIM, rows, liability, "r1", Accumulation.FIRST)
+        .getTotalAmount();
   }
 
   /**
