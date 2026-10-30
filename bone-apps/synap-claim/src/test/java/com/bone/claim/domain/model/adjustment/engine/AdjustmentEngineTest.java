@@ -440,6 +440,338 @@ class AdjustmentEngineTest {
           .isInstanceOf(RuleGap.class)
           .hasMessageContaining("永远不会生效");
     }
+
+    @Test
+    @DisplayName("次限额必须真的截断：单次 1000、次限额 300 ⇒ 赔 300（配了不生效就是超赔）")
+    void occurrenceLimitCaps() {
+      LiabilityRule rule =
+          ruleWithLimits(
+              new LiabilityRule.LimitSet(
+                  LiabilityRule.InsuredForm.FIXED,
+                  BigDecimal.ZERO,
+                  NO_CAP,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  new BigDecimal("300"),
+                  BigDecimal.ZERO),
+              LiabilityRule.QuotaPolicy.defaults(),
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none());
+
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, List.of(row(2001L, "IN", "1000.00", "0", "0")), rule, Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount())
+          .as("若为 1000.00，说明次限额只是配置字段、没有接进控额栈")
+          .isEqualByComparingTo("300.00");
+    }
+
+    /**
+     * 次限额是"每次各一份"，责任额度是"全案一本账"——两者混用会一个多赔一个少赔。
+     *
+     * <p>两个「次」各 400、次限额 1000（不生效）、责任额度 500：正确 500；若责任额度按组重置则 800（超赔）。
+     */
+    @Test
+    @DisplayName("两个「次」共享责任额度：400 + 400 受 500 封顶 ⇒ 赔 500（不是 800）")
+    void liabilitySharedAcrossOccurrences() {
+      LiabilityRule rule =
+          occurrenceRule(
+              new LiabilityRule.LimitSet(
+                  LiabilityRule.InsuredForm.FIXED,
+                  BigDecimal.ZERO,
+                  new BigDecimal("500"),
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  new BigDecimal("1000"),
+                  BigDecimal.ZERO),
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none());
+
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, twoRows("400.00", "400.00"), rule, Accumulation.FIRST),
+              twoDayFacts());
+
+      assertThat(outcome.totalAmount())
+          .as("若为 800.00，说明责任额度被每个「次」重置了一次（跨组共享失效 ⇒ 超赔）")
+          .isEqualByComparingTo("500.00");
+    }
+
+    @Test
+    @DisplayName("次限额按组各算：两组各 400、次限额 300 ⇒ 600（不是总额 800 取 min = 300）")
+    void occurrenceLimitAppliesPerGroup() {
+      LiabilityRule rule =
+          occurrenceRule(
+              new LiabilityRule.LimitSet(
+                  LiabilityRule.InsuredForm.FIXED,
+                  BigDecimal.ZERO,
+                  NO_CAP,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  new BigDecimal("300"),
+                  BigDecimal.ZERO),
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none());
+
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, twoRows("400.00", "400.00"), rule, Accumulation.FIRST),
+              twoDayFacts());
+
+      assertThat(outcome.totalAmount())
+          .as("若为 300.00，说明对总额取了一次 min（次限额被当成年度限额）")
+          .isEqualByComparingTo("600.00");
+    }
+
+    @Test
+    @DisplayName("年度免赔跨「次」共享余额：两组各 8000、免赔 1 万 ⇒ 8000 被吃光 + 第二组扣 2000 = 赔 6000")
+    void annualDeductibleSharedAcrossOccurrences() {
+      LiabilityRule rule =
+          occurrenceRule(
+              new LiabilityRule.LimitSet(
+                  LiabilityRule.InsuredForm.FIXED,
+                  BigDecimal.ZERO,
+                  NO_CAP,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO),
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.annualAbsolute(new BigDecimal("10000")));
+
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, twoRows("8000.00", "8000.00"), rule, Accumulation.FIRST),
+              twoDayFacts());
+
+      assertThat(outcome.totalAmount())
+          .as("若为 0.00，说明第二组又重扣了一次满额免赔（多扣 = 客户少赔）")
+          .isEqualByComparingTo("6000.00");
+      assertThat(outcome.deductibleApplied()).isEqualByComparingTo("10000.00");
+    }
+
+    @Test
+    @DisplayName("按次免赔每组独立：两组各 1000、每次免赔 500 ⇒ 各扣 500，赔 1000")
+    void perClaimDeductibleResetsPerOccurrence() {
+      DeductibleRule perClaim =
+          new DeductibleRule(
+              true,
+              DeductibleRule.Kind.ABSOLUTE,
+              DeductibleRule.Basis.PER_CLAIM,
+              DeductibleRule.Form.AMOUNT,
+              DeductibleRule.Offset.MEDICAL_AND_THIRD_PARTY,
+              DeductibleRule.Target.CALCULATED_AMOUNT,
+              DeductibleRule.Granularity.LIABILITY,
+              new BigDecimal("500"),
+              Money.ZERO,
+              0,
+              Map.of());
+      LiabilityRule rule =
+          occurrenceRule(
+              new LiabilityRule.LimitSet(
+                  LiabilityRule.InsuredForm.FIXED,
+                  BigDecimal.ZERO,
+                  NO_CAP,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO),
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              perClaim);
+
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, twoRows("1000.00", "1000.00"), rule, Accumulation.FIRST),
+              twoDayFacts());
+
+      assertThat(outcome.totalAmount())
+          .as("若为 1500.00，说明按次免赔被账本跨组递减（第二组没扣）")
+          .isEqualByComparingTo("1000.00");
+      assertThat(outcome.deductibleApplied()).isEqualByComparingTo("1000.00");
+    }
+
+    @Test
+    @DisplayName("分组维度缺失必须拒绝：配了「同日」却没有发票日期 ⇒ 并成一组会少赔")
+    void missingDimensionFailsClosed() {
+      LiabilityRule rule =
+          occurrenceRule(
+              new LiabilityRule.LimitSet(
+                  LiabilityRule.InsuredForm.FIXED,
+                  BigDecimal.ZERO,
+                  NO_CAP,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  new BigDecimal("300"),
+                  BigDecimal.ZERO),
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none());
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L, twoRows("400.00", "400.00"), rule, Accumulation.FIRST)))
+          .as("不传分组事实时不得静默按一次算")
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("OCCURRENCE_DIMENSION_MISSING");
+    }
+  }
+
+  // ===================== 额度层接线 =====================
+
+  @Nested
+  @DisplayName("额度层接线：配了必须生效，否则拒绝（V1 §1.2 七层）")
+  class LayerWiring {
+
+    @Test
+    @DisplayName("险种/计划额度声明了却无可用余额 ⇒ LIMIT_LAYER_UNDEFINED（不得静默忽略）")
+    void declaredUpperLayerWithoutSourceRejected() {
+      LiabilityRule rule =
+          ruleWithLimits(
+              new LiabilityRule.LimitSet(
+                  LiabilityRule.InsuredForm.FIXED,
+                  BigDecimal.ZERO,
+                  NO_CAP,
+                  new BigDecimal("900"),
+                  new BigDecimal("500"),
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO),
+              LiabilityRule.QuotaPolicy.defaults(),
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none());
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L, rows("1200.00", "0", "0"), rule, Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("LIMIT_LAYER_UNDEFINED");
+    }
+
+    @Test
+    @DisplayName("可用余额超过配置额度 ⇒ 两个数必有一个错，拒绝")
+    void availableExceedsConfiguredLayerRejected() {
+      LiabilityRule rule =
+          ruleWithLimits(
+              new LiabilityRule.LimitSet(
+                  LiabilityRule.InsuredForm.FIXED,
+                  BigDecimal.ZERO,
+                  NO_CAP,
+                  BigDecimal.ZERO,
+                  new BigDecimal("500"),
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO),
+              LiabilityRule.QuotaPolicy.defaults(),
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none());
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                              1L, rows("1200.00", "0", "0"), rule, Accumulation.FIRST)
+                          .withExtraLayers(
+                              List.of(
+                                  new QuotaStack.LayerQuota(
+                                      QuotaStack.Layer.PLAN, "PLAN-1", new BigDecimal("900"))))))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("超过配置额度");
+    }
+
+    @Test
+    @DisplayName("个人额度配在「仅责任额度」方式下 ⇒ 无消耗路径，拒绝（配了不生效）")
+    void personalLimitWithoutSequentialModeRejected() {
+      LiabilityRule rule =
+          ruleWithLimits(
+              new LiabilityRule.LimitSet(
+                  LiabilityRule.InsuredForm.FIXED_PLUS_PERSONAL,
+                  new BigDecimal("800"),
+                  NO_CAP,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO),
+              LiabilityRule.QuotaPolicy.defaults(),
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none());
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L, rows("1200.00", "0", "0"), rule, Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("没有消耗路径");
+    }
+  }
+
+  // ===================== 诊断与重复赔付 =====================
+
+  @Nested
+  @DisplayName("可观测性：诊断落库 + 三方重复赔付闸门")
+  class Observability {
+
+    @Test
+    @DisplayName("诊断必须进快照：三方已赔提示此前只存在内存里，生产一条也看不到")
+    void diagnosticsPersistedInSnapshot() {
+      LiabilityRule rule =
+          rule(
+              "100",
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none(),
+              NO_CAP);
+      ClaimWithItemsProjection row = row(2001L, "IN", "800.00", "0", "0");
+      row.setItemThirdPartyPaid(new BigDecimal("200.00"));
+      // 发票 1000 = 合理 800 + 三方 200（valid 已按 ① 扣过）⇒ 残差 0，自洽
+      row.setItemAmount(new BigDecimal("1000.00"));
+
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(1L, List.of(row), rule, Accumulation.FIRST));
+
+      assertThat(outcome.snapshot())
+          .as("诊断不落库 = 风险对运维不可见")
+          .contains("\"diagnostics\"")
+          .contains("三方已赔");
+    }
+
+    @Test
+    @DisplayName("三方已赔被算进合理金额（负残差）⇒ 拒绝理算，不得再赔一次")
+    void doublePayDetectedByNegativeResidual() {
+      LiabilityRule rule =
+          rule(
+              "100",
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none(),
+              NO_CAP);
+      ClaimWithItemsProjection row = row(2001L, "IN", "1000.00", "0", "0");
+      row.setItemAmount(new BigDecimal("1000.00"));
+      // valid=1000 已经含了发票全额，三方又单独记 200 ⇒ 800 + 200 会被重复赔付
+      row.setItemThirdPartyPaid(new BigDecimal("200.00"));
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(1L, List.of(row), rule, Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("INVOICE_SETTLEMENT_INCONSISTENT");
+    }
   }
 
   // ===================== V1 边界：显式拒绝 =====================
@@ -708,6 +1040,59 @@ class AdjustmentEngineTest {
         LiabilityRule.OccurrenceSpec.none(),
         LiabilityRule.Relation.none(),
         LiabilityRule.LimitedConditions.disabled());
+  }
+
+  /** 自定义额度集（用于验证险种/计划/次限额/个人额度是否真的接线）。 */
+  private static LiabilityRule ruleWithLimits(
+      LiabilityRule.LimitSet limits,
+      LiabilityRule.QuotaPolicy quota,
+      PayRatioTable ratios,
+      DeductibleRule deductible) {
+    return new LiabilityRule(
+        "L-TEST",
+        "v1",
+        LiabilityRule.LiabilityForm.REIMBURSEMENT,
+        false,
+        EnumSet.allOf(FeePools.Bucket.class),
+        0,
+        deductible,
+        ratios,
+        limits,
+        quota,
+        LiabilityRule.OccurrenceSpec.none(),
+        LiabilityRule.Relation.none(),
+        LiabilityRule.LimitedConditions.disabled());
+  }
+
+  /** 按「同日」分组、次限额取自额度集的责任规则。 */
+  private static LiabilityRule occurrenceRule(
+      LiabilityRule.LimitSet limits, PayRatioTable ratios, DeductibleRule deductible) {
+    return new LiabilityRule(
+        "L-TEST",
+        "v1",
+        LiabilityRule.LiabilityForm.REIMBURSEMENT,
+        false,
+        EnumSet.allOf(FeePools.Bucket.class),
+        0,
+        deductible,
+        ratios,
+        limits,
+        LiabilityRule.QuotaPolicy.defaults(),
+        new LiabilityRule.OccurrenceSpec(
+            OccurrenceGrouper.Basis.SAME_DAY, limits.occurrenceLimit()),
+        LiabilityRule.Relation.none(),
+        LiabilityRule.LimitedConditions.disabled());
+  }
+
+  /** 两天各一张票（同一赔案、不同发票日期）。 */
+  private static List<ClaimWithItemsProjection> twoRows(String first, String second) {
+    return List.of(row(2001L, "IN", first, "0", "0"), row(2002L, "IN", second, "0", "0"));
+  }
+
+  private static List<OccurrenceGrouper.Fact> twoDayFacts() {
+    return List.of(
+        new OccurrenceGrouper.Fact("CL001", java.time.LocalDate.of(2026, 1, 1), "H1", "D1", null),
+        new OccurrenceGrouper.Fact("CL001", java.time.LocalDate.of(2026, 1, 2), "H1", "D1", null));
   }
 
   private static LiabilityRule ruleWithRelation(String sharedCode, String priorUuid) {

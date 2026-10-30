@@ -156,6 +156,20 @@ public final class AdjustmentEngine {
    * @throws RuleGap 前置校验不过 / 规则缺失 / 能力未定义（fail-closed，绝不出"猜出来的金额"）
    */
   public static Outcome calculate(Request request) {
+    return calculate(request, null);
+  }
+
+  /**
+   * 执行理算，并显式指定「次」的分组事实。
+   *
+   * <p><b>为什么要外部传分组事实</b>：次限额（§7.3）的分组维度是发票日期 / 医院 / 科室 / 病种，
+   * 而当前明细投影没有这些列。若在此静默退化成"整案一次"，配置了"同日"的责任会少赔（见 {@link
+   * OccurrenceGrouper#requireDimensions}）。故本方法要求调用方在有维度时显式给出： 给了就按它分组，<b>缺维度则拒绝</b>；不给（{@code
+   * null}）才回落到"一赔案一次"。
+   *
+   * @param facts 与 {@code request.rows()} 下标一一对应的事实；{@code null} = 按赔案单次处理
+   */
+  public static Outcome calculate(Request request, List<OccurrenceGrouper.Fact> facts) {
     requireInputs(request);
     LiabilityRule rule = request.rule();
     rule.validate();
@@ -166,30 +180,38 @@ public final class AdjustmentEngine {
     FeePools pools = aggregation.pools();
 
     // 次限额分组（§7.3）：先分组，每组独立走一遍完整理算
+    List<OccurrenceGrouper.Fact> groupingFacts = resolveFacts(request, facts);
+    OccurrenceGrouper.requireDimensions(rule.occurrences().basis(), groupingFacts);
     List<OccurrenceGrouper.Occurrence> occurrences =
-        OccurrenceGrouper.group(
-            rule.occurrences().basis(), factsOf(request.rows(), request.claimId()));
+        OccurrenceGrouper.group(rule.occurrences().basis(), groupingFacts);
 
     List<String> diagnostics = new ArrayList<>();
     if (occurrences.size() > 1) {
       diagnostics.add("次限额分组：%d 组（%s）".formatted(occurrences.size(), rule.occurrences().basis()));
     }
+    // 费用类型级免赔 × 多「次」：V1 §6.7 只规定了"各费用类型各自扣"，没有规定组间是否共享各类型额度（Q-04）。
+    // 按"每组重新拿满额"实现等于放大免赔、按"跨组递减"实现等于缩小——两种都是猜，故拒绝。
+    if (occurrences.size() > 1
+        && rule.deductible().granularity() == DeductibleRule.Granularity.FEE_TYPE) {
+      throw RuleGap.of(
+          RuleGap.Code.DEDUCTIBLE_CONFIG_INVALID,
+          "费用类型级免赔出现 %d 个「次」分组：各费用类型的免赔额度是否跨组共享未定义（Q-04），" + "按任一口径实现都会系统性偏差，须业务先定口径",
+          occurrences.size());
+    }
     if (Money.isZero(aggregation.excludedOutOfScope()) == false) {
       diagnostics.add("socialOnly 剔除范围外合理金额 " + Money.round(aggregation.excludedOutOfScope()));
     }
     // 三式核对（§3.4）：本引擎把 REASONABLE 池当作 ① 口径（已扣三方）。若入参实际是 ②/③（未扣三方），
-    // 差额会以"三方已赔"的形式暴露。引擎不擅自扣减（那是上游 valid_amount 的职责），但必须让风险可见。
-    FeePools.Reconciliation reconciliation = pools.reconcile(request.rows());
-    if (reconciliation.thirdPartyPaid().signum() > 0) {
-      diagnostics.add(
-          "三方已赔 "
-              + Money.round(reconciliation.thirdPartyPaid())
-              + "：引擎未从合理金额扣除（须确认上游 valid_amount 已按 §3.4 ① 扣减，否则重复赔付）");
-    }
+    // 差额会以"三方已赔"的形式暴露。引擎不擅自扣减（那是上游 valid_amount 的职责），但必须让风险可见；
+    // 一旦票面三段拆分自己就不自洽（负残差），则可**证明**入参把三方已赔算进了合理金额 ⇒ 重复赔付，必须拒绝。
+    checkSettlementConsistency(request, pools, diagnostics);
 
     // 本次理算的额度消耗（多层跨组共享：同一次理算内，前一组用掉的额度后一组不能用）
     MutableQuotaPool quotaPool =
         new MutableQuotaPool(rule, request.accumulation(), request.extraLayers(), pools);
+    // 免赔账本：年度免赔在多「次」之间共享余额（按次免赔每组独立，由 resolveRemaining 决定）
+    DeductibleLedger deductibleLedger =
+        new DeductibleLedger(rule.deductible(), request.accumulation().deductibleUsed());
 
     BigDecimal total = Money.ZERO;
     BigDecimal deductibleApplied = Money.ZERO;
@@ -211,6 +233,7 @@ public final class AdjustmentEngine {
               rule,
               request,
               quotaPool,
+              deductibleLedger,
               diagnostics,
               ratioHits,
               deductibleBranches,
@@ -254,9 +277,10 @@ public final class AdjustmentEngine {
                 ratioHits,
                 deductibleBranches,
                 quotaTrace,
-                lines),
+                lines,
+                diagnostics),
             diagnostics);
-    InvariantGuard.verify(outcome, request, pools);
+    InvariantGuard.verify(outcome, request, pools, occurrences.size());
     return outcome;
   }
 
@@ -282,6 +306,7 @@ public final class AdjustmentEngine {
       LiabilityRule rule,
       Request request,
       MutableQuotaPool quotaPool,
+      DeductibleLedger deductibleLedger,
       List<String> diagnostics,
       List<String> ratioHits,
       List<String> deductibleBranches,
@@ -341,7 +366,7 @@ public final class AdjustmentEngine {
 
     // ② 免赔（按 target 决定运算顺序）
     BigDecimal deductibleApplied =
-        applyDeductible(cells, rule, request.accumulation(), deductibleBranches);
+        applyDeductible(cells, rule, deductibleLedger, deductibleBranches);
 
     BigDecimal ratioPayout = Money.ZERO;
     BigDecimal afterDeduct = Money.ZERO;
@@ -427,10 +452,13 @@ public final class AdjustmentEngine {
    *   <li>{@code INVOICE_AMOUNT}：先减剩余免赔得到"免赔后基数"，再乘比例。
    * </ul>
    *
+   * <p><b>剩余免赔取自账本而不是跨案累计</b>：一次理算可能包含多个「次」，年度免赔是全案共享的一本账
+   * ——每组各自重读跨案累计，等于第二组又拿到一份满额免赔，多扣的钱会直接变成客户少赔。
+   *
    * @return 本次实际消抵的免赔额
    */
   private static BigDecimal applyDeductible(
-      List<Cell> cells, LiabilityRule rule, Accumulation accumulation, List<String> branches) {
+      List<Cell> cells, LiabilityRule rule, DeductibleLedger ledger, List<String> branches) {
     DeductibleRule deductible = rule.deductible();
     if (deductible.inactive()) {
       for (Cell cell : cells) {
@@ -441,9 +469,14 @@ public final class AdjustmentEngine {
       branches.add("NOT_APPLIED");
       return Money.ZERO;
     }
-    BigDecimal remaining =
-        DeductibleEngine.resolveRemaining(deductible, accumulation.deductibleUsed());
+    BigDecimal applied = deductibleForGroup(cells, deductible, ledger.remaining(), branches);
+    ledger.consume(applied);
+    return applied;
+  }
 
+  /** 单组免赔（运算顺序 + 粒度）。{@code remaining} 由账本给出，本方法不自行解析跨案累计。 */
+  private static BigDecimal deductibleForGroup(
+      List<Cell> cells, DeductibleRule deductible, BigDecimal remaining, List<String> branches) {
     if (deductible.target() == DeductibleRule.Target.CALCULATED_AMOUNT) {
       // 先比例
       for (Cell cell : cells) {
@@ -551,6 +584,49 @@ public final class AdjustmentEngine {
   // ===================== 额度池 =====================
 
   /**
+   * 免赔账本：本次理算内多「次」分组的免赔余额。
+   *
+   * <p><b>为什么不每组各自 {@code resolveRemaining}</b>：年度免赔的累计键是"保单 + 主被 + 责任 + 年度"，
+   * 与「次」无关。若每组都按跨案累计重算，第二组又会拿到一份满额免赔——多扣的部分直接变成客户少赔， 而且金额看着"更保守"，复核时几乎不会被发现。
+   *
+   * <p>{@code PER_CLAIM}（按次）不受账本影响：{@link DeductibleEngine#resolveRemaining} 对按次免赔
+   * 每案给满额，账本只负责在组间递减，不改变其初始值。
+   */
+  private static final class DeductibleLedger {
+
+    private final DeductibleRule rule;
+    private BigDecimal annual;
+
+    DeductibleLedger(DeductibleRule rule, BigDecimal accumulatedUsed) {
+      this.rule = rule == null ? DeductibleRule.none() : rule;
+      this.annual = DeductibleEngine.resolveRemaining(this.rule, accumulatedUsed);
+    }
+
+    /** 本组可用剩余免赔。按次免赔每组都拿满额（{@code resolveRemaining} 对 PER_CLAIM 直接返回配置额）。 */
+    BigDecimal remaining() {
+      return rule.basis() == DeductibleRule.Basis.PER_CLAIM ? configured() : annual;
+    }
+
+    /**
+     * 记账：本组实际消抵额从年度余额中扣掉。
+     *
+     * <p>按次免赔不受影响——{@link #remaining()} 对 {@code PER_CLAIM} 每「次」都返回配置额， 账本对它是无操作（此处不再重复判一次
+     * basis，避免两处判断在后续改动中分叉）。
+     */
+    void consume(BigDecimal applied) {
+      BigDecimal used = Money.nz(applied);
+      if (used.signum() <= 0) {
+        return;
+      }
+      annual = Money.nonNegative(annual.subtract(used));
+    }
+
+    private BigDecimal configured() {
+      return DeductibleEngine.resolveRemaining(rule, Money.ZERO);
+    }
+  }
+
+  /**
    * 本次理算内的额度消耗池：责任/共保/险种/计划额度在<b>多个「次」分组间共享</b>。
    *
    * <p>为什么不每组各建一个池：次限额分组是"分别理算"，但责任额度是同一个。若每组都从满额开始截断， 分 3 组就会赔出 3 倍责任额度——这正是 §7.3〔缺〕里最容易踩的坑。
@@ -582,6 +658,56 @@ public final class AdjustmentEngine {
         }
         layerRemaining.put(layer.layer(), layer.available());
       }
+      requireUpperLayersSourced(rule.limits(), layerRemaining);
+      requirePersonalConsumable(rule);
+    }
+
+    /**
+     * 险种 / 计划 / 共保额度的<b>来源</b>必须在装载期确定。
+     *
+     * <p>三层都是"跨案共享的池"，可用余额只能来自外部账本（如责任额度来自 {@code accumulation.limitUsed}）。
+     * 早前实现把这三层当装饰字段：配了不报错、也不生效——超赔会持续到计划总额被穿透才在财务侧暴露。 现在只有两条路：由 {@code extraLayers}
+     * 显式给出可用余额（并与配置额度交叉校验），或在装载期拒绝。
+     */
+    private static void requireUpperLayersSourced(
+        LiabilityRule.LimitSet limits, Map<QuotaStack.Layer, BigDecimal> provided) {
+      Map<QuotaStack.Layer, BigDecimal> declared = new LinkedHashMap<>();
+      declared.put(QuotaStack.Layer.SHARED, limits.sharedLimit());
+      declared.put(QuotaStack.Layer.PRODUCT, limits.productLimit());
+      declared.put(QuotaStack.Layer.PLAN, limits.planLimit());
+      for (Map.Entry<QuotaStack.Layer, BigDecimal> entry : declared.entrySet()) {
+        BigDecimal configured = entry.getValue();
+        if (configured.signum() <= 0) {
+          continue;
+        }
+        BigDecimal available = provided.get(entry.getKey());
+        if (available == null) {
+          throw RuleGap.of(
+              RuleGap.Code.LIMIT_LAYER_UNDEFINED,
+              "%s 额度为 %s 但未提供可用余额：该层是跨案共享池，剩余额只能来自外部账本" + "（否则配了不生效 ⇒ 超赔）",
+              entry.getKey(),
+              configured.toPlainString());
+        }
+        if (available.compareTo(configured) > 0) {
+          throw RuleGap.of(
+              RuleGap.Code.LIMIT_LAYER_UNDEFINED,
+              "%s 可用余额 %s 超过配置额度 %s：额度来源与责任配置不自洽，两个数必有一个错",
+              entry.getKey(),
+              available.toPlainString(),
+              configured.toPlainString());
+        }
+      }
+    }
+
+    /** 个人额度只在扣减方式 4/5 有消耗路径；其它方式下配置它等于没配。 */
+    private static void requirePersonalConsumable(LiabilityRule rule) {
+      if (rule.limits().personalLimit().signum() > 0 && !rule.quota().mode().sequential()) {
+        throw RuleGap.of(
+            RuleGap.Code.LIMIT_LAYER_UNDEFINED,
+            "个人额度 %s 配置在扣减方式 %s 下没有消耗路径（该方式只用责任额度）：配了不生效 ⇒ 超赔，请改用方式 4/5",
+            rule.limits().personalLimit().toPlainString(),
+            rule.quota().mode());
+      }
     }
 
     /**
@@ -601,6 +727,12 @@ public final class AdjustmentEngine {
       }
 
       List<QuotaStack.LayerQuota> layers = new ArrayList<>();
+      // 顺序即截断顺序，按 V1 §7.2：③ 次限额（在 Demand 内预截断）→ ④ 共保 → ⑤ 责任 → ⑥ 险种 → ⑦ 计划
+      for (QuotaStack.Layer layer : List.of(QuotaStack.Layer.SHARED)) {
+        if (layerRemaining.containsKey(layer)) {
+          layers.add(new QuotaStack.LayerQuota(layer, layer.name(), layerRemaining.get(layer)));
+        }
+      }
       boolean liabilityLayerUsed =
           rule.quota().mode() != QuotaStack.DeductionMode.PERSONAL_ONLY
               && liabilityRemaining != null;
@@ -608,8 +740,7 @@ public final class AdjustmentEngine {
         layers.add(
             new QuotaStack.LayerQuota(QuotaStack.Layer.LIABILITY, "LIABILITY", liabilityRemaining));
       }
-      for (QuotaStack.Layer layer :
-          List.of(QuotaStack.Layer.SHARED, QuotaStack.Layer.PRODUCT, QuotaStack.Layer.PLAN)) {
+      for (QuotaStack.Layer layer : List.of(QuotaStack.Layer.PRODUCT, QuotaStack.Layer.PLAN)) {
         if (layerRemaining.containsKey(layer)) {
           layers.add(new QuotaStack.LayerQuota(layer, layer.name(), layerRemaining.get(layer)));
         }
@@ -617,7 +748,7 @@ public final class AdjustmentEngine {
 
       QuotaStack.Result result =
           QuotaStack.cap(
-              new QuotaStack.Demand(groups, groupCaps, personalRemaining),
+              new QuotaStack.Demand(groups, groupCaps, personalRemaining, occurrenceCap()),
               layers,
               rule.quota().mode());
 
@@ -663,6 +794,15 @@ public final class AdjustmentEngine {
         }
       }
       return result;
+    }
+
+    /**
+     * 本「次」的次限额（层③）。
+     *
+     * <p>每次分组都从<b>配置额度</b>起算，不进入跨组账本：次限额的语义就是"每一次各自受此限额约束"， 若像责任额度那样跨组递减，第二个「次」会一分不赔。
+     */
+    private BigDecimal occurrenceCap() {
+      return rule.limits().hasOccurrenceLimit() ? rule.limits().occurrenceLimit() : null;
     }
   }
 
@@ -725,6 +865,76 @@ public final class AdjustmentEngine {
 
   // ===================== 校验 =====================
 
+  /**
+   * 票面三段拆分自洽性（§3.4 三式），只做"能证明"的那一半。
+   *
+   * <p>逐行残差 = 发票金额 − (合理 + 不合理 + 三方已赔 + 自付二 + 总自费)：
+   *
+   * <ul>
+   *   <li>若 {@code valid_amount} 已按 ① 扣过三方与核减，残差 = 自付一 ≥ 0；
+   *   <li>若未扣，残差会变成<b>负数</b>，缺口恰为被重复计入的那部分。
+   * </ul>
+   *
+   * <p>负残差 + 三方已赔 = 可证明"合理金额里还含三方已赔的钱"⇒ 引擎会把它再赔一次，故 fail-closed；
+   * 无三方已赔的负残差只是数据质量噪声，降级为诊断（不阻断，但落进快照可审计）。
+   *
+   * <p><b>为什么不擅自扣减</b>：{@code valid_amount} 的口径归上游票面结算，引擎改了会与发票对不上账；
+   * 引擎的责任是"发现不自洽就拒绝"，而不是"猜一个自认为对的基数"。
+   */
+  private static void checkSettlementConsistency(
+      Request request, FeePools pools, List<String> diagnostics) {
+    FeePools.Reconciliation reconciliation = pools.reconcile(request.rows());
+    if (reconciliation.thirdPartyPaid().signum() > 0) {
+      diagnostics.add(
+          "三方已赔 "
+              + Money.round(reconciliation.thirdPartyPaid())
+              + "：引擎不从合理金额扣除（须上游 valid_amount 按 §3.4 ① 扣减，否则重复赔付）");
+    }
+
+    BigDecimal tolerance = new BigDecimal("0.01");
+    int negativeRows = 0;
+    BigDecimal worst = Money.ZERO;
+    String worstItem = "";
+    for (ClaimWithItemsProjection row : request.rows()) {
+      if (row == null || row.getItemId() == null) {
+        continue;
+      }
+      BigDecimal amount = Money.nz(row.getItemAmount());
+      if (amount.signum() <= 0) {
+        continue; // 票面金额缺失时无法判定，不猜
+      }
+      BigDecimal residual =
+          amount
+              .subtract(Money.nz(row.getItemValidAmount()))
+              .subtract(Money.nz(row.getItemInvalidAmount()))
+              .subtract(Money.nz(row.getItemThirdPartyPaid()))
+              .subtract(Money.nz(row.getItemSelfPay2()))
+              .subtract(Money.nz(row.getItemSelfPayC()));
+      if (residual.compareTo(tolerance.negate()) >= 0) {
+        continue;
+      }
+      negativeRows++;
+      if (worst.compareTo(residual) > 0) {
+        worst = residual;
+        worstItem = row.getItemName() == null ? String.valueOf(row.getItemId()) : row.getItemName();
+      }
+    }
+    if (negativeRows == 0) {
+      return;
+    }
+    String detail =
+        "%d 条明细的发票金额小于其拆分项之和（最差 %s，%s）：合理金额很可能未按 §3.4 ① 扣减"
+            .formatted(negativeRows, Money.round(worst), worstItem);
+    if (reconciliation.thirdPartyPaid().signum() > 0) {
+      throw RuleGap.of(
+          RuleGap.Code.INVOICE_SETTLEMENT_INCONSISTENT,
+          "%s；三方已赔 %s 会被再赔一次，须先修上游 valid_amount 口径",
+          detail,
+          Money.round(reconciliation.thirdPartyPaid()));
+    }
+    diagnostics.add(detail + "（无三方已赔，暂作数据质量提示）");
+  }
+
   private static void requireInputs(Request request) {
     if (request == null) {
       throw RuleGap.of(RuleGap.Code.INVALID_INPUT, "理算请求为空");
@@ -763,6 +973,26 @@ public final class AdjustmentEngine {
           rule.limitedConditions().hospitalCode(),
           rule.limitedConditions().diseaseCode());
     }
+  }
+
+  /**
+   * 分组事实：调用方给了就用它（并校验下标对齐），否则回落到"一赔案一次"。
+   *
+   * <p>下标必须与明细一一对应——分组结果返回的是下标，错位会把 A 票的日期配到 B 票的金额上， 算出来的每一组都"看起来合理"。故此处强校验而非截断。
+   */
+  private static List<OccurrenceGrouper.Fact> resolveFacts(
+      Request request, List<OccurrenceGrouper.Fact> facts) {
+    if (facts == null) {
+      return factsOf(request.rows(), request.claimId());
+    }
+    if (facts.size() != request.rows().size()) {
+      throw RuleGap.of(
+          RuleGap.Code.INVALID_INPUT,
+          "分组事实 %d 条与明细 %d 条不一一对应：按下标分组会错位",
+          facts.size(),
+          request.rows().size());
+    }
+    return List.copyOf(facts);
   }
 
   private static List<OccurrenceGrouper.Fact> factsOf(
@@ -808,7 +1038,8 @@ public final class AdjustmentEngine {
       List<String> ratioHits,
       List<String> deductibleBranches,
       List<String> quotaTrace,
-      List<Line> lines) {
+      List<Line> lines,
+      List<String> diagnostics) {
     StringBuilder sb = new StringBuilder("{");
     append(sb, "liabilityUuid", rule.liabilityUuid());
     append(sb, "liabilityVersion", rule.liabilityVersion());
@@ -869,6 +1100,9 @@ public final class AdjustmentEngine {
     appendArray(sb, "ratioHits", ratioHits);
     appendArray(sb, "deductibleBranches", deductibleBranches);
     appendArray(sb, "quotaSteps", quotaTrace);
+    // 诊断必须落库：这些提示（三方已赔未扣、比例超 100%、责任不承担的费用类型、次分组数）此前只存在于
+    // 内存返回值里，聚合外壳从不读它 ⇒ 生产环境一条也看不到，等于没报。
+    appendArray(sb, "diagnostics", diagnostics);
     appendArray(sb, "lines", lines.stream().map(AdjustmentEngine::lineJson).toList());
     sb.append("\"items\":").append(itemsJson(request.rows()));
     sb.append('}');

@@ -107,7 +107,10 @@ public final class QuotaStack {
 
   /** 控额需求。 */
   public record Demand(
-      List<Group> groups, Map<String, BigDecimal> groupCaps, BigDecimal personalCap) {
+      List<Group> groups,
+      Map<String, BigDecimal> groupCaps,
+      BigDecimal personalCap,
+      BigDecimal occurrenceCap) {
 
     public Demand {
       groups = List.copyOf(groups);
@@ -115,7 +118,12 @@ public final class QuotaStack {
     }
 
     public static Demand of(List<Group> groups) {
-      return new Demand(groups, Map.of(), null);
+      return new Demand(groups, Map.of(), null, null);
+    }
+
+    /** 附次限额（层③，作用于本组总额，早于责任层⑤）。 */
+    public Demand withOccurrenceCap(BigDecimal cap) {
+      return new Demand(groups, groupCaps, personalCap, cap);
     }
   }
 
@@ -160,7 +168,11 @@ public final class QuotaStack {
   /**
    * 执行控额。
    *
-   * @param demand 待控额的分组金额 + 组额度 + 个人额度
+   * <p><b>次限额为什么在这里统一预截断</b>：它是层③（V1 §7.2），作用于<b>本「次」的总额</b>，早于责任层⑤。 两种扣减方式（求和后截断 /
+   * 逐组顺序消耗）若各自实现一次，就会出现"方式 1 生效、方式 5 忘掉"的分叉； 更糟的是方式 4/5 若把它放到池消耗之后，个人/责任池会被截断前的金额占用——多占的额度不会退。
+   * 故此处只做一次：先按次限额把各组额度等比例压低，再进入分组/逐层逻辑。
+   *
+   * @param demand 待控额的分组金额 + 组额度 + 个人额度 + 次限额
    * @param layers 有序额度层（从细到粗；顺序即截断顺序，调用方须按 {@link Layer} 声明序排列）
    * @param mode 扣减方式
    */
@@ -168,9 +180,41 @@ public final class QuotaStack {
     if (demand.groups().isEmpty()) {
       return new Result(List.of(), Money.ZERO, List.of(), mode);
     }
-    return mode.sequential()
-        ? capSequential(demand, layers, mode)
-        : capAggregate(demand, layers, mode);
+    List<Step> pre = new ArrayList<>();
+    Demand effective = applyOccurrenceCap(demand, pre);
+    Result result =
+        mode.sequential()
+            ? capSequential(effective, layers, mode)
+            : capAggregate(effective, layers, mode);
+    if (pre.isEmpty()) {
+      return result;
+    }
+    List<Step> steps = new ArrayList<>(pre);
+    steps.addAll(result.steps());
+    return new Result(result.groups(), result.payable(), steps, mode);
+  }
+
+  /** 层③ 责任次限额：本组总额超过次限额时按各组原额等比压低（不改变组间相对关系）。 */
+  private static Demand applyOccurrenceCap(Demand demand, List<Step> steps) {
+    BigDecimal cap = demand.occurrenceCap();
+    if (cap == null || cap.signum() <= 0) {
+      return demand;
+    }
+    List<BigDecimal> amounts = new ArrayList<>(demand.groups().size());
+    for (Group group : demand.groups()) {
+      amounts.add(group.amount());
+    }
+    BigDecimal total = Money.sum(amounts);
+    if (total.compareTo(cap) <= 0) {
+      return demand;
+    }
+    steps.add(new Step(Layer.OCCURRENCE, "OCCURRENCE", total, cap, total.subtract(cap)));
+    List<BigDecimal> shares = Money.proRata(cap, amounts);
+    List<Group> capped = new ArrayList<>(demand.groups().size());
+    for (int i = 0; i < demand.groups().size(); i++) {
+      capped.add(new Group(demand.groups().get(i).key(), shares.get(i)));
+    }
+    return new Demand(capped, demand.groupCaps(), demand.personalCap(), null);
   }
 
   /** 方式 1/2/3：组级截断 → 求和 → 逐层截断（每次截断后按原比例回分摊，保证 Σ组 ≡ 总额）。 */

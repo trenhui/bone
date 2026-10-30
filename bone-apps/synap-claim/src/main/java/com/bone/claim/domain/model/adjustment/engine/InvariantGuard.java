@@ -31,7 +31,10 @@ final class InvariantGuard {
    * </table>
    */
   static void verify(
-      AdjustmentEngine.Outcome outcome, AdjustmentEngine.Request request, FeePools pools) {
+      AdjustmentEngine.Outcome outcome,
+      AdjustmentEngine.Request request,
+      FeePools pools,
+      int groupCount) {
     BigDecimal total = outcome.totalAmount();
 
     // 金额非负（负赔付只可能来自上游计算错误）
@@ -72,9 +75,13 @@ final class InvariantGuard {
     }
     if (!rule.deductible().inactive()) {
       BigDecimal configured = rule.deductible().amount();
+      // 按次免赔的上界是"每「次」一份"，故须乘以分组数；年度免赔才是全案一本账。
       BigDecimal remainingBefore =
-          DeductibleEngine.resolveRemaining(
-              rule.deductible(), request.accumulation().deductibleUsed());
+          rule.deductible().basis() == DeductibleRule.Basis.ANNUAL
+              ? DeductibleEngine.resolveRemaining(
+                  rule.deductible(), request.accumulation().deductibleUsed())
+              : DeductibleEngine.resolveRemaining(rule.deductible(), Money.ZERO)
+                  .multiply(BigDecimal.valueOf(Math.max(1, groupCount)));
       BigDecimal allowed = configured.signum() > 0 ? remainingBefore : configured;
       // 容差 = 明细行数 × 0.01：消抵额按结果精度取整后回传，"免赔 0.009"这类配置本身不足 1 分，
       // 取整后可能比剩余大 1 分。这是精度约定的必然产物，不是逻辑错误。

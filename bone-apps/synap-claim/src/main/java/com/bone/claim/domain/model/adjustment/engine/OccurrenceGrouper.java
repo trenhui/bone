@@ -147,4 +147,61 @@ public final class OccurrenceGrouper {
     }
     Objects.requireNonNull(basis, "次定义不得为 null");
   }
+
+  /**
+   * 校验「次」的判定维度确实存在于明细事实里。
+   *
+   * <p><b>为什么必须拒绝而不是照算</b>：分组键在维度缺失时退化成空串（{@link Fact#keyOf}），于是"同日同院" 的全部明细落进同一个组——次限额只被应用一次。 两天各
+   * 500、次限额 300 的场景会赔 300 而不是 600，属<b>静默少赔</b>；反过来若额度按责任共享， 单组又会把两者的额度合并计算而超赔。两者都不会报错，只会在对账时被发现。
+   *
+   * <p>缺一个维度就整体拒绝（而不是"能分几组算几组"）：混合分组会把一张票拆成"有日期的组"与"日期未知的组"， 后者拿到的是一次独立的次限额——同一份条款两种算法。
+   *
+   * @param basis 「次」的定义
+   * @param facts 明细事实（顺序与明细一致）
+   * @throws RuleGap 任一事实缺少该档位要求的维度
+   */
+  public static void requireDimensions(Basis basis, List<Fact> facts) {
+    if (basis == null || basis == Basis.NONE || basis == Basis.PER_CLAIM || facts.isEmpty()) {
+      return;
+    }
+    int missing = 0;
+    for (Fact fact : facts) {
+      if (!hasDimension(basis, fact)) {
+        missing++;
+      }
+    }
+    if (missing > 0) {
+      throw RuleGap.of(
+          RuleGap.Code.OCCURRENCE_DIMENSION_MISSING,
+          "「次」定义为 %s，但 %d/%d 条明细缺少该判定维度（%s）：按一组计算会少赔，须先补齐明细维度",
+          basis,
+          missing,
+          facts.size(),
+          requiredDimension(basis));
+    }
+  }
+
+  private static boolean hasDimension(Basis basis, Fact fact) {
+    return switch (basis) {
+      case NONE, PER_CLAIM -> true;
+      case SAME_DAY -> fact.invoiceDate() != null;
+      case SAME_DAY_HOSPITAL -> fact.invoiceDate() != null && !fact.hospital().isBlank();
+      case SAME_DAY_HOSPITAL_DEPT -> fact.invoiceDate() != null
+          && !fact.hospital().isBlank()
+          && !fact.department().isBlank();
+      case SAME_DAY_HOSPITAL_DISEASE -> fact.invoiceDate() != null
+          && !fact.hospital().isBlank()
+          && !fact.disease().isBlank();
+    };
+  }
+
+  private static String requiredDimension(Basis basis) {
+    return switch (basis) {
+      case NONE, PER_CLAIM -> "";
+      case SAME_DAY -> "发票日期";
+      case SAME_DAY_HOSPITAL -> "发票日期+医院";
+      case SAME_DAY_HOSPITAL_DEPT -> "发票日期+医院+科室";
+      case SAME_DAY_HOSPITAL_DISEASE -> "发票日期+医院+病种";
+    };
+  }
 }

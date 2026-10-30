@@ -37,6 +37,8 @@ public final class RuleGap extends RuntimeException {
     LIMITED_CONDITION_NOT_MET,
     /** 票面结算数据与费用池不自洽（自付一定义冲突 / 三式差额异常，Q-08）。 */
     INVOICE_SETTLEMENT_INCONSISTENT,
+    /** 「次」的判定维度在明细里不存在（配了同日/同院分组却无发票日期等）：并成一组会少赔。 */
+    OCCURRENCE_DIMENSION_MISSING,
     /** 入参结构非法（无明细 / 金额为负等）。 */
     INVALID_INPUT
   }
