@@ -13,7 +13,7 @@
 
     <artifactId>synap-claim</artifactId>
     <name>synap-claim</name>
-    <description>synapClaim 智能理赔平台（DDD 四层，实现见 doc/ai-product/synapClaim/ 工程详细设计（落地版））</description>
+    <description>synapClaim 智能理赔平台（DDD 四层，实现见 doc/ai-product/synapClaim/03-contract/ 工程详细设计（落地版））</description>
 
     <dependencies>
         <!-- Spring Boot -->
