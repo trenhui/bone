@@ -163,6 +163,22 @@ export interface AdjustmentResult {
   /** 公式快照（人类可读的归因链描述）。 */
   snapshot: string;
   lines: AdjustmentLine[];
+  /**
+   * 本次实际消抵的年度免赔额（后端 {@code AdjustmentResult.deductibleApplied}）。
+   *
+   * 后端注释明确：A7 结算须把它累加进责任账 `deductible_used`，否则次案仍会重扣全额免赔。
+   * 前端此前未声明该字段 ⇒ 页面上「免赔扣了多少」不可见，核赔员无法核对「为什么这单只赔这么多」。
+   */
+  deductibleApplied?: number | null;
+  /**
+   * 跨案累计账是否解析到（{@code accumulationAvailable}）。
+   *
+   * `false` 表示没读到责任账（历史账本缺失）。此时理算结果仍可展示，但 A7 会 fail-closed 拒绝占额——
+   * 必须上屏告知，否则用户只会看到「资金工作台点不动」而不知道为什么。
+   */
+  accumulationAvailable?: boolean;
+  /** 本次理算命中的责任（单责任场景）。 */
+  liabilityUuid?: string;
 }
 
 /* ===================== A2 证据材料 ===================== */
@@ -222,25 +238,20 @@ export interface QuotaSummary {
 
 /* ===================== A3 决策执行（AI 编排 DAG：轨迹回放） ===================== */
 
-export interface DecisionExecutionResult {
-  traceId: string;
-  claimId: string;
-  decisionResult: string;
-  decisionTier: string;
-  status: string;
-  traceCount: number;
-  /**
-   * 自动通过结论的消费结果（仅 `decisionResult=AUTO_APPROVE` 时有意义）。
-   *
-   * - `APPLIED`：已自动结案并建结算单（资金链有单）；
-   * - `AUTO_APPROVE_DISABLED`：自动放款开关未开（策略待签核，保持人工核赔）；
-   * - `CAP_EXCEEDED`：理算金额超单笔自动放款上限；
-   * - `ALREADY_SETTLED` / `NOT_AUTO_APPROVE`：无需消费。
-   *
-   * 工作台据此显示「已自动结案」或「为何没自动放款」，避免「已自动通过但资金没动」变成静默状态。
-   */
-  consumptionReason?: string;
-}
+/**
+ * 决策执行（`POST /claims/{id}/decision/execute`）**故意不在前端暴露**。
+ *
+ * <p>它是**写**操作：落 `claim_decision_execution` + `claim_decision_trace`，且遇 `AUTO_APPROVE`
+ * 会按开关自动结案并建结算单（`DecisionController#execute` 的 javadoc 明写）。先前工作台的
+ * 「决策图」按钮为了拿一个 `traceId` 去调它，等价于**点一下「查看」就重跑一次决策**：
+ * 轻则 409 `SC_CLAIM_DECISION_ACTIVE_CONFLICT`（同案仅允许一个活跃执行），重则为已结案的案子
+ * 再造一张结算单。查看类动作不得产生写副作用。
+ *
+ * <p>只读真源因此是工作台契约 `<b>GET /api/v1/review/tasks/{claimId}/trace</b>`
+ * （对应 {@link reviewTaskApi.trace}）：取该案**最近一次**执行的全链节点，无执行记录返回
+ * `SC_CLAIM_DECISION_NOT_FOUND`。需要补执行入口时应由业务流程（初审通过/自动通过）驱动，
+ * 而不是绑在某个「查看」按钮上。
+ */
 
 /** 自动通过 + 建结算单的结果（12→50 且资金链有单）。 */
 export interface AutoApprovalOutcome {
@@ -281,9 +292,21 @@ export const claimApi = {
     });
   },
 
-  /** 待办/列表分页（默认待核赔 PENDING_ADJUST）。 */
+  /** 待办/列表分页（默认待核赔 PENDING_ADJUST；不传 statuses 时后端按待核赔兜底）。 */
   page(params?: { statuses?: ClaimStatusName[]; sourceChannel?: string; page?: number; size?: number }): Promise<ApiResponse<PageResult<ClaimHeadProjection>>> {
-    return client.get<never, ApiResponse<PageResult<ClaimHeadProjection>>>('/', { params });
+    return client.get<never, ApiResponse<PageResult<ClaimHeadProjection>>>('/', {
+      params,
+      /**
+       * 数组参数序列化为 `statuses=A&statuses=B`（{@code indexes: null}），而不是 axios 默认的
+       * `statuses[]=A`。后端 `ClaimPageReq.statuses` 是 `List<ClaimStatus>`，依赖 `getParameterValues("statuses")`
+       * 绑定；`statuses[]` 这种带方括号的键名不在「同名重复参数」的绑定形态内。
+       *
+       * <p>后果不对称：绑定失败时后端把空集兜底成「待核赔 40」，于是**默认视图看起来是对的**，
+       * 而用户切到「已结案/复核中」筛选时列表纹丝不动——典型的「配了不生效」。显式指定序列化后，
+       * 行为不再取决于框架对 `foo[]` 的隐式支持。
+       */
+      paramsSerializer: { indexes: null },
+    });
   },
 
   /** 案件详情（进度追踪）：赔案头 + 费用明细，每明细一行；查不到返回 404（防枚举）。 */
@@ -298,6 +321,21 @@ export const claimApi = {
   startPreExam(claimId: string, automated: boolean): Promise<ApiResponse<void>> {
     return client.post<never, ApiResponse<void>>(`/${claimId}/pre-exam/start`, undefined, {
       headers: { 'X-Automated': String(automated) },
+    });
+  },
+
+  /**
+   * 初审完成并回填理算核定金额（11/13→12）。
+   *
+   * <p>核定金额走 `X-Approved-Amount` 请求头（后端 {@code ClaimCaseController#completePreExam} 用
+   * `@RequestHeader` 接收，不是请求体）——写成 body 会 400「Required request header is not present」。
+   *
+   * <p>该方法此前在前端**完全缺失**：`allocate/startPreExam/escalate` 三个方法定义了却没有任何页面调用，
+   * 缺了「完成」这一步，初审段（7→10→11/13→12）在 UI 上根本无法走通。
+   */
+  completePreExam(claimId: string, approvedAmount: number): Promise<ApiResponse<void>> {
+    return client.post<never, ApiResponse<void>>(`/${claimId}/pre-exam/complete`, undefined, {
+      headers: { 'X-Approved-Amount': String(approvedAmount) },
     });
   },
 
@@ -318,6 +356,20 @@ export const claimApi = {
   /** 发起双人复核：复核人 = 当前登录用户，故同一账号重复发起会被 409 拒（职责分离）。 */
   submitForSecondReview(claimId: string): Promise<ApiResponse<void>> {
     return client.post<never, ApiResponse<void>>(`/${claimId}/second-review`);
+  },
+
+  /**
+   * 复核结论（44→50 通过 / 45 拒赔）。
+   *
+   * <p>必须由**非第一审核人**的账号操作，服务端比对 token 主体；通过与否走 `X-Approved` 请求头。
+   *
+   * <p>该方法此前缺失：页面只能「发起复核」，没有「出复核结论」的出口 ⇒ 案件进入 REVIEWING(44) 后
+   * 无论如何点都不能结案（`auto-approve` 只覆盖 12→50，不处理 44），复核成为死锁态。
+   */
+  completeSecondReview(claimId: string, approved: boolean): Promise<ApiResponse<void>> {
+    return client.post<never, ApiResponse<void>>(`/${claimId}/second-review/complete`, undefined, {
+      headers: { 'X-Approved': String(approved) },
+    });
   },
 
   /** 自动通过：结案（12→50）+ 建结算单软占额度（同事务；结案必有结算单）。 */
@@ -439,33 +491,6 @@ export const quotaApi = {
   },
 };
 
-/* ===================== A3 决策执行（执行一次决策图并回放轨迹） ===================== */
-
-export const decisionApi = {
-  /** 执行决策图（同案仅一个活跃执行；结论由确定性分诊计算，AI 只产建议与置信度）。 */
-  execute(
-    claimId: string,
-    req?: {
-      graphVersion?: string;
-      ruleVersion?: string;
-      modelVersion?: string;
-      promptVersion?: string;
-      catalogVersion?: string;
-    },
-  ): Promise<ApiResponse<DecisionExecutionResult>> {
-    return client.post<unknown, ApiResponse<DecisionExecutionResult>>(
-      `/${claimId}/decision/execute`,
-      req ?? {},
-    );
-  },
-  /** 轨迹回放（按 traceId 取全链节点序列：证据 → 解析 → 核责 → 理算 → 决策）。 */
-  trace(claimId: string, traceId: string): Promise<ApiResponse<DecisionTraceNode[]>> {
-    return client.get<never, ApiResponse<DecisionTraceNode[]>>(`/${claimId}/decision/trace`, {
-      params: { traceId },
-    });
-  },
-};
-
 /* ===================== A8 申诉复议 ===================== */
 
 export type AppealReviewResult = 'UPHELD' | 'REOPEN';
@@ -517,13 +542,23 @@ export const attachmentApi = {
   /**
    * 上传影像本体到平台附件服务（multipart）。返回 {@link FileObjectResp.objectName} 即证据材料登记的 `fileRef`。
    * 证据登记只需 fileRef + 内容哈希，影像本体不经 synap-claim 应用线程池（§7.2）。
+   *
+   * @param opts.onProgress 上传百分比（0–100）。理赔影像动辄数十 MB，没有进度条时页面在哈希+上传期间
+   *     完全无反馈，用户会重复点「上传」——重复登记由 `contentHash` 去重兜底，但交互上仍是缺陷。
    */
-  upload(file: File, bucket?: string): Promise<ApiResponse<FileObjectResp>> {
+  upload(
+    file: File,
+    opts?: { bucket?: string; onProgress?: (percent: number) => void },
+  ): Promise<ApiResponse<FileObjectResp>> {
     const formData = new FormData();
     formData.append('file', file);
-    if (bucket) formData.append('bucket', bucket);
+    if (opts?.bucket) formData.append('bucket', opts.bucket);
     return fileClient.post<FormData, ApiResponse<FileObjectResp>>('/files', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      // e.total 在部分浏览器首个事件里为 undefined ⇒ 只在已知总量时给百分比，否则报 0 而非 NaN
+      onUploadProgress: opts?.onProgress
+        ? (e) => opts.onProgress?.(e.total ? Math.round((e.loaded / e.total) * 100) : 0)
+        : undefined,
     });
   },
 };
@@ -612,6 +647,25 @@ export const inspectionApi = {
 
 /* ===================== 工作台任务中心（delivery/05 契约路径 /review/tasks） ===================== */
 
+/**
+ * 工作台任务中心 —— 核赔工作台的**取数与决策**唯一入口。
+ *
+ * <p>与案件中心 `claimApi.page` / `claimApi.decide` 的关系：后端 `ReviewTaskController` 是
+ * 「门面而非第二套业务」，三个端点全部转到案件中心能力，本类不含状态判断。工作台必须走门面，
+ * 理由都在后端注释里、也都是前端踩过的坑：
+ *
+ * <ul>
+ *   <li><b>任务维 → 案件状态集的映射唯一</b>（`ReviewTaskStatusMapper`）。前端若自己拿
+ *       `statuses: ['PENDING_ADJUST']` 拼，就等于复制一份映射：案件一被领取进入 `ADJUSTING(41)`
+ *       就从待办里消失，而「通过/拒赔/补件」恰恰只挂在 41 行上 ⇒ 领了单子反而没法审核。
+ *   <li><b>轨迹只读</b>。`GET /tasks/{id}/trace` 取最近一次执行的节点，**不触发执行**；
+ *       案件侧的 `POST /claims/{id}/decision/execute` 是写操作（建执行记录、AUTO_APPROVE 还会
+ *       自动结案建结算单），不能拿来当「查看」用。
+ *   <li><b>受控拒赔原因码由服务端强制</b>（`ReviewDecisionAssembler#requireRejectType`）：
+ *       缺 `rejectType` 直接 400 `SC_CLAIM_REJECT_REASON_REQUIRED`，不接受用自由文本兜底。
+ * </ul>
+ */
+
 /** 任务维 4 值（非案件状态；映射见后端 ReviewTaskStatusMapper）。 */
 export type ReviewTaskStatus = 'WAITING' | 'ASSIGNED' | 'PROCESSING' | 'DONE';
 
@@ -632,7 +686,7 @@ export interface ReviewTaskDecisionReq {
 }
 
 export const reviewTaskApi = {
-  /** 待办列表（任务维 → 案件状态集；不传 status 取默认待办 40+41）。 */
+  /** 待办列表（任务维 → 案件状态集；**不传 status 取默认待办 40+41**，即前端「全部待办」）。 */
   tasks(params: {
     status?: ReviewTaskStatus;
     page?: number;
@@ -642,14 +696,14 @@ export const reviewTaskApi = {
       params,
     });
   },
-  /** 审核决策（路由到案件中心人工核赔；审核人取认证主体）。 */
+  /** 审核决策（路由到案件中心人工核赔；审核人取认证主体，**请求体不得带审核人**）。 */
   decide(claimId: string, req: ReviewTaskDecisionReq): Promise<ApiResponse<void>> {
     return reviewClient.post<ReviewTaskDecisionReq, ApiResponse<void>>(
       `/tasks/${claimId}/decision`,
       req,
     );
   },
-  /** 决策追溯（该案最近一次执行的全链轨迹；无执行记录 404）。 */
+  /** 决策追溯（该案**最近一次**执行的全链轨迹；无执行记录 404 `SC_CLAIM_DECISION_NOT_FOUND`）。 */
   trace(claimId: string): Promise<ApiResponse<DecisionTraceNode[]>> {
     return reviewClient.get<never, ApiResponse<DecisionTraceNode[]>>(`/tasks/${claimId}/trace`);
   },

@@ -179,29 +179,29 @@ export function explainNode(node: TraceNodeLike): ExplainFact[] {
     return [];
   }
   switch (node.nodeName) {
-    case 'AiAssess':
-      return explainAiAssess(o);
-    case 'RuleCheck':
-      return explainRuleCheck(o);
-    case 'Adjust':
-      return explainAdjust(o);
-    case 'EvidenceLoad':
-      return explainEvidence(o);
-    default:
-      return [];
+  case 'AiAssess':
+    return explainAiAssess(o);
+  case 'RuleCheck':
+    return explainRuleCheck(o);
+  case 'Adjust':
+    return explainAdjust(o);
+  case 'EvidenceLoad':
+    return explainEvidence(o);
+  default:
+    return [];
   }
 }
 
 /** fact 语气 → antd Tag 颜色。 */
 export function toneColor(tone: FactTone): string {
   switch (tone) {
-    case 'good':
-      return 'green';
-    case 'bad':
-      return 'red';
-    case 'muted':
-      return 'default';
-    default:
-      return 'blue';
+  case 'good':
+    return 'green';
+  case 'bad':
+    return 'red';
+  case 'muted':
+    return 'default';
+  default:
+    return 'blue';
   }
 }

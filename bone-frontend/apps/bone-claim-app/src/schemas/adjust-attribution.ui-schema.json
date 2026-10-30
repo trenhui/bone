@@ -34,17 +34,20 @@
               "props": {
                 "childEntity": "adjustment_line",
                 "columns": [
-                  { "fieldCode": "line_type", "controlKind": "ENUM" },
-                  { "fieldCode": "liability_uuid" },
-                  { "fieldCode": "fee_calculate", "controlKind": "MONEY" },
-                  { "fieldCode": "fee_deduct", "controlKind": "MONEY" },
-                  { "fieldCode": "ratio_payout", "controlKind": "MONEY" },
-                  { "fieldCode": "fee_occupied", "controlKind": "MONEY" },
-                  { "fieldCode": "fee_payout", "controlKind": "MONEY" },
-                  { "fieldCode": "fee_remain", "controlKind": "MONEY" },
-                  { "fieldCode": "zero_reason" },
-                  { "fieldCode": "reject_type", "controlKind": "ENUM" },
-                  { "fieldCode": "formula_hash" }
+                  { "fieldCode": "bucket_label", "labelOverride": "费用池" },
+                  { "fieldCode": "scope_label", "labelOverride": "医保内外" },
+                  { "fieldCode": "ratio_percent", "labelOverride": "赔付比例" },
+                  { "fieldCode": "liability_uuid", "labelOverride": "责任" },
+                  { "fieldCode": "fee_calculate", "controlKind": "MONEY", "labelOverride": "合理费用" },
+                  { "fieldCode": "fee_deduct", "controlKind": "MONEY", "labelOverride": "免赔扣减" },
+                  { "fieldCode": "ratio_payout", "controlKind": "MONEY", "labelOverride": "按比例应付" },
+                  { "fieldCode": "fee_occupied", "controlKind": "MONEY", "labelOverride": "占额" },
+                  { "fieldCode": "fee_payout", "controlKind": "MONEY", "labelOverride": "实付" },
+                  { "fieldCode": "fee_remain", "controlKind": "MONEY", "labelOverride": "剩余额度" },
+                  { "fieldCode": "zero_reason", "labelOverride": "零赔付归因" },
+                  { "fieldCode": "reject_type", "labelOverride": "原因码" },
+                  { "fieldCode": "line_type_label", "labelOverride": "行类型" },
+                  { "fieldCode": "formula_hash", "labelOverride": "公式哈希" }
                 ]
               }
             }

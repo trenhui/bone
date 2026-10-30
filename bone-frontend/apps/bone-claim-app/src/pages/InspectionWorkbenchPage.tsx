@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Button,
   Card,
   Descriptions,
-  Empty,
   Form,
   Input,
   Segmented,
@@ -25,6 +23,9 @@ import {
   type InspectionView,
 } from '../services/claimApi';
 import { PageHeader } from '../components/PageHeader';
+import { CaseIdBar, CaseNotSelected } from '../components/CaseIdBar';
+import { useClaimIdParam } from '../hooks/useClaimIdParam';
+import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 
 /**
  * 后督抽检工作台（A9 / §7.6）。
@@ -97,9 +98,7 @@ interface ConcludeFormValues {
 }
 
 export function InspectionWorkbenchPage(): ReactElement {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const claimId = searchParams.get('claimId') ?? '';
-  const [input, setInput] = useState(claimId);
+  const { claimId, input, setInput, submit } = useClaimIdParam();
   const [dimension, setDimension] = useState<InspectionDimension>('AMOUNT');
   const [inspection, setInspection] = useState<InspectionView | null>(null);
   const [loading, setLoading] = useState(false);
@@ -116,8 +115,8 @@ export function InspectionWorkbenchPage(): ReactElement {
     try {
       const resp = await inspectionApi.latest(claimId);
       setInspection(resp?.data ?? null);
-    } catch {
-      message.error('抽检单查询失败');
+    } catch (err) {
+      message.error(resolveErrorMessage(err, '抽检单查询失败'));
     } finally {
       setLoading(false);
     }
@@ -134,24 +133,19 @@ export function InspectionWorkbenchPage(): ReactElement {
       message.success(okMsg);
       await load();
     } catch (err) {
-      const errorCode = (err as { errorCode?: string }).errorCode;
-      if (errorCode === 'SC_CLAIM_STATUS_CONFLICT') {
+      const code = resolveErrorCode(err);
+      if (code === 'SC_CLAIM_STATUS_CONFLICT') {
         message.error('案件尚未终态：后督抽检只针对已结案/已拒赔生效案件');
-      } else if (errorCode === 'SC_CLAIM_INSPECTION_CONFLICT') {
+      } else if (code === 'SC_CLAIM_INSPECTION_CONFLICT') {
         message.error('该抽检单已结论，结论不可改写');
-      } else if (errorCode === 'SC_CLAIM_NOT_FOUND') {
+      } else if (code === 'SC_CLAIM_NOT_FOUND') {
         message.error('案件不存在或不可见');
       } else {
-        message.error('操作失败');
+        message.error(resolveErrorMessage(err, '操作失败'));
       }
     } finally {
       setActing(false);
     }
-  };
-
-  const onSearch = () => {
-    const id = input.trim();
-    setSearchParams(id ? { claimId: id } : {});
   };
 
   const onOpen = () => run(() => inspectionApi.open(claimId, dimension), '抽检单已创建（或已存在）');
@@ -164,10 +158,10 @@ export function InspectionWorkbenchPage(): ReactElement {
     const diffDetail =
       values.result === 'DIFF'
         ? Object.fromEntries(
-            (values.diffRows ?? [])
-              .filter((row) => row?.field && row?.value)
-              .map((row) => [row.field, row.value] as const),
-          )
+          (values.diffRows ?? [])
+            .filter((row) => row?.field && row?.value)
+            .map((row) => [row.field, row.value] as const),
+        )
         : undefined;
     await run(
       () =>
@@ -206,18 +200,22 @@ export function InspectionWorkbenchPage(): ReactElement {
         }
         loading={loading}
         extra={
-          <Space>
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onPressEnter={onSearch}
-              placeholder="案件ID"
-              style={{ width: 140 }}
-            />
-            <Button icon={<ReloadOutlined />} onClick={onSearch}>
-              查询
-            </Button>
-          </Space>
+          <CaseIdBar
+            value={input}
+            onChange={setInput}
+            onSubmit={submit}
+            loading={loading}
+            extra={
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => void load()}
+                disabled={!claimId}
+                loading={loading}
+              >
+                刷新
+              </Button>
+            }
+          />
         }
       >
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -228,7 +226,7 @@ export function InspectionWorkbenchPage(): ReactElement {
           />
 
           {!claimId ? (
-            <Empty description="输入案件ID后查询抽检单，或直接发起抽检" />
+            <CaseNotSelected hint="后督抽检按案件发起，输入案件ID后即可查询抽检单或发起抽检" />
           ) : !inspection ? (
             <Card type="inner" title="发起抽检（#13）" extra={<Tag color="default">该案暂无抽检单</Tag>}>
               <Space wrap>

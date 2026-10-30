@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import {
   Button,
   Card,
-  Input,
   Select,
   Space,
   Statistic,
@@ -29,6 +27,9 @@ import {
   type SettlementResult,
 } from '../services/claimApi';
 import { PageHeader } from '../components/PageHeader';
+import { CaseIdBar, CaseNotSelected } from '../components/CaseIdBar';
+import { useClaimIdParam } from '../hooks/useClaimIdParam';
+import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 
 /**
  * 资金工作台（synapClaim A7，手写不低代码化）。
@@ -60,27 +61,23 @@ const fmt = (v?: number): string => `¥${(Number(v ?? 0) || 0).toFixed(2)}`;
 
 function stageStep(stage?: string): { current: number; status: 'process' | 'finish' | 'wait' } {
   switch (stage) {
-    case 'SOFT_RESERVED':
-      return { current: 0, status: 'process' };
-    case 'REVIEW_FREEZE':
-    case 'HARD_RESERVED':
-      return { current: 1, status: 'process' };
-    case 'PAID':
-    case 'RELEASED':
-    case 'FAILED':
-    case 'REFUNDED':
-      return { current: 2, status: 'finish' };
-    default:
-      return { current: 0, status: 'wait' };
+  case 'SOFT_RESERVED':
+    return { current: 0, status: 'process' };
+  case 'REVIEW_FREEZE':
+  case 'HARD_RESERVED':
+    return { current: 1, status: 'process' };
+  case 'PAID':
+  case 'RELEASED':
+  case 'FAILED':
+  case 'REFUNDED':
+    return { current: 2, status: 'finish' };
+  default:
+    return { current: 0, status: 'wait' };
   }
 }
 
 export function FundWorkbenchPage(): ReactElement {
-  const [searchParams, setSearchParams] = useSearchParams();
-  // 缺省**不要**用占位 '1'：URL 未带 claimId 时会自动查一个未必存在的案件，
-  // 后端返回 404 SC_CLAIM_NOT_FOUND 被兜底成「资金数据加载失败」——把「没数据」报成「加载出错」。
-  const claimId = searchParams.get('claimId') ?? '';
-  const [input, setInput] = useState(claimId);
+  const { claimId, input, setInput, submit } = useClaimIdParam();
   const [accountType, setAccountType] = useState<AccountType>('PERSONAL');
   const [settlement, setSettlement] = useState<SettlementResult | null>(null);
   const [quota, setQuota] = useState<QuotaSummary | null>(null);
@@ -88,22 +85,30 @@ export function FundWorkbenchPage(): ReactElement {
   const [acting, setActing] = useState(false);
 
   const load = useCallback(async () => {
+    // 缺省**不要**用占位 '1'：URL 未带 claimId 时会自动查一个未必存在的案件，
+    // 后端返回 404 SC_CLAIM_NOT_FOUND 被兜底成「资金数据加载失败」——把「没数据」报成「加载出错」。
+    if (!claimId) {
+      setSettlement(null);
+      setQuota(null);
+      return;
+    }
     setLoading(true);
     try {
       const [s, q] = await Promise.all([settlementApi.latest(claimId), quotaApi.get(claimId)]);
       setSettlement(s?.data ?? null);
       setQuota(q?.data ?? null);
     } catch (err) {
-      const errorCode = (err as { errorCode?: string }).errorCode;
-      if (errorCode === 'SC_CLAIM_QUOTA_NOT_FOUND') {
+      const code = resolveErrorCode(err);
+      if (code === 'SC_CLAIM_QUOTA_NOT_FOUND') {
         setQuota(null);
-      } else if (errorCode === 'SC_CLAIM_NOT_FOUND') {
+      } else if (code === 'SC_CLAIM_NOT_FOUND') {
         // 查无此案 = 空态，不是故障。报成「加载失败」会让用户在没有任何错误时以为系统坏了。
         setSettlement(null);
         setQuota(null);
         message.info('未查询到该案件（或不属于当前租户）');
       } else {
-        message.error('资金数据加载失败');
+        // 其余按 i18n 码表出文案（原先一律吞成「资金数据加载失败」，把 409/422 的语义全抹平）
+        message.error(resolveErrorMessage(err, '资金数据加载失败'));
       }
     } finally {
       setLoading(false);
@@ -123,8 +128,8 @@ export function FundWorkbenchPage(): ReactElement {
       await fn();
       message.success(okMsg);
       void load();
-    } catch {
-      message.error('操作失败');
+    } catch (err) {
+      message.error(resolveErrorMessage(err, '操作失败'));
     } finally {
       setActing(false);
     }
@@ -148,12 +153,6 @@ export function FundWorkbenchPage(): ReactElement {
     run(() => settlementApi.cancel(claimId, { payFailed: false }), '已撤销/拒赔（释放预占）');
   const onRefund = () => run(() => settlementApi.refund(claimId), '已退票退款（红冲并回冲额度）');
 
-  const onSearch = () => {
-    const id = input.trim();
-    if (!id) return;
-    setSearchParams({ claimId: id });
-  };
-
   const stage = settlement?.fundingStage;
   const step = stageStep(stage);
   const terminal = isTerminal(stage);
@@ -164,116 +163,124 @@ export function FundWorkbenchPage(): ReactElement {
       <Card
         title="结算单与额度"
         extra={
-          <Space>
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onPressEnter={onSearch}
-              placeholder="案件ID"
-              style={{ width: 140 }}
-            />
-            <Button icon={<ReloadOutlined />} onClick={onSearch}>
-              查询
-            </Button>
-          </Space>
+          <CaseIdBar
+            value={input}
+            onChange={setInput}
+            onSubmit={submit}
+            loading={loading}
+            extra={
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => void load()}
+                disabled={!claimId}
+                loading={loading}
+              >
+                刷新
+              </Button>
+            }
+          />
         }
       >
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <Steps current={step.current} status={step.status} items={STAGE_STEPS.map((t) => ({ title: t }))} />
+        {!claimId ? (
+          <CaseNotSelected hint="资金视图按案件归集，输入案件ID后即可查看结算单与额度" />
+        ) : (
+          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Steps current={step.current} status={step.status} items={STAGE_STEPS.map((t) => ({ title: t }))} />
 
-          <Space wrap>
-            {settlement == null && (
-              <>
-                <Select<AccountType>
-                  value={accountType}
-                  onChange={setAccountType}
-                  style={{ width: 160 }}
-                  options={[
-                    { value: 'PERSONAL', label: '个人账户' },
-                    { value: 'PUBLIC', label: '对公账户' },
-                    { value: 'NO_ACCOUNT', label: '无账户' },
-                  ]}
-                />
-                <Button type="primary" icon={<PlusOutlined />} loading={acting} onClick={onCreate}>
+            <Space wrap>
+              {settlement == null && (
+                <>
+                  <Select<AccountType>
+                    value={accountType}
+                    onChange={setAccountType}
+                    style={{ width: 160 }}
+                    options={[
+                      { value: 'PERSONAL', label: '个人账户' },
+                      { value: 'PUBLIC', label: '对公账户' },
+                      { value: 'NO_ACCOUNT', label: '无账户' },
+                    ]}
+                  />
+                  <Button type="primary" icon={<PlusOutlined />} loading={acting} onClick={onCreate}>
                   建结算单
-                </Button>
-              </>
-            )}
-            {stage === 'SOFT_RESERVED' && (
-              <Button type="primary" icon={<CheckCircleOutlined />} loading={acting} onClick={onAuditPass}>
+                  </Button>
+                </>
+              )}
+              {stage === 'SOFT_RESERVED' && (
+                <Button type="primary" icon={<CheckCircleOutlined />} loading={acting} onClick={onAuditPass}>
                 审核通过
-              </Button>
-            )}
-            {stage === 'REVIEW_FREEZE' && (
-              <Button type="primary" icon={<CheckCircleOutlined />} loading={acting} onClick={onConfirmReview}>
+                </Button>
+              )}
+              {stage === 'REVIEW_FREEZE' && (
+                <Button type="primary" icon={<CheckCircleOutlined />} loading={acting} onClick={onConfirmReview}>
                 复核放行（第二人）
-              </Button>
-            )}
-            {stage === 'HARD_RESERVED' && (
-              <Button type="primary" icon={<BankOutlined />} loading={acting} onClick={onPay}>
+                </Button>
+              )}
+              {stage === 'HARD_RESERVED' && (
+                <Button type="primary" icon={<BankOutlined />} loading={acting} onClick={onPay}>
                 支付
-              </Button>
-            )}
-            {(stage === 'SOFT_RESERVED' || isOccupied(stage)) && (
-              <Button icon={<StopOutlined />} loading={acting} onClick={onCancel}>
+                </Button>
+              )}
+              {(stage === 'SOFT_RESERVED' || isOccupied(stage)) && (
+                <Button icon={<StopOutlined />} loading={acting} onClick={onCancel}>
                 撤销/拒赔
-              </Button>
-            )}
-            {stage === 'PAID' && (
-              <Button icon={<RollbackOutlined />} loading={acting} onClick={onRefund}>
+                </Button>
+              )}
+              {stage === 'PAID' && (
+                <Button icon={<RollbackOutlined />} loading={acting} onClick={onRefund}>
                 退票退款
-              </Button>
+                </Button>
+              )}
+              {terminal && stage && (
+                <Tag color={STAGE_META[stage]?.color ?? 'default'}>{STAGE_META[stage]?.label ?? stage}</Tag>
+              )}
+            </Space>
+
+            {settlement && (
+              <Space size="large" wrap>
+                <Statistic title="结算单号" value={settlement.settlementNo} valueStyle={{ fontSize: 14 }} />
+                <Statistic title="结算金额" value={fmt(settlement.amount)} />
+                <Statistic title="占额周期" value={settlement.attempt} />
+                <Statistic
+                  title="资金阶段"
+                  value={STAGE_META[stage ?? '']?.label ?? stage}
+                  valueStyle={{ fontSize: 14 }}
+                />
+              </Space>
             )}
-            {terminal && stage && (
-              <Tag color={STAGE_META[stage]?.color ?? 'default'}>{STAGE_META[stage]?.label ?? stage}</Tag>
+
+            <Card type="inner" title="额度账户（A5 三值模型）" loading={loading}>
+              {quota ? (
+                <Space size="large" wrap>
+                  <Statistic title="初始额度" value={fmt(quota.initial)} />
+                  <Statistic title="已扣减(claimed)" value={fmt(quota.claimed)} />
+                  <Statistic title="已冻结(frozen)" value={fmt(quota.frozen)} />
+                  <Statistic title="可用额度" value={fmt(quota.available)} valueStyle={{ color: '#3f8600' }} />
+                </Space>
+              ) : (
+                <Typography.Text type="secondary">该案件无个人额度账户</Typography.Text>
+              )}
+            </Card>
+
+            {quota && quota.transactions.length > 0 && (
+              <Card type="inner" title="额度流水（append-only）">
+                <Timeline
+                  items={[...quota.transactions].reverse().map((t) => ({
+                    color: t.direction === 'OCCUPY' ? 'green' : 'red',
+                    children: (
+                      <span>
+                        <Tag color={t.txnType === 'PAID' ? 'green' : t.txnType === 'RELEASE' ? 'red' : 'blue'}>
+                          {t.txnType}
+                        </Tag>
+                        {fmt(t.amount)} ｜ 后值 {fmt(t.afterAmount)} ｜{' '}
+                        <Typography.Text type="secondary">{t.idempotencyKey}</Typography.Text>
+                      </span>
+                    ),
+                  }))}
+                />
+              </Card>
             )}
           </Space>
-
-          {settlement && (
-            <Space size="large" wrap>
-              <Statistic title="结算单号" value={settlement.settlementNo} valueStyle={{ fontSize: 14 }} />
-              <Statistic title="结算金额" value={fmt(settlement.amount)} />
-              <Statistic title="占额周期" value={settlement.attempt} />
-              <Statistic
-                title="资金阶段"
-                value={STAGE_META[stage ?? '']?.label ?? stage}
-                valueStyle={{ fontSize: 14 }}
-              />
-            </Space>
-          )}
-
-          <Card type="inner" title="额度账户（A5 三值模型）" loading={loading}>
-            {quota ? (
-              <Space size="large" wrap>
-                <Statistic title="初始额度" value={fmt(quota.initial)} />
-                <Statistic title="已扣减(claimed)" value={fmt(quota.claimed)} />
-                <Statistic title="已冻结(frozen)" value={fmt(quota.frozen)} />
-                <Statistic title="可用额度" value={fmt(quota.available)} valueStyle={{ color: '#3f8600' }} />
-              </Space>
-            ) : (
-              <Typography.Text type="secondary">该案件无个人额度账户</Typography.Text>
-            )}
-          </Card>
-
-          {quota && quota.transactions.length > 0 && (
-            <Card type="inner" title="额度流水（append-only）">
-              <Timeline
-                items={[...quota.transactions].reverse().map((t) => ({
-                  color: t.direction === 'OCCUPY' ? 'green' : 'red',
-                  children: (
-                    <span>
-                      <Tag color={t.txnType === 'PAID' ? 'green' : t.txnType === 'RELEASE' ? 'red' : 'blue'}>
-                        {t.txnType}
-                      </Tag>
-                      {fmt(t.amount)} ｜ 后值 {fmt(t.afterAmount)} ｜{' '}
-                      <Typography.Text type="secondary">{t.idempotencyKey}</Typography.Text>
-                    </span>
-                  ),
-                }))}
-              />
-            </Card>
-          )}
-        </Space>
+        )}
       </Card>
     </div>
   );

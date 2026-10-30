@@ -15,6 +15,8 @@ import {
 import { SearchOutlined } from '@ant-design/icons';
 import { PageHeader } from '../components/PageHeader';
 import { claimApi, type ClaimWithItemsProjection } from '../services/claimApi';
+import { claimStatusMeta } from '../services/claimStatus';
+import { resolveErrorCode } from '@bone/shared-utils';
 
 /**
  * 员工端 · 进度追踪（PRD §7.2「进度追踪」/ delivery/05 员工端查询进度）。
@@ -35,22 +37,11 @@ const STAGE_LABEL: Record<string, string> = {
   FINISH: '结案',
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: '草稿',
-  ACCEPTED: '已受理',
-  PENDING_PRE_EXAM: '待初审分配',
-  PRE_EXAMINING: '初审中',
-  AUTO_PRE_EXAMINING: '自动初审中',
-  PRE_EXAMINED: '已初审',
-  EVIDENCE_SUBMITTING: '材料补录中',
-  PENDING_ADJUST: '待核赔',
-  ADJUSTING: '核赔中',
-  ADJUSTED: '已审核',
-  REVIEWING: '复核中',
-  CLOSED_REJECTED: '已撤销/拒赔生效',
-  FINISHED: '已结案',
-  APPEALING: '申诉中',
-};
+/**
+ * 状态文案统一取 {@link claimStatusMeta}（`services/claimStatus.ts`）。
+ * 本页原有一份 `STATUS_LABEL` 与核赔工作台的 `STATUS_TAG` 各写一遍且条目集不同，
+ * 后端加状态时只会改一处 ⇒ 另一处直接显示英文枚举名。
+ */
 
 export function ClaimProgressPage(): ReactElement {
   const [claimIdText, setClaimIdText] = useState('');
@@ -59,9 +50,13 @@ export function ClaimProgressPage(): ReactElement {
 
   const search = async () => {
     const idText = claimIdText.trim();
-    const id = Number(idText);
-    if (!Number.isFinite(id) || id <= 0) {
-      message.warning('请输入合法的案件ID');
+    /**
+     * 只做「非空 + 纯数字」校验，**不要**转 Number 判大小。
+     * 案件 ID 是雪花 ID（19 位），超出 `Number.MAX_SAFE_INTEGER`，`Number('1846...')` 会静默丢精度；
+     * 而且 `Number('1e5')` 也能通过 isFinite，会把非法输入放进请求。
+     */
+    if (!/^\d{1,19}$/.test(idText) || idText === '0') {
+      message.warning('请输入合法的案件ID（纯数字）');
       return;
     }
     setLoading(true);
@@ -73,7 +68,7 @@ export function ClaimProgressPage(): ReactElement {
         message.info('未查询到该案件（或不属于当前租户）');
       }
     } catch (err) {
-      const errorCode = (err as { errorCode?: string }).errorCode;
+      const errorCode = resolveErrorCode(err);
       message.error(errorCode === 'SC_CLAIM_NOT_FOUND' ? '案件不存在或无权查看' : '查询失败，请稍后重试');
       setRows(null);
     } finally {
@@ -111,7 +106,7 @@ export function ClaimProgressPage(): ReactElement {
               <Descriptions.Item label="报案号">{head.claimNo}</Descriptions.Item>
               <Descriptions.Item label="保单号">{head.policyNo}</Descriptions.Item>
               <Descriptions.Item label="当前状态">
-                <Tag color="blue">{STATUS_LABEL[head.status] ?? head.status}</Tag>
+                <Tag color={claimStatusMeta(head.status).color}>{claimStatusMeta(head.status).label}</Tag>
                 {head.externalStatus && <Tag>{head.externalStatus}</Tag>}
               </Descriptions.Item>
               <Descriptions.Item label="申请金额">¥{Number(head.claimAmount).toFixed(2)}</Descriptions.Item>
