@@ -543,6 +543,12 @@
       "file": "verify_0052.py",
       "kind": "tool",
       "summary": "0052 的自动化校验（pymysql 连真实 MySQL 8，CI migration-verify.yml 调用）"
+    },
+    {
+      "order": null,
+      "file": "init-coverage-baseline.json",
+      "kind": "tool",
+      "summary": "G39 覆盖率基线：迁移建表但 bone-init.sql 未并入的 31 张表（23 待并入 / 2 待裁决 / 6 疑未执行，只可收缩）"
     }
   ],
   "ordinalConflicts": [
@@ -614,5 +620,5 @@
     }
   ],
   "appliesTo": "store-incremental",
-  "scopeNote": "本清单定义的是**存量环境**的增量应用顺序，不是「新库初始化脚本」：bone-init.sql 已是当前全量结构（含 CREATE DATABASE bone / USE bone），新环境只需灌它。把 84 个脚本对空库跑一遍必然失败（2026-10-30 实测 65 成功 / 19 失败），失败项多为 Duplicate column（对象早已并入基线，如 0002 的 app_id）或脚本自带 SIGNAL 校验发现目标状态不满足（如 0078 要求理赔菜单按租户×10 全覆盖）。"
+  "scopeNote": "本清单定义的是**存量环境**的增量应用顺序，不是「新库初始化脚本」：bone-init.sql 是当前全量结构的入口。把 84 个脚本对空库跑一遍必然失败（2026-10-30 实测 65 成功 / 19 失败），失败项多为 Duplicate column（对象早已并入基线，如 0002 的 app_id）或脚本自带 SIGNAL 校验发现目标状态不满足（如 0078 要求理赔菜单按租户×10 全覆盖）。**但「新环境只灌 init 就够」目前不成立**：2026-10-30 实测 init 121 张表、dev 库 183 张，其中 25 张是迁移脚本建的结构表（wf_* 工作流 8 张、t_claim_* 与 t_reconciliation_* 理赔 6 张、meta_* 运行时 6 张等），取 6 张关键表双证：init 命中 0、dev 命中 6。即新环境灌完 init，工作流引擎与理赔轨迹直接缺表，且缺表不报错（0072 记的正是同一种事故）。31 项缺口已登记在 init-coverage-baseline.json，由 check-migration-init-coverage.py（G39）把守：只可收缩，新迁移建表未并入全量直接判红。补齐全量属 L3 结构变更，待单独评审。"
 }

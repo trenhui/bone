@@ -7,17 +7,23 @@ on:
   push:
     paths:
       - 'scripts/migration/**'
+      - 'bone-init.sql'
       - 'scripts/check-migration-manifest.py'
+      - 'scripts/check-migration-init-coverage.py'
       - 'scripts/migrate.py'
       - 'scripts/tests/test_check_migration_manifest.py'
+      - 'scripts/tests/test_check_migration_init_coverage.py'
       - 'scripts/tests/test_migrate_journal.py'
       - '.github/workflows/migration-verify.yml'
   pull_request:
     paths:
       - 'scripts/migration/**'
+      - 'bone-init.sql'
       - 'scripts/check-migration-manifest.py'
+      - 'scripts/check-migration-init-coverage.py'
       - 'scripts/migrate.py'
       - 'scripts/tests/test_check_migration_manifest.py'
+      - 'scripts/tests/test_check_migration_init_coverage.py'
       - 'scripts/tests/test_migrate_journal.py'
       - '.github/workflows/migration-verify.yml'
 
@@ -54,11 +60,16 @@ jobs:
       - name: Manifest gate
         run: python3 scripts/check-migration-manifest.py
 
+      # 两个 DDL 真源必须等价：迁移脚本建过的表必须已在 bone-init.sql 里（存量缺口在基线，只可收缩）。
+      - name: Init coverage gate
+        run: python3 scripts/check-migration-init-coverage.py
+
       # 门禁自身回归：判据被改坏时这里先红，而不是等到「清单悄悄失守」。
       # 含账本比对逻辑的纯函数单测（不连库）：重编号不得被误判成「脚本被改动」。
       - name: Manifest gate self-test
         run: |
           python3 scripts/tests/test_check_migration_manifest.py -v
+          python3 scripts/tests/test_check_migration_init_coverage.py -v
           python3 scripts/tests/test_migrate_journal.py -v
 
       # 账本功能自测。**不跑「空库全量 apply」**：bone-init.sql 已是当前全量结构，
