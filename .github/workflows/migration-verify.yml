@@ -1,13 +1,25 @@
 name: Migration Verify
 
-# 仅当迁移目录有改动时触发，避免对普通提交造成额外 CI 成本。
+# 仅当迁移目录或迁移工具本身有改动时触发，避免对普通提交造成额外 CI 成本。
+# 注意必须包含门禁脚本/执行器/门禁自测三条路径：否则「改坏了门禁」这一类改动恰好不跑 CI，
+# 而它正是唯一能发现「清单悄悄失守」的作业要守的东西（2026-10-30 补）。
 on:
   push:
     paths:
       - 'scripts/migration/**'
+      - 'scripts/check-migration-manifest.py'
+      - 'scripts/migrate.py'
+      - 'scripts/tests/test_check_migration_manifest.py'
+      - 'scripts/tests/test_migrate_journal.py'
+      - '.github/workflows/migration-verify.yml'
   pull_request:
     paths:
       - 'scripts/migration/**'
+      - 'scripts/check-migration-manifest.py'
+      - 'scripts/migrate.py'
+      - 'scripts/tests/test_check_migration_manifest.py'
+      - 'scripts/tests/test_migrate_journal.py'
+      - '.github/workflows/migration-verify.yml'
 
 jobs:
   manifest-and-journal:
@@ -43,13 +55,16 @@ jobs:
         run: python3 scripts/check-migration-manifest.py
 
       # 门禁自身回归：判据被改坏时这里先红，而不是等到「清单悄悄失守」。
+      # 含账本比对逻辑的纯函数单测（不连库）：重编号不得被误判成「脚本被改动」。
       - name: Manifest gate self-test
-        run: python3 scripts/tests/test_check_migration_manifest.py -v
+        run: |
+          python3 scripts/tests/test_check_migration_manifest.py -v
+          python3 scripts/tests/test_migrate_journal.py -v
 
       # 账本功能自测。**不跑「空库全量 apply」**：bone-init.sql 已是当前全量结构，
       # 84 个脚本面向存量环境，空库全量必然失败（2026-10-30 实测 65 成功 / 19 失败，
       # 多为 Duplicate column 或脚本自带 SIGNAL 校验发现目标状态不满足）。
-      - name: Journal smoke (baseline → status → apply no-op)
+      - name: Journal smoke (baseline → status → apply no-op → drift → renumber)
         env:
           MYSQL_HOST: 127.0.0.1
           MYSQL_PORT: '3306'
@@ -63,15 +78,38 @@ jobs:
           python3 scripts/migrate.py --db mig_journal_smoke --baseline
           python3 scripts/migrate.py --db mig_journal_smoke | tee /tmp/s1.txt
           grep -q "待应用 0" /tmp/s1.txt       # 登记后：不应再有待应用项
+          # baseline 与真跑过必须可分辨：否则一次登记就能把漏跑的脚本永久掩盖成绿。
+          grep -q "条是 --baseline 登记" /tmp/s1.txt
           python3 scripts/migrate.py --db mig_journal_smoke --apply | tee /tmp/a.txt
           grep -q "无待应用项" /tmp/a.txt
           # 校验和漂移必须被判红：改一行记账后 status 应退 1
           mysql -h127.0.0.1 -uroot -pbone_ci_only mig_journal_smoke \
-            -e "UPDATE schema_migration_journal SET sha256=REPEAT('0',64) WHERE order_no=1"
+            -e "UPDATE schema_migration_journal SET sha256=REPEAT('0',64) WHERE file='0001_masterdata_mdm_convergence.sql'"
           if python3 scripts/migrate.py --db mig_journal_smoke >/tmp/s2.txt 2>&1; then
             echo "❌ 校验和漂移未被判红（账本失去发现「已发脚本被改动」的能力）"; exit 1
           fi
           grep -q "校验和不符" /tmp/s2.txt
+          # 清掉上一段注入的假校验和（删行后重新登记即可拿回正确 sha），否则下一段会同时报两类问题
+          mysql -h127.0.0.1 -uroot -pbone_ci_only mig_journal_smoke \
+            -e "DELETE FROM schema_migration_journal WHERE file='0001_masterdata_mdm_convergence.sql'"
+          python3 scripts/migrate.py --db mig_journal_smoke --baseline >/dev/null
+          # 回归：账本按 file 认身份。整体重编号（等价于清单里插入一个新脚本）只能报「order 变更」，
+          # 绝不能被诊断成「已发脚本被改动」——那会诱导人去还原一个本来就没错的文件。
+          mysql -h127.0.0.1 -uroot -pbone_ci_only mig_journal_smoke \
+            -e "UPDATE schema_migration_journal SET order_no=order_no+1 WHERE order_no>=2"
+          python3 scripts/migrate.py --db mig_journal_smoke >/tmp/s3.txt 2>&1 || true
+          grep -q "order 变更" /tmp/s3.txt
+          if grep -q "校验和不符（已应用后脚本被改动" /tmp/s3.txt; then
+            echo "❌ 重编号被误判成「脚本被改动」（账本按 order 认身份，已回归）"; exit 1
+          fi
+          # 失败行必须与「从未执行」分开：前者库可能是半截状态，处置完全不同。
+          mysql -h127.0.0.1 -uroot -pbone_ci_only mig_journal_smoke \
+            -e "UPDATE schema_migration_journal SET success=0, error_msg='simulated 1064' WHERE file='0002_extension_impl_app_id_and_tenant_code.sql'"
+          if python3 scripts/migrate.py --db mig_journal_smoke >/tmp/s4.txt 2>&1; then
+            echo "❌ 存在执行失败行时 status 不该退 0"; exit 1
+          fi
+          grep -q "执行失败 1" /tmp/s4.txt
+          grep -q "待应用 0" /tmp/s4.txt    # 失败行不得被算成「从未执行」
 
   verify-0052:
     name: Verify 0052 rename migration

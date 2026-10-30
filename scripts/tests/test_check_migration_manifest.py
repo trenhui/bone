@@ -61,7 +61,8 @@ class MigrationManifestGateTest(unittest.TestCase):
         return doc
 
     def run_gate(self) -> int:
-        argv = ["check-migration-manifest.py", "--migration-dir", str(self.mig), "--manifest", str(self.manifest)]
+        argv = ["check-migration-manifest.py", "--root", str(self.root),
+                "--migration-dir", str(self.mig), "--manifest", str(self.manifest)]
         buf = io.StringIO()
         old = sys.argv
         try:
@@ -185,6 +186,57 @@ class MigrationManifestGateTest(unittest.TestCase):
                              {"file": "0002_b.sql", "reason": "必须早于 0001 执行，因为要先把数据补齐"},
                          ]})
         self.assertEqual(self.run_gate(), 1, "依赖项排在被依赖项之后必须判红")
+
+    # ---- M1 子目录 / M9 元数据 / M10 retired（2026-10-30 补）----
+    def test_M1_子目录里的迁移不得隐身(self):
+        """实证过的洞：gate 用 os.listdir + isfile 只扫本层，子目录里的 .sql 完全不被发现。"""
+        self.manifest_of(self.base(), conflicts=[
+            {"ordinal": "0002", "files": ["0002_README.md", "0002_b.sql"], "verdict": "同变更附件：README 为说明文档"}
+        ])
+        (self.mig / "archive").mkdir()
+        (self.mig / "archive" / "0099_zz.sql").write_text(DDL_SQL, encoding="utf-8")
+        self.assertEqual(self.run_gate(), 1, "子目录里的脚本对门禁隐身，必须直接禁止子目录")
+
+    def test_M9_账本表名与migrate_不一致(self):
+        """账本表名在 manifest 与 migrate.py 各写一遍 = 下一次漂移；必须钉死一致。"""
+        (self.root / "bone-init.sql").write_text("-- 全量基线\n", encoding="utf-8")
+        (self.root / "migrate.py").write_text('JOURNAL = "schema_migration_journal"\n', encoding="utf-8")
+        entries = self.base()
+        meta = {"journalTable": "migration_journal_typo", "baseline": "bone-init.sql",
+                "frozenAt": "2026-10-30", "appliesTo": "store-incremental"}
+        self.manifest_of(entries, conflicts=[
+            {"ordinal": "0002", "files": ["0002_README.md", "0002_b.sql"], "verdict": "同变更附件：README 为说明文档"}
+        ], extra=meta)
+        self.assertEqual(self.run_gate(), 1)
+
+        meta["journalTable"] = "schema_migration_journal"
+        self.manifest_of(entries, conflicts=[
+            {"ordinal": "0002", "files": ["0002_README.md", "0002_b.sql"], "verdict": "同变更附件：README 为说明文档"}
+        ], extra=meta)
+        self.assertEqual(self.run_gate(), 0, "表名对齐后应放行")
+
+    def test_M9_元数据只声明一半(self):
+        """只声明一部分必须判红：否则「删掉某个键」就成了绕过检查的手法。"""
+        self.manifest_of(self.base(), conflicts=[
+            {"ordinal": "0002", "files": ["0002_README.md", "0002_b.sql"], "verdict": "同变更附件：README 为说明文档"}
+        ], extra={"journalTable": "schema_migration_journal"})
+        self.assertEqual(self.run_gate(), 1)
+
+    def test_M10_retired_文件仍在磁盘(self):
+        entries = self.base()
+        self.manifest_of(entries, conflicts=[
+            {"ordinal": "0002", "files": ["0002_README.md", "0002_b.sql"], "verdict": "同变更附件：README 为说明文档"}
+        ], extra={"retired": [{"file": "0001_a.sql", "since": "2026-10-30",
+                               "reason": "已并入 bone-init.sql，存量环境均已越过"}]})
+        self.assertEqual(self.run_gate(), 1, "文件还在就是没下线")
+
+    def test_M10_retired_合规(self):
+        entries = self.base()
+        self.manifest_of(entries, conflicts=[
+            {"ordinal": "0002", "files": ["0002_README.md", "0002_b.sql"], "verdict": "同变更附件：README 为说明文档"}
+        ], extra={"retired": [{"file": "0000_old.sql", "since": "2026-10-30",
+                               "reason": "已并入 bone-init.sql，存量环境均已越过该版本"}]})
+        self.assertEqual(self.run_gate(), 0)
 
 
 if __name__ == "__main__":

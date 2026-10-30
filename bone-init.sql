@@ -2,7 +2,12 @@
 -- Bone 数据库初始化脚本（最终版）
 -- 规范: doc/architecture/数据库开发规范.md
 -- 使用: mysql -u root -p < bone-init.sql
--- 说明: 内部开发库可 DROP DATABASE 后全量重建，无增量迁移
+-- 说明: 本文件是**当前全量结构**（含 CREATE DATABASE / USE），新环境只需灌它。
+--       已经存在的旧库不走全量重建，而是按 scripts/migration/migration-manifest.json
+--       的 order 应用增量并由 scripts/migrate.py 记账（账本表 schema_migration_journal）。
+--       内部开发库仍可 DROP DATABASE 后全量重建——重建后账本随之清空，需重跑一次
+--       `python3 scripts/migrate.py --baseline` 才可以继续用 --status 判断待办。
+--       重新生成本文件时请排除 schema_migration_journal：那是**环境状态**，不是结构。
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS bone

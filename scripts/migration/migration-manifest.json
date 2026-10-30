@@ -1,9 +1,10 @@
 {
-  "_comment": "scripts/migration 执行顺序与清单的唯一真源。文件名序号是「变更号」，可被同一变更的文档/校验附件复用，因此不构成全序；order 才是应用顺序（仅 SQL 有值，1..N 连续）。order 冻结于 2026-10-30 的名词典序，此后新增脚本必须追加在末尾，不得插入中间。新增/删除/改名任何文件都必须同步本清单，否则 scripts/check-migration-manifest.py 判红。",
+  "_comment": "scripts/migration 执行顺序与清单的唯一真源。文件名序号是「变更号」，可被同一变更的文档/校验附件复用，因此不构成全序；order 才是应用顺序（仅 SQL 有值，1..N 连续）。order 冻结于 2026-10-30 的名词典序，此后新增脚本必须追加在末尾，不得插入中间。新增/删除/改名任何文件都必须同步本清单，否则 scripts/check-migration-manifest.py 判红。另外两条：脚本只能平铺在本目录（门禁只扫本层，子目录里的迁移会隐身且不生效）；历史脚本并入 bone-init.sql 后若要从这里下线，必须登记到 retired，否则已应用环境会永久报「账本残留」。",
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
   "executableCount": 84,
+  "retired": [],
   "entries": [
     {
       "order": 1,
