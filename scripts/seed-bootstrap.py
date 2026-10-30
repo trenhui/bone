@@ -51,15 +51,28 @@ OUT_SQL = OUT_DIR / "10_bootstrap_seed.sql"
 OUT_MANIFEST = OUT_DIR / "seed-manifest.json"
 
 # (表, where 条件, 为什么它是启动必需)
+# 过滤规则必须四张表**都**加 E2E 排除：2026-10-30 实测 dev 库里
+#   iam_permission 28 行 / sys_dict_type 47 行 / sys_dict_item 58 行 / iam_menu 1 行
+# 是 E2E 联调残留（码形如 e2e191721、E2E_DICT_354510、E2E_DI_...）。
+# 只给 iam_menu 加过滤会让另外三张表的残渣固化进基线——上一版的真实事故。
+# sys_dict_item 必须连带排除 type_code 命中的 E2E 类型（否则字典项指向一个被删的 E2E 类型）。
+E2E_RE = "E2E|e2e"
 SEED_SPECS = [
-    ("iam_permission", "deleted = 0",
-     "权限点：接口 @PreAuthorize 与菜单 permission 都按码匹配，缺码即 403 / 菜单被剪"),
+    ("iam_permission",
+     "deleted = 0 AND code NOT REGEXP '%s' AND name NOT REGEXP '%s|测试'" % (E2E_RE, E2E_RE),
+     "权限点：接口 @PreAuthorize 与菜单 permission 都按码匹配，缺码即 403 / 菜单被剪；排除 E2E 联调权限"),
     ("iam_menu",
      "tenant_id IN (0, 1001) AND deleted = 0 "
-     "AND name NOT REGEXP 'E2E|测试' AND IFNULL(path, '') NOT REGEXP 'e2e|test'",
-     "菜单树：tenant 0 为平台模板、1001 为默认租户；已排除 E2E 联调残留菜单"),
-    ("sys_dict_type", "deleted = 0", "字典类型：下拉/枚举的取值域定义"),
-    ("sys_dict_item", "deleted = 0", "字典项：有类型无项等于没有字典"),
+     "AND name NOT REGEXP '%s|测试' AND IFNULL(path, '') NOT REGEXP 'e2e|test' "
+     "AND IFNULL(permission, '') NOT REGEXP '%s'" % (E2E_RE, E2E_RE),
+     "菜单树：tenant 0 为平台模板、1001 为默认租户；已排除 E2E 联调残留菜单（含其脏 permission 码）"),
+    ("sys_dict_type",
+     "deleted = 0 AND code NOT REGEXP '%s' AND name NOT REGEXP '%s|测试'" % (E2E_RE, E2E_RE),
+     "字典类型：下拉/枚举的取值域定义；排除 E2E 联调字典"),
+    ("sys_dict_item",
+     "deleted = 0 AND type_code NOT REGEXP '%s' "
+     "AND code NOT REGEXP '%s' AND value NOT REGEXP '%s'" % (E2E_RE, E2E_RE, E2E_RE),
+     "字典项：有类型无项等于没有字典；排除 E2E 类型及其项下所有项"),
 ]
 
 SEED_TABLES = [spec[0] for spec in SEED_SPECS]
@@ -128,13 +141,34 @@ def dump_table(db: Db, table: str, where: str) -> str:
     return "\n".join(ln.replace("INSERT INTO", "REPLACE INTO", 1) for ln in lines)
 
 
+def orphan_menu_ids(db: Db) -> list[str]:
+    """返回 dev 里 permission 指向不存在权限点的菜单 id（静默失效：普通租户永远看不到）。
+
+    这层一致性是 G40（check-seed-menu-permission.py）的权威来源：生成种子时就把这些
+    幽灵菜单排除，避免「新环境灌了种子却渲染不出菜单」的假象。根因（dev 缺对应权限点）
+    是独立的数据缺陷，由 owner 在 dev 补权限点后再 regenerate 即可让菜单回归。
+    """
+    out = subprocess.run(
+        [find_client("mysql"), *db.conn, "-N", "-B", db.db, "-e",
+         "SELECT id FROM iam_menu WHERE deleted = 0 AND permission IS NOT NULL "
+         "AND permission <> '' AND permission NOT IN "
+         "(SELECT code FROM iam_permission WHERE deleted = 0)"],
+        capture_output=True, text=True,
+    )
+    if out.returncode != 0:
+        raise SystemExit(f"❌ 查孤儿菜单失败：{out.stderr.strip().splitlines()[-1:] or out.stderr}")
+    return [ln.strip() for ln in out.stdout.splitlines() if ln.strip()]
+
+
 def generate(source_db: str | None = None) -> int:
     db = Db(source_db)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    orphans = orphan_menu_ids(db)
     parts = [
         "-- 10_bootstrap_seed.sql",
         "-- 新环境启动种子（结构之外的最小可用数据）。由 scripts/seed-bootstrap.py 生成，禁止手工编辑。",
-        "-- 来源：本地 dev 库（跑过全部增量迁移）；已按 SEED_SPECS 的 where 过滤 E2E 联调残留。",
+        "-- 来源：本地 dev 库（跑过全部增量迁移）；已按 SEED_SPECS 的 where 过滤 E2E 联调残留，",
+        "-- 并在生成时排除 permission 指向不存在权限点的幽灵菜单（G40 一致性）。",
         "-- 幂等：全部 REPLACE INTO，可重复执行。",
         "-- 用法：mysql -u root -p <db> < scripts/seed/bootstrap/10_bootstrap_seed.sql",
         "",
@@ -146,9 +180,14 @@ def generate(source_db: str | None = None) -> int:
                 "generatedAt": None, "tables": {}}
     total = 0
     for table, where, why in SEED_SPECS:
-        kept = db.count(table, where)
+        eff_where = where
+        if table == "iam_menu" and orphans:
+            # 把孤儿菜单从种子里排除：它们引用不存在的 permission，渲染不出来，
+            # 塞进种子只会让新环境多一堆「种下了但永远看不到」的假数据。
+            eff_where += " AND id NOT IN (%s)" % ", ".join(orphans)
+        kept = db.count(table, eff_where)
         allrows = db.count(table)
-        sql = dump_table(db, table, where)
+        sql = dump_table(db, table, eff_where)
         # 注意：mysqldump 默认 extended insert，一条语句含多行——语句数 ≠ 行数，
         # 行数以 where 后的 COUNT 为准（语句数只用来判「解析是否拿到东西」）。
         rows = kept
@@ -157,15 +196,20 @@ def generate(source_db: str | None = None) -> int:
         if kept == 0:
             print(f"  ⚠ {table:16s} where 命中 0 行——该表将不进种子，请确认过滤条件没有写错")
             continue
+        # 审计：种子相对源库的排除 = E2E/测试残渣 + 孤儿菜单（仅 iam_menu）
+        excluded = allrows - kept
+        tag = ""
+        if table == "iam_menu" and orphans:
+            tag = f"，其中 {len(orphans)} 行为 permission 孤儿（G40 一致性排除）"
         total += rows
         manifest["tables"][table] = {"rows": rows, "source_rows": allrows,
-                                     "excluded": allrows - kept, "where": where, "why": why}
-        parts.append(f"-- ── {table}：导出 {rows} 行（源库 {allrows} 行，排除 {allrows - kept} 行）")
+                                     "excluded": excluded, "where": eff_where, "why": why}
+        parts.append(f"-- ── {table}：导出 {rows} 行（源库 {allrows} 行，排除 {excluded}{tag}）")
         parts.append(f"--    {why}")
-        parts.append(f"--    where: {where}")
+        parts.append(f"--    where: {eff_where}")
         parts.append(sql)
         parts.append("")
-        print(f"  {table:16s} 导出 {rows:5d} / 源 {allrows:5d}（排除 {allrows - kept}）")
+        print(f"  {table:16s} 导出 {rows:5d} / 源 {allrows:5d}（排除 {excluded}{tag}")
 
     if total == 0:
         raise SystemExit("❌ 一条种子都没导出——空种子会让 --verify 恒过，必须判红")

@@ -11,6 +11,8 @@ on:
       - 'bone-init.sql'
       - 'scripts/check-migration-manifest.py'
       - 'scripts/check-migration-init-coverage.py'
+      - 'scripts/check-menu-icon-whitelist.py'
+      - 'scripts/check-seed-menu-permission.py'
       - 'scripts/migrate.py'
       - 'scripts/sync-init-from-live.py'
       - 'scripts/seed-bootstrap.py'
@@ -19,6 +21,7 @@ on:
       - 'scripts/tests/test_migrate_journal.py'
       - 'scripts/tests/test_sync_init_from_live.py'
       - 'scripts/tests/test_seed_and_lock.py'
+      - 'scripts/tests/test_check_seed_menu_permission.py'
       - '.github/workflows/migration-verify.yml'
   pull_request:
     paths:
@@ -27,6 +30,8 @@ on:
       - 'bone-init.sql'
       - 'scripts/check-migration-manifest.py'
       - 'scripts/check-migration-init-coverage.py'
+      - 'scripts/check-menu-icon-whitelist.py'
+      - 'scripts/check-seed-menu-permission.py'
       - 'scripts/migrate.py'
       - 'scripts/sync-init-from-live.py'
       - 'scripts/seed-bootstrap.py'
@@ -35,6 +40,7 @@ on:
       - 'scripts/tests/test_migrate_journal.py'
       - 'scripts/tests/test_sync_init_from_live.py'
       - 'scripts/tests/test_seed_and_lock.py'
+      - 'scripts/tests/test_check_seed_menu_permission.py'
       - '.github/workflows/migration-verify.yml'
 
 jobs:
@@ -74,6 +80,16 @@ jobs:
       - name: Init coverage gate
         run: python3 scripts/check-migration-init-coverage.py
 
+      # 菜单图标白名单（G37）：2026-10-30 扩展为同时扫描 scripts/seed/bootstrap/10_bootstrap_seed.sql，
+      # 否则「真正会进新环境的菜单数据」绕过了图标校验，未登记图标被静默降级成默认图标。
+      - name: Menu icon whitelist gate (incl seed)
+        run: python3 scripts/check-menu-icon-whitelist.py
+
+      # 种子菜单 permission 自洽（G40）：菜单 permission 必须存在对应权限点，否则运行时被静默剪掉。
+      # 静态解析种子 SQL（无需连库），与 seed-bootstrap.py 生成时的孤儿排除互相印证。
+      - name: Seed menu-permission consistency gate (G40)
+        run: python3 scripts/check-seed-menu-permission.py
+
       # 门禁自身回归：判据被改坏时这里先红，而不是等到「清单悄悄失守」。
       # 含账本比对逻辑的纯函数单测（不连库）：重编号不得被误判成「脚本被改动」。
       - name: Manifest gate self-test
@@ -83,6 +99,7 @@ jobs:
           python3 scripts/tests/test_migrate_journal.py -v
           python3 scripts/tests/test_sync_init_from_live.py -v
           python3 scripts/tests/test_seed_and_lock.py -v
+          python3 scripts/tests/test_check_seed_menu_permission.py -v
 
       # 账本功能自测。**不跑「空库全量 apply」**：bone-init.sql 已是当前全量结构，
       # 84 个脚本面向存量环境，空库全量必然失败（2026-10-30 实测 65 成功 / 19 失败，
@@ -193,12 +210,14 @@ jobs:
 
       # 结构齐了但数据是空的 —— 这就是「空壳」：登录后侧栏空白、下拉无值、接口 403，
       # 而所有只看结构的门禁全绿。所以这一条必须单独断言，不能靠 seed 清单自证。
+      # 下限取自当前提交种子的实际行数（seed-manifest.json）：seed-bootstrap.py 在生成时已排除
+      # E2E 残渣与 permission 孤儿菜单，故较早期统计下降；谁动了种子必须同步这里。
       - name: Assert not a shell (menu / dict / permission)
         run: |
           set -euo pipefail
           # 不用 `set -- $pair` 分词：zsh 默认不做变量分词，本地跑同一段脚本会静默失败，
           # 而 CI 是 bash 又能过 —— 这种「只在本地/只在 CI 出问题」的写法迟早埋雷。
-          for pair in "iam_menu:288" "iam_permission:126" "sys_dict_type:81" "sys_dict_item:237"; do
+          for pair in "iam_menu:236" "iam_permission:98" "sys_dict_type:34" "sys_dict_item:176"; do
             name="${pair%%:*}"; min="${pair##*:}"
             n=$(mysql -h127.0.0.1 -uroot -pbone_ci_only -N -B bone -e "SELECT COUNT(*) FROM $name")
             echo "$name = $n（下限 $min）"

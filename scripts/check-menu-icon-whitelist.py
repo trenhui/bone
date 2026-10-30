@@ -43,6 +43,9 @@ from glob import glob
 APP_REL = os.path.join("bone-frontend", "apps", "bone-shell", "src", "App.tsx")
 MIGRATION_REL = os.path.join("scripts", "migration")
 INIT_REL = "bone-init.sql"
+# 菜单种子（含图标）的权威来源已迁到这里（2026-10-30 起，由 seed-bootstrap.py 生成）。
+# 漏扫它等于图标白名单对「真正会进新环境的数据」失守。
+SEED_REL = os.path.join("scripts", "seed", "bootstrap", "10_bootstrap_seed.sql")
 
 ICON_LITERAL = re.compile(r"'([A-Za-z0-9_]+(?:Outlined|Filled|TwoTone))'")
 
@@ -90,6 +93,7 @@ def main():
     app_override = None
     mig_override = None
     init_override = None
+    seed_override = None
     args = sys.argv[1:]
     i = 0
     while i < len(args):
@@ -102,6 +106,8 @@ def main():
             mig_override = args[i + 1]; i += 2; continue
         if a == "--init" and i + 1 < len(args):
             init_override = args[i + 1]; i += 2; continue
+        if a == "--seed" and i + 1 < len(args):
+            seed_override = args[i + 1]; i += 2; continue
         i += 1
 
     if root is None:
@@ -123,11 +129,14 @@ def main():
 
     mig_dir = mig_override or os.path.join(root, MIGRATION_REL)
     init_path = init_override or os.path.join(root, INIT_REL)
+    seed_path = seed_override or os.path.join(root, SEED_REL)
     sql_files = sorted(glob(os.path.join(mig_dir, "*.sql")))
     if os.path.isfile(init_path):
         sql_files.append(init_path)
+    if os.path.isfile(seed_path):
+        sql_files.append(seed_path)
     if not sql_files:
-        print(f"[G37] ❌ 未扫描到任何 SQL 文件（{mig_dir} / {init_path}），无法校验")
+        print(f"[G37] ❌ 未扫描到任何 SQL 文件（{mig_dir} / {init_path} / {seed_path}），无法校验")
         return 1
 
     usages = collect_usages(sql_files)
@@ -152,7 +161,7 @@ def main():
 
     print(
         f"[G37] ✅ 菜单图标全部已登记（{len(usages)} 个图标 / 白名单 {len(keys)} 项 / "
-        f"扫描 {len(sql_files)} 个 SQL）"
+        f"扫描 {len(sql_files)} 个 SQL，含种子 scripts/seed/bootstrap/10_bootstrap_seed.sql）"
     )
     return 0
 
