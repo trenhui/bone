@@ -559,12 +559,24 @@ if ! python3 scripts/check-three-entry-boundaries.py; then
   exit_code=1
 fi
 
+# 2026-10-30 新增（G38）。迁移目录的文件名序号是「变更号」而不是执行序：0008/0020 各带
+# README/RUNBOOK 附件，而 0052 被两个**不同变更**共用（mdm_entity_workflow 与 rename），
+# 0067/0068/0069/0070 同理。于是「该跑哪些、什么顺序」只能靠人按文件名猜——猜错的代价不是报错
+# 而是静默少跑：0072 头部记着一次实证，理赔 6 张表「代码已上线、DDL 没跟上」，缺表时
+# ClaimCaseTrackRecorder 打 ERROR 后吞异常，审计流水全丢而页面照常返回 200。
+# 本步把顺序变成显式数据（migration-manifest.json 的 order），并钉死「新增只能追加在末尾」。
+echo -e "${YELLOW}[38/39] 迁移清单完整性（存在即登记 / 顺序冻结 / 重号必登记 · G38）...${RESET}"
+if ! python3 scripts/check-migration-manifest.py; then
+  echo -e "${RED}❌ 迁移清单与磁盘不一致（新增脚本须登记 order，重号须登记 ordinalConflicts）${RESET}"
+  exit_code=1
+fi
+
 # 2026-10-17 接入：门禁脚本自身单元测试（防门禁回归）。此前 check-archunit-freeze-baseline.py
 # 与 check-freeze-ledger.py 零单测，其判据一旦回归无人知晓；scripts/tests/ 下表征测试用
 # importlib 加载真实门禁脚本、monkeypatch 模块级 REPO/LEDGER 到临时目录，锁定 R1/R2/R3 与
 # R4 判据。接进 pre-commit 后，任何门禁脚本回归都会在提交时被本地自检拦截——门禁本身不再是
 # "无人看护的守卫"。
-echo -e "${YELLOW}[38/38] 门禁脚本自身单元测试（防门禁回归 · scripts/tests）...${RESET}"
+echo -e "${YELLOW}[39/39] 门禁脚本自身单元测试（防门禁回归 · scripts/tests）...${RESET}"
 if ! python3 -m unittest discover -s scripts/tests -p 'test_*.py' --verbose 2>&1; then
   echo -e "${RED}❌ 门禁自身单元测试失败（门禁脚本可能已回归，详见上方 traceback）${RESET}"
   exit_code=1

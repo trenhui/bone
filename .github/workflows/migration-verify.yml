@@ -10,6 +10,69 @@ on:
       - 'scripts/migration/**'
 
 jobs:
+  manifest-and-journal:
+    name: Migration manifest + journal smoke
+    runs-on: ubuntu-latest
+    # 账本自测要真连 MySQL（CREATE TABLE / 主键与唯一键行为），用与 ci.yml 一致的 service。
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: bone_ci_only
+        ports:
+          - '3306:3306'
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pbone_ci_only"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install mysql client
+        run: |
+          command -v mysql >/dev/null 2>&1 || {
+            sudo apt-get update -qq && sudo apt-get install -y -qq mysql-client
+          }
+          mysql --version
+
+      # 静态判据：清单与磁盘双向一致、order 连续、重号已登记、kind 与内容一致。
+      - name: Manifest gate
+        run: python3 scripts/check-migration-manifest.py
+
+      # 门禁自身回归：判据被改坏时这里先红，而不是等到「清单悄悄失守」。
+      - name: Manifest gate self-test
+        run: python3 scripts/tests/test_check_migration_manifest.py -v
+
+      # 账本功能自测。**不跑「空库全量 apply」**：bone-init.sql 已是当前全量结构，
+      # 84 个脚本面向存量环境，空库全量必然失败（2026-10-30 实测 65 成功 / 19 失败，
+      # 多为 Duplicate column 或脚本自带 SIGNAL 校验发现目标状态不满足）。
+      - name: Journal smoke (baseline → status → apply no-op)
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PORT: '3306'
+          MYSQL_USER: root
+          MYSQL_PASSWORD: bone_ci_only
+        run: |
+          set -euo pipefail
+          mysql -h127.0.0.1 -uroot -pbone_ci_only -e "CREATE DATABASE mig_journal_smoke"
+          python3 scripts/migrate.py --db mig_journal_smoke | tee /tmp/s0.txt
+          grep -q "待应用 [1-9]" /tmp/s0.txt   # 空账本：应有待应用项
+          python3 scripts/migrate.py --db mig_journal_smoke --baseline
+          python3 scripts/migrate.py --db mig_journal_smoke | tee /tmp/s1.txt
+          grep -q "待应用 0" /tmp/s1.txt       # 登记后：不应再有待应用项
+          python3 scripts/migrate.py --db mig_journal_smoke --apply | tee /tmp/a.txt
+          grep -q "无待应用项" /tmp/a.txt
+          # 校验和漂移必须被判红：改一行记账后 status 应退 1
+          mysql -h127.0.0.1 -uroot -pbone_ci_only mig_journal_smoke \
+            -e "UPDATE schema_migration_journal SET sha256=REPEAT('0',64) WHERE order_no=1"
+          if python3 scripts/migrate.py --db mig_journal_smoke >/tmp/s2.txt 2>&1; then
+            echo "❌ 校验和漂移未被判红（账本失去发现「已发脚本被改动」的能力）"; exit 1
+          fi
+          grep -q "校验和不符" /tmp/s2.txt
+
   verify-0052:
     name: Verify 0052 rename migration
     runs-on: ubuntu-latest

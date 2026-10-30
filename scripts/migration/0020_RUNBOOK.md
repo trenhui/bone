@@ -21,7 +21,13 @@
 
 ## 3. 执行（在线变更，推荐 gh-ost / pt-osc）
 
-脚本自带幂等（`DROP INDEX IF EXISTS` + 按 information_schema 判定列集合，`@need_*` 为 false 时退化为 `SELECT 1`），可复跑。
+脚本自带幂等（按 `information_schema.statistics` 判定每个索引的现有列集合，`@need_*` 为 false 时 DROP 与 ADD 都退化为 `SELECT 1`），可复跑。
+> **2026-10-30 更正**：原文写的是「`DROP INDEX IF EXISTS` + 幂等」。该语法 **MySQL 8 不支持**（只支持 `DROP TABLE/DATABASE IF EXISTS`），实测 8.0.31 直接 1064 语法错，
+> 于是本脚本此前**从第 275 行起全部无法执行**，22 张表的索引重建从未真正跑过。现已改为
+> `SET @drop_* = IF(@need_*, 'ALTER TABLE ... DROP INDEX ...', 'SELECT 1')` + `PREPARE`。
+> 同时修正一处更隐蔽的逻辑缺陷：原 DROP 不受 `@need_*` 约束，索引**已正确**时也会被删掉而不重建——
+> 实测（仅修语法、不修该条件）会让 22 张表的唯一索引从 98 行降到 22 行，即软删唯一约束彻底消失。
+> 正确语义是「只有需要重建时才删」，改后已验证：修前修后索引集合逐行一致（45→45，零差异）。
 前置校验段会对每张表查"同 UK 同 deleted 重复行"，若历史数据已被物理删除逻辑破坏（重复 > 0），脚本 `SIGNAL` 报错而非静默加索引失败 —— 此时**先人工清理重复行再执行**。
 
 ### 3.1 生产（大表，走在线变更工具）

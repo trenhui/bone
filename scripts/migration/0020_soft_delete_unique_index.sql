@@ -27,6 +27,17 @@
 --
 -- 执行状态：**待批准**（L3 DDL 变更，需架构师审批；生产库执行属 L4，禁止 AI 执行）。
 --   批准后请在本段追加执行日期、备份表名与验收结论（范式见 0018/ 0019）。
+--
+-- 2026-10-30 修订（执行前修复，脚本从未在任何环境跑通，不涉及回改已发脚本）：
+--   · 原「阶段 2」起 23 处用了 `DROP INDEX IF EXISTS x ON t` —— MySQL 8 不支持该语法
+--     （只支持 DROP TABLE/DATABASE IF EXISTS），8.0.31 实测 1064，脚本自第 275 行起全部中断，
+--     22 张表的索引重建从未真正执行。已改为 information_schema 判定 + PREPARE 动态 DROP。
+--   · 同时修正 DROP 的守卫条件：原 DROP 不受 @need_* 约束，索引**已正确**时也会被删掉、
+--     且因 @need_* 为 false 不再重建。实测「仅修语法不修该条件」会让 22 张表的唯一索引
+--     从 98 行降到 22 行（只剩主键），等于把软删唯一约束整个删掉。现 DROP 与 ADD 同受
+--     @need_* 约束，语义为「只有需要重建时才删」。
+--   · 验证：基线库上修前/修后唯一索引集合逐行一致（45→45，零差异）；另造一个缺 deleted 的
+--     索引，跑本脚本后被重建成含 deleted，证明重建路径确实生效。
 
 -- ---------------------------------------------------------------------------
 -- 阶段 1：前置校验 —— 存量数据不得已有「同 UK 同 deleted」重复行
@@ -272,7 +283,10 @@ SET @idx_uk_gen_ct_code_ver = (
   WHERE table_schema = DATABASE() AND table_name = 'gen_code_template' AND index_name = 'uk_gen_ct_code_ver'
 );
 SET @need_uk_gen_ct_code_ver = (@idx_uk_gen_ct_code_ver IS NOT NULL AND @idx_uk_gen_ct_code_ver <> 'tenant_id,code,template_version,deleted');
-DROP INDEX IF EXISTS `uk_gen_ct_code_ver` ON `gen_code_template`;
+SET @drop_uk_gen_ct_code_ver = IF(@need_uk_gen_ct_code_ver, 'ALTER TABLE `gen_code_template` DROP INDEX `uk_gen_ct_code_ver`', 'SELECT 1');
+PREPARE st_drop_uk_gen_ct_code_ver FROM @drop_uk_gen_ct_code_ver;
+EXECUTE st_drop_uk_gen_ct_code_ver;
+DEALLOCATE PREPARE st_drop_uk_gen_ct_code_ver;
 SET @sql_uk_gen_ct_code_ver = IF(@need_uk_gen_ct_code_ver,
   'ALTER TABLE `gen_code_template` ADD UNIQUE KEY `uk_gen_ct_code_ver` (tenant_id, code, template_version, deleted)',
   'SELECT 1');
@@ -287,7 +301,10 @@ SET @idx_uk_gen_ds_tenant_name = (
   WHERE table_schema = DATABASE() AND table_name = 'gen_data_source' AND index_name = 'uk_gen_ds_tenant_name'
 );
 SET @need_uk_gen_ds_tenant_name = (@idx_uk_gen_ds_tenant_name IS NOT NULL AND @idx_uk_gen_ds_tenant_name <> 'tenant_id,name,deleted');
-DROP INDEX IF EXISTS `uk_gen_ds_tenant_name` ON `gen_data_source`;
+SET @drop_uk_gen_ds_tenant_name = IF(@need_uk_gen_ds_tenant_name, 'ALTER TABLE `gen_data_source` DROP INDEX `uk_gen_ds_tenant_name`', 'SELECT 1');
+PREPARE st_drop_uk_gen_ds_tenant_name FROM @drop_uk_gen_ds_tenant_name;
+EXECUTE st_drop_uk_gen_ds_tenant_name;
+DEALLOCATE PREPARE st_drop_uk_gen_ds_tenant_name;
 SET @sql_uk_gen_ds_tenant_name = IF(@need_uk_gen_ds_tenant_name,
   'ALTER TABLE `gen_data_source` ADD UNIQUE KEY `uk_gen_ds_tenant_name` (tenant_id, name, deleted)',
   'SELECT 1');
@@ -302,7 +319,10 @@ SET @idx_uk_gen_gt_task = (
   WHERE table_schema = DATABASE() AND table_name = 'gen_generation_task' AND index_name = 'uk_gen_gt_task'
 );
 SET @need_uk_gen_gt_task = (@idx_uk_gen_gt_task IS NOT NULL AND @idx_uk_gen_gt_task <> 'task_id,deleted');
-DROP INDEX IF EXISTS `uk_gen_gt_task` ON `gen_generation_task`;
+SET @drop_uk_gen_gt_task = IF(@need_uk_gen_gt_task, 'ALTER TABLE `gen_generation_task` DROP INDEX `uk_gen_gt_task`', 'SELECT 1');
+PREPARE st_drop_uk_gen_gt_task FROM @drop_uk_gen_gt_task;
+EXECUTE st_drop_uk_gen_gt_task;
+DEALLOCATE PREPARE st_drop_uk_gen_gt_task;
 SET @sql_uk_gen_gt_task = IF(@need_uk_gen_gt_task,
   'ALTER TABLE `gen_generation_task` ADD UNIQUE KEY `uk_gen_gt_task` (task_id, deleted)',
   'SELECT 1');
@@ -317,7 +337,10 @@ SET @idx_uk_gen_tm_ds_table = (
   WHERE table_schema = DATABASE() AND table_name = 'gen_table_metadata' AND index_name = 'uk_gen_tm_ds_table'
 );
 SET @need_uk_gen_tm_ds_table = (@idx_uk_gen_tm_ds_table IS NOT NULL AND @idx_uk_gen_tm_ds_table <> 'tenant_id,data_source_id,original_table_name,deleted');
-DROP INDEX IF EXISTS `uk_gen_tm_ds_table` ON `gen_table_metadata`;
+SET @drop_uk_gen_tm_ds_table = IF(@need_uk_gen_tm_ds_table, 'ALTER TABLE `gen_table_metadata` DROP INDEX `uk_gen_tm_ds_table`', 'SELECT 1');
+PREPARE st_drop_uk_gen_tm_ds_table FROM @drop_uk_gen_tm_ds_table;
+EXECUTE st_drop_uk_gen_tm_ds_table;
+DEALLOCATE PREPARE st_drop_uk_gen_tm_ds_table;
 SET @sql_uk_gen_tm_ds_table = IF(@need_uk_gen_tm_ds_table,
   'ALTER TABLE `gen_table_metadata` ADD UNIQUE KEY `uk_gen_tm_ds_table` (tenant_id, data_source_id, original_table_name, deleted)',
   'SELECT 1');
@@ -332,7 +355,10 @@ SET @idx_uk_iam_account_username = (
   WHERE table_schema = DATABASE() AND table_name = 'iam_account' AND index_name = 'uk_iam_account_username'
 );
 SET @need_uk_iam_account_username = (@idx_uk_iam_account_username IS NOT NULL AND @idx_uk_iam_account_username <> 'tenant_id,username,deleted');
-DROP INDEX IF EXISTS `uk_iam_account_username` ON `iam_account`;
+SET @drop_uk_iam_account_username = IF(@need_uk_iam_account_username, 'ALTER TABLE `iam_account` DROP INDEX `uk_iam_account_username`', 'SELECT 1');
+PREPARE st_drop_uk_iam_account_username FROM @drop_uk_iam_account_username;
+EXECUTE st_drop_uk_iam_account_username;
+DEALLOCATE PREPARE st_drop_uk_iam_account_username;
 SET @sql_uk_iam_account_username = IF(@need_uk_iam_account_username,
   'ALTER TABLE `iam_account` ADD UNIQUE KEY `uk_iam_account_username` (tenant_id, username, deleted)',
   'SELECT 1');
@@ -347,7 +373,10 @@ SET @idx_uk_iam_permission_code = (
   WHERE table_schema = DATABASE() AND table_name = 'iam_permission' AND index_name = 'uk_iam_permission_code'
 );
 SET @need_uk_iam_permission_code = (@idx_uk_iam_permission_code IS NOT NULL AND @idx_uk_iam_permission_code <> 'code,deleted');
-DROP INDEX IF EXISTS `uk_iam_permission_code` ON `iam_permission`;
+SET @drop_uk_iam_permission_code = IF(@need_uk_iam_permission_code, 'ALTER TABLE `iam_permission` DROP INDEX `uk_iam_permission_code`', 'SELECT 1');
+PREPARE st_drop_uk_iam_permission_code FROM @drop_uk_iam_permission_code;
+EXECUTE st_drop_uk_iam_permission_code;
+DEALLOCATE PREPARE st_drop_uk_iam_permission_code;
 SET @sql_uk_iam_permission_code = IF(@need_uk_iam_permission_code,
   'ALTER TABLE `iam_permission` ADD UNIQUE KEY `uk_iam_permission_code` (code, deleted)',
   'SELECT 1');
@@ -362,7 +391,10 @@ SET @idx_uk_iam_role_code = (
   WHERE table_schema = DATABASE() AND table_name = 'iam_role' AND index_name = 'uk_iam_role_code'
 );
 SET @need_uk_iam_role_code = (@idx_uk_iam_role_code IS NOT NULL AND @idx_uk_iam_role_code <> 'tenant_id,code,deleted');
-DROP INDEX IF EXISTS `uk_iam_role_code` ON `iam_role`;
+SET @drop_uk_iam_role_code = IF(@need_uk_iam_role_code, 'ALTER TABLE `iam_role` DROP INDEX `uk_iam_role_code`', 'SELECT 1');
+PREPARE st_drop_uk_iam_role_code FROM @drop_uk_iam_role_code;
+EXECUTE st_drop_uk_iam_role_code;
+DEALLOCATE PREPARE st_drop_uk_iam_role_code;
 SET @sql_uk_iam_role_code = IF(@need_uk_iam_role_code,
   'ALTER TABLE `iam_role` ADD UNIQUE KEY `uk_iam_role_code` (tenant_id, code, deleted)',
   'SELECT 1');
@@ -377,7 +409,10 @@ SET @idx_uk_iam_tenant_code = (
   WHERE table_schema = DATABASE() AND table_name = 'iam_tenant' AND index_name = 'uk_iam_tenant_code'
 );
 SET @need_uk_iam_tenant_code = (@idx_uk_iam_tenant_code IS NOT NULL AND @idx_uk_iam_tenant_code <> 'code,deleted');
-DROP INDEX IF EXISTS `uk_iam_tenant_code` ON `iam_tenant`;
+SET @drop_uk_iam_tenant_code = IF(@need_uk_iam_tenant_code, 'ALTER TABLE `iam_tenant` DROP INDEX `uk_iam_tenant_code`', 'SELECT 1');
+PREPARE st_drop_uk_iam_tenant_code FROM @drop_uk_iam_tenant_code;
+EXECUTE st_drop_uk_iam_tenant_code;
+DEALLOCATE PREPARE st_drop_uk_iam_tenant_code;
 SET @sql_uk_iam_tenant_code = IF(@need_uk_iam_tenant_code,
   'ALTER TABLE `iam_tenant` ADD UNIQUE KEY `uk_iam_tenant_code` (code, deleted)',
   'SELECT 1');
@@ -392,7 +427,10 @@ SET @idx_uk_meta_dqr_tenant_name = (
   WHERE table_schema = DATABASE() AND table_name = 'md_quality_rule' AND index_name = 'uk_meta_dqr_tenant_name'
 );
 SET @need_uk_meta_dqr_tenant_name = (@idx_uk_meta_dqr_tenant_name IS NOT NULL AND @idx_uk_meta_dqr_tenant_name <> 'tenant_id,name,deleted');
-DROP INDEX IF EXISTS `uk_meta_dqr_tenant_name` ON `md_quality_rule`;
+SET @drop_uk_meta_dqr_tenant_name = IF(@need_uk_meta_dqr_tenant_name, 'ALTER TABLE `md_quality_rule` DROP INDEX `uk_meta_dqr_tenant_name`', 'SELECT 1');
+PREPARE st_drop_uk_meta_dqr_tenant_name FROM @drop_uk_meta_dqr_tenant_name;
+EXECUTE st_drop_uk_meta_dqr_tenant_name;
+DEALLOCATE PREPARE st_drop_uk_meta_dqr_tenant_name;
 SET @sql_uk_meta_dqr_tenant_name = IF(@need_uk_meta_dqr_tenant_name,
   'ALTER TABLE `md_quality_rule` ADD UNIQUE KEY `uk_meta_dqr_tenant_name` (tenant_id, name, deleted)',
   'SELECT 1');
@@ -407,7 +445,10 @@ SET @idx_uk_mdm_cat_code = (
   WHERE table_schema = DATABASE() AND table_name = 'mdm_category' AND index_name = 'uk_mdm_cat_code'
 );
 SET @need_uk_mdm_cat_code = (@idx_uk_mdm_cat_code IS NOT NULL AND @idx_uk_mdm_cat_code <> 'tenant_id,mdm_entity_id,code,deleted');
-DROP INDEX IF EXISTS `uk_mdm_cat_code` ON `mdm_category`;
+SET @drop_uk_mdm_cat_code = IF(@need_uk_mdm_cat_code, 'ALTER TABLE `mdm_category` DROP INDEX `uk_mdm_cat_code`', 'SELECT 1');
+PREPARE st_drop_uk_mdm_cat_code FROM @drop_uk_mdm_cat_code;
+EXECUTE st_drop_uk_mdm_cat_code;
+DEALLOCATE PREPARE st_drop_uk_mdm_cat_code;
 SET @sql_uk_mdm_cat_code = IF(@need_uk_mdm_cat_code,
   'ALTER TABLE `mdm_category` ADD UNIQUE KEY `uk_mdm_cat_code` (tenant_id, mdm_entity_id, code, deleted)',
   'SELECT 1');
@@ -422,7 +463,10 @@ SET @idx_uk_mdm_tpl_domain = (
   WHERE table_schema = DATABASE() AND table_name = 'mdm_domain_template' AND index_name = 'uk_mdm_tpl_domain'
 );
 SET @need_uk_mdm_tpl_domain = (@idx_uk_mdm_tpl_domain IS NOT NULL AND @idx_uk_mdm_tpl_domain <> 'tenant_id,domain_code,deleted');
-DROP INDEX IF EXISTS `uk_mdm_tpl_domain` ON `mdm_domain_template`;
+SET @drop_uk_mdm_tpl_domain = IF(@need_uk_mdm_tpl_domain, 'ALTER TABLE `mdm_domain_template` DROP INDEX `uk_mdm_tpl_domain`', 'SELECT 1');
+PREPARE st_drop_uk_mdm_tpl_domain FROM @drop_uk_mdm_tpl_domain;
+EXECUTE st_drop_uk_mdm_tpl_domain;
+DEALLOCATE PREPARE st_drop_uk_mdm_tpl_domain;
 SET @sql_uk_mdm_tpl_domain = IF(@need_uk_mdm_tpl_domain,
   'ALTER TABLE `mdm_domain_template` ADD UNIQUE KEY `uk_mdm_tpl_domain` (tenant_id, domain_code, deleted)',
   'SELECT 1');
@@ -437,7 +481,10 @@ SET @idx_uk_mdm_entity_code = (
   WHERE table_schema = DATABASE() AND table_name = 'mdm_entity' AND index_name = 'uk_mdm_entity_code'
 );
 SET @need_uk_mdm_entity_code = (@idx_uk_mdm_entity_code IS NOT NULL AND @idx_uk_mdm_entity_code <> 'tenant_id,entity_code,deleted');
-DROP INDEX IF EXISTS `uk_mdm_entity_code` ON `mdm_entity`;
+SET @drop_uk_mdm_entity_code = IF(@need_uk_mdm_entity_code, 'ALTER TABLE `mdm_entity` DROP INDEX `uk_mdm_entity_code`', 'SELECT 1');
+PREPARE st_drop_uk_mdm_entity_code FROM @drop_uk_mdm_entity_code;
+EXECUTE st_drop_uk_mdm_entity_code;
+DEALLOCATE PREPARE st_drop_uk_mdm_entity_code;
 SET @sql_uk_mdm_entity_code = IF(@need_uk_mdm_entity_code,
   'ALTER TABLE `mdm_entity` ADD UNIQUE KEY `uk_mdm_entity_code` (tenant_id, entity_code, deleted)',
   'SELECT 1');
@@ -452,7 +499,10 @@ SET @idx_uk_mdm_entity_meta = (
   WHERE table_schema = DATABASE() AND table_name = 'mdm_entity' AND index_name = 'uk_mdm_entity_meta'
 );
 SET @need_uk_mdm_entity_meta = (@idx_uk_mdm_entity_meta IS NOT NULL AND @idx_uk_mdm_entity_meta <> 'tenant_id,meta_entity_id,deleted');
-DROP INDEX IF EXISTS `uk_mdm_entity_meta` ON `mdm_entity`;
+SET @drop_uk_mdm_entity_meta = IF(@need_uk_mdm_entity_meta, 'ALTER TABLE `mdm_entity` DROP INDEX `uk_mdm_entity_meta`', 'SELECT 1');
+PREPARE st_drop_uk_mdm_entity_meta FROM @drop_uk_mdm_entity_meta;
+EXECUTE st_drop_uk_mdm_entity_meta;
+DEALLOCATE PREPARE st_drop_uk_mdm_entity_meta;
 SET @sql_uk_mdm_entity_meta = IF(@need_uk_mdm_entity_meta,
   'ALTER TABLE `mdm_entity` ADD UNIQUE KEY `uk_mdm_entity_meta` (tenant_id, meta_entity_id, deleted)',
   'SELECT 1');
@@ -467,7 +517,10 @@ SET @idx_uk_mdm_sub_entity_app = (
   WHERE table_schema = DATABASE() AND table_name = 'mdm_entity_subscription' AND index_name = 'uk_mdm_sub_entity_app'
 );
 SET @need_uk_mdm_sub_entity_app = (@idx_uk_mdm_sub_entity_app IS NOT NULL AND @idx_uk_mdm_sub_entity_app <> 'mdm_entity_id,app_id,subscribe_mode,deleted');
-DROP INDEX IF EXISTS `uk_mdm_sub_entity_app` ON `mdm_entity_subscription`;
+SET @drop_uk_mdm_sub_entity_app = IF(@need_uk_mdm_sub_entity_app, 'ALTER TABLE `mdm_entity_subscription` DROP INDEX `uk_mdm_sub_entity_app`', 'SELECT 1');
+PREPARE st_drop_uk_mdm_sub_entity_app FROM @drop_uk_mdm_sub_entity_app;
+EXECUTE st_drop_uk_mdm_sub_entity_app;
+DEALLOCATE PREPARE st_drop_uk_mdm_sub_entity_app;
 SET @sql_uk_mdm_sub_entity_app = IF(@need_uk_mdm_sub_entity_app,
   'ALTER TABLE `mdm_entity_subscription` ADD UNIQUE KEY `uk_mdm_sub_entity_app` (mdm_entity_id, app_id, subscribe_mode, deleted)',
   'SELECT 1');
@@ -482,7 +535,10 @@ SET @idx_uk_mdm_record_code = (
   WHERE table_schema = DATABASE() AND table_name = 'mdm_record' AND index_name = 'uk_mdm_record_code'
 );
 SET @need_uk_mdm_record_code = (@idx_uk_mdm_record_code IS NOT NULL AND @idx_uk_mdm_record_code <> 'tenant_id,mdm_entity_id,record_code,deleted');
-DROP INDEX IF EXISTS `uk_mdm_record_code` ON `mdm_record`;
+SET @drop_uk_mdm_record_code = IF(@need_uk_mdm_record_code, 'ALTER TABLE `mdm_record` DROP INDEX `uk_mdm_record_code`', 'SELECT 1');
+PREPARE st_drop_uk_mdm_record_code FROM @drop_uk_mdm_record_code;
+EXECUTE st_drop_uk_mdm_record_code;
+DEALLOCATE PREPARE st_drop_uk_mdm_record_code;
 SET @sql_uk_mdm_record_code = IF(@need_uk_mdm_record_code,
   'ALTER TABLE `mdm_record` ADD UNIQUE KEY `uk_mdm_record_code` (tenant_id, mdm_entity_id, record_code, deleted)',
   'SELECT 1');
@@ -497,7 +553,10 @@ SET @idx_uk_mdm_refset_code = (
   WHERE table_schema = DATABASE() AND table_name = 'mdm_reference_set' AND index_name = 'uk_mdm_refset_code'
 );
 SET @need_uk_mdm_refset_code = (@idx_uk_mdm_refset_code IS NOT NULL AND @idx_uk_mdm_refset_code <> 'set_code,deleted');
-DROP INDEX IF EXISTS `uk_mdm_refset_code` ON `mdm_reference_set`;
+SET @drop_uk_mdm_refset_code = IF(@need_uk_mdm_refset_code, 'ALTER TABLE `mdm_reference_set` DROP INDEX `uk_mdm_refset_code`', 'SELECT 1');
+PREPARE st_drop_uk_mdm_refset_code FROM @drop_uk_mdm_refset_code;
+EXECUTE st_drop_uk_mdm_refset_code;
+DEALLOCATE PREPARE st_drop_uk_mdm_refset_code;
 SET @sql_uk_mdm_refset_code = IF(@need_uk_mdm_refset_code,
   'ALTER TABLE `mdm_reference_set` ADD UNIQUE KEY `uk_mdm_refset_code` (set_code, deleted)',
   'SELECT 1');
@@ -512,7 +571,10 @@ SET @idx_uk_mdm_refval = (
   WHERE table_schema = DATABASE() AND table_name = 'mdm_reference_value' AND index_name = 'uk_mdm_refval'
 );
 SET @need_uk_mdm_refval = (@idx_uk_mdm_refval IS NOT NULL AND @idx_uk_mdm_refval <> 'set_id,value_code,deleted');
-DROP INDEX IF EXISTS `uk_mdm_refval` ON `mdm_reference_value`;
+SET @drop_uk_mdm_refval = IF(@need_uk_mdm_refval, 'ALTER TABLE `mdm_reference_value` DROP INDEX `uk_mdm_refval`', 'SELECT 1');
+PREPARE st_drop_uk_mdm_refval FROM @drop_uk_mdm_refval;
+EXECUTE st_drop_uk_mdm_refval;
+DEALLOCATE PREPARE st_drop_uk_mdm_refval;
 SET @sql_uk_mdm_refval = IF(@need_uk_mdm_refval,
   'ALTER TABLE `mdm_reference_value` ADD UNIQUE KEY `uk_mdm_refval` (set_id, value_code, deleted)',
   'SELECT 1');
@@ -527,7 +589,10 @@ SET @idx_uk_mdm_refval_tenant = (
   WHERE table_schema = DATABASE() AND table_name = 'mdm_reference_value_tenant' AND index_name = 'uk_mdm_refval_tenant'
 );
 SET @need_uk_mdm_refval_tenant = (@idx_uk_mdm_refval_tenant IS NOT NULL AND @idx_uk_mdm_refval_tenant <> 'tenant_id,set_id,value_code,deleted');
-DROP INDEX IF EXISTS `uk_mdm_refval_tenant` ON `mdm_reference_value_tenant`;
+SET @drop_uk_mdm_refval_tenant = IF(@need_uk_mdm_refval_tenant, 'ALTER TABLE `mdm_reference_value_tenant` DROP INDEX `uk_mdm_refval_tenant`', 'SELECT 1');
+PREPARE st_drop_uk_mdm_refval_tenant FROM @drop_uk_mdm_refval_tenant;
+EXECUTE st_drop_uk_mdm_refval_tenant;
+DEALLOCATE PREPARE st_drop_uk_mdm_refval_tenant;
 SET @sql_uk_mdm_refval_tenant = IF(@need_uk_mdm_refval_tenant,
   'ALTER TABLE `mdm_reference_value_tenant` ADD UNIQUE KEY `uk_mdm_refval_tenant` (tenant_id, set_id, value_code, deleted)',
   'SELECT 1');
@@ -542,7 +607,10 @@ SET @idx_uk_sys_config_key = (
   WHERE table_schema = DATABASE() AND table_name = 'sys_config' AND index_name = 'uk_sys_config_key'
 );
 SET @need_uk_sys_config_key = (@idx_uk_sys_config_key IS NOT NULL AND @idx_uk_sys_config_key <> 'tenant_id,config_key,deleted');
-DROP INDEX IF EXISTS `uk_sys_config_key` ON `sys_config`;
+SET @drop_uk_sys_config_key = IF(@need_uk_sys_config_key, 'ALTER TABLE `sys_config` DROP INDEX `uk_sys_config_key`', 'SELECT 1');
+PREPARE st_drop_uk_sys_config_key FROM @drop_uk_sys_config_key;
+EXECUTE st_drop_uk_sys_config_key;
+DEALLOCATE PREPARE st_drop_uk_sys_config_key;
 SET @sql_uk_sys_config_key = IF(@need_uk_sys_config_key,
   'ALTER TABLE `sys_config` ADD UNIQUE KEY `uk_sys_config_key` (tenant_id, config_key, deleted)',
   'SELECT 1');
@@ -557,7 +625,10 @@ SET @idx_uk_dict_hierarchy = (
   WHERE table_schema = DATABASE() AND table_name = 'sys_dict_hierarchy' AND index_name = 'uk_dict_hierarchy'
 );
 SET @need_uk_dict_hierarchy = (@idx_uk_dict_hierarchy IS NOT NULL AND @idx_uk_dict_hierarchy <> 'tenant_id,type_code,hierarchy_code,code,deleted');
-DROP INDEX IF EXISTS `uk_dict_hierarchy` ON `sys_dict_hierarchy`;
+SET @drop_uk_dict_hierarchy = IF(@need_uk_dict_hierarchy, 'ALTER TABLE `sys_dict_hierarchy` DROP INDEX `uk_dict_hierarchy`', 'SELECT 1');
+PREPARE st_drop_uk_dict_hierarchy FROM @drop_uk_dict_hierarchy;
+EXECUTE st_drop_uk_dict_hierarchy;
+DEALLOCATE PREPARE st_drop_uk_dict_hierarchy;
 SET @sql_uk_dict_hierarchy = IF(@need_uk_dict_hierarchy,
   'ALTER TABLE `sys_dict_hierarchy` ADD UNIQUE KEY `uk_dict_hierarchy` (tenant_id, type_code, hierarchy_code, code, deleted)',
   'SELECT 1');
@@ -572,7 +643,10 @@ SET @idx_uk_dict_item = (
   WHERE table_schema = DATABASE() AND table_name = 'sys_dict_item' AND index_name = 'uk_dict_item'
 );
 SET @need_uk_dict_item = (@idx_uk_dict_item IS NOT NULL AND @idx_uk_dict_item <> 'tenant_id,type_code,code,deleted');
-DROP INDEX IF EXISTS `uk_dict_item` ON `sys_dict_item`;
+SET @drop_uk_dict_item = IF(@need_uk_dict_item, 'ALTER TABLE `sys_dict_item` DROP INDEX `uk_dict_item`', 'SELECT 1');
+PREPARE st_drop_uk_dict_item FROM @drop_uk_dict_item;
+EXECUTE st_drop_uk_dict_item;
+DEALLOCATE PREPARE st_drop_uk_dict_item;
 SET @sql_uk_dict_item = IF(@need_uk_dict_item,
   'ALTER TABLE `sys_dict_item` ADD UNIQUE KEY `uk_dict_item` (tenant_id, type_code, code, deleted)',
   'SELECT 1');
@@ -587,7 +661,10 @@ SET @idx_uk_dict_item_text = (
   WHERE table_schema = DATABASE() AND table_name = 'sys_dict_item_text' AND index_name = 'uk_dict_item_text'
 );
 SET @need_uk_dict_item_text = (@idx_uk_dict_item_text IS NOT NULL AND @idx_uk_dict_item_text <> 'tenant_id,type_code,code,language,deleted');
-DROP INDEX IF EXISTS `uk_dict_item_text` ON `sys_dict_item_text`;
+SET @drop_uk_dict_item_text = IF(@need_uk_dict_item_text, 'ALTER TABLE `sys_dict_item_text` DROP INDEX `uk_dict_item_text`', 'SELECT 1');
+PREPARE st_drop_uk_dict_item_text FROM @drop_uk_dict_item_text;
+EXECUTE st_drop_uk_dict_item_text;
+DEALLOCATE PREPARE st_drop_uk_dict_item_text;
 SET @sql_uk_dict_item_text = IF(@need_uk_dict_item_text,
   'ALTER TABLE `sys_dict_item_text` ADD UNIQUE KEY `uk_dict_item_text` (tenant_id, type_code, code, language, deleted)',
   'SELECT 1');
@@ -602,7 +679,10 @@ SET @idx_uk_dict_type = (
   WHERE table_schema = DATABASE() AND table_name = 'sys_dict_type' AND index_name = 'uk_dict_type'
 );
 SET @need_uk_dict_type = (@idx_uk_dict_type IS NOT NULL AND @idx_uk_dict_type <> 'tenant_id,code,deleted');
-DROP INDEX IF EXISTS `uk_dict_type` ON `sys_dict_type`;
+SET @drop_uk_dict_type = IF(@need_uk_dict_type, 'ALTER TABLE `sys_dict_type` DROP INDEX `uk_dict_type`', 'SELECT 1');
+PREPARE st_drop_uk_dict_type FROM @drop_uk_dict_type;
+EXECUTE st_drop_uk_dict_type;
+DEALLOCATE PREPARE st_drop_uk_dict_type;
 SET @sql_uk_dict_type = IF(@need_uk_dict_type,
   'ALTER TABLE `sys_dict_type` ADD UNIQUE KEY `uk_dict_type` (tenant_id, code, deleted)',
   'SELECT 1');

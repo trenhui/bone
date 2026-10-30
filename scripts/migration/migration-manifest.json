@@ -1,0 +1,617 @@
+{
+  "_comment": "scripts/migration 执行顺序与清单的唯一真源。文件名序号是「变更号」，可被同一变更的文档/校验附件复用，因此不构成全序；order 才是应用顺序（仅 SQL 有值，1..N 连续）。order 冻结于 2026-10-30 的名词典序，此后新增脚本必须追加在末尾，不得插入中间。新增/删除/改名任何文件都必须同步本清单，否则 scripts/check-migration-manifest.py 判红。",
+  "frozenAt": "2026-10-30",
+  "baseline": "bone-init.sql",
+  "journalTable": "schema_migration_journal",
+  "executableCount": 84,
+  "entries": [
+    {
+      "order": 1,
+      "file": "0001_masterdata_mdm_convergence.sql",
+      "kind": "mixed",
+      "summary": "主数据双表收敛：md_entity/md_field/md_record → mdm_*（expand/contract，只搬数据不重建 DDL）"
+    },
+    {
+      "order": 2,
+      "file": "0002_extension_impl_app_id_and_tenant_code.sql",
+      "kind": "mixed",
+      "summary": "扩展实现归属应用（G1）+ 租户码遗留值治理（G2）"
+    },
+    {
+      "order": 3,
+      "file": "0003_masterdata_reference_data_overlay.sql",
+      "kind": "mixed",
+      "summary": "参考数据 overlay 拆分（2026-09-26 裁决，多租户规范 §8 约束 6）："
+    },
+    {
+      "order": 4,
+      "file": "0004_notification_ntf_message_tenant.sql",
+      "kind": "mixed",
+      "summary": "R9（多租户数据隔离方案设计.md）：ntf_message 加 tenant_id 列，站内信按租户隔离。"
+    },
+    {
+      "order": 5,
+      "file": "0005_integration_tenant_backfill.sql",
+      "kind": "mixed",
+      "summary": "integration 5 个聚合已改 extends TenantAggregateRoot（多租户数据隔离方案 §3 / R2 代码侧），"
+    },
+    {
+      "order": 6,
+      "file": "0006_dict_two_level.sql",
+      "kind": "mixed",
+      "summary": "字典 v1 扁平模型 → v2 两级模型（类型 + 项）"
+    },
+    {
+      "order": 7,
+      "file": "0007_dict_hierarchy_split.sql",
+      "kind": "mixed",
+      "summary": "字典 v2（父指针内联） → v3（值扁平 + 层级关系独立）"
+    },
+    {
+      "order": null,
+      "file": "0008_README.md",
+      "kind": "doc",
+      "summary": "0008 的两条执行路线（A 纯 SQL 直跑 / B 应用层端点 repair-entity-names）与选择依据"
+    },
+    {
+      "order": 8,
+      "file": "0008_generator_entity_name_pascal.sql",
+      "kind": "mixed",
+      "summary": "gen_table_metadata.custom_entity_name 存量修正：原始表名 → 大驼峰"
+    },
+    {
+      "order": 9,
+      "file": "0009_generator_builtin_template_convergence.sql",
+      "kind": "mixed",
+      "summary": "gen_code_template 内置模板收敛：正文唯一真源回到 classpath templates/{code}.ftl"
+    },
+    {
+      "order": 10,
+      "file": "0010_iam_quota_counter_backfill.sql",
+      "kind": "mixed",
+      "summary": "iam_tenant 新增 allocated_accounts / allocated_roles 占用计数，"
+    },
+    {
+      "order": 11,
+      "file": "0011_generator_tenant_backfill.sql",
+      "kind": "mixed",
+      "summary": "studio-generator 此前把租户写死为 0L（写入侧）/ 1L（查询侧），"
+    },
+    {
+      "order": 12,
+      "file": "0012_blueprint_order_payment_business_fields.sql",
+      "kind": "ddl",
+      "summary": "bone-blueprint 真实交易场景字段扩展（机制 A：领域核心字段，进聚合模型与金额不变量）。"
+    },
+    {
+      "order": 13,
+      "file": "0013_blueprint_reserved_columns.sql",
+      "kind": "mixed",
+      "summary": "此前机制 B 用 ALTER TABLE 给宿主表加真实 B 列（receiver_name 等 16 列），违背元数据驱动原则，"
+    },
+    {
+      "order": 14,
+      "file": "0014_masterdata_field_range_and_record_business_key.sql",
+      "kind": "mixed",
+      "summary": "① 字段定义补齐数值值域（min_value / max_value），让「建模时声明的值域」在写入时真正生效"
+    },
+    {
+      "order": 15,
+      "file": "0015_generator_builtin_template_drift.sql",
+      "kind": "mixed",
+      "summary": "gen_code_template 内置模板漂移收口：清掉存量环境里残留的旧正文，并补齐 12 类内置行"
+    },
+    {
+      "order": 16,
+      "file": "0016_masterdata_demo_seed.sql",
+      "kind": "mixed",
+      "summary": "主数据演示种子：给「客户 CUSTOMER」实体补齐字段与多级分类树"
+    },
+    {
+      "order": 17,
+      "file": "0017_masterdata_orphan_field_cleanup.sql",
+      "kind": "mixed",
+      "summary": "mdm_field 没有外键约束（HC-006 基线：主数据子表随聚合落盘，删除走应用层级联），"
+    },
+    {
+      "order": 18,
+      "file": "0018_steward_updated_at.sql",
+      "kind": "mixed",
+      "summary": "HC-008 要求新增表含 tenant_id / created_at / updated_at / deleted 四列。"
+    },
+    {
+      "order": 19,
+      "file": "0019_qcheck_task_updated_at.sql",
+      "kind": "mixed",
+      "summary": "HC-008 要求新增表含 tenant_id / created_at / updated_at / deleted 四列。"
+    },
+    {
+      "order": null,
+      "file": "0020_RUNBOOK.md",
+      "kind": "doc",
+      "summary": "database=bone \\"
+    },
+    {
+      "order": 20,
+      "file": "0020_soft_delete_unique_index.sql",
+      "kind": "ddl",
+      "summary": "骨soft-delete 治理发现22 张业务表的唯一索引**无一含 deleted 列**。",
+      "note": "2026-10-30 执行前修复：23 处 `DROP INDEX IF EXISTS` 是 MySQL 8 不支持的语法，脚本自第 275 行起全部中断、22 张表索引重建从未执行；且原 DROP 不受 @need_* 约束，索引已正确时也会被删掉而不重建（仅修语法实测会让唯一索引从 98 行降到 22 行）。已改为 PREPARE 动态 DROP 且与 ADD 同受 @need_* 约束。详见脚本头与 0020_RUNBOOK.md。"
+    },
+    {
+      "order": 21,
+      "file": "0021_multichannel_commerce.sql",
+      "kind": "mixed",
+      "summary": "多渠道交易域：渠道注册 / 渠道商品上架 / 库存 / 发货物流。"
+    },
+    {
+      "order": 22,
+      "file": "0022_channel_buyer_mapping.sql",
+      "kind": "ddl",
+      "summary": "此前渠道订单的内部客户维度是用买家昵称的稳定哈希"
+    },
+    {
+      "order": 23,
+      "file": "0023_channel_broadcast_outbox.sql",
+      "kind": "ddl",
+      "summary": "原先库存变更后由 ChannelProductApplicationService#syncInventoryToAllChannels 在**业务事务内**"
+    },
+    {
+      "order": 24,
+      "file": "0024_seed_iam_menu_tree.sql",
+      "kind": "mixed",
+      "summary": "IAM 菜单/按钮权限点种子：把前端硬编码的侧边栏与操作按钮搬到数据库，"
+    },
+    {
+      "order": 25,
+      "file": "0025_purge_e2e_menu_leftovers.sql",
+      "kind": "mixed",
+      "summary": "清理 E2E 测试遗留的 iam_menu 垃圾数据，让动态菜单树只保留真实业务菜单。"
+    },
+    {
+      "order": 26,
+      "file": "0026_replenishment_order.sql",
+      "kind": "ddl",
+      "summary": "0026 · 供应链补货单（bone-blueprint）"
+    },
+    {
+      "order": 27,
+      "file": "0027_menu_metadata_ia.sql",
+      "kind": "mixed",
+      "summary": "收敛「业务建模」分组的信息架构，消除自欺式死链，"
+    },
+    {
+      "order": 28,
+      "file": "0028_meta_template_enum.sql",
+      "kind": "ddl",
+      "summary": "为平台模型模板字段表补 ENUM / 校验规则的存储列，"
+    },
+    {
+      "order": 29,
+      "file": "0029_scenario_templates.sql",
+      "kind": "dml",
+      "summary": "把原型里的「巡检 / 补货 / 访客」三套场景落成平台模板数据"
+    },
+    {
+      "order": 30,
+      "file": "0030_menu_single_entry.sql",
+      "kind": "mixed",
+      "summary": "消除「同一扇门两个入口」——把元数据域的**唯一入口**收敛到「业务建模 → 建模工作台」，"
+    },
+    {
+      "order": 31,
+      "file": "0031_scenario_template_expense.sql",
+      "kind": "dml",
+      "summary": "把原型/PRD §2.5.9 / cases 文档里的「费用报销」场景"
+    },
+    {
+      "order": 32,
+      "file": "0032_runtime_action_spi.sql",
+      "kind": "mixed",
+      "summary": "落地「动作 SPI」所需"
+    },
+    {
+      "order": 33,
+      "file": "0033_runtime_data_safety.sql",
+      "kind": "mixed",
+      "summary": "① RC-009 记录级变更审计表（meta_runtime_record_audit）——「谁把哪张单据从"
+    },
+    {
+      "order": 34,
+      "file": "0034_runtime_permission_grant.sql",
+      "kind": "dml",
+      "summary": "0032 把报销动作的 permission_code 清一色写成旧的粗粒度 metadata:runtime:write，"
+    },
+    {
+      "order": 35,
+      "file": "0035_runtime_action_execution_phase.sql",
+      "kind": "ddl",
+      "summary": "0032 的 meta_runtime_action_execution 只有 success/fail 两态，且只在「整个"
+    },
+    {
+      "order": 36,
+      "file": "0036_runtime_action_handler_rename.sql",
+      "kind": "dml",
+      "summary": "报销「确认打款」逃逸处理器 bean 名由 paymentApplicationService 改名为"
+    },
+    {
+      "order": 37,
+      "file": "0037_runtime_expense_l1_relations.sql",
+      "kind": "mixed",
+      "summary": "把费用报销场景从「L0 单实体」升级为「L1 头+明细+类别主数据+附件」"
+    },
+    {
+      "order": 38,
+      "file": "0038_runtime_row_policies.sql",
+      "kind": "mixed",
+      "summary": "上一轮（v0.47）实现行级 ACL owner 维度（created_by 单列过滤）。本轮把"
+    },
+    {
+      "order": 39,
+      "file": "0039_ia_business_modeling_rename.sql",
+      "kind": "mixed",
+      "summary": "建模工作台→模型设计、实体→业务对象、"
+    },
+    {
+      "order": 40,
+      "file": "0040_template_action_state_machine.sql",
+      "kind": "mixed",
+      "summary": "让「从模板实例化」产出**可用的状态机**，而不是只有对象与字段。"
+    },
+    {
+      "order": 41,
+      "file": "0041_meta_template_delivery_mode.sql",
+      "kind": "mixed",
+      "summary": "模板声明交付模式（delivery_mode），实例化时继承，消灭「发布成功却无表」的使用姿势坑。"
+    },
+    {
+      "order": 42,
+      "file": "0042_ui_overlay_server_side.sql",
+      "kind": "ddl",
+      "summary": "PRD v0.32 §12.2 D2 定案「MVP 覆盖存 localStorage」，遗留问题是换设备/清缓存即丢失，"
+    },
+    {
+      "order": 43,
+      "file": "0043_runtime_auto_number.sql",
+      "kind": "ddl",
+      "summary": "费用报销等场景的单据号（如报销单号）当前由测试/客户端手动填写，缺乏平台级、"
+    },
+    {
+      "order": 44,
+      "file": "0044_ia_business_modeling_button_prefix.sql",
+      "kind": "mixed",
+      "summary": "把残留旧前缀的按钮权限点"
+    },
+    {
+      "order": 45,
+      "file": "0045_runtime_admin_authorization_repair.sql",
+      "kind": "mixed",
+      "summary": "0034_runtime_permission_grant.sql 设计了「SUPER_ADMIN 持通配 + 报销实体 + 四动作细码」"
+    },
+    {
+      "order": 46,
+      "file": "0046_entity_ui_schema.sql",
+      "kind": "ddl",
+      "summary": "业务对象「界面」设计从「个人级列投影（UiOverlay / 0042）」升级为「团队级 BoneUiSchema 协议」"
+    },
+    {
+      "order": 47,
+      "file": "0047_ui_schema_demo_seed.sql",
+      "kind": "mixed",
+      "summary": "P0-3 建模页两套 schema 种子【DEMO/DEV 联调专用，禁上生产】。"
+    },
+    {
+      "order": 48,
+      "file": "0048_template_action_entry.sql",
+      "kind": "mixed",
+      "summary": "给状态机动作定义加「入口动作」显式标记（is_entry），修复全环状态机"
+    },
+    {
+      "order": 49,
+      "file": "0049_bp_outbox_claimed_at.sql",
+      "kind": "ddl",
+      "summary": "给存量库 bp_outbox 补 claimed_at 列 + (status, claimed_at) 索引，"
+    },
+    {
+      "order": 50,
+      "file": "0050_meta_field_enum_source.sql",
+      "kind": "ddl",
+      "summary": "给存量库 meta_field 补 enum_source 列（枚举选项源声明，JSON），"
+    },
+    {
+      "order": 51,
+      "file": "0051_expense_production_templates.sql",
+      "kind": "dml",
+      "summary": "把「企业报销应用」的 §4 模型规格落成"
+    },
+    {
+      "order": null,
+      "file": "0052_PR_DESCRIPTION.md",
+      "kind": "doc",
+      "summary": "0052 改名迁移的 PR 说明（变更动机与影响面）"
+    },
+    {
+      "order": 52,
+      "file": "0052_mdm_entity_workflow.sql",
+      "kind": "ddl",
+      "summary": "落地 UC-MD-T7 主数据实体级评审发布流（mdm_entity 加审核状态列）"
+    },
+    {
+      "order": 53,
+      "file": "0052_rename_expense_claim_to_reimbursement.sql",
+      "kind": "mixed",
+      "summary": "报销实体 expense_claim 改名 expense_reimbursement（与理赔 claim_case 并存，避免同名歧义），含表/实体/动作/权限点/UI schema 全链改名"
+    },
+    {
+      "order": null,
+      "file": "0052_rename_expense_claim_to_reimbursement_RUNBOOK.md",
+      "kind": "doc",
+      "summary": "0052 改名迁移的运维手册（执行/校验/回滚四节，0052_verify.sql 的判据出自第四节）"
+    },
+    {
+      "order": 54,
+      "file": "0052_verify.sql",
+      "kind": "verify",
+      "summary": "0052 改名迁移的事后校验（纯 SELECT，可重复执行）；判据见同号 RUNBOOK 第四节",
+      "requires": [
+        "0052_rename_expense_claim_to_reimbursement.sql"
+      ]
+    },
+    {
+      "order": 55,
+      "file": "0053_seed_masterdata_standards_lineage_menu.sql",
+      "kind": "mixed",
+      "summary": "把后端已上线、前端已落地、但菜单里没有入口的两个能力补进侧边栏："
+    },
+    {
+      "order": 56,
+      "file": "0054_sys_log_tenant_time_idx.sql",
+      "kind": "ddl",
+      "summary": "为 sys_log 补复合索引 (tenant_id, created_at)；MySQL 8 无 CREATE INDEX IF NOT EXISTS，故走 information_schema 探测 + PREPARE"
+    },
+    {
+      "order": 57,
+      "file": "0055_schedule_task_execution_log.sql",
+      "kind": "ddl",
+      "summary": "定时任务执行记录表 sys_schedule_task_log（业界标配：RuoYi / XXL-Job 的 task log）"
+    },
+    {
+      "order": 58,
+      "file": "0056_wf_workflow_tables.sql",
+      "kind": "ddl",
+      "summary": "工作流引擎六表：wf_instance / wf_task / wf_active_instance /"
+    },
+    {
+      "order": 59,
+      "file": "0057_expense_workflow_seed.sql",
+      "kind": "dml",
+      "summary": "① 种报销流程定义 expense_reimbursement v1（wf_process_def）：金额三档 CONDITION 分支 +"
+    },
+    {
+      "order": 60,
+      "file": "0058_synap_claim_tables.sql",
+      "kind": "ddl",
+      "summary": "synap-claim 理赔 13 张表的可部署 DDL；字段真源为模块内 Flyway V1-V5，与本脚本及设计文档同源"
+    },
+    {
+      "order": 61,
+      "file": "0059_synap_claim_permissions.sql",
+      "kind": "dml",
+      "summary": "synap-claim 理赔模块 6 个权限码注册 + 超管（role 1）绑定。"
+    },
+    {
+      "order": 62,
+      "file": "0060_synap_claim_invoice_nullable.sql",
+      "kind": "mixed",
+      "summary": "修正 t_claim_case.uk_tenant_invoice 对\"未附发票\"的误伤。"
+    },
+    {
+      "order": 63,
+      "file": "0061_synap_claim_appeal_status_align.sql",
+      "kind": "mixed",
+      "summary": "t_claim_case.status 落的是枚举 name（ClaimCase#transition 写 to.name()），"
+    },
+    {
+      "order": 64,
+      "file": "0062_synap_claim_settlement_review_approver.sql",
+      "kind": "ddl",
+      "summary": "settle_order 之前没有记录「这次大额审核是谁发起的」，于是双人复核只能靠请求体里"
+    },
+    {
+      "order": 65,
+      "file": "0063_seed_metadata_approval_center_menu.sql",
+      "kind": "mixed",
+      "summary": "把「审批中心」能力补进侧边栏——后端 RuntimeApprovalController（待办/已办/审批概况/"
+    },
+    {
+      "order": 66,
+      "file": "0064_seed_synap_claim_menus.sql",
+      "kind": "mixed",
+      "summary": "为 synap-claim 智能理赔微应用播种完整侧边栏菜单——shell 已注册"
+    },
+    {
+      "order": 67,
+      "file": "0065_wf_process_draft.sql",
+      "kind": "ddl",
+      "summary": "工作流设计器 M0：草稿表 + 版本唯一键"
+    },
+    {
+      "order": 68,
+      "file": "0066_wf_node_round.sql",
+      "kind": "mixed",
+      "summary": "节点轮次（node_round）+ 驳回往返计数（reject_rounds）+ 投影操作人（operator_id）"
+    },
+    {
+      "order": 69,
+      "file": "0067_fin_voucher.sql",
+      "kind": "mixed",
+      "summary": "会计引擎（bone-accounting-engine / voucherGenerateHandler）配置前提：物理表 + 凭证模板/科目映射种子。"
+    },
+    {
+      "order": 70,
+      "file": "0067_seed_workflow_designer_permission_menu.sql",
+      "kind": "mixed",
+      "summary": "工作流设计器（v1.5 REST 层 + 前端拖拽画布）已上线代码，但"
+    },
+    {
+      "order": 71,
+      "file": "0068_purchase_workflow_seed.sql",
+      "kind": "dml",
+      "summary": "① 种采购流程定义 purchase_order v1（wf_process_def）：合理默认单级审批"
+    },
+    {
+      "order": 72,
+      "file": "0068_seed_reimbursement_menus.sql",
+      "kind": "mixed",
+      "summary": "报销系统（expense 域）无任何菜单入口 ⇒ 业务用户不可达。"
+    },
+    {
+      "order": 73,
+      "file": "0069_expense_accounting_action.sql",
+      "kind": "dml",
+      "summary": "0069 · 报销接入会计引擎（业财一体，doc/design/modules/12 工作流引擎设计 §3/§4）"
+    },
+    {
+      "order": 74,
+      "file": "0069_seed_expense_runtime_platform_tenant.sql",
+      "kind": "mixed",
+      "summary": "让**平台租户 0** 也有可用的「费用报销」运行时实体。"
+    },
+    {
+      "order": 75,
+      "file": "0070_expense_purchase_countersign_v2.sql",
+      "kind": "dml",
+      "summary": "① 补建第二会签人 demo 账号 mdapprover3（id 9105，复制 mdapprover2 的密码哈希/租户，"
+    },
+    {
+      "order": 76,
+      "file": "0070_seed_purchase_menu.sql",
+      "kind": "mixed",
+      "summary": "把「采购订单」能力补进侧边栏——采购模块（bone-app-purchase）的 purchase_order"
+    },
+    {
+      "order": 77,
+      "file": "0071_align_claim_menus.sql",
+      "kind": "mixed",
+      "summary": "理赔菜单对齐：消除「shell 侧边栏 8 条 + 微应用自绘 Sider 9 条」两层菜单，子应用停绘自身 Sider，菜单与名称统一以 IAM 为准"
+    },
+    {
+      "order": 78,
+      "file": "0072_synap_claim_missing_tables.sql",
+      "kind": "ddl",
+      "summary": "补建理赔 6 张「代码已上线、DDL 未跟上」的表（case_track / inspection / case_sla / reconciliation_diff / reconciliation_report / domain_event_outbox）——缺表时是静默降级而非报错"
+    },
+    {
+      "order": 79,
+      "file": "0073_seed_claim_reference_data.sql",
+      "kind": "mixed",
+      "summary": "补理赔链路引用数据：责任表 t_adj_liability 与额度账户，缺则理算 422 SC_CLAIM_LIABILITY_NOT_FOUND、占额 404"
+    },
+    {
+      "order": 80,
+      "file": "0074_synap_claim_inspection_permission.sql",
+      "kind": "mixed",
+      "summary": "注册后督抽检权限码 claim:inspection:write 并绑超管；未注册时菜单可见但端点全 403"
+    },
+    {
+      "order": 81,
+      "file": "0075_workflow_escape_idempotency.sql",
+      "kind": "dml",
+      "summary": "报销的 submit / approve / reject / withdraw 四个动作由 0057 改成逃逸动作（接工作流引擎）时，"
+    },
+    {
+      "order": 82,
+      "file": "0076_purchase_workflow_withdraw.sql",
+      "kind": "mixed",
+      "summary": "① 采购「撤回」动作：补 meta_entity_action_def.withdraw（SUBMITTED→DRAFT，逃逸 →"
+    },
+    {
+      "order": 83,
+      "file": "0077_status_field_not_client_required.sql",
+      "kind": "mixed",
+      "summary": "修「状态机实体建单必失败」——`status` 是状态机独占字段（运行时禁止经 POST 直写），"
+    },
+    {
+      "order": 84,
+      "file": "0078_seed_claim_preexam_menu.sql",
+      "kind": "mixed",
+      "summary": "补「初审工作台」菜单（permission 与另 9 条同为 claim:claims:read，icon 须在 shell MENU_ICON_MAP 白名单内）"
+    },
+    {
+      "order": null,
+      "file": "verify_0052.py",
+      "kind": "tool",
+      "summary": "0052 的自动化校验（pymysql 连真实 MySQL 8，CI migration-verify.yml 调用）"
+    }
+  ],
+  "ordinalConflicts": [
+    {
+      "ordinal": "0008",
+      "files": [
+        "0008_README.md",
+        "0008_generator_entity_name_pascal.sql"
+      ],
+      "independentChanges": false,
+      "verdict": "同变更附件：README 是该脚本的两条执行路线说明，不带 SQL，不存在顺序问题。"
+    },
+    {
+      "ordinal": "0020",
+      "files": [
+        "0020_RUNBOOK.md",
+        "0020_soft_delete_unique_index.sql"
+      ],
+      "independentChanges": false,
+      "verdict": "同变更附件：RUNBOOK 是软删唯一索引改造的运维手册。"
+    },
+    {
+      "ordinal": "0052",
+      "files": [
+        "0052_PR_DESCRIPTION.md",
+        "0052_mdm_entity_workflow.sql",
+        "0052_rename_expense_claim_to_reimbursement.sql",
+        "0052_rename_expense_claim_to_reimbursement_RUNBOOK.md",
+        "0052_verify.sql"
+      ],
+      "independentChanges": true,
+      "verdict": "两个独立变更共用序号：mdm_entity_workflow 只触及 mdm_entity，rename 只触及 meta_*/iam_permission，触及表无交集，二者相对顺序无语义。但 0052_verify.sql 必须排在 rename 之后——当前靠「rename < verify」的字母序巧合成立（r<v），故在该条目上显式声明 requires，避免将来改名后静默打乱。"
+    },
+    {
+      "ordinal": "0067",
+      "files": [
+        "0067_fin_voucher.sql",
+        "0067_seed_workflow_designer_permission_menu.sql"
+      ],
+      "independentChanges": true,
+      "verdict": "两个独立变更共用序号：fin_voucher 建会计引擎表（fin_*），seed_workflow_designer_permission_menu 播菜单（iam_menu/iam_permission），触及表无交集。"
+    },
+    {
+      "ordinal": "0068",
+      "files": [
+        "0068_purchase_workflow_seed.sql",
+        "0068_seed_reimbursement_menus.sql"
+      ],
+      "independentChanges": true,
+      "verdict": "两个独立变更共用序号：purchase_workflow_seed 触及 wf_*/meta_entity_action_def，seed_reimbursement_menus 触及 iam_menu，触及表无交集。"
+    },
+    {
+      "ordinal": "0069",
+      "files": [
+        "0069_expense_accounting_action.sql",
+        "0069_seed_expense_runtime_platform_tenant.sql"
+      ],
+      "independentChanges": true,
+      "verdict": "两个独立变更共用序号：expense_accounting_action 触及 meta_entity_action_def，seed_expense_runtime_platform_tenant 触及 meta_entity/meta_field，触及表无交集。"
+    },
+    {
+      "ordinal": "0070",
+      "files": [
+        "0070_expense_purchase_countersign_v2.sql",
+        "0070_seed_purchase_menu.sql"
+      ],
+      "independentChanges": true,
+      "verdict": "两个独立变更共用序号：expense_purchase_countersign_v2 触及 wf_process_def/iam_account，seed_purchase_menu 触及 iam_menu，触及表无交集。"
+    }
+  ],
+  "appliesTo": "store-incremental",
+  "scopeNote": "本清单定义的是**存量环境**的增量应用顺序，不是「新库初始化脚本」：bone-init.sql 已是当前全量结构（含 CREATE DATABASE bone / USE bone），新环境只需灌它。把 84 个脚本对空库跑一遍必然失败（2026-10-30 实测 65 成功 / 19 失败），失败项多为 Duplicate column（对象早已并入基线，如 0002 的 app_id）或脚本自带 SIGNAL 校验发现目标状态不满足（如 0078 要求理赔菜单按租户×10 全覆盖）。"
+}
