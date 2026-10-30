@@ -31,10 +31,13 @@ import lombok.NoArgsConstructor;
  *
  * <ol>
  *   <li>计算基准：Σ 合理费用（{@code validAmount}），{@code socialOnly} 时仅累计社保内；
- *   <li>免赔扣减：年度免赔（R-DED-03 仅累计社保范围内自付一）；
+ *   <li>免赔扣减：<b>剩余</b>年度免赔 = 配置免赔 − 跨案已消抵（R-DED-03，见 {@link Accumulation}）；
  *   <li>赔付比例：{@code payRate}（百分数存储，此处转小数，上限 100% 钳制，防配置超赔）；
- *   <li>限额截断：与责任额度取 {@code min}（§5.3 多维度控额语义，任一维度耗尽即截断）。
+ *   <li>限额截断：与<b>剩余</b>责任额度取 {@code min}（§5.3 多维度控额语义，任一维度耗尽即截断）。
  * </ol>
+ *
+ * <p><b>跨案累计（⑩）不是可选优化</b>：免赔与限额都是<b>保单年度内</b>的口径。若按案各用满额， 同保单第 2 案起必然一侧系统性少赔（免赔重扣）、一侧系统性超赔（限额重置）。 故
+ * {@link Accumulation} 是理算的<b>必填入参</b>——没有"默认首案"的重载，就是为了杜绝调用方 无意间按"已用 0"算（那正是本项目铁律点名的「配了不生效」）。
  *
  * <p><b>快照不可仅版本引用</b>（§5.2）：理算把当期责任参数**物化**进 {@code formulaSnapshot}，
  * 而非只存版本引用——源配置后续被改时，本记录仍可自包含复算（金融理算「同输入同输出」是合规硬要求）。
@@ -84,6 +87,22 @@ public class Adjustment extends TenantAggregateRoot<Long> {
   @Column(name = "total_amount", nullable = false)
   private BigDecimal totalAmount;
 
+  /**
+   * 本次实际消抵的年度免赔（{@code ⑩} 跨案累计的<b>写侧增量</b>，不落库）。
+   *
+   * <p>由理算内核产出、由 A7 结算经 {@code QuotaApplicationService} 累加进责任账 {@code
+   * deductible_used}——不回写就没有次案，等于护栏只装了一半。
+   */
+  @Transient private BigDecimal deductibleApplied;
+
+  /**
+   * 本次理算所依据的跨案累计是否真实可读（⑩，不落库）。
+   *
+   * <p>{@code false} = 理算是在"已用未知"的前提下算出来的，结果仅供人工参考，A7 不得据此占额。 显式设字段而不是让上层去解析 {@code
+   * formulaSnapshot}——解析快照字符串取值是"能跑通但口径会漂"的典型写法。
+   */
+  @Transient private boolean accumulationAvailable;
+
   @Column(name = "result_status", nullable = false)
   private String resultStatus;
 
@@ -111,6 +130,7 @@ public class Adjustment extends TenantAggregateRoot<Long> {
     this.ruleVersion = ruleVersion == null ? "" : ruleVersion;
     this.resultStatus = ResultStatus.FROZEN.name();
     this.totalAmount = ZERO;
+    this.deductibleApplied = ZERO;
     java.time.Instant now = java.time.Instant.now();
     this.createdAt = now;
     this.updatedAt = now;
@@ -122,6 +142,7 @@ public class Adjustment extends TenantAggregateRoot<Long> {
    * @param rows 费用明细（读侧投影，须已三段拆分：{@code validAmount}/{@code selfPay1} 就绪； 取自 {@code
    *     findClaimWithItems}——聚合 {@code findById} 不回填集合，与 blueprint 同纪律）
    * @param liability 当期责任配置（版本化，参数被物化进快照）
+   * @param accumulation 跨案累计快照（⑩；必填，无默认重载）
    */
   public static Adjustment calculate(
       Long id,
@@ -129,22 +150,27 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       Long claimId,
       List<ClaimWithItemsProjection> rows,
       AdjLiability liability,
-      String ruleVersion) {
+      String ruleVersion,
+      Accumulation accumulation) {
     if (rows == null || rows.isEmpty()) {
       throw new DomainException("理算明细不能为空");
     }
     if (liability == null || !liability.isActive()) {
       throw new DomainException("责任配置缺失或未生效，无法理算");
     }
+    if (accumulation == null) {
+      throw new DomainException("跨案累计快照缺失，无法理算（⑩：禁止按『已用 0』隐式计算）");
+    }
     Adjustment adjustment = new Adjustment(id, tenantId, claimId, ruleVersion);
-    adjustment.apply(rows, liability);
+    adjustment.apply(rows, liability, accumulation);
     return adjustment;
   }
 
   /** 重算（同一聚合内重新计算；已确认 CONFIRMED 禁止调用，见 {@link #requireModifiable}）。 */
-  public void recalculate(List<ClaimWithItemsProjection> rows, AdjLiability liability) {
+  public void recalculate(
+      List<ClaimWithItemsProjection> rows, AdjLiability liability, Accumulation accumulation) {
     requireModifiable("已确认的理算结果禁止重算");
-    apply(rows, liability);
+    apply(rows, liability, accumulation);
     this.updatedAt = java.time.Instant.now();
   }
 
@@ -180,7 +206,8 @@ public class Adjustment extends TenantAggregateRoot<Long> {
 
   // ===================== 理算内核 =====================
 
-  private void apply(List<ClaimWithItemsProjection> rows, AdjLiability liability) {
+  private void apply(
+      List<ClaimWithItemsProjection> rows, AdjLiability liability, Accumulation accumulation) {
     boolean socialOnly = liability.isSocialOnly();
 
     // ① 计算基准：合理费用合计；socialOnly 时剔除社保外（R-DIR-01）
@@ -211,8 +238,10 @@ public class Adjustment extends TenantAggregateRoot<Long> {
     }
     inputBuilder.append("]");
 
-    // ② 免赔（R-DED-03：从基准扣减，上限为基准本身，不得为负）
-    BigDecimal deductible = liability.deduct().min(base);
+    // ② 免赔（R-DED-03）：扣的是**剩余**免赔（配置 − 跨案已消抵），上限为基准本身，不得为负。
+    //    按配置全额扣会让同保单第 2 案起每案重扣一次 ⇒ 系统性少赔。
+    BigDecimal deductibleConfigured = liability.deduct();
+    BigDecimal deductible = accumulation.remainingDeductible(deductibleConfigured).min(base);
     BigDecimal afterDeduct = base.subtract(deductible).max(ZERO);
 
     // ③ 赔付比例（clampRatioAt100：比例上限 100%。payPercent>100 视为配置错误，钳到 1.0 防超赔；
@@ -221,10 +250,12 @@ public class Adjustment extends TenantAggregateRoot<Long> {
     BigDecimal ratioPayout = afterDeduct.multiply(ratio).setScale(CALC_SCALE, RoundingMode.HALF_UP);
 
     // ④ 限额截断（min 语义：任一维度耗尽即截断）
+    //    截的是**剩余**责任额度（配置 − 跨案已占用 claimed+frozen）；按配置满额截会让第 2 案起每案重置 ⇒ 系统性超赔。
     BigDecimal limit = liability.limit();
-    BigDecimal feePayout = limit.signum() > 0 ? ratioPayout.min(limit) : ratioPayout;
+    BigDecimal limitRemaining = accumulation.remainingLimit(limit);
+    BigDecimal feePayout = limit.signum() > 0 ? ratioPayout.min(limitRemaining) : ratioPayout;
     feePayout = feePayout.setScale(RESULT_SCALE, RoundingMode.HALF_UP);
-    BigDecimal feeRemain = limit.signum() > 0 ? limit.subtract(feePayout).max(ZERO) : ZERO;
+    BigDecimal feeRemain = limit.signum() > 0 ? limitRemaining.subtract(feePayout).max(ZERO) : ZERO;
 
     // ⑤ 零赔付归因（受控枚举，禁自由文本）
     String zeroReason = "";
@@ -235,6 +266,10 @@ public class Adjustment extends TenantAggregateRoot<Long> {
         zeroReason = "ZERO_DEDUCT";
       } else if (liability.payRate().signum() == 0) {
         zeroReason = "ZERO_PERCENT";
+      } else if (limit.signum() > 0 && limitRemaining.signum() == 0) {
+        // 与 ZERO_LIMIT 区分：本责任额度在本年度已被历史案件用尽（而非本案单次即超限）。
+        // 拒赔五要素要求"事实认定"能说清是"本次超限"还是"年度用尽"，两者对客户的解释完全不同。
+        zeroReason = "ZERO_LIMIT_EXHAUSTED";
       } else {
         zeroReason = "ZERO_LIMIT";
       }
@@ -254,8 +289,22 @@ public class Adjustment extends TenantAggregateRoot<Long> {
             + "\"deduct\":"
             + deductible
             + ","
+            + // ⑩ 跨案累计：物化进快照，历史案件才能自包含复算（§5.2「物化不可仅版本引用」）。
+            // 只存"本次扣了多少"而不存"扣之前已用多少"，复算时就无法区分"首案扣 1 万"与"次案扣 5000"。
+            "\"deductibleBefore\":"
+            + deductibleConfigured.setScale(RESULT_SCALE, RoundingMode.HALF_UP)
+            + ","
+            + "\"deductibleUsedBefore\":"
+            + accumulation.deductibleUsed().setScale(RESULT_SCALE, RoundingMode.HALF_UP)
+            + ","
             + "\"limit\":"
             + limit
+            + ","
+            + "\"limitUsedBefore\":"
+            + accumulation.limitUsed().setScale(RESULT_SCALE, RoundingMode.HALF_UP)
+            + ","
+            + "\"accumulationAvailable\":"
+            + accumulation.available()
             + ","
             + "\"socialOnly\":"
             + socialOnly
@@ -281,6 +330,8 @@ public class Adjustment extends TenantAggregateRoot<Long> {
     this.formulaSnapshot = snapshot;
     this.formulaHash = sha256(snapshot);
     this.totalAmount = feePayout;
+    this.deductibleApplied = deductible;
+    this.accumulationAvailable = accumulation.available();
     this.lines = new ArrayList<>();
     AdjustmentLine outputLine =
         AdjustmentLine.of(
@@ -307,7 +358,7 @@ public class Adjustment extends TenantAggregateRoot<Long> {
   private static String reasonCodeOf(String zeroReason) {
     return switch (zeroReason) {
       case "ZERO_DEDUCT" -> "06";
-      case "ZERO_LIMIT" -> "09";
+      case "ZERO_LIMIT", "ZERO_LIMIT_EXHAUSTED" -> "09";
       case "ZERO_PERCENT", "ZERO_REASONABLE" -> "05";
       default -> "";
     };

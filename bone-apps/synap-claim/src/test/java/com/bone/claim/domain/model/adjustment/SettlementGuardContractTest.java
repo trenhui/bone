@@ -97,7 +97,12 @@ class SettlementGuardContractTest {
   }
 
   private static Adjustment adjust(List<ClaimWithItemsProjection> rows, AdjLiability liability) {
-    return Adjustment.calculate(9001L, TENANT, CLAIM, rows, liability, "r1");
+    return adjust(rows, liability, Accumulation.FIRST);
+  }
+
+  private static Adjustment adjust(
+      List<ClaimWithItemsProjection> rows, AdjLiability liability, Accumulation accumulation) {
+    return Adjustment.calculate(9001L, TENANT, CLAIM, rows, liability, "r1", accumulation);
   }
 
   // ===================== 生效护栏 =====================
@@ -126,12 +131,72 @@ class SettlementGuardContractTest {
   }
 
   @Test
-  @Disabled(
-      "F1 缺口 · EngineFlags#applyAccumulation / applyLiabilityAccumulation：责任/年度限额跨案累计，防同责任多次理算各用满额超赔。"
-          + " 生产内核当前无累计快照/占额通道，待 F1 接入 AccumulationPort 后启用。"
-          + " 参考 SettlementEngine.java L209-215, L244-251")
-  void gap_accumulation_crossCaseLimit() {
-    assumeTrue(false, "见 @Disabled 说明：F1 复现后启用");
+  @DisplayName("applyAccumulation（已落地）：责任限额跨案累计 —— 首案用满 1 万后，次案同额费用赔 0，不得各用满额")
+  void accumulation_crossCaseLimit() {
+    AdjLiability capped = liability("90", "0", "10000", 0);
+    List<ClaimWithItemsProjection> rows =
+        List.of(row("住院费", "IN", new BigDecimal("20000.00"), new BigDecimal("20000.00")));
+
+    Adjustment first = adjust(rows, capped, Accumulation.FIRST);
+    assertThat(first.getTotalAmount())
+        .as("首案：20000×90%%=18000，截到责任限额 1 万")
+        .isEqualByComparingTo("10000.00");
+
+    // 次案：限额已占用 10000（claimed 或 frozen 都算），剩余 0
+    Adjustment second =
+        adjust(rows, capped, Accumulation.of(BigDecimal.ZERO, new BigDecimal("10000.00"), true));
+
+    assertThat(second.getTotalAmount())
+        .as("次案：责任限额年度已用尽 ⇒ 赔 0。若此处为 10000.00，说明限额仍按配置满额截断（跨案累计失效，系统性超赔）")
+        .isEqualByComparingTo("0.00");
+    assertThat(second.lines().get(0).getZeroReason())
+        .as("零赔付归因须区分『本年度额度已用尽』与『本案单次超限』——拒赔五要素的事实认定要求")
+        .isEqualTo("ZERO_LIMIT_EXHAUSTED");
+  }
+
+  @Test
+  @DisplayName("applyAccumulation（已落地）：年度免赔跨案只扣剩余 —— 首案吃掉 8000 后，次案只再扣 2000，不得重扣全额")
+  void accumulation_crossCaseDeductible() {
+    AdjLiability withDeduct = liability("90", "10000", "0", 0);
+    List<ClaimWithItemsProjection> rows =
+        List.of(row("门诊费", "IN", new BigDecimal("8000.00"), new BigDecimal("8000.00")));
+
+    Adjustment first = adjust(rows, withDeduct, Accumulation.FIRST);
+    assertThat(first.getTotalAmount()).as("首案 8000 未达 1 万免赔 → 赔 0").isEqualByComparingTo("0.00");
+    assertThat(first.getDeductibleApplied())
+        .as("首案实际消抵的免赔必须回传 A7：不回写，次案仍会重扣全额")
+        .isEqualByComparingTo("8000.00");
+
+    // 次案：本年度已消抵 8000，剩余免赔 2000 → (8000−2000)×90% = 5400
+    Adjustment second =
+        adjust(rows, withDeduct, Accumulation.of(new BigDecimal("8000.00"), BigDecimal.ZERO, true));
+
+    assertThat(second.getTotalAmount())
+        .as("次案须只扣剩余免赔 2000。若此处为 0.00，说明免赔仍按配置全额重扣（跨案累计失效，系统性少赔）")
+        .isEqualByComparingTo("5400.00");
+    assertThat(second.getDeductibleApplied()).isEqualByComparingTo("2000.00");
+
+    // 第三案：免赔已全部消抵，不再扣
+    Adjustment third =
+        adjust(
+            rows, withDeduct, Accumulation.of(new BigDecimal("10000.00"), BigDecimal.ZERO, true));
+    assertThat(third.getTotalAmount()).as("免赔已用尽 → 不再扣减").isEqualByComparingTo("7200.00");
+    assertThat(third.getDeductibleApplied()).isEqualByComparingTo("0.00");
+  }
+
+  @Test
+  @DisplayName("累计读侧缺失（available=false）：理算仍出结果但快照标记，不伪造『已用 0』为事实")
+  void accumulationMissing_isMarkedNotSilentlyZero() {
+    Adjustment adjustment =
+        adjust(
+            List.of(row("门诊费", "IN", new BigDecimal("8000.00"), new BigDecimal("8000.00"))),
+            liability("90", "10000", "0", 0),
+            Accumulation.MISSING);
+
+    assertThat(adjustment.isAccumulationAvailable())
+        .as("缺账本必须显式标记：A7 据此拒绝占额，若标记恒 true 则资金路径失去 fail-closed 依据")
+        .isFalse();
+    assertThat(adjustment.getFormulaSnapshot()).contains("\"accumulationAvailable\":false");
   }
 
   @Test

@@ -85,7 +85,7 @@ class AdjustmentTest {
   }
 
   private static Adjustment adjust(List<ClaimWithItemsProjection> rows, AdjLiability liability) {
-    return Adjustment.calculate(9001L, TENANT, CLAIM, rows, liability, "r1");
+    return Adjustment.calculate(9001L, TENANT, CLAIM, rows, liability, "r1", Accumulation.FIRST);
   }
 
   @Test
@@ -171,7 +171,8 @@ class AdjustmentTest {
         List.of(row("诊查费", "IN", new BigDecimal("200.00"), new BigDecimal("200.00")));
 
     Adjustment first = adjust(rows, liability);
-    Adjustment second = Adjustment.calculate(9002L, TENANT, CLAIM, rows, liability, "r1");
+    Adjustment second =
+        Adjustment.calculate(9002L, TENANT, CLAIM, rows, liability, "r1", Accumulation.FIRST);
 
     assertThat(second.getFormulaHash()).isEqualTo(first.getFormulaHash());
     assertThat(second.getTotalAmount()).isEqualByComparingTo(first.getTotalAmount());
@@ -190,7 +191,8 @@ class AdjustmentTest {
             () ->
                 adjustment.recalculate(
                     List.of(row("诊查费", "IN", new BigDecimal("200.00"), new BigDecimal("200.00"))),
-                    liability("90", "50", "10000", 1)))
+                    liability("90", "50", "10000", 1),
+                    Accumulation.FIRST))
         .isInstanceOf(DomainException.class)
         .hasMessageContaining("已确认");
   }
@@ -199,7 +201,10 @@ class AdjustmentTest {
   @DisplayName("入参校验：明细为空 / 责任未生效 / 责任为空")
   void invariants() {
     AdjLiability active = liability("90", "0", "10000", 1);
-    assertThatThrownBy(() -> Adjustment.calculate(1L, TENANT, CLAIM, List.of(), active, "r1"))
+    assertThatThrownBy(
+            () ->
+                Adjustment.calculate(
+                    1L, TENANT, CLAIM, List.of(), active, "r1", Accumulation.FIRST))
         .isInstanceOf(DomainException.class)
         .hasMessageContaining("明细");
     assertThatThrownBy(
@@ -210,7 +215,8 @@ class AdjustmentTest {
                     CLAIM,
                     List.of(row("诊查费", "IN", BigDecimal.TEN, BigDecimal.TEN)),
                     null,
-                    "r1"))
+                    "r1",
+                    Accumulation.FIRST))
         .isInstanceOf(DomainException.class);
     AdjLiability draft =
         AdjLiability.of(
@@ -235,7 +241,8 @@ class AdjustmentTest {
                     CLAIM,
                     List.of(row("诊查费", "IN", BigDecimal.TEN, BigDecimal.TEN)),
                     draft,
-                    "r1"))
+                    "r1",
+                    Accumulation.FIRST))
         .isInstanceOf(DomainException.class)
         .hasMessageContaining("未生效");
   }

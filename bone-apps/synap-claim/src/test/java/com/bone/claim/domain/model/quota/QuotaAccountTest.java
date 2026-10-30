@@ -182,8 +182,21 @@ class QuotaAccountTest {
   @DisplayName("年免赔累计（R-DED-03）与减人标记")
   void deductibleAndRemoved() {
     QuotaAccount account = account(new BigDecimal("20000.00"));
-    account.accumulateDeductible(new BigDecimal("120.50"));
+
+    // 幂等键：重复消抵同一笔免赔必须被流水判重拦住，否则撤件重算会把免赔吃掉两次 ⇒ 系统性少赔
+    assertThat(account.accumulateDeductible(1L, new BigDecimal("120.50"), 1001L, "S1", "C1:DED:1"))
+        .isNotNull();
     assertThat(account.getDeductibleUsed()).isEqualByComparingTo("120.50");
+
+    // 回退对称：撤件后免赔须归还，否则客户下一案要重新消化一笔根本没赔出去的免赔
+    account.reduceDeductible(2L, new BigDecimal("120.50"), 1001L, "S1", "C1:DED_ROLLBACK:1");
+    assertThat(account.getDeductibleUsed()).isEqualByComparingTo("0.00");
+
+    account.accumulateDeductible(3L, new BigDecimal("80.00"), 1002L, "S2", "C2:DED:1");
+    account.reduceDeductible(4L, new BigDecimal("9999.00"), 1002L, "S2", "C2:DED_ROLLBACK:1");
+    assertThat(account.getDeductibleUsed())
+        .as("回退金额超过已累计时钳到 0，不得出现负免赔反向放大赔付基数")
+        .isEqualByComparingTo("0.00");
 
     account.markRemoved();
     assertThat(account.isRemoved()).isTrue();

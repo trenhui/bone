@@ -87,20 +87,22 @@ class AdjustmentSemanticGapInventoryTest {
               "§7.4 · reference-impl S27"),
           new Step(
               "⑩跨案累计（年度免赔/责任限额）",
-              Status.GAP,
-              "liabilityDeduct 为配置常量、按案各扣一次；无 AccumulationPort 跨案余额",
+              Status.SUPPORTED,
+              "Adjustment.apply 接收 Accumulation（必填入参）：剩余免赔 = 配置 − deductibleUsed；"
+                  + "剩余责任限额 = 配置 − (claimed+frozen)；读侧 AccumulationPort 投影 LIABILITY_CAP 账户，"
+                  + "写侧由 A7 结算经 QuotaApplicationService.reserveLiability 回写",
               "Go-Live G2 · reference-impl S3/S21"));
 
   @Test
   @DisplayName("覆盖清单固定：SUPPORTED / PARTIAL / GAP 三集合与登记一致（能力变化须显式改档）")
   void statusSetsArePinned() {
     assertThat(labelsWith(Status.SUPPORTED))
-        .containsExactlyInAnyOrder("④年度免赔（作用于费用基数）", "⑤赔付比例", "⑦取整（中间 6 位 / 结果 2 位 HALF_UP）");
+        .containsExactlyInAnyOrder(
+            "④年度免赔（作用于费用基数）", "⑤赔付比例", "⑦取整（中间 6 位 / 结果 2 位 HALF_UP）", "⑩跨案累计（年度免赔/责任限额）");
     assertThat(labelsWith(Status.PARTIAL))
         .containsExactlyInAnyOrder("①费用明细筛选（目录/合理必要）", "⑧多维度 min 控额");
     assertThat(labelsWith(Status.GAP))
-        .containsExactlyInAnyOrder(
-            "②发票级免赔", "③第三方已付抵扣（不可获利）", "⑥理算级免赔（第二个免赔）", "⑨逐行分位归因（分位守恒）", "⑩跨案累计（年度免赔/责任限额）");
+        .containsExactlyInAnyOrder("②发票级免赔", "③第三方已付抵扣（不可获利）", "⑥理算级免赔（第二个免赔）", "⑨逐行分位归因（分位守恒）");
   }
 
   @Test
@@ -134,21 +136,44 @@ class AdjustmentSemanticGapInventoryTest {
             1001L,
             List.of(item(2001L, "100.00"), item(2002L, "200.00"), item(2003L, "300.00")),
             liability("100", "0", "0"),
-            "r1");
+            "r1",
+            Accumulation.FIRST);
 
     assertThat(adjustment.lines()).as("若本断言转红：逐行归因已实现，请把 GAP⑨ 改为 SUPPORTED 并回填 G2").hasSize(1);
   }
 
   @Test
-  @DisplayName("GAP⑩ 反证：年度免赔按案各扣一次，不跨案累计 —— 两案各 8000 均赔 0")
-  void gap_noCrossClaimAccumulation() {
-    BigDecimal first = payout("8000.00", "0");
-    BigDecimal second = payout("8000.00", "0");
+  @DisplayName("⑩ 已支持（原 GAP⑩ 反证转正）：次案的免赔按首案已消抵额递减 —— 两案各 8000，次案应赔 7200 而非 0")
+  void crossClaimDeductibleAccumulates() {
+    // 首案：免赔 1 万未消抵完，赔 0，但已消抵 8000（这是次案的输入）
+    Accumulation seeded = Accumulation.FIRST;
+    Adjustment first =
+        Adjustment.calculate(
+            9001L,
+            42L,
+            1001L,
+            List.of(item(2001L, "8000.00")),
+            liability("90", "10000", "0"),
+            "r1",
+            seeded);
+    assertThat(first.getTotalAmount()).isEqualByComparingTo("0.00");
+    assertThat(first.getDeductibleApplied()).isEqualByComparingTo("8000.00");
 
-    assertThat(first).as("首案 8000 未达 1 万免赔 → 0").isEqualByComparingTo("0.00");
-    assertThat(second)
-        .as("若本断言转红：跨案累计已实现（reference-impl S3 次案应为 8000×90%），请把 GAP⑩ 改为 SUPPORTED")
-        .isEqualByComparingTo("0.00");
+    // 次案：剩余免赔只剩 2000 —— 若内核仍按配置全额扣免赔，这里必为 0.00（即原 GAP⑩ 反证）
+    Adjustment second =
+        Adjustment.calculate(
+            9002L,
+            42L,
+            1002L,
+            List.of(item(2002L, "8000.00")),
+            liability("90", "10000", "0"),
+            "r1",
+            Accumulation.of(first.getDeductibleApplied(), BigDecimal.ZERO, true));
+
+    assertThat(second.getTotalAmount())
+        .as("次案：8000 − 剩余免赔 2000 = 6000，×90%% = 5400；若此处为 0 说明跨案累计被回退")
+        .isEqualByComparingTo("5400.00");
+    assertThat(second.getDeductibleApplied()).isEqualByComparingTo("2000.00");
   }
 
   @Test
@@ -156,7 +181,13 @@ class AdjustmentSemanticGapInventoryTest {
   void snapshotKeysArePinned() {
     Adjustment adjustment =
         Adjustment.calculate(
-            9001L, 42L, 1001L, List.of(item(2001L, "1000.00")), liability("80", "100", "0"), "r1");
+            9001L,
+            42L,
+            1001L,
+            List.of(item(2001L, "1000.00")),
+            liability("80", "100", "0"),
+            "r1",
+            Accumulation.FIRST);
     String snapshot = adjustment.getFormulaSnapshot();
 
     Set<String> pinned =
@@ -166,7 +197,12 @@ class AdjustmentSemanticGapInventoryTest {
                 "liabilityVersion",
                 "payPercent",
                 "deduct",
+                // ⑩ 跨案累计：不物化进快照，历史案件就无法自包含复算（§5.2）
+                "deductibleBefore",
+                "deductibleUsedBefore",
                 "limit",
+                "limitUsedBefore",
+                "accumulationAvailable",
                 "socialOnly",
                 "base",
                 "selfPay1Total",
@@ -223,7 +259,8 @@ class AdjustmentSemanticGapInventoryTest {
   private static BigDecimal payout(String valid, String thirdPartyPaid) {
     ClaimWithItemsProjection p = item(2001L, valid);
     p.setItemPoolingAmount(new BigDecimal(thirdPartyPaid));
-    return Adjustment.calculate(9001L, 42L, 1001L, List.of(p), liability("90", "10000", "0"), "r1")
+    return Adjustment.calculate(
+            9001L, 42L, 1001L, List.of(p), liability("90", "10000", "0"), "r1", Accumulation.FIRST)
         .getTotalAmount();
   }
 

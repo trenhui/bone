@@ -285,12 +285,60 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
         idempotencyKey);
   }
 
-  /** 累计年免赔（R-DED-03）。 */
-  public void accumulateDeductible(BigDecimal amount) {
+  /**
+   * 累计年免赔（R-DED-03）并落流水。
+   *
+   * <p><b>必须落 {@code txn_type=DEDUCTIBLE} 的流水</b>：{@code deductible_used} 是账户投影，流水才是事实。 不落流水就无法按
+   * {@code idempotencyKey} 判重（重复提交会把免赔消抵两次 ⇒ 系统性少赔）， 撤件/重算时也没有可据以回退的依据。金额为 0 时不落流水（免赔未消抵，无需记账）。
+   *
+   * @return 本次流水；{@code amount <= 0} 时返回 {@code null}
+   */
+  public QuotaTransaction accumulateDeductible(
+      long txnId, BigDecimal amount, Long claimId, String settlementNo, String idempotencyKey) {
     if (amount == null || amount.signum() <= 0) {
-      return;
+      return null;
     }
+    BigDecimal before = deductibleUsed;
     this.deductibleUsed = deductibleUsed.add(amount).setScale(2, java.math.RoundingMode.HALF_UP);
+    this.updatedAt = Instant.now();
+    return append(
+        txnId,
+        claimId,
+        settlementNo,
+        "OCCUPY",
+        "DEDUCTIBLE",
+        amount,
+        before,
+        deductibleUsed,
+        idempotencyKey);
+  }
+
+  /**
+   * 回退年免赔（撤件 / 拒赔 / 冲正：本案消抵的免赔须归还，否则后续案件会重复"消化"同一笔免赔 ⇒ 系统性少赔）。
+   *
+   * <p>与 {@link #accumulateDeductible} 严格对称：方向 {@code ROLLBACK}，且钳到 0（历史上限保护）。
+   *
+   * @return 本次流水；{@code amount <= 0} 时返回 {@code null}
+   */
+  public QuotaTransaction reduceDeductible(
+      long txnId, BigDecimal amount, Long claimId, String settlementNo, String idempotencyKey) {
+    if (amount == null || amount.signum() <= 0) {
+      return null;
+    }
+    BigDecimal before = deductibleUsed;
+    this.deductibleUsed =
+        deductibleUsed.subtract(amount).max(ZERO).setScale(2, java.math.RoundingMode.HALF_UP);
+    this.updatedAt = Instant.now();
+    return append(
+        txnId,
+        claimId,
+        settlementNo,
+        "ROLLBACK",
+        "DEDUCTIBLE",
+        amount,
+        before,
+        deductibleUsed,
+        idempotencyKey);
   }
 
   /** 减人（不再参与额度累计）。 */
