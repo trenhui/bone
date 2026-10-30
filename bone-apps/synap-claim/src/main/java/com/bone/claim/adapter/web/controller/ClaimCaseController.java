@@ -128,7 +128,8 @@ public class ClaimCaseController {
       @Valid @ModelAttribute ClaimPageReq qry) {
     List<ClaimStatus> statuses = claimCaseAssembler.statusesOf(qry);
     return ApiResponse.success(
-        claimCaseApplicationService.page(statuses, qry.sourceChannel(), qry.page(), qry.size()));
+        claimCaseApplicationService.page(
+            statuses, qry.sourceChannel(), qry.pageOrDefault(), qry.sizeOrDefault()));
   }
 
   @Operation(

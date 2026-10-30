@@ -18,7 +18,7 @@ import tempfile
 import time
 from collections import Counter, defaultdict
 
-from e2e_lib import http
+from e2e_lib import endpoints, http
 
 # 探测响应体写**每进程独立**的临时文件（原共享 /tmp/_sweep_body.txt 会被
 # 并发运行的另一份 sweep 覆盖 body，误报 500 明细），进程退出自动删除
@@ -49,6 +49,11 @@ ROUTE_PREFIXES = [
     "/api/v1/generator",
     "/api/v1/metadata",
     "/api/v1/runtime",
+    # 2026-10-30 补齐：这三个命名空间此前从未进入扫描（网关已登记路由，但不在前缀表里），
+    # 导致 synap-claim(:8087) 与 workflow(:9001) 的端点长期处于「源码里有、联调没扫过」的盲区。
+    "/api/v1/claims",
+    "/api/v1/review",
+    "/api/v1/workflow",
 ]
 
 
@@ -97,7 +102,8 @@ def main():
     ap.add_argument("--out", default="logs/api-sweep.json")
     args = ap.parse_args()
 
-    eps = json.load(open("/tmp/endpoints.json", encoding="utf-8"))
+    # 端点真源 = Controller 源码（不再读 /tmp 缓存快照，详见 e2e_lib/endpoints.py 说明）
+    eps = endpoints.load()
     token = login()
     if not token:
         return 2

@@ -17,7 +17,7 @@ import sys
 import time
 from collections import Counter, defaultdict
 
-from e2e_lib import http
+from e2e_lib import endpoints, http
 
 GW = "http://127.0.0.1:8888"
 ROUTE_PREFIXES = [
@@ -42,6 +42,10 @@ ROUTE_PREFIXES = [
     "/api/v1/generator",
     "/api/v1/metadata",
     "/api/v1/runtime",
+    # 2026-10-30 补齐：见 api-sweep.py 同前缀说明（claims/review/workflow 此前是扫描盲区）。
+    "/api/v1/claims",
+    "/api/v1/review",
+    "/api/v1/workflow",
 ]
 # 501 = 设计如此（能力未实现），不算缺陷
 BENIGN_5XX = {501}
@@ -77,7 +81,8 @@ def main():
     ap.add_argument("--out", default="logs/write-sweep.json")
     args = ap.parse_args()
 
-    eps = json.load(open("/tmp/endpoints.json", encoding="utf-8"))
+    # 端点真源 = Controller 源码（不再读 /tmp 缓存快照，详见 e2e_lib/endpoints.py 说明）
+    eps = endpoints.load()
     token = login()
     if not token:
         return 2
