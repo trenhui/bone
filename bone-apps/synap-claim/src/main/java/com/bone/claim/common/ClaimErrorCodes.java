@@ -76,6 +76,16 @@ public final class ClaimErrorCodes {
   /** 申诉记录不存在（或已复议终态）。 */
   public static final String CLAIM_APPEAL_NOT_FOUND = "SC_CLAIM_APPEAL_NOT_FOUND";
 
+  /**
+   * 申诉超出 48h 受理时限（§6.6，《保险法》第 23/24 条口径）。
+   *
+   * <p>为什么单独给码而不复用 {@code COMMON_VALIDATION_FAILED}：时限过期是<b>监管口径的业务结论</b>， 不是"参数填错"。域层此前抛 {@link
+   * com.bone.core.exception.DomainException}，经全局 handler 落成 400 + {@code
+   * COMMON_VALIDATION_FAILED}，前端只能显示 `参数校验失败：申诉已超 48h 时限（§6.6），不可受理`——
+   * 既把内部分节号泄露给柜面人员，又让"申诉窗口已关闭"和"字段格式错误"在监控里同码聚合。
+   */
+  public static final String CLAIM_APPEAL_EXPIRED = "SC_CLAIM_APPEAL_EXPIRED";
+
   /** 证据未锁定即发起理算（理算前置不满足，§4.3）。 */
   public static final String CLAIM_ADJUST_EVIDENCE_NOT_LOCKED =
       "SC_CLAIM_ADJUST_EVIDENCE_NOT_LOCKED";

@@ -614,9 +614,11 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_SETTLEMENT_NOT_FOUND` | 404 | 结算单不存在 |
 | `SC_CLAIM_SETTLEMENT_CONFLICT` | 409 | 结算状态冲突（已终态不可操作） |
 | `SC_CLAIM_APPEAL_NOT_FOUND` | 404 | 申诉记录不存在 |
+| `SC_CLAIM_APPEAL_EXPIRED` | 422 | 申诉超出 48h 受理时限（§6.6，申诉窗口已关闭；与"参数填错"区分开） |
 | `SC_CLAIM_INSPECTION_NOT_FOUND` | 404 | 抽检单不存在（后督抽检，A9） |
 | `SC_CLAIM_INSPECTION_CONFLICT` | 409 | 抽检单状态冲突（已结论不可改写 / 同案重复发起） |
 | `SC_CLAIM_DECISION_NOT_FOUND` | 404 | 案件尚无决策执行记录（轨迹回放无对象，区别于案件不存在） |
+| `SC_CLAIM_DECISION_ACTIVE_CONFLICT` | 409 | 同案已有活跃决策执行（不允许并发重跑；工作台「决策图」改为只读取最近轨迹，不该命中此码） |
 
 ---
 

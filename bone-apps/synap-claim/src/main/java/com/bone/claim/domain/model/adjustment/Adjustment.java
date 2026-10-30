@@ -240,7 +240,7 @@ public class Adjustment extends TenantAggregateRoot<Long> {
               getId(),
               this.liabilityUuid,
               "OUTPUT",
-              "{\"bucket\":\"" + line.bucket() + "\",\"scope\":\"" + line.scope() + "\"}",
+              inputSnapshotOf(line),
               line.feeCalculate(),
               line.feeDeduct(),
               line.ratioPayout(),
@@ -254,6 +254,28 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       outputLine.setTenantId(getTenantId());
       this.lines.add(outputLine);
     }
+  }
+
+  /**
+   * 行快照（{@code t_adj_calculation_line.input_snapshot}）。
+   *
+   * <p><b>为什么把 bucketLabel / ratioPercent 一起落库</b>：引擎的 {@code Line} 已算出这两个值， 但外壳只写了 {@code bucket}
+   * 与 {@code scope}（都是英文码：{@code REASONABLE} / {@code IN|OUT}）。 前端要显示「合理金额 / 自付二 /
+   * 总自费」与本次赔付比例，只能自己再建一份桶名映射—— 那就是**同一套词汇的第三份副本**（引擎一份、文档一份、前端一份），改一处必然漏两处。 落库后展示口径与计算口径同源。
+   *
+   * <p>取值均为受控枚举与定点小数，不含自由文本，故直接内联拼接即可（无需 JSON 转义）。
+   */
+  private static String inputSnapshotOf(AdjustmentEngine.Line line) {
+    String ratio = line.ratioPercent() == null ? "null" : line.ratioPercent().toPlainString();
+    return "{\"bucket\":\""
+        + line.bucket()
+        + "\",\"bucketLabel\":\""
+        + line.bucketLabel()
+        + "\",\"scope\":\""
+        + line.scope()
+        + "\",\"ratioPercent\":"
+        + ratio
+        + "}";
   }
 
   private static String sha256(String input) {

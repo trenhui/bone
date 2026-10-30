@@ -27,6 +27,19 @@ public class AppealRecord extends TenantAggregateRoot<Long> {
   /** 申诉受理法定时限：结案/拒赔生效后 48h（§6.6）。 */
   private static final Duration APPEAL_WINDOW = Duration.ofHours(48);
 
+  /**
+   * 是否仍在 48h 受理窗口内。
+   *
+   * <p>应用层用它在<b>抛异常之前</b>把"窗口已关闭"翻译成带业务码的 {@code SC_CLAIM_APPEAL_EXPIRED}。 时限判定只写在领域层这一处：应用层若自己再写一遍
+   * {@code Duration.ofHours(48)}，改法定时限时 就会一半新一半旧，且两处判定必然在某天分叉。
+   *
+   * @param caseClosedAt 案件进入终态的时间；{@code null} 表示时间点缺失（无法判断，返回 {@code false}， 由调用方按"缺数据"而非"超时"处理）
+   */
+  public static boolean withinAppealWindow(Instant caseClosedAt) {
+    return caseClosedAt != null
+        && Duration.between(caseClosedAt, Instant.now()).compareTo(APPEAL_WINDOW) <= 0;
+  }
+
   @Column(name = "appeal_no", nullable = false)
   private String appealNo;
 
@@ -119,7 +132,7 @@ public class AppealRecord extends TenantAggregateRoot<Long> {
     if (caseClosedAt == null) {
       throw new DomainException("案件终态时间缺失，无法计算申诉时限");
     }
-    if (Duration.between(caseClosedAt, Instant.now()).compareTo(APPEAL_WINDOW) > 0) {
+    if (!withinAppealWindow(caseClosedAt)) {
       throw new DomainException("申诉已超 48h 时限（§6.6），不可受理");
     }
     return new AppealRecord(

@@ -47,6 +47,13 @@ public class AppealApplicationService {
     if (!claim.finished()) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_STATUS_CONFLICT, claimId);
     }
+    // 超 48h 窗口先在这里翻译成业务码：域层 AppealRecord#submit 仍会再判一次（不变量不外包），
+    // 但域层抛的是 DomainException ⇒ 全局 handler 落成 400 + COMMON_VALIDATION_FAILED，
+    // 前端只能显示「参数校验失败：申诉已超 48h 时限（§6.6），不可受理」——把内部分节号泄露给柜面，
+    // 且与真正的参数错同码。closedAt 为 null 时不在本处报错：那是「数据缺失」，交给域层给出精确原因。
+    if (claim.closedAt() != null && !AppealRecord.withinAppealWindow(claim.closedAt())) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_APPEAL_EXPIRED, claim.getClaimNo());
+    }
     // 进入申诉前的终态，存枚举名（与 t_claim_case.status 同口径，见 ClaimStatus 类注释）
     String originalStatus = claim.status().name();
     claim.enterAppeal(submittedBy);

@@ -231,19 +231,33 @@ public class ClaimCaseApplicationService {
     save(claim);
   }
 
-  /** 挂起（§6.5 正交机制）。 */
+  /**
+   * 挂起（§6.5 正交机制）。
+   *
+   * <p>域层用 {@link DomainException}（"案件已挂起，须先恢复"）表达状态冲突，全局 handler 会把它落成 <b>400 + {@code
+   * COMMON_VALIDATION_FAILED}</b>：前端既拿不到可分支的码，柜面看到的还是 "参数校验失败：案件已挂起，须先恢复"——把一个 409
+   * 语义的状态冲突说成参数问题。此处按 {@code GlobalExceptionHandler} javadoc 推荐的路径在应用层显式翻译（域层异常保持不动）。
+   */
   @Transactional
   public void hangUp(long claimId, HangUpType type, String operatorId) {
     ClaimCase claim = loadForUpdate(claimId);
-    claim.hangUp(type, operatorId);
+    try {
+      claim.hangUp(type, operatorId);
+    } catch (DomainException e) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_STATUS_CONFLICT, e.getMessage());
+    }
     save(claim);
   }
 
-  /** 恢复挂起（FRAUD 仅风控岗：调用方已做角色校验）。 */
+  /** 恢复挂起（FRAUD 仅风控岗：调用方已做角色校验）。翻译口径同 {@link #hangUp}。 */
   @Transactional
   public void resume(long claimId, String operatorId) {
     ClaimCase claim = loadForUpdate(claimId);
-    claim.resume(operatorId);
+    try {
+      claim.resume(operatorId);
+    } catch (DomainException e) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_STATUS_CONFLICT, e.getMessage());
+    }
     save(claim);
   }
 

@@ -32,6 +32,8 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.CLAIM_SETTLEMENT_NOT_FOUND, 404),
           Map.entry(ClaimErrorCodes.CLAIM_SETTLEMENT_CONFLICT, 409),
           Map.entry(ClaimErrorCodes.CLAIM_APPEAL_NOT_FOUND, 404),
+          // 422 而非 400：请求本身合法，是"案件过了申诉窗口"这一业务前提不成立（与 POLICY_NOT_ACTIVE 同口径）
+          Map.entry(ClaimErrorCodes.CLAIM_APPEAL_EXPIRED, 422),
           Map.entry(ClaimErrorCodes.CLAIM_DECISION_ACTIVE_CONFLICT, 409),
           Map.entry(ClaimErrorCodes.CLAIM_ADJUST_EVIDENCE_NOT_LOCKED, 422),
           Map.entry(ClaimErrorCodes.CLAIM_QUOTA_NOT_FOUND, 404),
