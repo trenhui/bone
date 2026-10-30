@@ -20,9 +20,22 @@ Rulebook 与落地版指两条不同规则、对外枚举值只在交付包出�
      「自造对外枚举」（曾发生 status=ACCEPTED，C3 单向比对抓不到）。
   C6 表清单 ↔ DDL 落点（新增，弱检查）：§9.1 表清单登记的表必须在 §9.5 DDL 中
      出现；DDL 中出现的表未登记则提示（防「声明了但无落点」的空洞）。
+  C7 分层真源规则 ID 覆盖（新增）：`design/` 与 `verification/` 引用的每个
+     `R-XXX-NN` 必须在 Rulebook 有定义行。
+  C8 分层真源表名对位（新增，弱检查）：上述目录出现的业务表名须在工程落地版
+     出现过，防合并后的设计真源自造表名。
+
+**扫描范围为何是这三个根文件 + 两个子目录**：`reviews/` 是有意豁免——它是冻结的
+过程记录（某时点的取证），不是当前设计；要求它随契约演进而修改，等于篡改历史。
+
+**C7/C8 的由来**（记一笔，免得后人误删）：文档按「设计/验证/过程记录」分层后，
+`design/理算引擎设计.md`、`design/风控与支付通道设计.md`、`verification/理算引擎
+验证套件.md` 已升为理算与风控主题的唯一真源，但它们落在原有门禁之外——引用一个
+不存在的规则 ID 不会被任何人拦住。分层若不同步扩门禁，等于把门禁变成摆设。
 
 退出码：发现硬性漂移 -> 1；仅提示（--report） -> 0。
 """
+import glob
 import os
 import re
 import sys
@@ -153,6 +166,22 @@ def main() -> int:
     for t in sorted(listed_tables - ddl_tables):
         soft.append(f"[C6] §9.1 登记的表在 §9.5 DDL 中无 CREATE TABLE：{t}")
 
+    # C7/C8 分层真源（design/ verification/）纳入同一门禁
+    #  根目录三份文件之外，合并后的设计/验证真源同样承载规则 ID 与表名契约，
+    #  不纳管就会出现「真源写错、门禁全绿」。
+    layer_files = sorted(
+        glob.glob(os.path.join(ROOT, "design", "*.md"))
+        + glob.glob(os.path.join(ROOT, "verification", "*.md"))
+    )
+    landing_tables = set(re.findall(r"\b(?:claim|tenant|ai)_[a-z_]+\b", landing))
+    for path in layer_files:
+        rel = os.path.relpath(path, ROOT)
+        text = read(path)
+        for rid in sorted(set(ANY_RULE_ID.findall(text)) - set(defined)):
+            hard.append(f"[C7] {rel} 引用了 Rulebook 未定义的规则 ID：{rid}")
+        for t in sorted(set(re.findall(r"\b(?:claim|tenant|ai)_[a-z_]+\b", text)) - landing_tables):
+            soft.append(f"[C8] {rel} 出现工程落地版未登记的表名：{t}")
+
     for line in hard:
         print(f"❌ {line}")
     for line in soft:
@@ -160,7 +189,7 @@ def main() -> int:
     if hard:
         print(f"\n发现 {len(hard)} 处契约漂移（硬性）。")
         return 0 if report_only else 1
-    print(f"✅ 契约漂移检查通过（规则 ID / 对外枚举双向 / 错误码集合 / 表清单对位一致）。")
+    print(f"✅ 契约漂移检查通过（规则 ID / 对外枚举双向 / 错误码集合 / 表清单对位 / 分层真源 C7-C8 一致）。")
     return 0
 
 
