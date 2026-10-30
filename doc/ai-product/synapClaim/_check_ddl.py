@@ -12,8 +12,19 @@ MySQL/TiDB 直接 Duplicate column name），且同批索引引用并不存在�
   D3 PRIMARY KEY (id) 存在
   D4 KEY/UNIQUE KEY 引用的列均已声明
   D5 CREATE TABLE 块以 `) ENGINE=InnoDB` 收尾（无悬空逗号）
-  D6 append-only 表（本文 §9.2 矩阵名单）不得注入 updated_at/updated_by/deleted/version
+  D6 禁注入表的建表块不得含 updated_at/updated_by/deleted/version
+     （名单**从本文 §9.2 矩阵现读**，不在脚本里手抄——见下方 append_only_tables）
   D7 §9.5 建表数 = 35（与 §9.1 表清单口径一致；改表数须同步 §9.1/§11.13）
+
+关于 D6 的名单来源（2026-10-30 修正）：
+  原先本脚本硬编码一份 APPEND_ONLY 副本，注释却写着「本文 §9.2 矩阵登记的名单」——
+  注释宣称的与实际做的不是一回事。后果在当天就应验：docs 把
+  `claim_decision_execution` 从 append-only 移到可变状态表后，脚本仍按旧副本判红，
+  报的是一条**已经不成立**的规则。同一事实存两份，改一处不报错，只是校验的
+  不再是同一件事（与上一轮文档族「同一事实四份拷贝」同源）。
+  现在改为解析 §9.2 矩阵：判据是「该行 `updated_by/at` 列写着『不注入』」，
+  而不是维护一份表名清单——这才是矩阵真正表达的语义。
+  矩阵若解析不出任何表，直接判失败（宁可红着让人看，也不要空集合恒过）。
 """
 import io, re, sys
 
@@ -21,18 +32,43 @@ import _manifest as M
 
 # 路径取自 docs.manifest.json（doc id），不在此硬编码文件名。
 DOC = M.path('contract.landing')
-# 本文 §9.2「通用列约定」矩阵登记的 append-only 表名单
-APPEND_ONLY = {
-    'claim_case_track', 'claim_decision_trace', 'claim_decision_execution',
-    'claim_rule_hit', 'claim_review_record', 'claim_inspection',
-    'settle_funding_event', 'settle_receipt', 'quota_transaction',
-    'domain_event_outbox', 'reconciliation_report', 'reconciliation_diff',
-    'integration_sync_log',
-    'idempotency_record',  # 同矩阵：不注入 updated/version/deleted（TTL 清理）
-}
 COL_RE = re.compile(r'^  ([a-z_]+)\s+(BIGINT|VARCHAR|DECIMAL|DATETIME|DATE|TINYINT|INT|JSON|CHAR)\b')
 KEY_RE = re.compile(r'^  (?:UNIQUE )?KEY\s+\S+\s*\(([^)]*)\)')
 MUTABLE_COLS = {'updated_at', 'updated_by', 'deleted', 'version'}
+
+
+def append_only_tables(lines):
+    """从 §9.2「通用列注入矩阵」解析出「禁注入变更列」的表名集合。
+
+    返回 (exact_names, prefix_patterns)；矩阵解析失败返回 (None, None)。
+    判据取列语义而非表名清单：`updated_by/at` 列含「不注入」的行，其表名全部计入。
+    `reconciliation_*` 这类通配登记转成前缀集合，避免把通配当成一个不存在的表名。
+    """
+    exact, prefixes, found_row = set(), set(), False
+    for l in lines:
+        if not l.startswith('|'):
+            continue
+        cells = [c.strip() for c in l.strip().strip('|').split('|')]
+        # 矩阵列序：表类 | tenant_id | created_by/at | updated_by/at | version | deleted
+        if len(cells) < 5:
+            continue
+        if '不注入' not in cells[3]:
+            continue
+        found_row = True
+        for name in re.findall(r'`([a-z_*]+)`', cells[0]):
+            if name.endswith('*'):
+                prefixes.add(name[:-1])
+            else:
+                exact.add(name)
+    if not found_row or not (exact or prefixes):
+        return None, None
+    return exact, prefixes
+
+
+def is_forbidden(name, exact, prefixes):
+    if name in exact:
+        return True
+    return any(name.startswith(p) for p in prefixes)
 
 
 def main():
@@ -64,6 +100,13 @@ def main():
     if cur:
         tables.append(cur)
 
+    exact, prefixes = append_only_tables(lines)
+    if exact is None:
+        print('=== DDL 可执行性机检 ===')
+        print('【FAIL】D6 未能从 §9.2 注入矩阵解析出任何「禁注入」表——'
+              '矩阵格式可能已改（表头/列序变化），先修解析再看结论')
+        return 1
+
     for t in tables:
         n = t['name']
         if t['cols'].count('id') != 1:
@@ -79,10 +122,10 @@ def main():
         undeclared = [c for c in t['keys'] if c not in t['cols']]
         if undeclared:
             errors.append('D4 %s（L%d）：索引引用未声明列 %s' % (n, t['line'], undeclared))
-        if n in APPEND_ONLY:
+        if is_forbidden(n, exact, prefixes):
             bad = MUTABLE_COLS & set(t['cols'])
             if bad:
-                errors.append('D6 %s（L%d）：append-only 表禁注入 %s（§9.2 矩阵：不注入 updated/version/deleted）'
+                errors.append('D6 %s（L%d）：§9.2 矩阵判其禁注入变更列，却声明了 %s'
                               % (n, t['line'], sorted(bad)))
 
     if len(tables) != 35:

@@ -78,8 +78,12 @@ console.log(`前端路由（routes.tsx）：${routes.length} 条`);
 console.log(`后端菜单（iam/current）：${menus.length} 条\n`);
 
 // ---------- B. 菜单 ↔ 路由 双向一致性（无需浏览器，先判，失败即中止） ----------
-check('routes.tsx 解析到 9 条理赔路由', routes.length === 9, `实际 ${routes.length}`);
-check('IAM 下发 9 条理赔菜单', menus.length === 9, `实际 ${menus.length}`);
+// 条数**不硬编码**：routes.tsx 是唯一真源，在这里再写一个数字等于给真源拷一份副本，
+// 每加一条路由都要同步改探针（2026-10-30 加 `/pre-exam` 后此处仍是 9 ⇒ 探针必红，
+// 而当时路由表与菜单其实完全一致——报的是假失败）。下面 ghosts / unreachable 两条
+// 双向全等已能推出「条数相等」，此处只守「解析成功」，防解析漂移把 0 条当成通过。
+check('routes.tsx 解析到理赔路由（非空）', routes.length > 0, `实际 ${routes.length}`);
+check('IAM 下发理赔菜单（非空）', menus.length > 0, `实际 ${menus.length}`);
 
 const routeByPath = new Map(routes.map((r) => [r.path, r.name]));
 const menuPaths = menus.map((m) => m.path.replace(CLAIM_MENU_PREFIX, ''));

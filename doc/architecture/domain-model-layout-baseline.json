@@ -20,6 +20,11 @@
       "module": "bone-apps/synap-claim",
       "path": "domain/security",
       "reason": "理赔域内的 PII / 大模型输出安全策略（PiiMasker、MaskedText、SafePromptBuilder、LlmOutputGuard）。它们是纯领域规则（等长掩码、白名单提示词组装、输出护栏），不依赖 Spring 与任何适配器，故不属 infrastructure；按 ADR-0036 R3 登记为模块自有领域策略子包"
+    },
+    {
+      "module": "bone-apps/synap-claim",
+      "path": "domain/port",
+      "reason": "出站端口（OutboxPort.dispatch + OutboxRecord），由 infrastructure/event/SpringOutboxDispatcher 实现。领域层只声明「把一条发件箱记录投递出去」这一能力，不关心介质（一期进程内事件总线、二期 MQ），因此不属 infrastructure；包名沿用六边形惯例 port/out，按 ADR-0036 R3 登记为模块自有领域端口子包"
     }
   ]
 }

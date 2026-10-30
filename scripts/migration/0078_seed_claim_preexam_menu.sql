@@ -29,6 +29,21 @@
 --   顺序 = 作业链路：初审 → 核赔 → 理算 → 材料 → 资金 → 申诉 → 挂起 → 后督 → 理赔申请 → 理赔进度
 --   与 `bone-claim-app/src/routes.tsx` 数组顺序逐项对应。
 --
+-- permission / icon 两处口径（2026-10-30 执行前修正，初版两处都会静默失效）
+-- --------------------------------
+--   · permission 必须与同目录另 9 条一致 = `claim:claims:read`。
+--     `MenuApplicationService#current` 的可见性判据是 `scopes.contains(menu.permission)`，
+--     即菜单码决定「能不能看见这个入口」，不是「能不能在页面里写」。初版写的是
+--     `claim:review:write` ⇒ 租户 1001 的 DEMO_AUDITOR / DEMO_OPS / DEMO_WF_INITIATOR
+--     三个角色只持 `claim:claims:read`，会看到 9 个理赔菜单却独独看不见初审工作台——
+--     而作业链路正是从初审开始的（页面可达 ≠ 操作可写：写动作由按钮权限与
+--     Controller 的 @PreAuthorize 各自判定）。
+--   · icon 必须是 `bone-shell/src/App.tsx` 里 `MENU_ICON_MAP` 已登记的名字。该映射是**白名单**
+--     而非动态取（动态取会把整个图标包打进产物且逃过类型检查），未登记的图标名不会报错，
+--     只会被 `resolveMenuIcon` 静默降级成 DEFAULT_MENU_ICON —— 数据看着对，界面上是错的。
+--     初版写的 `SolutionOutlined` 未登记，故改用已登记的 `ProfileOutlined`。
+--     该口径由 `scripts/check-menu-icon-whitelist.py` 机器校验。
+--
 -- 号段
 -- --------------------------------
 -- 沿用 0064/0071 的 `913000000000000000 + 租户序号*10000 + 行序号`（叶子 = 目录 id + seq）。
@@ -42,6 +57,16 @@
 --
 -- 执行（本地/测试库直接应用；生产数据变更属 L3，由 DBA / CI 在目标库运行）：
 --   mysql --default-character-set=utf8mb4 -h <host> -u <user> -p bone < 0078_seed_claim_preexam_menu.sql
+--
+-- 落地状态（2026-10-30，本地开发库 127.0.0.1:3306/bone 已执行）
+-- --------------------------------
+--   · 执行前基线：2 个租户 / 18 条叶子（每租户 9 条），无 pre-exam；
+--   · 执行后：2 个租户 / 20 条叶子（每租户 10 条），SIGNAL 六项校验全 0；
+--   · 与执行前备份逐行比对：新增 2 行（每租户 1 条 pre-exam）、order_no 调整 18 行（9×2，全体 +1）、
+--     其他字段漂移 0 行、删除 0 行 —— 改动面精确无越界；
+--   · 幂等实测：复跑一次后 `iam_menu` 全表 MD5 与首次执行完全相同；
+--   · 与 `routes.tsx` 逐项对照：10 条 path / 名称 / order_no 全等。
+--   生产库执行仍属 L3，须 DBA 授权后在目标库按同样步骤执行（脚本自身幂等 + SIGNAL 校验可复跑）。
 -- ============================================================
 
 USE bone;
@@ -67,7 +92,7 @@ SELECT tenant_id, MIN(id)
 INSERT INTO iam_menu
     (id, tenant_id, name, parent_id, path, icon, order_no, permission, type, created_by, updated_by)
 SELECT d.dir_id + 18, d.tenant_id, '初审工作台', d.dir_id, '/claim#/pre-exam',
-       'SolutionOutlined', 1, 'claim:review:write', 1, NULL, NULL
+       'ProfileOutlined', 1, 'claim:claims:read', 1, NULL, NULL
   FROM tmp_claim_dir_0078 d
  WHERE NOT EXISTS (
     SELECT 1 FROM iam_menu m
@@ -117,6 +142,8 @@ BEGIN
     DECLARE v_orphan INT DEFAULT 0;
     DECLARE v_dup    INT DEFAULT 0;
     DECLARE v_drift  INT DEFAULT 0;
+    DECLARE v_perm   INT DEFAULT 0;
+    DECLARE v_icon   INT DEFAULT 0;
 
     -- 播种范围 = 有「智能理赔」目录的租户数
     SELECT COUNT(DISTINCT tenant_id) INTO v_dir
@@ -200,7 +227,31 @@ BEGIN
             SET MESSAGE_TEXT = '0078 校验失败：存在重复理赔菜单行（幂等判定失效）';
     END IF;
 
-    SELECT v_dir AS dir_tenants, v_leaf AS leaf_rows, v_orphan AS orphan_rows, v_dup AS dup_paths;
+    -- permission 口径：菜单码 = 「能否看见入口」，必须与同目录另 9 条一致。
+    -- 单独用写权限码会让只持读权限的角色（DEMO_AUDITOR / DEMO_OPS / DEMO_WF_INITIATOR）
+    -- 看到 9 个菜单却看不见初审工作台，而作业链路正从初审开始。
+    SELECT COUNT(*) INTO v_perm
+      FROM iam_menu m
+     WHERE m.deleted = 0 AND m.type = 1 AND m.path LIKE '/claim#/%'
+       AND (m.permission IS NULL OR m.permission <> 'claim:claims:read');
+    IF v_perm <> 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = '0078 校验失败：理赔菜单 permission 与既有 9 条口径不一致';
+    END IF;
+
+    -- 初审工作台 icon 必须非空（是否为前端已登记图标由 scripts/check-menu-icon-whitelist.py 判，
+    -- 纯 SQL 读不到 App.tsx，此处只防「漏填」）
+    SELECT COUNT(*) INTO v_icon
+      FROM iam_menu
+     WHERE deleted = 0 AND type = 1 AND path LIKE '/claim#/%'
+       AND (icon IS NULL OR icon = '');
+    IF v_icon <> 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = '0078 校验失败：存在未填 icon 的理赔菜单';
+    END IF;
+
+    SELECT v_dir AS dir_tenants, v_leaf AS leaf_rows, v_orphan AS orphan_rows,
+           v_dup AS dup_paths, v_perm AS bad_permission, v_icon AS empty_icon;
 END$$
 DELIMITER ;
 

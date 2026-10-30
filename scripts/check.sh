@@ -490,9 +490,17 @@ if ! python3 scripts/check-frontend-route-param.py; then
   exit_code=1
 fi
 
-echo -e "${YELLOW}[32/35] 菜单↔路由可达性（防死链菜单 · G32）...${RESET}"
+echo -e "${YELLOW}[32/35] 菜单↔路由可达性 + 图标白名单（G32/G37）...${RESET}"
 if ! python3 scripts/check-menu-route-consistency.py; then
   echo -e "${RED}❌ 菜单 seed 存在无对应真实路由的死链项${RESET}"
+  exit_code=1
+fi
+# 2026-10-30 新增（G37）。G32 只管「点进去有没有页面」，管不到「图标画不画得出来」：
+# shell 的 MENU_ICON_MAP 是白名单映射（动态取会把整个图标包打进产物），
+# 数据里写了未登记的图标名不报错、不告警，只被 resolveMenuIcon 静默降级成默认图标。
+# 实证：0078 初审工作台初版写 SolutionOutlined，不在 38 项白名单内。
+if ! python3 scripts/check-menu-icon-whitelist.py; then
+  echo -e "${RED}❌ 菜单种子使用了 MENU_ICON_MAP 未登记的图标（会被静默降级为默认图标）${RESET}"
   exit_code=1
 fi
 

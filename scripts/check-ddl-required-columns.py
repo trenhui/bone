@@ -13,6 +13,14 @@
   同样失败；基线里已消失的表提示清理。这条是真正可安全执行的"新增零容忍"。
 - 默认（报告）：打印存量缺口清单，供模块 Owner 逐表分类，分类结论回填基线 `note` 后再从基线移除。
 
+「只可收缩」的两个方向（2026-10-30 补齐后半个）：
+  1. 实际缺列变多（DDL 又少了一列）—— 一直有判据；
+  2. 基线声明变宽（声明缺、实际早已补上；或表已四列齐全 / 已删除）—— 原先只 print 一行提示，
+     退出码仍 0。提示在人眼皮底下滚过去等于没提，基线只会越写越宽：一个声明「四列全缺」的
+     条目即使表早已补齐三列，仍能豁免剩下那一列，而没人回头收紧它。现两处均判红。
+     同一失效模式已在 i18n 白名单棘轮（check-i18n-sync.py 第 11 项）与 doc-code-symbols
+     失效判据上各修过一次，这是第三处。
+
 登记位置：`doc/architecture/ddl-required-columns-baseline.json`（唯一真源，勿在别处复制清单）。
 
 用法:
@@ -94,7 +102,10 @@ def main() -> int:
         print("未找到 DDL 文件：{}".format(DDL), file=sys.stderr)
         return 1
 
-    missing = parse_tables(DDL.read_text(encoding="utf-8", errors="ignore"))
+    ddl_text = DDL.read_text(encoding="utf-8", errors="ignore")
+    missing = parse_tables(ddl_text)
+    # 全部表名（含四列齐全的），用于区分「基线条目已合规」与「基线条目指向已不存在的表」
+    tables_present = {m[0] for m in CREATE_TABLE.findall(ddl_text)}
 
     if args.baseline:
         write_baseline(missing)
@@ -143,8 +154,28 @@ def main() -> int:
             errors.append(
                 "基线内表 `{}` 缺列扩大：{}（基线只可收缩）".format(name, "/".join(worse))
             )
+        # 「只可收缩」的另一半：基线声明缺、而实际已经补上的列，属于**过宽豁免**。
+        # 原先这里没有任何判据，于是基线条目只会越写越宽——一个声明了 4 列全缺的条目，
+        # 即使表早已补齐 3 列，也照样能豁免剩下那 1 列，而没人会回头收紧它。
+        # 与 i18n 白名单棘轮 / doc-code-symbols 失效判据同源：白名单条目不再需要豁免时必须响。
+        stale = [c for c in was if c not in cols]
+        if stale:
+            errors.append(
+                "基线内表 `{}` 的声明已过宽：{}（实际已不缺，请从基线 missing 删除）".format(
+                    name, "/".join(stale)
+                )
+            )
+    # 表级悬空：基线里登记了、但 DDL 里已不缺列甚或已无此表。
+    # 原来只 print 一行提示，退出码仍 0 —— 提示在人眼皮底下滚过去就等于没提。
     for name in sorted(set(baseline) - set(missing)):
-        print("提示：`{}` 已不在缺口列表中，可从基线移除".format(name))
+        if name in tables_present:
+            errors.append(
+                "基线内表 `{}` 四列已齐全，条目应从基线移除（基线只可收缩）".format(name)
+            )
+        else:
+            errors.append(
+                "基线内表 `{}` 在 bone-init.sql 中已不存在（表已删/改名），条目应从基线移除".format(name)
+            )
 
     if errors:
         print("HC-008 必备列检查失败：")

@@ -1058,11 +1058,21 @@ sequenceDiagram
 
 | 表类 | `tenant_id` | `created_by/at` | `updated_by/at` | `version` | `deleted` |
 |---|---|---|---|---|---|
-| 可变状态表（`claim_case`/`adj_*`/`quota_account`/`settle_order`/`feature_toggle`/`claim_flow_config`/`adj_fee_type`/`appeal_record`） | 注入 | 注入 | 注入 | 注入（乐观锁） | 注入 |
-| append-only 表（`claim_case_track`/`claim_decision_trace`/`claim_decision_execution`/`claim_rule_hit`/`claim_review_record`/`claim_inspection`/`settle_funding_event`/`settle_receipt`/`quota_transaction`/`domain_event_outbox`/`reconciliation_*`/`integration_sync_log`） | **注入**（租户过滤与按租户对账依赖） | 注入 | **不注入**（禁 UPDATE） | **不注入**（追加式，无并发改） | **不注入**（禁物理删） |
+| 可变状态表（`claim_case`/`adj_*`/`quota_account`/`settle_order`/`feature_toggle`/`claim_flow_config`/`adj_fee_type`/`appeal_record`/`claim_decision_execution`） | 注入 | 注入 | 注入 | 注入（乐观锁） | 注入 |
+| append-only 表（`claim_case_track`/`claim_decision_trace`/`claim_rule_hit`/`claim_review_record`/`claim_inspection`/`settle_funding_event`/`settle_receipt`/`quota_transaction`/`domain_event_outbox`/`reconciliation_*`/`integration_sync_log`） | **注入**（租户过滤与按租户对账依赖） | 注入 | **不注入**（禁 UPDATE） | **不注入**（追加式，无并发改） | **不注入**（禁物理删） |
 | `idempotency_record` | 注入 | 注入 | 不注入 | 不注入 | 不注入（TTL 清理） |
 
 > append-only 表的 `tenant_id`/`created_by`/`created_at` 在 §9.5 DDL 中**显式声明**（2026-10-23 补齐，防索引引用未声明列导致建表失败），`updated_*`/`version`/`deleted` 一律不注入；框架侧 `TenantAbstractEntity` 统一处理，否则 §10.3 租户过滤、§11.7 按租户对账、§11.3 审计留存三处均失效。MySQL/TiDB 侧以**应用账号权限**兜底：append-only 表仅授 `INSERT`/`SELECT`，不授 `UPDATE`/`DELETE`（§11.5 审计不可篡改）。
+
+> **`claim_decision_execution` 归属修正（2026-10-30）**：本行原将该表列入 append-only，与 §9.5 自身 DDL 及已落地实现三方冲突——
+>
+> 1. §9.5 该表 `active_flag` 注释写明「完成后置 NULL」、`status` 有 `RUNNING→SUCCESS/FALLBACK/FAILED` 迁移、`finished_at`/`duration_ms` 执行完才回填；
+> 2. V5 迁移实际建表已含 `updated_at`/`updated_by`/`deleted`/`version` 四列，实体 `DecisionExecution` 亦带 `@Version` 乐观锁；
+> 3. V11 又按同一逻辑追加 `consumption_reason`/`consumed_at`（自动通过结论的消费结果，只能事后回填）。
+>
+> 即：**「一次执行」是可变状态行，「执行过程」才是 append-only**。故本表改列可变状态表，`updated_*`/`version`/`deleted` 按可变表注入；`claim_decision_trace` 仍为 append-only，不可篡改的审计语义由轨迹承担，执行行只承载状态与结论。此前 §11.3「应用账号仅 INSERT」若对执行表生效，会直接让 `DecisionExecution#succeed/fail` 无法落库——分类错了，权限兜底也会跟着错。
+>
+> 同表不同命的另一例是 `claim_inspection`（抽检任务 + 结论同表、结论落库后可改写状态），其与 §9.5 append-only 口径的刻意差异已在 `09-records/reviews/代码整改清单.md` §3 登记并留了回退改造点，**属待评审项，此处不改分类**。
 
 ```sql
 -- 赔案主表
@@ -1284,6 +1294,9 @@ CREATE TABLE claim_medical_fact (
 -- 注：主键列名统一为 id（bone-metadata-sdk 由实体 id 字段推导，平台 DDL 同此约定），业务标识另设独立列。
 -- active_flag 允许 NULL：原稿 UNIQUE(claim_id, active_flag) + 0/1 取值会连带限制同案最多 2 行（0 与 1 各一行），
 -- 无法保留多次执行历史；改 NULL=非活跃后，唯一索引只约束非 NULL 值，"每案仅一个活跃执行 + 多条历史"两语义同时成立。
+-- 本表是**可变状态行**不是 append-only（详见 §9.2 归属修正）：status 有 RUNNING→终态迁移、active_flag 完成即置 NULL、
+-- finished_at/duration_ms 执行完回填、consumption_* 事后回填，故按可变表注入 updated_*/version/deleted。
+-- 不可篡改的审计语义由 claim_decision_trace（append-only）承担，两者分工：执行行记"这次跑成什么"，轨迹记"怎么跑出来的"。
 CREATE TABLE claim_decision_execution (
   id            BIGINT        NOT NULL COMMENT '执行ID(分布式ID)',
   claim_id      BIGINT        NOT NULL COMMENT '案件ID',
@@ -1301,9 +1314,18 @@ CREATE TABLE claim_decision_execution (
   started_at    DATETIME(3)  NOT NULL COMMENT '开始时间',
   finished_at   DATETIME(3)  DEFAULT NULL COMMENT '结束时间',
   duration_ms   INT          DEFAULT NULL COMMENT '耗时',
+  -- V11 追加：AUTO_APPROVE 结论的「消费结果」。原因码取决于执行当时的自动放款开关与单笔上限，
+  -- 事后用当前配置重算只会得到"现在重跑会怎样"，故必须落库而非推导。NULL=本次无自动通过结论可消费
+  -- （不用空串，避免与"消费了但原因未知"混淆）；consumed_at 与 finished_at 分开，两者语义不同。
+  consumption_reason VARCHAR(32) DEFAULT NULL COMMENT 'APPLIED/CAP_EXCEEDED/AUTO_APPROVE_DISABLED/ALREADY_SETTLED/NOT_AUTO_APPROVE; NULL=无可消费结论',
+  consumed_at   DATETIME(3)  DEFAULT NULL COMMENT '消费结果落库时间(与 finished_at 区分)',
   tenant_id     BIGINT       NOT NULL COMMENT '租户',
   created_at    DATETIME(3)  NOT NULL COMMENT '创建时间',
   created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
+  updated_at    DATETIME(3)  NOT NULL COMMENT '更新时间',
+  updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
+  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  version       BIGINT       NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
   PRIMARY KEY (id),
   UNIQUE KEY uk_trace (tenant_id, trace_id),
   UNIQUE KEY uk_claim_active (claim_id, active_flag),

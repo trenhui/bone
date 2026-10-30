@@ -9,10 +9,16 @@
   C2 model 平铺 domain/model/ 下直接放 .java（聚合必须各自成包，D1）
   C3 空聚合包  domain/model/{x}/ 递归内没有任何 .java
   C4 根下可疑包 domain/{x} 不在白名单且未登记基线（疑似 R5 扁平存量）
+  C5 失效豁免 基线条目指向的 domain 子包已不存在（已删/改名/移入 model）
 
 白名单：model / repository / service / gateway。模块自有的领域端口子包（如 iam、integration
 的 client、blueprint 的 extension）登记在 doc/architecture/domain-model-layout-baseline.json，
 只可收缩。
+
+C5 的意义（2026-10-30 补）：基线此前只用于「是否豁免」这一个方向——目录一旦被删除或改名，
+对应条目再也不会被任何代码路径看到，却照样留在文件里。这等于豁免额度只增不减，将来谁把同名
+包加回来就直接静默放行。同一失效模式在 i18n 白名单棘轮、doc-code-symbols 失效判据、
+HC-008 基线过宽判据上已各修一次，这是第四处。
 
 豁免：
   - SDK / 框架模块（bone-framework/*、bone-metadata-sdk）与 Go 引擎；
@@ -149,6 +155,27 @@ def main() -> int:
         checked += 1
         problems.extend(check_domain(rel_module, domain_dir, baseline))
 
+    # C5：基线失效判据（「只可收缩」的另一半）。
+    # 登记的 (module, domain/x) 必须仍对应一个真实存在的子目录；否则该条目已无约束对象，
+    # 留着只会让同名包将来被静默放行。模块本身不在扫描范围（非四层 / 已删除）时不判，
+    # 避免把「模块整体被跳过」误报成「条目失效」。
+    present = set()
+    for rel_module, domain_dir in domain_dirs:
+        if not domain_dir.is_dir():
+            continue
+        for child in domain_dir.iterdir():
+            if child.is_dir():
+                present.add((rel_module, "domain/" + child.name))
+    scannable = {m for m, _ in domain_dirs}
+    for module, path in sorted(baseline):
+        if module not in scannable:
+            continue
+        if (module, path) not in present:
+            problems.append(
+                "C5 {}: 基线条目 {} 已失效——该 domain 子包不存在（已删除 / 改名 / 移入 model），"
+                "请从基线移除".format(module, path)
+            )
+
     if problems:
         print("domain 分组布局校验失败（ADR-0036 D5）:")
         for problem in problems:
@@ -159,7 +186,7 @@ def main() -> int:
 
     print(
         "OK: domain 分组布局校验通过（{} 个 domain 包；C1 并存 / C2 model 平铺 / C3 空聚合包 / "
-        "C4 根下可疑包；基线例外 {} 条；跳过非四层模块 {} 个）".format(
+        "C4 根下可疑包 / C5 失效豁免；基线例外 {} 条；跳过非四层模块 {} 个）".format(
             checked, len(baseline), len(skipped)
         )
     )

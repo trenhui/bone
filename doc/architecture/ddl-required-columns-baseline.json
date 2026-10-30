@@ -141,12 +141,11 @@
     },
     "mdm_qcheck_report": {
       "missing": [
-        "tenant_id",
         "updated_at",
         "deleted"
       ],
       "classification": "by-design",
-      "note": "质检报告：租户随 check_id"
+      "note": "质检报告：租户随 check_id；2026-10-30 收缩 missing：tenant_id 列已在 bone-init.sql 补齐，基线不再声明"
     },
     "mdm_qcheck_task": {
       "missing": [
@@ -188,6 +187,16 @@
       "classification": "by-design",
       "note": "域模板版本快照：TemplateVersion 语义为『发布时冻结当时的 schema』，一经发布不可变（无 update 路径，AggregateRoot 无仓储更新调用）。追加写 + 不可变，故不需要 updated_at/deleted。列名仍为 created_at。"
     },
+    "meta_runtime_sequence": {
+      "missing": [
+        "tenant_id",
+        "created_at",
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "运行时取号计数器（单列 KV，非聚合）：唯一业务列是 current_value，靠 INSERT..ON DUPLICATE KEY UPDATE 自增（JdbcRuntimeRecordService#nextSequence）。租户编在 seq_key 里（tenantId:entityCode:field:date，见同文件 generateAutoNumber），故不另设 tenant_id 列；整行只有 current_value 一个语义，无“更新人/更新时间”可记，也无软删语义。代价：按租户查全部序列只能 LIKE 'tenantId:%' 走不了索引前缀等值——该查询当前无调用方，若将来要做“租户用量统计”应补 tenant_id 列（L3 DDL），不要靠 LIKE"
+    },
     "ntf_message": {
       "missing": [
         "updated_at",
@@ -203,6 +212,14 @@
       ],
       "classification": "by-design",
       "note": "配置变更流水（ADR-0030 C2 投影表）：ConfigHistory 实体 javadoc 已写明『历史为只追加流水，不承接业务命令，故无需软删 / 乐观锁』，每次配置变更追加一行、只读不改。时间列名仍为 created_at。"
+    },
+    "sys_schedule_task_log": {
+      "missing": [
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "调度执行流水：一条 INSERT 即终态（run_status/duration_ms 一次写定），只追加、永不更新，故无 updated_at；流水不软删（保留到期由归档清理），故无 deleted。同效先例见 exts_audit_log / iam_audit_log"
     },
     "t_order_item": {
       "missing": [
