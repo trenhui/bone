@@ -83,6 +83,23 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   @Column(name = "invoice_no")
   private String invoiceNo;
 
+  /**
+   * 发票开票日期（<b>发票级</b>「次」分组维度，V1 §7.3）。
+   *
+   * <p>与 {@code outInsureTime} 是两件事：出险日是就医发生日，开票日是结算日，可相差数天。 缺值时保持 {@code null} 并由 {@code
+   * OccurrenceGrouper} 决定"能否降级"，<b>不在此处用出险日顶替</b>。
+   */
+  @Column(name = "invoice_date")
+  private java.time.LocalDate invoiceDate;
+
+  /** 医院编码（发票级分组维度；按编码比对）。 */
+  @Column(name = "hospital_code", nullable = false)
+  private String hospitalCode = "";
+
+  /** 病种/诊断编码（发票级分组维度；一次就诊一个主要诊断）。 */
+  @Column(name = "diagnosis_code", nullable = false)
+  private String diagnosisCode = "";
+
   @Column(name = "out_insure_time", nullable = false)
   private Instant outInsureTime;
 
@@ -276,6 +293,38 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   }
 
   // ===================== 状态机（§6.2 合法转换） =====================
+
+  /**
+   * 补录发票维度（开票日期 / 医院 / 病种）。
+   *
+   * <p><b>为什么不加进 {@code draft} 参数</b>：{@code draft} 已有 14 处调用方在造赔案，没有一个关心发票维度；
+   * 给构造器再塞三个可空参数，会让"补录"和"报案"两种意图共用一个入口，也让漏传变成静默的空值。
+   *
+   * <p><b>为什么允许覆盖</b>：报案时可能只上传了发票图片、OCR 未回填；理算前的补录属正常业务动作。 已进入理算后的修改会改变"次"的分组数，故要求重算（由调用方保证，见
+   * {@code IndemnityApplicationService}）。
+   *
+   * <p>入参为 {@code null}/空白时按"未提供"处理并清零，不保留脏串——分组键靠它区分"缺失"与"有值"。
+   */
+  public void bindInvoiceContext(
+      java.time.LocalDate invoiceDate, String hospitalCode, String diagnosisCode) {
+    this.invoiceDate = invoiceDate;
+    this.hospitalCode = normalise(hospitalCode);
+    this.diagnosisCode = normalise(diagnosisCode);
+  }
+
+  private static String normalise(String value) {
+    return value == null ? "" : value.trim();
+  }
+
+  /**
+   * 是否可证"本案对应单张发票"（分组维度缺失时能否降级的唯一依据）。
+   *
+   * <p>发票号是赔案级唯一标识（{@code uk_tenant_invoice}），有发票号 ⇒ 案内明细必然属于同一张票 ⇒ 开票日期/医院/病种在案内恒定 ⇒
+   * 这些维度缺失不改变分组结果。没有发票号（草稿、未附票、 或多票混装）则无法证明，只能拒绝。判断放在聚合上，因为它读的是聚合自己的状态。
+   */
+  public boolean singleInvoiceProvable() {
+    return invoiceNo != null && !invoiceNo.isBlank();
+  }
 
   /**
    * 受理签收（DRAFT → 7，含存量旁路 sync 导入）。

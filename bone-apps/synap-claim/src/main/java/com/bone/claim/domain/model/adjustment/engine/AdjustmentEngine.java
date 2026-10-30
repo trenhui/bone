@@ -181,11 +181,18 @@ public final class AdjustmentEngine {
 
     // 次限额分组（§7.3）：先分组，每组独立走一遍完整理算
     List<OccurrenceGrouper.Fact> groupingFacts = resolveFacts(request, facts);
-    OccurrenceGrouper.requireDimensions(rule.occurrences().basis(), groupingFacts);
+    boolean singleInvoiceProvable = singleInvoiceProvable(request.rows());
+    List<String> degradedDimensions =
+        OccurrenceGrouper.requireDimensions(
+            rule.occurrences().basis(), groupingFacts, singleInvoiceProvable);
     List<OccurrenceGrouper.Occurrence> occurrences =
         OccurrenceGrouper.group(rule.occurrences().basis(), groupingFacts);
 
     List<String> diagnostics = new ArrayList<>();
+    for (String degraded : degradedDimensions) {
+      // 降级必须可见：否则"证据没回填"与"规则如此"在报表上长得一模一样。
+      diagnostics.add("次分组降级：" + degraded);
+    }
     if (occurrences.size() > 1) {
       diagnostics.add("次限额分组：%d 组（%s）".formatted(occurrences.size(), rule.occurrences().basis()));
     }
@@ -278,7 +285,12 @@ public final class AdjustmentEngine {
                 deductibleBranches,
                 quotaTrace,
                 lines,
-                diagnostics),
+                diagnostics,
+                groupingJson(
+                    rule.occurrences(),
+                    occurrences.size(),
+                    degradedDimensions,
+                    singleInvoiceProvable)),
             diagnostics);
     InvariantGuard.verify(outcome, request, pools, occurrences.size());
     return outcome;
@@ -998,13 +1010,68 @@ public final class AdjustmentEngine {
   private static List<OccurrenceGrouper.Fact> factsOf(
       List<ClaimWithItemsProjection> rows, Long claimId) {
     List<OccurrenceGrouper.Fact> facts = new ArrayList<>(rows.size());
-    String claimNo = claimId == null ? "" : String.valueOf(claimId);
+    String fallbackClaimNo = claimId == null ? "" : String.valueOf(claimId);
     for (ClaimWithItemsProjection row : rows) {
-      // 明细投影没有发票日期/医院/科室/病种列（V1 边界：单票），故按"同一赔案同一次"处理；
-      // 多票场景由 InvocationFacts 扩展时替换此处，不改分组算法本身。
-      facts.add(OccurrenceGrouper.Fact.ofClaim(claimNo));
+      if (row == null) {
+        facts.add(OccurrenceGrouper.Fact.ofClaim(fallbackClaimNo));
+        continue;
+      }
+      // 分组维度一律来自投影的真实列，不再"按一赔案一次"糊过去：
+      // 糊过去会让配了"同日/同科室"的责任少赔，且少赔得毫无痕迹。
+      facts.add(
+          new OccurrenceGrouper.Fact(
+              row.getClaimNo() == null || row.getClaimNo().isBlank()
+                  ? fallbackClaimNo
+                  : row.getClaimNo(),
+              row.getInvoiceDate(),
+              row.getHospitalCode(),
+              row.getItemDepartment(),
+              row.getDiagnosisCode()));
     }
     return facts;
+  }
+
+  /**
+   * 是否可证"本案只对应一张发票"：赔案有发票号即为真（{@code uk_tenant_invoice} 限定单一发票号）。
+   *
+   * <p>这是发票级维度缺失时<b>唯一</b>允许降级的依据。没有发票号时，"案内明细同属一张票"只是假设， 而按假设把多天多票并成一次会少赔，故必须拒绝。
+   */
+  private static boolean singleInvoiceProvable(List<ClaimWithItemsProjection> rows) {
+    for (ClaimWithItemsProjection row : rows) {
+      if (row != null && row.getInvoiceNo() != null && !row.getInvoiceNo().isBlank()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** 分组事实的物化（快照用）：组数、维度、是否降级——复算与审计都要能看出"这一次是怎么分的"。 */
+  private static String groupingJson(
+      LiabilityRule.OccurrenceSpec spec,
+      int groups,
+      List<String> degradedDimensions,
+      boolean singleInvoiceProvable) {
+    StringBuilder sb = new StringBuilder("{\"basis\":\"");
+    sb.append(spec.basis().name())
+        .append("\",\"occurrenceLimit\":")
+        .append(num(Money.round(spec.limit())))
+        .append(",\"groups\":")
+        .append(groups)
+        .append(",\"singleInvoiceProvable\":")
+        .append(singleInvoiceProvable)
+        .append(",\"dimensions\":[");
+    boolean first = true;
+    for (OccurrenceGrouper.Dimension dimension : OccurrenceGrouper.dimensionsOf(spec.basis())) {
+      if (!first) {
+        sb.append(',');
+      }
+      first = false;
+      sb.append('"').append(dimension.name()).append('"');
+    }
+    sb.append("],");
+    appendArray(sb, "degraded", degradedDimensions);
+    sb.append('}');
+    return sb.toString();
   }
 
   private static FeePools subset(
@@ -1039,7 +1106,8 @@ public final class AdjustmentEngine {
       List<String> deductibleBranches,
       List<String> quotaTrace,
       List<Line> lines,
-      List<String> diagnostics) {
+      List<String> diagnostics,
+      String groupingJson) {
     StringBuilder sb = new StringBuilder("{");
     append(sb, "liabilityUuid", rule.liabilityUuid());
     append(sb, "liabilityVersion", rule.liabilityVersion());
@@ -1100,6 +1168,7 @@ public final class AdjustmentEngine {
     appendArray(sb, "ratioHits", ratioHits);
     appendArray(sb, "deductibleBranches", deductibleBranches);
     appendArray(sb, "quotaSteps", quotaTrace);
+    sb.append("\"grouping\":").append(groupingJson).append(',');
     // 诊断必须落库：这些提示（三方已赔未扣、比例超 100%、责任不承担的费用类型、次分组数）此前只存在于
     // 内存返回值里，聚合外壳从不读它 ⇒ 生产环境一条也看不到，等于没报。
     appendArray(sb, "diagnostics", diagnostics);

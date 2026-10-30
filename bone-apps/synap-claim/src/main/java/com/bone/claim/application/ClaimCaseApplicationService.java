@@ -84,17 +84,22 @@ public class ClaimCaseApplicationService {
     List<ClaimItem> items =
         command.items().stream()
             .map(
-                dto ->
-                    ClaimItem.of(
-                        DistributedIdGenerator.generateLongId(),
-                        tenantId,
-                        claimId,
-                        dto.itemName(),
-                        dto.itemCode(),
-                        dto.category(),
-                        dto.quantity(),
-                        dto.unitPrice(),
-                        dto.amount()))
+                dto -> {
+                  ClaimItem item =
+                      ClaimItem.of(
+                          DistributedIdGenerator.generateLongId(),
+                          tenantId,
+                          claimId,
+                          dto.itemName(),
+                          dto.itemCode(),
+                          dto.category(),
+                          dto.quantity(),
+                          dto.unitPrice(),
+                          dto.amount());
+                  // 科室是行级「次」分组维度（V1 §7.3）：随明细落库，否则"同院同科室"责任无法分组。
+                  item.assignDepartment(dto.department());
+                  return item;
+                })
             .toList();
 
     ClaimCase claim =
@@ -112,6 +117,10 @@ public class ClaimCaseApplicationService {
             command.idempotencyKey(),
             snapshot.planVersion(),
             items);
+    // 发票维度（开票日期/医院/病种）是「次」分组的依据，必须随报案落库：
+    // 只加列不写入等于"配了不生效"，理算侧会一律判定为维度缺失。
+    claim.bindInvoiceContext(
+        command.invoiceDate(), command.hospitalCode(), command.diagnosisCode());
     // 报案即受理签收（员工端提交 = 已受理；缺件走后续 requestEvidence，不阻塞受理）
     claim.accept();
 
@@ -391,6 +400,9 @@ public class ClaimCaseApplicationService {
       String claimType,
       String invoiceCode,
       String invoiceNo,
+      java.time.LocalDate invoiceDate,
+      String hospitalCode,
+      String diagnosisCode,
       java.time.Instant outInsureTime,
       String batchNo,
       List<ClaimItemDto> items) {
@@ -411,6 +423,9 @@ public class ClaimCaseApplicationService {
           claimType,
           invoiceCode,
           invoiceNo,
+          invoiceDate,
+          hospitalCode,
+          diagnosisCode,
           outInsureTime,
           batchNo,
           items);
@@ -426,6 +441,9 @@ public class ClaimCaseApplicationService {
           claimType,
           invoiceCode,
           invoiceNo,
+          invoiceDate,
+          hospitalCode,
+          diagnosisCode,
           outInsureTime,
           batchNo,
           items);
@@ -441,6 +459,9 @@ public class ClaimCaseApplicationService {
           claimType,
           invoiceCode,
           invoiceNo,
+          invoiceDate,
+          hospitalCode,
+          diagnosisCode,
           outInsureTime,
           batchNo,
           items);
@@ -453,7 +474,8 @@ public class ClaimCaseApplicationService {
         com.bone.claim.domain.model.claim.valueobject.ItemCategory category,
         BigDecimal quantity,
         BigDecimal unitPrice,
-        BigDecimal amount) {}
+        BigDecimal amount,
+        String department) {}
   }
 
   /** 状态跃迁事件类型再导出（供订阅方引用，避免直接 import domain.event 包）。 */

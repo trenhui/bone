@@ -149,59 +149,150 @@ public final class OccurrenceGrouper {
   }
 
   /**
-   * 校验「次」的判定维度确实存在于明细事实里。
+   * 分组维度及其作用域。
    *
-   * <p><b>为什么必须拒绝而不是照算</b>：分组键在维度缺失时退化成空串（{@link Fact#keyOf}），于是"同日同院" 的全部明细落进同一个组——次限额只被应用一次。 两天各
-   * 500、次限额 300 的场景会赔 300 而不是 600，属<b>静默少赔</b>；反过来若额度按责任共享， 单组又会把两者的额度合并计算而超赔。两者都不会报错，只会在对账时被发现。
+   * <p><b>{@code scope} 决定"缺失能否降级"</b>，这是本类唯一真正的设计判断：
    *
-   * <p>缺一个维度就整体拒绝（而不是"能分几组算几组"）：混合分组会把一张票拆成"有日期的组"与"日期未知的组"， 后者拿到的是一次独立的次限额——同一份条款两种算法。
-   *
-   * @param basis 「次」的定义
-   * @param facts 明细事实（顺序与明细一致）
-   * @throws RuleGap 任一事实缺少该档位要求的维度
+   * <ul>
+   *   <li>{@link Scope#INVOICE}：发票级维度，一赔案一发票（{@code uk_tenant_invoice}）⇒ 案内恒定。
+   *       若整案都缺该维度，分组键里那一段对所有成员恒为空，<b>分组结果与配置语义相同</b>，因此可以降级；
+   *   <li>{@link Scope#LINE}：行级维度，一张发票可跨科室 ⇒ 缺了就<b>无法</b>证明恒定， 并成一组会把两次就诊的次限额合并成一次（少赔），必须拒绝。
+   * </ul>
    */
-  public static void requireDimensions(Basis basis, List<Fact> facts) {
-    if (basis == null || basis == Basis.NONE || basis == Basis.PER_CLAIM || facts.isEmpty()) {
-      return;
+  public enum Dimension {
+    INVOICE_DATE("发票日期", Scope.INVOICE),
+    HOSPITAL("医院编码", Scope.INVOICE),
+    DEPARTMENT("就诊科室", Scope.LINE),
+    DIAGNOSIS("病种编码", Scope.INVOICE);
+
+    /** 维度作用域。 */
+    public enum Scope {
+      INVOICE,
+      LINE
     }
-    int missing = 0;
-    for (Fact fact : facts) {
-      if (!hasDimension(basis, fact)) {
-        missing++;
-      }
+
+    private final String label;
+    private final Scope scope;
+
+    Dimension(String label, Scope scope) {
+      this.label = label;
+      this.scope = scope;
     }
-    if (missing > 0) {
-      throw RuleGap.of(
-          RuleGap.Code.OCCURRENCE_DIMENSION_MISSING,
-          "「次」定义为 %s，但 %d/%d 条明细缺少该判定维度（%s）：按一组计算会少赔，须先补齐明细维度",
-          basis,
-          missing,
-          facts.size(),
-          requiredDimension(basis));
+
+    public String label() {
+      return label;
+    }
+
+    public Scope scope() {
+      return scope;
     }
   }
 
-  private static boolean hasDimension(Basis basis, Fact fact) {
+  /** 某档「次」定义所需的维度。 */
+  public static java.util.Set<Dimension> dimensionsOf(Basis basis) {
+    if (basis == null) {
+      return java.util.Set.of();
+    }
     return switch (basis) {
-      case NONE, PER_CLAIM -> true;
-      case SAME_DAY -> fact.invoiceDate() != null;
-      case SAME_DAY_HOSPITAL -> fact.invoiceDate() != null && !fact.hospital().isBlank();
-      case SAME_DAY_HOSPITAL_DEPT -> fact.invoiceDate() != null
-          && !fact.hospital().isBlank()
-          && !fact.department().isBlank();
-      case SAME_DAY_HOSPITAL_DISEASE -> fact.invoiceDate() != null
-          && !fact.hospital().isBlank()
-          && !fact.disease().isBlank();
+      case NONE, PER_CLAIM -> java.util.Set.of();
+      case SAME_DAY -> java.util.EnumSet.of(Dimension.INVOICE_DATE);
+      case SAME_DAY_HOSPITAL -> java.util.EnumSet.of(Dimension.INVOICE_DATE, Dimension.HOSPITAL);
+      case SAME_DAY_HOSPITAL_DEPT -> java.util.EnumSet.of(
+          Dimension.INVOICE_DATE, Dimension.HOSPITAL, Dimension.DEPARTMENT);
+      case SAME_DAY_HOSPITAL_DISEASE -> java.util.EnumSet.of(
+          Dimension.INVOICE_DATE, Dimension.HOSPITAL, Dimension.DIAGNOSIS);
     };
   }
 
-  private static String requiredDimension(Basis basis) {
-    return switch (basis) {
-      case NONE, PER_CLAIM -> "";
-      case SAME_DAY -> "发票日期";
-      case SAME_DAY_HOSPITAL -> "发票日期+医院";
-      case SAME_DAY_HOSPITAL_DEPT -> "发票日期+医院+科室";
-      case SAME_DAY_HOSPITAL_DISEASE -> "发票日期+医院+病种";
+  /**
+   * 校验「次」的判定维度是否足以支撑分组，并返回<b>可证明不影响结果</b>的降级项。
+   *
+   * <p><b>为什么不再"缺就拒"</b>：发票日期/医院/病种是发票级事实，一赔案一发票时案内恒定， 缺失不影响分组结果；对这类案子一律拒绝等于把"证据未回填"当成"规则不成立"，转人工率
+   * 100%。 反之，若连"本案是单张发票"都证明不了（无发票号），缺失就真的可能把多天多票并成一次，必须拒绝。
+   *
+   * <p>三种判定：
+   *
+   * <ol>
+   *   <li>全部有值 → 正常分组；
+   *   <li>全部缺失 + 发票级 + 可证单票 → <b>降级</b>并返回说明（进快照与诊断，审计可见）；
+   *   <li>部分有值（同案内不一致）、行级缺失、或不可证单票 → <b>拒绝</b>（fail-closed）。
+   * </ol>
+   *
+   * @param basis 「次」的定义
+   * @param facts 明细事实（顺序与明细一致）
+   * @param singleInvoiceProvable 是否能证明本案只对应一张发票（赔案有发票号即为真）
+   * @return 降级说明（空列表 = 维度完整，无需降级）
+   * @throws RuleGap 维度缺失且不可证明等价，或同案内维度不一致
+   */
+  public static List<String> requireDimensions(
+      Basis basis, List<Fact> facts, boolean singleInvoiceProvable) {
+    if (basis == null || basis == Basis.NONE || facts.isEmpty()) {
+      return List.of();
+    }
+    List<String> degraded = new ArrayList<>();
+    for (Dimension dimension : dimensionsOf(basis)) {
+      int missing = countMissing(dimension, facts);
+      if (missing == 0) {
+        continue;
+      }
+      if (dimension.scope() == Dimension.Scope.LINE) {
+        throw RuleGap.of(
+            RuleGap.Code.OCCURRENCE_DIMENSION_MISSING,
+            "「次」定义为 %s，需要%s，但 %d/%d 条明细缺失：该维度是行级事实（一张发票可跨%s），" + "缺失时并成一组会把多次的次限额合并成一次（少赔），须先补齐明细",
+            basis,
+            dimension.label(),
+            missing,
+            facts.size(),
+            dimension.label());
+      }
+      if (missing < facts.size()) {
+        // 同案内有的行有、有的行没有：数据本身不自洽，任何分组结果都建立在"猜哪些行算另一次"上。
+        throw RuleGap.of(
+            RuleGap.Code.OCCURRENCE_DIMENSION_INCONSISTENT,
+            "「次」定义为 %s，%s 在 %d/%d 条明细上缺失（其余有值）：同一赔案内该维度不一致，"
+                + "按存在与否分组会把同一张票拆成两个「次」（多赔一次次限额），须先修数据",
+            basis,
+            dimension.label(),
+            missing,
+            facts.size());
+      }
+      if (!singleInvoiceProvable) {
+        throw RuleGap.of(
+            RuleGap.Code.OCCURRENCE_DIMENSION_MISSING,
+            "「次」定义为 %s，需要%s，但全部 %d 条明细都缺失，且本案无发票号可证"
+                + "「案内只有一张发票」："
+                + "无法排除多天/多票混装，按一次计算会少赔，须补发票维度或发票号",
+            basis,
+            dimension.label(),
+            facts.size());
+      }
+      degraded.add(
+          dimension.label()
+              + "缺失 "
+              + facts.size()
+              + "/"
+              + facts.size()
+              + "（发票级维度，有发票号故案内恒定，按同一次处理，不改变分组结果）");
+    }
+    return degraded;
+  }
+
+  private static int countMissing(Dimension dimension, List<Fact> facts) {
+    int missing = 0;
+    for (Fact fact : facts) {
+      if (!has(dimension, fact)) {
+        missing++;
+      }
+    }
+    return missing;
+  }
+
+  private static boolean has(Dimension dimension, Fact fact) {
+    return switch (dimension) {
+      case INVOICE_DATE -> fact.invoiceDate() != null;
+      case HOSPITAL -> !fact.hospital().isBlank();
+      case DEPARTMENT -> !fact.department().isBlank();
+      case DIAGNOSIS -> !fact.disease().isBlank();
     };
   }
 }

@@ -39,6 +39,8 @@ public final class RuleGap extends RuntimeException {
     INVOICE_SETTLEMENT_INCONSISTENT,
     /** 「次」的判定维度在明细里不存在（配了同日/同院分组却无发票日期等）：并成一组会少赔。 */
     OCCURRENCE_DIMENSION_MISSING,
+    /** 「次」的判定维度只存在于部分明细上（同案内不一致）：按存在与否分组会多赔一次次限额。 */
+    OCCURRENCE_DIMENSION_INCONSISTENT,
     /** 入参结构非法（无明细 / 金额为负等）。 */
     INVALID_INPUT
   }

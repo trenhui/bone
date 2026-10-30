@@ -627,6 +627,117 @@ class AdjustmentEngineTest {
           .isInstanceOf(RuleGap.class)
           .hasMessageContaining("OCCURRENCE_DIMENSION_MISSING");
     }
+
+    /**
+     * 发票级维度缺失 ≠ 必须拒绝：一赔案一发票（有发票号即可证），案内开票日期恒定， 缺日期时分组结果与配置语义相同。此时拒绝等于把"证据未回填"当成"规则不成立"，转人工率 100%。
+     */
+    @Test
+    @DisplayName("有发票号可证单票 ⇒ 发票日期缺失降级为同一次，不拒绝且留痕")
+    void invoiceLevelDimensionDegradesWhenProvable() {
+      LiabilityRule rule = occurrenceRule(OccurrenceGrouper.Basis.SAME_DAY, "300");
+      List<ClaimWithItemsProjection> rows = twoRows("400.00", "400.00");
+      // 发票号是赔案级唯一标识：有它才能证明"案内只有一张票"，从而证明开票日期恒定。
+      rows.forEach(row -> row.setInvoiceNo("NO-2026-0001"));
+
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(1L, rows, rule, Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount())
+          .as("降级后整案算一次：400 受次限额 300 截断（若为 600，说明被拆成了两次 ⇒ 多赔）")
+          .isEqualByComparingTo("300.00");
+      assertThat(outcome.snapshot())
+          .as("降级必须进快照：否则'证据没回填'与'规则如此'在审计上长得一模一样")
+          .contains("\"singleInvoiceProvable\":true")
+          .contains("\"degraded\":[\"发票日期缺失");
+      assertThat(outcome.diagnostics()).anyMatch(d -> d.startsWith("次分组降级："));
+    }
+
+    @Test
+    @DisplayName("无发票号则不可证单票 ⇒ 仍拒绝（多天多票混装会少赔，不能按假设并成一组）")
+    void invoiceLevelDimensionRejectsWhenNotProvable() {
+      LiabilityRule rule = occurrenceRule(OccurrenceGrouper.Basis.SAME_DAY, "300");
+      List<ClaimWithItemsProjection> rows = twoRows("400.00", "400.00");
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(1L, rows, rule, Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("OCCURRENCE_DIMENSION_MISSING");
+    }
+
+    @Test
+    @DisplayName("科室是行级维度：即使可证单票，缺科室也必须拒绝（一张票可跨科室）")
+    void lineLevelDimensionNeverDegrades() {
+      LiabilityRule rule = occurrenceRule(OccurrenceGrouper.Basis.SAME_DAY_HOSPITAL_DEPT, "300");
+      List<ClaimWithItemsProjection> rows = twoRows("400.00", "400.00");
+      rows.forEach(row -> row.setInvoiceNo("NO-2026-0001"));
+      List<OccurrenceGrouper.Fact> facts =
+          List.of(
+              new OccurrenceGrouper.Fact(
+                  "CL001", java.time.LocalDate.of(2026, 1, 1), "H1", "", null),
+              new OccurrenceGrouper.Fact(
+                  "CL001", java.time.LocalDate.of(2026, 1, 1), "H1", "", null));
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(1L, rows, rule, Accumulation.FIRST), facts))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("OCCURRENCE_DIMENSION_MISSING")
+          .hasMessageContaining("就诊科室");
+    }
+
+    @Test
+    @DisplayName("同案内维度部分有值 ⇒ 数据不自洽，拒绝（按有无分组会多赔一次次限额）")
+    void partialDimensionRejects() {
+      LiabilityRule rule = occurrenceRule(OccurrenceGrouper.Basis.SAME_DAY, "300");
+      List<ClaimWithItemsProjection> rows = twoRows("400.00", "400.00");
+      rows.forEach(row -> row.setInvoiceNo("NO-2026-0001"));
+      List<OccurrenceGrouper.Fact> facts =
+          List.of(
+              new OccurrenceGrouper.Fact(
+                  "CL001", java.time.LocalDate.of(2026, 1, 1), "H1", "", null),
+              new OccurrenceGrouper.Fact("CL001", null, "H1", "", null));
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(1L, rows, rule, Accumulation.FIRST), facts))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("OCCURRENCE_DIMENSION_INCONSISTENT");
+    }
+
+    /**
+     * 接线证明：不显式传 facts 时，分组维度必须来自投影的真实列。
+     *
+     * <p>此前 {@code factsOf} 恒返回"一赔案一次"，配了"同院同科室"的责任要么被拒、要么少赔， 而这条路径（{@code Adjustment.apply}
+     * 走的正是它）根本没有机会读到科室。
+     */
+    @Test
+    @DisplayName("分组维度取自投影列：同日同院不同科室 ⇒ 两组各受次限额 300 ⇒ 赔 600")
+    void groupingDimensionsComeFromProjection() {
+      LiabilityRule rule = occurrenceRule(OccurrenceGrouper.Basis.SAME_DAY_HOSPITAL_DEPT, "300");
+      List<ClaimWithItemsProjection> rows = twoRows("400.00", "400.00");
+      for (int i = 0; i < rows.size(); i++) {
+        ClaimWithItemsProjection row = rows.get(i);
+        row.setClaimNo("CL001");
+        row.setInvoiceNo("NO-2026-0001");
+        row.setInvoiceDate(java.time.LocalDate.of(2026, 1, 1));
+        row.setHospitalCode("H1");
+        row.setItemDepartment(i == 0 ? "D1" : "D2");
+      }
+
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(1L, rows, rule, Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount())
+          .as("若为 300.00，说明科室没有从投影进到分组（两个科室被并成一次 ⇒ 少赔）")
+          .isEqualByComparingTo("600.00");
+      assertThat(outcome.snapshot()).contains("\"groups\":2");
+    }
   }
 
   // ===================== 额度层接线 =====================
@@ -1080,6 +1191,33 @@ class AdjustmentEngineTest {
         LiabilityRule.QuotaPolicy.defaults(),
         new LiabilityRule.OccurrenceSpec(
             OccurrenceGrouper.Basis.SAME_DAY, limits.occurrenceLimit()),
+        LiabilityRule.Relation.none(),
+        LiabilityRule.LimitedConditions.disabled());
+  }
+
+  /** 「次」分组规则（100% 赔付、无免赔、责任额度不限）：只调「次」的定义与次限额。 */
+  private static LiabilityRule occurrenceRule(
+      OccurrenceGrouper.Basis basis, String occurrenceLimit) {
+    return new LiabilityRule(
+        "L-TEST",
+        "v1",
+        LiabilityRule.LiabilityForm.REIMBURSEMENT,
+        false,
+        EnumSet.allOf(FeePools.Bucket.class),
+        0,
+        DeductibleRule.none(),
+        ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+        new LiabilityRule.LimitSet(
+            LiabilityRule.InsuredForm.FIXED,
+            BigDecimal.ZERO,
+            NO_CAP,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            new BigDecimal(occurrenceLimit),
+            BigDecimal.ZERO),
+        LiabilityRule.QuotaPolicy.defaults(),
+        new LiabilityRule.OccurrenceSpec(basis, new BigDecimal(occurrenceLimit)),
         LiabilityRule.Relation.none(),
         LiabilityRule.LimitedConditions.disabled());
   }
