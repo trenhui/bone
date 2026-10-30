@@ -40,11 +40,14 @@ import os
 import re
 import sys
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
+import _manifest as M
 
-RULEBOOK = os.path.join(ROOT, "delivery/04-业务规则书（Rulebook）-门诊小额快赔MVP全集.md")
-CONTRACT = os.path.join(ROOT, "delivery/05-接口契约与数据字典（MVP）.md")
-LANDING = os.path.join(ROOT, "synapClaim 智能理赔平台-工程详细设计（落地版）.md")
+ROOT = M.ROOT
+
+# 路径一律取自 docs.manifest.json（doc id），本文件不得出现文档文件名。
+RULEBOOK = M.path("delivery.04")
+CONTRACT = M.path("delivery.05")
+LANDING = M.path("contract.landing")
 
 RULE_ID = re.compile(r"\|\s*(R-[A-Z]+-\d+)\s*\|")
 ANY_RULE_ID = re.compile(r"R-[A-Z]+-\d+")
@@ -166,13 +169,10 @@ def main() -> int:
     for t in sorted(listed_tables - ddl_tables):
         soft.append(f"[C6] §9.1 登记的表在 §9.5 DDL 中无 CREATE TABLE：{t}")
 
-    # C7/C8 分层真源（design/ verification/）纳入同一门禁
-    #  根目录三份文件之外，合并后的设计/验证真源同样承载规则 ID 与表名契约，
+    # C7/C8 分层真源（L4 设计 / L6 验证）纳入同一门禁
+    #  契约三份之外，合并后的设计/验证真源同样承载规则 ID 与表名契约，
     #  不纳管就会出现「真源写错、门禁全绿」。
-    layer_files = sorted(
-        glob.glob(os.path.join(ROOT, "design", "*.md"))
-        + glob.glob(os.path.join(ROOT, "verification", "*.md"))
-    )
+    layer_files = sorted(os.path.join(ROOT, p) for p in M.in_layers(["L4", "L6"]))
     landing_tables = set(re.findall(r"\b(?:claim|tenant|ai)_[a-z_]+\b", landing))
     for path in layer_files:
         rel = os.path.relpath(path, ROOT)

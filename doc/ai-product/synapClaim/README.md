@@ -1,38 +1,45 @@
-# synapClaim 文档入口（3 分钟版）
+# synapClaim 文档入口（1 屏版）
 
-> 这个目录有 50 份文档（含 12 份交付包与 19 份上线门禁分册），但你通常只需要读 1–2 份。先回答一个问题：**你这次来是为了什么？**
+> 全族 51 份文档（另有 `reference-impl/` 参考实现说明 1 份，共 52 条登记），你通常只需要读 1–2 份。**先回答：你这次来做什么？**
+>
+> 机读索引在 [`docs.manifest.json`](docs.manifest.json)（含每份文档的 `summary` / `authority`），层与真源归属在 [`00-governance/00-文档地图.md`](00-governance/00-文档地图.md)。
 
 | 你要做什么 | 读这一份 | 再补这一份 |
 |---|---|---|
-| **了解产品是什么、卖给谁、能做什么** | `synapClaim 智能理赔平台-产品需求文档.md` | `Synap（思纳普）创业方案.md`（商业与团队） |
-| **改代码 / 加接口 / 动数据模型** | `synapClaim 智能理赔平台-工程详细设计（落地版）.md`（工程契约 SSOT） | `design/理算引擎设计.md`（若涉金额）、`delivery/05`（对外契约） |
-| **做 AI / 决策图 / 模型接入** | `synapClaim 智能理赔平台-AI 技术方案.md` | `design/BONE-AI 能力依赖图谱.md` |
-| **审理算算法 / 查金额为什么这么算** | `design/理算引擎设计.md` | `verification/理算引擎验证套件.md`（怎么验证） |
-| **跑测试 / 判断"是不是真的修好了"** | `verification/理算引擎验证套件.md` | `reference-impl/synap-claim-settlement/README.md` |
-| **对客户交付 / 试点落地** | `delivery/README.md`（交付包索引） | `synapClaim 智能理赔平台-部署集成方案（FDE）.md` |
-| **准备上线 / 过合规** | `生产就绪完善（业界最佳实践）/00-总纲与Go-Live门禁.md` | `生产就绪完善/01-生产准入合规包.md` |
-| **排期 / 定里程碑** | `synapClaim MVP 可落地执行方案.md` | — |
-| **想知道为什么这么设计、对标了谁** | `reviews/业界对标整改台账.md` | `reviews/TPA-SAAS基线差距分析.md`（上游源系统现状） |
+| 了解产品是什么、卖给谁、能做什么 | `02-requirements/synapClaim 智能理赔平台-产品需求文档.md` | `01-strategy/Synap（思纳普）创业方案.md`（商业与团队） |
+| 改代码 / 加接口 / 动数据模型 | `03-contract/synapClaim 智能理赔平台-工程详细设计（落地版）.md`（工程契约 SSOT） | `04-design/理算引擎设计.md`（若涉金额）、`07-delivery/05-接口契约与数据字典（MVP）.md`（对外契约） |
+| 做 AI / 决策图 / 模型接入 | `03-contract/synapClaim 智能理赔平台-AI 技术方案.md` | `04-design/BONE-AI 能力依赖图谱.md` |
+| 审理算算法 / 查金额为什么这么算 | `04-design/理算引擎设计.md` | `03-contract/synapClaim 智能理算引擎业务规则（V1·责任配置与理算基线）.md`（业务口径）、`06-verification/理算引擎验证套件.md`（怎么验证） |
+| 跑测试 / 判断"是不是真的修好了" | `06-verification/理算引擎验证套件.md` | `reference-impl/synap-claim-settlement/README.md` |
+| 对客户交付 / 试点落地 | `07-delivery/README.md`（交付包索引） | `05-plan/synapClaim 智能理赔平台-部署集成方案（FDE）.md` |
+| 准备上线 / 过合规 | `08-go-live/00-总纲与Go-Live门禁.md` | `08-go-live/01-生产准入合规包.md` |
+| 排期 / 定里程碑 | `05-plan/synapClaim MVP 可落地执行方案.md` | — |
+| 想知道为什么这么设计、对标了谁 | `09-records/reviews/业界对标整改台账.md` | `09-records/reviews/TPA-SAAS基线差距分析.md`（上游源系统现状） |
+| 想知道某处代码改动的前因后果 | `09-records/impl-log/`（14–18，按实施顺序） | `09-records/reviews/理算引擎诊断记录.md` |
 
-## 目录结构
+## 目录结构（**目录号 = 层号**，机检锁死）
 
 ```
 synapClaim/
-├── README.md                     ← 你在这里
-├── 文档地图.md                    ← 治理规约：分层、SSOT 归属、机检、整合历史
-├── （根目录只放"高频 + 受门禁保护"的 6 份核心文档）
-│   产品需求文档 / 工程详细设计（落地版）/ AI 技术方案 / MVP 可落地执行方案 / 部署集成方案（FDE）/ 创业方案
-├── design/                       设计层：理算引擎、风控与支付通道、BONE-AI 能力依赖
-├── verification/                 验证层：理算引擎验证套件（场景·探针·变异）
-├── reviews/                      过程记录：诊断记录、对标整改台账、代码整改清单、基线差距
-├── delivery/                     客户交付包 01–10（契约真源 04/05）
-├── 生产就绪完善（业界最佳实践）/    上线门禁 G1–G16 与 13 份伴随完善
-├── archive/                      已归档的上游设计（仅留行业洞察，正文作废）
-└── reference-impl/               可执行参考实现（JDK 21，mvn test）
+├── README.md                 ← 你在这里
+├── docs.manifest.json        ← 机读索引：路径 / 层 / 短名 / 权威域（唯一真源）
+├── 00-governance/            L0  导航与治理：文档地图 / 治理规约 / 整合历史
+├── 01-strategy/              L1  战略：创业方案（不含工程口径）
+├── 02-requirements/          L2  需求：PRD（需求真源）
+├── 03-contract/              L3  契约：工程落地版 / AI 技术方案 / 理算业务规则 V1
+├── 04-design/                L4  设计：理算引擎 / 风控与支付 / BONE-AI 依赖
+├── 05-plan/                  L5  实施：MVP 执行方案 / 部署集成 FDE
+├── 06-verification/          L6  验证：理算引擎验证套件
+├── 07-delivery/              L7  交付：交付包 00–10 + demo/
+├── 08-go-live/               L8  上线：门禁总纲 00 + 规范分册 01–13
+├── 09-records/               L9  记录：reviews/（评审与台账）+ impl-log/（实施记录 14–18）
+├── 10-archive/               L10 归档：正文作废，只留洞察
+├── reference-impl/           REF 可执行参考实现（JDK 21，mvn test）
+└── _check_*.py               6 道机检（见 00-governance/01-文档治理规约.md）
 ```
 
 ## 三条阅读纪律
 
-1. **先看真源声明**。每份文档头部都标了"我是哪块内容的真源、权威边界在哪"。冲突时以真源为准，不要跨文档拼口径。
-2. **过程记录不等于当前设计**。`reviews/` 里的诊断与整改是**某时点的取证与台账**，结论已回写到设计层；需要"现在是什么样"请读 design/ 与 SSOT。
-3. **新增内容优先回写章节，而不是新建文档**。见《文档地图》§三治理规则——这条规则的由来，是本目录曾在 7 天内从 13 份涨到 45 份。
+1. **先看层，再看文**。`03-contract` 里的才算契约，`09-records` 里的是证据——同一句话在两个层里含义不同。
+2. **过程记录不等于当前设计**。`09-records/` 里的诊断与实施记录是**某时点的取证**，部分结论已被后续记录撤销（如 `impl-log/15` 撤销了 `14` 的"额度服务 0 调用方"）。要"现在是什么样"，读 L3/L4 或直接读 `bone-apps/synap-claim` 代码。
+3. **新增内容优先回写章节，而不是新建文档**。规则见 [`00-governance/01-文档治理规约.md`](00-governance/01-文档治理规约.md)——它的由来是本目录曾在 7 天内从 13 份涨到 45 份，且两两相似度全部 <0.2（同一主题换角度重写）。

@@ -8,14 +8,20 @@ _check_contract_drift.py 管契约面（规则 ID/枚举/错误码），本脚�
 """
 import io, re, sys, glob
 
-BASE = '.'
-MAIN = {
-    'landing': 'synapClaim 智能理赔平台-工程详细设计（落地版）.md',
-    'prd': 'synapClaim 智能理赔平台-产品需求文档.md',
-    'ai': 'synapClaim 智能理赔平台-AI 技术方案.md',
-    'fde': 'synapClaim 智能理赔平台-部署集成方案（FDE）.md',
-    'mvp': 'synapClaim MVP 可落地执行方案.md',
-}
+import _manifest as M
+
+# 以脚本所在目录为基准，而不是 CWD：此前 BASE='.' 时从仓库根运行会 glob 到 0 个文件，
+# 于是 FORBIDDEN 恒过（假绿）、REQUIRED 恒红——运行位置不同结论不同，最不可信的一种。
+BASE = M.ROOT
+
+# 历史键（landing/prd/ai/fde/mvp）→ 路径，来自 manifest 的 checkKeys。
+# 键名保持不变，是为了让下面 100+ 条 FORBIDDEN/REQUIRED 断言不必改动（它们按语义分组）。
+MAIN = M.check_keys()
+
+# 原本扫描「根目录 *.md」；P10 分层后根目录只剩 README，若仍按根目录扫描，
+# 这三条 FORBIDDEN 会退化为只检查 README —— 覆盖率静默归零。
+# 因此改为扫描「原先位于根目录的那些层」：L0 导航 + L1 战略 + L2 需求 + L3 契约 + L5 实施。
+_ROOT_EQUIV_LAYERS = ["L0", "L1", "L2", "L3", "L5"]
 
 # (说明, 文件键或 glob, 正则) —— 命中即失败
 FORBIDDEN = [
@@ -139,8 +145,15 @@ REQUIRED = [
 def read(key):
     if key in MAIN:
         return io.open(BASE + '/' + MAIN[key], encoding='utf-8').read()
+    if key == '*.md':
+        # 「根目录」语义等价集：分层前位于根目录的那些层（见 _ROOT_EQUIV_LAYERS 注释）
+        txt = ''
+        for p in sorted(M.in_layers(_ROOT_EQUIV_LAYERS)):
+            txt += io.open(BASE + '/' + p, encoding='utf-8').read()
+        return txt
+    # 其余是形如 'delivery/05*.md' 的历史逻辑 glob：先映射到真实层目录再 glob
     txt = ''
-    for f in glob.glob(BASE + '/' + key):
+    for f in glob.glob(BASE + '/' + M.denormalize(key)):
         txt += io.open(f, encoding='utf-8').read()
     return txt
 

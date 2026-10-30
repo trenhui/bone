@@ -17,7 +17,10 @@ MySQL/TiDB 直接 Duplicate column name），且同批索引引用并不存在�
 """
 import io, re, sys
 
-DOC = 'synapClaim 智能理赔平台-工程详细设计（落地版）.md'
+import _manifest as M
+
+# 路径取自 docs.manifest.json（doc id），不在此硬编码文件名。
+DOC = M.path('contract.landing')
 # 本文 §9.2「通用列约定」矩阵登记的 append-only 表名单
 APPEND_ONLY = {
     'claim_case_track', 'claim_decision_trace', 'claim_decision_execution',
