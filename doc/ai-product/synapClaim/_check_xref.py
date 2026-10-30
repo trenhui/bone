@@ -7,6 +7,8 @@
 - 扫描根目录与 delivery/ 下所有 .md（含导航中枢 文档地图），提取 "文档名 §X" 形式的交叉引用，校验 X 是否在目标文档中真实存在（生成物 00-落地交付包清单 除外）。
 - 裸 "synapClaim §X" 引用（用产品名简写代指章节）作为警告（须改为指名具体文档）。
 - 契约-设计一致性：delivery/05 的 MVP 端点须是 工程落地版 §10 端点表的子集；其声明为枚举真源的令牌须被 工程落地版 引用（防交付漂移）。
+- 库存一致性：delivery/NN-*.md ↔ delivery/README.md 索引；生产就绪完善/NN-*.md ↔ 00-总纲映射表。
+  双向比对（磁盘有但未登记 / 登记了但无文件），防「新增分册无人登记」的静默漂移。
 
 用法：python3 _check_xref.py
 退出码：发现未解析引用 -> 1；否则 0。
@@ -26,6 +28,13 @@ DOC_MAP = {
     "创业方案": "Synap（思纳普）创业方案.md",
     "05": "delivery/05-接口契约与数据字典（MVP）.md",
     "04": "delivery/04-业务规则书（Rulebook）-门诊小额快赔MVP全集.md",
+    # 分层目录（P9 整合）：合并后的设计/验证真源也须可被 § 引用解析，
+    # 否则「见《理算引擎设计》§8」这类引用会静默逃过校验（漏检而非报错，最难发现）。
+    "理算引擎设计": "design/理算引擎设计.md",
+    "理算引擎验证套件": "verification/理算引擎验证套件.md",
+    "风控与支付通道设计": "design/风控与支付通道设计.md",
+    "BONE-AI 能力依赖图谱": "design/BONE-AI 能力依赖图谱.md",
+    "能力依赖图谱": "design/BONE-AI 能力依赖图谱.md",
 }
 
 # 章节标题正则：## 3 / ### 3.2 / #### 11.7.1
@@ -33,7 +42,14 @@ SEC_RE = re.compile(r'^#{2,4}\s+(\d+(?:\.\d+)*)\b', re.M)
 # 交叉引用：文档名 + § + 章节号，支持简写列表（"PRD §4、§14"、"工程落地版 §7.3/§11.6"）
 # 允许书名号隔断："《设计方案》§6.2" 也要纳入校验（否则漏检失效引用）
 # 后续 § 继承最近标签；连接器限 [、/，]，遇句号/；/其他标签即止（避免误归因跨句外部 §）
-REF_RE = re.compile(r'(工程落地版|设计方案|PRD|bone-ai\s*落地|MVP|FDE|创业方案|05|04)[》]?\s*§\s*\d+(?:\.\d+)*(?:(?:[、/，])\s*§\s*\d+(?:\.\d+)*)*')
+# 备选支按「名称越长越靠前」，避免短名把长名吃掉一半。
+_NAMES = (
+    r"BONE-AI\s*能力依赖图谱|能力依赖图谱|理算引擎验证套件|理算引擎设计|"
+    r"风控与支付通道设计|工程落地版|设计方案|PRD|bone-ai\s*落地|MVP|FDE|创业方案|05|04"
+)
+REF_RE = re.compile(
+    r'(' + _NAMES + r')[》]?\s*§\s*\d+(?:\.\d+)*(?:(?:[、/，])\s*§\s*\d+(?:\.\d+)*)*'
+)
 # 遗留裸引用
 LEGACY_RE = re.compile(r'synapClaim\s*§\s*\d')
 
@@ -48,7 +64,14 @@ def sections(filename):
 SECS = {k: sections(v) for k, v in DOC_MAP.items()}
 
 problems, warnings = [], []
-for f in sorted(glob.glob(os.path.join(ROOT, "*.md")) + glob.glob(os.path.join(ROOT, "delivery", "*.md"))):
+# 扫描范围：根目录 + delivery/ + design/ + verification/（P9 整合后新增层须受门禁保护）。
+# reviews/ 与 生产就绪完善/、archive/ 不纳入：前者是冻结的历史记录，后两者是伴随完善包与归档件，
+# 纳入会导致"改历史文档才能过 CI"。
+_SCAN_DIRS = ["delivery", "design", "verification"]
+_scan_files = sorted(glob.glob(os.path.join(ROOT, "*.md")))
+for _d in _SCAN_DIRS:
+    _scan_files += sorted(glob.glob(os.path.join(ROOT, _d, "*.md")))
+for f in _scan_files:
     base = os.path.basename(f)
     if base.startswith("00-落地交付包清单"):
         continue  # 生成物清单（gen_delivery_list.js 产出），非手维护引用源
@@ -103,9 +126,25 @@ for _p in sorted(_disk - _idx):
 for _p in sorted(_idx - _disk):
     problems.append(("delivery/README.md", f"索引登记 {_p} 但无对应交付包文件", "交付物-文档漂移"))
 
+# --- 生产就绪包库存一致性（与 delivery 同构，P9 补齐）---
+# 13 份分册由 00-总纲的「缺口 → 完善分册映射」表登记。此前只有 delivery/ 有库存校验，
+# 本包新增分册不登记无人察觉——与 delivery 完全同类的漂移，只是没人给它上闸。
+_ready = os.path.join(ROOT, "生产就绪完善（业界最佳实践）")
+_rtoc = os.path.join(_ready, "00-总纲与Go-Live门禁.md")
+if os.path.isdir(_ready) and os.path.exists(_rtoc):
+    _rd = {
+        f[:2] for f in os.listdir(_ready)
+        if re.match(r'^\d{2}-.*\.md$', f) and not f.startswith("00-")
+    }
+    _ri = set(re.findall(r'`(\d{2})-[^`]+\.md`', open(_rtoc, encoding="utf-8").read()))
+    for _p in sorted(_rd - _ri):
+        problems.append(("生产就绪完善/", f"分册 {_p}-*.md 存在但未在 00-总纲映射表登记", "库存漂移"))
+    for _p in sorted(_ri - _rd):
+        problems.append(("生产就绪完善/00-总纲", f"总纲登记 {_p} 但无对应分册文件", "库存漂移"))
+
 print("=== 跨文档引用校验 ===")
 if problems:
-    print("【错误】未解析的 § 引用：")
+    print("【错误】未解析引用 / 库存漂移：")
     for p in problems:
         print("  -", p)
 else:

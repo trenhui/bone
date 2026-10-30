@@ -720,7 +720,7 @@ SOFT_RESERVED → HARD_RESERVED → REVIEW_FREEZE → PAID
 >
 > **内部 6 节点 → 对外 4 类 `node_type` 映射**（上表「node_type」列即为映射结果）：`EvidenceLoad`→`OCR`、`RuleCheck`→`RULE`、`Adjust`→`RULE`、`AiAssess`→`LLM`、`Arbitrate`→`DECISION`、`FraudScreen`→`RULE`（`FRAUD` 类型 Phase B 扩展，见上注）。对外仅暴露枚举，内部节点名落 `claim_decision_trace.node_name`；DDL `node_type` 注释与 05 契约 §4.4 枚举同源。
 
-> 一期 `AiAssess` 的"医学合理性"为 LLM 通用推理（**无目录落地**），仅作合理性提示与风控信号；循证医学目录/知识库匹配（`bone-ai-rag` + GraphRAG）**由二期提前至 V1.0 Phase B**（见 §3.3 能力映射表与《synapClaim 依赖 BONE-AI 能力图谱与增强方案》），经 `KnowledgeRetrievalPort` 接入——**MVP I0–I4 仍不含目录匹配**（避免击穿 §3.3 容量矩阵），Phase B 增量另行架构评审与排期；R-DIR-06 临床合理性规则在 Phase B 经 C6 图谱检索生效，不进入 MVP 自动判定。
+> 一期 `AiAssess` 的"医学合理性"为 LLM 通用推理（**无目录落地**），仅作合理性提示与风控信号；循证医学目录/知识库匹配（`bone-ai-rag` + GraphRAG）**由二期提前至 V1.0 Phase B**（见 §3.3 能力映射表与《BONE-AI 能力依赖图谱》），经 `KnowledgeRetrievalPort` 接入——**MVP I0–I4 仍不含目录匹配**（避免击穿 §3.3 容量矩阵），Phase B 增量另行架构评审与排期；R-DIR-06 临床合理性规则在 Phase B 经 C6 图谱检索生效，不进入 MVP 自动判定。
 
 每次执行落 `DecisionExecution` 聚合 + `claim_decision_trace`（append-only），支持按 `trace_id` 回放输入/规则命中/AI 输出。
 

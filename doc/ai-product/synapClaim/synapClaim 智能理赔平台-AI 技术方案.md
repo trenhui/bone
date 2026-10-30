@@ -286,7 +286,7 @@ END
 | 标准 RAG（2-5 文档）（**V1.0 Phase B**） | — | 5s | 缓存 |
 | 复杂 RAG（>5 文档）（**V1.0 Phase B**） | — | 8s | 异步转 bone-ai-orchestration |
 
-> RAG 链路由二期提前至 **V1.0 Phase B**（依《synapClaim 依赖 BONE-AI 能力图谱与增强方案》）；MVP I0–I4 仍不含 RAG（避免击穿容量矩阵），Phase B 增量另行架构评审；一期 LLM 调用统一走 `bone-ai-gateway` 的熔断/重试/token 计量。
+> RAG 链路由二期提前至 **V1.0 Phase B**（依《BONE-AI 能力依赖图谱》）；MVP I0–I4 仍不含 RAG（避免击穿容量矩阵），Phase B 增量另行架构评审；一期 LLM 调用统一走 `bone-ai-gateway` 的熔断/重试/token 计量。
 
 ### 6.5 LLM 调用安全边界与提示词治理
 
