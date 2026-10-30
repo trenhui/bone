@@ -98,7 +98,7 @@
       "id": "contract.ai",
       "path": "03-contract/synapClaim 智能理赔平台-AI 技术方案.md",
       "layer": "L3",
-      "diataxis": "how-to",
+      "diataxis": "reference",
       "status": "active",
       "summary": "bone-ai 落地：六模块映射、DAG 执行器、五段式编排预算、资金、评测、ADR 摘记",
       "authority": "AI 编排 / DAG / 预算 / 评测",
