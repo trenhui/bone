@@ -104,4 +104,53 @@ class DecisionExecutionTest {
     assertThat(execution.decisionResultEnum()).isEqualTo(DecisionResult.MANUAL_REQUIRED);
     assertThat(execution.getActiveFlag()).isNull();
   }
+
+  @Test
+  @DisplayName("消费结果：执行终结后落位，consumedAt 与 finishedAt 是两个时点")
+  void recordConsumption() {
+    DecisionExecution execution = newExecution();
+    execution.complete(
+        DecisionResult.AUTO_APPROVE, DecisionTier.AUTO, new BigDecimal("0.9"), false);
+    assertThat(execution.getConsumptionReason()).isNull();
+
+    execution.recordConsumption("CAP_EXCEEDED");
+
+    assertThat(execution.getConsumptionReason()).isEqualTo("CAP_EXCEEDED");
+    assertThat(execution.getConsumedAt()).isNotNull();
+    // 未消费过时不得凭空造时间；消费后时间不早于决策结束时间
+    assertThat(execution.getConsumedAt()).isAfterOrEqualTo(execution.getFinishedAt());
+  }
+
+  @Test
+  @DisplayName("消费结果：RUNNING 期间不可记录（消费不可能先于结论确定）")
+  void rejectsConsumptionWhileRunning() {
+    DecisionExecution execution = newExecution();
+    assertThatThrownBy(() -> execution.recordConsumption("APPLIED"))
+        .isInstanceOf(DomainException.class)
+        .hasMessageContaining("执行未终结");
+  }
+
+  @Test
+  @DisplayName("消费结果：首写为准，重复写入不覆盖（两次判定矛盾时保留第一次的痕迹）")
+  void keepsFirstConsumption() {
+    DecisionExecution execution = newExecution();
+    execution.complete(
+        DecisionResult.AUTO_APPROVE, DecisionTier.AUTO, new BigDecimal("0.9"), false);
+    execution.recordConsumption("AUTO_APPROVE_DISABLED");
+
+    execution.recordConsumption("APPLIED");
+
+    assertThat(execution.getConsumptionReason()).isEqualTo("AUTO_APPROVE_DISABLED");
+  }
+
+  @Test
+  @DisplayName("消费结果：空原因拒绝（无消费动作应保持 NULL，而不是写空串冒充已判定）")
+  void rejectsBlankConsumption() {
+    DecisionExecution execution = newExecution();
+    execution.complete(
+        DecisionResult.AUTO_APPROVE, DecisionTier.AUTO, new BigDecimal("0.9"), false);
+    assertThatThrownBy(() -> execution.recordConsumption(" "))
+        .isInstanceOf(DomainException.class)
+        .hasMessageContaining("不得为空");
+  }
 }

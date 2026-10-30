@@ -12,6 +12,13 @@
 
 baseline 见 doc/architecture/doc-code-symbols-baseline.json，只可收缩：
 文档修订使某个类名不再出现在文中后，应从 baseline 删除对应条目。
+
+「只可收缩」的三类机器判据（缺一类就会重新长出永久失效的豁免）：
+    [symbol] 代码里已存在同名类        ⇒ 豁免多余（本可正常匹配，不必豁免）
+    [path]   登记的文档路径已不存在     ⇒ 豁免指向了不存在的载体（文档改名/归档后遗留）
+    [absent] 文档还在但已无此符号       ⇒ 文档改写成别的类名后没回头删豁免
+    [doc]    整篇豁免的文档已不存在
+三者都只说明「这条豁免对门禁已无约束力」，与「文档该不该改」无关，故一律判红让人收缩。
 """
 
 from __future__ import annotations
@@ -148,15 +155,41 @@ def main() -> int:
     # 基线里 docLevel 的值是**相对 doc/** 的（如 design/modules/x.md），
     # 必须用 DOC_DIR 拼接；早先误用 ROOT 导致所有 docLevel 都被判成 stale（假红）。
     stale_docs = sorted(d for d in doc_level if not (DOC_DIR / d).exists())
-    if stale_symbols or stale_docs:
+
+    # ---- 符号级豁免「指向已失效」检测（2026-10-30 补）--------------------
+    # 上段只判「代码里已有这个类」，漏了另一个方向的失效：豁免登记的**文档**一侧已经不成立。
+    # 两种形态都让该条豁免永远不会再生效，而门禁恒绿：
+    #   [path]   登记的文档路径已不存在（文档族重排改名 / 归档）
+    #   [absent] 文档还在，但已不再出现这个符号（改写成别的类名后没回头删豁免）
+    # 实证：doc/ai-product/synapClaim 按层重排后《ClaimSphere 智能理赔平台设计方案.md》
+    # 不复存在，6 条符号级豁免仍指向旧路径，静置数月无人察觉——本段就是为它们补的判据。
+    # 两个判据都**不看** [Vision]/[Target] 标记：豁免的语义是「这篇文档里写了这个类名」，
+    # 与扫描模式无关，按行跳过会制造「只在 Vision 行出现」的假阳性。
+    stale_symbol_docs: list[str] = []
+    absent_symbol_docs: list[str] = []
+    for symbol, docs in sorted(baseline_symbols.items()):
+        for rel_in_doc in docs:
+            path = DOC_DIR / rel_in_doc
+            if not path.exists():
+                stale_symbol_docs.append(f"{symbol} -> {rel_in_doc}")
+                continue
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            if not any(m.group(1) == symbol for m in SYMBOL.finditer(text)):
+                absent_symbol_docs.append(f"{symbol} -> {rel_in_doc}")
+
+    if stale_symbols or stale_docs or stale_symbol_docs or absent_symbol_docs:
         print(
-            "⚠️ 基线中已不再生效的条目（代码里已无对应类 / 文档已删除），可从基线移除：",
+            "⚠️ 基线中已不再生效的条目，可从基线移除：",
             file=sys.stderr,
         )
         for s in stale_symbols:
-            print(f"  [symbol] {s}", file=sys.stderr)
+            print(f"  [symbol]  {s}（代码里已有该类，豁免多余）", file=sys.stderr)
         for d in stale_docs:
-            print(f"  [doc]    {d}", file=sys.stderr)
+            print(f"  [doc]     {d}（文档已不存在）", file=sys.stderr)
+        for x in stale_symbol_docs:
+            print(f"  [path]    {x}（豁免指向的文档已不存在）", file=sys.stderr)
+        for x in absent_symbol_docs:
+            print(f"  [absent]  {x}（该文档已不再出现此符号）", file=sys.stderr)
         print(
             "基线只可收缩：这些条目对门禁已无约束力，留着会让基线变成「什么都能豁免」的口子。"
             "请删除后重跑。",

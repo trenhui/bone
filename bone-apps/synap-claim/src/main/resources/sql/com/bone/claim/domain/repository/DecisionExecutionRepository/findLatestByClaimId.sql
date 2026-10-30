@@ -15,6 +15,8 @@ SELECT
        started_at,
        finished_at,
        duration_ms,
+       consumption_reason,
+       consumed_at,
        tenant_id,
        created_at,
        updated_at,

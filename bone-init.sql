@@ -3011,6 +3011,8 @@ CREATE TABLE claim_decision_execution (
   started_at        DATETIME(3)   NOT NULL COMMENT '开始时间',
   finished_at       DATETIME(3)   DEFAULT NULL COMMENT '结束时间',
   duration_ms       INT           DEFAULT NULL COMMENT '耗时',
+  consumption_reason VARCHAR(32)  DEFAULT NULL COMMENT '自动通过结论的消费结果(APPLIED/AUTO_APPROVE_DISABLED/CAP_EXCEEDED/ALREADY_SETTLED); NULL=结论非自动通过或尚未消费',
+  consumed_at       DATETIME(3)   DEFAULT NULL COMMENT '结论消费(或受控跳过)的判定时间',
   tenant_id         BIGINT        NOT NULL COMMENT '租户',
   created_at        DATETIME(3)   NOT NULL COMMENT '创建时间',
   created_by        BIGINT        DEFAULT NULL COMMENT '创建人ID',

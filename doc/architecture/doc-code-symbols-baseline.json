@@ -1,7 +1,7 @@
 {
   "version": 1,
   "shrinkOnly": true,
-  "note": "文档类名漂移检查的白名单。docLevel 为整篇豁免；symbols 为符号级豁免，只可收缩。reason=handler-era-naming 的条目属待修订项：模块详设应用层仍用 Handler 命名，代码已按 ADR-0028 收敛为 ApplicationService，应按模块统一修订后删除登记。｜2026-10-03 新增三类 reason：review-snapshot（带时间戳的夜间复核报告快照）、tobe-named（模块详设的目标态类名，实现未落地）、workflow-sample（流程方案文档的示例类名）与 false-positive（Spring 通用词误报）。与既有 handler-era-naming 同理：改文档会丢失这些文档的时间/目标态信息。",
+  "note": "文档类名漂移检查的白名单。docLevel 为整篇豁免；symbols 为符号级豁免，只可收缩。reason=handler-era-naming 的条目属待修订项：模块详设应用层仍用 Handler 命名，代码已按 ADR-0028 收敛为 ApplicationService，应按模块统一修订后删除登记。｜2026-10-03 新增三类 reason：review-snapshot（带时间戳的夜间复核报告快照）、tobe-named（模块详设的目标态类名，实现未落地）、workflow-sample（流程方案文档的示例类名）与 false-positive（Spring 通用词误报）。与既有 handler-era-naming 同理：改文档会丢失这些文档的时间/目标态信息。｜2026-10-30 收缩：删除 6 条指向已不存在的《ClaimSphere 智能理赔平台设计方案.md》的符号级豁免与 1 条已无处出现的 VersionController；同时脚本新增 [path]/[absent] 两类失效判据（豁免指向的文档不存在 / 文档已不再出现该符号），存量失效即判红。",
   "docLevel": [
     {
       "doc": "design/modules/1. 控制台与仪表盘模块详细设计方案.md",
@@ -416,11 +416,10 @@
       "docs": [
         "doc/design/lowcode/BONE-低代码最小闭环PRD.md",
         "doc/design/lowcode/cases/费用报销系统-元数据建模方案.md",
-        "doc/design/lowcode/BONE-低代码Runtime数据面设计.md",
-        "doc/design/lowcode/ui/README.md"
+        "doc/design/lowcode/BONE-低代码Runtime数据面设计.md"
       ],
       "reason": "tobe-named",
-      "note": "PRD 报销场景设计稿的目标态 ApplicationService（费用报销 L0 探针），实现尚未落地"
+      "note": "PRD 报销场景设计稿的目标态 ApplicationService（费用报销 L0 探针），实现尚未落地；2026-10-30 收缩 docs：ui/README.md 仅在原型 HTML 中出现该符号（HTML 不在扫描范围），md 正文已无，故移除该路径"
     },
     {
       "symbol": "ExtPointCommandHandler",
@@ -766,62 +765,6 @@
       ],
       "reason": "handler-era-naming",
       "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "ClaimApplicationService",
-      "docs": [
-        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿（ClaimSphere 智能理赔平台设计方案.md）的目标态构件名，实现尚未落地；改文档会丢失方案示意信息"
-    },
-    {
-      "symbol": "ClaimApplicationRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
-    },
-    {
-      "symbol": "InvestigationRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
-    },
-    {
-      "symbol": "DecisionRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
-    },
-    {
-      "symbol": "IndemnityRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
-    },
-    {
-      "symbol": "PolicyRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
-    },
-    {
-      "symbol": "VersionController",
-      "docs": [
-        "doc/ai-product/platform/BONE-AI能力中台整体方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "BONE-AI 能力中台整体方案 §附录A 断言 5–7 将 RuleEngine / WorkflowMetadata / VersionController 列为 bone-metadata-engine-runtime 规划中的目标态类名，实现尚未落地；属示意性 To-Be 命名，登记豁免以免门禁误报"
     },
     {
       "symbol": "HitlCapacityProperties",

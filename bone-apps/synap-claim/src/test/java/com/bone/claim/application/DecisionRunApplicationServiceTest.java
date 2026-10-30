@@ -2,6 +2,7 @@ package com.bone.claim.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,13 +31,17 @@ class DecisionRunApplicationServiceTest {
 
   @Mock private DecisionGraphExecutor decisionGraphExecutor;
   @Mock private AutoApprovalApplicationService autoApprovalApplicationService;
+  @Mock private DecisionExecutionApplicationService decisionExecutionApplicationService;
 
   private DecisionRunApplicationService service;
 
   @BeforeEach
   void setUp() {
     service =
-        new DecisionRunApplicationService(decisionGraphExecutor, autoApprovalApplicationService);
+        new DecisionRunApplicationService(
+            decisionGraphExecutor,
+            autoApprovalApplicationService,
+            decisionExecutionApplicationService);
   }
 
   @Test
@@ -48,10 +53,13 @@ class DecisionRunApplicationServiceTest {
 
     assertThat(run.consumptionReason()).isEqualTo("NOT_AUTO_APPROVE");
     verify(autoApprovalApplicationService, never()).applyAutoDecision(anyLong());
+    // 没有可消费的自动通过结论 ⇒ 不该往执行记录上写消费原因（NULL 才表示"无消费动作"）
+    verify(decisionExecutionApplicationService, never())
+        .recordConsumption(anyString(), anyString());
   }
 
   @Test
-  @DisplayName("AUTO_APPROVE → 消费，透传受控原因（开关关闭时为 AUTO_APPROVE_DISABLED）")
+  @DisplayName("AUTO_APPROVE → 消费，透传受控原因（开关关闭时为 AUTO_APPROVE_DISABLED）并落库")
   void consumesAutoApprove() {
     when(decisionGraphExecutor.execute(CLAIM, VERSIONS)).thenReturn(result("AUTO_APPROVE"));
     when(autoApprovalApplicationService.applyAutoDecision(CLAIM))
@@ -61,6 +69,8 @@ class DecisionRunApplicationServiceTest {
 
     assertThat(run.consumptionReason()).isEqualTo("AUTO_APPROVE_DISABLED");
     verify(autoApprovalApplicationService).applyAutoDecision(CLAIM);
+    // 落库锚点是本次执行的 traceId，不是"案件最新一次执行"（后者可能被并发执行顶掉）
+    verify(decisionExecutionApplicationService).recordConsumption("t-1", "AUTO_APPROVE_DISABLED");
   }
 
   @Test
@@ -75,6 +85,7 @@ class DecisionRunApplicationServiceTest {
     assertThat(run.consumptionReason()).isEqualTo("APPLIED");
     assertThat(run.execution().decisionResult()).isEqualTo("AUTO_APPROVE");
     assertThat(run.execution().traceId()).isEqualTo("t-1");
+    verify(decisionExecutionApplicationService).recordConsumption("t-1", "APPLIED");
   }
 
   @Test
@@ -87,6 +98,22 @@ class DecisionRunApplicationServiceTest {
     org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.execute(CLAIM, VERSIONS))
         .isInstanceOf(IllegalStateException.class)
         .hasMessage("quota down");
+  }
+
+  @Test
+  @DisplayName("消费原因落库失败不升级为执行失败（资金动作已成功，不能因诊断信息让客户端重试）")
+  void toleratesConsumptionPersistFailure() {
+    when(decisionGraphExecutor.execute(CLAIM, VERSIONS)).thenReturn(result("AUTO_APPROVE"));
+    when(autoApprovalApplicationService.applyAutoDecision(CLAIM))
+        .thenReturn(new AutoApprovalOutcome(true, "APPLIED", "SO11-1", new BigDecimal("300.00")));
+    org.mockito.Mockito.doThrow(new IllegalStateException("deadlock"))
+        .when(decisionExecutionApplicationService)
+        .recordConsumption("t-1", "APPLIED");
+
+    DecisionRunApplicationService.DecisionRunResult run = service.execute(CLAIM, VERSIONS);
+
+    assertThat(run.consumptionReason()).isEqualTo("APPLIED");
+    assertThat(run.execution().traceId()).isEqualTo("t-1");
   }
 
   private static DecisionExecutionResult result(String decisionResult) {

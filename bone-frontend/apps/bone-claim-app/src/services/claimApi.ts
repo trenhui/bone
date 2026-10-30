@@ -275,6 +275,24 @@ export interface DecisionTraceNode {
   durationMs: number;
 }
 
+/**
+ * 决策执行摘要（`GET /review/tasks/{id}/execution`）。
+ *
+ * <p>`consumptionReason` 为 `null` 表示**本次执行没有自动通过结论可消费**（结论是
+ * SUGGEST_REJECT / MANUAL_REQUIRED / NEED_MORE_EVIDENCE），不是「消费了但原因未知」——
+ * 后者在库里不该出现，前端也不该用兜底文案把它掩盖成正常态。
+ */
+export interface DecisionExecutionSummary {
+  traceId: string;
+  decisionResult: string;
+  decisionTier: string;
+  status: string;
+  /** APPLIED / AUTO_APPROVE_DISABLED / CAP_EXCEEDED / ALREADY_SETTLED / NOT_AUTO_APPROVE:<结论> / null */
+  consumptionReason?: string | null;
+  consumedAt?: string | null;
+  finishedAt?: string | null;
+}
+
 function uuid(): string {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -706,5 +724,17 @@ export const reviewTaskApi = {
   /** 决策追溯（该案**最近一次**执行的全链轨迹；无执行记录 404 `SC_CLAIM_DECISION_NOT_FOUND`）。 */
   trace(claimId: string): Promise<ApiResponse<DecisionTraceNode[]>> {
     return reviewClient.get<never, ApiResponse<DecisionTraceNode[]>>(`/tasks/${claimId}/trace`);
+  },
+  /**
+   * 决策执行摘要（只读；含自动通过结论的消费结果）。
+   *
+   * <p>与 {@link trace} 分工：轨迹回答「怎么判出来的」，摘要回答「结论有没有被消费、为什么没有」。
+   * 这个信息此前只在 `POST /decision/execute` 的响应里出现，读侧拿不到，于是「已自动通过但资金没动」
+   * 只能靠重跑决策来确认——而重跑是写操作。
+   */
+  execution(claimId: string): Promise<ApiResponse<DecisionExecutionSummary>> {
+    return reviewClient.get<never, ApiResponse<DecisionExecutionSummary>>(
+      `/tasks/${claimId}/execution`,
+    );
   },
 };

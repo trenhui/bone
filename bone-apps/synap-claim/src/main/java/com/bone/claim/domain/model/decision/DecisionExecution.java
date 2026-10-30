@@ -84,6 +84,19 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
   @Column(name = "duration_ms")
   private Integer durationMs;
 
+  /**
+   * 自动通过结论的消费结果（受控码；{@code null} = 本次执行没有可消费的自动通过结论）。
+   *
+   * <p>为什么要落库：消费结果取决于<b>执行当时</b>的开关与单笔上限，事后用当前配置重算只会得到 「现在重跑会怎样」，而不是「当时为什么没放款」。这个字段此前只存在于 {@code
+   * POST /decision/execute} 的响应里，读侧一律看不见，于是「已自动通过但资金没动」只能靠翻日志。
+   */
+  @Column(name = "consumption_reason")
+  private String consumptionReason;
+
+  /** 结论消费（或受控跳过）的判定时间（与 {@link #finishedAt} 分离：决策跑完 ≠ 消费判定完）。 */
+  @Column(name = "consumed_at")
+  private Instant consumedAt;
+
   @Transient
   @Cascade(foreignKey = "executionId", orphanRemoval = false)
   private List<DecisionTraceNode> traces = new ArrayList<>();
@@ -233,6 +246,33 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
     this.decisionResult = DecisionResult.MANUAL_REQUIRED.name();
     this.decisionTier = DecisionTier.MANUAL.name();
     this.updatedAt = this.finishedAt;
+  }
+
+  /**
+   * 记录自动通过结论的消费结果（一次执行只消费一次）。
+   *
+   * <p><b>为什么不由 {@link #complete} 一并记</b>：消费发生在决策跑完之后，且要先读案件、算理算金额、
+   * 建结算单——把资金编排塞进「落结论」这一步，等于让决策聚合持有资金能力。两段事实两个时点，故两次写。
+   *
+   * <p><b>为什么首写为准而不是覆盖</b>：同一执行只有一个消费结论。重复写入相同值无意义，写入不同值
+   * 则说明两次判定给出了互相矛盾的答案（要么调用方重试了别的路径，要么并发消费）——那种情况下 后来的值并不更"真"，覆盖只会把第一次的痕迹抹掉。保留首写值，让矛盾在数据里可见。
+   *
+   * @param reason 受控原因码（{@code APPLIED} 表示已结案建单，其余为受控跳过原因）
+   * @throws DomainException 执行仍在 RUNNING（消费不可能先于结论确定），或原因码为空
+   */
+  public void recordConsumption(String reason) {
+    if (statusEnum() == Status.RUNNING) {
+      throw new DomainException("执行未终结，不可记录消费结果");
+    }
+    if (isBlank(reason)) {
+      throw new DomainException("消费结果原因码不得为空（无消费动作时应保持 NULL 而非写空串）");
+    }
+    if (!isBlank(this.consumptionReason)) {
+      return;
+    }
+    this.consumptionReason = reason;
+    this.consumedAt = Instant.now();
+    this.updatedAt = this.consumedAt;
   }
 
   public Status statusEnum() {

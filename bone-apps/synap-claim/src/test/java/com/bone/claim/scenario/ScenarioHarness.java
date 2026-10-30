@@ -183,7 +183,7 @@ public class ScenarioHarness {
             settleRepo, quotaSvc, indemnitySvc, claimSvc, tenantPort, events);
     autoApproveSvc =
         new AutoApprovalApplicationService(claimSvc, settleSvc, indemnitySvc, decExecSvc);
-    decisionRun = new DecisionRunApplicationService(decisionExecutor, autoApproveSvc);
+    decisionRun = new DecisionRunApplicationService(decisionExecutor, autoApproveSvc, decExecSvc);
   }
 
   // ===================== 种子数据助手（模拟企业真实配置/保单/额度） =====================
@@ -682,6 +682,14 @@ public class ScenarioHarness {
     @Override
     public List<DecisionTraceNode> findTracesByTraceId(String traceId) {
       return List.of();
+    }
+
+    @Override
+    public DecisionExecution findByTraceId(String traceId) {
+      return store.values().stream()
+          .filter(e -> Objects.equals(e.getTraceId(), traceId))
+          .findFirst()
+          .orElse(null);
     }
   }
 

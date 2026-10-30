@@ -4,12 +4,14 @@ import com.bone.claim.adapter.web.ReviewTaskStatusMapper;
 import com.bone.claim.adapter.web.ReviewTaskStatusMapper.TaskStatus;
 import com.bone.claim.adapter.web.assembler.ReviewDecisionAssembler;
 import com.bone.claim.adapter.web.dto.request.ReviewDecisionReq;
+import com.bone.claim.adapter.web.dto.response.DecisionExecutionResp;
 import com.bone.claim.application.ClaimCaseApplicationService;
 import com.bone.claim.application.DecisionExecutionApplicationService;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.projection.ClaimHeadProjection;
 import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
+import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.claim.domain.model.decision.DecisionTraceNode;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
@@ -91,6 +93,30 @@ public class ReviewTaskController {
         ReviewDecisionAssembler.requireRejectType(request),
         request.approvedAmount());
     return ApiResponse.success();
+  }
+
+  @Operation(
+      summary = "决策执行摘要",
+      description =
+          "取该案最近一次决策执行的只读摘要（含自动通过结论的消费结果）；无执行记录 404。"
+              + "与 /trace 分工：轨迹回答「怎么判出来的」，本接口回答「结论有没有被消费、为什么没有」。")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "执行摘要"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "404",
+        description = "SC_CLAIM_DECISION_NOT_FOUND")
+  })
+  @PreAuthorize("hasAuthority('claim:claims:read')")
+  @GetMapping("/{claimId}/execution")
+  public ApiResponse<DecisionExecutionResp> execution(
+      @Parameter(description = "案件ID（= 任务ID）") @PathVariable long claimId) {
+    DecisionExecution execution = decisionExecutionApplicationService.findLatest(claimId);
+    if (execution == null) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_DECISION_NOT_FOUND, claimId);
+    }
+    return ApiResponse.success(DecisionExecutionResp.of(execution));
   }
 
   @Operation(summary = "决策追溯", description = "取该案最近一次决策执行的全链轨迹（无执行记录 404）")

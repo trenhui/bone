@@ -23,11 +23,20 @@
     8  ApiResponse 顶层无 errorCode   🔴 阻断
     9  enums 覆盖率（内置枚举清单）    🔴 阻断（清单缺失时跳过并告警）
     10 禁止绕开取数入口拼接 enums key  🟡 警告
+    11 白名单只可收缩                   🔴 阻断（条目已不需要豁免却仍留在白名单）
 
 存量漂移处理（重要）:
     首期接通时后端有 100+ 存量码尚无译文，一次性全量翻译不现实。采用**显式白名单**
     config/i18n/errorcode-baseline.json：白名单内的码暂不参与阻断（不会隐式放行）。
     清零节奏见方案 §8.2.3「首次落地必做」。
+
+    白名单是「欠账清单」而不是「免检清单」，因此必须只减不增（第 11 项）。判据是
+    **豁免是否还在起作用**：
+        untranslated 里的码，若代码里已无定义（悬空）或语言包已补齐译文 ⇒ 已不需要豁免；
+        unregistered 里的码，若代码里已无定义或已登记台账 ⇒ 同样已不需要豁免。
+    这类条目留着不改变任何判定结果，只会让白名单越长越像「什么都能豁免」，最终没人
+    敢删（实测踩过：上一轮按名称剔除 8 个 META_* 时删错了列表——它们登在 untranslated
+    而非 unregistered，结果悬空条目静置数月无人察觉）。故由脚本判红，人来收缩。
 """
 
 import argparse
@@ -165,6 +174,18 @@ def main():
     if en != zh:
         print(f"❌ en-US / zh-CN errors key 不对称（差 {len(en ^ zh)} 条）")
         fail = 1
+
+    # 11 白名单只可收缩：豁免已不再起作用（码不存在 / 译文已补 / 台账已登）⇒ 必须删除。
+    # 与脚本自身注释里的取向一致：存量清单可以不清零，但绝不允许只增不减。
+    if has_baseline:
+        if stale_excluded := {c for c in excluded if c not in codes or c in en}:
+            report("白名单 untranslated 中已不需要豁免的码（代码无定义或已有译文）", stale_excluded)
+            fail = 1
+        if stale_unregistered := {
+            c for c in unregistered_baseline if c not in codes or c in ledger
+        }:
+            report("白名单 unregistered 中已不需要豁免的码（代码无定义或已登记台账）", stale_unregistered)
+            fail = 1
     if phantom := ledger - codes:
         print(
             f"⚠️ 台账有、代码无（{len(phantom)} 条，确认是待实现还是该删）: "

@@ -25,6 +25,7 @@ public class DecisionRunApplicationService {
 
   private final DecisionGraphExecutor decisionGraphExecutor;
   private final AutoApprovalApplicationService autoApprovalApplicationService;
+  private final DecisionExecutionApplicationService decisionExecutionApplicationService;
 
   /** 执行结果 + 结论消费结果（消费被跳过时为受控原因码，不影响执行结果本身）。 */
   public record DecisionRunResult(DecisionExecutionResult execution, String consumptionReason) {}
@@ -39,6 +40,29 @@ public class DecisionRunApplicationService {
     if (!outcome.applied()) {
       log.info("[决策执行] 自动通过结论未消费: claimId={}, reason={}", claimId, outcome.reason());
     }
+    recordConsumption(execution, outcome.reason());
     return new DecisionRunResult(execution, outcome.reason());
+  }
+
+  /**
+   * 把消费结果落到执行记录上（读侧只读轨迹时靠它回答「已自动通过，资金为什么没动」）。
+   *
+   * <p><b>为什么在这里落而不是在 {@link AutoApprovalApplicationService}</b>：那里只有 {@code claimId}，
+   * 而执行结束后活跃位已释放，用「案件最新一次执行」反查可能命中并发起的另一次执行；这里手里有本次 执行的 {@code traceId}，是唯一精确的锚点。
+   *
+   * <p><b>为什么失败只告警</b>：资金动作（结案 + 建结算单）此时已经成功，把写诊断信息失败升级成接口 失败，会让客户端重试并可能重复建单。降级为 WARN
+   * 并在日志里带全上下文，是这一处唯一可接受的取舍。
+   */
+  private void recordConsumption(DecisionExecutionResult execution, String reason) {
+    try {
+      decisionExecutionApplicationService.recordConsumption(execution.traceId(), reason);
+    } catch (RuntimeException e) {
+      log.warn(
+          "[决策执行] 消费结果落库失败（执行本身已成功，读侧将看不到跳过原因）: claimId={}, traceId={}, reason={}",
+          execution.claimId(),
+          execution.traceId(),
+          reason,
+          e);
+    }
   }
 }

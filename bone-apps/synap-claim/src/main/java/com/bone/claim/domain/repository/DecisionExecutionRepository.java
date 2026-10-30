@@ -23,6 +23,14 @@ public interface DecisionExecutionRepository extends Repository<DecisionExecutio
    */
   DecisionExecution findLatestByClaimId(@Param("claimId") long claimId);
 
+  /**
+   * 按 traceId 取执行记录（traceId 是租户内唯一的回放键）。
+   *
+   * <p>为什么消费结果要用它定位而不是 {@link #findLatestByClaimId}：决策执行结束后 {@code active_flag}
+   * 释放，「同案仅一个活跃执行」的约束随之失效——此时若有并发执行起来，latest 可能指向另一次执行， 消费结果就写到别人的行上。traceId 来自本次执行的返回值，是唯一精确的锚点。
+   */
+  DecisionExecution findByTraceId(@Param("traceId") String traceId);
+
   /** 按 traceId 取全链轨迹（回放）。 */
   List<DecisionTraceNode> findTracesByTraceId(@Param("traceId") String traceId);
 }

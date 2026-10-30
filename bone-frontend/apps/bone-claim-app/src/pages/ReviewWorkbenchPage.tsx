@@ -25,12 +25,14 @@ import {
   reviewTaskApi,
   type ClaimHeadProjection,
   type Decision,
+  type DecisionExecutionSummary,
   type DecisionTraceNode,
   type ReviewTaskStatus,
 } from '../services/claimApi';
 import { PageHeader } from '../components/PageHeader';
 import { explainNode, toneColor, type ExplainFact } from '../services/decisionExplain';
 import { claimStatusMeta } from '../services/claimStatus';
+import { consumptionReasonMeta } from '../services/decisionConsumption';
 import { rejectReasonGroups } from '../services/rejectReason';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 
@@ -61,13 +63,12 @@ const TASK_FILTER_OPTIONS: { value: ReviewTaskStatus; label: string }[] = [
 ];
 
 /**
- * 自动通过结论的「消费结果」目前**无法在只读视图展示**：`consumptionReason`
- * （APPLIED / AUTO_APPROVE_DISABLED / CAP_EXCEEDED / ALREADY_SETTLED）只存在于
- * `POST /decision/execute` 的响应里，未落 `claim_decision_execution` 任何列。
+ * 自动通过结论的「消费结果」由 `GET /review/tasks/{id}/execution` 提供（后端落
+ * `claim_decision_execution.consumption_reason`），文案统一走 `services/decisionConsumption.ts`。
  *
- * <p>先前页面靠「点开决策图 = 重新执行一次决策」把这个字段取回来，代价是查看动作带写副作用
- * （详见 `services/claimApi.ts` 的 A3 段说明）。现在改为只读轨迹，这个字段暂时缺席；
- * 要恢复它得给执行记录补一列，属后端取数改造，不在前端兜。
+ * <p>为什么不在前端从现有字段推算：原因码取决于**执行当时**的自动放款开关与单笔上限，
+ * 事后用当前配置重算得到的是「现在重跑会怎样」，而不是「当时为什么没放款」。可推导的假象
+ * 比缺字段更危险，故取持久化事实。
  */
 
 /**
@@ -138,39 +139,51 @@ export function ReviewWorkbenchPage(): ReactElement {
   /** 「无执行记录」的空态文案：与「加载失败」必须分开，否则 404 会被当成系统故障。 */
   const [traceEmpty, setTraceEmpty] = useState<string | null>(null);
   const [traceNodes, setTraceNodes] = useState<DecisionTraceNode[]>([]);
+  /** 本次执行的只读摘要（含「自动通过为什么没放款」的受控原因）；无执行记录时为 null。 */
+  const [traceExecution, setTraceExecution] = useState<DecisionExecutionSummary | null>(null);
 
   /**
-   * 决策图轨迹：**只读**。
+   * 决策图轨迹 + 执行摘要：**都只读**。
    *
    * <p>先前这里先调 `POST /claims/{id}/decision/execute` 拿 `traceId`，于是「查看决策图」实际是
    * 「重跑一次决策」：同案已有活跃执行时直接 409 `SC_CLAIM_DECISION_ACTIVE_CONFLICT`，
    * 没活跃执行时则新开一次执行（AUTO_APPROVE 还会结案并建结算单）——查看动作产生写副作用。
-   * 现在改走工作台契约 `GET /review/tasks/{id}/trace`，取最近一次的节点序列，零副作用。
+   * 现在改走工作台契约 `GET /review/tasks/{id}/trace` + `/execution`，零副作用。
+   *
+   * <p>两个请求**并行且互不连坐**：摘要拿不到不该把已取到的轨迹一起丢掉（反之亦然）。
+   * 二者对「没跑过决策」都回 `SC_CLAIM_DECISION_NOT_FOUND`，故只要有一路是 404 就按空态处理，
+   * 不弹故障 toast——「没执行过」是正常业务状态，不是系统错误。
    */
   const onOpenTrace = async (row: ClaimHeadProjection) => {
     setTraceTarget(row);
     setTraceLoading(true);
     setTraceEmpty(null);
     setTraceNodes([]);
-    try {
-      const nodes = await reviewTaskApi.trace(String(row.claimId));
-      const list = nodes?.data ?? [];
-      setTraceNodes(list);
-      if (list.length === 0) {
-        setTraceEmpty('该案有执行记录但没有轨迹节点（执行可能未走完）');
-      }
-    } catch (err) {
-      if (resolveErrorCode(err) === 'SC_CLAIM_DECISION_NOT_FOUND') {
-        // 没跑过决策 = 空态，不是故障。
-        setTraceEmpty(resolveErrorMessage(err, '该案尚无决策执行记录'));
-      } else {
-        message.error({ content: resolveErrorMessage(err, '决策轨迹加载失败'), key: MSG_KEY_ACTION });
-        // 抽屉不要留空白面板：失败原因同时在抽屉内留一行，用户关掉 toast 后仍能看到状态。
-        setTraceEmpty('轨迹加载失败，请稍后重试');
-      }
-    } finally {
-      setTraceLoading(false);
+    setTraceExecution(null);
+    const claimId = String(row.claimId);
+    const [nodesRes, execRes] = await Promise.allSettled([
+      reviewTaskApi.trace(claimId),
+      reviewTaskApi.execution(claimId),
+    ]);
+
+    const notFound = (r: PromiseSettledResult<unknown>) =>
+      r.status === 'rejected' && resolveErrorCode(r.reason) === 'SC_CLAIM_DECISION_NOT_FOUND';
+
+    const nodes = nodesRes.status === 'fulfilled' ? (nodesRes.value?.data ?? []) : [];
+    const execution = execRes.status === 'fulfilled' ? (execRes.value?.data ?? null) : null;
+    setTraceNodes(nodes);
+    setTraceExecution(execution);
+
+    if (nodes.length === 0 && (notFound(nodesRes) || notFound(execRes))) {
+      setTraceEmpty('该案尚无决策执行记录（决策流程尚未跑到决策图节点）');
+    } else if (nodesRes.status === 'rejected' && !notFound(nodesRes)) {
+      message.error({ content: resolveErrorMessage(nodesRes.reason, '决策轨迹加载失败'), key: MSG_KEY_ACTION });
+      // 抽屉不要留空白面板：失败原因同时在抽屉内留一行，用户关掉 toast 后仍能看到状态。
+      setTraceEmpty('轨迹加载失败，请稍后重试');
+    } else if (nodes.length === 0) {
+      setTraceEmpty('该案有执行记录但没有轨迹节点（执行可能未走完）');
     }
+    setTraceLoading(false);
   };
 
   const load = useCallback(async () => {
@@ -535,6 +548,33 @@ export function ReviewWorkbenchPage(): ReactElement {
         loading={traceLoading}
         onClose={() => setTraceTarget(null)}
       >
+        {(() => {
+          // 自动通过结论的消费结果是这一屏最该被看见的事实：结论说「可自动放款」而资金没动，
+          // 才是真正会变成客诉的状态。没有消费动作（结论非自动通过）时不渲染，避免噪声。
+          const meta = consumptionReasonMeta(traceExecution?.consumptionReason);
+          if (!meta) {
+            return null;
+          }
+          return (
+            <Alert
+              type={meta.tone === 'success' ? 'success' : meta.tone === 'warning' ? 'warning' : 'info'}
+              showIcon
+              style={{ marginBottom: 16 }}
+              message={
+                <Space wrap>
+                  <span>自动放款结论</span>
+                  <Tag
+                    color={meta.tone === 'success' ? 'green' : meta.tone === 'warning' ? 'orange' : 'default'}
+                    style={{ marginInlineEnd: 0 }}
+                  >
+                    {meta.label}
+                  </Tag>
+                </Space>
+              }
+              description={meta.hint}
+            />
+          );
+        })()}
         {traceNodes.length > 0 && (
           <Alert
             type="info"

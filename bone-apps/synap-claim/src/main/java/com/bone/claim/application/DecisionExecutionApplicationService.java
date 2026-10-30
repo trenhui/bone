@@ -6,6 +6,7 @@ import com.bone.claim.domain.repository.DecisionExecutionRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>每个写方法只持久化 {@code DecisionExecution} 一个聚合（轨迹为其子实体，级联写入）， 满足 CORE-06「一事务一聚合」。节点执行（可能含 LLM
  * 调用）**不在事务内**——执行器先在内存 聚合轨迹，再以单次短事务落库，避免长事务持锁。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DecisionExecutionApplicationService {
@@ -57,5 +59,25 @@ public class DecisionExecutionApplicationService {
   @Transactional(readOnly = true)
   public List<DecisionTraceNode> replay(String traceId) {
     return decisionExecutionRepository.findTracesByTraceId(traceId);
+  }
+
+  /**
+   * 记录自动通过结论的消费结果（用本次执行的 {@code traceId} 精确定位）。
+   *
+   * <p><b>为什么单独一个短事务</b>：这是诊断事实，不是资金动作。它发生在「结案 + 建单」之后，
+   * 若与资金动作共用事务，一次乐观锁冲突就会把已建好的结算单一起回滚——用审计信息打断资金链路 是本末倒置。反过来，丢掉这条记录的代价只是「这一单为什么没自动放款」要回去翻日志。
+   *
+   * <p><b>为什么找不到执行记录只告警不抛</b>：{@code traceId} 取自刚落库的那次执行，正常不会缺失；
+   * 缺失说明数据被删或租户上下文漂移，属数据缺陷。此时抛异常会让一个已经完成的资金动作对外表现为 失败（客户端可能重试而重复建单），比丢一条诊断信息更糟。
+   */
+  @Transactional
+  public void recordConsumption(String traceId, String reason) {
+    DecisionExecution execution = decisionExecutionRepository.findByTraceId(traceId);
+    if (execution == null) {
+      log.warn("[决策消费] 未找到执行记录，消费结果未落库: traceId={}, reason={}", traceId, reason);
+      return;
+    }
+    execution.recordConsumption(reason);
+    decisionExecutionRepository.update(execution);
   }
 }
