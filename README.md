@@ -9,7 +9,7 @@
 ![JDK](https://img.shields.io/badge/JDK-21+-orange.svg)
 ![AI-Native](https://img.shields.io/badge/AI--Native-purple.svg)
 
-![BONE 企业级原生 AI 应用开发平台](doc/design/assets/bone-hero-banner.png)
+![BONE 企业级原生 AI 应用开发平台](doc/design/assets/bone-hero-banner.webp)
 
 **一次建模，交付两类应用。** Bone 用统一元模型把「建模 → 数据结构 → 访问行为」打通：既能生成可审计源码（模式 A），也能运行时动态提供 CRUD/API（模式 B）；在企业底座（主数据 / 扩展 / 集成）之上原生内置 **Bone AI 能力中台**（LLM 网关 · RAG · 智能体编排 · AI 可观测），让同一份模型同时支撑传统应用与 AI 原生应用。
 
@@ -284,7 +284,7 @@ Nacos、Sentinel、Seata、SkyWalking 等保留为按部署规模评估的技术
 
 面向贡献者与评估者的 **最小可运行路径**：拉起「网关 + IAM + 系统 + 元数据 + 前端 Shell」并完成首次登录。首次全量构建耗时较长（视机器而定）；只想验证集成能力时，可使用下方的子集构建命令。完整端口与排错见 [本地开发与构建](doc/wiki/03-本地开发与构建.md)。
 
-**开发环境拓扑**（端口真源为各模块 `application.yml`；最小登录路径见图下注释）：
+**开发环境拓扑**（端口真源：后端各模块 `application.yml`、前端各应用 `vite.config.ts`；`check.sh` 的 G41 门禁会校验图与代码端口一致，改端口忘改图会红）：
 
 ![运行时拓扑](doc/design/assets/readme-runtime-topology.svg)
 
@@ -377,9 +377,9 @@ cd bone-frontend && npm ci && npm run dev
 
 ### 品牌与宣传素材
 
-- **宣传海报（竖版·深色）**：[doc/design/assets/bone-poster.png](doc/design/assets/bone-poster.png)
-- **宣传海报（竖版·浅色）**：[doc/design/assets/bone-poster-light.png](doc/design/assets/bone-poster-light.png)
-- **Hero 主视觉（横版）**：[doc/design/assets/bone-hero-banner.png](doc/design/assets/bone-hero-banner.png)
+- **宣传海报（竖版·深色）**：[doc/design/assets/bone-poster.webp](doc/design/assets/bone-poster.webp)
+- **宣传海报（竖版·浅色）**：[doc/design/assets/bone-poster-light.webp](doc/design/assets/bone-poster-light.webp)
+- **Hero 主视觉（横版）**：[doc/design/assets/bone-hero-banner.webp](doc/design/assets/bone-hero-banner.webp)
 
 > 上述素材可用于技术分享、社区活动与对外宣发；商用宣发请遵循 [License](#license) 章节的授权要求。
 

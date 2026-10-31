@@ -7,7 +7,7 @@
 ![JDK](https://img.shields.io/badge/JDK-21+-orange.svg)
 ![AI-Native](https://img.shields.io/badge/AI--Native-purple.svg)
 
-![BONE Enterprise AI-Native Application Development Platform](doc/design/assets/bone-hero-banner.png)
+![BONE Enterprise AI-Native Application Development Platform](doc/design/assets/bone-hero-banner.webp)
 
 **Model once, deliver two kinds of applications.** Bone connects *modeling → data structure → access behavior* through a unified metamodel: it can generate auditable source code (Mode A) or expose CRUD/API dynamically at runtime (Mode B). On top of the enterprise foundation (master data / extension / integration), it ships the native **Bone AI Capability Platform** (LLM gateway · RAG · agent orchestration · AI observability), so a single model powers both traditional and AI-native applications.
 
@@ -284,7 +284,7 @@ Scheduling is not promised in the README; delivery status and engineering debt a
 
 The **minimal runnable path** for contributors and evaluators: bring up "gateway + IAM + system + metadata + frontend Shell" and complete first login. The first full build takes a while (machine-dependent); to validate only integration, use the subset build command below. Full ports and troubleshooting: [Local development & build](doc/wiki/03-本地开发与构建.md).
 
-**Dev topology** (ports are authoritative in each module's `application.yml`; minimal login path annotated below):
+**Dev topology** (port sources: each module's `application.yml` and each app's `vite.config.ts`; gate G41 in `check.sh` verifies the diagram still matches the code, so a changed port without a diagram update fails the check):
 
 ![Runtime topology](doc/design/assets/readme-runtime-topology.svg)
 
@@ -377,9 +377,9 @@ cd bone-frontend && npm ci && npm run dev
 
 ### Brand assets
 
-- **Poster (portrait · dark)**: [doc/design/assets/bone-poster.png](doc/design/assets/bone-poster.png)
-- **Poster (portrait · light)**: [doc/design/assets/bone-poster-light.png](doc/design/assets/bone-poster-light.png)
-- **Hero banner (landscape)**: [doc/design/assets/bone-hero-banner.png](doc/design/assets/bone-hero-banner.png)
+- **Poster (portrait · dark)**: [doc/design/assets/bone-poster.webp](doc/design/assets/bone-poster.webp)
+- **Poster (portrait · light)**: [doc/design/assets/bone-poster-light.webp](doc/design/assets/bone-poster-light.webp)
+- **Hero banner (landscape)**: [doc/design/assets/bone-hero-banner.webp](doc/design/assets/bone-hero-banner.webp)
 
 > These assets are for tech talks, community events and external promotion; commercial promotion must follow the [License](#license) terms.
 

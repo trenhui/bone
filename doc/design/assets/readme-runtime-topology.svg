@@ -1,130 +1,225 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="760" viewBox="0 0 1180 760" font-family="-apple-system,'PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1040" viewBox="0 0 1080 1040" role="img" aria-labelledby="tp-title tp-desc" font-family="-apple-system,'PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif">
+  <title id="tp-title">Bone 开发环境运行时拓扑</title>
+  <desc id="tp-desc">前端 bone-shell（:3000）与 9 个 qiankun 子应用经 bone-gateway（:8888）调用 bone-platform 业务服务、bone-engine 引擎与 bone-ai 能力中台；基础设施为 MySQL 8 与 Redis 7。端口真源为各模块 application.yml 与前端 vite.config.ts。</desc>
   <defs>
-    <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <marker id="tp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#94A3B8"/>
     </marker>
   </defs>
 
   <style>
-    .grp { fill:#F8FAFC; stroke:#E2E8F0; }
-    .grp-t { font-size:12px; font-weight:600; letter-spacing:1.5px; fill:#94A3B8; }
-    .svc { fill:#FFFFFF; stroke:#CBD5E1; }
-    .svc-t { font-size:12.5px; font-weight:600; fill:#334155; }
-    .svc-p { font-size:11px; font-weight:600; fill:#2563EB; }
-    .svc-d { font-size:10.5px; fill:#94A3B8; }
-    .edge-l { font-size:11.5px; fill:#475569; font-weight:600; }
-    .cap { font-size:12px; fill:#94A3B8; }
+    .grp      { fill:#F8FAFC; stroke:#E2E8F0; stroke-width:1; }
+    .grp-ai   { fill:#FAF5FF; stroke:#E9D5FF; stroke-width:1; }
+    .grp-t    { font-size:12.5px; font-weight:700; letter-spacing:1.2px; fill:#94A3B8; }
+    .grp-t-ai { font-size:12.5px; font-weight:700; letter-spacing:1.2px; fill:#7C3AED; }
+    .card     { fill:#FFFFFF; stroke:#CBD5E1; stroke-width:1; }
+    .card-ai  { fill:#FFFFFF; stroke:#C4B5FD; stroke-width:1; }
+    .name     { font-size:13px; font-weight:600; fill:#334155; }
+    .port     { font-size:13px; font-weight:700; fill:#2563EB; }
+    .port-ai  { font-size:13px; font-weight:700; fill:#7C3AED; }
+    .desc     { font-size:12px; fill:#94A3B8; }
+    .note     { font-size:12.5px; fill:#475569; }
+    .note-ai  { font-size:12.5px; fill:#6D28D9; }
+    .cap      { font-size:12px; fill:#64748B; }
   </style>
 
-  <!-- ============ bone-frontend ============ -->
-  <g>
-    <rect class="grp" x="40" y="52" width="280" height="220" rx="14"/>
-    <text class="grp-t" x="64" y="80">BONE-FRONTEND · QIANKUN 微前端</text>
-    <rect x="64" y="98" width="232" height="70" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
-    <text class="svc-t" x="82" y="126">bone-shell 管理端</text>
-    <text class="svc-p" x="82" y="148">:3000</text>
+  <!-- 画布底色：显式白底，保证 GitHub 深色模式下仍是一张可读的浅色卡片 -->
+  <rect width="1080" height="1040" fill="#FFFFFF"/>
 
-    <rect x="64" y="184" width="232" height="70" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
-    <text class="svc-t" x="82" y="212">领域微应用 × N</text>
-    <text class="svc-p" x="82" y="234">:3003–:3009</text>
-    <text class="svc-d" x="172" y="234">集成微应用 :3006</text>
+  <text x="40" y="40" font-size="16" font-weight="700" fill="#0F172A">Bone 开发环境运行时拓扑</text>
+  <text x="1040" y="40" text-anchor="end" class="cap">端口真源：后端各模块 application.yml · 前端 vite.config.ts</text>
+
+  <!-- ============ 1. 前端 ============ -->
+  <g>
+    <rect class="grp" x="40" y="64" width="1000" height="236" rx="14"/>
+    <text class="grp-t" x="64" y="90">前端 · BONE-FRONTEND / QIANKUN 微前端</text>
+
+    <rect class="card" x="64" y="102" width="300" height="60" rx="10"/>
+    <text class="name" x="80" y="126">bone-shell 管理端</text>
+    <text class="port" x="80" y="146">:3000</text>
+    <text class="desc" x="132" y="146">主应用 · 布局 / 登录 / 菜单</text>
+
+    <rect x="380" y="102" width="636" height="60" rx="10" fill="#F1F5F9" stroke="#E2E8F0"/>
+    <text class="note" x="396" y="126">子应用经 qiankun 注册挂载，各自独立 dev server（可单独启动）</text>
+    <text class="note" x="396" y="146">统一调用网关 :8888，不直连后端服务端口</text>
+
+    <text class="grp-t" x="64" y="186">领域微应用 × 9</text>
+
+    <rect class="card" x="64" y="196" width="184" height="40" rx="8"/>
+    <text class="name" x="78" y="222">iam</text>
+    <text class="port" x="232" y="222" text-anchor="end">:3003</text>
+
+    <rect class="card" x="260" y="196" width="184" height="40" rx="8"/>
+    <text class="name" x="274" y="222">metadata</text>
+    <text class="port" x="428" y="222" text-anchor="end">:3004</text>
+
+    <rect class="card" x="456" y="196" width="184" height="40" rx="8"/>
+    <text class="name" x="470" y="222">masterdata</text>
+    <text class="port" x="624" y="222" text-anchor="end">:3005</text>
+
+    <rect class="card" x="652" y="196" width="184" height="40" rx="8"/>
+    <text class="name" x="666" y="222">integration</text>
+    <text class="port" x="820" y="222" text-anchor="end">:3006</text>
+
+    <rect class="card" x="848" y="196" width="184" height="40" rx="8"/>
+    <text class="name" x="862" y="222">system</text>
+    <text class="port" x="1016" y="222" text-anchor="end">:3007</text>
+
+    <rect class="card" x="64" y="244" width="184" height="40" rx="8"/>
+    <text class="name" x="78" y="270">extension</text>
+    <text class="port" x="232" y="270" text-anchor="end">:3008</text>
+
+    <rect class="card" x="260" y="244" width="184" height="40" rx="8"/>
+    <text class="name" x="274" y="270">generator</text>
+    <text class="port" x="428" y="270" text-anchor="end">:3009</text>
+
+    <rect class="card" x="456" y="244" width="184" height="40" rx="8"/>
+    <text class="name" x="470" y="270">commerce</text>
+    <text class="port" x="624" y="270" text-anchor="end">:3012</text>
+
+    <rect class="card" x="652" y="244" width="184" height="40" rx="8"/>
+    <text class="name" x="666" y="270">claim</text>
+    <text class="port" x="820" y="270" text-anchor="end">:3013</text>
+
+    <rect x="848" y="244" width="184" height="40" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-dasharray="4 3"/>
+    <text class="desc" x="940" y="270" text-anchor="middle">其余领域按需新增</text>
   </g>
 
-  <!-- ============ 网关 ============ -->
+  <line x1="536" y1="302" x2="536" y2="314" stroke="#94A3B8" stroke-width="2" marker-end="url(#tp-arrow)"/>
+
+  <!-- ============ 2. 网关 ============ -->
   <g>
-    <rect x="420" y="102" width="200" height="120" rx="14" fill="#0F172A"/>
-    <text x="446" y="148" font-size="15" font-weight="700" fill="#FFFFFF">bone-gateway</text>
-    <text x="446" y="172" font-size="12" fill="#94A3B8">Spring Cloud Gateway</text>
-    <text x="446" y="196" font-size="13" font-weight="700" fill="#60A5FA">:8888</text>
+    <rect x="40" y="316" width="1000" height="72" rx="14" fill="#0F172A"/>
+    <text x="64" y="344" font-size="14" font-weight="700" fill="#FFFFFF">bone-gateway</text>
+    <text x="176" y="344" font-size="11.5" fill="#94A3B8">Spring Cloud Gateway · 统一入口</text>
+    <text x="64" y="368" font-size="13" font-weight="700" fill="#60A5FA">:8888</text>
+    <text x="1016" y="344" text-anchor="end" font-size="12" fill="#CBD5E1">路由 · JWT 校验 · CORS · 限流</text>
+    <text x="1016" y="368" text-anchor="end" font-size="11.5" fill="#94A3B8">服务之间不互相经网关；AI 侧当前未经此入口</text>
   </g>
 
-  <!-- ============ bone-platform 服务组 ============ -->
+  <line x1="536" y1="390" x2="536" y2="402" stroke="#94A3B8" stroke-width="2" marker-end="url(#tp-arrow)"/>
+
+  <!-- ============ 3. bone-platform ============ -->
   <g>
-    <rect class="grp" x="740" y="52" width="400" height="270" rx="14"/>
-    <text class="grp-t" x="764" y="80">BONE-PLATFORM · 业务服务</text>
+    <rect class="grp" x="40" y="404" width="1000" height="176" rx="14"/>
+    <text class="grp-t" x="64" y="430">BONE-PLATFORM · 业务服务</text>
 
-    <rect class="svc" x="764" y="96" width="170" height="62" rx="10"/>
-    <text class="svc-t" x="782" y="122">bone-iam</text>
-    <text class="svc-p" x="782" y="142">:8081</text>
+    <rect class="card" x="64" y="442" width="226" height="54" rx="10"/>
+    <text class="name" x="80" y="464">bone-iam</text>
+    <text class="port" x="80" y="484">:8081</text>
+    <text class="desc" x="132" y="484">账户 / 权限 / 租户</text>
 
-    <rect class="svc" x="946" y="96" width="170" height="62" rx="10"/>
-    <text class="svc-t" x="964" y="122">bone-system</text>
-    <text class="svc-d" x="964" y="142">:8083 · 菜单/参数/字典</text>
+    <rect class="card" x="306" y="442" width="226" height="54" rx="10"/>
+    <text class="name" x="322" y="464">bone-system</text>
+    <text class="port" x="322" y="484">:8083</text>
+    <text class="desc" x="374" y="484">菜单 / 参数 / 字典</text>
 
-    <rect class="svc" x="764" y="170" width="170" height="62" rx="10"/>
-    <text class="svc-t" x="782" y="196">bone-integration</text>
-    <text class="svc-p" x="782" y="216">:8085</text>
+    <rect class="card" x="548" y="442" width="226" height="54" rx="10"/>
+    <text class="name" x="564" y="464">bone-masterdata</text>
+    <text class="port" x="564" y="484">:8084</text>
+    <text class="desc" x="616" y="484">主数据治理</text>
 
-    <rect class="svc" x="946" y="170" width="170" height="62" rx="10"/>
-    <text class="svc-t" x="964" y="196">bone-masterdata</text>
-    <text class="svc-d" x="964" y="216">:8084 · 主数据治理</text>
+    <rect class="card" x="790" y="442" width="226" height="54" rx="10"/>
+    <text class="name" x="806" y="464">bone-integration</text>
+    <text class="port" x="806" y="484">:8085</text>
+    <text class="desc" x="858" y="484">连接器 / 编排</text>
 
-    <rect class="svc" x="764" y="244" width="170" height="62" rx="10"/>
-    <text class="svc-t" x="782" y="270">bone-file（规划）</text>
-    <text class="svc-d" x="782" y="290">暂无独立实现</text>
+    <rect class="card" x="64" y="504" width="226" height="54" rx="10"/>
+    <text class="name" x="80" y="526">bone-file</text>
+    <text class="port" x="80" y="546">:8107</text>
+    <text class="desc" x="132" y="546">文件 / 对象存储</text>
 
-    <rect class="svc" x="946" y="244" width="170" height="62" rx="10"/>
-    <text class="svc-t" x="964" y="270">bone-notification SDK</text>
-    <text class="svc-d" x="964" y="290">REST 由 system 承载</text>
+    <rect class="card" x="306" y="504" width="226" height="54" rx="10"/>
+    <text class="name" x="322" y="526">bone-blueprint</text>
+    <text class="port" x="322" y="546">:8082</text>
+    <text class="desc" x="374" y="546">单据 / 支付 / 渠道</text>
+
+    <rect class="card" x="548" y="504" width="226" height="54" rx="10"/>
+    <text class="name" x="564" y="526">synap-claim</text>
+    <text class="port" x="564" y="546">:8087</text>
+    <text class="desc" x="616" y="546">智能理赔域</text>
+
+    <rect x="790" y="504" width="226" height="54" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-dasharray="4 3"/>
+    <text class="desc" x="806" y="526">notification / workflow</text>
+    <text class="desc" x="806" y="546">无独立进程，随宿主部署</text>
   </g>
 
-  <!-- ============ bone-engine 引擎与工具 ============ -->
+  <line x1="536" y1="582" x2="536" y2="594" stroke="#94A3B8" stroke-width="2" marker-end="url(#tp-arrow)"/>
+
+  <!-- ============ 4. bone-engine ============ -->
   <g>
-    <rect class="grp" x="740" y="352" width="400" height="180" rx="14"/>
-    <text class="grp-t" x="764" y="380">BONE-ENGINE · 引擎与工具</text>
+    <rect class="grp" x="40" y="596" width="1000" height="160" rx="14"/>
+    <text class="grp-t" x="64" y="622">BONE-ENGINE · 引擎与工具</text>
 
-    <rect class="svc" x="764" y="396" width="170" height="62" rx="10"/>
-    <text class="svc-t" x="782" y="422">bone-metadata-server</text>
-    <text class="svc-p" x="782" y="442">:9001</text>
+    <rect class="card" x="64" y="634" width="226" height="56" rx="10"/>
+    <text class="name" x="80" y="656">bone-metadata-server</text>
+    <text class="port" x="80" y="676">:9001</text>
+    <text class="desc" x="132" y="676">含 workflow 路由</text>
 
-    <rect class="svc" x="946" y="396" width="170" height="62" rx="10"/>
-    <text class="svc-t" x="964" y="422">studio-generator</text>
-    <text class="svc-p" x="964" y="442">:8086</text>
+    <rect class="card" x="306" y="634" width="226" height="56" rx="10"/>
+    <text class="name" x="322" y="656">bone-extension-studio</text>
+    <text class="port" x="322" y="676">:8088</text>
+    <text class="desc" x="374" y="676">扩展控制面</text>
 
-    <rect class="svc" x="764" y="470" width="352" height="44" rx="10"/>
-    <text class="svc-t" x="782" y="497">bone-extension-sdk（嵌入业务宿主）</text>
+    <rect class="card" x="548" y="634" width="226" height="56" rx="10"/>
+    <text class="name" x="564" y="656">studio-generator</text>
+    <text class="port" x="564" y="676">:8086</text>
+    <text class="desc" x="616" y="676">模式 A 代码生成</text>
+
+    <rect class="card" x="790" y="634" width="226" height="56" rx="10"/>
+    <text class="name" x="806" y="656">bone-extension-sdk</text>
+    <text class="desc" x="806" y="676">库 · 嵌入业务宿主</text>
+
+    <text class="desc" x="64" y="716">workflow 设计器经 /api/v1/workflow/** 由 metadata-server 承接；扩展 SDK 以依赖形式嵌入宿主，不单独起进程。</text>
   </g>
 
-  <!-- ============ 基础设施 ============ -->
+  <line x1="536" y1="758" x2="536" y2="770" stroke="#94A3B8" stroke-width="2" marker-end="url(#tp-arrow)"/>
+
+  <!-- ============ 5. bone-ai ============ -->
   <g>
-    <rect class="grp" x="420" y="572" width="720" height="130" rx="14"/>
-    <text class="grp-t" x="444" y="600">基础设施 · docker compose</text>
+    <rect class="grp-ai" x="40" y="772" width="1000" height="128" rx="14"/>
+    <text class="grp-t-ai" x="64" y="798">BONE-AI · 能力中台（独立部署域，当前未挂主网关）</text>
 
-    <g transform="translate(462,612)">
-      <path d="M0,12 a42,12 0 0 1 84,0" fill="none" stroke="#CBD5E1" stroke-width="1.5"/>
-      <path d="M0,12 v36 a42,12 0 0 0 84,0 v-36" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
-      <ellipse cx="42" cy="12" rx="42" ry="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
-      <text class="svc-t" x="42" y="40" text-anchor="middle">MySQL 8</text>
-      <text class="svc-d" x="42" y="76" text-anchor="middle">bone-init.sql</text>
-    </g>
-    <g transform="translate(682,612)">
-      <path d="M0,12 a42,12 0 0 1 84,0" fill="none" stroke="#CBD5E1" stroke-width="1.5"/>
-      <path d="M0,12 v36 a42,12 0 0 0 84,0 v-36" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
-      <ellipse cx="42" cy="12" rx="42" ry="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
-      <text class="svc-t" x="42" y="40" text-anchor="middle">Redis 7</text>
-      <text class="svc-d" x="42" y="76" text-anchor="middle">IAM 登录必需</text>
-    </g>
+    <rect class="card-ai" x="64" y="810" width="226" height="54" rx="10"/>
+    <text class="name" x="80" y="832">bone-ai-app</text>
+    <text class="port-ai" x="80" y="852">:8080</text>
+    <text class="desc" x="132" y="852">可运行宿主</text>
 
-    <rect class="svc" x="896" y="618" width="220" height="62" rx="10"/>
-    <text class="svc-t" x="914" y="644">可选 · 按需接入</text>
-    <text class="svc-d" x="914" y="664">RocketMQ · Nacos · Sentinel</text>
+    <rect class="card-ai" x="306" y="810" width="226" height="54" rx="10"/>
+    <text class="name" x="322" y="832">LLM 网关</text>
+    <text class="desc" x="322" y="852">库 · 模型接入与配额</text>
+
+    <rect class="card-ai" x="548" y="810" width="226" height="54" rx="10"/>
+    <text class="name" x="564" y="832">RAG / 编排 / trace</text>
+    <text class="desc" x="564" y="852">接地守卫 · gen_ai.* 追踪</text>
+
+    <rect x="790" y="810" width="226" height="54" rx="10" fill="#FAF5FF" stroke="#E9D5FF" stroke-dasharray="4 3"/>
+    <text class="desc" x="806" y="832">bone-ai-server 亦为参考宿主</text>
+    <text class="desc" x="806" y="852">默认同为 8080，与 ai-app 择一启动</text>
+
+    <text class="note-ai" x="64" y="886">AI 能力以库（SDK）形式随宿主装配：网关 / RAG / 编排 / trace 均无独立端口；宿主侧未在 bone-gateway 登记路由，需直连或另行接入。</text>
   </g>
 
-  <!-- ============ 连线 ============ -->
+  <line x1="536" y1="902" x2="536" y2="914" stroke="#94A3B8" stroke-width="2" marker-end="url(#tp-arrow)"/>
+
+  <!-- ============ 6. 基础设施 ============ -->
   <g>
-    <line x1="320" y1="162" x2="412" y2="162" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr2)"/>
-    <text class="edge-l" x="332" y="152">REST / Qiankun</text>
+    <rect class="grp" x="40" y="916" width="1000" height="80" rx="14"/>
+    <text class="grp-t" x="64" y="942">基础设施 · docker compose</text>
 
-    <line x1="620" y1="162" x2="732" y2="162" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr2)"/>
-    <text class="edge-l" x="630" y="152">路由 / 鉴权</text>
+    <rect class="card" x="64" y="948" width="300" height="40" rx="8"/>
+    <text class="name" x="80" y="973">MySQL 8</text>
+    <text class="port" x="160" y="973">:3306</text>
+    <text class="desc" x="216" y="973">bone-init.sql 初始化</text>
 
-    <path d="M520 222 V442 H732" fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arr2)"/>
-    <text class="edge-l" x="532" y="330">动态 API</text>
+    <rect class="card" x="380" y="948" width="300" height="40" rx="8"/>
+    <text class="name" x="396" y="973">Redis 7</text>
+    <text class="port" x="464" y="973">:6379</text>
+    <text class="desc" x="520" y="973">会话 / 缓存（IAM 登录必需）</text>
 
-    <line x1="940" y1="532" x2="940" y2="564" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr2)"/>
-    <text class="edge-l" x="952" y="552">JDBC · 缓存</text>
+    <rect x="696" y="948" width="320" height="40" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-dasharray="4 3"/>
+    <text class="desc" x="712" y="973">可选 · RocketMQ / Nacos / Sentinel（按需接入）</text>
   </g>
 
-  <text class="cap" x="40" y="736">最小启动子集：MySQL + Redis + bone-iam（:8081）+ bone-gateway（:8888）+ bone-shell（:3000）→ admin / 123456</text>
-  <text class="cap" x="1140" y="736" text-anchor="end">端口真源：各模块 application.yml</text>
+  <text class="cap" x="40" y="1024">最小启动子集：MySQL + Redis + bone-iam(:8081) + bone-gateway(:8888) + bone-system(:8083) + bone-metadata-server(:9001) + bone-shell(:3000) → admin / 123456</text>
 </svg>
