@@ -17,8 +17,15 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * A7 资金应用服务（结算编排）。
  *
- * <p>每个写方法只持久化 {@code SettlementOrder} 一个聚合（CORE-06）；额度占用/释放/确认/退款全部经 独立事务的 {@link
- * QuotaApplicationService}（{@code REQUIRES_NEW}），跨聚合改动不并入结算事务—— 资金状态机只由结算聚合推进，额度三值模型在自己事务内强一致。
+ * <p>每个写方法只持久化 {@code SettlementOrder} 一个聚合（CORE-06）；额度占用/释放/确认/退款经 {@link QuotaApplicationService}
+ * 完成。
+ *
+ * <p><b>事务边界（2026-10-31 资金 P0 修复）</b>：额度方法改为 {@code REQUIRED}，<b>加入本服务的事务</b>， 于是「结算单状态 + 个人账 +
+ * 责任账」三者<b>同事务、要么全成要么全败</b>。
+ *
+ * <p>此前额度方法用 {@code REQUIRES_NEW} 独立事务，两本账与结算单分属三个事务 ⇒ 任一环节失败都会留下 "账已动、单未动" 的账实不符（个人账已解冻不回滚 /
+ * 钱已扣但结算单未付 / 无结算单的幽灵预占）， 且结算单会永久卡死、无法再取消。这是一处<b>经登记的 CORE-06 例外</b>（同库本地跨聚合事务）， 业务不变量、失败语义与并发成本见
+ * {@code QuotaApplicationService} 类注释与 impl-log 第 16 分册。
  */
 @Service
 @RequiredArgsConstructor
@@ -55,8 +62,10 @@ public class SettlementApplicationService {
     // 理算侧不直接 422，是因为结果还要给人看；但占额是把钱从账本上划走的动作，账实不明时记账即超赔风险。
     //
     // 为什么不能只靠下游 loadLiability 的「找不到账户」兜底：那一步发生在 settlementOrder 落库与个人账软占
-    // 之后，而软占是 REQUIRES_NEW 独立事务（已提交），异常回溯会把结算单回滚掉、却留下一条没有责任账对应的预占。
-    // 在写第一行之前失败，才谈得上「要么全有要么全无」。
+    // 之后。额度方法现已加入本事务（REQUIRED），所以那一步失败会把「结算单 + 两本账」一起回滚，
+    // 不会留下"没有结算单对应的幽灵预占"（这正是旧 REQUIRES_NEW 语义下的 P0 洞）。
+    // 但**先判后写**仍要保留：fail-fast 的报错语义（账实不可读）比"写了一半再回滚"更准确，
+    // 也避免占用数据库事务做注定回滚的写。
     IndemnityApplicationService.AdjustmentResult adj = indemnityApplicationService.latest(claimId);
     if (adj == null) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_ADJUST_NOT_FOUND, claimId);
@@ -81,7 +90,7 @@ public class SettlementApplicationService {
             attempt);
     settlementRepository.insert(order);
 
-    // ① 个人账软占（独立事务）
+    // ① 个人账软占（与结算单同事务）
     quotaApplicationService.reserve(
         tenantId,
         ctx.getInsuredIdHash(),
@@ -93,8 +102,9 @@ public class SettlementApplicationService {
         settlementNo,
         attempt);
 
-    // ② 责任账软占 + 免赔消抵回写（独立事务，第二个聚合）。
+    // ② 责任账软占 + 免赔消抵回写（第二本账，仍在同一事务内）。
     //    只做 ① 不做 ② ⇒ 责任限额永远是配置常量、免赔永远从全额重扣：一案一满额、一案一免赔。
+    //    ② 失败 ⇒ ① 与结算单一起回滚，不会留下"有个人账预占、无责任账对应"的幽灵占用。
     quotaApplicationService.reserveLiability(
         tenantId,
         ctx.getInsuredIdHash(),
@@ -169,7 +179,7 @@ public class SettlementApplicationService {
         order.getSettlementNo(),
         attempt);
 
-    // 责任账 frozen→claimed（第二个聚合，独立事务）
+    // 责任账 frozen→claimed（第二本账，同一事务内 ⇒ 结算单不会"已扣钱却未支付"）
     quotaApplicationService.confirmLiabilityPay(
         order.getTenantId(),
         ctx.getInsuredIdHash(),

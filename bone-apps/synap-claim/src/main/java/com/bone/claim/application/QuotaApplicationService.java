@@ -3,13 +3,17 @@ package com.bone.claim.application;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.quota.QuotaAccount;
+import com.bone.claim.domain.model.quota.QuotaTransaction;
 import com.bone.claim.domain.model.settlement.FundingStage;
 import com.bone.claim.domain.repository.QuotaAccountRepository;
 import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.util.DistributedIdGenerator;
 import java.math.BigDecimal;
 import java.time.Year;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -18,8 +22,19 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * A5 额度账户应用服务（写侧）。
  *
- * <p>每个方法只写 {@code QuotaAccount} 一个聚合（CORE-06 一事务一聚合），且以 {@code REQUIRES_NEW}
- * 独立事务运行——资金流转（A7）跨聚合改额度时调用本服务，保证"一事务一聚合"且额度守恒写路径不被并入结算事务。
+ * <p>每个方法只写 {@code QuotaAccount} 一个聚合（CORE-06 一事务一聚合）。
+ *
+ * <p><b>传播语义：{@link Propagation#REQUIRED}（加入调用方事务），而不是 {@code REQUIRES_NEW}。</b>
+ *
+ * <p>为什么改（2026-10-31，资金 P0 修复）：一笔结算的额度占用横跨<b>两本账</b>（个人账 PERSONAL + 责任账
+ * LIABILITY_CAP），而结算单本身是第三个聚合。此前两本账各用 {@code REQUIRES_NEW} 独立事务， 于是"个人账释放已提交 → 责任账释放抛错 → 外层结算事务回滚"
+ * ⇒ <b>个人账已解冻却不回滚、结算单仍卡在冻结态</b>：账实不符 + 结算单永久卡死（再取消必撞同一错）。 同一形态的洞还有三处：建结算单（个人软占已提交、责任软占失败 ⇒
+ * 留下无对应结算单的幽灵预占）、 支付（个人账已扣、结算单未付）、退款（同上）。
+ *
+ * <p>改为 {@code REQUIRED} 后，<b>「结算单状态 + 两本账」在同一事务内要么全成、要么全败</b>。 这是一处<b>经登记的 CORE-06
+ * 例外</b>（同库本地跨聚合事务）：业务不变量＝"结算单的额度占用在两本账上 同时存在、同时消失"；失败语义＝任一本账失败则全部回滚，结算单不推进；并发成本＝两本账按固定顺序 （个人 →
+ * 责任）加锁，避免交叉死锁，账户用 {@code @Version} 乐观锁做冲突检测。 详见 {@code
+ * doc/ai-product/synapClaim/09-records/impl-log/16-额度释放原子性与占用归属（P0-5）.md}。
  *
  * <p>幂等：{@code idempotencyKey = {claimNo}:{stage}:{attempt}}（§7.5），同键重复调用直接跳过（不二次占额）。 额度变更经 {@code
  * QuotaTransaction} 落流水，不另发领域事件（{@link NoDomainEvent}）。
@@ -29,10 +44,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class QuotaApplicationService {
 
+  private static final BigDecimal ZERO = new BigDecimal("0.00");
+
   private final QuotaAccountRepository quotaAccountRepository;
 
   /** 软占（SOFT_RESERVED）：理算已算未确认的额度预占，计入 {@code frozen}。 */
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional(propagation = Propagation.REQUIRED)
   public void reserve(
       long tenantId,
       String insuredIdHash,
@@ -54,7 +71,7 @@ public class QuotaApplicationService {
   }
 
   /** 确认支付（PAID）：{@code frozen → claim} 同额转移，不二次占用。 */
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional(propagation = Propagation.REQUIRED)
   public void confirmPay(
       long tenantId,
       String insuredIdHash,
@@ -74,8 +91,13 @@ public class QuotaApplicationService {
     quotaAccountRepository.save(account);
   }
 
-  /** 释放预占（RELEASED/FAILED）：撤销/拒赔/支付失败回冲。 */
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  /**
+   * 释放预占（RELEASED/FAILED）：撤销/拒赔/支付失败回冲。
+   *
+   * <p><b>只归还本单自有预占</b>（见 {@link #ownHeld}）：共享池里还压着别的结算单的预占， 按池余额释放会让本单吃掉他人的预占（越权释放 ⇒
+   * 他人合法释放被拒、幽灵冻结）。
+   */
+  @Transactional(propagation = Propagation.REQUIRED)
   public void release(
       long tenantId,
       String insuredIdHash,
@@ -91,12 +113,18 @@ public class QuotaApplicationService {
     if (alreadyOccupied(account, key)) {
       return;
     }
-    account.release(DistributedIdGenerator.generateLongId(), amount, claimId, settlementNo, key);
+    BigDecimal held = ownHeld(account, settlementNo);
+    if (held.signum() > 0 && held.compareTo(amount) >= 0) {
+      // 本单自有占用足额 ⇒ 释放合法；若共享池投影已被抽干，先按流水自愈（否则合法释放会被池级余额拒掉）
+      reconcileProjectionIfDeficit(account, amount);
+    }
+    account.releaseOwned(
+        DistributedIdGenerator.generateLongId(), amount, held, claimId, settlementNo, key);
     quotaAccountRepository.save(account);
   }
 
   /** 退款（REFUNDED）：已付退票，红冲发票并回冲 {@code claimed}。 */
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional(propagation = Propagation.REQUIRED)
   public void refund(
       long tenantId,
       String insuredIdHash,
@@ -141,7 +169,7 @@ public class QuotaApplicationService {
    * @param amount 本次占用（= 理算实付）
    * @param deductibleApplied 本次实际消抵的免赔（理算产出；回写后次案才只扣剩余免赔）
    */
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional(propagation = Propagation.REQUIRED)
   public void reserveLiability(
       long tenantId,
       String insuredIdHash,
@@ -182,7 +210,7 @@ public class QuotaApplicationService {
   }
 
   /** 责任账确认支付（PAID）：{@code frozen → claimed}。 */
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional(propagation = Propagation.REQUIRED)
   public void confirmLiabilityPay(
       long tenantId,
       String insuredIdHash,
@@ -212,8 +240,11 @@ public class QuotaApplicationService {
    * 释放责任账预占（撤销 / 拒赔 / 支付失败）：{@code frozen} 归还，<b>并且已消抵的免赔必须回退</b>。
    *
    * <p>只还额度不还免赔，会出现"案件撤销了但免赔被吃掉"——客户下一案仍要重新消化一笔根本没赔出去的免赔。
+   *
+   * <p><b>额度与免赔都只归还本单自有量</b>（见 {@link #ownHeld} / {@link #ownDeductible}）：责任账是
+   * 多个案件<b>共享</b>的池，按池余额释放会让本单吃掉他人的预占/免赔（越权释放）。
    */
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional(propagation = Propagation.REQUIRED)
   public void releaseLiability(
       long tenantId,
       String insuredIdHash,
@@ -232,19 +263,27 @@ public class QuotaApplicationService {
     boolean touched = false;
     String relKey = claimNo + ":LIABILITY_RELEASE:" + attempt;
     if (!alreadyOccupied(account, relKey) && amount != null && amount.signum() > 0) {
-      account.release(
-          DistributedIdGenerator.generateLongId(), amount, claimId, settlementNo, relKey);
-      touched = true;
+      BigDecimal held = ownHeld(account, settlementNo);
+      if (held.signum() > 0 && held.compareTo(amount) >= 0) {
+        // 本单自有占用足额 ⇒ 释放合法；责任账是共享池，投影被他人越权释放抽干时先按流水自愈
+        reconcileProjectionIfDeficit(account, amount);
+      }
+      QuotaTransaction released =
+          account.releaseOwned(
+              DistributedIdGenerator.generateLongId(), amount, held, claimId, settlementNo, relKey);
+      touched = released != null;
     }
     String dedKey = claimNo + ":DEDUCTIBLE_ROLLBACK:" + attempt;
     if (!alreadyOccupied(account, dedKey)) {
-      account.reduceDeductible(
-          DistributedIdGenerator.generateLongId(),
-          deductibleApplied,
-          claimId,
-          settlementNo,
-          dedKey);
-      touched = true;
+      QuotaTransaction rolledBack =
+          account.reduceDeductibleOwned(
+              DistributedIdGenerator.generateLongId(),
+              deductibleApplied,
+              ownDeductible(account, settlementNo),
+              claimId,
+              settlementNo,
+              dedKey);
+      touched = touched || rolledBack != null;
     }
     if (touched) {
       quotaAccountRepository.save(account);
@@ -252,7 +291,7 @@ public class QuotaApplicationService {
   }
 
   /** 责任账退款回冲（REFUNDED）：{@code claimed} 归还 + 免赔回退。 */
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional(propagation = Propagation.REQUIRED)
   public void refundLiability(
       long tenantId,
       String insuredIdHash,
@@ -312,12 +351,166 @@ public class QuotaApplicationService {
     return account;
   }
 
+  /**
+   * 账户的完整流水视图（已落库 + 本事务内存中新增，按幂等键去重）。
+   *
+   * <p>为什么要合并两处：账户与流水分开查询（流水量大，随聚合回填会拖垮读取），而本服务现在把两本账 放在<b>同一事务</b>里写——同一事务内刚 append 的流水未必已对 {@code
+   * findTransactions} 的查询可见。 只看 DB 会漏掉"本次事务刚记的流水"⇒ 归属推导算错；只看内存会漏掉历史流水。合并去重后两侧都全。
+   */
+  private List<QuotaTransaction> ledger(QuotaAccount account) {
+    Map<String, QuotaTransaction> byKey = new LinkedHashMap<>();
+    for (QuotaTransaction t : quotaAccountRepository.findTransactions(account.getId())) {
+      byKey.put(t.getIdempotencyKey(), t);
+    }
+    List<QuotaTransaction> inMemory = account.getTransactions();
+    if (inMemory != null) {
+      for (QuotaTransaction t : inMemory) {
+        byKey.putIfAbsent(t.getIdempotencyKey(), t);
+      }
+    }
+    return new ArrayList<>(byKey.values());
+  }
+
+  /**
+   * 本结算单在本账户上的<b>自有冻结占用额</b>（从流水推导）。
+   *
+   * <p>口径：{@code SOFT} 新增预占；{@code PAID} 把冻结转成已扣减（不再占冻结）；{@code RELEASE} 归还冻结。 {@code HARD}
+   * 不新增占用（新版升级硬冻时 before==after，增量为 0）、{@code DEDUCTIBLE} 不占冻结、{@code REFUND} 回冲的是已扣减 ⇒ 三者均不计入。
+   *
+   * <p>这是"释放只能还自己的钱"的依据：共享池的 {@code frozen} 里混着多张结算单的预占， 只按池余额释放会越权吃掉他人预占。
+   *
+   * <p><b>老版本 HARD 的兼容</b>：早期版本用 {@code HARD} 直接起手占用（before≠after，真实增加了冻结额），与新版"SOFT 起手 + HARD
+   * 升级"不同。若一律按"增量 0"处理，那些老单的自有占用会被算成 0 ⇒ 释放被当成空操作、其占用永远留在池里。 故 {@code HARD} 取 {@code max(0, after −
+   * before)}：新版为 0（不计），老版为真实占用（计入）。
+   *
+   * <p>本口径与 {@link #projectFromLedger}（投影重算）<b>必须一致</b>，否则单笔归属判定与池级投影会互相打架。
+   */
+  private BigDecimal ownHeld(QuotaAccount account, String settlementNo) {
+    BigDecimal held = ZERO;
+    for (QuotaTransaction t : ledger(account)) {
+      if (!settlementNo.equals(t.getSettlementNo())) {
+        continue;
+      }
+      String type = t.getTxnType();
+      if ("SOFT".equals(type)) {
+        held = held.add(t.getAmount());
+      } else if ("HARD".equals(type)) {
+        held = held.add(hardDelta(t));
+      } else if ("PAID".equals(type) || "RELEASE".equals(type)) {
+        held = held.subtract(t.getAmount());
+      }
+    }
+    return held.max(ZERO);
+  }
+
+  /**
+   * {@code HARD} 流水的真实占用增量（{@code max(0, after − before)}）。
+   *
+   * <p>新版"SOFT 起手 + HARD 升级"下 HARD 的 before==after ⇒ 增量为 0（不重复计占用）； 早期版本用 HARD 直接起手时 before≠after ⇒
+   * 增量为真实占用额。 {@code before}/{@code after} 缺失时按 0 处理（宁可少算也不凭空计占用）。
+   */
+  private BigDecimal hardDelta(QuotaTransaction t) {
+    BigDecimal before = t.getBeforeAmount();
+    BigDecimal after = t.getAfterAmount();
+    if (before == null || after == null) {
+      return ZERO;
+    }
+    return after.subtract(before).max(ZERO);
+  }
+
+  /**
+   * 按流水事实<b>重算账户投影</b>（自愈：投影失真时修正投影，而不是阻塞业务）。
+   *
+   * <p>触发条件：<b>账户上的冻结额不足以支撑本次释放</b>。这说明投影与事实失真——最常见成因是历史越权释放（别的单据把共享池抽干）。
+   * 此时正确动作是<b>按流水重算</b>，否则本单合法的释放会被永久拒掉、结算单卡死在冻结态、钱出不来。
+   *
+   * <p>重算口径与 {@link #ownHeld} 同源，但按结算单聚合后取"净占用为正"的单求和：越权释放（无对应占用的 RELEASE）净额为负， 被 {@code max(0, …)}
+   * 剔除 ⇒ 投影回到事实（该单从未占用过，不应影响池）。
+   *
+   * <p>正常路径（投影充足）零开销：只做一次 O(1) 比较。
+   */
+  private void reconcileProjectionIfDeficit(QuotaAccount account, BigDecimal amount) {
+    BigDecimal frozen = account.getQuotaFrozen();
+    if (frozen != null && frozen.compareTo(amount) >= 0) {
+      return; // 投影充足：正常路径，不重算
+    }
+    Projection projection = projectFromLedger(account);
+    account.reconcileProjection(projection.frozen(), projection.claimed(), projection.deductible());
+  }
+
+  /**
+   * 按流水聚合出的账户投影。
+   *
+   * @param frozen 冻结占用投影（Σ 各结算单净冻结占用，只计正数）
+   * @param claimed 已扣减投影（Σ 各结算单净已付，只计正数）
+   * @param deductible 年免赔已用投影（Σ 各结算单净消抵，只计正数）
+   */
+  private record Projection(BigDecimal frozen, BigDecimal claimed, BigDecimal deductible) {}
+
+  /** 按流水事实聚合账户投影（见 {@link #reconcileProjectionIfDeficit} 的口径说明）。 */
+  private Projection projectFromLedger(QuotaAccount account) {
+    Map<String, BigDecimal> held = new LinkedHashMap<>();
+    Map<String, BigDecimal> paid = new LinkedHashMap<>();
+    Map<String, BigDecimal> deductible = new LinkedHashMap<>();
+    for (QuotaTransaction t : ledger(account)) {
+      String sn = t.getSettlementNo();
+      if (sn == null) {
+        continue;
+      }
+      String type = t.getTxnType();
+      if ("SOFT".equals(type)) {
+        held.merge(sn, t.getAmount(), BigDecimal::add);
+      } else if ("HARD".equals(type)) {
+        held.merge(sn, hardDelta(t), BigDecimal::add);
+      } else if ("PAID".equals(type)) {
+        held.merge(sn, t.getAmount().negate(), BigDecimal::add);
+        paid.merge(sn, t.getAmount(), BigDecimal::add);
+      } else if ("RELEASE".equals(type)) {
+        held.merge(sn, t.getAmount().negate(), BigDecimal::add);
+      } else if ("REFUND".equals(type)) {
+        paid.merge(sn, t.getAmount().negate(), BigDecimal::add);
+      } else if ("DEDUCTIBLE".equals(type)) {
+        BigDecimal delta =
+            "OCCUPY".equals(t.getDirection()) ? t.getAmount() : t.getAmount().negate();
+        deductible.merge(sn, delta, BigDecimal::add);
+      }
+    }
+    return new Projection(sumPositive(held), sumPositive(paid), sumPositive(deductible));
+  }
+
+  /** 各结算单净额求和（只计正数：净额为负 = 越权释放/无对应占用的归还，不应占用投影）。 */
+  private BigDecimal sumPositive(Map<String, BigDecimal> perSettlement) {
+    BigDecimal total = ZERO;
+    for (BigDecimal net : perSettlement.values()) {
+      if (net.signum() > 0) {
+        total = total.add(net);
+      }
+    }
+    return total;
+  }
+
+  /**
+   * 本结算单在本账户上<b>自有免赔消抵额</b>（从流水推导）。
+   *
+   * <p>口径：{@code DEDUCTIBLE + OCCUPY} 是消抵，{@code DEDUCTIBLE + ROLLBACK} 是回退。
+   * 年免赔是跨案共享池，只按池余额回退会把别人消抵掉的免赔退回来 ⇒ 客户下一案重复消化免赔（少赔）。
+   */
+  private BigDecimal ownDeductible(QuotaAccount account, String settlementNo) {
+    BigDecimal owned = ZERO;
+    for (QuotaTransaction t : ledger(account)) {
+      if (!settlementNo.equals(t.getSettlementNo()) || !"DEDUCTIBLE".equals(t.getTxnType())) {
+        continue;
+      }
+      if ("OCCUPY".equals(t.getDirection())) {
+        owned = owned.add(t.getAmount());
+      } else {
+        owned = owned.subtract(t.getAmount());
+      }
+    }
+    return owned.max(ZERO);
+  }
+
   private boolean alreadyOccupied(QuotaAccount account, String key) {
-    List<?> txns = quotaAccountRepository.findTransactions(account.getId());
-    return txns.stream()
-        .anyMatch(
-            t ->
-                key.equals(
-                    ((com.bone.claim.domain.model.quota.QuotaTransaction) t).getIdempotencyKey()));
+    return ledger(account).stream().anyMatch(t -> key.equals(t.getIdempotencyKey()));
   }
 }

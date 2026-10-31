@@ -520,6 +520,24 @@
       "authority": "次分组维度"
     },
     {
+      "id": "records.impl.19",
+      "path": "09-records/impl-log/19-额度释放原子性与占用归属（P0-5）.md",
+      "layer": "L9",
+      "diataxis": "explanation",
+      "status": "active",
+      "summary": "额度释放的占用归属校验与跨账原子性（含 CORE-06 例外登记与 4 项变异证据）",
+      "authority": "资金原子性"
+    },
+    {
+      "id": "records.impl.20",
+      "path": "09-records/impl-log/20-额度投影自愈与释放阻塞（P0-6）.md",
+      "layer": "L9",
+      "diataxis": "explanation",
+      "status": "active",
+      "summary": "额度投影自愈：共享池被越权释放抽干时，本单自有 hold 足额仍须能正常取消（含口径自洽性验算与 7 项变异证据）",
+      "authority": "资金投影自愈"
+    },
+    {
       "id": "archive.system-design",
       "path": "10-archive/synapClaim 智能理赔平台-系统设计方案.md",
       "layer": "L10",

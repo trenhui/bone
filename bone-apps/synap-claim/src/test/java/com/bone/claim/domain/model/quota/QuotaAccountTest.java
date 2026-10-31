@@ -201,4 +201,152 @@ class QuotaAccountTest {
     account.markRemoved();
     assertThat(account.isRemoved()).isTrue();
   }
+
+  // ===================== 释放归属：只还自己的钱（P0-5） =====================
+
+  @Test
+  @DisplayName("releaseOwned：本单无自有预占时是空操作，不得触碰共享池（越权释放防线）")
+  void releaseOwnedWithoutOwnHoldIsNoop() {
+    QuotaAccount account = account(new BigDecimal("20000.00"));
+    // 别的结算单占着的 5000：共享池里混着多单预占
+    account.reserveSoft(1L, new BigDecimal("5000.00"), 2002L, "S-OTHER", "OTHER:SOFT:1");
+
+    QuotaTransaction released =
+        account.releaseOwned(
+            2L, new BigDecimal("3000.00"), BigDecimal.ZERO, 1001L, "S-MINE", "MINE:RELEASE:1");
+
+    assertThat(released).as("本单自有预占为 0 ⇒ 空操作，不落流水").isNull();
+    assertThat(account.getQuotaFrozen()).as("共享池冻结额不得被本单释放改动").isEqualByComparingTo("5000.00");
+    assertThat(account.getTransactions()).as("空操作不得新增流水（只应保留他人那笔 SOFT）").hasSize(1);
+  }
+
+  @Test
+  @DisplayName("releaseOwned：本单自有预占不足时必须 fail-closed，拒绝按池余额放行")
+  void releaseOwnedRejectsInsufficientOwnHold() {
+    QuotaAccount account = account(new BigDecimal("20000.00"));
+    account.reserveSoft(1L, new BigDecimal("10000.00"), 1001L, "S-MINE", "MINE:SOFT:1");
+    // 历史上已释放过一部分：本单自有预占只剩 4000
+    account.release(2L, new BigDecimal("6000.00"), 1001L, "S-MINE", "MINE:LEGACY_PARTIAL:1");
+
+    assertThatThrownBy(
+            () ->
+                account.releaseOwned(
+                    3L,
+                    new BigDecimal("10000.00"),
+                    new BigDecimal("4000.00"),
+                    1001L,
+                    "S-MINE",
+                    "MINE:RELEASE:1"))
+        .isInstanceOf(DomainException.class)
+        .hasMessageContaining("拒绝越权释放");
+    assertThat(account.getQuotaFrozen()).as("拒绝后冻结额不得被改动").isEqualByComparingTo("4000.00");
+  }
+
+  @Test
+  @DisplayName("releaseOwned：自有预占充足时正常归还，并落 RELEASE 流水")
+  void releaseOwnedWithEnoughHoldReleases() {
+    QuotaAccount account = account(new BigDecimal("20000.00"));
+    account.reserveSoft(1L, new BigDecimal("10000.00"), 1001L, "S-MINE", "MINE:SOFT:1");
+
+    QuotaTransaction released =
+        account.releaseOwned(
+            2L,
+            new BigDecimal("10000.00"),
+            new BigDecimal("10000.00"),
+            1001L,
+            "S-MINE",
+            "MINE:RELEASE:1");
+
+    assertThat(released).isNotNull();
+    assertThat(released.getTxnType()).isEqualTo("RELEASE");
+    assertThat(released.getDirection()).isEqualTo("ROLLBACK");
+    assertThat(account.getQuotaFrozen()).isEqualByComparingTo("0.00");
+  }
+
+  @Test
+  @DisplayName("reduceDeductibleOwned：免赔回退只认本单自有量，不得回退他人已消抵的免赔")
+  void reduceDeductibleOwnedRespectsOwnership() {
+    QuotaAccount account = account(new BigDecimal("20000.00"));
+    // 别的案件消抵的免赔：共享池
+    account.accumulateDeductible(1L, new BigDecimal("10000.00"), 2002L, "S-OTHER", "OTHER:DED:1");
+
+    QuotaTransaction rolledBack =
+        account.reduceDeductibleOwned(
+            2L,
+            new BigDecimal("10000.00"),
+            BigDecimal.ZERO,
+            1001L,
+            "S-MINE",
+            "MINE:DED_ROLLBACK:1");
+
+    assertThat(rolledBack).as("本单从未消抵免赔 ⇒ 空操作").isNull();
+    assertThat(account.getDeductibleUsed()).as("不得回退他人已消抵的免赔").isEqualByComparingTo("10000.00");
+  }
+
+  @Test
+  @DisplayName("流水类型无歧义：回冲已扣减记 REFUND（区别于释放冻结的 RELEASE）")
+  void refundTxnTypeIsDistinctFromRelease() {
+    QuotaAccount account = account(new BigDecimal("20000.00"));
+    account.reserveSoft(1L, new BigDecimal("500.00"), 1001L, "S1", "CL001:SOFT:1");
+    account.confirm(2L, new BigDecimal("500.00"), 1001L, "S1", "CL001:PAID:1");
+    QuotaTransaction refund =
+        account.rollback(3L, new BigDecimal("500.00"), 1001L, "S1", "CL001:REFUND:1");
+
+    assertThat(refund.getTxnType())
+        .as("回冲 claimed 必须与释放 frozen 区分：流水是事实表，类型歧义会让「本单还占多少冻结」算错")
+        .isEqualTo("REFUND");
+    assertThat(refund.getDirection()).isEqualTo("ROLLBACK");
+    assertThat(account.getQuotaClaimed()).isEqualByComparingTo("0.00");
+  }
+
+  // ===================== 投影自愈：释放不得被共享池余额阻塞（F3） =====================
+
+  @Test
+  @DisplayName("归属校验通过但池投影亏空时不得放出负冻结：交由上层按流水自愈，领域层仍 fail-closed")
+  void releaseOwnedWithDeficitProjectionFailsOnConservation() {
+    QuotaAccount account = account(new BigDecimal("20000.00"));
+    account.reserveSoft(1L, new BigDecimal("500.00"), 1001L, "S-MINE", "MINE:SOFT:1");
+
+    // 共享池被他人越权释放抽干：账户投影 frozen 被扣成 0，而本单流水事实（SOFT 500）仍在
+    account.reconcileProjection(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+    assertThat(account.getQuotaFrozen()).isEqualByComparingTo("0.00");
+
+    // 自有 hold 足额 ⇒ 归属校验通过；但投影未自愈 ⇒ 扣减后为负 ⇒ 守恒 fail-closed
+    assertThatThrownBy(
+            () ->
+                account.releaseOwned(
+                    2L,
+                    new BigDecimal("500.00"),
+                    new BigDecimal("500.00"),
+                    1001L,
+                    "S-MINE",
+                    "MINE:RELEASE:1"))
+        .isInstanceOf(DomainException.class)
+        .hasMessageContaining("额度守恒被破坏");
+  }
+
+  @Test
+  @DisplayName("reconcileProjection：按流水事实重算投影并同步 capUsed，且不得放出负数")
+  void reconcileProjectionRestoresProjectionAndSyncsCapUsed() {
+    QuotaAccount account = account(new BigDecimal("20000.00"));
+    account.reserveSoft(1L, new BigDecimal("500.00"), 1001L, "S1", "CL001:SOFT:1");
+    account.confirm(2L, new BigDecimal("500.00"), 1001L, "S1", "CL001:PAID:1");
+
+    account.reconcileProjection(
+        new BigDecimal("300.00"), new BigDecimal("500.00"), new BigDecimal("80.00"));
+
+    assertThat(account.getQuotaFrozen()).isEqualByComparingTo("300.00");
+    assertThat(account.getQuotaClaimed()).isEqualByComparingTo("500.00");
+    assertThat(account.getCapUsed())
+        .as("capUsed 必须与 claimed 同步（封顶已用）")
+        .isEqualByComparingTo("500.00");
+    assertThat(account.getDeductibleUsed()).isEqualByComparingTo("80.00");
+
+    // 负投影必须被钳到 0，不得出现负额度
+    account.reconcileProjection(
+        new BigDecimal("-100.00"), new BigDecimal("-100.00"), new BigDecimal("-1.00"));
+    assertThat(account.getQuotaFrozen()).isEqualByComparingTo("0.00");
+    assertThat(account.getQuotaClaimed()).isEqualByComparingTo("0.00");
+    assertThat(account.getDeductibleUsed()).isEqualByComparingTo("0.00");
+  }
 }

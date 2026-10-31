@@ -10,6 +10,8 @@
   S3 材料/欺诈异常拒赔: AI fail-closed→人工拒赔(五要素+受控原因码)
   S4 申诉复议       : 对拒赔案发起申诉 → 复议推翻 → 重启审核(ADJUSTING)
   S5 后督抽检       : 对已结案案发起质检 → 结论 PASS
+  S6 资金原子性     : 责任账释放 fail-closed ⇒ 个人账释放必须一起回滚（真事务证明）
+  S7 资金投影自愈   : 共享池被越权释放抽干 ⇒ 本单自有 hold 足额时仍须能正常取消（真事务证明）
 
 关键设计(循证工程纪律):
   * 所有判定除接口 2xx 外, 额外直查 MySQL 第二证据源(防「接口 200 但没落库」假绿)。
@@ -571,6 +573,189 @@ def scenario_inspection(finished_cid):
         raise
 
 
+def scenario_fund_atomicity():
+    """S6 资金原子性探针（真事务证明）：责任账释放失败 ⇒ 个人账必须一起回滚。
+
+    手法：建一笔结算单（两本账都占额）→ **人为把责任账上本单的自有预占改小**
+    （把该单责任账 SOFT 流水的金额调小）⇒ cancel 时责任账释放必然 fail-closed。
+
+    - 旧语义（额度方法 REQUIRES_NEW 独立事务）：个人账的释放**已独立提交**、外层回滚不了它
+      ⇒ 账实不符（个人账已解冻、结算单仍卡在原阶段），且本探针的"取消必须失败"也直接不成立。
+    - 新语义（REQUIRED 同事务）：整体回滚 ⇒ 个人账的冻结额**原封不动**，结算单状态不推进。
+
+    **这是唯一能证明事务原子性的地方**：内存仓没有事务，场景测试证明不了"部分失败要整体回滚"。
+    """
+    name = "S6 资金原子性：部分失败必须整体回滚（真事务）"
+    print(f"\n### {name}")
+    admin_tok = login(*ADMIN)
+    scn = {
+        "policyNo": "E2E-POLICY-0001", "planId": 9001,
+        "insuredIdHash": "e2e-insured-hash-0001",
+        "hospitalCode": "HOSP_BJ_001", "diagnosisCode": "J18.9",
+        "invoiceCode": "011001900", "invoiceNo": "S6" + str(int(time.time()))[-6:],
+        "invoiceDate": "2026-10-20", "batchNo": "BATCH-S6",
+        "items": [                  {"itemName": "挂号费", "itemCode": "A001", "category": "SERVICE",
+                   "quantity": 1, "unitPrice": 50, "amount": 50, "department": "门诊"},
+                  {"itemName": "西药费", "itemCode": "B205", "category": "DRUG",
+                   "quantity": 2, "unitPrice": 265, "amount": 530, "department": "门诊"},
+                  {"itemName": "检查费", "itemCode": "C310", "category": "EXAM",
+                   "quantity": 1, "unitPrice": 300, "amount": 300, "department": "放射科"}],
+        "invoice_total": 880,
+    }
+    cid = None
+    try:
+        cid, total = run_intake_and_decision(admin_tok, scn)
+        decide_approved(admin_tok, cid)
+        call("POST", f"/claims/{cid}/settlement", token=admin_tok, expect=(201,),
+             json_body={"attempt": 1, "accountType": "PERSONAL"})
+        settlement_no = f"SO{cid}-1"
+
+        personal = db_query(
+            "SELECT id,quota_frozen FROM t_quota_account WHERE policy_no='E2E-POLICY-0001' "
+            "AND quota_type='PERSONAL' AND deleted=0")
+        assert personal, "个人账不存在"
+        liab = db_query(
+            "SELECT id FROM t_quota_account WHERE policy_no='E2E-POLICY-0001' "
+            "AND quota_type='LIABILITY_CAP' AND deleted=0 LIMIT 1")
+        assert liab, "责任账不存在"
+        liab_id = liab[0]["id"]
+        personal_frozen_before = float(personal[0]["quota_frozen"])
+
+        soft = db_query(
+            "SELECT id,amount FROM t_quota_transaction WHERE quota_account_id=%s "
+            "AND settlement_no=%s AND txn_type='SOFT'", (liab_id, settlement_no))
+        assert soft, f"责任账上找不到本单的 SOFT 流水 (settlement_no={settlement_no})"
+        soft_id, soft_amount = soft[0]["id"], float(soft[0]["amount"])
+
+        # 人为把本单在责任账上的自有预占改小 ⇒ 释放时 ownHeld < 待释放金额 ⇒ fail-closed
+        db_exec("UPDATE t_quota_transaction SET amount=1.00 WHERE id=%s", (soft_id,))
+        print(f"  · 已把责任账本单 SOFT 流水金额 {soft_amount} → 1.00（制造账实不符）")
+
+        # 取消必须失败（责任账释放被拒）
+        rejected = False
+        try:
+            call("POST", f"/claims/{cid}/settlement/cancel", token=admin_tok,
+                 expect=(200,), json_body={"payFailed": True})
+        except APIError as e:
+            rejected = True
+            print(f"  · 取消被拒（HTTP {e.code}）✓ 责任账释放 fail-closed")
+        assert rejected, "责任账释放本应 fail-closed，取消却成功了 ⇒ 归属校验未生效"
+
+        # **原子性判据**：个人账的释放必须随整体回滚而消失
+        after = db_query(
+            "SELECT quota_frozen FROM t_quota_account WHERE id=%s", (personal[0]["id"],))
+        personal_frozen_after = float(after[0]["quota_frozen"])
+        assert abs(personal_frozen_after - personal_frozen_before) < 0.01, (
+            f"个人账释放未被回滚: {personal_frozen_before} → {personal_frozen_after}"
+            "（额度方法用了独立事务 ⇒ 账实不符）")
+        print(f"  · 个人账冻结额保持 {personal_frozen_after:.2f}（释放已随整体回滚消失）✓ 原子性成立")
+
+        # 结算单状态不得推进
+        st = db_query("SELECT funding_stage FROM settle_order WHERE settlement_no=%s", (settlement_no,))
+        assert st and st[0]["funding_stage"] not in ("RELEASED", "FAILED"), (
+            f"取消失败但结算单已推进到 {st[0]['funding_stage'] if st else None}")
+
+        # 复原并清理（探针必须可重复）
+        db_exec("UPDATE t_quota_transaction SET amount=%s WHERE id=%s", (soft_amount, soft_id))
+        call("POST", f"/claims/{cid}/settlement/cancel", token=admin_tok,
+             expect=(200,), json_body={"payFailed": True})
+        print("  · 已复原流水并完成清理（探针可重复）")
+        record(name, True, f"claimId={cid} 赔付={total} 部分失败整体回滚 ✓")
+        return cid
+    except Exception as e:
+        record(name, False, str(e)[:200])
+        safe_cancel_settlement(admin_tok, cid)
+        raise
+
+
+def scenario_fund_self_heal():
+    """S7 资金投影自愈探针（真库证明）：共享池被越权释放抽干后，本单自有 hold 足额 ⇒ 必须能正常取消。
+
+    手法：建一笔结算单（两本账都占额）→ **人为把责任账的 quota_frozen 改成 0**（复刻 F2 时代
+    "只释放、从未占用"的越权释放把共享池抽干的污染形态）→ cancel 必须成功。
+
+    - 旧语义（releaseOwned 仍走池级余额校验）：frozen(0) < 待释放金额 ⇒ 400「冻结额度小于释放金额」
+      ⇒ **本单永久卡死在冻结态、钱出不来**（生产实证：claim 771522015306711040 自有 hold 足额 18000，
+      却因池被抽干后只剩 3969.92 而永远无法取消）。
+    - 新语义（归属校验 + 按流水重算投影自愈）：投影重算回「Σ 各单未结占用」= 本单自有 hold ⇒ 释放成功 ⇒ 冻结归零。
+
+    判据（全部直查 MySQL，不看接口返回）：
+      ① cancel 返回 200；
+      ② 责任账 quota_frozen 归零；
+      ③ 责任账上本单落下 RELEASE 流水；
+      ④ 个人账 quota_frozen 归零。
+    """
+    name = "S7 资金投影自愈：池被抽干后本单仍须能正常取消（真事务）"
+    print(f"\n### {name}")
+    admin_tok = login(*ADMIN)
+    scn = {
+        "policyNo": "E2E-POLICY-0001", "planId": 9001,
+        "insuredIdHash": "e2e-insured-hash-0001",
+        "hospitalCode": "HOSP_BJ_001", "diagnosisCode": "J18.9",
+        "invoiceCode": "011001900", "invoiceNo": "S7" + str(int(time.time()))[-6:],
+        "invoiceDate": "2026-10-20", "batchNo": "BATCH-S7",
+        "items": [                  {"itemName": "挂号费", "itemCode": "A001", "category": "SERVICE",
+                   "quantity": 1, "unitPrice": 50, "amount": 50, "department": "门诊"},
+                  {"itemName": "西药费", "itemCode": "B205", "category": "DRUG",
+                   "quantity": 2, "unitPrice": 265, "amount": 530, "department": "门诊"},
+                  {"itemName": "检查费", "itemCode": "C310", "category": "EXAM",
+                   "quantity": 1, "unitPrice": 300, "amount": 300, "department": "放射科"}],
+        "invoice_total": 880,
+    }
+    cid = None
+    try:
+        cid, total = run_intake_and_decision(admin_tok, scn)
+        decide_approved(admin_tok, cid)
+        call("POST", f"/claims/{cid}/settlement", token=admin_tok, expect=(201,),
+             json_body={"attempt": 1, "accountType": "PERSONAL"})
+        settlement_no = f"SO{cid}-1"
+
+        liab = db_query(
+            "SELECT id,quota_frozen FROM t_quota_account WHERE policy_no='E2E-POLICY-0001' "
+            "AND quota_type='LIABILITY_CAP' AND deleted=0 LIMIT 1")
+        assert liab, "责任账不存在"
+        liab_id = liab[0]["id"]
+        personal = db_query(
+            "SELECT id,quota_frozen FROM t_quota_account WHERE policy_no='E2E-POLICY-0001' "
+            "AND quota_type='PERSONAL' AND deleted=0")
+        assert personal, "个人账不存在"
+
+        soft = db_query(
+            "SELECT id,amount FROM t_quota_transaction WHERE quota_account_id=%s "
+            "AND settlement_no=%s AND txn_type='SOFT'", (liab_id, settlement_no))
+        assert soft, f"责任账上找不到本单的 SOFT 流水 (settlement_no={settlement_no})"
+        assert abs(float(soft[0]["amount"]) - total) < 0.01, (
+            f"责任账本单自有预占 {soft[0]['amount']} 与赔付额 {total} 不符")
+
+        # 复刻污染：把共享池的冻结投影抽干（流水事实不动）
+        db_exec("UPDATE t_quota_account SET quota_frozen=0 WHERE id=%s", (liab_id,))
+        print(f"  · 已把责任账 quota_frozen 抽干为 0（本单自有预占 {float(soft[0]['amount']):.2f} 仍在）")
+
+        # 取消必须成功（旧语义在此 400 卡死）
+        call("POST", f"/claims/{cid}/settlement/cancel", token=admin_tok,
+             expect=(200,), json_body={"payFailed": True})
+        print("  · 取消成功（HTTP 200）✓ 池被抽干不再阻塞本单释放")
+
+        # 直查判据：责任账冻结归零 + 本单 RELEASE 流水存在
+        after = db_query("SELECT quota_frozen FROM t_quota_account WHERE id=%s", (liab_id,))
+        assert abs(float(after[0]["quota_frozen"] or 0)) < 0.01, (
+            f"责任账冻结额应归零，实际 {after[0]['quota_frozen']}")
+        rel = db_query(
+            "SELECT id FROM t_quota_transaction WHERE quota_account_id=%s "
+            "AND settlement_no=%s AND txn_type='RELEASE'", (liab_id, settlement_no))
+        assert rel, "责任账上缺少本单的 RELEASE 流水"
+        pa = db_query("SELECT quota_frozen FROM t_quota_account WHERE id=%s", (personal[0]["id"],))
+        assert abs(float(pa[0]["quota_frozen"] or 0)) < 0.01, (
+            f"个人账冻结额应归零，实际 {pa[0]['quota_frozen']}")
+        print("  · 责任账冻结额归零 ✓ 本单 RELEASE 流水已落 ✓ 个人账冻结额归零 ✓ 自愈成立")
+        record(name, True, f"claimId={cid} 赔付={total} 池被抽干仍可取消 ✓")
+        return cid
+    except Exception as e:
+        record(name, False, str(e)[:200])
+        safe_cancel_settlement(admin_tok, cid)
+        raise
+
+
 def main():
     print("=" * 72)
     print("智能理赔 synap-claim · 企业复杂真实场景 E2E")
@@ -609,6 +794,14 @@ def main():
             print(f"!! S5 异常: {e}")
     else:
         print("!! S5 跳过：无可用的已结案案件")
+    try:
+        scenario_fund_atomicity()
+    except Exception as e:
+        print(f"!! S6 异常: {e}")
+    try:
+        scenario_fund_self_heal()
+    except Exception as e:
+        print(f"!! S7 异常: {e}")
 
     print("\n" + "=" * 72)
     print("E2E 结果汇总")

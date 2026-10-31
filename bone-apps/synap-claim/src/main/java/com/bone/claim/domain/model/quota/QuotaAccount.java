@@ -240,13 +240,79 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
         idempotencyKey);
   }
 
-  /** 释放冻结（重算/撤销：frozen 归还）。 */
+  /**
+   * 释放冻结（重算/撤销：frozen 归还）。
+   *
+   * <p><b>注意</b>：本方法只校验"账户上的冻结额够不够"——那是<b>共享池</b>口径，池里还压着别的结算单的预占。 跨结算单的释放必须走 {@link
+   * #releaseOwned}（按本单自有预占校验），否则 A 单释放会吃掉 B 单的预占。
+   *
+   * <p>本方法<b>生产代码零调用</b>（释放路径一律走 {@link #releaseOwned}），只作为"无归属信息"场景与测试夹具存在； 保留它是因为它携带的池级前置校验仍是
+   * {@link #releaseHeld} 的安全网。
+   */
   public QuotaTransaction release(
       long txnId, BigDecimal amount, Long claimId, String settlementNo, String idempotencyKey) {
     requirePositive(amount, "释放金额");
     if (quotaFrozen.compareTo(amount) < 0) {
       throw new DomainException("冻结额度小于释放金额");
     }
+    return releaseHeld(txnId, amount, claimId, settlementNo, idempotencyKey);
+  }
+
+  /**
+   * 释放<b>本结算单自有</b>的冻结预占（归还 {@code frozen}）。
+   *
+   * <p>与 {@link #release} 只差一条判据，但这条判据是资金正确性的分水岭：{@code release} 只看
+   * <b>共享池余额</b>（"账户上冻结额够不够"），而共享池里还压着别的结算单的预占 ⇒ A 单释放会吃掉 B 单的预占，池被抽干后 B 单的合法释放被拒（越权释放 / 幽灵冻结）。
+   *
+   * <p>{@code ownHeld} 是<b>本结算单在本账户上的自有冻结额</b>（由流水推导，见 {@code
+   * QuotaApplicationService#ownHeld}），据此三态判定：
+   *
+   * <ul>
+   *   <li>{@code ownHeld == 0}：本单在此账户上已无冻结占用（此前已释放，或从未在此占额） ⇒
+   *       <b>空操作</b>：不落流水、不触碰共享池。这是幂等重入的正常形态（结算单已释放过一遍）。
+   *   <li>{@code 0 < ownHeld < amount}：账实不符（本单持有量不足以释放本次金额） ⇒ 抛异常，<b>拒绝越权释放</b>（fail-closed）。
+   *   <li>{@code ownHeld >= amount}：正常释放。
+   * </ul>
+   *
+   * <p><b>归属校验通过后不再校验"共享池总额是否够"</b>（2026-10-31，F3 修复）：按业界 escrow/hold 语义， 释放一笔占用（hold）的唯一前置条件是"该
+   * hold 存在且未被释放"，<b>账户 {@code frozen} 是投影 （Σ 各笔未结
+   * hold），不是释放的前置门槛</b>。若池总额小于本单持有量，说明<b>投影已被他人越权释放抽干</b>， 那是别的单据的历史污染，正确动作是<b>按流水重算投影自愈</b>（{@link
+   * #reconcileProjection}，由应用层在释放前触发）， 而不是把本单的合法释放永久拒掉——那会让结算单卡死在冻结态、钱永远出不来（线上实证：claim
+   * 771522015306711040 自有 hold 足额 18000，却因池被抽干后只剩 3969.92 而永久无法取消）。
+   *
+   * <p>若应用层未先行重算、投影仍不足以支撑本次扣减，{@link #assertConserved} 会以"额度守恒被破坏" fail-closed。
+   *
+   * @param ownHeld 本单自有冻结额；{@code null} 视为 0（无自有预占 ⇒ 空操作）
+   * @return 本次流水；空操作时返回 {@code null}
+   */
+  public QuotaTransaction releaseOwned(
+      long txnId,
+      BigDecimal amount,
+      BigDecimal ownHeld,
+      Long claimId,
+      String settlementNo,
+      String idempotencyKey) {
+    requirePositive(amount, "释放金额");
+    BigDecimal held = ownHeld == null ? ZERO : ownHeld;
+    if (held.signum() <= 0) {
+      return null; // 本单已无自有占用：空操作，绝不触碰共享池
+    }
+    if (held.compareTo(amount) < 0) {
+      throw new DomainException("本单自有冻结占用 " + held + " 小于待释放 " + amount + "：额度账实不符，拒绝越权释放共享池额度");
+    }
+    return releaseHeld(txnId, amount, claimId, settlementNo, idempotencyKey);
+  }
+
+  /**
+   * 归还冻结额并落 {@code RELEASE} 流水（<b>不含池级余额前置校验</b>）。
+   *
+   * <p>这是 {@link #release} 与 {@link #releaseOwned} 共用的落账路径：调用方必须已就"这笔钱是谁的"给出判据 （池级余额 or 本单自有
+   * hold），本方法只负责改投影 + 记事实。
+   *
+   * <p>{@code frozen} 扣减后为负 ⇒ {@link #assertConserved} fail-closed（说明投影失真且调用方未自愈）。
+   */
+  private QuotaTransaction releaseHeld(
+      long txnId, BigDecimal amount, Long claimId, String settlementNo, String idempotencyKey) {
     BigDecimal before = quotaFrozen;
     this.quotaFrozen = quotaFrozen.subtract(amount).setScale(2, java.math.RoundingMode.HALF_UP);
     assertConserved();
@@ -262,7 +328,43 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
         idempotencyKey);
   }
 
-  /** 回冲已付（退款/红冲：claimed 归还）。 */
+  /**
+   * 按流水事实<b>重算并覆盖账户投影</b>（自愈）。
+   *
+   * <p>账户的 {@code frozen}/{@code claimed}/{@code deductible_used}/{@code cap_used}
+   * 是<b>投影</b>（各笔占用的汇总）， 流水才是事实。投影与事实失准时（历史越权释放、并发丢失更新、跨版本代码路径），<b>应当修正投影而不是阻塞业务</b>：
+   * 阻塞会让本单合法的释放被拒、结算单永久卡死、钱出不来。
+   *
+   * <p>调用方（应用层）负责按流水算出正确的投影值并传入；本方法只负责落值 + 守恒自校验（守恒被破坏仍 fail-closed）。
+   *
+   * @param frozen 重算后的冻结占用投影
+   * @param claimed 重算后的已扣减投影
+   * @param deductibleUsed 重算后的年免赔已用投影
+   */
+  public void reconcileProjection(
+      BigDecimal frozen, BigDecimal claimed, BigDecimal deductibleUsed) {
+    this.quotaFrozen = scale(frozen);
+    this.quotaClaimed = scale(claimed);
+    this.capUsed = scale(claimed);
+    this.deductibleUsed = scale(deductibleUsed);
+    this.updatedAt = Instant.now();
+    assertConserved();
+  }
+
+  private static BigDecimal scale(BigDecimal value) {
+    if (value == null || value.signum() <= 0) {
+      return ZERO;
+    }
+    return value.setScale(2, java.math.RoundingMode.HALF_UP);
+  }
+
+  /**
+   * 回冲已付（退款/红冲：claimed 归还）。
+   *
+   * <p><b>{@code txn_type=REFUND} 而非 RELEASE</b>：本方法回冲的是 {@code claimed}（已付钱）， {@link #release}
+   * 归还的是 {@code frozen}（未付的预占）——两者若共用 {@code RELEASE}， 流水就无法区分"释放冻结"与"回冲已扣减"，按流水推导"本单还占多少冻结"会算错
+   * （已退款的结算单会被算成还占着冻结）。流水是事实表，事实表的类型必须无歧义。
+   */
   public QuotaTransaction rollback(
       long txnId, BigDecimal amount, Long claimId, String settlementNo, String idempotencyKey) {
     requirePositive(amount, "回冲金额");
@@ -278,7 +380,7 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
         claimId,
         settlementNo,
         "ROLLBACK",
-        "RELEASE",
+        "REFUND",
         amount,
         before,
         quotaClaimed,
@@ -339,6 +441,38 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
         before,
         deductibleUsed,
         idempotencyKey);
+  }
+
+  /**
+   * 回退<b>本结算单自有</b>的年免赔消抵。
+   *
+   * <p>年免赔同样是<b>共享池</b>（一个被保人一年的免赔被多案先后消抵），所以回退必须限定在
+   * 本单实际消抵过的额度内：从未消抵免赔的结算单若去回退，会把<b>别的案件</b>已经消抵掉的免赔 退回来 ⇒ 客户下一案又要重新消化一笔根本没赔出去的免赔（系统性少赔）。
+   *
+   * <p>三态判定与 {@link #releaseOwned} 同构：{@code ownDeductible == 0} ⇒ 空操作； {@code 0 < ownDeductible <
+   * amount} ⇒ 抛异常（账实不符，fail-closed）；否则正常回退。
+   *
+   * @param ownDeductible 本单自有免赔消抵额；{@code null} 视为 0
+   * @return 本次流水；空操作时返回 {@code null}
+   */
+  public QuotaTransaction reduceDeductibleOwned(
+      long txnId,
+      BigDecimal amount,
+      BigDecimal ownDeductible,
+      Long claimId,
+      String settlementNo,
+      String idempotencyKey) {
+    if (amount == null || amount.signum() <= 0) {
+      return null;
+    }
+    BigDecimal owned = ownDeductible == null ? ZERO : ownDeductible;
+    if (owned.signum() <= 0) {
+      return null; // 本单从未消抵免赔：空操作，不动共享池
+    }
+    if (owned.compareTo(amount) < 0) {
+      throw new DomainException("本单自有免赔消抵 " + owned + " 小于待回退 " + amount + "：免赔账实不符，拒绝越权回退他人免赔");
+    }
+    return reduceDeductible(txnId, amount, claimId, settlementNo, idempotencyKey);
   }
 
   /** 减人（不再参与额度累计）。 */
