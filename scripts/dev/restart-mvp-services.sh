@@ -16,6 +16,22 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 export JAVA_HOME="${JAVA_HOME:-$HOME/Library/Java/JavaVirtualMachines/temurin-21/Contents/Home}"
 export PATH="/Users/renhui.trh/java/apache-maven-3.8.6/bin:$JAVA_HOME/bin:$PATH"
 
+# 统一本地启动契约：加载仓库根 .env（DB/Redis/密钥）+ 固定 dev profile。
+# 反面教训（2026-10-31）：不带 dev profile 起的 IAM 会出现
+# 「/actuator/health 秒回 200，而 / 、404、/api/v1/iam/login 全部挂起」——
+# 进程在听、health 绿，业务全死。重启必须收敛到与 local-up.sh 相同的一套环境。
+if [ -f "${ROOT}/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . "${ROOT}/.env"
+  set +a
+  echo "[env] 已加载 ${ROOT}/.env"
+else
+  echo "[env][warn] 未找到 ${ROOT}/.env，沿用当前环境变量"
+fi
+export SPRING_PROFILES_ACTIVE="${SPRING_PROFILES_ACTIVE:-dev}"
+echo "[env] SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}"
+
 module_dir() {
   case "$1" in
     gateway)     echo "${ROOT}/bone-platform/bone-gateway" ;;
@@ -70,6 +86,12 @@ for svc in "${targets[@]}"; do
   pid="$(lsof -nP -iTCP:"${port}" -sTCP:LISTEN -t 2>/dev/null | head -1)"
   if [ -n "${pid}" ]; then
     echo "[stop] ${svc} (pid=${pid}, port=${port})"
+    # 记录被杀者的启动命令：多会话共享本机时，只有留下这条才能事后分辨
+    # 「谁起的、带没带 dev profile」，否则只剩一个无法追溯的 SIGTERM。
+    if [ -x "${JAVA_HOME}/bin/jcmd" ]; then
+      "${JAVA_HOME}/bin/jcmd" "${pid}" VM.command_line 2>/dev/null \
+        | grep -m1 "java_command" | cut -c1-160 | sed 's/^/[stop]   /' || true
+    fi
     kill "${pid}" 2>/dev/null
     for _ in $(seq 1 40); do
       sleep 1
@@ -81,3 +103,5 @@ for svc in "${targets[@]}"; do
 done
 
 echo "已在后台启动：${targets[*]}；日志 /tmp/bone-<svc>-restart.log"
+echo "就绪校验（端口→health→业务 smoke，health 绿但业务挂会判红）："
+echo "  bash scripts/dev/svc-ready.sh ${targets[*]} 180"
