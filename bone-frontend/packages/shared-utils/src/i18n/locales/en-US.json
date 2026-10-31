@@ -191,6 +191,7 @@
     "META_UI_SCHEMA_TEMPLATE_ASSET_INCOMPLETE": "Template UI asset is missing; the follow entrance is temporarily unavailable",
     "META_UI_SCHEMA_STORE_UNAVAILABLE": "UI schema store unavailable (migration 0046 not applied)",
     "META_RUNTIME_RELATION_CONFIG_INVALID": "Relation configuration is invalid",
+    "META_RUNTIME_CHILD_RELATION_NOT_FOUND": "Parent entity declares no child-table relation to this child entity",
     "META_ENUM_SOURCE_INVALID": "Invalid enum source declaration (enum_source is not JSON / missing ref.typeCode / mode out of range)",
     "META_ENUM_SOURCE_RESOLVE_FAILED": "Failed to resolve enum source: value domain unavailable from the dictionary service (save/publish rolled back)",
     "META_MIGRATE_CONFLICT_UNCONFIRMED": "Migration has code-semantics conflicts (same code / different meaning, or same meaning / different code); confirm before migrating",

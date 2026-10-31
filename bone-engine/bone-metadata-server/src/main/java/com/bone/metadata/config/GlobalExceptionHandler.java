@@ -106,6 +106,10 @@ public class GlobalExceptionHandler {
             // 因为这是建模侧元数据错误，重试无用，需建模者修validation_rules。
           case MetadataErrorCodes.RUNTIME_RELATION_CONFIG_INVALID -> HttpStatus
               .INTERNAL_SERVER_ERROR;
+            // 2026-10-31：调用方传了父实体未声明的子实体码 → 404（子资源不存在，调用方可自行纠正）。
+            // 与上面的 500 是两回事：500 是建模侧配置非法（需建模者修 validation_rules），重试无用；
+            // 404 是请求路径上的关系不存在，换个子实体码即可。
+          case MetadataErrorCodes.RUNTIME_CHILD_RELATION_NOT_FOUND -> HttpStatus.NOT_FOUND;
             // RC-004：实体级 / 动作级授权拒绝 → 403。
           case MetadataErrorCodes.RUNTIME_ENTITY_FORBIDDEN,
               MetadataErrorCodes.RUNTIME_FORBIDDEN_ACTION -> HttpStatus.FORBIDDEN;

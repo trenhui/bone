@@ -85,6 +85,20 @@ public final class MetadataErrorCodes {
   public static final String RUNTIME_RELATION_CONFIG_INVALID =
       "META_RUNTIME_RELATION_CONFIG_INVALID";
 
+  /**
+   * 调用方给定的子实体码在该父实体上<b>没有对应的 CHILD_TABLE 声明</b> → 404。
+   *
+   * <p><b>为什么必须与 {@link #RUNTIME_RELATION_CONFIG_INVALID}（500）拆开</b>：2026-10-31 全模块联调实测， {@code GET
+   * /runtime/entities/{entityCode}/records/{id}/children/{childEntityCode}} 在调用方传错子实体码时 一律返回
+   * <b>500</b>。但这里的修复主体是<b>调用方</b>（换个子实体码即可），不是建模者—— 报 500
+   * 会把「客户端输入错误」混进服务端故障监控，前端也只能弹「服务器错误」，用户无法自行纠正。 与 {@code RUNTIME_ACTION_NOT_FOUND → 404}
+   * 同档：被请求的子资源不存在。
+   *
+   * <p>仅当<b>声明存在但配置非法</b>（缺 targetEntityCode / 子表实体无 deleted 列）才是建模侧错误，仍归 500（见上）。
+   */
+  public static final String RUNTIME_CHILD_RELATION_NOT_FOUND =
+      "META_RUNTIME_CHILD_RELATION_NOT_FOUND";
+
   // ===== 运行时状态机动作（META_RUNTIME_ACTION_*）=====
 
   /** 动作定义不存在（实体/动作码查不到）。 */

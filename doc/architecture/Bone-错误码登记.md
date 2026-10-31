@@ -309,6 +309,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `META_RUNTIME_ACTION_ORPHANED` | 409 | 动作执行孤儿态：副作用已发出、状态流转未完成，幂等重放被拒，须对账作业或人工确认后续转（§4.8.1） |
 | `META_RUNTIME_REFERENCE_NOT_FOUND` | 422 | 引用/关联指向的目标记录不存在（含跨租户不可见/软删除过滤，G10） |
 | `META_RUNTIME_RELATION_CONFIG_INVALID` | 500 | 关联关系声明配置非法（缺 targetEntityCode / 子表实体无 deleted 列等建模侧错误，需修正 validation_rules） |
+| `META_RUNTIME_CHILD_RELATION_NOT_FOUND` | 404 | 调用方给定的子实体码在父实体上无对应 CHILD_TABLE 声明（`/records/{id}/children/{childEntityCode}`）；与上一行 500 的区别是修复主体为调用方（换子实体码）而非建模者 |
 | `META_PRECONDITION_FAILED` | 412 | 乐观锁版本冲突（If-Match 与当前记录不一致） |
 | `META_DOMAIN_ERROR` | 409 | 发布期物理结构漂移：模型类型与物理列类型不兼容（doc2a §328） |
 | `META_UI_SCHEMA_INVALID` | 400 | 界面 schema 非法（schemaVersion≠1 / minor 非法 / JSON 非法 / UI-REF-xx 引用校验失败） |

@@ -128,8 +128,11 @@ public class RuntimeRelationApplicationService {
             .findFirst()
             .orElse(null);
     if (matched == null) {
+      // 调用方给的子实体码在本父实体上无对应声明 → 404（客户端输入错误，可由调用方自行纠正）。
+      // 2026-10-31 全模块联调实测：此前复用 RUNTIME_RELATION_CONFIG_INVALID 会把它报成 500，
+      // 让「换个子实体码即可修复」的问题混进服务端故障监控。声明存在但配置非法才走 500（见该码注释）。
       throw new RuntimeRecordException(
-          MetadataErrorCodes.RUNTIME_RELATION_CONFIG_INVALID,
+          MetadataErrorCodes.RUNTIME_CHILD_RELATION_NOT_FOUND,
           "实体「" + parent.entityCode() + "」未声明指向子实体「" + childEntityCode + "」的 CHILD_TABLE 字段");
     }
     return matched;

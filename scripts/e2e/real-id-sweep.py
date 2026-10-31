@@ -27,7 +27,7 @@ import sys
 import time
 from collections import Counter, defaultdict
 
-from e2e_lib import endpoints, http
+from e2e_lib import endpoints, http, mysql
 
 GW = "http://127.0.0.1:8888"
 ROUTE_PREFIXES = [
@@ -63,6 +63,104 @@ VAR_RE = re.compile(r"\{[^}]+\}")
 LIST_KEYS = ("list", "records", "content", "items", "rows", "result", "data", "elements", "nodes")
 # 可能的 id 键（按优先级）
 ID_KEYS = ("id", "recordId", "entityId", "flowId", "code", "entityCode", "name", "typeCode", "dictType")
+
+# 2026-10-31 补齐：变量名 → 候选字段别名表。
+# 【为什么必须显式声明】此前只按 `prefer_key == 变量名` 精确匹配，而列表接口实际返回的字段名
+# 往往与路径变量不同名（路径写 {entityCode}、实体里只有 code；路径写 {operationId}、列表里只有 id）。
+# 结果是 37/81 个带变量端点长期 `unresolved@*` —— 它们**从未被真正执行过**，
+# 里面潜藏的 NPE / 类型转换错误 / SQL 错误一概扫不出来（典型「分母缩水的假绿」）。
+VAR_ALIASES = {
+    "id": ("id", "recordId", "entityId", "flowId", "taskId", "roleId", "userId", "groupId"),
+    "entityCode": ("entityCode", "code", "entity", "name"),
+    "typeCode": ("typeCode", "code", "dictType", "dictTypeCode"),
+    "code": ("code", "typeCode", "dictType"),
+    "key": ("key", "configKey", "configName", "name", "code"),
+    "objectName": ("objectName", "name", "key", "fileName", "objectKey"),
+    "recordId": ("recordId", "id"),
+    "fieldId": ("fieldId", "id"),
+    "operationId": ("operationId", "id"),
+    "claimId": ("claimId", "id", "claimNo", "no"),
+    "inspectionNo": ("inspectionNo", "no", "inspectionId", "id"),
+    "version": ("version", "versionNo", "ver", "no"),
+    "ver": ("ver", "version", "versionNo"),
+    "scheduleTaskId": ("scheduleTaskId", "id", "taskId"),
+    "logId": ("logId", "id"),
+}
+# 变量名 → 期望值类型（"num" 只接受数字；"str" 接受字符串）
+def _var_kind(name):
+    if name in ("id",) or name.endswith("Id"):
+        return "num"
+    return "str"
+
+
+def _acceptable(name, v):
+    """值 v 能否作为路径变量 name 的回填值（类型口径必须与后端形参一致）。"""
+    if v is None:
+        return False
+    kind = _var_kind(name)
+    if kind == "num":
+        # 后端形参见 Long：字符串 code（如 e2e340093）会导致 400「参数 id 格式不正确」假阳性
+        if isinstance(v, bool):
+            return False
+        if isinstance(v, int):
+            return v > 0
+        if isinstance(v, str):
+            return v.strip().isdigit() and int(v) > 0
+        return False
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        return True
+    return isinstance(v, str) and bool(v.strip()) and len(v) < 128
+
+
+# 2026-10-31 补齐：活库兜底解析。
+# 【为什么还要这一层】有些集合根本没有「列表接口」（`/system/dict/types` GET 直接 405），
+# 或者列表接口有默认过滤（`/claims` 空 statuses 默认只看 PENDING_ADJUST，本环境 0 条）
+# ⇒ 走 API 永远拿不到真实 ID，这些端点**从未被真正执行过**。
+# 活库是第二真源（与 e2e_lib/mysql.py 的「双证据源」同口径），只读 SELECT，不改数据。
+DB_HINTS = [
+    # (路径包含片段, 变量名, 只读 SQL)
+    ("/system/dict/types/", "code",
+     "SELECT code FROM sys_dict_type WHERE deleted=0 ORDER BY id LIMIT 1"),
+    ("/system/dict/items/", "typeCode",
+     "SELECT code FROM sys_dict_type WHERE deleted=0 ORDER BY id LIMIT 1"),
+    ("/runtime/entities/", "entityCode",
+     "SELECT code FROM meta_entity WHERE deleted=0 ORDER BY id LIMIT 1"),
+    ("/runtime/approval/records/", "entityCode",
+     "SELECT code FROM meta_entity WHERE deleted=0 ORDER BY id LIMIT 1"),
+    ("/workflow/definitions/", "key",
+     "SELECT def_key FROM wf_process_def WHERE enabled=1 ORDER BY id LIMIT 1"),
+    ("/metadata/fields/", "fieldId",
+     "SELECT id FROM meta_field WHERE deleted=0 ORDER BY id LIMIT 1"),
+    ("/claims/", "id",
+     "SELECT id FROM t_claim_case WHERE tenant_id=0 AND deleted=0 ORDER BY id LIMIT 1"),
+    ("/claims/", "claimId",
+     "SELECT id FROM t_claim_case WHERE tenant_id=0 AND deleted=0 ORDER BY id LIMIT 1"),
+    ("/review/inspections/", "inspectionNo",
+     "SELECT inspection_no FROM t_claim_inspection ORDER BY id LIMIT 1"),
+    ("/system/schedule-tasks/", "id",
+     "SELECT id FROM sys_schedule_task WHERE deleted=0 ORDER BY id LIMIT 1"),
+    ("/system/logs/", "id",
+     "SELECT id FROM sys_log ORDER BY id LIMIT 1"),
+    ("/masterdata/quality/rules/", "id",
+     "SELECT id FROM mdm_quality_rule WHERE deleted=0 ORDER BY id LIMIT 1"),
+]
+
+
+def db_resolve(path, name):
+    """活库兜底：按 (路径片段, 变量名) 查一条真实值；查不到返回 None。"""
+    for frag, vname, sql in DB_HINTS:
+        if frag in path and vname == name:
+            out, err = mysql.query(sql)
+            if not out:
+                continue
+            # mysql -e 输出首行是列名，取第二行第一列
+            lines = [ln for ln in out.splitlines() if ln.strip()]
+            if len(lines) < 2:
+                continue
+            val = lines[1].split("\t")[0].strip()
+            if val and val != "NULL":
+                return val
+    return None
 
 
 def curl(args, timeout=20):
@@ -107,32 +205,43 @@ def pick_id(payload, prefer_key=None):
         return None
     data = payload.get("data", payload)
 
-    def from_obj(obj):
-        if not isinstance(obj, dict):
+    def from_obj(obj, depth=0):
+        if not isinstance(obj, dict) or depth > 3:
             return None
-        if prefer_key and obj.get(prefer_key) not in (None, ""):
-            return obj[prefer_key]
+        # 1) 变量名 → 别名表命中（最可靠：字段名与路径变量不同名也能对上）
+        if prefer_key:
+            for k in VAR_ALIASES.get(prefer_key, (prefer_key,)):
+                v = obj.get(k)
+                if _acceptable(prefer_key, v):
+                    return v
+        # 2) 兜底：按类型口径从通用 id 键里挑
         for k in ID_KEYS:
             v = obj.get(k)
-            if isinstance(v, (int,)) and v > 0:
+            if prefer_key:
+                if _acceptable(prefer_key, v):
+                    return v
+            elif isinstance(v, int) and v > 0:
                 return v
-            if isinstance(v, str) and v.strip() and len(v) < 128 and k in ("code", "entityCode", "name", "typeCode", "dictType"):
+            elif isinstance(v, str) and v.strip() and len(v) < 128 and k in (
+                "code", "entityCode", "name", "typeCode", "dictType",
+            ):
                 return v
-        # 再深一层：容器键
+        # 3) 再深一层：容器键（遍历前若干个元素，别只看 sub[0]——首个元素常缺目标字段）
         for k in LIST_KEYS:
             sub = obj.get(k)
-            if isinstance(sub, list) and sub:
-                r = from_obj(sub[0]) if isinstance(sub[0], dict) else None
-                if r is not None:
-                    return r
+            if isinstance(sub, list):
+                for it in sub[:10]:
+                    r = from_obj(it, depth + 1)
+                    if r is not None:
+                        return r
             elif isinstance(sub, dict):
-                r = from_obj(sub)
+                r = from_obj(sub, depth + 1)
                 if r is not None:
                     return r
         return None
 
     if isinstance(data, list):
-        for it in data:
+        for it in data[:10]:
             r = from_obj(it)
             if r is not None:
                 return r
@@ -161,15 +270,27 @@ def resolve(token, path, cache):
         if prefix in cache:
             val = cache[prefix]
         else:
-            code, payload = get_json(token, prefix)
-            if code.startswith("2") and payload is not None:
-                val = pick_id(payload, name)
-            else:
-                val = None
+            val = None
+            # 候选集合前缀：路径前缀本身，以及逐级去掉末段后的父集合。
+            # （`/system/config/key/{key}` 这类「非集合前缀」只有回退到 `/system/config` 才拿得到列表）
+            cands = [prefix]
+            seg = prefix
+            for _ in range(2):
+                seg = seg.rsplit("/", 1)[0] if "/" in seg else ""
+                if seg and seg != prefix:
+                    cands.append(seg)
+            for cand in cands:
+                for extra in ("", "?page=1&size=20"):
+                    code, payload = get_json(token, cand + extra)
+                    if code.startswith("2") and payload is not None:
+                        val = pick_id(payload, name)
+                        if val is not None:
+                            break
+                if val is not None:
+                    break
             if val is None:
-                # 有些列表端点要求分页参数
-                code2, payload2 = get_json(token, prefix + "?page=1&size=20")
-                val = pick_id(payload2, name) if (code2.startswith("2") and payload2 is not None) else None
+                # 列表接口缺失 / 有默认过滤 ⇒ 退回活库（只读）
+                val = db_resolve(path, name)
             cache[prefix] = val
         if val is None:
             return cur, filled, n_total, "unresolved@" + name
