@@ -1,12 +1,16 @@
 package com.bone.claim.application;
 
+import com.bone.claim.application.catalog.ItemCatalogGateway;
 import com.bone.claim.application.port.out.AccumulationPort;
+import com.bone.claim.application.port.out.ItemCatalogPort;
 import com.bone.claim.application.port.out.TenantPort;
+import com.bone.claim.application.quota.QuotaYearResolver;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.adjustment.Accumulation;
 import com.bone.claim.domain.model.adjustment.Adjustment;
 import com.bone.claim.domain.model.adjustment.AdjustmentLine;
+import com.bone.claim.domain.model.adjustment.engine.CatalogAdmission;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
 import com.bone.claim.domain.model.evidence.Evidence;
 import com.bone.claim.domain.model.liability.AdjLiability;
@@ -17,7 +21,9 @@ import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.DomainException;
 import com.bone.core.util.DistributedIdGenerator;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +43,8 @@ public class IndemnityApplicationService {
   private final EvidenceRepository evidenceRepository;
   private final ClaimCaseApplicationService claimCaseApplicationService;
   private final AccumulationPort accumulationPort;
+  private final ItemCatalogGateway itemCatalogGateway;
+  private final QuotaYearResolver quotaYearResolver;
   private final TenantPort tenantPort;
   private final DomainEventPublisher domainEventPublisher;
 
@@ -79,6 +87,7 @@ public class IndemnityApplicationService {
     List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
     AdjLiability liability = resolveLiability(rows);
     Accumulation accumulation = accumulate(rows, liability);
+    CatalogFacts catalog = catalogFactsOf(rows, liability);
 
     Adjustment adjustment;
     try {
@@ -91,7 +100,9 @@ public class IndemnityApplicationService {
               liability,
               ruleVersion,
               accumulation,
-              claimDateOf(rows));
+              claimDateOf(rows),
+              catalog.asOf(),
+              catalog.verdicts());
     } catch (DomainException ex) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_LIABILITY_NOT_FOUND, claimId, ex);
     }
@@ -109,7 +120,14 @@ public class IndemnityApplicationService {
     }
     List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
     AdjLiability liability = resolveLiability(rows);
-    latest.recalculate(rows, liability, accumulate(rows, liability), claimDateOf(rows));
+    CatalogFacts catalog = catalogFactsOf(rows, liability);
+    latest.recalculate(
+        rows,
+        liability,
+        accumulate(rows, liability),
+        claimDateOf(rows),
+        catalog.asOf(),
+        catalog.verdicts());
     adjustmentRepository.save(latest);
     domainEventPublisher.publishFrom(latest);
     return toResult(latest);
@@ -172,9 +190,9 @@ public class IndemnityApplicationService {
    * <p><b>缺账本不阻断理算</b>：理算结果还要给人看，直接 422 会让整条链路在缺数据时完全不可用。 改为在快照里落 {@code
    * accumulationAvailable=false} 并告警，由 A7 资金路径 fail-closed—— 结算是真正把钱占出去的动作，账实不明时不允许记账。
    *
-   * <p><b>年度口径</b>：与 {@code QuotaApplicationService#loadPersonal} 同为 {@code Year.now()}。
-   * 严格来说应为<b>保单年度</b>（DDL 注释即"按保单年度"），保单生效月非 1 月时两者不等； 此处刻意与既有写侧保持一致——读写两侧若用不同口径，两本账立刻对不上，
-   * 那比"用错年度"更糟。保单年度口径作为独立改动（需保单快照提供生效日）另行推进。
+   * <p><b>年度口径</b>：由 {@code QuotaYearResolver} 单一裁决（{@code bone.claim.quota-year.basis}）， 与 A7
+   * 结算写侧<b>调用同一个方法</b>（{@link #quotaYear(long)}）。年度是额度账户主键的一部分，读写两侧各算一次
+   * 就会在跨年/跨口径时落到两行账上——那不是"用了错的年度"，而是同一笔钱存在两本账。
    */
   private Accumulation accumulate(List<ClaimWithItemsProjection> rows, AdjLiability liability) {
     if (rows.isEmpty()) {
@@ -189,9 +207,30 @@ public class IndemnityApplicationService {
         head.getInsuredIdHash(),
         head.getPolicyNo(),
         head.getPlanId(),
-        java.time.Year.now().getValue(),
+        quotaYearOf(rows),
         liability.getLiabilityUuid(),
         dailyWindowOf(rows, liability));
+  }
+
+  /**
+   * 本案的额度年度（A6 读侧与 A7 写侧<b>共用</b>，年度是账户主键的一部分）。
+   *
+   * <p>由赔案业务日（发票日 → 受理日）与保单期间裁决，<b>不看处理时刻</b>：跨年补报的案件按处理时刻归年度会把去年的费用 记进今年。口径与 fail-closed 语义见
+   * {@link QuotaYearResolver}。
+   */
+  public int quotaYear(long claimId) {
+    List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
+    if (rows == null || rows.isEmpty()) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_NOT_FOUND, claimId);
+    }
+    return quotaYearOf(rows);
+  }
+
+  private int quotaYearOf(List<ClaimWithItemsProjection> rows) {
+    ClaimWithItemsProjection head = rows.get(0);
+    return quotaYearResolver
+        .resolve(head.getPolicyNo(), head.getPlanId(), ClaimBusinessDate.of(rows))
+        .year();
   }
 
   /** 本案的日限额业务日（Q-05）。A7 占额写按日流水时必须与理算读用<b>同一个窗口</b>， 否则"算的时候看 A 天、写的时候记 B 天"，日限额在跨天补赔场景下必然错配。 */
@@ -201,10 +240,63 @@ public class IndemnityApplicationService {
   }
 
   /**
+   * 目录准入事实（缺口 ①）：判定基准日 + 每条明细的结论。
+   *
+   * @param asOf 判定基准日；{@code null} = 判不出来（由 {@code CatalogAdmission.of} fail-closed）
+   * @param verdicts {@code itemId → 结论}；空 = 一条都没查到（同上）
+   */
+  private record CatalogFacts(
+      java.time.LocalDate asOf, Map<Long, CatalogAdmission.Verdict> verdicts) {
+
+    static final CatalogFacts NONE = new CatalogFacts(null, Map.of());
+  }
+
+  /**
+   * 取目录准入事实。
+   *
+   * <p><b>策略为 {@code NONE} 时一次外部调用都不发</b>：绝大多数责任不配目录，若每案都去打一次目录端口， 等于给全部理赔加一跳网络依赖，而收益为零。
+   *
+   * <p><b>基准日取发票日期、缺失回落赔案受理日</b>：与日限额 Q-05 同一条口径（{@link #dailyWindowOf}）。
+   * 两个口径若各取各的，同一天的两件事（日限额窗口、目录版本）会指向不同日期，事后对不上账。
+   *
+   * <p>判不出来时<b>不在这里抛</b>，交给 {@code CatalogAdmission.of} 统一裁决：那里同时守"有编码没开策略"
+   * 等反向一致性，散成两处会让同一类错误在不同入口给出不同结论。
+   */
+  private CatalogFacts catalogFactsOf(List<ClaimWithItemsProjection> rows, AdjLiability liability) {
+    if (!"MANDATORY".equalsIgnoreCase(liability.catalogPolicy())) {
+      return CatalogFacts.NONE;
+    }
+    java.time.LocalDate asOf = catalogDateOf(rows);
+    if (asOf == null) {
+      return new CatalogFacts(null, Map.of());
+    }
+    List<ItemCatalogPort.Item> items = new ArrayList<>();
+    for (ClaimWithItemsProjection row : rows) {
+      if (row != null && row.getItemId() != null) {
+        items.add(new ItemCatalogPort.Item(row.getItemId(), row.getItemCode()));
+      }
+    }
+    if (items.isEmpty()) {
+      return new CatalogFacts(asOf, Map.of());
+    }
+    return new CatalogFacts(asOf, itemCatalogGateway.check(liability.catalogCode(), asOf, items));
+  }
+
+  /**
+   * 目录判定基准日：发票日期优先（一案一发票），缺失回落赔案受理日；都缺返回 {@code null}。
+   *
+   * <p>与额度年度、日限额窗口共用同一个业务日定义（{@link ClaimBusinessDate}）：三处若各取各的，
+   * 同一天的三件事（目录版本、按日限额、按年度累计）会指向不同日期，事后对不上账。
+   */
+  private java.time.LocalDate catalogDateOf(List<ClaimWithItemsProjection> rows) {
+    return ClaimBusinessDate.of(rows);
+  }
+
+  /**
    * 日窗口：按同日发票取发票日期，按同日赔案取赔案受理日；未配日限额返回 {@code null}。
    *
-   * <p><b>为什么赔案受理日取 {@code createdAt}</b>：这是系统里唯一有"受理"语义的时间戳（案件落库时刻）。 它是瞬时值，转业务日必须选时区——这里与 {@code
-   * Year.now()} 同口径用系统时区，理由是理赔作业本身按 本地日历排班；若将来引入保单所在时区，应在此单点替换，而不是散落到各调用方。
+   * <p><b>为什么赔案受理日取 {@code createdAt}</b>：这是系统里唯一有"受理"语义的时间戳（案件落库时刻）。 它是瞬时值，转业务日必须选时区——这里与 {@link
+   * ClaimBusinessDate} 同口径用系统时区，理由是理赔作业本身按 本地日历排班；若将来引入保单所在时区，应在该单点替换，而不是散落到各调用方。
    */
   private java.time.LocalDate dailyWindowOf(
       List<ClaimWithItemsProjection> rows, AdjLiability liability) {

@@ -44,6 +44,14 @@ public final class RuleGap extends RuntimeException {
      * 缺失时按"不符"处理会把缺编码的案子静默拒赔；按"符合"处理则白名单形同虚设——两者都是猜。
      */
     LIMITED_CONDITION_UNDETERMINED,
+    /**
+     * 目录准入<b>判不出来</b>：责任开了目录准入，但明细缺 {@code item_code}、或该明细查不到结论。
+     *
+     * <p>与"目录外确定不赔"严格分开：那是结论，这是没结论。按"在目录内"放行 = 目录白配； 按"目录外"剔除 = 替客户下了拒赔决定，而真实原因只是录入漏了编码或端口没接好。
+     */
+    CATALOG_UNRESOLVED,
+    /** 目录准入<b>无从判定基准日</b>：发票日期与赔案受理日都缺失，不知道该用哪一版目录。 */
+    CATALOG_UNDETERMINED,
     /** 票面结算数据与费用池不自洽（自付一定义冲突 / 三式差额异常，Q-08）。 */
     INVOICE_SETTLEMENT_INCONSISTENT,
     /** 「次」的判定维度在明细里不存在（配了同日/同院分组却无发票日期等）：并成一组会少赔。 */

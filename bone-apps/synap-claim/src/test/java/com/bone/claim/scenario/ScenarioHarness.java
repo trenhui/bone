@@ -10,6 +10,7 @@ import com.bone.claim.application.IndemnityApplicationService;
 import com.bone.claim.application.InspectionApplicationService;
 import com.bone.claim.application.QuotaApplicationService;
 import com.bone.claim.application.SettlementApplicationService;
+import com.bone.claim.application.catalog.ItemCatalogGateway;
 import com.bone.claim.application.handler.AdjustNodeHandler;
 import com.bone.claim.application.handler.AiAssessNodeHandler;
 import com.bone.claim.application.handler.ArbitrateNodeHandler;
@@ -27,6 +28,7 @@ import com.bone.claim.application.port.out.PolicyQueryPort;
 import com.bone.claim.application.port.out.RuleEnginePort;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.application.port.out.VisualForensicsPort;
+import com.bone.claim.application.quota.QuotaYearResolver;
 import com.bone.claim.domain.model.adjustment.Adjustment;
 import com.bone.claim.domain.model.adjustment.AdjustmentLine;
 import com.bone.claim.domain.model.appeal.AppealRecord;
@@ -141,7 +143,17 @@ public class ScenarioHarness {
     AccumulationPort accumulationPort = new QuotaDrivenAccumulationPortAdapter(quotaRepo);
     indemnitySvc =
         new IndemnityApplicationService(
-            adjRepo, liabRepo, eviRepo, claimSvc, accumulationPort, tenantPort, events);
+            adjRepo,
+            liabRepo,
+            eviRepo,
+            claimSvc,
+            accumulationPort,
+            // 目录端口未接线：场景里没有责任配 catalog_policy=MANDATORY，故走与引入前一致的路径
+            ItemCatalogGateway.unwired(),
+            // 年度口径固定自然年（与生产默认值一致）：场景断言不随部署配置变化
+            QuotaYearResolver.of(QuotaYearResolver.Basis.CALENDAR, policyPort),
+            tenantPort,
+            events);
     decExecSvc = new DecisionExecutionApplicationService(decRepo, events);
 
     // 反欺诈 / 知识图谱 端口：默认「能力可用、无命中」，可按场景切换
@@ -809,6 +821,12 @@ public class ScenarioHarness {
 
     @Override
     public Optional<PolicySnapshot> findActivePolicy(String policyNo, Long planId) {
+      return Optional.ofNullable(map.get(policyNo + "|" + planId));
+    }
+
+    /** 场景里不区分"生效中"与"仅期间"：年度口径需要能回答已满期保单。 */
+    @Override
+    public Optional<PolicySnapshot> findByPolicy(String policyNo, Long planId) {
       return Optional.ofNullable(map.get(policyNo + "|" + planId));
     }
   }

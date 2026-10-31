@@ -165,6 +165,25 @@ class QuotaDrivenAccumulationPortAdapterTest {
         .isEqualByComparingTo("0.00");
   }
 
+  @Test
+  @DisplayName("日用量回退多于占用 → available=false（钳零会把『账本坏了』显示成『今天还没赔过』）")
+  void negativeDailyUsageFailsClosed() {
+    QuotaAccount account = account("LIABILITY_CAP", LIABILITY, new BigDecimal("100000.00"));
+    java.time.LocalDate today = java.time.LocalDate.of(2026, 10, 1);
+    account.accumulateDaily(1L, new BigDecimal("200.00"), today, 1001L, "SO1", "CL1:DAILY:1");
+    // 重复释放 / 记错业务日留下的"回退多于占用"：当日净额为 −100。
+    account.reduceDaily(2L, new BigDecimal("300.00"), today, 1001L, "SO1", "CL1:DAILY_ROLLBACK:1");
+    when(repo.findAccount(INSURED, POLICY, PLAN, YEAR, "LIABILITY_CAP", LIABILITY))
+        .thenReturn(account);
+    when(repo.findTransactions(2L)).thenReturn(account.getTransactions());
+
+    Accumulation acc = adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, today);
+
+    assertThat(acc.available())
+        .as("负的日用量是账实不符信号：必须交给 A7 fail-closed，而不是把当日已用当 0（日限额重新满额=超赔）")
+        .isFalse();
+  }
+
   private Accumulation load() {
     return adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, null);
   }

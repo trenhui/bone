@@ -1,6 +1,7 @@
 package com.bone.claim.domain.model.adjustment;
 
 import com.bone.claim.domain.model.adjustment.engine.AdjustmentEngine;
+import com.bone.claim.domain.model.adjustment.engine.CatalogAdmission;
 import com.bone.claim.domain.model.adjustment.engine.LiabilityRule;
 import com.bone.claim.domain.model.adjustment.engine.RuleGap;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
@@ -157,6 +158,40 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       String ruleVersion,
       Accumulation accumulation,
       java.time.LocalDate claimDate) {
+    return calculate(
+        id,
+        tenantId,
+        claimId,
+        rows,
+        liability,
+        ruleVersion,
+        accumulation,
+        claimDate,
+        null,
+        java.util.Map.of());
+  }
+
+  /**
+   * 执行理算（带目录准入结论，缺口 ①）。
+   *
+   * <p><b>为什么目录结论由调用方传进来</b>：目录是外部主数据，查它是基础设施职责；聚合只消费事实， 才能保证"同输入同输出"。不传（走上面的重载）时 {@code
+   * catalogAsOf=null}、结论为空——若责任配了 {@code MANDATORY}，{@link CatalogAdmission#of} 会直接拒绝（<b>不传 ≠
+   * 关闭</b>），不会静默放行。
+   *
+   * @param catalogAsOf 目录判定基准日（发票日期，缺失回落赔案受理日）
+   * @param catalogVerdicts {@code itemId → 准入结论}（由 {@code ItemCatalogPort} 查得）
+   */
+  public static Adjustment calculate(
+      Long id,
+      Long tenantId,
+      Long claimId,
+      List<ClaimWithItemsProjection> rows,
+      AdjLiability liability,
+      String ruleVersion,
+      Accumulation accumulation,
+      java.time.LocalDate claimDate,
+      java.time.LocalDate catalogAsOf,
+      java.util.Map<Long, CatalogAdmission.Verdict> catalogVerdicts) {
     if (rows == null || rows.isEmpty()) {
       throw new DomainException("理算明细不能为空");
     }
@@ -170,16 +205,14 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       throw new DomainException("跨案累计快照缺失，无法理算（⑩：禁止按『已用 0』隐式计算）");
     }
     Adjustment adjustment = new Adjustment(id, tenantId, claimId, ruleVersion);
-    adjustment.apply(rows, liability, accumulation, claimDate);
+    adjustment.apply(rows, liability, accumulation, claimDate, catalogAsOf, catalogVerdicts);
     return adjustment;
   }
 
   /** 重算（同一聚合内重新计算；已确认 CONFIRMED 禁止调用，见 {@link #requireModifiable}）。 */
   public void recalculate(
       List<ClaimWithItemsProjection> rows, AdjLiability liability, Accumulation accumulation) {
-    requireModifiable("已确认的理算结果禁止重算");
-    apply(rows, liability, accumulation, null);
-    this.updatedAt = java.time.Instant.now();
+    recalculate(rows, liability, accumulation, null, null, java.util.Map.of());
   }
 
   /** 重算（带赔案受理日，口径同 {@link #recalculate(List, AdjLiability, Accumulation)}）。 */
@@ -188,8 +221,19 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       AdjLiability liability,
       Accumulation accumulation,
       java.time.LocalDate claimDate) {
+    recalculate(rows, liability, accumulation, claimDate, null, java.util.Map.of());
+  }
+
+  /** 重算（带赔案受理日 + 目录准入结论，口径同 {@code calculate} 的十参重载）。 */
+  public void recalculate(
+      List<ClaimWithItemsProjection> rows,
+      AdjLiability liability,
+      Accumulation accumulation,
+      java.time.LocalDate claimDate,
+      java.time.LocalDate catalogAsOf,
+      java.util.Map<Long, CatalogAdmission.Verdict> catalogVerdicts) {
     requireModifiable("已确认的理算结果禁止重算");
-    apply(rows, liability, accumulation, claimDate);
+    apply(rows, liability, accumulation, claimDate, catalogAsOf, catalogVerdicts);
     this.updatedAt = java.time.Instant.now();
   }
 
@@ -235,7 +279,9 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       List<ClaimWithItemsProjection> rows,
       AdjLiability liability,
       Accumulation accumulation,
-      java.time.LocalDate claimDate) {
+      java.time.LocalDate claimDate,
+      java.time.LocalDate catalogAsOf,
+      java.util.Map<Long, CatalogAdmission.Verdict> catalogVerdicts) {
     LiabilityRule rule =
         LiabilityRule.fromLegacy(
             liability.getLiabilityUuid(),
@@ -255,11 +301,18 @@ public class Adjustment extends TenantAggregateRoot<Long> {
 
     AdjustmentEngine.Outcome outcome;
     try {
+      // 目录准入（缺口 ①）：策略与目录编码都来自责任配置，结论由应用层查端口后作为事实传入——
+      // 聚合不查外部系统，保证理算"同输入同输出"可复算。反向一致性校验在 CatalogAdmission.of 内，
+      // 与日限额同一套纪律：有编码没开策略、开了策略没编码/没基准日/没结论，一律拒绝。
+      CatalogAdmission catalog =
+          CatalogAdmission.of(
+              liability.catalogPolicy(), liability.catalogCode(), catalogAsOf, catalogVerdicts);
       outcome =
           AdjustmentEngine.calculate(
               AdjustmentEngine.Request.of(getClaimId(), rows, rule, accumulation)
                   .withRuleVersion(this.ruleVersion)
-                  .withClaimDate(claimDate));
+                  .withClaimDate(claimDate)
+                  .withCatalog(catalog));
     } catch (RuleGap gap) {
       // 规则缺口属"业务上算不出"，外壳对外统一成领域异常；原因码留在异常信息里可被审计日志提取。
       throw new DomainException(gap.getMessage());

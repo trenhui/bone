@@ -35,6 +35,17 @@ public class PolicyQueryPortAdapter implements PolicyQueryPort {
     return active ? Optional.of(snapshot) : Optional.empty();
   }
 
+  /**
+   * 不按"此刻生效中"过滤的期间查询（额度年度口径用）。
+   *
+   * <p>与 {@link #findActivePolicy} 的唯一差别就是<b>不做时间过滤</b>：已满期保单的补赔/红冲仍要回到原保单年度记账，
+   * 用生效中版本问会把这些案件判成"保单不存在"。过滤逻辑的移除在这里是刻意的，不是遗漏。
+   */
+  @Override
+  public Optional<PolicySnapshot> findByPolicy(String policyNo, Long planId) {
+    return Optional.ofNullable(snapshots.get(key(policyNo, planId)));
+  }
+
   private static String key(String policyNo, Long planId) {
     return policyNo + "|" + planId;
   }

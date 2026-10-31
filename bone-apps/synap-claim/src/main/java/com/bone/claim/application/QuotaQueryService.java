@@ -1,5 +1,6 @@
 package com.bone.claim.application;
 
+import com.bone.claim.application.quota.QuotaYearResolver;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
@@ -9,7 +10,6 @@ import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.QuotaAccountRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.Year;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +30,7 @@ public class QuotaQueryService {
 
   private final ClaimCaseRepository claimCaseRepository;
   private final QuotaAccountRepository quotaAccountRepository;
+  private final QuotaYearResolver quotaYearResolver;
 
   @Transactional(readOnly = true)
   public QuotaSummary getByClaim(long claimId) {
@@ -38,12 +39,18 @@ public class QuotaQueryService {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_NOT_FOUND, claimId);
     }
     ClaimWithItemsProjection head = ctx.get(0);
+    // 与 A7 写侧同一口径（赔案业务日 + QuotaYearResolver）：查询若按"当前自然年"取账户，
+    // 跨年案件会查到一个空账户或别人的账户，页面显示"额度为 0"而钱其实记在上一保单年度。
+    int quotaYear =
+        quotaYearResolver
+            .resolve(head.getPolicyNo(), head.getPlanId(), ClaimBusinessDate.of(ctx))
+            .year();
     QuotaAccount account =
         quotaAccountRepository.findAccount(
             head.getInsuredIdHash(),
             head.getPolicyNo(),
             head.getPlanId(),
-            Year.now().getValue(),
+            quotaYear,
             "PERSONAL",
             "");
     if (account == null) {

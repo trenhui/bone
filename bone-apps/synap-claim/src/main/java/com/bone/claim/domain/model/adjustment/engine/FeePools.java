@@ -106,6 +106,25 @@ public record FeePools(List<Pool> pools, List<ItemContribution> contributions) {
    * @param socialOnly 责任是否"仅赔医保范围内"（R-DIR-01）
    */
   public static FeePools aggregate(List<ClaimWithItemsProjection> rows, boolean socialOnly) {
+    return aggregate(rows, socialOnly, java.util.Set.of());
+  }
+
+  /**
+   * 归集明细，并按目录准入结论剔除（缺口 ① 费用明细筛选）。
+   *
+   * <p><b>为什么在归集处剔除、而不是在调用方过滤明细列表</b>：{@code rows} 的下标同时是「次」分组事实 （{@code
+   * OccurrenceGrouper.Fact}）与逐行归因的下标基准。若在上游 {@code removeIf}，两个下标系立刻错位，
+   * 分组会悄悄串组、归因会贴到别的费用项上——而且两者都不报错。故"剔哪几条"以集合形式传进来，{@code rows} 本体与下标保持不变。
+   *
+   * <p>被剔除的明细<b>不产生任何分池金额，也不产生逐行贡献</b>：目录外费用不属于可赔基数， 与"核减"（{@code invalid_amount}）同类。其金额由引擎单独计入
+   * {@code catalogExcluded} 诊断与快照， 保证"为什么少赔"可回答。
+   *
+   * @param excludedItemIds 目录判定为目录外的 {@code itemId}；空集 = 不做目录剔除
+   */
+  public static FeePools aggregate(
+      List<ClaimWithItemsProjection> rows,
+      boolean socialOnly,
+      java.util.Set<Long> excludedItemIds) {
     List<ItemContribution> contributions = new ArrayList<>();
     BigDecimal reasonableIn = Money.ZERO;
     BigDecimal reasonableOut = Money.ZERO;
@@ -113,6 +132,9 @@ public record FeePools(List<Pool> pools, List<ItemContribution> contributions) {
     BigDecimal selfPayC = Money.ZERO;
     for (ClaimWithItemsProjection row : rows) {
       if (row == null || row.getItemId() == null) {
+        continue;
+      }
+      if (excludedItemIds != null && excludedItemIds.contains(row.getItemId())) {
         continue;
       }
       BigDecimal valid = Money.nz(row.getItemValidAmount());
@@ -177,10 +199,28 @@ public record FeePools(List<Pool> pools, List<ItemContribution> contributions) {
    */
   public static Aggregation aggregateDetailed(
       List<ClaimWithItemsProjection> rows, boolean socialOnly) {
+    return aggregateDetailed(rows, socialOnly, java.util.Set.of());
+  }
+
+  /**
+   * 归集明细（含目录剔除），并把"因 socialOnly 被剔除"的范围外金额单独记入诊断。
+   *
+   * <p>注意两个"剔除"是两件事，不可合并：{@code socialOnly} 剔的是<b>医保范围外</b>（金额仍留在池里作为
+   * outOfScope，只是不参与赔付，用于解释"为什么没赔"）；目录剔除是<b>不进池</b>（不属于可赔基数）。
+   *
+   * @param excludedItemIds 目录判定为目录外的 {@code itemId}
+   */
+  public static Aggregation aggregateDetailed(
+      List<ClaimWithItemsProjection> rows,
+      boolean socialOnly,
+      java.util.Set<Long> excludedItemIds) {
     BigDecimal excludedOutOfScope = Money.ZERO;
     if (socialOnly) {
       for (ClaimWithItemsProjection row : rows) {
         if (row == null || row.getItemId() == null) {
+          continue;
+        }
+        if (excludedItemIds != null && excludedItemIds.contains(row.getItemId())) {
           continue;
         }
         if (!"IN".equalsIgnoreCase(row.getItemSocialFlag())) {
@@ -188,7 +228,7 @@ public record FeePools(List<Pool> pools, List<ItemContribution> contributions) {
         }
       }
     }
-    return new Aggregation(aggregate(rows, socialOnly), excludedOutOfScope);
+    return new Aggregation(aggregate(rows, socialOnly, excludedItemIds), excludedOutOfScope);
   }
 
   /** 归集结果（池 + 被 socialOnly 剔除的范围外合理金额）。 */

@@ -339,7 +339,8 @@ class AdjustmentEngineTest {
               null,
               null,
               List.of(),
-              null);
+              null,
+              CatalogAdmission.INACTIVE);
 
       AdjustmentEngine.Outcome outcome = AdjustmentEngine.calculate(request);
 
@@ -1105,7 +1106,8 @@ class AdjustmentEngineTest {
               null,
               10,
               List.of(),
-              null);
+              null,
+              CatalogAdmission.INACTIVE);
 
       assertThatThrownBy(() -> AdjustmentEngine.calculate(request))
           .isInstanceOf(RuleGap.class)
@@ -1419,6 +1421,21 @@ class AdjustmentEngineTest {
   class LimitedCondition {
 
     @Test
+    @DisplayName("配置面冻结：只暴露 医院 / 病种 两维 —— 新增维度必须同批具备事实来源与判定码")
+    void surfaceIsFrozenToTwoDimensions() {
+      assertThat(
+              java.util.Arrays.stream(LiabilityRule.LimitedConditions.class.getRecordComponents())
+                  .map(java.lang.reflect.RecordComponent::getName))
+          .as(
+              "V1 §2 要素 6 声明六维，落地两维：医院/病种有本地事实（t_claim_case 编码），"
+                  + "药品/诊疗由目录准入承载（同一件事不立两套配置），区域/医保本仓库无事实来源。"
+                  + "若在此处新增 region/insurance 字段，说明配置面已先于「事实来源 + 判定码 + 文档」落地——"
+                  + "那正是 V14 之前『配了不生效、条款说限某区域、系统照全额赔』的形态。"
+                  + "新增维度须同时补：事实列/端口、装载期反向校验、LIMITED_CONDITION_UNDETERMINED 分支、V1 文档口径表")
+          .containsExactly("mode", "hospitalCodes", "diagnosisCodes");
+    }
+
+    @Test
     @DisplayName("白名单命中医院：正常理算，不受限定影响")
     void hospitalWhitelisted() {
       AdjustmentEngine.Outcome outcome =
@@ -1586,6 +1603,157 @@ class AdjustmentEngineTest {
       assertThatThrownBy(() -> LiabilityRule.LimitedConditions.Mode.fromCode("PARTIAL"))
           .isInstanceOf(RuleGap.class)
           .hasMessageContaining("INVALID_INPUT");
+    }
+  }
+
+  // ===================== 目录准入（缺口 ①） =====================
+
+  @Nested
+  @DisplayName("目录准入：按目录结论决定明细是否进可赔基数")
+  class CatalogGate {
+
+    private final java.time.LocalDate day = java.time.LocalDate.parse("2026-10-01");
+
+    @Test
+    @DisplayName("全部在目录内：与不启用目录时同额（目录开了不等于要少赔）")
+    void allCoveredPaysInFull() {
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                      1L,
+                      List.of(codedRow(2001L, "M001", "300.00"), codedRow(2002L, "M002", "200.00")),
+                      catalogRule(),
+                      Accumulation.FIRST)
+                  .withCatalog(
+                      admission(
+                          Map.of(
+                              2001L, CatalogAdmission.Verdict.COVERED,
+                              2002L, CatalogAdmission.Verdict.COVERED))));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("500.00");
+      assertThat(outcome.diagnostics()).anyMatch(d -> d.contains("全部明细在目录内"));
+    }
+
+    @Test
+    @DisplayName("目录外明细剔除：只赔目录内部分，剔除金额可查（不是安静地少赔）")
+    void excludedItemDropped() {
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                      1L,
+                      List.of(codedRow(2001L, "M001", "300.00"), codedRow(2002L, "M002", "200.00")),
+                      catalogRule(),
+                      Accumulation.FIRST)
+                  .withCatalog(
+                      admission(
+                          Map.of(
+                              2001L, CatalogAdmission.Verdict.COVERED,
+                              2002L, CatalogAdmission.Verdict.EXCLUDED))));
+
+      assertThat(outcome.totalAmount()).as("目录外 200 元不进可赔基数").isEqualByComparingTo("300.00");
+      assertThat(outcome.diagnostics()).anyMatch(d -> d.contains("剔除目录外 1 条"));
+      assertThat(outcome.snapshot())
+          .as("剔除金额必须物化：只记总额变少，事后答不出「为什么少赔 200」")
+          .contains("\"catalogExcludedAmount\":200")
+          .contains("\"catalogExcludedCount\":1")
+          .contains("\"catalogCode\":\"NATIONAL_TEST\"");
+    }
+
+    @Test
+    @DisplayName("全部目录外：零赔付归因为 ZERO_CATALOG_EXCLUDED，不混成「合理费用为 0」")
+    void allExcludedHasOwnReason() {
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                      1L,
+                      List.of(codedRow(2001L, "M001", "300.00")),
+                      catalogRule(),
+                      Accumulation.FIRST)
+                  .withCatalog(admission(Map.of(2001L, CatalogAdmission.Verdict.EXCLUDED))));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("0.00");
+      assertThat(outcome.zeroReason())
+          .as("「不在保障目录内」与「票面金额不成立」客户侧动作不同，必须分开报")
+          .isEqualTo(AdjustmentEngine.ZERO_CATALOG_EXCLUDED);
+      assertThat(outcome.rejectType()).isEqualTo("05");
+    }
+
+    @Test
+    @DisplayName("明细缺费用编码：CATALOG_UNRESOLVED（不按目录内放行、也不按目录外剔除）")
+    void missingItemCodeFailsClosed() {
+      ClaimWithItemsProjection noCode = row(2003L, "IN", "300.00", "0", "0");
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                              1L, List.of(noCode), catalogRule(), Accumulation.FIRST)
+                          .withCatalog(admission(Map.of(2003L, CatalogAdmission.Verdict.UNKNOWN)))))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("CATALOG_UNRESOLVED")
+          .hasMessageContaining("缺费用编码");
+    }
+
+    @Test
+    @DisplayName("端口未接线（一条结论都没有）：装载期即拒，不退化成全额赔付")
+    void emptyVerdictsRejected() {
+      assertThatThrownBy(
+              () -> CatalogAdmission.of("MANDATORY", "NATIONAL_TEST", day, java.util.Map.of()))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("CATALOG_UNRESOLVED");
+    }
+
+    @Test
+    @DisplayName("未启用目录准入：路径与引入前逐字一致（快照里 catalogCode 为空、无剔除）")
+    void inactiveKeepsLegacyPath() {
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L,
+                  List.of(codedRow(2001L, "M001", "300.00")),
+                  catalogRule(),
+                  Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("300.00");
+      assertThat(outcome.snapshot())
+          .contains("\"catalogCode\":\"\"")
+          .contains("\"catalogExcludedAmount\":0");
+      assertThat(outcome.diagnostics()).noneMatch(d -> d.contains("目录准入"));
+    }
+
+    @Test
+    @DisplayName("多「次」案件：分组重算后目录剔除仍然生效（漏传剔除集只在多组案件上复现）")
+    void excludedItemStaysDroppedAcrossOccurrences() {
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                      1L,
+                      List.of(codedRow(2001L, "M001", "400.00"), codedRow(2002L, "M002", "400.00")),
+                      occurrenceRule(OccurrenceGrouper.Basis.SAME_DAY, "1000"),
+                      Accumulation.FIRST)
+                  .withCatalog(
+                      admission(
+                          Map.of(
+                              2001L, CatalogAdmission.Verdict.COVERED,
+                              2002L, CatalogAdmission.Verdict.EXCLUDED))),
+              twoDayFacts());
+
+      assertThat(outcome.totalAmount())
+          .as("每个「次」都要按 rows 重新归集：重算时漏传剔除集 ⇒ 目录外费用被放回，只在多组案件上超赔")
+          .isEqualByComparingTo("400.00");
+    }
+
+    /** 100% 赔付、无免赔、额度不限：目录准入是唯一变量。 */
+    private LiabilityRule catalogRule() {
+      return rule(
+          "100",
+          ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+          DeductibleRule.none(),
+          NO_CAP);
+    }
+
+    private CatalogAdmission admission(Map<Long, CatalogAdmission.Verdict> verdicts) {
+      return new CatalogAdmission(CatalogAdmission.Mode.MANDATORY, "NATIONAL_TEST", day, verdicts);
     }
   }
 
@@ -1781,6 +1949,13 @@ class AdjustmentEngineTest {
 
   private static List<ClaimWithItemsProjection> datedRows(String reasonable, String date) {
     return List.of(datedRow(2001L, reasonable, date));
+  }
+
+  /** 带费用编码的一行（目录准入按编码判定，编码是目录主数据的键）。 */
+  private static ClaimWithItemsProjection codedRow(long itemId, String itemCode, String valid) {
+    ClaimWithItemsProjection p = row(itemId, "IN", valid, "0", "0");
+    p.setItemCode(itemCode);
+    return p;
   }
 
   /** 100% 赔付、无免赔、责任额度不限，只配日限额（默认按同日发票口径）。 */

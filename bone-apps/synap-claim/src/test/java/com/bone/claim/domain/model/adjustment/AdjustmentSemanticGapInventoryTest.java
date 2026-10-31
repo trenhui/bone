@@ -3,6 +3,7 @@ package com.bone.claim.domain.model.adjustment;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.bone.claim.domain.model.adjustment.engine.AdjustmentEngine;
+import com.bone.claim.domain.model.adjustment.engine.CatalogAdmission;
 import com.bone.claim.domain.model.adjustment.engine.DeductibleRule;
 import com.bone.claim.domain.model.adjustment.engine.LiabilityRule;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
@@ -58,10 +59,14 @@ class AdjustmentSemanticGapInventoryTest {
               "「合理必要性」一侧已闭环：核减由初审核定写入 ClaimItem.approveValidAmount"
                   + "（明细金额 − 核减 ⇒ valid_amount，差额记 invalid_amount），引擎消费 valid_amount 并"
                   + "在 FeePools.aggregate 净扣统筹+第三方（全链唯一扣除点，checkSettlementConsistency 守已付≤合理）——"
-                  + "故 invalid_amount 零读取是分工，不是漏读。仍缺「目录准入」一侧：item_code 已入库但不参与判定，"
-                  + "无目录内/目录外匹配，也无医院/病种/药品名单的本地比对（本轮询价限定直接拒绝，LIMITED_CONDITION_NOT_MET）——"
-                  + "两者都需外部目录主数据，本仓库不可闭环",
-              "V1 §3.4（落地口径表）· §4.1 · Go-Live G2"),
+                  + "故 invalid_amount 零读取是分工，不是漏读。"
+                  + "「目录准入」一侧**机制已就位**：责任配 catalog_policy=MANDATORY + catalog_code，"
+                  + "应用层经 ItemCatalogPort 按业务日（发票日期，缺失回落受理日）取每条明细的三态结论，"
+                  + "引擎据此剔除目录外并从可赔基数扣除（CatalogAdmission / FeePools.aggregate(excludedItemIds)），"
+                  + "判不出来即 CATALOG_UNRESOLVED 退补件。"
+                  + "仍缺的是**目录数据本身**：本仓库不持有目录副本（避免第二真源），端口默认未接线 ⇒ 全部 UNKNOWN；"
+                  + "接入方实现 ItemCatalogPort 后该维度即闭环",
+              "V1 §3.4（落地口径表）· §3.5（目录准入）· Go-Live G2"),
           new Step(
               "②发票级免赔",
               Status.SUPPORTED,
@@ -322,6 +327,12 @@ class AdjustmentSemanticGapInventoryTest {
                 "dailyUsedBefore",
                 "dailyWindow",
                 "dailyRemaining",
+                // 缺口 ① 目录准入：目录编码、基准日、剔除条数、剔除金额四项一起物化——
+                // 只记"总额变少"而不记按哪一版目录、以哪天为基准判的，事后分不清"真在目录外"与"取错了版本/日期"
+                "catalogCode",
+                "catalogAsOf",
+                "catalogExcludedCount",
+                "catalogExcludedAmount",
                 "accumulationAvailable",
                 "socialOnly",
                 "base",
@@ -382,6 +393,65 @@ class AdjustmentSemanticGapInventoryTest {
         .as("窗口日与当日已用量必须落快照，否则事后无法判断这笔少赔是真限额还是取数取错了天")
         .contains("\"dailyWindow\":\"2026-10-01\"")
         .contains("\"dailyUsedBefore\":150");
+  }
+
+  @Test
+  @DisplayName("缺口 ① 目录准入机制已就位（原「无判定」转正）：目录外 200 元不进可赔基数，剔除金额可查")
+  void catalogAdmissionDropsExcludedItem() {
+    AdjLiability liability =
+        AdjLiability.of(
+            1L,
+            42L,
+            "L-CAT",
+            "v1",
+            7L,
+            "R01",
+            "REIMBURSEMENT",
+            new BigDecimal("100"),
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            "NONE",
+            "NONE",
+            "",
+            "",
+            "MANDATORY",
+            "NATIONAL_2024",
+            1,
+            0,
+            "ACTIVE");
+
+    ClaimWithItemsProjection covered = datedItem(2001L, "300.00", "2026-10-01");
+    covered.setItemCode("M001");
+    ClaimWithItemsProjection excluded = datedItem(2002L, "200.00", "2026-10-01");
+    excluded.setItemCode("M002");
+
+    Adjustment adjustment =
+        Adjustment.calculate(
+            9004L,
+            42L,
+            1004L,
+            List.of(covered, excluded),
+            liability,
+            "r1",
+            Accumulation.FIRST,
+            null,
+            java.time.LocalDate.of(2026, 10, 1),
+            java.util.Map.of(
+                covered.getItemId(), CatalogAdmission.Verdict.COVERED,
+                excluded.getItemId(), CatalogAdmission.Verdict.EXCLUDED));
+
+    assertThat(adjustment.getTotalAmount())
+        .as("目录外 200 元不属于可赔基数；若为 500 说明目录配了不生效（正是本缺口原本的形态）")
+        .isEqualByComparingTo("300.00");
+    assertThat(adjustment.getFormulaSnapshot())
+        .as("按哪一版目录、以哪天为基准、剔了多少钱，必须一起可查")
+        .contains("\"catalogCode\":\"NATIONAL_2024\"")
+        .contains("\"catalogAsOf\":\"2026-10-01\"")
+        .contains("\"catalogExcludedAmount\":200")
+        .contains("\"catalogExcludedCount\":1");
   }
 
   // ===================== 夹具 =====================

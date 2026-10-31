@@ -77,6 +77,9 @@ public class SettlementApplicationService {
     BigDecimal amount = adj.totalAmount();
     ClaimWithItemsProjection ctx = claimCaseApplicationService.getClaimWithItems(claimId).get(0);
     String settlementNo = "SO" + claimId + "-" + attempt;
+    // 额度年度由理算侧单点裁决（同一方法，读写两侧不会各算一次）：年度是账户行键的一部分，
+    // 读侧看 A 年、写侧记 B 年，等于同一笔钱存在两本账。
+    int quotaYear = indemnityApplicationService.quotaYear(claimId);
 
     SettlementOrder order =
         SettlementOrder.create(
@@ -96,6 +99,7 @@ public class SettlementApplicationService {
         ctx.getInsuredIdHash(),
         ctx.getPolicyNo(),
         ctx.getPlanId(),
+        quotaYear,
         claimId,
         ctx.getClaimNo(),
         amount,
@@ -110,7 +114,7 @@ public class SettlementApplicationService {
         ctx.getInsuredIdHash(),
         ctx.getPolicyNo(),
         ctx.getPlanId(),
-        java.time.Year.now().getValue(),
+        quotaYear,
         adj.liabilityUuid(),
         claimId,
         ctx.getClaimNo(),
@@ -171,11 +175,13 @@ public class SettlementApplicationService {
     BigDecimal amount = order.getAmount();
     ClaimWithItemsProjection ctx = claimCaseApplicationService.getClaimWithItems(claimId).get(0);
     int attempt = order.getAttempt();
+    int quotaYear = indemnityApplicationService.quotaYear(claimId);
     quotaApplicationService.confirmPay(
         order.getTenantId(),
         ctx.getInsuredIdHash(),
         ctx.getPolicyNo(),
         ctx.getPlanId(),
+        quotaYear,
         claimId,
         order.getClaimNo(),
         amount,
@@ -188,7 +194,7 @@ public class SettlementApplicationService {
         ctx.getInsuredIdHash(),
         ctx.getPolicyNo(),
         ctx.getPlanId(),
-        java.time.Year.now().getValue(),
+        quotaYear,
         adjustment(claimId).liabilityUuid(),
         claimId,
         order.getClaimNo(),
@@ -218,11 +224,15 @@ public class SettlementApplicationService {
 
     BigDecimal amount = order.getAmount();
     ClaimWithItemsProjection ctx = claimCaseApplicationService.getClaimWithItems(claimId).get(0);
+    // 释放/退款必须落到<b>原占额那条账户行</b>：年度由同一方法按赔案业务日裁决，
+    // 因此跨年释放（去年占额、今年撤销）仍回到去年那一行，不会去今年那本账上"凭空还钱"。
+    int quotaYear = indemnityApplicationService.quotaYear(claimId);
     quotaApplicationService.release(
         order.getTenantId(),
         ctx.getInsuredIdHash(),
         ctx.getPolicyNo(),
         ctx.getPlanId(),
+        quotaYear,
         claimId,
         order.getClaimNo(),
         amount,
@@ -236,7 +246,7 @@ public class SettlementApplicationService {
         ctx.getInsuredIdHash(),
         ctx.getPolicyNo(),
         ctx.getPlanId(),
-        java.time.Year.now().getValue(),
+        quotaYear,
         adj.liabilityUuid(),
         claimId,
         order.getClaimNo(),
@@ -261,11 +271,13 @@ public class SettlementApplicationService {
 
     BigDecimal amount = order.getAmount();
     ClaimWithItemsProjection ctx = claimCaseApplicationService.getClaimWithItems(claimId).get(0);
+    int quotaYear = indemnityApplicationService.quotaYear(claimId);
     quotaApplicationService.refund(
         order.getTenantId(),
         ctx.getInsuredIdHash(),
         ctx.getPolicyNo(),
         ctx.getPlanId(),
+        quotaYear,
         claimId,
         order.getClaimNo(),
         amount,
@@ -278,7 +290,7 @@ public class SettlementApplicationService {
         ctx.getInsuredIdHash(),
         ctx.getPolicyNo(),
         ctx.getPlanId(),
-        java.time.Year.now().getValue(),
+        quotaYear,
         adj.liabilityUuid(),
         claimId,
         order.getClaimNo(),

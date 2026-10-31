@@ -64,8 +64,21 @@ public class QuotaDrivenAccumulationPortAdapter implements AccumulationPort {
       return Accumulation.MISSING;
     }
     BigDecimal limitUsed = account.getQuotaClaimed().add(account.getQuotaFrozen());
-    return Accumulation.of(
-        account.getDeductibleUsed(), limitUsed, dailyUsed(account, dailyWindow), dailyWindow, true);
+    BigDecimal dailyUsed = dailyUsed(account, dailyWindow);
+    if (dailyUsed.signum() < 0) {
+      // 负的日用量 = ROLLBACK 超过 OCCUPY（重复释放 / 记错业务日 / 结构化改造留下的半截流水）。
+      // 此前这里 `.max(ZERO)` 钳到 0：当日已用归零 ⇒ 日限额重新满额 ⇒ **静默超赔**，而账面上"什么都正常"。
+      // 账实不明时的既定处置是 available=false（理算只标记、A7 拒绝占额），不是替它猜一个数。
+      log.error(
+          "日用量流水聚合为负（ROLLBACK 超过 OCCUPY）→ 账实不明，返回 available=false 由 A7 拒绝占额："
+              + "tenant={} account={} window={} used={}",
+          tenantId,
+          account.getId(),
+          dailyWindow,
+          dailyUsed);
+      return Accumulation.of(account.getDeductibleUsed(), limitUsed, false);
+    }
+    return Accumulation.of(account.getDeductibleUsed(), limitUsed, dailyUsed, dailyWindow, true);
   }
 
   /**
@@ -76,6 +89,9 @@ public class QuotaDrivenAccumulationPortAdapter implements AccumulationPort {
    * 减，任意一天随时可重算，倒签发票也能算对。
    *
    * <p>业务日为 {@code null}（本案不配日限额）时直接返回 0，不扫流水。
+   *
+   * <p><b>不在此处钳到 0</b>：负的聚合值是账实不符的信号（释放多于占用），由调用方转成 {@code available=false} 交给 A7
+   * fail-closed。在这里钳零等于把"账本坏了"显示成"今天还没赔过"。
    */
   private BigDecimal dailyUsed(QuotaAccount account, java.time.LocalDate window) {
     if (window == null) {
@@ -99,6 +115,6 @@ public class QuotaDrivenAccumulationPortAdapter implements AccumulationPort {
         used = used.subtract(txn.getAmount());
       }
     }
-    return used.max(BigDecimal.ZERO);
+    return used;
   }
 }
