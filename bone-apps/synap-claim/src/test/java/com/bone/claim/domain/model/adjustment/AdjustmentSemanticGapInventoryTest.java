@@ -96,8 +96,10 @@ class AdjustmentSemanticGapInventoryTest {
                   + "并在汇总层按比例回摊，保 Σ组 ≡ 总额；对齐 oracle LimitControl 的责任/费用子限额/计划/年度四维，"
                   + "「年度」按责任限额跨案累计（Accumulation.limitUsed）承载。"
                   + "逐组记录被哪几维截断（GroupResult.cappedBy → Line.cappedBy，细→粗记全）并落行快照，"
-                  + "「少赔」可归因到具体维度。未含：日赔付限额（Q-05，装载期 DAILY_LIMIT_UNSUPPORTED 拒绝，"
-                  + "属另册登记的独立缺口）与跨案同日累计（需按日账本）",
+                  + "「少赔」可归因到具体维度。含日赔付限额（Q-05）：QuotaStack.Layer.DAILY 按「同一业务日"
+                  + "已用 + 本单」累计截断，窗口日由 t_adj_liability.daily_limit_basis 决定（按同日发票 / 按同日赔案），"
+                  + "跨案同日累计由 Accumulation.dailyUsed 经按日流水（t_quota_transaction.biz_date）读入；"
+                  + "窗口判不出来即 DAILY_LIMIT_WINDOW_UNDETERMINED 拒绝，不按任意一天算",
               "§7 多维度控额 · reference-impl LimitControl"),
           new Step(
               "⑨逐行分位归因（分位守恒）",
@@ -308,6 +310,13 @@ class AdjustmentSemanticGapInventoryTest {
                 "deductibleUsedBefore",
                 "limit",
                 "limitUsedBefore",
+                // Q-05 日限额：金额、口径、窗口日、当日已用、当日剩余五项一起物化——
+                // 只记"被截断"而不记窗口与已用量，事后无法判断是当日额度真用完还是取数取错了天
+                "dailyLimit",
+                "dailyBasis",
+                "dailyUsedBefore",
+                "dailyWindow",
+                "dailyRemaining",
                 "accumulationAvailable",
                 "socialOnly",
                 "base",
@@ -321,6 +330,53 @@ class AdjustmentSemanticGapInventoryTest {
     for (String absent : List.of("thirdPartyPaid", "limitDimensions")) {
       assertThat(snapshot).as("快照不应出现 %s——若出现说明对应 GAP 已补齐，请改档", absent).doesNotContain(absent);
     }
+  }
+
+  @Test
+  @DisplayName("Q-05 日限额已支持（原装载期拒绝转正）：同日已赔 150、日限额 300 ⇒ 本单只赔剩余 150")
+  void dailyLimitCapsSameDayTotal() {
+    AdjLiability liability =
+        AdjLiability.of(
+            1L,
+            42L,
+            "L-DAILY",
+            "v1",
+            7L,
+            "R01",
+            "REIMBURSEMENT",
+            new BigDecimal("100"),
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            new BigDecimal("300"),
+            "SAME_DAY_INVOICE",
+            1,
+            0,
+            "ACTIVE");
+
+    Adjustment adjustment =
+        Adjustment.calculate(
+            9003L,
+            42L,
+            1003L,
+            List.of(datedItem(2001L, "200.00", "2026-10-01")),
+            liability,
+            "r1",
+            Accumulation.of(
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                new BigDecimal("150.00"),
+                java.time.LocalDate.of(2026, 10, 1),
+                true));
+
+    assertThat(adjustment.getTotalAmount())
+        .as("日限额是同日累计口径：当日已赔 150，本单 200 只能赔剩余的 150；若为 200 说明日限额配了不生效")
+        .isEqualByComparingTo("150.00");
+    assertThat(adjustment.getFormulaSnapshot())
+        .as("窗口日与当日已用量必须落快照，否则事后无法判断这笔少赔是真限额还是取数取错了天")
+        .contains("\"dailyWindow\":\"2026-10-01\"")
+        .contains("\"dailyUsedBefore\":150");
   }
 
   // ===================== 夹具 =====================
@@ -346,6 +402,13 @@ class AdjustmentSemanticGapInventoryTest {
     p.setItemSocialFlag("IN");
     p.setItemValidAmount(new BigDecimal(valid));
     p.setItemSelfPay1(new BigDecimal(valid));
+    return p;
+  }
+
+  /** 带发票日期的一笔（日限额按同日发票口径时，窗口来源是它）。 */
+  private static ClaimWithItemsProjection datedItem(long itemId, String valid, String date) {
+    ClaimWithItemsProjection p = item(itemId, valid);
+    p.setInvoiceDate(java.time.LocalDate.parse(date));
     return p;
   }
 

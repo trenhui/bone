@@ -105,9 +105,9 @@ class QuotaDrivenAccumulationPortAdapterTest {
     when(repo.findAccount(INSURED, POLICY, PLAN, YEAR, "LIABILITY_CAP", "LIAB-A")).thenReturn(a);
     when(repo.findAccount(INSURED, POLICY, PLAN, YEAR, "LIABILITY_CAP", "LIAB-B")).thenReturn(b);
 
-    assertThat(adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, "LIAB-A").limitUsed())
+    assertThat(adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, "LIAB-A", null).limitUsed())
         .isEqualByComparingTo("10000.00");
-    assertThat(adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, "LIAB-B").limitUsed())
+    assertThat(adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, "LIAB-B", null).limitUsed())
         .isEqualByComparingTo("0.00");
   }
 
@@ -117,11 +117,56 @@ class QuotaDrivenAccumulationPortAdapterTest {
     when(repo.findAccount(INSURED, POLICY, PLAN, YEAR, "LIABILITY_CAP", ""))
         .thenReturn(account("LIABILITY_CAP", "", new BigDecimal("100000.00")));
 
-    assertThat(adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, null).available()).isTrue();
+    assertThat(adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, null, null).available()).isTrue();
+  }
+
+  @Test
+  @DisplayName("日用量按业务日聚合 DAILY 流水（Q-05）：同日加、跨日不串、回退减")
+  void dailyUsageAggregatesByBizDate() {
+    QuotaAccount account = account("LIABILITY_CAP", LIABILITY, new BigDecimal("100000.00"));
+    java.time.LocalDate today = java.time.LocalDate.of(2026, 10, 1);
+    java.time.LocalDate tomorrow = java.time.LocalDate.of(2026, 10, 2);
+    account.accumulateDaily(1L, new BigDecimal("120.00"), today, 1001L, "SO1", "CL1:DAILY:1");
+    account.accumulateDaily(2L, new BigDecimal("80.00"), today, 1002L, "SO2", "CL2:DAILY:1");
+    account.accumulateDaily(3L, new BigDecimal("500.00"), tomorrow, 1003L, "SO3", "CL3:DAILY:1");
+    when(repo.findAccount(INSURED, POLICY, PLAN, YEAR, "LIABILITY_CAP", LIABILITY))
+        .thenReturn(account);
+    when(repo.findTransactions(2L)).thenReturn(account.getTransactions());
+
+    Accumulation todayAcc = adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, today);
+    Accumulation tomorrowAcc =
+        adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, tomorrow);
+
+    assertThat(todayAcc.dailyUsed())
+        .as("同一天两笔必须相加：120 + 80 = 200；若为 120 说明只取了第一笔")
+        .isEqualByComparingTo("200.00");
+    assertThat(todayAcc.dailyWindow()).isEqualTo(today);
+    assertThat(tomorrowAcc.dailyUsed())
+        .as("跨日必须归零重算：10-01 的 200 不得算进 10-02")
+        .isEqualByComparingTo("500.00");
+    assertThat(todayAcc.remainingDaily(new BigDecimal("300.00")))
+        .as("当日剩余 = 日限额 − 当日已用 = 300 − 200")
+        .isEqualByComparingTo("100.00");
+  }
+
+  @Test
+  @DisplayName("日用量回退后必须减掉（撤销/退款的当日额度要还回去，否则当天后续赔案被误拦）")
+  void dailyRollbackReducesUsage() {
+    QuotaAccount account = account("LIABILITY_CAP", LIABILITY, new BigDecimal("100000.00"));
+    java.time.LocalDate today = java.time.LocalDate.of(2026, 10, 1);
+    account.accumulateDaily(1L, new BigDecimal("200.00"), today, 1001L, "SO1", "CL1:DAILY:1");
+    account.reduceDaily(2L, new BigDecimal("200.00"), today, 1001L, "SO1", "CL1:DAILY_ROLLBACK:1");
+    when(repo.findAccount(INSURED, POLICY, PLAN, YEAR, "LIABILITY_CAP", LIABILITY))
+        .thenReturn(account);
+    when(repo.findTransactions(2L)).thenReturn(account.getTransactions());
+
+    assertThat(adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, today).dailyUsed())
+        .as("占用 200 后回退 200 ⇒ 当日已用回到 0")
+        .isEqualByComparingTo("0.00");
   }
 
   private Accumulation load() {
-    return adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY);
+    return adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, null);
   }
 
   private static QuotaAccount account(String type, String liabilityUuid, BigDecimal initial) {

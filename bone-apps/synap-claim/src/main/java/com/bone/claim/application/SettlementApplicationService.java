@@ -117,7 +117,10 @@ public class SettlementApplicationService {
         amount,
         adj.deductibleApplied(),
         settlementNo,
-        attempt);
+        attempt,
+        // 日限额（Q-05）的业务日：与理算读侧同一口径（发票日期 / 赔案受理日）。
+        // 读的时候看 A 天、写的时候记 B 天，跨天补赔场景下日限额必然错配，故由同一处推导。
+        indemnityApplicationService.dailyWindow(claimId));
 
     domainEventPublisher.publishFrom(order);
     return toResult(order);

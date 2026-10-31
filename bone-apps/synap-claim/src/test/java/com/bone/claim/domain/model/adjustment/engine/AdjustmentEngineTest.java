@@ -338,7 +338,8 @@ class AdjustmentEngineTest {
               null,
               null,
               null,
-              List.of());
+              List.of(),
+              null);
 
       AdjustmentEngine.Outcome outcome = AdjustmentEngine.calculate(request);
 
@@ -1013,7 +1014,7 @@ class AdjustmentEngineTest {
     }
 
     @Test
-    @DisplayName("共享保额 / 先赔后赔 / 日限额 / 外部控额：各自给出专属原因码，不静默照算")
+    @DisplayName("共享保额 / 先赔后赔 / 外部控额：各自给出专属原因码；日限额改为校验口径一致性")
     void unsupportedRelationsRejected() {
       assertThatThrownBy(() -> ruleWithRelation("SHARED-1", "").validate())
           .isInstanceOf(RuleGap.class)
@@ -1021,6 +1022,8 @@ class AdjustmentEngineTest {
       assertThatThrownBy(() -> ruleWithRelation("", "L-PRIOR").validate())
           .isInstanceOf(RuleGap.class)
           .hasMessageContaining("PRIORITY_CHAIN_UNSUPPORTED");
+      // 日限额（Q-05）已落地：配了金额却没配「日」的口径 ⇒ 仍然拒绝装载——
+      // 只配金额时"同日"指发票日还是赔案受理日无法判定，替客户选一天就是猜。
       assertThatThrownBy(
               () ->
                   new LiabilityRule(
@@ -1047,7 +1050,7 @@ class AdjustmentEngineTest {
                           LiabilityRule.LimitedConditions.disabled())
                       .validate())
           .isInstanceOf(RuleGap.class)
-          .hasMessageContaining("DAILY_LIMIT_UNSUPPORTED");
+          .hasMessageContaining("未配「日」的口径");
       assertThatThrownBy(
               () ->
                   new LiabilityRule(
@@ -1101,7 +1104,8 @@ class AdjustmentEngineTest {
               null,
               null,
               10,
-              List.of());
+              List.of(),
+              null);
 
       assertThatThrownBy(() -> AdjustmentEngine.calculate(request))
           .isInstanceOf(RuleGap.class)
@@ -1287,6 +1291,129 @@ class AdjustmentEngineTest {
         null);
   }
 
+  @Nested
+  @DisplayName("日赔付限额：同一业务日累计截断（V1 §7.4 / Q-05）")
+  class DailyLimit {
+
+    @Test
+    @DisplayName("当日还有额度：日限额不生效，只受责任额度约束")
+    void underDailyLimit() {
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, datedRows("200.00", "2026-10-01"), dailyRule("300"), Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("200.00");
+      assertThat(line(outcome, "REASONABLE").cappedBy()).doesNotContain("DAILY");
+    }
+
+    @Test
+    @DisplayName("跨案同日已赔 150：本单只赔剩余 150（日限额是累计口径，不是单案口径）")
+    void remainingAfterSameDayUsage() {
+      Accumulation accumulation =
+          Accumulation.of(
+              new BigDecimal("0"),
+              new BigDecimal("0"),
+              new BigDecimal("150.00"),
+              java.time.LocalDate.of(2026, 10, 1),
+              true);
+
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, datedRows("200.00", "2026-10-01"), dailyRule("300"), accumulation));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("150.00");
+      assertThat(line(outcome, "REASONABLE").cappedBy()).contains("DAILY");
+    }
+
+    @Test
+    @DisplayName("当日额度已用满：赔 0 且归因 ZERO_DAILY_EXHAUSTED（不是本年度额度用尽）")
+    void dailyExhausted() {
+      Accumulation accumulation =
+          Accumulation.of(
+              new BigDecimal("0"),
+              new BigDecimal("0"),
+              new BigDecimal("300.00"),
+              java.time.LocalDate.of(2026, 10, 1),
+              true);
+
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, datedRows("200.00", "2026-10-01"), dailyRule("300"), accumulation));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("0.00");
+      assertThat(outcome.zeroReason())
+          .as("日限额用满与'本年度额度用尽'对客户是两件事：前者第二天就能赔")
+          .isEqualTo(AdjustmentEngine.ZERO_DAILY_EXHAUSTED);
+      assertThat(outcome.lines()).allSatisfy(l -> assertThat(l.cappedBy()).contains("DAILY"));
+    }
+
+    @Test
+    @DisplayName("明细缺发票日期：日窗口判不出来 ⇒ DAILY_LIMIT_WINDOW_UNDETERMINED（不按任意一天算）")
+    void missingInvoiceDate() {
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L, rows("200.00", "0", "0"), dailyRule("300"), Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("DAILY_LIMIT_WINDOW_UNDETERMINED");
+    }
+
+    @Test
+    @DisplayName("账本窗口晚于本案业务日：拿别天的用量算这天 ⇒ DAILY_LIMIT_WINDOW_STALE")
+    void staleWindow() {
+      Accumulation accumulation =
+          Accumulation.of(
+              new BigDecimal("0"),
+              new BigDecimal("0"),
+              new BigDecimal("100.00"),
+              java.time.LocalDate.of(2026, 10, 2),
+              true);
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L, datedRows("200.00", "2026-10-01"), dailyRule("300"), accumulation)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("DAILY_LIMIT_WINDOW_STALE");
+    }
+
+    @Test
+    @DisplayName("按同日赔案累计：窗口取赔案受理日；未提供受理日即拒绝（不拿发票日期顶替）")
+    void claimBasisNeedsClaimDate() {
+      LiabilityRule rule = dailyRule("300", LiabilityRule.DailyBasis.SAME_DAY_CLAIM);
+      List<ClaimWithItemsProjection> rows = datedRows("200.00", "2026-10-01");
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(1L, rows, rule, Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("DAILY_LIMIT_WINDOW_UNDETERMINED");
+
+      // 给了受理日（10-05）就按它算窗口：账本里 10-01 的已用不该被算进来
+      Accumulation accumulation =
+          Accumulation.of(
+              new BigDecimal("0"),
+              new BigDecimal("0"),
+              new BigDecimal("300.00"),
+              java.time.LocalDate.of(2026, 10, 1),
+              true);
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(1L, rows, rule, accumulation)
+                  .withClaimDate(java.time.LocalDate.of(2026, 10, 5)));
+
+      assertThat(outcome.totalAmount())
+          .as("窗口是 10-05，账本记的是 10-01（更早）⇒ 本案这天还没赔过")
+          .isEqualByComparingTo("200.00");
+    }
+  }
+
   private static LiabilityRule rule(
       String payPercent, PayRatioTable ratios, DeductibleRule deductible, String liabilityLimit) {
     return rule(payPercent, ratios, deductible, new BigDecimal(liabilityLimit));
@@ -1468,5 +1595,38 @@ class AdjustmentEngineTest {
     p.setItemId(null);
     p.setItemValidAmount(new BigDecimal("100.00"));
     return p;
+  }
+
+  /** 带发票日期的一行（日限额按同日发票口径时，窗口来源是它）。 */
+  private static ClaimWithItemsProjection datedRow(long itemId, String reasonable, String date) {
+    ClaimWithItemsProjection p = row(itemId, "IN", reasonable, "0", "0");
+    p.setInvoiceDate(java.time.LocalDate.parse(date));
+    return p;
+  }
+
+  private static List<ClaimWithItemsProjection> datedRows(String reasonable, String date) {
+    return List.of(datedRow(2001L, reasonable, date));
+  }
+
+  /** 100% 赔付、无免赔、责任额度不限，只配日限额（默认按同日发票口径）。 */
+  private static LiabilityRule dailyRule(String dailyLimit) {
+    return dailyRule(dailyLimit, LiabilityRule.DailyBasis.SAME_DAY_INVOICE);
+  }
+
+  private static LiabilityRule dailyRule(String dailyLimit, LiabilityRule.DailyBasis basis) {
+    return new LiabilityRule(
+        "L-DAILY",
+        "v1",
+        LiabilityRule.LiabilityForm.REIMBURSEMENT,
+        false,
+        EnumSet.allOf(FeePools.Bucket.class),
+        0,
+        DeductibleRule.none(),
+        ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+        LiabilityRule.LimitSet.liabilityOnly(NO_CAP).withDaily(new BigDecimal(dailyLimit), basis),
+        LiabilityRule.QuotaPolicy.defaults(),
+        LiabilityRule.OccurrenceSpec.none(),
+        LiabilityRule.Relation.none(),
+        LiabilityRule.LimitedConditions.disabled());
   }
 }

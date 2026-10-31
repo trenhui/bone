@@ -3,8 +3,10 @@ package com.bone.claim.infrastructure.quota;
 import com.bone.claim.application.port.out.AccumulationPort;
 import com.bone.claim.domain.model.adjustment.Accumulation;
 import com.bone.claim.domain.model.quota.QuotaAccount;
+import com.bone.claim.domain.model.quota.QuotaTransaction;
 import com.bone.claim.domain.repository.QuotaAccountRepository;
 import java.math.BigDecimal;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +47,8 @@ public class QuotaDrivenAccumulationPortAdapter implements AccumulationPort {
       String policyNo,
       long planId,
       int quotaYear,
-      String liabilityUuid) {
+      String liabilityUuid,
+      java.time.LocalDate dailyWindow) {
     String uuid = liabilityUuid == null ? "" : liabilityUuid;
     QuotaAccount account =
         quotaAccountRepository.findAccount(
@@ -61,6 +64,41 @@ public class QuotaDrivenAccumulationPortAdapter implements AccumulationPort {
       return Accumulation.MISSING;
     }
     BigDecimal limitUsed = account.getQuotaClaimed().add(account.getQuotaFrozen());
-    return Accumulation.of(account.getDeductibleUsed(), limitUsed, true);
+    return Accumulation.of(
+        account.getDeductibleUsed(), limitUsed, dailyUsed(account, dailyWindow), dailyWindow, true);
+  }
+
+  /**
+   * 某业务日的已占用赔付额（Q-05）：从 {@code txn_type=DAILY} 的流水按 {@code biz_date} 聚合。
+   *
+   * <p><b>为什么从流水算而不是账户上存一个"当日已用"字段</b>：存字段就必须在跨日时清零，而"清零"是个
+   * 状态迁移——漏跑一次（服务重启、批处理失败、补赔跨日）就永久多算或少算一天，且没有任何事实可以复原。 流水是事实：{@code OCCUPY} 加、{@code ROLLBACK}
+   * 减，任意一天随时可重算，倒签发票也能算对。
+   *
+   * <p>业务日为 {@code null}（本案不配日限额）时直接返回 0，不扫流水。
+   */
+  private BigDecimal dailyUsed(QuotaAccount account, java.time.LocalDate window) {
+    if (window == null) {
+      return BigDecimal.ZERO;
+    }
+    List<QuotaTransaction> transactions = quotaAccountRepository.findTransactions(account.getId());
+    if (transactions == null || transactions.isEmpty()) {
+      return BigDecimal.ZERO;
+    }
+    BigDecimal used = BigDecimal.ZERO;
+    for (QuotaTransaction txn : transactions) {
+      if (!"DAILY".equals(txn.getTxnType()) || txn.getBizDate() == null) {
+        continue;
+      }
+      if (!window.equals(txn.getBizDate())) {
+        continue;
+      }
+      if ("OCCUPY".equals(txn.getDirection())) {
+        used = used.add(txn.getAmount());
+      } else {
+        used = used.subtract(txn.getAmount());
+      }
+    }
+    return used.max(BigDecimal.ZERO);
   }
 }

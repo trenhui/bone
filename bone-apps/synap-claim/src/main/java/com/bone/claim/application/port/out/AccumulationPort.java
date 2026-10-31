@@ -26,6 +26,7 @@ public interface AccumulationPort {
    * @param planId 计划 ID
    * @param quotaYear 额度年度
    * @param liabilityUuid 责任 UUID（责任账的分行键）
+   * @param dailyWindow 日限额的业务日（{@code null} = 本案不配日限额，不读日用量）
    * @return 累计快照；未解析到责任账时返回 {@link Accumulation#MISSING}（{@code available=false}）
    */
   Accumulation load(
@@ -34,5 +35,6 @@ public interface AccumulationPort {
       String policyNo,
       long planId,
       int quotaYear,
-      String liabilityUuid);
+      String liabilityUuid,
+      java.time.LocalDate dailyWindow);
 }

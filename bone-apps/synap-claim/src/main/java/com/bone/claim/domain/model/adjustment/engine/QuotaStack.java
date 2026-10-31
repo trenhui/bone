@@ -42,6 +42,8 @@ public final class QuotaStack {
     FEE_TYPE,
     /** ③ 责任次限额金额。 */
     OCCURRENCE,
+    /** ③.5 责任日赔付限额（V1 §7.4，Q-05）：同一业务日的<b>累计</b>上限，与次限额同为时间窗截断。 */
+    DAILY,
     /** ④ 责任共保可用金额。 */
     SHARED,
     /** ⑤ 责任可用金额。 */
@@ -98,12 +100,19 @@ public final class QuotaStack {
     }
   }
 
-  /** 控额需求。 */
+  /**
+   * 控额需求。
+   *
+   * <p>{@code occurrenceCap} / {@code dailyCap} 都是<b>对本组总额</b>的时间窗截断，语义差别只在窗口： 前者是"一次"（按 {@code
+   * OccurrenceSpec} 分组的这一次），后者是"一个业务日"（跨案累计）。 二者都为 {@code null} 表示该维未配置； {@code dailyCap} 允许为
+   * <b>0</b>（当日已赔满），此时必须真的截到 0 并留下归因， 不能当成"未配置"跳过——那会把当日额度已用尽的案子照赔一遍。
+   */
   public record Demand(
       List<Group> groups,
       Map<String, BigDecimal> groupCaps,
       BigDecimal personalCap,
-      BigDecimal occurrenceCap) {
+      BigDecimal occurrenceCap,
+      BigDecimal dailyCap) {
 
     public Demand {
       groups = List.copyOf(groups);
@@ -111,12 +120,17 @@ public final class QuotaStack {
     }
 
     public static Demand of(List<Group> groups) {
-      return new Demand(groups, Map.of(), null, null);
+      return new Demand(groups, Map.of(), null, null, null);
     }
 
     /** 附次限额（层③，作用于本组总额，早于责任层⑤）。 */
     public Demand withOccurrenceCap(BigDecimal cap) {
-      return new Demand(groups, groupCaps, personalCap, cap);
+      return new Demand(groups, groupCaps, personalCap, cap, dailyCap);
+    }
+
+    /** 附日限额（层③.5，当日剩余可赔额，早于责任层⑤）。 */
+    public Demand withDailyCap(BigDecimal cap) {
+      return new Demand(groups, groupCaps, personalCap, occurrenceCap, cap);
     }
   }
 
@@ -187,6 +201,7 @@ public final class QuotaStack {
     }
     List<Step> pre = new ArrayList<>();
     Demand effective = applyOccurrenceCap(demand, pre, binding);
+    effective = applyDailyCap(effective, pre, binding);
     Result result =
         mode.sequential()
             ? capSequential(effective, layers, mode, binding)
@@ -223,7 +238,44 @@ public final class QuotaStack {
         binding.get(i).add(Layer.OCCURRENCE.name());
       }
     }
-    return new Demand(capped, demand.groupCaps(), demand.personalCap(), null);
+    return new Demand(capped, demand.groupCaps(), demand.personalCap(), null, demand.dailyCap());
+  }
+
+  /**
+   * 层③.5 日赔付限额（V1 §7.4 / Q-05）：当日剩余可赔额对<b>本「次」总额</b>再截一次。
+   *
+   * <p><b>与次限额的三点差别，都不能省</b>：
+   *
+   * <ol>
+   *   <li>剩余额可以是 <b>0</b>（当日已赔满）：必须真的截到 0 并留归因，否则"今天赔满了"的案子会照赔一遍；
+   *   <li>窗口是<b>跨案</b>的业务日，不是本组：所以用"当日已用"折出的剩余额在这里只是一个总额上限， 不再做分组——分组语义由次限额负责，两者叠用是 min；
+   *   <li>它比次限额<b>更粗</b>（同一天内所有"次"共用这一个额度），因此必须排在次限额之后截断： 反过来会让日的剩余额先被某一组吃掉，另一组明明当日还有额度却赔不出。
+   * </ol>
+   */
+  private static Demand applyDailyCap(Demand demand, List<Step> steps, List<List<String>> binding) {
+    BigDecimal cap = demand.dailyCap();
+    if (cap == null || cap.signum() < 0) {
+      return demand;
+    }
+    List<BigDecimal> amounts = new ArrayList<>(demand.groups().size());
+    for (Group group : demand.groups()) {
+      amounts.add(group.amount());
+    }
+    BigDecimal total = Money.sum(amounts);
+    if (total.compareTo(cap) <= 0) {
+      return demand;
+    }
+    steps.add(new Step(Layer.DAILY, "DAILY", total, cap, total.subtract(cap)));
+    List<BigDecimal> shares = Money.proRata(cap, amounts);
+    List<Group> capped = new ArrayList<>(demand.groups().size());
+    for (int i = 0; i < demand.groups().size(); i++) {
+      capped.add(new Group(demand.groups().get(i).key(), shares.get(i)));
+      if (shares.get(i).compareTo(amounts.get(i)) < 0) {
+        binding.get(i).add(Layer.DAILY.name());
+      }
+    }
+    return new Demand(
+        capped, demand.groupCaps(), demand.personalCap(), demand.occurrenceCap(), null);
   }
 
   /** 方式 1/2/3：组级截断 → 求和 → 逐层截断（每次截断后按原比例回分摊，保证 Σ组 ≡ 总额）。 */

@@ -37,6 +37,10 @@ public final class AdjustmentEngine {
   public static final String ZERO_PERCENT = "ZERO_PERCENT";
   public static final String ZERO_LIMIT = "ZERO_LIMIT";
   public static final String ZERO_LIMIT_EXHAUSTED = "ZERO_LIMIT_EXHAUSTED";
+
+  /** 日限额（Q-05）当日已用满：与本年度额度用尽不同，改日即可再赔。 */
+  public static final String ZERO_DAILY_EXHAUSTED = "ZERO_DAILY_EXHAUSTED";
+
   public static final String ZERO_NOT_COVERED = "ZERO_NOT_COVERED";
 
   private AdjustmentEngine() {}
@@ -57,6 +61,7 @@ public final class AdjustmentEngine {
    * @param diseaseType 疾病类型（比例因子）
    * @param daysSinceEffective 出险日距保险生效日的天数（等待期判定；{@code null} = 不判）
    * @param extraLayers 额外额度层（共保/险种/计划；可选）
+   * @param claimDate 赔案受理日（日限额「按同日赔案累计」的窗口来源；{@code null} = 该口径不可用， 配置了该口径即 fail-closed）
    */
   public record Request(
       Long claimId,
@@ -69,7 +74,8 @@ public final class AdjustmentEngine {
       String hospitalLevel,
       String diseaseType,
       Integer daysSinceEffective,
-      List<QuotaStack.LayerQuota> extraLayers) {
+      List<QuotaStack.LayerQuota> extraLayers,
+      java.time.LocalDate claimDate) {
 
     public Request {
       rows = rows == null ? List.of() : List.copyOf(rows);
@@ -82,7 +88,8 @@ public final class AdjustmentEngine {
     /** 最小请求：只给金额计算必需的入参。 */
     public static Request of(
         Long claimId, List<ClaimWithItemsProjection> rows, LiabilityRule rule, Accumulation acc) {
-      return new Request(claimId, rows, rule, acc, "", Map.of(), null, null, null, null, List.of());
+      return new Request(
+          claimId, rows, rule, acc, "", Map.of(), null, null, null, null, List.of(), null);
     }
 
     public Request withRuleVersion(String version) {
@@ -97,7 +104,8 @@ public final class AdjustmentEngine {
           hospitalLevel,
           diseaseType,
           daysSinceEffective,
-          extraLayers);
+          extraLayers,
+          claimDate);
     }
 
     public Request withExtraLayers(List<QuotaStack.LayerQuota> layers) {
@@ -112,7 +120,25 @@ public final class AdjustmentEngine {
           hospitalLevel,
           diseaseType,
           daysSinceEffective,
-          layers);
+          layers,
+          claimDate);
+    }
+
+    /** 附赔案受理日（日限额「按同日赔案累计」口径的窗口）。 */
+    public Request withClaimDate(java.time.LocalDate date) {
+      return new Request(
+          claimId,
+          rows,
+          rule,
+          accumulation,
+          ruleVersion,
+          historicalAccumulated,
+          invoiceTotal,
+          hospitalLevel,
+          diseaseType,
+          daysSinceEffective,
+          extraLayers,
+          date);
     }
   }
 
@@ -216,8 +242,10 @@ public final class AdjustmentEngine {
     checkSettlementConsistency(request, pools, diagnostics);
 
     // 本次理算的额度消耗（多层跨组共享：同一次理算内，前一组用掉的额度后一组不能用）
+    DailyGuard daily = resolveDaily(request, rule, diagnostics);
     MutableQuotaPool quotaPool =
-        new MutableQuotaPool(rule, request.accumulation(), request.extraLayers(), pools);
+        new MutableQuotaPool(
+            rule, request.accumulation(), request.extraLayers(), pools, daily.remaining());
     // 免赔账本：年度免赔在多「次」之间共享余额（按次免赔每组独立，由 resolveRemaining 决定）
     DeductibleLedger deductibleLedger =
         new DeductibleLedger(rule.deductible(), request.accumulation().deductibleUsed());
@@ -302,10 +330,130 @@ public final class AdjustmentEngine {
                     rule.occurrences(),
                     occurrences.size(),
                     degradedDimensions,
-                    singleInvoiceProvable)),
+                    singleInvoiceProvable),
+                daily),
             diagnostics);
     InvariantGuard.verify(outcome, request, pools, occurrences.size());
     return outcome;
+  }
+
+  // ===================== 日限额（Q-05） =====================
+
+  /**
+   * 日限额的执行状态。
+   *
+   * @param window 本案的业务日（日窗口）；未启用日限额时为 {@code null}
+   * @param remaining 当日剩余可赔额（{@code null} = 未启用日限额，不参与截断）
+   */
+  private record DailyGuard(java.time.LocalDate window, BigDecimal remaining) {
+
+    static final DailyGuard INACTIVE = new DailyGuard(null, null);
+  }
+
+  /**
+   * 解析日窗口并折算"当日剩余可赔额"（V1 §7.4 / Q-05）。
+   *
+   * <p><b>为什么要校验账本窗口与本案业务日一致</b>：日用量是"某一天"的量，拿错天的用量算出来的剩余额，看着完全正常， 方向却是错的——账本给的是更晚的一天 ⇒
+   * 本案当天的额度被当成"已用满"（少赔到 0）；给的是更早的一天 ⇒ 当成"没赔过"（超赔）。 读侧按 {@code biz_date}
+   * 分日聚合时两者必然相等，故这里是一道<b>接线护栏</b>： 对不上就说明有人把口径串了，此时宁可拒绝，也不拿别天的数算这天。
+   *
+   * <p>三种情形：
+   *
+   * <ol>
+   *   <li>相同 ⇒ 直接用当日已用；
+   *   <li>账本窗口<b>更早</b> ⇒ 账本里没有本案这一天的占用，已用 = 0（昨日赔完、今日重新起算的正常形态）；
+   *   <li>账本窗口<b>更晚</b> ⇒ 口径串了（拿别天的用量算这天），fail-closed。
+   * </ol>
+   *
+   * <p>账实不可读（{@code accumulation.available=false}）时与年度/责任额度同口径：只标记不阻断——理算结果还要给人看， 而 A7
+   * 结算会因同一标记拒绝占额，真正的资金动作不会带着未知账本记账。
+   */
+  private static DailyGuard resolveDaily(
+      Request request, LiabilityRule rule, List<String> diagnostics) {
+    LiabilityRule.LimitSet limits = rule.limits();
+    if (!limits.dailyActive()) {
+      return DailyGuard.INACTIVE;
+    }
+    java.time.LocalDate window = dailyWindowOf(request, limits.dailyBasis());
+    Accumulation accumulation = request.accumulation();
+    BigDecimal used;
+    if (!accumulation.available()) {
+      used = Money.ZERO;
+      diagnostics.add("日限额账本不可读：按「当日未占用」计算，结算前须复核（A7 会 fail-closed）");
+    } else {
+      used = dailyUsedOn(accumulation, window);
+    }
+    BigDecimal remaining = Money.nonNegative(limits.dailyLimit().subtract(used));
+    diagnostics.add(
+        "日限额 %s（%s，窗口 %s 已用 %s，剩余 %s）"
+            .formatted(
+                Money.round(limits.dailyLimit()),
+                limits.dailyBasis(),
+                window,
+                Money.round(used),
+                Money.round(remaining)));
+    return new DailyGuard(window, remaining);
+  }
+
+  /** 本案业务日：按同日发票取发票日期，按同日赔案取赔案受理日。判不出来即拒绝，不替客户选一天。 */
+  private static java.time.LocalDate dailyWindowOf(
+      Request request, LiabilityRule.DailyBasis basis) {
+    if (basis == LiabilityRule.DailyBasis.SAME_DAY_INVOICE) {
+      java.time.LocalDate day = null;
+      for (ClaimWithItemsProjection row : request.rows()) {
+        if (row == null || row.getItemId() == null || row.getInvoiceDate() == null) {
+          continue;
+        }
+        if (day == null) {
+          day = row.getInvoiceDate();
+        } else if (!day.equals(row.getInvoiceDate())) {
+          throw RuleGap.of(
+              RuleGap.Code.DAILY_LIMIT_WINDOW_UNDETERMINED,
+              "日限额按「同日发票累计」，但本案明细跨 %s / %s 两个发票日期：一天只有一个日窗口，" + "把两天的票并成一张会少赔、按其中一天算会超赔，须拆案",
+              day,
+              row.getInvoiceDate());
+        }
+      }
+      if (day == null) {
+        throw RuleGap.of(
+            RuleGap.Code.DAILY_LIMIT_WINDOW_UNDETERMINED,
+            "日限额按「同日发票累计」，但全部 %d 条明细都缺发票日期：日窗口判不出来，" + "按任意一天算都会把别天的赔付算进来（或漏掉），须先补发票日期",
+            request.rows().size());
+      }
+      return day;
+    }
+    if (request.claimDate() == null) {
+      throw RuleGap.of(
+          RuleGap.Code.DAILY_LIMIT_WINDOW_UNDETERMINED,
+          "日限额按「同日赔案累计」，但本次理算未提供赔案受理日：日窗口判不出来，不能按发票日期顶替" + "（补赔场景下两者不同一天）");
+    }
+    return request.claimDate();
+  }
+
+  /** 账本上"本案业务日"的已用额（三态判定见 {@link #resolveDaily}）。 */
+  private static BigDecimal dailyUsedOn(Accumulation accumulation, java.time.LocalDate window) {
+    java.time.LocalDate ledgerWindow = accumulation.dailyWindow();
+    if (ledgerWindow == null) {
+      if (accumulation.dailyUsed().signum() > 0) {
+        throw RuleGap.of(
+            RuleGap.Code.DAILY_LIMIT_WINDOW_UNDETERMINED,
+            "按日账本记了已用 %s 却没有窗口日：这份账无法归到任何一天，不能当作本案当日已用",
+            Money.round(accumulation.dailyUsed()));
+      }
+      return Money.ZERO;
+    }
+    int compare = ledgerWindow.compareTo(window);
+    if (compare == 0) {
+      return accumulation.dailyUsed();
+    }
+    if (compare < 0) {
+      return Money.ZERO;
+    }
+    throw RuleGap.of(
+        RuleGap.Code.DAILY_LIMIT_WINDOW_STALE,
+        "按日账本给出的窗口是 %s，晚于本案业务日 %s：拿别天的用量算这天要么少赔到 0、要么当没赔过，" + "须核对日窗口口径（daily_limit_basis）与读侧取数",
+        ledgerWindow,
+        window);
   }
 
   // ===================== 单组计算 =====================
@@ -813,12 +961,17 @@ public final class AdjustmentEngine {
         new EnumMap<>(QuotaStack.Layer.class);
     private final BigDecimal personalRemaining;
 
+    /** 当日剩余可赔额（Q-05）：与责任额度一样是<b>同一次理算内跨「次」共享</b>的池—— 同一天分 3 组各从满额起算，等于把日限额放大 3 倍。 */
+    private BigDecimal dailyRemaining;
+
     MutableQuotaPool(
         LiabilityRule rule,
         Accumulation accumulation,
         List<QuotaStack.LayerQuota> extraLayers,
-        FeePools pools) {
+        FeePools pools,
+        BigDecimal dailyRemaining) {
       this.rule = rule;
+      this.dailyRemaining = dailyRemaining;
       this.liabilityRemaining =
           rule.limits().liabilityUncapped()
               ? null
@@ -922,7 +1075,8 @@ public final class AdjustmentEngine {
 
       QuotaStack.Result result =
           QuotaStack.cap(
-              new QuotaStack.Demand(groups, groupCaps, personalRemaining, occurrenceCap()),
+              new QuotaStack.Demand(
+                  groups, groupCaps, personalRemaining, occurrenceCap(), dailyRemaining),
               layers,
               rule.quota().mode());
 
@@ -964,6 +1118,9 @@ public final class AdjustmentEngine {
       if (liabilityRemaining != null) {
         liabilityRemaining = Money.nonNegative(liabilityRemaining.subtract(totalPaid));
       }
+      if (dailyRemaining != null) {
+        dailyRemaining = Money.nonNegative(dailyRemaining.subtract(totalPaid));
+      }
       for (QuotaStack.Layer layer : List.copyOf(layerRemaining.keySet())) {
         BigDecimal available = layerRemaining.get(layer);
         if (available != null) {
@@ -1002,6 +1159,11 @@ public final class AdjustmentEngine {
     }
     // 行级归因已经区分了"年度用尽"与"单次超限"，总额归因沿用同一事实（不另判一次，避免两处口径）
     if (!lines.isEmpty()
+        && lines.stream().allMatch(line -> ZERO_DAILY_EXHAUSTED.equals(line.zeroReason()))) {
+      // 日限额把整案压到 0：与"本年度额度用尽"分开报，客户第二天就能再赔
+      return ZERO_DAILY_EXHAUSTED;
+    }
+    if (!lines.isEmpty()
         && lines.stream().allMatch(line -> ZERO_LIMIT_EXHAUSTED.equals(line.zeroReason()))) {
       return ZERO_LIMIT_EXHAUSTED;
     }
@@ -1026,6 +1188,11 @@ public final class AdjustmentEngine {
     if (cell.ratioPayout.signum() == 0) {
       return ZERO_REASONABLE;
     }
+    // 日限额用满是"改日再赔"，与本年度额度用尽（今年没了）是两件事，拒赔解释必须分开：
+    // 都报 ZERO_LIMIT_EXHAUSTED 会让客户以为这一年的保障已经用完，实际第二天就能赔。
+    if (cell.cappedBy != null && cell.cappedBy.contains(QuotaStack.Layer.DAILY.name())) {
+      return ZERO_DAILY_EXHAUSTED;
+    }
     // 区分"本年度额度已用尽"与"本案单次超限"：两者对客户的解释完全不同（拒赔五要素的事实认定要求）
     return cell.quotaExhausted ? ZERO_LIMIT_EXHAUSTED : ZERO_LIMIT;
   }
@@ -1034,7 +1201,7 @@ public final class AdjustmentEngine {
   private static String rejectionCodeOf(String zeroReason) {
     return switch (zeroReason) {
       case ZERO_DEDUCT -> "06";
-      case ZERO_LIMIT, ZERO_LIMIT_EXHAUSTED -> "09";
+      case ZERO_LIMIT, ZERO_LIMIT_EXHAUSTED, ZERO_DAILY_EXHAUSTED -> "09";
       case ZERO_PERCENT, ZERO_REASONABLE, ZERO_NOT_COVERED -> "05";
       default -> "";
     };
@@ -1249,7 +1416,8 @@ public final class AdjustmentEngine {
       List<String> quotaTrace,
       List<Line> lines,
       List<String> diagnostics,
-      String groupingJson) {
+      String groupingJson,
+      DailyGuard daily) {
     StringBuilder sb = new StringBuilder("{");
     append(sb, "liabilityUuid", rule.liabilityUuid());
     append(sb, "liabilityVersion", rule.liabilityVersion());
@@ -1281,6 +1449,24 @@ public final class AdjustmentEngine {
         .append(',');
     sb.append("\"limitUsedBefore\":")
         .append(num(Money.round(request.accumulation().limitUsed())))
+        .append(',');
+    // Q-05 日赔付限额：金额、口径、窗口日、当日已用、当日剩余五项一起物化——
+    // 只记"被日限额截断"而不记截断时的窗口与已用量，事后无法判断这笔少赔是当日额度真的用完了，还是取数取错了天。
+    sb.append("\"dailyLimit\":")
+        .append(rule.limits().dailyLimit().stripTrailingZeros().toPlainString())
+        .append(',');
+    append(sb, "dailyBasis", rule.limits().dailyBasis().name());
+    sb.append("\"dailyUsedBefore\":")
+        .append(num(Money.round(request.accumulation().dailyUsed())))
+        .append(',');
+    sb.append("\"dailyWindow\":")
+        .append(
+            request.accumulation().dailyWindow() == null
+                ? "null"
+                : "\"" + request.accumulation().dailyWindow() + "\"")
+        .append(',');
+    sb.append("\"dailyRemaining\":")
+        .append(daily.remaining() == null ? "null" : num(Money.round(daily.remaining())))
         .append(',');
     sb.append("\"accumulationAvailable\":").append(request.accumulation().available()).append(',');
     sb.append("\"socialOnly\":").append(rule.socialOnly()).append(',');

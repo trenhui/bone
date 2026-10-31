@@ -140,6 +140,23 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       AdjLiability liability,
       String ruleVersion,
       Accumulation accumulation) {
+    return calculate(id, tenantId, claimId, rows, liability, ruleVersion, accumulation, null);
+  }
+
+  /**
+   * 执行理算（带赔案受理日）。
+   *
+   * @param claimDate 赔案受理日：日限额「按同日赔案累计」的窗口来源；不配该口径时可为 {@code null}
+   */
+  public static Adjustment calculate(
+      Long id,
+      Long tenantId,
+      Long claimId,
+      List<ClaimWithItemsProjection> rows,
+      AdjLiability liability,
+      String ruleVersion,
+      Accumulation accumulation,
+      java.time.LocalDate claimDate) {
     if (rows == null || rows.isEmpty()) {
       throw new DomainException("理算明细不能为空");
     }
@@ -153,7 +170,7 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       throw new DomainException("跨案累计快照缺失，无法理算（⑩：禁止按『已用 0』隐式计算）");
     }
     Adjustment adjustment = new Adjustment(id, tenantId, claimId, ruleVersion);
-    adjustment.apply(rows, liability, accumulation);
+    adjustment.apply(rows, liability, accumulation, claimDate);
     return adjustment;
   }
 
@@ -161,7 +178,18 @@ public class Adjustment extends TenantAggregateRoot<Long> {
   public void recalculate(
       List<ClaimWithItemsProjection> rows, AdjLiability liability, Accumulation accumulation) {
     requireModifiable("已确认的理算结果禁止重算");
-    apply(rows, liability, accumulation);
+    apply(rows, liability, accumulation, null);
+    this.updatedAt = java.time.Instant.now();
+  }
+
+  /** 重算（带赔案受理日，口径同 {@link #recalculate(List, AdjLiability, Accumulation)}）。 */
+  public void recalculate(
+      List<ClaimWithItemsProjection> rows,
+      AdjLiability liability,
+      Accumulation accumulation,
+      java.time.LocalDate claimDate) {
+    requireModifiable("已确认的理算结果禁止重算");
+    apply(rows, liability, accumulation, claimDate);
     this.updatedAt = java.time.Instant.now();
   }
 
@@ -204,7 +232,10 @@ public class Adjustment extends TenantAggregateRoot<Long> {
    * DomainException}、把引擎输出物化成聚合字段与明细行。这里<b>没有任何算术</b>。
    */
   private void apply(
-      List<ClaimWithItemsProjection> rows, AdjLiability liability, Accumulation accumulation) {
+      List<ClaimWithItemsProjection> rows,
+      AdjLiability liability,
+      Accumulation accumulation,
+      java.time.LocalDate claimDate) {
     LiabilityRule rule =
         LiabilityRule.fromLegacy(
             liability.getLiabilityUuid(),
@@ -214,14 +245,17 @@ public class Adjustment extends TenantAggregateRoot<Long> {
             liability.limit(),
             liability.isSocialOnly(),
             liability.invoiceDeduct(),
-            liability.adjustDeduct());
+            liability.adjustDeduct(),
+            liability.dailyLimit(),
+            LiabilityRule.DailyBasis.fromCode(liability.dailyLimitBasis()));
 
     AdjustmentEngine.Outcome outcome;
     try {
       outcome =
           AdjustmentEngine.calculate(
               AdjustmentEngine.Request.of(getClaimId(), rows, rule, accumulation)
-                  .withRuleVersion(this.ruleVersion));
+                  .withRuleVersion(this.ruleVersion)
+                  .withClaimDate(claimDate));
     } catch (RuleGap gap) {
       // 规则缺口属"业务上算不出"，外壳对外统一成领域异常；原因码留在异常信息里可被审计日志提取。
       throw new DomainException(gap.getMessage());

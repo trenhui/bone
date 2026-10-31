@@ -416,6 +416,71 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
   }
 
   /**
+   * 累计<b>当日</b>赔付占用（Q-05 日赔付限额）。
+   *
+   * <p><b>它不是第四本账，而是一条事实</b>：日用量是"同一业务日已经占用了多少"的事件，落成 {@code txn_type=DAILY} + {@code biz_date}
+   * 的流水行，读侧按业务日聚合即可。因此它既不改变 {@code frozen}/{@code claimed}（不参与守恒校验），也不需要"每日清零"这种批处理——清零是状态，
+   * 状态就会漏跑；按日聚合是纯函数，补赔/倒签发票都能算对。
+   *
+   * <p><b>缺业务日即不落账</b>：没有业务日的钱算不到任何一天，硬记一笔反而会污染某天的额度。
+   *
+   * @param bizDate 业务日（发票日期 / 赔案受理日，按责任配置的 {@code daily_limit_basis}）
+   * @return 本次流水；{@code amount <= 0} 或业务日缺失时返回 {@code null}
+   */
+  public QuotaTransaction accumulateDaily(
+      long txnId,
+      BigDecimal amount,
+      java.time.LocalDate bizDate,
+      Long claimId,
+      String settlementNo,
+      String idempotencyKey) {
+    if (amount == null || amount.signum() <= 0 || bizDate == null) {
+      return null;
+    }
+    return append(
+        txnId,
+        claimId,
+        settlementNo,
+        "OCCUPY",
+        "DAILY",
+        amount,
+        ZERO,
+        ZERO,
+        idempotencyKey,
+        bizDate);
+  }
+
+  /**
+   * 回退<b>当日</b>赔付占用（撤销 / 拒赔 / 退款，与 {@link #accumulateDaily} 严格对称）。
+   *
+   * <p>不回退的后果是单向的：当日额度被一笔已经撤销的赔案永久吃掉，当天后续真实赔案被限额拦下（少赔）。
+   *
+   * @return 本次流水；{@code amount <= 0} 或业务日缺失时返回 {@code null}
+   */
+  public QuotaTransaction reduceDaily(
+      long txnId,
+      BigDecimal amount,
+      java.time.LocalDate bizDate,
+      Long claimId,
+      String settlementNo,
+      String idempotencyKey) {
+    if (amount == null || amount.signum() <= 0 || bizDate == null) {
+      return null;
+    }
+    return append(
+        txnId,
+        claimId,
+        settlementNo,
+        "ROLLBACK",
+        "DAILY",
+        amount,
+        ZERO,
+        ZERO,
+        idempotencyKey,
+        bizDate);
+  }
+
+  /**
    * 回退年免赔（撤件 / 拒赔 / 冲正：本案消抵的免赔须归还，否则后续案件会重复"消化"同一笔免赔 ⇒ 系统性少赔）。
    *
    * <p>与 {@link #accumulateDeductible} 严格对称：方向 {@code ROLLBACK}，且钳到 0（历史上限保护）。
@@ -498,6 +563,30 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
       BigDecimal before,
       BigDecimal after,
       String idempotencyKey) {
+    return append(
+        txnId,
+        claimId,
+        settlementNo,
+        direction,
+        txnType,
+        amount,
+        before,
+        after,
+        idempotencyKey,
+        null);
+  }
+
+  private QuotaTransaction append(
+      long txnId,
+      Long claimId,
+      String settlementNo,
+      String direction,
+      String txnType,
+      BigDecimal amount,
+      BigDecimal before,
+      BigDecimal after,
+      String idempotencyKey,
+      java.time.LocalDate bizDate) {
     Instant now = Instant.now();
     this.updatedAt = now;
     QuotaTransaction txn =
@@ -513,7 +602,8 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
             before,
             after,
             idempotencyKey,
-            now);
+            now,
+            bizDate);
     this.transactions.add(txn);
     return txn;
   }

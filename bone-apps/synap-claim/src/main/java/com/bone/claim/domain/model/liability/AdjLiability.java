@@ -58,6 +58,14 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
   @Column(name = "adjust_deduct")
   private BigDecimal adjustDeduct;
 
+  /** 日赔付限额（Q-05）：同一业务日累计上限；0 = 不启用。 */
+  @Column(name = "daily_limit")
+  private BigDecimal dailyLimit;
+
+  /** 日窗口口径（Q-05）：NONE / SAME_DAY_INVOICE（按同日发票）/ SAME_DAY_CLAIM（按同日赔案）。 */
+  @Column(name = "daily_limit_basis")
+  private String dailyLimitBasis;
+
   /** 是否仅赔付社保范围内（false 则目录外也按比例赔）。 */
   @Column(name = "social_only")
   private Integer socialOnly;
@@ -128,6 +136,50 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
       Integer socialOnly,
       Integer waitingPeriod,
       String status) {
+    return of(
+        id,
+        tenantId,
+        liabilityUuid,
+        liabilityVersion,
+        planId,
+        liabilityCode,
+        liabilityType,
+        payPercent,
+        liabilityDeduct,
+        liabilityLimit,
+        invoiceDeduct,
+        adjustDeduct,
+        java.math.BigDecimal.ZERO,
+        "NONE",
+        socialOnly,
+        waitingPeriod,
+        status);
+  }
+
+  /**
+   * 含日限额（Q-05）的完整责任配置工厂。
+   *
+   * <p>日限额必须「金额 + 口径」一起给：只给金额无法判定"同日"是哪一天（发票日期 or 赔案受理日）， 装载期即被 {@code LiabilityRule#validate()}
+   * 拒绝——这是 V1 §7.4 两档口径落地的配置入口。
+   */
+  public static AdjLiability of(
+      Long id,
+      Long tenantId,
+      String liabilityUuid,
+      String liabilityVersion,
+      Long planId,
+      String liabilityCode,
+      String liabilityType,
+      java.math.BigDecimal payPercent,
+      java.math.BigDecimal liabilityDeduct,
+      java.math.BigDecimal liabilityLimit,
+      java.math.BigDecimal invoiceDeduct,
+      java.math.BigDecimal adjustDeduct,
+      java.math.BigDecimal dailyLimit,
+      String dailyLimitBasis,
+      Integer socialOnly,
+      Integer waitingPeriod,
+      String status) {
     AdjLiability liability = new AdjLiability();
     liability.setId(id);
     liability.setTenantId(tenantId);
@@ -142,6 +194,9 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
     liability.liabilityLimit = liabilityLimit == null ? java.math.BigDecimal.ZERO : liabilityLimit;
     liability.invoiceDeduct = invoiceDeduct == null ? java.math.BigDecimal.ZERO : invoiceDeduct;
     liability.adjustDeduct = adjustDeduct == null ? java.math.BigDecimal.ZERO : adjustDeduct;
+    liability.dailyLimit = dailyLimit == null ? java.math.BigDecimal.ZERO : dailyLimit;
+    liability.dailyLimitBasis =
+        dailyLimitBasis == null || dailyLimitBasis.isBlank() ? "NONE" : dailyLimitBasis;
     liability.socialOnly = socialOnly == null ? 1 : socialOnly;
     liability.waitingPeriod = waitingPeriod == null ? 0 : waitingPeriod;
     liability.status = status == null ? "DRAFT" : status;
@@ -184,5 +239,15 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
   /** 理算级免赔（GAP⑥）；0 或不配置表示不启用。 */
   public BigDecimal adjustDeduct() {
     return adjustDeduct == null ? BigDecimal.ZERO : adjustDeduct;
+  }
+
+  /** 日赔付限额（Q-05）；0 或不配置表示不启用。 */
+  public BigDecimal dailyLimit() {
+    return dailyLimit == null ? BigDecimal.ZERO : dailyLimit;
+  }
+
+  /** 日窗口口径（Q-05）；缺省 {@code NONE}（不启用）。 */
+  public String dailyLimitBasis() {
+    return dailyLimitBasis == null || dailyLimitBasis.isBlank() ? "NONE" : dailyLimitBasis;
   }
 }
