@@ -129,7 +129,9 @@ public final class AdjustmentEngine {
       BigDecimal feeRemain,
       BigDecimal ratioPercent,
       String zeroReason,
-      String rejectType) {}
+      String rejectType,
+      Long itemId,
+      String itemName) {}
 
   /** 理算结果。 */
   public record Outcome(
@@ -427,20 +429,10 @@ public final class AdjustmentEngine {
       }
       occupied = occupied.add(cell.occupied);
       remaining = remaining.add(cell.remaining);
-      lines.add(
-          new Line(
-              cell.bucket.name(),
-              cell.label,
-              cell.inScope.signum() > 0 ? "IN" : "OUT",
-              Money.round(cell.base),
-              Money.round(cell.deducted),
-              Money.round(cell.ratioPayout),
-              Money.round(cell.occupied),
-              Money.round(cell.payout),
-              Money.round(cell.remaining),
-              cell.ratioPercent,
-              cell.payout.signum() == 0 ? cellZeroReason(cell) : "",
-              cell.payout.signum() == 0 ? rejectionCodeOf(cellZeroReason(cell)) : ""));
+      String cellZero = cell.payout.signum() == 0 ? cellZeroReason(cell) : "";
+      // 逐行分位归因（GAP⑨，oracle S27）：把池级最终赔付按各费用项在池内基数占比下钻到费用项明细行，
+      // Σ 各行 feePayout ≡ 池 feePayout（I1 守恒）；无正贡献（理论不出现）时退回池级单行兜底。
+      lines.addAll(attributeToItems(pools, cell, cellZero));
     }
     return new GroupResult(
         capped.payable(),
@@ -454,6 +446,78 @@ public final class AdjustmentEngine {
         invoiceDeductApplied,
         adjustDeductApplied,
         afterAdjust);
+  }
+
+  /**
+   * 逐行分位归因（GAP⑨，对齐 oracle S27 的"分位守恒"口径）。
+   *
+   * <p><b>为什么必须逐费用项出行</b>：池级单行只能回答"这张票的合理金额赔了多少"，回答不了"哪一笔费用赔了多少"。
+   * 客户对账、拒赔说明、监管抽样都要求明细可加回合计——这正是"明细可加回合计"这条硬口径的来源。
+   *
+   * <p><b>分摊口径</b>：以各费用项在该池内的基数贡献为权重，用 {@link Money#proRata} 拆分池级各成分金额， 保证 <b>Σ 各费用项 ≡ 池</b>（I1
+   * 不破）。权重只取正贡献项：{@code socialOnly} 下被剔除的范围外金额权重为 0， 不单独出行（出行反而是"这条被赔了 0"的噪声，其不赔原因已由池级 {@code
+   * socialOnly} 诊断说明）。
+   *
+   * <p><b>剩余额度不外摊</b>：{@code cell.remaining} 是"组级"口径（同一分组内各池取同一个责任剩余额），
+   * 不是可按费用项分割的金额；摊到每行会让汇总口径随明细条数漂移，故整额记在本池首行。
+   */
+  private static List<Line> attributeToItems(FeePools pools, Cell cell, String zeroReason) {
+    String rejectType = zeroReason.isBlank() ? "" : rejectionCodeOf(zeroReason);
+    List<FeePools.ItemContribution> items =
+        pools.contributions().stream()
+            .filter(item -> item.bucket() == cell.bucket && item.amount().signum() > 0)
+            .toList();
+    if (items.isEmpty()) {
+      // 零基数池（或自定义费用类型无费用项映射）：没有权重可分，退回池级单行，
+      // 否则"为什么不赔"的归因行会凭空消失。
+      return List.of(poolLine(cell, zeroReason, rejectType));
+    }
+    List<BigDecimal> weights = items.stream().map(FeePools.ItemContribution::amount).toList();
+    List<BigDecimal> bases = Money.proRata(cell.base, weights);
+    List<BigDecimal> deducted = Money.proRata(cell.deducted, weights);
+    List<BigDecimal> ratioPayouts = Money.proRata(cell.ratioPayout, weights);
+    List<BigDecimal> occupied = Money.proRata(cell.occupied, weights);
+    List<BigDecimal> payouts = Money.proRata(cell.payout, weights);
+    List<Line> lines = new ArrayList<>(items.size());
+    for (int i = 0; i < items.size(); i++) {
+      FeePools.ItemContribution item = items.get(i);
+      lines.add(
+          new Line(
+              cell.bucket.name(),
+              cell.label,
+              item.inScope() ? "IN" : "OUT",
+              bases.get(i),
+              deducted.get(i),
+              ratioPayouts.get(i),
+              occupied.get(i),
+              payouts.get(i),
+              i == 0 ? Money.round(cell.remaining) : Money.ZERO,
+              cell.ratioPercent,
+              zeroReason,
+              rejectType,
+              item.itemId(),
+              item.itemName()));
+    }
+    return lines;
+  }
+
+  /** 池级单行（无费用项可分摊时的兜底，{@code itemId} 留空）。 */
+  private static Line poolLine(Cell cell, String zeroReason, String rejectType) {
+    return new Line(
+        cell.bucket.name(),
+        cell.label,
+        cell.inScope.signum() > 0 ? "IN" : "OUT",
+        Money.round(cell.base),
+        Money.round(cell.deducted),
+        Money.round(cell.ratioPayout),
+        Money.round(cell.occupied),
+        Money.round(cell.payout),
+        Money.round(cell.remaining),
+        cell.ratioPercent,
+        zeroReason,
+        rejectType,
+        null,
+        null);
   }
 
   /** 比例查表（累计区间因子 = 历史累计 + 本池当前金额，§5.4）。 */
@@ -1247,10 +1311,54 @@ public final class AdjustmentEngine {
     // 诊断必须落库：这些提示（三方已赔未扣、比例超 100%、责任不承担的费用类型、次分组数）此前只存在于
     // 内存返回值里，聚合外壳从不读它 ⇒ 生产环境一条也看不到，等于没报。
     appendArray(sb, "diagnostics", diagnostics);
-    appendArray(sb, "lines", lines.stream().map(AdjustmentEngine::lineJson).toList());
+    // 快照里的 lines 保持**池级**口径（逐费用项明细落 t_adj_calculation_line，不在这里展开）：
+    // 一者 formula_snapshot 是 VARCHAR(4000) 的复算快照，逐行展开会让一张多明细发票直接溢出；
+    // 二者快照的语义是"复算所需的责任参数与池级归因"，逐行审计溯源由明细行表承担，两处各司其职。
+    // 池级聚合保证既有场景的快照字节不变（formula_hash 因此保持稳定）。
+    appendArray(
+        sb, "lines", poolLevelLines(lines).stream().map(AdjustmentEngine::lineJson).toList());
     sb.append("\"items\":").append(itemsJson(request.rows()));
     sb.append('}');
     return sb.toString();
+  }
+
+  /**
+   * 把逐费用项明细行按费用池合回一条（快照口径）。
+   *
+   * <p>与 {@link #attributeToItems} 互为逆运算：明细行的六个成分金额相加必须回到池级值， 这样"快照池级口径 +
+   * 明细行逐项口径"两种读法对得上，复算与审计不会各说各话。
+   */
+  private static List<Line> poolLevelLines(List<Line> lines) {
+    // 只合并**相邻**同池行：跨分组（次限额分组）的同名池必须各自成行，否则快照会把两组的
+    // 赔付混成一条，复算时看不出"这一次为什么只赔这么多"。
+    List<Line> merged = new ArrayList<>();
+    for (Line line : lines) {
+      int last = merged.size() - 1;
+      if (last >= 0 && merged.get(last).bucket().equals(line.bucket())) {
+        merged.set(last, mergeLine(merged.get(last), line));
+      } else {
+        merged.add(line);
+      }
+    }
+    return List.copyOf(merged);
+  }
+
+  private static Line mergeLine(Line left, Line right) {
+    return new Line(
+        left.bucket(),
+        left.bucketLabel(),
+        left.scope(),
+        left.feeCalculate().add(right.feeCalculate()),
+        left.feeDeduct().add(right.feeDeduct()),
+        left.ratioPayout().add(right.ratioPayout()),
+        left.feeOccupied().add(right.feeOccupied()),
+        left.feePayout().add(right.feePayout()),
+        left.feeRemain().add(right.feeRemain()),
+        left.ratioPercent(),
+        left.zeroReason(),
+        left.rejectType(),
+        null,
+        null);
   }
 
   private static String lineJson(Line line) {

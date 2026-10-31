@@ -265,7 +265,9 @@ public class Adjustment extends TenantAggregateRoot<Long> {
    * 与 {@code scope}（都是英文码：{@code REASONABLE} / {@code IN|OUT}）。 前端要显示「合理金额 / 自付二 /
    * 总自费」与本次赔付比例，只能自己再建一份桶名映射—— 那就是**同一套词汇的第三份副本**（引擎一份、文档一份、前端一份），改一处必然漏两处。 落库后展示口径与计算口径同源。
    *
-   * <p>取值均为受控枚举与定点小数，不含自由文本，故直接内联拼接即可（无需 JSON 转义）。
+   * <p><b>为什么还要落 itemId / itemName</b>：逐行分位归因（GAP⑨）落地后，一行对应一笔费用明细，
+   * 缺了费用项标识这行就无从追溯到发票上的具体收费项，审计与客户对账都会回到"按池汇总"的老问题。 明细表没有 item_id 列，故随快照落库（{@code itemName}
+   * 是自由文本，必须转义——JSON 里一个引号就会让整段快照失效）。
    */
   private static String inputSnapshotOf(AdjustmentEngine.Line line) {
     String ratio = line.ratioPercent() == null ? "null" : line.ratioPercent().toPlainString();
@@ -277,7 +279,37 @@ public class Adjustment extends TenantAggregateRoot<Long> {
         + line.scope()
         + "\",\"ratioPercent\":"
         + ratio
-        + "}";
+        + ",\"itemId\":"
+        + (line.itemId() == null ? "null" : line.itemId())
+        + ",\"itemName\":\""
+        + jsonEscape(line.itemName())
+        + "\"}";
+  }
+
+  /** 最小 JSON 字符串转义（只做 JSON 合法性所需，不改变原文语义）。 */
+  private static String jsonEscape(String value) {
+    if (value == null || value.isEmpty()) {
+      return "";
+    }
+    StringBuilder sb = new StringBuilder(value.length() + 8);
+    for (int i = 0; i < value.length(); i++) {
+      char ch = value.charAt(i);
+      switch (ch) {
+        case '"' -> sb.append("\\\"");
+        case '\\' -> sb.append("\\\\");
+        case '\n' -> sb.append("\\n");
+        case '\r' -> sb.append("\\r");
+        case '\t' -> sb.append("\\t");
+        default -> {
+          if (ch < 0x20) {
+            sb.append("\\u").append(String.format("%04x", (int) ch));
+          } else {
+            sb.append(ch);
+          }
+        }
+      }
+    }
+    return sb.toString();
   }
 
   private static String sha256(String input) {

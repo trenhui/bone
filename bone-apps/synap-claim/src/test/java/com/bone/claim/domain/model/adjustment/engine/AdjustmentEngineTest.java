@@ -1047,6 +1047,47 @@ class AdjustmentEngineTest {
     }
 
     @Test
+    @DisplayName("逐费用项分位归因（GAP⑨）：同一池的多笔费用各出一行、Σ 行 ≡ 池，各池按自身比例分位")
+    void perItemAttributionSplitsWithinPool() {
+      // 合理金额 300+700=1000 ×90% = 900 ⇒ 270 / 630；自付二 100+300=400 ×80% = 320 ⇒ 80 / 240
+      LiabilityRule rule =
+          rule(
+              "90",
+              ratios(
+                  entry(FeePools.Bucket.REASONABLE, "90", null),
+                  entry(FeePools.Bucket.SELF_PAY_2, "80", null)),
+              DeductibleRule.none(),
+              NO_CAP);
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L,
+                  List.of(
+                      row(2001L, "IN", "300.00", "100.00", "0"),
+                      row(2002L, "IN", "700.00", "300.00", "0")),
+                  rule,
+                  Accumulation.FIRST));
+
+      assertThat(
+              outcome.lines().stream()
+                  .map(
+                      line ->
+                          line.itemId()
+                              + "/"
+                              + line.bucket()
+                              + "="
+                              + line.feePayout().stripTrailingZeros().toPlainString())
+                  .toList())
+          .as("逐行归因须落到费用项（缺 itemId 就追溯不回票面收费项），且分摊额守恒于池")
+          .containsExactly(
+              "2001/REASONABLE=270",
+              "2002/REASONABLE=630",
+              "2001/SELF_PAY_2=80",
+              "2002/SELF_PAY_2=240");
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("1220.00");
+    }
+
+    @Test
     @DisplayName("零赔付归因：责任额度年度用尽 ⇒ ZERO_LIMIT_EXHAUSTED（区别于单次超限）")
     void zeroReasonDistinguishesExhausted() {
       LiabilityRule rule =
@@ -1123,11 +1164,35 @@ class AdjustmentEngineTest {
         .totalAmount();
   }
 
+  /**
+   * 取指定费用池的**池级**归因金额。
+   *
+   * <p>GAP⑨ 逐行分位归因落地后，一个费用池会按费用项拆成多行（Σ 各行 ≡ 池）， 故这里必须按池聚合而不是取首行——取首行会静默读到"第一笔费用的份额"，断言看起来仍绿却是错的。
+   */
   private static AdjustmentEngine.Line line(AdjustmentEngine.Outcome outcome, String bucket) {
     return outcome.lines().stream()
         .filter(l -> l.bucket().equals(bucket))
-        .findFirst()
+        .reduce(AdjustmentEngineTest::merge)
         .orElseThrow(() -> new AssertionError("缺少费用池归因行：" + bucket + "，实际 " + outcome.lines()));
+  }
+
+  private static AdjustmentEngine.Line merge(
+      AdjustmentEngine.Line left, AdjustmentEngine.Line right) {
+    return new AdjustmentEngine.Line(
+        left.bucket(),
+        left.bucketLabel(),
+        left.scope(),
+        left.feeCalculate().add(right.feeCalculate()),
+        left.feeDeduct().add(right.feeDeduct()),
+        left.ratioPayout().add(right.ratioPayout()),
+        left.feeOccupied().add(right.feeOccupied()),
+        left.feePayout().add(right.feePayout()),
+        left.feeRemain().add(right.feeRemain()),
+        left.ratioPercent(),
+        left.zeroReason(),
+        left.rejectType(),
+        null,
+        null);
   }
 
   private static LiabilityRule rule(

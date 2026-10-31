@@ -11,6 +11,8 @@ import java.math.BigDecimal;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -94,8 +96,10 @@ class AdjustmentSemanticGapInventoryTest {
               "§5.3 · Go-Live G2"),
           new Step(
               "⑨逐行分位归因（分位守恒）",
-              Status.GAP,
-              "Adjustment.apply 只落 1 条 OUTPUT 汇总行，不按费用行分位",
+              Status.SUPPORTED,
+              "AdjustmentEngine.attributeToItems：池级各成分金额按费用项在池内基数占比（Money.proRata）下钻为"
+                  + "逐费用项 OUTPUT 行，Σ 各行 ≡ 池（I1 守恒，oracle S27 口径）；费用项标识随"
+                  + "t_adj_calculation_line.input_snapshot 落库（itemId/itemName），可供逐笔对账与申诉举证",
               "§7.4 · reference-impl S27"),
           new Step(
               "⑩跨案累计（年度免赔/责任限额）",
@@ -104,6 +108,9 @@ class AdjustmentSemanticGapInventoryTest {
                   + "剩余责任限额 = 配置 − (claimed+frozen)；读侧 AccumulationPort 投影 LIABILITY_CAP 账户，"
                   + "写侧由 A7 结算经 QuotaApplicationService.reserveLiability 回写",
               "Go-Live G2 · reference-impl S3/S21"));
+
+  /** 行快照里的费用项标识提取式（{@code input_snapshot} 是内联 JSON，明细表无独立列）。 */
+  private static final Pattern ITEM_ID = Pattern.compile("\"itemId\":(\\d+)");
 
   @Test
   @DisplayName("覆盖清单固定：SUPPORTED / PARTIAL / GAP 三集合与登记一致（能力变化须显式改档）")
@@ -116,10 +123,11 @@ class AdjustmentSemanticGapInventoryTest {
             "⑤赔付比例",
             "⑥理算级免赔（第二个免赔）",
             "⑦取整（中间 6 位 / 结果 2 位 HALF_UP）",
+            "⑨逐行分位归因（分位守恒）",
             "⑩跨案累计（年度免赔/责任限额）");
     assertThat(labelsWith(Status.PARTIAL))
         .containsExactlyInAnyOrder("①费用明细筛选（目录/合理必要）", "⑧多维度 min 控额");
-    assertThat(labelsWith(Status.GAP)).containsExactlyInAnyOrder("⑨逐行分位归因（分位守恒）");
+    assertThat(labelsWith(Status.GAP)).isEmpty();
   }
 
   @Test
@@ -145,8 +153,8 @@ class AdjustmentSemanticGapInventoryTest {
   }
 
   @Test
-  @DisplayName("GAP⑨ 反证：多费用行只落 1 条汇总行 —— 无逐行分位归因")
-  void gap_noPerLineAttribution() {
+  @DisplayName("⑨ 已支持（原 GAP⑨ 反证转正）：多费用行按费用项分位落 OUTPUT 行，Σ 行 ≡ 总额（分位守恒）")
+  void perLineAttributionConserves() {
     Adjustment adjustment =
         Adjustment.calculate(
             9001L,
@@ -157,7 +165,24 @@ class AdjustmentSemanticGapInventoryTest {
             "r1",
             Accumulation.FIRST);
 
-    assertThat(adjustment.lines()).as("若本断言转红：逐行归因已实现，请把 GAP⑨ 改为 SUPPORTED 并回填 G2").hasSize(1);
+    assertThat(adjustment.getTotalAmount()).isEqualByComparingTo("600.00");
+    assertThat(adjustment.lines()).as("三笔费用明细须各落一条 OUTPUT 行；若仍为 1 行说明逐行分位归因被回退").hasSize(3);
+    // 逐行可追溯：itemId 随行快照落库（明细表无 item_id 列），缺了它这行就说不清是哪笔收费
+    assertThat(adjustment.lines().stream().map(line -> itemIdOf(line.getInputSnapshot())).toList())
+        .as("每行须携带费用项标识，否则无法追溯到发票上的具体收费项")
+        .containsExactlyInAnyOrder(2001L, 2002L, 2003L);
+    assertThat(
+            adjustment.lines().stream()
+                .map(line -> line.getFeePayout().stripTrailingZeros().toPlainString())
+                .toList())
+        .as("按各费用项基数占比分位：100/200/300 在 100%% 比例下即为 100/200/300")
+        .containsExactlyInAnyOrder("100", "200", "300");
+    assertThat(
+            adjustment.lines().stream()
+                .map(AdjustmentLine::getFeePayout)
+                .reduce(BigDecimal.ZERO, BigDecimal::add))
+        .as("分位守恒（oracle S27）：Σ 各行实付 ≡ 理算总额，否则明细加不回合计（I1 破裂）")
+        .isEqualByComparingTo("600.00");
   }
 
   @Test
@@ -300,6 +325,12 @@ class AdjustmentSemanticGapInventoryTest {
         .filter(s -> s.status() == status)
         .map(Step::label)
         .collect(Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  /** 从行快照里取费用项标识（明细表无 item_id 列，该值随 {@code input_snapshot} 落库）。 */
+  private static Long itemIdOf(String inputSnapshot) {
+    Matcher matcher = ITEM_ID.matcher(inputSnapshot == null ? "" : inputSnapshot);
+    return matcher.find() ? Long.valueOf(matcher.group(1)) : null;
   }
 
   private static ClaimWithItemsProjection item(long itemId, String valid) {
