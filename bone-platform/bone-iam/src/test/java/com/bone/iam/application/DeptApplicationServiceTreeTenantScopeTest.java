@@ -8,6 +8,7 @@ import com.bone.iam.application.query.dto.DeptTreeDTO;
 import com.bone.iam.application.query.qry.DeptTreeQuery;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.model.dept.Dept;
+import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.domain.repository.DeptRepository;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -26,9 +27,10 @@ import org.junit.jupiter.api.Test;
 class DeptApplicationServiceTreeTenantScopeTest {
 
   private final DeptRepository deptRepository = mock(DeptRepository.class);
+  private final AccountRepository accountRepository = mock(AccountRepository.class);
   private final TenantProvider tenantProvider = mock(TenantProvider.class);
   private final DeptApplicationService service =
-      new DeptApplicationService(deptRepository, tenantProvider);
+      new DeptApplicationService(deptRepository, accountRepository, tenantProvider);
 
   private static Dept dept(String name, Long tenantId) {
     return Dept.create(name, null, 1, 1, tenantId);

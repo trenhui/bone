@@ -354,6 +354,10 @@ export interface DeptNode {
   parentId: string | null;
   orderNo?: number;
   status?: number;
+  /** 部门负责人账户 ID（审批流 DEPT_HEAD 的数据源） */
+  leaderId?: string | null;
+  /** 部门负责人姓名（后端回填） */
+  leaderName?: string | null;
   children?: DeptNode[];
 }
 
@@ -362,6 +366,8 @@ export interface DeptReq {
   parentId?: string | null;
   orderNo?: number;
   status?: number;
+  /** 负责人：null/undefined = 不变更，'0' = 清空，其他 = 设为该账户 */
+  leaderId?: string | null;
 }
 
 /** 获取组织机构树 */

@@ -135,3 +135,11 @@ bone:
       # 本地与 E2E 探针依赖绑定解析链路：默认全开。
       # 生产（base application.yaml）默认关，按 enabled-tenants 逐租户灰度开放。
       enabled: true
+
+  # 工作流审批人组织目录（本地/联调）：与 dev 同口径打开。
+  # 不开时组织类指派策略（LINE_MANAGER / DEPT_HEAD / LEVEL_UP）解析不出人，单据会挂起——
+  # 那是设计好的 fail-closed，但在本地看起来像「提交后没人收到待办」，容易误诊为引擎故障。
+  workflow:
+    org-directory:
+      enabled: ${BONE_WF_ORG_DIRECTORY_ENABLED:true}
+      service-password: ${BONE_WF_ORG_SERVICE_PASSWORD:123456}

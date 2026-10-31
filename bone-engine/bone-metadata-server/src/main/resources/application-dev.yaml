@@ -118,3 +118,15 @@ oss:
 
 #####################################################################################################
 
+--- #################### 工作流审批人组织目录（dev 打开） ####################
+# LINE_MANAGER / DEPT_HEAD / LEVEL_UP 的取数源（IAM 的 manager_id / leader_id）。
+# 基础配置默认关（生产不改变存量行为），dev 显式打开：联调环境必须能验证「报销按直属主管审批」
+# 这条链路真的通，而不是靠猜。组织数据缺失时引擎挂起（fail-closed），日志有明确 warn。
+#
+# 关闭方式：BONE_WF_ORG_DIRECTORY_ENABLED=false。
+# 注意：只改这里不做迁移 0082/0083 是无效的——列不存在时 IAM 侧读不到主管，同样挂起。
+bone:
+  workflow:
+    org-directory:
+      enabled: ${BONE_WF_ORG_DIRECTORY_ENABLED:true}
+      service-password: ${BONE_WF_ORG_SERVICE_PASSWORD:123456}

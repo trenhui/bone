@@ -78,6 +78,7 @@ CREATE TABLE iam_account (
     real_name           VARCHAR(100)    DEFAULT NULL COMMENT '真实姓名',
     avatar_url          VARCHAR(500)    DEFAULT NULL COMMENT '头像URL',
     dept_id             BIGINT          DEFAULT NULL COMMENT '归属部门ID（主部门，跨聚合只存ID不级联）',
+    manager_id          BIGINT          DEFAULT NULL COMMENT '直属主管账户ID（审批流 LINE_MANAGER 策略的数据源，跨聚合只存ID不级联）',
     status              TINYINT         NOT NULL DEFAULT 1 COMMENT '0-禁用 1-启用 2-锁定',
     is_admin            TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否管理员',
     last_login_at       DATETIME(3)     DEFAULT NULL COMMENT '最后登录时间',
@@ -94,7 +95,8 @@ CREATE TABLE iam_account (
     PRIMARY KEY (id),
     UNIQUE KEY uk_iam_account_username (tenant_id, username, deleted),
     KEY idx_iam_account_tenant (tenant_id),
-    KEY idx_iam_account_dept (dept_id)
+    KEY idx_iam_account_dept (dept_id),
+    KEY idx_iam_account_manager (manager_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='IAM账户';
 
 CREATE TABLE iam_role (
@@ -232,6 +234,7 @@ CREATE TABLE iam_dept (
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
     name                VARCHAR(200)    NOT NULL COMMENT '部门名称',
     parent_id           BIGINT          DEFAULT NULL COMMENT '父部门ID',
+    leader_id           BIGINT          DEFAULT NULL COMMENT '部门负责人账户ID（审批流 DEPT_HEAD 策略的数据源，跨聚合只存ID不级联）',
     order_no            INT             NOT NULL DEFAULT 0 COMMENT '排序',
     status              TINYINT         NOT NULL DEFAULT 1 COMMENT '状态 0-停用 1-启用',
     created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
@@ -242,7 +245,8 @@ CREATE TABLE iam_dept (
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
     KEY idx_iam_dept_tenant (tenant_id),
-    KEY idx_iam_dept_parent (parent_id)
+    KEY idx_iam_dept_parent (parent_id),
+    KEY idx_iam_dept_leader (leader_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='IAM部门';
 
 CREATE TABLE iam_menu (

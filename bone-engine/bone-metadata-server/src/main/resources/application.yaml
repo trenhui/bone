@@ -78,3 +78,30 @@ bone:
         key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
   jwt:
     secret: ${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}
+
+  # 工作流审批人组织目录（bone-workflow-spring-boot-starter 的 IamOrgHierarchyProvider）。
+  #
+  # 作用：点亮 LINE_MANAGER / DEPT_HEAD / LEVEL_UP 三个指派策略——它们的取数源是 IAM 的
+  # iam_account.manager_id 与 iam_dept.leader_id（迁移 0082 建列、0083 起报销/采购流程改用）。
+  #
+  # 【默认关闭，且这是刻意的】关闭时 OrgHierarchyProvider bean 不存在，组织类策略一律
+  # 解析不出人 ⇒ 引擎挂起（fail-closed）。也就是说：升级本模块不会让任何「本来按设计挂起」
+  # 的单据突然路由到某个真实的人。开启是显式动作，不是默认结果。
+  #
+  # 【为什么地址用 127.0.0.1 而不是 localhost】macOS 把 localhost 解析成 ::1，而 Spring 默认
+  # 绑 IPv4，会出现「服务起着却连不上」的假故障（bone-local-e2e 已记录同款陷阱）。
+  #
+  # 【cache-ttl-seconds 故意取小值】审批是低频关键路径，多一次 HTTP 完全可以接受；刚给某人
+  # 设了主管就发起单据，不该因为缓存而解析到旧主管——那会把单据挂到不该审的人头上。
+  #
+  # 【服务账号】服务间登录用，生产必须外部化（严禁把口令留在配置文件里）。
+  workflow:
+    org-directory:
+      enabled: ${BONE_WF_ORG_DIRECTORY_ENABLED:false}
+      iam-base-url: ${BONE_WF_ORG_IAM_BASE_URL:http://127.0.0.1:8081}
+      service-username: ${BONE_WF_ORG_SERVICE_USERNAME:admin}
+      service-password: ${BONE_WF_ORG_SERVICE_PASSWORD:}
+      cache-ttl-seconds: ${BONE_WF_ORG_CACHE_TTL_SECONDS:30}
+      max-levels: ${BONE_WF_ORG_MAX_LEVELS:10}
+      connect-timeout-millis: ${BONE_WF_ORG_CONNECT_TIMEOUT_MILLIS:2000}
+      read-timeout-millis: ${BONE_WF_ORG_READ_TIMEOUT_MILLIS:4000}

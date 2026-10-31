@@ -10,11 +10,14 @@ import com.bone.iam.application.support.TenantScopeResolver;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.TenantProvider;
+import com.bone.iam.domain.model.account.Account;
 import com.bone.iam.domain.model.dept.Dept;
+import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.domain.repository.DeptRepository;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,13 +49,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class DeptApplicationService {
 
   private final DeptRepository deptRepository;
+  private final AccountRepository accountRepository;
   private final TenantProvider tenantProvider;
 
   @Transactional
   public Long create(CreateDeptCommand cmd) {
     Long tenantId = resolveTenantId(cmd.getTenantId());
     Dept dept =
-        Dept.create(cmd.getName(), cmd.getParentId(), cmd.getOrderNo(), cmd.getStatus(), tenantId);
+        Dept.create(
+            cmd.getName(),
+            cmd.getParentId(),
+            assertLeaderBelongsToTenant(cmd.getLeaderId(), tenantId),
+            cmd.getOrderNo(),
+            cmd.getStatus(),
+            tenantId);
     deptRepository.save(dept);
     return dept.getId();
   }
@@ -64,6 +74,14 @@ public class DeptApplicationService {
       throw IamErrors.of(IamErrorCodes.DEPT_NOT_FOUND, cmd.getId());
     }
     dept.update(cmd.getName(), cmd.getParentId(), cmd.getOrderNo(), cmd.getStatus());
+    // 负责人三分支：null=不变更；0=清空（小部门可暂无负责人）；其他=本租户内已存在的账号
+    if (cmd.getLeaderId() != null) {
+      Long leaderId =
+          cmd.getLeaderId() == 0L
+              ? null
+              : assertLeaderBelongsToTenant(cmd.getLeaderId(), dept.getTenantId());
+      dept.changeLeader(leaderId);
+    }
     deptRepository.update(dept);
     return dept.getId();
   }
@@ -88,6 +106,11 @@ public class DeptApplicationService {
     List<DeptTreeDTO> dtoList =
         new ArrayList<>(scoped.stream().map(DeptApplicationService::toDto).toList());
     retainDeptKeywordMatches(dtoList, qry.getKeyword());
+
+    // 负责人姓名：放在 keyword 过滤之后装配，只为最终返回的节点查一次，不白查被过滤掉的。
+    Map<Long, String> leaderNames =
+        leaderNameIndex(dtoList.stream().map(DeptTreeDTO::getLeaderId).toList());
+    dtoList.forEach(d -> d.setLeaderName(leaderNames.get(d.getLeaderId())));
 
     Map<Long, List<DeptTreeDTO>> childrenMap =
         dtoList.stream()
@@ -170,9 +193,49 @@ public class DeptApplicationService {
     dto.setId(d.getId());
     dto.setName(d.getName());
     dto.setParentId(d.getParentId());
+    dto.setLeaderId(d.getLeaderId());
     dto.setOrderNo(d.getOrderNo());
     dto.setStatus(d.getStatus());
     dto.setChildren(new ArrayList<>());
     return dto;
+  }
+
+  /**
+   * 批量装配负责人姓名：一次 {@code findByIds} 查完，避免每个部门一次查询的 N+1。
+   *
+   * <p>null 元素必须先滤掉——SDK 的 IN 查询不接受 null，而未指定负责人的部门很常见。
+   */
+  private Map<Long, String> leaderNameIndex(List<Long> leaderIds) {
+    List<Long> ids = leaderIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
+    // 必须返回 HashMap 而不是 Map.of()：不可变 Map 的 get(null) 会抛 NPE，而未指定负责人的
+    // 部门的 leaderId 就是 null，调用方一次 get(null) 就能让部门树接口 500。
+    Map<Long, String> index = new HashMap<>();
+    if (ids.isEmpty()) {
+      return index;
+    }
+    accountRepository
+        .findByIds(ids)
+        .forEach(
+            account -> {
+              String realName = account.getRealName();
+              index.put(
+                  account.getId(),
+                  realName != null && !realName.isBlank()
+                      ? realName
+                      : account.getUsername().value());
+            });
+    return index;
+  }
+
+  /** 负责人必须存在且属于目标租户——防止把部门负责人指到别的租户的账号上（跨租户 IDOR）。 */
+  private Long assertLeaderBelongsToTenant(Long leaderId, Long tenantId) {
+    if (leaderId == null) {
+      return null;
+    }
+    Account leader = accountRepository.findById(leaderId);
+    if (leader == null || !java.util.Objects.equals(leader.getTenantId(), tenantId)) {
+      throw IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND, "负责人账户不存在或不属于当前租户: " + leaderId);
+    }
+    return leaderId;
   }
 }

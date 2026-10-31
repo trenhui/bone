@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 87,
+  "executableCount": 89,
   "retired": [],
   "entries": [
     {
@@ -555,6 +555,18 @@
       "file": "0081_approver_field_semantics.sql",
       "kind": "dml",
       "summary": "把 6 个实体上措辞分裂的 approver_id 统一为「指定审批人」并写明边界：它是申请人指定的流程输入，当前/历史审批人以引擎任务台账 wf_task 为准"
+    },
+    {
+      "order": 88,
+      "file": "0082_iam_org_hierarchy.sql",
+      "kind": "mixed",
+      "summary": "IAM 组织层级建模：iam_account.manager_id（直属主管）+ iam_dept.leader_id（部门负责人），并回填演示/默认租户的组织基线。这两列是引擎 LINE_MANAGER / DEPT_HEAD 指派策略的数据源——此前平台从未建模汇报线，导致报销流程里语义不同的「直属主管审批」与「部门负责人审批」只能共用单据上的 approver_id，实际解析成同一个人，分级审批退化为一人连审两级。两列均可空且空值是合法状态（创始人无上级/部门暂未指定负责人），引擎拿到空会挂起实例而非跳过审批"
+    },
+    {
+      "order": 89,
+      "file": "0083_expense_org_routing_v3.sql",
+      "kind": "dml",
+      "summary": "报销/采购流程 v3：mgr 改 LINE_MANAGER、dept 改 DEPT_HEAD、采购单级审批改 DEPT_HEAD，把审批人从「申请人自选的表单字段 approver_id」换成「IAM 组织层级实时解析」。v1/v2 两个语义不同的节点共用同一个 approver_id，实测 tenant 0 全部 wf_task 的 assignee 恒为 9104，分级审批退化为一人连审两级；更根本的是审批人由被控制方自己指定（SoD 缺陷）。图结构（nodes/edges）与 v2 逐字一致，只改 assignments——一次只动一个变量。依赖 0082 建列+回填，且需运行期开关 bone.workflow.org-directory.enabled=true；任一缺失时引擎 fail-closed 挂起（不放行、不回落表单字段）。回滚无需发版：UPDATE wf_process_def SET enabled=0 WHERE def_version=3 → findLatestPublished 自动回落 v2"
     },
     {
       "order": null,

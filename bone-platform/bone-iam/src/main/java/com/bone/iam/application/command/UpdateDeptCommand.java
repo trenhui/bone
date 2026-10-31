@@ -7,6 +7,7 @@ public class UpdateDeptCommand {
   private Long id;
   private String name;
   private Long parentId;
+  private Long leaderId;
   private Integer orderNo;
   private Integer status;
 }

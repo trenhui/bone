@@ -25,6 +25,7 @@ public class AccountWebConverter {
     cmd.setRealName(req.getRealName());
     cmd.setTenantId(req.getTenantId());
     cmd.setDeptId(req.getDeptId());
+    cmd.setManagerId(req.getManagerId());
     cmd.setRoleIds(req.getRoleIds());
     return cmd;
   }
@@ -37,6 +38,7 @@ public class AccountWebConverter {
     cmd.setRealName(req.getRealName());
     cmd.setStatus(req.getStatus());
     cmd.setDeptId(req.getDeptId());
+    cmd.setManagerId(req.getManagerId());
     cmd.setRoleIds(req.getRoleIds());
     return cmd;
   }
@@ -60,6 +62,8 @@ public class AccountWebConverter {
     resp.setIsAdmin(dto.getIsAdmin());
     resp.setDeptId(dto.getDeptId());
     resp.setDeptName(dto.getDeptName());
+    resp.setManagerId(dto.getManagerId());
+    resp.setManagerName(dto.getManagerName());
     resp.setRoleIds(dto.getRoleIds());
     resp.setLastLoginAt(toInstant(dto.getLastLoginAt()));
     resp.setLastLoginIp(dto.getLastLoginIp());

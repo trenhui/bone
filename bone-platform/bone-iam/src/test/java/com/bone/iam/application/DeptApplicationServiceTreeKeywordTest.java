@@ -9,6 +9,7 @@ import com.bone.iam.application.query.dto.DeptTreeDTO;
 import com.bone.iam.application.query.qry.DeptTreeQuery;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.model.dept.Dept;
+import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.domain.repository.DeptRepository;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +28,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class DeptApplicationServiceTreeKeywordTest {
 
   @Mock private DeptRepository deptRepository;
+
+  /** 树装配负责人姓名要用到它；漏声明会让 @InjectMocks 注入 null 并在 tree() 里 NPE。 */
+  @Mock private AccountRepository accountRepository;
 
   @Mock private TenantProvider tenantProvider;
 

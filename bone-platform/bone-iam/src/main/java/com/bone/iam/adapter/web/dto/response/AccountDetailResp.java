@@ -19,6 +19,11 @@ public class AccountDetailResp {
 
   private String deptName;
 
+  /** 直属主管账户 ID；无上级时为 null。 */
+  private Long managerId;
+
+  private String managerName;
+
   private Long[] roleIds;
   private Instant lastLoginAt;
   private String lastLoginIp;

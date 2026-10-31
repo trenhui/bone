@@ -12,6 +12,7 @@ import com.bone.iam.application.AccountApplicationService;
 import com.bone.iam.application.command.DisableAccountCommand;
 import com.bone.iam.application.command.EnableAccountCommand;
 import com.bone.iam.application.query.dto.AccountDTO;
+import com.bone.iam.application.query.dto.AccountOrgHierarchyDTO;
 import com.bone.iam.application.query.qry.AccountPageQuery;
 import java.util.ArrayList;
 import java.util.List;
@@ -105,6 +106,24 @@ public class AccountController {
   public ApiResponse<PageResult<AccountDTO>> page(AccountPageQuery qry) {
     PageResult<AccountDTO> result = accountApplicationService.page(qry);
     return ApiResponse.success(result);
+  }
+
+  /**
+   * 组织层级视图：直属主管 / 所属部门 / 部门负责人。
+   *
+   * <p><b>服务间契约</b>：bone-metadata-server 的 {@code IamOrgHierarchyProvider} 用它解析审批流 {@code
+   * LINE_MANAGER} / {@code DEPT_HEAD} 的办理人。语义边界——三个字段都可为 null，调用方拿到 null
+   * 必须<b>挂起</b>审批实例（fail-closed），不得跳过节点。
+   *
+   * <p>与 {@code GET /{id}} 分开的原因见 {@link AccountOrgHierarchyDTO} 类注释。
+   */
+  @GetMapping("/{id}/org-hierarchy")
+  @PreAuthorize("hasAuthority('iam:accounts:read')")
+  public ApiResponse<AccountOrgHierarchyDTO> orgHierarchy(@PathVariable Long id) {
+    return ApiResponse.success(
+        accountApplicationService
+            .orgHierarchy(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "账号不存在")));
   }
 
   /** 批量导入账号；失败项跳过并写日志，返回成功数量。 */

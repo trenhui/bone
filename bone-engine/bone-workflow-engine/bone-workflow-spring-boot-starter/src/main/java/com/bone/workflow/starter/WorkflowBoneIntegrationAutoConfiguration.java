@@ -18,6 +18,9 @@ import com.bone.workflow.starter.adapter.SdkWorkflowDefinitionRepository;
 import com.bone.workflow.starter.adapter.SdkWorkflowInstanceRepository;
 import com.bone.workflow.starter.binding.WorkflowBindingRepository;
 import com.bone.workflow.starter.metrics.WorkflowMetrics;
+import com.bone.workflow.starter.org.HttpOrgHierarchyQuery;
+import com.bone.workflow.starter.org.IamOrgHierarchyProvider;
+import com.bone.workflow.starter.org.OrgDirectoryProperties;
 import com.bone.workflow.starter.outbox.OutboxDeadLetterSweep;
 import com.bone.workflow.starter.outbox.OutboxStatusPort;
 import com.bone.workflow.starter.outbox.RuntimeActionIntentExecutor;
@@ -42,6 +45,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -70,7 +74,27 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @ConditionalOnClass(SqlExecutor.class)
+@EnableConfigurationProperties(OrgDirectoryProperties.class)
 public class WorkflowBoneIntegrationAutoConfiguration {
+
+  /**
+   * 组织目录接入（{@code LINE_MANAGER} / {@code DEPT_HEAD} / {@code LEVEL_UP} 的取数源）。
+   *
+   * <p><b>默认不注册</b>（{@code bone.workflow.org-directory.enabled=false}）：缺这个 bean 时引擎保持挂起
+   * （fail-closed），与升级前行为完全一致——不会因为多了一个 bean，让原本按设计挂起的单据突然路由到某个真实的人。
+   *
+   * <p>开启后 {@code workflowApproverResolver} 里的 {@code ObjectProvider<OrgHierarchyProvider>} 会在运行时
+   * 拿到它（该 provider 在 bean 实例化阶段解析，此时全部定义已注册，不受同配置类内注册顺序影响）。
+   */
+  @Bean
+  @ConditionalOnProperty(
+      prefix = "bone.workflow.org-directory",
+      name = "enabled",
+      havingValue = "true")
+  public OrgHierarchyProvider workflowOrgHierarchyProvider(OrgDirectoryProperties props) {
+    return new IamOrgHierarchyProvider(
+        new HttpOrgHierarchyQuery(props), props.getCacheTtlSeconds(), props.getMaxLevels());
+  }
 
   @Bean
   @ConditionalOnMissingBean

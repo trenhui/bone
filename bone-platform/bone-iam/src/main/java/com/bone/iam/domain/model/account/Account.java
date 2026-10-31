@@ -55,6 +55,17 @@ public class Account extends TenantAggregateRoot<Long> {
    */
   private Long deptId;
 
+  /**
+   * 直属主管（审批流 {@code LINE_MANAGER} 指派策略的数据源）。跨聚合只存 ID，与 {@link #deptId} 同构。
+   *
+   * <p><b>为什么必须单独存而不是从部门树推</b>：部门树只表达「谁和谁同部门」，推不出「谁向谁汇报」——同一部门内
+   * 平级同事互相不审批，而跨部门的虚线汇报（如项目组）也真实存在。审批流语义要的是汇报线，故独立成列。
+   *
+   * <p><b>与 {@code dept_id} 的关键差异：本字段真可空</b>（创始人/CEO 无上级）。因此 {@code changeManager(null)}
+   * 是合法的「清空」，不像 {@link #changeDept} 那样拒绝 null——照抄部门的三分支语义会得到 「主管一旦设置就永远清不掉」。
+   */
+  private Long managerId;
+
   private AccountStatus status;
   private boolean isAdmin;
   private LocalDateTime lastLoginAt;
@@ -150,6 +161,30 @@ public class Account extends TenantAggregateRoot<Long> {
       return;
     }
     this.deptId = newDeptId;
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  /**
+   * 调整直属主管。
+   *
+   * <p>与 {@link #changeDept} 的两点差异，都是刻意的：
+   *
+   * <ul>
+   *   <li><b>允许 null</b>——无上级是合法状态（创始人/CEO），不能像部门那样「拒绝清空」。
+   *   <li><b>拒绝自环</b>——「自己是自己的主管」会让 {@code LINE_MANAGER} 解析出申请人本人，进而被引擎的
+   *       「不能审批自己」规则拒绝（单据直接挂死），所以在聚合内先挡掉。跨租户/账号存在性校验依赖仓储，放应用服务。
+   * </ul>
+   *
+   * <p>幂等：值未变则不动 {@code updatedAt}，避免全列 UPDATE 场景下乐观锁版本号无意义推进。
+   */
+  public void changeManager(Long newManagerId) {
+    if (newManagerId != null && newManagerId.equals(this.getId())) {
+      throw new DomainException("直属主管不能是本人");
+    }
+    if (java.util.Objects.equals(this.managerId, newManagerId)) {
+      return;
+    }
+    this.managerId = newManagerId;
     this.updatedAt = LocalDateTime.now();
   }
 

@@ -10,6 +10,7 @@ import com.bone.iam.application.command.ResetPasswordCommand;
 import com.bone.iam.application.command.UpdateAccountCommand;
 import com.bone.iam.application.command.UpdateMyProfileCommand;
 import com.bone.iam.application.query.dto.AccountDTO;
+import com.bone.iam.application.query.dto.AccountOrgHierarchyDTO;
 import com.bone.iam.application.query.mapper.AccountDtoMapper;
 import com.bone.iam.application.query.qry.AccountPageQuery;
 import com.bone.iam.application.support.AccountRoleBindingSupport;
@@ -109,6 +110,10 @@ public class AccountApplicationService {
         Account.create(
             null, username, passwordHash, email, cmd.getPhone(), cmd.getRealName(), tenantId);
     account.changeDept(assertDeptBelongsToTenant(cmd.getDeptId(), tenantId));
+    // 直属主管可空（创始人/CEO 无上级）；给了就必须是同租户的真实账号
+    if (cmd.getManagerId() != null) {
+      account.changeManager(assertAccountBelongsToTenant(cmd.getManagerId(), tenantId));
+    }
     accountRepository.save(account);
     accountRoleBindingSupport.replaceBindings(
         account.getId(), account.getTenantId(), cmd.getRoleIds());
@@ -128,6 +133,15 @@ public class AccountApplicationService {
         throw IamErrors.of(IamErrorCodes.DEPT_REQUIRED, "归属部门为必填项，不能清空");
       }
       account.changeDept(assertDeptBelongsToTenant(cmd.getDeptId(), account.getTenantId()));
+    }
+    // 直属主管三分支：null=不变更（全列 UPDATE 下这是必需的守卫）；0=清空（无上级是合法状态）；其他=本租户内已存在的账号
+    if (cmd.getManagerId() != null) {
+      if (cmd.getManagerId() == 0L) {
+        account.changeManager(null);
+      } else {
+        account.changeManager(
+            assertAccountBelongsToTenant(cmd.getManagerId(), account.getTenantId()));
+      }
     }
     if (cmd.getStatus() != null) {
       AccountStatus status = AccountStatus.of(cmd.getStatus());
@@ -249,12 +263,17 @@ public class AccountApplicationService {
             qry.getPage(),
             qry.getSize());
     Map<Long, String> deptNames = deptNameIndex(deptTree);
+    // 主管姓名必须**无条件**装配。不要照抄上面 deptTree 的「按需加载」：那只在按部门筛选时才填，
+    // 结果是不过滤的列表里整列 deptName 为 null，看着像数据缺失。批量 findByIds 一次查完，避免 N+1。
+    Map<Long, String> managerNames =
+        managerNameIndex(result.getRecords().stream().map(Account::getManagerId).toList());
     List<AccountDTO> dtoList =
         result.getRecords().stream()
             .map(
                 account -> {
                   AccountDTO dto = toPageDto(account);
                   dto.setDeptName(deptNames.get(account.getDeptId()));
+                  dto.setManagerName(managerNames.get(account.getManagerId()));
                   return dto;
                 })
             .toList();
@@ -275,6 +294,37 @@ public class AccountApplicationService {
                 Dept dept = deptRepository.findById(account.getDeptId());
                 if (dept != null) {
                   dto.setDeptName(dept.getName());
+                }
+              }
+              if (account.getManagerId() != null) {
+                Account manager = accountRepository.findById(account.getManagerId());
+                if (manager != null) {
+                  dto.setManagerName(displayNameOf(manager));
+                }
+              }
+              return dto;
+            });
+  }
+
+  /**
+   * 组织层级视图（服务间契约）：供审批引擎的 {@code OrgHierarchyProvider} 解析办理人。
+   *
+   * <p>不做 {@link #visibleToCaller} 过滤：调用方是服务账号（平台租户 0），而审批可能发生在任意租户的单据上； 越权风险由「该端点只授 {@code
+   * iam:accounts:read}，且仅本服务的服务账号持有」控制。三个关系字段都可以为 null —— 如实返回，引擎据此挂起而不是跳过审批。
+   */
+  @Transactional(readOnly = true)
+  public Optional<AccountOrgHierarchyDTO> orgHierarchy(Long id) {
+    return Optional.ofNullable(accountRepository.findById(id))
+        .map(
+            account -> {
+              AccountOrgHierarchyDTO dto = new AccountOrgHierarchyDTO();
+              dto.setAccountId(account.getId());
+              dto.setDeptId(account.getDeptId());
+              dto.setLineManagerId(account.getManagerId());
+              if (account.getDeptId() != null) {
+                Dept dept = deptRepository.findById(account.getDeptId());
+                if (dept != null) {
+                  dto.setDeptHeadId(dept.getLeaderId());
                 }
               }
               return dto;
@@ -317,6 +367,41 @@ public class AccountApplicationService {
     return index;
   }
 
+  /**
+   * 批量装配直属主管姓名：{@code managerId → 姓名}。
+   *
+   * <p>一次 {@code findByIds} 查完本页所有主管，避免逐行 {@code findById} 的 N+1；空集合与 null 元素先滤掉 （SDK 的 IN 查询不接受
+   * null，且无主管的账号很常见）。查不到姓名时索引里没有该键，前端自然降级为「—」。
+   */
+  private Map<Long, String> managerNameIndex(List<Long> managerIds) {
+    List<Long> ids = managerIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
+    // 必须返回 HashMap 而不是 Map.of()：不可变 Map 的 get(null) 会抛 NPE，而无主管的账号
+    // 的 managerId 就是 null，调用方一次 get(null) 就能让整个列表接口 500。
+    Map<Long, String> index = new HashMap<>();
+    if (ids.isEmpty()) {
+      return index;
+    }
+    accountRepository
+        .findByIds(ids)
+        .forEach(manager -> index.put(manager.getId(), displayNameOf(manager)));
+    return index;
+  }
+
+  /** 主管的展示名：优先真实姓名，回退用户名——只显示 id 对使用者没有意义。 */
+  private static String displayNameOf(Account account) {
+    String realName = account.getRealName();
+    return realName != null && !realName.isBlank() ? realName : account.getUsername().value();
+  }
+
+  /** 主管必须存在且属于目标租户——防止把主管指到别的租户的账号上（跨租户 IDOR）。 */
+  private Long assertAccountBelongsToTenant(Long managerId, Long tenantId) {
+    Account manager = accountRepository.findById(managerId);
+    if (manager == null || !java.util.Objects.equals(manager.getTenantId(), tenantId)) {
+      throw IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND, "主管账户不存在或不属于当前租户: " + managerId);
+    }
+    return managerId;
+  }
+
   /** 部门必须存在且属于目标租户——防止把成员挂到别的租户的部门上（跨租户 IDOR）。 */
   private Long assertDeptBelongsToTenant(Long deptId, Long tenantId) {
     Dept dept = deptRepository.findById(deptId);
@@ -340,6 +425,7 @@ public class AccountApplicationService {
     dto.setIsAdmin(account.isAdmin());
     dto.setTenantId(account.getTenantId());
     dto.setDeptId(account.getDeptId());
+    dto.setManagerId(account.getManagerId());
     dto.setLastLoginAt(account.getLastLoginAt());
     dto.setLastLoginIp(account.getLastLoginIp());
     dto.setCreatedAt(account.getCreatedAt());

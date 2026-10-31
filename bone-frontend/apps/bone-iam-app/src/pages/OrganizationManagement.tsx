@@ -30,11 +30,13 @@ import type { Key } from 'react';
 import {
   createDept,
   deleteDept,
+  getAccounts,
   getDeptTree,
   updateDept,
   type DeptNode,
   type DeptReq,
 } from '../services/api';
+import { unwrapPage } from '../utils/pageResult';
 import { AuthButton } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
 import ModulePage from '../components/ModulePage';
@@ -119,6 +121,34 @@ const OrganizationManagement: React.FC = () => {
   const [editing, setEditing] = useState<DeptNode | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm<DeptReq>();
+
+  /**
+   * 部门负责人候选（本租户账号）。
+   *
+   * 与「上级部门」不同：负责人是**人**不是部门，不能复用 TreeSelect 的部门树。这里拉一页足量账号做候选，
+   * 管理台账号规模有限（统计接口同样一次性取 500），无需远程搜索。
+   */
+  const [leaderOptions, setLeaderOptions] = useState<{ value: string; label: string }[]>([]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await getAccounts(1, 500);
+        if (res.code === 200) {
+          const { records } = unwrapPage(res.data);
+          setLeaderOptions(
+            records.map((a) => ({
+              value: a.id,
+              label: a.realName ? `${a.realName}（${a.username}）` : a.username,
+            })),
+          );
+        }
+      } catch (err) {
+        // 候选拉不到不应挡住建部门：负责人可留空，事后补
+        console.error('获取负责人候选失败', err);
+      }
+    })();
+  }, []);
 
   const load = useCallback(
     async (kw?: string) => {
@@ -231,6 +261,7 @@ const OrganizationManagement: React.FC = () => {
     form.setFieldsValue({
       name: node.name,
       parentId: node.parentId && node.parentId !== '0' ? node.parentId : '0',
+      leaderId: node.leaderId ?? undefined,
       orderNo: node.orderNo ?? 1,
       status: node.status ?? 1,
     });
@@ -242,7 +273,16 @@ const OrganizationManagement: React.FC = () => {
     setSubmitting(true);
     try {
       const parentId = values.parentId && values.parentId !== '0' ? values.parentId : null;
-      const payload = { ...values, parentId };
+      const pickedLeader = values.leaderId ?? null;
+      const originalLeader = editing?.leaderId ?? null;
+      // 后端把 null 当「不变更」、'0' 当「清空」：编辑态只有在用户真的改了负责人才发字段，
+      // 否则任何改排序号的提交都会把负责人清掉（全量覆盖语义的坑）。
+      const leaderId = !editing
+        ? pickedLeader
+        : pickedLeader === originalLeader
+          ? null
+          : (pickedLeader ?? '0');
+      const payload: DeptReq = { ...values, parentId, leaderId };
       if (editing) {
         await updateDept(editing.id, payload);
         msg.success('部门已更新');
@@ -397,6 +437,9 @@ const OrganizationManagement: React.FC = () => {
                     {selectedNode.parentId ? findPath(treeData, selectedNode.parentId)?.pop()?.name ?? selectedNode.parentId : '根部门'}
                   </Descriptions.Item>
                   <Descriptions.Item label="排序号">{selectedNode.orderNo ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="部门负责人">
+                    {selectedNode.leaderName ?? (selectedNode.leaderId ? selectedNode.leaderId : '未指定')}
+                  </Descriptions.Item>
                   <Descriptions.Item label="子部门数">{selectedNode.children?.length ?? 0}</Descriptions.Item>
                   <Descriptions.Item label="层级">第 {(selectedPath.findIndex((n) => n.id === selectedNode.id) + 1)} 级</Descriptions.Item>
                 </Descriptions>
@@ -434,6 +477,19 @@ const OrganizationManagement: React.FC = () => {
               placeholder="请选择上级部门"
               allowClear
               onChange={(v) => form.setFieldsValue({ parentId: v ?? undefined })}
+            />
+          </Form.Item>
+          <Form.Item
+            name="leaderId"
+            label="部门负责人"
+            tooltip="审批流的「部门负责人审批」节点按此字段解析办理人；留空则该节点会挂起（不会跳过审批）"
+          >
+            <Select
+              options={leaderOptions}
+              placeholder="请选择负责人"
+              allowClear
+              showSearch
+              optionFilterProp="label"
             />
           </Form.Item>
           <Form.Item name="orderNo" label="排序号" tooltip="同层级下的展示顺序，数字越小越靠前">

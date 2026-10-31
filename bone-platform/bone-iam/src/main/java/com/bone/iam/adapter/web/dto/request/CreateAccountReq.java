@@ -32,5 +32,12 @@ public class CreateAccountReq {
   @NotNull(message = "归属部门不能为空")
   private Long deptId;
 
+  /**
+   * 直属主管账户 ID；<b>可空</b>（创始人/CEO 无上级），不要加 {@code @NotNull}。
+   *
+   * <p>非空时由应用服务校验「存在、同租户、不是本人」。
+   */
+  private Long managerId;
+
   private Long[] roleIds;
 }

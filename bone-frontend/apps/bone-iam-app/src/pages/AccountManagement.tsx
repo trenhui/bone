@@ -86,6 +86,8 @@ const AccountManagement: React.FC = () => {
   const [isResetPwdModalVisible, setIsResetPwdModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [stats, setStats] = useState({ enabled: 0, disabledOrLocked: 0, admins: 0 });
+  /** 直属主管候选（本租户账号）；与部门树不同，这是「人」的选择器 */
+  const [managerOptions, setManagerOptions] = useState<{ value: string; label: string }[]>([]);
   const [form] = Form.useForm();
   const [resetPwdForm] = Form.useForm();
   const { message: antMessage } = AntApp.useApp();
@@ -122,6 +124,13 @@ const AccountManagement: React.FC = () => {
           disabledOrLocked: records.filter((a) => a.status === 0 || a.status === 2).length,
           admins: records.filter((a) => a.isAdmin).length,
         });
+        // 复用同一次全量请求生成主管候选，避免为下拉再打一次接口
+        setManagerOptions(
+          records.map((a) => ({
+            value: a.id,
+            label: a.realName ? `${a.realName}（${a.username}）` : a.username,
+          })),
+        );
       }
     } catch {
       /* 统计失败不影响列表 */
@@ -202,6 +211,7 @@ const AccountManagement: React.FC = () => {
         realName: account.realName,
         status: account.status,
         deptId: account.deptId ?? undefined,
+        managerId: account.managerId ?? undefined,
         roleIds,
       });
     } catch {
@@ -211,6 +221,7 @@ const AccountManagement: React.FC = () => {
         realName: account.realName,
         status: account.status,
         deptId: account.deptId ?? undefined,
+        managerId: account.managerId ?? undefined,
         roleIds: account.roleIds ?? account.roles?.map((role) => role.id) ?? [],
       });
     }
@@ -268,12 +279,19 @@ const AccountManagement: React.FC = () => {
       const values = await form.validateFields();
       setSubmitting(true);
       if (isEditMode && currentAccount) {
+        const pickedManager = values.managerId ?? null;
+        const originalManager = currentAccount.managerId ?? null;
+        // 后端语义：null=不变更，'0'=清空。只有用户真的改了主管才发字段，
+        // 否则任何改手机号的提交都会因全量覆盖把主管清掉。
+        const managerId =
+          pickedManager === originalManager ? null : (pickedManager ?? '0');
         const updateData: UpdateAccountRequest = {
           email: values.email,
           phone: values.phone,
           realName: values.realName,
           status: values.status,
           deptId: values.deptId ?? null,
+          managerId,
           roleIds: values.roleIds,
         };
         const response = await api.updateAccount(currentAccount.id, updateData);
@@ -293,6 +311,7 @@ const AccountManagement: React.FC = () => {
           realName: values.realName,
           tenantId: values.tenantId,
           deptId: values.deptId ?? null,
+          managerId: values.managerId ?? null,
           roleIds: values.roleIds,
         };
         const response = await api.createAccount(createData);
@@ -359,6 +378,18 @@ const AccountManagement: React.FC = () => {
       key: 'deptName',
       width: 112,
       render: (v: string | null) => (v ? <Tag color="blue" icon={<ApartmentOutlined />}>{v}</Tag> : <Typography.Text type="secondary">未归属</Typography.Text>),
+    },
+    {
+      title: (
+        <Tooltip title="审批流「直属主管审批」节点的数据源；与归属部门是两条独立的线">
+          <span>直属主管</span>
+        </Tooltip>
+      ),
+      dataIndex: 'managerName',
+      key: 'managerName',
+      width: 100,
+      render: (v: string | null) =>
+        v ? <Typography.Text>{v}</Typography.Text> : <Typography.Text type="secondary">—</Typography.Text>,
     },
     {
       title: '联系方式',
@@ -577,6 +608,19 @@ const AccountManagement: React.FC = () => {
               placeholder="请选择归属部门"
               treeDefaultExpandAll
               style={{ width: '100%' }}
+            />
+          </Form.Item>
+          <Form.Item
+            name="managerId"
+            label="直属主管"
+            tooltip="审批流「直属主管审批」节点按此字段解析办理人。与归属部门是两条独立的线：部门表达「和谁同部门」，主管表达「向谁汇报」。可留空（创始人/CEO 无上级）"
+          >
+            <Select
+              options={managerOptions}
+              placeholder="请选择直属主管（可留空）"
+              allowClear
+              showSearch
+              optionFilterProp="label"
             />
           </Form.Item>
           <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态!' }]}>

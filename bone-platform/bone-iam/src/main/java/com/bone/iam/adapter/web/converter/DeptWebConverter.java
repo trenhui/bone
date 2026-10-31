@@ -13,6 +13,7 @@ public class DeptWebConverter {
     CreateDeptCommand cmd = new CreateDeptCommand();
     cmd.setName(req.getName());
     cmd.setParentId(req.getParentId());
+    cmd.setLeaderId(req.getLeaderId());
     cmd.setOrderNo(req.getOrderNo());
     cmd.setStatus(req.getStatus());
     cmd.setTenantId(req.getTenantId());
@@ -24,6 +25,7 @@ public class DeptWebConverter {
     cmd.setId(id);
     cmd.setName(req.getName());
     cmd.setParentId(req.getParentId());
+    cmd.setLeaderId(req.getLeaderId());
     cmd.setOrderNo(req.getOrderNo());
     cmd.setStatus(req.getStatus());
     return cmd;

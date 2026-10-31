@@ -20,6 +20,7 @@ public class AccountDtoMapper {
     dto.setIsAdmin(account.isAdmin());
     dto.setTenantId(account.getTenantId());
     dto.setDeptId(account.getDeptId());
+    dto.setManagerId(account.getManagerId());
     dto.setLastLoginAt(account.getLastLoginAt());
     dto.setLastLoginIp(account.getLastLoginIp());
     dto.setPasswordUpdatedAt(account.getPasswordUpdatedAt());

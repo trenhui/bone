@@ -20,5 +20,13 @@ public class UpdateAccountReq {
   /** 归属部门（主部门）；传 null 且不显式清除时保持原值，语义见应用服务。 */
   private Long deptId;
 
+  /**
+   * 直属主管账户 ID：{@code null} = 不变更，{@code 0} = 清空（无主管），其他 = 设为该账户。
+   *
+   * <p><b>为什么清空要用 0 哨兵而不是 null</b>：本接口是全列 UPDATE 语义，若 null 表示清空， 任何「只改手机号」的部分提交都会静默把主管清掉。0 不是合法雪花
+   * ID，作哨兵无歧义。
+   */
+  private Long managerId;
+
   private Long[] roleIds;
 }
