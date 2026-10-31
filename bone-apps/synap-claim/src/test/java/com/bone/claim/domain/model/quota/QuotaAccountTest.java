@@ -400,4 +400,21 @@ class QuotaAccountTest {
     assertThat(account.getQuotaClaimed()).isEqualByComparingTo("0.00");
     assertThat(account.getDeductibleUsed()).isEqualByComparingTo("0.00");
   }
+
+  @Test
+  @DisplayName("回冲不钳零：cap_used 与 claimed 全程同步（钳零会把两列不等吸成表面自洽）")
+  void rollbackKeepsCapUsedInLockstep() {
+    QuotaAccount account = account(new BigDecimal("20000.00"));
+    account.reserveSoft(1L, new BigDecimal("500.00"), 1001L, "S1", "CL001:SOFT:1");
+    account.confirm(2L, new BigDecimal("500.00"), 1001L, "S1", "CL001:PAID:1");
+    assertThat(account.getCapUsed()).isEqualByComparingTo("500.00");
+
+    // 全额退款：两列同步归零。此前对 cap_used 单独 max(0, …)，一旦历史已漂移（cap_used < claimed），
+    // 钳零会让差额被吸掉——多退几次之后 cap_used 归零而 claimed 仍为正，记账动作本身看不出异常。
+    account.rollback(3L, new BigDecimal("500.00"), 1001L, "S1", "CL001:REFUND:1");
+
+    assertThat(account.getQuotaClaimed()).isEqualByComparingTo("0.00");
+    assertThat(account.getCapUsed()).isEqualByComparingTo("0.00");
+    assertThat(account.available()).isEqualByComparingTo("20000.00");
+  }
 }

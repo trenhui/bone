@@ -73,7 +73,13 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
   @Column(name = "deductible_used")
   private BigDecimal deductibleUsed;
 
-  /** 年封顶已用（R-CAP）。 */
+  /**
+   * 年封顶已用（R-CAP）。
+   *
+   * <p><b>当前口径下它是 {@code quota_claimed} 的镜像</b>：PERSONAL 账户的 {@code quota_initial} 就是年封顶，
+   * 责任账的同名计数同理，故"已用封顶"与"已确认赔付"是同一个数。此列作为封顶口径的读模型冗余存在， 由 {@code QuotaProjection#driftAgainst}
+   * 在对账中强制等值（差异记 {@code PROJECTION_DRIFT}）—— 不与 {@code claimed} 一起被校验的冗余列＝第二真源，漂移了没人知道。
+   */
   @Column(name = "cap_used")
   private BigDecimal capUsed;
 
@@ -364,6 +370,12 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
    * <p><b>{@code txn_type=REFUND} 而非 RELEASE</b>：本方法回冲的是 {@code claimed}（已付钱）， {@link #release}
    * 归还的是 {@code frozen}（未付的预占）——两者若共用 {@code RELEASE}， 流水就无法区分"释放冻结"与"回冲已扣减"，按流水推导"本单还占多少冻结"会算错
    * （已退款的结算单会被算成还占着冻结）。流水是事实表，事实表的类型必须无歧义。
+   *
+   * <p><b>{@code cap_used} 不再钳零</b>（2026-11-01）：它是 {@code claimed} 的封顶口径镜像，两者按同一算式增减。 此前对 {@code
+   * cap_used} 单独 {@code max(0, …)}，一旦历史数据已漂移（{@code cap_used < claimed}），
+   * 钳零会把"两列不等"<b>吸成表面自洽</b>——多退几次之后 {@code cap_used} 归零、{@code claimed} 仍为正，
+   * 而记账动作本身看不出任何异常。去掉钳制后差额原样保留，由 {@code QuotaProjection#driftAgainst} 在对账里暴露。 合法路径上不会因此变负：前面已校验
+   * {@code claimed >= amount}，而镜像同增减 ⇒ {@code cap_used >= amount}。
    */
   public QuotaTransaction rollback(
       long txnId, BigDecimal amount, Long claimId, String settlementNo, String idempotencyKey) {
@@ -373,7 +385,7 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
     }
     BigDecimal before = quotaClaimed;
     this.quotaClaimed = quotaClaimed.subtract(amount).setScale(2, java.math.RoundingMode.HALF_UP);
-    this.capUsed = capUsed.subtract(amount).max(ZERO).setScale(2, java.math.RoundingMode.HALF_UP);
+    this.capUsed = capUsed.subtract(amount).setScale(2, java.math.RoundingMode.HALF_UP);
     assertConserved();
     return append(
         txnId,

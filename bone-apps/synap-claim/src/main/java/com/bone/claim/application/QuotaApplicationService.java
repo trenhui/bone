@@ -3,6 +3,7 @@ package com.bone.claim.application;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.quota.QuotaAccount;
+import com.bone.claim.domain.model.quota.QuotaProjection;
 import com.bone.claim.domain.model.quota.QuotaTransaction;
 import com.bone.claim.domain.model.settlement.FundingStage;
 import com.bone.claim.domain.repository.QuotaAccountRepository;
@@ -435,7 +436,8 @@ public class QuotaApplicationService {
    * 升级"不同。若一律按"增量 0"处理，那些老单的自有占用会被算成 0 ⇒ 释放被当成空操作、其占用永远留在池里。 故 {@code HARD} 取 {@code max(0, after −
    * before)}：新版为 0（不计），老版为真实占用（计入）。
    *
-   * <p>本口径与 {@link #projectFromLedger}（投影重算）<b>必须一致</b>，否则单笔归属判定与池级投影会互相打架。
+   * <p>本口径与 {@link QuotaProjection#rebuild}（投影重算）<b>必须一致</b>，否则单笔归属判定与池级投影会互相打架： 故 {@code HARD}
+   * 的增量算式取自 {@link QuotaProjection#hardDelta}，两处共用一份定义。
    */
   private BigDecimal ownHeld(QuotaAccount account, String settlementNo) {
     BigDecimal held = ZERO;
@@ -447,7 +449,7 @@ public class QuotaApplicationService {
       if ("SOFT".equals(type)) {
         held = held.add(t.getAmount());
       } else if ("HARD".equals(type)) {
-        held = held.add(hardDelta(t));
+        held = held.add(QuotaProjection.hardDelta(t));
       } else if ("PAID".equals(type) || "RELEASE".equals(type)) {
         held = held.subtract(t.getAmount());
       }
@@ -456,28 +458,13 @@ public class QuotaApplicationService {
   }
 
   /**
-   * {@code HARD} 流水的真实占用增量（{@code max(0, after − before)}）。
-   *
-   * <p>新版"SOFT 起手 + HARD 升级"下 HARD 的 before==after ⇒ 增量为 0（不重复计占用）； 早期版本用 HARD 直接起手时 before≠after ⇒
-   * 增量为真实占用额。 {@code before}/{@code after} 缺失时按 0 处理（宁可少算也不凭空计占用）。
-   */
-  private BigDecimal hardDelta(QuotaTransaction t) {
-    BigDecimal before = t.getBeforeAmount();
-    BigDecimal after = t.getAfterAmount();
-    if (before == null || after == null) {
-      return ZERO;
-    }
-    return after.subtract(before).max(ZERO);
-  }
-
-  /**
    * 按流水事实<b>重算账户投影</b>（自愈：投影失真时修正投影，而不是阻塞业务）。
    *
    * <p>触发条件：<b>账户上的冻结额不足以支撑本次释放</b>。这说明投影与事实失真——最常见成因是历史越权释放（别的单据把共享池抽干）。
    * 此时正确动作是<b>按流水重算</b>，否则本单合法的释放会被永久拒掉、结算单卡死在冻结态、钱出不来。
    *
-   * <p>重算口径与 {@link #ownHeld} 同源，但按结算单聚合后取"净占用为正"的单求和：越权释放（无对应占用的 RELEASE）净额为负， 被 {@code max(0, …)}
-   * 剔除 ⇒ 投影回到事实（该单从未占用过，不应影响池）。
+   * <p>重算口径在 {@link QuotaProjection#rebuild}（与对账共用同一实现）：按结算单聚合后取"净占用为正"的单求和，越权释放（无对应占用的
+   * RELEASE）净额为负，被剔除 ⇒ 投影回到事实（该单从未占用过，不应影响池）。
    *
    * <p>正常路径（投影充足）零开销：只做一次 O(1) 比较。
    */
@@ -486,59 +473,9 @@ public class QuotaApplicationService {
     if (frozen != null && frozen.compareTo(amount) >= 0) {
       return; // 投影充足：正常路径，不重算
     }
-    Projection projection = projectFromLedger(account);
-    account.reconcileProjection(projection.frozen(), projection.claimed(), projection.deductible());
-  }
-
-  /**
-   * 按流水聚合出的账户投影。
-   *
-   * @param frozen 冻结占用投影（Σ 各结算单净冻结占用，只计正数）
-   * @param claimed 已扣减投影（Σ 各结算单净已付，只计正数）
-   * @param deductible 年免赔已用投影（Σ 各结算单净消抵，只计正数）
-   */
-  private record Projection(BigDecimal frozen, BigDecimal claimed, BigDecimal deductible) {}
-
-  /** 按流水事实聚合账户投影（见 {@link #reconcileProjectionIfDeficit} 的口径说明）。 */
-  private Projection projectFromLedger(QuotaAccount account) {
-    Map<String, BigDecimal> held = new LinkedHashMap<>();
-    Map<String, BigDecimal> paid = new LinkedHashMap<>();
-    Map<String, BigDecimal> deductible = new LinkedHashMap<>();
-    for (QuotaTransaction t : ledger(account)) {
-      String sn = t.getSettlementNo();
-      if (sn == null) {
-        continue;
-      }
-      String type = t.getTxnType();
-      if ("SOFT".equals(type)) {
-        held.merge(sn, t.getAmount(), BigDecimal::add);
-      } else if ("HARD".equals(type)) {
-        held.merge(sn, hardDelta(t), BigDecimal::add);
-      } else if ("PAID".equals(type)) {
-        held.merge(sn, t.getAmount().negate(), BigDecimal::add);
-        paid.merge(sn, t.getAmount(), BigDecimal::add);
-      } else if ("RELEASE".equals(type)) {
-        held.merge(sn, t.getAmount().negate(), BigDecimal::add);
-      } else if ("REFUND".equals(type)) {
-        paid.merge(sn, t.getAmount().negate(), BigDecimal::add);
-      } else if ("DEDUCTIBLE".equals(type)) {
-        BigDecimal delta =
-            "OCCUPY".equals(t.getDirection()) ? t.getAmount() : t.getAmount().negate();
-        deductible.merge(sn, delta, BigDecimal::add);
-      }
-    }
-    return new Projection(sumPositive(held), sumPositive(paid), sumPositive(deductible));
-  }
-
-  /** 各结算单净额求和（只计正数：净额为负 = 越权释放/无对应占用的归还，不应占用投影）。 */
-  private BigDecimal sumPositive(Map<String, BigDecimal> perSettlement) {
-    BigDecimal total = ZERO;
-    for (BigDecimal net : perSettlement.values()) {
-      if (net.signum() > 0) {
-        total = total.add(net);
-      }
-    }
-    return total;
+    QuotaProjection projection = QuotaProjection.rebuild(ledger(account));
+    account.reconcileProjection(
+        projection.frozen(), projection.claimed(), projection.deductibleUsed());
   }
 
   /**

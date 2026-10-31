@@ -221,18 +221,39 @@ export interface QuotaTxn {
   direction: string;
   txnType: string;
   amount: number;
+  /** 只对"改余额"的流水有意义：`DAILY`（日用量）/`DEDUCTIBLE`（免赔消抵）记的是事实，两侧恒为 0。 */
   beforeAmount: number;
   afterAmount: number;
+  /** 业务日（发票日 / 赔案受理日）：日限额按业务日累计，排障第一个问题就是"这笔算在哪天"。 */
+  bizDate?: string;
   idempotencyKey: string;
   occurredAt?: string;
 }
 
-/** A5 额度账户快照（三值：initial/claimed/frozen；可用 = initial − claimed − frozen）+ 流水。 */
+/**
+ * A5 额度账户快照（三值：initial/claimed/frozen；可用 = initial − claimed − frozen）+ 流水。
+ *
+ * <p>**渲染前必须先看 `opened`**：账户按 (被保人, 保单, 计划, 年度, 维度) 开户，"这个案子还没有额度账户"
+ * 是合法状态（年度口径切换、开户未跑、报案数据缺行键），此时金额全为 0 但**不是"额度为 0"**。
+ * 早期后端对这种情况直接 404，页面上分不清"赔案查不到""账户没开户"还是"看错了年份"。
+ */
 export interface QuotaSummary {
+  /** 查到的是哪一年的账户；`null` = 案件缺行键（保单号/计划），年度不可确定。 */
+  quotaYear: number | null;
+  /** 年度口径：`CALENDAR` 自然年 / `POLICY_TERM` 保单年度。 */
+  quotaYearBasis: string;
+  /** 账户是否已开立。`false` 时其余金额字段无意义（全 0）。 */
+  opened: boolean;
   initial: number;
   claimed: number;
   frozen: number;
+  /** 年免赔已用（R-DED）。 */
+  deductibleUsed: number;
+  /** 年封顶已用（R-CAP），当前口径下等于 `claimed`。 */
+  capUsed: number;
   available: number;
+  /** 已达封顶（已无可赔额度，含冻结占用）。未开户恒为 false——"没有账户"不是"封顶了"。 */
+  capReached: boolean;
   transactions: QuotaTxn[];
 }
 
