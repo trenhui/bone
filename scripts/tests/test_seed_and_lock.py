@@ -39,8 +39,10 @@ migrate = _load("migrate_for_lock", "migrate.py")
 class FakeDb:
     def __init__(self, counts):
         self.counts = counts
+        self.wheres = []  # 记录收到的 where，供断言「过滤条件真的进了查询」
 
     def count(self, table, where="1=1", db=None):
+        self.wheres.append((table, where))
         return self.counts.get(table, 0)
 
 
@@ -87,12 +89,15 @@ class SeedFreshnessTest(unittest.TestCase):
         self.manifest.write_text(json.dumps({"tables": {"iam_menu": {"rows": 288}}}), encoding="utf-8")
         self._orig_out = seed.OUT_MANIFEST
         self._orig_specs = seed.SEED_SPECS
+        self._orig_orphans = seed.orphan_menu_ids
         seed.OUT_MANIFEST = self.manifest
         seed.SEED_SPECS = [("iam_menu", "1=1", "菜单树")]
+        seed.orphan_menu_ids = lambda db: []
 
     def tearDown(self):
         seed.OUT_MANIFEST = self._orig_out
         seed.SEED_SPECS = self._orig_specs
+        seed.orphan_menu_ids = self._orig_orphans
 
     def test_活库变了而种子没重生成应判红(self):
         with mock.patch.object(seed, "Db", lambda *a, **k: FakeDb({"iam_menu": 300})):
@@ -101,6 +106,21 @@ class SeedFreshnessTest(unittest.TestCase):
     def test_一致时通过(self):
         with mock.patch.object(seed, "Db", lambda *a, **k: FakeDb({"iam_menu": 288})):
             self.assertEqual(seed.check_fresh(), 0)
+
+    def test_校验必须剔除G40孤儿菜单(self):
+        """回归护栏：generate 剔孤儿、check 不剔 ⇒ 两者恒差孤儿条数 ⇒ 提交必被拦。
+
+        2026-10-30 实测活库 288 行、种子 236 行，差值 52 恰为 permission 孤儿数，
+        --check 恒红导致每次提交失败。此处断言孤儿 id 真的进了 count 的 where，
+        而不是只在 generate 一侧生效。
+        """
+        seed.orphan_menu_ids = lambda db: ["9100", "9101"]
+        fake = FakeDb({"iam_menu": 288})
+        with mock.patch.object(seed, "Db", lambda *a, **k: fake):
+            self.assertEqual(seed.check_fresh(), 0)
+        wheres = {t: w for t, w in fake.wheres}
+        self.assertIn("id NOT IN (9100, 9101)", wheres["iam_menu"],
+                      "check_fresh 漏了 G40 孤儿排除——generate 与 check 口径不一致会恒红")
 
 
 class ApplyLockTest(unittest.TestCase):

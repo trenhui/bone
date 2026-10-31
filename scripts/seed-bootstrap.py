@@ -160,6 +160,21 @@ def orphan_menu_ids(db: Db) -> list[str]:
     return [ln.strip() for ln in out.stdout.splitlines() if ln.strip()]
 
 
+def effective_where(db: Db, table: str, where: str,
+                    orphans: list[str] | None = None) -> str:
+    """生成与校验必须共用同一个过滤口径。
+
+    历史坑：generate() 排除 G40 孤儿菜单后用 eff_where 导出，check_fresh() 却仍用
+    SEED_SPECS 里的基础 where 数活库——两者永久相差「孤儿条数」，于是 --check 恒红、
+    每次提交都被拦（实测差 52 行）。口径只能有一处定义，否则修好一次、下次换表再犯。
+    """
+    if table != "iam_menu":
+        return where
+    if orphans is None:
+        orphans = orphan_menu_ids(db)
+    return where + (" AND id NOT IN (%s)" % ", ".join(orphans) if orphans else "")
+
+
 def generate(source_db: str | None = None) -> int:
     db = Db(source_db)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -180,11 +195,10 @@ def generate(source_db: str | None = None) -> int:
                 "generatedAt": None, "tables": {}}
     total = 0
     for table, where, why in SEED_SPECS:
-        eff_where = where
-        if table == "iam_menu" and orphans:
-            # 把孤儿菜单从种子里排除：它们引用不存在的 permission，渲染不出来，
-            # 塞进种子只会让新环境多一堆「种下了但永远看不到」的假数据。
-            eff_where += " AND id NOT IN (%s)" % ", ".join(orphans)
+        # iam_menu 要把 permission 孤儿从种子里排除：它们引用不存在的权限点，
+        # 渲染不出来，塞进种子只会让新环境多一堆「种下了但永远看不到」的假数据。
+        # 口径由 effective_where 单点定义，check_fresh 复用同一函数。
+        eff_where = effective_where(db, table, where, orphans if table == "iam_menu" else None)
         kept = db.count(table, eff_where)
         allrows = db.count(table)
         sql = dump_table(db, table, eff_where)
@@ -270,7 +284,11 @@ def verify(target_db: str) -> int:
 
 
 def check_fresh() -> int:
-    """校验已生成的种子与活库一致（防止 dev 加了菜单而种子没重生成）。"""
+    """校验已生成的种子与活库一致（防止 dev 加了菜单而种子没重生成）。
+
+    必须用 effective_where 而非 SEED_SPECS 的基础 where：否则 iam_menu 会拿
+    「含孤儿」的活库行数去比「已剔孤儿」的种子行数，恒差孤儿条数而恒红。
+    """
     if not OUT_MANIFEST.exists():
         print(f"❌ 找不到 {OUT_MANIFEST}")
         return 1
@@ -278,7 +296,7 @@ def check_fresh() -> int:
     db = Db()
     stale = []
     for table, where, _ in SEED_SPECS:
-        now = db.count(table, where)
+        now = db.count(table, effective_where(db, table, where))
         was = doc["tables"].get(table, {}).get("rows")
         if was is None:
             stale.append(f"{table}: 清单里没有它")
