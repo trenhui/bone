@@ -55,7 +55,7 @@ class ClaimCaseApplicationServiceTest {
             "EG20260001",
             7L,
             "v3",
-            "hash-abc",
+            java.util.List.of("hash-abc"),
             Instant.parse("2026-01-01T00:00:00Z"),
             Instant.parse("2026-12-31T23:59:59Z"));
     when(tenantPort.currentTenantId()).thenReturn(TENANT_ID);

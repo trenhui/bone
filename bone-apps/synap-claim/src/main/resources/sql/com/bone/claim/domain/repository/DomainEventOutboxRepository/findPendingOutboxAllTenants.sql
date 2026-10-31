@@ -1,5 +1,3 @@
--- 待投发件箱扫描（全租户，OutboxRelayJob 专用）：PENDING 且超过窗口，按时间升序取一批
--- 全租户扫描：不加 /*bone:tenant*/ 锚点（@TenantScope(ALL) 跨租户）
 SELECT id,
        tenant_id,
        aggregate,

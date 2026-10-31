@@ -549,6 +549,61 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
     return insuredState != null && insuredState == 1;
   }
 
+  /**
+   * 调整初始额度（运营保全：改保额）。
+   *
+   * <p><b>这是配置变更，不是占用事件</b>：它只改 {@code quotaInitial}，不动 {@code claimed}/{@code frozen}，因此<b>不落
+   * {@link QuotaTransaction}</b>（那是理赔占用流水，守恒校验依赖它， 把配置变更混进去会让"按 txn_type 统计占用"的读侧算歪）。变更留痕走 {@link
+   * QuotaChangeLog} （独立的保全记录表）。
+   *
+   * <p><b>下调额度的下界约束（fail-closed）</b>：新初始额度必须 {@code ≥ claimed + frozen}， 否则 {@code available =
+   * initial − claimed − frozen} 变负 ⇒ 守恒被破坏。 这不是"极端情况"，而是业务上真实会发生的：被保人已赔了 8 万（claimed=80000）， 运营把保额从
+   * 10 万调到 5 万，此时已赔额已超新保额。拒绝的理由是——系统无法判定 这 8 万该不该追回（追回是理赔决定，不是配置决定），若放行则账面 available 为负、
+   * 后续任何占额都会被守恒校验拦下，整条链卡死。故明确拒绝并要求先处置已赔案件。
+   *
+   * @param newInitial 新初始额度（非负）
+   * @return 变更前的初始额度（供保全记录记 before 值）
+   */
+  public BigDecimal adjustInitial(BigDecimal newInitial) {
+    if (newInitial == null || newInitial.signum() < 0) {
+      throw new DomainException("初始额度不能为负");
+    }
+    if (newInitial.compareTo(new BigDecimal("100000000")) > 0) {
+      throw new DomainException("初始额度超出上限，请核对配置");
+    }
+    BigDecimal scaled = newInitial.setScale(2, java.math.RoundingMode.HALF_UP);
+    BigDecimal occupied = quotaClaimed.add(quotaFrozen);
+    if (scaled.compareTo(occupied) < 0) {
+      throw new DomainException(
+          "新初始额度 "
+              + scaled
+              + " 低于已占用额度（已赔 "
+              + quotaClaimed
+              + " + 已冻结 "
+              + quotaFrozen
+              + " = "
+              + occupied
+              + "）：请先处置已赔案件，不可直接下调保额");
+    }
+    BigDecimal before = quotaInitial;
+    this.quotaInitial = scaled;
+    this.updatedAt = Instant.now();
+    // 守恒自校验：下调被上面的下界约束挡住，这里再兜一次底（写路径强制）。
+    assertConserved();
+    return before;
+  }
+
+  /** 恢复（撤销减人，重新参与额度累计）。 */
+  public void restore() {
+    this.insuredState = 0;
+    this.updatedAt = Instant.now();
+  }
+
+  /** 当前初始额度（供保全记录与读侧使用）。 */
+  public BigDecimal initial() {
+    return quotaInitial;
+  }
+
   List<QuotaTransaction> transactions() {
     return Collections.unmodifiableList(transactions);
   }

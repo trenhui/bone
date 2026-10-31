@@ -86,6 +86,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 智能理赔端到端场景验证基础设施。
@@ -776,6 +777,24 @@ public class ScenarioHarness {
     public List<QuotaAccount> findAllAccounts() {
       return new ArrayList<>(store.values());
     }
+
+    @Override
+    public List<QuotaAccount> findAccountsByPolicyNo(String policyNo) {
+      return store.values().stream()
+          .filter(a -> Objects.equals(a.getPolicyNo(), policyNo))
+          .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<QuotaAccount> findAccountsByPolicyAndInsured(
+        String policyNo, String insuredIdHash) {
+      return store.values().stream()
+          .filter(
+              a ->
+                  Objects.equals(a.getPolicyNo(), policyNo)
+                      && Objects.equals(a.getInsuredIdHash(), insuredIdHash))
+          .collect(Collectors.toList());
+    }
   }
 
   static class InMemoryAppealRepository extends InMemoryRepository<AppealRecord>
@@ -816,7 +835,7 @@ public class ScenarioHarness {
     void seed(String policyNo, Long planId, String insuredIdHash, Instant from, Instant to) {
       map.put(
           policyNo + "|" + planId,
-          new PolicySnapshot(policyNo, planId, "v1", insuredIdHash, from, to));
+          new PolicySnapshot(policyNo, planId, "v1", java.util.List.of(insuredIdHash), from, to));
     }
 
     @Override

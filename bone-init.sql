@@ -2833,11 +2833,21 @@ CREATE TABLE t_adj_liability (
   liability_uuid    VARCHAR(64)   NOT NULL COMMENT '责任UUID(版本化主键)',
   liability_version VARCHAR(32)   NOT NULL COMMENT '责任版本',
   plan_id           BIGINT        NOT NULL COMMENT '计划ID',
+  coverage_id       BIGINT        DEFAULT NULL COMMENT '所属险种ID(NULL=未归类)',
   liability_code    VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '责任编码(R01...)',
   liability_type    VARCHAR(32)   NOT NULL DEFAULT 'REIMBURSEMENT' COMMENT 'REIMBURSEMENT/FIXED_AMOUNT/ALLOWANCE',
   pay_percent       DECIMAL(6,2)  NOT NULL DEFAULT 0 COMMENT '赔付比例(百分数; 缺省0, 禁隐式默认90%)',
   liability_deduct  DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '年度免赔额(R-DED-03)',
   liability_limit   DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '责任额度上限(R-CAP)',
+  invoice_deduct    DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '发票级免赔(GAP②，比例前): 0=不启用',
+  adjust_deduct     DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '理算级免赔(GAP⑥，比例后): 0=不启用',
+  daily_limit       DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '日赔付限额(Q-05): 同一业务日累计上限; 0=不启用',
+  daily_limit_basis VARCHAR(24)   NOT NULL DEFAULT 'NONE' COMMENT '日窗口口径(Q-05): NONE/SAME_DAY_INVOICE/SAME_DAY_CLAIM',
+  limit_mode        VARCHAR(16)   NOT NULL DEFAULT 'NONE' COMMENT '适用限定方式: NONE/WHITELIST/BLACKLIST',
+  limit_hospital_codes VARCHAR(1024) NOT NULL DEFAULT '' COMMENT '适用限定-医院编码名单(分隔串): 空=不限定',
+  limit_diagnosis_codes VARCHAR(512) NOT NULL DEFAULT '' COMMENT '适用限定-病种编码名单(分隔串): 空=不限定',
+  catalog_policy    VARCHAR(16)   NOT NULL DEFAULT 'NONE' COMMENT '目录准入: NONE(不查目录)/MANDATORY(每条明细须有结论)',
+  catalog_code      VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '目录编码(如 NATIONAL_2024); catalog_policy=NONE 时须为空',
   social_only       TINYINT       NOT NULL DEFAULT 1 COMMENT '1仅赔社保内(R-DIR-01)',
   waiting_period    INT           NOT NULL DEFAULT 0 COMMENT '等待期(天)',
   status            VARCHAR(16)   NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT/GRAY/ACTIVE/RETIRED',
@@ -2847,9 +2857,11 @@ CREATE TABLE t_adj_liability (
   updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at        DATETIME(3)   NOT NULL COMMENT '更新时间',
   deleted           TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
+  version         BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
   PRIMARY KEY (id),
   UNIQUE KEY uk_uuid_ver (tenant_id, liability_uuid, liability_version),
-  KEY idx_plan_status (tenant_id, plan_id, status)
+  KEY idx_plan_status (tenant_id, plan_id, status),
+  KEY idx_coverage (tenant_id, coverage_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '保险责任(版本化)';
 
 -- A6 理算记录
@@ -2903,6 +2915,101 @@ CREATE TABLE t_adj_calculation_line (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '理算明细(归因成分链)';
 
 -- A5 额度账户（三值模型）
+-- 保单 / 计划 / 险种 / 额度保全记录（0085 迁移落地；设计文档 §9.3 口径）
+CREATE TABLE t_claim_policy (
+  id                  BIGINT      NOT NULL COMMENT '主键(分布式ID)',
+  policy_no           VARCHAR(32)   NOT NULL COMMENT '保单号(对外业务号)',
+  policy_name         VARCHAR(128)  NOT NULL DEFAULT '' COMMENT '保单名称',
+  insurer_name        VARCHAR(128)  NOT NULL DEFAULT '' COMMENT '保险公司',
+  branch_name         VARCHAR(128)  NOT NULL DEFAULT '' COMMENT '保险分公司',
+  insure_name         VARCHAR(128)  NOT NULL DEFAULT '' COMMENT '投保公司(企业客户)',
+  biz_identity_code   VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '业务主体码(保司/分公司/投保公司/保单四级匹配,集成路由依据)',
+  product_type        VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '产品类型(门诊等)',
+  effective_start     DATETIME(3)   NOT NULL COMMENT '生效起',
+  effective_end       DATETIME(3)   NOT NULL COMMENT '生效止',
+  waiting_period      INT           NOT NULL DEFAULT 0 COMMENT '等待期(天)',
+  policy_version      VARCHAR(32)   NOT NULL DEFAULT 'v1' COMMENT '保单版本(配置变更即新增)',
+  insured_snapshot    JSON         DEFAULT NULL COMMENT '被保人清单(假名化ID数组; 不存明文证件)',
+  config_status       VARCHAR(16)   NOT NULL DEFAULT 'INACTIVE' COMMENT '规则开关: INACTIVE未启用/ACTIVE启用中/PAUSE停用中',
+  stale_flag          TINYINT       NOT NULL DEFAULT 0 COMMENT '快照过期(1=拒新报案)',
+  synced_at           DATETIME(3)   NOT NULL COMMENT '最近同步时间',
+  tenant_id           BIGINT        NOT NULL COMMENT '租户',
+  created_by          BIGINT        DEFAULT NULL COMMENT '创建人ID',
+  created_at          DATETIME(3)   NOT NULL COMMENT '创建时间',
+  updated_by          BIGINT        DEFAULT NULL COMMENT '修改人ID',
+  updated_at          DATETIME(3)   NOT NULL COMMENT '修改时间',
+  version             BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  deleted             TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_tenant_policy_no (tenant_id, policy_no),
+  KEY idx_tenant_policy_status (tenant_id, config_status, effective_start)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '保单(被保人身份+承保期间+规则开关)';
+
+CREATE TABLE t_claim_plan (
+  id              BIGINT      NOT NULL COMMENT '主键(分布式ID)',
+  policy_no       VARCHAR(32)   NOT NULL COMMENT '所属保单号',
+  plan_code       VARCHAR(32)   NOT NULL COMMENT '计划编码(保司侧产品编码)',
+  plan_name       VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '计划名称',
+  plan_limit      DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '计划额度上限(0=不限)',
+  waiting_period  INT           NOT NULL DEFAULT 0 COMMENT '等待期(天)',
+  version_no      VARCHAR(32)   NOT NULL DEFAULT 'v1' COMMENT '计划版本(配置变更即新增)',
+  status          VARCHAR(16)   NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT草稿/ACTIVE已发布/RETIRED已下线',
+  tenant_id       BIGINT        NOT NULL COMMENT '租户',
+  created_by      BIGINT        DEFAULT NULL COMMENT '创建人ID',
+  created_at      DATETIME(3)   NOT NULL COMMENT '创建时间',
+  updated_by      BIGINT        DEFAULT NULL COMMENT '修改人ID',
+  updated_at      DATETIME(3)   NOT NULL COMMENT '修改时间',
+  version         BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  deleted         TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_tenant_plan_code (tenant_id, policy_no, plan_code),
+  KEY idx_tenant_policy (tenant_id, policy_no)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '保障计划(保单下可多份, 版本化)';
+
+CREATE TABLE t_claim_coverage (
+  id              BIGINT      NOT NULL COMMENT '主键(分布式ID)',
+  plan_id         BIGINT        NOT NULL COMMENT '所属计划ID',
+  coverage_code   VARCHAR(32)   NOT NULL COMMENT '险种编码',
+  coverage_name   VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '险种名称',
+  coverage_limit  DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '险种额度上限(0=不限)',
+  liability_type  VARCHAR(32)   NOT NULL DEFAULT 'REIMBURSEMENT' COMMENT '责任形式: REIMBURSEMENT/FIXED_AMOUNT/ALLOWANCE',
+  status          VARCHAR(16)   NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT/ACTIVE/RETIRED',
+  tenant_id       BIGINT        NOT NULL COMMENT '租户',
+  created_by      BIGINT        DEFAULT NULL COMMENT '创建人ID',
+  created_at      DATETIME(3)   NOT NULL COMMENT '创建时间',
+  updated_by      BIGINT        DEFAULT NULL COMMENT '修改人ID',
+  updated_at      DATETIME(3)   NOT NULL COMMENT '修改时间',
+  version         BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  deleted         TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_tenant_plan_coverage (tenant_id, plan_id, coverage_code),
+  KEY idx_tenant_plan (tenant_id, plan_id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '保障项/险种(计划下)';
+
+CREATE TABLE t_quota_change_log (
+  id                BIGINT      NOT NULL COMMENT '主键(分布式ID)',
+  quota_account_id  BIGINT        NOT NULL COMMENT '额度账户ID',
+  policy_no         VARCHAR(32)   NOT NULL COMMENT '保单号',
+  insured_id_hash   CHAR(64)      NOT NULL COMMENT '假名化被保人',
+  change_type       VARCHAR(16)   NOT NULL COMMENT 'INIT开户/ADJUST调额/REMOVE减人/RESTORE恢复',
+  before_initial    DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '变更前初始额度',
+  after_initial     DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '变更后初始额度',
+  operator_id       VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '操作人ID',
+  operator_name     VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '操作人姓名',
+  remark            VARCHAR(500)  NOT NULL DEFAULT '' COMMENT '变更说明',
+  occurred_at       DATETIME(3)   NOT NULL COMMENT '发生时间',
+  tenant_id         BIGINT        NOT NULL COMMENT '租户',
+  created_by        BIGINT        DEFAULT NULL COMMENT '创建人ID',
+  created_at        DATETIME(3)   NOT NULL COMMENT '创建时间',
+  updated_by        BIGINT        DEFAULT NULL COMMENT '修改人ID',
+  updated_at        DATETIME(3)   NOT NULL COMMENT '修改时间',
+  deleted           TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
+  PRIMARY KEY (id),
+  KEY idx_tenant_account (tenant_id, quota_account_id, id),
+  KEY idx_tenant_policy (tenant_id, policy_no)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '额度保全记录(配置变更流水, 与理赔占用流水分表)';
+
+-- A5 额度账户（三值模型）
 CREATE TABLE t_quota_account (
   id BIGINT      NOT NULL COMMENT '主键(分布式ID)',
   insured_id_hash  CHAR(64)      NOT NULL COMMENT '假名化被保人',
@@ -2936,12 +3043,13 @@ CREATE TABLE t_quota_transaction (
   claim_id         BIGINT      NOT NULL COMMENT '案件ID',
   settlement_no    VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '结算单号',
   direction        VARCHAR(16)   NOT NULL COMMENT 'OCCUPY/ROLLBACK',
-  txn_type         VARCHAR(16)   NOT NULL COMMENT 'SOFT/HARD/PAID/RELEASE',
+  txn_type         VARCHAR(16)   NOT NULL COMMENT 'SOFT/HARD/PAID/RELEASE/REFUND/DEDUCTIBLE/DAILY',
   amount           DECIMAL(12,2) NOT NULL COMMENT '金额',
   before_amount    DECIMAL(12,2) NOT NULL COMMENT '变动前',
   after_amount     DECIMAL(12,2) NOT NULL COMMENT '变动后',
   idempotency_key  VARCHAR(64)   NOT NULL COMMENT '幂等键 {claimNo}:{stage}:{attempt}',
   occurred_at      DATETIME(3)   NOT NULL COMMENT '发生时间',
+  biz_date         DATE         DEFAULT NULL COMMENT '业务日(发票日期/赔案受理日): 日限额按此累计; NULL=不参与日累计',
   tenant_id        BIGINT        NOT NULL COMMENT '租户',
   created_at       DATETIME(3)   NOT NULL COMMENT '落库时间',
   created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',

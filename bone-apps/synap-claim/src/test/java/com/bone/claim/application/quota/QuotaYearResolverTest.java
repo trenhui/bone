@@ -47,7 +47,7 @@ class QuotaYearResolverTest {
         POLICY,
         PLAN,
         "v1",
-        "h-insured",
+        java.util.List.of("h-insured"),
         inception.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant(),
         expiry.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
   }
@@ -139,7 +139,12 @@ class QuotaYearResolverTest {
               QuotaYearResolver.Basis.POLICY_TERM,
               portReturning(
                   new PolicyQueryPort.PolicySnapshot(
-                      POLICY, PLAN, "v1", "h-insured", java.time.Instant.now(), null)));
+                      POLICY,
+                      PLAN,
+                      "v1",
+                      java.util.List.of("h-insured"),
+                      java.time.Instant.now(),
+                      null)));
 
       assertThatThrownBy(() -> resolver.resolve(POLICY, PLAN, LocalDate.of(2026, 5, 1)))
           .isInstanceOf(BizException.class)

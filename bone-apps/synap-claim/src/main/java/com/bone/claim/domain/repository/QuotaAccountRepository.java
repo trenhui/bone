@@ -38,4 +38,18 @@ public interface QuotaAccountRepository extends Repository<QuotaAccount, Long> {
   /** 本租户全部额度账户（对账守恒核对用，{@code ReconciliationApplicationService} 在租户上下文内调用）。 */
   @TenantScope(TenantScopeMode.AUTO)
   List<QuotaAccount> findAllAccounts();
+
+  /**
+   * 按保单号取额度账户（配置面：某保单下的个人额度列表）。
+   *
+   * <p>与 {@link #findAllAccounts} 的区别：后者是全租户扫描（仅对账用，且被 ArchUnit 收紧到 {@code adapter.schedule}
+   * 可调），本方法带 {@code policyNo} 过滤，属正常业务查询。
+   */
+  @TenantScope(TenantScopeMode.AUTO)
+  List<QuotaAccount> findAccountsByPolicyNo(@Param("policyNo") String policyNo);
+
+  /** 按保单号 + 被保人取额度账户（配置面：某被保人的额度明细；一个被保人可有多个计划/年度的账户）。 */
+  @TenantScope(TenantScopeMode.AUTO)
+  List<QuotaAccount> findAccountsByPolicyAndInsured(
+      @Param("policyNo") String policyNo, @Param("insuredIdHash") String insuredIdHash);
 }

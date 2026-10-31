@@ -1,4 +1,3 @@
--- 本租户某业务日创建的结算单（对账 PAYMENT 通道输入；AUTO 租户锚点由 SDK 注入）
 SELECT id,
        settlement_no,
        claim_id,

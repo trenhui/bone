@@ -35,7 +35,25 @@ public interface PolicyQueryPort {
       String policyNo,
       Long planId,
       String planVersion,
-      String insuredIdHash,
+      /**
+       * 该保单承保的<b>被保人集合</b>（假名化 ID）。
+       *
+       * <p><b>为什么是集合而不是单个 ID</b>：一张团险保单承保的是<b>一群人</b>（参考实现里"保单下的被保人名单"
+       * 是一张清单），报案时只能针对其中任一人生效。若这里只存一个 ID，则该保单下除此人以外的所有报案 都会被 {@code
+       * SC_CLAIM_INSURED_MISMATCH}（403）拒掉——用集合才与"承保一群人"的业务事实一致。
+       *
+       * <p>实现方须保证集合内元素为服务端计算的假名化 ID（不落明文证件）。
+       */
+      java.util.List<String> insuredIdHashes,
       java.time.Instant effectiveFrom,
-      java.time.Instant effectiveTo) {}
+      java.time.Instant effectiveTo) {
+
+    /** 该被保人是否在本保单承保范围内（集合为空 ⇒ 一概不承保）。 */
+    public boolean covers(String insuredIdHash) {
+      return insuredIdHash != null
+          && !insuredIdHash.isBlank()
+          && insuredIdHashes != null
+          && insuredIdHashes.contains(insuredIdHash);
+    }
+  }
 }

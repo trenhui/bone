@@ -257,7 +257,13 @@
     "META_RUNTIME_ENTITY_FORBIDDEN": "无该实体的运行时访问权限，请申请 runtime:{entityCode}:read|write 或通配授权",
     "META_RUNTIME_FORBIDDEN_ACTION": "无该动作的执行权限，请申请动作级权限码授权",
     "META_RUNTIME_FIELD_NOT_VISIBLE": "包含当前角色不可见的字段，已被拒绝修改；如需修改请联系管理员调整字段的角色可见范围",
-    "AI_GATEWAY_PROVIDER_RESPONSE_INVALID": "模型服务响应异常，已转人工复核"},
+    "SC_CLAIM_POLICY_NOT_FOUND": "保单不存在（或不属于当前租户）",
+    "SC_CLAIM_POLICY_DUPLICATED": "保单号已存在（同租户下保单号唯一）",
+    "SC_CLAIM_PLAN_NOT_FOUND": "保障计划不存在（或不属于当前租户）",
+    "SC_CLAIM_PLAN_DUPLICATED": "计划编码已存在（同保单下计划编码唯一）",
+    "SC_CLAIM_COVERAGE_NOT_FOUND": "保障项/险种不存在（或不属于当前租户）",
+    "SC_CLAIM_COVERAGE_DUPLICATED": "险种编码已存在（同计划下险种编码唯一）"
+  },
   "enums": {
     "ORDER_STATUS": {
       "CREATED": "已创建",

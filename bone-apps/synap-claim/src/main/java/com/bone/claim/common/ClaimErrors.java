@@ -41,7 +41,14 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.CLAIM_QUOTA_STATE_CONFLICT, 409),
           Map.entry(ClaimErrorCodes.CLAIM_INSPECTION_NOT_FOUND, 404),
           Map.entry(ClaimErrorCodes.CLAIM_INSPECTION_CONFLICT, 409),
-          Map.entry(ClaimErrorCodes.CLAIM_DECISION_NOT_FOUND, 404));
+          Map.entry(ClaimErrorCodes.CLAIM_DECISION_NOT_FOUND, 404),
+          // 配置面：404 = 目标不存在（防枚举统一语义）；409 = 唯一键冲突（重复创建）
+          Map.entry(ClaimErrorCodes.CLAIM_POLICY_NOT_FOUND, 404),
+          Map.entry(ClaimErrorCodes.CLAIM_POLICY_DUPLICATED, 409),
+          Map.entry(ClaimErrorCodes.CLAIM_PLAN_NOT_FOUND, 404),
+          Map.entry(ClaimErrorCodes.CLAIM_PLAN_DUPLICATED, 409),
+          Map.entry(ClaimErrorCodes.CLAIM_COVERAGE_NOT_FOUND, 404),
+          Map.entry(ClaimErrorCodes.CLAIM_COVERAGE_DUPLICATED, 409));
 
   static {
     checkEveryCodeRegistered();

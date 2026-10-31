@@ -108,4 +108,30 @@ public final class ClaimErrorCodes {
 
   /** 额度状态冲突（已确认 CONFIRMED 禁止清除/重算，§5.3 硬不变量）。 */
   public static final String CLAIM_QUOTA_STATE_CONFLICT = "SC_CLAIM_QUOTA_STATE_CONFLICT";
+
+  // ===== 配置面：保单 / 计划 / 险种 =====
+
+  /**
+   * 保单不存在（配置面查保单/计划/险种时）。
+   *
+   * <p>此前保单无主数据表，{@code t_claim_case.policy_no} 只是裸字符串，报案前置校验靠进程内存桩 （{@code PolicyQueryPortAdapter}
+   * 的 {@code ConcurrentHashMap}），只有 {@code @Profile("dev")} 的 seeder 灌两条种子 ⇒ 非 dev
+   * 环境查任何保单都返回空，<b>生产报案必然被拒</b>。
+   */
+  public static final String CLAIM_POLICY_NOT_FOUND = "SC_CLAIM_POLICY_NOT_FOUND";
+
+  /** 保单号重复（同租户下 {@code policy_no} 唯一）。 */
+  public static final String CLAIM_POLICY_DUPLICATED = "SC_CLAIM_POLICY_DUPLICATED";
+
+  /** 计划不存在（按 planId 查）。 */
+  public static final String CLAIM_PLAN_NOT_FOUND = "SC_CLAIM_PLAN_NOT_FOUND";
+
+  /** 计划编码重复（同保单下 {@code plan_code} 唯一）。 */
+  public static final String CLAIM_PLAN_DUPLICATED = "SC_CLAIM_PLAN_DUPLICATED";
+
+  /** 险种不存在（按 coverageId 查）。 */
+  public static final String CLAIM_COVERAGE_NOT_FOUND = "SC_CLAIM_COVERAGE_NOT_FOUND";
+
+  /** 险种编码重复（同计划下 {@code coverage_code} 唯一）。 */
+  public static final String CLAIM_COVERAGE_DUPLICATED = "SC_CLAIM_COVERAGE_DUPLICATED";
 }

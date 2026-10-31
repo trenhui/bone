@@ -10,6 +10,9 @@ import {
   FormOutlined,
   HistoryOutlined,
   SolutionOutlined,
+  ClusterOutlined,
+  DeploymentUnitOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import { ClaimSubmitPage } from './pages/ClaimSubmitPage';
 import { ReviewWorkbenchPage } from './pages/ReviewWorkbenchPage';
@@ -21,6 +24,9 @@ import { FundWorkbenchPage } from './pages/FundWorkbenchPage';
 import { AppealPage } from './pages/AppealPage';
 import { SuspendPage } from './pages/SuspendPage';
 import { InspectionWorkbenchPage } from './pages/InspectionWorkbenchPage';
+import { PolicyManagementPage } from './pages/PolicyManagementPage';
+import { PlanConfigPage } from './pages/PlanConfigPage';
+import { QuotaConfigPage } from './pages/QuotaConfigPage';
 
 /**
  * 智能理赔 · 路由与页面名的**唯一真源**（单导航架构的前端侧锚点）。
@@ -44,11 +50,17 @@ import { InspectionWorkbenchPage } from './pages/InspectionWorkbenchPage';
  * 与迁移脚本 `scripts/migration/0078_seed_claim_preexam_menu.sql` 的 order_no 一一对应（1..10；
  * 该脚本在 0071 的 9 条基础上补齐「初审工作台」并整体重排）。
  *
+ * 末尾三条（11..13）是<b>运营配置面</b>：保单管理 / 计划配置 / 额度管理。
+ * 放在作业链路之后而非之前，是因为它们的**变更节奏与风险面不同**：作业面逐单流转（改一次影响一件赔案），
+ * 配置面批量编辑（改一次影响该保单所有未来赔案），把它放在链路末尾可让"日常作业"与"偶发配置"
+ * 在侧栏上天然分组。三者与 0085 迁移的 order_no 一一对应。
+ *
  * 能力编号对照（synapClaim 工程落地版 A1–A9；**只做代码内追溯，不上屏**——页面上出现
  * 「材料上传（A2）」这类编号是给研发看的，业务用户看不懂）：
  *   /pre-exam 初审 A3 前段 · /review 核赔工作台 A3 · /adjust 理算归因 A6 · /fund 资金工作台 A7
  *   /evidence 材料上传 A2 · /progress 理赔进度 A5 · /appeal 申诉复议 A8
  *   /inspection 后督抽检 A9 · /suspend 挂起/恢复 正交机制 · /submit 理赔申请 A1
+ *   /policy 保单管理 · /plan 计划配置 · /quota 额度管理（运营配置面，不属 A1–A9 能力编号体系）
  */
 export interface ClaimRoute {
   /** 微应用内 hash 路由（shell 侧菜单 path 形如 `/claim#/review`）。 */
@@ -74,6 +86,9 @@ export const CLAIM_ROUTES: ClaimRoute[] = [
   { path: '/inspection', name: '后督抽检', icon: <SafetyCertificateOutlined />, element: <InspectionWorkbenchPage /> },
   { path: '/submit', name: '理赔申请', icon: <FormOutlined />, element: <ClaimSubmitPage /> },
   { path: '/progress', name: '理赔进度', icon: <HistoryOutlined />, element: <ClaimProgressPage /> },
+  { path: '/policy', name: '保单管理', icon: <FileTextOutlined />, element: <PolicyManagementPage /> },
+  { path: '/plan', name: '计划配置', icon: <DeploymentUnitOutlined />, element: <PlanConfigPage /> },
+  { path: '/quota', name: '额度管理', icon: <ClusterOutlined />, element: <QuotaConfigPage /> },
 ];
 
 /** shell（qiankun activeRule）侧的路由前缀；菜单 path 形如 `/claim#/<hash>`。 */

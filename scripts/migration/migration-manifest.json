@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 90,
+  "executableCount": 93,
   "retired": [],
   "entries": [
     {
@@ -591,6 +591,24 @@
       "file": "README.md",
       "kind": "doc",
       "summary": "scripts/migration 总索引：三条路径、并入全量的闭环、下线与归档纪律"
+    },
+    {
+      "order": 91,
+      "file": "0085_synap_claim_policy_plan_quota_config.sql",
+      "kind": "ddl",
+      "summary": "补齐 synap-claim 的保单/计划/险种/额度配置面：新建 t_claim_policy / t_claim_plan / t_claim_coverage / t_quota_change_log 四张表（设计文档 §9.3 早已定义 adj_policy/adj_plan/adj_coverage，但从未落地任何一行代码——保单无主数据、计划/险种无实体、额度账户只有读没有写，参考实现 pk-tpa-saas 里运营能自助完成的三件事在本仓一件都做不了）。同时修一个 P0 潜伏缺陷：t_adj_liability 实体声明的 9 列（invoice_deduct/adjust_deduct/daily_limit/daily_limit_basis/limit_mode/limit_hospital_codes/limit_diagnosis_codes/catalog_policy/catalog_code）与 t_quota_transaction.biz_date 只存在于模块内从未执行的 Flyway 孤儿通道（V12-V15），scripts/migration 与 bone-init.sql 均无；而 SDK 的 INSERT 列清单由实体元数据生成 ⇒ 任何写这两张表的代码都会 Unknown column 1054（实测复现），读侧因手写列清单 SQL 恰好绕开 ⇒ 读能过、写必炸。本次把列补进生效通道并对每列做 information_schema 断言。"
+    },
+    {
+      "order": 92,
+      "file": "0086_seed_claim_config_reference_data.sql",
+      "kind": "mixed",
+      "summary": "给 synap-claim 的保单/计划配置面补 E2E 联调参考数据：0085 把 PolicyQueryPort 的实现从「进程内存 ConcurrentHashMap + @Profile(\"dev\") seeder」换成「读 t_claim_policy 表」（因为内存桩导致生产环境报案必然被拒：非 dev 环境查任何保单都返回空 ⇒ 恒抛 SC_CLAIM_POLICY_NOT_ACTIVE 422），换实现后 E2E 用的保单必须以数据形式存在，否则 scripts/e2e/* 全链路探针立刻失效。本脚本种两张保单（E2E-POLICY-0001 生效中 / E2E-POLICY-EXPIRED 已满期）与两个计划；被保人清单里的 hash 必须与 0073 种的额度账户 insured_id_hash 完全一致，否则报案会被「被保人不匹配」403 拒掉而额度账户成了没人能用的孤儿数据。"
+    },
+    {
+      "order": 93,
+      "file": "0087_seed_claim_config_menus.sql",
+      "kind": "mixed",
+      "summary": "给「智能理赔」目录补 3 条运营配置面的叶子菜单（保单管理 / 计划配置 / 额度管理，order_no 11..13）并注册 4 个权限码（claim:policy:read/write、claim:quota:read/write）。菜单与前端 bone-claim-app/src/routes.tsx 必须同提交改：scripts/e2e/ui/claim-single-nav-probe.mjs 对「IAM 菜单 ↔ routes.tsx」做双向全等断言（页面有路由而菜单无入口 ⇒ 功能不可达；菜单有而路由无 ⇒ 幽灵菜单），且逐条比对菜单名与页面名逐字一致、菜单顺序与声明顺序一致。三条菜单的 permission 用读码而非写码（0078 已记此口径：菜单用写权限码会让只持读权限的角色看不见入口），写动作由端点 @PreAuthorize 把关。图标须在 bone-shell 的 MENU_ICON_MAP 白名单内（未登记会被静默降级成默认图标且不报错）。"
     }
   ],
   "ordinalConflicts": [

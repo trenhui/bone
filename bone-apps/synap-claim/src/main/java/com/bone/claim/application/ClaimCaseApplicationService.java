@@ -72,7 +72,7 @@ public class ClaimCaseApplicationService {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_POLICY_NOT_ACTIVE, command.policyNo());
     }
     PolicyQueryPort.PolicySnapshot snapshot = policy.get();
-    if (!snapshot.insuredIdHash().equals(command.insuredIdHash())) {
+    if (!snapshot.covers(command.insuredIdHash())) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_INSURED_MISMATCH, command.policyNo());
     }
     if (command.outInsureTime().isBefore(snapshot.effectiveFrom())

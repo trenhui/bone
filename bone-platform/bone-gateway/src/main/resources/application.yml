@@ -157,6 +157,16 @@ spring:
           uri: ${BONE_CLAIM_URI:http://localhost:8087}
           predicates:
             - Path=/api/v1/review/**
+        # 智能理赔 · 运营配置面命名空间：`/api/v1/claim-config/**`（同属 synap-claim）。
+        # 归属三个页面：保单管理 / 计划配置 / 额度管理（ClaimConfigController、QuotaConfigController）。
+        # 【为什么必须单独登记】同 review 前缀：网关按前缀白名单转发，前缀不匹配 ⇒ 整体 404
+        # 且**不产生后端日志**（请求没进上游 DispatcherServlet），排查时极易误判为"服务没实现"。
+        # 实证：直连 :8087 命中「请求地址不存在」是上游自身 404，经网关时连上游都到不了——
+        # 两者错误体不同，据此可区分「路由缺」与「服务缺」。
+        - id: synap-claim-config
+          uri: ${BONE_CLAIM_URI:http://localhost:8087}
+          predicates:
+            - Path=/api/v1/claim-config/**
 
 # 网关统一鉴权（JWT 密钥与 bone-iam 等签发模块共享）
 bone:

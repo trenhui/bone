@@ -1,4 +1,3 @@
--- 本租户全部额度账户（对账守恒核对；AUTO 租户锚点由 SDK 注入）
 SELECT id,
        insured_id_hash,
        policy_no,
