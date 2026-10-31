@@ -6,3 +6,8 @@ reference-impl/**/target/
 
 # macOS 元数据
 .DS_Store
+
+# 交付物二进制件不入库：.md 为唯一真源，docx/pdf/html 由它导出，避免 AI 语义索引吞入不可读格式 / 仓库膨胀
+07-delivery/00-落地交付包清单.pdf
+07-delivery/00-落地交付包清单.docx
+07-delivery/00-落地交付包清单.html

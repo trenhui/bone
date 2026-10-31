@@ -1,3 +1,9 @@
+---
+doc_id: impl.readme
+role: tooling
+currency: frozen
+---
+
 # synap-claim-settlement · 理算引擎参考实现（真实 TPA 场景 + 防假绿探针版）
 
 > **⚠️ 这不是产品代码，不要并入 `bone-apps/synap-claim`。**

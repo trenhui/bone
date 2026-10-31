@@ -26,7 +26,7 @@ import os
 import re
 import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MANIFEST = os.path.join(HERE, "docs.manifest.json")
 
 REQUIRED_FIELDS = ("id", "path", "layer", "diataxis", "summary")

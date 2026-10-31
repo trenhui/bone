@@ -29,7 +29,9 @@
       "diataxis": "navigation",
       "status": "active",
       "summary": "3 分钟入口：按「你这次来做什么」路由到唯一该读的文档；不再按目录树猜",
-      "authority": ""
+      "authority": "",
+      "role": "navigation",
+      "currency": "current"
     },
     {
       "id": "map",
@@ -38,7 +40,9 @@
       "diataxis": "governance",
       "status": "active",
       "summary": "层 ↔ 目录映射表 + 每份文档的 SSOT 归属与权威边界（冲突时谁说了算）",
-      "authority": "分层与 SSOT 归属"
+      "authority": "分层与 SSOT 归属",
+      "role": "navigation",
+      "currency": "current"
     },
     {
       "id": "governance",
@@ -47,7 +51,9 @@
       "diataxis": "governance",
       "status": "active",
       "summary": "命名、引用、机检、新增登记的强制规则（防再次膨胀）",
-      "authority": "文档治理"
+      "authority": "文档治理",
+      "role": "navigation",
+      "currency": "current"
     },
     {
       "id": "history",
@@ -56,7 +62,9 @@
       "diataxis": "governance",
       "status": "active",
       "summary": "P1–P10 各轮整合的动因、动作与口径修正记录（历史，非当前口径）",
-      "authority": "整合历史"
+      "authority": "整合历史",
+      "role": "navigation",
+      "currency": "current"
     },
     {
       "id": "strategy",
@@ -65,11 +73,13 @@
       "diataxis": "explanation",
       "status": "active",
       "summary": "公司定位、1 底座 + 2 触角战略、竞争与团队；只讲商业，不含工程口径",
-      "authority": "商业定位 / 战略 / 团队"
+      "authority": "商业定位 / 战略 / 团队",
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "prd",
-      "path": "02-requirements/synapClaim 智能理赔平台-产品需求文档.md",
+      "path": "02-requirements/产品需求文档.md",
       "layer": "L2",
       "diataxis": "reference",
       "status": "active",
@@ -77,11 +87,13 @@
       "authority": "需求 / 用户故事 / KPI",
       "checkKeys": [
         "prd"
-      ]
+      ],
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "contract.landing",
-      "path": "03-contract/synapClaim 智能理赔平台-工程详细设计（落地版）.md",
+      "path": "03-contract/工程详细设计-落地版.md",
       "layer": "L3",
       "diataxis": "reference",
       "status": "active",
@@ -92,11 +104,13 @@
       ],
       "checkKeys": [
         "landing"
-      ]
+      ],
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "contract.ai",
-      "path": "03-contract/synapClaim 智能理赔平台-AI 技术方案.md",
+      "path": "03-contract/AI技术方案.md",
       "layer": "L3",
       "diataxis": "reference",
       "status": "active",
@@ -108,16 +122,20 @@
       ],
       "checkKeys": [
         "ai"
-      ]
+      ],
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "contract.rules-v1",
-      "path": "03-contract/synapClaim 智能理算引擎业务规则（V1·责任配置与理算基线）.md",
+      "path": "03-contract/智能理算引擎业务规则V1.md",
       "layer": "L3",
       "diataxis": "reference",
       "status": "active",
       "summary": "理算业务口径真源(V1)：责任 11 要素、发票 6 公式、九步主流程、免赔 6 维、控额 7 层；含 Q-01–Q-15 待澄清",
-      "authority": "理算业务口径 / 责任配置 / 免赔 / 控额"
+      "authority": "理算业务口径 / 责任配置 / 免赔 / 控额",
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "design.adjustment",
@@ -129,7 +147,9 @@
       "authority": "理算算法与引擎结构",
       "shortNames": [
         "理算引擎设计"
-      ]
+      ],
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "design.risk-payment",
@@ -141,11 +161,13 @@
       "authority": "风控 / 反欺诈 / 直付",
       "shortNames": [
         "风控与支付通道设计"
-      ]
+      ],
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "design.bone-ai-deps",
-      "path": "04-design/BONE-AI 能力依赖图谱.md",
+      "path": "04-design/BONE-AI能力依赖图谱.md",
       "layer": "L4",
       "diataxis": "reference",
       "status": "active",
@@ -154,11 +176,13 @@
       "shortNames": [
         "BONE-AI 能力依赖图谱",
         "能力依赖图谱"
-      ]
+      ],
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "plan.mvp",
-      "path": "05-plan/synapClaim MVP 可落地执行方案.md",
+      "path": "05-plan/MVP可落地执行方案.md",
       "layer": "L5",
       "diataxis": "how-to",
       "status": "active",
@@ -169,11 +193,13 @@
       ],
       "checkKeys": [
         "mvp"
-      ]
+      ],
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "plan.fde",
-      "path": "05-plan/synapClaim 智能理赔平台-部署集成方案（FDE）.md",
+      "path": "05-plan/部署集成方案-FDE.md",
       "layer": "L5",
       "diataxis": "how-to",
       "status": "active",
@@ -184,7 +210,9 @@
       ],
       "checkKeys": [
         "fde"
-      ]
+      ],
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "verify.adjustment",
@@ -196,7 +224,9 @@
       "authority": "验证用例 / 探针 / 变异",
       "shortNames": [
         "理算引擎验证套件"
-      ]
+      ],
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "delivery.00",
@@ -205,7 +235,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "交付包总览与生成物清单（由 gen_delivery_list.js 产出，勿手改）",
-      "authority": "交付物总览"
+      "authority": "交付物总览",
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "delivery.01",
@@ -214,7 +246,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "试点合作 MOU/NDA/DPA 三件套条款骨架与签署顺序",
-      "authority": "试点协议"
+      "authority": "试点协议",
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "delivery.02",
@@ -223,7 +257,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "数据分级、逐字段脱敏算法、验证方法与 PIPL 合规检查",
-      "authority": "脱敏 / 个人信息保护"
+      "authority": "脱敏 / 个人信息保护",
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "delivery.03",
@@ -232,7 +268,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "25 分钟 POC 演示剧本与异议应答",
-      "authority": "演示"
+      "authority": "演示",
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "delivery.04",
@@ -244,7 +282,9 @@
       "authority": "规则 ID 定义",
       "shortNames": [
         "04"
-      ]
+      ],
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "delivery.05",
@@ -256,7 +296,9 @@
       "authority": "对外接口契约 / 枚举 / 错误码",
       "shortNames": [
         "05"
-      ]
+      ],
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "delivery.06",
@@ -265,7 +307,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "医学目录库四类组成、数据来源合规、入库字段与更新机制",
-      "authority": "医学目录库"
+      "authority": "医学目录库",
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "delivery.07",
@@ -274,7 +318,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "测试分层、评测集标注规范、性能基准与发布门禁",
-      "authority": "测试方案 / 性能基准"
+      "authority": "测试方案 / 性能基准",
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "delivery.08",
@@ -283,7 +329,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "部署、日常运维、应急手册",
-      "authority": "部署运维"
+      "authority": "部署运维",
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "delivery.09",
@@ -292,7 +340,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "培训计划、核赔工作台操作手册、AI 人责归属说明",
-      "authority": "培训 / 操作手册"
+      "authority": "培训 / 操作手册",
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "delivery.10",
@@ -301,7 +351,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "商务模式、竞品矩阵、白皮书大纲、等保清单、规模化检查表",
-      "authority": "商务 / 规模化"
+      "authority": "商务 / 规模化",
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "delivery.index",
@@ -310,7 +362,9 @@
       "diataxis": "navigation",
       "status": "active",
       "summary": "交付包索引：01–10 编号与内容对照（新增交付包必须在此登记）",
-      "authority": ""
+      "authority": "",
+      "role": "navigation",
+      "currency": "current"
     },
     {
       "id": "golive.00",
@@ -319,7 +373,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "总纲：缺口→分册映射表、G1–G16 上线门禁、与既有治理的衔接",
-      "authority": "上线门禁 G1–G16"
+      "authority": "上线门禁 G1–G16",
+      "role": "ssot",
+      "currency": "current"
     },
     {
       "id": "golive.01",
@@ -328,7 +384,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "PIA/DPIA、等保备案、AI 算法备案、SBOM、渗透测试门禁",
-      "authority": "生产准入合规"
+      "authority": "生产准入合规",
+      "role": "draft",
+      "currency": "draft"
     },
     {
       "id": "golive.02",
@@ -337,7 +395,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "外部依赖清单、SLA 与降级责任矩阵、支付实时对账契约",
-      "authority": "外部依赖 SLA"
+      "authority": "外部依赖 SLA",
+      "role": "draft",
+      "currency": "draft"
     },
     {
       "id": "golive.03",
@@ -346,7 +406,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "连接池、OCR 背压、网关 WAF、水平扩展模型、压测计划",
-      "authority": "容量 / 性能"
+      "authority": "容量 / 性能",
+      "role": "draft",
+      "currency": "draft"
     },
     {
       "id": "golive.04",
@@ -355,7 +417,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "ArchUnit 结构锁 + 反例测试，租户隔离纳入 CI",
-      "authority": "租户隔离护栏"
+      "authority": "租户隔离护栏",
+      "role": "draft",
+      "currency": "draft"
     },
     {
       "id": "golive.05",
@@ -364,7 +428,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "阈值校准方法论、审计 hash 链、错误预算/SLO burn-rate",
-      "authority": "成熟度 / SLO"
+      "authority": "成熟度 / SLO",
+      "role": "draft",
+      "currency": "draft"
     },
     {
       "id": "golive.06",
@@ -373,7 +439,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "PIPL 第四章权利清单、DSAR 流程、删除权×WORM 调和",
-      "authority": "DSAR / 删除权"
+      "authority": "DSAR / 删除权",
+      "role": "draft",
+      "currency": "draft"
     },
     {
       "id": "golive.07",
@@ -382,7 +450,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "IRP 框架与常见故障 Runbook",
-      "authority": "事件响应"
+      "authority": "事件响应",
+      "role": "draft",
+      "currency": "draft"
     },
     {
       "id": "golive.08",
@@ -391,7 +461,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "规则即攻击面：四眼发布、签名、灰度与回滚",
-      "authority": "规则发布安全"
+      "authority": "规则发布安全",
+      "role": "draft",
+      "currency": "draft"
     },
     {
       "id": "golive.09",
@@ -400,7 +472,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "条款费率报批与算法备案的分界、须建设内容",
-      "authority": "监管报批"
+      "authority": "监管报批",
+      "role": "draft",
+      "currency": "draft"
     },
     {
       "id": "golive.10",
@@ -409,7 +483,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "备份可证伪：恢复实测与演练证据要求",
-      "authority": "备份恢复"
+      "authority": "备份恢复",
+      "role": "draft",
+      "currency": "draft"
     },
     {
       "id": "golive.11",
@@ -418,7 +494,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "医疗数据训练合法性闭环",
-      "authority": "训练数据合规"
+      "authority": "训练数据合规",
+      "role": "draft",
+      "currency": "draft"
     },
     {
       "id": "golive.12",
@@ -427,7 +505,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "累计扣减的 DB 级并发正确性（单测契约不足）",
-      "authority": "并发正确性"
+      "authority": "并发正确性",
+      "role": "draft",
+      "currency": "draft"
     },
     {
       "id": "golive.13",
@@ -436,7 +516,9 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "唯一权威资金路径决策、整改步骤、双路径歧义根除",
-      "authority": "资金路径收敛 F1"
+      "authority": "资金路径收敛 F1",
+      "role": "draft",
+      "currency": "draft"
     },
     {
       "id": "records.review.TPA-",
@@ -445,7 +527,9 @@
       "diataxis": "explanation",
       "status": "active",
       "summary": "上游飞书 TPA-SAAS 源系统盘点与差距（护城河与欠账）",
-      "authority": "上游基线差距"
+      "authority": "上游基线差距",
+      "role": "evidence",
+      "currency": "frozen"
     },
     {
       "id": "records.review.业界对标",
@@ -454,7 +538,9 @@
       "diataxis": "explanation",
       "status": "active",
       "summary": "业界对标量化基线、已落地整改项、V1.0 执行清单",
-      "authority": "对标整改台账"
+      "authority": "对标整改台账",
+      "role": "evidence",
+      "currency": "frozen"
     },
     {
       "id": "records.review.代码整改",
@@ -463,7 +549,9 @@
       "diataxis": "explanation",
       "status": "active",
       "summary": "待架构评审的代码整改项（含已闭环项的备查记录）",
-      "authority": "代码整改项"
+      "authority": "代码整改项",
+      "role": "evidence",
+      "currency": "frozen"
     },
     {
       "id": "records.review.理算引擎",
@@ -472,7 +560,9 @@
       "diataxis": "explanation",
       "status": "active",
       "summary": "两轮取证：修复前后的实证与新发现的缺陷",
-      "authority": "诊断取证"
+      "authority": "诊断取证",
+      "role": "evidence",
+      "currency": "frozen"
     },
     {
       "id": "records.impl.14",
@@ -481,7 +571,11 @@
       "diataxis": "explanation",
       "status": "active",
       "summary": "四本账未对齐的体检与 3 项 P0 修复（含变异证据）",
-      "authority": "主链路闭环"
+      "authority": "主链路闭环",
+      "role": "evidence",
+      "currency": "frozen",
+      "superseded_by": "09-records/impl-log/15-跨案累计读侧与责任账接线（P0-4）.md",
+      "supersede_note": "impl-log/15 已撤销本册\"额度服务 0 调用方\"判断"
     },
     {
       "id": "records.impl.15",
@@ -490,7 +584,9 @@
       "diataxis": "explanation",
       "status": "active",
       "summary": "跨案累计读侧与 A7 责任账接线",
-      "authority": "跨案累计"
+      "authority": "跨案累计",
+      "role": "evidence",
+      "currency": "frozen"
     },
     {
       "id": "records.impl.16",
@@ -499,7 +595,11 @@
       "diataxis": "explanation",
       "status": "active",
       "summary": "按 V1 规则重建分层管线与控额",
-      "authority": "引擎 V1 重建"
+      "authority": "引擎 V1 重建",
+      "role": "evidence",
+      "currency": "frozen",
+      "superseded_by": "09-records/impl-log/17-控额层接线修正与多次闭环.md",
+      "supersede_note": "impl-log/17 修正本册\"七层控额四层仅声明未读取\"（死配置）"
     },
     {
       "id": "records.impl.17",
@@ -508,7 +608,9 @@
       "diataxis": "explanation",
       "status": "active",
       "summary": "四层死配置改为「生效或拒绝」，8 项变异被抓",
-      "authority": "控额接线"
+      "authority": "控额接线",
+      "role": "evidence",
+      "currency": "frozen"
     },
     {
       "id": "records.impl.18",
@@ -517,7 +619,9 @@
       "diataxis": "explanation",
       "status": "active",
       "summary": "「次」分组维度落地与 fail-closed 降级判据",
-      "authority": "次分组维度"
+      "authority": "次分组维度",
+      "role": "evidence",
+      "currency": "frozen"
     },
     {
       "id": "records.impl.19",
@@ -526,7 +630,9 @@
       "diataxis": "explanation",
       "status": "active",
       "summary": "额度释放的占用归属校验与跨账原子性（含 CORE-06 例外登记与 4 项变异证据）",
-      "authority": "资金原子性"
+      "authority": "资金原子性",
+      "role": "evidence",
+      "currency": "frozen"
     },
     {
       "id": "records.impl.20",
@@ -535,11 +641,13 @@
       "diataxis": "explanation",
       "status": "active",
       "summary": "额度投影自愈：共享池被越权释放抽干时，本单自有 hold 足额仍须能正常取消（含口径自洽性验算与 7 项变异证据）",
-      "authority": "资金投影自愈"
+      "authority": "资金投影自愈",
+      "role": "evidence",
+      "currency": "frozen"
     },
     {
       "id": "archive.system-design",
-      "path": "10-archive/synapClaim 智能理赔平台-系统设计方案.md",
+      "path": "10-archive/系统设计方案.md",
       "layer": "L10",
       "diataxis": "explanation",
       "status": "archived",
@@ -547,7 +655,11 @@
       "authority": "历史设计（已作废）",
       "shortNames": [
         "设计方案"
-      ]
+      ],
+      "role": "evidence",
+      "currency": "frozen",
+      "superseded_by": "03-contract/工程详细设计-落地版.md",
+      "supersede_note": "正文已作废，独特价值已并入《工程落地版》§3.6/§3.7/§4.3"
     },
     {
       "id": "impl.readme",
@@ -556,7 +668,20 @@
       "diataxis": "reference",
       "status": "active",
       "summary": "可执行参考实现说明：构建运行、理算顺序铁律、TPA 场景用例、30 条探针 + 19 类变异",
-      "authority": "参考实现"
+      "authority": "参考实现",
+      "role": "tooling",
+      "currency": "frozen"
+    },
+    {
+      "id": "ai-index",
+      "path": "AI-INDEX.md",
+      "layer": "L0",
+      "diataxis": "navigation",
+      "status": "active",
+      "role": "navigation",
+      "currency": "current",
+      "summary": "机器优先入口：语料模型+按来意路由+ACTIVE/DRAFT/FROZEN 三段清单，供 AI 确定性检索",
+      "authority": "AI 检索路由"
     }
   ]
 }

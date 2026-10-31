@@ -6,14 +6,14 @@
 
 | 你要做什么 | 读这一份 | 再补这一份 |
 |---|---|---|
-| 了解产品是什么、卖给谁、能做什么 | `02-requirements/synapClaim 智能理赔平台-产品需求文档.md` | `01-strategy/Synap（思纳普）创业方案.md`（商业与团队） |
-| 改代码 / 加接口 / 动数据模型 | `03-contract/synapClaim 智能理赔平台-工程详细设计（落地版）.md`（工程契约 SSOT） | `04-design/理算引擎设计.md`（若涉金额）、`07-delivery/05-接口契约与数据字典（MVP）.md`（对外契约） |
-| 做 AI / 决策图 / 模型接入 | `03-contract/synapClaim 智能理赔平台-AI 技术方案.md` | `04-design/BONE-AI 能力依赖图谱.md` |
-| 审理算算法 / 查金额为什么这么算 | `04-design/理算引擎设计.md` | `03-contract/synapClaim 智能理算引擎业务规则（V1·责任配置与理算基线）.md`（业务口径）、`06-verification/理算引擎验证套件.md`（怎么验证） |
+| 了解产品是什么、卖给谁、能做什么 | `02-requirements/产品需求文档.md` | `01-strategy/Synap（思纳普）创业方案.md`（商业与团队） |
+| 改代码 / 加接口 / 动数据模型 | `03-contract/工程详细设计-落地版.md`（工程契约 SSOT） | `04-design/理算引擎设计.md`（若涉金额）、`07-delivery/05-接口契约与数据字典（MVP）.md`（对外契约） |
+| 做 AI / 决策图 / 模型接入 | `03-contract/AI技术方案.md` | `04-design/BONE-AI能力依赖图谱.md` |
+| 审理算算法 / 查金额为什么这么算 | `04-design/理算引擎设计.md` | `03-contract/智能理算引擎业务规则V1.md`（业务口径）、`06-verification/理算引擎验证套件.md`（怎么验证） |
 | 跑测试 / 判断"是不是真的修好了" | `06-verification/理算引擎验证套件.md` | `reference-impl/synap-claim-settlement/README.md` |
-| 对客户交付 / 试点落地 | `07-delivery/README.md`（交付包索引） | `05-plan/synapClaim 智能理赔平台-部署集成方案（FDE）.md` |
+| 对客户交付 / 试点落地 | `07-delivery/README.md`（交付包索引） | `05-plan/部署集成方案-FDE.md` |
 | 准备上线 / 过合规 | `08-go-live/00-总纲与Go-Live门禁.md` | `08-go-live/01-生产准入合规包.md` |
-| 排期 / 定里程碑 | `05-plan/synapClaim MVP 可落地执行方案.md` | — |
+| 排期 / 定里程碑 | `05-plan/MVP可落地执行方案.md` | — |
 | 想知道为什么这么设计、对标了谁 | `09-records/reviews/业界对标整改台账.md` | `09-records/reviews/TPA-SAAS基线差距分析.md`（上游源系统现状） |
 | 想知道某处代码改动的前因后果 | `09-records/impl-log/`（14–18，按实施顺序） | `09-records/reviews/理算引擎诊断记录.md` |
 

@@ -136,7 +136,7 @@
     {
       "symbol": "AdjLiabilityRepository",
       "docs": [
-        "doc/ai-product/synapClaim/03-contract/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
+        "doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md"
       ],
       "reason": "tobe-named",
       "note": "理赔责任调整仓储的目标态名（§156 仓储清单），实现尚未落地"
@@ -211,7 +211,7 @@
     {
       "symbol": "CreateClaimApplicationService",
       "docs": [
-        "doc/ai-product/synapClaim/03-contract/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
+        "doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md"
       ],
       "reason": "tobe-named",
       "note": "synapClaim 落地版 §应用层目录示意的目标态应用服务名，实现尚未落地；属方案示意 To-Be 命名，登记豁免以免门禁误报"
@@ -498,7 +498,7 @@
     {
       "symbol": "FundingEventRepository",
       "docs": [
-        "doc/ai-product/synapClaim/03-contract/synapClaim 智能理赔平台-AI 技术方案.md"
+        "doc/ai-product/synapClaim/03-contract/AI技术方案.md"
       ],
       "reason": "tobe-named",
       "note": "synapClaim 资金事件仓储的目标态名（§299 资金流设计），实现尚未落地；2026-10-21 更新引用：原登记指向《智能理赔详细技术方案（bone-ai落地）》，该文档已改名，当前载体为《AI 技术方案》"
@@ -589,7 +589,7 @@
     {
       "symbol": "LiabilityConverter",
       "docs": [
-        "doc/ai-product/synapClaim/03-contract/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
+        "doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md"
       ],
       "reason": "tobe-named",
       "note": "责任域 DTO↔领域模型转换器的目标态名（§838），实现尚未落地"
@@ -629,7 +629,7 @@
     {
       "symbol": "PersonalQuotaRepository",
       "docs": [
-        "doc/ai-product/synapClaim/03-contract/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
+        "doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md"
       ],
       "reason": "tobe-named",
       "note": "个人额度仓储的目标态名（§156 仓储清单），实现尚未落地"
@@ -678,8 +678,8 @@
     {
       "symbol": "SettlementOrderRepository",
       "docs": [
-        "doc/ai-product/synapClaim/03-contract/synapClaim 智能理赔平台-工程详细设计（落地版）.md",
-        "doc/ai-product/synapClaim/03-contract/synapClaim 智能理赔平台-AI 技术方案.md"
+        "doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md",
+        "doc/ai-product/synapClaim/03-contract/AI技术方案.md"
       ],
       "reason": "tobe-named",
       "note": "结算单仓储的目标态名（§156 仓储清单），实现尚未落地"

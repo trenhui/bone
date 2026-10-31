@@ -1,12 +1,15 @@
 # Bone — Build Once, Natively Everywhere
 
-**企业级全栈原生快速开发平台**
+**企业级原生 AI 应用开发平台**
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-BSL%201.1-blue.svg)
 ![JDK](https://img.shields.io/badge/JDK-21+-orange.svg)
+![AI-Native](https://img.shields.io/badge/AI--Native-purple.svg)
 
-> **个人学习免费 · 商业使用需授权 · 元数据驱动 · 四大引擎协同**
+![BONE 企业级原生 AI 应用开发平台](doc/design/assets/bone-hero-banner.png)
+
+> **个人学习免费 · 商业使用需授权 · 元数据驱动 · AI 原生 · 四大引擎协同**
 > **「构建可复用的系统，创造可持续的价值。」** —— 梅山
 
 ---
@@ -30,12 +33,29 @@
 
 ---
 
+## 核心能力速览
+
+| 🧬 **元数据驱动** | ⚙️ **双模式交付** | 🏛️ **DDD 架构** |
+| 一次建模，驱动数据结构与访问行为，减少重复 CRUD 与样板工程 | 模式 A 生成式（源码进 Git、可审计）/ 模式 B 运行时（动态 CRUD/API），按场景选择 | 整洁 / 六边形分层，模块边界由 ArchUnit 门禁守护 |
+
+| 🔐 **企业级底座** | 🔌 **扩展引擎** | 🔗 **集成引擎** |
+| RBAC · JWT · 多租户 · 审计日志，细粒度权限按阶段完善 | ExtPoint 插件化注入差异化逻辑，尽量不 fork 主干 | 多协议连接器 + 流程编排 + Outbox 可靠投递，幂等 / 可观测为一等公民 |
+
+| 🤖 **AI 原生能力** | 🧠 **RAG & 接地守卫** | 🕸️ **智能体编排** |
+| 原生内置 Bone AI 能力中台（LLM 网关 / AI 链路追踪 / 治理面），AI 能力为平台一等公民 | 检索增强生成 + GroundingGuard 防幻觉 + 金标准评测与负向探针门禁 | 工作流 / 多 Agent 编排，结合元模型与扩展点构建 AI 原生业务 |
+
+> 四大引擎、Bone AI 能力中台与 DDD 投资分类、各能力的**当前实现状态**见下文与 [P0 看板](doc/wiki/07-P0-TODO看板.md)，路线图不写成现状。
+
+---
+
 ## 目录
 
 - [项目概述](#项目概述)
+- [核心能力速览](#核心能力速览)
 - [设计原则](#设计原则)
 - [核心价值](#核心价值)
 - [四大引擎](#四大引擎)
+- [Bone AI 能力中台（AI 原生层）](#bone-ai-能力中台ai-原生层)
 - [协同架构](#协同架构)
 - [技术路线](#技术路线)
 - [演进路线](#演进路线)
@@ -48,9 +68,9 @@
 
 ## 项目概述
 
-Bone 以 **「Build Once, Natively Everywhere」** 为长期愿景：用**统一元数据**描述业务，用**标准化引擎**承载主数据、扩展与集成，让企业应用从「项目制重复建设」走向「平台化持续演进」。
+Bone 以 **「Build Once, Natively Everywhere」** 为长期愿景：用**统一元数据**描述业务，用**标准化引擎**承载主数据、扩展与集成，并**原生内置 AI 能力中台**，让企业一次建模，既能交付传统应用，也能交付 **AI 原生应用**，从「项目制重复建设」走向「平台化、AI 原生的持续演进」。
 
-产品层面对外称“四大引擎”；DDD 战略分类上，**元数据 / 建模是当前核心域**，主数据、扩展和集成是支撑域。产品能力与 DDD 投资分类用途不同，并不矛盾。
+产品层面对外称“四大引擎 + Bone AI 能力中台”；DDD 战略分类上，**元数据 / 建模是当前核心域**，主数据、扩展、集成与 AI 能力中台是支撑域。产品能力与 DDD 投资分类用途不同，并不矛盾。
 
 当前仓库是这一愿景的开源参考实现：元数据双模式、IAM、主数据、扩展管理和集成等能力已有代码和启动入口，完整度各不相同；尚未落地的能力在本文中明确标为“规划”或“目标”。
 
@@ -189,13 +209,34 @@ Bone 以 **「Build Once, Natively Everywhere」** 为长期愿景：用**统一
 
 ---
 
+## Bone AI 能力中台（AI 原生层）
+
+**定位**：与 `bone-engine` / `bone-platform` 同级的 **Bone AI 能力中台**，补齐 LLM 运行时与 AI 治理面空白，让 AI 能力成为平台的一等公民，而非外挂组件。
+
+| 模块 | 职责 | 当前状态 |
+|------|------|----------|
+| `bone-ai-gateway` | 统一 LLM 网关：多模型路由、限流、token / 延迟 / 首字 metrics | 基础已落地，多模型治理演进中 |
+| `bone-ai-rag` | RAG 检索 + `GroundingGuard` 接地守卫（防幻觉）+ 金标准评测门禁 + 负向探针 | 检索 / 接地守卫 / 评测门禁已交付 |
+| `bone-ai-orchestration` | 智能体 / 工作流编排，结合元模型与扩展点 | 编排基础已实现，深度 Agent 演进中 |
+| `bone-ai-trace` | AI 链路追踪，对齐 OpenTelemetry `gen_ai.*` 语义约定 | 映射与自校验已落地 |
+| `bone-ai-rules` / `-document` / `-notification` / `-integration` / `-ledger` / `-server` / `-app` | 规则、文档、通知、集成、账本（成本 / 配额）、服务与前端 | 模块已建立，随能力中台持续完善 |
+
+**与四大引擎的关系**：元数据引擎为 AI 应用提供统一模型与数据面；主数据、扩展、集成在消费链路与 AI 能力中台协同；AI 能力中台在上述企业底座之上，提供「模型接入 → 检索增强 → 编排 → 观测治理」的端到端能力。
+
+> 平台自身研发亦采用 **Agentic Engineering**（可治理的 AI 原生 SDLC，见 [doc/agenticx/](doc/agenticx/README.md)）：意图先落成契约，再由 CI 与门禁裁决产出。
+
+**相关代码**：[`bone-ai/`](bone-ai/)（构件 `bone-ai`，含 11 个子模块）
+
+---
+
 ## 协同架构
 
 - **元数据引擎**提供统一模型、仓储和两种交付路径。
 - **主数据平台**基于元数据能力治理权威记录和数据质量。
 - **扩展引擎**与**集成引擎**是可按场景组合的支撑能力，不构成必须串行经过的处理链路。
+- **Bone AI 能力中台**在四大引擎之上提供 AI 原生能力（模型接入、RAG、编排、观测治理），与元数据 / 主数据 / 集成在消费链路协同，可按场景接入。
 
-物理部署不要求四个独立进程。例如，集成能力由 `bone-platform/bone-integration` 单一进程承载，扩展 SDK 则嵌入业务宿主。
+物理部署不要求四个独立进程。例如，集成能力由 `bone-platform/bone-integration` 单一进程承载，扩展 SDK 则嵌入业务宿主；AI 能力中台同样可按模块嵌入或独立部署。
 
 ---
 
@@ -208,6 +249,7 @@ Bone 以 **「Build Once, Natively Everywhere」** 为长期愿景：用**统一
 | API 与安全 | REST、OpenAPI、Spring Security、JWT、Gateway | 更细粒度权限与统一治理 |
 | 集成与可靠性 | HTTP、Camel 编译器、Outbox；RocketMQ 可选 | 更多连接器、流程运行时和可观测性 |
 | 前端 | React 18、TypeScript、Vite 5、Ant Design 5、Qiankun | 模型驱动复用与多端适配 |
+| AI 原生 | Bone AI 能力中台（LLM 网关、RAG、编排、trace） | 多模型治理、深度 Agent、评测闭环 |
 | 工程质量 | Spotless、ArchUnit、ESLint、Prettier、Vitest | 提升自动化测试和基准覆盖 |
 
 Nacos、Sentinel、Seata、SkyWalking 等保留为按部署规模评估的技术选项，不作为所有场景的默认依赖。
@@ -320,6 +362,14 @@ cd bone-frontend && npm ci && npm run dev
 - [元数据三模块对照](doc/design/modules/元数据能力-实现映射与竞品对照.md)  
 - [主 PRD](doc/prd/BONE产品需求文档正式版.md)  
 - [引擎索引](bone-engine/README.md)
+
+### 品牌与宣传素材
+
+- **宣传海报（竖版·深色）**：[doc/design/assets/bone-poster.png](doc/design/assets/bone-poster.png)
+- **宣传海报（竖版·浅色）**：[doc/design/assets/bone-poster-light.png](doc/design/assets/bone-poster-light.png)
+- **Hero 主视觉（横版）**：[doc/design/assets/bone-hero-banner.png](doc/design/assets/bone-hero-banner.png)
+
+> 上述素材可用于技术分享、社区活动与对外宣发；商用宣发请遵循 [License](#license) 章节的授权要求。
 
 ### 参与贡献
 
