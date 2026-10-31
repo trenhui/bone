@@ -43,7 +43,11 @@ public record LiabilityRule(
     QuotaPolicy quota,
     OccurrenceSpec occurrences,
     Relation relation,
-    LimitedConditions limitedConditions) {
+    LimitedConditions limitedConditions,
+    /** 发票级免赔（GAP②）：在比例之前、作用于各费用池基数；与年度免赔（{@link #deductible}）是两层独立免赔。 */
+    DeductibleRule invoiceDeductible,
+    /** 理算级免赔（GAP⑥）：在比例之后、控额之前，对理算金额再做一次绝对额扣减；是第二个免赔层。 */
+    DeductibleRule adjustDeductible) {
 
   /** 责任形式（V1 §2 要素 1）。 */
   public enum LiabilityForm {
@@ -190,6 +194,84 @@ public record LiabilityRule(
     relation = relation == null ? Relation.none() : relation;
     limitedConditions =
         limitedConditions == null ? LimitedConditions.disabled() : limitedConditions;
+    invoiceDeductible = invoiceDeductible == null ? DeductibleRule.none() : invoiceDeductible;
+    adjustDeductible = adjustDeductible == null ? DeductibleRule.none() : adjustDeductible;
+  }
+
+  /**
+   * 兼容构造（旧调用点仅传 13 个要素）：两个新增免赔层默认不启用（{@link DeductibleRule#none()}），
+   * 行为与不新增免赔层时完全一致——保证既有测试与生产入口无需改动即可继续编译、运行。
+   */
+  public LiabilityRule(
+      String liabilityUuid,
+      String liabilityVersion,
+      LiabilityForm form,
+      boolean socialOnly,
+      Set<FeePools.Bucket> coveredBuckets,
+      int waitingPeriodDays,
+      DeductibleRule deductible,
+      PayRatioTable ratios,
+      LimitSet limits,
+      QuotaPolicy quota,
+      OccurrenceSpec occurrences,
+      Relation relation,
+      LimitedConditions limitedConditions) {
+    this(
+        liabilityUuid,
+        liabilityVersion,
+        form,
+        socialOnly,
+        coveredBuckets,
+        waitingPeriodDays,
+        deductible,
+        ratios,
+        limits,
+        quota,
+        occurrences,
+        relation,
+        limitedConditions,
+        DeductibleRule.none(),
+        DeductibleRule.none());
+  }
+
+  /** 设置发票级免赔层（GAP②）：返回新规则实例，原实例不变。 */
+  public LiabilityRule withInvoiceDeductible(DeductibleRule deductible) {
+    return new LiabilityRule(
+        liabilityUuid,
+        liabilityVersion,
+        form,
+        socialOnly,
+        coveredBuckets,
+        waitingPeriodDays,
+        this.deductible,
+        ratios,
+        limits,
+        quota,
+        occurrences,
+        relation,
+        limitedConditions,
+        deductible,
+        adjustDeductible);
+  }
+
+  /** 设置理算级免赔层（GAP⑥）：返回新规则实例，原实例不变。 */
+  public LiabilityRule withAdjustDeductible(DeductibleRule deductible) {
+    return new LiabilityRule(
+        liabilityUuid,
+        liabilityVersion,
+        form,
+        socialOnly,
+        coveredBuckets,
+        waitingPeriodDays,
+        this.deductible,
+        ratios,
+        limits,
+        quota,
+        occurrences,
+        relation,
+        limitedConditions,
+        invoiceDeductible,
+        deductible);
   }
 
   /**
@@ -232,14 +314,43 @@ public record LiabilityRule(
       BigDecimal deductibleAmount,
       BigDecimal liabilityLimit,
       boolean socialOnly) {
-    return build(
+    return fromLegacy(
         liabilityUuid,
         liabilityVersion,
         payPercent,
         deductibleAmount,
         liabilityLimit,
         socialOnly,
-        DeductibleRule.Target.INVOICE_AMOUNT);
+        Money.ZERO,
+        Money.ZERO);
+  }
+
+  /**
+   * 由<b>旧责任配置</b>映射，并显式带上发票级 / 理算级两个新增免赔层（GAP② / GAP⑥）。
+   *
+   * <p>两个新增免赔层默认不配置（{@code 0} ⇒ {@link DeductibleRule#none()}），与未启用时行为完全一致； 配置后由引擎在「比例前 /
+   * 比例后」两个独立时点施加。
+   */
+  public static LiabilityRule fromLegacy(
+      String liabilityUuid,
+      String liabilityVersion,
+      BigDecimal payPercent,
+      BigDecimal deductibleAmount,
+      BigDecimal liabilityLimit,
+      boolean socialOnly,
+      BigDecimal invoiceDeduct,
+      BigDecimal adjustDeduct) {
+    LiabilityRule base =
+        build(
+            liabilityUuid,
+            liabilityVersion,
+            payPercent,
+            deductibleAmount,
+            liabilityLimit,
+            socialOnly,
+            DeductibleRule.Target.INVOICE_AMOUNT);
+    return base.withInvoiceDeductible(DeductibleRule.annualAbsolute(Money.nz(invoiceDeduct)))
+        .withAdjustDeductible(DeductibleRule.annualAbsolute(Money.nz(adjustDeduct)));
   }
 
   private static LiabilityRule build(
@@ -322,6 +433,8 @@ public record LiabilityRule(
     }
     OccurrenceGrouper.requireConsistent(occurrences.basis(), occurrences.limit());
     deductible.validate();
+    invoiceDeductible.validate();
+    adjustDeductible.validate();
     ratios.validate();
   }
 
