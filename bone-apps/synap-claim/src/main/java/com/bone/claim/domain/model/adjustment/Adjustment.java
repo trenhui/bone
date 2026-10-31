@@ -212,7 +212,9 @@ public class Adjustment extends TenantAggregateRoot<Long> {
             liability.getPayPercent(),
             liability.deduct(),
             liability.limit(),
-            liability.isSocialOnly());
+            liability.isSocialOnly(),
+            liability.invoiceDeduct(),
+            liability.adjustDeduct());
 
     AdjustmentEngine.Outcome outcome;
     try {

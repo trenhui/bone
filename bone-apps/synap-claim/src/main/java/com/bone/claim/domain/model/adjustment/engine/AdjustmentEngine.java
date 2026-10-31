@@ -223,6 +223,9 @@ public final class AdjustmentEngine {
     BigDecimal deductibleApplied = Money.ZERO;
     BigDecimal ratioPayoutTotal = Money.ZERO;
     BigDecimal afterDeductTotal = Money.ZERO;
+    BigDecimal invoiceDeductTotal = Money.ZERO;
+    BigDecimal adjustDeductTotal = Money.ZERO;
+    BigDecimal afterAdjustTotal = Money.ZERO;
     BigDecimal baseTotal = Money.ZERO;
     BigDecimal occupiedTotal = Money.ZERO;
     BigDecimal remainTotal = Money.ZERO;
@@ -248,6 +251,9 @@ public final class AdjustmentEngine {
       deductibleApplied = deductibleApplied.add(group.deductibleApplied());
       ratioPayoutTotal = ratioPayoutTotal.add(group.ratioPayout());
       afterDeductTotal = afterDeductTotal.add(group.afterDeduct());
+      invoiceDeductTotal = invoiceDeductTotal.add(group.invoiceDeductApplied());
+      adjustDeductTotal = adjustDeductTotal.add(group.adjustDeductApplied());
+      afterAdjustTotal = afterAdjustTotal.add(group.afterAdjust());
       baseTotal = baseTotal.add(group.base());
       occupiedTotal = occupiedTotal.add(group.occupied());
       remainTotal = remainTotal.add(group.remaining());
@@ -256,7 +262,9 @@ public final class AdjustmentEngine {
 
     String zeroReason = "";
     if (total.signum() == 0) {
-      zeroReason = attributeZero(baseTotal, afterDeductTotal, ratioPayoutTotal, rule, lines);
+      // 零赔付归因以"扣完所有免赔层（发票+年度+理算）之后"的金额为基准，
+      // 两层新增免赔把金额扣到 0 时归因为 ZERO_DEDUCT，与年度免赔口径一致。
+      zeroReason = attributeZero(baseTotal, afterAdjustTotal, ratioPayoutTotal, rule, lines);
     }
 
     BigDecimal finalTotal = Money.round(total);
@@ -278,6 +286,8 @@ public final class AdjustmentEngine {
                 occupiedTotal,
                 remainTotal,
                 deductibleApplied,
+                invoiceDeductTotal,
+                adjustDeductTotal,
                 finalTotal,
                 zeroReason,
                 ratioHits,
@@ -305,7 +315,10 @@ public final class AdjustmentEngine {
       BigDecimal base,
       BigDecimal occupied,
       BigDecimal remaining,
-      List<Line> lines) {}
+      List<Line> lines,
+      BigDecimal invoiceDeductApplied,
+      BigDecimal adjustDeductApplied,
+      BigDecimal afterAdjust) {}
 
   /**
    * 一组（一次）的完整理算：比例 → 免赔 → 控额。
@@ -375,7 +388,11 @@ public final class AdjustmentEngine {
       baseTotal = baseTotal.add(cell.base);
     }
 
-    // ② 免赔（按 target 决定运算顺序）
+    // ② 发票级免赔（GAP②）：作用于比例之前、年度免赔之前，按各池基数占比分摊。无配置则 no-op。
+    BigDecimal invoiceDeductApplied =
+        applyInvoiceDeductible(cells, rule.invoiceDeductible(), deductibleBranches);
+
+    // ④ 年度免赔（按 target 决定运算顺序）；now 作用在已扣发票级免赔的有效基数上。
     BigDecimal deductibleApplied =
         applyDeductible(cells, rule, deductibleLedger, deductibleBranches);
 
@@ -384,6 +401,15 @@ public final class AdjustmentEngine {
     for (Cell cell : cells) {
       ratioPayout = ratioPayout.add(cell.ratioPayout);
       afterDeduct = afterDeduct.add(cell.payable);
+    }
+
+    // ⑥ 理算级免赔（GAP⑥）：作用于比例之后、控额之前，对理算金额按占比分摊。无配置则 no-op。
+    BigDecimal adjustDeductApplied =
+        applyAdjustDeductible(cells, rule.adjustDeductible(), deductibleBranches);
+
+    BigDecimal afterAdjust = Money.ZERO;
+    for (Cell cell : cells) {
+      afterAdjust = afterAdjust.add(cell.payable);
     }
 
     // ③ 控额（分池截断 → 责任 → 共保 → 险种 → 计划）
@@ -424,7 +450,10 @@ public final class AdjustmentEngine {
         baseTotal,
         occupied,
         remaining,
-        lines);
+        lines,
+        invoiceDeductApplied,
+        adjustDeductApplied,
+        afterAdjust);
   }
 
   /** 比例查表（累计区间因子 = 历史累计 + 本池当前金额，§5.4）。 */
@@ -473,7 +502,8 @@ public final class AdjustmentEngine {
     DeductibleRule deductible = rule.deductible();
     if (deductible.inactive()) {
       for (Cell cell : cells) {
-        cell.ratioPayout = Money.round(Money.calc(cell.base.multiply(cell.rate)));
+        // 即使年度免赔未启用，发票级免赔（GAP②）仍可能已扣减基数，故比例须基于有效基数。
+        cell.ratioPayout = Money.round(Money.calc(cell.effectiveBase().multiply(cell.rate)));
         cell.payable = cell.ratioPayout;
         cell.deducted = Money.ZERO;
       }
@@ -489,9 +519,9 @@ public final class AdjustmentEngine {
   private static BigDecimal deductibleForGroup(
       List<Cell> cells, DeductibleRule deductible, BigDecimal remaining, List<String> branches) {
     if (deductible.target() == DeductibleRule.Target.CALCULATED_AMOUNT) {
-      // 先比例
+      // 先比例（基数已扣过发票级免赔 effectiveBase）
       for (Cell cell : cells) {
-        cell.ratioPayout = Money.round(Money.calc(cell.base.multiply(cell.rate)));
+        cell.ratioPayout = Money.round(Money.calc(cell.effectiveBase().multiply(cell.rate)));
         cell.payable = cell.ratioPayout;
       }
       return deductibleGranularity(cells, deductible, remaining, branches);
@@ -500,7 +530,7 @@ public final class AdjustmentEngine {
     // 先扣免赔（对象 = 发票费用），再比例
     BigDecimal deductibleApplied;
     if (deductible.granularity() == DeductibleRule.Granularity.LIABILITY) {
-      BigDecimal totalBase = sumBase(cells);
+      BigDecimal totalBase = sumEffectiveBase(cells);
       DeductibleEngine.Outcome outcome = DeductibleEngine.apply(deductible, remaining, totalBase);
       branches.add(outcome.branch().name());
       distributeBase(cells, outcome.payable());
@@ -508,7 +538,7 @@ public final class AdjustmentEngine {
     } else {
       deductibleApplied = Money.ZERO;
       for (Map.Entry<FeePools.Bucket, List<Cell>> entry : byBucket(cells).entrySet()) {
-        BigDecimal bucketBase = sumBase(entry.getValue());
+        BigDecimal bucketBase = sumEffectiveBase(entry.getValue());
         DeductibleEngine.Outcome outcome =
             DeductibleEngine.apply(deductible, deductible.amountOf(entry.getKey()), bucketBase);
         branches.add(entry.getKey() + ":" + outcome.branch().name());
@@ -521,9 +551,74 @@ public final class AdjustmentEngine {
       // 写成 cell.base 会让"先扣免赔再打折"退化成"只打折不扣免赔"——免赔配置静默失效。
       cell.ratioPayout = Money.round(Money.calc(cell.payableBase.multiply(cell.rate)));
       cell.payable = cell.ratioPayout;
-      cell.deducted = Money.round(cell.base.subtract(cell.payableBase));
+      // 年度免赔扣减只记"有效基数 ⇒ 免赔后基数"之差，不含已扣的发票级免赔，避免两层免赔混记。
+      cell.deducted = Money.round(cell.effectiveBase().subtract(cell.payableBase));
     }
     return Money.round(deductibleApplied);
+  }
+
+  /**
+   * GAP② 发票级免赔：在<b>比例之前、年度免赔之前</b>，对各费用池基数按占比分摊一次绝对额扣减。
+   *
+   * <p>顺序铁律（oracle S 链）：发票级免赔必须先于年度免赔与比例。它扣的是"发票费用"本身， 与年度免赔（GAP④）是<b>两层独立免赔</b>——此处只改各池的 {@code
+   * invoiceDeducted}， 由 {@link Cell#effectiveBase()} 把"已扣发票免赔的基数"透传给年度免赔，故两层不会重复计数。
+   *
+   * @return 本次实际消抵的发票级免赔额（不参与跨案累计，仅本赔案一次）
+   */
+  private static BigDecimal applyInvoiceDeductible(
+      List<Cell> cells, DeductibleRule layer, List<String> branches) {
+    if (layer == null || layer.inactive()) {
+      return Money.ZERO;
+    }
+    BigDecimal amount = layer.amount();
+    BigDecimal totalBase = sumEffectiveBase(cells);
+    if (amount.signum() <= 0 || totalBase.signum() <= 0) {
+      branches.add("INVOICE_DEDUCT_NOT_APPLIED");
+      return Money.ZERO;
+    }
+    // 已扣额取 min(配置额, 总基数)：发票级免赔是"扣到 0 为止"，不会把基数扣成负。
+    BigDecimal applied = Money.nonNegative(amount.min(totalBase));
+    List<BigDecimal> weights = cells.stream().map(cell -> cell.base).toList();
+    // 剩余基数按比例回分，保证 Σ 各池剩余基数 ≡ 原基数 − applied（I1 守恒、归因可追溯）。
+    List<BigDecimal> shares = Money.proRata(totalBase.subtract(applied), weights);
+    for (int i = 0; i < cells.size(); i++) {
+      cells.get(i).invoiceDeducted = Money.nonNegative(cells.get(i).base.subtract(shares.get(i)));
+    }
+    branches.add("INVOICE_DEDUCT:" + Money.round(applied).toPlainString());
+    return applied;
+  }
+
+  /**
+   * GAP⑥ 理算级免赔：在<b>比例之后、控额之前</b>，对理算金额（各池 {@code payable}）按占比分摊一次绝对额扣减。
+   *
+   * <p>它是 oracle S 链里"按比例后"的第二个免赔层，与年度免赔（GAP④，作用于比例前/后由 target 决定）、
+   * 发票级免赔（GAP②，作用于比例前）彼此独立。扣减后得到的金额再进入多维控额。
+   *
+   * @return 本次实际消抵的理算级免赔额（不参与跨案累计，仅本赔案一次）
+   */
+  private static BigDecimal applyAdjustDeductible(
+      List<Cell> cells, DeductibleRule layer, List<String> branches) {
+    if (layer == null || layer.inactive()) {
+      return Money.ZERO;
+    }
+    BigDecimal amount = layer.amount();
+    BigDecimal totalPayout = Money.ZERO;
+    for (Cell cell : cells) {
+      totalPayout = totalPayout.add(cell.payable);
+    }
+    if (amount.signum() <= 0 || totalPayout.signum() <= 0) {
+      branches.add("ADJUST_DEDUCT_NOT_APPLIED");
+      return Money.ZERO;
+    }
+    BigDecimal applied = Money.nonNegative(amount.min(totalPayout));
+    List<BigDecimal> weights = cells.stream().map(cell -> cell.payable).toList();
+    List<BigDecimal> shares = Money.proRata(totalPayout.subtract(applied), weights);
+    for (int i = 0; i < cells.size(); i++) {
+      cells.get(i).adjustDeducted = Money.nonNegative(cells.get(i).payable.subtract(shares.get(i)));
+      cells.get(i).payable = shares.get(i);
+    }
+    branches.add("ADJUST_DEDUCT:" + Money.round(applied).toPlainString());
+    return applied;
   }
 
   /** 免赔对象为"理算金额"时，按粒度扣减（此时 {@code cell.payable} 已是比例后金额）。 */
@@ -584,10 +679,11 @@ public final class AdjustmentEngine {
     return map;
   }
 
-  private static BigDecimal sumBase(List<Cell> cells) {
+  /** 各池<b>扣除发票级免赔后的</b>有效基数之和（GAP②）。年度免赔（GAP④）必须基于这一基数， 否则发票级免赔会被年度免赔重新叠加（双重计数 ⇒ 系统性多扣）。 */
+  private static BigDecimal sumEffectiveBase(List<Cell> cells) {
     BigDecimal total = Money.ZERO;
     for (Cell cell : cells) {
-      total = total.add(cell.base);
+      total = total.add(cell.effectiveBase());
     }
     return total;
   }
@@ -1074,6 +1170,8 @@ public final class AdjustmentEngine {
       BigDecimal occupied,
       BigDecimal remain,
       BigDecimal deductibleApplied,
+      BigDecimal invoiceDeductApplied,
+      BigDecimal adjustDeductApplied,
       BigDecimal total,
       String zeroReason,
       List<String> ratioHits,
@@ -1095,6 +1193,9 @@ public final class AdjustmentEngine {
         .append(',');
     append(sb, "ruleVersion", request.ruleVersion());
     sb.append("\"deduct\":").append(num(deductibleApplied)).append(',');
+    // GAP② 发票级免赔、GAP⑥ 理算级免赔：与年度免赔（deduct）是三层独立免赔，分别物化，便于审计对账。
+    sb.append("\"invoiceDeduct\":").append(num(Money.round(invoiceDeductApplied))).append(',');
+    sb.append("\"adjustDeduct\":").append(num(Money.round(adjustDeductApplied))).append(',');
     append(sb, "deductibleKind", rule.deductible().kind().name());
     append(sb, "deductibleTarget", rule.deductible().target().name());
     append(sb, "deductibleGranularity", rule.deductible().granularity().name());
@@ -1240,6 +1341,12 @@ public final class AdjustmentEngine {
     private BigDecimal occupied = Money.ZERO;
     private BigDecimal remaining = Money.ZERO;
 
+    /** 发票级免赔（GAP②）本池已扣减额（比例之前、年度免赔之前）。 */
+    private BigDecimal invoiceDeducted = Money.ZERO;
+
+    /** 理算级免赔（GAP⑥）本池已扣减额（比例之后、控额之前）。 */
+    private BigDecimal adjustDeducted = Money.ZERO;
+
     /** 责任额度是否"本年度已用尽"（区别于"本案单次超限"，决定零赔付归因）。 */
     private boolean quotaExhausted;
 
@@ -1259,6 +1366,11 @@ public final class AdjustmentEngine {
       this.ratioPercent = ratioPercent;
       this.feeLimit = feeLimit;
       this.payableBase = base;
+    }
+
+    /** 扣除发票级免赔后的<b>有效基数</b>：年度免赔（GAP④）必须作用在这一基数上， 否则发票级免赔会被年度免赔重新叠加上去（双重计数 ⇒ 系统性多扣）。 */
+    BigDecimal effectiveBase() {
+      return Money.nonNegative(base.subtract(invoiceDeducted));
     }
   }
 }

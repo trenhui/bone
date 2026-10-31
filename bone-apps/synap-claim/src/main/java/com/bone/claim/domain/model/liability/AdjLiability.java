@@ -50,6 +50,14 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
   @Column(name = "liability_limit")
   private BigDecimal liabilityLimit;
 
+  /** 发票级免赔（GAP②）：在比例之前、年度免赔之前，对各费用池基数按比例分摊扣减；0 = 不启用。 */
+  @Column(name = "invoice_deduct")
+  private BigDecimal invoiceDeduct;
+
+  /** 理算级免赔（GAP⑥）：在比例之后、控额之前，对理算金额再做一次绝对额扣减；0 = 不启用。 */
+  @Column(name = "adjust_deduct")
+  private BigDecimal adjustDeduct;
+
   /** 是否仅赔付社保范围内（false 则目录外也按比例赔）。 */
   @Column(name = "social_only")
   private Integer socialOnly;
@@ -81,6 +89,45 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
       Integer socialOnly,
       Integer waitingPeriod,
       String status) {
+    return of(
+        id,
+        tenantId,
+        liabilityUuid,
+        liabilityVersion,
+        planId,
+        liabilityCode,
+        liabilityType,
+        payPercent,
+        liabilityDeduct,
+        liabilityLimit,
+        java.math.BigDecimal.ZERO,
+        java.math.BigDecimal.ZERO,
+        socialOnly,
+        waitingPeriod,
+        status);
+  }
+
+  /**
+   * 含发票级 / 理算级免赔（GAP② / GAP⑥）的责任配置工厂。
+   *
+   * <p>两个新增免赔层默认 0（不启用），与未新增前行为完全一致；配置后由理算引擎在「比例前 / 比例后」 两个独立时点施加。
+   */
+  public static AdjLiability of(
+      Long id,
+      Long tenantId,
+      String liabilityUuid,
+      String liabilityVersion,
+      Long planId,
+      String liabilityCode,
+      String liabilityType,
+      java.math.BigDecimal payPercent,
+      java.math.BigDecimal liabilityDeduct,
+      java.math.BigDecimal liabilityLimit,
+      java.math.BigDecimal invoiceDeduct,
+      java.math.BigDecimal adjustDeduct,
+      Integer socialOnly,
+      Integer waitingPeriod,
+      String status) {
     AdjLiability liability = new AdjLiability();
     liability.setId(id);
     liability.setTenantId(tenantId);
@@ -93,6 +140,8 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
     liability.liabilityDeduct =
         liabilityDeduct == null ? java.math.BigDecimal.ZERO : liabilityDeduct;
     liability.liabilityLimit = liabilityLimit == null ? java.math.BigDecimal.ZERO : liabilityLimit;
+    liability.invoiceDeduct = invoiceDeduct == null ? java.math.BigDecimal.ZERO : invoiceDeduct;
+    liability.adjustDeduct = adjustDeduct == null ? java.math.BigDecimal.ZERO : adjustDeduct;
     liability.socialOnly = socialOnly == null ? 1 : socialOnly;
     liability.waitingPeriod = waitingPeriod == null ? 0 : waitingPeriod;
     liability.status = status == null ? "DRAFT" : status;
@@ -125,5 +174,15 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
 
   public BigDecimal limit() {
     return liabilityLimit == null ? BigDecimal.ZERO : liabilityLimit;
+  }
+
+  /** 发票级免赔（GAP②）；0 或不配置表示不启用。 */
+  public BigDecimal invoiceDeduct() {
+    return invoiceDeduct == null ? BigDecimal.ZERO : invoiceDeduct;
+  }
+
+  /** 理算级免赔（GAP⑥）；0 或不配置表示不启用。 */
+  public BigDecimal adjustDeduct() {
+    return adjustDeduct == null ? BigDecimal.ZERO : adjustDeduct;
   }
 }

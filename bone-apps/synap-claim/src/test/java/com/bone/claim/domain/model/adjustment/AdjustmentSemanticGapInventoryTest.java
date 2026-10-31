@@ -2,6 +2,9 @@ package com.bone.claim.domain.model.adjustment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.bone.claim.domain.model.adjustment.engine.AdjustmentEngine;
+import com.bone.claim.domain.model.adjustment.engine.DeductibleRule;
+import com.bone.claim.domain.model.adjustment.engine.LiabilityRule;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
 import com.bone.claim.domain.model.liability.AdjLiability;
 import java.math.BigDecimal;
@@ -54,8 +57,10 @@ class AdjustmentSemanticGapInventoryTest {
               "《理算引擎内部设计》§算法 · Go-Live G2"),
           new Step(
               "②发票级免赔",
-              Status.GAP,
-              "Adjustment.apply 只有责任级 liabilityDeduct 一次扣减，无发票维度免赔",
+              Status.SUPPORTED,
+              "AdjustmentEngine.applyInvoiceDeductible：在比例之前、年度免赔之前，对各费用池基数按占比分摊一次绝对额扣减"
+                  + "（oracle S 链 deductInvoice 口径）；经 LiabilityRule.invoiceDeductible 承载，"
+                  + "fromLegacy 由 t_adj_liability.invoice_deduct 装载（V12 迁移），无配置即 none() no-op",
               "Go-Live G2"),
           new Step(
               "③第三方已付抵扣（不可获利）",
@@ -71,7 +76,12 @@ class AdjustmentSemanticGapInventoryTest {
               "§7.4 · reference-impl P16"),
           new Step("⑤赔付比例", Status.SUPPORTED, "Adjustment.apply 步骤③：afterDeduct × payRate", "§7.4"),
           new Step(
-              "⑥理算级免赔（第二个免赔）", Status.GAP, "Adjustment.apply 仅一次免赔；无「按比例后」的二次免赔", "Go-Live G2"),
+              "⑥理算级免赔（第二个免赔）",
+              Status.SUPPORTED,
+              "AdjustmentEngine.applyAdjustDeductible：在比例之后、控额之前，对理算金额按占比分摊一次绝对额扣减"
+                  + "（oracle S 链 deductAdjust 口径）；经 LiabilityRule.adjustDeductible 承载，"
+                  + "fromLegacy 由 t_adj_liability.adjust_deduct 装载（V12 迁移），无配置即 none() no-op",
+              "Go-Live G2"),
           new Step(
               "⑦取整（中间 6 位 / 结果 2 位 HALF_UP）",
               Status.SUPPORTED,
@@ -100,15 +110,16 @@ class AdjustmentSemanticGapInventoryTest {
   void statusSetsArePinned() {
     assertThat(labelsWith(Status.SUPPORTED))
         .containsExactlyInAnyOrder(
+            "②发票级免赔",
             "③第三方已付抵扣（不可获利）",
             "④年度免赔（作用于费用基数）",
             "⑤赔付比例",
+            "⑥理算级免赔（第二个免赔）",
             "⑦取整（中间 6 位 / 结果 2 位 HALF_UP）",
             "⑩跨案累计（年度免赔/责任限额）");
     assertThat(labelsWith(Status.PARTIAL))
         .containsExactlyInAnyOrder("①费用明细筛选（目录/合理必要）", "⑧多维度 min 控额");
-    assertThat(labelsWith(Status.GAP))
-        .containsExactlyInAnyOrder("②发票级免赔", "⑥理算级免赔（第二个免赔）", "⑨逐行分位归因（分位守恒）");
+    assertThat(labelsWith(Status.GAP)).containsExactlyInAnyOrder("⑨逐行分位归因（分位守恒）");
   }
 
   @Test
@@ -184,6 +195,61 @@ class AdjustmentSemanticGapInventoryTest {
   }
 
   @Test
+  @DisplayName("GAP② 已支持（原 GAP② 反证转正）：发票级免赔在比例之前扣减基数 —— 基础 1000、发票免赔 200、比例 100% ⇒ 800")
+  void invoiceLevelDeductibleBeforeRatio() {
+    LiabilityRule rule =
+        LiabilityRule.simple(
+                "L-GAP2", "v1", new BigDecimal("100"), BigDecimal.ZERO, BigDecimal.ZERO, false)
+            .withInvoiceDeductible(DeductibleRule.annualAbsolute(new BigDecimal("200")));
+    BigDecimal payout =
+        AdjustmentEngine.calculate(
+                AdjustmentEngine.Request.of(
+                    1L, List.of(item(2001L, "1000.00")), rule, Accumulation.FIRST))
+            .totalAmount();
+
+    assertThat(payout)
+        .as("发票级免赔须先于比例作用于基数：(1000−200)×100% = 800；若此处为 1000 说明发票免赔静默失效")
+        .isEqualByComparingTo("800.00");
+  }
+
+  @Test
+  @DisplayName("GAP⑥ 已支持（原 GAP⑥ 反证转正）：理算级免赔在比例之后二次扣减 —— 基础 1000、比例 100%、理算免赔 200 ⇒ 800")
+  void adjustmentLevelDeductibleAfterRatio() {
+    LiabilityRule rule =
+        LiabilityRule.simple(
+                "L-GAP6", "v1", new BigDecimal("100"), BigDecimal.ZERO, BigDecimal.ZERO, false)
+            .withAdjustDeductible(DeductibleRule.annualAbsolute(new BigDecimal("200")));
+    BigDecimal payout =
+        AdjustmentEngine.calculate(
+                AdjustmentEngine.Request.of(
+                    1L, List.of(item(2001L, "1000.00")), rule, Accumulation.FIRST))
+            .totalAmount();
+
+    assertThat(payout)
+        .as("理算级免赔须后于比例作二次绝对额扣减：1000×100% − 200 = 800；若此处为 1000 说明理算免赔静默失效")
+        .isEqualByComparingTo("800.00");
+  }
+
+  @Test
+  @DisplayName("GAP② + ⑥ 串联：发票免赔(前) → 比例 → 理算免赔(后) 不双重计数 —— 1000−200(发票)×100%−200(理算) = 600")
+  void invoiceAndAdjustDeductibleCompose() {
+    LiabilityRule rule =
+        LiabilityRule.simple(
+                "L-GAP26", "v1", new BigDecimal("100"), BigDecimal.ZERO, BigDecimal.ZERO, false)
+            .withInvoiceDeductible(DeductibleRule.annualAbsolute(new BigDecimal("200")))
+            .withAdjustDeductible(DeductibleRule.annualAbsolute(new BigDecimal("200")));
+    BigDecimal payout =
+        AdjustmentEngine.calculate(
+                AdjustmentEngine.Request.of(
+                    1L, List.of(item(2001L, "1000.00")), rule, Accumulation.FIRST))
+            .totalAmount();
+
+    assertThat(payout)
+        .as("发票级与理算级是两个独立免赔层，应串联而非叠加后一次扣：1000−200=800，再×100%−200=600")
+        .isEqualByComparingTo("600.00");
+  }
+
+  @Test
   @DisplayName("快照键集固定：新增/删除理算参数必须显式改档（防口径静默漂移）")
   void snapshotKeysArePinned() {
     Adjustment adjustment =
@@ -204,6 +270,9 @@ class AdjustmentSemanticGapInventoryTest {
                 "liabilityVersion",
                 "payPercent",
                 "deduct",
+                // GAP② 发票级免赔 / GAP⑥ 理算级免赔：已落地，物化进快照便于审计对账（与 deduct 同为免赔层）
+                "invoiceDeduct",
+                "adjustDeduct",
                 // ⑩ 跨案累计：不物化进快照，历史案件就无法自包含复算（§5.2）
                 "deductibleBefore",
                 "deductibleUsedBefore",
@@ -219,8 +288,7 @@ class AdjustmentSemanticGapInventoryTest {
     for (String key : pinned) {
       assertThat(snapshot).as("快照须含理算参数 %s（不可仅版本引用，§5.2）", key).contains("\"" + key + "\"");
     }
-    for (String absent :
-        List.of("thirdPartyPaid", "invoiceDeduct", "adjustDeduct", "limitDimensions")) {
+    for (String absent : List.of("thirdPartyPaid", "limitDimensions")) {
       assertThat(snapshot).as("快照不应出现 %s——若出现说明对应 GAP 已补齐，请改档", absent).doesNotContain(absent);
     }
   }
