@@ -73,6 +73,15 @@ import { BoneDynamicForm, type DisplayMode } from '../components/BoneDynamicForm
 import { RuntimeDetailView, detailValueOf } from '../components/RuntimeDetailView';
 import ApprovalProgress from '../components/ApprovalProgress';
 import PersonalViewBar from '../components/PersonalViewBar';
+import ViewerModeSwitch from '../components/ViewerModeSwitch';
+import {
+  hiddenTechnicalFields,
+  isLabelLessEnum,
+  recordIdentityOf,
+  visibleFieldsFor,
+  VIEWER_MODE_KEY,
+  type ViewerMode,
+} from '../utils/persona';
 import ContractScopeCard from '../components/ContractScopeCard';
 import { useBoneUiSchema } from '../hooks/useBoneUiSchema';
 import type { UiContext } from '@bone/ui-schema';
@@ -392,6 +401,45 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   );
 
   /**
+   * 观看者模式（消费面 ⇄ 实施面）—— 本机偏好，默认消费面。
+   *
+   * <p>为什么默认是消费面：本页第一受众是"用它干活的人"（报销填单/审批），实施者是少数
+   * 且清楚自己要点什么；默认展示全部会让多数人替少数人的排障需求买单。偏好粒度刻意取
+   * **全局**而非按实体——模式是"我现在来干活还是来排查"的身份，不是某实体的属性
+   * （Salesforce Setup / Odoo 开发者模式同理，切一次全局生效）。
+   */
+  const [viewerMode, setViewerMode] = useState<ViewerMode>(() => {
+    try {
+      const raw = localStorage.getItem(VIEWER_MODE_KEY);
+      if (raw === 'consume' || raw === 'implement') return raw;
+    } catch {
+      /* localStorage 不可用（隐私模式）按默认消费面处理 */
+    }
+    return 'consume';
+  });
+  const implMode = viewerMode === 'implement';
+  const changeViewerMode = useCallback((mode: ViewerMode) => {
+    setViewerMode(mode);
+    try {
+      localStorage.setItem(VIEWER_MODE_KEY, mode);
+    } catch {
+      /* 写不进 localStorage 不影响本次会话内的切换 */
+    }
+  }, []);
+
+  /**
+   * 消费面可读字段：剔除**内部代理键**（如 `approver_id` 这类裸内部外键）。
+   *
+   * <p>依据是 OWASP 的"信息最小化"与 DAMA 的"代理键不是业务键"——把 Surrogate key
+   * 暴露给业务用户，既不增加他的理解、又让界面承担"这是什么数字"的解释成本。
+   * 实施模式下全量可见（排障需要），且永不隐藏必填项（避免把显示分层变成写缺列事故）。
+   */
+  const readFields = useMemo(
+    () => visibleFieldsFor(writableFields, viewerMode),
+    [writableFields, viewerMode],
+  );
+
+  /**
    * 表单可编辑字段 = 可写字段排除 `status`。
    * status 由状态机（动作 SPI）驱动，禁止在新建/编辑表单里直接编辑，
    * 否则可绕过状态机边（DRAFT→SUBMITTED→…）直达任一状态，是 G14 漏洞的 UI 回归点。
@@ -401,10 +449,10 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
    */
   const formFields = useMemo(
     () =>
-      writableFields.filter(
+      readFields.filter(
         (f) => f.code !== 'status' && (f.type || '').toUpperCase() !== 'CHILD_TABLE',
       ),
-    [writableFields],
+    [readFields],
   );
 
   /**
@@ -423,8 +471,10 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   const contractListView = uiSchemaPipe.executionSchema?.views.list ?? null;
   const overlay = useOverlayBundle(entityCode, writableFields, contractListView);
   const projectedColumns = useMemo(
-    () => projectRuntimeColumns(writableFields, overlay.activeOv, contractListView),
-    [writableFields, overlay.activeOv, contractListView],
+    // 注：列集合按「当前模式可读字段」投影（`readFields`）而非全量可写字段——消费面不
+    // 因内部代理键多出一列空或满屏数字的列；契约/个人覆盖两层间的判定语义不变。
+    () => projectRuntimeColumns(readFields, overlay.activeOv, contractListView),
+    [readFields, overlay.activeOv, contractListView],
   );
   /** 字段视图（列查询 fieldsParam / 筛选选项 / 列渲染共用）——由投影列去契约元数据得到 */
   const projectedFields = useMemo(() => projectedColumns.map((c) => c.field), [projectedColumns]);
@@ -1548,16 +1598,18 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           )}
           {/* 个人显示组：视图切换 / 列设置 / 自伤遮蔽自救（个人覆盖的唯一编辑器）。
               契约列（列集合/列序/列宽）在建模台「界面设计器」配，发布后全员生效。 */}
-          <PersonalViewBar overlay={overlay} fields={writableFields} listView={contractListView} onSaveFilterToView={saveCurrentFilterToView} />
+          <PersonalViewBar overlay={overlay} fields={readFields} listView={contractListView} onSaveFilterToView={saveCurrentFilterToView} />
+          {/* 观看者模式开关：同一份数据两套信息密度（Odoo 开发者模式 / Salesforce Setup 同源思路），
+              只有具备建模维护权限的人看得到入口——不可达的能力不占视觉位。 */}
+          <ViewerModeSwitch value={viewerMode} onChange={changeViewerMode} />
         </Space>
       )}
 
-      {/* 交付口径对照：契约应显示什么 vs 我实际看到什么 + 自伤遮蔽告警与一键自救。
-          放在数据页而非建模台——个人覆盖的编辑器就在本页工具栏，对照必须与被对照对象同处；
-          团队契约那一侧由「界面设计器」的实时预览承担（跑运行时同一套引擎，信息更强）。
-          无契约时也渲染（卡片内有「团队契约 · 未配置」+ 去设计器入口）：尚未配契约的实体
-          恰恰最需要被引导去配置，不能因为没有契约就什么都不显示。 */}
-      {!embeddedBlocked && selectedEntity && (
+      {/* 交付口径对照：**实施模式的诊断面板**，不是业务用户的日常信息。
+          此前无条件常驻首屏——「契约 / 列表列 / 个人覆盖」都是**建模产物**的内部构造，报销填单人既不关心也无权处理；常态展示还会把真正的异常（自伤遮蔽）
+          淹没在噪音里（Nielsen：异常提示必须与日常信息分开，常态化的警告等于没有警告）。
+          现在：实施模式看全量卡片；消费面**仅在有可行动异常**时给一行可自救的提示。 */}
+      {!embeddedBlocked && selectedEntity && implMode && (
         <ContractScopeCard
           overlay={overlay}
           fields={writableFields}
@@ -1565,30 +1617,61 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           onOpenDesigner={() => navigate(designerPath)}
         />
       )}
+      {/* 消费面的异常通道：个人偏好盖住团队契约（被自伤遮蔽）是本页唯一"用户自己能修"的
+          实施向异常，保留一行 + 一键恢复；无异常时消费面干净，不做任何说明。 */}
+      {!embeddedBlocked && selectedEntity && !implMode && overlay.shadowedColumns.length > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={`有 ${overlay.shadowedColumns.length} 列被你的个人显示设置隐藏了`}
+          description={
+            <Space size={8} wrap>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {overlay.shadowedColumns.map((f) => f.displayName || f.code).join('、')}
+              </Text>
+              <Button
+                size="small"
+                onClick={() =>
+                  overlay.shadowedColumns.forEach((f) => overlay.toggleVisible(f.code, true))
+                }
+              >
+                恢复显示
+              </Button>
+            </Space>
+          }
+        />
+      )}
 
-      {/* 数据生命周期步骤条：建模侧 2 步（实测状态）+ 状态机真实状态链。
-          建模侧给出「去建模/去发布」的回跳入口（用户常从数据页发现「模型还没定」）；
+      {/* 数据生命周期步骤条：**建模侧 2 步只在实施模式出现**，状态机真实状态链两面都给。
+          建模侧（模型已定义 / 已发布）是进入本页的**前置条件**——条件已满足却继续占据
+          业务用户首屏第一行，等于天天告诉报销人"恭喜你，这张表已经建好了"（中性信息噪音）；
+          真正有 news 价值的只有「未发布 / 待建模」这类**实施者才能解决**的异常态。
           状态链可点击下钻 —— 点某状态即把列表筛到该态（q=status:<code>，后端精确匹配）。 */}
-      {!embeddedBlocked && selectedEntity && (
+      {!embeddedBlocked && selectedEntity && (implMode || stateChain.length > 0) && (
         <Card size="small" style={{ marginBottom: 16 }} styles={{ body: { padding: '14px 16px 16px' } }}>
           <Steps
             size="small"
             current={-1}
             items={[
-              {
-                title: (
-                  <a onClick={() => navigate(structurePath)}>{MODEL_STEPS[0].label}</a>
-                ),
-                status: 'finish',
-              },
-              {
-                title: selectedEntity.status === META_ENTITY_PUBLISHED ? (
-                  <Text strong style={{ fontSize: 13 }}>{MODEL_STEPS[1].label}</Text>
-                ) : (
-                  <a onClick={() => navigate(structurePath)}>待发布</a>
-                ),
-                status: selectedEntity.status === META_ENTITY_PUBLISHED ? 'finish' : 'error',
-              },
+              ...(implMode
+                ? [
+                  {
+                    title: (
+                      <a onClick={() => navigate(structurePath)}>{MODEL_STEPS[0].label}</a>
+                    ),
+                    status: 'finish' as const,
+                  },
+                  {
+                    title: selectedEntity.status === META_ENTITY_PUBLISHED ? (
+                      <Text strong style={{ fontSize: 13 }}>{MODEL_STEPS[1].label}</Text>
+                    ) : (
+                      <a onClick={() => navigate(structurePath)}>待发布</a>
+                    ),
+                    status: (selectedEntity.status === META_ENTITY_PUBLISHED ? 'finish' : 'error') as 'finish' | 'error',
+                  },
+                ]
+                : []),
               ...(stateChain.length > 0
                 ? stateChain.map((code) => {
                   // 下钻态判定：生效条件恰为「单条 status=code」（用户可能另有多条件，
@@ -1652,19 +1735,44 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         </div>
       )}
 
-      {selectedEntity && (
+      {/* 物理表 / 交付模式 / 发布状态 —— **实施模式专属**。
+          物理表名是 schema 的内部实现：对业务用户零信息量，却给误操作与外部探测提供了
+          有效线索（信息最小化原则）；一旦展示还等于承诺"这个表名不会变"——后续重命名
+          或分表都会变成一次用户可见的破坏性变更。实施模式下保留，排障需要它。 */}
+      {selectedEntity && implMode && (
         <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
           物理表：<Text code>{selectedEntity.tableName}</Text> · 交付模式：
           {DELIVERY_MODE[selectedEntity.deliveryMode ?? 0]} · 状态：
           {ENTITY_STATUS[selectedEntity.status]}
         </Text>
       )}
+      {/* 实施模式自查：告诉实施者"消费面为此隐藏了什么 / 哪处还需建模"，
+          对标 Odoo 开发者模式的「技术字段已在常规视图隐藏」提示——**信息没有丢，只是分层**。 */}
+      {selectedEntity && implMode && (hiddenTechnicalFields(writableFields, 'consume').length > 0 || readFields.some(isLabelLessEnum)) && (
+        <Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 12 }}>
+          <Space size={8} wrap>
+            {hiddenTechnicalFields(writableFields, 'consume').length > 0 && (
+              <Tooltip title="建议建模侧把它们声明为 REFERENCE 并按 label 回显（如审批人显示人名），而不是靠展示层过滤">
+                <Tag color="orange">
+                  业务视图已隐藏 {hiddenTechnicalFields(writableFields, 'consume').length} 个代理键字段
+                </Tag>
+              </Tooltip>
+            )}
+            {readFields.filter(isLabelLessEnum).map((f) => (
+              <Tooltip key={f.code} title={`枚举「${f.displayName || f.code}」只有 code 没有中文标签，运行时只能显示裸码；建议在结构 Tab 改为 {code,label} 对象数组`}>
+                <Tag color="gold">枚举缺中文标签：{f.displayName || f.code}</Tag>
+              </Tooltip>
+            ))}
+          </Space>
+        </Text>
+      )}
 
       {/* strict 契约集合的可观测面：已建模但未列入团队契约的字段不出现在数据列表。
           本页「交付口径对照」给出同源提示——交付工程师「我建的字段呢」
           类困惑就发生在此（字段建了、发布了，但列表里没有，且无任何迹象）。
-          低噪音单行提示（不占 Alert 横幅）：列名前 5 个进 Tooltip，全文去「界面设计器」看。 */}
-      {contractListView && outsideContractFields.length > 0 && (
+          低噪音单行提示（不占 Alert 横幅）：列名前 5 个进 Tooltip，全文去「界面设计器」看。
+          实施模式专属：这是"列没配好"，业务用户既看不懂也改不了。 */}
+      {implMode && contractListView && outsideContractFields.length > 0 && (
         <Tooltip
           title={`${outsideContractFields.map((f) => f.displayName || f.code).join('、')}——已建模但未列入团队列契约，不出现在数据列表；在「界面设计器 → 列表」加入并发布后生效`}
         >
@@ -1728,7 +1836,10 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
                   </>
                 )}
                 {/* 个人显示组（独立/嵌入两种形态都可用）：个人覆盖编辑器 + 自伤遮蔽自救 */}
-                <PersonalViewBar overlay={overlay} fields={writableFields} listView={contractListView} onSaveFilterToView={saveCurrentFilterToView} />
+                <PersonalViewBar overlay={overlay} fields={readFields} listView={contractListView} onSaveFilterToView={saveCurrentFilterToView} />
+                {/* 观看者模式开关：同一份数据两套信息密度（Odoo 开发者模式 / Salesforce Setup 同源思路），
+                    只有具备建模维护权限的人看得到入口——不可达的能力不占视觉位。 */}
+                <ViewerModeSwitch value={viewerMode} onChange={changeViewerMode} />
                 {/* 回收站：软删必须可观测、可恢复。没有这个入口，「归档」就等同于「永久删除」。 */}
                 <Segmented
                   value={trashMode ? 'trash' : 'active'}
@@ -2118,7 +2229,13 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           时间线 = meta_runtime_action_execution 按记录回放（P0-2 保证半事务也有行），
           状态色：成功=绿 / 失败=红 / 执行中=蓝 / 孤儿=橙（禁自动重放，须对账）。 */}
       <Drawer
-        title={detailDrawer.record ? `记录详情 #${String(detailDrawer.record.id).slice(-8)}` : '记录详情'}
+        title={
+          /* 标题同样按模式给标识：业务视图 →「报销单号：BX-…」，实施模式 → 带主记录 ID。
+             标题是用户判别"我在看哪一条"的唯一锚点，用代理键做锚点等于没有锚点。 */
+          detailDrawer.record
+            ? `记录详情 · ${recordIdentityOf(detailDrawer.record, writableFields, viewerMode)}`
+            : '记录详情'
+        }
         open={detailDrawer.open}
         onClose={() => setDetailDrawer({ open: false, record: null })}
         width={560}
@@ -2139,7 +2256,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
                 column={1}
                 bordered
                 styles={{ label: { width: 132 } }}
-                items={fields
+                items={visibleFieldsFor(fields, viewerMode)
                   .filter((f) => !RUNTIME_READONLY_FIELDS.has(f.code))
                   .map((f) => ({
                     key: f.code,
@@ -2222,12 +2339,11 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           type="info"
           showIcon
           style={{ marginBottom: 12 }}
-          message="保存时整组替换明细行（同事务先删后插）"
-          description={
-            childModal.record
-              ? `主记录：${formatCell(childModal.record.id)}`
-              : '未选中主记录'
-          }
+          /* 同一件事，两种说法：业务用户得到「保存会覆盖全部明细行」的结果提示；
+             实施者额外看到事务实现（同事务先删后插）与记录标识（含雪花主键）——
+             后者是排障线索，前者只是噪音，甚至会引发"什么叫事务"的支持工单。 */
+          message={implMode ? '保存时整组替换明细行（同事务先删后插）' : '保存后用本次填写的内容覆盖全部明细行'}
+          description={recordIdentityOf(childModal.record, writableFields, viewerMode)}
         />
         <Space style={{ marginBottom: 12 }} wrap>
           <Button
