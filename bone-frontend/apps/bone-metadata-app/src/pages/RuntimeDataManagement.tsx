@@ -82,6 +82,7 @@ import {
   VIEWER_MODE_KEY,
   type ViewerMode,
 } from '../utils/persona';
+import { enumToneOf } from '../utils/enumTone';
 import ContractScopeCard from '../components/ContractScopeCard';
 import { useBoneUiSchema } from '../hooks/useBoneUiSchema';
 import type { UiContext } from '@bone/ui-schema';
@@ -170,17 +171,23 @@ function formatCell(value: unknown): string {
   return String(value);
 }
 
-/** ENUM 列表 Tag 色板（§5.5：MetaList ENUM 列 → Tag 徽标，可选色板） */
+/** ENUM 列表 Tag 色板（§5.5：MetaList ENUM 列 → Tag 徽标，可选色板）——
+ *  仅用于「无语义可判」的普通枚举（差旅/餐饮/甲/乙）做稳定区分；
+ *  状态类枚举走 `enumToneOf` 的语义色，不在此轮转。 */
 const ENUM_TAG_COLORS = ['blue', 'green', 'orange', 'purple', 'cyan', 'magenta', 'gold', 'geekblue', 'volcano', 'lime'];
 
-/** ENUM 单元格：码值 → Tag 徽标（选项按定义序取色，稳定不闪烁；未命中码值兜底灰 Tag） */
+/** ENUM 单元格：码值 → Tag 徽标。
+ *
+ *  取色两段式：① 状态类语义色（同一状态跨实体同色，见 `enumToneOf`）；
+ *  ② 无语义可判时按定义序轮转（稳定不闪烁）。未命中码值兜底灰 Tag。 */
 function renderEnumCell(value: unknown, field: MetaField): ReactNode {
   if (value == null || value === '') return '—';
   const opts = enumOptionsOf(field);
   const idx = opts.findIndex((o) => o.code === String(value));
   const opt = idx >= 0 ? opts[idx] : null;
   if (!opt) return <Tag>{String(value)}</Tag>;
-  return <Tag color={ENUM_TAG_COLORS[idx % ENUM_TAG_COLORS.length]}>{opt.label}</Tag>;
+  const tone = enumToneOf(opt);
+  return <Tag color={tone ?? ENUM_TAG_COLORS[idx % ENUM_TAG_COLORS.length]}>{opt.label}</Tag>;
 }
 
 export interface RuntimeDataManagementProps {
@@ -438,6 +445,15 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     () => visibleFieldsFor(writableFields, viewerMode),
     [writableFields, viewerMode],
   );
+
+  /** 实施模式自查用：被消费面隐藏的代理键字段（点名，而不是只报个数） */
+  const hiddenKeyFields = useMemo(
+    () => hiddenTechnicalFields(writableFields, 'consume'),
+    [writableFields],
+  );
+
+  /** 实施模式自查用：只有 code 没有中文标签的枚举字段（裸码的根因） */
+  const labelLessEnums = useMemo(() => readFields.filter(isLabelLessEnum), [readFields]);
 
   /**
    * 表单可编辑字段 = 可写字段排除 `status`。
@@ -1747,22 +1763,31 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         </Text>
       )}
       {/* 实施模式自查：告诉实施者"消费面为此隐藏了什么 / 哪处还需建模"，
-          对标 Odoo 开发者模式的「技术字段已在常规视图隐藏」提示——**信息没有丢，只是分层**。 */}
-      {selectedEntity && implMode && (hiddenTechnicalFields(writableFields, 'consume').length > 0 || readFields.some(isLabelLessEnum)) && (
+          对标 Odoo 开发者模式的「技术字段已在常规视图隐藏」提示——**信息没有丢，只是分层**。
+          两点纪律：① **点名**（只报"隐藏了 1 个字段"等于让人自己去找）；
+          ② 给**修复入口**（发现问题却要手工找路，提示就会被当噪音关掉）。 */}
+      {selectedEntity && implMode && (hiddenKeyFields.length > 0 || labelLessEnums.length > 0) && (
         <Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 12 }}>
           <Space size={8} wrap>
-            {hiddenTechnicalFields(writableFields, 'consume').length > 0 && (
-              <Tooltip title="建议建模侧把它们声明为 REFERENCE 并按 label 回显（如审批人显示人名），而不是靠展示层过滤">
+            {hiddenKeyFields.length > 0 && (
+              <Tooltip
+                title={`为可读性临时隐藏：${hiddenKeyFields.map((f) => `${f.displayName || f.code}（${f.code}）`).join('、')}。根治办法是建模侧把它们声明为 REFERENCE 并按 label 回显（如审批人显示人名），而不是靠展示层过滤。`}
+              >
                 <Tag color="orange">
-                  业务视图已隐藏 {hiddenTechnicalFields(writableFields, 'consume').length} 个代理键字段
+                  业务视图已隐藏 {hiddenKeyFields.length} 个代理键字段：
+                  {hiddenKeyFields.map((f) => f.displayName || f.code).join('、')}
                 </Tag>
               </Tooltip>
             )}
-            {readFields.filter(isLabelLessEnum).map((f) => (
-              <Tooltip key={f.code} title={`枚举「${f.displayName || f.code}」只有 code 没有中文标签，运行时只能显示裸码；建议在结构 Tab 改为 {code,label} 对象数组`}>
+            {labelLessEnums.map((f) => (
+              <Tooltip
+                key={f.code}
+                title={`枚举「${f.displayName || f.code}」的选项只有 code 没有中文标签，运行时只能显示裸码；改法：结构 Tab 的字段选项里补 {code,label} 对象数组（或绑定系统字典）`}
+              >
                 <Tag color="gold">枚举缺中文标签：{f.displayName || f.code}</Tag>
               </Tooltip>
             ))}
+            <a onClick={() => navigate(structurePath)}>去建模台修复</a>
           </Space>
         </Text>
       )}

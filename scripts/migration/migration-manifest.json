@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 85,
+  "executableCount": 86,
   "retired": [],
   "entries": [
     {
@@ -543,6 +543,12 @@
       "file": "0079_synap_claim_occurrence_dimensions.sql",
       "kind": "ddl",
       "summary": "落地 synap-claim Flyway 孤儿脚本 V10/V11：「次」分组维度四列 + 决策消费两列（缺失即理赔列表/详情 500）"
+    },
+    {
+      "order": 86,
+      "file": "0080_enum_option_label_normalize.sql",
+      "kind": "mixed",
+      "summary": "把 7 个早期「字符串数组」枚举归一为 {code,label} 对象数组并补中文标签——否则运行时只能把 APPROVED 这类裸码显示给业务用户"
     },
     {
       "order": null,
