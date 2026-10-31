@@ -1,22 +1,36 @@
+---
+doc_id: ai-index
+role: navigation
+currency: current
+---
+
 # synapClaim · AI 入口索引（机器优先）
 
-> **本文件供 AI Agent / 检索系统优先读取**，用于确定性路由，避免对散文式 README 做模糊匹配。
-
-> 权威真源以 [`docs.manifest.json`](docs.manifest.json) 为准（含 `role` / `currency` / `authority` 机器字段）。
-
-> **黄金法则**：默认只信任 `currency=current`；`role=draft` 是待合入草案；`role=evidence`（`currency=frozen`）是历史取证，**不得当作当前设计引用**。
+> **本文件由 `tools/_gen_ai_index.py` 从 `docs.manifest.json` 生成，禁止手工编辑。**
+> 改内容请改 manifest 后重跑：`python3 tools/_gen_ai_index.py`；校验用 `--check`。
+>
+> 权威真源以 [`docs.manifest.json`](docs.manifest.json) 为准（含每份文档的 `role` / `currency` /
+> `authority` / `superseded_by` 机器字段）。
+>
+> **黄金法则**：默认只信任 `currency=current`；`role=draft` 是待合入草案；
+> `role=evidence`（`currency=frozen`）是历史取证，**不得当作当前设计引用**。
 
 
 ## 一、语料模型（检索前先理解）
 
-| 维度 | 取值 | 含义 | AI 如何处理 |
-|---|---|---|---|
-| `role` | `ssot` | 当前权威真源 | 可引用为事实 |
-| `role` | `navigation` | 导航/治理元文档 | 用于路由，不含业务口径 |
-| `role` | `draft` | 待合入草案（go-live 01–13） | 仅作提案，不当现行契约 |
-| `role` | `evidence` | 冻结过程证据（L9/L10） | 仅答"为什么/历史"，不当现状 |
-| `role` | `tooling` | 工具/参考实现 | 非产品代码，不当设计引用 |
-| `currency` | current/draft/frozen | 时效 | 过滤主信号 |
+| `role` | 含义 | AI 如何处理 |
+|---|---|---|
+| `ssot` | 当前权威真源 | 可引用为事实 |
+| `navigation` | 导航/治理元文档 | 用于路由，不含业务口径 |
+| `draft` | 待合入草案（如 go-live 01–13） | 仅作计划/提案，不当现行契约 |
+| `evidence` | 冻结的过程证据（L9/L10） | 仅回答「为什么/历史」，不当现状 |
+| `tooling` | 工具/参考实现（oracle） | 非产品代码，不当设计引用 |
+
+| `currency` | 含义 |
+|---|---|
+| `current` | 现行——默认可引用 |
+| `draft` | 草案——仅在明确询问规划时引用 |
+| `frozen` | 冻结——只作历史取证，禁止当作现状 |
 
 ## 二、按来意路由（ask → read）
 
@@ -33,7 +47,7 @@
 | 为什么这么设计 / 对标 / 差距 | `records.review.业界对标` / `records.review.TPA-` |
 | 某次代码改动的前因后果 / 历史取证 | `records.impl.14` / `records.impl.15` / `records.impl.16` / `records.impl.17` / `records.impl.18` / `records.impl.19` / `records.impl.20` / `records.review.理算引擎` |
 
-## 三、ACTIVE 现行真源（currency=current，可引用为事实）
+## 三、ACTIVE 现行真源（currency=current，可引用为事实，共 29 份）
 
 | id | 路径 | role | 一句话 |
 |---|---|---|---|
@@ -67,7 +81,7 @@
 | `ai-index` | `AI-INDEX.md` | navigation | 机器优先入口：语料模型+按来意路由+ACTIVE/DRAFT/FROZEN 三段清单，供 AI 确定性检索 |
 | `index` | `README.md` | navigation | 3 分钟入口：按「你这次来做什么」路由到唯一该读的文档；不再按目录树猜 |
 
-## 四、DRAFT 草案（role=draft，待合入 L3，不当现行契约）
+## 四、DRAFT 草案（role=draft，待合入 L3，不当现行契约，共 13 份）
 
 - `golive.01` → `08-go-live/01-生产准入合规包.md`：PIA/DPIA、等保备案、AI 算法备案、SBOM、渗透测试门禁
 - `golive.02` → `08-go-live/02-外部依赖SLA与降级责任矩阵.md`：外部依赖清单、SLA 与降级责任矩阵、支付实时对账契约
@@ -83,7 +97,7 @@
 - `golive.12` → `08-go-live/12-资金累计DB级并发正确性.md`：累计扣减的 DB 级并发正确性（单测契约不足）
 - `golive.13` → `08-go-live/13-理算引擎三重路径收敛与护栏移植（F1）.md`：唯一权威资金路径决策、整改步骤、双路径歧义根除
 
-## 五、FROZEN 冻结证据（role=evidence/tooling，仅用于"为什么/历史"，禁止当作现状）
+## 五、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 13 份）
 
 - `records.impl.14` → `09-records/impl-log/14-主链路闭环体检与P0修复记录.md`：四本账未对齐的体检与 3 项 P0 修复（含变异证据）  ⚠️ 已被 `09-records/impl-log/15-跨案累计读侧与责任账接线（P0-4）.md` 撤销/修正：impl-log/15 已撤销本册"额度服务 0 调用方"判断
 - `records.impl.15` → `09-records/impl-log/15-跨案累计读侧与责任账接线（P0-4）.md`：跨案累计读侧与 A7 责任账接线
@@ -97,7 +111,7 @@
 - `records.review.代码整改` → `09-records/reviews/代码整改清单.md`：待架构评审的代码整改项（含已闭环项的备查记录）
 - `records.review.理算引擎` → `09-records/reviews/理算引擎诊断记录.md`：两轮取证：修复前后的实证与新发现的缺陷
 - `archive.system-design` → `10-archive/系统设计方案.md`：上游设计演进记录；2026-10-21 起正文作废，仅留行业洞察与选型理由  ⚠️ 已被 `03-contract/工程详细设计-落地版.md` 撤销/修正：正文已作废，独特价值已并入《工程落地版》§3.6/§3.7/§4.3
-- `impl.readme` → `doc/ai-product/synap-claim-oracle/synap-claim-settlement/README.md`：可执行参考实现说明：构建运行、理算顺序铁律、TPA 场景用例、30 条探针 + 19 类变异
+- `impl.readme` → `synap-claim-oracle-POINTER.md`：可执行参考实现（双轨 oracle）指针：真实位置 doc/ai-product/synap-claim-oracle/synap-claim-settlement/；非产品代码
 
 ## 六、manifest 字段图例
 
@@ -105,5 +119,5 @@
 - `currency`：时效（current/draft/frozen）
 - `authority`：本文件独占真源的主题
 - `superseded_by`：被哪份文档撤销/修正（仅证据类有）
+- `aiRouting`：本索引第二节的路由表真源（在 manifest 中，不在本文件）
 
-> 本文件可由 manifest 重新生成；手工编辑请同步 `docs.manifest.json`。

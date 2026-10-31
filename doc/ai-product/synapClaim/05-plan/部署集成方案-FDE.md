@@ -1,3 +1,9 @@
+---
+doc_id: plan.fde
+role: ssot
+currency: current
+---
+
 # synapClaim 智能理赔平台-部署集成方案（FDE）
 
 **FDE = Fast Deployment Engine（快速部署引擎）**

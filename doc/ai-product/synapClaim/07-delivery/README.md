@@ -1,3 +1,9 @@
+---
+doc_id: delivery.index
+role: navigation
+currency: current
+---
+
 # delivery —— 落地交付物索引
 
 本目录存放 synapClaim 从"方案"到"签约/上线"所需的落地交付物，按补齐顺序编号，与主文档关系：

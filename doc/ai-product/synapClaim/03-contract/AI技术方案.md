@@ -1,3 +1,9 @@
+---
+doc_id: contract.ai
+role: ssot
+currency: current
+---
+
 # 智能理赔平台详细技术方案（bone-ai 落地版）
 
 > 版本：v1.0　状态：技术方案（可评审）　作者：BONE 平台架构

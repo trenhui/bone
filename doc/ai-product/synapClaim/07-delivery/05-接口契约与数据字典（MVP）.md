@@ -1,3 +1,9 @@
+---
+doc_id: delivery.05
+role: ssot
+currency: current
+---
+
 # 05 接口契约与数据字典（MVP）
 
 > 用途：开发与联调的唯一契约来源。本文档定义 MVP 核心接口（OpenAPI 风格）与关键数据字典；完整 OpenAPI 文件在 I2 迭代前由后端产出并入库。**幂等与错误处理约定为强制项。**

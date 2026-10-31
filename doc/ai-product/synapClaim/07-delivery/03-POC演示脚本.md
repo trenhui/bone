@@ -1,3 +1,9 @@
+---
+doc_id: delivery.03
+role: ssot
+currency: current
+---
+
 # 03 POC 演示脚本
 
 > 用途：把"概念"变成"能签单的 Demo"。目标受众：险企/TPA 的 CIO、理赔总监、核赔组长。总时长建议 45 分钟（演示 25 分钟 + 问答 20 分钟）。

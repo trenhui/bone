@@ -1,3 +1,9 @@
+---
+doc_id: strategy
+role: ssot
+currency: current
+---
+
 ## ✅ Synap（思纳普）创业方案
 
 > **适用对象：4位技术老兵 · AI落地创业方案**  

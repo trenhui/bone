@@ -1,3 +1,9 @@
+---
+doc_id: design.bone-ai-deps
+role: ssot
+currency: current
+---
+
 # synapClaim × BONE-AI 能力依赖图谱与增强方案（企业级串联）
 
 > **版本**：v1.0　**日期**：2026-10-26　**归口**：理赔产品架构组

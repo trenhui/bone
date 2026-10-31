@@ -1,3 +1,9 @@
+---
+doc_id: golive.00
+role: ssot
+currency: current
+---
+
 # synapClaim 生产就绪完善包 · 总纲与 Go-Live 门禁
 
 > **定位**：本包（子目录 `08-go-live/`）是对《工程落地版》SSOT 的**伴随式完善**，不修改 SSOT 既有权威章节。它把 `outputs/synapClaim-生产就绪独立诊断.md` 识别出的真实缺口，按业界最佳实践落成为**可直接合入系统**的内容草案。

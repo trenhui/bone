@@ -682,5 +682,89 @@
       "summary": "机器优先入口：语料模型+按来意路由+ACTIVE/DRAFT/FROZEN 三段清单，供 AI 确定性检索",
       "authority": "AI 检索路由"
     }
-  ]
+  ],
+  "aiRouting": [
+    {
+      "intent": "产品定位 / 卖给谁 / 能做什么",
+      "docs": [
+        "prd",
+        "strategy"
+      ]
+    },
+    {
+      "intent": "改代码 / 加接口 / 动数据模型 / 契约口径",
+      "docs": [
+        "contract.landing",
+        "design.adjustment",
+        "delivery.05"
+      ]
+    },
+    {
+      "intent": "AI 编排 / 决策图 / 模型接入",
+      "docs": [
+        "contract.ai",
+        "design.bone-ai-deps"
+      ]
+    },
+    {
+      "intent": "理算算法 / 金额怎么算 / 业务口径",
+      "docs": [
+        "design.adjustment",
+        "contract.rules-v1",
+        "verify.adjustment"
+      ]
+    },
+    {
+      "intent": "跑测试 / 验证是否真的修好",
+      "docs": [
+        "verify.adjustment",
+        "impl.readme"
+      ]
+    },
+    {
+      "intent": "客户交付 / 试点落地 / POC",
+      "docs": [
+        "delivery.index",
+        "plan.fde"
+      ]
+    },
+    {
+      "intent": "上线 / 合规 / 门禁",
+      "docs": [
+        "golive.00",
+        "golive.01"
+      ]
+    },
+    {
+      "intent": "排期 / 里程碑 / 迭代",
+      "docs": [
+        "plan.mvp"
+      ]
+    },
+    {
+      "intent": "为什么这么设计 / 对标 / 差距",
+      "docs": [
+        "records.review.业界对标",
+        "records.review.TPA-"
+      ]
+    },
+    {
+      "intent": "某次代码改动的前因后果 / 历史取证",
+      "docs": [
+        "records.impl.14",
+        "records.impl.15",
+        "records.impl.16",
+        "records.impl.17",
+        "records.impl.18",
+        "records.impl.19",
+        "records.impl.20",
+        "records.review.理算引擎"
+      ]
+    }
+  ],
+  "aiIndex": {
+    "path": "AI-INDEX.md",
+    "generated": true,
+    "generator": "tools/_gen_ai_index.py"
+  }
 }

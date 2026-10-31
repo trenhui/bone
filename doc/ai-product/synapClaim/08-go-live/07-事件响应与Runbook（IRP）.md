@@ -1,3 +1,9 @@
+---
+doc_id: golive.07
+role: draft
+currency: draft
+---
+
 # 07 · 事件响应与 Runbook（IRP）
 
 > **定位**：补齐 `outputs/synapClaim-生产就绪独立诊断.md` 盲区 **B2**。原独立诊断已识别"告警 35 处 + 混沌 CI + 季度演练"，但**告警是感知层、Runbook 是处置层**——金融系统上线强制要求"可执行的事故流程"，而非仅有指标。本册补全 Incident Response Plan（IRP）、on-call、严重级与常见故障处置手册。
