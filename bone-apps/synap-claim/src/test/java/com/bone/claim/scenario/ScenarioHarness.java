@@ -10,6 +10,7 @@ import com.bone.claim.application.IndemnityApplicationService;
 import com.bone.claim.application.InspectionApplicationService;
 import com.bone.claim.application.QuotaApplicationService;
 import com.bone.claim.application.SettlementApplicationService;
+import com.bone.claim.application.catalog.ItemCatalogGateway;
 import com.bone.claim.application.handler.AdjustNodeHandler;
 import com.bone.claim.application.handler.AiAssessNodeHandler;
 import com.bone.claim.application.handler.ArbitrateNodeHandler;
@@ -141,7 +142,15 @@ public class ScenarioHarness {
     AccumulationPort accumulationPort = new QuotaDrivenAccumulationPortAdapter(quotaRepo);
     indemnitySvc =
         new IndemnityApplicationService(
-            adjRepo, liabRepo, eviRepo, claimSvc, accumulationPort, tenantPort, events);
+            adjRepo,
+            liabRepo,
+            eviRepo,
+            claimSvc,
+            accumulationPort,
+            // 目录端口未接线：场景里没有责任配 catalog_policy=MANDATORY，故走与引入前一致的路径
+            ItemCatalogGateway.unwired(),
+            tenantPort,
+            events);
     decExecSvc = new DecisionExecutionApplicationService(decRepo, events);
 
     // 反欺诈 / 知识图谱 端口：默认「能力可用、无命中」，可按场景切换

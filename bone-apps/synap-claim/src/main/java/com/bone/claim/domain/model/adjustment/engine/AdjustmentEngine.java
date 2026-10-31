@@ -41,6 +41,13 @@ public final class AdjustmentEngine {
   /** 日限额（Q-05）当日已用满：与本年度额度用尽不同，改日即可再赔。 */
   public static final String ZERO_DAILY_EXHAUSTED = "ZERO_DAILY_EXHAUSTED";
 
+  /**
+   * 目录准入把整案费用剔除干净（缺口 ①）：与"合理费用为 0"必须分开报。
+   *
+   * <p>两者客户侧动作完全不同：前者是"这些费用不在保障目录内"（可申诉、可查目录）， 后者是"票面金额本身不成立"（要退补件）。混成一个码， 客服只能回一句"系统算出来是 0"。
+   */
+  public static final String ZERO_CATALOG_EXCLUDED = "ZERO_CATALOG_EXCLUDED";
+
   public static final String ZERO_NOT_COVERED = "ZERO_NOT_COVERED";
 
   private AdjustmentEngine() {}
@@ -62,6 +69,7 @@ public final class AdjustmentEngine {
    * @param daysSinceEffective 出险日距保险生效日的天数（等待期判定；{@code null} = 不判）
    * @param extraLayers 额外额度层（共保/险种/计划；可选）
    * @param claimDate 赔案受理日（日限额「按同日赔案累计」的窗口来源；{@code null} = 该口径不可用， 配置了该口径即 fail-closed）
+   * @param catalog 目录准入结论（缺口 ①；缺省 {@link CatalogAdmission#INACTIVE} = 不查目录，行为与引入前逐字一致）
    */
   public record Request(
       Long claimId,
@@ -75,7 +83,8 @@ public final class AdjustmentEngine {
       String diseaseType,
       Integer daysSinceEffective,
       List<QuotaStack.LayerQuota> extraLayers,
-      java.time.LocalDate claimDate) {
+      java.time.LocalDate claimDate,
+      CatalogAdmission catalog) {
 
     public Request {
       rows = rows == null ? List.of() : List.copyOf(rows);
@@ -83,13 +92,26 @@ public final class AdjustmentEngine {
           historicalAccumulated == null ? Map.of() : Map.copyOf(historicalAccumulated);
       extraLayers = extraLayers == null ? List.of() : List.copyOf(extraLayers);
       ruleVersion = ruleVersion == null ? "" : ruleVersion;
+      catalog = catalog == null ? CatalogAdmission.INACTIVE : catalog;
     }
 
     /** 最小请求：只给金额计算必需的入参。 */
     public static Request of(
         Long claimId, List<ClaimWithItemsProjection> rows, LiabilityRule rule, Accumulation acc) {
       return new Request(
-          claimId, rows, rule, acc, "", Map.of(), null, null, null, null, List.of(), null);
+          claimId,
+          rows,
+          rule,
+          acc,
+          "",
+          Map.of(),
+          null,
+          null,
+          null,
+          null,
+          List.of(),
+          null,
+          CatalogAdmission.INACTIVE);
     }
 
     public Request withRuleVersion(String version) {
@@ -105,7 +127,8 @@ public final class AdjustmentEngine {
           diseaseType,
           daysSinceEffective,
           extraLayers,
-          claimDate);
+          claimDate,
+          catalog);
     }
 
     public Request withExtraLayers(List<QuotaStack.LayerQuota> layers) {
@@ -121,7 +144,26 @@ public final class AdjustmentEngine {
           diseaseType,
           daysSinceEffective,
           layers,
-          claimDate);
+          claimDate,
+          catalog);
+    }
+
+    /** 附目录准入结论（缺口 ①）：未附 = {@link CatalogAdmission#INACTIVE}，不查目录。 */
+    public Request withCatalog(CatalogAdmission admission) {
+      return new Request(
+          claimId,
+          rows,
+          rule,
+          accumulation,
+          ruleVersion,
+          historicalAccumulated,
+          invoiceTotal,
+          hospitalLevel,
+          diseaseType,
+          daysSinceEffective,
+          extraLayers,
+          claimDate,
+          admission);
     }
 
     /** 附赔案受理日（日限额「按同日赔案累计」口径的窗口）。 */
@@ -138,7 +180,8 @@ public final class AdjustmentEngine {
           diseaseType,
           daysSinceEffective,
           extraLayers,
-          date);
+          date,
+          catalog);
     }
   }
 
@@ -205,7 +248,9 @@ public final class AdjustmentEngine {
     checkPreconditions(request, rule);
 
     boolean inScopeOnly = rule.socialOnly();
-    FeePools.Aggregation aggregation = FeePools.aggregateDetailed(request.rows(), inScopeOnly);
+    CatalogGuard catalog = resolveCatalog(request);
+    FeePools.Aggregation aggregation =
+        FeePools.aggregateDetailed(request.rows(), inScopeOnly, catalog.excludedItemIds());
     FeePools pools = aggregation.pools();
 
     // 次限额分组（§7.3）：先分组，每组独立走一遍完整理算
@@ -218,6 +263,9 @@ public final class AdjustmentEngine {
         OccurrenceGrouper.group(rule.occurrences().basis(), groupingFacts);
 
     List<String> diagnostics = new ArrayList<>();
+    if (catalog.active()) {
+      diagnostics.add(catalog.summary());
+    }
     for (String degraded : degradedDimensions) {
       // 降级必须可见：否则"证据没回填"与"规则如此"在报表上长得一模一样。
       diagnostics.add("次分组降级：" + degraded);
@@ -266,7 +314,13 @@ public final class AdjustmentEngine {
     List<String> quotaTrace = new ArrayList<>();
 
     for (OccurrenceGrouper.Occurrence occurrence : occurrences) {
-      FeePools groupPools = subset(pools, occurrence.memberIndexes(), request.rows(), inScopeOnly);
+      FeePools groupPools =
+          subset(
+              pools,
+              occurrence.memberIndexes(),
+              request.rows(),
+              inScopeOnly,
+              catalog.excludedItemIds());
       GroupResult group =
           computeGroup(
               groupPools,
@@ -295,7 +349,9 @@ public final class AdjustmentEngine {
     if (total.signum() == 0) {
       // 零赔付归因以"扣完所有免赔层（发票+年度+理算）之后"的金额为基准，
       // 两层新增免赔把金额扣到 0 时归因为 ZERO_DEDUCT，与年度免赔口径一致。
-      zeroReason = attributeZero(baseTotal, afterAdjustTotal, ratioPayoutTotal, rule, lines);
+      zeroReason =
+          attributeZero(
+              baseTotal, afterAdjustTotal, ratioPayoutTotal, rule, lines, catalog.excludedAmount());
     }
 
     BigDecimal finalTotal = Money.round(total);
@@ -331,10 +387,98 @@ public final class AdjustmentEngine {
                     occurrences.size(),
                     degradedDimensions,
                     singleInvoiceProvable),
-                daily),
+                daily,
+                catalog),
             diagnostics);
     InvariantGuard.verify(outcome, request, pools, occurrences.size());
     return outcome;
+  }
+
+  // ===================== 目录准入（缺口 ①） =====================
+
+  /**
+   * 目录准入的执行状态。
+   *
+   * @param catalogCode 目录编码（写进快照：事后复算必须知道"按哪一版目录判的"）
+   * @param asOf 判定基准日
+   * @param excludedItemIds 判为目录外的明细 ID（供归集剔除）
+   * @param excludedAmount 被剔除明细的合理金额合计（诊断与快照用：解释"为什么少赔"）
+   */
+  private record CatalogGuard(
+      String catalogCode,
+      java.time.LocalDate asOf,
+      java.util.Set<Long> excludedItemIds,
+      BigDecimal excludedAmount) {
+
+    static final CatalogGuard INACTIVE = new CatalogGuard("", null, java.util.Set.of(), Money.ZERO);
+
+    boolean active() {
+      return asOf != null;
+    }
+
+    String summary() {
+      if (excludedItemIds.isEmpty()) {
+        return "目录准入 %s（基准日 %s）：全部明细在目录内".formatted(catalogCode, asOf);
+      }
+      return "目录准入 %s（基准日 %s）：剔除目录外 %d 条，合理金额合计 %s"
+          .formatted(catalogCode, asOf, excludedItemIds.size(), Money.round(excludedAmount));
+    }
+  }
+
+  /**
+   * 消费目录准入结论（缺口 ①）：把 {@link CatalogAdmission} 折成"剔哪几条"。
+   *
+   * <p><b>三种结论的处理必须分开</b>：
+   *
+   * <ul>
+   *   <li>{@code COVERED} 进可赔基数；
+   *   <li>{@code EXCLUDED} 剔除，金额单独记账（否则"为什么少赔 300"在快照里查不到）；
+   *   <li>{@code UNKNOWN} <b>整案拒绝</b>，不猜。这是本机制唯一的 fail-closed 出口：
+   *       按"在目录内"放行等于目录白配（配了照赔，超赔且不可见），按"目录外"剔除等于替客户下拒赔决定—— 而真实原因可能只是 {@code item_code}
+   *       没录或目录端口没接好，两种都不该由理算来承担。
+   * </ul>
+   *
+   * <p>未启用（{@code NONE}）时<b>连遍历都不做</b>：既不查、也不校验，保证与引入前的路径逐字一致。
+   */
+  private static CatalogGuard resolveCatalog(Request request) {
+    CatalogAdmission admission = request.catalog();
+    if (!admission.active()) {
+      return CatalogGuard.INACTIVE;
+    }
+    java.util.Set<Long> excluded = new java.util.LinkedHashSet<>();
+    java.util.List<String> unresolved = new ArrayList<>();
+    BigDecimal amount = Money.ZERO;
+    for (ClaimWithItemsProjection row : request.rows()) {
+      if (row == null || row.getItemId() == null) {
+        continue;
+      }
+      CatalogAdmission.Verdict verdict = admission.verdictOf(row.getItemId());
+      if (verdict == CatalogAdmission.Verdict.EXCLUDED) {
+        excluded.add(row.getItemId());
+        amount = amount.add(Money.nz(row.getItemValidAmount()));
+      } else if (verdict == CatalogAdmission.Verdict.UNKNOWN) {
+        String code = row.getItemCode();
+        unresolved.add(
+            "明细 %s「%s」%s"
+                .formatted(
+                    row.getItemId(),
+                    row.getItemName() == null ? "" : row.getItemName(),
+                    code == null || code.isBlank() ? "缺费用编码" : "编码 " + code + " 未返回结论"));
+      }
+    }
+    if (!unresolved.isEmpty()) {
+      // 只列前 5 条：几百条一起抛会把日志打满，反而找不到"端口没接好"这个共同原因。
+      java.util.List<String> sample = unresolved.subList(0, Math.min(5, unresolved.size()));
+      throw RuleGap.of(
+          RuleGap.Code.CATALOG_UNRESOLVED,
+          "目录「%s」（基准日 %s）未给出 %d 条明细的准入结论，例：%s。"
+              + "判不出来时既不按目录内放行（目录白配），也不按目录外剔除（替客户拒赔），须先补齐费用编码或接通目录端口",
+          admission.catalogCode(),
+          admission.asOf(),
+          unresolved.size(),
+          String.join("；", sample));
+    }
+    return new CatalogGuard(admission.catalogCode(), admission.asOf(), excluded, amount);
   }
 
   // ===================== 日限额（Q-05） =====================
@@ -1147,7 +1291,8 @@ public final class AdjustmentEngine {
       BigDecimal afterDeduct,
       BigDecimal ratioPayout,
       LiabilityRule rule,
-      List<Line> lines) {
+      List<Line> lines,
+      BigDecimal catalogExcluded) {
     if (ratioPayout.signum() == 0 && baseTotal.signum() > 0) {
       return ZERO_PERCENT;
     }
@@ -1155,7 +1300,9 @@ public final class AdjustmentEngine {
       return ZERO_DEDUCT;
     }
     if (baseTotal.signum() == 0) {
-      return ZERO_REASONABLE;
+      // 目录把可赔基数清空 ≠ 票面金额本身为 0：前者是"不在保障目录内"，后者是"这笔费用不成立"，
+      // 客户侧的下一步动作完全不同（申诉目录 / 补发票），故必须分开报。
+      return Money.nz(catalogExcluded).signum() > 0 ? ZERO_CATALOG_EXCLUDED : ZERO_REASONABLE;
     }
     // 行级归因已经区分了"年度用尽"与"单次超限"，总额归因沿用同一事实（不另判一次，避免两处口径）
     if (!lines.isEmpty()
@@ -1202,7 +1349,7 @@ public final class AdjustmentEngine {
     return switch (zeroReason) {
       case ZERO_DEDUCT -> "06";
       case ZERO_LIMIT, ZERO_LIMIT_EXHAUSTED, ZERO_DAILY_EXHAUSTED -> "09";
-      case ZERO_PERCENT, ZERO_REASONABLE, ZERO_NOT_COVERED -> "05";
+      case ZERO_PERCENT, ZERO_REASONABLE, ZERO_NOT_COVERED, ZERO_CATALOG_EXCLUDED -> "05";
       default -> "";
     };
   }
@@ -1468,14 +1615,17 @@ public final class AdjustmentEngine {
       FeePools pools,
       List<Integer> memberIndexes,
       List<ClaimWithItemsProjection> rows,
-      boolean inScopeOnly) {
+      boolean inScopeOnly,
+      java.util.Set<Long> excludedItemIds) {
     List<ClaimWithItemsProjection> memberRows = new ArrayList<>(memberIndexes.size());
     for (Integer index : memberIndexes) {
       if (index >= 0 && index < rows.size()) {
         memberRows.add(rows.get(index));
       }
     }
-    return FeePools.aggregate(memberRows, inScopeOnly);
+    // 重新归集时必须带上目录剔除集合：这里是从 rows 重算，漏传等于"分组一出现就把目录外费用放回来"，
+    // 而且只在多「次」案件上复现——单「次」用例全绿，最容易被漏掉。
+    return FeePools.aggregate(memberRows, inScopeOnly, excludedItemIds);
   }
 
   // ===================== 快照 =====================
@@ -1500,7 +1650,8 @@ public final class AdjustmentEngine {
       List<Line> lines,
       List<String> diagnostics,
       String groupingJson,
-      DailyGuard daily) {
+      DailyGuard daily,
+      CatalogGuard catalog) {
     StringBuilder sb = new StringBuilder("{");
     append(sb, "liabilityUuid", rule.liabilityUuid());
     append(sb, "liabilityVersion", rule.liabilityVersion());
@@ -1550,6 +1701,16 @@ public final class AdjustmentEngine {
         .append(',');
     sb.append("\"dailyRemaining\":")
         .append(daily.remaining() == null ? "null" : num(Money.round(daily.remaining())))
+        .append(',');
+    // 目录准入（缺口 ①）：目录编码、基准日、剔除条数与剔除金额四项一起物化——
+    // 只记"总额变少"而不记按哪一版目录、以哪天为基准判的，事后无法区分"真在目录外"与"取错了目录版本/日期"。
+    append(sb, "catalogCode", catalog.catalogCode());
+    sb.append("\"catalogAsOf\":")
+        .append(catalog.asOf() == null ? "null" : "\"" + catalog.asOf() + "\"")
+        .append(',');
+    sb.append("\"catalogExcludedCount\":").append(catalog.excludedItemIds().size()).append(',');
+    sb.append("\"catalogExcludedAmount\":")
+        .append(num(Money.round(catalog.excludedAmount())))
         .append(',');
     sb.append("\"accumulationAvailable\":").append(request.accumulation().available()).append(',');
     sb.append("\"socialOnly\":").append(rule.socialOnly()).append(',');

@@ -1,12 +1,15 @@
 package com.bone.claim.application;
 
+import com.bone.claim.application.catalog.ItemCatalogGateway;
 import com.bone.claim.application.port.out.AccumulationPort;
+import com.bone.claim.application.port.out.ItemCatalogPort;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.adjustment.Accumulation;
 import com.bone.claim.domain.model.adjustment.Adjustment;
 import com.bone.claim.domain.model.adjustment.AdjustmentLine;
+import com.bone.claim.domain.model.adjustment.engine.CatalogAdmission;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
 import com.bone.claim.domain.model.evidence.Evidence;
 import com.bone.claim.domain.model.liability.AdjLiability;
@@ -17,7 +20,9 @@ import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.DomainException;
 import com.bone.core.util.DistributedIdGenerator;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +42,7 @@ public class IndemnityApplicationService {
   private final EvidenceRepository evidenceRepository;
   private final ClaimCaseApplicationService claimCaseApplicationService;
   private final AccumulationPort accumulationPort;
+  private final ItemCatalogGateway itemCatalogGateway;
   private final TenantPort tenantPort;
   private final DomainEventPublisher domainEventPublisher;
 
@@ -79,6 +85,7 @@ public class IndemnityApplicationService {
     List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
     AdjLiability liability = resolveLiability(rows);
     Accumulation accumulation = accumulate(rows, liability);
+    CatalogFacts catalog = catalogFactsOf(rows, liability);
 
     Adjustment adjustment;
     try {
@@ -91,7 +98,9 @@ public class IndemnityApplicationService {
               liability,
               ruleVersion,
               accumulation,
-              claimDateOf(rows));
+              claimDateOf(rows),
+              catalog.asOf(),
+              catalog.verdicts());
     } catch (DomainException ex) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_LIABILITY_NOT_FOUND, claimId, ex);
     }
@@ -109,7 +118,14 @@ public class IndemnityApplicationService {
     }
     List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
     AdjLiability liability = resolveLiability(rows);
-    latest.recalculate(rows, liability, accumulate(rows, liability), claimDateOf(rows));
+    CatalogFacts catalog = catalogFactsOf(rows, liability);
+    latest.recalculate(
+        rows,
+        liability,
+        accumulate(rows, liability),
+        claimDateOf(rows),
+        catalog.asOf(),
+        catalog.verdicts());
     adjustmentRepository.save(latest);
     domainEventPublisher.publishFrom(latest);
     return toResult(latest);
@@ -198,6 +214,61 @@ public class IndemnityApplicationService {
   public java.time.LocalDate dailyWindow(long claimId) {
     List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
     return dailyWindowOf(rows, resolveLiability(rows));
+  }
+
+  /**
+   * 目录准入事实（缺口 ①）：判定基准日 + 每条明细的结论。
+   *
+   * @param asOf 判定基准日；{@code null} = 判不出来（由 {@code CatalogAdmission.of} fail-closed）
+   * @param verdicts {@code itemId → 结论}；空 = 一条都没查到（同上）
+   */
+  private record CatalogFacts(
+      java.time.LocalDate asOf, Map<Long, CatalogAdmission.Verdict> verdicts) {
+
+    static final CatalogFacts NONE = new CatalogFacts(null, Map.of());
+  }
+
+  /**
+   * 取目录准入事实。
+   *
+   * <p><b>策略为 {@code NONE} 时一次外部调用都不发</b>：绝大多数责任不配目录，若每案都去打一次目录端口， 等于给全部理赔加一跳网络依赖，而收益为零。
+   *
+   * <p><b>基准日取发票日期、缺失回落赔案受理日</b>：与日限额 Q-05 同一条口径（{@link #dailyWindowOf}）。
+   * 两个口径若各取各的，同一天的两件事（日限额窗口、目录版本）会指向不同日期，事后对不上账。
+   *
+   * <p>判不出来时<b>不在这里抛</b>，交给 {@code CatalogAdmission.of} 统一裁决：那里同时守"有编码没开策略"
+   * 等反向一致性，散成两处会让同一类错误在不同入口给出不同结论。
+   */
+  private CatalogFacts catalogFactsOf(List<ClaimWithItemsProjection> rows, AdjLiability liability) {
+    if (!"MANDATORY".equalsIgnoreCase(liability.catalogPolicy())) {
+      return CatalogFacts.NONE;
+    }
+    java.time.LocalDate asOf = catalogDateOf(rows);
+    if (asOf == null) {
+      return new CatalogFacts(null, Map.of());
+    }
+    List<ItemCatalogPort.Item> items = new ArrayList<>();
+    for (ClaimWithItemsProjection row : rows) {
+      if (row != null && row.getItemId() != null) {
+        items.add(new ItemCatalogPort.Item(row.getItemId(), row.getItemCode()));
+      }
+    }
+    if (items.isEmpty()) {
+      return new CatalogFacts(asOf, Map.of());
+    }
+    return new CatalogFacts(asOf, itemCatalogGateway.check(liability.catalogCode(), asOf, items));
+  }
+
+  /** 目录判定基准日：发票日期优先（一案一发票），缺失回落赔案受理日；都缺返回 {@code null}。 */
+  private java.time.LocalDate catalogDateOf(List<ClaimWithItemsProjection> rows) {
+    if (rows != null) {
+      for (ClaimWithItemsProjection row : rows) {
+        if (row != null && row.getInvoiceDate() != null) {
+          return row.getInvoiceDate();
+        }
+      }
+    }
+    return claimDateOf(rows);
   }
 
   /**

@@ -78,6 +78,19 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
   @Column(name = "limit_diagnosis_codes")
   private String limitDiagnosisCodes;
 
+  /**
+   * 目录准入策略（缺口 ① / 适用限定「药品·诊疗」维度）：{@code NONE} 不查目录 / {@code MANDATORY} 必须查到结论。
+   *
+   * <p>{@code NONE} 时行为与引入本机制之前逐字一致；{@code MANDATORY} 时每条明细都要有目录结论， 缺结论即退补件（不猜）。与 {@link
+   * #catalogCode} 必须同配或同不配，否则装载期拒绝。
+   */
+  @Column(name = "catalog_policy")
+  private String catalogPolicy;
+
+  /** 目录编码（如 {@code NATIONAL_2024}）：回答"按哪一版目录判"。 */
+  @Column(name = "catalog_code")
+  private String catalogCode;
+
   /** 是否仅赔付社保范围内（false 则目录外也按比例赔）。 */
   @Column(name = "social_only")
   private Integer socialOnly;
@@ -273,6 +286,67 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
     return liability;
   }
 
+  /**
+   * 含目录准入（缺口 ① / 适用限定「药品·诊疗」维度）的完整责任配置工厂。
+   *
+   * <p>目录准入与日限额同一套纪律：<b>策略与目录编码必须同配或同不配</b>。只配一边在装载期即被 {@link
+   * com.bone.claim.domain.model.adjustment.engine.CatalogAdmission#of} 拒绝——因为"配了不生效"比"没配"更危险：
+   * 后者至少在文档里是缺口，前者在配置页、评审和代码里都显示"已支持"。
+   *
+   * @param catalogPolicy {@code NONE}（不查目录）/ {@code MANDATORY}（每条明细必须查到结论）
+   * @param catalogCode 目录编码（如 {@code NATIONAL_2024}）；{@code NONE} 时须为空
+   */
+  public static AdjLiability of(
+      Long id,
+      Long tenantId,
+      String liabilityUuid,
+      String liabilityVersion,
+      Long planId,
+      String liabilityCode,
+      String liabilityType,
+      java.math.BigDecimal payPercent,
+      java.math.BigDecimal liabilityDeduct,
+      java.math.BigDecimal liabilityLimit,
+      java.math.BigDecimal invoiceDeduct,
+      java.math.BigDecimal adjustDeduct,
+      java.math.BigDecimal dailyLimit,
+      String dailyLimitBasis,
+      String limitMode,
+      String limitHospitalCodes,
+      String limitDiagnosisCodes,
+      String catalogPolicy,
+      String catalogCode,
+      Integer socialOnly,
+      Integer waitingPeriod,
+      String status) {
+    AdjLiability liability =
+        of(
+            id,
+            tenantId,
+            liabilityUuid,
+            liabilityVersion,
+            planId,
+            liabilityCode,
+            liabilityType,
+            payPercent,
+            liabilityDeduct,
+            liabilityLimit,
+            invoiceDeduct,
+            adjustDeduct,
+            dailyLimit,
+            dailyLimitBasis,
+            limitMode,
+            limitHospitalCodes,
+            limitDiagnosisCodes,
+            socialOnly,
+            waitingPeriod,
+            status);
+    liability.catalogPolicy =
+        catalogPolicy == null || catalogPolicy.isBlank() ? "NONE" : catalogPolicy;
+    liability.catalogCode = catalogCode == null ? "" : catalogCode;
+    return liability;
+  }
+
   public boolean isActive() {
     return "ACTIVE".equals(status);
   }
@@ -319,6 +393,16 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
   /** 日窗口口径（Q-05）；缺省 {@code NONE}（不启用）。 */
   public String dailyLimitBasis() {
     return dailyLimitBasis == null || dailyLimitBasis.isBlank() ? "NONE" : dailyLimitBasis;
+  }
+
+  /** 目录准入策略（缺口 ①）；缺省 {@code NONE}（不查目录，与历史行为一致）。 */
+  public String catalogPolicy() {
+    return catalogPolicy == null || catalogPolicy.isBlank() ? "NONE" : catalogPolicy;
+  }
+
+  /** 目录编码（缺口 ①）；未配为空串。 */
+  public String catalogCode() {
+    return catalogCode == null ? "" : catalogCode;
   }
 
   /**
