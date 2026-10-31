@@ -227,12 +227,18 @@ export function PlanConfigPage(): ReactElement {
         planLimit: values.planLimit ?? 0,
         waitingPeriod: values.waitingPeriod ?? 0,
         versionNo: values.versionNo ?? 'v1',
+        version: planEditTarget.version,
       });
       message.success('计划已更新');
       setPlanEditTarget(null);
       await loadPlans();
     } catch (err) {
-      if (resolveErrorCode(err)) {
+      const code = resolveErrorCode(err);
+      if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
+        setPlanEditTarget(null);
+        await loadPlans();
+        message.warning('该计划已被其他人修改，请重新打开编辑并保存');
+      } else if (code) {
         message.error(resolveErrorMessage(err, '计划更新失败'));
       }
     } finally {
@@ -258,12 +264,18 @@ export function PlanConfigPage(): ReactElement {
         coverageName: values.coverageName?.trim(),
         coverageLimit: values.coverageLimit ?? 0,
         liabilityType: values.liabilityType ?? 'REIMBURSEMENT',
+        version: coverageEditTarget.version,
       });
       message.success('险种已更新');
       setCoverageEditTarget(null);
       await loadCoverages(coverageEditTarget.planId);
     } catch (err) {
-      if (resolveErrorCode(err)) {
+      const code = resolveErrorCode(err);
+      if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
+        setCoverageEditTarget(null);
+        await loadCoverages(coverageEditTarget.planId);
+        message.warning('该险种已被其他人修改，请重新打开编辑并保存');
+      } else if (code) {
         message.error(resolveErrorMessage(err, '险种更新失败'));
       }
     } finally {

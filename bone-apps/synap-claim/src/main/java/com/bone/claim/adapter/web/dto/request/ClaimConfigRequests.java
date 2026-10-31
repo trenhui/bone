@@ -85,7 +85,8 @@ public final class ClaimConfigRequests {
           Instant effectiveEnd,
       @Schema(description = "等待期（天）") @Min(value = 0, message = "等待期不能为负") Integer waitingPeriod,
       @Schema(description = "保单版本") String policyVersion,
-      @Schema(description = "被保人清单（假名化ID数组；不存明文证件）") String insuredSnapshot) {}
+      @Schema(description = "被保人清单（假名化ID数组；不存明文证件）") String insuredSnapshot,
+      @Schema(description = "乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）") Long version) {}
 
   /** 编辑计划（不改动计划编码与状态）。 */
   @Schema(description = "编辑计划请求")
@@ -94,7 +95,8 @@ public final class ClaimConfigRequests {
       @Schema(description = "计划额度上限（0=不限）") @DecimalMin(value = "0", message = "计划额度不能为负")
           BigDecimal planLimit,
       @Schema(description = "等待期（天）") @Min(value = 0, message = "等待期不能为负") Integer waitingPeriod,
-      @Schema(description = "计划版本") String versionNo) {}
+      @Schema(description = "计划版本") String versionNo,
+      @Schema(description = "乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）") Long version) {}
 
   /** 编辑险种（不改动险种编码与状态）。 */
   @Schema(description = "编辑险种请求")
@@ -105,7 +107,8 @@ public final class ClaimConfigRequests {
       @Schema(
               description = "责任形式",
               allowableValues = {"REIMBURSEMENT", "FIXED_AMOUNT", "ALLOWANCE"})
-          String liabilityType) {}
+          String liabilityType,
+      @Schema(description = "乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）") Long version) {}
 
   /** 开户（初始化个人额度）。 */
   @Schema(description = "额度开户请求")

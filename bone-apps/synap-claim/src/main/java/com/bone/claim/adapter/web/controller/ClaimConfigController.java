@@ -134,7 +134,8 @@ public class ClaimConfigController {
                 request.effectiveEnd(),
                 request.waitingPeriod() == null ? 0 : request.waitingPeriod(),
                 request.policyVersion(),
-                request.insuredSnapshot())));
+                request.insuredSnapshot(),
+                request.version())));
   }
 
   // ===================== 计划 =====================
@@ -198,7 +199,8 @@ public class ClaimConfigController {
                 request.planName(),
                 request.planLimit(),
                 request.waitingPeriod() == null ? 0 : request.waitingPeriod(),
-                request.versionNo())));
+                request.versionNo(),
+                request.version())));
   }
 
   // ===================== 险种 =====================
@@ -240,6 +242,9 @@ public class ClaimConfigController {
         claimConfigApplicationService.updateCoverage(
             coverageId,
             new ClaimConfigApplicationService.UpdateCoverage(
-                request.coverageName(), request.coverageLimit(), request.liabilityType())));
+                request.coverageName(),
+                request.coverageLimit(),
+                request.liabilityType(),
+                request.version())));
   }
 }

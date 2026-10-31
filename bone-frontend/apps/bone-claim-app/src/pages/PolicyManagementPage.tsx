@@ -175,13 +175,20 @@ export function PolicyManagementPage(): ReactElement {
         waitingPeriod: values.waitingPeriod ?? 0,
         policyVersion: values.policyVersion ?? 'v1',
         insuredSnapshot: JSON.stringify(insured),
+        version: editTarget.version,
       });
       message.success('保单已更新');
       setEditTarget(null);
       await load();
     } catch (err) {
-      // 启用中改承保期间会被后端拒绝（返回 400 + 「启用中的保单不允许修改承保期间，请先停用」），此处透传同口径提示
-      if (resolveErrorCode(err)) {
+      const code = resolveErrorCode(err);
+      if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
+        // 乐观锁冲突：编辑期间被他人改过。关闭弹窗并刷新，提示用户重新打开编辑。
+        setEditTarget(null);
+        await load();
+        message.warning('该保单已被其他人修改，请重新打开编辑并保存');
+      } else if (code) {
+        // 启用中改承保期间会被后端拒绝（返回 400 + 「启用中的保单不允许修改承保期间，请先停用」），此处透传同口径提示
         message.error(resolveErrorMessage(err, '保单更新失败'));
       }
     } finally {

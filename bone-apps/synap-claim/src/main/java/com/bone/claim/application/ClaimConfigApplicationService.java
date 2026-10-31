@@ -113,6 +113,7 @@ public class ClaimConfigApplicationService {
   @Transactional
   public PolicyView updatePolicy(String policyNo, UpdatePolicy command) {
     ClaimPolicy policy = requirePolicy(policyNo);
+    assertEditableVersion("保单", policy.getVersion(), command.version());
     policy.edit(
         command.policyName(),
         command.insurerName(),
@@ -186,6 +187,7 @@ public class ClaimConfigApplicationService {
   @Transactional
   public PlanView updatePlan(long planId, UpdatePlan command) {
     ClaimPlan plan = requirePlan(planId);
+    assertEditableVersion("计划", plan.getVersion(), command.version());
     plan.edit(
         command.planName(), command.planLimit(), command.waitingPeriod(), command.versionNo());
     claimPlanRepository.save(plan);
@@ -229,6 +231,7 @@ public class ClaimConfigApplicationService {
   @Transactional
   public CoverageView updateCoverage(long coverageId, UpdateCoverage command) {
     ClaimCoverage coverage = requireCoverage(coverageId);
+    assertEditableVersion("险种", coverage.getVersion(), command.version());
     coverage.edit(command.coverageName(), command.coverageLimit(), command.liabilityType());
     claimCoverageRepository.save(coverage);
     domainEventPublisher.publishFrom(coverage);
@@ -259,6 +262,20 @@ public class ClaimConfigApplicationService {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_COVERAGE_NOT_FOUND, coverageId);
     }
     return coverage;
+  }
+
+  /**
+   * 乐观锁冲突校验：前端编辑时带回它加载到的版本号，与当前实体版本不一致即说明在编辑期间被他人改过。
+   *
+   * <p><b>为什么显式比对而非只依赖 SDK 的 {@code @Version} 落库拦截</b>： 显式比对可在<b>业务层</b>给出确定、可测的 409
+   * （不依赖数据库并发窗口，单测即可稳定复现），且错误消息明确指向"请刷新后重试"； SDK 的版本列拦截作为最后一道防线兜底，二者不冲突。
+   *
+   * <p><b>{@code submittedVersion == null} 时放行</b>：兼容不带版本的非前端调用方，不破坏既有契约。
+   */
+  private void assertEditableVersion(String kind, long currentVersion, Long submittedVersion) {
+    if (submittedVersion != null && submittedVersion.longValue() != currentVersion) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_CONCURRENT_CONFLICT, kind + "已被其他人修改，请刷新后重试");
+    }
   }
 
   // ===================== 命令 =====================
@@ -307,15 +324,16 @@ public class ClaimConfigApplicationService {
       Instant effectiveEnd,
       int waitingPeriod,
       String policyVersion,
-      String insuredSnapshot) {}
+      String insuredSnapshot,
+      Long version) {}
 
   /** 编辑计划命令（不改动计划编码与状态）。 */
   public record UpdatePlan(
-      String planName, BigDecimal planLimit, int waitingPeriod, String versionNo) {}
+      String planName, BigDecimal planLimit, int waitingPeriod, String versionNo, Long version) {}
 
   /** 编辑险种命令（不改动险种编码与状态）。 */
   public record UpdateCoverage(
-      String coverageName, BigDecimal coverageLimit, String liabilityType) {}
+      String coverageName, BigDecimal coverageLimit, String liabilityType, Long version) {}
 
   // ===================== 视图 =====================
 
@@ -336,7 +354,8 @@ public class ClaimConfigApplicationService {
       String configStatus,
       boolean stale,
       Instant createdAt,
-      Instant updatedAt) {
+      Instant updatedAt,
+      Long version) {
 
     static PolicyView from(ClaimPolicy p) {
       return new PolicyView(
@@ -355,7 +374,8 @@ public class ClaimConfigApplicationService {
           p.configStatus(),
           p.isStale(),
           p.getCreatedAt(),
-          p.getUpdatedAt());
+          p.getUpdatedAt(),
+          p.getVersion());
     }
   }
 
@@ -370,7 +390,8 @@ public class ClaimConfigApplicationService {
       String versionNo,
       String status,
       Instant createdAt,
-      Instant updatedAt) {
+      Instant updatedAt,
+      Long version) {
 
     static PlanView from(ClaimPlan p) {
       return new PlanView(
@@ -383,7 +404,8 @@ public class ClaimConfigApplicationService {
           p.getVersionNo(),
           p.status(),
           p.getCreatedAt(),
-          p.getUpdatedAt());
+          p.getUpdatedAt(),
+          p.getVersion());
     }
   }
 
@@ -397,7 +419,8 @@ public class ClaimConfigApplicationService {
       String liabilityType,
       String status,
       Instant createdAt,
-      Instant updatedAt) {
+      Instant updatedAt,
+      Long version) {
 
     static CoverageView from(ClaimCoverage c) {
       return new CoverageView(
@@ -409,7 +432,8 @@ public class ClaimConfigApplicationService {
           c.getLiabilityType(),
           c.status(),
           c.getCreatedAt(),
-          c.getUpdatedAt());
+          c.getUpdatedAt(),
+          c.getVersion());
     }
   }
 }

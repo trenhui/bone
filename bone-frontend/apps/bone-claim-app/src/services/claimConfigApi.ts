@@ -49,6 +49,8 @@ export interface PolicyView {
   stale: boolean;
   createdAt: string;
   updatedAt: string;
+  /** 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）。 */
+  version?: number;
 }
 
 export interface PlanView {
@@ -63,6 +65,8 @@ export interface PlanView {
   status: ConfigStatus;
   createdAt: string;
   updatedAt: string;
+  /** 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）。 */
+  version?: number;
 }
 
 export interface CoverageView {
@@ -75,6 +79,8 @@ export interface CoverageView {
   status: ConfigStatus;
   createdAt: string;
   updatedAt: string;
+  /** 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）。 */
+  version?: number;
 }
 
 export interface QuotaAccountView {
@@ -175,6 +181,8 @@ export interface UpdatePolicyReq {
   policyVersion?: string;
   /** 被保人清单：假名化 ID 数组（后端接受 JSON 数组字符串或数组）。 */
   insuredSnapshot?: string | string[];
+  /** 乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）。 */
+  version?: number;
 }
 
 /** 编辑计划请求（不改动计划编码与状态）。 */
@@ -183,6 +191,8 @@ export interface UpdatePlanReq {
   planLimit?: number;
   waitingPeriod?: number;
   versionNo?: string;
+  /** 乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）。 */
+  version?: number;
 }
 
 /** 编辑险种请求（不改动险种编码与状态）。 */
@@ -190,6 +200,8 @@ export interface UpdateCoverageReq {
   coverageName?: string;
   coverageLimit?: number;
   liabilityType?: LiabilityType;
+  /** 乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）。 */
+  version?: number;
 }
 
 /** 开户请求。 */
