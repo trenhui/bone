@@ -38,7 +38,7 @@ import {
   runtimeApprovalApi,
   runtimeRecordApi,
 } from '../services/metadataApi';
-import type { ApprovalDescribe } from '../services/metadataApi';
+import type { ApprovalDescribe, ApprovalSummaryRow } from '../services/metadataApi';
 import type {
   MetaEntity,
   MetaField,
@@ -72,6 +72,7 @@ import CommandPalette from '../components/CommandPalette';
 import { BoneDynamicForm, type DisplayMode } from '../components/BoneDynamicForm';
 import { RuntimeDetailView, detailValueOf } from '../components/RuntimeDetailView';
 import ApprovalProgress from '../components/ApprovalProgress';
+import ApproverCell from '../components/ApproverCell';
 import PersonalViewBar from '../components/PersonalViewBar';
 import ViewerModeSwitch from '../components/ViewerModeSwitch';
 import {
@@ -83,6 +84,7 @@ import {
   type ViewerMode,
 } from '../utils/persona';
 import { enumToneOf } from '../utils/enumTone';
+import { loadApproverNames, isApproverPickerField, toApproverOptions } from '../utils/approverDirectory';
 import ContractScopeCard from '../components/ContractScopeCard';
 import { useBoneUiSchema } from '../hooks/useBoneUiSchema';
 import type { UiContext } from '@bone/ui-schema';
@@ -224,6 +226,18 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   const [fields, setFields] = useState<MetaField[]>([]);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<RuntimeRecord[]>([]);
+  /**
+   * 本页记录的审批摘要（recordId → 阶段/当前节点/待办人）与账户姓名目录。
+   *
+   * <p>随列表一次批量取（`/approval/summaries`），不逐行调 describe——后者会为渲染一列
+   * 把每张单据的完整审批轨迹都拉回来。
+   */
+  const [approvalSummaries, setApprovalSummaries] = useState<Record<string, ApprovalSummaryRow>>(
+    {},
+  );
+  const [approverNames, setApproverNames] = useState<Record<string, string>>({});
+  /** 表单「指定审批人」下拉选项（由姓名目录派生，姓名排序；目录拉不到时为空 → 加载态） */
+  const approverOptions = useMemo(() => toApproverOptions(approverNames), [approverNames]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -463,12 +477,21 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
    * CHILD_TABLE 声明字段不进主表单（由「明细」弹窗整组替换，G10）——
    * 否则 Form.Item 会把 items 当普通字段提交，产生无物理列的写路径错误。
    */
+  /**
+   * 表单可编辑字段 = **全部可写字段**排除 `status` 与明细声明。
+   *
+   * <p><b>为什么不用 {@link readFields}（观看者模式投影）</b>：角色化可见性只该管「读」，
+   * 不该管「写」。消费面把内部代理键隐藏掉是对的——但同一个投影一旦接到表单上，就会把
+   * 「指定审批人」这类**输入型**字段也一并藏掉：字段没渲染 ⇒ 提交缺列 ⇒ 引擎按 FIELD 策略
+   * 解析不出办理人 ⇒ 单据挂起（fail-closed，不放行）。这与 persona.ts 里「必填字段不隐藏」
+   * 是同一条纪律的延伸：隐藏显示只是少看一眼，隐藏输入是静默写入事故。
+   */
   const formFields = useMemo(
     () =>
-      readFields.filter(
+      writableFields.filter(
         (f) => f.code !== 'status' && (f.type || '').toUpperCase() !== 'CHILD_TABLE',
       ),
-    [readFields],
+    [writableFields],
   );
 
   /**
@@ -699,6 +722,58 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   useEffect(() => {
     load();
   }, [load]);
+
+  /**
+   * 审批摘要：列表数据到位后，按**本页**记录 id 批量取一次（服务端单批上限 50，页大小 20 内）。
+   *
+   * <p>失败静默清空：无审批流 / 无实体读权限 / 引擎未装配都会走到这里，列表本身仍要能用——
+   * 少一列审批状态不该让整张表报错。
+   */
+  useEffect(() => {
+    const ids = data.map((row) => String(row.id ?? '')).filter((id) => id !== '');
+    if (!entityCode || ids.length === 0) {
+      setApprovalSummaries({});
+      return;
+    }
+    let alive = true;
+    void (async () => {
+      try {
+        /* 按服务端单批上限（50）分块：页大小可选 100 时一次传 100 会被截断，
+           第 51 行往后静默变成「—」——那种失败看起来完全像「这条没进流程」。 */
+        const CHUNK = 50;
+        const merged: Record<string, ApprovalSummaryRow> = {};
+        for (let i = 0; i < ids.length; i += CHUNK) {
+          const res = await runtimeApprovalApi.summaries(entityCode, ids.slice(i, i + CHUNK));
+          if (!alive) return;
+          if (res.code === 200 && res.data) {
+            Object.assign(merged, res.data.items ?? {});
+          }
+        }
+        if (alive) setApprovalSummaries(merged);
+      } catch {
+        if (alive) setApprovalSummaries({});
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [data, entityCode]);
+
+  /**
+   * 账户姓名目录：与列表数据**解耦**加载。
+   *
+   * <p>不能挂在列表 effect 里：新增表单要选审批人时列表可能是空页（首屏无数据 / 空结果），
+   * 那时目录不加载，人员下拉就永远转圈。目录本身有 5 分钟缓存，多调一次无成本。
+   */
+  useEffect(() => {
+    let alive = true;
+    void loadApproverNames().then((names) => {
+      if (alive) setApproverNames(names);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   /**
    * 切换实体时清空全部筛选/排序/分页/视图态。
@@ -1270,6 +1345,29 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         render: (_: unknown, row) => formatCell(row.id),
       });
     }
+    /* 「当前审批人」列：从引擎台账（wf_task 待办）派生，**不读单据字段**。
+       单据上只有一个 approver_id 标量，而审批是 (节点 × 轮次 × 办理人) 的 1:N 事实
+       （会签 / 加签 / 改派之后同节点可多人并发待办）；且改派只改 wf_task 不回写单据，
+       字段必然陈旧。回收站里单据已删、流程无意义，故不渲染此列。
+
+       位置紧跟「状态」而不是追加到最右：状态（已提交）与「谁在办」是同一件事的两面，
+       业务用户扫读时是连在一起看的；放到「操作」前会在宽表里被挤进横向滚动区，
+       等于藏起来（实测 1680 宽屏下完全不可见）。 */
+    if (!trashMode) {
+      const approverCol = {
+        title: '当前审批人',
+        key: '__approver',
+        width: 148,
+        sorter: false,
+        sortOrder: null,
+        ellipsis: true,
+        render: (_: unknown, row: RuntimeRecord) => (
+          <ApproverCell row={approvalSummaries[String(row.id)]} names={approverNames} />
+        ),
+      } as ColumnsType<RuntimeRecord>[number];
+      const statusIdx = cols.findIndex((c) => c.key === 'status');
+      cols.splice(statusIdx >= 0 ? statusIdx + 1 : cols.length, 0, approverCol);
+    }
     cols.push({
       title: '操作',
       key: 'actions',
@@ -1406,7 +1504,17 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     return cols;
     // handleDelete/handleRestore/openEdit/openAction/actionsOf 为稳定的页面级函数引用，加入会导致循环
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectedFields, entityCode, sortField, sortDesc, actionDefs, actionsByStatus, trashMode]);
+  }, [
+    projectedFields,
+    entityCode,
+    sortField,
+    sortDesc,
+    actionDefs,
+    actionsByStatus,
+    trashMode,
+    approvalSummaries,
+    approverNames,
+  ]);
 
   const renderFieldInput = (field: MetaField) => {
     const type = (field.type || 'STRING').toUpperCase();
@@ -1427,6 +1535,29 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       return (
         <Form.Item name={field.code} label={field.displayName} valuePropName="checked">
           <Switch />
+        </Form.Item>
+      );
+    }
+    /* 「指定审批人」用人员选择器，不用数字输入框。
+       把 LONG 类型的账户 id 交给 InputNumber，等于要求申请人去查 IAM 账户号——业界无一例外
+       用人员选择器（Salesforce Lookup / ServiceNow reference / 钉钉审批人组件）。
+       数据仍是账户 id，只是录入与回显换成姓名（值不变 ⇒ 引擎 FIELD 策略照旧解析）。 */
+    if (isApproverPickerField(field)) {
+      return (
+        <Form.Item
+          name={field.code}
+          label={field.displayName}
+          extra="仅用于「指定审批」节点；会签 / 组织级审批人由流程节点的指派规则决定"
+          rules={field.required ? [{ required: true, message: `请选择${field.displayName}` }] : []}
+        >
+          <Select
+            showSearch
+            allowClear
+            optionFilterProp="label"
+            placeholder="按姓名搜索账户"
+            options={approverOptions}
+            loading={approverOptions.length === 0}
+          />
         </Form.Item>
       );
     }

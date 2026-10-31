@@ -283,4 +283,15 @@ public interface WorkflowEngine {
    * @return 候选节点（定义顺序；实例不存在抛 {@code INSTANCE_NOT_FOUND}）
    */
   List<WorkflowDefinition.Node> listReturnableNodes(String instanceId);
+
+  /**
+   * 流程定义的<b>全部</b>节点（含当前节点），供界面把节点码翻译成业务名。
+   *
+   * <p><b>为什么不复用 {@link #listReturnableNodes}</b>：那个口径刻意排除了当前节点（自身循环无意义），
+   * 而界面最需要中文名的一行恰恰是「当前节点」——用它做字典会得到「当前节点没有标签」这个最尴尬的缺口。 两者语义不同：候选是「能退回到哪」，本方法是「这个码叫什么」。
+   *
+   * @param instanceId 流程实例 id
+   * @return 定义中的全部节点（定义顺序；实例不存在抛 {@code INSTANCE_NOT_FOUND}）
+   */
+  List<WorkflowDefinition.Node> listDefinitionNodes(String instanceId);
 }

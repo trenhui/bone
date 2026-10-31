@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Empty, Space, Tag, Timeline, Tooltip, Typography } from 'antd';
 import { formatDate } from '@bone/shared-utils';
+import { loadApproverNames } from '../utils/approverDirectory';
 import type { ApprovalDescribe } from '../services/metadataApi';
 
 const { Text } = Typography;
@@ -58,6 +59,22 @@ const ApprovalProgress: React.FC<{ data: ApprovalDescribe | null; loading?: bool
   data,
   loading,
 }) => {
+  // 姓名目录走进程内缓存（列表已经拉过一次），这里不会多发请求；拿不到就回落为「待办人」占位，
+  // 绝不把 9104 这类账户 id 印给业务用户。
+  const [names, setNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let alive = true;
+    void loadApproverNames().then((map) => {
+      if (alive) setNames(map);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const labelOf = (code: string) => data?.nodeLabels?.[code] || code;
+  const nameOf = (id?: string | null) => (id ? names[id] || '待办人' : '待指派');
+
   if (loading) {
     return (
       <div>
@@ -96,7 +113,7 @@ const ApprovalProgress: React.FC<{ data: ApprovalDescribe | null; loading?: bool
         </Tooltip>
         {currentNode && (
           <Text type="secondary" style={{ fontSize: 12 }}>
-            当前节点 <Text code>{currentNode}</Text>
+            当前节点 <Text code>{labelOf(currentNode)}</Text>
           </Text>
         )}
         {asText(instance.definitionKey) && (
@@ -106,7 +123,7 @@ const ApprovalProgress: React.FC<{ data: ApprovalDescribe | null; loading?: bool
         )}
         {(startedBy || startedAt) && (
           <Text type="secondary" style={{ fontSize: 12 }}>
-            发起人 {startedBy ?? '—'}
+            发起人 {startedBy ? nameOf(startedBy) : '—'}
             {startedAt ? ` · ${formatDate(startedAt)}` : ''}
           </Text>
         )}
@@ -127,7 +144,7 @@ const ApprovalProgress: React.FC<{ data: ApprovalDescribe | null; loading?: bool
               )}
               <div>
                 引擎按指派规则解析不出审批人时不会静默放行（跳过节点等于少一道审批）。
-                请联系管理员在审批中心「问题单据」里指派办理人，或修正单据上的审批人字段后恢复流程；
+                请联系管理员在审批中心「问题单据」里指派办理人，或补填单据上的「指定审批人」后恢复流程；
                 发起人也可直接撤回后重新提交。
               </div>
             </>
@@ -137,13 +154,17 @@ const ApprovalProgress: React.FC<{ data: ApprovalDescribe | null; loading?: bool
 
       {pendingTasks.length > 0 && (
         <div style={{ marginBottom: 8 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            待办 {pendingTasks.length} 人
+            {pendingTasks.length > 1 ? '（会签/加签，全部处理完才进入下一节点）' : ''}
+          </Text>
           {pendingTasks.map((t) => (
             <div key={t.taskId} style={{ fontSize: 12, lineHeight: '20px' }}>
               <Tag color="blue" style={{ marginInlineEnd: 6 }}>
                 待办
               </Tag>
-              <Text code>{t.nodeCode}</Text>
-              <Text type="secondary"> · 办理人 {t.assigneeId || '待指派'}</Text>
+              <Text>{labelOf(t.nodeCode)}</Text>
+              <Text type="secondary"> · 办理人 {nameOf(t.assigneeId)}</Text>
             </div>
           ))}
         </div>
@@ -166,12 +187,12 @@ const ApprovalProgress: React.FC<{ data: ApprovalDescribe | null; loading?: bool
               children: (
                 <div>
                   <Space size={8} wrap>
-                    <Text strong>{t.nodeCode}</Text>
+                    <Text strong>{labelOf(t.nodeCode)}</Text>
                     <Tag color={rowMeta?.color ?? (cancelled ? 'default' : 'blue')}>
                       {rowMeta?.label ?? STATUS_LABEL[asText(t.status) ?? ''] ?? '—'}
                     </Tag>
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      办理人 {t.assigneeId || '—'}
+                      办理人 {nameOf(t.assigneeId)}
                     </Text>
                     {t.decidedAt && (
                       <Text type="secondary" style={{ fontSize: 12 }}>

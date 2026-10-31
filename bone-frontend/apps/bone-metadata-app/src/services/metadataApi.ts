@@ -474,6 +474,32 @@ export interface ApprovalTaskRow {
   summary?: Record<string, unknown> | null;
 }
 
+/**
+ * 单据审批摘要（`GET /approval/summaries` 的行投影）。
+ *
+ * <p>`pendingAssignees` 是**复数**：节点进入时按指派规则一次性解析多位办理人，
+ * 会签 / 加签后同节点会同时挂着多条待办（实测 `finance_cosign` 两人并发）。
+ * 单据上的单个 `approver_id` 表达不了这个事实，这也是本列改读引擎台账的原因。
+ */
+export interface ApprovalSummaryRow {
+  started: boolean;
+  instanceId?: string;
+  phase?: string;
+  currentNode?: string;
+  /** 当前节点的业务名（引擎定义里的 label，如「部门负责人审批」） */
+  currentNodeLabel?: string;
+  pendingCount?: number;
+  pendingAssignees?: string[];
+}
+
+/** 批量摘要返回：`items` 以 recordId 为键，未进流程的记录只有 `started=false`。 */
+export interface ApprovalSummariesResult {
+  entityCode: string;
+  /** 入参超过服务端单批上限（50）时为 true */
+  truncated: boolean;
+  items: Record<string, ApprovalSummaryRow>;
+}
+
 /** 单据审批概况（实例 + 待办 + 轨迹）。 */
 export interface ApprovalDescribe {
   entityCode: string;
@@ -497,6 +523,13 @@ export interface ApprovalDescribe {
    * 此时轨迹里只有发起一步，按轨迹推候选恒为空 ⇒ 退回入口不可用。候选的权威来源是定义。
    */
   returnableNodes?: ApprovalNodeOption[];
+  /**
+   * 节点码 → 业务名（整份流程定义）。
+   *
+   * <p>轨迹只存 `node_code`（`finance_cosign`/`dept`），直接把码印给业务用户等于让人读流程图；
+   * 界面一律用本表翻译。键缺省时前端回落为节点码（不吞掉这一行）。
+   */
+  nodeLabels?: Record<string, string>;
 }
 
 /** 退回候选节点（`code` 为引擎跳转标识，`label` 用于展示）。 */
@@ -549,6 +582,23 @@ export interface ApprovalProblemList {
  * 后者在「任务已改派 / 指派快照与单据字段不一致」时必然失真。
  */
 export const runtimeApprovalApi = {
+  /**
+   * 一批单据的审批摘要（列表「当前审批人」列）。
+   *
+   * <p>不做「逐行调 describe」：describe 会把每张单据的完整审批轨迹一起查出来并序列化，
+   * 一页 20 行就是 20 份轨迹，只为渲染一列。本端点只投影阶段 / 当前节点 / 待办人。
+   *
+   * @param recordIds 当前页的记录 id（服务端单批上限 50）
+   */
+  summaries: (
+    entityCode: string,
+    recordIds: string[],
+  ): Promise<ApiResponse<ApprovalSummariesResult>> =>
+    api.post<never, ApiResponse<ApprovalSummariesResult>>(`${RUNTIME}/approval/summaries`, {
+      entityCode,
+      recordIds,
+    }),
+
   pending: (page = 1, size = 20): Promise<ApiResponse<PageResult<ApprovalTaskRow>>> =>
     api.get<never, ApiResponse<PageResult<ApprovalTaskRow>>>(
       `${RUNTIME}/approval/tasks/pending`,

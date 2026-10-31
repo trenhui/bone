@@ -27,7 +27,11 @@ const MAIN = '764059967975063552'; // 费用报销
 const CATEGORY = '9250'; // 报销类别
 
 const TECH_MARKERS = ['物理表', '交付口径对照', '已发布出物理表'];
-const TECH_COL = '审批人账户ID';
+/**
+ * 指定审批人 = 申请人指定的**流程输入**字段（0081 统一措辞，原名「审批人账户ID」）。
+ * 消费面隐藏、实施面保留：它是内部账户 id，且「谁在审」由引擎台账派生（列表另有「当前审批人」列）。
+ */
+const TECH_COL = '指定审批人';
 const BUS_COL = '报销单号';
 
 /** 平台既有 status 词表的中文措辞（与 16 个同源字段一致） */
@@ -184,7 +188,7 @@ async function setMode(page, mode) {
   check('实施模式 · 自证「隐藏了哪些代理键」', body.includes('代理键字段'));
   // 点名而非只报个数：只报「隐藏了 1 个字段」等于让人自己去找
   check(
-    '实施模式 · 自检点名被隐藏的字段（审批人账户ID）',
+    '实施模式 · 自检点名被隐藏的字段（指定审批人）',
     body.includes(TECH_COL),
     body.split('\n').filter((l) => l.includes('代理键字段')).join(' / ').slice(0, 200),
   );

@@ -3,6 +3,7 @@ package com.bone.metadata.approval.adapter.web;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.runtime.application.RuntimeApprovalApplicationService;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -54,6 +55,36 @@ public class RuntimeApprovalController {
   public ApiResponse<Map<String, Object>> describe(
       @PathVariable String entityCode, @PathVariable String recordId) {
     return ApiResponse.success(approvalService.describe(entityCode, recordId));
+  }
+
+  /**
+   * 一批单据的审批摘要（列表「当前审批人」列）：阶段 + 当前节点 + 待办人（复数）。
+   *
+   * <p>刻意<b>不</b>复用 {@code /records/{entityCode}/{recordId}} 逐行调用：那样一页 20 行会把 20
+   * 张单据的完整审批轨迹（含全部历史任务）都拉一遍，只为渲染一列。
+   *
+   * <p><b>为什么用 POST 而不是 GET + 逗号串</b>：实测 20 个雪花 id 的查询串约 480 字符，叠上认证与 Cookie 头后触发容器 {@code Request
+   * header is too large}——返回的是容器 HTML 错误页， 前端只能看到「列表加载失败」。批量读把 id 放进 body，请求行长度与页大小解耦。
+   *
+   * <p>授权：注解层只做粗筛（与其他读端点同口径），实体级判据在应用服务里 {@code accessGuard.requireRead}——body 里的 entityCode 无法在
+   * SpEL 里安全求值。
+   */
+  @PostMapping("/summaries")
+  @org.springframework.security.access.prepost.PreAuthorize(
+      "hasAnyAuthority('metadata:runtime:read', 'metadata:read')")
+  public ApiResponse<Map<String, Object>> summaries(
+      @RequestBody(required = false) Map<String, Object> body) {
+    String entityCode = body == null ? null : textOf(body.get("entityCode"));
+    Object rawIds = body == null ? null : body.get("recordIds");
+    List<String> ids =
+        rawIds instanceof List<?> list
+            ? list.stream().filter(java.util.Objects::nonNull).map(String::valueOf).toList()
+            : List.of();
+    return ApiResponse.success(approvalService.summaries(entityCode, ids));
+  }
+
+  private static String textOf(Object value) {
+    return value == null ? null : String.valueOf(value);
   }
 
   /** 我的已办：已表态任务（通过 / 驳回 / 已转交 / 已作废），按决策时间倒序。 */

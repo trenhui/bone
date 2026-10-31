@@ -1073,6 +1073,18 @@ public class WorkflowEngineImpl implements WorkflowEngine {
         .toList();
   }
 
+  @Override
+  public List<WorkflowDefinition.Node> listDefinitionNodes(String instanceId) {
+    WorkflowInstance instance =
+        instanceRepository
+            .findInstance(instanceId)
+            .orElseThrow(
+                () ->
+                    new WorkflowEngineException(
+                        WorkflowErrorCode.INSTANCE_NOT_FOUND, "流程实例不存在：" + instanceId));
+    return definitionOf(instance).nodes();
+  }
+
   private WorkflowInstance terminateInstanceInTransaction(
       String instanceId, String operatorId, String reason) {
     WorkflowInstance instance =

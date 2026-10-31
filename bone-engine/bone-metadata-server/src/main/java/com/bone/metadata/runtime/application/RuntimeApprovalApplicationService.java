@@ -4,6 +4,7 @@ import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.domain.gateway.CurrentUserProvider;
 import com.bone.metadata.engine.runtime.MetadataErrorCodes;
 import com.bone.metadata.engine.runtime.RuntimeRecordException;
+import com.bone.workflow.domain.WorkflowDefinition;
 import com.bone.workflow.domain.WorkflowEngine;
 import com.bone.workflow.domain.WorkflowEngineException;
 import com.bone.workflow.domain.WorkflowErrorCode;
@@ -42,6 +43,9 @@ public class RuntimeApprovalApplicationService {
   /** 待办列表里附带展示的单据字段（只读展示，不构成任何校验口径）。 */
   private static final List<String> SUMMARY_FIELDS =
       List.of("claim_no", "advance_no", "title", "amount", "currency", "status", "applicant");
+
+  /** 单据审批摘要单批上限：每条单据两次索引查询，50 条已覆盖任何合理的列表页（默认 10/20/50）， 再大就是拿「列表渲染」当导出用。 */
+  private static final int MAX_SUMMARY_IDS = 50;
 
   private final ObjectProvider<WorkflowEngine> engineProvider;
   private final ObjectProvider<WorkflowInboxQuery> inboxProvider;
@@ -123,6 +127,9 @@ public class RuntimeApprovalApplicationService {
     // 驳回可退回的候选节点（引擎按流程定义给出）。此前界面用「轨迹里出现过的节点」推候选，
     // 在**单级审批**（第一个审批人退回发起人，最高频场景）下轨迹里只有发起一步，候选恒为空 ⇒ 退回入口不可用。
     result.put("returnableNodes", returnableNodes(engine, instance));
+    // 节点码 → 业务名。引擎的轨迹只存 node_code（finance_cosign / dept），界面直接把码印给业务用户
+    // 等于让人读流程图 XML；定义里的 label 才是「财务负责人审批」。
+    result.put("nodeLabels", nodeLabels(engine, instance));
     // 挂起原因（诊断）：挂起时引擎不派单，详情页只看到「挂起 + 零待办」时，发起人/审批人无法判断
     // 是「审批人解析不出」「审批人就是发起人本人」还是「组织信息缺失」。原因真源是挂起告警正文，
     // 读回来一并返回；查不到就不返回该字段（前端降级为通用指引），不让诊断信息缺失影响整个详情。
@@ -130,6 +137,103 @@ public class RuntimeApprovalApplicationService {
       suspendReason(instance).ifPresent(reason -> result.put("suspendReason", reason));
     }
     return result;
+  }
+
+  /**
+   * 一批单据的审批摘要（列表「当前审批人」列的真源）。
+   *
+   * <p><b>为什么要批量端点而不是让前端逐行调 {@code describe}</b>：列表一页 20 行就是 20 个 describe，每个 describe
+   * 还会把完整轨迹（含全部历史任务与流程定义节点）一并查出并序列化—— 20 倍放大成「为了渲染一列，拉回 20 张单据的全部审批历史」。这里只投影列表真正要的四个事实 （阶段 / 当前节点 /
+   * 待办人数 / 待办人），且<b>不返回轨迹</b>。
+   *
+   * <p><b>为什么当前审批人是复数</b>：节点进入时按指派规则<b>一次性解析多位</b>办理人（会签 / 加签 / 改派后都可能同节点多人并发待办，实测 {@code
+   * finance_cosign} 节点同时挂着 2 条 PENDING）。 单据上一个 {@code approver_id} 标量永远表达不了这件事——这正是本次把「审批人」从实体字段
+   * 迁到引擎台账的原因。
+   *
+   * <p><b>N+1 边界</b>：每条单据两次索引查询（实例 + 待办），单批上限 {@value #MAX_SUMMARY_IDS} 条；调用方按页大小传，不传整表。超限按截断处理并回
+   * {@code truncated=true}。
+   *
+   * @param entityCode 实体码
+   * @param recordIds 记录 id 列表（去重，超限截断）
+   */
+  public Map<String, Object> summaries(String entityCode, List<String> recordIds) {
+    accessGuard.requireRead(entityCode);
+    WorkflowEngine engine = requireEngine();
+    List<String> ids =
+        recordIds == null
+            ? List.of()
+            : recordIds.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(id -> !id.isEmpty())
+                .distinct()
+                .toList();
+    boolean truncated = ids.size() > MAX_SUMMARY_IDS;
+    List<String> capped = truncated ? ids.subList(0, MAX_SUMMARY_IDS) : ids;
+
+    Map<String, Object> items = new LinkedHashMap<>();
+    for (String recordId : capped) {
+      Map<String, Object> row = new LinkedHashMap<>();
+      Optional<WorkflowInstance> found = call(() -> engine.findInstance(entityCode, recordId));
+      if (found.isEmpty()) {
+        // 从未进过审批流的记录：明确 started=false，让界面显示「—」而不是误报「待指派」。
+        row.put("started", Boolean.FALSE);
+        items.put(recordId, row);
+        continue;
+      }
+      WorkflowInstance instance = found.get();
+      List<WorkflowTask> pending = call(() -> engine.listPendingTasks(instance.id()));
+      row.put("started", Boolean.TRUE);
+      row.put("instanceId", instance.id());
+      row.put("phase", instance.phase().name());
+      row.put("currentNode", instance.currentNodeCode());
+      row.put("currentNodeLabel", nodeLabelOf(engine, instance));
+      row.put("pendingCount", pending.size());
+      row.put(
+          "pendingAssignees",
+          pending.stream().map(WorkflowTask::assigneeId).filter(Objects::nonNull).toList());
+      items.put(recordId, row);
+    }
+
+    Map<String, Object> result = new LinkedHashMap<>();
+    result.put("entityCode", entityCode);
+    result.put("truncated", truncated);
+    result.put("items", items);
+    return result;
+  }
+
+  /**
+   * 当前节点的业务名（列表/摘要用单点查询）。
+   *
+   * <p>读定义失败降级为节点码而不是抛错：摘要只服务一列展示，缺个中文名不该让整页列表 500。
+   */
+  private String nodeLabelOf(WorkflowEngine engine, WorkflowInstance instance) {
+    String code = instance.currentNodeCode();
+    if (code == null) {
+      return null;
+    }
+    Map<String, String> labels = nodeLabels(engine, instance);
+    return labels.getOrDefault(code, code);
+  }
+
+  /**
+   * 节点码 → 业务名（整份定义）。
+   *
+   * <p>用 {@link WorkflowEngine#listDefinitionNodes} 而非 {@code listReturnableNodes}：后者刻意排除
+   * 当前节点，拿它当字典会恰好缺掉最需要翻译的那一行。
+   */
+  private Map<String, String> nodeLabels(WorkflowEngine engine, WorkflowInstance instance) {
+    try {
+      Map<String, String> labels = new LinkedHashMap<>();
+      for (WorkflowDefinition.Node node : engine.listDefinitionNodes(instance.id())) {
+        String label = node.label();
+        labels.put(node.code(), label == null || label.isBlank() ? node.code() : label);
+      }
+      return labels;
+    } catch (RuntimeException ex) {
+      log.warn("[approval] 流程节点标签读取失败 instance={} reason={}", instance.id(), ex.toString());
+      return Map.of();
+    }
   }
 
   /**
