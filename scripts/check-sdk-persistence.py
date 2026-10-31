@@ -39,7 +39,7 @@ ALLOW_PREFIXES = (
 # ★ 安全门禁「默认拒绝、显式放行」：豁免只给到已知的具体示例路径，而非整棵 doc/。
 #   未来若在 doc/ 下新增任何绕过 SDK 的平台式代码，门禁仍会拦下、强制走显式决策，
 #   不会因 blanket 的 doc/ 豁免而悄悄放过。
-DOC_SAMPLE_PREFIX = "doc/ai-product/synapClaim/reference-impl/"
+DOC_SAMPLE_PREFIX = "doc/ai-product/synap-claim-oracle/synap-claim-settlement/"
 IMPORT_RE = re.compile(
     r"import\s+(?:"
     r"org\.springframework\.jdbc\.core\.JdbcTemplate|"

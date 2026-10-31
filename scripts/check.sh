@@ -62,9 +62,9 @@ echo -e "${YELLOW}[1/42] 代码风格校验 (Spotless)...${RESET}"
 SPOTLESS_FILES=$(git diff --cached --name-only --diff-filter=ACD 2>/dev/null | grep -E '\.java$|\.properties$' || true)
 # doc/ 下的独立示例工程不参与平台构建（自带 pom、自成一体），不套平台 Spotless 格式，
 # 否则会把平台格式强加给示例、并把他人的示例代码改得面目全非。见 [11/42] 同款 doc/ 豁免口径。
-# 同 [11/42]：只放行已知的具体示例路径 doc/ai-product/synapClaim/reference-impl/（默认拒绝原则），
+# 同 [11/42]：只放行已知的具体示例路径 doc/ai-product/synap-claim-oracle/synap-claim-settlement/（默认拒绝原则），
 # 未来 doc/ 下新增任何绕过 SDK 的平台式代码仍会被门禁拦下。
-SPOTLESS_MODULES=$(echo "$SPOTLESS_FILES" | grep -E '/src/' | grep -v '^doc/ai-product/synapClaim/reference-impl/' | sed -E 's|/src/.*||' | sort -u || true)
+SPOTLESS_MODULES=$(echo "$SPOTLESS_FILES" | grep -E '/src/' | grep -v '^doc/ai-product/synap-claim-oracle/synap-claim-settlement/' | sed -E 's|/src/.*||' | sort -u || true)
 if [ -n "$SPOTLESS_MODULES" ]; then
   while IFS= read -r MODULE_PATH; do
     [ -z "$MODULE_PATH" ] && continue
@@ -90,7 +90,7 @@ if [ -n "$CHANGED_FILES" ]; then
   # 会被解析成 `(grep) || (true | sed)`，sed 拿不到输入，MODULE_PATHS 变成文件全路径，
   # 导致下面 $MODULE_PATH/pom.xml 恒不存在、ArchUnit 门禁被静默跳过。
   # 同 [1/42]/[11/42]：只放行已知的具体示例路径（默认拒绝原则），doc/ 下其他路径仍受平台架构规则约束。
-  MODULE_PATHS=$(echo "$CHANGED_FILES" | grep 'src/main/java' | grep -v '^doc/ai-product/synapClaim/reference-impl/' | sed 's|/src/main/java/.*||' | sort -u || true)
+  MODULE_PATHS=$(echo "$CHANGED_FILES" | grep 'src/main/java' | grep -v '^doc/ai-product/synap-claim-oracle/synap-claim-settlement/' | sed 's|/src/main/java/.*||' | sort -u || true)
 
   if [ -n "$MODULE_PATHS" ]; then
     echo "  变更模块:"

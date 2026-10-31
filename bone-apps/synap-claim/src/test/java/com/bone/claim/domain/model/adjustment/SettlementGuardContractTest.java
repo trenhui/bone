@@ -26,8 +26,8 @@ import org.junit.jupiter.api.Test;
  * </ul>
  *
  * <p>参考实现（证据）：{@code
- * doc/ai-product/synapClaim/reference-impl/synap-claim-settlement/.../engine/EngineFlags.java} （19
- * 开关）与 {@code SettlementEngine.java}（两轮诊断 N1–N10）。
+ * doc/ai-product/synap-claim-oracle/synap-claim-settlement/.../engine/EngineFlags.java} （19 开关）与
+ * {@code SettlementEngine.java}（两轮诊断 N1–N10）。
  */
 @DisplayName("F1 · 理算内核护栏契约（SettlementGuardContract）")
 class SettlementGuardContractTest {

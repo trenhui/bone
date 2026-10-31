@@ -25,8 +25,8 @@ import org.junit.jupiter.api.Test;
  * 都配一条「反证测试」，证明该能力当前确实不存在（而不是仅口头声明）。若某次实现补齐了某项能力， 对应反证会转红——**这是设计意图**：请同步把该项改为 SUPPORTED，并回填
  * Go-Live 门禁 G2 与 《待架构评审代码整改清单》，不要直接删断言。
  *
- * <p>参考实现：{@code doc/ai-product/synapClaim/reference-impl/synap-claim-settlement} （30 探针 + 19 变异 +
- * 28 个真实 TPA 场景）。
+ * <p>参考实现：{@code doc/ai-product/synap-claim-oracle/synap-claim-settlement} （30 探针 + 19 变异 + 28 个真实
+ * TPA 场景）。
  */
 class AdjustmentSemanticGapInventoryTest {
 

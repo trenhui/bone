@@ -13,7 +13,7 @@ import java.util.Map;
  * 理算「双轨一致 + 防假绿」共享夹具（G2 门禁的 CI 载体）。
  *
  * <p><b>为什么要双轨</b>：单一实现的单测只能证明「它按自己算的对」——若实现与规格同错，测试照样全绿。本 夹具从 reference-impl（{@code
- * doc/ai-product/synapClaim/reference-impl/synap-claim-settlement}，含 30 探针 + 19 变异、28 个真实 TPA
+ * doc/ai-product/synap-claim-oracle/synap-claim-settlement}，含 30 探针 + 19 变异、28 个真实 TPA
  * 场景）的理算链中，抽取**生产引擎已支持的语义子集**，另写一份**独立 oracle** 作为第二轨，逐场景比对赔款金额。
  *
  * <p><b>独立性边界（诚实声明）</b>：oracle 不复用生产的任何工具方法（独立表达式、独立钳零、独立取整路径）， 但**共用 §8.3 精度约定**（中间 6 位 / 结果 2 位 /
