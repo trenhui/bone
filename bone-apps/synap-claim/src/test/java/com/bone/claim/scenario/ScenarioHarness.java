@@ -1,11 +1,13 @@
 package com.bone.claim.scenario;
 
+import com.bone.claim.application.AppealApplicationService;
 import com.bone.claim.application.AutoApprovalApplicationService;
 import com.bone.claim.application.ClaimCaseApplicationService;
 import com.bone.claim.application.DecisionExecutionApplicationService;
 import com.bone.claim.application.DecisionGraphExecutor;
 import com.bone.claim.application.DecisionRunApplicationService;
 import com.bone.claim.application.IndemnityApplicationService;
+import com.bone.claim.application.InspectionApplicationService;
 import com.bone.claim.application.QuotaApplicationService;
 import com.bone.claim.application.SettlementApplicationService;
 import com.bone.claim.application.handler.AdjustNodeHandler;
@@ -27,6 +29,7 @@ import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.application.port.out.VisualForensicsPort;
 import com.bone.claim.domain.model.adjustment.Adjustment;
 import com.bone.claim.domain.model.adjustment.AdjustmentLine;
+import com.bone.claim.domain.model.appeal.AppealRecord;
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.ClaimItem;
 import com.bone.claim.domain.model.claim.projection.ClaimHeadProjection;
@@ -39,16 +42,19 @@ import com.bone.claim.domain.model.decision.DecisionTraceNode;
 import com.bone.claim.domain.model.evidence.Evidence;
 import com.bone.claim.domain.model.evidence.valueobject.DocType;
 import com.bone.claim.domain.model.evidence.valueobject.OcrStatus;
+import com.bone.claim.domain.model.inspection.InspectionRecord;
 import com.bone.claim.domain.model.liability.AdjLiability;
 import com.bone.claim.domain.model.quota.QuotaAccount;
 import com.bone.claim.domain.model.quota.QuotaTransaction;
 import com.bone.claim.domain.model.settlement.FundingEvent;
 import com.bone.claim.domain.model.settlement.SettlementOrder;
 import com.bone.claim.domain.repository.AdjustmentRepository;
+import com.bone.claim.domain.repository.AppealRepository;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.ClaimItemRepository;
 import com.bone.claim.domain.repository.DecisionExecutionRepository;
 import com.bone.claim.domain.repository.EvidenceRepository;
+import com.bone.claim.domain.repository.InspectionRepository;
 import com.bone.claim.domain.repository.LiabilityRepository;
 import com.bone.claim.domain.repository.QuotaAccountRepository;
 import com.bone.claim.domain.repository.SettlementRepository;
@@ -111,6 +117,8 @@ public class ScenarioHarness {
       new InMemoryDecisionExecutionRepository();
   public final InMemorySettlementRepository settleRepo = new InMemorySettlementRepository();
   public final InMemoryQuotaAccountRepository quotaRepo = new InMemoryQuotaAccountRepository();
+  public final InMemoryAppealRepository appealRepo = new InMemoryAppealRepository();
+  public final InMemoryInspectionRepository inspectionRepo = new InMemoryInspectionRepository();
 
   public final ScenarioContextPort contextPort = new ScenarioContextPort();
 
@@ -122,6 +130,8 @@ public class ScenarioHarness {
   public final AutoApprovalApplicationService autoApproveSvc;
   public final SettlementApplicationService settleSvc;
   public final QuotaApplicationService quotaSvc;
+  public final AppealApplicationService appealSvc;
+  public final InspectionApplicationService inspectionSvc;
 
   public ScenarioHarness() {
     TenantPort tenantPort = () -> tenantId;
@@ -184,6 +194,8 @@ public class ScenarioHarness {
     autoApproveSvc =
         new AutoApprovalApplicationService(claimSvc, settleSvc, indemnitySvc, decExecSvc);
     decisionRun = new DecisionRunApplicationService(decisionExecutor, autoApproveSvc, decExecSvc);
+    appealSvc = new AppealApplicationService(appealRepo, claimSvc, tenantPort, events);
+    inspectionSvc = new InspectionApplicationService(inspectionRepo, claimSvc, tenantPort, events);
   }
 
   // ===================== 种子数据助手（模拟企业真实配置/保单/额度） =====================
@@ -751,6 +763,36 @@ public class ScenarioHarness {
     @Override
     public List<QuotaAccount> findAllAccounts() {
       return new ArrayList<>(store.values());
+    }
+  }
+
+  static class InMemoryAppealRepository extends InMemoryRepository<AppealRecord>
+      implements AppealRepository {
+    @Override
+    public AppealRecord findLatestByClaimId(long claimId) {
+      return store.values().stream()
+          .filter(a -> Objects.equals(a.getClaimId(), claimId))
+          .max(Comparator.comparingLong(AppealRecord::getId))
+          .orElse(null);
+    }
+  }
+
+  static class InMemoryInspectionRepository extends InMemoryRepository<InspectionRecord>
+      implements InspectionRepository {
+    @Override
+    public InspectionRecord findByInspectionNo(String inspectionNo) {
+      return store.values().stream()
+          .filter(r -> Objects.equals(r.getInspectionNo(), inspectionNo))
+          .findFirst()
+          .orElse(null);
+    }
+
+    @Override
+    public InspectionRecord findLatestByClaimId(long claimId) {
+      return store.values().stream()
+          .filter(r -> Objects.equals(r.getClaimId(), claimId))
+          .max(Comparator.comparingLong(InspectionRecord::getId))
+          .orElse(null);
     }
   }
 

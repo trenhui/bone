@@ -126,10 +126,43 @@ public class IndemnityApplicationService {
     domainEventPublisher.publishFrom(latest);
   }
 
+  /**
+   * 读取最新理算结果（A7 结算占额前的账实复核入口）。
+   *
+   * <p><b>关键修正（P0）</b>：{@code accumulationAvailable} 是瞬态标记（{@link
+   * Adjustment#isAccumulationAvailable()} 标注 {@code @Transient}，不落库）。若直接 {@code
+   * findLatestByClaimId} 后读该标记，reload 后恒为 {@code false}， 导致 <b>每一笔</b> 结算都走到 {@code
+   * SC_CLAIM_QUOTA_NOT_FOUND} 而 fail-closed——即系统永远付不出钱。
+   *
+   * <p>按设计意图（"不落库，读侧实时复算账实可读性"），此处必须<b>实时复算</b>：重新拉取跨案累计， 以当前账本实际可读性决定 A7 是否放行。账实不明（缺责任账/缺责任配置）即
+   * {@code false}，结算继续 fail-closed。
+   */
   @Transactional(readOnly = true)
   public AdjustmentResult latest(long claimId) {
     Adjustment latest = adjustmentRepository.findLatestByClaimId(claimId);
-    return latest == null ? null : toResult(latest);
+    if (latest == null) {
+      return null;
+    }
+    boolean accumulationAvailable;
+    try {
+      List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
+      AdjLiability liability = resolveLiability(rows);
+      Accumulation accumulation = accumulate(rows, liability);
+      accumulationAvailable = accumulation.available();
+    } catch (DomainException ex) {
+      // 账实不明（缺责任配置/责任账）→ fail-closed，与计算期语义一致
+      accumulationAvailable = false;
+    }
+    AdjustmentResult base = toResult(latest);
+    return new AdjustmentResult(
+        base.calculationId(),
+        base.totalAmount(),
+        base.formulaHash(),
+        base.snapshot(),
+        base.lines(),
+        base.liabilityUuid(),
+        base.deductibleApplied(),
+        accumulationAvailable);
   }
 
   /**
