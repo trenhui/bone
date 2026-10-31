@@ -1,0 +1,69 @@
+name: synap-claim Oracle
+
+# 为什么单独一个 workflow，而不是并进 ci.yml
+# ---------------------------------------------------------------
+# `doc/ai-product/synapClaim/reference-impl/synap-claim-settlement` 是一个
+# **独立 Maven 工程**：它有自己的 pom（无 parent，groupId com.bone.synap），
+# 不在 bone-apps/pom.xml 的 modules 里，因此**根目录 `mvn clean verify` 碰不到它**。
+# 而 scripts/check.sh 又显式把它排除在 spotless 与 ArchUnit 之外
+# （[11/35] 与 [13/35] 两处 `grep -v reference-impl`）。
+#
+# 结果是：这个模块此前**没有任何自动化执行入口**。它的价值恰恰是"防假绿"——
+# 30 条性质断言 + 19 类变异对照 + 28 个真实 TPA 场景，用来证明
+# `AdjustmentDualTrackConsistencyTest` 的第二轨（独立 oracle）确实有判别力。
+# 一个只靠人想起来才 `mvn test` 的 oracle，等价于没有：Java 版本、依赖、
+# 断言会随时间静默腐烂，而腐烂时不会有任何红灯。
+#
+# 单独成文件而非并入 ci.yml 的理由：① 它是独立构建，与 reactor 无关；
+# ② 修改 ci.yml 属 L3（需架构师审批），而新增独立 job 不改动既有门禁行为；
+# ③ 失败与主构建解耦，排障时一眼能看出是 oracle 漂移还是产品代码坏了。
+#
+# ⚠️ 生效前提：需在仓库 branch protection 里把本 job 设为 **required status check**，
+# 否则它只是"跑给你看"，不阻断合并。
+
+on:
+  push:
+    branches: [dev, main, master]
+  pull_request:
+    branches: [dev, main, master]
+
+env:
+  # 与 ci.yml / bone-parent 的 java.version=21 严格对齐。
+  # 本模块 pom 里写的是 maven.compiler.release=21，版本不一致会直接编译失败。
+  JAVA_VERSION: '21'
+
+jobs:
+  settlement-oracle:
+    name: 理算引擎独立 oracle（S1–S28 / P1–P28 / 19 变异）
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # 不加 -o（离线）：本模块 pom 引用了 compiler/surefire 插件，离线模式下
+      # 若 runner 缓存缺插件会报 "Cannot access central in offline mode"，
+      # 看起来像代码坏了，实则环境问题。在线跑，让它拉取。
+      #
+      # 不加 spotless:check：check.sh 有意不约束本模块格式（既有代码风格与
+      # GJF 1.17.0 不一致），在这里强加会把"格式漂移"伪装成"oracle 失效"。
+      - name: Run oracle test suite
+        working-directory: doc/ai-product/synapClaim/reference-impl/synap-claim-settlement
+        run: mvn test --batch-mode
+
+      # 把 surefire 报告留档：oracle 失败时最需要看的是"哪条场景/探针/变异出了问题"，
+      # 而不是 CI 日志里被截断的异常栈。
+      - name: Upload surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-surefire-reports
+          path: doc/ai-product/synapClaim/reference-impl/synap-claim-settlement/target/surefire-reports/
+          retention-days: 14
+          if-no-files-found: warn

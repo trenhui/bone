@@ -21,8 +21,9 @@ import java.util.List;
  * <p><b>为什么每池还要拆医保内外</b>：§4.3 的精确式是"范围内与范围外各自 min 后求和，再用责任额度截断"。
  * 若不分内外，某一类额度用尽会吞掉另一类的可用额——这正是团体保单超赔/少赔的经典成因。
  *
- * <p><b>三式校验</b>（§3.4）不是可选项：{@code ①} 与 {@code ②} 只在"三方支付 = 0 且不合理 = 0"时等价。 引擎默认取 ①（扣三方），若调用方送来 ②/③
- * 的口径（{@code validAmount} 未扣三方）， 会<b>把第三方已赔的钱再赔一次</b>。故此处提供 {@link #reconcile} 把差异暴露成诊断，而不是静默相信入参。
+ * <p><b>不可获利（损失补偿）原则</b>（§3.4 / D6）：统筹支付（社保）与第三方已赔付（商保/公账/其他基金）是"别人已替被保险人付过的钱"， 必须从可赔基数扣除，否则"赔付 +
+ * 已付"会超过实际损失（超赔）。本类在 {@link #aggregate} 归集时即净扣， 再用 {@link #reconcile} 核对"已付不得超合理"这一硬约束——与
+ * reference-impl S17 口径一致（第三方已付 = 社保统筹 + 其他保险已赔）。
  */
 public record FeePools(List<Pool> pools) {
 
@@ -89,11 +90,20 @@ public record FeePools(List<Pool> pools) {
         continue;
       }
       BigDecimal valid = Money.nz(row.getItemValidAmount());
+      // 不可获利（损失补偿）原则：统筹/第三方已付是"别人已付"，必须从可赔基数扣除，否则赔付+已付超损失（D6）。
+      // 与 oracle S17 口径一致：第三方已付 = 社保统筹支付 + 其他保险已赔。
+      BigDecimal priorPaid =
+          Money.nz(row.getItemPoolingAmount()).add(Money.nz(row.getItemThirdPartyPaid()));
+      BigDecimal netReasonable = valid.subtract(priorPaid);
+      if (netReasonable.signum() < 0) {
+        // 已付超过合理费用属数据异常；此处钳零，真正的不可能由 checkSettlementConsistency 兜底拒绝。
+        netReasonable = BigDecimal.ZERO;
+      }
       boolean inSocialScope = "IN".equalsIgnoreCase(row.getItemSocialFlag());
       if (inSocialScope) {
-        reasonableIn = reasonableIn.add(valid);
+        reasonableIn = reasonableIn.add(netReasonable);
       } else {
-        reasonableOut = reasonableOut.add(valid);
+        reasonableOut = reasonableOut.add(netReasonable);
       }
       selfPay2 = selfPay2.add(Money.nz(row.getItemSelfPay2()));
       selfPayC = selfPayC.add(Money.nz(row.getItemSelfPayC()));
@@ -144,28 +154,29 @@ public record FeePools(List<Pool> pools) {
   }
 
   /**
-   * 三式一致性核对（§3.4）：{@code ① = ② − 三方已赔 − 不合理}。
+   * 不可获利核对（§3.4 / D6）：汇总"统筹+第三方已付"与不合理金额。
    *
-   * <p>本引擎的 {@code REASONABLE} 池即 ① 口径；调用方若送来 ②/③（未扣三方），差额应接近 {@code Σ
-   * third_party_paid}。此处把这些量算成<b>可断言的差异</b>，让"重复赔付"在数据上可见， 而不是靠人读代码判断。
+   * <p>{@code REASONABLE} 池已是净可赔基数（{@link #aggregate} 在归集时即扣掉 {@code priorPaid}）， 故此处只需暴露 {@code
+   * priorPaid}，供 {@code checkSettlementConsistency} 断言"已付不得超合理"。
    */
   public Reconciliation reconcile(List<ClaimWithItemsProjection> rows) {
-    BigDecimal thirdPartyPaid = Money.ZERO;
+    BigDecimal priorPaid = Money.ZERO;
     BigDecimal invalid = Money.ZERO;
     for (ClaimWithItemsProjection row : rows) {
       if (row == null || row.getItemId() == null) {
         continue;
       }
-      thirdPartyPaid = thirdPartyPaid.add(Money.nz(row.getItemThirdPartyPaid()));
+      priorPaid =
+          priorPaid
+              .add(Money.nz(row.getItemPoolingAmount()))
+              .add(Money.nz(row.getItemThirdPartyPaid()));
       invalid = invalid.add(Money.nz(row.getItemInvalidAmount()));
     }
+    // REASONABLE 池已是净可赔基数（aggregate 已扣 priorPaid），此处只核对"已付不得超合理"。
     BigDecimal reasonable = pool(Bucket.REASONABLE).total();
-    // ② 口径（不扣三方）：合理 + 三方 + 不合理 —— 若等于 ①，说明入参已按 ① 扣过，无重复赔付风险。
-    BigDecimal grossReasonable = reasonable.add(thirdPartyPaid).add(invalid);
-    return new Reconciliation(reasonable, thirdPartyPaid, invalid, grossReasonable);
+    return new Reconciliation(reasonable, priorPaid, invalid);
   }
 
-  /** 三式核对结果。 */
-  public record Reconciliation(
-      BigDecimal reasonable, BigDecimal thirdPartyPaid, BigDecimal invalid, BigDecimal gross) {}
+  /** 不可获利核对结果：净可赔基数 + 已付合计（统筹+第三方）+ 不合理。 */
+  public record Reconciliation(BigDecimal reasonable, BigDecimal priorPaid, BigDecimal invalid) {}
 }

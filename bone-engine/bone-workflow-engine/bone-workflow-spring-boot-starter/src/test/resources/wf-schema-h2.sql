@@ -26,7 +26,8 @@ CREATE TABLE wf_instance (
   created_at        TIMESTAMP    NOT NULL,
   updated_by        VARCHAR(64),
   deleted           TINYINT   NOT NULL DEFAULT 0,
-  version           INT       NOT NULL DEFAULT 0
+  version           INT       NOT NULL DEFAULT 0,
+  condition_snapshot_json TEXT DEFAULT NULL
 );
 -- findLatestInstanceRowByRecord / 对账窗口扫描都需要按 (租户, 实体, 记录) 定位
 CREATE INDEX idx_wf_instance_record ON wf_instance (tenant_id, entity_code, record_id);
@@ -164,6 +165,7 @@ CREATE TABLE wf_notification (
   title        VARCHAR(255) NOT NULL,
   body         VARCHAR(1024),
   read_flag    TINYINT   NOT NULL DEFAULT 0,
+  delivery_state VARCHAR(16)   NOT NULL DEFAULT 'SENT',
   created_at   TIMESTAMP    NOT NULL,
   updated_at   TIMESTAMP    NOT NULL,
   created_by   VARCHAR(64)  NOT NULL,

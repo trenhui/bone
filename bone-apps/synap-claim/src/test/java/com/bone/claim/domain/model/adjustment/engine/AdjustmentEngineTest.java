@@ -839,7 +839,7 @@ class AdjustmentEngineTest {
   class Observability {
 
     @Test
-    @DisplayName("诊断必须进快照：三方已赔提示此前只存在内存里，生产一条也看不到")
+    @DisplayName("诊断+净扣必须进快照：第三方已付从可赔基数扣除，且诊断对运维可见")
     void diagnosticsPersistedInSnapshot() {
       LiabilityRule rule =
           rule(
@@ -847,9 +847,9 @@ class AdjustmentEngineTest {
               ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
               DeductibleRule.none(),
               NO_CAP);
-      ClaimWithItemsProjection row = row(2001L, "IN", "800.00", "0", "0");
+      // valid=1000 为毛额合理费用，第三方已付 200 ⇒ 可赔基数净扣为 800
+      ClaimWithItemsProjection row = row(2001L, "IN", "1000.00", "0", "0");
       row.setItemThirdPartyPaid(new BigDecimal("200.00"));
-      // 发票 1000 = 合理 800 + 三方 200（valid 已按 ① 扣过）⇒ 残差 0，自洽
       row.setItemAmount(new BigDecimal("1000.00"));
 
       AdjustmentEngine.Outcome outcome =
@@ -860,21 +860,24 @@ class AdjustmentEngineTest {
           .as("诊断不落库 = 风险对运维不可见")
           .contains("\"diagnostics\"")
           .contains("三方已赔");
+      assertThat(outcome.totalAmount())
+          .as("不可获利：净基数 800 × 100% = 800，而非毛额 1000")
+          .isEqualByComparingTo("800.00");
     }
 
     @Test
-    @DisplayName("三方已赔被算进合理金额（负残差）⇒ 拒绝理算，不得再赔一次")
-    void doublePayDetectedByNegativeResidual() {
+    @DisplayName("统筹+第三方已付超过合理费用 ⇒ 拒绝理算（不可获利：已付不得超损失）")
+    void priorPaidExceedsReasonableRejected() {
       LiabilityRule rule =
           rule(
               "100",
               ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
               DeductibleRule.none(),
               NO_CAP);
+      // 合理 1000，但统筹+第三方已付记了 1500（超过合理，不可能）⇒ 拒绝，防 D6 超赔
       ClaimWithItemsProjection row = row(2001L, "IN", "1000.00", "0", "0");
       row.setItemAmount(new BigDecimal("1000.00"));
-      // valid=1000 已经含了发票全额，三方又单独记 200 ⇒ 800 + 200 会被重复赔付
-      row.setItemThirdPartyPaid(new BigDecimal("200.00"));
+      row.setItemPoolingAmount(new BigDecimal("1500.00"));
 
       assertThatThrownBy(
               () ->

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>TPA 智能理赔 SaaS · 三年财务模型仪表盘</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+  :root{--bg:#f7f8fa;--card:#ffffff;--ink:#1f2329;--sub:#6b7280;--line:#e5e7eb;
+        --blue:#2563eb;--green:#16a34a;--red:#dc2626;--amber:#d97706;--purple:#7c3aed;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.6}
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 20px 60px}
+  header h1{font-size:24px;margin:0 0 4px}
+  header p{color:var(--sub);margin:0 0 20px;font-size:14px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .kpi .v{font-size:22px;font-weight:700}
+  .kpi .l{font-size:12px;color:var(--sub);margin-top:4px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 16px 8px}
+  .card h3{margin:0 0 10px;font-size:15px}
+  .full{grid-column:1 / -1}
+  .chart{width:100%;height:320px}
+  .note{font-size:12px;color:var(--sub);margin-top:6px}
+  @media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+  .tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:6px;background:#eef2ff;color:#3730a3;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>TPA 医疗健康智能理赔 SaaS · 三年财务模型<span class="tag">per-claim ¥5/单</span></h1>
+    <p>单元经济 + 简化三表 + 三情景 + VC 融资节奏 ｜ 币种：人民币（万元）｜ 数据为假设性推演，非投资建议</p>
+  </header>
+
+  <div class="kpis">
+    <div class="kpi"><div class="v">¥13,824万</div><div class="l">基准 M36 ARR（$1,920万）</div></div>
+    <div class="kpi"><div class="v">7.7x</div><div class="l">LTV / CAC（3年封顶）</div></div>
+    <div class="kpi"><div class="v">M20</div><div class="l">现金流转正首月</div></div>
+    <div class="kpi"><div class="v">~88%</div><div class="l">毛利率</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="card full"><h3>ARR 增长轨迹（三情景，月度，万元）</h3>
+      <div id="c_arr" class="chart"></div>
+      <div class="note">基准 ARR 由 M12 的 ¥950万 增至 M36 的 ¥13,824万；乐观/悲观跨度约 4.2 倍。</div>
+    </div>
+
+    <div class="card"><h3>成本结构（基准，年度，万元）</h3>
+      <div id="c_cost" class="chart"></div>
+      <div class="note">人员+S&M 占主导；COGS（单均¥0.60）随理赔量线性增长但占比低。</div>
+    </div>
+
+    <div class="card"><h3>年度收入 vs EBITDA（基准，万元）</h3>
+      <div id="c_ebitda" class="chart"></div>
+      <div class="note">Y2 EBITDA 转正（+40万），Y3 达 +3,570万。</div>
+    </div>
+
+    <div class="card full"><h3>现金余额走势（基准，含融资注入，万元）</h3>
+      <div id="c_cash" class="chart"></div>
+      <div class="note">Seed ¥1,000万@M1；A轮 ¥6,000万M16；B轮 ¥2亿M31。资本效率高，Seed 即可撑至现金流转正。</div>
+    </div>
+
+    <div class="card"><h3>M36 ARR 情景对比（万元）</h3>
+      <div id="c_scen" class="chart"></div>
+    </div>
+
+    <div class="card"><h3>单位经济与效率指标</h3>
+      <div id="c_metric" class="chart"></div>
+      <div class="note">LTV/CAC、NRR、CAC回收期、Rule of 40（Y3）。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+var months = Array.from({length:36},function(_,i){return 'M'+(i+1);});
+function line(id,series,extra){
+  var ch=echarts.init(document.getElementById(id));
+  ch.setOption(Object.assign({
+    tooltip:{trigger:'axis'},
+    legend:{top:0,textStyle:{fontSize:11}},
+    grid:{left:48,right:18,top:34,bottom:28},
+    xAxis:{type:'category',data:months,axisLabel:{fontSize:10}},
+    yAxis:{type:'value',axisLabel:{fontSize:10}},
+    series:series
+  },extra||{}));
+  window.addEventListener('resize',function(){ch.resize();});
+}
+// ARR 三情景
+line('c_arr',[
+  {name:'乐观',type:'line',smooth:true,data:[210000, 426429, 1086322, 1765117, 2689643, 3638701, 5083309, 6563976, 8324378, 10374287, 12976194, 15892739, 19394614, 23235432, 27424096, 32243662, 37434280, 43287233, 49533669, 56181676, 63534942, 71311181, 79822327, 88777119, 98182890, 108364012, 119015820, 130470957, 142415803, 154856991, 168139628, 181936727, 196601683, 211798576, 227533385, 244172004],lineStyle:{width:2},itemStyle:{color:'#16a34a'}},
+  {name:'基准',type:'line',smooth:true,data:[180000, 364106, 739062, 1121905, 1706130, 2301711, 3108900, 3930613, 4973867, 6245381, 7751728, 9499334, 11494481, 13743314, 16251839, 19025927, 22071318, 25393625, 28998330, 32890794, 37076258, 41559840, 46346543, 51441258, 56848760, 62573717, 68620689, 74994129, 81698390, 88737720, 96116272, 103838098, 111907157, 120327315, 129102347, 138235937],lineStyle:{width:2},itemStyle:{color:'#2563eb'}},
+  {name:'悲观',type:'line',smooth:true,data:[150000, 300566, 451605, 603032, 915050, 1227552, 1540383, 1853397, 2337027, 2993662, 3649836, 4483579, 5316085, 6330490, 7528658, 8723759, 10106581, 11484982, 13054885, 14817704, 16573319, 18525346, 20468379, 22611191, 24954807, 27285880, 29820911, 32341283, 35068674, 38003771, 40920047, 44046937, 47152657, 50471831, 54004852, 57512050],lineStyle:{width:2},itemStyle:{color:'#dc2626'}}
+]);
+// 成本结构堆叠
+(function(){
+  var ch=echarts.init(document.getElementById('c_cost'));
+  ch.setOption({
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},
+    legend:{top:0,textStyle:{fontSize:11}},
+    grid:{left:42,right:14,top:34,bottom:24},
+    xAxis:{type:'category',data:['Y1','Y2','Y3']},
+    yAxis:{type:'value',axisLabel:{fontSize:10}},
+    series:[
+      {name:'人员',type:'bar',stack:'t',data:[348, 1004, 2019],itemStyle:{color:'#2563eb'}},
+      {name:'COGS',type:'bar',stack:'t',data:[42, 346, 1133],itemStyle:{color:'#7c3aed'}},
+      {name:'S&M/CAC',type:'bar',stack:'t',data:[392, 1440, 2616],itemStyle:{color:'#d97706'}},
+      {name:'G&A',type:'bar',stack:'t',data:[30, 60, 108],itemStyle:{color:'#9ca3af'}}
+    ]
+  });
+  window.addEventListener('resize',function(){ch.resize();});
+})();
+// 收入 vs EBITDA
+line('c_ebitda',[
+  {name:'收入',type:'bar',data:[349, 2886, 9442],itemStyle:{color:'#2563eb'}},
+  {name:'EBITDA',type:'line',data:[-462, 35, 3566],smooth:true,lineStyle:{width:3},itemStyle:{color:'#16a34a'}}
+],{xAxis:{type:'category',data:['Y1','Y2','Y3']},yAxis:{type:'value'}});
+// 现金余额
+(function(){
+  var ch=echarts.init(document.getElementById('c_cash'));
+  var mark=[];
+  mark.push({xAxis:15,label:{formatter:'A轮',fontSize:10},lineStyle:{color:'#d97706',type:'dashed'}});
+  mark.push({xAxis:30,label:{formatter:'B轮',fontSize:10},lineStyle:{color:'#7c3aed',type:'dashed'}});
+  ch.setOption({
+    tooltip:{trigger:'axis'},
+    grid:{left:52,right:18,top:20,bottom:28},
+    xAxis:{type:'category',data:months,axisLabel:{fontSize:10}},
+    yAxis:{type:'value',axisLabel:{fontSize:10}},
+    series:[{name:'现金余额',type:'line',smooth:true,data:[974, 946, 911, 877, 836, 797, 753, 713, 670, 625, 582, 538, 487, 440, 397, 6361, 6335, 6319, 6316, 6328, 6358, 6407, 6478, 6573, 6672, 6799, 6956, 7146, 7371, 7634, 27937, 28282, 28673, 29111, 29600, 30139],
+      areaStyle:{color:'rgba(37,99,235,0.12)'},lineStyle:{width:2},itemStyle:{color:'#2563eb'},
+      markLine:{symbol:'none',data:mark}}]
+  });
+  window.addEventListener('resize',function(){ch.resize();});
+})();
+// 情景 ARR 对比
+(function(){
+  var ch=echarts.init(document.getElementById('c_scen'));
+  ch.setOption({
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},
+    grid:{left:52,right:18,top:20,bottom:28},
+    xAxis:{type:'category',data:['悲观','基准','乐观']},
+    yAxis:{type:'value',axisLabel:{fontSize:10}},
+    series:[{type:'bar',data:[
+      {value:57512050,itemStyle:{color:'#dc2626'}},
+      {value:138235937,itemStyle:{color:'#2563eb'}},
+      {value:244172004,itemStyle:{color:'#16a34a'}}],barWidth:'45%'}]
+  });
+  window.addEventListener('resize',function(){ch.resize();});
+})();
+// 指标卡
+(function(){
+  var ch=echarts.init(document.getElementById('c_metric'));
+  var data=[
+    {name:'LTV/CAC',value:'7.7x',c:'#16a34a'},
+    {name:'NRR(Y3)',value:'97%',c:'#2563eb'},
+    {name:'CAC回收期',value:'3.6月',c:'#d97706'},
+    {name:'Rule of 40',value:'265%*',c:'#7c3aed'}
+  ];
+  ch.setOption({
+    tooltip:{show:false},
+    grid:{left:10,right:10,top:10,bottom:10},
+    xAxis:{type:'category',show:false,data:data.map(function(d){return d.name;})},
+    yAxis:{show:false},
+    series:[{type:'bar',barWidth:'60%',data:data.map(function(d){return {value:1,itemStyle:{color:d.c},label:{show:true,position:'inside',formatter:d.value+''+d.name,fontSize:12,color:'#fff'}};})}]
+  });
+  window.addEventListener('resize',function(){ch.resize();});
+})();
+</script>
+</body>
+</html>

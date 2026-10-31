@@ -208,9 +208,8 @@ public final class AdjustmentEngine {
     if (Money.isZero(aggregation.excludedOutOfScope()) == false) {
       diagnostics.add("socialOnly 剔除范围外合理金额 " + Money.round(aggregation.excludedOutOfScope()));
     }
-    // 三式核对（§3.4）：本引擎把 REASONABLE 池当作 ① 口径（已扣三方）。若入参实际是 ②/③（未扣三方），
-    // 差额会以"三方已赔"的形式暴露。引擎不擅自扣减（那是上游 valid_amount 的职责），但必须让风险可见；
-    // 一旦票面三段拆分自己就不自洽（负残差），则可**证明**入参把三方已赔算进了合理金额 ⇒ 重复赔付，必须拒绝。
+    // 不可获利护栏（§3.4 / D6）：REASONABLE 池已在 FeePools.aggregate 内净扣统筹+第三方已付，
+    // 此处只核对"已付不得超合理"这一硬约束，并对净扣动作落诊断（保证运维可见、可审计）。
     checkSettlementConsistency(request, pools, diagnostics);
 
     // 本次理算的额度消耗（多层跨组共享：同一次理算内，前一组用掉的额度后一组不能用）
@@ -878,73 +877,48 @@ public final class AdjustmentEngine {
   // ===================== 校验 =====================
 
   /**
-   * 票面三段拆分自洽性（§3.4 三式），只做"能证明"的那一半。
+   * 不可获利护栏（§3.4 / D6）。
    *
-   * <p>逐行残差 = 发票金额 − (合理 + 不合理 + 三方已赔 + 自付二 + 总自费)：
+   * <p>引擎已在 {@code FeePools.aggregate} 内把"统筹+第三方已付"从可赔基数净扣（oracle S17 口径）， 故本方法不再假设 {@code
+   * valid_amount} 已净额，而是直接守住两条硬约束：
    *
    * <ul>
-   *   <li>若 {@code valid_amount} 已按 ① 扣过三方与核减，残差 = 自付一 ≥ 0；
-   *   <li>若未扣，残差会变成<b>负数</b>，缺口恰为被重复计入的那部分。
+   *   <li><b>不可获利（fail-closed）</b>：逐行 {@code 统筹 + 第三方已付 > 合理费用} ⇒ 已付超过实际损失， 不可能，疑似把已付又算进合理 ⇒ 拒绝（防
+   *       D6 超赔）。这是原"负残差+三方⇒拒绝"的纠正： 原逻辑因假设 valid 已净额，凡是带第三方已付的案子一律拒绝，反而把本应赔付的案子挡在门外；
+   *       现在引擎已净扣，只需拦截"已付超合理"这种真正不可能的数据。
+   *   <li><b>净扣可见（诊断）</b>：存在已付即落诊断，保证运维在快照里看得到"这笔钱已被抵扣"，可审计。
    * </ul>
-   *
-   * <p>负残差 + 三方已赔 = 可证明"合理金额里还含三方已赔的钱"⇒ 引擎会把它再赔一次，故 fail-closed；
-   * 无三方已赔的负残差只是数据质量噪声，降级为诊断（不阻断，但落进快照可审计）。
-   *
-   * <p><b>为什么不擅自扣减</b>：{@code valid_amount} 的口径归上游票面结算，引擎改了会与发票对不上账；
-   * 引擎的责任是"发现不自洽就拒绝"，而不是"猜一个自认为对的基数"。
    */
   private static void checkSettlementConsistency(
       Request request, FeePools pools, List<String> diagnostics) {
     FeePools.Reconciliation reconciliation = pools.reconcile(request.rows());
-    if (reconciliation.thirdPartyPaid().signum() > 0) {
-      diagnostics.add(
-          "三方已赔 "
-              + Money.round(reconciliation.thirdPartyPaid())
-              + "：引擎不从合理金额扣除（须上游 valid_amount 按 §3.4 ① 扣减，否则重复赔付）");
-    }
-
     BigDecimal tolerance = new BigDecimal("0.01");
-    int negativeRows = 0;
-    BigDecimal worst = Money.ZERO;
-    String worstItem = "";
+
     for (ClaimWithItemsProjection row : request.rows()) {
       if (row == null || row.getItemId() == null) {
         continue;
       }
-      BigDecimal amount = Money.nz(row.getItemAmount());
-      if (amount.signum() <= 0) {
-        continue; // 票面金额缺失时无法判定，不猜
-      }
-      BigDecimal residual =
-          amount
-              .subtract(Money.nz(row.getItemValidAmount()))
-              .subtract(Money.nz(row.getItemInvalidAmount()))
-              .subtract(Money.nz(row.getItemThirdPartyPaid()))
-              .subtract(Money.nz(row.getItemSelfPay2()))
-              .subtract(Money.nz(row.getItemSelfPayC()));
-      if (residual.compareTo(tolerance.negate()) >= 0) {
-        continue;
-      }
-      negativeRows++;
-      if (worst.compareTo(residual) > 0) {
-        worst = residual;
-        worstItem = row.getItemName() == null ? String.valueOf(row.getItemId()) : row.getItemName();
+      BigDecimal valid = Money.nz(row.getItemValidAmount());
+      BigDecimal priorPaid =
+          Money.nz(row.getItemPoolingAmount()).add(Money.nz(row.getItemThirdPartyPaid()));
+
+      // 不可获利硬约束：已付（统筹+第三方）不得超过合理费用，否则"已付又赔"必然超赔。
+      if (priorPaid.compareTo(valid.add(tolerance)) > 0) {
+        throw RuleGap.of(
+            RuleGap.Code.INVOICE_SETTLEMENT_INCONSISTENT,
+            "费用项「%s」的统筹+第三方已付 %s 超过合理费用 %s：已付超过实际损失，疑似重复计入，" + "须先核对票面拆分",
+            row.getItemName() == null ? String.valueOf(row.getItemId()) : row.getItemName(),
+            Money.round(priorPaid),
+            Money.round(valid));
       }
     }
-    if (negativeRows == 0) {
-      return;
+
+    if (reconciliation.priorPaid().signum() > 0) {
+      diagnostics.add(
+          "三方已赔付 "
+              + Money.round(reconciliation.priorPaid())
+              + "（统筹+商保）已从可赔基数扣除：赔付+已付 ≤ 总费用（不可获利原则）");
     }
-    String detail =
-        "%d 条明细的发票金额小于其拆分项之和（最差 %s，%s）：合理金额很可能未按 §3.4 ① 扣减"
-            .formatted(negativeRows, Money.round(worst), worstItem);
-    if (reconciliation.thirdPartyPaid().signum() > 0) {
-      throw RuleGap.of(
-          RuleGap.Code.INVOICE_SETTLEMENT_INCONSISTENT,
-          "%s；三方已赔 %s 会被再赔一次，须先修上游 valid_amount 口径",
-          detail,
-          Money.round(reconciliation.thirdPartyPaid()));
-    }
-    diagnostics.add(detail + "（无三方已赔，暂作数据质量提示）");
   }
 
   private static void requireInputs(Request request) {

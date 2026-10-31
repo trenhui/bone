@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS wf_instance (
     updated_by        VARCHAR(64)  DEFAULT NULL COMMENT '更新人',
     deleted           TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '软删标记',
     version           INT          NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+    condition_snapshot_json TEXT   DEFAULT NULL COMMENT '启动时的业务单据快照（条件求值/审批人解析的契约基准，防审批中改单导致已决策条件按新值重算）',
     PRIMARY KEY (id),
     KEY idx_wf_instance_record (tenant_id, entity_code, record_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工作流实例';
@@ -165,6 +166,7 @@ CREATE TABLE IF NOT EXISTS wf_notification (
     title        VARCHAR(255) NOT NULL COMMENT '通知标题',
     body         VARCHAR(1024) DEFAULT NULL COMMENT '通知正文',
     read_flag    TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '已读标记（0未读/1已读）',
+    delivery_state VARCHAR(16) NOT NULL DEFAULT 'SENT' COMMENT '投递状态（SENT/FAILED）：通知失败绝不阻断审批主链路，但必须可见可审计，不静默丢失（见设计文档 §P1-7）',
     created_at   DATETIME(3)  NOT NULL COMMENT '创建时间',
     updated_at   DATETIME(3)  NOT NULL COMMENT '更新时间',
     created_by   VARCHAR(64)  NOT NULL COMMENT '创建人（通知发起方账户ID）',

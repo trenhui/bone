@@ -27,6 +27,7 @@ public class WfNotificationRow extends Entity<String> {
   private String title;
   private String body;
   private int readFlag;
+  private String deliveryState;
   private Instant createdAt;
   private Instant updatedAt;
 }

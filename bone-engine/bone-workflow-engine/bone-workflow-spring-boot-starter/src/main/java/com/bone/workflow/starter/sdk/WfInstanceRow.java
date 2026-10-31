@@ -26,4 +26,5 @@ public class WfInstanceRow extends Entity<String> {
   private String startedBy;
   private Instant startedAt;
   private Instant updatedAt;
+  private String conditionSnapshotJson;
 }

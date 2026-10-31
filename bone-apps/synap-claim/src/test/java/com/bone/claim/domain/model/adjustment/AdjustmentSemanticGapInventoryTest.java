@@ -59,8 +59,10 @@ class AdjustmentSemanticGapInventoryTest {
               "Go-Live G2"),
           new Step(
               "③第三方已付抵扣（不可获利）",
-              Status.GAP,
-              "Adjustment.apply 完全不读 itemPoolingAmount，赔付+已付可超总费用",
+              Status.SUPPORTED,
+              "FeePools.aggregate 归集时净扣 统筹+第三方已付（pooling_amount+third_party_paid），"
+                  + "clamp≥0；checkSettlementConsistency 守\"已付不得超合理\"硬约束（INVOICE_SETTLEMENT_INCONSISTENT），"
+                  + "与 reference-impl S17 口径一致",
               "Go-Live G2 · reference-impl S17"),
           new Step(
               "④年度免赔（作用于费用基数）",
@@ -98,11 +100,15 @@ class AdjustmentSemanticGapInventoryTest {
   void statusSetsArePinned() {
     assertThat(labelsWith(Status.SUPPORTED))
         .containsExactlyInAnyOrder(
-            "④年度免赔（作用于费用基数）", "⑤赔付比例", "⑦取整（中间 6 位 / 结果 2 位 HALF_UP）", "⑩跨案累计（年度免赔/责任限额）");
+            "③第三方已付抵扣（不可获利）",
+            "④年度免赔（作用于费用基数）",
+            "⑤赔付比例",
+            "⑦取整（中间 6 位 / 结果 2 位 HALF_UP）",
+            "⑩跨案累计（年度免赔/责任限额）");
     assertThat(labelsWith(Status.PARTIAL))
         .containsExactlyInAnyOrder("①费用明细筛选（目录/合理必要）", "⑧多维度 min 控额");
     assertThat(labelsWith(Status.GAP))
-        .containsExactlyInAnyOrder("②发票级免赔", "③第三方已付抵扣（不可获利）", "⑥理算级免赔（第二个免赔）", "⑨逐行分位归因（分位守恒）");
+        .containsExactlyInAnyOrder("②发票级免赔", "⑥理算级免赔（第二个免赔）", "⑨逐行分位归因（分位守恒）");
   }
 
   @Test
@@ -116,14 +122,15 @@ class AdjustmentSemanticGapInventoryTest {
   }
 
   @Test
-  @DisplayName("GAP③ 反证：第三方已付（统筹/公账）不影响赔付额 —— 不可获利护栏缺失")
-  void gap_thirdPartyPaidIsNotOffset() {
-    BigDecimal withoutThirdParty = payout("10000.00", "0");
-    BigDecimal withThirdParty = payout("10000.00", "5000.00");
+  @DisplayName("③ 已支持（原 GAP③ 反证转正）：第三方已付（统筹/商保）从可赔基数扣除 —— 不可获利")
+  void thirdPartyPaidIsOffset() {
+    BigDecimal without = payoutNet("10000.00", "0"); // 净基数 10000 × 90% = 9000
+    BigDecimal with = payoutNet("10000.00", "5000.00"); // 净基数 (10000−5000) × 90% = 4500
 
-    assertThat(withThirdParty)
-        .as("若本断言转红：第三方已付抵扣已实现，请把 GAP③ 改为 SUPPORTED 并回填 G2")
-        .isEqualByComparingTo(withoutThirdParty);
+    assertThat(with)
+        .as("第三方/统筹已付须从可赔基数扣除，否则赔付+已付>总费用（不可获利）")
+        .isLessThan(without)
+        .isEqualByComparingTo("4500.00");
   }
 
   @Test
@@ -255,12 +262,12 @@ class AdjustmentSemanticGapInventoryTest {
         "ACTIVE");
   }
 
-  /** 责任：90%、年免赔 1 万、不封顶。 */
-  private static BigDecimal payout(String valid, String thirdPartyPaid) {
+  /** 责任：90%、无免赔、不封顶（隔离"第三方已付净扣"这一环，不被免赔掩盖）。 */
+  private static BigDecimal payoutNet(String valid, String priorPaid) {
     ClaimWithItemsProjection p = item(2001L, valid);
-    p.setItemPoolingAmount(new BigDecimal(thirdPartyPaid));
+    p.setItemPoolingAmount(new BigDecimal(priorPaid));
     return Adjustment.calculate(
-            9001L, 42L, 1001L, List.of(p), liability("90", "10000", "0"), "r1", Accumulation.FIRST)
+            9001L, 42L, 1001L, List.of(p), liability("90", "0", "0"), "r1", Accumulation.FIRST)
         .getTotalAmount();
   }
 

@@ -5,14 +5,19 @@
     <modelVersion>4.0.0</modelVersion>
 
     <!--
-      synap-claim-settlement : 智能理算引擎（生产实现骨架）
+      synap-claim-settlement : 理算引擎参考实现（双轨验证的独立 oracle 源）
+
+      ⚠️ 本模块是**验证资产，不是产品代码**，不并入 bone-apps/synap-claim，也不在任何
+      reactor 内（根目录 mvn clean verify 不覆盖它），执行入口是独立 CI job：
+      .github/workflows/synap-claim-oracle.yml。生产实现见
+      com.bone.claim.domain.model.adjustment.engine.AdjustmentEngine（V1 九步，另一套语义）。
 
       六边形架构：domain/engine 为纯逻辑，绝不直接依赖 Spring/DB/网络；
       一切外部能力（BONE-AI 各能力中心）经 port 防腐层消费。
-      本模块自带可运行参考实现（InMemory 端口）与 生产级 JDBC 端口（H2/MySQL）。
+      本模块自带可运行参考实现（InMemory 端口）与 JDBC 端口实现（H2/MySQL 双方言）。
       验证：ProbeSuite（30 探针 + 19 变异对照）+ ScenarioSuite（28 真实 TPA 场景）
       + JdbcPortsIntegrationTest（JDBC 持久化路径：CAS/冲正/预授权 TTL/幂等租约）。
-      构建：mvn -o test   （离线，依赖已在本地仓库）
+      构建：mvn test   （离线加 -o；CI 用在线模式，避免 runner 缓存缺插件被误判为代码缺陷）
     -->
 
     <groupId>com.bone.synap</groupId>

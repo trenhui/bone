@@ -1,6 +1,17 @@
 # synap-claim-settlement · 理算引擎参考实现（真实 TPA 场景 + 防假绿探针版）
 
-本目录是《synapClaim 理算引擎设计》（`design/理算引擎设计.md`）+《synapClaim 理算引擎验证套件》（`verification/理算引擎验证套件.md`）+《理算引擎诊断记录》（`reviews/理算引擎诊断记录.md`）的**可执行参考实现**：
+> **⚠️ 这不是产品代码，不要并入 `bone-apps/synap-claim`。**
+>
+> 本模块是一个**独立 Maven 工程**（`com.bone.synap:synap-claim-settlement`，不在 `bone-apps/pom.xml` 的 modules 里，根目录 `mvn clean verify` 碰不到它），职责是**双轨验证的第二轨**：为生产引擎 `AdjustmentEngine` 提供一份**独立于被测实现语义**的 oracle 与探针库。
+>
+> 三件必须分清的事：
+> 1. **生产实现**是 `bone-apps/synap-claim` 的 `com.bone.claim.domain.model.adjustment.engine.AdjustmentEngine`（按 V1 §4.2 九步重建，实测 53KB + 11 个协同类）。本模块的 `SettlementEngine` 是**另一套**（0–7 八步 + `FormulaSnapshot`），**不参与生产**，也**不允许被搬进生产**——同一条款两套算法并存，正是最难排查的一类缺陷（`AdjustmentEngine` 类注释对此有明文禁令）。
+> 2. **本模块的价值全在"独立"**。生产侧 `AdjustmentDualTrackConsistencyTest` 用它做第二轨逐场景比对赔款金额；`AdjustmentSemanticGapInventoryTest` 用它做缺口哨兵。一旦同 module、同 classpath、共享依赖，比对就退化为"自己跟自己对答案"，判别力归零。
+> 3. **它是验证资产，不是交付物**。执行入口是 `.github/workflows/synap-claim-oracle.yml`（独立 CI job，29 tests / 约 12s）。`scripts/check.sh` 有意把它排除在 spotless 与 ArchUnit 之外——本模块代码风格与 GJF 1.17.0 不一致，强行纳入只会把"格式漂移"伪装成"oracle 失效"。
+>
+> 下文出现的"生产级 JDBC 端口""生产 SQL"描述的是**该端口的成熟度**（有乐观锁 CAS / 冲正 / 预授权 TTL / 方言抽象，可承受真实并发），**不代表本模块已进入生产链路**。产品侧持久化走的是 `bone-apps/synap-claim` 自己的仓储与 `OutboxRelayJob`。
+
+本目录是《synapClaim 理算引擎设计》（`design/理算引擎设计.md`，**当前实现见该文 §14**）+《synapClaim 理算引擎验证套件》（`verification/理算引擎验证套件.md`）+《理算引擎诊断记录》（`reviews/理算引擎诊断记录.md`）的**可执行参考实现**：
 把"架构决策 + 内部设计 + 真实场景用例 + 诊断优化"落成可编译、可运行、带变异/负向探针的 Java 模块，**证明算法与护栏确实生效，而非仅文档描述**。
 
 ## 与 tpa-saas 的关系（复用 proven 引擎为基线 + 新架构补强）
@@ -21,7 +32,7 @@
 
 ## 构建与运行（JDK 21）
 
-### 方式一：Maven 模块（生产级，已落地并测试通过 ✅）
+### 方式一：Maven 模块（可直接运行，已测试通过）
 本目录已转型为**可构建、可测试的标准 Maven 模块**，自带生产级 JDBC 端口与 JUnit 5 回归套件。
 ```bash
 cd reference-impl/synap-claim-settlement
@@ -53,7 +64,7 @@ java -cp out com.bone.synap.settlement.diag.Diagnostics2       # 第二轮取证
 ```
 退出码 0 = 正确引擎全绿**且**全部变异被捕获；非 0 = 实现缺陷（假红）或探针失辨（假绿）。
 
-## 生产级实现要点（本模块已落地）
+## 实现要点（本模块已落地）
 1. **六边形 + 端口防腐**：`domain/engine` 为纯逻辑，绝不 import 任何 Spring/DB/实现；一切外部能力经 `port` 接入。
 2. **生产 JDBC 端口**（`adapter/jdbc/JdbcBackedPorts`）实现全部 7 个端口：
    - 累计采用 `version` 乐观锁（CAS）：并发提交版本不符即 `CONFLICT`（fail-closed，禁静默覆盖）；
