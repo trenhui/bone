@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 93,
+  "executableCount": 94,
   "retired": [],
   "entries": [
     {
@@ -609,6 +609,12 @@
       "file": "0087_seed_claim_config_menus.sql",
       "kind": "mixed",
       "summary": "给「智能理赔」目录补 3 条运营配置面的叶子菜单（保单管理 / 计划配置 / 额度管理，order_no 11..13）并注册 4 个权限码（claim:policy:read/write、claim:quota:read/write）。菜单与前端 bone-claim-app/src/routes.tsx 必须同提交改：scripts/e2e/ui/claim-single-nav-probe.mjs 对「IAM 菜单 ↔ routes.tsx」做双向全等断言（页面有路由而菜单无入口 ⇒ 功能不可达；菜单有而路由无 ⇒ 幽灵菜单），且逐条比对菜单名与页面名逐字一致、菜单顺序与声明顺序一致。三条菜单的 permission 用读码而非写码（0078 已记此口径：菜单用写权限码会让只持读权限的角色看不见入口），写动作由端点 @PreAuthorize 把关。图标须在 bone-shell 的 MENU_ICON_MAP 白名单内（未登记会被静默降级成默认图标且不报错）。"
+    },
+    {
+      "order": 94,
+      "file": "0088_approver_id_inert_relabel.sql",
+      "kind": "dml",
+      "summary": "决策 D1 收口：把 approver_id 的惰性弃用语义显式标注——仅 FIELD/INITIATOR_SELECT 指定审批人使用，组织策略(LINE_MANAGER/DEPT_HEAD/LEVEL_UP)不读，v1/v2 在途实例仍按启动版本读、禁止删列（expand/contract）；只改注释不动物理列与数据"
     }
   ],
   "ordinalConflicts": [
