@@ -37,6 +37,24 @@ public interface ApproverResolver {
       WorkflowDefinition.Node node,
       ApproverContext context);
 
+  /**
+   * 解释「为什么没解析出人」，供引擎把挂起原因写成可定位、可操作的一句话。
+   *
+   * <p><b>为什么需要它</b>：引擎只能看到「审批人列表为空」，看不到空的原因。若挂起原因只有「审批节点 mgr 解析不出审批人」，运维到场后要在 「补主管 / 补部门负责人 /
+   * 修组织目录连通性 / 改流程定义」之间逐个试——而单据此刻正停在半路。 把原因前移到解析层，是因为只有解析层知道自己查了什么、查的是谁的什么数据。
+   *
+   * <p><b>契约</b>：仅当 {@link #resolve} 返回空时被调用。返回值应说明「哪个策略、谁的什么数据缺失、怎么修」； 返回 {@code null}
+   * 表示不提供诊断，引擎退化为只写策略名。 <b>不得</b>在此方法里再次发起远程查询或抛异常——它处在挂起路径上，异常会让挂起本身失败， 把「可见的卡单」变成「不可见的卡单」。
+   *
+   * <p>以 default 方法提供，是为了不打断既有实现：本接口是函数式接口，宿主大量以 lambda 实现， 加抽象方法会一次性失效。
+   */
+  default String describeFailure(
+      WorkflowDefinition.AssignmentRule rule,
+      WorkflowDefinition.Node node,
+      ApproverContext context) {
+    return null;
+  }
+
   /** 解析上下文。 */
   record ApproverContext(
       String entityCode, String recordId, String initiatorId, Map<String, Object> recordData) {}

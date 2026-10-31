@@ -111,4 +111,48 @@ class RecordFieldApproverResolverOrgHierarchyTest {
 
     assertTrue(result.isEmpty());
   }
+
+  @Test
+  @DisplayName("部门负责人自己发单（DEPT_HEAD 解析到本人）：上溯到其主管，而不是挂起")
+  void deptHead_selfLeader_escalatesToLineManager() {
+    // 真实场景：部门负责人提交报销。DEPT_HEAD 必然解析到本人，
+    // 若不处理，这个人的每一张单据都会永久挂在 dept 节点（实测租户 1001 的 24 个真实发起人里 10 个如此）。
+    OrgHierarchyProvider org =
+        new InMemoryOrgHierarchyProvider()
+            .withDeptHead("u1", "u1") // u1 就是本部门负责人
+            .withLineManager("u1", "boss"); // u1 的主管是 boss
+    ApproverResolver resolver = new RecordFieldApproverResolver(null, org);
+
+    List<String> result =
+        resolver.resolve(new AssignmentRule("DEPT_HEAD", Map.of()), NODE, ctx("u1"));
+
+    assertEquals(List.of("boss"), result, "必须换成上级来审，而不是返回空（挂起）或返回本人（自审批）：节点不能少，但人必须换");
+  }
+
+  @Test
+  @DisplayName("部门负责人自己发单且无主管（顶层）：返回空 → 挂起，不得退回本人")
+  void deptHead_selfLeaderWithoutManager_returnsEmpty() {
+    // 上溯到顶仍无人的正确结局是挂起等人工指派，绝不能退回「本人审自己」。
+    OrgHierarchyProvider org =
+        new InMemoryOrgHierarchyProvider().withDeptHead("u1", "u1"); // 无 lineManager
+    ApproverResolver resolver = new RecordFieldApproverResolver(null, org);
+
+    List<String> result =
+        resolver.resolve(new AssignmentRule("DEPT_HEAD", Map.of()), NODE, ctx("u1"));
+
+    assertTrue(result.isEmpty());
+  }
+
+  @Test
+  @DisplayName("主管自环（manager_id = 自己）：上溯无效，返回空而非死循环")
+  void lineManager_selfLoop_returnsEmpty() {
+    OrgHierarchyProvider org =
+        new InMemoryOrgHierarchyProvider().withLineManager("u1", "u1"); // 数据脏：自己是自己的主管
+    ApproverResolver resolver = new RecordFieldApproverResolver(null, org);
+
+    List<String> result =
+        resolver.resolve(new AssignmentRule("LINE_MANAGER", Map.of()), NODE, ctx("u1"));
+
+    assertTrue(result.isEmpty(), "自环上溯后仍是本人，必须判为解析不出（挂起），不得成环");
+  }
 }

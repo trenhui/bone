@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 89,
+  "executableCount": 90,
   "retired": [],
   "entries": [
     {
@@ -567,6 +567,12 @@
       "file": "0083_expense_org_routing_v3.sql",
       "kind": "dml",
       "summary": "报销/采购流程 v3：mgr 改 LINE_MANAGER、dept 改 DEPT_HEAD、采购单级审批改 DEPT_HEAD，把审批人从「申请人自选的表单字段 approver_id」换成「IAM 组织层级实时解析」。v1/v2 两个语义不同的节点共用同一个 approver_id，实测 tenant 0 全部 wf_task 的 assignee 恒为 9104，分级审批退化为一人连审两级；更根本的是审批人由被控制方自己指定（SoD 缺陷）。图结构（nodes/edges）与 v2 逐字一致，只改 assignments——一次只动一个变量。依赖 0082 建列+回填，且需运行期开关 bone.workflow.org-directory.enabled=true；任一缺失时引擎 fail-closed 挂起（不放行、不回落表单字段）。回滚无需发版：UPDATE wf_process_def SET enabled=0 WHERE def_version=3 → findLatestPublished 自动回落 v2"
+    },
+    {
+      "order": 90,
+      "file": "0084_org_leader_reporting_line.sql",
+      "kind": "dml",
+      "summary": "补齐部门负责人向父部门负责人的汇报线，修掉 0082 留下的结构性空洞：0082 让负责人自己的 manager_id 恒为 NULL（假设「负责人没有上级」），但真实三层部门树里科室负责人要向事业部负责人汇报。实测后果（scripts/audit-org-coverage.py，分母取 wf_instance.started_by）：租户 1001 的 24 个真实发起人中有 10 个是部门负责人，在 v3 定义下mgr(LINE_MANAGER) 因 manager_id 为空、dept(DEPT_HEAD) 因解析到本人，双双挂起——42% 的报销提交直接卡死。本脚本 ① 负责人主管=父部门负责人 ② 普通成员主管=本部门负责人（补 tenant 0 遗漏）③ 根部门负责人保持 NULL（他确实无上级，由 assignTask 特批，是正确结局）。必须与解析器侧的「自审批上溯」一起生效：只补数据，DEPT_HEAD 仍解析到本人；只改解析器，上溯目标 manager_id 为空无处可去。"
     },
     {
       "order": null,

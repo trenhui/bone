@@ -22,6 +22,7 @@ import com.bone.workflow.ports.spi.WorkflowStatusPort;
 import com.bone.workflow.ports.spi.WorkflowUnitOfWork;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -805,12 +806,15 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     // 只有审批节点才需要「重新解析审批人」：条件节点挂起是因<b>分支不可裁决</b>（如两条分支同时命中），
     // 恢复应直接重跑该节点；若也去解析审批人，条件节点没有指派规则 ⇒ 永远 NO_ASSIGNEE ⇒ 死单不可恢复。
     boolean approvalNode = node.type() == WorkflowDefinition.NodeType.APPROVE;
-    List<String> assignees =
-        approvalNode ? resolveAssignees(node, definition, instance, data) : List.of();
-    if (approvalNode && assignees.isEmpty()) {
+    Resolution resolution =
+        approvalNode ? resolveAssignees(node, definition, instance, data) : Resolution.EMPTY;
+    List<String> assignees = resolution.assignees();
+    if (approvalNode && resolution.isEmpty()) {
       // 组织架构仍未修复：保持挂起，明确报错，避免「恢复成功」的假象把死单变成更隐蔽的卡单。
+      // 原因一并带出——管理员点「恢复」失败时最需要知道「到底还差哪一项」，否则只能反复试。
       throw new WorkflowEngineException(
-          WorkflowErrorCode.NO_ASSIGNEE, "审批人仍解析不出，无法恢复挂起：" + instance.currentNodeCode());
+          WorkflowErrorCode.NO_ASSIGNEE,
+          "审批人仍解析不出，无法恢复挂起：" + node.code() + "（" + resolution.failureSummary() + "）");
     }
     if (approvalNode && isSelfApproval(instance, assignees)) {
       // 自审批未解除（仍解析出发起人）：保持挂起并明确报错，不得派单给发起人。
@@ -1170,11 +1174,17 @@ public class WorkflowEngineImpl implements WorkflowEngine {
           // 抄送（知会）：解析抄送人 → 逐人发知会 → 立即穿透到下一节点。
           // 抄送<b>不建任务、不阻塞</b>——它不是审批动作，收件人无需决策；若建了待办，
           // 会签/推进判据会把抄送人算进「未决策」集合，流程反而卡死。
-          List<String> ccRecipients = resolveAssignees(node, definition, instance, data);
-          if (ccRecipients.isEmpty()) {
+          Resolution cc = resolveAssignees(node, definition, instance, data);
+          if (cc.isEmpty()) {
             // 抄送人解析不出：不挂起（抄送不是阻塞动作），记 WARN 让配置问题可见即可。
-            LOG.warn("[workflow] 抄送节点 {} 解析不出抄送人，跳过知会：instance={}", currentNodeCode, instance.id());
+            // 原因一并打出——否则只看到「跳过知会」，无从知道是抄送规则配错还是人没配。
+            LOG.warn(
+                "[workflow] 抄送节点 {} 解析不出抄送人，跳过知会：instance={} 原因：{}",
+                currentNodeCode,
+                instance.id(),
+                cc.failureSummary());
           } else {
+            List<String> ccRecipients = cc.assignees();
             notify(() -> notificationPort.notifyCc(instance, currentNodeCode, ccRecipients));
             LOG.info(
                 "[workflow] 抄送：instance={} node={} recipients={}",
@@ -1222,21 +1232,31 @@ public class WorkflowEngineImpl implements WorkflowEngine {
           current = selection.to();
         }
         case APPROVE -> {
-          List<String> assignees = resolveAssignees(node, definition, instance, data);
-          if (assignees.isEmpty()) {
-            suspend(instance, node, operatorId, "审批节点 " + node.code() + " 解析不出审批人");
+          Resolution resolution = resolveAssignees(node, definition, instance, data);
+          if (resolution.isEmpty()) {
+            // 挂起原因必须落到「谁的什么数据缺失、怎么修」——只写「解析不出审批人」会让运维
+            // 在补主管 / 补负责人 / 查目录连通性之间盲试，而单据此刻正停在半路。
+            suspend(
+                instance,
+                node,
+                operatorId,
+                "审批节点 "
+                    + node.code()
+                    + " 解析不出审批人："
+                    + resolution.failureSummary()
+                    + "（补齐组织数据后可 resume 续跑，或用 assignTask 直接指派）");
             return latestInstance(instance);
           }
           // 内控红线（职责分离）：解析出的审批人若含发起人本人，一律挂起而不派单。
           // 为什么不做「自动跳过发起人」：跳过 = 少一道审批，单据表面通过但内控环节缺失，比挂起更隐蔽、
           // 审计更难发现。挂起则把问题显式暴露给管理员，经 assignTask 指派他人即可续跑。
-          if (isSelfApproval(instance, assignees)) {
+          if (isSelfApproval(instance, resolution.assignees())) {
             suspend(
                 instance, node, operatorId, "审批节点 " + node.code() + " 解析出的审批人含发起人本人（自审批，违反职责分离）");
             return latestInstance(instance);
           }
           Instant now = clock.instant();
-          for (String assignee : assignees) {
+          for (String assignee : resolution.assignees()) {
             WorkflowTask task =
                 new WorkflowTask(
                     idGenerator.nextId(),
@@ -1257,7 +1277,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
               "[workflow] 派单：instance={} node={} assignees={}",
               instance.id(),
               node.code(),
-              assignees);
+              resolution.assignees());
           return latestInstance(instance); // 停在审批节点，等待人工决策
         }
         case END -> {
@@ -1369,8 +1389,16 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     LOG.warn("[workflow] 流程挂起：instance={} {}", instance.id(), reason);
   }
 
-  /** 解析节点审批人（去重且保序）。 */
-  private List<String> resolveAssignees(
+  /**
+   * 解析节点审批人（去重且保序），并收集「哪条规则没解析出人、为什么」。
+   *
+   * <p><b>为什么要一并收集原因</b>：解析结果是后续挂起判定的唯一依据，而挂起原因必须能落到「谁的什么数据缺失」。
+   * 若只返回空列表，上层只剩一句「解析不出审批人」——运维无从下手。收集在这里做，是因为此刻 {@code rule} / {@code node} / {@code context}
+   * 都还在作用域内，出了这个方法就只剩一个空 List。
+   *
+   * <p>注意：只有在<b>全部</b>规则都解析为空时才需要原因（部分成功即可派单）。此处仍对每条空规则收集， 由调用方在整体为空时取用——避免「部分成功」时白跑诊断。
+   */
+  private Resolution resolveAssignees(
       WorkflowDefinition.Node node,
       WorkflowDefinition definition,
       WorkflowInstance instance,
@@ -1378,13 +1406,37 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     List<WorkflowDefinition.AssignmentRule> rules =
         definition.assignments().getOrDefault(node.code(), List.of());
     Set<String> assignees = new LinkedHashSet<>();
+    List<String> failures = new ArrayList<>();
     ApproverResolver.ApproverContext context =
         new ApproverResolver.ApproverContext(
             instance.entityCode(), instance.recordId(), instance.startedBy(), data);
     for (WorkflowDefinition.AssignmentRule rule : rules) {
-      assignees.addAll(approverResolver.resolve(rule, node, context));
+      List<String> resolved = approverResolver.resolve(rule, node, context);
+      if (resolved != null && !resolved.isEmpty()) {
+        assignees.addAll(resolved);
+        continue;
+      }
+      String why = approverResolver.describeFailure(rule, node, context);
+      failures.add(
+          why == null || why.isBlank() ? "策略 " + rule.strategy() + " 未解析出人（该解析器未提供诊断信息）" : why);
     }
-    return List.copyOf(assignees);
+    return new Resolution(List.copyOf(assignees), List.copyOf(failures));
+  }
+
+  /** 审批人解析结果：办理人 + 每条落空规则的原因（仅在整体为空时才被使用）。 */
+  private record Resolution(List<String> assignees, List<String> failures) {
+
+    /** 非审批节点（如条件节点）不需要解析审批人，用空结果占位。 */
+    static final Resolution EMPTY = new Resolution(List.of(), List.of());
+
+    boolean isEmpty() {
+      return assignees.isEmpty();
+    }
+
+    /** 供挂起原因使用的失败摘要：无规则与「有规则但都落空」要区分开，两者修法完全不同。 */
+    String failureSummary() {
+      return failures.isEmpty() ? "该节点未配置任何指派规则" : String.join("；", failures);
+    }
   }
 
   /**
