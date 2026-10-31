@@ -66,13 +66,23 @@ public class QuotaQueryService {
       BigDecimal available,
       List<Txn> transactions) {
 
-    /** 额度流水视图（守恒校验与审计的数据源）。 */
+    /**
+     * 额度流水视图（守恒校验与审计的数据源）。
+     *
+     * <p><b>{@code beforeAmount}/{@code afterAmount} 只对"改余额"的流水有意义</b>：{@code
+     * txn_type=DAILY}（日用量，Q-05）与 {@code DEDUCTIBLE}（免赔消抵）记的是事实，其一侧或两侧恒为 0——前台若把它渲染成"变动前 → 变动后"，
+     * 会像一笔"金额 X 却没改变余额"的坏数据。判断某行改没改余额，看的是 {@code txnType} 而不是金额是否大于 0。
+     *
+     * <p><b>{@code bizDate} 必须出现在视图里</b>：日限额按业务日累计，排障时第一个问题就是"这笔算在哪一天"。 只给 {@code
+     * occurredAt}（落账时刻）回答不了——9 月的发票 10 月才赔，两个日期本来就不同，缺了业务日就分不清"当日额度真赔满了"还是"取错了天"。
+     */
     public record Txn(
         String direction,
         String txnType,
         BigDecimal amount,
         BigDecimal beforeAmount,
         BigDecimal afterAmount,
+        java.time.LocalDate bizDate,
         String idempotencyKey,
         Instant occurredAt) {
 
@@ -83,6 +93,7 @@ public class QuotaQueryService {
             t.getAmount(),
             t.getBeforeAmount(),
             t.getAfterAmount(),
+            t.getBizDate(),
             t.getIdempotencyKey(),
             t.getOccurredAt());
       }

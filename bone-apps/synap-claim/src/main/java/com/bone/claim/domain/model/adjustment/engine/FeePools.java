@@ -86,10 +86,20 @@ public record FeePools(List<Pool> pools, List<ItemContribution> contributions) {
    * <p>归集口径逐条对齐条款：
    *
    * <ul>
-   *   <li>合理金额：{@code valid_amount}（已由上游按 §3.4 ① 扣三方与核减）；{@code social_flag=IN} 计范围内， 其余计范围外；
+   *   <li>合理金额：{@code valid_amount} 为基数，<b>再在此处净扣统筹与第三方已付</b>；{@code social_flag=IN} 计范围内，其余计范围外；
    *   <li>自付二：{@code self_pay_2}，<b>全部计范围外</b>（乙类先行自付属目录外自担）；
    *   <li>总自费：{@code self_pay_c}（丙类 + 超限价），<b>全部计范围外</b>；
    *   <li>无明细的纯头行（{@code itemId == null}）跳过——LEFT JOIN 语义，否则赔案头金额会被重复计入。
+   * </ul>
+   *
+   * <p><b>{@code valid_amount} 到底含哪些扣减（别搞错，错了就是双扣或少赔）</b>：它由初审核定的 {@code
+   * ClaimItem#approveValidAmount} 写入，口径是「明细金额 − 核减（不合理费用）」， 差额自动落到 {@code
+   * invalid_amount}。也就是说<b>它尚未扣统筹与第三方已付</b>——这两项正是本方法在下面 {@code priorPaid} 处扣除的。据此：
+   *
+   * <ul>
+   *   <li>「核减」在上游做一次（进 {@code valid_amount}），引擎不再重复扣 {@code invalid_amount}；
+   *   <li>「统筹 + 第三方已付」在<b>本方法</b>做一次，是全链唯一的扣除点；
+   *   <li>两者都不得在另一侧再扣一遍：多扣 = 少赔（客户吃亏），漏扣 = 超赔（不可获利原则被破）。
    * </ul>
    *
    * @param rows 明细投影

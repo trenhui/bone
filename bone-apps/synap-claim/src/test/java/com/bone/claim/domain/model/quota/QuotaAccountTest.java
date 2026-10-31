@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.bone.core.exception.DomainException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -200,6 +201,56 @@ class QuotaAccountTest {
 
     account.markRemoved();
     assertThat(account.isRemoved()).isTrue();
+  }
+
+  // ===================== 日用量流水：守恒中立的第三条事实（Q-05） =====================
+
+  @Test
+  @DisplayName("日用量流水不动三值：不参与守恒、不影响可用额，因此不需要「每日清零」作业")
+  void dailyLedgerIsConservationNeutral() {
+    QuotaAccount account = account(new BigDecimal("20000.00"));
+    account.reserveSoft(1L, new BigDecimal("500.00"), 1001L, "S1", "CL001:SOFT:1");
+    LocalDate day = LocalDate.of(2026, 10, 1);
+
+    QuotaTransaction occupied =
+        account.accumulateDaily(2L, new BigDecimal("300.00"), day, 1001L, "S1", "CL001:DAILY:1");
+
+    assertThat(occupied.getDirection()).isEqualTo("OCCUPY");
+    assertThat(occupied.getTxnType()).isEqualTo("DAILY");
+    assertThat(occupied.getBizDate()).isEqualTo(day);
+
+    // 关键断言：日用量是「事实」不是「状态」，账户三值一个都不能动。
+    // 若在这里顺手扣 frozen，同一笔赔付会既进冻结额又进日累计——核赔看到的可用额偏小、
+    // 对账按 initial == claimed + frozen + available 却仍然平，两处都"看起来正常"，最难查。
+    assertThat(account.getQuotaFrozen()).isEqualByComparingTo("500.00");
+    assertThat(account.getQuotaClaimed()).isEqualByComparingTo("0.00");
+    assertThat(account.available()).isEqualByComparingTo("19500.00");
+
+    // 回退同样只追加事实，不反向放大任何余额
+    account.reduceDaily(3L, new BigDecimal("300.00"), day, 1001L, "S1", "CL001:DAILY_ROLLBACK:1");
+    assertThat(account.getQuotaFrozen()).isEqualByComparingTo("500.00");
+    assertThat(account.available()).isEqualByComparingTo("19500.00");
+    assertThat(account.getTransactions()).as("软占 1 条 + 日占用/日回退各 1 条：日用量只追加事实，不产生新的余额流水").hasSize(3);
+    assertThat(
+            account.getTransactions().stream()
+                .filter(t -> "DAILY".equals(t.getTxnType()))
+                .allMatch(t -> day.equals(t.getBizDate())))
+        .as("按日流水的业务日必须落在同一天，否则读侧按 biz_date 聚合时占用与回退两边对不上")
+        .isTrue();
+  }
+
+  @Test
+  @DisplayName("日用量流水：缺业务日或金额非正不落账（算不到某一天的钱不得污染任何一天）")
+  void dailyLedgerRequiresBusinessDate() {
+    QuotaAccount account = account(new BigDecimal("20000.00"));
+    LocalDate day = LocalDate.of(2026, 10, 1);
+
+    assertThat(account.accumulateDaily(1L, new BigDecimal("300.00"), null, 1001L, "S1", "K1"))
+        .as("没有业务日的钱算不到任何一天，硬记一笔会把它摊到某个无辜的日子上")
+        .isNull();
+    assertThat(account.accumulateDaily(2L, BigDecimal.ZERO, day, 1001L, "S1", "K2")).isNull();
+    assertThat(account.reduceDaily(3L, new BigDecimal("-1.00"), day, 1001L, "S1", "K3")).isNull();
+    assertThat(account.getTransactions()).isEmpty();
   }
 
   // ===================== 释放归属：只还自己的钱（P0-5） =====================

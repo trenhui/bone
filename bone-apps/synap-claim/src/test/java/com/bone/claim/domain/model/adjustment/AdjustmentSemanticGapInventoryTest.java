@@ -55,8 +55,13 @@ class AdjustmentSemanticGapInventoryTest {
           new Step(
               "①费用明细筛选（目录/合理必要）",
               Status.PARTIAL,
-              "Adjustment.apply 仅按 itemSocialFlag 做社保内外粗筛，无目录编码/合理必要性判定",
-              "《理算引擎内部设计》§算法 · Go-Live G2"),
+              "「合理必要性」一侧已闭环：核减由初审核定写入 ClaimItem.approveValidAmount"
+                  + "（明细金额 − 核减 ⇒ valid_amount，差额记 invalid_amount），引擎消费 valid_amount 并"
+                  + "在 FeePools.aggregate 净扣统筹+第三方（全链唯一扣除点，checkSettlementConsistency 守已付≤合理）——"
+                  + "故 invalid_amount 零读取是分工，不是漏读。仍缺「目录准入」一侧：item_code 已入库但不参与判定，"
+                  + "无目录内/目录外匹配，也无医院/病种/药品名单的本地比对（本轮询价限定直接拒绝，LIMITED_CONDITION_NOT_MET）——"
+                  + "两者都需外部目录主数据，本仓库不可闭环",
+              "V1 §3.4（落地口径表）· §4.1 · Go-Live G2"),
           new Step(
               "②发票级免赔",
               Status.SUPPORTED,
