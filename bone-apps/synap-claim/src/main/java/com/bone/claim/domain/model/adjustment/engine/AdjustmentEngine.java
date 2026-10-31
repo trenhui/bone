@@ -1285,13 +1285,96 @@ public final class AdjustmentEngine {
           request.daysSinceEffective(),
           rule.waitingPeriodDays());
     }
-    if (rule.limitedConditions().enabled()) {
-      throw RuleGap.of(
-          RuleGap.Code.LIMITED_CONDITION_NOT_MET,
-          "责任启用了适用限定（医院=%s / 病种=%s）：名单比对需要外部目录，V1 未接入",
-          rule.limitedConditions().hospitalCode(),
-          rule.limitedConditions().diseaseCode());
+    if (rule.limitedConditions().active()) {
+      checkLimitedConditions(request, rule.limitedConditions());
     }
+  }
+
+  /**
+   * 适用限定（V1 §2 要素 6）：医院 / 病种 白黑名单比对。
+   *
+   * <p><b>为什么这两维能落地而其余四维不能</b>：医院编码与病种编码在 V10 已随「次」分组落到 {@code
+   * t_claim_case}，案情自带，比对是确定行为；区域/医保/药品/诊疗要外部主数据库，本仓库给不出。 只做能确定的部分，且<b>对判不出来的部分显式拒绝</b>，是这里唯一的诚实做法。
+   *
+   * <p><b>三个不可省的判定</b>：
+   *
+   * <ol>
+   *   <li>编码缺失 ⇒ {@code LIMITED_CONDITION_UNDETERMINED}。按"符合"放行等于白名单配了白配；按"不符"拒赔等于替客户做拒赔决定，
+   *       而原因只是录入漏了；
+   *   <li>同案多值 ⇒ 同上拒绝。这两个字段是<b>发票级</b>事实（一赔案一发票，一案一值），出现多值说明数据串了， 任取其一都是"看起来合理"的错；
+   *   <li>维度之间取 <b>与</b>：条款写"限 A 医院"与"限 D 病种"是同一条责任的叠加限制，任一维不符即整条不适用。
+   * </ol>
+   */
+  private static void checkLimitedConditions(
+      Request request, LiabilityRule.LimitedConditions conditions) {
+    if (!conditions.hospitalCodes().isEmpty()) {
+      java.util.Set<String> hospitals =
+          claimLevelCodes(request.rows(), ClaimWithItemsProjection::getHospitalCode, "医院编码");
+      if (!admitted(conditions, hospitals, conditions.hospitalCodes())) {
+        throw RuleGap.of(
+            RuleGap.Code.LIMITED_CONDITION_NOT_MET,
+            "医院编码 %s %s责任适用限定名单 %s：该责任不适用于本次就诊",
+            hospitals.iterator().next(),
+            conditions.mode() == LiabilityRule.LimitedConditions.Mode.WHITELIST ? "不在" : "命中排除",
+            conditions.hospitalCodes());
+      }
+    }
+    if (!conditions.diagnosisCodes().isEmpty()) {
+      java.util.Set<String> diagnoses =
+          claimLevelCodes(request.rows(), ClaimWithItemsProjection::getDiagnosisCode, "病种编码");
+      if (!admitted(conditions, diagnoses, conditions.diagnosisCodes())) {
+        throw RuleGap.of(
+            RuleGap.Code.LIMITED_CONDITION_NOT_MET,
+            "病种编码 %s %s责任适用限定名单 %s：该责任不适用于本次就诊",
+            diagnoses.iterator().next(),
+            conditions.mode() == LiabilityRule.LimitedConditions.Mode.WHITELIST ? "不在" : "命中排除",
+            conditions.diagnosisCodes());
+      }
+    }
+  }
+
+  /** 白名单 = 命中才放行；黑名单 = 命中即拦。 */
+  private static boolean admitted(
+      LiabilityRule.LimitedConditions conditions,
+      java.util.Set<String> facts,
+      java.util.Set<String> listed) {
+    boolean hit = facts.stream().anyMatch(listed::contains);
+    return conditions.mode() == LiabilityRule.LimitedConditions.Mode.WHITELIST ? hit : !hit;
+  }
+
+  /**
+   * 取发票级（一案一值）编码事实。
+   *
+   * <p>投影里这两个字段逐行重复（明细扁平投影的形态使然），故取去重集合：正常案件恒为 1 个值， 0 个或多个都是数据问题，不能由引擎"挑一个"。
+   */
+  private static java.util.Set<String> claimLevelCodes(
+      List<ClaimWithItemsProjection> rows,
+      java.util.function.Function<ClaimWithItemsProjection, String> getter,
+      String dimension) {
+    java.util.Set<String> codes = new java.util.LinkedHashSet<>();
+    for (ClaimWithItemsProjection row : rows) {
+      if (row == null || row.getItemId() == null) {
+        continue;
+      }
+      String code = getter.apply(row);
+      if (code != null && !code.isBlank()) {
+        codes.add(code.trim());
+      }
+    }
+    if (codes.isEmpty()) {
+      throw RuleGap.of(
+          RuleGap.Code.LIMITED_CONDITION_UNDETERMINED,
+          "责任启用了适用限定，但案情缺少%s：判不出来时既不能按\"符合\"放行（白名单形同虚设），" + "也不能按\"不符\"拒赔（缺编码不是客户的责任），须补件后重算",
+          dimension);
+    }
+    if (codes.size() > 1) {
+      throw RuleGap.of(
+          RuleGap.Code.LIMITED_CONDITION_UNDETERMINED,
+          "同案出现多个%s %s：该字段是发票级事实（一案一值），多值说明数据串了，" + "任取其一都可能把不该赔的判成该赔",
+          dimension,
+          codes);
+    }
+    return codes;
   }
 
   /**

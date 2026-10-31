@@ -247,7 +247,11 @@ public class Adjustment extends TenantAggregateRoot<Long> {
             liability.invoiceDeduct(),
             liability.adjustDeduct(),
             liability.dailyLimit(),
-            LiabilityRule.DailyBasis.fromCode(liability.dailyLimitBasis()));
+            LiabilityRule.DailyBasis.fromCode(liability.dailyLimitBasis()),
+            LiabilityRule.LimitedConditions.of(
+                LiabilityRule.LimitedConditions.Mode.fromCode(liability.limitMode()),
+                liability.limitHospitalCodes(),
+                liability.limitDiagnosisCodes()));
 
     AdjustmentEngine.Outcome outcome;
     try {

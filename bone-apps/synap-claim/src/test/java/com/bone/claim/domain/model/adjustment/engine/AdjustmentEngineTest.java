@@ -1414,6 +1414,181 @@ class AdjustmentEngineTest {
     }
   }
 
+  @Nested
+  @DisplayName("适用限定：医院 / 病种 白黑名单（V1 §2 要素 6）")
+  class LimitedCondition {
+
+    @Test
+    @DisplayName("白名单命中医院：正常理算，不受限定影响")
+    void hospitalWhitelisted() {
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L,
+                  hospitalRows("200.00", "H001", "D01"),
+                  limitedRule("WHITELIST", "H001,H002", ""),
+                  Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("200.00");
+    }
+
+    @Test
+    @DisplayName("白名单未命中医院：LIMITED_CONDITION_NOT_MET（该责任不适用，不是数据问题）")
+    void hospitalNotWhitelisted() {
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L,
+                          hospitalRows("200.00", "H009", "D01"),
+                          limitedRule("WHITELIST", "H001,H002", ""),
+                          Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("LIMITED_CONDITION_NOT_MET")
+          .hasMessageContaining("H009");
+    }
+
+    @Test
+    @DisplayName("黑名单命中医院：拒绝")
+    void hospitalBlacklisted() {
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L,
+                          hospitalRows("200.00", "H001", "D01"),
+                          limitedRule("BLACKLIST", "H001", ""),
+                          Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("LIMITED_CONDITION_NOT_MET");
+    }
+
+    @Test
+    @DisplayName("黑名单未命中医院：正常理算（黑名单的常态是绝大多数不在名单内）")
+    void hospitalNotBlacklisted() {
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L,
+                  hospitalRows("200.00", "H009", "D01"),
+                  limitedRule("BLACKLIST", "H001", ""),
+                  Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("200.00");
+    }
+
+    @Test
+    @DisplayName("白名单命中病种：正常理算")
+    void diagnosisWhitelisted() {
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L,
+                  hospitalRows("200.00", "H009", "D01"),
+                  limitedRule("WHITELIST", "", "D01、D02"),
+                  Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount())
+          .as("顿号分隔的名单也要能解析——配置岗从表格粘贴过来的常态")
+          .isEqualByComparingTo("200.00");
+    }
+
+    @Test
+    @DisplayName("病种不在白名单：拒绝")
+    void diagnosisNotWhitelisted() {
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L,
+                          hospitalRows("200.00", "H001", "D99"),
+                          limitedRule("WHITELIST", "", "D01,D02"),
+                          Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("LIMITED_CONDITION_NOT_MET");
+    }
+
+    @Test
+    @DisplayName("两维同时配：取「与」——医院命中但病种不符仍整条不适用")
+    void bothDimensionsMustHold() {
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L,
+                          hospitalRows("200.00", "H001", "D99"),
+                          limitedRule("WHITELIST", "H001", "D01"),
+                          Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("LIMITED_CONDITION_NOT_MET");
+    }
+
+    @Test
+    @DisplayName("案情缺医院编码：LIMITED_CONDITION_UNDETERMINED（不按符合放行、也不按不符拒赔）")
+    void missingHospitalCode() {
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L,
+                          hospitalRows("200.00", "", "D01"),
+                          limitedRule("WHITELIST", "H001", ""),
+                          Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("LIMITED_CONDITION_UNDETERMINED");
+    }
+
+    @Test
+    @DisplayName("同案出现多个医院编码：数据串了，任取其一都可能把不该赔的判成该赔")
+    void conflictingHospitalCodes() {
+      ClaimWithItemsProjection first = row(3001L, "IN", "100.00", "0", "0");
+      first.setHospitalCode("H001");
+      ClaimWithItemsProjection second = row(3002L, "IN", "100.00", "0", "0");
+      second.setHospitalCode("H002");
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L,
+                          List.of(first, second),
+                          limitedRule("WHITELIST", "H001,H002", ""),
+                          Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("LIMITED_CONDITION_UNDETERMINED");
+    }
+
+    @Test
+    @DisplayName("启用限定但名单为空：装载期即拒（白名单空=全不赔、黑名单空=不设限，都不是业务意图）")
+    void emptyCodesRejectedAtLoad() {
+      assertThatThrownBy(() -> limitedRule("WHITELIST", "", "").validate())
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("INVALID_INPUT");
+    }
+
+    @Test
+    @DisplayName("模式为 NONE 时名单被忽略：配了名单忘开模式不会变成隐性限定")
+    void disabledModeIgnoresCodes() {
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L,
+                  hospitalRows("200.00", "H999", "D99"),
+                  limitedRule("NONE", "H001", "D01"),
+                  Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("200.00");
+    }
+
+    @Test
+    @DisplayName("无法识别的限定方式：fail-closed，不回落成 NONE")
+    void unknownModeRejected() {
+      assertThatThrownBy(() -> LiabilityRule.LimitedConditions.Mode.fromCode("PARTIAL"))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("INVALID_INPUT");
+    }
+  }
+
   private static LiabilityRule rule(
       String payPercent, PayRatioTable ratios, DeductibleRule deductible, String liabilityLimit) {
     return rule(payPercent, ratios, deductible, new BigDecimal(liabilityLimit));
@@ -1628,5 +1803,33 @@ class AdjustmentEngineTest {
         LiabilityRule.OccurrenceSpec.none(),
         LiabilityRule.Relation.none(),
         LiabilityRule.LimitedConditions.disabled());
+  }
+
+  /** 100% 赔付、无免赔、额度不限，只配适用限定（医院/病种名单按配置串给）。 */
+  private static LiabilityRule limitedRule(String mode, String hospitals, String diagnoses) {
+    return new LiabilityRule(
+        "L-LIMIT",
+        "v1",
+        LiabilityRule.LiabilityForm.REIMBURSEMENT,
+        false,
+        EnumSet.allOf(FeePools.Bucket.class),
+        0,
+        DeductibleRule.none(),
+        ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+        LiabilityRule.LimitSet.liabilityOnly(NO_CAP),
+        LiabilityRule.QuotaPolicy.defaults(),
+        LiabilityRule.OccurrenceSpec.none(),
+        LiabilityRule.Relation.none(),
+        LiabilityRule.LimitedConditions.of(
+            LiabilityRule.LimitedConditions.Mode.fromCode(mode), hospitals, diagnoses));
+  }
+
+  /** 带医院/病种编码的单行明细（这两个字段是发票级事实，正常案件案内恒定）。 */
+  private static List<ClaimWithItemsProjection> hospitalRows(
+      String reasonable, String hospitalCode, String diagnosisCode) {
+    ClaimWithItemsProjection p = row(3001L, "IN", reasonable, "0", "0");
+    p.setHospitalCode(hospitalCode);
+    p.setDiagnosisCode(diagnosisCode);
+    return List.of(p);
   }
 }

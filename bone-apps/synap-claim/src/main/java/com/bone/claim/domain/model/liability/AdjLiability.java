@@ -66,6 +66,18 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
   @Column(name = "daily_limit_basis")
   private String dailyLimitBasis;
 
+  /** 适用限定方式（V1 §2 要素 6）：NONE / WHITELIST / BLACKLIST。 */
+  @Column(name = "limit_mode")
+  private String limitMode;
+
+  /** 适用限定——医院编码名单（分隔串；空 = 该维度不限定）。 */
+  @Column(name = "limit_hospital_codes")
+  private String limitHospitalCodes;
+
+  /** 适用限定——病种编码名单（分隔串；空 = 该维度不限定）。 */
+  @Column(name = "limit_diagnosis_codes")
+  private String limitDiagnosisCodes;
+
   /** 是否仅赔付社保范围内（false 则目录外也按比例赔）。 */
   @Column(name = "social_only")
   private Integer socialOnly;
@@ -197,9 +209,67 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
     liability.dailyLimit = dailyLimit == null ? java.math.BigDecimal.ZERO : dailyLimit;
     liability.dailyLimitBasis =
         dailyLimitBasis == null || dailyLimitBasis.isBlank() ? "NONE" : dailyLimitBasis;
+    liability.limitMode = "NONE";
+    liability.limitHospitalCodes = "";
+    liability.limitDiagnosisCodes = "";
     liability.socialOnly = socialOnly == null ? 1 : socialOnly;
     liability.waitingPeriod = waitingPeriod == null ? 0 : waitingPeriod;
     liability.status = status == null ? "DRAFT" : status;
+    return liability;
+  }
+
+  /**
+   * 含适用限定（V1 §2 要素 6）的完整责任配置工厂。
+   *
+   * <p>限定只覆盖医院 / 病种两维——其余四维（区域/医保/药品/诊疗）需要外部主数据，本仓库无法闭环， 因此<b>没有对应列</b>：表达不出来，就不会出现"配了但引擎不读"的静默失效。
+   *
+   * @param limitMode {@code NONE} / {@code WHITELIST} / {@code BLACKLIST}；{@code NONE} 时名单被忽略
+   * @param limitHospitalCodes 医院编码串（空 = 该维度不限定）
+   * @param limitDiagnosisCodes 病种编码串（空 = 该维度不限定）
+   */
+  public static AdjLiability of(
+      Long id,
+      Long tenantId,
+      String liabilityUuid,
+      String liabilityVersion,
+      Long planId,
+      String liabilityCode,
+      String liabilityType,
+      java.math.BigDecimal payPercent,
+      java.math.BigDecimal liabilityDeduct,
+      java.math.BigDecimal liabilityLimit,
+      java.math.BigDecimal invoiceDeduct,
+      java.math.BigDecimal adjustDeduct,
+      java.math.BigDecimal dailyLimit,
+      String dailyLimitBasis,
+      String limitMode,
+      String limitHospitalCodes,
+      String limitDiagnosisCodes,
+      Integer socialOnly,
+      Integer waitingPeriod,
+      String status) {
+    AdjLiability liability =
+        of(
+            id,
+            tenantId,
+            liabilityUuid,
+            liabilityVersion,
+            planId,
+            liabilityCode,
+            liabilityType,
+            payPercent,
+            liabilityDeduct,
+            liabilityLimit,
+            invoiceDeduct,
+            adjustDeduct,
+            dailyLimit,
+            dailyLimitBasis,
+            socialOnly,
+            waitingPeriod,
+            status);
+    liability.limitMode = limitMode == null || limitMode.isBlank() ? "NONE" : limitMode;
+    liability.limitHospitalCodes = limitHospitalCodes == null ? "" : limitHospitalCodes;
+    liability.limitDiagnosisCodes = limitDiagnosisCodes == null ? "" : limitDiagnosisCodes;
     return liability;
   }
 
@@ -249,5 +319,24 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
   /** 日窗口口径（Q-05）；缺省 {@code NONE}（不启用）。 */
   public String dailyLimitBasis() {
     return dailyLimitBasis == null || dailyLimitBasis.isBlank() ? "NONE" : dailyLimitBasis;
+  }
+
+  /**
+   * 适用限定方式（V1 §2 要素 6）：{@code NONE} / {@code WHITELIST} / {@code BLACKLIST}。
+   *
+   * <p>{@code NONE} 为默认，与历史配置行为完全一致（不设限）；只有显式配了模式且配了名单才生效。
+   */
+  public String limitMode() {
+    return limitMode == null || limitMode.isBlank() ? "NONE" : limitMode;
+  }
+
+  /** 适用限定——医院编码名单（逗号/顿号/分号/空白分隔；仅在被限定的维度上判定）。 */
+  public String limitHospitalCodes() {
+    return limitHospitalCodes == null ? "" : limitHospitalCodes;
+  }
+
+  /** 适用限定——病种编码名单（同上）。 */
+  public String limitDiagnosisCodes() {
+    return limitDiagnosisCodes == null ? "" : limitDiagnosisCodes;
   }
 }

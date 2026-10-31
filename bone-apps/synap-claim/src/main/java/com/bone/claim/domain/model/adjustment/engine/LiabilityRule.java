@@ -254,11 +254,119 @@ public record LiabilityRule(
     }
   }
 
-  /** 适用限定（V1 §2 要素 6）：前置校验，不符即不赔。 */
-  public record LimitedConditions(boolean enabled, String hospitalCode, String diseaseCode) {
+  /**
+   * 适用限定（V1 §2 要素 6）：前置校验，不符即不赔。
+   *
+   * <p><b>只落 V1 六维里的两维——医院、病种</b>。理由是事实可得性与其它四维有本质差别：
+   *
+   * <ul>
+   *   <li>医院 / 病种：{@code t_claim_case.hospital_code} / {@code diagnosis_code} 已在 V10 为「次」分组落地，
+   *       案情自带编码，<b>不需要任何外部主数据</b>，可以现在就把比对做成确定行为；
+   *   <li>区域 / 医保 / 药品 / 诊疗：判定要么依赖外部目录（药品/诊疗编码表），要么依赖保单层面的区域划分口径，
+   *       本仓库无法闭环。这两维<b>当前没有配置列</b>——即"表达不出来"而不是"表达出来被静默忽略"； 接入时须同时补列，并在这里加 {@code
+   *       LIMITED_CONDITION_DIMENSION_UNSUPPORTED} 之类的显式拒绝， 不允许出现"配了但引擎不读"的第三种状态。
+   * </ul>
+   *
+   * <p><b>为什么不沿用旧的 {@code (enabled, hospitalCode, diseaseCode)} 三字段</b>：那三个字段既没进过配置映射 （生产恒为 {@code
+   * disabled()}），形状上也只能表达"限一家医院 + 一个病种"、无法表达黑名单与名单集。 真实条款是"限以下医院之一 / 除以下病种"， 单值等值比对会把"限 A、B
+   * 两家医院"这种最常见的写法逼成两条责任。
+   *
+   * @param mode 判定方式：{@code NONE} 不启用；{@code WHITELIST} 只赔名单内；{@code BLACKLIST} 名单内不赔
+   * @param hospitalCodes 医院编码集合（按编码而非名称比对——名称可改，编码是身份）
+   * @param diagnosisCodes 病种/诊断编码集合
+   */
+  public record LimitedConditions(
+      Mode mode, Set<String> hospitalCodes, Set<String> diagnosisCodes) {
+
+    /** 限定方式。混合模式（医院白名单 + 病种黑名单）V1 无依据，需由两条责任表达，故这里是单一模式。 */
+    public enum Mode {
+      /** 不启用（默认；与历史配置行为完全一致）。 */
+      NONE,
+      /** 白名单：只在名单内赔，名单外拒。 */
+      WHITELIST,
+      /** 黑名单：名单内拒，名单外赔。 */
+      BLACKLIST;
+
+      /** 解析配置值；空串为 {@link #NONE}，无法识别即 fail-closed（配错模式比不配更危险）。 */
+      public static Mode fromCode(String code) {
+        if (code == null || code.isBlank()) {
+          return NONE;
+        }
+        for (Mode mode : values()) {
+          if (mode.name().equalsIgnoreCase(code.trim())) {
+            return mode;
+          }
+        }
+        throw RuleGap.of(
+            RuleGap.Code.INVALID_INPUT, "无法识别的适用限定方式「%s」：仅支持 NONE / WHITELIST / BLACKLIST", code);
+      }
+    }
+
+    public LimitedConditions {
+      mode = mode == null ? Mode.NONE : mode;
+      hospitalCodes = ordered(hospitalCodes);
+      diagnosisCodes = ordered(diagnosisCodes);
+    }
+
+    /** 去重 + 保留录入顺序（{@code Set.copyOf} 的顺序未定义，会让同一份配置每次报出不同的名单排列）。 */
+    private static Set<String> ordered(Set<String> codes) {
+      return codes == null || codes.isEmpty()
+          ? Set.of()
+          : java.util.Collections.unmodifiableSet(new java.util.LinkedHashSet<>(codes));
+    }
 
     public static LimitedConditions disabled() {
-      return new LimitedConditions(false, "", "");
+      return new LimitedConditions(Mode.NONE, Set.of(), Set.of());
+    }
+
+    /**
+     * 由责任配置装配。
+     *
+     * <p>{@code mode = NONE} 时<b>忽略名单</b>：否则"配了名单忘了开模式"会变成一条没有任何限定的责任， 且从库里看不出差别——而这正是"配了不生效"的典型来源。
+     * 反过来"开了模式但名单为空"由 {@link LiabilityRule#validate()} 拒绝，两个方向都不留静默通道。
+     *
+     * @param mode 判定方式（由 {@link Mode#fromCode} 解析；无法识别即 fail-closed，不回落 {@code NONE}）
+     * @param hospitalCsv 医院编码串（逗号 / 顿号 / 分号 / 空白分隔，均可）
+     * @param diagnosisCsv 病种编码串（同一分隔规则）
+     */
+    public static LimitedConditions of(Mode mode, String hospitalCsv, String diagnosisCsv) {
+      if (mode == null || mode == Mode.NONE) {
+        return disabled();
+      }
+      return new LimitedConditions(mode, parseCodes(hospitalCsv), parseCodes(diagnosisCsv));
+    }
+
+    /**
+     * 解析编码串。
+     *
+     * <p>只做 trim 与去空，<b>不折叠大小写</b>：编码是主数据身份，{@code H001} 与 {@code h001} 在对手方系统里可能是两条不同记录，
+     * 折叠会让"改个大小写就绕过黑名单"。分隔符放宽是因为这些串由配置岗手工录入或从表格粘贴，全角逗号与顿号是常态。
+     *
+     * <p>返回<b>保留录入顺序</b>的集合：错误信息里要能按配置岗熟悉的顺序列出名单，{@code Set.copyOf} 的顺序未定义会让同一份配置
+     * 每次报出不同的名单排列，排障时以为是数据变了。
+     */
+    public static Set<String> parseCodes(String csv) {
+      if (csv == null || csv.isBlank()) {
+        return Set.of();
+      }
+      Set<String> codes = new java.util.LinkedHashSet<>();
+      for (String part : csv.split("[,，、;；\\s]+")) {
+        String code = part.trim();
+        if (!code.isEmpty()) {
+          codes.add(code);
+        }
+      }
+      return java.util.Collections.unmodifiableSet(codes);
+    }
+
+    /** 是否启用。 */
+    public boolean active() {
+      return mode != Mode.NONE;
+    }
+
+    /** 是否配了任一维度的名单（启用但两个名单都空属于配置不成立）。 */
+    public boolean hasAnyCode() {
+      return !hospitalCodes.isEmpty() || !diagnosisCodes.isEmpty();
     }
   }
 
@@ -374,6 +482,26 @@ public record LiabilityRule(
         adjustDeductible);
   }
 
+  /** 设置适用限定（医院/病种白黑名单）：返回新规则实例，原实例不变。 */
+  public LiabilityRule withLimitedConditions(LimitedConditions conditions) {
+    return new LiabilityRule(
+        liabilityUuid,
+        liabilityVersion,
+        form,
+        socialOnly,
+        coveredBuckets,
+        waitingPeriodDays,
+        this.deductible,
+        ratios,
+        limits,
+        quota,
+        occurrences,
+        relation,
+        conditions,
+        invoiceDeductible,
+        adjustDeductible);
+  }
+
   /**
    * V1 默认规则：由最小标量集构造，免赔对象取<b>理算金额</b>（§6.3 默认，先乘比例再减免赔）。
    *
@@ -470,6 +598,38 @@ public record LiabilityRule(
       BigDecimal adjustDeduct,
       BigDecimal dailyLimit,
       DailyBasis dailyBasis) {
+    return fromLegacy(
+        liabilityUuid,
+        liabilityVersion,
+        payPercent,
+        deductibleAmount,
+        liabilityLimit,
+        socialOnly,
+        invoiceDeduct,
+        adjustDeduct,
+        dailyLimit,
+        dailyBasis,
+        LimitedConditions.disabled());
+  }
+
+  /**
+   * 由<b>旧责任配置</b>映射，带齐三层免赔（年度 / 发票级 / 理算级）、日限额（Q-05）与适用限定（V1 §2 要素 6）。
+   *
+   * <p>适用限定在这里只做装配，<b>不做判定</b>：判定发生在 {@code checkPreconditions}，因为它需要案情事实（医院/病种编码），
+   * 而事实不在责任配置里。装配与判定分离也保证了"装载期能发现的配置问题"与"必须看到案子才能发现的数据问题"不会混成一个错误。
+   */
+  public static LiabilityRule fromLegacy(
+      String liabilityUuid,
+      String liabilityVersion,
+      BigDecimal payPercent,
+      BigDecimal deductibleAmount,
+      BigDecimal liabilityLimit,
+      boolean socialOnly,
+      BigDecimal invoiceDeduct,
+      BigDecimal adjustDeduct,
+      BigDecimal dailyLimit,
+      DailyBasis dailyBasis,
+      LimitedConditions limitedConditions) {
     LiabilityRule base =
         build(
             liabilityUuid,
@@ -485,7 +645,8 @@ public record LiabilityRule(
             : base.limits.withDaily(dailyLimit, dailyBasis);
     return base.withLimits(limits)
         .withInvoiceDeductible(DeductibleRule.annualAbsolute(Money.nz(invoiceDeduct)))
-        .withAdjustDeductible(DeductibleRule.annualAbsolute(Money.nz(adjustDeduct)));
+        .withAdjustDeductible(DeductibleRule.annualAbsolute(Money.nz(adjustDeduct)))
+        .withLimitedConditions(limitedConditions);
   }
 
   private static LiabilityRule build(
@@ -548,6 +709,12 @@ public record LiabilityRule(
           RuleGap.Code.INVALID_INPUT,
           "配置了日限额口径 %s 但日限额为 0：该口径永远不会生效（配了不生效 ⇒ 超赔）",
           limits.dailyBasis());
+    }
+    if (limitedConditions.active() && !limitedConditions.hasAnyCode()) {
+      throw RuleGap.of(
+          RuleGap.Code.INVALID_INPUT,
+          "启用了适用限定（%s）但医院与病种名单都为空：白名单空等于全不赔、黑名单空等于不设限，" + "两种都不是业务意图，须补齐名单或关闭限定",
+          limitedConditions.mode());
     }
     if (relation.sharedCode != null && !relation.sharedCode.isBlank()) {
       throw RuleGap.of(

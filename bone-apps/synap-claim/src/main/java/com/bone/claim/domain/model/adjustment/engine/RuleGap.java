@@ -35,8 +35,15 @@ public final class RuleGap extends RuntimeException {
     DAILY_LIMIT_WINDOW_STALE,
     /** 等待期内出险，不进理算（V1 §4.1 前置校验）。 */
     WAITING_PERIOD_NOT_MET,
-    /** 适用限定（区域/医院/药品/病种白黑名单）不符，前置校验即退。 */
+    /** 适用限定（医院/病种白黑名单）经比对<b>确定不符</b>：前置校验即退，属"该责任不适用"。 */
     LIMITED_CONDITION_NOT_MET,
+    /**
+     * 适用限定<b>判不出来</b>：责任配了限定，但案情缺该维度的编码（医院/病种为空），或同案内出现多个不同值。
+     *
+     * <p>与 {@link #LIMITED_CONDITION_NOT_MET} 严格分开：那是"确定不赔"，这是"不能自动判定"。
+     * 缺失时按"不符"处理会把缺编码的案子静默拒赔；按"符合"处理则白名单形同虚设——两者都是猜。
+     */
+    LIMITED_CONDITION_UNDETERMINED,
     /** 票面结算数据与费用池不自洽（自付一定义冲突 / 三式差额异常，Q-08）。 */
     INVOICE_SETTLEMENT_INCONSISTENT,
     /** 「次」的判定维度在明细里不存在（配了同日/同院分组却无发票日期等）：并成一组会少赔。 */
