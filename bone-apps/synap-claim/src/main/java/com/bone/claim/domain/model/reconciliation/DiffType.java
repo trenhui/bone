@@ -19,5 +19,21 @@ public enum DiffType {
    * claimed 与 frozen 一增一减）。 两者成因与处置不同：守恒破坏＝账目本身不平，立即冻结自动放款；投影漂移＝账户行是旧值， 按流水重算即可自愈（{@code
    * QuotaProjection#rebuild} + {@code QuotaAccount#reconcileProjection}）。
    */
-  PROJECTION_DRIFT
+  PROJECTION_DRIFT,
+  /**
+   * 资金阶段链不单调（§11.7 不变量 3）：流水里出现状态机不允许的迁移，或事件时间倒序。
+   *
+   * <p>与 {@link #STATUS_MISMATCH} 分开：后者只比「末条流水 = 结算单当前阶段」，对<b>逆向序列</b>无感—— 末条若是新追加的
+   * SOFT，与结算单同步改过之后仍然相等。判定表见 {@code FundingStageChain} （合法迁移表就是 {@code FundingStage}
+   * 的语义，不在对账服务里另写一份）。
+   */
+  STAGE_REGRESSION,
+  /**
+   * 案件与结算金额不一致（§11.7 不变量 6）：净已付 ≠ 该案最新理算总额。
+   *
+   * <p><b>为什么不比 {@code claim_case.approved_amount}</b>：那列是核赔决策时的快照，而结算金额取的是理算结果（资金权威口径，见 {@code
+   * AutoApprovalApplicationService} 的金额口径说明）。核减过的案件两者天然不等， 按 {@code approved_amount}
+   * 判会把正常案件全判成差异——判决式写错比没有判决式更糟。
+   */
+  CASE_SETTLE_MISMATCH
 }

@@ -8,17 +8,23 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.claim.application.port.out.TenantPort;
+import com.bone.claim.domain.model.adjustment.Adjustment;
+import com.bone.claim.domain.model.claim.projection.ClaimSettlementRef;
 import com.bone.claim.domain.model.quota.QuotaAccount;
 import com.bone.claim.domain.model.quota.QuotaTransaction;
 import com.bone.claim.domain.model.reconciliation.ReconciliationDiff;
 import com.bone.claim.domain.model.reconciliation.ReconciliationReport;
 import com.bone.claim.domain.model.settlement.FundingEvent;
+import com.bone.claim.domain.model.settlement.FundingStage;
 import com.bone.claim.domain.model.settlement.SettlementOrder;
+import com.bone.claim.domain.repository.AdjustmentRepository;
+import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.QuotaAccountRepository;
 import com.bone.claim.domain.repository.ReconciliationDiffRepository;
 import com.bone.claim.domain.repository.ReconciliationReportRepository;
 import com.bone.claim.domain.repository.SettlementRepository;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-/** 对账应用服务测试：QUOTA 守恒核对 + PAYMENT 结算/流水一致性 + 重跑幂等跳过。 */
+/** 对账应用服务测试：QUOTA 守恒核对 + PAYMENT 结算/流水一致性 + CASE_SETTLE 案件↔结算 + 重跑幂等跳过。 */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ReconciliationApplicationServiceTest {
@@ -41,6 +47,8 @@ class ReconciliationApplicationServiceTest {
 
   @Mock private QuotaAccountRepository quotaAccountRepository;
   @Mock private SettlementRepository settlementRepository;
+  @Mock private ClaimCaseRepository claimCaseRepository;
+  @Mock private AdjustmentRepository adjustmentRepository;
   @Mock private ReconciliationReportRepository reportRepository;
   @Mock private ReconciliationDiffRepository diffRepository;
   @Mock private TenantPort tenantPort;
@@ -54,10 +62,16 @@ class ReconciliationApplicationServiceTest {
             tenantPort,
             quotaAccountRepository,
             settlementRepository,
+            claimCaseRepository,
+            adjustmentRepository,
             reportRepository,
             diffRepository);
     when(tenantPort.currentTenantId()).thenReturn(TENANT);
     when(reportRepository.save(any())).thenReturn(99L);
+    // 默认让 CASE_SETTLE 通道「已存在报告」而跳过：本类多数用例只关心单条通道，
+    // 不跳过会让每条用例都多出一份 0 笔的空报告，把 verify(save) 的计数弄乱。
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_CASE_SETTLE))
+        .thenReturn(mock(ReconciliationReport.class));
   }
 
   @Test
@@ -198,6 +212,128 @@ class ReconciliationApplicationServiceTest {
   }
 
   @Test
+  @DisplayName("流水 PAID 后又出现 SOFT_RESERVED ⇒ STAGE_REGRESSION（末条比对看不出倒拨）")
+  void detectsStageRegression() {
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_QUOTA))
+        .thenReturn(mock(ReconciliationReport.class));
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_PAYMENT))
+        .thenReturn(null);
+
+    SettlementOrder settlement = settlement(1L, 21L, "C21", "SO21", "800.00", FundingStage.PAID);
+    when(settlementRepository.findByBizDate(BIZ_DATE)).thenReturn(List.of(settlement));
+    List<FundingEvent> events =
+        List.of(
+            event("SOFT_RESERVED", 0),
+            event("HARD_RESERVED", 1),
+            event("PAID", 2),
+            event("SOFT_RESERVED", 3));
+    when(settlementRepository.findFundingEventsBySettlementId(1L)).thenReturn(events);
+
+    service.reconcileForTenant(BIZ_DATE);
+
+    ArgumentCaptor<ReconciliationDiff> diffCaptor =
+        ArgumentCaptor.forClass(ReconciliationDiff.class);
+    // 只出一条差异：结算单阶段仍是 PAID、PAID 流水金额也等额，判据 ①② 全过——这正是「末条比对看不出倒拨」
+    verify(diffRepository).save(diffCaptor.capture());
+    ReconciliationDiff regression = diffCaptor.getValue();
+    assertEquals("STAGE_REGRESSION", regression.getDiffType());
+    assertEquals("PAID", regression.getLocalStage());
+    assertEquals("SOFT_RESERVED", regression.getRemoteStatus());
+  }
+
+  @Test
+  @DisplayName("结案但一张结算单都没有 ⇒ MISSING_LOCAL（结案侧扫不到就没有人会发现）")
+  void detectsFinishedClaimWithoutSettlement() {
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_QUOTA))
+        .thenReturn(mock(ReconciliationReport.class));
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_PAYMENT))
+        .thenReturn(mock(ReconciliationReport.class));
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_CASE_SETTLE))
+        .thenReturn(null);
+    ClaimSettlementRef finished = new ClaimSettlementRef(11L, "C11", new BigDecimal("800.00"));
+    Adjustment adjust = adjustment("800.00");
+    when(claimCaseRepository.findFinishedBetween(any(), any())).thenReturn(List.of(finished));
+    when(settlementRepository.findByBizDate(BIZ_DATE)).thenReturn(List.of());
+    when(settlementRepository.findByClaimId(11L)).thenReturn(List.of());
+    when(adjustmentRepository.findLatestByClaimId(11L)).thenReturn(adjust);
+
+    service.reconcileForTenant(BIZ_DATE);
+
+    ArgumentCaptor<ReconciliationReport> reportCaptor =
+        ArgumentCaptor.forClass(ReconciliationReport.class);
+    verify(reportRepository).save(reportCaptor.capture());
+    ReconciliationReport report = reportCaptor.getValue();
+    assertEquals(ReconciliationReport.CHANNEL_CASE_SETTLE, report.getChannel());
+    assertEquals(1, report.getTotalCount());
+    assertEquals(0, report.getBalancedCount());
+    assertEquals(1, report.getDiffCount());
+    assertEquals(0, report.getTotalAmount().compareTo(new BigDecimal("0.00")));
+    assertEquals(0, report.getCounterAmount().compareTo(new BigDecimal("800.00")));
+
+    ArgumentCaptor<ReconciliationDiff> diffCaptor =
+        ArgumentCaptor.forClass(ReconciliationDiff.class);
+    verify(diffRepository).save(diffCaptor.capture());
+    assertEquals("MISSING_LOCAL", diffCaptor.getValue().getDiffType());
+    assertEquals("NO_SETTLEMENT", diffCaptor.getValue().getRemoteStatus());
+    assertEquals(0, diffCaptor.getValue().getRemoteAmount().compareTo(new BigDecimal("800.00")));
+  }
+
+  @Test
+  @DisplayName("净已付 ≠ 最新理算总额 ⇒ CASE_SETTLE_MISMATCH（判决基准是理算，不是核定快照）")
+  void detectsCaseSettleAmountMismatch() {
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_QUOTA))
+        .thenReturn(mock(ReconciliationReport.class));
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_PAYMENT))
+        .thenReturn(mock(ReconciliationReport.class));
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_CASE_SETTLE))
+        .thenReturn(null);
+    when(claimCaseRepository.findFinishedBetween(any(), any())).thenReturn(List.of());
+
+    SettlementOrder settlement = settlement(2L, 12L, "C12", "SO12", "700.00", FundingStage.PAID);
+    Adjustment adjust = adjustment("800.00");
+    when(settlementRepository.findByBizDate(BIZ_DATE)).thenReturn(List.of(settlement));
+    when(settlementRepository.findByClaimId(12L)).thenReturn(List.of(settlement));
+    when(adjustmentRepository.findLatestByClaimId(12L)).thenReturn(adjust);
+
+    service.reconcileForTenant(BIZ_DATE);
+
+    ArgumentCaptor<ReconciliationDiff> diffCaptor =
+        ArgumentCaptor.forClass(ReconciliationDiff.class);
+    verify(diffRepository).save(diffCaptor.capture());
+    assertEquals("CASE_SETTLE_MISMATCH", diffCaptor.getValue().getDiffType());
+    assertEquals(0, diffCaptor.getValue().getLocalAmount().compareTo(new BigDecimal("700.00")));
+    assertEquals(0, diffCaptor.getValue().getRemoteAmount().compareTo(new BigDecimal("800.00")));
+  }
+
+  @Test
+  @DisplayName("有在途结算单 ⇒ CASE_SETTLE 不判（钱还没走完，此刻净付当然不等于应付）")
+  void skipsCaseSettleWhenSettlementInFlight() {
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_QUOTA))
+        .thenReturn(mock(ReconciliationReport.class));
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_PAYMENT))
+        .thenReturn(mock(ReconciliationReport.class));
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_CASE_SETTLE))
+        .thenReturn(null);
+    when(claimCaseRepository.findFinishedBetween(any(), any())).thenReturn(List.of());
+
+    SettlementOrder settlement =
+        settlement(3L, 13L, "C13", "SO13", "700.00", FundingStage.SOFT_RESERVED);
+    Adjustment adjust = adjustment("800.00");
+    when(settlementRepository.findByBizDate(BIZ_DATE)).thenReturn(List.of(settlement));
+    when(settlementRepository.findByClaimId(13L)).thenReturn(List.of(settlement));
+    when(adjustmentRepository.findLatestByClaimId(13L)).thenReturn(adjust);
+
+    service.reconcileForTenant(BIZ_DATE);
+
+    ArgumentCaptor<ReconciliationReport> reportCaptor =
+        ArgumentCaptor.forClass(ReconciliationReport.class);
+    verify(reportRepository).save(reportCaptor.capture());
+    assertEquals(0, reportCaptor.getValue().getDiffCount());
+    assertEquals(ReconciliationReport.STATUS_BALANCED, reportCaptor.getValue().getStatus());
+    verify(diffRepository, never()).save(any());
+  }
+
+  @Test
   void skipsWhenReportAlreadyExists() {
     when(reportRepository.findReport(any(), any(), any()))
         .thenReturn(mock(ReconciliationReport.class));
@@ -206,6 +342,42 @@ class ReconciliationApplicationServiceTest {
 
     verify(reportRepository, never()).save(any());
     verify(diffRepository, never()).save(any());
+  }
+
+  /** 结算单桩（金额/阶段/归属都给出：CASE_SETTLE 判据依赖 claimId 与 fundingStageEnum）。 */
+  private static SettlementOrder settlement(
+      long id,
+      long claimId,
+      String claimNo,
+      String settlementNo,
+      String amount,
+      FundingStage stage) {
+    SettlementOrder order = mock(SettlementOrder.class);
+    when(order.getId()).thenReturn(id);
+    when(order.getClaimId()).thenReturn(claimId);
+    when(order.getClaimNo()).thenReturn(claimNo);
+    when(order.getSettlementNo()).thenReturn(settlementNo);
+    when(order.getAmount()).thenReturn(new BigDecimal(amount));
+    when(order.getFundingStage()).thenReturn(stage.name());
+    when(order.fundingStageEnum()).thenReturn(stage);
+    return order;
+  }
+
+  /** 资金流水桩（{@code offsetSeconds} 决定事件先后，阶段链校验按顺序判）。 */
+  private static FundingEvent event(String stage, long offsetSeconds) {
+    FundingEvent e = mock(FundingEvent.class);
+    when(e.getStage()).thenReturn(stage);
+    when(e.stageEnum()).thenReturn(FundingStage.valueOf(stage));
+    when(e.getAmount()).thenReturn(new BigDecimal("800.00"));
+    when(e.getEventTime())
+        .thenReturn(Instant.parse("2026-10-24T01:00:00Z").plusSeconds(offsetSeconds));
+    return e;
+  }
+
+  private static Adjustment adjustment(String totalAmount) {
+    Adjustment adjustment = mock(Adjustment.class);
+    when(adjustment.getTotalAmount()).thenReturn(new BigDecimal(totalAmount));
+    return adjustment;
   }
 
   /** 账户桩（{@code deductibleUsed} 与 {@code capUsed} 显式给出：对账要逐列比对投影， 这两列若留空会被当成"投影 0"而平白多出漂移）。 */

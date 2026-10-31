@@ -2,6 +2,7 @@ package com.bone.claim.domain.repository;
 
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.projection.ClaimHeadProjection;
+import com.bone.claim.domain.model.claim.projection.ClaimSettlementRef;
 import com.bone.claim.domain.model.claim.projection.ClaimTenantRef;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
 import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
@@ -60,6 +61,20 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
    */
   @TenantScope(TenantScopeMode.ALL)
   List<ClaimTenantRef> findActiveClaimsAllTenants(@Param("limit") int limit);
+
+  /**
+   * 某业务日内结案（{@code status = FINISHED} 且 {@code closed_at} 落在 {@code [from, to)}）的赔案最小投影（对账
+   * CASE_SETTLE 通道输入）。
+   *
+   * <p><b>为什么按 {@code closed_at} 而不是 {@code updated_at}</b>：后者任何字段修改都会变（挂起、补件、申诉都写它），
+   * 拿它划日界会把「今天被谁碰过」当成「今天结的案」。{@code closed_at} 是进入终态的时间戳（申诉 48h 时限的起算点），语义唯一。
+   *
+   * <p><b>为什么要扫结案案件</b>：不变量 6 有一半是「结案了但没有结算单」——这种赔案在结算表里<b>一行都没有</b>，
+   * 从结算侧出发永远扫不到。只按结算单逐笔对平，漏的恰恰是「钱根本没出去」的那一类。
+   */
+  @TenantScope(TenantScopeMode.AUTO)
+  List<ClaimSettlementRef> findFinishedBetween(
+      @Param("from") java.sql.Timestamp from, @Param("to") java.sql.Timestamp to);
 
   /** 按报案号查（对外检索键）。 */
   default ClaimCase findByClaimNo(Long tenantId, String claimNo) {

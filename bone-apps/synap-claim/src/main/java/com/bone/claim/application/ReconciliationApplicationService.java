@@ -1,25 +1,36 @@
 package com.bone.claim.application;
 
 import com.bone.claim.application.port.out.TenantPort;
+import com.bone.claim.domain.model.adjustment.Adjustment;
+import com.bone.claim.domain.model.claim.projection.ClaimSettlementRef;
 import com.bone.claim.domain.model.quota.QuotaAccount;
 import com.bone.claim.domain.model.quota.QuotaProjection;
 import com.bone.claim.domain.model.reconciliation.DiffType;
 import com.bone.claim.domain.model.reconciliation.ReconciliationDiff;
 import com.bone.claim.domain.model.reconciliation.ReconciliationReport;
 import com.bone.claim.domain.model.settlement.FundingEvent;
+import com.bone.claim.domain.model.settlement.FundingStage;
+import com.bone.claim.domain.model.settlement.FundingStageChain;
 import com.bone.claim.domain.model.settlement.SettlementOrder;
+import com.bone.claim.domain.repository.AdjustmentRepository;
+import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.QuotaAccountRepository;
 import com.bone.claim.domain.repository.ReconciliationDiffRepository;
 import com.bone.claim.domain.repository.ReconciliationReportRepository;
 import com.bone.claim.domain.repository.SettlementRepository;
 import com.bone.core.annotation.NoDomainEvent;
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,20 +40,27 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 资金对账应用服务（§11.7，一期内部一致性对账）。
  *
- * <p>由 {@code adapter.schedule} 的 {@code ReconciliationJob} 逐租户驱动（ADR-0030）。一期两条通道：
+ * <p>由 {@code adapter.schedule} 的 {@code ReconciliationJob} 逐租户驱动（ADR-0030）。一期三条通道：
  *
  * <ul>
  *   <li>{@link ReconciliationReport#CHANNEL_QUOTA}：额度账户两条判据——①守恒式 {@code initial == claimed +
  *       frozen + available}，破坏记 {@link DiffType#QUOTA_BREAK}；②<b>投影 = 事实</b>：按 {@code
  *       t_quota_transaction} 重算 {@code frozen/claimed/deductible_used/cap_used} 并与账户行比对，不等记 {@link
  *       DiffType#PROJECTION_DRIFT}（§11.7 不变量 1 ①）。
- *   <li>{@link ReconciliationReport#CHANNEL_PAYMENT}：结算单 vs 资金流水阶段/金额一致性，PAID 结算单须有等额 PAID 流水，非
- *       PAID 结算单末条流水阶段须与结算阶段一致。
+ *   <li>{@link ReconciliationReport#CHANNEL_PAYMENT}：结算单 vs 资金流水三判据——①{@code PAID} 结算单须有等额 {@code
+ *       PAID} 流水；②非 {@code PAID} 结算单末条流水阶段须与结算阶段一致；③<b>阶段单调</b>：整条流水按状态机串一遍，非法迁移与事件时间倒序记 {@link
+ *       DiffType#STAGE_REGRESSION}（不变量 3）。
+ *   <li>{@link ReconciliationReport#CHANNEL_CASE_SETTLE}：案件 ↔ 结算金额一致（不变量 6）——结案了却没有结算单记 {@link
+ *       DiffType#MISSING_LOCAL}；净已付（{@code Σ PAID − Σ REFUNDED}）≠ 最新理算总额记 {@link
+ *       DiffType#CASE_SETTLE_MISMATCH}。
  * </ul>
  *
- * <p><b>为什么两条判据都要</b>：守恒式只校验账户内部三值自洽，一根指针错到底（{@code claimed} 少记一笔、 {@code deductible_used}
+ * <p><b>为什么额度通道要两条判据</b>：守恒式只校验账户内部三值自洽，一根指针错到底（{@code claimed} 少记一笔、 {@code deductible_used}
  * 多记一次）照样"自洽"；反过来，投影漂移也不一定破坏守恒（{@code claimed} 与 {@code frozen} 一增一减）。只查前者时，错的值会被当成"平账"放过去——这正是
  * §11.7 不变量 1 把 "账户 = Σ流水"和"三值自洽"并列的原因。
+ *
+ * <p><b>为什么支付通道要三条判据</b>：①②只看「末条」与「PAID 等额」，一串被倒拨过的流水（PAID 后又追加 SOFT）在末条同步改过之后与结算单仍然相等；
+ * ③把整条链按状态机串一遍才看得出「钱的状态被往回拨过」，且它是唯一能发现「事件时间倒序」（补数/乱序重放）的判据。
  *
  * <p>外部支付网关/TPA 对账（{@link ReconciliationReport#CHANNEL_TPA}）需外部对账文件接入，二期启用。报告与差异均 append-only，
  * 同日同通道已生成则跳过（重跑幂等）。
@@ -57,18 +75,24 @@ public class ReconciliationApplicationService {
 
   private static final BigDecimal ZERO = new BigDecimal("0.00");
 
+  /** 业务日划界的时区（与 {@code ReconciliationJob} 一致：理赔作业按本地日历排班）。 */
+  private static final ZoneId BIZ_ZONE = ZoneId.of("Asia/Shanghai");
+
   private final TenantPort tenantPort;
   private final QuotaAccountRepository quotaAccountRepository;
   private final SettlementRepository settlementRepository;
+  private final ClaimCaseRepository claimCaseRepository;
+  private final AdjustmentRepository adjustmentRepository;
   private final ReconciliationReportRepository reportRepository;
   private final ReconciliationDiffRepository diffRepository;
 
-  /** 对当前租户某业务日执行 QUOTA + PAYMENT 两通道对账（须在租户上下文内调用）。 */
+  /** 对当前租户某业务日执行 QUOTA + PAYMENT + CASE_SETTLE 三通道对账（须在租户上下文内调用）。 */
   @Transactional
   public void reconcileForTenant(LocalDate bizDate) {
     long tenantId = tenantPort.currentTenantId();
     reconcileQuota(tenantId, bizDate);
     reconcilePayment(tenantId, bizDate);
+    reconcileCaseSettle(tenantId, bizDate);
   }
 
   private void reconcileQuota(long tenantId, LocalDate bizDate) {
@@ -191,6 +215,19 @@ public class ReconciliationApplicationService {
                   lastStage));
         }
       }
+      // 判据 ③：整条流水按状态机串一遍（不变量 3）。判据 ①② 只看「末条」与「PAID 等额」，
+      // 对「PAID 之后又追加 SOFT」这类倒拨无感——末条在结算单同步改过之后仍然相等。
+      for (FundingStageChain.Breach breach : FundingStageChain.check(events)) {
+        violations.add(
+            new Violation(
+                settlement.getClaimNo(),
+                settlement.getSettlementNo(),
+                DiffType.STAGE_REGRESSION,
+                null,
+                null,
+                breach.from(),
+                breach.to()));
+      }
     }
     saveReport(
         tenantId,
@@ -201,6 +238,144 @@ public class ReconciliationApplicationService {
         totalAmount,
         counterAmount,
         violations);
+  }
+
+  /**
+   * 案件 ↔ 结算金额一致（§11.7 不变量 6）。
+   *
+   * <p><b>判决式为什么不是文档里那句 {@code approved_amount = ΣPAID}</b>：结算金额取的是<b>理算结果</b>（资金权威口径），{@code
+   * approved_amount} 是核赔决策时的快照——核减过的案件两者天然不等。按快照判会把每一天的正常案件全判成差异， 报告长期飘红之后真差异就没人看了。故判决式改为「净已付 =
+   * 最新理算总额」：净已付 = Σ{@code PAID} − Σ{@code REFUNDED}，多轮补赔/退款后才是真实的钱。
+   *
+   * <p><b>两条判据分工</b>：<b>结案无单</b>记 {@link DiffType#MISSING_LOCAL}（这类赔案在结算表里一行都没有，从结算侧出发永远扫不到， 必须按
+   * {@code closed_at} 主动扫结案侧）；<b>金额不符</b>记 {@link DiffType#CASE_SETTLE_MISMATCH}。
+   *
+   * <p><b>三种情况刻意不判</b>（不是漏判，是判决式在这些状态下无意义）：
+   *
+   * <ul>
+   *   <li><b>有在途结算单</b>（SOFT/HARD/REVIEW_FREEZE）：钱还没走完，此刻的净已付当然不等于应付。
+   *   <li><b>出现过退款</b>（存在 {@code REFUNDED} 结算单）：退款后该案须重新理算再结，新旧金额不可比；强行比会得到一条永不消失的假差异。
+   *   <li><b>应付为 0 或查不到理算</b>：零赔付结案本就不该有结算单（建单要求金额 > 0），判它等于把正常结案变差异。
+   * </ul>
+   */
+  private void reconcileCaseSettle(long tenantId, LocalDate bizDate) {
+    if (reportRepository.findReport(tenantId, bizDate, ReconciliationReport.CHANNEL_CASE_SETTLE)
+        != null) {
+      return;
+    }
+    // 待判赔案 = 当日结案的 ∪ 当日有结算单的。两侧都要扫：只扫结算侧会漏「结案但没单」，
+    // 只扫结案侧会漏「今天付了钱但案子早就结了」（补赔/重结）。
+    Map<Long, String> claimNos = new LinkedHashMap<>();
+    for (ClaimSettlementRef ref :
+        claimCaseRepository.findFinishedBetween(dayStart(bizDate), dayEnd(bizDate))) {
+      if (ref != null && ref.claimId() != null) {
+        claimNos.putIfAbsent(ref.claimId(), ref.claimNo());
+      }
+    }
+    for (SettlementOrder settlement : settlementRepository.findByBizDate(bizDate)) {
+      claimNos.putIfAbsent(settlement.getClaimId(), settlement.getClaimNo());
+    }
+
+    List<Violation> violations = new ArrayList<>();
+    // 差异按赔案计一份（一个赔案可能同时命中两条判据），否则 balanced + diff > total
+    Set<Long> differingClaims = new HashSet<>();
+    BigDecimal totalPaid = ZERO;
+    BigDecimal totalExpected = ZERO;
+    for (Map.Entry<Long, String> entry : claimNos.entrySet()) {
+      Long claimId = entry.getKey();
+      String claimNo = entry.getValue();
+      List<SettlementOrder> orders = settlementRepository.findByClaimId(claimId);
+      BigDecimal expected = expectedAmount(claimId);
+      BigDecimal netPaid = netPaid(orders);
+      totalPaid = totalPaid.add(netPaid);
+      if (expected != null) {
+        totalExpected = totalExpected.add(expected);
+      }
+
+      if (orders.isEmpty()) {
+        if (expected == null || expected.signum() <= 0) {
+          continue; // 无应付 ⇒ 不需要结算单（零赔付结案）
+        }
+        violations.add(
+            new Violation(
+                claimNo, "", DiffType.MISSING_LOCAL, ZERO, expected, "", "NO_SETTLEMENT"));
+        differingClaims.add(claimId);
+        continue;
+      }
+      if (orders.stream().anyMatch(o -> !o.fundingStageEnum().isTerminal())) {
+        continue; // 在途：钱还没走完，不判
+      }
+      if (orders.stream().anyMatch(o -> o.fundingStageEnum() == FundingStage.REFUNDED)) {
+        continue; // 退款后须重结，新旧金额不可比
+      }
+      if (expected == null) {
+        // 付了钱却查不到理算依据：账单本身缺一环，派给资金岗核对，不当金额差异处理
+        violations.add(
+            new Violation(
+                claimNo,
+                lastSettlementNo(orders),
+                DiffType.AMOUNT_MISMATCH,
+                netPaid,
+                null,
+                "NET_PAID",
+                "NO_ADJUSTMENT"));
+        differingClaims.add(claimId);
+        continue;
+      }
+      if (netPaid.compareTo(expected) != 0) {
+        violations.add(
+            new Violation(
+                claimNo,
+                lastSettlementNo(orders),
+                DiffType.CASE_SETTLE_MISMATCH,
+                netPaid,
+                expected,
+                "NET_PAID",
+                "ADJUST_TOTAL"));
+        differingClaims.add(claimId);
+      }
+    }
+    saveReport(
+        tenantId,
+        bizDate,
+        ReconciliationReport.CHANNEL_CASE_SETTLE,
+        claimNos.size(),
+        differingClaims.size(),
+        totalPaid,
+        totalExpected,
+        violations);
+  }
+
+  /** 最新理算总额（资金权威口径）；未理算返回 {@code null}（不是 0——"没算过"与"算出 0"判法不同）。 */
+  private BigDecimal expectedAmount(Long claimId) {
+    Adjustment adjustment = adjustmentRepository.findLatestByClaimId(claimId);
+    return adjustment == null ? null : adjustment.getTotalAmount();
+  }
+
+  /** 净已付 = Σ{@code PAID} − Σ{@code REFUNDED}（退款把已付的钱退回去，钱就不再在赔案上）。 */
+  private static BigDecimal netPaid(List<SettlementOrder> orders) {
+    BigDecimal net = ZERO;
+    for (SettlementOrder order : orders) {
+      BigDecimal amount = order.getAmount() == null ? ZERO : order.getAmount();
+      if (order.fundingStageEnum() == FundingStage.PAID) {
+        net = net.add(amount);
+      } else if (order.fundingStageEnum() == FundingStage.REFUNDED) {
+        net = net.subtract(amount);
+      }
+    }
+    return net;
+  }
+
+  private static String lastSettlementNo(List<SettlementOrder> orders) {
+    return orders.get(orders.size() - 1).getSettlementNo();
+  }
+
+  private static Timestamp dayStart(LocalDate bizDate) {
+    return Timestamp.from(bizDate.atStartOfDay(BIZ_ZONE).toInstant());
+  }
+
+  private static Timestamp dayEnd(LocalDate bizDate) {
+    return Timestamp.from(bizDate.plusDays(1).atStartOfDay(BIZ_ZONE).toInstant());
   }
 
   private void saveReport(

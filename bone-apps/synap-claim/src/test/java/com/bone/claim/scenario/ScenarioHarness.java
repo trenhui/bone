@@ -529,6 +529,31 @@ public class ScenarioHarness {
     }
 
     @Override
+    public List<com.bone.claim.domain.model.claim.projection.ClaimSettlementRef>
+        findFinishedBetween(java.sql.Timestamp from, java.sql.Timestamp to) {
+      java.time.Instant start = from == null ? null : from.toInstant();
+      java.time.Instant end = to == null ? null : to.toInstant();
+      List<com.bone.claim.domain.model.claim.projection.ClaimSettlementRef> rows =
+          new ArrayList<>();
+      for (ClaimCase c : store.values()) {
+        if (!com.bone.claim.domain.model.claim.valueobject.ClaimStatus.FINISHED.equals(
+            c.status())) {
+          continue;
+        }
+        java.time.Instant closedAt = c.closedAt();
+        if (closedAt == null || start == null || end == null) {
+          continue;
+        }
+        if (!closedAt.isBefore(start) && closedAt.isBefore(end)) {
+          rows.add(
+              new com.bone.claim.domain.model.claim.projection.ClaimSettlementRef(
+                  c.getId(), c.getClaimNo(), c.getApprovedAmount()));
+        }
+      }
+      return rows;
+    }
+
+    @Override
     public List<ClaimWithItemsProjection> findClaimWithItems(long claimId) {
       ClaimCase c = store.get(claimId);
       if (c == null) return List.of();
@@ -726,6 +751,14 @@ public class ScenarioHarness {
           .filter(s -> Objects.equals(s.getClaimId(), claimId))
           .max(Comparator.comparingLong(SettlementOrder::getId))
           .orElse(null);
+    }
+
+    @Override
+    public List<SettlementOrder> findByClaimId(long claimId) {
+      return store.values().stream()
+          .filter(s -> Objects.equals(s.getClaimId(), claimId))
+          .sorted(Comparator.comparingInt(SettlementOrder::getAttempt))
+          .toList();
     }
 
     @Override
