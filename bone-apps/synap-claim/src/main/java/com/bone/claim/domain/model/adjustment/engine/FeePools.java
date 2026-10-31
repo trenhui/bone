@@ -25,7 +25,21 @@ import java.util.List;
  * 已付"会超过实际损失（超赔）。本类在 {@link #aggregate} 归集时即净扣， 再用 {@link #reconcile} 核对"已付不得超合理"这一硬约束——与
  * reference-impl S17 口径一致（第三方已付 = 社保统筹 + 其他保险已赔）。
  */
-public record FeePools(List<Pool> pools) {
+public record FeePools(List<Pool> pools, List<ItemContribution> contributions) {
+
+  /**
+   * 单费用项在费用池内的基数贡献（GAP⑨ 逐行分位归因用：把池级最终赔付下钻到费用项明细行）。
+   *
+   * <p>同一张发票的多个费用项会被归集进同一费用池，但理算结果须能<b>逐费用项</b>解释赔付来源， 故在归集时即保留「项 → 池」的基数映射，供引擎在池级计算完成后按权重分摊回费用项（Σ
+   * 各费用项 ≡ 池）。
+   */
+  public record ItemContribution(
+      Long itemId, String itemName, Bucket bucket, BigDecimal amount, boolean inScope) {
+    public ItemContribution {
+      amount = Money.nz(amount);
+      itemName = itemName == null ? "" : itemName;
+    }
+  }
 
   /** 承担费用类型（V1 §3.6；{@code CUSTOM} 承载自定义新增类型）。 */
   public enum Bucket {
@@ -63,6 +77,7 @@ public record FeePools(List<Pool> pools) {
 
   public FeePools {
     pools = List.copyOf(pools);
+    contributions = List.copyOf(contributions);
   }
 
   /**
@@ -81,6 +96,7 @@ public record FeePools(List<Pool> pools) {
    * @param socialOnly 责任是否"仅赔医保范围内"（R-DIR-01）
    */
   public static FeePools aggregate(List<ClaimWithItemsProjection> rows, boolean socialOnly) {
+    List<ItemContribution> contributions = new ArrayList<>();
     BigDecimal reasonableIn = Money.ZERO;
     BigDecimal reasonableOut = Money.ZERO;
     BigDecimal selfPay2 = Money.ZERO;
@@ -105,8 +121,33 @@ public record FeePools(List<Pool> pools) {
       } else {
         reasonableOut = reasonableOut.add(netReasonable);
       }
-      selfPay2 = selfPay2.add(Money.nz(row.getItemSelfPay2()));
-      selfPayC = selfPayC.add(Money.nz(row.getItemSelfPayC()));
+      // 逐行分位归因（GAP⑨）：每个费用项在 REASONABLE 池内的基数贡献。
+      // socialOnly 时范围外合理金额不参与赔付 ⇒ 其贡献记为 0（与池的 outOfScope=0 一致）。
+      contributions.add(
+          new ItemContribution(
+              row.getItemId(),
+              row.getItemName(),
+              Bucket.REASONABLE,
+              inSocialScope ? netReasonable : (socialOnly ? Money.ZERO : netReasonable),
+              inSocialScope));
+      BigDecimal sp2 = Money.nz(row.getItemSelfPay2());
+      selfPay2 = selfPay2.add(sp2);
+      contributions.add(
+          new ItemContribution(
+              row.getItemId(),
+              row.getItemName(),
+              Bucket.SELF_PAY_2,
+              socialOnly ? Money.ZERO : sp2,
+              false));
+      BigDecimal spc = Money.nz(row.getItemSelfPayC());
+      selfPayC = selfPayC.add(spc);
+      contributions.add(
+          new ItemContribution(
+              row.getItemId(),
+              row.getItemName(),
+              Bucket.TOTAL_SELF_PAY,
+              socialOnly ? Money.ZERO : spc,
+              false));
     }
     List<Pool> pools = new ArrayList<>(3);
     // socialOnly 时范围外合理金额不参与赔付，但**仍要登记**：归因明细必须能解释"钱为什么没赔"，
@@ -116,7 +157,7 @@ public record FeePools(List<Pool> pools) {
     pools.add(new Pool(Bucket.SELF_PAY_2, "自付二", Money.ZERO, socialOnly ? Money.ZERO : selfPay2));
     pools.add(
         new Pool(Bucket.TOTAL_SELF_PAY, "总自费", Money.ZERO, socialOnly ? Money.ZERO : selfPayC));
-    return new FeePools(pools);
+    return new FeePools(pools, contributions);
   }
 
   /**

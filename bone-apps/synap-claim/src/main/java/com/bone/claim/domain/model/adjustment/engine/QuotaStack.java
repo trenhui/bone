@@ -42,6 +42,8 @@ public final class QuotaStack {
     FEE_TYPE,
     /** ③ 责任次限额金额。 */
     OCCURRENCE,
+    /** ③.5 责任日赔付限额（V1 §7.4，Q-05）：同一业务日的<b>累计</b>上限，与次限额同为时间窗截断。 */
+    DAILY,
     /** ④ 责任共保可用金额。 */
     SHARED,
     /** ⑤ 责任可用金额。 */
@@ -55,27 +57,20 @@ public final class QuotaStack {
   /** 扣减方式（§7.2 五种）。 */
   public enum DeductionMode {
     /** 方式 1：发票单责任赔付 = min(理算金额, 责任可用额度)。 */
-    LIABILITY_ONLY(Layer.LIABILITY, false),
+    LIABILITY_ONLY(false),
     /** 方式 2：按费用类型分组截断，再责任额度截断。 */
-    LIABILITY_PLUS_FEE_TYPE(Layer.FEE_TYPE, false),
+    LIABILITY_PLUS_FEE_TYPE(false),
     /** 方式 3：按费用项目分组截断，再责任额度截断。 */
-    LIABILITY_PLUS_FEE_ITEM(Layer.FEE_ITEM, false),
+    LIABILITY_PLUS_FEE_ITEM(false),
     /** 方式 4：个人额度逐项消耗，无责任层。 */
-    PERSONAL_ONLY(null, true),
+    PERSONAL_ONLY(true),
     /** 方式 5：个人额度与责任额度都逐项消耗。 */
-    PERSONAL_PLUS_LIABILITY(Layer.LIABILITY, true);
+    PERSONAL_PLUS_LIABILITY(true);
 
-    private final Layer groupLayer;
     private final boolean sequential;
 
-    DeductionMode(Layer groupLayer, boolean sequential) {
-      this.groupLayer = groupLayer;
+    DeductionMode(boolean sequential) {
       this.sequential = sequential;
-    }
-
-    /** 该方式下"分组截断"使用的额度层（{@code null} = 不分组）。 */
-    public Layer groupLayer() {
-      return groupLayer;
     }
 
     /** 是否逐组顺序消耗额度池（方式 4/5），而非"求和后统一截断"（方式 1/2/3）。 */
@@ -105,12 +100,19 @@ public final class QuotaStack {
     }
   }
 
-  /** 控额需求。 */
+  /**
+   * 控额需求。
+   *
+   * <p>{@code occurrenceCap} / {@code dailyCap} 都是<b>对本组总额</b>的时间窗截断，语义差别只在窗口： 前者是"一次"（按 {@code
+   * OccurrenceSpec} 分组的这一次），后者是"一个业务日"（跨案累计）。 二者都为 {@code null} 表示该维未配置； {@code dailyCap} 允许为
+   * <b>0</b>（当日已赔满），此时必须真的截到 0 并留下归因， 不能当成"未配置"跳过——那会把当日额度已用尽的案子照赔一遍。
+   */
   public record Demand(
       List<Group> groups,
       Map<String, BigDecimal> groupCaps,
       BigDecimal personalCap,
-      BigDecimal occurrenceCap) {
+      BigDecimal occurrenceCap,
+      BigDecimal dailyCap) {
 
     public Demand {
       groups = List.copyOf(groups);
@@ -118,12 +120,17 @@ public final class QuotaStack {
     }
 
     public static Demand of(List<Group> groups) {
-      return new Demand(groups, Map.of(), null, null);
+      return new Demand(groups, Map.of(), null, null, null);
     }
 
     /** 附次限额（层③，作用于本组总额，早于责任层⑤）。 */
     public Demand withOccurrenceCap(BigDecimal cap) {
-      return new Demand(groups, groupCaps, personalCap, cap);
+      return new Demand(groups, groupCaps, personalCap, cap, dailyCap);
+    }
+
+    /** 附日限额（层③.5，当日剩余可赔额，早于责任层⑤）。 */
+    public Demand withDailyCap(BigDecimal cap) {
+      return new Demand(groups, groupCaps, personalCap, occurrenceCap, cap);
     }
   }
 
@@ -131,7 +138,13 @@ public final class QuotaStack {
   public record Step(
       Layer layer, String key, BigDecimal before, BigDecimal available, BigDecimal lost) {}
 
-  /** 组结果（{@code cappedBy} 记录该组是被哪一层截断的，用于归因）。 */
+  /**
+   * 组结果。
+   *
+   * @param cappedBy 该组被哪几维额度截断，按截断顺序（细→粗）以逗号连接，如 {@code
+   *     "FEE_TYPE:REASONABLE,PLAN"}；未被截断时为空串。<b>必须记全而不是只记首维</b>：一个组同时撞多层是常态，
+   *     只报第一维会让"为什么少赔"答错一半，客户告知与后督复盘的结论直接跑偏。
+   */
   public record GroupResult(String key, BigDecimal gross, BigDecimal payable, String cappedBy) {}
 
   /** 控额结果。 */
@@ -180,12 +193,19 @@ public final class QuotaStack {
     if (demand.groups().isEmpty()) {
       return new Result(List.of(), Money.ZERO, List.of(), mode);
     }
+    // 逐组的"被哪几维截断"记录，与 groups 下标对齐、按截断顺序（细→粗）追加。
+    // 一个组同时撞多层是常态（费用子限额 + 计划额度），只记一维会把"为什么少赔"答错一半。
+    List<List<String>> binding = new ArrayList<>(demand.groups().size());
+    for (int i = 0; i < demand.groups().size(); i++) {
+      binding.add(new ArrayList<>(2));
+    }
     List<Step> pre = new ArrayList<>();
-    Demand effective = applyOccurrenceCap(demand, pre);
+    Demand effective = applyOccurrenceCap(demand, pre, binding);
+    effective = applyDailyCap(effective, pre, binding);
     Result result =
         mode.sequential()
-            ? capSequential(effective, layers, mode)
-            : capAggregate(effective, layers, mode);
+            ? capSequential(effective, layers, mode, binding)
+            : capAggregate(effective, layers, mode, binding);
     if (pre.isEmpty()) {
       return result;
     }
@@ -195,7 +215,8 @@ public final class QuotaStack {
   }
 
   /** 层③ 责任次限额：本组总额超过次限额时按各组原额等比压低（不改变组间相对关系）。 */
-  private static Demand applyOccurrenceCap(Demand demand, List<Step> steps) {
+  private static Demand applyOccurrenceCap(
+      Demand demand, List<Step> steps, List<List<String>> binding) {
     BigDecimal cap = demand.occurrenceCap();
     if (cap == null || cap.signum() <= 0) {
       return demand;
@@ -213,28 +234,68 @@ public final class QuotaStack {
     List<Group> capped = new ArrayList<>(demand.groups().size());
     for (int i = 0; i < demand.groups().size(); i++) {
       capped.add(new Group(demand.groups().get(i).key(), shares.get(i)));
+      if (shares.get(i).compareTo(amounts.get(i)) < 0) {
+        binding.get(i).add(Layer.OCCURRENCE.name());
+      }
     }
-    return new Demand(capped, demand.groupCaps(), demand.personalCap(), null);
+    return new Demand(capped, demand.groupCaps(), demand.personalCap(), null, demand.dailyCap());
+  }
+
+  /**
+   * 层③.5 日赔付限额（V1 §7.4 / Q-05）：当日剩余可赔额对<b>本「次」总额</b>再截一次。
+   *
+   * <p><b>与次限额的三点差别，都不能省</b>：
+   *
+   * <ol>
+   *   <li>剩余额可以是 <b>0</b>（当日已赔满）：必须真的截到 0 并留归因，否则"今天赔满了"的案子会照赔一遍；
+   *   <li>窗口是<b>跨案</b>的业务日，不是本组：所以用"当日已用"折出的剩余额在这里只是一个总额上限， 不再做分组——分组语义由次限额负责，两者叠用是 min；
+   *   <li>它比次限额<b>更粗</b>（同一天内所有"次"共用这一个额度），因此必须排在次限额之后截断： 反过来会让日的剩余额先被某一组吃掉，另一组明明当日还有额度却赔不出。
+   * </ol>
+   */
+  private static Demand applyDailyCap(Demand demand, List<Step> steps, List<List<String>> binding) {
+    BigDecimal cap = demand.dailyCap();
+    if (cap == null || cap.signum() < 0) {
+      return demand;
+    }
+    List<BigDecimal> amounts = new ArrayList<>(demand.groups().size());
+    for (Group group : demand.groups()) {
+      amounts.add(group.amount());
+    }
+    BigDecimal total = Money.sum(amounts);
+    if (total.compareTo(cap) <= 0) {
+      return demand;
+    }
+    steps.add(new Step(Layer.DAILY, "DAILY", total, cap, total.subtract(cap)));
+    List<BigDecimal> shares = Money.proRata(cap, amounts);
+    List<Group> capped = new ArrayList<>(demand.groups().size());
+    for (int i = 0; i < demand.groups().size(); i++) {
+      capped.add(new Group(demand.groups().get(i).key(), shares.get(i)));
+      if (shares.get(i).compareTo(amounts.get(i)) < 0) {
+        binding.get(i).add(Layer.DAILY.name());
+      }
+    }
+    return new Demand(
+        capped, demand.groupCaps(), demand.personalCap(), demand.occurrenceCap(), null);
   }
 
   /** 方式 1/2/3：组级截断 → 求和 → 逐层截断（每次截断后按原比例回分摊，保证 Σ组 ≡ 总额）。 */
-  private static Result capAggregate(Demand demand, List<LayerQuota> layers, DeductionMode mode) {
+  private static Result capAggregate(
+      Demand demand, List<LayerQuota> layers, DeductionMode mode, List<List<String>> binding) {
     List<Step> steps = new ArrayList<>();
     List<BigDecimal> current = new ArrayList<>();
     List<Group> groups = demand.groups();
 
     // ① 组级截断（对应 §4.3 的两个 Min 内层：医保范围内 / 范围外各自的可用额度）
-    for (Group group : groups) {
+    for (int i = 0; i < groups.size(); i++) {
+      Group group = groups.get(i);
       BigDecimal cap = demand.groupCaps().get(group.key());
       BigDecimal amount = group.amount();
       if (cap != null && cap.signum() >= 0 && cap.compareTo(amount) < 0) {
-        steps.add(
-            new Step(
-                mode.groupLayer() == null ? Layer.FEE_TYPE : mode.groupLayer(),
-                group.key(),
-                amount,
-                cap,
-                amount.subtract(cap)));
+        // 归因层固定标 FEE_TYPE：组额度的**来源**是发票费用类型子限额（调用方把 cell.feeLimit 放进 groupCaps），
+        // 不是"分组维度"——那是"按什么分组"，与"被哪一维截断"是两回事。方式 1/5 下若沿用分组维度，
+        // 会把费用子限额截断误标成责任额度截断，客户解释与双跑差异归因都会指错维度。
+        steps.add(new Step(Layer.FEE_TYPE, group.key(), amount, cap, amount.subtract(cap)));
+        binding.get(i).add(Layer.FEE_TYPE.name() + ":" + group.key());
         amount = Money.nonNegative(cap);
       }
       current.add(amount);
@@ -248,14 +309,22 @@ public final class QuotaStack {
       }
       BigDecimal capped = layer.amount();
       steps.add(new Step(layer.layer(), layer.key(), total, capped, total.subtract(capped)));
+      List<BigDecimal> before = current;
       current = Money.proRata(capped, current);
+      // 汇总层按比例回摊：只有"真的被摊薄"的组才记这一层，四舍五入后未变的组不算被它截断。
+      for (int i = 0; i < current.size(); i++) {
+        if (current.get(i).compareTo(before.get(i)) < 0) {
+          binding.get(i).add(layer.layer().name());
+        }
+      }
     }
 
-    return build(groups, current, steps, mode);
+    return build(groups, current, steps, mode, binding);
   }
 
   /** 方式 4/5：逐组顺序消耗额度池（个人额度、以及方式 5 的责任额度）。 */
-  private static Result capSequential(Demand demand, List<LayerQuota> layers, DeductionMode mode) {
+  private static Result capSequential(
+      Demand demand, List<LayerQuota> layers, DeductionMode mode, List<List<String>> binding) {
     List<Step> steps = new ArrayList<>();
     List<BigDecimal> current = new ArrayList<>();
     List<Group> groups = demand.groups();
@@ -271,23 +340,22 @@ public final class QuotaStack {
       }
     }
 
-    for (Group group : groups) {
+    for (int i = 0; i < groups.size(); i++) {
+      Group group = groups.get(i);
       BigDecimal amount = group.amount();
       BigDecimal groupCap = demand.groupCaps().get(group.key());
       if (groupCap != null && groupCap.compareTo(amount) < 0) {
+        // 同 capAggregate：组额度的来源是费用类型子限额，归因层固定 FEE_TYPE。
         steps.add(
-            new Step(
-                mode.groupLayer() == null ? Layer.PERSONAL : mode.groupLayer(),
-                group.key(),
-                amount,
-                groupCap,
-                amount.subtract(groupCap)));
+            new Step(Layer.FEE_TYPE, group.key(), amount, groupCap, amount.subtract(groupCap)));
+        binding.get(i).add(Layer.FEE_TYPE.name() + ":" + group.key());
         amount = Money.nonNegative(groupCap);
       }
       if (personalPool != null && personalPool.compareTo(amount) < 0) {
         steps.add(
             new Step(
                 Layer.PERSONAL, group.key(), amount, personalPool, amount.subtract(personalPool)));
+        binding.get(i).add(Layer.PERSONAL.name());
         amount = personalPool;
         personalPool = Money.ZERO;
       } else if (personalPool != null) {
@@ -301,6 +369,7 @@ public final class QuotaStack {
                 amount,
                 liabilityPool,
                 amount.subtract(liabilityPool)));
+        binding.get(i).add(Layer.LIABILITY.name());
         amount = liabilityPool;
         liabilityPool = Money.ZERO;
       } else if (liabilityPool != null) {
@@ -320,38 +389,34 @@ public final class QuotaStack {
       }
       BigDecimal capped = layer.amount();
       steps.add(new Step(layer.layer(), layer.key(), total, capped, total.subtract(capped)));
+      List<BigDecimal> before = current;
       current = Money.proRata(capped, current);
+      for (int i = 0; i < current.size(); i++) {
+        if (current.get(i).compareTo(before.get(i)) < 0) {
+          binding.get(i).add(layer.layer().name());
+        }
+      }
     }
 
-    return build(groups, current, steps, mode);
+    return build(groups, current, steps, mode, binding);
   }
 
   private static Result build(
-      List<Group> groups, List<BigDecimal> amounts, List<Step> steps, DeductionMode mode) {
+      List<Group> groups,
+      List<BigDecimal> amounts,
+      List<Step> steps,
+      DeductionMode mode,
+      List<List<String>> binding) {
     List<GroupResult> results = new ArrayList<>(groups.size());
     BigDecimal payable = Money.ZERO;
     for (int i = 0; i < groups.size(); i++) {
       Group group = groups.get(i);
       BigDecimal amount = Money.round(amounts.get(i));
       results.add(
-          new GroupResult(group.key(), group.amount(), amount, bindingKey(steps, group.key())));
+          new GroupResult(group.key(), group.amount(), amount, String.join(",", binding.get(i))));
       payable = payable.add(amount);
     }
     return new Result(results, Money.round(payable), steps, mode);
-  }
-
-  private static String bindingKey(List<Step> steps, String groupKey) {
-    for (Step step : steps) {
-      if (groupKey.equals(step.key())) {
-        return step.layer().name() + ":" + step.key();
-      }
-    }
-    for (Step step : steps) {
-      if (!groupKey.equals(step.key())) {
-        return step.layer().name();
-      }
-    }
-    return "";
   }
 
   /**

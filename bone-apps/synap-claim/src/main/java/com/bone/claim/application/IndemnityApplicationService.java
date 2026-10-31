@@ -90,7 +90,8 @@ public class IndemnityApplicationService {
               rows,
               liability,
               ruleVersion,
-              accumulation);
+              accumulation,
+              claimDateOf(rows));
     } catch (DomainException ex) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_LIABILITY_NOT_FOUND, claimId, ex);
     }
@@ -108,7 +109,7 @@ public class IndemnityApplicationService {
     }
     List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
     AdjLiability liability = resolveLiability(rows);
-    latest.recalculate(rows, liability, accumulate(rows, liability));
+    latest.recalculate(rows, liability, accumulate(rows, liability), claimDateOf(rows));
     adjustmentRepository.save(latest);
     domainEventPublisher.publishFrom(latest);
     return toResult(latest);
@@ -189,7 +190,44 @@ public class IndemnityApplicationService {
         head.getPolicyNo(),
         head.getPlanId(),
         java.time.Year.now().getValue(),
-        liability.getLiabilityUuid());
+        liability.getLiabilityUuid(),
+        dailyWindowOf(rows, liability));
+  }
+
+  /** 本案的日限额业务日（Q-05）。A7 占额写按日流水时必须与理算读用<b>同一个窗口</b>， 否则"算的时候看 A 天、写的时候记 B 天"，日限额在跨天补赔场景下必然错配。 */
+  public java.time.LocalDate dailyWindow(long claimId) {
+    List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
+    return dailyWindowOf(rows, resolveLiability(rows));
+  }
+
+  /**
+   * 日窗口：按同日发票取发票日期，按同日赔案取赔案受理日；未配日限额返回 {@code null}。
+   *
+   * <p><b>为什么赔案受理日取 {@code createdAt}</b>：这是系统里唯一有"受理"语义的时间戳（案件落库时刻）。 它是瞬时值，转业务日必须选时区——这里与 {@code
+   * Year.now()} 同口径用系统时区，理由是理赔作业本身按 本地日历排班；若将来引入保单所在时区，应在此单点替换，而不是散落到各调用方。
+   */
+  private java.time.LocalDate dailyWindowOf(
+      List<ClaimWithItemsProjection> rows, AdjLiability liability) {
+    if (liability == null || liability.dailyLimit().signum() <= 0) {
+      return null;
+    }
+    String basis = liability.dailyLimitBasis();
+    if ("SAME_DAY_INVOICE".equalsIgnoreCase(basis)) {
+      return rows.isEmpty() ? null : rows.get(0).getInvoiceDate();
+    }
+    if ("SAME_DAY_CLAIM".equalsIgnoreCase(basis)) {
+      return claimDateOf(rows);
+    }
+    return null;
+  }
+
+  /** 赔案受理日（{@code createdAt} 的业务日）；缺失返回 {@code null}（引擎据此 fail-closed）。 */
+  private java.time.LocalDate claimDateOf(List<ClaimWithItemsProjection> rows) {
+    if (rows == null || rows.isEmpty() || rows.get(0).getCreatedAt() == null) {
+      return null;
+    }
+    return java.time.LocalDate.ofInstant(
+        rows.get(0).getCreatedAt(), java.time.ZoneId.systemDefault());
   }
 
   private AdjustmentResult toResult(Adjustment adjustment) {

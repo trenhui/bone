@@ -54,6 +54,15 @@ public class QuotaTransaction extends AbstractEntity {
   private Instant occurredAt;
 
   /**
+   * 业务日（Q-05 日限额的累计键）：发票日期 / 赔案受理日，由占额调用方按责任配置的 {@code daily_limit_basis} 传入。
+   *
+   * <p><b>为什么不用 {@code occurred_at}</b>：那是落账时刻。理赔实务里 9 月的发票 10 月才赔，
+   * 按落账日累计等于把"集中补赔"当成"同日多次就诊"，日限额会误伤；按业务日累计才是条款语义。 历史行为 {@code null}（不参与日累计）。
+   */
+  @Column(name = "biz_date")
+  private java.time.LocalDate bizDate;
+
+  /**
    * 租户与审计时间戳。
    *
    * <p>本类继承的是不带租户的 {@code AbstractEntity}，而 {@code t_quota_transaction.tenant_id} 是 {@code NOT
@@ -112,7 +121,7 @@ public class QuotaTransaction extends AbstractEntity {
       BigDecimal afterAmount,
       String idempotencyKey,
       Instant occurredAt) {
-    return new QuotaTransaction(
+    return of(
         id,
         tenantId,
         quotaAccountId,
@@ -124,6 +133,40 @@ public class QuotaTransaction extends AbstractEntity {
         beforeAmount,
         afterAmount,
         idempotencyKey,
-        occurredAt);
+        occurredAt,
+        null);
+  }
+
+  /** 含业务日的流水（Q-05：只有 {@code txn_type=DAILY} 会带业务日）。 */
+  static QuotaTransaction of(
+      Long id,
+      Long tenantId,
+      Long quotaAccountId,
+      Long claimId,
+      String settlementNo,
+      String direction,
+      String txnType,
+      BigDecimal amount,
+      BigDecimal beforeAmount,
+      BigDecimal afterAmount,
+      String idempotencyKey,
+      Instant occurredAt,
+      java.time.LocalDate bizDate) {
+    QuotaTransaction txn =
+        new QuotaTransaction(
+            id,
+            tenantId,
+            quotaAccountId,
+            claimId,
+            settlementNo,
+            direction,
+            txnType,
+            amount,
+            beforeAmount,
+            afterAmount,
+            idempotencyKey,
+            occurredAt);
+    txn.bizDate = bizDate;
+    return txn;
   }
 }

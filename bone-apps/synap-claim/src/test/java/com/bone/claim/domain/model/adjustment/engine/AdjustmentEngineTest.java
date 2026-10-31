@@ -338,7 +338,8 @@ class AdjustmentEngineTest {
               null,
               null,
               null,
-              List.of());
+              List.of(),
+              null);
 
       AdjustmentEngine.Outcome outcome = AdjustmentEngine.calculate(request);
 
@@ -886,6 +887,97 @@ class AdjustmentEngineTest {
           .isInstanceOf(RuleGap.class)
           .hasMessageContaining("INVOICE_SETTLEMENT_INCONSISTENT");
     }
+
+    @Test
+    @DisplayName("控额归因：费用子限额截断 ⇒ cappedBy 指出 FEE_TYPE，而不是把来源说成责任额度")
+    void cappedByNamesFeeTypeSubLimit() {
+      // 合理金额 10000，比例 100%，费用类型子限额 3000 ⇒ 该池只赔 3000
+      LiabilityRule rule =
+          rule(
+              "100",
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", "3000")),
+              DeductibleRule.none(),
+              NO_CAP);
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, rows("10000.00", "0", "0"), rule, Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("3000.00");
+      assertThat(line(outcome, "REASONABLE").cappedBy())
+          .as("组额度的来源是费用类型子限额；标成 LIABILITY 会把'少赔'的事实认定指错维度")
+          .isEqualTo("FEE_TYPE:REASONABLE");
+    }
+
+    @Test
+    @DisplayName("控额归因：责任额度截断 ⇒ cappedBy=LIABILITY；未被截断 ⇒ 空串（不得一律标成限额）")
+    void cappedByNamesLiabilityOrNone() {
+      LiabilityRule capped =
+          rule(
+              "100",
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none(),
+              "5000");
+      AdjustmentEngine.Outcome truncated =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, rows("10000.00", "0", "0"), capped, Accumulation.FIRST));
+
+      assertThat(truncated.totalAmount()).isEqualByComparingTo("5000.00");
+      assertThat(line(truncated, "REASONABLE").cappedBy()).isEqualTo("LIABILITY");
+
+      LiabilityRule uncapped =
+          rule(
+              "100",
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none(),
+              NO_CAP);
+      AdjustmentEngine.Outcome intact =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, rows("10000.00", "0", "0"), uncapped, Accumulation.FIRST));
+
+      assertThat(intact.totalAmount()).isEqualByComparingTo("10000.00");
+      assertThat(line(intact, "REASONABLE").cappedBy())
+          .as("没被截断就不得有截断归因：否则'为什么少赔'的追问会被引到一个没生效的维度上")
+          .isEmpty();
+    }
+
+    @Test
+    @DisplayName("多维度取交：费用子限额 3000 + 责任 20000 + 计划 9000 ⇒ 取最小 9000，并标出真正生效的维度")
+    void multiDimensionTakesMinimum() {
+      LiabilityRule rule =
+          ruleWithLimits(
+              new LiabilityRule.LimitSet(
+                  LiabilityRule.InsuredForm.FIXED,
+                  BigDecimal.ZERO,
+                  new BigDecimal("20000"),
+                  BigDecimal.ZERO,
+                  new BigDecimal("9000"),
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO),
+              LiabilityRule.QuotaPolicy.defaults(),
+              ratios(
+                  entry(FeePools.Bucket.REASONABLE, "100", "3000"),
+                  entry(FeePools.Bucket.TOTAL_SELF_PAY, "100", null)),
+              DeductibleRule.none());
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                      1L, rows("10000.00", "0", "10000.00"), rule, Accumulation.FIRST)
+                  .withExtraLayers(
+                      List.of(
+                          new QuotaStack.LayerQuota(
+                              QuotaStack.Layer.PLAN, "PLAN-1", new BigDecimal("9000")))));
+
+      assertThat(outcome.totalAmount())
+          .as("四维同时生效：(3000 + 10000) 先被费用子限额压到 13000，再被计划额度 9000 取交")
+          .isEqualByComparingTo("9000.00");
+      assertThat(line(outcome, "REASONABLE").cappedBy())
+          .as("两维都真实生效过（先被费用子限额压到 3000，再被计划额度摊薄），归因须按细→粗记全")
+          .isEqualTo("FEE_TYPE:REASONABLE,PLAN");
+    }
   }
 
   // ===================== V1 边界：显式拒绝 =====================
@@ -922,7 +1014,7 @@ class AdjustmentEngineTest {
     }
 
     @Test
-    @DisplayName("共享保额 / 先赔后赔 / 日限额 / 外部控额：各自给出专属原因码，不静默照算")
+    @DisplayName("共享保额 / 先赔后赔 / 外部控额：各自给出专属原因码；日限额改为校验口径一致性")
     void unsupportedRelationsRejected() {
       assertThatThrownBy(() -> ruleWithRelation("SHARED-1", "").validate())
           .isInstanceOf(RuleGap.class)
@@ -930,6 +1022,8 @@ class AdjustmentEngineTest {
       assertThatThrownBy(() -> ruleWithRelation("", "L-PRIOR").validate())
           .isInstanceOf(RuleGap.class)
           .hasMessageContaining("PRIORITY_CHAIN_UNSUPPORTED");
+      // 日限额（Q-05）已落地：配了金额却没配「日」的口径 ⇒ 仍然拒绝装载——
+      // 只配金额时"同日"指发票日还是赔案受理日无法判定，替客户选一天就是猜。
       assertThatThrownBy(
               () ->
                   new LiabilityRule(
@@ -956,7 +1050,7 @@ class AdjustmentEngineTest {
                           LiabilityRule.LimitedConditions.disabled())
                       .validate())
           .isInstanceOf(RuleGap.class)
-          .hasMessageContaining("DAILY_LIMIT_UNSUPPORTED");
+          .hasMessageContaining("未配「日」的口径");
       assertThatThrownBy(
               () ->
                   new LiabilityRule(
@@ -1010,7 +1104,8 @@ class AdjustmentEngineTest {
               null,
               null,
               10,
-              List.of());
+              List.of(),
+              null);
 
       assertThatThrownBy(() -> AdjustmentEngine.calculate(request))
           .isInstanceOf(RuleGap.class)
@@ -1044,6 +1139,47 @@ class AdjustmentEngineTest {
         sum = sum.add(line.feePayout());
       }
       assertThat(sum).isEqualByComparingTo(outcome.totalAmount());
+    }
+
+    @Test
+    @DisplayName("逐费用项分位归因（GAP⑨）：同一池的多笔费用各出一行、Σ 行 ≡ 池，各池按自身比例分位")
+    void perItemAttributionSplitsWithinPool() {
+      // 合理金额 300+700=1000 ×90% = 900 ⇒ 270 / 630；自付二 100+300=400 ×80% = 320 ⇒ 80 / 240
+      LiabilityRule rule =
+          rule(
+              "90",
+              ratios(
+                  entry(FeePools.Bucket.REASONABLE, "90", null),
+                  entry(FeePools.Bucket.SELF_PAY_2, "80", null)),
+              DeductibleRule.none(),
+              NO_CAP);
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L,
+                  List.of(
+                      row(2001L, "IN", "300.00", "100.00", "0"),
+                      row(2002L, "IN", "700.00", "300.00", "0")),
+                  rule,
+                  Accumulation.FIRST));
+
+      assertThat(
+              outcome.lines().stream()
+                  .map(
+                      line ->
+                          line.itemId()
+                              + "/"
+                              + line.bucket()
+                              + "="
+                              + line.feePayout().stripTrailingZeros().toPlainString())
+                  .toList())
+          .as("逐行归因须落到费用项（缺 itemId 就追溯不回票面收费项），且分摊额守恒于池")
+          .containsExactly(
+              "2001/REASONABLE=270",
+              "2002/REASONABLE=630",
+              "2001/SELF_PAY_2=80",
+              "2002/SELF_PAY_2=240");
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("1220.00");
     }
 
     @Test
@@ -1123,11 +1259,159 @@ class AdjustmentEngineTest {
         .totalAmount();
   }
 
+  /**
+   * 取指定费用池的**池级**归因金额。
+   *
+   * <p>GAP⑨ 逐行分位归因落地后，一个费用池会按费用项拆成多行（Σ 各行 ≡ 池）， 故这里必须按池聚合而不是取首行——取首行会静默读到"第一笔费用的份额"，断言看起来仍绿却是错的。
+   */
   private static AdjustmentEngine.Line line(AdjustmentEngine.Outcome outcome, String bucket) {
     return outcome.lines().stream()
         .filter(l -> l.bucket().equals(bucket))
-        .findFirst()
+        .reduce(AdjustmentEngineTest::merge)
         .orElseThrow(() -> new AssertionError("缺少费用池归因行：" + bucket + "，实际 " + outcome.lines()));
+  }
+
+  private static AdjustmentEngine.Line merge(
+      AdjustmentEngine.Line left, AdjustmentEngine.Line right) {
+    return new AdjustmentEngine.Line(
+        left.bucket(),
+        left.bucketLabel(),
+        left.scope(),
+        left.feeCalculate().add(right.feeCalculate()),
+        left.feeDeduct().add(right.feeDeduct()),
+        left.ratioPayout().add(right.ratioPayout()),
+        left.feeOccupied().add(right.feeOccupied()),
+        left.feePayout().add(right.feePayout()),
+        left.feeRemain().add(right.feeRemain()),
+        left.ratioPercent(),
+        left.zeroReason(),
+        left.rejectType(),
+        left.cappedBy(),
+        null,
+        null);
+  }
+
+  @Nested
+  @DisplayName("日赔付限额：同一业务日累计截断（V1 §7.4 / Q-05）")
+  class DailyLimit {
+
+    @Test
+    @DisplayName("当日还有额度：日限额不生效，只受责任额度约束")
+    void underDailyLimit() {
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, datedRows("200.00", "2026-10-01"), dailyRule("300"), Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("200.00");
+      assertThat(line(outcome, "REASONABLE").cappedBy()).doesNotContain("DAILY");
+    }
+
+    @Test
+    @DisplayName("跨案同日已赔 150：本单只赔剩余 150（日限额是累计口径，不是单案口径）")
+    void remainingAfterSameDayUsage() {
+      Accumulation accumulation =
+          Accumulation.of(
+              new BigDecimal("0"),
+              new BigDecimal("0"),
+              new BigDecimal("150.00"),
+              java.time.LocalDate.of(2026, 10, 1),
+              true);
+
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, datedRows("200.00", "2026-10-01"), dailyRule("300"), accumulation));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("150.00");
+      assertThat(line(outcome, "REASONABLE").cappedBy()).contains("DAILY");
+    }
+
+    @Test
+    @DisplayName("当日额度已用满：赔 0 且归因 ZERO_DAILY_EXHAUSTED（不是本年度额度用尽）")
+    void dailyExhausted() {
+      Accumulation accumulation =
+          Accumulation.of(
+              new BigDecimal("0"),
+              new BigDecimal("0"),
+              new BigDecimal("300.00"),
+              java.time.LocalDate.of(2026, 10, 1),
+              true);
+
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, datedRows("200.00", "2026-10-01"), dailyRule("300"), accumulation));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("0.00");
+      assertThat(outcome.zeroReason())
+          .as("日限额用满与'本年度额度用尽'对客户是两件事：前者第二天就能赔")
+          .isEqualTo(AdjustmentEngine.ZERO_DAILY_EXHAUSTED);
+      assertThat(outcome.lines()).allSatisfy(l -> assertThat(l.cappedBy()).contains("DAILY"));
+    }
+
+    @Test
+    @DisplayName("明细缺发票日期：日窗口判不出来 ⇒ DAILY_LIMIT_WINDOW_UNDETERMINED（不按任意一天算）")
+    void missingInvoiceDate() {
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L, rows("200.00", "0", "0"), dailyRule("300"), Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("DAILY_LIMIT_WINDOW_UNDETERMINED");
+    }
+
+    @Test
+    @DisplayName("账本窗口晚于本案业务日：拿别天的用量算这天 ⇒ DAILY_LIMIT_WINDOW_STALE")
+    void staleWindow() {
+      Accumulation accumulation =
+          Accumulation.of(
+              new BigDecimal("0"),
+              new BigDecimal("0"),
+              new BigDecimal("100.00"),
+              java.time.LocalDate.of(2026, 10, 2),
+              true);
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(
+                          1L, datedRows("200.00", "2026-10-01"), dailyRule("300"), accumulation)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("DAILY_LIMIT_WINDOW_STALE");
+    }
+
+    @Test
+    @DisplayName("按同日赔案累计：窗口取赔案受理日；未提供受理日即拒绝（不拿发票日期顶替）")
+    void claimBasisNeedsClaimDate() {
+      LiabilityRule rule = dailyRule("300", LiabilityRule.DailyBasis.SAME_DAY_CLAIM);
+      List<ClaimWithItemsProjection> rows = datedRows("200.00", "2026-10-01");
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(1L, rows, rule, Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("DAILY_LIMIT_WINDOW_UNDETERMINED");
+
+      // 给了受理日（10-05）就按它算窗口：账本里 10-01 的已用不该被算进来
+      Accumulation accumulation =
+          Accumulation.of(
+              new BigDecimal("0"),
+              new BigDecimal("0"),
+              new BigDecimal("300.00"),
+              java.time.LocalDate.of(2026, 10, 1),
+              true);
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(1L, rows, rule, accumulation)
+                  .withClaimDate(java.time.LocalDate.of(2026, 10, 5)));
+
+      assertThat(outcome.totalAmount())
+          .as("窗口是 10-05，账本记的是 10-01（更早）⇒ 本案这天还没赔过")
+          .isEqualByComparingTo("200.00");
+    }
   }
 
   private static LiabilityRule rule(
@@ -1311,5 +1595,38 @@ class AdjustmentEngineTest {
     p.setItemId(null);
     p.setItemValidAmount(new BigDecimal("100.00"));
     return p;
+  }
+
+  /** 带发票日期的一行（日限额按同日发票口径时，窗口来源是它）。 */
+  private static ClaimWithItemsProjection datedRow(long itemId, String reasonable, String date) {
+    ClaimWithItemsProjection p = row(itemId, "IN", reasonable, "0", "0");
+    p.setInvoiceDate(java.time.LocalDate.parse(date));
+    return p;
+  }
+
+  private static List<ClaimWithItemsProjection> datedRows(String reasonable, String date) {
+    return List.of(datedRow(2001L, reasonable, date));
+  }
+
+  /** 100% 赔付、无免赔、责任额度不限，只配日限额（默认按同日发票口径）。 */
+  private static LiabilityRule dailyRule(String dailyLimit) {
+    return dailyRule(dailyLimit, LiabilityRule.DailyBasis.SAME_DAY_INVOICE);
+  }
+
+  private static LiabilityRule dailyRule(String dailyLimit, LiabilityRule.DailyBasis basis) {
+    return new LiabilityRule(
+        "L-DAILY",
+        "v1",
+        LiabilityRule.LiabilityForm.REIMBURSEMENT,
+        false,
+        EnumSet.allOf(FeePools.Bucket.class),
+        0,
+        DeductibleRule.none(),
+        ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+        LiabilityRule.LimitSet.liabilityOnly(NO_CAP).withDaily(new BigDecimal(dailyLimit), basis),
+        LiabilityRule.QuotaPolicy.defaults(),
+        LiabilityRule.OccurrenceSpec.none(),
+        LiabilityRule.Relation.none(),
+        LiabilityRule.LimitedConditions.disabled());
   }
 }

@@ -29,8 +29,10 @@ public final class RuleGap extends RuntimeException {
     PRIORITY_CHAIN_UNSUPPORTED,
     /** 外部控额（直付 / 保司）：超时、幂等、对账口径未定义（Q-07）。 */
     EXTERNAL_QUOTA_UNSUPPORTED,
-    /** 日赔付限额：配置存在但主流程无判定点（Q-05）。 */
-    DAILY_LIMIT_UNSUPPORTED,
+    /** 日赔付限额：日窗口判不出来（明细缺发票日期 / 未提供赔案受理日）。 */
+    DAILY_LIMIT_WINDOW_UNDETERMINED,
+    /** 日赔付限额：账本给出的窗口晚于本案业务日（日口径串了），不能拿别天的用量算这天。 */
+    DAILY_LIMIT_WINDOW_STALE,
     /** 等待期内出险，不进理算（V1 §4.1 前置校验）。 */
     WAITING_PERIOD_NOT_MET,
     /** 适用限定（区域/医院/药品/病种白黑名单）不符，前置校验即退。 */

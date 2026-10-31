@@ -140,6 +140,23 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       AdjLiability liability,
       String ruleVersion,
       Accumulation accumulation) {
+    return calculate(id, tenantId, claimId, rows, liability, ruleVersion, accumulation, null);
+  }
+
+  /**
+   * 执行理算（带赔案受理日）。
+   *
+   * @param claimDate 赔案受理日：日限额「按同日赔案累计」的窗口来源；不配该口径时可为 {@code null}
+   */
+  public static Adjustment calculate(
+      Long id,
+      Long tenantId,
+      Long claimId,
+      List<ClaimWithItemsProjection> rows,
+      AdjLiability liability,
+      String ruleVersion,
+      Accumulation accumulation,
+      java.time.LocalDate claimDate) {
     if (rows == null || rows.isEmpty()) {
       throw new DomainException("理算明细不能为空");
     }
@@ -153,7 +170,7 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       throw new DomainException("跨案累计快照缺失，无法理算（⑩：禁止按『已用 0』隐式计算）");
     }
     Adjustment adjustment = new Adjustment(id, tenantId, claimId, ruleVersion);
-    adjustment.apply(rows, liability, accumulation);
+    adjustment.apply(rows, liability, accumulation, claimDate);
     return adjustment;
   }
 
@@ -161,7 +178,18 @@ public class Adjustment extends TenantAggregateRoot<Long> {
   public void recalculate(
       List<ClaimWithItemsProjection> rows, AdjLiability liability, Accumulation accumulation) {
     requireModifiable("已确认的理算结果禁止重算");
-    apply(rows, liability, accumulation);
+    apply(rows, liability, accumulation, null);
+    this.updatedAt = java.time.Instant.now();
+  }
+
+  /** 重算（带赔案受理日，口径同 {@link #recalculate(List, AdjLiability, Accumulation)}）。 */
+  public void recalculate(
+      List<ClaimWithItemsProjection> rows,
+      AdjLiability liability,
+      Accumulation accumulation,
+      java.time.LocalDate claimDate) {
+    requireModifiable("已确认的理算结果禁止重算");
+    apply(rows, liability, accumulation, claimDate);
     this.updatedAt = java.time.Instant.now();
   }
 
@@ -204,7 +232,10 @@ public class Adjustment extends TenantAggregateRoot<Long> {
    * DomainException}、把引擎输出物化成聚合字段与明细行。这里<b>没有任何算术</b>。
    */
   private void apply(
-      List<ClaimWithItemsProjection> rows, AdjLiability liability, Accumulation accumulation) {
+      List<ClaimWithItemsProjection> rows,
+      AdjLiability liability,
+      Accumulation accumulation,
+      java.time.LocalDate claimDate) {
     LiabilityRule rule =
         LiabilityRule.fromLegacy(
             liability.getLiabilityUuid(),
@@ -214,14 +245,17 @@ public class Adjustment extends TenantAggregateRoot<Long> {
             liability.limit(),
             liability.isSocialOnly(),
             liability.invoiceDeduct(),
-            liability.adjustDeduct());
+            liability.adjustDeduct(),
+            liability.dailyLimit(),
+            LiabilityRule.DailyBasis.fromCode(liability.dailyLimitBasis()));
 
     AdjustmentEngine.Outcome outcome;
     try {
       outcome =
           AdjustmentEngine.calculate(
               AdjustmentEngine.Request.of(getClaimId(), rows, rule, accumulation)
-                  .withRuleVersion(this.ruleVersion));
+                  .withRuleVersion(this.ruleVersion)
+                  .withClaimDate(claimDate));
     } catch (RuleGap gap) {
       // 规则缺口属"业务上算不出"，外壳对外统一成领域异常；原因码留在异常信息里可被审计日志提取。
       throw new DomainException(gap.getMessage());
@@ -265,7 +299,9 @@ public class Adjustment extends TenantAggregateRoot<Long> {
    * 与 {@code scope}（都是英文码：{@code REASONABLE} / {@code IN|OUT}）。 前端要显示「合理金额 / 自付二 /
    * 总自费」与本次赔付比例，只能自己再建一份桶名映射—— 那就是**同一套词汇的第三份副本**（引擎一份、文档一份、前端一份），改一处必然漏两处。 落库后展示口径与计算口径同源。
    *
-   * <p>取值均为受控枚举与定点小数，不含自由文本，故直接内联拼接即可（无需 JSON 转义）。
+   * <p><b>为什么还要落 itemId / itemName</b>：逐行分位归因（GAP⑨）落地后，一行对应一笔费用明细，
+   * 缺了费用项标识这行就无从追溯到发票上的具体收费项，审计与客户对账都会回到"按池汇总"的老问题。 明细表没有 item_id 列，故随快照落库（{@code itemName}
+   * 是自由文本，必须转义——JSON 里一个引号就会让整段快照失效）。
    */
   private static String inputSnapshotOf(AdjustmentEngine.Line line) {
     String ratio = line.ratioPercent() == null ? "null" : line.ratioPercent().toPlainString();
@@ -277,7 +313,39 @@ public class Adjustment extends TenantAggregateRoot<Long> {
         + line.scope()
         + "\",\"ratioPercent\":"
         + ratio
-        + "}";
+        + ",\"itemId\":"
+        + (line.itemId() == null ? "null" : line.itemId())
+        + ",\"itemName\":\""
+        + jsonEscape(line.itemName())
+        + "\",\"cappedBy\":\""
+        + jsonEscape(line.cappedBy())
+        + "\"}";
+  }
+
+  /** 最小 JSON 字符串转义（只做 JSON 合法性所需，不改变原文语义）。 */
+  private static String jsonEscape(String value) {
+    if (value == null || value.isEmpty()) {
+      return "";
+    }
+    StringBuilder sb = new StringBuilder(value.length() + 8);
+    for (int i = 0; i < value.length(); i++) {
+      char ch = value.charAt(i);
+      switch (ch) {
+        case '"' -> sb.append("\\\"");
+        case '\\' -> sb.append("\\\\");
+        case '\n' -> sb.append("\\n");
+        case '\r' -> sb.append("\\r");
+        case '\t' -> sb.append("\\t");
+        default -> {
+          if (ch < 0x20) {
+            sb.append("\\u").append(String.format("%04x", (int) ch));
+          } else {
+            sb.append(ch);
+          }
+        }
+      }
+    }
+    return sb.toString();
   }
 
   private static String sha256(String input) {

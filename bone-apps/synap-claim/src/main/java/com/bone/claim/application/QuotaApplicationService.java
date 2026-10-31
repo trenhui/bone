@@ -168,6 +168,8 @@ public class QuotaApplicationService {
    * @param liabilityUuid 责任 UUID（分行键）
    * @param amount 本次占用（= 理算实付）
    * @param deductibleApplied 本次实际消抵的免赔（理算产出；回写后次案才只扣剩余免赔）
+   * @param businessDate 本次的业务日（Q-05 日限额累计键：发票日期 / 赔案受理日；{@code null} = 本案不配日限额， 此时不落按日流水，而非记成"某天已用
+   *     0"）
    */
   @Transactional(propagation = Propagation.REQUIRED)
   public void reserveLiability(
@@ -182,7 +184,8 @@ public class QuotaApplicationService {
       BigDecimal amount,
       BigDecimal deductibleApplied,
       String settlementNo,
-      int attempt) {
+      int attempt,
+      java.time.LocalDate businessDate) {
     QuotaAccount account =
         loadLiability(tenantId, insuredIdHash, policyNo, planId, quotaYear, liabilityUuid);
     boolean touched = false;
@@ -203,6 +206,20 @@ public class QuotaApplicationService {
           settlementNo,
           dedKey);
       touched = true;
+    }
+    // 日用量（Q-05）与额度/免赔分开落第三条流水：它不改变任何余额，只回答"这一天的累计赔了多少"。
+    // 幂等周期与软占一致（同一 attempt），但键独立——分账后"重算改金额"能只重记其中一条。
+    String dailyKey = claimNo + ":DAILY:" + attempt;
+    if (!alreadyOccupied(account, dailyKey) && businessDate != null) {
+      QuotaTransaction daily =
+          account.accumulateDaily(
+              DistributedIdGenerator.generateLongId(),
+              amount,
+              businessDate,
+              claimId,
+              settlementNo,
+              dailyKey);
+      touched = touched || daily != null;
     }
     if (touched) {
       quotaAccountRepository.save(account);
@@ -285,6 +302,20 @@ public class QuotaApplicationService {
               dedKey);
       touched = touched || rolledBack != null;
     }
+    // 日用量同步回退：不回退则该日额度被一笔已撤销的赔案永久吃掉，当天后续真实赔案被限额拦下（少赔）。
+    String dailyKey = claimNo + ":DAILY_ROLLBACK:" + attempt;
+    if (!alreadyOccupied(account, dailyKey)) {
+      DailyOwned owned = ownDaily(account, settlementNo);
+      QuotaTransaction rolledBack =
+          account.reduceDaily(
+              DistributedIdGenerator.generateLongId(),
+              owned.amount(),
+              owned.bizDate(),
+              claimId,
+              settlementNo,
+              dailyKey);
+      touched = touched || rolledBack != null;
+    }
     if (touched) {
       quotaAccountRepository.save(account);
     }
@@ -323,6 +354,20 @@ public class QuotaApplicationService {
           settlementNo,
           dedKey);
       touched = true;
+    }
+    // 退款同样归还当日占用：钱退回去了，就不该再占着那天的日限额。
+    String dailyKey = claimNo + ":DAILY_REFUND:" + attempt;
+    if (!alreadyOccupied(account, dailyKey)) {
+      DailyOwned owned = ownDaily(account, settlementNo);
+      QuotaTransaction rolledBack =
+          account.reduceDaily(
+              DistributedIdGenerator.generateLongId(),
+              owned.amount(),
+              owned.bizDate(),
+              claimId,
+              settlementNo,
+              dailyKey);
+      touched = touched || rolledBack != null;
     }
     if (touched) {
       quotaAccountRepository.save(account);
@@ -509,6 +554,36 @@ public class QuotaApplicationService {
     }
     return owned.max(ZERO);
   }
+
+  /**
+   * 本结算单在某账户上的<b>自有日用量</b>（金额 + 业务日），从流水推导。
+   *
+   * <p>口径：{@code DAILY + OCCUPY} 是占用，{@code DAILY + ROLLBACK} 是回退。归属判定与免赔同构——日用量也是
+   * <b>跨案共享</b>的一天额度，按"当天已用总额"回退会把别的赔案占的额度退出来 ⇒ 那天还能再赔一遍（超赔）。
+   *
+   * <p>业务日取本单占用行的 {@code biz_date}：回退流水必须落在同一天，否则读侧按日聚合时两边对不上， 退了个寂寞（占用还在）。
+   */
+  private DailyOwned ownDaily(QuotaAccount account, String settlementNo) {
+    BigDecimal owned = ZERO;
+    java.time.LocalDate bizDate = null;
+    for (QuotaTransaction t : ledger(account)) {
+      if (!settlementNo.equals(t.getSettlementNo()) || !"DAILY".equals(t.getTxnType())) {
+        continue;
+      }
+      if ("OCCUPY".equals(t.getDirection())) {
+        owned = owned.add(t.getAmount());
+        if (bizDate == null) {
+          bizDate = t.getBizDate();
+        }
+      } else {
+        owned = owned.subtract(t.getAmount());
+      }
+    }
+    return new DailyOwned(owned.max(ZERO), bizDate);
+  }
+
+  /** 自有日用量（金额 + 业务日）。业务日为 {@code null} 时不落回退流水（无法定位到某一天）。 */
+  private record DailyOwned(BigDecimal amount, java.time.LocalDate bizDate) {}
 
   private boolean alreadyOccupied(QuotaAccount account, String key) {
     return ledger(account).stream().anyMatch(t -> key.equals(t.getIdempotencyKey()));

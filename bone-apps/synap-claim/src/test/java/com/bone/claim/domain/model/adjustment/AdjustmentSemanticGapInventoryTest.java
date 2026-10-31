@@ -11,6 +11,8 @@ import java.math.BigDecimal;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -89,13 +91,22 @@ class AdjustmentSemanticGapInventoryTest {
               "§8.3"),
           new Step(
               "⑧多维度 min 控额",
-              Status.PARTIAL,
-              "Adjustment.apply 仅 liabilityLimit 单维截断；无「维度可用额」多路取交",
-              "§5.3 · Go-Live G2"),
+              Status.SUPPORTED,
+              "QuotaStack：七层额度（费用类型子限额/次/共保/责任/险种/计划/个人）× 五种扣减方式，逐层取交（min）"
+                  + "并在汇总层按比例回摊，保 Σ组 ≡ 总额；对齐 oracle LimitControl 的责任/费用子限额/计划/年度四维，"
+                  + "「年度」按责任限额跨案累计（Accumulation.limitUsed）承载。"
+                  + "逐组记录被哪几维截断（GroupResult.cappedBy → Line.cappedBy，细→粗记全）并落行快照，"
+                  + "「少赔」可归因到具体维度。含日赔付限额（Q-05）：QuotaStack.Layer.DAILY 按「同一业务日"
+                  + "已用 + 本单」累计截断，窗口日由 t_adj_liability.daily_limit_basis 决定（按同日发票 / 按同日赔案），"
+                  + "跨案同日累计由 Accumulation.dailyUsed 经按日流水（t_quota_transaction.biz_date）读入；"
+                  + "窗口判不出来即 DAILY_LIMIT_WINDOW_UNDETERMINED 拒绝，不按任意一天算",
+              "§7 多维度控额 · reference-impl LimitControl"),
           new Step(
               "⑨逐行分位归因（分位守恒）",
-              Status.GAP,
-              "Adjustment.apply 只落 1 条 OUTPUT 汇总行，不按费用行分位",
+              Status.SUPPORTED,
+              "AdjustmentEngine.attributeToItems：池级各成分金额按费用项在池内基数占比（Money.proRata）下钻为"
+                  + "逐费用项 OUTPUT 行，Σ 各行 ≡ 池（I1 守恒，oracle S27 口径）；费用项标识随"
+                  + "t_adj_calculation_line.input_snapshot 落库（itemId/itemName），可供逐笔对账与申诉举证",
               "§7.4 · reference-impl S27"),
           new Step(
               "⑩跨案累计（年度免赔/责任限额）",
@@ -104,6 +115,9 @@ class AdjustmentSemanticGapInventoryTest {
                   + "剩余责任限额 = 配置 − (claimed+frozen)；读侧 AccumulationPort 投影 LIABILITY_CAP 账户，"
                   + "写侧由 A7 结算经 QuotaApplicationService.reserveLiability 回写",
               "Go-Live G2 · reference-impl S3/S21"));
+
+  /** 行快照里的费用项标识提取式（{@code input_snapshot} 是内联 JSON，明细表无独立列）。 */
+  private static final Pattern ITEM_ID = Pattern.compile("\"itemId\":(\\d+)");
 
   @Test
   @DisplayName("覆盖清单固定：SUPPORTED / PARTIAL / GAP 三集合与登记一致（能力变化须显式改档）")
@@ -116,10 +130,11 @@ class AdjustmentSemanticGapInventoryTest {
             "⑤赔付比例",
             "⑥理算级免赔（第二个免赔）",
             "⑦取整（中间 6 位 / 结果 2 位 HALF_UP）",
+            "⑧多维度 min 控额",
+            "⑨逐行分位归因（分位守恒）",
             "⑩跨案累计（年度免赔/责任限额）");
-    assertThat(labelsWith(Status.PARTIAL))
-        .containsExactlyInAnyOrder("①费用明细筛选（目录/合理必要）", "⑧多维度 min 控额");
-    assertThat(labelsWith(Status.GAP)).containsExactlyInAnyOrder("⑨逐行分位归因（分位守恒）");
+    assertThat(labelsWith(Status.PARTIAL)).containsExactlyInAnyOrder("①费用明细筛选（目录/合理必要）");
+    assertThat(labelsWith(Status.GAP)).isEmpty();
   }
 
   @Test
@@ -145,8 +160,8 @@ class AdjustmentSemanticGapInventoryTest {
   }
 
   @Test
-  @DisplayName("GAP⑨ 反证：多费用行只落 1 条汇总行 —— 无逐行分位归因")
-  void gap_noPerLineAttribution() {
+  @DisplayName("⑨ 已支持（原 GAP⑨ 反证转正）：多费用行按费用项分位落 OUTPUT 行，Σ 行 ≡ 总额（分位守恒）")
+  void perLineAttributionConserves() {
     Adjustment adjustment =
         Adjustment.calculate(
             9001L,
@@ -157,7 +172,24 @@ class AdjustmentSemanticGapInventoryTest {
             "r1",
             Accumulation.FIRST);
 
-    assertThat(adjustment.lines()).as("若本断言转红：逐行归因已实现，请把 GAP⑨ 改为 SUPPORTED 并回填 G2").hasSize(1);
+    assertThat(adjustment.getTotalAmount()).isEqualByComparingTo("600.00");
+    assertThat(adjustment.lines()).as("三笔费用明细须各落一条 OUTPUT 行；若仍为 1 行说明逐行分位归因被回退").hasSize(3);
+    // 逐行可追溯：itemId 随行快照落库（明细表无 item_id 列），缺了它这行就说不清是哪笔收费
+    assertThat(adjustment.lines().stream().map(line -> itemIdOf(line.getInputSnapshot())).toList())
+        .as("每行须携带费用项标识，否则无法追溯到发票上的具体收费项")
+        .containsExactlyInAnyOrder(2001L, 2002L, 2003L);
+    assertThat(
+            adjustment.lines().stream()
+                .map(line -> line.getFeePayout().stripTrailingZeros().toPlainString())
+                .toList())
+        .as("按各费用项基数占比分位：100/200/300 在 100%% 比例下即为 100/200/300")
+        .containsExactlyInAnyOrder("100", "200", "300");
+    assertThat(
+            adjustment.lines().stream()
+                .map(AdjustmentLine::getFeePayout)
+                .reduce(BigDecimal.ZERO, BigDecimal::add))
+        .as("分位守恒（oracle S27）：Σ 各行实付 ≡ 理算总额，否则明细加不回合计（I1 破裂）")
+        .isEqualByComparingTo("600.00");
   }
 
   @Test
@@ -278,6 +310,13 @@ class AdjustmentSemanticGapInventoryTest {
                 "deductibleUsedBefore",
                 "limit",
                 "limitUsedBefore",
+                // Q-05 日限额：金额、口径、窗口日、当日已用、当日剩余五项一起物化——
+                // 只记"被截断"而不记窗口与已用量，事后无法判断是当日额度真用完还是取数取错了天
+                "dailyLimit",
+                "dailyBasis",
+                "dailyUsedBefore",
+                "dailyWindow",
+                "dailyRemaining",
                 "accumulationAvailable",
                 "socialOnly",
                 "base",
@@ -293,6 +332,53 @@ class AdjustmentSemanticGapInventoryTest {
     }
   }
 
+  @Test
+  @DisplayName("Q-05 日限额已支持（原装载期拒绝转正）：同日已赔 150、日限额 300 ⇒ 本单只赔剩余 150")
+  void dailyLimitCapsSameDayTotal() {
+    AdjLiability liability =
+        AdjLiability.of(
+            1L,
+            42L,
+            "L-DAILY",
+            "v1",
+            7L,
+            "R01",
+            "REIMBURSEMENT",
+            new BigDecimal("100"),
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            new BigDecimal("300"),
+            "SAME_DAY_INVOICE",
+            1,
+            0,
+            "ACTIVE");
+
+    Adjustment adjustment =
+        Adjustment.calculate(
+            9003L,
+            42L,
+            1003L,
+            List.of(datedItem(2001L, "200.00", "2026-10-01")),
+            liability,
+            "r1",
+            Accumulation.of(
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                new BigDecimal("150.00"),
+                java.time.LocalDate.of(2026, 10, 1),
+                true));
+
+    assertThat(adjustment.getTotalAmount())
+        .as("日限额是同日累计口径：当日已赔 150，本单 200 只能赔剩余的 150；若为 200 说明日限额配了不生效")
+        .isEqualByComparingTo("150.00");
+    assertThat(adjustment.getFormulaSnapshot())
+        .as("窗口日与当日已用量必须落快照，否则事后无法判断这笔少赔是真限额还是取数取错了天")
+        .contains("\"dailyWindow\":\"2026-10-01\"")
+        .contains("\"dailyUsedBefore\":150");
+  }
+
   // ===================== 夹具 =====================
 
   private static Set<String> labelsWith(Status status) {
@@ -300,6 +386,12 @@ class AdjustmentSemanticGapInventoryTest {
         .filter(s -> s.status() == status)
         .map(Step::label)
         .collect(Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  /** 从行快照里取费用项标识（明细表无 item_id 列，该值随 {@code input_snapshot} 落库）。 */
+  private static Long itemIdOf(String inputSnapshot) {
+    Matcher matcher = ITEM_ID.matcher(inputSnapshot == null ? "" : inputSnapshot);
+    return matcher.find() ? Long.valueOf(matcher.group(1)) : null;
   }
 
   private static ClaimWithItemsProjection item(long itemId, String valid) {
@@ -310,6 +402,13 @@ class AdjustmentSemanticGapInventoryTest {
     p.setItemSocialFlag("IN");
     p.setItemValidAmount(new BigDecimal(valid));
     p.setItemSelfPay1(new BigDecimal(valid));
+    return p;
+  }
+
+  /** 带发票日期的一笔（日限额按同日发票口径时，窗口来源是它）。 */
+  private static ClaimWithItemsProjection datedItem(long itemId, String valid, String date) {
+    ClaimWithItemsProjection p = item(itemId, valid);
+    p.setInvoiceDate(java.time.LocalDate.parse(date));
     return p;
   }
 
