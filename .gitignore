@@ -307,3 +307,11 @@ dump.rdb
 
 # Playwright 探针浏览器缓存（575MB，可再生，勿入库）
 .pw-browsers/
+
+# =========================
+# 演讲稿 / PPT 生成工作区（本地产物，勿入库）
+# =========================
+# llm-tech-talk/ 是「大模型技术趋势与应用实践」演讲稿的生成工作区：
+# 含 16MB 的 .pptx 二进制、slides/ 与 assets/ 生成物、以及 .slidep/ 工具状态目录，
+# 整体约 47MB。它不属于 Bone 平台源码，入库会永久撑大仓库且 clean checkout 无意义。
+llm-tech-talk/

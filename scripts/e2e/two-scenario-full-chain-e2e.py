@@ -604,7 +604,11 @@ check("采购：publish 放行", s == 200, f"{s} {ecode(d)} {d.get('message')}")
 PO_SUP = ds.supplier
 PO_DEPT = ds.dept
 PO_BUYER = ds.person()
-PO_AMOUNT = ds.amount(lo=9000, hi=24000)                   # 采购金额（非圆整、带分位）
+# 采购金额约束在 v2 流程的「单级审批(SINGLE)档」(≤10000)：本场景验证的是「订单 approver_id 指定
+# 的审批人能批」（SINGLE 档按 FIELD approver_id 指派），而非大额会签。>10000 的双人会签
+# （purchase_cosign → 固定指派 9104/9105）由 expense-purchase-approval-integration-e2e.py 的
+# S10 用例专门覆盖，避免两处重复且本场景误触会签导致审批人拿不到待办（403 连锁）。
+PO_AMOUNT = ds.amount(lo=2000, hi=9000)                     # 采购金额（SINGLE 档·非圆整·带分位）
 PO_PARTS = ds.split(PO_AMOUNT, 3)                          # 行项目金额守恒：Σ == PO_AMOUNT
 PO_PARTS_BAD = ds.split(PO_AMOUNT, 3, break_=True)         # 破坏版 Σ == PO_AMOUNT + 1.01（SUB-ITEMS-01 负向）
 PO_TAXES = [round(p * 0.13, 2) for p in PO_PARTS]
@@ -799,7 +803,9 @@ if prid2:
 
     # 驳回路径验证：另建一张采购单，提交后由审批人驳回（演练 purchaseWorkflowDecisionHandler REJECT 分支）
     PO3_TITLE = f"{PO_DEPT}驳回演练采购"
-    PO3_AMOUNT = ds.amount(lo=9000, hi=20000)
+    # 约束在 v2 单级审批(SINGLE)档(≤10000)：本断言验证「订单审批人 REJECT 分支」，不得误触大额会签
+    # （>10000 → purchase_cosign 固定指派 9104/9105，e2e 审批人非待办对象 → 403，由 S10 集成用例覆盖）。
+    PO3_AMOUNT = ds.amount(lo=2000, hi=9000)
     PO3_PARTS = ds.split(PO3_AMOUNT, 3)
     PO3_TAXES = [round(p * 0.13, 2) for p in PO3_PARTS]
     PO3_TAX_TOTAL = round(sum(PO3_TAXES), 2)   # 守恒：税额合计 = Σ 行税额（与主单 TAX_TOTAL 同口径，过 SUB-TAX-01；

@@ -2,6 +2,7 @@
   "license": "BUSL-1.1",
   "dependencies": {
     "@openapitools/openapi-generator-cli": "^2.15.0",
+    "playwright": "^1.64.1",
     "qs": "^6.15.1",
     "sharp": "^0.35.5"
   }
