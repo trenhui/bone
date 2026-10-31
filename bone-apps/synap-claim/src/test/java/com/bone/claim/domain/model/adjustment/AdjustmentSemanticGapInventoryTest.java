@@ -91,9 +91,14 @@ class AdjustmentSemanticGapInventoryTest {
               "§8.3"),
           new Step(
               "⑧多维度 min 控额",
-              Status.PARTIAL,
-              "Adjustment.apply 仅 liabilityLimit 单维截断；无「维度可用额」多路取交",
-              "§5.3 · Go-Live G2"),
+              Status.SUPPORTED,
+              "QuotaStack：七层额度（费用类型子限额/次/共保/责任/险种/计划/个人）× 五种扣减方式，逐层取交（min）"
+                  + "并在汇总层按比例回摊，保 Σ组 ≡ 总额；对齐 oracle LimitControl 的责任/费用子限额/计划/年度四维，"
+                  + "「年度」按责任限额跨案累计（Accumulation.limitUsed）承载。"
+                  + "逐组记录被哪几维截断（GroupResult.cappedBy → Line.cappedBy，细→粗记全）并落行快照，"
+                  + "「少赔」可归因到具体维度。未含：日赔付限额（Q-05，装载期 DAILY_LIMIT_UNSUPPORTED 拒绝，"
+                  + "属另册登记的独立缺口）与跨案同日累计（需按日账本）",
+              "§7 多维度控额 · reference-impl LimitControl"),
           new Step(
               "⑨逐行分位归因（分位守恒）",
               Status.SUPPORTED,
@@ -123,10 +128,10 @@ class AdjustmentSemanticGapInventoryTest {
             "⑤赔付比例",
             "⑥理算级免赔（第二个免赔）",
             "⑦取整（中间 6 位 / 结果 2 位 HALF_UP）",
+            "⑧多维度 min 控额",
             "⑨逐行分位归因（分位守恒）",
             "⑩跨案累计（年度免赔/责任限额）");
-    assertThat(labelsWith(Status.PARTIAL))
-        .containsExactlyInAnyOrder("①费用明细筛选（目录/合理必要）", "⑧多维度 min 控额");
+    assertThat(labelsWith(Status.PARTIAL)).containsExactlyInAnyOrder("①费用明细筛选（目录/合理必要）");
     assertThat(labelsWith(Status.GAP)).isEmpty();
   }
 

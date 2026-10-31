@@ -886,6 +886,97 @@ class AdjustmentEngineTest {
           .isInstanceOf(RuleGap.class)
           .hasMessageContaining("INVOICE_SETTLEMENT_INCONSISTENT");
     }
+
+    @Test
+    @DisplayName("控额归因：费用子限额截断 ⇒ cappedBy 指出 FEE_TYPE，而不是把来源说成责任额度")
+    void cappedByNamesFeeTypeSubLimit() {
+      // 合理金额 10000，比例 100%，费用类型子限额 3000 ⇒ 该池只赔 3000
+      LiabilityRule rule =
+          rule(
+              "100",
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", "3000")),
+              DeductibleRule.none(),
+              NO_CAP);
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, rows("10000.00", "0", "0"), rule, Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("3000.00");
+      assertThat(line(outcome, "REASONABLE").cappedBy())
+          .as("组额度的来源是费用类型子限额；标成 LIABILITY 会把'少赔'的事实认定指错维度")
+          .isEqualTo("FEE_TYPE:REASONABLE");
+    }
+
+    @Test
+    @DisplayName("控额归因：责任额度截断 ⇒ cappedBy=LIABILITY；未被截断 ⇒ 空串（不得一律标成限额）")
+    void cappedByNamesLiabilityOrNone() {
+      LiabilityRule capped =
+          rule(
+              "100",
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none(),
+              "5000");
+      AdjustmentEngine.Outcome truncated =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, rows("10000.00", "0", "0"), capped, Accumulation.FIRST));
+
+      assertThat(truncated.totalAmount()).isEqualByComparingTo("5000.00");
+      assertThat(line(truncated, "REASONABLE").cappedBy()).isEqualTo("LIABILITY");
+
+      LiabilityRule uncapped =
+          rule(
+              "100",
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none(),
+              NO_CAP);
+      AdjustmentEngine.Outcome intact =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, rows("10000.00", "0", "0"), uncapped, Accumulation.FIRST));
+
+      assertThat(intact.totalAmount()).isEqualByComparingTo("10000.00");
+      assertThat(line(intact, "REASONABLE").cappedBy())
+          .as("没被截断就不得有截断归因：否则'为什么少赔'的追问会被引到一个没生效的维度上")
+          .isEmpty();
+    }
+
+    @Test
+    @DisplayName("多维度取交：费用子限额 3000 + 责任 20000 + 计划 9000 ⇒ 取最小 9000，并标出真正生效的维度")
+    void multiDimensionTakesMinimum() {
+      LiabilityRule rule =
+          ruleWithLimits(
+              new LiabilityRule.LimitSet(
+                  LiabilityRule.InsuredForm.FIXED,
+                  BigDecimal.ZERO,
+                  new BigDecimal("20000"),
+                  BigDecimal.ZERO,
+                  new BigDecimal("9000"),
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO,
+                  BigDecimal.ZERO),
+              LiabilityRule.QuotaPolicy.defaults(),
+              ratios(
+                  entry(FeePools.Bucket.REASONABLE, "100", "3000"),
+                  entry(FeePools.Bucket.TOTAL_SELF_PAY, "100", null)),
+              DeductibleRule.none());
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                      1L, rows("10000.00", "0", "10000.00"), rule, Accumulation.FIRST)
+                  .withExtraLayers(
+                      List.of(
+                          new QuotaStack.LayerQuota(
+                              QuotaStack.Layer.PLAN, "PLAN-1", new BigDecimal("9000")))));
+
+      assertThat(outcome.totalAmount())
+          .as("四维同时生效：(3000 + 10000) 先被费用子限额压到 13000，再被计划额度 9000 取交")
+          .isEqualByComparingTo("9000.00");
+      assertThat(line(outcome, "REASONABLE").cappedBy())
+          .as("两维都真实生效过（先被费用子限额压到 3000，再被计划额度摊薄），归因须按细→粗记全")
+          .isEqualTo("FEE_TYPE:REASONABLE,PLAN");
+    }
   }
 
   // ===================== V1 边界：显式拒绝 =====================
@@ -1191,6 +1282,7 @@ class AdjustmentEngineTest {
         left.ratioPercent(),
         left.zeroReason(),
         left.rejectType(),
+        left.cappedBy(),
         null,
         null);
   }

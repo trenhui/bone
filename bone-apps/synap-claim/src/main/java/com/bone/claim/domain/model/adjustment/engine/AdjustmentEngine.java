@@ -130,6 +130,7 @@ public final class AdjustmentEngine {
       BigDecimal ratioPercent,
       String zeroReason,
       String rejectType,
+      String cappedBy,
       Long itemId,
       String itemName) {}
 
@@ -495,6 +496,7 @@ public final class AdjustmentEngine {
               cell.ratioPercent,
               zeroReason,
               rejectType,
+              cell.cappedBy,
               item.itemId(),
               item.itemName()));
     }
@@ -516,6 +518,7 @@ public final class AdjustmentEngine {
         cell.ratioPercent,
         zeroReason,
         rejectType,
+        cell.cappedBy,
         null,
         null);
   }
@@ -930,11 +933,14 @@ public final class AdjustmentEngine {
               : Money.nonNegative(liabilityRemaining.subtract(totalPaid));
       for (int i = 0; i < cells.size(); i++) {
         Cell cell = cells.get(i);
-        BigDecimal payable = result.groups().get(i).payable();
-        cell.payable = payable;
-        cell.payout = payable;
-        cell.occupied = payable;
+        QuotaStack.GroupResult group = result.groups().get(i);
+        cell.payable = group.payable();
+        cell.payout = group.payable();
+        cell.occupied = group.payable();
         cell.remaining = remainingAfter;
+        // 控额归因必须逐组带回来：QuotaStack 已经算好"这一组被哪一维截断"，此处不接就等于白算——
+        // 少赔的客户解释、双跑差异归因（MOU「差异可归因率 ≥95%」）、后督抽检都要这一维标识。
+        cell.cappedBy = group.cappedBy();
       }
       // "本年度额度已用尽"与"本案单次超限"的解释不同，靠截断层可用额为 0 来区分
       for (QuotaStack.Step step : result.steps()) {
@@ -1357,6 +1363,7 @@ public final class AdjustmentEngine {
         left.ratioPercent(),
         left.zeroReason(),
         left.rejectType(),
+        left.cappedBy(),
         null,
         null);
   }
@@ -1375,6 +1382,8 @@ public final class AdjustmentEngine {
         + num(line.feePayout())
         + ",\"zero\":\""
         + line.zeroReason()
+        + "\",\"cappedBy\":\""
+        + line.cappedBy()
         + "\"}";
   }
 
@@ -1457,6 +1466,15 @@ public final class AdjustmentEngine {
 
     /** 责任额度是否"本年度已用尽"（区别于"本案单次超限"，决定零赔付归因）。 */
     private boolean quotaExhausted;
+
+    /**
+     * 本池被哪一维额度截断（{@code ""} = 未被截断）。
+     *
+     * <p>取值形如 {@code LIABILITY} / {@code LIABILITY:<key>} / {@code FEE_TYPE:REASONABLE} / {@code
+     * OCCURRENCE}， 由 {@link QuotaStack.GroupResult#cappedBy()} 逐组带回。没有它，"少赔"只能看到金额变小，
+     * 说不清是责任额度、费用子限额还是次限额吃掉的——拒赔五要素里"事实认定"这一条就落不了地。
+     */
+    private String cappedBy = "";
 
     Cell(
         FeePools.Bucket bucket,

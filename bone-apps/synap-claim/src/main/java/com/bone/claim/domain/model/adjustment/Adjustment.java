@@ -283,6 +283,8 @@ public class Adjustment extends TenantAggregateRoot<Long> {
         + (line.itemId() == null ? "null" : line.itemId())
         + ",\"itemName\":\""
         + jsonEscape(line.itemName())
+        + "\",\"cappedBy\":\""
+        + jsonEscape(line.cappedBy())
         + "\"}";
   }
 
