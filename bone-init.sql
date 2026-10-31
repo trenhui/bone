@@ -2744,6 +2744,13 @@ CREATE TABLE t_claim_case (
   closed_at         DATETIME(3)   DEFAULT NULL COMMENT '进入终态时间(申诉48h时限起算点)',
   version           BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本(SDK @Version 维护)',
   deleted           TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
+  -- V10「次」分组维度（详见 scripts/migration/0079）：发票开票日期/医院编码/病种编码。
+  -- 放在案件级而非明细级：赔案与发票 1:1（uk_tenant_invoice），一次就诊一个开票日期、一家医院、
+  -- 一个主要诊断；放明细会引入「同案多开票日期」这种 schema 允许、业务非法的一致性裂缝。
+  -- 历史案件为 NULL / 空串，不回填不猜测；缺失时能否降级由 OccurrenceGrouper#requireDimensions 决定。
+  invoice_date      DATE          DEFAULT NULL COMMENT '发票开票日期(「次」分组维度；历史案件为 NULL，不得用出险时间顶替)',
+  hospital_code     VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '医院编码(「次」分组维度；按编码比对，不按名称——名称可改，编码是身份)',
+  diagnosis_code    VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '病种/诊断编码(「次」分组维度；一次就诊一个主要诊断)',
   PRIMARY KEY (id),
   UNIQUE KEY uk_tenant_claim_no (tenant_id, claim_no),
   UNIQUE KEY uk_tenant_idem (tenant_id, idempotency_key),
@@ -2782,6 +2789,10 @@ CREATE TABLE t_claim_item (
   updated_at       DATETIME(3)   NOT NULL COMMENT '更新时间',
   version          BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
   deleted          TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
+  -- V10「次」分组维度（详见 scripts/migration/0079）：就诊科室是**行级**事实
+  -- （一张发票可跨科室，同日多科就诊合并结算），故必须落在明细上——它是「同院同科室」
+  -- 这一档能把一次就诊拆成多「次」的唯一维度。
+  department       VARCHAR(128)  NOT NULL DEFAULT '' COMMENT '就诊科室(行级「次」分组维度；一张发票可跨科室，故必须落在明细上)',
   PRIMARY KEY (id),
   KEY idx_claim (claim_id),
   KEY idx_item_code (tenant_id, item_code)

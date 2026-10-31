@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 84,
+  "executableCount": 85,
   "retired": [],
   "entries": [
     {
@@ -537,6 +537,12 @@
       "file": "0078_seed_claim_preexam_menu.sql",
       "kind": "mixed",
       "summary": "补「初审工作台」菜单（permission 与另 9 条同为 claim:claims:read，icon 须在 shell MENU_ICON_MAP 白名单内）"
+    },
+    {
+      "order": 85,
+      "file": "0079_synap_claim_occurrence_dimensions.sql",
+      "kind": "ddl",
+      "summary": "落地 synap-claim Flyway 孤儿脚本 V10/V11：「次」分组维度四列 + 决策消费两列（缺失即理赔列表/详情 500）"
     },
     {
       "order": null,
