@@ -41,7 +41,7 @@ currency: frozen
 ### 方式一：Maven 模块（可直接运行，已测试通过）
 本目录已转型为**可构建、可测试的标准 Maven 模块**，自带生产级 JDBC 端口与 JUnit 5 回归套件。
 ```bash
-cd reference-impl/synap-claim-settlement
+cd doc/ai-product/synap-claim-oracle/synap-claim-settlement
 mvn -o clean test      # 离线（依赖已在本地仓库）；在线去掉 -o
 ```
 测试套件（全部绿色，15 测试类）：
@@ -60,7 +60,7 @@ mvn -o clean test      # 离线（依赖已在本地仓库）；在线去掉 -o
 
 ### 方式二：单文件直跑（无 Maven，快速验证算法与护栏）
 ```bash
-cd reference-impl/synap-claim-settlement
+cd doc/ai-product/synap-claim-oracle/synap-claim-settlement
 rm -rf out && mkdir -p out
 find src/main -name "*.java" > sources.txt
 javac -d out @sources.txt

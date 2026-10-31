@@ -84,15 +84,15 @@ FORBIDDEN = [
     ('AI 建议整体预算另立 ≤5s（§11.2 建议返回 P95≤30s；分级预算可，整体口径不可）', '*.md', r'AI 建议[^\n]{0,12}≤\s*5\s*s'),
     ('端到端自动通过预算写成 ≤30s（§11.2 为 P95<60s；30s 是「建议返回」口径，不可互换）', '*.md', r'端到端[^\n]{0,12}(?:<|≤)\s*30\s*s(?!\s*内)'),
     # --- 2026-10-30 第六批（V1 重建后定位纠偏：oracle 不是产品代码）---
-    #  背景：reference-impl 的 README 与 pom 曾自称「生产实现骨架」「生产级模块」「7 端口的
+    #  背景：synap-claim-oracle 的 README 与 pom 曾自称「生产实现骨架」「生产级模块」「7 端口的
     #  JDBC 生产实现」。读者据此以为它是待上线的产品代码（实测确有误判），进而提出把它并入
     #  bone-apps/synap-claim——而这恰好违反 AdjustmentEngine 类注释的明文禁令
     #  「不允许两套算法并存」。它真实身份是双轨验证的第二轨（独立 oracle），
     #  价值全在「独立于被测实现」，一旦并入即自证。
-    ('reference-impl 自称为生产实现骨架（它是双轨 oracle，不是产品代码）',
-     'reference-impl/synap-claim-settlement/README.md', r'生产实现骨架'),
-    ('reference-impl 恢复旧「生产级模块」表述（会误导为待上线代码）',
-     'reference-impl/synap-claim-settlement/README.md',
+    ('synap-claim-oracle 自称为生产实现骨架（它是双轨 oracle，不是产品代码）',
+     '../synap-claim-oracle/synap-claim-settlement/README.md', r'生产实现骨架'),
+    ('synap-claim-oracle 恢复旧「生产级模块」表述（会误导为待上线代码）',
+     '../synap-claim-oracle/synap-claim-settlement/README.md',
      r'Maven 模块（生产级|## 生产级实现要点'),
 ]
 
@@ -167,8 +167,8 @@ REQUIRED = [
      'design/理算引擎设计.md', r'文档宣称 ≠ 代码做到'),
     ('设计真源须写明 V1〔缺〕能力处置（显式拒绝而非猜算法）',
      'design/理算引擎设计.md', r'显式拒绝，而不是猜一个算法'),
-    ('reference-impl 定位声明在位（非产品代码 + 不并入生产 + 独立 CI 入口）',
-     'reference-impl/synap-claim-settlement/README.md', r'这不是产品代码'),
+    ('synap-claim-oracle 定位声明在位（非产品代码 + 不并入生产 + 独立 CI 入口）',
+     '../synap-claim-oracle/synap-claim-settlement/README.md', r'这不是产品代码'),
 ]
 
 

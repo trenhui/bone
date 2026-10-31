@@ -97,7 +97,7 @@
 - `records.review.代码整改` → `09-records/reviews/代码整改清单.md`：待架构评审的代码整改项（含已闭环项的备查记录）
 - `records.review.理算引擎` → `09-records/reviews/理算引擎诊断记录.md`：两轮取证：修复前后的实证与新发现的缺陷
 - `archive.system-design` → `10-archive/系统设计方案.md`：上游设计演进记录；2026-10-21 起正文作废，仅留行业洞察与选型理由  ⚠️ 已被 `03-contract/工程详细设计-落地版.md` 撤销/修正：正文已作废，独特价值已并入《工程落地版》§3.6/§3.7/§4.3
-- `impl.readme` → `reference-impl/synap-claim-settlement/README.md`：可执行参考实现说明：构建运行、理算顺序铁律、TPA 场景用例、30 条探针 + 19 类变异
+- `impl.readme` → `doc/ai-product/synap-claim-oracle/synap-claim-settlement/README.md`：可执行参考实现说明：构建运行、理算顺序铁律、TPA 场景用例、30 条探针 + 19 类变异
 
 ## 六、manifest 字段图例
 

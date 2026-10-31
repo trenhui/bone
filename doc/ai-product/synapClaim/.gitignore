@@ -1,7 +1,5 @@
 # 参考实现是可运行 Maven 模块，构建产物不入库
 # 目的：避免 AI 语义索引吞入 stale 编译件、防止仓库膨胀、避免误 git add 进库
-reference-impl/**/out/
-reference-impl/**/target/
 *.class
 
 # macOS 元数据

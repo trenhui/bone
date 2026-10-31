@@ -12,8 +12,7 @@
     "L7": "07-delivery",
     "L8": "08-go-live",
     "L9": "09-records",
-    "L10": "10-archive",
-    "REF": "reference-impl"
+    "L10": "10-archive"
   },
   "invariants": [
     "目录号 = 层号：L3 必在 03-contract/，不许跨层借放",
@@ -663,11 +662,11 @@
     },
     {
       "id": "impl.readme",
-      "path": "reference-impl/synap-claim-settlement/README.md",
-      "layer": "REF",
-      "diataxis": "reference",
+      "path": "synap-claim-oracle-POINTER.md",
+      "layer": "L0",
+      "diataxis": "navigation",
       "status": "active",
-      "summary": "可执行参考实现说明：构建运行、理算顺序铁律、TPA 场景用例、30 条探针 + 19 类变异",
+      "summary": "可执行参考实现（双轨 oracle）指针：真实位置 doc/ai-product/synap-claim-oracle/synap-claim-settlement/；非产品代码",
       "authority": "参考实现",
       "role": "tooling",
       "currency": "frozen"

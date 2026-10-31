@@ -2,11 +2,11 @@ name: synap-claim Oracle
 
 # 为什么单独一个 workflow，而不是并进 ci.yml
 # ---------------------------------------------------------------
-# `doc/ai-product/synapClaim/reference-impl/synap-claim-settlement` 是一个
+# `doc/ai-product/synap-claim-oracle/synap-claim-settlement` 是一个
 # **独立 Maven 工程**：它有自己的 pom（无 parent，groupId com.bone.synap），
 # 不在 bone-apps/pom.xml 的 modules 里，因此**根目录 `mvn clean verify` 碰不到它**。
 # 而 scripts/check.sh 又显式把它排除在 spotless 与 ArchUnit 之外
-# （[11/35] 与 [13/35] 两处 `grep -v reference-impl`）。
+# （[11/35] 与 [13/35] 两处 `grep -v synap-claim-oracle`）。
 #
 # 结果是：这个模块此前**没有任何自动化执行入口**。它的价值恰恰是"防假绿"——
 # 30 条性质断言 + 19 类变异对照 + 28 个真实 TPA 场景，用来证明
@@ -54,7 +54,7 @@ jobs:
       # 不加 spotless:check：check.sh 有意不约束本模块格式（既有代码风格与
       # GJF 1.17.0 不一致），在这里强加会把"格式漂移"伪装成"oracle 失效"。
       - name: Run oracle test suite
-        working-directory: doc/ai-product/synapClaim/reference-impl/synap-claim-settlement
+        working-directory: doc/ai-product/synap-claim-oracle/synap-claim-settlement
         run: mvn test --batch-mode
 
       # 把 surefire 报告留档：oracle 失败时最需要看的是"哪条场景/探针/变异出了问题"，
@@ -64,6 +64,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: oracle-surefire-reports
-          path: doc/ai-product/synapClaim/reference-impl/synap-claim-settlement/target/surefire-reports/
+          path: doc/ai-product/synap-claim-oracle/synap-claim-settlement/target/surefire-reports/
           retention-days: 14
           if-no-files-found: warn

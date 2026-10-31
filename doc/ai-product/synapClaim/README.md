@@ -1,6 +1,6 @@
 # synapClaim 文档入口（1 屏版）
 
-> 全族 51 份文档（另有 `reference-impl/` 参考实现说明 1 份，共 52 条登记），你通常只需要读 1–2 份。**先回答：你这次来做什么？**
+> 全族 51 份文档（另有 `doc/ai-product/synap-claim-oracle/` 参考实现说明 1 份，共 52 条登记），你通常只需要读 1–2 份。**先回答：你这次来做什么？**
 >
 > 机读索引在 [`docs.manifest.json`](docs.manifest.json)（含每份文档的 `summary` / `authority`），层与真源归属在 [`00-governance/00-文档地图.md`](00-governance/00-文档地图.md)。
 
@@ -10,7 +10,7 @@
 | 改代码 / 加接口 / 动数据模型 | `03-contract/工程详细设计-落地版.md`（工程契约 SSOT） | `04-design/理算引擎设计.md`（若涉金额）、`07-delivery/05-接口契约与数据字典（MVP）.md`（对外契约） |
 | 做 AI / 决策图 / 模型接入 | `03-contract/AI技术方案.md` | `04-design/BONE-AI能力依赖图谱.md` |
 | 审理算算法 / 查金额为什么这么算 | `04-design/理算引擎设计.md` | `03-contract/智能理算引擎业务规则V1.md`（业务口径）、`06-verification/理算引擎验证套件.md`（怎么验证） |
-| 跑测试 / 判断"是不是真的修好了" | `06-verification/理算引擎验证套件.md` | `reference-impl/synap-claim-settlement/README.md` |
+| 跑测试 / 判断"是不是真的修好了" | `06-verification/理算引擎验证套件.md` | `doc/ai-product/synap-claim-oracle/synap-claim-settlement/README.md` |
 | 对客户交付 / 试点落地 | `07-delivery/README.md`（交付包索引） | `05-plan/部署集成方案-FDE.md` |
 | 准备上线 / 过合规 | `08-go-live/00-总纲与Go-Live门禁.md` | `08-go-live/01-生产准入合规包.md` |
 | 排期 / 定里程碑 | `05-plan/MVP可落地执行方案.md` | — |
@@ -34,7 +34,7 @@ synapClaim/
 ├── 08-go-live/               L8  上线：门禁总纲 00 + 规范分册 01–13
 ├── 09-records/               L9  记录：reviews/（评审与台账）+ impl-log/（实施记录 14–18）
 ├── 10-archive/               L10 归档：正文作废，只留洞察
-├── reference-impl/           REF 可执行参考实现（JDK 21，mvn test）
+├── doc/ai-product/synap-claim-oracle/           REF 可执行参考实现（JDK 21，mvn test）
 └── _check_*.py               6 道机检（见 00-governance/01-文档治理规约.md）
 ```
 

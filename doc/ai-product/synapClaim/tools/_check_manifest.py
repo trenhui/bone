@@ -100,7 +100,7 @@ def check_all_registered(docs, layer_dirs):
         full = os.path.join(HERE, entry)
         if not os.path.isdir(full) or entry in known or entry.startswith("."):
             continue
-        if entry == "reference-impl":
+        if entry == "synap-claim-oracle":
             continue  # 已由 layerDirs 的 REF 覆盖
         for root, _, files in os.walk(full):
             for f in files:
@@ -142,7 +142,7 @@ def check_path_tokens(docs, layer_dirs):
     "去这里找"，写错即失效；正文叙述里出现的裸目录名（如"本包见 08-go-live"）不校验，
     否则会把 `07-delivery/04-05` 这类简写误判为坏路径。
     """
-    known_prefixes = tuple(layer_dirs.values()) + ("reference-impl",)
+    known_prefixes = tuple(layer_dirs.values())
     for d in docs:
         full = os.path.join(HERE, d["path"])
         if not os.path.exists(full):
