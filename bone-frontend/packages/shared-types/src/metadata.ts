@@ -337,6 +337,12 @@ export function parseEnumSource(raw?: string | null): EnumSource | null {
  * 解析 ENUM 字段的 enumValues（JSON 文本）为选项数组。
  * 兼容 [{code,label}] 与 [{value,label}] 两种形态；可选携带 state（三态生命周期，仅 DEPRECATED 会写出）；
  * 非法输入返回 []，不抛异常。
+ *
+ * <p>另兼容**裸标量数组** `["DRAFT","SUBMITTED"]`（早期建模产物，实体状态字段大量存在），
+ * 按 code=label 兜底：此前这类文本会被逐项 filter 成空数组（`typeof 'x' === 'object'` 为 false），
+ * 运行时 `renderEnumCell` 拿不到选项 ⇒ 把 `APPROVED / SUBMITTED / REJECTED` 这类**裸枚举码**
+ * 直接打印给报销业务用户（2026-10-31 UI 取证实测）。兜底后至少能走标准 Tag 着色与后续
+ * label 补齐路径，而不是退化成裸码。
  */
 export function parseEnumValues(raw?: string | null): EnumOption[] {
   if (!raw) return [];
@@ -356,6 +362,12 @@ export function parseEnumValues(raw?: string | null): EnumOption[] {
             option.state = state;
           }
           return option;
+        }
+        // 裸标量数组 ⇒ code=label（映射不到中文名，但不再是「无选项」）
+        if (typeof it === 'string' || typeof it === 'number') {
+          const code = String(it);
+          if (!code) return null;
+          return { code, label: code } as EnumOption;
         }
         return null;
       })
