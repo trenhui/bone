@@ -9,7 +9,6 @@ import com.bone.claim.domain.repository.QuotaAccountRepository;
 import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.util.DistributedIdGenerator;
 import java.math.BigDecimal;
-import java.time.Year;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -48,19 +47,24 @@ public class QuotaApplicationService {
 
   private final QuotaAccountRepository quotaAccountRepository;
 
-  /** 软占（SOFT_RESERVED）：理算已算未确认的额度预占，计入 {@code frozen}。 */
+  /**
+   * 软占（SOFT_RESERVED）：理算已算未确认的额度预占，计入 {@code frozen}。
+   *
+   * @param quotaYear 额度年度（由 {@code QuotaYearResolver} 单点裁决；年度是账户行键的一部分， 不在本类就地取"当前年"——那会让读写两侧各算一次）
+   */
   @Transactional(propagation = Propagation.REQUIRED)
   public void reserve(
       long tenantId,
       String insuredIdHash,
       String policyNo,
       long planId,
+      int quotaYear,
       long claimId,
       String claimNo,
       BigDecimal amount,
       String settlementNo,
       int attempt) {
-    QuotaAccount account = loadPersonal(tenantId, insuredIdHash, policyNo, planId);
+    QuotaAccount account = loadPersonal(tenantId, insuredIdHash, policyNo, planId, quotaYear);
     String key = claimNo + ":" + FundingStage.SOFT_RESERVED.name() + ":" + attempt;
     if (alreadyOccupied(account, key)) {
       return;
@@ -77,12 +81,13 @@ public class QuotaApplicationService {
       String insuredIdHash,
       String policyNo,
       long planId,
+      int quotaYear,
       long claimId,
       String claimNo,
       BigDecimal amount,
       String settlementNo,
       int attempt) {
-    QuotaAccount account = loadPersonal(tenantId, insuredIdHash, policyNo, planId);
+    QuotaAccount account = loadPersonal(tenantId, insuredIdHash, policyNo, planId, quotaYear);
     String key = claimNo + ":" + FundingStage.PAID.name() + ":" + attempt;
     if (alreadyOccupied(account, key)) {
       return;
@@ -103,12 +108,13 @@ public class QuotaApplicationService {
       String insuredIdHash,
       String policyNo,
       long planId,
+      int quotaYear,
       long claimId,
       String claimNo,
       BigDecimal amount,
       String settlementNo,
       int attempt) {
-    QuotaAccount account = loadPersonal(tenantId, insuredIdHash, policyNo, planId);
+    QuotaAccount account = loadPersonal(tenantId, insuredIdHash, policyNo, planId, quotaYear);
     String key = claimNo + ":RELEASE:" + attempt;
     if (alreadyOccupied(account, key)) {
       return;
@@ -130,12 +136,13 @@ public class QuotaApplicationService {
       String insuredIdHash,
       String policyNo,
       long planId,
+      int quotaYear,
       long claimId,
       String claimNo,
       BigDecimal amount,
       String settlementNo,
       int attempt) {
-    QuotaAccount account = loadPersonal(tenantId, insuredIdHash, policyNo, planId);
+    QuotaAccount account = loadPersonal(tenantId, insuredIdHash, policyNo, planId, quotaYear);
     String key = claimNo + ":REFUND:" + attempt;
     if (alreadyOccupied(account, key)) {
       return;
@@ -145,10 +152,10 @@ public class QuotaApplicationService {
   }
 
   private QuotaAccount loadPersonal(
-      long tenantId, String insuredIdHash, String policyNo, long planId) {
+      long tenantId, String insuredIdHash, String policyNo, long planId, int quotaYear) {
     QuotaAccount account =
         quotaAccountRepository.findAccount(
-            insuredIdHash, policyNo, planId, Year.now().getValue(), "PERSONAL", "");
+            insuredIdHash, policyNo, planId, quotaYear, "PERSONAL", "");
     if (account == null) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_QUOTA_NOT_FOUND, policyNo);
     }

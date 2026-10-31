@@ -89,7 +89,16 @@ class QuotaReleaseOwnershipScenarioTest {
     String settlementNoA = "SO" + claimA + "-1";
     // 旧版 create() 只占个人账（责任账接线之前上线），此处精确复刻该形态
     h.quotaSvc.reserve(
-        h.tenantId, INSURED, POLICY, PLAN, claimA, claimNo(claimA), PAYOUT, settlementNoA, 1);
+        h.tenantId,
+        INSURED,
+        POLICY,
+        PLAN,
+        Year.now().getValue(),
+        claimA,
+        claimNo(claimA),
+        PAYOUT,
+        settlementNoA,
+        1);
     // 责任账上 A 单的流水为空 ⇒ 其自有冻结额为 0
     assertEquals(
         0,

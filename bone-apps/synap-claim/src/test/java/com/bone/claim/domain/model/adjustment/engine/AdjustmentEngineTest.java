@@ -1421,6 +1421,21 @@ class AdjustmentEngineTest {
   class LimitedCondition {
 
     @Test
+    @DisplayName("配置面冻结：只暴露 医院 / 病种 两维 —— 新增维度必须同批具备事实来源与判定码")
+    void surfaceIsFrozenToTwoDimensions() {
+      assertThat(
+              java.util.Arrays.stream(LiabilityRule.LimitedConditions.class.getRecordComponents())
+                  .map(java.lang.reflect.RecordComponent::getName))
+          .as(
+              "V1 §2 要素 6 声明六维，落地两维：医院/病种有本地事实（t_claim_case 编码），"
+                  + "药品/诊疗由目录准入承载（同一件事不立两套配置），区域/医保本仓库无事实来源。"
+                  + "若在此处新增 region/insurance 字段，说明配置面已先于「事实来源 + 判定码 + 文档」落地——"
+                  + "那正是 V14 之前『配了不生效、条款说限某区域、系统照全额赔』的形态。"
+                  + "新增维度须同时补：事实列/端口、装载期反向校验、LIMITED_CONDITION_UNDETERMINED 分支、V1 文档口径表")
+          .containsExactly("mode", "hospitalCodes", "diagnosisCodes");
+    }
+
+    @Test
     @DisplayName("白名单命中医院：正常理算，不受限定影响")
     void hospitalWhitelisted() {
       AdjustmentEngine.Outcome outcome =

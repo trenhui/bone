@@ -41,6 +41,16 @@ bone:
       # 提交理赔的 Idempotency-Key 快照落库开关（表 claim_idempotency_record）；
       # false 时退化为「不记录快照」（同 blueprint bone.blueprint.idempotency.enabled 口径）。
       enabled: ${BONE_CLAIM_IDEMPOTENCY_ENABLED:true}
+    quota-year:
+      # 额度年度口径（额度账户行键的一部分，读写两侧共用 QuotaYearResolver 裁决）：
+      #   CALENDAR    自然年（默认）。业务日缺失的历史案件退回处理日，与切换前行为一致。
+      #   POLICY_TERM 保单年度。按保单生效日起算每满 12 个月为一个年度，quota_year 记该年度起始年份；
+      #               期间查不到 / 业务日缺失 / 业务日超出保单期间一律拒算（SC_CLAIM_POLICY_NOT_ACTIVE
+      #               或 SC_CLAIM_OUT_OF_POLICY_PERIOD），不会静默退回自然年。
+      # 切换前必须完成两件事，否则历史累计读不到（免赔重扣、封顶重满）：
+      #   ① PolicyQueryPort 接真实保单系统（一期为进程内存桩，只有 dev seeder 种进去的保单）；
+      #   ② 把既有 t_quota_account.quota_year 按保单年度重映射（数据迁移，不是开关）。
+      basis: ${BONE_CLAIM_QUOTA_YEAR_BASIS:CALENDAR}
 
 # 生产可观测性出口（与 bone-system / bone-iam 同口径）：
 # 缺此块时指标只留在进程内存里，Prometheus 抓不到 —— 有埋点等于没有。

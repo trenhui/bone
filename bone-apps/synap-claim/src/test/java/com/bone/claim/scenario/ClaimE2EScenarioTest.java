@@ -417,6 +417,7 @@ class ClaimE2EScenarioTest {
         "ins-fff",
         "POL-OUTPAT-006",
         9006L,
+        java.time.Year.now().getValue(),
         claimId,
         paid.getClaimNo(),
         new BigDecimal("270"),
