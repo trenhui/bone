@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert, Button, DatePicker, Form, Input, InputNumber, Select, Space, Switch, Table, Typography, message,
 } from 'antd';
@@ -119,6 +119,8 @@ export const BoneDynamicForm: React.FC<Props> = ({
   const [referenceOptions, setReferenceOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const [submitMsg, setSubmitMsg] = useState<{ errors: string[]; warnings: string[] } | null>(null);
   const [saving, setSaving] = useState(false);
+  /** 提交结果汇总锚点：拦截时滚到可见（长表单下底部提示与提交按钮不同屏，见下方渲染处注释） */
+  const errTopRef = useRef<HTMLDivElement | null>(null);
 
   const fieldMap = useMemo(() => Object.fromEntries(fields.map((f) => [f.code, f])), [fields]);
   // 规则/动作条包 useMemo：下游 linkageState/visibleActions 的 useMemo 依赖它们，
@@ -293,7 +295,20 @@ export const BoneDynamicForm: React.FC<Props> = ({
       merged = { errors: ['表单校验异常，请检查界面配置或联系管理员'], warnings: [] };
     }
     setSubmitMsg(merged);
-    if (merged.errors.length) return;
+    if (merged.errors.length) {
+      // 拦截后把汇总滚到视口内：否则长表单里用户点完「提交」看不到任何变化，
+      // 只能得出「系统没反应」的结论（2026-10-31 采购订单实测：提示在内容区末行，
+      // 连提交按钮都不在同一视口）。等一帧再滚，确保汇总已渲染。
+      requestAnimationFrame(() => {
+        // jsdom 未实现 scrollIntoView（单测环境），直接用可选链仍会 TypeError；
+        // 先探能力再调用，保证「无滚动能力」只降级为不滚动，不影响拦截逻辑本身。
+        const el = errTopRef.current;
+        if (el && typeof el.scrollIntoView === 'function') {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+      return;
+    }
     if (merged.warnings.length) {
       const ok = window.confirm(`有 ${merged.warnings.length} 条警告，仍要保存？\n${merged.warnings.join('\n')}`);
       if (!ok) return;
@@ -326,6 +341,43 @@ export const BoneDynamicForm: React.FC<Props> = ({
 
   return (
     <div style={{ maxWidth: 720 }}>
+      {/* 提交结果汇总（error summary，置顶 + 自动滚动到可见）。
+          为什么不能只在底部出 Alert：长表单（采购订单 15+ 字段）里，底部 Alert 位于
+          滚动区末端，用户点「提交」的位置与提示出现的位置常常不同屏 —— 实测截图里
+          提示在内容区最后一行、连提交按钮都不在同一视口，点完提交屏幕上"什么都没发生"。
+          GOV.UK Design System / WAI 表单错误惯例都是：错误汇总置顶 + 计数 + 滚到可见。
+          底部 Alert 保留作为就地上下文，两处同源不冲突。 */}
+      {submitMsg && (submitMsg.errors.length > 0 || submitMsg.warnings.length > 0) && (
+        <div ref={errTopRef} style={{ marginBottom: 12 }}>
+          {submitMsg.errors.length > 0 && (
+            <Alert
+              type="error"
+              showIcon
+              style={{ marginBottom: 8 }}
+              message={`提交被拦截：共 ${submitMsg.errors.length} 项需修正`}
+              description={
+                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  {submitMsg.errors.map((e, i) => <li key={`se${i}`}>{e}</li>)}
+                </ul>
+              }
+            />
+          )}
+          {submitMsg.warnings.length > 0 && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 8 }}
+              message={`有 ${submitMsg.warnings.length} 条提醒（确认后仍可提交）`}
+              description={
+                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  {submitMsg.warnings.map((w, i) => <li key={`sw${i}`}>{w}</li>)}
+                </ul>
+              }
+            />
+          )}
+        </div>
+      )}
+
       {/* 页头关键信息条（v1.2 §13.2；引用字段必须存在于某分区控件，悬空由 lint ERROR） */}
       <PageHeaderBar codes={form.pageHeader ?? []} data={data} fields={fields} />
 

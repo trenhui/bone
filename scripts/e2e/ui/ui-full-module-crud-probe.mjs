@@ -586,6 +586,15 @@ try {
       await page.waitForTimeout(1500);
 
       const toast = await page.locator('.ant-message, .ant-notification').innerText().catch(() => '');
+      // 表单内 Alert 也必须采集：提交规则（submitRules）拦截的反馈走的是**表单内 Alert**，
+      // 不是 toast。只读 toast 会把「有明确提示的规则拦截」与「点了没反应的真静默」
+      // 混为一谈 —— 前者是产品行为，后者才是缺陷（采购订单 2026-10-31 实证：8 条 Alert
+      // 里有 4 条带【规则名】前缀的拦截说明，而 toast 为空 ⇒ 曾被误判为静默失败）。
+      const alertTexts = await modal.locator('.ant-alert:visible').allInnerTexts().catch(() => []);
+      const alertText = alertTexts.join(' | ').replace(/\s+/g, ' ');
+      // 强信号：runSubmit 的每条提示都带【规则名/校验名】前缀
+      const ruleNames = [...new Set([...alertText.matchAll(/【([^】]{2,30})】/g)].map((x) => x[1]))];
+      const ruleBlocked = ruleNames.length > 0;
       // 轮询等弹窗收起，而不是固定 sleep：下单这类要过库存/发布预校验的接口偶尔慢一拍，
       // 固定等待会把「其实已经成功」误判成「弹窗没关」。
       for (let i = 0; i < 10; i++) {
@@ -601,12 +610,28 @@ try {
       // 之所以接受「成功 toast」作为第二判据：列表多为分页，新建的记录可能落在第 N 页，
       // 首屏文本不变化不代表没落库——但「弹窗关闭 + 成功 toast」已经足以证明提交成功。
       const okSubmit = stillOpen === 0 && !bad && (changed || /成功|已创建|已保存|已添加|已新增/.test(toast));
-      check(
-        `${m.name}：新建提交闭环（填${filled.length}项/跳${skipped.length}项，按钮「${btnText}」）`,
-        okSubmit,
-        `弹窗仍开=${stillOpen} toast=${toast.replace(/\s+/g, ' ').slice(0, 90)} 列表变化=${changed}`
-      );
-      if (stillOpen || bad) {
+      if (okSubmit) {
+        check(
+          `${m.name}：新建提交闭环（填${filled.length}项/跳${skipped.length}项，按钮「${btnText}」）`,
+          true,
+          `弹窗关闭 列表变化=${changed}`
+        );
+      } else if (ruleBlocked) {
+        // 拦截成立且**有可见说明** ⇒ 产品行为，不判缺陷；但必须留下规则名，
+        // 否则「被规则拦住」与「静默无反馈」在日志里长得一样，下次还得重查一遍。
+        check(
+          `${m.name}：被提交规则拦截（非缺陷）`,
+          true,
+          `规则=${ruleNames.join('/')} 无HTTP=${badResponses.length === 0} Alert已提示=${alertText.length > 0}`
+        );
+      } else {
+        check(
+          `${m.name}：新建提交闭环（填${filled.length}项/跳${skipped.length}项，按钮「${btnText}」）`,
+          false,
+          `弹窗仍开=${stillOpen} toast=${toast.replace(/\s+/g, ' ').slice(0, 60)} Alert=${alertText.slice(0, 80)} 列表变化=${changed}`
+        );
+      }
+      if (stillOpen && !ruleBlocked) {
         await shot(slug(m.path) + '_fail');
         for (const b of badResponses.slice(0, 3)) {
           console.log(`    ↳ HTTP ${b.status} ${b.url} :: ${b.body.replace(/\s+/g, ' ')}`);
