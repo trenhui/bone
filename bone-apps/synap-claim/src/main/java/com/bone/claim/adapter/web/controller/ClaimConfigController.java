@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -112,6 +113,30 @@ public class ClaimConfigController {
         HttpStatus.OK.value(), claimConfigApplicationService.pausePolicy(policyNo));
   }
 
+  @Operation(summary = "编辑保单", description = "修正可改字段（名称/承保期间/等待期/被保人清单等）；启用中的保单不允许改承保期间，需先停用")
+  @PreAuthorize("hasAuthority('claim:policy:write')")
+  @PutMapping("/policies/{policyNo}")
+  public ApiResponse<PolicyView> updatePolicy(
+      @Parameter(description = "保单号") @PathVariable String policyNo,
+      @Valid @RequestBody ClaimConfigRequests.UpdatePolicyReq request) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(),
+        claimConfigApplicationService.updatePolicy(
+            policyNo,
+            new ClaimConfigApplicationService.UpdatePolicy(
+                request.policyName(),
+                request.insurerName(),
+                request.branchName(),
+                request.insureName(),
+                request.bizIdentityCode(),
+                request.productType(),
+                request.effectiveStart(),
+                request.effectiveEnd(),
+                request.waitingPeriod() == null ? 0 : request.waitingPeriod(),
+                request.policyVersion(),
+                request.insuredSnapshot())));
+  }
+
   // ===================== 计划 =====================
 
   @Operation(summary = "计划列表", description = "某保单下的全部计划")
@@ -159,6 +184,23 @@ public class ClaimConfigController {
         HttpStatus.OK.value(), claimConfigApplicationService.retirePlan(planId));
   }
 
+  @Operation(summary = "编辑计划", description = "修正可改字段（名称/额度/等待期/版本）；不改计划编码与状态")
+  @PreAuthorize("hasAuthority('claim:policy:write')")
+  @PutMapping("/plans/{planId}")
+  public ApiResponse<PlanView> updatePlan(
+      @Parameter(description = "计划ID") @PathVariable long planId,
+      @Valid @RequestBody ClaimConfigRequests.UpdatePlanReq request) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(),
+        claimConfigApplicationService.updatePlan(
+            planId,
+            new ClaimConfigApplicationService.UpdatePlan(
+                request.planName(),
+                request.planLimit(),
+                request.waitingPeriod() == null ? 0 : request.waitingPeriod(),
+                request.versionNo())));
+  }
+
   // ===================== 险种 =====================
 
   @Operation(summary = "险种列表", description = "某计划下的全部险种")
@@ -185,5 +227,19 @@ public class ClaimConfigController {
                 request.coverageName(),
                 request.coverageLimit(),
                 request.liabilityType())));
+  }
+
+  @Operation(summary = "编辑险种", description = "修正可改字段（名称/额度/责任形式）；不改险种编码与状态")
+  @PreAuthorize("hasAuthority('claim:policy:write')")
+  @PutMapping("/coverages/{coverageId}")
+  public ApiResponse<CoverageView> updateCoverage(
+      @Parameter(description = "险种ID") @PathVariable long coverageId,
+      @Valid @RequestBody ClaimConfigRequests.UpdateCoverageReq request) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(),
+        claimConfigApplicationService.updateCoverage(
+            coverageId,
+            new ClaimConfigApplicationService.UpdateCoverage(
+                request.coverageName(), request.coverageLimit(), request.liabilityType())));
   }
 }

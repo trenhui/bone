@@ -109,6 +109,27 @@ public class ClaimConfigApplicationService {
     return PolicyView.from(policy);
   }
 
+  /** 编辑保单可修正字段（不改动保单号与规则开关）。启用中的保单锁定承保期间。 */
+  @Transactional
+  public PolicyView updatePolicy(String policyNo, UpdatePolicy command) {
+    ClaimPolicy policy = requirePolicy(policyNo);
+    policy.edit(
+        command.policyName(),
+        command.insurerName(),
+        command.branchName(),
+        command.insureName(),
+        command.bizIdentityCode(),
+        command.productType(),
+        command.effectiveStart(),
+        command.effectiveEnd(),
+        command.waitingPeriod(),
+        command.policyVersion(),
+        command.insuredSnapshot());
+    claimPolicyRepository.save(policy);
+    domainEventPublisher.publishFrom(policy);
+    return PolicyView.from(policy);
+  }
+
   // ===================== 计划 =====================
 
   /** 某保单下的计划列表。 */
@@ -161,6 +182,17 @@ public class ClaimConfigApplicationService {
     return PlanView.from(plan);
   }
 
+  /** 编辑计划可修正字段（不改动计划编码与状态）。 */
+  @Transactional
+  public PlanView updatePlan(long planId, UpdatePlan command) {
+    ClaimPlan plan = requirePlan(planId);
+    plan.edit(
+        command.planName(), command.planLimit(), command.waitingPeriod(), command.versionNo());
+    claimPlanRepository.save(plan);
+    domainEventPublisher.publishFrom(plan);
+    return PlanView.from(plan);
+  }
+
   // ===================== 险种 =====================
 
   /** 某计划下的险种列表。 */
@@ -193,6 +225,16 @@ public class ClaimConfigApplicationService {
     return CoverageView.from(coverage);
   }
 
+  /** 编辑险种可修正字段（不改动险种编码与状态）。 */
+  @Transactional
+  public CoverageView updateCoverage(long coverageId, UpdateCoverage command) {
+    ClaimCoverage coverage = requireCoverage(coverageId);
+    coverage.edit(command.coverageName(), command.coverageLimit(), command.liabilityType());
+    claimCoverageRepository.save(coverage);
+    domainEventPublisher.publishFrom(coverage);
+    return CoverageView.from(coverage);
+  }
+
   // ===================== 内部 =====================
 
   private ClaimPolicy requirePolicy(String policyNo) {
@@ -209,6 +251,14 @@ public class ClaimConfigApplicationService {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_PLAN_NOT_FOUND, planId);
     }
     return plan;
+  }
+
+  private ClaimCoverage requireCoverage(long coverageId) {
+    ClaimCoverage coverage = claimCoverageRepository.findCoverageById(coverageId);
+    if (coverage == null) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_COVERAGE_NOT_FOUND, coverageId);
+    }
+    return coverage;
   }
 
   // ===================== 命令 =====================
@@ -244,6 +294,28 @@ public class ClaimConfigApplicationService {
       String coverageName,
       BigDecimal coverageLimit,
       String liabilityType) {}
+
+  /** 编辑保单命令（不改动保单号与规则开关）。 */
+  public record UpdatePolicy(
+      String policyName,
+      String insurerName,
+      String branchName,
+      String insureName,
+      String bizIdentityCode,
+      String productType,
+      Instant effectiveStart,
+      Instant effectiveEnd,
+      int waitingPeriod,
+      String policyVersion,
+      String insuredSnapshot) {}
+
+  /** 编辑计划命令（不改动计划编码与状态）。 */
+  public record UpdatePlan(
+      String planName, BigDecimal planLimit, int waitingPeriod, String versionNo) {}
+
+  /** 编辑险种命令（不改动险种编码与状态）。 */
+  public record UpdateCoverage(
+      String coverageName, BigDecimal coverageLimit, String liabilityType) {}
 
   // ===================== 视图 =====================
 

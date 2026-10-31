@@ -190,6 +190,28 @@ public class ClaimPlan extends TenantAggregateRoot<Long> {
     this.updatedAt = Instant.now();
   }
 
+  /**
+   * 编辑计划可修正字段（不改动计划编码与状态）。
+   *
+   * <p><b>不改计划编码</b>：计划编码是险种、额度账户、赔案的主数据键，改名会制造孤儿引用； 如需换码应走"新计划 + 迁移险种"而非原地改键。额度/等待期/名称/版本可随时改。
+   * 下调额度不会回收已占用额度（与账户不同，计划的"额度"是配置上限而非余额）， 仅作为后续理算的约束，故此处不校验下界之外的守恒。
+   */
+  public void edit(String planName, BigDecimal planLimit, int waitingPeriod, String versionNo) {
+    if (planLimit != null && planLimit.signum() < 0) {
+      throw new DomainException("计划额度不能为负");
+    }
+    if (waitingPeriod < 0) {
+      throw new DomainException("等待期不能为负");
+    }
+    this.planName = planName == null ? "" : planName;
+    this.planLimit =
+        (planLimit == null ? BigDecimal.ZERO : planLimit)
+            .setScale(2, java.math.RoundingMode.HALF_UP);
+    this.waitingPeriod = waitingPeriod;
+    this.versionNo = versionNo == null || versionNo.isBlank() ? "v1" : versionNo;
+    this.updatedAt = Instant.now();
+  }
+
   /** 计划状态。 */
   public String status() {
     return status;

@@ -161,6 +161,37 @@ export interface CreateCoverageReq {
   liabilityType?: LiabilityType;
 }
 
+/** 编辑保单请求（不改动保单号与规则开关）。 */
+export interface UpdatePolicyReq {
+  policyName?: string;
+  insurerName?: string;
+  branchName?: string;
+  insureName?: string;
+  bizIdentityCode?: string;
+  productType?: string;
+  effectiveStart: string;
+  effectiveEnd: string;
+  waitingPeriod?: number;
+  policyVersion?: string;
+  /** 被保人清单：假名化 ID 数组（后端接受 JSON 数组字符串或数组）。 */
+  insuredSnapshot?: string | string[];
+}
+
+/** 编辑计划请求（不改动计划编码与状态）。 */
+export interface UpdatePlanReq {
+  planName?: string;
+  planLimit?: number;
+  waitingPeriod?: number;
+  versionNo?: string;
+}
+
+/** 编辑险种请求（不改动险种编码与状态）。 */
+export interface UpdateCoverageReq {
+  coverageName?: string;
+  coverageLimit?: number;
+  liabilityType?: LiabilityType;
+}
+
 /** 开户请求。 */
 export interface OpenQuotaReq {
   insuredIdHash: string;
@@ -285,6 +316,27 @@ export const claimConfigApi = {
   /** 新建险种（草稿态）。 */
   createCoverage(req: CreateCoverageReq): Promise<ApiResponse<CoverageView>> {
     return client.post<CreateCoverageReq, ApiResponse<CoverageView>>('/coverages', req);
+  },
+
+  /** 编辑保单（不改动保单号与规则开关；启用中不可改承保期间）。 */
+  updatePolicy(policyNo: string, req: UpdatePolicyReq): Promise<ApiResponse<PolicyView>> {
+    return client.put<UpdatePolicyReq, ApiResponse<PolicyView>>(
+      `/policies/${encodeURIComponent(policyNo)}`,
+      req,
+    );
+  },
+
+  /** 编辑计划（不改动计划编码与状态）。 */
+  updatePlan(planId: string, req: UpdatePlanReq): Promise<ApiResponse<PlanView>> {
+    return client.put<UpdatePlanReq, ApiResponse<PlanView>>(`/plans/${encodeURIComponent(planId)}`, req);
+  },
+
+  /** 编辑险种（不改动险种编码与状态）。 */
+  updateCoverage(coverageId: string, req: UpdateCoverageReq): Promise<ApiResponse<CoverageView>> {
+    return client.put<UpdateCoverageReq, ApiResponse<CoverageView>>(
+      `/coverages/${encodeURIComponent(coverageId)}`,
+      req,
+    );
   },
 
   /** 某保单下的额度账户列表。 */

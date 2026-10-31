@@ -8,6 +8,7 @@ import com.bone.metadata.sdk.domain.annotation.Version;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -218,6 +219,55 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
     addDomainEvent(
         new com.bone.claim.domain.model.policy.event.PolicyConfigStatusChangedEvent(
             getId(), getTenantId(), policyNo, from, CONFIG_PAUSE, operatorId, updatedAt));
+  }
+
+  /**
+   * 编辑保单可修正字段（不改动保单号与规则开关）。
+   *
+   * <p><b>启用中的保单锁定承保期间</b>：承保期间是报案前置校验与额度年度裁决的事实源， 启用后改期间会让"此刻在保"与"已受理赔案落在哪一年度"同时失准。故 {@code
+   * ACTIVE} 态下若改了生效起止即拒绝，须先 {@link #pause} 再编辑——这条规则把"改期间"与"停收案" 两件事显式绑定，避免无声地污染在途赔案。
+   *
+   * <p><b>不改保单号</b>：保单号是被保人清单、额度账户、赔案的主数据键，改名会制造孤儿引用； 如需换号应走"停用旧 + 新建"而非原地改键。被保人清单、等待期、描述字段则可随时改。
+   */
+  public void edit(
+      String policyName,
+      String insurerName,
+      String branchName,
+      String insureName,
+      String bizIdentityCode,
+      String productType,
+      Instant effectiveStart,
+      Instant effectiveEnd,
+      int waitingPeriod,
+      String policyVersion,
+      String insuredSnapshot) {
+    if (waitingPeriod < 0) {
+      throw new DomainException("等待期不能为负");
+    }
+    boolean datesChanged =
+        !Objects.equals(this.effectiveStart, effectiveStart)
+            || !Objects.equals(this.effectiveEnd, effectiveEnd);
+    if (CONFIG_ACTIVE.equals(configStatus) && datesChanged) {
+      throw new DomainException("启用中的保单不允许修改承保期间，请先停用");
+    }
+    if (effectiveStart == null || effectiveEnd == null) {
+      throw new DomainException("保单生效期间不能为空");
+    }
+    if (!effectiveStart.isBefore(effectiveEnd)) {
+      throw new DomainException("保单生效起必须早于生效止");
+    }
+    this.policyName = orEmpty(policyName);
+    this.insurerName = orEmpty(insurerName);
+    this.branchName = orEmpty(branchName);
+    this.insureName = orEmpty(insureName);
+    this.bizIdentityCode = orEmpty(bizIdentityCode);
+    this.productType = orEmpty(productType);
+    this.effectiveStart = effectiveStart;
+    this.effectiveEnd = effectiveEnd;
+    this.waitingPeriod = waitingPeriod;
+    this.policyVersion = orEmpty(policyVersion);
+    this.insuredSnapshot = insuredSnapshot;
+    this.updatedAt = Instant.now();
   }
 
   /** 规则开关状态。 */

@@ -14,7 +14,7 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import { PauseCircleOutlined, PlayCircleOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { EditOutlined, PauseCircleOutlined, PlayCircleOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { AuthButton } from '@bone/ui';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
@@ -50,6 +50,8 @@ export function PolicyManagementPage(): ReactElement {
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
+  const [editTarget, setEditTarget] = useState<PolicyView | null>(null);
+  const [editForm] = Form.useForm();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -132,6 +134,58 @@ export function PolicyManagementPage(): ReactElement {
       await load();
     } catch (err) {
       message.error(resolveErrorMessage(err, action === 'activate' ? '启用失败' : '停用失败'));
+    }
+  };
+
+  const openEdit = (row: PolicyView) => {
+    setEditTarget(row);
+    editForm.setFieldsValue({
+      policyName: row.policyName,
+      insurerName: row.insurerName,
+      branchName: row.branchName,
+      insureName: row.insureName,
+      bizIdentityCode: row.bizIdentityCode,
+      productType: row.productType,
+      waitingPeriod: row.waitingPeriod,
+      policyVersion: row.policyVersion,
+      effectiveStart: dayjs(row.effectiveStart),
+      effectiveEnd: dayjs(row.effectiveEnd),
+      insuredHashes: parseInsuredSnapshot(row.insuredSnapshot).join(','),
+    });
+  };
+
+  const submitEdit = async () => {
+    if (!editTarget) return;
+    const values = await editForm.validateFields();
+    setSubmitting(true);
+    try {
+      const insured = String(values.insuredHashes ?? '')
+        .split(',')
+        .map((v: string) => v.trim())
+        .filter(Boolean);
+      await claimConfigApi.updatePolicy(editTarget.policyNo, {
+        policyName: values.policyName?.trim(),
+        insurerName: values.insurerName?.trim(),
+        branchName: values.branchName?.trim(),
+        insureName: values.insureName?.trim(),
+        bizIdentityCode: values.bizIdentityCode?.trim(),
+        productType: values.productType?.trim(),
+        effectiveStart: values.effectiveStart.toISOString(),
+        effectiveEnd: values.effectiveEnd.toISOString(),
+        waitingPeriod: values.waitingPeriod ?? 0,
+        policyVersion: values.policyVersion ?? 'v1',
+        insuredSnapshot: JSON.stringify(insured),
+      });
+      message.success('保单已更新');
+      setEditTarget(null);
+      await load();
+    } catch (err) {
+      // 启用中改承保期间会被后端拒绝（返回 400 + 「启用中的保单不允许修改承保期间，请先停用」），此处透传同口径提示
+      if (resolveErrorCode(err)) {
+        message.error(resolveErrorMessage(err, '保单更新失败'));
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -256,6 +310,15 @@ export function PolicyManagementPage(): ReactElement {
                     code="claim:policy:write"
                     type="link"
                     size="small"
+                    icon={<EditOutlined />}
+                    onClick={() => openEdit(r)}
+                  >
+                    编辑
+                  </AuthButton>
+                  <AuthButton
+                    code="claim:policy:write"
+                    type="link"
+                    size="small"
                     icon={<PlayCircleOutlined />}
                     disabled={r.configStatus === 'ACTIVE'}
                     onClick={() => void toggle(r, 'activate')}
@@ -360,6 +423,89 @@ export function PolicyManagementPage(): ReactElement {
           >
             <Input placeholder="如 e2e-insured-hash-0001,e2e-insured-hash-0002" />
           </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={editTarget ? `编辑保单（${editTarget.policyNo}）` : '编辑保单'}
+        open={editTarget !== null}
+        onCancel={() => setEditTarget(null)}
+        onOk={() => void submitEdit()}
+        confirmLoading={submitting}
+        okText="保存"
+        width={720}
+        destroyOnHidden
+      >
+        <Form form={editForm} layout="vertical" preserve={false}>
+          <Space size="middle" wrap style={{ width: '100%' }}>
+            <Form.Item name="policyName" label="保单名称" style={{ width: 260 }}>
+              <Input placeholder="选填" />
+            </Form.Item>
+            <Form.Item name="policyVersion" label="保单版本" style={{ width: 140 }}>
+              <Input placeholder="v1" />
+            </Form.Item>
+          </Space>
+          <Space size="middle" wrap style={{ width: '100%' }}>
+            <Form.Item name="insurerName" label="保险公司" style={{ width: 220 }}>
+              <Input placeholder="选填" />
+            </Form.Item>
+            <Form.Item name="branchName" label="保险分公司" style={{ width: 220 }}>
+              <Input placeholder="选填" />
+            </Form.Item>
+            <Form.Item name="insureName" label="投保公司" style={{ width: 220 }}>
+              <Input placeholder="选填" />
+            </Form.Item>
+          </Space>
+          <Space size="middle" wrap style={{ width: '100%' }}>
+            <Form.Item name="bizIdentityCode" label="业务主体码" style={{ width: 220 }}>
+              <Input placeholder="保司/分公司/投保公司/保单四级匹配" />
+            </Form.Item>
+            <Form.Item name="productType" label="产品类型" style={{ width: 220 }}>
+              <Input placeholder="如 OUTPATIENT" />
+            </Form.Item>
+            <Form.Item
+              name="waitingPeriod"
+              label="等待期（天）"
+              style={{ width: 180 }}
+              rules={[{ type: 'number', min: 0, message: '等待期不能为负' }]}
+            >
+              <InputNumber min={0} style={{ width: 160 }} />
+            </Form.Item>
+          </Space>
+          <Space size="middle" wrap style={{ width: '100%' }}>
+            <Form.Item
+              name="effectiveStart"
+              label="生效起"
+              rules={[{ required: true, message: '生效起不能为空' }]}
+              style={{ width: 220 }}
+            >
+              <DatePicker style={{ width: 200 }} disabled={editTarget?.configStatus === 'ACTIVE'} />
+            </Form.Item>
+            <Form.Item
+              name="effectiveEnd"
+              label="生效止"
+              rules={[{ required: true, message: '生效止不能为空' }]}
+              style={{ width: 220 }}
+            >
+              <DatePicker
+                style={{ width: 200 }}
+                disabled={editTarget?.configStatus === 'ACTIVE'}
+              />
+            </Form.Item>
+          </Space>
+          <Form.Item
+            name="insuredHashes"
+            label="被保人假名化 ID"
+            tooltip="填服务端计算出的假名化被保人标识（与额度账户的 insured_id_hash 同口径）；库里不落明文证件"
+            extra="多个用逗号分隔。留空表示该保单暂未录入被保人，此时任何报案都会被「被保人不匹配」拒收。"
+          >
+            <Input placeholder="如 e2e-insured-hash-0001,e2e-insured-hash-0002" />
+          </Form.Item>
+          {editTarget?.configStatus === 'ACTIVE' && (
+            <Typography.Paragraph type="warning">
+              保单当前为「启用中」，承保期间已锁定，如需修改生效起止请先停用。
+            </Typography.Paragraph>
+          )}
         </Form>
       </Modal>
     </div>

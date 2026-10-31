@@ -15,6 +15,7 @@ import {
 } from 'antd';
 import {
   CloudUploadOutlined,
+  EditOutlined,
   PlusOutlined,
   ReloadOutlined,
   StopOutlined,
@@ -61,6 +62,10 @@ export function PlanConfigPage(): ReactElement {
   const [submitting, setSubmitting] = useState(false);
   const [planForm] = Form.useForm();
   const [coverageForm] = Form.useForm();
+  const [planEditTarget, setPlanEditTarget] = useState<PlanView | null>(null);
+  const [planEditForm] = Form.useForm();
+  const [coverageEditTarget, setCoverageEditTarget] = useState<CoverageView | null>(null);
+  const [coverageEditForm] = Form.useForm();
   /** 险种按计划缓存（展开时才加载，避免一次性拉全量）。 */
   const [coverageMap, setCoverageMap] = useState<Record<string, CoverageView[]>>({});
 
@@ -202,6 +207,70 @@ export function PlanConfigPage(): ReactElement {
     }
   };
 
+  const openPlanEdit = (plan: PlanView) => {
+    setPlanEditTarget(plan);
+    planEditForm.setFieldsValue({
+      planName: plan.planName,
+      planLimit: plan.planLimit,
+      waitingPeriod: plan.waitingPeriod,
+      versionNo: plan.versionNo,
+    });
+  };
+
+  const submitPlanEdit = async () => {
+    if (!planEditTarget) return;
+    const values = await planEditForm.validateFields();
+    setSubmitting(true);
+    try {
+      await claimConfigApi.updatePlan(planEditTarget.planId, {
+        planName: values.planName?.trim(),
+        planLimit: values.planLimit ?? 0,
+        waitingPeriod: values.waitingPeriod ?? 0,
+        versionNo: values.versionNo ?? 'v1',
+      });
+      message.success('计划已更新');
+      setPlanEditTarget(null);
+      await loadPlans();
+    } catch (err) {
+      if (resolveErrorCode(err)) {
+        message.error(resolveErrorMessage(err, '计划更新失败'));
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openCoverageEdit = (coverage: CoverageView) => {
+    setCoverageEditTarget(coverage);
+    coverageEditForm.setFieldsValue({
+      coverageName: coverage.coverageName,
+      coverageLimit: coverage.coverageLimit,
+      liabilityType: coverage.liabilityType,
+    });
+  };
+
+  const submitCoverageEdit = async () => {
+    if (!coverageEditTarget) return;
+    const values = await coverageEditForm.validateFields();
+    setSubmitting(true);
+    try {
+      await claimConfigApi.updateCoverage(coverageEditTarget.coverageId, {
+        coverageName: values.coverageName?.trim(),
+        coverageLimit: values.coverageLimit ?? 0,
+        liabilityType: values.liabilityType ?? 'REIMBURSEMENT',
+      });
+      message.success('险种已更新');
+      setCoverageEditTarget(null);
+      await loadCoverages(coverageEditTarget.planId);
+    } catch (err) {
+      if (resolveErrorCode(err)) {
+        message.error(resolveErrorMessage(err, '险种更新失败'));
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div>
       <PageHeader
@@ -279,6 +348,21 @@ export function PlanConfigPage(): ReactElement {
                         return <Tag color={meta.color}>{meta.label}</Tag>;
                       },
                     },
+                    {
+                      title: '操作',
+                      width: 100,
+                      render: (_, c) => (
+                        <AuthButton
+                          code="claim:policy:write"
+                          type="link"
+                          size="small"
+                          icon={<EditOutlined />}
+                          onClick={() => openCoverageEdit(c)}
+                        >
+                          编辑
+                        </AuthButton>
+                      ),
+                    },
                   ]}
                 />
               );
@@ -314,6 +398,15 @@ export function PlanConfigPage(): ReactElement {
               width: 230,
               render: (_, r) => (
                 <Space size={4}>
+                  <AuthButton
+                    code="claim:policy:write"
+                    type="link"
+                    size="small"
+                    icon={<EditOutlined />}
+                    onClick={() => openPlanEdit(r)}
+                  >
+                    编辑
+                  </AuthButton>
                   <AuthButton
                     code="claim:policy:write"
                     type="link"
@@ -413,6 +506,71 @@ export function PlanConfigPage(): ReactElement {
           >
             <Input placeholder="同一计划下唯一" />
           </Form.Item>
+          <Form.Item name="coverageName" label="险种名称">
+            <Input placeholder="选填" />
+          </Form.Item>
+          <Form.Item
+            name="coverageLimit"
+            label="险种额度（0 = 不限）"
+            rules={[{ type: 'number', min: 0, message: '险种额度不能为负' }]}
+          >
+            <InputNumber min={0} style={{ width: 220 }} />
+          </Form.Item>
+          <Form.Item name="liabilityType" label="责任形式">
+            <Select
+              options={[
+                { value: 'REIMBURSEMENT', label: '费用补偿' },
+                { value: 'FIXED_AMOUNT', label: '定额给付' },
+                { value: 'ALLOWANCE', label: '津贴给付' },
+              ]}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={planEditTarget ? `编辑计划（${planEditTarget.planName || planEditTarget.planCode}）` : '编辑计划'}
+        open={planEditTarget !== null}
+        onCancel={() => setPlanEditTarget(null)}
+        onOk={() => void submitPlanEdit()}
+        confirmLoading={submitting}
+        okText="保存"
+        destroyOnHidden
+      >
+        <Form form={planEditForm} layout="vertical" preserve={false}>
+          <Form.Item name="planName" label="计划名称">
+            <Input placeholder="选填" />
+          </Form.Item>
+          <Form.Item
+            name="planLimit"
+            label="计划额度（0 = 不限）"
+            rules={[{ type: 'number', min: 0, message: '计划额度不能为负' }]}
+          >
+            <InputNumber min={0} style={{ width: 220 }} />
+          </Form.Item>
+          <Form.Item
+            name="waitingPeriod"
+            label="等待期（天）"
+            rules={[{ type: 'number', min: 0, message: '等待期不能为负' }]}
+          >
+            <InputNumber min={0} style={{ width: 220 }} />
+          </Form.Item>
+          <Form.Item name="versionNo" label="计划版本">
+            <Input placeholder="v1" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={coverageEditTarget ? `编辑险种（${coverageEditTarget.coverageName || coverageEditTarget.coverageCode}）` : '编辑险种'}
+        open={coverageEditTarget !== null}
+        onCancel={() => setCoverageEditTarget(null)}
+        onOk={() => void submitCoverageEdit()}
+        confirmLoading={submitting}
+        okText="保存"
+        destroyOnHidden
+      >
+        <Form form={coverageEditForm} layout="vertical" preserve={false}>
           <Form.Item name="coverageName" label="险种名称">
             <Input placeholder="选填" />
           </Form.Item>

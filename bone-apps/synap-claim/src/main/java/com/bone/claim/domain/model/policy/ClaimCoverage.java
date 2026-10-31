@@ -136,6 +136,33 @@ public class ClaimCoverage extends TenantAggregateRoot<Long> {
     this.updatedAt = Instant.now();
   }
 
+  /**
+   * 编辑险种可修正字段（不改动险种编码与状态）。
+   *
+   * <p><b>不改险种编码</b>：险种编码是责任（{@code t_adj_liability.coverage_id}）的主数据键，
+   * 改名会制造孤儿引用；如需换码应新建险种。名称/额度/责任形式可随时改。
+   */
+  public void edit(String coverageName, BigDecimal coverageLimit, String liabilityType) {
+    if (coverageLimit != null && coverageLimit.signum() < 0) {
+      throw new DomainException("险种额度不能为负");
+    }
+    String type =
+        liabilityType == null || liabilityType.isBlank()
+            ? LIABILITY_REIMBURSEMENT
+            : liabilityType.trim().toUpperCase(java.util.Locale.ROOT);
+    if (!LIABILITY_REIMBURSEMENT.equals(type)
+        && !LIABILITY_FIXED_AMOUNT.equals(type)
+        && !LIABILITY_ALLOWANCE.equals(type)) {
+      throw new DomainException("责任形式只能是 REIMBURSEMENT / FIXED_AMOUNT / ALLOWANCE");
+    }
+    this.coverageName = coverageName == null ? "" : coverageName;
+    this.coverageLimit =
+        (coverageLimit == null ? BigDecimal.ZERO : coverageLimit)
+            .setScale(2, java.math.RoundingMode.HALF_UP);
+    this.liabilityType = type;
+    this.updatedAt = Instant.now();
+  }
+
   /** 险种状态（与计划同语义：DRAFT/ACTIVE/RETIRED）。 */
   public String status() {
     return status;

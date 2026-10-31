@@ -68,6 +68,45 @@ public final class ClaimConfigRequests {
               allowableValues = {"REIMBURSEMENT", "FIXED_AMOUNT", "ALLOWANCE"})
           String liabilityType) {}
 
+  /** 编辑保单（不改动保单号与规则开关）。 */
+  @Schema(description = "编辑保单请求")
+  public record UpdatePolicyReq(
+      @Schema(description = "保单名称") String policyName,
+      @Schema(description = "保险公司") String insurerName,
+      @Schema(description = "保险分公司") String branchName,
+      @Schema(description = "投保公司") String insureName,
+      @Schema(description = "业务主体码") String bizIdentityCode,
+      @Schema(description = "产品类型") String productType,
+      @Schema(description = "生效起", requiredMode = Schema.RequiredMode.REQUIRED)
+          @NotNull(message = "生效起不能为空")
+          Instant effectiveStart,
+      @Schema(description = "生效止", requiredMode = Schema.RequiredMode.REQUIRED)
+          @NotNull(message = "生效止不能为空")
+          Instant effectiveEnd,
+      @Schema(description = "等待期（天）") @Min(value = 0, message = "等待期不能为负") Integer waitingPeriod,
+      @Schema(description = "保单版本") String policyVersion,
+      @Schema(description = "被保人清单（假名化ID数组；不存明文证件）") String insuredSnapshot) {}
+
+  /** 编辑计划（不改动计划编码与状态）。 */
+  @Schema(description = "编辑计划请求")
+  public record UpdatePlanReq(
+      @Schema(description = "计划名称") String planName,
+      @Schema(description = "计划额度上限（0=不限）") @DecimalMin(value = "0", message = "计划额度不能为负")
+          BigDecimal planLimit,
+      @Schema(description = "等待期（天）") @Min(value = 0, message = "等待期不能为负") Integer waitingPeriod,
+      @Schema(description = "计划版本") String versionNo) {}
+
+  /** 编辑险种（不改动险种编码与状态）。 */
+  @Schema(description = "编辑险种请求")
+  public record UpdateCoverageReq(
+      @Schema(description = "险种名称") String coverageName,
+      @Schema(description = "险种额度上限（0=不限）") @DecimalMin(value = "0", message = "险种额度不能为负")
+          BigDecimal coverageLimit,
+      @Schema(
+              description = "责任形式",
+              allowableValues = {"REIMBURSEMENT", "FIXED_AMOUNT", "ALLOWANCE"})
+          String liabilityType) {}
+
   /** 开户（初始化个人额度）。 */
   @Schema(description = "额度开户请求")
   public record OpenQuotaReq(
