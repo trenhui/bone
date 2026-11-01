@@ -262,6 +262,7 @@
     "META_RUNTIME_FIELD_NOT_VISIBLE": "包含当前角色不可见的字段，已被拒绝修改；如需修改请联系管理员调整字段的角色可见范围",
     "SC_CLAIM_POLICY_NOT_FOUND": "保单不存在（或不属于当前租户）",
     "SC_CLAIM_POLICY_DUPLICATED": "保单号已存在（同租户下保单号唯一）",
+    "SC_CLAIM_POLICY_TYPE_CONFLICT": "保单类型与被保人清单矛盾（个人保单只能有 1 名被保人）",
     "SC_CLAIM_PLAN_NOT_FOUND": "保障计划不存在（或不属于当前租户）",
     "SC_CLAIM_PLAN_DUPLICATED": "计划编码已存在（同保单下计划编码唯一）",
     "SC_CLAIM_COVERAGE_NOT_FOUND": "保障项/险种不存在（或不属于当前租户）",

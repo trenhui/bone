@@ -262,6 +262,7 @@
     "META_RUNTIME_FIELD_PROTECTED": "Field protected by state machine; direct writes are forbidden, use action endpoint",
     "SC_CLAIM_POLICY_NOT_FOUND": "Policy not found or not visible in the current tenant",
     "SC_CLAIM_POLICY_DUPLICATED": "Policy number already exists (unique per tenant)",
+    "SC_CLAIM_POLICY_TYPE_CONFLICT": "Policy type conflicts with insured list (an individual policy allows exactly one insured)",
     "SC_CLAIM_PLAN_NOT_FOUND": "Coverage plan not found or not visible in the current tenant",
     "SC_CLAIM_PLAN_DUPLICATED": "Plan code already exists (unique per policy)",
     "SC_CLAIM_COVERAGE_NOT_FOUND": "Coverage item not found or not visible in the current tenant",

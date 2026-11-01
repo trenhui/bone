@@ -405,6 +405,12 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
             socialOnly,
             waitingPeriod,
             status);
+    // 适用限定三列必须在这里补：上面的 coverageId 重载只设置到「日限额」为止，limit_mode / limit_*_codes
+    // 是另一条重载（不含 coverageId）赋的。两条重载交叉，谁也没覆盖「有保障归属 + 有限定」这种组合——
+    // 少写这三行，配置面填的适用限定会 200 成功、落库却是 NONE（配了不生效，且页面上看不出异常）。
+    liability.limitMode = limitMode == null || limitMode.isBlank() ? "NONE" : limitMode;
+    liability.limitHospitalCodes = limitHospitalCodes == null ? "" : limitHospitalCodes;
+    liability.limitDiagnosisCodes = limitDiagnosisCodes == null ? "" : limitDiagnosisCodes;
     liability.catalogPolicy =
         catalogPolicy == null || catalogPolicy.isBlank() ? "NONE" : catalogPolicy;
     liability.catalogCode = catalogCode == null ? "" : catalogCode;

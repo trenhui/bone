@@ -133,6 +133,15 @@ public final class ClaimErrorCodes {
   /** 保单号重复（同租户下 {@code policy_no} 唯一）。 */
   public static final String CLAIM_POLICY_DUPLICATED = "SC_CLAIM_POLICY_DUPLICATED";
 
+  /**
+   * 保单类型与被保人清单自相矛盾（个人保单出现多名被保人）。
+   *
+   * <p>为什么单独立码：个人保单的业务定义是"自然人投保、单人单账户"，其额度池必须且只能对唯一被保人开立。
+   * 一旦出现多名被保人，只可能是两种情况——保单类型标错，或名单串到了别的保单。两者都会让责任额度池
+   * 开到<b>不存在的人</b>头上（额度虚增、理赔时对不上人），属资金级错误。用一条可诊断的错误挡住， 比事后按流水对账要便宜得多。
+   */
+  public static final String CLAIM_POLICY_TYPE_CONFLICT = "SC_CLAIM_POLICY_TYPE_CONFLICT";
+
   /** 计划不存在（按 planId 查）。 */
   public static final String CLAIM_PLAN_NOT_FOUND = "SC_CLAIM_PLAN_NOT_FOUND";
 

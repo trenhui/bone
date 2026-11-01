@@ -621,6 +621,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_INSPECTION_CONFLICT` | 409 | 抽检单状态冲突（已结论不可改写 / 同案重复发起） |
 | `SC_CLAIM_POLICY_NOT_FOUND` | 404 | 保单不存在或不可见（配置面；租户隔离下的统一 404 语义，防枚举） |
 | `SC_CLAIM_POLICY_DUPLICATED` | 409 | 保单号已存在（同租户下 `policy_no` 唯一） |
+| `SC_CLAIM_POLICY_TYPE_CONFLICT` | 422 | 保单类型与被保人清单矛盾（个人保单只能有 1 名被保人） |
 | `SC_CLAIM_PLAN_NOT_FOUND` | 404 | 保障计划不存在或不可见（配置面） |
 | `SC_CLAIM_PLAN_DUPLICATED` | 409 | 计划编码已存在（同保单下 `plan_code` 唯一） |
 | `SC_CLAIM_COVERAGE_NOT_FOUND` | 404 | 保障项/险种不存在或不可见（配置面） |

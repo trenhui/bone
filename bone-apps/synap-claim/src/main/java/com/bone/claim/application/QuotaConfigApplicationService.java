@@ -4,9 +4,11 @@ import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.policy.ClaimPlan;
+import com.bone.claim.domain.model.policy.ClaimPolicy;
 import com.bone.claim.domain.model.quota.QuotaAccount;
 import com.bone.claim.domain.model.quota.QuotaChangeLog;
 import com.bone.claim.domain.repository.ClaimPlanRepository;
+import com.bone.claim.domain.repository.ClaimPolicyRepository;
 import com.bone.claim.domain.repository.QuotaAccountRepository;
 import com.bone.claim.domain.repository.QuotaChangeLogRepository;
 import com.bone.core.annotation.NoDomainEvent;
@@ -57,6 +59,7 @@ public class QuotaConfigApplicationService {
   private final QuotaAccountRepository quotaAccountRepository;
   private final QuotaChangeLogRepository quotaChangeLogRepository;
   private final ClaimPlanRepository claimPlanRepository;
+  private final ClaimPolicyRepository claimPolicyRepository;
   private final TenantPort tenantPort;
 
   /**
@@ -153,6 +156,11 @@ public class QuotaConfigApplicationService {
    *
    * <p><b>幂等</b>：复用 openAccount 的同键幂等（已存在直接返回），重复发布/重发布新版本不会覆盖既有占用。
    *
+   * <p><b>保单类型的口径差异（团体 / 个人）</b>：两者结构同构，差异在被保人数量——团体保单是多被保人共享，
+   * 个人保单是"单人单账户"。故个人保单下一旦发现<b>多于一个</b>未减人的个人账户，就不是"要多开几个池"，
+   * 而是<b>保单类型或被保人名单已经错了</b>：继续按人开池会把责任额度开到不存在的人头上（额度虚增、 理赔对不上人）。这种时候 fail-closed 报 {@code
+   * SC_CLAIM_POLICY_TYPE_CONFLICT}，让人先去修数据， 而不是在这里替它"按现状多开几个"。
+   *
    * @return 已覆盖的被保人账户数（含幂等命中既有账户）
    */
   @Transactional
@@ -171,6 +179,7 @@ public class QuotaConfigApplicationService {
                         && "PERSONAL".equals(a.getQuotaType())
                         && !a.isRemoved())
             .toList();
+    assertPolicyTypeMatchesInsuredCount(policyNo, personalAccounts.size());
     int quotaYear = Year.now().getValue();
     for (QuotaAccount personal : personalAccounts) {
       openAccount(
@@ -187,6 +196,34 @@ public class QuotaConfigApplicationService {
               "责任发布自动初始化"));
     }
     return personalAccounts.size();
+  }
+
+  /**
+   * 保单类型 ↔ 被保人账户数一致性（责任发布前的闸门）。
+   *
+   * <p>个人保单 = 单人单账户，故其名下未减人的个人额度账户<b>最多一个</b>。多于一个只可能是：① 保单类型标错 （实为团单）；②
+   * 被保人名单串到了别的保单。两种情况下继续按人开责任池，都会把额度开到不存在的人头上， 而这笔虚增额度在理赔时表现为"某不存在的被保人占着额度"，对账时极难回溯。
+   *
+   * <p>查不到保单时放行（{@code 配置面存量/测试数据} 可能没有保单主数据）：本闸门只用来挡"确定矛盾"， 不承担"保单必须存在"的校验——那是报案前置校验（{@code
+   * findActivePolicy}）的职责，混在一起会让 责任发布因为一张历史保单缺失而整体不可用。
+   */
+  private void assertPolicyTypeMatchesInsuredCount(String policyNo, int insuredCount) {
+    if (insuredCount <= 1) {
+      return;
+    }
+    ClaimPolicy policy = claimPolicyRepository.findByPolicyNo(policyNo);
+    if (policy == null || !policy.isIndividualPolicy()) {
+      return;
+    }
+    throw ClaimErrors.of(
+        ClaimErrorCodes.CLAIM_POLICY_TYPE_CONFLICT,
+        "个人保单 "
+            + policyNo
+            + " 下存在 "
+            + insuredCount
+            + " 个未减人的个人额度账户，"
+            + "与「单人单账户」矛盾：请核实保单类型（是否为团体保单）或被保人名单是否串单；"
+            + "修好后重新发布责任即可自动开立责任额度池");
   }
 
   /**

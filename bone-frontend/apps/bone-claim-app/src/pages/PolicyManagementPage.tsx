@@ -454,16 +454,24 @@ export function PolicyManagementPage(): ReactElement {
             },
             {
               title: '被保人',
-              width: 220,
+              width: 240,
               render: (_, r) => {
                 const list = parseInsuredSnapshot(r.insuredSnapshot);
+                // 个人保单 = 单人单账户：多于一人只可能是保单类型标错或名单串单，
+                // 后果是责任额度池开到不存在的人头上。列表上直接标红，别等到发布责任才被后端拦。
+                const individual = (r.policyType || 'GROUP') === 'INDIVIDUAL';
+                const mismatch = individual && list.length > 1;
                 if (list.length === 0) {
                   return <Typography.Text type="secondary">未录入</Typography.Text>;
                 }
                 return (
-                  <Typography.Text ellipsis={{ tooltip: list.join('、') }}>
+                  <Typography.Text
+                    type={mismatch ? 'danger' : undefined}
+                    ellipsis={{ tooltip: mismatch ? `${list.join('、')}（个人保单应为 1 人）` : list.join('、') }}
+                  >
                     {list.length} 人（{list[0]}
                     {list.length > 1 ? ' 等' : ''}）
+                    {mismatch ? ' · 个人保单应仅 1 人' : ''}
                   </Typography.Text>
                 );
               },
@@ -496,10 +504,9 @@ export function PolicyManagementPage(): ReactElement {
                     详情
                   </AuthButton>
                   {/* 层级下钻：保单 → 计划配置（配置面第一层：计划 → 险种 → 责任 → 额度）。
-                      不做「保单配置中心」单页聚合是刻意的取舍：把三件事塞进一屏会让
-                      计划/险种/责任/额度四层结构在滚动里失去层级，且与侧栏「计划配置/
-                      责任配置/额度管理」形成两套入口（同一功能两个名字、两份交互）。
-                      这里只负责把保单上下文带进去，后续层级在各自页面内下钻。 */}
+                      计划/险种/责任强依附保单（0093 已撤下其独立菜单），「配置」按钮是
+                      唯一入口：这里把保单上下文带进去，后续层级在各自页面内逐级下钻
+                      （/plan 计划行「责任配置」→ /liability?policyNo=&planId=）。 */}
                   <AuthButton
                     code={PERMISSIONS.POLICY_READ}
                     type="link"

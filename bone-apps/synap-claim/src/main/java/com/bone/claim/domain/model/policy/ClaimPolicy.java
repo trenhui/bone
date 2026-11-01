@@ -302,6 +302,20 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
     return CONFIG_ACTIVE.equals(configStatus);
   }
 
+  /**
+   * 保单类型（历史空值按团体兜底）。
+   *
+   * <p>兜底方向选团体而不是个人：存量数据一律来自团险业务，且团体的额度池口径（逐被保人开立） 对个人保单也仍然成立；反向兜底会让存量团单被当作个单做强校验，直接拦死存量业务的日常操作。
+   */
+  public String policyTypeOrDefault() {
+    return policyType == null || policyType.isBlank() ? TYPE_GROUP : policyType.trim();
+  }
+
+  /** 是否个人保单（单人单账户）。 */
+  public boolean isIndividualPolicy() {
+    return TYPE_INDIVIDUAL.equals(policyTypeOrDefault());
+  }
+
   /** 快照是否过期（过期即拒新报案）。 */
   public boolean isStale() {
     return staleFlag != null && staleFlag == 1;

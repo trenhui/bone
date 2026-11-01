@@ -62,6 +62,124 @@ const CATALOG_POLICY_OPTIONS = [
   { value: 'MANDATORY', label: '必须查到结论' },
 ];
 
+/**
+ * 成对配置的联动校验（与后端 {@code LiabilityConfigApplicationService#assertRuleUsable} 同一口径）。
+ *
+ * <p><b>为什么前端也要判一次</b>：这三对字段（金额↔口径、模式↔名单、策略↔目录编码）只配一边时，
+ * 库里是合法数据、页面上看着"已配置"，但理算期会整类拒绝——配置岗看不出任何异常。后端已经会拒，
+ * 前端这一层只是把这次往返省掉，并让错误出现在<b>出问题的那个字段下面</b>而不是顶部一条 toast。
+ * 判定权仍在服务端：这里漏判只会多点一次保存，不会让脏配置进库。
+ *
+ * <p>校验器只挂在"主字段"上（金额 / 模式 / 策略）并用 {@code dependencies} 联动另一侧：
+ * 一个矛盾只报一次错，不会两个字段各弹一条。
+ */
+function pairValidator(check: (getFieldValue: (name: string) => unknown) => string | null) {
+  return ({ getFieldValue }: { getFieldValue: (name: string) => unknown }) => ({
+    validator() {
+      const problem = check(getFieldValue);
+      return problem ? Promise.reject(new Error(problem)) : Promise.resolve();
+    },
+  });
+}
+
+/** 数值型字段读成数字（antd InputNumber 在 stringMode 下给的是字符串）。 */
+function toNum(v: unknown): number {
+  const n = Number(v ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** 日限额金额 ↔ 口径：两边必须同时配或同时不配。 */
+function dailyPairProblem(getFieldValue: (name: string) => unknown): string | null {
+  const hasLimit = toNum(getFieldValue('dailyLimit')) > 0;
+  const basis = String(getFieldValue('dailyLimitBasis') ?? 'NONE');
+  const hasBasis = basis !== '' && basis !== 'NONE';
+  if (hasLimit && !hasBasis) {
+    return '配了日限额就必须选「日」的口径，否则判不出「同日」是哪一天';
+  }
+  if (!hasLimit && hasBasis) {
+    return '选了日窗口口径但日限额为 0，该口径永远不会生效（会被读成不限额）';
+  }
+  return null;
+}
+
+/** 适用限定：开了白/黑名单就必须给名单（空名单 = 全不赔 或 等于不设限，都不是业务意图）。 */
+function limitModePairProblem(getFieldValue: (name: string) => unknown): string | null {
+  const mode = String(getFieldValue('limitMode') ?? 'NONE');
+  if (mode === '' || mode === 'NONE') {
+    return null;
+  }
+  const hospitals = String(getFieldValue('limitHospitalCodes') ?? '').trim();
+  const diagnoses = String(getFieldValue('limitDiagnosisCodes') ?? '').trim();
+  if (!hospitals && !diagnoses) {
+    return '启用了适用限定就必须填医院或病种编码名单，否则白名单等于全不赔、黑名单等于不设限';
+  }
+  return null;
+}
+
+/** 目录准入：策略与目录编码必须同配或同不配。 */
+function catalogPairProblem(getFieldValue: (name: string) => unknown): string | null {
+  const policy = String(getFieldValue('catalogPolicy') ?? 'NONE');
+  const code = String(getFieldValue('catalogCode') ?? '').trim();
+  if ((policy === '' || policy === 'NONE') && code) {
+    return '策略为「不查目录」时不该填目录编码——该编码永远不会被查询';
+  }
+  if (policy === 'MANDATORY' && !code) {
+    return '策略为「必须查到结论」时必须填目录编码，否则不知道该查哪一版目录';
+  }
+  return null;
+}
+
+/**
+ * 「已启规则」摘要：把十一维里真正生效的那几维在列表上一眼看全。
+ *
+ * <p>此前列表只有「日限额」一列，多出来的免赔层 / 适用限定 / 目录准入只能点开编辑弹窗才知道，
+ * 运营排查"这条责任为什么拒赔"时只能逐行打开。
+ */
+function ruleSummaryTags(row: LiabilityView): ReactElement {
+  const tags: ReactElement[] = [];
+  if (toNum(row.invoiceDeduct) > 0) {
+    tags.push(<Tag key="invoice">发票免赔 {row.invoiceDeduct}</Tag>);
+  }
+  if (toNum(row.adjustDeduct) > 0) {
+    tags.push(<Tag key="adjust">理算免赔 {row.adjustDeduct}</Tag>);
+  }
+  if (toNum(row.dailyLimit) > 0) {
+    const basisLabel =
+      DAILY_BASIS_OPTIONS.find((o) => o.value === row.dailyLimitBasis)?.label ?? row.dailyLimitBasis;
+    tags.push(
+      <Tag key="daily" color="orange">
+        {`日限额 ${row.dailyLimit}（${basisLabel}）`}
+      </Tag>,
+    );
+  }
+  if (row.limitMode && row.limitMode !== 'NONE') {
+    const modeLabel = LIMIT_MODE_OPTIONS.find((o) => o.value === row.limitMode)?.label ?? row.limitMode;
+    tags.push(
+      <Tag key="limit" color="purple">
+        {`限定 ${modeLabel}`}
+      </Tag>,
+    );
+  }
+  if (row.catalogPolicy === 'MANDATORY') {
+    tags.push(
+      <Tag key="catalog" color="blue">
+        {`目录 ${row.catalogCode || '未指定版本'}`}
+      </Tag>,
+    );
+  }
+  if (row.socialOnly === 0) {
+    tags.push(<Tag key="social">社保内外</Tag>);
+  }
+  if (tags.length === 0) {
+    return <Typography.Text type="secondary">仅基础规则</Typography.Text>;
+  }
+  return (
+    <Space size={4} wrap>
+      {tags}
+    </Space>
+  );
+}
+
 /** 责任批量导入列定义（模板表头用英文键）。 */
 const liabilityImportColumns: ImportColumn[] = [
   { key: 'planId', label: '计划ID', required: true, example: '' },
@@ -151,6 +269,13 @@ export function LiabilityConfigPage(): ReactElement {
   const [importOpen, setImportOpen] = useState(false);
   /** 正在执行发布/下线的责任行（防重复提交并发控制）。 */
   const [processingId, setProcessingId] = useState('');
+  /**
+   * 弹窗里当前的「责任类型」。非报销型（定额/津贴）在 V1 没有赔付公式，
+   * 保存/发布都会成功但理赔转人工——这一点必须在录入时就告诉配置岗，
+   * 否则很容易配完以为会自动赔，直到第一笔理赔卡住才发现。
+   */
+  const watchedLiabilityType = Form.useWatch('liabilityType', form) as LiabilityType | undefined;
+  const manualOnly = !!watchedLiabilityType && watchedLiabilityType !== 'REIMBURSEMENT';
 
   const loadPlans = useCallback(async (pn: string) => {
     if (!pn) {
@@ -490,13 +615,30 @@ export function LiabilityConfigPage(): ReactElement {
     {
       title: '类型',
       dataIndex: 'liabilityType',
-      width: 130,
-      render: (v: LiabilityType) => v || '-',
+      width: 140,
+      render: (v: LiabilityType) => {
+        // 定额/津贴在 V1 无赔付公式（只能转人工）。列表上就标出来，避免运营以为"配了就会自动赔"。
+        if (!v || v === 'REIMBURSEMENT') {
+          return v || 'REIMBURSEMENT';
+        }
+        return (
+          <Space size={4}>
+            <span>{v}</span>
+            <Tag color="gold">转人工</Tag>
+          </Space>
+        );
+      },
     },
     { title: '赔付比例(%)', dataIndex: 'payPercent', width: 100, render: (v: string) => v ?? '0' },
     { title: '年度免赔', dataIndex: 'liabilityDeduct', width: 100 },
     { title: '责任额度', dataIndex: 'liabilityLimit', width: 100 },
-    { title: '日限额', dataIndex: 'dailyLimit', width: 90 },
+    {
+      /* 「已启规则」取代原来的「日限额」单列：十一维里真正生效的那几维（多层免赔 / 日限额 / 适用限定 /
+         目录准入 / 社保范围）都要能在列表上一眼看全，否则排查"这条责任为什么拒赔"只能逐行点开弹窗。 */
+      title: '已启规则',
+      width: 260,
+      render: (_: unknown, row: LiabilityView) => ruleSummaryTags(row),
+    },
     { title: '版本', dataIndex: 'liabilityVersion', width: 80 },
     {
       title: '状态',
@@ -687,6 +829,16 @@ export function LiabilityConfigPage(): ReactElement {
           key={editTarget?.liabilityId ?? `liability-create-${bucketCoverageId ?? 'none'}`}
           initialValues={liabilityFormInitial}
         >
+          {manualOnly && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 12 }}
+              message="该责任类型不参与自动理算（理赔转人工）"
+              description="V1 只对「报销型 REIMBURSEMENT」给出赔付公式与控额口径；定额给付 / 津贴可以正常建档、发布与备案，但引擎不会算钱，赔案会走人工理算。"
+            />
+          )}
+
           <Card size="small" title="基础信息" style={{ marginBottom: 12 }}>
             <Space size="large" wrap>
               <Form.Item
@@ -753,7 +905,12 @@ export function LiabilityConfigPage(): ReactElement {
             </Space>
           </Card>
 
-          <Card size="small" title="多层免赔与日限额" style={{ marginBottom: 12 }}>
+          <Card
+            size="small"
+            title="多层免赔与日限额"
+            extra={<Typography.Text type="secondary">日限额的金额与口径须同配</Typography.Text>}
+            style={{ marginBottom: 12 }}
+          >
             <Space size="large" wrap>
               <Form.Item label="发票级免赔" name="invoiceDeduct">
                 <InputNumber stringMode min={0} placeholder="0" style={{ width: 160 }} />
@@ -761,7 +918,12 @@ export function LiabilityConfigPage(): ReactElement {
               <Form.Item label="理算级免赔" name="adjustDeduct">
                 <InputNumber stringMode min={0} placeholder="0" style={{ width: 160 }} />
               </Form.Item>
-              <Form.Item label="日赔付限额" name="dailyLimit">
+              <Form.Item
+                label="日赔付限额"
+                name="dailyLimit"
+                dependencies={['dailyLimitBasis']}
+                rules={[pairValidator(dailyPairProblem)]}
+              >
                 <InputNumber stringMode min={0} placeholder="0=不启用" style={{ width: 160 }} />
               </Form.Item>
               <Form.Item label="日窗口口径" name="dailyLimitBasis">
@@ -774,9 +936,19 @@ export function LiabilityConfigPage(): ReactElement {
             </Space>
           </Card>
 
-          <Card size="small" title="适用限定" style={{ marginBottom: 12 }}>
+          <Card
+            size="small"
+            title="适用限定"
+            extra={<Typography.Text type="secondary">启用后必须给医院或病种名单</Typography.Text>}
+            style={{ marginBottom: 12 }}
+          >
             <Space size="large" wrap>
-              <Form.Item label="适用限定方式" name="limitMode">
+              <Form.Item
+                label="适用限定方式"
+                name="limitMode"
+                dependencies={['limitHospitalCodes', 'limitDiagnosisCodes']}
+                rules={[pairValidator(limitModePairProblem)]}
+              >
                 <Select
                   options={LIMIT_MODE_OPTIONS}
                   style={{ width: 200 }}
@@ -792,9 +964,19 @@ export function LiabilityConfigPage(): ReactElement {
             </Space>
           </Card>
 
-          <Card size="small" title="目录准入" style={{ marginBottom: 12 }}>
+          <Card
+            size="small"
+            title="目录准入"
+            extra={<Typography.Text type="secondary">策略与目录编码须同配</Typography.Text>}
+            style={{ marginBottom: 12 }}
+          >
             <Space size="large" wrap>
-              <Form.Item label="目录准入策略" name="catalogPolicy">
+              <Form.Item
+                label="目录准入策略"
+                name="catalogPolicy"
+                dependencies={['catalogCode']}
+                rules={[pairValidator(catalogPairProblem)]}
+              >
                 <Select
                   options={CATALOG_POLICY_OPTIONS}
                   style={{ width: 200 }}

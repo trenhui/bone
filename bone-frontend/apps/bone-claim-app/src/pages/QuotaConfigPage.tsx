@@ -105,6 +105,22 @@ export function QuotaConfigPage(): ReactElement {
   const effectiveQuotaType: QuotaType = quotaTab === 'personal' ? 'PERSONAL' : 'LIABILITY_CAP';
 
   /**
+   * 当前保单是否个人保单（历史数据 policy_type 为空按团体兜底，与后端
+   * {@code ClaimPolicy#policyTypeOrDefault} 同一口径）。
+   *
+   * <p><b>为什么它要影响交互</b>：个人保单是"单人单账户"，这个人的额度就是保单额度。
+   * 「减人」在团单里是"名单变更、账户保留"，在个单里语义上等于<b>退保</b>——正确动作是停用保单，
+   * 而不是把唯一的被保人减掉（减完这张保单就再也没有可赔对象了）。所以个单不提供减人/恢复。
+   */
+  const isIndividualPolicy = useMemo(
+    () =>
+      (policies.find((p) => p.policyNo === policyNo)?.policyType || 'GROUP') === 'INDIVIDUAL',
+    [policies, policyNo],
+  );
+  /** 减人/恢复是否可用：个账视图 + 团体保单。 */
+  const canToggleInsured = quotaTab === 'personal' && !isIndividualPolicy;
+
+  /**
    * 保单初值：优先 URL 深链（从保单配置页跳入时带保单上下文），否则取列表首条。
    *
    * <p>列表由 {@link usePolicyOptions} 拉取，这里只做「初值选择」；{@code prev ||} 保证用户
@@ -394,6 +410,11 @@ export function QuotaConfigPage(): ReactElement {
               { label: '公账额度（责任池）', value: 'public' },
             ]}
           />
+          {quotaTab === 'personal' && isIndividualPolicy && (
+            <Typography.Text type="secondary">
+              个人保单为单人单账户，不提供「减人」；退保请到保单管理停用该保单
+            </Typography.Text>
+          )}
           <Select
             placeholder="选择保单"
             style={{ width: 300 }}
@@ -617,7 +638,7 @@ export function QuotaConfigPage(): ReactElement {
             },
             {
               title: '操作',
-              width: quotaTab === 'personal' ? 250 : 170,
+              width: canToggleInsured ? 250 : 170,
               fixed: 'right',
               render: (_, r) => (
                 <Space size={4}>
@@ -630,10 +651,11 @@ export function QuotaConfigPage(): ReactElement {
                   >
                     调额
                   </AuthButton>
-                  {/* 减人/恢复只对个账有意义（公账额度池没有"减人"概念），公账视图隐藏。
-                      两者互斥（一个账户只会处于其中一种状态），故收进下拉：
-                      四个按钮平铺在 190px 列里会被挤成两行、把「保全记录」挤出可视区。 */}
-                  {quotaTab === 'personal' && (
+                  {/* 减人/恢复只对个账 + 团体保单有意义：公账额度池没有"减人"概念；
+                      个单是单人单账户，减人等于退保（应停用保单）。两者互斥（一个账户只会处于
+                      其中一种状态），故收进下拉：四个按钮平铺在 190px 列里会被挤成两行、
+                      把「保全记录」挤出可视区。 */}
+                  {canToggleInsured && (
                     <Dropdown
                       menu={{
                         items: [

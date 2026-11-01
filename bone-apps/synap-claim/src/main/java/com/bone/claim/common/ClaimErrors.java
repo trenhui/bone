@@ -46,6 +46,8 @@ public final class ClaimErrors {
           // 配置面：404 = 目标不存在（防枚举统一语义）；409 = 唯一键冲突（重复创建）
           Map.entry(ClaimErrorCodes.CLAIM_POLICY_NOT_FOUND, 404),
           Map.entry(ClaimErrorCodes.CLAIM_POLICY_DUPLICATED, 409),
+          // 422 而非 400：请求本身合法，是"保单类型与被保人清单对不上"这一业务前提不成立
+          Map.entry(ClaimErrorCodes.CLAIM_POLICY_TYPE_CONFLICT, 422),
           Map.entry(ClaimErrorCodes.CLAIM_PLAN_NOT_FOUND, 404),
           Map.entry(ClaimErrorCodes.CLAIM_PLAN_DUPLICATED, 409),
           Map.entry(ClaimErrorCodes.CLAIM_COVERAGE_NOT_FOUND, 404),

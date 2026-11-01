@@ -4,6 +4,9 @@ import com.bone.claim.adapter.web.dto.request.LiabilityRequests;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
+import com.bone.claim.domain.model.adjustment.engine.CatalogAdmission;
+import com.bone.claim.domain.model.adjustment.engine.LiabilityRule;
+import com.bone.claim.domain.model.adjustment.engine.RuleGap;
 import com.bone.claim.domain.model.liability.AdjLiability;
 import com.bone.claim.domain.model.policy.ClaimCoverage;
 import com.bone.claim.domain.model.policy.ClaimPlan;
@@ -44,6 +47,8 @@ public class LiabilityConfigApplicationService {
     long tenantId = tenantPort.currentTenantId();
     assertCoverageUsable(command.planId(), command.coverageId());
     assertPercent(command.payPercent());
+    RuleValues values = RuleValues.ofCreate(command);
+    assertRuleUsable(values);
     AdjLiability liability =
         AdjLiability.of(
             DistributedIdGeneratorHolder.next(),
@@ -52,22 +57,22 @@ public class LiabilityConfigApplicationService {
             "v1",
             command.planId(),
             command.coverageId(),
-            command.liabilityCode(),
-            command.liabilityType(),
-            toDecimal(command.payPercent()),
-            toDecimal(command.liabilityDeduct()),
-            toDecimal(command.liabilityLimit()),
-            toDecimal(command.invoiceDeduct()),
-            toDecimal(command.adjustDeduct()),
-            toDecimal(command.dailyLimit()),
-            command.dailyLimitBasis(),
-            command.limitMode(),
-            command.limitHospitalCodes(),
-            command.limitDiagnosisCodes(),
-            command.catalogPolicy(),
-            command.catalogCode(),
-            command.socialOnly(),
-            command.waitingPeriod(),
+            values.liabilityCode(),
+            values.liabilityType(),
+            values.payPercent(),
+            values.liabilityDeduct(),
+            values.liabilityLimit(),
+            values.invoiceDeduct(),
+            values.adjustDeduct(),
+            values.dailyLimit(),
+            values.dailyLimitBasis(),
+            values.limitMode(),
+            values.limitHospitalCodes(),
+            values.limitDiagnosisCodes(),
+            values.catalogPolicy(),
+            values.catalogCode(),
+            values.socialOnly(),
+            values.waitingPeriod(),
             command.status() == null || command.status().isBlank() ? "DRAFT" : command.status());
     liabilityRepository.save(liability);
     domainEventPublisher.publishFrom(liability);
@@ -89,6 +94,9 @@ public class LiabilityConfigApplicationService {
       assertCoverageUsable(existing.getPlanId(), command.coverageId());
     }
     assertPercent(command.payPercent());
+    // 生效值只算一次：校验与落库读同一份，否则会出现「校验看的是合并值、落库存的是命令值」的两套口径。
+    RuleValues values = RuleValues.merge(existing, command);
+    assertRuleUsable(values);
     if (existing.isActive()) {
       // 已生效版本不可改：生成同 UUID 的新版本草稿（新行，无需乐观锁）
       AdjLiability next =
@@ -99,24 +107,22 @@ public class LiabilityConfigApplicationService {
               nextVersion(existing.getLiabilityVersion()),
               existing.getPlanId(),
               targetCoverageId,
-              or(command.liabilityCode(), existing.getLiabilityCode()),
-              or(command.liabilityType(), existing.getLiabilityType()),
-              num(command.payPercent(), existing.getPayPercent()),
-              num(command.liabilityDeduct(), existing.getLiabilityDeduct()),
-              num(command.liabilityLimit(), existing.getLiabilityLimit()),
-              num(command.invoiceDeduct(), existing.getInvoiceDeduct()),
-              num(command.adjustDeduct(), existing.getAdjustDeduct()),
-              num(command.dailyLimit(), existing.getDailyLimit()),
-              or(command.dailyLimitBasis(), existing.getDailyLimitBasis()),
-              or(command.limitMode(), existing.getLimitMode()),
-              or(command.limitHospitalCodes(), existing.getLimitHospitalCodes()),
-              or(command.limitDiagnosisCodes(), existing.getLimitDiagnosisCodes()),
-              or(command.catalogPolicy(), existing.getCatalogPolicy()),
-              or(command.catalogCode(), existing.getCatalogCode()),
-              command.socialOnly() != null ? command.socialOnly() : existing.getSocialOnly(),
-              command.waitingPeriod() != null
-                  ? command.waitingPeriod()
-                  : existing.getWaitingPeriod(),
+              values.liabilityCode(),
+              values.liabilityType(),
+              values.payPercent(),
+              values.liabilityDeduct(),
+              values.liabilityLimit(),
+              values.invoiceDeduct(),
+              values.adjustDeduct(),
+              values.dailyLimit(),
+              values.dailyLimitBasis(),
+              values.limitMode(),
+              values.limitHospitalCodes(),
+              values.limitDiagnosisCodes(),
+              values.catalogPolicy(),
+              values.catalogCode(),
+              values.socialOnly(),
+              values.waitingPeriod(),
               "DRAFT");
       liabilityRepository.save(next);
       domainEventPublisher.publishFrom(next);
@@ -124,22 +130,22 @@ public class LiabilityConfigApplicationService {
     }
     // DRAFT 原地编辑：保留 SDK 管理的 version（乐观锁），并发编辑冲突由框架抛异常→控制器转 409
     existing.applyEdit(
-        or(command.liabilityCode(), existing.getLiabilityCode()),
-        or(command.liabilityType(), existing.getLiabilityType()),
-        num(command.payPercent(), existing.getPayPercent()),
-        num(command.liabilityDeduct(), existing.getLiabilityDeduct()),
-        num(command.liabilityLimit(), existing.getLiabilityLimit()),
-        num(command.invoiceDeduct(), existing.getInvoiceDeduct()),
-        num(command.adjustDeduct(), existing.getAdjustDeduct()),
-        num(command.dailyLimit(), existing.getDailyLimit()),
-        or(command.dailyLimitBasis(), existing.getDailyLimitBasis()),
-        or(command.limitMode(), existing.getLimitMode()),
-        or(command.limitHospitalCodes(), existing.getLimitHospitalCodes()),
-        or(command.limitDiagnosisCodes(), existing.getLimitDiagnosisCodes()),
-        or(command.catalogPolicy(), existing.getCatalogPolicy()),
-        or(command.catalogCode(), existing.getCatalogCode()),
-        command.socialOnly() != null ? command.socialOnly() : existing.getSocialOnly(),
-        command.waitingPeriod() != null ? command.waitingPeriod() : existing.getWaitingPeriod(),
+        values.liabilityCode(),
+        values.liabilityType(),
+        values.payPercent(),
+        values.liabilityDeduct(),
+        values.liabilityLimit(),
+        values.invoiceDeduct(),
+        values.adjustDeduct(),
+        values.dailyLimit(),
+        values.dailyLimitBasis(),
+        values.limitMode(),
+        values.limitHospitalCodes(),
+        values.limitDiagnosisCodes(),
+        values.catalogPolicy(),
+        values.catalogCode(),
+        values.socialOnly(),
+        values.waitingPeriod(),
         targetCoverageId);
     liabilityRepository.save(existing);
     domainEventPublisher.publishFrom(existing);
@@ -184,6 +190,167 @@ public class LiabilityConfigApplicationService {
   @Transactional(readOnly = true)
   public List<LiabilityView> listByPlan(long planId) {
     return liabilityRepository.findByPlanId(planId).stream().map(LiabilityView::from).toList();
+  }
+
+  // ===================== 规则自洽校验 =====================
+
+  /**
+   * 责任配置的<b>生效值</b>：新建时等于命令值，编辑时等于「命令值覆盖既有值」后的合并结果。
+   *
+   * <p><b>为什么必须先算出这一份再校验</b>：编辑接口的语义是「空字段沿用原值」，只看命令本身会漏掉 最危险的一种半配置——库里已有 {@code
+   * daily_limit=500}、本次只提交 {@code daily_limit_basis=NONE}，
+   * 单看命令两边"各有一个值"都不算矛盾，合并后却是"配了金额没配口径"。只有对合并结果求值， 校验与落库才是同一份事实。
+   */
+  private record RuleValues(
+      String liabilityCode,
+      String liabilityType,
+      BigDecimal payPercent,
+      BigDecimal liabilityDeduct,
+      BigDecimal liabilityLimit,
+      BigDecimal invoiceDeduct,
+      BigDecimal adjustDeduct,
+      BigDecimal dailyLimit,
+      String dailyLimitBasis,
+      String limitMode,
+      String limitHospitalCodes,
+      String limitDiagnosisCodes,
+      String catalogPolicy,
+      String catalogCode,
+      Integer socialOnly,
+      Integer waitingPeriod) {
+
+    static RuleValues ofCreate(LiabilityRequests.CreateLiabilityReq c) {
+      return new RuleValues(
+          c.liabilityCode(),
+          c.liabilityType(),
+          toDecimal(c.payPercent()),
+          toDecimal(c.liabilityDeduct()),
+          toDecimal(c.liabilityLimit()),
+          toDecimal(c.invoiceDeduct()),
+          toDecimal(c.adjustDeduct()),
+          toDecimal(c.dailyLimit()),
+          c.dailyLimitBasis(),
+          c.limitMode(),
+          c.limitHospitalCodes(),
+          c.limitDiagnosisCodes(),
+          c.catalogPolicy(),
+          c.catalogCode(),
+          c.socialOnly(),
+          c.waitingPeriod());
+    }
+
+    static RuleValues merge(AdjLiability e, LiabilityRequests.UpdateLiabilityReq c) {
+      return new RuleValues(
+          or(c.liabilityCode(), e.getLiabilityCode()),
+          or(c.liabilityType(), e.getLiabilityType()),
+          num(c.payPercent(), e.getPayPercent()),
+          num(c.liabilityDeduct(), e.getLiabilityDeduct()),
+          num(c.liabilityLimit(), e.getLiabilityLimit()),
+          num(c.invoiceDeduct(), e.getInvoiceDeduct()),
+          num(c.adjustDeduct(), e.getAdjustDeduct()),
+          num(c.dailyLimit(), e.getDailyLimit()),
+          or(c.dailyLimitBasis(), e.getDailyLimitBasis()),
+          or(c.limitMode(), e.getLimitMode()),
+          or(c.limitHospitalCodes(), e.getLimitHospitalCodes()),
+          or(c.limitDiagnosisCodes(), e.getLimitDiagnosisCodes()),
+          or(c.catalogPolicy(), e.getCatalogPolicy()),
+          or(c.catalogCode(), e.getCatalogCode()),
+          c.socialOnly() != null ? c.socialOnly() : e.getSocialOnly(),
+          c.waitingPeriod() != null ? c.waitingPeriod() : e.getWaitingPeriod());
+    }
+  }
+
+  /**
+   * 配置写入期的规则自洽校验（把「配了不生效」拦在保存时，而不是等客户来报销）。
+   *
+   * <p><b>它防的是什么</b>：日限额配了金额没配口径、开了白/黑名单却没给名单、目录编码与准入策略只配一边—— 这些形态在库里是合法数据、在页面上看着"已配置"，但理算走到 {@code
+   * LiabilityRule#validate()} 就整类赔案 算不出钱。而配置错的代价与发现时点强相关：越晚发现，受影响的赔案越多，且运营完全不知道是自己配错了。
+   *
+   * <p><b>判定逻辑不新写一份</b>：装配出真正的 {@link LiabilityRule} 后调 {@link
+   * LiabilityRule#validateConfigShape()}——与理算期同一段代码。若这里另写一套，会出现"配置面放行、理算再拒"
+   * 的两套判据，运营看着保存成功的配置却永远赔不出钱。
+   *
+   * <p><b>为什么不调 {@code validate()}</b>：那会连带拒绝定额给付 / 津贴给付型。那两种责任<b>允许建档</b>
+   * （业务必须能登记），只是不参与自动理算——由配置面的「可自动理算」提示告知运营，而不是禁止录入。
+   */
+  private static void assertRuleUsable(RuleValues v) {
+    assertNonNegative("年度免赔额", v.liabilityDeduct());
+    assertNonNegative("发票级免赔", v.invoiceDeduct());
+    assertNonNegative("理算级免赔", v.adjustDeduct());
+    assertNonNegative("日赔付限额", v.dailyLimit());
+    // 责任额度为负按"不封顶"解释（见 LimitSet#liabilityUncapped），故只挡"配了负数的免赔/日限额"这类
+    // 会被静默夹成 0 的形态——静默夹紧等于少扣钱，属于典型的"配了不生效"。
+    //
+    // 日限额的「金额 ↔ 口径」在这里<b>按原始值</b>判一次：装配器 {@code LiabilityRule.fromLegacy} 在
+    // {@code dailyLimit <= 0} 时会把口径直接置回 NONE（它把"没有金额"当作"不启用日限额"），
+    // 于是"只配了口径没配金额"这一半配置<b>在域层看不出来</b>。这正是必须按原始值判的原因——
+    // 交给域校验就等于放它进库，然后理算时静默按"不限额"赔付。
+    boolean hasDailyLimit = v.dailyLimit() != null && v.dailyLimit().signum() > 0;
+    boolean hasDailyBasis =
+        v.dailyLimitBasis() != null
+            && !v.dailyLimitBasis().isBlank()
+            && !"NONE".equalsIgnoreCase(v.dailyLimitBasis().trim());
+    if (hasDailyLimit && !hasDailyBasis) {
+      throw ClaimErrors.of(
+          ClaimErrorCodes.CLAIM_LIABILITY_INVALID_ARGUMENT,
+          "配置了日限额 "
+              + v.dailyLimit().toPlainString()
+              + " 但未配「日」的口径（SAME_DAY_INVOICE 按同日发票 / SAME_DAY_CLAIM 按同日赔案）："
+              + "窗口日判不出来，日限额无法执行");
+    }
+    if (!hasDailyLimit && hasDailyBasis) {
+      throw ClaimErrors.of(
+          ClaimErrorCodes.CLAIM_LIABILITY_INVALID_ARGUMENT,
+          "配置了日限额口径 " + v.dailyLimitBasis() + " 但日限额为 0：该口径永远不会生效（配了不生效 ⇒ 超赔）");
+    }
+    try {
+      // 目录准入：策略与编码必须同配或同不配。CatalogAdmission.of 还要基准日与逐条结论（配置面拿不到），
+      // 故这里只跑它对"策略 ↔ 编码"这一对的反向一致性口径。
+      CatalogAdmission.Mode mode = CatalogAdmission.Mode.fromCode(v.catalogPolicy());
+      boolean hasCode = v.catalogCode() != null && !v.catalogCode().isBlank();
+      if (mode == CatalogAdmission.Mode.NONE && hasCode) {
+        throw ClaimErrors.of(
+            ClaimErrorCodes.CLAIM_LIABILITY_INVALID_ARGUMENT,
+            "配置了目录编码「"
+                + v.catalogCode().trim()
+                + "」但准入策略为 NONE：该编码永远不会被查询"
+                + "（配了不生效 ⇒ 超赔），要么把策略改为 MANDATORY，要么清空目录编码");
+      }
+      if (mode != CatalogAdmission.Mode.NONE && !hasCode) {
+        throw ClaimErrors.of(
+            ClaimErrorCodes.CLAIM_LIABILITY_INVALID_ARGUMENT,
+            "目录准入策略为 " + mode + " 但未填目录编码：不知道该查哪一版目录，理算只能退补件");
+      }
+      LiabilityRule rule =
+          LiabilityRule.fromLegacy(
+              v.liabilityCode() == null ? "" : v.liabilityCode(),
+              "validate-only",
+              v.payPercent(),
+              v.liabilityDeduct(),
+              v.liabilityLimit(),
+              v.socialOnly() == null || v.socialOnly() == 1,
+              v.invoiceDeduct(),
+              v.adjustDeduct(),
+              v.dailyLimit(),
+              LiabilityRule.DailyBasis.fromCode(v.dailyLimitBasis()),
+              LiabilityRule.LimitedConditions.of(
+                  LiabilityRule.LimitedConditions.Mode.fromCode(v.limitMode()),
+                  v.limitHospitalCodes(),
+                  v.limitDiagnosisCodes()));
+      rule.validateConfigShape();
+    } catch (RuleGap gap) {
+      // 解析期拒绝（口径/模式写错）与形状拒绝（半配置）同一出口：都是"这条配置不能这么存"。
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_LIABILITY_INVALID_ARGUMENT, gap.detail());
+    }
+  }
+
+  /** 金额类配置非负校验（负数会被引擎按 0 静默处理 = 少扣钱）。 */
+  private static void assertNonNegative(String label, BigDecimal value) {
+    if (value != null && value.signum() < 0) {
+      throw ClaimErrors.of(
+          ClaimErrorCodes.CLAIM_LIABILITY_INVALID_ARGUMENT,
+          label + "不能为负: " + value.toPlainString());
+    }
   }
 
   // ===================== 内部 =====================

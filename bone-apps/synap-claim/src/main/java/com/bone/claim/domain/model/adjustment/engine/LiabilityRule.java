@@ -692,12 +692,28 @@ public record LiabilityRule(
    * 装载期自检：把"V1 无法自动理算"的配置拦在算钱之前。
    *
    * <p>每一条拒绝都对应文档里一个明确的〔缺〕，注释里带 Q 编号，便于业务补齐后逐条放开（放开时请同时把 该条从"拒绝"改为"实现"，并补对应不变量测试）。
+   *
+   * <p><b>拆成「形式 + 形状」两层</b>：{@link #validateConfigShape()} 是<b>配置面写入期</b>也能跑的子集（配置自相矛盾），
+   * 责任形式的检查留在这里——定额给付/津贴给付型<b>允许配置</b>（业务要能建档），只是不能自动理算。
    */
   public void validate() {
     if (form != LiabilityForm.REIMBURSEMENT) {
       throw RuleGap.of(
           RuleGap.Code.LIABILITY_FORM_UNSUPPORTED, "责任形式 %s 在 V1 无规则（Q-11：定额给付型/津贴给付型整章空白）", form);
     }
+    validateConfigShape();
+  }
+
+  /**
+   * 配置形状自检：<b>只看配置本身是否自相矛盾</b>，不看责任形式，也不依赖任何案情事实。
+   *
+   * <p><b>为什么这一层必须能被配置面调用</b>：这些形态（配了日限额没配口径、开了白名单却没给名单、共保代码/先赔后赔、
+   * 外部控额）在库里<b>看不出异常</b>，只有等到某个赔案走到理算才炸。而配置错了以后，后果是"这一整类赔案都算不出钱"——
+   * 越晚发现代价越大。写入期就拒绝，等于把发现时点从"客户来报销"提前到"配置岗点保存"。
+   *
+   * <p>与 {@link #validate()} 共用同一段实现，不允许两处各写一份：配置面放行了、理算再拒的"两套判据"会让运营 看着保存成功的配置却永远赔不出钱。
+   */
+  public void validateConfigShape() {
     if (limits.hasDailyLimit() && limits.dailyBasis() == DailyBasis.NONE) {
       throw RuleGap.of(
           RuleGap.Code.INVALID_INPUT,
