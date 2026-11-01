@@ -151,6 +151,39 @@ def load_dept_leaders(db: Db, tenant: str) -> dict[str, str | None]:
     return {r["id"]: (r["leader_id"] or None) for r in rows}
 
 
+def coverage_stats(db: Db, tenant: str) -> dict:
+    """组织数据覆盖率（账号级，与决策里给的分母一致）：主管覆盖率 / 负责人覆盖率。
+
+    注意：这是「账号总数」口径（含 E2E 残留），与审计用的「真实发起人」口径不同——
+    前者回答「这个租户的组织数据完整度」，后者回答「谁会真的挂单」。两者都报，不互相替代。
+    未覆盖账号发起单据将按设计 fail-closed 挂起（不是故障，见 ADR-0044 决策 7）。
+    """
+    acc = db.rows(
+        "SELECT COUNT(*) AS total, "
+        "SUM(CASE WHEN manager_id IS NOT NULL AND manager_id <> '' THEN 1 ELSE 0 END) AS with_mgr "
+        f"FROM iam_account WHERE tenant_id = {int(tenant)} AND deleted = 0 AND status = 1"
+    )
+    dep = db.rows(
+        "SELECT COUNT(*) AS total, "
+        "SUM(CASE WHEN leader_id IS NOT NULL AND leader_id <> '' THEN 1 ELSE 0 END) AS with_leader "
+        f"FROM iam_dept WHERE tenant_id = {int(tenant)} AND deleted = 0"
+    )
+    a = acc[0] if acc else {"total": "0", "with_mgr": "0"}
+    d = dep[0] if dep else {"total": "0", "with_leader": "0"}
+    total_a = int(a.get("total") or 0)
+    with_mgr = int(a.get("with_mgr") or 0)
+    total_d = int(d.get("total") or 0)
+    with_leader = int(d.get("with_leader") or 0)
+    return {
+        "accounts": total_a,
+        "with_manager": with_mgr,
+        "manager_cov": (with_mgr / total_a * 100) if total_a else 0.0,
+        "depts": total_d,
+        "with_leader": with_leader,
+        "leader_cov": (with_leader / total_d * 100) if total_d else 0.0,
+    }
+
+
 def load_active_definitions(db: Db, tenant: str) -> list[dict]:
     """取每个 def_key 下 **已启用** 的最高版本 —— 复刻引擎的 findLatestPublished。
 
@@ -323,6 +356,13 @@ def main() -> int:
         action="store_true",
         help="把全部有效账号当作审计对象（缺省只用真实发起人，避免分母虚高）",
     )
+    parser.add_argument(
+        "--min-coverage",
+        type=float,
+        default=0,
+        help="组织数据覆盖率阈值（%%）。非 demo 租户低于该值则告警；配合 --strict 时计入失败退出码。"
+        "缺省 0 = 不检查覆盖率（只审计真实发起人挂单风险）。demo 租户 0 始终豁免。",
+    )
     args = parser.parse_args()
 
     db = Db(
@@ -342,6 +382,7 @@ def main() -> int:
         ]
 
     total_risks = 0
+    coverage_failures = 0
     risky_accounts_all: set[str] = set()
     print("=" * 96)
     print("组织覆盖审计（判据与引擎一致：解析不出人 ⇒ 挂起；解析出本人 ⇒ 自审批挂起）")
@@ -350,6 +391,23 @@ def main() -> int:
 
     for tenant in tenants:
         print(f"\n--- 租户 {tenant} ---")
+        cov = coverage_stats(db, tenant)
+        demo = str(tenant) == "0"
+        print(
+            f"  组织数据覆盖率：账号 {cov['with_manager']}/{cov['accounts']} 有主管"
+            f"（{cov['manager_cov']:.0f}%）；部门 {cov['with_leader']}/{cov['depts']} 有负责人"
+            f"（{cov['leader_cov']:.0f}%）"
+            + ("  [demo 基线，豁免阈值]" if demo else "")
+        )
+        if args.min_coverage and not demo:
+            if cov["manager_cov"] < args.min_coverage or cov["leader_cov"] < args.min_coverage:
+                print(
+                    f"  ⚠️ 租户 {tenant} 覆盖率低于阈值 {args.min_coverage:.0f}%"
+                    f"（主管 {cov['manager_cov']:.0f}% / 负责人 {cov['leader_cov']:.0f}%）"
+                    f"——未覆盖账号发起单据将按设计 fail-closed 挂起；建议先回填"
+                    f"（见 scripts/ops/org-coverage-backfill.sql）"
+                )
+                coverage_failures += 1
         report, accounts, defs = audit_tenant(
             db, tenant, args.verbose, only_initiators=not args.all_accounts
         )
@@ -382,6 +440,13 @@ def main() -> int:
     if total_risks:
         print(f"结论：{len(risky_accounts_all)} 个真实发起人在 {total_risks} 处节点会挂单（fail-closed，不会放行）。")
         print("修复路径：补 iam_account.manager_id / iam_dept.leader_id，或用 assignTask 直接指派。")
+        return 1 if args.strict else 0
+    if coverage_failures:
+        print(
+            f"结论：无挂单风险，但 {coverage_failures} 个非 demo 租户组织数据覆盖率低于阈值"
+            f"（--min-coverage {args.min_coverage:.0f}%）。未覆盖账号发起单据会按设计挂起，非故障；"
+            f"正式上线前建议回填（scripts/ops/org-coverage-backfill.sql）。"
+        )
         return 1 if args.strict else 0
     print("结论：无挂单风险。")
     return 0

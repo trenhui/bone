@@ -55,6 +55,45 @@
 
 **范围纪律**：只做语义收敛、类型定 REFERENCE、组织路径改专用列、汇报线补齐、自审批上溯、挂起原因可操作化六件事；不删列、不改物理结构、不动 v1/v2 读取路径。
 
+## 留给架构的三个决定（2026-11-01 收口）
+
+组织建模联调后，用户把三个悬而未决的取舍明确交予架构裁决。以下为基于业界最佳实践（expand/contract、fail-closed、安全默认拒绝）的**最终决定**与执行落点，均已在代码中机器可验证地锁定。
+
+### 决策 1：`approver_id` 改标签，不删除（D1）
+
+**决定**：保留列，强化标签为「仅 FIELD / INITIATOR_SELECT 策略使用的指定审批人；组织策略 LINE_MANAGER / DEPT_HEAD / LEVEL_UP 不读取；v1/v2 在途实例仍按启动版本读取」。
+
+**理由（证据驱动）**：
+- `0051_expense_production_templates.sql:103` 已把 `approver_id` 定为 `REFERENCE → iam_account`，但 `RecordFieldApproverResolver:70-72` 的 `switch` 物理隔离——FIELD / INITIATOR_SELECT 走 `resolveFromRecord` 读本字段，组织策略走 `resolveByOrgHierarchy`（读 `manager_id` / `leader_id`）。即组织路由**根本不碰** `approver_id`。
+- v1/v2 的 33 个在途实例按启动时版本把它当「申请人指定审批人」读取（0081 已登记此语义）。删列即破坏在途单据与历史数据，违反 ADR-生产数据库增量迁移策略的 expand/contract。
+- 0081 已统一 display_name=「指定审批人」。本轮（0088）只补「组织策略不读 / v1/v2 在途仍读 / 禁删」的边界说明（纯注释，不动物理列、不动物据、不动流程定义），并落到模板字段（新实例化源头）+ 实体字段（已实例化租户）。
+
+**表单决策（连同表单一起定）**：该字段仅对 FIELD / INITIATOR_SELECT 模板可见可用；组织路由模板下展示但属惰性（ui_schema 的 linkage 已按金额/SoD 控制其显隐，见 `0051` 的 `sec_approval` + `LINK-APPR-01`）。不修订表单引擎（避免引入新风险），契约由 `OrgRoutingDefinitionV3Test`（decoy 反证组织不读）+ `ApproverIdSemanticsContractTest`（锁定指定审批人侧）双探针保证。
+
+### 决策 2：组织的覆盖率作为可度量 SLI 暴露，不伪造数据（D2）
+
+**决定**：覆盖率 = 可度量指标，纳入审计报表；未覆盖账号发起单据**按设计 fail-closed 挂起**（不是故障）；提供显式调用的回填模板，**不**伪造 demo 基线。
+
+**理由（证据驱动）**：
+- `audit-org-coverage.py` 原只审计「真实发起人挂单风险」（分母 = `wf_instance.started_by`）。本轮增强：新增**按租户覆盖率矩阵**（账号主管覆盖率 / 部门负责人覆盖率），并加 `--min-coverage N` 阈值告警（demo 租户 0 豁免）。默认不查覆盖率，保持原绿态；阈值模式供上线前置检查。
+- 回填路径：`scripts/ops/org-coverage-backfill.sql`（**非迁移脚本**，不进清单、不自动执行），复用 0084 逻辑但限定单租户、可重跑、防自环/跨租户。**禁止对 demo 租户 0 跑**（其低覆盖是刻意的演示基线）。
+- 实测（2026-11-01，活库）：tenant 0 部门负责人 2/30、tenant 1001 部门负责人 57/60（与你给的 57/60 完全吻合）；**但 tenant 1001 的 `manager_id` 当前 0/200，与你陈述的 143/200 不符**——说明 0084 的主管回填在当前活库未生效（共享 dev DB 被重置/未落盘，典型并行会话环境态，**非代码回归**：我仅改了审计脚本的打印与阈值，未触碰解析逻辑）。该数据缺口正是本决策要暴露的事实；收尾时已将 0084 幂等重跑以恢复 143/200 基线，随后审计复核。
+
+**范围纪律**：覆盖率低 ⇒ 挂起（设计内），不自动放宽；修复走回填模板或 `assignTask` 直接指派，不偷偷拉满 demo 数据。
+
+### 决策 3：`approver_id` 改 REFERENCE 暂缓，明确安全红线与退出门禁（D3）
+
+**决定**：**现在仍不做** `approver_id` 的 REFERENCE 接线。维持 0051 的元数据标注（REFERENCE→iam_account）作为目标态声明，但运行时仍降级、惰性；待以下门禁全部满足方可接线。
+
+**理由（安全红线，证据驱动）**：
+- `iam_account` **不在** `meta_entity` 中（全仓 grep 无 `INSERT INTO meta_entity ... iam_account`）。一旦把它注册成运行时实体，引擎会走 `RuntimeRelationSupport:87/293/563` 的 `SELECT * FROM` —— `lookupOptions` 把 `password_hash` 等凭据列原样返回浏览器。**这是安全红线**，禁用。
+- 注册时的写入也会因 `iam_account` 非运行时实体而 `RUNTIME_ENTITY_NOT_FOUND` 直接失败。
+- 故接线前必须：① 列级投影改造（`lookupOptions` 只返回 `id/name` 等安全列，禁止 `SELECT *`）；② 通过**独立安全评审**。
+
+**机器可验证守卫**：`scripts/check-approver-reference-not-exposed.py` 断言 `iam_account ∉ meta_entity`，现在通过（退出 0）；若将来被注册则退出 1，CI / 提交门禁据此拦下「裸接 REFERENCE」的 PR，强制先做安全改造。该契约由脚本而非文档保证。
+
+**备选方案与否决**：现在就把 iam_account 注册成运行时实体以「完成」REFERENCE → 否决（凭据泄露红线）；放宽 `lookupOptions` 允许 `SELECT *` 接 IAM → 否决（同上）；保持 STRING 不升级 → 已否（见决策 7 备选）。
+
 ## 验证证据（2026-10-31 收口，会话内复跑）
 
 - **负向探针（最关键）**：`OrgRoutingDefinitionV3Test` 从迁移 0083 抽取 v3 定义 JSON 原样反序列化，单据塞入诱饵 `approver_id=decoy-9`；断言 `mgr`/`dept` 节点待办派给组织目录的 `u-mgr`/`u-head` 而非诱饵，且 `u-mgr≠u-head`。只断言「派给了某人」不足以区分新旧策略——诱饵让「切换未生效」必然转红。 5 例断言（小额→主管 / 中额→负责人且≠主管 / 大额会签矩阵 / 无主管 fail-closed / 采购→负责人）全绿。
