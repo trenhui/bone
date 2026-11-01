@@ -20,7 +20,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { UI_BASE as BASE, SHOT_DIR, loadPlaywright, makeChecker, api } from '../e2e_lib/client.cjs';
+import { UI_BASE as BASE, SHOT_DIR, loadPlaywright, makeChecker, api, CHROME } from '../e2e_lib/client.cjs';
 import { uiLogin, shot } from '../e2e_lib/ui.cjs';
 
 const { chromium } = loadPlaywright();
@@ -58,12 +58,23 @@ function parseShellRegistry() {
   };
 }
 
-/** 挂载点文本：微应用容器优先，退化到 main（不同 shell 版本容器 class 不一致）。 */
+/**
+ * 挂载点文本：微应用容器优先，退化到 main（不同 shell 版本容器 class 不一致）。
+ *
+ * 为什么取「候选中文本最长」而不是 querySelector 第一个命中：shell 的 `<main>` 是布局骨架
+ * （实测存在但 innerText 为空），真实内容在 `.ant-layout-content` 里。旧写法命中空骨架即返回 0 字，
+ * 于是 9 个已正常渲染的微应用被判成"挂载点没内容"——探针假红，掩盖真故障也浪费排障时间。
+ */
 async function mountedText(page) {
   return page.evaluate(() => {
-    const sel = '#subapp-viewport, .subapp-viewport, #micro-app, .micro-app-container, main';
-    const el = document.querySelector(sel) || document.body;
-    return (el.innerText || '').trim();
+    const sel =
+      '#subapp-viewport, .subapp-viewport, #micro-app, .micro-app-container, .ant-layout-content, main';
+    let best = '';
+    for (const el of document.querySelectorAll(sel)) {
+      const t = (el.innerText || '').trim();
+      if (t.length > best.length) best = t;
+    }
+    return best || (document.body.innerText || '').trim();
   });
 }
 
@@ -100,7 +111,11 @@ async function fetchEntryPaths() {
     missing.length ? `漏登记：${missing.join(', ')}` : `前缀表 ${prefixes.length} 项，注册 ${registry.length} 项`,
   );
 
-  const browser = await chromium.launch({ headless: true });
+  // playwright 自带 chromium 未必可下载（1.64.1 起不再支持 mac13），此时回退本机 Chrome。
+  // 不加 executablePath 时探针在本机直接 "Executable doesn't exist" 崩，全部断言都跑不到。
+  const launchOpts = { headless: true };
+  if (fs.existsSync(CHROME)) launchOpts.executablePath = CHROME;
+  const browser = await chromium.launch(launchOpts);
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 950 } });
   const page = await ctx.newPage();
 

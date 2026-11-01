@@ -25,6 +25,7 @@ import path from 'node:path';
 import {
   UI_BASE as BASE,
   SHOT_DIR,
+  CHROME,
   loadPlaywright,
   makeChecker,
   api,
@@ -121,7 +122,11 @@ if (ghosts.length || unreachable.length) {
 }
 
 // ---------- 浏览器阶段 ----------
-const browser = await chromium.launch({ headless: true });
+// 本机 Playwright 自带 chromium 下载不全且 1.64 不支持 macOS 13 ⇒ 退回系统 Chrome 通道；
+// 与 micro-app-matrix-probe 同一套判据，避免两个探针走不同浏览器导致结论不可比。
+const launchOpts = { headless: true };
+if (fs.existsSync(CHROME)) launchOpts.executablePath = CHROME;
+const browser = await chromium.launch(launchOpts);
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 page.setDefaultTimeout(20000);
 
@@ -139,12 +144,22 @@ const viewportText = () =>
   page
     .evaluate(() => {
       const e = document.querySelector('#subapp-viewport');
-      return e ? (e.innerText || '').trim() : '';
+      if (!e) return '';
+      // innerText 对隐藏元素返回空串，会与「白屏」混淆 ⇒ 显式带上存在性与可见性，
+      // 便于区分「容器没了 / 容器在但不可见 / 容器可见但真没内容」三种不同故障。
+      const vis = !!e.offsetParent || e.getClientRects().length > 0;
+      return `${e.innerText || ''}`.trim() + (vis ? '' : '\u0000HIDDEN');
     })
     .catch(() => '');
 
-/** 等微应用内容稳定（连续两次采样一致），避免读到上一个页面残留 DOM。 */
-async function waitStable(ms = 12000) {
+/**
+ * 等微应用内容稳定（连续两次采样一致），避免读到上一个页面残留 DOM。
+ *
+ * 默认窗口 25s（原 12s）：首屏进子应用时要过 qiankun 拉 entry + 执行 bundle + 首屏接口，
+ * 本机实测首次点击后 12s 内仍可能是空容器，12s 会把「加载慢」误判成「白屏」。
+ * 超窗时打印实测文本长度，保留「真白屏」的可观测性。
+ */
+async function waitStable(ms = 25000) {
   const deadline = Date.now() + ms;
   let prev = '';
   while (Date.now() < deadline) {
@@ -152,6 +167,23 @@ async function waitStable(ms = 12000) {
     if (cur.length > 10 && cur === prev) return cur;
     prev = cur;
     await page.waitForTimeout(400);
+  }
+  // 只在「完全无文本」时告警：查询驱动页（理赔进度）初始态只有标题+输入框，本就 <10 字，
+  // 按长度告警会把正常空态刷成噪音，掩盖真正的白屏。
+  if (prev.length === 0) {
+    const diag = await page
+      .evaluate(() => {
+        const e = document.querySelector('#subapp-viewport');
+        return {
+          has: !!e,
+          childCount: e ? e.children.length : -1,
+          htmlLen: e ? e.innerHTML.length : -1,
+          hash: location.hash,
+          url: location.href,
+        };
+      })
+      .catch(() => null);
+    console.log(`  ⚠ 等待 ${ms}ms 后容器仍为空（${prev.length} 字），按白屏判定`, JSON.stringify(diag));
   }
   return prev;
 }
