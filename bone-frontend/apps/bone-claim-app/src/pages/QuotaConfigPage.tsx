@@ -34,10 +34,10 @@ import { ERROR_CODES } from '../constants/errorCodes';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
 import { FORM_VALIDATION_MESSAGE, isFormValidationError } from '../utils/formError';
+import { usePolicyOptions } from '../hooks/usePolicyOptions';
 import {
   QUOTA_CHANGE_TYPE_META,
   claimConfigApi,
-  type PolicyView,
   type QuotaAccountView,
   type QuotaChangeView,
   type QuotaType,
@@ -57,7 +57,7 @@ import {
 export function QuotaConfigPage(): ReactElement {
   const { message } = AntApp.useApp();
   const confirm = useConfirmAction();
-  const [policies, setPolicies] = useState<PolicyView[]>([]);
+  const { policies } = usePolicyOptions();
   const [policyNo, setPolicyNo] = useState<string>('');
   const [accounts, setAccounts] = useState<QuotaAccountView[]>([]);
   const [loading, setLoading] = useState(false);
@@ -69,17 +69,6 @@ export function QuotaConfigPage(): ReactElement {
   const [submitting, setSubmitting] = useState(false);
   const [openForm] = Form.useForm();
   const [adjustForm] = Form.useForm();
-
-  const loadPolicies = useCallback(async () => {
-    try {
-      const res = await claimConfigApi.listPolicies({ page: 1, size: 200 });
-      const list = res.data?.records ?? [];
-      setPolicies(list);
-      setPolicyNo((prev) => prev || list[0]?.policyNo || '');
-    } catch (err) {
-      message.error(resolveErrorMessage(err, '保单列表加载失败'));
-    }
-  }, [message]);
 
   const loadAccounts = useCallback(async () => {
     if (!policyNo) {
@@ -98,8 +87,8 @@ export function QuotaConfigPage(): ReactElement {
   }, [policyNo, message]);
 
   useEffect(() => {
-    void loadPolicies();
-  }, [loadPolicies]);
+    setPolicyNo((prev) => prev || policies[0]?.policyNo || '');
+  }, [policies]);
 
   useEffect(() => {
     void loadAccounts();

@@ -24,6 +24,7 @@ import { AuthButton } from '@bone/ui';
 import { resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
 import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
+import { usePolicyOptions } from '../hooks/usePolicyOptions';
 import { useConfirmAction } from '../hooks/useConfirmAction';
 import { PERMISSIONS } from '../constants/permissions';
 import {
@@ -34,7 +35,6 @@ import {
   type LiabilityType,
   type LiabilityView,
   type PlanView,
-  type PolicyView,
   type UpdateLiabilityReq,
 } from '../services/claimConfigApi';
 
@@ -80,11 +80,11 @@ const liabilityImportColumns: ImportColumn[] = [
   { key: 'status', label: '初始状态', example: 'DRAFT' },
 ];
 
-function buildLiabilityRequest(row: Record<string, string>): Record<string, unknown> | null {
+function buildLiabilityRequest(row: Record<string, string>): CreateLiabilityReq | null {
   return {
     planId: row.planId.trim(),
     liabilityCode: row.liabilityCode.trim(),
-    liabilityType: row.liabilityType?.trim() || undefined,
+    liabilityType: (row.liabilityType?.trim() || undefined) as LiabilityType | undefined,
     payPercent: row.payPercent?.trim() || undefined,
     liabilityDeduct: row.liabilityDeduct?.trim() || undefined,
     liabilityLimit: row.liabilityLimit?.trim() || undefined,
@@ -99,7 +99,7 @@ function buildLiabilityRequest(row: Record<string, string>): Record<string, unkn
     catalogCode: row.catalogCode?.trim() || undefined,
     socialOnly: row.socialOnly ? Number(row.socialOnly) : undefined,
     waitingPeriod: row.waitingPeriod ? Number(row.waitingPeriod) : undefined,
-    status: row.status?.trim() || undefined,
+    status: (row.status?.trim() || undefined) as ConfigStatus | undefined,
   };
 }
 
@@ -121,7 +121,7 @@ function validateLiabilityRow(row: Record<string, string>): string | null {
 export function LiabilityConfigPage(): ReactElement {
   const { message } = AntApp.useApp();
   const confirm = useConfirmAction();
-  const [policies, setPolicies] = useState<PolicyView[]>([]);
+  const { policies } = usePolicyOptions();
   const [policyNo, setPolicyNo] = useState('');
   const [plans, setPlans] = useState<PlanView[]>([]);
   const [planId, setPlanId] = useState('');
@@ -132,17 +132,6 @@ export function LiabilityConfigPage(): ReactElement {
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
   const [importOpen, setImportOpen] = useState(false);
-
-  const loadPolicies = useCallback(async () => {
-    try {
-      const res = await claimConfigApi.listPolicies({ page: 1, size: 200 });
-      const list = res.data?.records ?? [];
-      setPolicies(list);
-      setPolicyNo((prev) => prev || list[0]?.policyNo || '');
-    } catch (err) {
-      message.error(resolveErrorMessage(err, '保单列表加载失败'));
-    }
-  }, [message]);
 
   const loadPlans = useCallback(async (pn: string) => {
     if (!pn) {
@@ -174,8 +163,8 @@ export function LiabilityConfigPage(): ReactElement {
   }, [message]);
 
   useEffect(() => {
-    void loadPolicies();
-  }, [loadPolicies]);
+    setPolicyNo((prev) => prev || policies[0]?.policyNo || '');
+  }, [policies]);
 
   const onPolicyChange = async (pn: string) => {
     setPolicyNo(pn);
@@ -529,7 +518,7 @@ export function LiabilityConfigPage(): ReactElement {
         defaults={{ planId }}
         buildRequest={buildLiabilityRequest}
         validateRow={validateLiabilityRow}
-        createOne={(req) => claimConfigApi.createLiability(req as unknown as CreateLiabilityReq)}
+        createOne={(req) => claimConfigApi.createLiability(req)}
         onSuccess={() => void loadLiabilities(planId)}
       />
     </div>

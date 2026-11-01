@@ -28,6 +28,7 @@ import { ERROR_CODES } from '../constants/errorCodes';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
 import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
+import { usePolicyOptions } from '../hooks/usePolicyOptions';
 import { FORM_VALIDATION_MESSAGE, isFormValidationError } from '../utils/formError';
 import {
   CONFIG_STATUS_META,
@@ -37,7 +38,6 @@ import {
   type CreatePlanReq,
   type LiabilityType,
   type PlanView,
-  type PolicyView,
 } from '../services/claimConfigApi';
 
 /**
@@ -66,7 +66,7 @@ const planImportColumns: ImportColumn[] = [
   { key: 'versionNo', label: '计划版本', example: 'v1' },
 ];
 
-function buildPlanRequest(row: Record<string, string>): Record<string, unknown> | null {
+function buildPlanRequest(row: Record<string, string>): CreatePlanReq | null {
   return {
     policyNo: row.policyNo.trim(),
     planCode: row.planCode.trim(),
@@ -86,7 +86,7 @@ function validatePlanRow(row: Record<string, string>): string | null {
 export function PlanConfigPage(): ReactElement {
   const { message } = AntApp.useApp();
   const confirm = useConfirmAction();
-  const [policies, setPolicies] = useState<PolicyView[]>([]);
+  const { policies } = usePolicyOptions();
   const [policyNo, setPolicyNo] = useState<string>('');
   const [plans, setPlans] = useState<PlanView[]>([]);
   const [loading, setLoading] = useState(false);
@@ -105,17 +105,6 @@ export function PlanConfigPage(): ReactElement {
   /** 险种按计划缓存（展开时才加载，避免一次性拉全量）。 */
   const [coverageMap, setCoverageMap] = useState<Record<string, CoverageView[]>>({});
 
-  const loadPolicies = useCallback(async () => {
-    try {
-      const res = await claimConfigApi.listPolicies({ page: 1, size: 200 });
-      const list = res.data?.records ?? [];
-      setPolicies(list);
-      setPolicyNo((prev) => prev || list[0]?.policyNo || '');
-    } catch (err) {
-      message.error(resolveErrorMessage(err, '保单列表加载失败'));
-    }
-  }, [message]);
-
   const loadPlans = useCallback(async () => {
     if (!policyNo) {
       setPlans([]);
@@ -133,8 +122,8 @@ export function PlanConfigPage(): ReactElement {
   }, [policyNo, message]);
 
   useEffect(() => {
-    void loadPolicies();
-  }, [loadPolicies]);
+    setPolicyNo((prev) => prev || policies[0]?.policyNo || '');
+  }, [policies]);
 
   useEffect(() => {
     void loadPlans();
@@ -783,7 +772,7 @@ export function PlanConfigPage(): ReactElement {
         defaults={{ policyNo }}
         buildRequest={buildPlanRequest}
         validateRow={validatePlanRow}
-        createOne={(req) => claimConfigApi.createPlan(req as unknown as CreatePlanReq)}
+        createOne={(req) => claimConfigApi.createPlan(req)}
         onSuccess={() => void loadPlans()}
       />
     </div>

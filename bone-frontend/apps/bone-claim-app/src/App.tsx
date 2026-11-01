@@ -1,6 +1,7 @@
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { App as AntdApp, Layout, Menu, Tag, Typography } from 'antd';
 import { CLAIM_DEFAULT_PATH, CLAIM_ROUTES } from './routes';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import './App.css';
 
 /**
@@ -73,16 +74,18 @@ export const App: React.FC<AppProps> = ({ embedded = false }) => {
           此前误用 BrowserRouter 会去读 pathname=/claim 而忽略 #/review，
           导致内部 <Routes> 永远匹配不到业务页面 ⇒ 内容区空白。 */}
       <HashRouter future={{ v7_relativeSplatPath: true }}>
-        {embedded ? (
-          <ClaimRoutes />
-        ) : (
-          <Layout style={{ minHeight: '100vh' }}>
-            <DevNav />
-            <Layout.Content style={{ padding: 0 }}>
-              <ClaimRoutes />
-            </Layout.Content>
-          </Layout>
-        )}
+        <ErrorBoundary>
+          {embedded ? (
+            <ClaimRoutes />
+          ) : (
+            <Layout style={{ minHeight: '100vh' }}>
+              <DevNav />
+              <Layout.Content style={{ padding: 0 }}>
+                <ClaimRoutes />
+              </Layout.Content>
+            </Layout>
+          )}
+        </ErrorBoundary>
       </HashRouter>
     </AntdApp>
   );

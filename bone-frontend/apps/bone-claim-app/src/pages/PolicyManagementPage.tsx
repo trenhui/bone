@@ -60,7 +60,7 @@ const policyImportColumns: ImportColumn[] = [
   { key: 'insuredHashes', label: '被保人假名ID(逗号分隔)', example: 'hash-001,hash-002' },
 ];
 
-function buildPolicyRequest(row: Record<string, string>): Record<string, unknown> | null {
+function buildPolicyRequest(row: Record<string, string>): CreatePolicyReq | null {
   const insured = (row.insuredHashes ?? '')
     .split(',')
     .map((s) => s.trim())
@@ -629,7 +629,7 @@ export function PolicyManagementPage(): ReactElement {
         columns={policyImportColumns}
         buildRequest={buildPolicyRequest}
         validateRow={validatePolicyRow}
-        createOne={(req) => claimConfigApi.createPolicy(req as unknown as CreatePolicyReq)}
+        createOne={(req) => claimConfigApi.createPolicy(req)}
         onSuccess={() => void load()}
       />
     </div>

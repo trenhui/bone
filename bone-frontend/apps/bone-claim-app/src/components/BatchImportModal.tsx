@@ -39,7 +39,7 @@ export interface ImportColumn {
   example?: string;
 }
 
-export interface BatchImportModalProps {
+export interface BatchImportModalProps<TReq = Record<string, unknown>> {
   open: boolean;
   onClose: () => void;
   title: string;
@@ -49,11 +49,11 @@ export interface BatchImportModalProps {
   /** 缺失单元格回退的默认值（如计划导入时把当前选中的保单号带进去）。 */
   defaults?: Record<string, string>;
   /** 把一行 CSV（键为 column.key）转成创建请求；返回 null 表示该行无需创建（标记成功并跳过）。 */
-  buildRequest: (row: Record<string, string>) => Record<string, unknown> | null;
+  buildRequest: (row: Record<string, string>) => TReq | null;
   /** 行级校验：返回错误信息字符串表示非法，返回 null 表示通过。 */
   validateRow?: (row: Record<string, string>) => string | null;
   /** 单条创建调用（返回 ApiResponse）。失败抛错由组件捕获并记到该行。 */
-  createOne: (req: Record<string, unknown>) => Promise<ApiResponse<unknown>>;
+  createOne: (req: TReq) => Promise<ApiResponse<unknown>>;
   /** 全部导入完成后的回调（通常用于刷新列表）。 */
   onSuccess?: () => void;
 }
@@ -117,7 +117,9 @@ function csvCell(value: string): string {
   return value;
 }
 
-export function BatchImportModal(props: BatchImportModalProps): ReactElement {
+export function BatchImportModal<TReq = Record<string, unknown>>(
+  props: BatchImportModalProps<TReq>,
+): ReactElement {
   const {
     open,
     onClose,
