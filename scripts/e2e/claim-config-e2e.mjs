@@ -80,6 +80,23 @@ const call = (method, url, body) => api(method, url, body, { token: TOKEN });
 const errCode = (r) => (r.data && r.data.data && r.data.data.errorCode) || '';
 /** 后端 Long 全局序列化为字符串 ⇒ version 是 string，比较前统一转数字。 */
 const asNum = (v) => (v === undefined || v === null || v === '' ? NaN : Number(v));
+/**
+ * 取列表响应里的记录行 —— **兼容两种响应契约**。
+ *
+ * <p>列表接口的响应形态正在演进：保单列表已是分页信封 `{records,total,page,size}`，
+ * 而额度列表刚升级为分页信封，计划/险种/保全记录仍是裸数组。
+ * 探针若写死 `data.data || []`，一旦后端升级契约就会 `.find is not a function` 崩在
+ * 中途（看不到任何断言结果），故统一走本 helper。
+ *
+ * @param {object} res api() 的返回值（{status, data: ApiResponse}）
+ * @returns {Array<object>} 记录行数组（无数据时为空数组）
+ */
+const rowsOf = (res) => {
+  const d = res?.data?.data;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.records)) return d.records;
+  return [];
+};
 
 const sha256 = async (s) =>
   Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))))
@@ -473,7 +490,7 @@ async function main() {
     `实际 ${adjStale.status} ${errCode(adjStale) || JSON.stringify(adjStale.data).slice(0, 140)}`);
 
   const qAfterStale = await call('GET', `${P}/quota-accounts?policyNo=${POLICY_NO}`);
-  const accountRow = (qAfterStale.data?.data || []).find((a) => a.quotaAccountId === quotaId);
+  const accountRow = rowsOf(qAfterStale).find((a) => a.quotaAccountId === quotaId);
   check('并发冲突后额度未被改写（写确实被拦下）',
     accountRow && asNum(accountRow.initial) === asNum(adjustedTo),
     `initial=${accountRow?.initial}（期望 ${adjustedTo}）`);
@@ -521,7 +538,7 @@ async function main() {
 
   // ================= 7. 保全留痕 =================
   const changes = await call('GET', `${P}/quota-accounts/${quotaId}/changes`);
-  const changeList = changes.data?.data || [];
+  const changeList = rowsOf(changes);
   check('保全记录可查（开户/调额/减人/恢复 ≥ 4 条）',
     changeList.length >= 4, `实际 ${changeList.length} 条`);
   const types = changeList.map((c) => c.changeType);
@@ -544,31 +561,31 @@ async function main() {
   // UI 搜索框 placeholder 承诺「保单号 / 名称」两维搜索 ⇒ 两列都必须真的命中（此前仅按保单号匹配）。
   const byNo = await call('GET', `${P}/policies?keyword=${encodeURIComponent(POLICY_NO)}&page=1&size=50`);
   check('保单列表按保单号可检索（回归原有能力）',
-    (byNo.data?.data?.records || []).some((r) => r.policyNo === POLICY_NO),
-    `返回 ${(byNo.data?.data?.records || []).length} 条`);
+    rowsOf(byNo).some((r) => r.policyNo === POLICY_NO),
+    `返回 ${rowsOf(byNo).length} 条`);
 
   const byName = await call('GET', `${P}/policies?keyword=${encodeURIComponent(NAME_ONLY)}&page=1&size=50`);
   check('保单列表按保单名称可检索（UI placeholder 承诺的两维之一）',
-    (byName.data?.data?.records || []).some((r) => r.policyNo === POLICY_NO),
-    `返回 ${(byName.data?.data?.records || []).length} 条`);
+    rowsOf(byName).some((r) => r.policyNo === POLICY_NO),
+    `返回 ${rowsOf(byName).length} 条`);
 
   const list = await call('GET', `${P}/policies?keyword=${encodeURIComponent(COMPANY)}&page=1&size=50`);
   const listData = list.data?.data || {};
   check('保单列表按关键字（投保企业名，含于保单名称）可检索到本用例保单',
-    (listData.records || []).some((r) => r.policyNo === POLICY_NO),
-    `返回 ${(listData.records || []).length} 条`);
+    rowsOf(list).some((r) => r.policyNo === POLICY_NO),
+    `返回 ${rowsOf(list).length} 条`);
   check('列表分页信封带 total/page/size',
     listData.total !== undefined && listData.page === 1 && listData.size === 50,
     JSON.stringify({ total: listData.total, page: listData.page, size: listData.size }));
 
   const planList = await call('GET', `${P}/plans?policyNo=${POLICY_NO}`);
   check('计划列表按保单可查（3 个计划）',
-    (planList.data?.data || []).length === PLANS.length,
-    `实际 ${(planList.data?.data || []).length}`);
+    rowsOf(planList).length === PLANS.length,
+    `实际 ${rowsOf(planList).length}`);
   const covList = await call('GET', `${P}/coverages?planId=${planIds[PLANS[0].code]}`);
   check('险种列表按计划可查',
-    (covList.data?.data || []).length === PLANS[0].coverages.length,
-    `实际 ${(covList.data?.data || []).length}`);
+    rowsOf(covList).length === PLANS[0].coverages.length,
+    `实际 ${rowsOf(covList).length}`);
 
   // ================= 9. 第二证据源：MySQL 直查对账 =================
   const policyRow = mysqlRow(
