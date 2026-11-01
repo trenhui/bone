@@ -14,17 +14,19 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import { EditOutlined, PauseCircleOutlined, PlayCircleOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { EditOutlined, PauseCircleOutlined, PlayCircleOutlined, PlusOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { AuthButton } from '@bone/ui';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
+import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
 import { FORM_VALIDATION_MESSAGE, isFormValidationError } from '../utils/formError';
 import {
   POLICY_CONFIG_STATUS_META,
   claimConfigApi,
   parseInsuredSnapshot,
   toTotal,
+  type CreatePolicyReq,
   type PolicyConfigStatus,
   type PolicyView,
 } from '../services/claimConfigApi';
@@ -39,6 +41,50 @@ import {
  * <p><b>被保人清单只存假名化 ID</b>：本页展示的是服务端 HMAC 后的 ID（与额度账户的
  * {@code insured_id_hash} 同一口径），库里不落明文证件——页面因此也拿不到、也不需要明文。
  */
+/** 保单批量导入列定义（模板表头用英文键，避免中文编码坑）。 */
+const policyImportColumns: ImportColumn[] = [
+  { key: 'policyNo', label: '保单号', required: true, example: 'POL-2026-0001' },
+  { key: 'policyName', label: '保单名称', example: '2026团体门诊险' },
+  { key: 'insurerName', label: '保险公司', example: '某保险公司' },
+  { key: 'branchName', label: '保险分公司', example: '华东分公司' },
+  { key: 'insureName', label: '投保公司', example: '某科技有限公司' },
+  { key: 'bizIdentityCode', label: '业务主体码', example: 'BIZ-001' },
+  { key: 'productType', label: '产品类型', example: 'OUTPATIENT' },
+  { key: 'effectiveStart', label: '生效起(ISO时间)', required: true, example: '2026-01-01T00:00:00.000Z' },
+  { key: 'effectiveEnd', label: '生效止(ISO时间)', required: true, example: '2026-12-31T23:59:59.000Z' },
+  { key: 'waitingPeriod', label: '等待期(天)', example: '0' },
+  { key: 'policyVersion', label: '保单版本', example: 'v1' },
+  { key: 'insuredHashes', label: '被保人假名ID(逗号分隔)', example: 'hash-001,hash-002' },
+];
+
+function buildPolicyRequest(row: Record<string, string>): Record<string, unknown> | null {
+  const insured = (row.insuredHashes ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return {
+    policyNo: row.policyNo.trim(),
+    policyName: row.policyName?.trim() || undefined,
+    insurerName: row.insurerName?.trim() || undefined,
+    branchName: row.branchName?.trim() || undefined,
+    insureName: row.insureName?.trim() || undefined,
+    bizIdentityCode: row.bizIdentityCode?.trim() || undefined,
+    productType: row.productType?.trim() || undefined,
+    effectiveStart: row.effectiveStart.trim(),
+    effectiveEnd: row.effectiveEnd.trim(),
+    waitingPeriod: row.waitingPeriod ? Number(row.waitingPeriod) : 0,
+    policyVersion: row.policyVersion?.trim() || 'v1',
+    insuredSnapshot: insured.length ? JSON.stringify(insured) : undefined,
+  };
+}
+
+function validatePolicyRow(row: Record<string, string>): string | null {
+  if (!row.policyNo?.trim()) return '保单号不能为空';
+  if (!row.effectiveStart?.trim()) return '生效起不能为空';
+  if (!row.effectiveEnd?.trim()) return '生效止不能为空';
+  return null;
+}
+
 export function PolicyManagementPage(): ReactElement {
   const { message } = AntApp.useApp();
   const [rows, setRows] = useState<PolicyView[]>([]);
@@ -53,6 +99,7 @@ export function PolicyManagementPage(): ReactElement {
   const [form] = Form.useForm();
   const [editTarget, setEditTarget] = useState<PolicyView | null>(null);
   const [editForm] = Form.useForm();
+  const [importOpen, setImportOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -261,6 +308,13 @@ export function PolicyManagementPage(): ReactElement {
             onClick={openCreate}
           >
             新建保单
+          </AuthButton>
+          <AuthButton
+            code="claim:policy:write"
+            icon={<UploadOutlined />}
+            onClick={() => setImportOpen(true)}
+          >
+            批量导入
           </AuthButton>
         </Space>
 
@@ -550,6 +604,18 @@ export function PolicyManagementPage(): ReactElement {
           )}
         </Form>
       </Modal>
+
+      <BatchImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        title="批量导入保单"
+        fileName="policy-template"
+        columns={policyImportColumns}
+        buildRequest={buildPolicyRequest}
+        validateRow={validatePolicyRow}
+        createOne={(req) => claimConfigApi.createPolicy(req as unknown as CreatePolicyReq)}
+        onSuccess={() => void load()}
+      />
     </div>
   );
 }

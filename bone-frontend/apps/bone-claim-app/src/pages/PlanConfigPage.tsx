@@ -19,16 +19,19 @@ import {
   PlusOutlined,
   ReloadOutlined,
   StopOutlined,
+  UploadOutlined,
 } from '@ant-design/icons';
 import { AuthButton } from '@bone/ui';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
+import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
 import { FORM_VALIDATION_MESSAGE, isFormValidationError } from '../utils/formError';
 import {
   CONFIG_STATUS_META,
   claimConfigApi,
   type ConfigStatus,
   type CoverageView,
+  type CreatePlanReq,
   type LiabilityType,
   type PlanView,
   type PolicyView,
@@ -50,6 +53,33 @@ import {
  * 责任配置入口维护并随计划发布生效——两者分开是因为**责任版本化**与
  * **计划结构**的变更节奏与审批口径不同（改责任要发版本、改险种是结构调整）。
  */
+/** 计划批量导入列定义（模板表头用英文键）。 */
+const planImportColumns: ImportColumn[] = [
+  { key: 'policyNo', label: '保单号', required: true, example: 'POL-2026-0001' },
+  { key: 'planCode', label: '计划编码', required: true, example: 'PLAN-OUTPATIENT' },
+  { key: 'planName', label: '计划名称', example: '门诊计划' },
+  { key: 'planLimit', label: '计划额度(元,0=不限)', example: '0' },
+  { key: 'waitingPeriod', label: '等待期(天)', example: '0' },
+  { key: 'versionNo', label: '计划版本', example: 'v1' },
+];
+
+function buildPlanRequest(row: Record<string, string>): Record<string, unknown> | null {
+  return {
+    policyNo: row.policyNo.trim(),
+    planCode: row.planCode.trim(),
+    planName: row.planName?.trim() || undefined,
+    planLimit: row.planLimit ? Number(row.planLimit) : 0,
+    waitingPeriod: row.waitingPeriod ? Number(row.waitingPeriod) : 0,
+    versionNo: row.versionNo?.trim() || 'v1',
+  };
+}
+
+function validatePlanRow(row: Record<string, string>): string | null {
+  if (!row.planCode?.trim()) return '计划编码不能为空';
+  if (!row.policyNo?.trim()) return '保单号不能为空（可在模板填写，或先在本页选中保单）';
+  return null;
+}
+
 export function PlanConfigPage(): ReactElement {
   const { message } = AntApp.useApp();
   const [policies, setPolicies] = useState<PolicyView[]>([]);
@@ -67,6 +97,7 @@ export function PlanConfigPage(): ReactElement {
   const [planEditForm] = Form.useForm();
   const [coverageEditTarget, setCoverageEditTarget] = useState<CoverageView | null>(null);
   const [coverageEditForm] = Form.useForm();
+  const [planImportOpen, setPlanImportOpen] = useState(false);
   /** 险种按计划缓存（展开时才加载，避免一次性拉全量）。 */
   const [coverageMap, setCoverageMap] = useState<Record<string, CoverageView[]>>({});
 
@@ -368,6 +399,14 @@ export function PlanConfigPage(): ReactElement {
             onClick={openCreatePlan}
           >
             新建计划
+          </AuthButton>
+          <AuthButton
+            code="claim:policy:write"
+            icon={<UploadOutlined />}
+            disabled={!policyNo}
+            onClick={() => setPlanImportOpen(true)}
+          >
+            批量导入计划
           </AuthButton>
         </Space>
 
@@ -706,6 +745,19 @@ export function PlanConfigPage(): ReactElement {
           </Form.Item>
         </Form>
       </Modal>
+
+      <BatchImportModal
+        open={planImportOpen}
+        onClose={() => setPlanImportOpen(false)}
+        title="批量导入计划"
+        fileName="plan-template"
+        columns={planImportColumns}
+        defaults={{ policyNo }}
+        buildRequest={buildPlanRequest}
+        validateRow={validatePlanRow}
+        createOne={(req) => claimConfigApi.createPlan(req as unknown as CreatePlanReq)}
+        onSuccess={() => void loadPlans()}
+      />
     </div>
   );
 }

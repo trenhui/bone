@@ -272,6 +272,73 @@ export interface InsuredStateReq {
   version?: string;
 }
 
+/** 责任视图（配置面读模型）。金额类字段均为字符串：后端 BigDecimal 序列化为纯文本，前端只展示/回传不运算。 */
+export interface LiabilityView {
+  liabilityId: string;
+  liabilityUuid: string;
+  liabilityVersion: string;
+  planId: string;
+  liabilityCode: string;
+  liabilityType: LiabilityType;
+  payPercent: string;
+  liabilityDeduct: string;
+  liabilityLimit: string;
+  invoiceDeduct: string;
+  adjustDeduct: string;
+  dailyLimit: string;
+  dailyLimitBasis: string;
+  limitMode: string;
+  limitHospitalCodes: string;
+  limitDiagnosisCodes: string;
+  catalogPolicy: string;
+  catalogCode: string;
+  socialOnly: number;
+  waitingPeriod: number;
+  status: ConfigStatus;
+}
+
+/** 新建责任请求。 */
+export interface CreateLiabilityReq {
+  planId: string;
+  liabilityCode: string;
+  liabilityType?: LiabilityType;
+  payPercent?: string;
+  liabilityDeduct?: string;
+  liabilityLimit?: string;
+  invoiceDeduct?: string;
+  adjustDeduct?: string;
+  dailyLimit?: string;
+  dailyLimitBasis?: string;
+  limitMode?: string;
+  limitHospitalCodes?: string;
+  limitDiagnosisCodes?: string;
+  catalogPolicy?: string;
+  catalogCode?: string;
+  socialOnly?: number;
+  waitingPeriod?: number;
+  status?: ConfigStatus;
+}
+
+/** 编辑责任请求（空字段沿用原值；ACTIVE 责任将生成新版本）。 */
+export interface UpdateLiabilityReq {
+  liabilityCode?: string;
+  liabilityType?: LiabilityType;
+  payPercent?: string;
+  liabilityDeduct?: string;
+  liabilityLimit?: string;
+  invoiceDeduct?: string;
+  adjustDeduct?: string;
+  dailyLimit?: string;
+  dailyLimitBasis?: string;
+  limitMode?: string;
+  limitHospitalCodes?: string;
+  limitDiagnosisCodes?: string;
+  catalogPolicy?: string;
+  catalogCode?: string;
+  socialOnly?: number;
+  waitingPeriod?: number;
+}
+
 /** 规则开关展示元数据（唯一真源，避免多处各写一份文案）。 */
 export const POLICY_CONFIG_STATUS_META: Record<PolicyConfigStatus, { color: string; label: string }> = {
   INACTIVE: { color: 'default', label: '未启用' },
@@ -469,6 +536,43 @@ export const claimConfigApi = {
     return client.post<InsuredStateReq, ApiResponse<QuotaAccountView>>(
       `/quota-accounts/${encodeURIComponent(quotaAccountId)}/restore`,
       req,
+    );
+  },
+
+  /** 按计划列出责任（含各版本）。 */
+  listLiabilities(planId: string): Promise<ApiResponse<LiabilityView[]>> {
+    return client.get<never, ApiResponse<LiabilityView[]>>(
+      `/liabilities/plan/${encodeURIComponent(planId)}`,
+    );
+  },
+
+  /** 新建责任（草稿态，版本 v1）。 */
+  createLiability(req: CreateLiabilityReq): Promise<ApiResponse<LiabilityView>> {
+    return client.post<CreateLiabilityReq, ApiResponse<LiabilityView>>('/liabilities', req);
+  },
+
+  /** 编辑责任（ACTIVE 生成新版本，DRAFT 原地编辑；空字段沿用原值）。 */
+  updateLiability(
+    liabilityId: string,
+    req: UpdateLiabilityReq,
+  ): Promise<ApiResponse<LiabilityView>> {
+    return client.put<UpdateLiabilityReq, ApiResponse<LiabilityView>>(
+      `/liabilities/${encodeURIComponent(liabilityId)}`,
+      req,
+    );
+  },
+
+  /** 发布责任（DRAFT → ACTIVE；同 UUID 旧 ACTIVE 版本自动下线）。 */
+  publishLiability(liabilityId: string): Promise<ApiResponse<LiabilityView>> {
+    return client.post<never, ApiResponse<LiabilityView>>(
+      `/liabilities/${encodeURIComponent(liabilityId)}/publish`,
+    );
+  },
+
+  /** 下线责任（ACTIVE/DRAFT → RETIRED）。 */
+  retireLiability(liabilityId: string): Promise<ApiResponse<LiabilityView>> {
+    return client.post<never, ApiResponse<LiabilityView>>(
+      `/liabilities/${encodeURIComponent(liabilityId)}/retire`,
     );
   },
 };

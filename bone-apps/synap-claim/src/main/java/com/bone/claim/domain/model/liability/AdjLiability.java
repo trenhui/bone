@@ -1,6 +1,7 @@
 package com.bone.claim.domain.model.liability;
 
 import com.bone.core.domain.TenantAggregateRoot;
+import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.math.BigDecimal;
@@ -422,5 +423,23 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
   /** 适用限定——病种编码名单（同上）。 */
   public String limitDiagnosisCodes() {
     return limitDiagnosisCodes == null ? "" : limitDiagnosisCodes;
+  }
+
+  /**
+   * 发布责任（DRAFT → ACTIVE）。
+   *
+   * <p><b>版本化不变式（§8.2「已生效版本不可改」）</b>：本方法只翻转状态，不修改任何参数； 真正"改已生效版本"的语义由 {@code
+   * LiabilityConfigApplicationService} 以"生成新版本草稿"实现， 旧版本冻结保留。已下线的责任不可再发布。
+   */
+  public void publish() {
+    if ("RETIRED".equals(status)) {
+      throw new DomainException("责任已下线，不可发布");
+    }
+    this.status = "ACTIVE";
+  }
+
+  /** 下线责任（ACTIVE/DRAFT → RETIRED）：不再参与理算，历史版本保留可查。 */
+  public void retire() {
+    this.status = "RETIRED";
   }
 }
