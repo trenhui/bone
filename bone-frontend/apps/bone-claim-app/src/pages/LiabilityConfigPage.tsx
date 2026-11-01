@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import {
   App as AntApp,
   Button,
@@ -24,6 +24,8 @@ import { AuthButton } from '@bone/ui';
 import { resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
 import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
+import { useConfirmAction } from '../hooks/useConfirmAction';
+import { PERMISSIONS } from '../constants/permissions';
 import {
   CONFIG_STATUS_META,
   claimConfigApi,
@@ -118,6 +120,7 @@ function validateLiabilityRow(row: Record<string, string>): string | null {
  */
 export function LiabilityConfigPage(): ReactElement {
   const { message } = AntApp.useApp();
+  const confirm = useConfirmAction();
   const [policies, setPolicies] = useState<PolicyView[]>([]);
   const [policyNo, setPolicyNo] = useState('');
   const [plans, setPlans] = useState<PlanView[]>([]);
@@ -192,26 +195,30 @@ export function LiabilityConfigPage(): ReactElement {
     setModalOpen(true);
   };
 
+  const liabilityEditInitial = useMemo<Record<string, unknown> | undefined>(() => {
+    if (!editTarget) return undefined;
+    return {
+      liabilityCode: editTarget.liabilityCode,
+      liabilityType: editTarget.liabilityType,
+      payPercent: editTarget.payPercent,
+      liabilityDeduct: editTarget.liabilityDeduct,
+      liabilityLimit: editTarget.liabilityLimit,
+      invoiceDeduct: editTarget.invoiceDeduct,
+      adjustDeduct: editTarget.adjustDeduct,
+      dailyLimit: editTarget.dailyLimit,
+      dailyLimitBasis: editTarget.dailyLimitBasis,
+      limitMode: editTarget.limitMode,
+      limitHospitalCodes: editTarget.limitHospitalCodes,
+      limitDiagnosisCodes: editTarget.limitDiagnosisCodes,
+      catalogPolicy: editTarget.catalogPolicy,
+      catalogCode: editTarget.catalogCode,
+      socialOnly: editTarget.socialOnly,
+      waitingPeriod: editTarget.waitingPeriod,
+    };
+  }, [editTarget]);
+
   const openEdit = (row: LiabilityView) => {
     setEditTarget(row);
-    form.setFieldsValue({
-      liabilityCode: row.liabilityCode,
-      liabilityType: row.liabilityType,
-      payPercent: row.payPercent,
-      liabilityDeduct: row.liabilityDeduct,
-      liabilityLimit: row.liabilityLimit,
-      invoiceDeduct: row.invoiceDeduct,
-      adjustDeduct: row.adjustDeduct,
-      dailyLimit: row.dailyLimit,
-      dailyLimitBasis: row.dailyLimitBasis,
-      limitMode: row.limitMode,
-      limitHospitalCodes: row.limitHospitalCodes,
-      limitDiagnosisCodes: row.limitDiagnosisCodes,
-      catalogPolicy: row.catalogPolicy,
-      catalogCode: row.catalogCode,
-      socialOnly: row.socialOnly,
-      waitingPeriod: row.waitingPeriod,
-    });
     setModalOpen(true);
   };
 
@@ -315,7 +322,7 @@ export function LiabilityConfigPage(): ReactElement {
       render: (_: unknown, row: LiabilityView) => (
         <Space size={4}>
           <AuthButton
-            code="claim:policy:write"
+            code={PERMISSIONS.POLICY_WRITE}
             type="link"
             size="small"
             icon={<EditOutlined />}
@@ -324,23 +331,35 @@ export function LiabilityConfigPage(): ReactElement {
             编辑
           </AuthButton>
           <AuthButton
-            code="claim:policy:write"
+            code={PERMISSIONS.POLICY_WRITE}
             type="link"
             size="small"
             icon={<CloudUploadOutlined />}
             disabled={row.status === 'ACTIVE'}
-            onClick={() => void publish(row)}
+            onClick={() =>
+              confirm({
+                title: '确认发布该责任？',
+                content: '发布后旧版本将自动下线，新版本立即生效。',
+                onOk: () => publish(row),
+              })
+            }
           >
             发布
           </AuthButton>
           <AuthButton
-            code="claim:policy:write"
+            code={PERMISSIONS.POLICY_WRITE}
             type="link"
             size="small"
             danger
             icon={<StopOutlined />}
             disabled={row.status === 'RETIRED'}
-            onClick={() => void retire(row)}
+            onClick={() =>
+              confirm({
+                title: '确认下线该责任？',
+                content: '下线后该责任版本停止生效，已受理案件按历史快照不受影响。',
+                onOk: () => retire(row),
+              })
+            }
           >
             下线
           </AuthButton>
@@ -353,7 +372,7 @@ export function LiabilityConfigPage(): ReactElement {
     <div>
       <PageHeader
         title="责任配置"
-        subtitle="保险责任的版本化配置（赔付比例 / 多层免赔 / 日限额 / 适用限定 / 目录准入）。编辑已生效责任会生成新版本草稿，发布后旧版本自动下线。"
+        description="保险责任的版本化配置（赔付比例 / 多层免赔 / 日限额 / 适用限定 / 目录准入）。编辑已生效责任会生成新版本草稿，发布后旧版本自动下线。"
       />
       <Card>
         <Space wrap style={{ marginBottom: 16 }}>
@@ -383,7 +402,7 @@ export function LiabilityConfigPage(): ReactElement {
             optionFilterProp="label"
           />
           <AuthButton
-            code="claim:policy:write"
+            code={PERMISSIONS.POLICY_WRITE}
             type="primary"
             icon={<PlusOutlined />}
             disabled={!planId}
@@ -392,7 +411,7 @@ export function LiabilityConfigPage(): ReactElement {
             新建责任
           </AuthButton>
           <AuthButton
-            code="claim:policy:write"
+            code={PERMISSIONS.POLICY_WRITE}
             icon={<UploadOutlined />}
             disabled={!planId}
             onClick={() => setImportOpen(true)}
@@ -422,7 +441,12 @@ export function LiabilityConfigPage(): ReactElement {
         destroyOnClose
         width={760}
       >
-        <Form form={form} layout="vertical">
+        <Form
+          form={form}
+          layout="vertical"
+          key={editTarget?.liabilityId ?? 'liability-create-none'}
+          initialValues={liabilityEditInitial}
+        >
           <Form.Item
             label="责任编码"
             name="liabilityCode"

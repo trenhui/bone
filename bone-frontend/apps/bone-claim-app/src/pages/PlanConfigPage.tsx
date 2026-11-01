@@ -22,6 +22,9 @@ import {
   UploadOutlined,
 } from '@ant-design/icons';
 import { AuthButton } from '@bone/ui';
+import { useConfirmAction } from '../hooks/useConfirmAction';
+import { PERMISSIONS } from '../constants/permissions';
+import { ERROR_CODES } from '../constants/errorCodes';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
 import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
@@ -82,6 +85,7 @@ function validatePlanRow(row: Record<string, string>): string | null {
 
 export function PlanConfigPage(): ReactElement {
   const { message } = AntApp.useApp();
+  const confirm = useConfirmAction();
   const [policies, setPolicies] = useState<PolicyView[]>([]);
   const [policyNo, setPolicyNo] = useState<string>('');
   const [plans, setPlans] = useState<PlanView[]>([]);
@@ -308,7 +312,7 @@ export function PlanConfigPage(): ReactElement {
         return;
       }
       const code = resolveErrorCode(err);
-      if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
+      if (code === ERROR_CODES.CONCURRENT_CONFLICT) {
         setPlanEditTarget(null);
         await loadPlans();
         message.warning('该计划已被其他人修改，请重新打开编辑并保存');
@@ -357,7 +361,7 @@ export function PlanConfigPage(): ReactElement {
         return;
       }
       const code = resolveErrorCode(err);
-      if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
+      if (code === ERROR_CODES.CONCURRENT_CONFLICT) {
         setCoverageEditTarget(null);
         await loadCoverages(coverageEditTarget.planId);
         message.warning('该险种已被其他人修改，请重新打开编辑并保存');
@@ -392,7 +396,7 @@ export function PlanConfigPage(): ReactElement {
             刷新
           </Button>
           <AuthButton
-            code="claim:policy:write"
+            code={PERMISSIONS.POLICY_WRITE}
             type="primary"
             icon={<PlusOutlined />}
             disabled={!policyNo}
@@ -401,7 +405,7 @@ export function PlanConfigPage(): ReactElement {
             新建计划
           </AuthButton>
           <AuthButton
-            code="claim:policy:write"
+            code={PERMISSIONS.POLICY_WRITE}
             icon={<UploadOutlined />}
             disabled={!policyNo}
             onClick={() => setPlanImportOpen(true)}
@@ -460,7 +464,7 @@ export function PlanConfigPage(): ReactElement {
                       render: (_, c) => (
                         <Space size={4}>
                           <AuthButton
-                            code="claim:policy:write"
+                            code={PERMISSIONS.POLICY_WRITE}
                             type="link"
                             size="small"
                             icon={<EditOutlined />}
@@ -469,23 +473,35 @@ export function PlanConfigPage(): ReactElement {
                             编辑
                           </AuthButton>
                           <AuthButton
-                            code="claim:policy:write"
+                            code={PERMISSIONS.POLICY_WRITE}
                             type="link"
                             size="small"
                             icon={<CloudUploadOutlined />}
                             disabled={c.status === 'ACTIVE'}
-                            onClick={() => void publishCoverage(c)}
+                            onClick={() =>
+  confirm({
+    title: '确认发布该险种？',
+    content: '发布后险种生效，可参与理算；已受理案件按受理时快照不受影响。',
+    onOk: () => publishCoverage(c),
+  })
+}
                           >
                             发布
                           </AuthButton>
                           <AuthButton
-                            code="claim:policy:write"
+                            code={PERMISSIONS.POLICY_WRITE}
                             type="link"
                             size="small"
                             danger
                             icon={<StopOutlined />}
                             disabled={c.status === 'RETIRED'}
-                            onClick={() => void retireCoverage(c)}
+                            onClick={() =>
+  confirm({
+    title: '确认下线该险种？',
+    content: '下线后险种停止生效，已受理案件按受理时快照不受影响。',
+    onOk: () => retireCoverage(c),
+  })
+}
                           >
                             下线
                           </AuthButton>
@@ -528,7 +544,7 @@ export function PlanConfigPage(): ReactElement {
               render: (_, r) => (
                 <Space size={4}>
                   <AuthButton
-                    code="claim:policy:write"
+                    code={PERMISSIONS.POLICY_WRITE}
                     type="link"
                     size="small"
                     icon={<EditOutlined />}
@@ -537,7 +553,7 @@ export function PlanConfigPage(): ReactElement {
                     编辑
                   </AuthButton>
                   <AuthButton
-                    code="claim:policy:write"
+                    code={PERMISSIONS.POLICY_WRITE}
                     type="link"
                     size="small"
                     icon={<PlusOutlined />}
@@ -546,23 +562,35 @@ export function PlanConfigPage(): ReactElement {
                     新增险种
                   </AuthButton>
                   <AuthButton
-                    code="claim:policy:write"
+                    code={PERMISSIONS.POLICY_WRITE}
                     type="link"
                     size="small"
                     icon={<CloudUploadOutlined />}
                     disabled={r.status === 'ACTIVE'}
-                    onClick={() => void publishPlan(r)}
+                    onClick={() =>
+  confirm({
+    title: '确认发布该计划？',
+    content: '发布后计划生效，险种可挂接；已受理案件按受理时快照不受影响。',
+    onOk: () => publishPlan(r),
+  })
+}
                   >
                     发布
                   </AuthButton>
                   <AuthButton
-                    code="claim:policy:write"
+                    code={PERMISSIONS.POLICY_WRITE}
                     type="link"
                     size="small"
                     danger
                     icon={<StopOutlined />}
                     disabled={r.status === 'RETIRED'}
-                    onClick={() => void retirePlan(r)}
+                    onClick={() =>
+  confirm({
+    title: '确认下线该计划？',
+    content: '下线后计划停止生效，已受理案件按受理时快照不受影响。',
+    onOk: () => retirePlan(r),
+  })
+}
                   >
                     下线
                   </AuthButton>

@@ -54,6 +54,16 @@ public final class ClaimErrorCodes {
   /** 未找到有效责任配置（计划未配置或已失效，理算无法进行）。 */
   public static final String CLAIM_LIABILITY_NOT_FOUND = "SC_CLAIM_LIABILITY_NOT_FOUND";
 
+  /**
+   * 责任配置数值字段非法（赔付比例 / 多层免赔 / 额度 / 日限额等传了不可解析的脏值）。
+   *
+   * <p>为什么单独给码：此前 {@link com.bone.claim.application.LiabilityConfigApplicationService} 的 {@code
+   * toDecimal} 对 {@link NumberFormatException} 静默返回 {@code ZERO}，"9O"/"-50" 这类脏值会被当成 0，
+   * 导致<b>系统性少赔且无任何报错</b>。金融配置必须 fast-fail，故改为显式抛此码（空白/缺省仍按既有语义归 0）。
+   */
+  public static final String CLAIM_LIABILITY_INVALID_ARGUMENT =
+      "SC_CLAIM_LIABILITY_INVALID_ARGUMENT";
+
   /** 理算记录不存在。 */
   public static final String CLAIM_ADJUST_NOT_FOUND = "SC_CLAIM_ADJUST_NOT_FOUND";
 

@@ -28,6 +28,9 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { AuthButton } from '@bone/ui';
+import { useConfirmAction } from '../hooks/useConfirmAction';
+import { PERMISSIONS } from '../constants/permissions';
+import { ERROR_CODES } from '../constants/errorCodes';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
 import { FORM_VALIDATION_MESSAGE, isFormValidationError } from '../utils/formError';
@@ -53,6 +56,7 @@ import {
  */
 export function QuotaConfigPage(): ReactElement {
   const { message } = AntApp.useApp();
+  const confirm = useConfirmAction();
   const [policies, setPolicies] = useState<PolicyView[]>([]);
   const [policyNo, setPolicyNo] = useState<string>('');
   const [accounts, setAccounts] = useState<QuotaAccountView[]>([]);
@@ -174,7 +178,7 @@ export function QuotaConfigPage(): ReactElement {
         return;
       }
       const code = resolveErrorCode(err);
-      if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
+      if (code === ERROR_CODES.CONCURRENT_CONFLICT) {
         // 乐观锁冲突：调整期间被他人改过。关闭弹窗并刷新，提示用户重新打开调整。
         setAdjustTarget(null);
         await loadAccounts();
@@ -199,7 +203,7 @@ export function QuotaConfigPage(): ReactElement {
       await loadAccounts();
     } catch (err) {
       const code = resolveErrorCode(err);
-      if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
+      if (code === ERROR_CODES.CONCURRENT_CONFLICT) {
         await loadAccounts();
         message.warning('该额度账户已被其他人修改，请重新操作');
       } else {
@@ -257,7 +261,7 @@ export function QuotaConfigPage(): ReactElement {
             刷新
           </Button>
           <AuthButton
-            code="claim:quota:write"
+            code={PERMISSIONS.QUOTA_WRITE}
             type="primary"
             icon={<PlusOutlined />}
             disabled={!policyNo}
@@ -346,7 +350,7 @@ export function QuotaConfigPage(): ReactElement {
               render: (_, r) => (
                 <Space size={4}>
                   <AuthButton
-                    code="claim:quota:write"
+                    code={PERMISSIONS.QUOTA_WRITE}
                     type="link"
                     size="small"
                     icon={<EditOutlined />}
@@ -374,7 +378,11 @@ export function QuotaConfigPage(): ReactElement {
                         },
                       ],
                       onClick: ({ key }) =>
-                        void toggleRemoved(r, key === 'remove' ? 'remove' : 'restore'),
+                        confirm({
+                          title: key === 'remove' ? '确认减人？' : '确认恢复该被保人额度？',
+                          content: `被保人 ${r.insuredIdHash}。减人后其额度账户停用，恢复后可重新占用。`,
+                          onOk: () => toggleRemoved(r, key === 'remove' ? 'remove' : 'restore'),
+                        }),
                     }}
                   >
                     <Button type="link" size="small" icon={<MoreOutlined />}>

@@ -28,6 +28,7 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.CLAIM_EVIDENCE_LIMIT_EXCEEDED, 400),
           Map.entry(ClaimErrorCodes.CLAIM_EVIDENCE_LOCKED, 409),
           Map.entry(ClaimErrorCodes.CLAIM_LIABILITY_NOT_FOUND, 422),
+          Map.entry(ClaimErrorCodes.CLAIM_LIABILITY_INVALID_ARGUMENT, 400),
           Map.entry(ClaimErrorCodes.CLAIM_ADJUST_NOT_FOUND, 404),
           Map.entry(ClaimErrorCodes.CLAIM_SETTLEMENT_NOT_FOUND, 404),
           Map.entry(ClaimErrorCodes.CLAIM_SETTLEMENT_CONFLICT, 409),

@@ -17,6 +17,9 @@ import {
 import { EditOutlined, PauseCircleOutlined, PlayCircleOutlined, PlusOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { AuthButton } from '@bone/ui';
+import { useConfirmAction } from '../hooks/useConfirmAction';
+import { PERMISSIONS } from '../constants/permissions';
+import { ERROR_CODES } from '../constants/errorCodes';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
 import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
@@ -87,6 +90,7 @@ function validatePolicyRow(row: Record<string, string>): string | null {
 
 export function PolicyManagementPage(): ReactElement {
   const { message } = AntApp.useApp();
+  const confirm = useConfirmAction();
   const [rows, setRows] = useState<PolicyView[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
@@ -252,7 +256,7 @@ export function PolicyManagementPage(): ReactElement {
         return;
       }
       const code = resolveErrorCode(err);
-      if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
+      if (code === ERROR_CODES.CONCURRENT_CONFLICT) {
         // 乐观锁冲突：编辑期间被他人改过。关闭弹窗并刷新，提示用户重新打开编辑。
         setEditTarget(null);
         await load();
@@ -302,7 +306,7 @@ export function PolicyManagementPage(): ReactElement {
             刷新
           </Button>
           <AuthButton
-            code="claim:policy:write"
+            code={PERMISSIONS.POLICY_WRITE}
             type="primary"
             icon={<PlusOutlined />}
             onClick={openCreate}
@@ -310,7 +314,7 @@ export function PolicyManagementPage(): ReactElement {
             新建保单
           </AuthButton>
           <AuthButton
-            code="claim:policy:write"
+            code={PERMISSIONS.POLICY_WRITE}
             icon={<UploadOutlined />}
             onClick={() => setImportOpen(true)}
           >
@@ -391,7 +395,7 @@ export function PolicyManagementPage(): ReactElement {
               render: (_, r) => (
                 <Space size={4}>
                   <AuthButton
-                    code="claim:policy:write"
+                    code={PERMISSIONS.POLICY_WRITE}
                     type="link"
                     size="small"
                     icon={<EditOutlined />}
@@ -400,23 +404,35 @@ export function PolicyManagementPage(): ReactElement {
                     编辑
                   </AuthButton>
                   <AuthButton
-                    code="claim:policy:write"
+                    code={PERMISSIONS.POLICY_WRITE}
                     type="link"
                     size="small"
                     icon={<PlayCircleOutlined />}
                     disabled={r.configStatus === 'ACTIVE'}
-                    onClick={() => void toggle(r, 'activate')}
+                    onClick={() =>
+                      confirm({
+                        title: '确认启用该保单？',
+                        content: `保单 ${r.policyNo} 启用后将可正常收案。`,
+                        onOk: () => toggle(r, 'activate'),
+                      })
+                    }
                   >
                     启用
                   </AuthButton>
                   <AuthButton
-                    code="claim:policy:write"
+                    code={PERMISSIONS.POLICY_WRITE}
                     type="link"
                     size="small"
                     danger
                     icon={<PauseCircleOutlined />}
                     disabled={r.configStatus === 'PAUSE'}
-                    onClick={() => void toggle(r, 'pause')}
+                    onClick={() =>
+                      confirm({
+                        title: '确认停用该保单？',
+                        content: `保单 ${r.policyNo} 停用后将无法收案，在途案件不受影响。`,
+                        onOk: () => toggle(r, 'pause'),
+                      })
+                    }
                   >
                     停用
                   </AuthButton>

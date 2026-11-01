@@ -2,6 +2,8 @@ package com.bone.claim.application;
 
 import com.bone.claim.adapter.web.dto.request.LiabilityRequests;
 import com.bone.claim.application.port.out.TenantPort;
+import com.bone.claim.common.ClaimErrorCodes;
+import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.liability.AdjLiability;
 import com.bone.claim.domain.repository.LiabilityRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
@@ -169,7 +171,10 @@ public class LiabilityConfigApplicationService {
     try {
       return new BigDecimal(s.trim());
     } catch (NumberFormatException e) {
-      return BigDecimal.ZERO;
+      // 金融配置必须 fast-fail：脏值（如 "9O"、"abc"）不能再静默归零，否则会系统性少赔且无报错。
+      // 空白/缺省仍按既有语义归 0（见 num() 与 createLiability 的默认分支）。
+      throw ClaimErrors.of(
+          ClaimErrorCodes.CLAIM_LIABILITY_INVALID_ARGUMENT, "数值字段不是合法数字: \"" + s.trim() + "\"");
     }
   }
 
