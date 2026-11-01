@@ -157,18 +157,18 @@ export function PolicyManagementPage(): ReactElement {
     () =>
       editTarget
         ? {
-            policyName: editTarget.policyName,
-            insurerName: editTarget.insurerName,
-            branchName: editTarget.branchName,
-            insureName: editTarget.insureName,
-            bizIdentityCode: editTarget.bizIdentityCode,
-            productType: editTarget.productType,
-            waitingPeriod: editTarget.waitingPeriod,
-            policyVersion: editTarget.policyVersion,
-            effectiveStart: dayjs(editTarget.effectiveStart),
-            effectiveEnd: dayjs(editTarget.effectiveEnd),
-            insuredHashes: parseInsuredSnapshot(editTarget.insuredSnapshot).join(','),
-          }
+          policyName: editTarget.policyName,
+          insurerName: editTarget.insurerName,
+          branchName: editTarget.branchName,
+          insureName: editTarget.insureName,
+          bizIdentityCode: editTarget.bizIdentityCode,
+          productType: editTarget.productType,
+          waitingPeriod: editTarget.waitingPeriod,
+          policyVersion: editTarget.policyVersion,
+          effectiveStart: dayjs(editTarget.effectiveStart),
+          effectiveEnd: dayjs(editTarget.effectiveEnd),
+          insuredHashes: parseInsuredSnapshot(editTarget.insuredSnapshot).join(','),
+        }
         : undefined,
     [editTarget],
   );

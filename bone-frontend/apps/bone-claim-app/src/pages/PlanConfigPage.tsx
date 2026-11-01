@@ -247,11 +247,11 @@ export function PlanConfigPage(): ReactElement {
     () =>
       planEditTarget
         ? {
-            planName: planEditTarget.planName,
-            planLimit: planEditTarget.planLimit,
-            waitingPeriod: planEditTarget.waitingPeriod,
-            versionNo: planEditTarget.versionNo,
-          }
+          planName: planEditTarget.planName,
+          planLimit: planEditTarget.planLimit,
+          waitingPeriod: planEditTarget.waitingPeriod,
+          versionNo: planEditTarget.versionNo,
+        }
         : undefined,
     [planEditTarget],
   );
@@ -298,10 +298,10 @@ export function PlanConfigPage(): ReactElement {
     () =>
       coverageEditTarget
         ? {
-            coverageName: coverageEditTarget.coverageName,
-            coverageLimit: coverageEditTarget.coverageLimit,
-            liabilityType: coverageEditTarget.liabilityType,
-          }
+          coverageName: coverageEditTarget.coverageName,
+          coverageLimit: coverageEditTarget.coverageLimit,
+          liabilityType: coverageEditTarget.liabilityType,
+        }
         : undefined,
     [coverageEditTarget],
   );
