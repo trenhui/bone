@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 98,
+  "executableCount": 99,
   "retired": [],
   "entries": [
     {
@@ -639,6 +639,12 @@
       "file": "0092_seed_claim_liability_menu.sql",
       "kind": "mixed",
       "summary": "给「智能理赔」目录补第 4 条运营配置面叶子菜单「责任配置」（/claim#/liability）：routes.tsx 早已注册该路由，但 0087 只播种了保单管理/计划配置/额度管理三条，侧栏无入口 ⇒ 真实环境该页完全不可达（菜单是唯一入口），且 claim-single-nav-probe 的双向全等断言会判红。口径与 0087 一致：叶子 id=目录 id+23、permission=claim:policy:read（写动作仍由 claim:policy:write 把关）、icon=TagsOutlined、order_no=14；结尾带幂等判定与终态断言（14 条全覆盖 / 名称与 routes.tsx 一致 / permission 与 icon 未漂移）。"
+    },
+    {
+      "order": 99,
+      "file": "0093_drop_claim_plan_liability_menus.sql",
+      "kind": "mixed",
+      "summary": "把「计划配置」「责任配置」两条叶子菜单软删（deleted=1）：计划挂保单、责任挂计划，独立菜单强迫用户先选菜单再补保单上下文，与「保单管理 →「配置」逐级下钻」的动线相反；0092 曾为闭合探针补上责任配置菜单，本次按 2026-11-01 产品确认改回下钻形态（routes.tsx 同步把 /liability 标 hidden，探针对 hidden 路由豁免菜单全等）。幂等 UPDATE + 终态断言（12 条叶子 / plan+liability 无 deleted=0 残留 / 保单管理与额度管理入口幸存）。"
     }
   ],
   "ordinalConflicts": [

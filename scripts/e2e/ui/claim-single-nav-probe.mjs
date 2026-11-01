@@ -8,7 +8,9 @@
  *   A. 导航唯一    —— 页面里 `.shell-sider` 恰好 1 个；qiankun 容器内 `.ant-layout-sider` 为 0
  *                     （子应用重新自绘侧边栏 = 双层菜单复发）
  *   B. 菜单↔路由   —— IAM 下发菜单（路径集合/名称/顺序）与 `bone-claim-app/src/routes.tsx`
- *                     双向全等；多一条 = 幽灵菜单（点了空白），少一条 = 功能不可达
+ *                     的非 hidden 路由双向全等；多一条 = 幽灵菜单（点了空白），
+ *                     少一条 = 功能不可达。hidden 路由（保单下钻页）豁免——它们
+ *                     从对象列表深链进入，本就不该有菜单。
  *   C. 真实点击    —— 逐个点侧边栏菜单（不是 goto），断言 hash 落地、顶栏标题、页面标题、内容非空
  *   D. 无致命错误  —— 导航期间无 5xx、无 console error（第三方噪音除外）
  *
@@ -41,13 +43,19 @@ const ROUTES_TSX = path.resolve(
   '../../../bone-frontend/apps/bone-claim-app/src/routes.tsx',
 );
 
-/** 前端唯一真源：从 routes.tsx 解析 [{path, name}]（与页面组件一一对应）。 */
+/**
+ * 前端唯一真源：从 routes.tsx 解析 [{path, name, hidden}]（与页面组件一一对应）。
+ * hidden 路由（如 /plan /liability）不进菜单，从对象列表深链进入（见 routes.tsx hidden 注释），
+ * 不参与菜单↔路由全等断言。
+ */
 function parseRoutes() {
   const src = fs.readFileSync(ROUTES_TSX, 'utf8');
   const out = [];
-  const re = /\{\s*path:\s*'([^']+)',\s*name:\s*'([^']+)'/g;
+  const re = /\{\s*path:\s*'([^']+)',\s*name:\s*'([^']+)'[^}]*\}/g;
   let m;
-  while ((m = re.exec(src))) out.push({ path: m[1], name: m[2] });
+  while ((m = re.exec(src))) {
+    out.push({ path: m[1], name: m[2], hidden: /hidden:\s*true/.test(m[0]) });
+  }
   return out;
 }
 
@@ -87,9 +95,10 @@ check('routes.tsx 解析到理赔路由（非空）', routes.length > 0, `实际
 check('IAM 下发理赔菜单（非空）', menus.length > 0, `实际 ${menus.length}`);
 
 const routeByPath = new Map(routes.map((r) => [r.path, r.name]));
+const visibleRoutes = routes.filter((r) => !r.hidden);
 const menuPaths = menus.map((m) => m.path.replace(CLAIM_MENU_PREFIX, ''));
 const ghosts = menus.filter((m) => !routeByPath.has(m.path.replace(CLAIM_MENU_PREFIX, '')));
-const unreachable = routes.filter((r) => !menuPaths.includes(r.path));
+const unreachable = visibleRoutes.filter((r) => !menuPaths.includes(r.path));
 
 check(
   '无幽灵菜单（菜单项都有落地页面）',
@@ -110,8 +119,8 @@ check('菜单名与页面名逐字一致', nameDrift.length === 0, nameDrift.joi
 
 const menuOrder = menuPaths.filter((p) => routeByPath.has(p));
 check(
-  '菜单顺序 = routes.tsx 声明顺序（order_no 真实生效）',
-  JSON.stringify(menuOrder) === JSON.stringify(routes.map((r) => r.path)),
+  '菜单顺序 = routes.tsx 声明顺序（order_no 真实生效；hidden 路由不占菜单）',
+  JSON.stringify(menuOrder) === JSON.stringify(visibleRoutes.map((r) => r.path)),
   `菜单序 ${menuOrder.join(' → ')}`,
 );
 
@@ -210,7 +219,7 @@ try {
   await expandGroup();
   await page
     .locator('.shell-sider .ant-menu-item')
-    .filter({ hasText: routes[0].name })
+    .filter({ hasText: visibleRoutes[0].name })
     .first()
     .click();
   await waitStable();
@@ -228,7 +237,9 @@ try {
   );
 
   // ---------- C. 逐个点击菜单 ----------
-  for (const r of routes) {
+  // 只点可见路由（= 侧栏菜单，数据阶段已断言全等）：hidden 下钻页不占菜单，
+  // 由对象列表「配置」按钮深链进入，菜单里点不到是正确形态。
+  for (const r of visibleRoutes) {
     consoleErrors = [];
     httpErrors = [];
     const item = page.locator('.shell-sider .ant-menu-item').filter({ hasText: r.name }).first();
@@ -270,7 +281,7 @@ try {
   // 页面标题与菜单名一一对应的实拍证据（人工复核用）
   await page
     .locator('.shell-sider .ant-menu-item')
-    .filter({ hasText: routes[6].name })
+    .filter({ hasText: visibleRoutes.find((r) => r.path === '/inspection').name })
     .first()
     .click();
   await waitStable();

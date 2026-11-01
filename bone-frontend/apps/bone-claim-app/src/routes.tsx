@@ -52,17 +52,19 @@ import { LiabilityConfigPage } from './pages/LiabilityConfigPage';
  * 与迁移脚本 `scripts/migration/0078_seed_claim_preexam_menu.sql` 的 order_no 一一对应（1..10；
  * 该脚本在 0071 的 9 条基础上补齐「初审工作台」并整体重排）。
  *
- * 末尾三条（11..13）是<b>运营配置面</b>：保单管理 / 计划配置 / 额度管理。
+ * 末尾两个菜单（11 保单管理、13 额度管理）是<b>运营配置面</b>。
  * 放在作业链路之后而非之前，是因为它们的**变更节奏与风险面不同**：作业面逐单流转（改一次影响一件赔案），
  * 配置面批量编辑（改一次影响该保单所有未来赔案），把它放在链路末尾可让"日常作业"与"偶发配置"
- * 在侧栏上天然分组。三者与 0085 迁移的 order_no 一一对应。
+ * 在侧栏上天然分组。计划配置(12)/责任配置(14) 曾是独立菜单，2026-11-01 迁移 0093 撤下——
+ * 计划/险种/责任强依附保单，从保单管理「配置」逐级下钻（hidden 路由）。
  *
  * 能力编号对照（synapClaim 工程落地版 A1–A9；**只做代码内追溯，不上屏**——页面上出现
  * 「材料上传（A2）」这类编号是给研发看的，业务用户看不懂）：
  *   /pre-exam 初审 A3 前段 · /review 核赔工作台 A3 · /adjust 理算归因 A6 · /fund 资金工作台 A7
  *   /evidence 材料上传 A2 · /progress 理赔进度 A5 · /appeal 申诉复议 A8
  *   /inspection 后督抽检 A9 · /suspend 挂起/恢复 正交机制 · /submit 理赔申请 A1
- *   /policy 保单管理 · /plan 计划配置 · /quota 额度管理（运营配置面，不属 A1–A9 能力编号体系）
+ *   /policy 保单管理 · /quota 额度管理（运营配置面，不属 A1–A9 能力编号体系；
+ *   /plan /liability 为保单下钻页，hidden）
  */
 export interface ClaimRoute {
   /** 微应用内 hash 路由（shell 侧菜单 path 形如 `/claim#/review`）。 */
@@ -78,15 +80,17 @@ export interface ClaimRoute {
   /**
    * 不进导航菜单（路由仍然可达）。
    *
-   * <p>/plan 是保单配置的<b>下钻页</b>而非独立工作台：计划/险种配置天然属于某张保单
-   * （页面顶部就是保单上下文），独立入口会让用户先选保单再选计划——多一次无上下文的选择。
+   * <p>计划/险种/责任是<b>强依附保单的下钻页</b>而非独立工作台：计划挂在保单下、
+   * 责任挂在计划下，独立菜单会强迫用户"先点菜单、再补保单上下文"——多一次无意义的选择。
    * 业界形态（含参考站 policyRuleConfig）：这类页面有独立路由，但从对象列表
-   * （保单管理 → 配置）进入，不占顶级菜单。
+   * （保单管理 → 配置 → 计划行 → 责任配置）逐级深链进入，不占顶级菜单。
    *
-   * <p>配置面只有一套页面：保单管理（保单）→ 计划配置（计划/险种）→ 责任配置（责任）
-   * → 额度管理（个人额度），层间靠带上下文的深链串联（`?policyNo=` / `?planId=`）。
+   * <p>侧栏配置面收敛为两个入口（2026-11-01 迁移 0093）：
+   *   · 保单管理 —— 「配置」按钮下钻 计划/险种（/plan）→ 责任（/liability）；
+   *   · 额度管理 —— 个人额度/公账巡检是跨保单动线，独立入口成立。
    * 曾短暂存在过的 `/policy-config` 单页聚合（三页能力并集）已删除——同一功能两套界面
-   * 必然漂移，且与侧栏三个配置菜单形成重复入口。
+   * 必然漂移。探针（claim-single-nav-probe）对 hidden 路由豁免菜单全等，
+   * 其可达性由「配置」按钮深链保证。
    */
   hidden?: boolean;
 }
@@ -105,7 +109,7 @@ export const CLAIM_ROUTES: ClaimRoute[] = [
   { path: '/policy', name: '保单管理', icon: <FileTextOutlined />, element: <PolicyManagementPage /> },
   { path: '/plan', name: '计划配置', icon: <DeploymentUnitOutlined />, element: <PlanConfigPage />, hidden: true },
   { path: '/quota', name: '额度管理', icon: <ClusterOutlined />, element: <QuotaConfigPage /> },
-  { path: '/liability', name: '责任配置', icon: <TagsOutlined />, element: <LiabilityConfigPage /> },
+  { path: '/liability', name: '责任配置', icon: <TagsOutlined />, element: <LiabilityConfigPage />, hidden: true },
 ];
 
 /** shell（qiankun activeRule）侧的路由前缀；菜单 path 形如 `/claim#/<hash>`。 */
