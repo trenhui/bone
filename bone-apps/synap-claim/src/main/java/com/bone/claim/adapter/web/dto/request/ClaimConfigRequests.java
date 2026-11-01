@@ -140,10 +140,12 @@ public final class ClaimConfigRequests {
           @NotNull(message = "初始额度不能为空")
           @DecimalMin(value = "0", message = "初始额度不能为负")
           BigDecimal newInitial,
-      @Schema(description = "变更说明") @Size(max = 500, message = "变更说明过长") String remark) {}
+      @Schema(description = "变更说明") @Size(max = 500, message = "变更说明过长") String remark,
+      @Schema(description = "乐观锁版本号（来自账户列表，提交时原样带回用于并发冲突检测）") Long version) {}
 
   /** 减人/恢复。 */
   @Schema(description = "额度减人/恢复请求")
   public record InsuredStateReq(
-      @Schema(description = "变更说明") @Size(max = 500, message = "变更说明过长") String remark) {}
+      @Schema(description = "变更说明") @Size(max = 500, message = "变更说明过长") String remark,
+      @Schema(description = "乐观锁版本号（来自账户列表，提交时原样带回用于并发冲突检测）") Long version) {}
 }

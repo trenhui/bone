@@ -136,6 +136,8 @@ public class QuotaConfigApplicationService {
   @Transactional(propagation = Propagation.REQUIRED)
   public QuotaAccountView adjustInitial(AdjustQuota command) {
     QuotaAccount account = requireAccount(command.quotaAccountId());
+    ClaimConfigApplicationService.assertEditableVersion(
+        "额度账户", account.getVersion(), command.version());
     BigDecimal before = account.adjustInitial(command.newInitial());
     quotaAccountRepository.save(account);
     appendChangeLog(
@@ -153,6 +155,8 @@ public class QuotaConfigApplicationService {
   @Transactional(propagation = Propagation.REQUIRED)
   public QuotaAccountView removeInsured(AdjustQuota command) {
     QuotaAccount account = requireAccount(command.quotaAccountId());
+    ClaimConfigApplicationService.assertEditableVersion(
+        "额度账户", account.getVersion(), command.version());
     BigDecimal before = account.initial();
     account.markRemoved();
     quotaAccountRepository.save(account);
@@ -171,6 +175,8 @@ public class QuotaConfigApplicationService {
   @Transactional(propagation = Propagation.REQUIRED)
   public QuotaAccountView restoreInsured(AdjustQuota command) {
     QuotaAccount account = requireAccount(command.quotaAccountId());
+    ClaimConfigApplicationService.assertEditableVersion(
+        "额度账户", account.getVersion(), command.version());
     BigDecimal before = account.initial();
     account.restore();
     quotaAccountRepository.save(account);
@@ -240,7 +246,9 @@ public class QuotaConfigApplicationService {
       BigDecimal newInitial,
       String operatorId,
       String operatorName,
-      String remark) {}
+      String remark,
+      /** 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）；为空时放行以兼容非前端调用方。 */
+      Long version) {}
 
   /** 额度账户视图（配置面读模型；含三值与可用额度）。 */
   public record QuotaAccountView(
@@ -258,7 +266,9 @@ public class QuotaConfigApplicationService {
       BigDecimal deductibleUsed,
       BigDecimal capUsed,
       boolean removed,
-      Instant updatedAt) {
+      Instant updatedAt,
+      /** 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）。 */
+      Long version) {
 
     static QuotaAccountView from(QuotaAccount a) {
       return new QuotaAccountView(
@@ -276,7 +286,8 @@ public class QuotaConfigApplicationService {
           a.getDeductibleUsed(),
           a.getCapUsed(),
           a.isRemoved(),
-          a.getUpdatedAt());
+          a.getUpdatedAt(),
+          a.getVersion());
     }
   }
 

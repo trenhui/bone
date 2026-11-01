@@ -104,6 +104,8 @@ export interface QuotaAccountView {
   /** 是否已减人（减人后不再参与额度累计）。 */
   removed: boolean;
   updatedAt: string;
+  /** 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）。 */
+  version?: number;
 }
 
 export interface QuotaChangeView {
@@ -220,11 +222,15 @@ export interface OpenQuotaReq {
 export interface AdjustQuotaReq {
   newInitial: number;
   remark?: string;
+  /** 乐观锁版本号（来自账户列表，提交时原样带回用于并发冲突检测）。 */
+  version?: number;
 }
 
 /** 减人/恢复请求。 */
 export interface InsuredStateReq {
   remark?: string;
+  /** 乐观锁版本号（来自账户列表，提交时原样带回用于并发冲突检测）。 */
+  version?: number;
 }
 
 /** 规则开关展示元数据（唯一真源，避免多处各写一份文案）。 */

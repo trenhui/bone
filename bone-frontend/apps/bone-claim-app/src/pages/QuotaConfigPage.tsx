@@ -150,12 +150,19 @@ export function QuotaConfigPage(): ReactElement {
       await claimConfigApi.adjustQuota(adjustTarget.quotaAccountId, {
         newInitial: values.newInitial,
         remark: values.remark?.trim(),
+        version: adjustTarget.version,
       });
       message.success('额度已调整');
       setAdjustTarget(null);
       await loadAccounts();
     } catch (err) {
-      if (resolveErrorCode(err)) {
+      const code = resolveErrorCode(err);
+      if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
+        // 乐观锁冲突：调整期间被他人改过。关闭弹窗并刷新，提示用户重新打开调整。
+        setAdjustTarget(null);
+        await loadAccounts();
+        message.warning('该额度账户已被其他人修改，请重新打开调整并保存');
+      } else if (code) {
         message.error(resolveErrorMessage(err, '调额失败'));
       }
     } finally {
@@ -166,15 +173,21 @@ export function QuotaConfigPage(): ReactElement {
   const toggleRemoved = async (row: QuotaAccountView, action: 'remove' | 'restore') => {
     try {
       if (action === 'remove') {
-        await claimConfigApi.removeInsured(row.quotaAccountId, {});
+        await claimConfigApi.removeInsured(row.quotaAccountId, { version: row.version });
         message.success('已减人（该被保人不再参与额度累计）');
       } else {
-        await claimConfigApi.restoreInsured(row.quotaAccountId, {});
+        await claimConfigApi.restoreInsured(row.quotaAccountId, { version: row.version });
         message.success('已恢复');
       }
       await loadAccounts();
     } catch (err) {
-      message.error(resolveErrorMessage(err, action === 'remove' ? '减人失败' : '恢复失败'));
+      const code = resolveErrorCode(err);
+      if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
+        await loadAccounts();
+        message.warning('该额度账户已被其他人修改，请重新操作');
+      } else {
+        message.error(resolveErrorMessage(err, action === 'remove' ? '减人失败' : '恢复失败'));
+      }
     }
   };
 

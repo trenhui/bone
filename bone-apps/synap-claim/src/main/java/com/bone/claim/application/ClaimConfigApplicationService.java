@@ -272,7 +272,7 @@ public class ClaimConfigApplicationService {
    *
    * <p><b>{@code submittedVersion == null} 时放行</b>：兼容不带版本的非前端调用方，不破坏既有契约。
    */
-  private void assertEditableVersion(String kind, long currentVersion, Long submittedVersion) {
+  static void assertEditableVersion(String kind, long currentVersion, Long submittedVersion) {
     if (submittedVersion != null && submittedVersion.longValue() != currentVersion) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_CONCURRENT_CONFLICT, kind + "已被其他人修改，请刷新后重试");
     }
