@@ -149,6 +149,7 @@ public class QuotaConfigApplicationService {
   @Transactional(propagation = Propagation.REQUIRED)
   public QuotaAccountView adjustInitial(AdjustQuota command) {
     QuotaAccount account = requireAccount(command.quotaAccountId());
+    assertVersionSubmitted("额度账户", command.version());
     ClaimConfigApplicationService.assertEditableVersion(
         "额度账户", account.getVersion(), command.version());
     BigDecimal before = account.adjustInitial(command.newInitial());
@@ -168,6 +169,7 @@ public class QuotaConfigApplicationService {
   @Transactional(propagation = Propagation.REQUIRED)
   public QuotaAccountView removeInsured(AdjustQuota command) {
     QuotaAccount account = requireAccount(command.quotaAccountId());
+    assertVersionSubmitted("额度账户", command.version());
     ClaimConfigApplicationService.assertEditableVersion(
         "额度账户", account.getVersion(), command.version());
     BigDecimal before = account.initial();
@@ -188,6 +190,7 @@ public class QuotaConfigApplicationService {
   @Transactional(propagation = Propagation.REQUIRED)
   public QuotaAccountView restoreInsured(AdjustQuota command) {
     QuotaAccount account = requireAccount(command.quotaAccountId());
+    assertVersionSubmitted("额度账户", command.version());
     ClaimConfigApplicationService.assertEditableVersion(
         "额度账户", account.getVersion(), command.version());
     BigDecimal before = account.initial();
@@ -224,6 +227,19 @@ public class QuotaConfigApplicationService {
     ClaimPlan plan = claimPlanRepository.findPlanById(planId);
     if (plan == null || !policyNo.equals(plan.policyNo())) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_PLAN_NOT_FOUND, planId);
+    }
+  }
+
+  /**
+   * 版本号必填校验（A3 资金配置防并发覆盖）。
+   *
+   * <p><b>为什么单独拦 null</b>：{@link ClaimConfigApplicationService#assertEditableVersion} 对 {@code
+   * null} 提交版本采取「静默放行」语义（服务于保单/计划/险种等配置面的内部调用），但<b>额度账户是资金口径</b>，
+   * 不带版本即等于放弃乐观锁、允许覆盖他人刚做的调额/减人——故在此显式拒绝。改配置必须带当前 {@code version}，由前端从详情接口取回后回填。
+   */
+  private static void assertVersionSubmitted(String kind, Long submittedVersion) {
+    if (submittedVersion == null) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_CONCURRENT_CONFLICT, kind + "更新必须携带版本号，请刷新后重试");
     }
   }
 

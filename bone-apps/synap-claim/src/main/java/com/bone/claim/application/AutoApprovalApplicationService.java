@@ -3,7 +3,9 @@ package com.bone.claim.application;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.ClaimCase;
+import com.bone.claim.domain.model.decision.DecisionResult;
 import com.bone.claim.domain.model.settlement.AccountType;
+import com.bone.claim.domain.model.settlement.SettlementOrder;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -94,14 +96,42 @@ public class AutoApprovalApplicationService {
   }
 
   /**
-   * 人工显式自动通过（快捷赔付 R-FAST-01；操作人可追责，不受开关/上限约束）。
+   * 人工显式自动通过（快捷赔付 R-FAST-01；操作人可追责）。
    *
-   * <p>与 {@link #applyAutoDecision} 共用「结案 + 建单」段：任何走到 {@code FINISHED} 的路径都必须有结算单，
-   * 否则就是「已结案未出金」的静默欠账。
+   * <p><b>护栏（资金分级授权，P0 修复）</b>：虽不受自动放款开关约束，但<b>仍须守住两条资金红线</b>，否则单点账号或内鬼可无上限一键放款：
+   *
+   * <ul>
+   *   <li><b>大额双人复核门</b>：金额 ≥ {@link SettlementOrder#reviewThreshold()}（1 万）一律拒绝单点快捷赔付， 必须走 {@code
+   *       audit-pass} + {@code review-confirm} 双人流程（与结算引擎、对账不变量 5 同一阈值，单一真源）。
+   *   <li><b>风险闸</b>：决策结论显式 {@code SUGGEST_REJECT} 的，快捷赔付不得绕过（fraud/risk 判否后不应被一键放款）。
+   * </ul>
+   *
+   * <p>以上任一拦截都返回 {@code applied=false}（带受控原因码），<b>不触碰任何聚合</b>——「拦截」与「放行」共用同一段 「结案 +
+   * 建单」编排，避免两条路径出金行为漂移。
+   *
+   * <p>与 {@link #applyAutoDecision} 共用「结案 + 建单」段：任何走到 {@code FINISHED}
+   * 的路径都必须有结算单，否则就是「已结案未出金」的静默欠账。
    */
   @Transactional
   public AutoApprovalOutcome approveAndSettle(long claimId, String operatorId) {
     BigDecimal amount = adjustmentAmount(claimId);
+    // 大额（≥双人复核门）禁止单人快捷赔付：必须走双人复核流程，否则绕过对账不变量 5
+    if (amount.compareTo(SettlementOrder.reviewThreshold()) >= 0) {
+      log.info(
+          "[快捷赔付] 超双人复核门转双人流程: claimId={}, amount={}, threshold={}",
+          claimId,
+          amount,
+          SettlementOrder.reviewThreshold());
+      return AutoApprovalOutcome.skipped("DUAL_REVIEW_REQUIRED");
+    }
+    // 风险闸：决策结论显式建议拒赔的，快捷赔付不得绕过。
+    // 注：RISK_HIT 仅作分诊原因码、未持久化到执行记录，故此处只能可靠拦截 SUGGEST_REJECT；
+    // RISK_HIT 类案件建议后续把风险原因落库后再拦截（见优化说明）。
+    var latest = decisionExecutionApplicationService.findLatest(claimId);
+    if (latest != null && DecisionResult.SUGGEST_REJECT == latest.decisionResultEnum()) {
+      log.info("[快捷赔付] 风险闸拦截: claimId={}, decision={}", claimId, latest.getDecisionResult());
+      return AutoApprovalOutcome.skipped("RISK_GATE_BLOCKED");
+    }
     return approveAndSettleInternal(claimId, operatorId, amount);
   }
 

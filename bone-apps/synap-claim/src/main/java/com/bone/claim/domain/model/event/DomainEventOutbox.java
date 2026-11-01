@@ -21,6 +21,7 @@ import lombok.Getter;
 public class DomainEventOutbox extends TenantAbstractEntity<Long> {
 
   public static final String STATUS_PENDING = "PENDING";
+  public static final String STATUS_DISPATCHING = "DISPATCHING";
   public static final String STATUS_SENT = "SENT";
   public static final String STATUS_FAILED = "FAILED";
 
@@ -75,6 +76,17 @@ public class DomainEventOutbox extends TenantAbstractEntity<Long> {
   /** 派发成功：刷为 SENT。 */
   public void markSent() {
     this.status = STATUS_SENT;
+    setUpdatedAt(new java.util.Date());
+  }
+
+  /**
+   * 派发占用（乐观锁抢占）：PENDING/DISPATCHING → DISPATCHING。
+   *
+   * <p>只有抢到版本锁（{@code @Version}）的实例能让这次状态转换落库；并发实例的 {@code save} 会因版本冲突抛 {@code
+   * OptimisticLockingFailureException}，被派发方捕获后视为「已被其他实例接管」，从而<b>杜绝同一事件被两个中继实例重复派发</b>。
+   */
+  public void markDispatching() {
+    this.status = STATUS_DISPATCHING;
     setUpdatedAt(new java.util.Date());
   }
 

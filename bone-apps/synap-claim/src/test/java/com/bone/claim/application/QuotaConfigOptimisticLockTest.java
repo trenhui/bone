@@ -29,7 +29,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
  *   <li>{@link #staleVersion_throwsConcurrentConflict_onAdjust()}——提交版本落后于当前版本，必须抛出 {@code
  *       CLAIM_CONCURRENT_CONFLICT}（409）；删掉守护这一行即转红，是真正的变异杀。
  *   <li>{@link #matchingVersion_appliesAdjust()}——版本一致，调额正常落盘。
- *   <li>{@link #nullSubmittedVersion_bypassesGuard()}——不带版本的非前端调用方（如脚本/内部调用）仍被放行，不破坏既有契约。
+ *   <li>{@link #nullSubmittedVersion_rejected()}——额度账户属资金口径，<b>不带版本必须被拒</b>（不允许放弃乐观锁覆盖他人变更）；
+ *       改为放行即转红，是真正的变异杀。
  * </ul>
  *
  * <p><b>版本种子的取法</b>：{@link QuotaAccount#open} 出来的聚合 {@code version} 为 null（由 SDK 在首次落库时置值）， 而守护比较要求
@@ -84,10 +85,14 @@ class QuotaConfigOptimisticLockTest {
   }
 
   @Test
-  void nullSubmittedVersion_bypassesGuard() {
+  void nullSubmittedVersion_rejected() {
     when(quotaAccountRepository.findById(1L)).thenReturn(savedAccount(5L));
 
-    QuotaAccountView view = service.adjustInitial(adjustCmd(null));
-    assertThat(view.initial()).isEqualByComparingTo("800");
+    assertThatThrownBy(() -> service.adjustInitial(adjustCmd(null)))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getErrorCode())
+                    .isEqualTo(ClaimErrorCodes.CLAIM_CONCURRENT_CONFLICT));
   }
 }

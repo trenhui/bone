@@ -8,6 +8,8 @@ import com.bone.claim.application.ClaimCaseApplicationService;
 import com.bone.claim.domain.model.claim.valueobject.ItemCategory;
 import com.bone.claim.domain.model.liability.AdjLiability;
 import com.bone.claim.domain.model.quota.QuotaAccount;
+import com.bone.claim.domain.model.settlement.AccountType;
+import com.bone.claim.domain.model.settlement.SettlementOrder;
 import com.bone.core.exception.DomainException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -317,7 +319,12 @@ class QuotaReleaseOwnershipScenarioTest {
     return h.claimSvc.getClaimWithItems(claimId).get(0).getClaimNo();
   }
 
-  /** 走完"报案→核赔→建结算单"，返回 claimId（结算单号固定为 {@code SO{claimId}-1}）。 */
+  /**
+   * 走完"报案→核赔→结案→建结算单"，返回 claimId（结算单号固定为 {@code SO{claimId}-1}）。
+   *
+   * <p>走<b>合规出金路径</b>（结案 → 建单 → 第一认证 → 大额第二认证），不走快捷赔付： 次案理算额 14400 ≥ 双人复核门（1
+   * 万），快捷赔付护栏（B1）会正确拒绝单点放款——本测试主题是额度释放归属，不是快捷赔付。
+   */
   private long settledClaim(int seq) {
     long claimId = submit(seq, CLAIM_AMOUNT);
     h.seedEvidence(claimId, false);
@@ -326,7 +333,13 @@ class QuotaReleaseOwnershipScenarioTest {
     h.claimSvc.completePreExam(claimId, CLAIM_AMOUNT, "op-pre");
     h.indemnitySvc.calculate(claimId, "RULE-1.0.0");
     h.setClaimFirstReviewer(claimId, "op-pre");
-    h.autoApproveSvc.approveAndSettle(claimId, "op-fast");
+    h.claimSvc.autoApprove(claimId, "op-mgr");
+    h.settleSvc.create(claimId, 1, AccountType.NO_ACCOUNT, "op-mgr");
+    h.settleSvc.auditPass(claimId, "op-reviewer1");
+    // ≥ 双人复核门的金额须经第二人复核放行（复核人 ≠ 第一审核人 op-pre，与对账不变量 5 同一约束）
+    if (h.settleSvc.latest(claimId).amount().compareTo(SettlementOrder.reviewThreshold()) >= 0) {
+      h.settleSvc.confirmReview(claimId, "op-reviewer2");
+    }
     return claimId;
   }
 

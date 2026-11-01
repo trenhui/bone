@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +41,10 @@ public class OutboxRelayJob {
   @Value("${bone.claim.schedule.outbox-batch:200}")
   private int batch;
 
+  /** 卡死占用态回收窗口（分钟）：DISPATCHING 且更新时间早于此刻即视为派发中崩溃，回收重投（B3）。 */
+  @Value("${bone.claim.schedule.outbox-stuck-minutes:5}")
+  private long stuckMinutes;
+
   /** 周期可配置（默认每分钟一轮）。 */
   @Scheduled(cron = "${bone.claim.schedule.outbox-relay-cron:0 */1 * * * ?}")
   public void relayPending() {
@@ -48,30 +53,52 @@ public class OutboxRelayJob {
     int dispatched = 0;
     int failed = 0;
     for (DomainEventOutbox outbox : pending) {
-      try {
-        boolean[] ok = {false};
-        TenantContextRunner.runAs(
-            outbox.getTenantId(),
-            () ->
-                ok[0] =
-                    outboxApplicationService.dispatchAndAck(outbox.getTenantId(), outbox.getId()));
-        if (ok[0]) {
-          dispatched++;
-        } else {
-          failed++;
-        }
-      } catch (Exception e) {
-        failed++;
-        log.error("outbox 中继异常: id={}, tenantId={}", outbox.getId(), outbox.getTenantId(), e);
-      }
+      DispatchOutcome r = dispatchOne(outbox);
+      dispatched += r.dispatched();
+      failed += r.failed();
     }
-
-    // 区分「命中」与「实际完成」：只打命中数会掩盖派发失败。
+    // 卡死 DISPATCHING 回收：派发中崩溃导致占用态未释放，更新时间早于 stuckBefore 即回收重投（B3）
+    Timestamp stuckBefore = Timestamp.from(Instant.now().minus(stuckMinutes, ChronoUnit.MINUTES));
+    List<DomainEventOutbox> stuck =
+        outboxRepository.findStuckDispatchingOutboxAllTenants(stuckBefore, batch);
+    for (DomainEventOutbox outbox : stuck) {
+      DispatchOutcome r = dispatchOne(outbox);
+      dispatched += r.dispatched();
+      failed += r.failed();
+    }
+    // 死信告警：FAILED（耗尽重试）记录是零丢失的兜底，绝不静默丢弃，必须人工介入（B2）
+    List<DomainEventOutbox> dead = outboxRepository.findFailedOutboxAllTenants(batch);
+    if (!dead.isEmpty()) {
+      log.error(
+          "[全租户扫描] outbox 死信告警: 待人工介入 {} 条 (ids={})（E-2 平台运维入口）",
+          dead.size(),
+          dead.stream().map(o -> String.valueOf(o.getId())).collect(Collectors.joining(",")));
+    }
     log.info(
-        "[全租户扫描] outbox 中继完成: 窗口={}min, 待发={}, 成功={}, 失败={}（E-2 平台运维入口）",
+        "[全租户扫描] outbox 中继完成: 窗口={}min, 待发={}, 卡死回收={}, 成功={}, 失败={}, 死信={}",
         olderThanMinutes,
         pending.size(),
+        stuck.size(),
         dispatched,
-        failed);
+        failed,
+        dead.size());
+  }
+
+  private record DispatchOutcome(int dispatched, int failed) {}
+
+  /** 单笔派发（在显式租户上下文内执行；返回成功/失败计数供日志聚合）。 */
+  private DispatchOutcome dispatchOne(DomainEventOutbox outbox) {
+    try {
+      boolean[] ok = {false};
+      TenantContextRunner.runAs(
+          outbox.getTenantId(),
+          () ->
+              ok[0] =
+                  outboxApplicationService.dispatchAndAck(outbox.getTenantId(), outbox.getId()));
+      return ok[0] ? new DispatchOutcome(1, 0) : new DispatchOutcome(0, 1);
+    } catch (Exception e) {
+      log.error("outbox 中继异常: id={}, tenantId={}", outbox.getId(), outbox.getTenantId(), e);
+      return new DispatchOutcome(0, 1);
+    }
   }
 }

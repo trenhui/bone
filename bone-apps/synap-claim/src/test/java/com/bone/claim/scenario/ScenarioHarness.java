@@ -677,10 +677,28 @@ public class ScenarioHarness {
   static class InMemoryLiabilityRepository extends InMemoryRepository<AdjLiability>
       implements LiabilityRepository {
     @Override
+    public AdjLiability findById(long id) {
+      return store.get(id);
+    }
+
+    @Override
     public List<AdjLiability> findActiveByPlanId(long planId) {
       return store.values().stream()
           .filter(l -> Objects.equals(l.getPlanId(), planId) && l.isActive())
           .toList();
+    }
+
+    @Override
+    public AdjLiability findActiveByUuid(String liabilityUuid) {
+      return store.values().stream()
+          .filter(l -> Objects.equals(l.getLiabilityUuid(), liabilityUuid) && l.isActive())
+          .findFirst()
+          .orElse(null);
+    }
+
+    @Override
+    public List<AdjLiability> findByPlanId(long planId) {
+      return store.values().stream().filter(l -> Objects.equals(l.getPlanId(), planId)).toList();
     }
 
     @Override

@@ -34,6 +34,7 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -267,12 +268,21 @@ public class ReconciliationApplicationService {
                 gap.name()));
       }
     }
+    // 差异按<b>结算单</b>计一份（一个结算单可同时命中阶段倒拨、复核缺失等多条判据），
+    // 报告里的 balanced/diff 是结算单口径；若直接用差异行数当 diffCount，会出现 balanced + diff > total。
+    int paymentDiffCount =
+        (int)
+            violations.stream()
+                .map(Violation::settlementNo)
+                .filter(Objects::nonNull)
+                .distinct()
+                .count();
     saveReport(
         tenantId,
         bizDate,
         ReconciliationReport.CHANNEL_PAYMENT,
         total,
-        violations.size(),
+        paymentDiffCount,
         totalAmount,
         counterAmount,
         violations);

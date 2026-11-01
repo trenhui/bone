@@ -22,6 +22,15 @@ public interface DomainEventOutboxRepository extends Repository<DomainEventOutbo
   List<DomainEventOutbox> findPendingOutboxAllTenants(
       @Param("before") Timestamp before, @Param("limit") int limit);
 
+  /** 跨租户扫描已耗尽重试的 FAILED 记录（死信），需人工介入 / 告警，绝不静默丢弃（B2）。 */
+  @TenantScope(TenantScopeMode.ALL)
+  List<DomainEventOutbox> findFailedOutboxAllTenants(@Param("limit") int limit);
+
+  /** 跨租户扫描卡死在 DISPATCHING 的占用记录（更新时间早于 before，疑似派发中崩溃），回收重投（B3）。 */
+  @TenantScope(TenantScopeMode.ALL)
+  List<DomainEventOutbox> findStuckDispatchingOutboxAllTenants(
+      @Param("before") Timestamp before, @Param("limit") int limit);
+
   /** 按主键加载（应用层在 {@code runAs} 上下文内调用，租户隔离由上下文 + AUTO 作用域落实）。 */
   default DomainEventOutbox load(Long tenantId, Long id) {
     return findById(id);
