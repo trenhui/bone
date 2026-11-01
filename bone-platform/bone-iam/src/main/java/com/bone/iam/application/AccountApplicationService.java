@@ -126,7 +126,14 @@ public class AccountApplicationService {
     if (account == null) {
       throw IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND, "账户不存在");
     }
+    // 资料字段与 deptId / managerId / status / roleIds 同口径：**null = 不变更**。
+    // 仓储层是全列 UPDATE，若这里无条件覆盖 null，任何只提交部分字段的编辑请求（例如只改角色）
+    // 都会把用户的真实姓名 / 手机号抹掉——用户在界面上只会看到「资料莫名丢了」。
     account.updateProfile(cmd.getRealName(), cmd.getPhone(), null);
+    // email 之前**根本没有被处理**：前端表单提交了也被静默丢弃，管理员改邮箱永远不生效。
+    if (cmd.getEmail() != null) {
+      account.changeEmail(Email.of(cmd.getEmail()));
+    }
     if (cmd.getDeptId() != null) {
       // 语义：null=不变更（兼容未传该字段的存量调用方）；0=清空（已禁止，归属部门必填）；其他=本租户内已存在的部门
       if (cmd.getDeptId() == 0L) {
@@ -262,9 +269,13 @@ public class AccountApplicationService {
             resolveDeptSubtree(qry.getDeptId(), deptTree),
             qry.getPage(),
             qry.getSize());
-    Map<Long, String> deptNames = deptNameIndex(deptTree);
-    // 主管姓名必须**无条件**装配。不要照抄上面 deptTree 的「按需加载」：那只在按部门筛选时才填，
-    // 结果是不过滤的列表里整列 deptName 为 null，看着像数据缺失。批量 findByIds 一次查完，避免 N+1。
+    // deptName 与 managerName 都必须**无条件**装配。不要沿用上面 deptTree 的「按需加载」：
+    // deptTree 只在按部门筛选时才加载，于是不过滤的列表里整列 deptName 为 null，前端据此把
+    // 「有 deptId 的账号」渲染成「未归属」——那是**错误信息**而不是数据缺失，用户会以为组织关系丢了。
+    // 批量 findByIds 一次查完本页涉及的部门，避免 N+1。
+    Map<Long, String> deptNames =
+        deptNameIndexByIds(result.getRecords().stream().map(Account::getDeptId).toList());
+    // 主管姓名同理：必须无条件装配，否则不过滤的列表里整列 managerName 为 null，看着像数据缺失。
     Map<Long, String> managerNames =
         managerNameIndex(result.getRecords().stream().map(Account::getManagerId).toList());
     List<AccountDTO> dtoList =
@@ -361,9 +372,22 @@ public class AccountApplicationService {
     return visited;
   }
 
-  private static Map<Long, String> deptNameIndex(List<Dept> deptTree) {
+  /**
+   * 批量装配所属部门名：{@code deptId → 部门名}。
+   *
+   * <p>一次 {@code findByIds} 查完本页所有部门，避免逐行 {@code findById} 的 N+1；空集合与 null 元素先滤掉 （SDK 的 IN 查询不接受
+   * null，且未归属部门的账号很常见）。
+   *
+   * <p>返回 {@code HashMap} 而不是 {@code Map.of()}：不可变 Map 的 {@code get(null)} 会抛 NPE，而未归属部门的 账号的
+   * deptId 就是 null，调用方一次 get(null) 就能让整个列表接口 500。
+   */
+  private Map<Long, String> deptNameIndexByIds(List<Long> deptIds) {
+    List<Long> ids = deptIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
     Map<Long, String> index = new HashMap<>();
-    deptTree.forEach(dept -> index.put(dept.getId(), dept.getName()));
+    if (ids.isEmpty()) {
+      return index;
+    }
+    deptRepository.findByIds(ids).forEach(dept -> index.put(dept.getId(), dept.getName()));
     return index;
   }
 

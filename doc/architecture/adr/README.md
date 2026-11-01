@@ -52,6 +52,7 @@
 | [0042](./0042-evidence-idempotency-unique-index.md) | 证据链消费幂等兜底 — `ai_trace_snapshot` 建 `(trace_id, input_hash, deleted)` 唯一索引，把"查重幂等"升级为存储保证（**提议**，L3 待审批；查重已落地但并发窗口未兜，MQ 化前必须补） |
 | [0043](./0043-enum-option-source-layered-truth.md) | 枚举选项源选型 — 四层真源分层 + 字段单向引用（`meta_field.enum_source`）+ 发布物化 + 版本协商 SWR（**已接受 / 已实现**，2026-10-21 终验归档；否决「三方合并 / UI 层自建 / live 直连 / 物理外键」四路备选） |
 | [0044](./0044-approver-id-field-semantics-contract.md) | 审批人字段 `approver_id` 语义契约 — FIELD 专用指定审批人 + 类型 REFERENCE→iam_account + 组织策略改读 `manager_id`/`leader_id`（LINE_MANAGER/DEPT_HEAD/LEVEL_UP）+ expand/contract 兼容 v1/v2 + 自审批上溯（**已接受 / 已实现**，2026-10-31 收口归档；否决「删列 / 共用列 / 当组织真源 / 跳过节点 / 保持 STRING」五路） |
+| [0045](./0045-org-modeling-frontend-backend-integration-defect-closure.md) | 组织建模前后端联调缺陷闭环 — IAM 账号列表「所属部门」恒显未归属 / 部分更新抹掉真实姓名手机号 / 邮箱被静默丢弃 三处**已修**（单测 + 变异验证锁定）；审批人待办摘要恒空（行级 ACL 语义混用）与审批端点授权口径漂移（注解层仍写死旧粗码）**待决**，只出方案不擅动（**部分已实现 / 部分待决**，2026-11-01；附 API 层 32 项 + UI 层 23 项双证据源 E2E 资产与幽灵审批人种子债） |
 
 **非编号附录**
 

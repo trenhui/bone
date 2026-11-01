@@ -188,12 +188,39 @@ public class Account extends TenantAggregateRoot<Long> {
     this.updatedAt = LocalDateTime.now();
   }
 
+  /**
+   * 更新资料字段（真实姓名 / 手机号 / 头像）。
+   *
+   * <p><b>语义：{@code null = 不变更</b>。仓储层是全列 UPDATE，聚合若无条件覆盖 null，任何只提交了部分字段的
+   * 编辑请求（例如只改角色、只改部门）都会把用户的真实姓名 / 手机号**静默抹掉**——用户看到的是「资料莫名丢了」。
+   * 因此这里对每个字段各自判空，与 {@link #changeManager(Long)} / {@code changeDept} 的 null 守卫同构。
+   *
+   * <p>「清空」语义若将来需要，由应用层显式传空串（业务上姓名/手机号本就不可为空，故不提供清空入口）。
+   */
   public void updateProfile(String realName, String phone, String avatarUrl) {
-    this.realName = realName;
-    this.phone = phone;
+    if (realName != null) {
+      this.realName = realName;
+    }
+    if (phone != null) {
+      this.phone = phone;
+    }
     if (avatarUrl != null) {
       this.avatarUrl = avatarUrl;
     }
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  /**
+   * 变更邮箱。
+   *
+   * <p>语义同 {@link #updateProfile}：{@code null = 不变更}。邮箱在库表上没有唯一约束（唯一键是 {@code (tenant_id,
+   * username)}），故与创建路径保持一致——不引入额外唯一性规则，避免「改邮箱被 409 拦住」 这种与创建行为不一致的割裂。
+   */
+  public void changeEmail(Email newEmail) {
+    if (newEmail == null) {
+      return;
+    }
+    this.email = newEmail;
     this.updatedAt = LocalDateTime.now();
   }
 
