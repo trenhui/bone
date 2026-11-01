@@ -4,6 +4,7 @@ import {
   App as AntApp,
   Button,
   Card,
+  Drawer,
   Form,
   Input,
   InputNumber,
@@ -16,6 +17,7 @@ import {
 } from 'antd';
 import {
   CloudUploadOutlined,
+  DeleteOutlined,
   EditOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -32,10 +34,12 @@ import { useConfirmAction } from '../hooks/useConfirmAction';
 import { PERMISSIONS } from '../constants/permissions';
 import {
   CONFIG_STATUS_META,
+  POLICY_CONFIG_STATUS_META,
   claimConfigApi,
   type ConfigStatus,
   type CoverageView,
   type CreateLiabilityReq,
+  type FeeRuleView,
   type LiabilityType,
   type LiabilityView,
   type PlanView,
@@ -102,16 +106,38 @@ function dailyPairProblem(getFieldValue: (name: string) => unknown): string | nu
   return null;
 }
 
+/** 名单字段值归一：库选择器（tags 多选）给数组，批量导入/旧数据给逗号串 —— 统一成逗号串判空。 */
+function codesText(v: unknown): string {
+  if (Array.isArray(v)) {
+    return v.map((c) => String(c).trim()).filter(Boolean).join(',');
+  }
+  return String(v ?? '').trim();
+}
+
+/** 逗号分隔编码串 → 库选择器的数组值（编辑回显用；空串给 undefined 让表单留空）。 */
+function toCodeList(v?: string | null): string[] {
+  return (v ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/** 库选择器下拉选项（value=编码）。 */
+interface LibraryOption {
+  value: string;
+  label: string;
+}
+
 /** 适用限定：开了白/黑名单就必须给名单（空名单 = 全不赔 或 等于不设限，都不是业务意图）。 */
 function limitModePairProblem(getFieldValue: (name: string) => unknown): string | null {
   const mode = String(getFieldValue('limitMode') ?? 'NONE');
   if (mode === '' || mode === 'NONE') {
     return null;
   }
-  const hospitals = String(getFieldValue('limitHospitalCodes') ?? '').trim();
-  const diagnoses = String(getFieldValue('limitDiagnosisCodes') ?? '').trim();
+  const hospitals = codesText(getFieldValue('limitHospitalCodes'));
+  const diagnoses = codesText(getFieldValue('limitDiagnosisCodes'));
   if (!hospitals && !diagnoses) {
-    return '启用了适用限定就必须填医院或病种编码名单，否则白名单等于全不赔、黑名单等于不设限';
+    return '启用了适用限定就必须选医院或病种名单，否则白名单等于全不赔、黑名单等于不设限';
   }
   return null;
 }
@@ -119,12 +145,12 @@ function limitModePairProblem(getFieldValue: (name: string) => unknown): string 
 /** 目录准入：策略与目录编码必须同配或同不配。 */
 function catalogPairProblem(getFieldValue: (name: string) => unknown): string | null {
   const policy = String(getFieldValue('catalogPolicy') ?? 'NONE');
-  const code = String(getFieldValue('catalogCode') ?? '').trim();
+  const code = codesText(getFieldValue('catalogCode'));
   if ((policy === '' || policy === 'NONE') && code) {
-    return '策略为「不查目录」时不该填目录编码——该编码永远不会被查询';
+    return '策略为「不查目录」时不该选药品目录——该编码永远不会被查询';
   }
   if (policy === 'MANDATORY' && !code) {
-    return '策略为「必须查到结论」时必须填目录编码，否则不知道该查哪一版目录';
+    return '策略为「必须查到结论」时必须选药品目录编码，否则不知道该查哪一版目录';
   }
   return null;
 }
@@ -276,6 +302,163 @@ export function LiabilityConfigPage(): ReactElement {
    */
   const watchedLiabilityType = Form.useWatch('liabilityType', form) as LiabilityType | undefined;
   const manualOnly = !!watchedLiabilityType && watchedLiabilityType !== 'REIMBURSEMENT';
+
+  // ===================== 基础目录库（0094）：库选择器数据源 =====================
+
+  /** 目录下拉选项（value=编码，label=`编码 名称`；加载大页一次，列表页维护目录）。 */
+  const [hospitalOptions, setHospitalOptions] = useState<LibraryOption[]>([]);
+  const [diseaseOptions, setDiseaseOptions] = useState<LibraryOption[]>([]);
+  const [drugOptions, setDrugOptions] = useState<LibraryOption[]>([]);
+  const [feeCategoryOptions, setFeeCategoryOptions] = useState<LibraryOption[]>([]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const [hosp, dise, drug, fee] = await Promise.all([
+          claimConfigApi.listHospitals({ page: 1, size: 500 }),
+          claimConfigApi.listDiseases({ page: 1, size: 500 }),
+          claimConfigApi.listDrugs({ page: 1, size: 500 }),
+          claimConfigApi.listAllFeeCategories(),
+        ]);
+        setHospitalOptions(
+          (hosp.data?.records ?? []).map((x) => ({
+            value: x.hospitalCode,
+            label: `${x.hospitalCode} ${x.hospitalName}`,
+          })),
+        );
+        setDiseaseOptions(
+          (dise.data?.records ?? []).map((x) => ({
+            value: x.diseaseCode,
+            label: `${x.diseaseCode} ${x.diseaseName}`,
+          })),
+        );
+        setDrugOptions(
+          (drug.data?.records ?? []).map((x) => ({
+            value: x.drugCode,
+            label: `${x.drugCode} ${x.drugName}`,
+          })),
+        );
+        setFeeCategoryOptions(
+          (fee.data ?? []).map((x) => ({ value: x.feeCode, label: `${x.feeCode} ${x.feeName}` })),
+        );
+      } catch {
+        // 目录加载失败不阻断责任配置：选择器仍可手输编码（tags 模式），与旧行为兼容
+        message.error('基础目录库加载失败，名单选择器降级为手动输入编码');
+      }
+    })();
+    // 只在挂载时加载一次目录快照；目录变更由「基础目录库」页维护
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ===================== 费用类别规则（0094） =====================
+
+  /** 费用规则抽屉的行（feeName 冗余展示，提交时按 FeeRuleItem 提交）。 */
+  interface FeeRuleRow {
+    feeCode: string;
+    feeName: string;
+    payPercent?: string;
+    limitAmount?: string;
+    socialOnly: number;
+  }
+
+  const [feeRuleOpen, setFeeRuleOpen] = useState(false);
+  const [feeRuleTarget, setFeeRuleTarget] = useState<LiabilityView | null>(null);
+  const [feeRuleRows, setFeeRuleRows] = useState<FeeRuleRow[]>([]);
+  const [feeRuleLoading, setFeeRuleLoading] = useState(false);
+  const [feeRuleSaving, setFeeRuleSaving] = useState(false);
+
+  const openFeeRules = async (row: LiabilityView) => {
+    setFeeRuleTarget(row);
+    setFeeRuleRows([]);
+    setFeeRuleOpen(true);
+    setFeeRuleLoading(true);
+    try {
+      const res = await claimConfigApi.listFeeRules(row.liabilityId);
+      setFeeRuleRows(
+        (res.data ?? []).map((r: FeeRuleView) => ({
+          feeCode: r.feeCode,
+          feeName: r.feeName,
+          payPercent: r.payPercent,
+          limitAmount: r.limitAmount,
+          socialOnly: r.socialOnly ?? 0,
+        })),
+      );
+    } catch (err) {
+      message.error(resolveErrorMessage(err, '费用规则加载失败'));
+    } finally {
+      setFeeRuleLoading(false);
+    }
+  };
+
+  const updateFeeRule = (idx: number, patch: Partial<FeeRuleRow>) => {
+    setFeeRuleRows((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  };
+
+  const removeFeeRule = (idx: number) => {
+    setFeeRuleRows((rows) => rows.filter((_, i) => i !== idx));
+  };
+
+  const addFeeRule = () => {
+    setFeeRuleRows((rows) => [...rows, { feeCode: '', feeName: '', socialOnly: 0 }]);
+  };
+
+  const saveFeeRules = async () => {
+    if (!feeRuleTarget) {
+      return;
+    }
+    const rows = feeRuleRows;
+    if (rows.some((r) => !r.feeCode)) {
+      message.error('每行费用规则都必须选择费用类别');
+      return;
+    }
+    const dup = rows.find((r, i) => rows.findIndex((x) => x.feeCode === r.feeCode) !== i);
+    if (dup) {
+      message.error(`费用类别重复: ${dup.feeCode}`);
+      return;
+    }
+    const badPercent = rows.find(
+      (r) => r.payPercent !== undefined && r.payPercent !== '' && Number(r.payPercent) > 100,
+    );
+    if (badPercent) {
+      message.error(`赔付比例必须在 0-100 之间（${badPercent.feeCode}）`);
+      return;
+    }
+    setFeeRuleSaving(true);
+    try {
+      const res = await claimConfigApi.saveFeeRules(feeRuleTarget.liabilityId, {
+        items: rows.map((r) => ({
+          feeCode: r.feeCode,
+          payPercent: r.payPercent || undefined,
+          limitAmount: r.limitAmount || undefined,
+          socialOnly: r.socialOnly,
+        })),
+      });
+      if (res.code !== 200) {
+        message.error(resolveErrorMessage(res, '费用规则保存失败'));
+        return;
+      }
+      message.success('费用规则已保存（全量替换生效）');
+      setFeeRuleRows(
+        (res.data ?? []).map((r: FeeRuleView) => ({
+          feeCode: r.feeCode,
+          feeName: r.feeName,
+          payPercent: r.payPercent,
+          limitAmount: r.limitAmount,
+          socialOnly: r.socialOnly ?? 0,
+        })),
+      );
+    } catch (err) {
+      message.error(resolveErrorMessage(err, '费用规则保存失败'));
+    } finally {
+      setFeeRuleSaving(false);
+    }
+  };
+
+  // ===================== 启用联动（0094） =====================
+
+  /** 当前所选保单；规则开关未启用（INACTIVE/PAUSE）时禁用全部写操作。 */
+  const currentPolicy = policies.find((p) => p.policyNo === policyNo);
+  const policyRuleDisabled = !!currentPolicy && currentPolicy.configStatus !== 'ACTIVE';
 
   const loadPlans = useCallback(async (pn: string) => {
     if (!pn) {
@@ -461,10 +644,11 @@ export function LiabilityConfigPage(): ReactElement {
       dailyLimit: editTarget.dailyLimit,
       dailyLimitBasis: editTarget.dailyLimitBasis,
       limitMode: editTarget.limitMode,
-      limitHospitalCodes: editTarget.limitHospitalCodes,
-      limitDiagnosisCodes: editTarget.limitDiagnosisCodes,
+      // 库选择器（tags 多选）以数组承接；提交时再拼回逗号分隔编码串（理算引擎存量口径）
+      limitHospitalCodes: toCodeList(editTarget.limitHospitalCodes),
+      limitDiagnosisCodes: toCodeList(editTarget.limitDiagnosisCodes),
       catalogPolicy: editTarget.catalogPolicy,
-      catalogCode: editTarget.catalogCode,
+      catalogCode: toCodeList(editTarget.catalogCode),
       socialOnly: editTarget.socialOnly,
       waitingPeriod: editTarget.waitingPeriod,
     };
@@ -506,10 +690,11 @@ export function LiabilityConfigPage(): ReactElement {
         dailyLimit: clean(values.dailyLimit),
         dailyLimitBasis: clean(values.dailyLimitBasis),
         limitMode: clean(values.limitMode),
-        limitHospitalCodes: clean(values.limitHospitalCodes),
-        limitDiagnosisCodes: clean(values.limitDiagnosisCodes),
+        // 名单/目录从库选择器（数组）拼回逗号分隔编码串——理算引擎按编码串读取，向后兼容
+        limitHospitalCodes: codesText(values.limitHospitalCodes) || undefined,
+        limitDiagnosisCodes: codesText(values.limitDiagnosisCodes) || undefined,
         catalogPolicy: clean(values.catalogPolicy),
-        catalogCode: clean(values.catalogCode),
+        catalogCode: codesText(values.catalogCode) || undefined,
         socialOnly:
           values.socialOnly === undefined || values.socialOnly === null
             ? undefined
@@ -651,7 +836,7 @@ export function LiabilityConfigPage(): ReactElement {
     },
     {
       title: '操作',
-      width: 230,
+      width: 290,
       render: (_: unknown, row: LiabilityView) => (
         <Space size={4}>
           <AuthButton
@@ -659,6 +844,7 @@ export function LiabilityConfigPage(): ReactElement {
             type="link"
             size="small"
             icon={<EditOutlined />}
+            disabled={policyRuleDisabled}
             onClick={() => openEdit(row)}
           >
             编辑
@@ -667,8 +853,17 @@ export function LiabilityConfigPage(): ReactElement {
             code={PERMISSIONS.POLICY_WRITE}
             type="link"
             size="small"
+            disabled={policyRuleDisabled}
+            onClick={() => void openFeeRules(row)}
+          >
+            费用规则
+          </AuthButton>
+          <AuthButton
+            code={PERMISSIONS.POLICY_WRITE}
+            type="link"
+            size="small"
             icon={<CloudUploadOutlined />}
-            disabled={row.status === 'ACTIVE'}
+            disabled={row.status === 'ACTIVE' || policyRuleDisabled}
             loading={processingId === row.liabilityId}
             onClick={() => publish(row)}
           >
@@ -728,7 +923,7 @@ export function LiabilityConfigPage(): ReactElement {
             code={PERMISSIONS.POLICY_WRITE}
             type="primary"
             icon={<PlusOutlined />}
-            disabled={!planId}
+            disabled={!planId || policyRuleDisabled}
             onClick={openCreate}
           >
             新建责任
@@ -736,7 +931,7 @@ export function LiabilityConfigPage(): ReactElement {
           <AuthButton
             code={PERMISSIONS.POLICY_WRITE}
             icon={<UploadOutlined />}
-            disabled={!planId}
+            disabled={!planId || policyRuleDisabled}
             onClick={() => setImportOpen(true)}
           >
             批量导入
@@ -753,6 +948,19 @@ export function LiabilityConfigPage(): ReactElement {
             style={{ marginBottom: 12 }}
             message="该方案尚未配置保障（险种）"
             description="责任会挂在方案级，配置与理算不受影响；如需「保单 → 方案 → 保障 → 责任」四级建模，请先在「保单配置 → 责任规则」为该方案新增险种。"
+          />
+        )}
+
+        {policyRuleDisabled && currentPolicy && (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message={`保单「${currentPolicy.policyName ?? policyNo}」的责任规则未启用（当前：${
+              POLICY_CONFIG_STATUS_META[currentPolicy.configStatus]?.label ??
+              currentPolicy.configStatus
+            }）`}
+            description="未启用保单下的责任不参与理赔受理。新建 / 编辑 / 发布已锁定，请先在「保单管理」启用该保单的责任规则。"
           />
         )}
 
@@ -955,11 +1163,31 @@ export function LiabilityConfigPage(): ReactElement {
                   placeholder="NONE"
                 />
               </Form.Item>
-              <Form.Item label="限定医院编码" name="limitHospitalCodes">
-                <Input placeholder="逗号分隔" style={{ width: 220 }} />
+              <Form.Item label="限定医院" name="limitHospitalCodes">
+                <Select
+                  mode="tags"
+                  options={hospitalOptions}
+                  style={{ width: 300 }}
+                  placeholder="从医院库选择，可多选"
+                  tokenSeparators={[',']}
+                  open={hospitalOptions.length > 0}
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                />
               </Form.Item>
-              <Form.Item label="限定病种编码" name="limitDiagnosisCodes">
-                <Input placeholder="逗号分隔" style={{ width: 220 }} />
+              <Form.Item label="限定病种" name="limitDiagnosisCodes">
+                <Select
+                  mode="tags"
+                  options={diseaseOptions}
+                  style={{ width: 300 }}
+                  placeholder="从疾病库选择，可多选"
+                  tokenSeparators={[',']}
+                  open={diseaseOptions.length > 0}
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                />
               </Form.Item>
             </Space>
           </Card>
@@ -983,8 +1211,18 @@ export function LiabilityConfigPage(): ReactElement {
                   placeholder="NONE"
                 />
               </Form.Item>
-              <Form.Item label="目录编码" name="catalogCode">
-                <Input placeholder="如 NATIONAL_2024" style={{ width: 200 }} />
+              <Form.Item label="药品目录" name="catalogCode">
+                <Select
+                  mode="tags"
+                  options={drugOptions}
+                  style={{ width: 300 }}
+                  placeholder="从药品库选择目录编码"
+                  tokenSeparators={[',']}
+                  open={drugOptions.length > 0}
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                />
               </Form.Item>
             </Space>
           </Card>
@@ -1011,6 +1249,101 @@ export function LiabilityConfigPage(): ReactElement {
           </Card>
         </Form>
       </Modal>
+
+      <Drawer
+        title={`费用类别规则 · ${feeRuleTarget?.liabilityCode ?? ''}`}
+        width={760}
+        open={feeRuleOpen}
+        onClose={() => setFeeRuleOpen(false)}
+        destroyOnHidden
+        extra={
+          <Space>
+            <Button icon={<PlusOutlined />} onClick={addFeeRule}>
+              加一行
+            </Button>
+            <Button type="primary" loading={feeRuleSaving} onClick={() => void saveFeeRules()}>
+              保存
+            </Button>
+          </Space>
+        }
+      >
+        {feeRuleTarget && (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="当前版本：规则只存档，不参与理算"
+            description={
+              <>
+                理算引擎的归集维度仍是「医保范围内 / 自付二 / 总自费」，尚未按费用类别拆分，
+                所以这里填的比例与限额<b>不会改变任何一笔赔付</b>。
+                为避免「界面写着手术费 60%、实赔仍按责任主规则」这类静默错赔，
+                责任存在规则时后端会<b>拒绝发布</b>（提示清空后再发布）。
+                规则可先作为预配置留存，引擎支持后自动放开。
+              </>
+            }
+          />
+        )}
+        {feeRuleLoading ? (
+          <Typography.Text type="secondary">加载中…</Typography.Text>
+        ) : (
+          <Space direction="vertical" style={{ width: '100%' }} size={8}>
+            {feeRuleRows.length === 0 && (
+              <Alert
+                type="info"
+                showIcon
+                message="尚未配置费用类别规则"
+                description="理算将按责任主规则对全部费用整体赔付，不做类别级拆分。可在此预配置「药品费 80%、手术费 90%」这类口径，待引擎支持类别级理算后生效。"
+              />
+            )}
+            {feeRuleRows.map((row, idx) => (
+              <Space key={idx} align="baseline" wrap>
+                <Select
+                  value={row.feeCode || undefined}
+                  options={feeCategoryOptions}
+                  style={{ width: 240 }}
+                  placeholder="费用类别"
+                  showSearch
+                  optionFilterProp="label"
+                  onChange={(v) => {
+                    const opt = feeCategoryOptions.find((o) => o.value === v);
+                    updateFeeRule(idx, { feeCode: v, feeName: opt?.label ?? v });
+                  }}
+                />
+                <InputNumber
+                  stringMode
+                  min="0"
+                  max="100"
+                  value={row.payPercent || undefined}
+                  placeholder="比例%"
+                  style={{ width: 110 }}
+                  onChange={(v) => updateFeeRule(idx, { payPercent: v ? String(v) : undefined })}
+                />
+                <InputNumber
+                  stringMode
+                  min="0"
+                  value={row.limitAmount || undefined}
+                  placeholder="限额(0=不限)"
+                  style={{ width: 130 }}
+                  onChange={(v) => updateFeeRule(idx, { limitAmount: v ? String(v) : undefined })}
+                />
+                <Select
+                  value={row.socialOnly}
+                  options={[
+                    { value: 1, label: '仅社保内' },
+                    { value: 0, label: '不限' },
+                  ]}
+                  style={{ width: 110 }}
+                  onChange={(v) => updateFeeRule(idx, { socialOnly: v })}
+                />
+                <Button type="link" danger icon={<DeleteOutlined />} onClick={() => removeFeeRule(idx)}>
+                  删除
+                </Button>
+              </Space>
+            ))}
+          </Space>
+        )}
+      </Drawer>
 
       <BatchImportModal
         open={importOpen}

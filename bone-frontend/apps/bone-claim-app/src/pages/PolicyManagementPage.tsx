@@ -293,6 +293,9 @@ export function PolicyManagementPage(): ReactElement {
           effectiveStart: dayjs(editTarget.effectiveStart),
           effectiveEnd: dayjs(editTarget.effectiveEnd),
           insuredHashes: parseInsuredSnapshot(editTarget.insuredSnapshot).join(','),
+          // 作业开关（0094）：历史数据可能为空，按 NEED 兜底与后端口径一致
+          docClaimApply: editTarget.docClaimApply ?? 'NEED',
+          docClaimNotice: editTarget.docClaimNotice ?? 'NEED',
         }
         : undefined,
     [editTarget],
@@ -320,6 +323,8 @@ export function PolicyManagementPage(): ReactElement {
         waitingPeriod: values.waitingPeriod ?? 0,
         policyVersion: values.policyVersion ?? 'v1',
         insuredSnapshot: JSON.stringify(insured),
+        docClaimApply: values.docClaimApply,
+        docClaimNotice: values.docClaimNotice,
         version: editTarget.version,
       });
       message.success('保单已更新');
@@ -742,6 +747,34 @@ export function PolicyManagementPage(): ReactElement {
               <DatePicker
                 style={{ width: 200 }}
                 disabled={editTarget?.configStatus === 'ACTIVE'}
+              />
+            </Form.Item>
+          </Space>
+          <Space size="middle" wrap style={{ width: '100%' }}>
+            <Form.Item
+              name="docClaimApply"
+              label="理赔申请书"
+              tooltip="作业开关：是否为该保单的赔案自动生成「理赔申请书」单证（部分线上自助理赔渠道无需申请书）"
+              style={{ width: 220 }}
+            >
+              <Select
+                options={[
+                  { value: 'NEED', label: '需生成（NEED）' },
+                  { value: 'NOT_NEED', label: '无需生成（NOT_NEED）' },
+                ]}
+              />
+            </Form.Item>
+            <Form.Item
+              name="docClaimNotice"
+              label="理赔通知单"
+              tooltip="作业开关：是否为该保单的赔案自动生成「理赔通知单」单证"
+              style={{ width: 220 }}
+            >
+              <Select
+                options={[
+                  { value: 'NEED', label: '需生成（NEED）' },
+                  { value: 'NOT_NEED', label: '无需生成（NOT_NEED）' },
+                ]}
               />
             </Form.Item>
           </Space>

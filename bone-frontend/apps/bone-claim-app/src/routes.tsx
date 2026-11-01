@@ -14,6 +14,7 @@ import {
   DeploymentUnitOutlined,
   FileTextOutlined,
   TagsOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 import { ClaimSubmitPage } from './pages/ClaimSubmitPage';
 import { ReviewWorkbenchPage } from './pages/ReviewWorkbenchPage';
@@ -29,6 +30,7 @@ import { PolicyManagementPage } from './pages/PolicyManagementPage';
 import { PlanConfigPage } from './pages/PlanConfigPage';
 import { QuotaConfigPage } from './pages/QuotaConfigPage';
 import { LiabilityConfigPage } from './pages/LiabilityConfigPage';
+import { LibraryPage } from './pages/LibraryPage';
 
 /**
  * 智能理赔 · 路由与页面名的**唯一真源**（单导航架构的前端侧锚点）。
@@ -110,6 +112,7 @@ export const CLAIM_ROUTES: ClaimRoute[] = [
   { path: '/plan', name: '计划配置', icon: <DeploymentUnitOutlined />, element: <PlanConfigPage />, hidden: true },
   { path: '/quota', name: '额度管理', icon: <ClusterOutlined />, element: <QuotaConfigPage /> },
   { path: '/liability', name: '责任配置', icon: <TagsOutlined />, element: <LiabilityConfigPage />, hidden: true },
+  { path: '/library', name: '基础目录库', icon: <DatabaseOutlined />, element: <LibraryPage /> },
 ];
 
 /** shell（qiankun activeRule）侧的路由前缀；菜单 path 形如 `/claim#/<hash>`。 */

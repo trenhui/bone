@@ -31,6 +31,9 @@ export type QuotaChangeType = 'INIT' | 'ADJUST' | 'REMOVE' | 'RESTORE';
 /** 额度维度。 */
 export type QuotaType = 'PERSONAL' | 'LIABILITY_CAP' | 'LIABILITY_PERSONAL';
 
+/** 作业开关：NEED 需生成 / NOT_NEED 无需生成。 */
+export type DocFlag = 'NEED' | 'NOT_NEED';
+
 export interface PolicyView {
   policyNo: string;
   policyName: string;
@@ -48,6 +51,10 @@ export interface PolicyView {
   /** 被保人清单（假名化 ID 的 JSON 数组字符串；不含明文证件）。 */
   insuredSnapshot: string;
   configStatus: PolicyConfigStatus;
+  /** 理赔申请书作业开关：NEED 需生成 / NOT_NEED 无需生成。 */
+  docClaimApply: DocFlag;
+  /** 理赔通知单作业开关：NEED 需生成 / NOT_NEED 无需生成。 */
+  docClaimNotice: DocFlag;
   stale: boolean;
   createdAt: string;
   updatedAt: string;
@@ -176,6 +183,101 @@ export interface PageResult<T> {
   size: number;
 }
 
+// ===================== 基础目录库（0094） =====================
+
+/**
+ * 医院目录项。socialFlag：1=社保定点 / 0=非定点（理算按它过滤"社保内医院"类规则）。
+ * hospitalLevel：一甲/二甲/三甲/三特 等租户自定义等级。
+ */
+export interface HospitalView {
+  id: string;
+  hospitalCode: string;
+  hospitalName: string;
+  hospitalLevel?: string;
+  socialFlag?: number;
+  province?: string;
+  city?: string;
+}
+
+/** 疾病目录项。icdCategory：ICD 大类（如 ICD-10 章节码），供筛选与展示。 */
+export interface DiseaseView {
+  id: string;
+  diseaseCode: string;
+  diseaseName: string;
+  icdCategory?: string;
+}
+
+/** 药品目录项。medicalType：甲类/乙类/丙类 等医保分类。 */
+export interface DrugView {
+  id: string;
+  drugCode: string;
+  drugName: string;
+  socialFlag?: number;
+  medicalType?: string;
+}
+
+/** 费用类别目录项（床位费/检查费/手术费/药品费…；责任费用规则按 feeCode 挂载）。 */
+export interface FeeCategoryView {
+  id: string;
+  feeCode: string;
+  feeName: string;
+  sortNo?: number;
+}
+
+export interface HospitalCommand {
+  code: string;
+  name: string;
+  level?: string;
+  socialFlag?: number;
+  province?: string;
+  city?: string;
+}
+
+export interface DiseaseCommand {
+  code: string;
+  name: string;
+  icdCategory?: string;
+}
+
+export interface DrugCommand {
+  code: string;
+  name: string;
+  socialFlag?: number;
+  medicalType?: string;
+}
+
+export interface FeeCategoryCommand {
+  code: string;
+  name: string;
+  sortNo?: number;
+}
+
+/** 责任费用类别规则（一条责任 × 一个费用类别的赔付口径）。金额为字符串（同 LiabilityView 口径）。 */
+export interface FeeRuleView {
+  id: string;
+  feeCode: string;
+  feeName: string;
+  /** 赔付比例（0-100 的数字文本）。 */
+  payPercent: string;
+  /** 单次限额（空/0 = 不限）。 */
+  limitAmount: string;
+  /** 1=仅社保内 / 0=不限。 */
+  socialOnly: number;
+}
+
+/** 保存费用规则的单条项（全量替换语义）。 */
+export interface FeeRuleItem {
+  feeCode: string;
+  payPercent?: string;
+  limitAmount?: string;
+  socialOnly?: number;
+}
+
+/** 保存费用规则请求：items 即该责任的最终规则集（后端先软删旧行再插入）。 */
+export interface SaveFeeRulesReq {
+  items: FeeRuleItem[];
+}
+
 /** 新建保单请求。 */
 export interface CreatePolicyReq {
   policyNo: string;
@@ -193,6 +295,10 @@ export interface CreatePolicyReq {
   policyVersion?: string;
   /** 被保人清单：假名化 ID 数组（后端接受 JSON 数组字符串或数组）。 */
   insuredSnapshot?: string | string[];
+  /** 理赔申请书作业开关（缺省 NEED）。 */
+  docClaimApply?: DocFlag;
+  /** 理赔通知单作业开关（缺省 NEED）。 */
+  docClaimNotice?: DocFlag;
 }
 
 /** 新建计划请求。 */
@@ -230,6 +336,10 @@ export interface UpdatePolicyReq {
   policyVersion?: string;
   /** 被保人清单：假名化 ID 数组（后端接受 JSON 数组字符串或数组）。 */
   insuredSnapshot?: string | string[];
+  /** 理赔申请书作业开关（不传沿用原值）。 */
+  docClaimApply?: DocFlag;
+  /** 理赔通知单作业开关（不传沿用原值）。 */
+  docClaimNotice?: DocFlag;
   /**
    * 乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）。
    * 后端是 {@code Long}，平台按「Long 全局序列化为 JSON 字符串」下发 ⇒ 用 string 承接，只透传。
@@ -682,6 +792,127 @@ export const claimConfigApi = {
   retireLiability(liabilityId: string): Promise<ApiResponse<LiabilityView>> {
     return client.post<never, ApiResponse<LiabilityView>>(
       `/liabilities/${encodeURIComponent(liabilityId)}/retire`,
+    );
+  },
+
+  // ===================== 基础目录库（0094） =====================
+
+  /** 医院库分页列表（keyword 模糊匹配编码/名称）。 */
+  listHospitals(params: {
+    keyword?: string;
+    page?: number;
+    size?: number;
+  }): Promise<ApiResponse<PageResult<HospitalView>>> {
+    return client.get<never, ApiResponse<PageResult<HospitalView>>>('/libraries/hospitals', {
+      params,
+    });
+  },
+
+  /** 新建医院目录项（同租户同编码唯一）。 */
+  createHospital(req: HospitalCommand): Promise<ApiResponse<HospitalView>> {
+    return client.post<HospitalCommand, ApiResponse<HospitalView>>('/libraries/hospitals', req);
+  },
+
+  /** 编辑医院目录项。 */
+  updateHospital(id: string, req: HospitalCommand): Promise<ApiResponse<HospitalView>> {
+    return client.put<HospitalCommand, ApiResponse<HospitalView>>(
+      `/libraries/hospitals/${encodeURIComponent(id)}`,
+      req,
+    );
+  },
+
+  /** 疾病库分页列表。 */
+  listDiseases(params: {
+    keyword?: string;
+    page?: number;
+    size?: number;
+  }): Promise<ApiResponse<PageResult<DiseaseView>>> {
+    return client.get<never, ApiResponse<PageResult<DiseaseView>>>('/libraries/diseases', {
+      params,
+    });
+  },
+
+  /** 新建疾病目录项。 */
+  createDisease(req: DiseaseCommand): Promise<ApiResponse<DiseaseView>> {
+    return client.post<DiseaseCommand, ApiResponse<DiseaseView>>('/libraries/diseases', req);
+  },
+
+  /** 编辑疾病目录项。 */
+  updateDisease(id: string, req: DiseaseCommand): Promise<ApiResponse<DiseaseView>> {
+    return client.put<DiseaseCommand, ApiResponse<DiseaseView>>(
+      `/libraries/diseases/${encodeURIComponent(id)}`,
+      req,
+    );
+  },
+
+  /** 药品库分页列表。 */
+  listDrugs(params: {
+    keyword?: string;
+    page?: number;
+    size?: number;
+  }): Promise<ApiResponse<PageResult<DrugView>>> {
+    return client.get<never, ApiResponse<PageResult<DrugView>>>('/libraries/drugs', { params });
+  },
+
+  /** 新建药品目录项。 */
+  createDrug(req: DrugCommand): Promise<ApiResponse<DrugView>> {
+    return client.post<DrugCommand, ApiResponse<DrugView>>('/libraries/drugs', req);
+  },
+
+  /** 编辑药品目录项。 */
+  updateDrug(id: string, req: DrugCommand): Promise<ApiResponse<DrugView>> {
+    return client.put<DrugCommand, ApiResponse<DrugView>>(
+      `/libraries/drugs/${encodeURIComponent(id)}`,
+      req,
+    );
+  },
+
+  /** 费用类别分页列表。 */
+  listFeeCategories(params: {
+    keyword?: string;
+    page?: number;
+    size?: number;
+  }): Promise<ApiResponse<PageResult<FeeCategoryView>>> {
+    return client.get<never, ApiResponse<PageResult<FeeCategoryView>>>('/libraries/fee-categories', {
+      params,
+    });
+  },
+
+  /** 费用类别全量列表（按 sortNo 升序；供费用规则下拉等场景）。 */
+  listAllFeeCategories(): Promise<ApiResponse<FeeCategoryView[]>> {
+    return client.get<never, ApiResponse<FeeCategoryView[]>>('/libraries/fee-categories/all');
+  },
+
+  /** 新建费用类别。 */
+  createFeeCategory(req: FeeCategoryCommand): Promise<ApiResponse<FeeCategoryView>> {
+    return client.post<FeeCategoryCommand, ApiResponse<FeeCategoryView>>(
+      '/libraries/fee-categories',
+      req,
+    );
+  },
+
+  /** 编辑费用类别。 */
+  updateFeeCategory(id: string, req: FeeCategoryCommand): Promise<ApiResponse<FeeCategoryView>> {
+    return client.put<FeeCategoryCommand, ApiResponse<FeeCategoryView>>(
+      `/libraries/fee-categories/${encodeURIComponent(id)}`,
+      req,
+    );
+  },
+
+  // ===================== 责任费用类别规则（0094） =====================
+
+  /** 某责任的费用类别规则列表（全量）。 */
+  listFeeRules(liabilityId: string): Promise<ApiResponse<FeeRuleView[]>> {
+    return client.get<never, ApiResponse<FeeRuleView[]>>(
+      `/liabilities/${encodeURIComponent(liabilityId)}/fee-rules`,
+    );
+  },
+
+  /** 保存某责任的费用类别规则（全量替换：先软删旧行再插入新行）。 */
+  saveFeeRules(liabilityId: string, req: SaveFeeRulesReq): Promise<ApiResponse<FeeRuleView[]>> {
+    return client.put<SaveFeeRulesReq, ApiResponse<FeeRuleView[]>>(
+      `/liabilities/${encodeURIComponent(liabilityId)}/fee-rules`,
+      req,
     );
   },
 };
