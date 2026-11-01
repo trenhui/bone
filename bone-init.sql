@@ -2932,6 +2932,8 @@ CREATE TABLE t_claim_policy (
   policy_version      VARCHAR(32)   NOT NULL DEFAULT 'v1' COMMENT '保单版本(配置变更即新增)',
   insured_snapshot    JSON         DEFAULT NULL COMMENT '被保人清单(假名化ID数组; 不存明文证件)',
   config_status       VARCHAR(16)   NOT NULL DEFAULT 'INACTIVE' COMMENT '规则开关: INACTIVE未启用/ACTIVE启用中/PAUSE停用中',
+  doc_claim_apply     VARCHAR(16)   NOT NULL DEFAULT 'NEED' COMMENT '理赔申请书作业开关: NEED需生成/NOT_NEED无需生成(0094)',
+  doc_claim_notice    VARCHAR(16)   NOT NULL DEFAULT 'NEED' COMMENT '理赔通知单作业开关: NEED需生成/NOT_NEED无需生成(0094)',
   stale_flag          TINYINT       NOT NULL DEFAULT 0 COMMENT '快照过期(1=拒新报案)',
   synced_at           DATETIME(3)   NOT NULL COMMENT '最近同步时间',
   tenant_id           BIGINT        NOT NULL COMMENT '租户',
@@ -2986,6 +2988,101 @@ CREATE TABLE t_claim_coverage (
   UNIQUE KEY uk_tenant_plan_coverage (tenant_id, plan_id, coverage_code),
   KEY idx_tenant_plan (tenant_id, plan_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '保障项/险种(计划下)';
+
+-- 13.1 基础目录库（租户级主数据，0094）：医院/疾病/药品/费用类别；
+--      责任适用限定名单（t_adj_liability.limit_*_codes 分隔串）的编码来源即本目录。
+CREATE TABLE t_ref_hospital (
+  id              BIGINT       NOT NULL COMMENT '主键',
+  hospital_code   VARCHAR(32)  NOT NULL COMMENT '医院编码(责任适用限定名单存此编码)',
+  hospital_name   VARCHAR(128) NOT NULL COMMENT '医院名称',
+  hospital_level  VARCHAR(16)  NOT NULL DEFAULT '' COMMENT '医院等级(三甲/三乙/二甲等)',
+  social_flag     TINYINT      NOT NULL DEFAULT 1 COMMENT '医保定点(1是/0否)',
+  province        VARCHAR(32)  NOT NULL DEFAULT '' COMMENT '省',
+  city            VARCHAR(32)  NOT NULL DEFAULT '' COMMENT '市',
+  tenant_id       BIGINT       NOT NULL COMMENT '租户',
+  created_by      BIGINT       DEFAULT NULL COMMENT '创建人ID',
+  created_at      DATETIME(3)  NOT NULL COMMENT '创建时间',
+  updated_by      BIGINT       DEFAULT NULL COMMENT '修改人ID',
+  updated_at      DATETIME(3)  NOT NULL COMMENT '修改时间',
+  version         BIGINT       NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  deleted         TINYINT      NOT NULL DEFAULT 0 COMMENT '软删标记',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_tenant_hospital_code (tenant_id, hospital_code),
+  KEY idx_tenant_name (tenant_id, hospital_name)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '基础目录-医院';
+
+CREATE TABLE t_ref_disease (
+  id              BIGINT       NOT NULL COMMENT '主键',
+  disease_code    VARCHAR(32)  NOT NULL COMMENT '疾病编码(ICD-10, 责任适用限定名单存此编码)',
+  disease_name    VARCHAR(128) NOT NULL COMMENT '疾病名称',
+  icd_category    VARCHAR(16)  NOT NULL DEFAULT '' COMMENT 'ICD类目(如 循环系统I)',
+  tenant_id       BIGINT       NOT NULL COMMENT '租户',
+  created_by      BIGINT       DEFAULT NULL COMMENT '创建人ID',
+  created_at      DATETIME(3)  NOT NULL COMMENT '创建时间',
+  updated_by      BIGINT       DEFAULT NULL COMMENT '修改人ID',
+  updated_at      DATETIME(3)  NOT NULL COMMENT '修改时间',
+  version         BIGINT       NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  deleted         TINYINT      NOT NULL DEFAULT 0 COMMENT '软删标记',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_tenant_disease_code (tenant_id, disease_code),
+  KEY idx_tenant_name (tenant_id, disease_name)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '基础目录-疾病';
+
+CREATE TABLE t_ref_drug (
+  id              BIGINT       NOT NULL COMMENT '主键',
+  drug_code       VARCHAR(32)  NOT NULL COMMENT '药品编码',
+  drug_name       VARCHAR(128) NOT NULL COMMENT '药品名称',
+  social_flag     TINYINT      NOT NULL DEFAULT 1 COMMENT '社保内(1是/0否)',
+  medical_type    VARCHAR(16)  NOT NULL DEFAULT '' COMMENT '医保分类(甲类/乙类/丙类)',
+  tenant_id       BIGINT       NOT NULL COMMENT '租户',
+  created_by      BIGINT       DEFAULT NULL COMMENT '创建人ID',
+  created_at      DATETIME(3)  NOT NULL COMMENT '创建时间',
+  updated_by      BIGINT       DEFAULT NULL COMMENT '修改人ID',
+  updated_at      DATETIME(3)  NOT NULL COMMENT '修改时间',
+  version         BIGINT       NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  deleted         TINYINT      NOT NULL DEFAULT 0 COMMENT '软删标记',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_tenant_drug_code (tenant_id, drug_code),
+  KEY idx_tenant_name (tenant_id, drug_name)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '基础目录-药品';
+
+CREATE TABLE t_ref_fee_category (
+  id              BIGINT      NOT NULL COMMENT '主键',
+  fee_code        VARCHAR(32) NOT NULL COMMENT '费用类别编码(费用明细归集口径)',
+  fee_name        VARCHAR(64) NOT NULL COMMENT '费用类别名称',
+  sort_no         INT         NOT NULL DEFAULT 0 COMMENT '排序号',
+  tenant_id       BIGINT      NOT NULL COMMENT '租户',
+  created_by      BIGINT      DEFAULT NULL COMMENT '创建人ID',
+  created_at      DATETIME(3) NOT NULL COMMENT '创建时间',
+  updated_by      BIGINT      DEFAULT NULL COMMENT '修改人ID',
+  updated_at      DATETIME(3) NOT NULL COMMENT '修改时间',
+  version         BIGINT      NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  deleted         TINYINT     NOT NULL DEFAULT 0 COMMENT '软删标记',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_tenant_fee_code (tenant_id, fee_code),
+  KEY idx_tenant_sort (tenant_id, sort_no)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '基础目录-费用类别';
+
+-- 13.2 责任 × 费用类别 差异化规则（0094，配置态挂 liability_uuid；发布时随公式快照进理算）
+CREATE TABLE t_adj_liability_fee_rule (
+  id              BIGINT        NOT NULL COMMENT '主键',
+  liability_uuid  VARCHAR(64)   NOT NULL COMMENT '责任UUID(配置态, 各版本共享)',
+  fee_code        VARCHAR(32)   NOT NULL COMMENT '费用类别编码(须存在于 t_ref_fee_category)',
+  fee_name        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '费用类别名称(冗余, 免联表展示)',
+  pay_percent     DECIMAL(6,2)  NOT NULL DEFAULT 100 COMMENT '赔付比例(百分数, 0-100)',
+  limit_amount    DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '该类别单次限额(0=不限)',
+  social_only     TINYINT       NOT NULL DEFAULT 1 COMMENT '仅赔社保内(1是/0否)',
+  tenant_id       BIGINT        NOT NULL COMMENT '租户',
+  created_by      BIGINT        DEFAULT NULL COMMENT '创建人ID',
+  created_at      DATETIME(3)   NOT NULL COMMENT '创建时间',
+  updated_by      BIGINT        DEFAULT NULL COMMENT '修改人ID',
+  updated_at      DATETIME(3)   NOT NULL COMMENT '修改时间',
+  version         BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  deleted         TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_tenant_uuid_fee (tenant_id, liability_uuid, fee_code),
+  KEY idx_tenant_uuid (tenant_id, liability_uuid)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '责任费用类别规则(按类别差异化比例/限额)';
 
 CREATE TABLE t_quota_change_log (
   id                BIGINT      NOT NULL COMMENT '主键(分布式ID)',

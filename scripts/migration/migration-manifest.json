@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 99,
+  "executableCount": 100,
   "retired": [],
   "entries": [
     {
@@ -645,6 +645,12 @@
       "file": "0093_drop_claim_plan_liability_menus.sql",
       "kind": "mixed",
       "summary": "把「计划配置」「责任配置」两条叶子菜单软删（deleted=1）：计划挂保单、责任挂计划，独立菜单强迫用户先选菜单再补保单上下文，与「保单管理 →「配置」逐级下钻」的动线相反；0092 曾为闭合探针补上责任配置菜单，本次按 2026-11-01 产品确认改回下钻形态（routes.tsx 同步把 /liability 标 hidden，探针对 hidden 路由豁免菜单全等）。幂等 UPDATE + 终态断言（12 条叶子 / plan+liability 无 deleted=0 残留 / 保单管理与额度管理入口幸存）。"
+    },
+    {
+      "order": 100,
+      "file": "0094_claim_reference_libraries.sql",
+      "kind": "mixed",
+      "summary": "补齐理赔配置的基础目录库底座（对标参考站 policyRuleConfig 差距项）：① 医院/疾病/药品/费用类别四张租户级主数据表（t_ref_hospital/t_ref_disease/t_ref_drug/t_ref_fee_category，UK(tenant,code)）+ 责任×费用类别差异化规则表 t_adj_liability_fee_rule（挂 liability_uuid 配置态，比例/限额/社保内）；② t_claim_policy 补 doc_claim_apply/doc_claim_notice 两个作业开关（NEED/NOT_NEED，默认 NEED 兼容存量）；③ 「基础目录库」侧栏菜单（/claim#/library，叶子 id=目录 id+24、order 15、icon DatabaseOutlined、permission=claim:policy:read）；④ 标准费用类别 10 类种子（租户 0/1001 各一份）+ 医院/疾病/药品示例各 4 条（显式小 ID 94xxxxxx）。责任表单仍存编码分隔串，理算引擎零改动，只换录入方式（前端从库选择器选取）；但费用类别规则当前**不被理算消费**（归集维度只有医保范围内/自付二/总自费），故责任存在规则时发布被 SC_CLAIM_LIABILITY_FEE_RULE_UNSUPPORTED(422) 拒绝，避免静默错赔。动态 DDL 幂等 + 终态断言（五表关键列齐全/作业列就位/种子齐/13 条叶子/order 覆盖 1..11,13,15/名称·权限·icon 不漂移）。bone-init.sql 同提交补齐表与列。"
     }
   ],
   "ordinalConflicts": [

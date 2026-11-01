@@ -68,9 +68,14 @@ class ClaimConfigEditContractTest {
         Instant.parse("2027-01-31T00:00:00Z"),
         45,
         "v2",
-        "[\"h3\"]");
+        "[\"h3\"]",
+        "NOT_NEED",
+        "NEED");
 
     assertThat(p.getPolicyName()).isEqualTo("保单A-改");
+    // 作业配置（0094）随编辑一并改写
+    assertThat(p.getDocClaimApply()).isEqualTo("NOT_NEED");
+    assertThat(p.getDocClaimNotice()).isEqualTo("NEED");
     assertThat(p.getInsurerName()).isEqualTo("保司-改");
     assertThat(p.getProductType()).isEqualTo("INPATIENT");
     assertThat(p.getWaitingPeriod()).isEqualTo(45);
@@ -100,7 +105,9 @@ class ClaimConfigEditContractTest {
                     Instant.parse("2027-01-31T00:00:00Z"),
                     -1,
                     "v2",
-                    "[]"))
+                    "[]",
+                    null,
+                    null))
         .isInstanceOf(DomainException.class);
   }
 
@@ -125,7 +132,9 @@ class ClaimConfigEditContractTest {
                     Instant.parse("2025-12-31T00:00:00Z"),
                     30,
                     "v2",
-                    "[]"))
+                    "[]",
+                    null,
+                    null))
         .isInstanceOf(DomainException.class);
   }
 
@@ -146,7 +155,9 @@ class ClaimConfigEditContractTest {
         p.getEffectiveEnd(),
         30,
         "v2",
-        p.getInsuredSnapshot());
+        p.getInsuredSnapshot(),
+        null,
+        null);
     assertThat(p.getPolicyName()).isEqualTo("改名");
   }
 
@@ -168,7 +179,9 @@ class ClaimConfigEditContractTest {
                     Instant.parse("2026-01-01T00:00:00Z"),
                     30,
                     "v2",
-                    "[]"))
+                    "[]",
+                    null,
+                    null))
         .isInstanceOf(DomainException.class);
   }
 

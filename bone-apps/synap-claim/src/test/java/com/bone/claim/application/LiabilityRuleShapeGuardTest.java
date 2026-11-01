@@ -3,6 +3,8 @@ package com.bone.claim.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,11 +15,17 @@ import com.bone.claim.application.LiabilityConfigApplicationService.LiabilityVie
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.domain.model.liability.AdjLiability;
 import com.bone.claim.domain.model.policy.ClaimCoverage;
+import com.bone.claim.domain.model.policy.ClaimPlan;
+import com.bone.claim.domain.model.policy.ClaimPolicy;
 import com.bone.claim.domain.repository.ClaimCoverageRepository;
+import com.bone.claim.domain.repository.ClaimPlanRepository;
+import com.bone.claim.domain.repository.ClaimPolicyRepository;
 import com.bone.claim.domain.repository.LiabilityRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
+import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -46,11 +54,41 @@ class LiabilityRuleShapeGuardTest {
 
   @Mock LiabilityRepository liabilityRepository;
   @Mock ClaimCoverageRepository claimCoverageRepository;
+  @Mock ClaimPlanRepository claimPlanRepository;
+  @Mock ClaimPolicyRepository claimPolicyRepository;
   @Mock TenantPort tenantPort;
   @Mock DomainEventPublisher domainEventPublisher;
   @Mock QuotaConfigApplicationService quotaConfigApplicationService;
 
   @InjectMocks LiabilityConfigApplicationService service;
+
+  /** 启用联动（0094）的放行夹具：责任写入口会先校验所属保单的责任规则开关为「启用中」。 用 {@code lenient} 以兼容个别不经服务入口的用例。 */
+  @BeforeEach
+  void stubPolicyRuleEnabled() {
+    ClaimPlan plan =
+        ClaimPlan.draft(PLAN_ID, 1L, "POL-1", "PLAN-1", "门诊计划", BigDecimal.valueOf(1000), 15, "v1");
+    lenient().when(claimPlanRepository.findPlanById(anyLong())).thenReturn(plan);
+    ClaimPolicy policy =
+        ClaimPolicy.open(
+            9001L,
+            1L,
+            "POL-1",
+            "保单A",
+            "保司",
+            "分公司",
+            "投保方",
+            "BIZ-1",
+            "OUTPATIENT",
+            "GROUP",
+            Instant.parse("2026-01-01T00:00:00Z"),
+            Instant.parse("2026-12-31T00:00:00Z"),
+            30,
+            "v1",
+            "[\"h1\"]",
+            Instant.parse("2026-01-01T00:00:00Z"));
+    policy.activate("tester");
+    lenient().when(claimPolicyRepository.findByPolicyNo(any())).thenReturn(policy);
+  }
 
   // ===================== 日限额：金额 ↔ 口径必须同配 =====================
 

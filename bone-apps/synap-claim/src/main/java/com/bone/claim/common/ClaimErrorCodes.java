@@ -64,6 +64,19 @@ public final class ClaimErrorCodes {
   public static final String CLAIM_LIABILITY_INVALID_ARGUMENT =
       "SC_CLAIM_LIABILITY_INVALID_ARGUMENT";
 
+  /**
+   * 责任配置了「费用类别规则」但理算引擎尚未消费该维度，禁止发布（fail-closed）。
+   *
+   * <p>为什么拒绝而不是放行：{@code t_adj_liability_fee_rule} 的规则（按费用类别给比例/限额/社保内）由配置面写入， 但 {@code
+   * AdjustmentEngine} 的归集维度只有「医保范围内 / 自付二 / 总自费」，{@code Adjustment#apply} 也只从 {@code AdjLiability}
+   * 装配 {@code LiabilityRule}——规则存在但<b>不参与任何算术</b>。此时放行发布，结果是 "界面显示手术费
+   * 60%、实际按责任统一比例赔付"，属<b>静默错赔</b>，且事后无法从快照看出规则曾被忽略。
+   *
+   * <p>与 Q-04（费用类型级免赔 × 多次分组是否共享额度未定义 ⇒ 拒绝）同一纪律：交互口径未定时不猜。
+   */
+  public static final String CLAIM_LIABILITY_FEE_RULE_UNSUPPORTED =
+      "SC_CLAIM_LIABILITY_FEE_RULE_UNSUPPORTED";
+
   /** 理算记录不存在。 */
   public static final String CLAIM_ADJUST_NOT_FOUND = "SC_CLAIM_ADJUST_NOT_FOUND";
 

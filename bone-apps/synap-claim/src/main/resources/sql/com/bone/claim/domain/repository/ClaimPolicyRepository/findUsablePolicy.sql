@@ -13,6 +13,8 @@ SELECT
        waiting_period,
        policy_version,
        insured_snapshot,
+       doc_claim_apply,
+       doc_claim_notice,
        config_status,
        stale_flag,
        synced_at,

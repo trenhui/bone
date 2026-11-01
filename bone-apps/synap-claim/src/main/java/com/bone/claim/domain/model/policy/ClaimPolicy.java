@@ -55,6 +55,12 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
   /** 保单类型：个人保单（自然人投保，被保人为投保人本人，单人单账户）。 */
   public static final String TYPE_INDIVIDUAL = "INDIVIDUAL";
 
+  /** 作业开关：需生成（默认，兼容存量保单全量出单口径）。 */
+  public static final String DOC_NEED = "NEED";
+
+  /** 作业开关：无需生成。 */
+  public static final String DOC_NOT_NEED = "NOT_NEED";
+
   @Column(name = "policy_no", nullable = false)
   private String policyNo;
 
@@ -103,6 +109,18 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
 
   @Column(name = "config_status")
   private String configStatus;
+
+  /**
+   * 作业开关——理赔申请书（NEED 需生成 / NOT_NEED 无需生成，0094）。
+   *
+   * <p>作业链路是否为该保单出「理赔申请书」：部分保司/渠道走线上自助理赔无需申请书， 全量生成会产生无人提交的死单。历史数据列默认 NEED，与引入前行为一致。
+   */
+  @Column(name = "doc_claim_apply")
+  private String docClaimApply;
+
+  /** 作业开关——理赔通知单（NEED 需生成 / NOT_NEED 无需生成，0094）。 */
+  @Column(name = "doc_claim_notice")
+  private String docClaimNotice;
 
   /** 快照过期标记：1 = 拒新报案（存量同步发现上游已变更时置位）。 */
   @Column(name = "stale_flag")
@@ -156,6 +174,9 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
     this.policyVersion = orEmpty(policyVersion);
     this.insuredSnapshot = insuredSnapshot;
     this.configStatus = configStatus;
+    // 作业开关：新建默认 NEED（存量保单列默认值同为 NEED，口径一致）
+    this.docClaimApply = DOC_NEED;
+    this.docClaimNotice = DOC_NEED;
     this.staleFlag = staleFlag;
     this.syncedAt = syncedAt;
     this.createdAt = syncedAt;
@@ -214,6 +235,12 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
         now);
   }
 
+  /** 新建后设置作业开关（0094）：空值默认 NEED（兼容"建单不传开关"的既有调用方），非法值拒绝。 */
+  public void configureDocs(String docClaimApply, String docClaimNotice) {
+    this.docClaimApply = normalizeDocFlag(docClaimApply, DOC_NEED);
+    this.docClaimNotice = normalizeDocFlag(docClaimNotice, DOC_NEED);
+  }
+
   /** 启用保单责任（INACTIVE/PAUSE → ACTIVE）。 */
   public void activate(String operatorId) {
     if (CONFIG_ACTIVE.equals(configStatus)) {
@@ -260,7 +287,9 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
       Instant effectiveEnd,
       int waitingPeriod,
       String policyVersion,
-      String insuredSnapshot) {
+      String insuredSnapshot,
+      String docClaimApply,
+      String docClaimNotice) {
     if (waitingPeriod < 0) {
       throw new DomainException("等待期不能为负");
     }
@@ -289,6 +318,8 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
     this.waitingPeriod = waitingPeriod;
     this.policyVersion = orEmpty(policyVersion);
     this.insuredSnapshot = insuredSnapshot;
+    this.docClaimApply = normalizeDocFlag(docClaimApply, this.docClaimApply);
+    this.docClaimNotice = normalizeDocFlag(docClaimNotice, this.docClaimNotice);
     this.updatedAt = Instant.now();
   }
 
@@ -349,5 +380,19 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
 
   private static String orEmpty(String value) {
     return value == null ? "" : value;
+  }
+
+  /**
+   * 作业开关归一化：空值沿用原值（编辑"不传 = 不改"），非法值拒绝—— 只有 NEED/NOT_NEED 两个合法口径，静默兜底成 NEED 会让"传了 NOT_NEED
+   * 却没生效"这类配置错误无感通过。
+   */
+  private static String normalizeDocFlag(String value, String fallback) {
+    if (value == null || value.isBlank()) {
+      return fallback;
+    }
+    if (DOC_NEED.equals(value.trim()) || DOC_NOT_NEED.equals(value.trim())) {
+      return value.trim();
+    }
+    throw new DomainException("作业开关只允许 NEED/NOT_NEED: " + value);
   }
 }

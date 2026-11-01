@@ -69,4 +69,19 @@ public final class LiabilityRequests {
                       + "故用显式标志位；为 true 时忽略 coverageId 并清空归属。",
               defaultValue = "false")
           Boolean detachCoverage) {}
+
+  /** 费用类别规则行（责任费用规则抽屉整表提交，金额 String 承载）。 */
+  @Schema(description = "责任费用类别规则行")
+  public record FeeRuleItem(
+      @Schema(description = "费用类别编码（须存在于基础目录库）", requiredMode = Schema.RequiredMode.REQUIRED)
+          @NotBlank(message = "费用类别不能为空")
+          String feeCode,
+      @Schema(description = "赔付比例(百分数, 0-100)") String payPercent,
+      @Schema(description = "该类别单次限额(0=不限)") String limitAmount,
+      @Schema(description = "仅赔社保内(1是0否)") @Min(0) @Max(1) Integer socialOnly) {}
+
+  /** 责任费用规则全量保存请求（整表替换）。 */
+  @Schema(description = "责任费用类别规则保存请求")
+  public record SaveFeeRulesReq(
+      @Schema(description = "规则行（空数组=清空）") java.util.List<FeeRuleItem> items) {}
 }

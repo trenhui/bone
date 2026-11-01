@@ -3,6 +3,7 @@ package com.bone.claim.adapter.web.controller;
 import com.bone.claim.adapter.web.dto.request.LiabilityRequests;
 import com.bone.claim.application.LiabilityConfigApplicationService;
 import com.bone.claim.application.LiabilityConfigApplicationService.LiabilityView;
+import com.bone.claim.application.LiabilityFeeRuleApplicationService.FeeRuleView;
 import com.bone.core.model.ApiResponse;
 import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,6 +39,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class LiabilityConfigController {
 
   private final LiabilityConfigApplicationService liabilityConfigApplicationService;
+  private final com.bone.claim.application.LiabilityFeeRuleApplicationService
+      liabilityFeeRuleApplicationService;
 
   private static final org.slf4j.Logger log =
       org.slf4j.LoggerFactory.getLogger(LiabilityConfigController.class);
@@ -87,6 +90,26 @@ public class LiabilityConfigController {
       @Parameter(description = "计划ID") @PathVariable long planId) {
     return ApiResponse.success(
         HttpStatus.OK.value(), liabilityConfigApplicationService.listByPlan(planId));
+  }
+
+  @Operation(summary = "按责任列出费用类别规则", description = "按责任UUID返回全部费用类别差异化规则（0094）")
+  @PreAuthorize("hasAuthority('claim:policy:read')")
+  @GetMapping("/{liabilityId}/fee-rules")
+  public ApiResponse<List<FeeRuleView>> listFeeRules(
+      @Parameter(description = "责任ID") @PathVariable long liabilityId) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(), liabilityFeeRuleApplicationService.listByLiabilityId(liabilityId));
+  }
+
+  @Operation(summary = "保存责任费用类别规则", description = "全量替换（软删旧行+插新行，同事务原子）；类别编码须存在于基础目录库")
+  @PreAuthorize("hasAuthority('claim:policy:write')")
+  @PutMapping("/{liabilityId}/fee-rules")
+  public ApiResponse<List<FeeRuleView>> saveFeeRules(
+      @Parameter(description = "责任ID") @PathVariable long liabilityId,
+      @Valid @RequestBody LiabilityRequests.SaveFeeRulesReq request) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(),
+        liabilityFeeRuleApplicationService.saveAll(liabilityId, request.items()));
   }
 
   /**

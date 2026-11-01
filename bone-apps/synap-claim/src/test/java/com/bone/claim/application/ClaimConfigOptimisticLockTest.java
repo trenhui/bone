@@ -94,6 +94,8 @@ class ClaimConfigOptimisticLockTest {
         0,
         "v1",
         "[\"h1\"]",
+        null,
+        null,
         submittedVersion);
   }
 

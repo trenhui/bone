@@ -35,7 +35,9 @@ public final class ClaimConfigRequests {
           Instant effectiveEnd,
       @Schema(description = "等待期（天）") @Min(value = 0, message = "等待期不能为负") Integer waitingPeriod,
       @Schema(description = "保单版本") String policyVersion,
-      @Schema(description = "被保人清单（假名化ID数组；不存明文证件）") String insuredSnapshot) {}
+      @Schema(description = "被保人清单（假名化ID数组；不存明文证件）") String insuredSnapshot,
+      @Schema(description = "理赔申请书作业开关：NEED需生成/NOT_NEED无需生成（缺省 NEED）") String docClaimApply,
+      @Schema(description = "理赔通知单作业开关：NEED需生成/NOT_NEED无需生成（缺省 NEED）") String docClaimNotice) {}
 
   /** 新建计划。 */
   @Schema(description = "新建计划请求")
@@ -88,6 +90,8 @@ public final class ClaimConfigRequests {
       @Schema(description = "等待期（天）") @Min(value = 0, message = "等待期不能为负") Integer waitingPeriod,
       @Schema(description = "保单版本") String policyVersion,
       @Schema(description = "被保人清单（假名化ID数组；不存明文证件）") String insuredSnapshot,
+      @Schema(description = "理赔申请书作业开关：NEED需生成/NOT_NEED无需生成（不传沿用原值）") String docClaimApply,
+      @Schema(description = "理赔通知单作业开关：NEED需生成/NOT_NEED无需生成（不传沿用原值）") String docClaimNotice,
       @Schema(description = "乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）") Long version) {}
 
   /** 编辑计划（不改动计划编码与状态）。 */

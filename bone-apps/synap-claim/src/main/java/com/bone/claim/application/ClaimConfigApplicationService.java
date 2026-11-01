@@ -99,6 +99,7 @@ public class ClaimConfigApplicationService {
             command.policyVersion(),
             command.insuredSnapshot(),
             Instant.now());
+    policy.configureDocs(command.docClaimApply(), command.docClaimNotice());
     claimPolicyRepository.save(policy);
     domainEventPublisher.publishFrom(policy);
     return PolicyView.from(policy);
@@ -141,7 +142,9 @@ public class ClaimConfigApplicationService {
         command.effectiveEnd(),
         command.waitingPeriod(),
         command.policyVersion(),
-        command.insuredSnapshot());
+        command.insuredSnapshot(),
+        command.docClaimApply(),
+        command.docClaimNotice());
     claimPolicyRepository.save(policy);
     domainEventPublisher.publishFrom(policy);
     return PolicyView.from(policy);
@@ -330,7 +333,9 @@ public class ClaimConfigApplicationService {
       Instant effectiveEnd,
       int waitingPeriod,
       String policyVersion,
-      String insuredSnapshot) {}
+      String insuredSnapshot,
+      String docClaimApply,
+      String docClaimNotice) {}
 
   /** 新建计划命令。 */
   public record CreatePlan(
@@ -363,6 +368,8 @@ public class ClaimConfigApplicationService {
       int waitingPeriod,
       String policyVersion,
       String insuredSnapshot,
+      String docClaimApply,
+      String docClaimNotice,
       Long version) {}
 
   /** 编辑计划命令（不改动计划编码与状态）。 */
@@ -391,6 +398,8 @@ public class ClaimConfigApplicationService {
       String policyVersion,
       String insuredSnapshot,
       String configStatus,
+      String docClaimApply,
+      String docClaimNotice,
       boolean stale,
       Instant createdAt,
       Instant updatedAt,
@@ -412,10 +421,16 @@ public class ClaimConfigApplicationService {
           p.getPolicyVersion(),
           p.getInsuredSnapshot(),
           p.configStatus(),
+          normalizeDocFlag(p.getDocClaimApply()),
+          normalizeDocFlag(p.getDocClaimNotice()),
           p.isStale(),
           p.getCreatedAt(),
           p.getUpdatedAt(),
           p.getVersion());
+    }
+
+    private static String normalizeDocFlag(String value) {
+      return value == null || value.isBlank() ? ClaimPolicy.DOC_NEED : value;
     }
   }
 
