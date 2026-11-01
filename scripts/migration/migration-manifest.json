@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 97,
+  "executableCount": 98,
   "retired": [],
   "entries": [
     {
@@ -633,6 +633,12 @@
       "file": "0091_synap_claim_decision_triage_reason.sql",
       "kind": "ddl",
       "summary": "claim_decision_execution 补 triage_reason（分诊受控原因码 RISK_HIT/AMOUNT_OVER_LIMIT 等）：此前原因码只存在于决策响应里，读侧（快捷赔付风险闸/核赔工作台/处置归因）无法从库内证明『为什么转人工』。动态 DDL 幂等，NULL=异常中止未经分诊或历史行。"
+    },
+    {
+      "order": 98,
+      "file": "0092_seed_claim_liability_menu.sql",
+      "kind": "mixed",
+      "summary": "给「智能理赔」目录补第 4 条运营配置面叶子菜单「责任配置」（/claim#/liability）：routes.tsx 早已注册该路由，但 0087 只播种了保单管理/计划配置/额度管理三条，侧栏无入口 ⇒ 真实环境该页完全不可达（菜单是唯一入口），且 claim-single-nav-probe 的双向全等断言会判红。口径与 0087 一致：叶子 id=目录 id+23、permission=claim:policy:read（写动作仍由 claim:policy:write 把关）、icon=TagsOutlined、order_no=14；结尾带幂等判定与终态断言（14 条全覆盖 / 名称与 routes.tsx 一致 / permission 与 icon 未漂移）。"
     }
   ],
   "ordinalConflicts": [
