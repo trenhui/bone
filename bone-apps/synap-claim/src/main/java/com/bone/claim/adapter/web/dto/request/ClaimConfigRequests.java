@@ -26,6 +26,7 @@ public final class ClaimConfigRequests {
       @Schema(description = "投保公司") String insureName,
       @Schema(description = "业务主体码") String bizIdentityCode,
       @Schema(description = "产品类型") String productType,
+      @Schema(description = "保单类型：GROUP 团体 / INDIVIDUAL 个人（缺省 GROUP）") String policyType,
       @Schema(description = "生效起", requiredMode = Schema.RequiredMode.REQUIRED)
           @NotNull(message = "生效起不能为空")
           Instant effectiveStart,
@@ -77,6 +78,7 @@ public final class ClaimConfigRequests {
       @Schema(description = "投保公司") String insureName,
       @Schema(description = "业务主体码") String bizIdentityCode,
       @Schema(description = "产品类型") String productType,
+      @Schema(description = "保单类型：GROUP 团体 / INDIVIDUAL 个人（缺省 GROUP）") String policyType,
       @Schema(description = "生效起", requiredMode = Schema.RequiredMode.REQUIRED)
           @NotNull(message = "生效起不能为空")
           Instant effectiveStart,

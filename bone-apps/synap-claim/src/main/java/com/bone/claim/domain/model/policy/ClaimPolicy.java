@@ -49,8 +49,23 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
   /** 规则开关：停用中。 */
   public static final String CONFIG_PAUSE = "PAUSE";
 
+  /** 保单类型：团体保单（企业/机构投保，多名被保人共享保单责任与额度池）。 */
+  public static final String TYPE_GROUP = "GROUP";
+
+  /** 保单类型：个人保单（自然人投保，被保人为投保人本人，单人单账户）。 */
+  public static final String TYPE_INDIVIDUAL = "INDIVIDUAL";
+
   @Column(name = "policy_no", nullable = false)
   private String policyNo;
+
+  /**
+   * 保单类型（{@link #TYPE_GROUP} / {@link #TYPE_INDIVIDUAL}；历史数据为空按 GROUP 处理）。
+   *
+   * <p><b>为什么是分类字段而非两套模型</b>：团单与个单在配置结构上同构（保单→计划→险种→责任、 额度账户按被保人开立），差异只在业务语义与入口交互（团单批量导入被保人、个单单人）。
+   * 拆两套聚合会把承保期间校验、规则开关、额度年度裁决等域规则复制两份——分类字段 + 场景化 交互即可覆盖，且后续按"团单为主"演进不会牵动个单存量数据。
+   */
+  @Column(name = "policy_type")
+  private String policyType;
 
   @Column(name = "policy_name")
   private String policyName;
@@ -116,6 +131,7 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
       String insureName,
       String bizIdentityCode,
       String productType,
+      String policyType,
       Instant effectiveStart,
       Instant effectiveEnd,
       int waitingPeriod,
@@ -127,6 +143,7 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
     setId(id);
     setTenantId(tenantId);
     this.policyNo = policyNo;
+    this.policyType = policyType;
     this.policyName = orEmpty(policyName);
     this.insurerName = orEmpty(insurerName);
     this.branchName = orEmpty(branchName);
@@ -156,6 +173,7 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
       String insureName,
       String bizIdentityCode,
       String productType,
+      String policyType,
       Instant effectiveStart,
       Instant effectiveEnd,
       int waitingPeriod,
@@ -185,6 +203,7 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
         insureName,
         bizIdentityCode,
         productType,
+        policyType == null || policyType.isBlank() ? TYPE_GROUP : policyType.trim(),
         effectiveStart,
         effectiveEnd,
         waitingPeriod,
@@ -236,6 +255,7 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
       String insureName,
       String bizIdentityCode,
       String productType,
+      String policyType,
       Instant effectiveStart,
       Instant effectiveEnd,
       int waitingPeriod,
@@ -262,6 +282,8 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
     this.insureName = orEmpty(insureName);
     this.bizIdentityCode = orEmpty(bizIdentityCode);
     this.productType = orEmpty(productType);
+    // 保单类型允许改（分类字段，无下游外键引用；历史空值编辑后补全）
+    this.policyType = policyType == null || policyType.isBlank() ? TYPE_GROUP : policyType.trim();
     this.effectiveStart = effectiveStart;
     this.effectiveEnd = effectiveEnd;
     this.waitingPeriod = waitingPeriod;

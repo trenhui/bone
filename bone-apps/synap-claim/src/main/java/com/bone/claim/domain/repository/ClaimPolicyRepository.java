@@ -61,6 +61,18 @@ public interface ClaimPolicyRepository extends Repository<ClaimPolicy, Long> {
   }
 
   /**
+   * 同筛选条件的全量列表（CSV 导出用，不翻页）。
+   *
+   * <p>与 {@link #findPolicyPage} 共用 {@link #policyListCriteria}：导出必须与列表页所见一致 （同一套关键字/状态条件），否则"页面 3
+   * 条、导出 300 条"。
+   */
+  default List<ClaimPolicy> findPolicyAll(Long tenantId, String keyword, String configStatus) {
+    Criteria<ClaimPolicy> criteria = policyListCriteria(tenantId, keyword, configStatus);
+    criteria.orderByDesc(ClaimPolicy::getCreatedAt);
+    return findByCriteria(criteria);
+  }
+
+  /**
    * 列表查询条件（list 与 count 共用，避免两端口径漂移）。
    *
    * <p><b>关键字必须跨两列 OR</b>：前端搜索框 placeholder 承诺「保单号 / 名称」两维搜索，API 契约同样写明 「保单号/名称模糊匹配」。此前实现只对 {@code

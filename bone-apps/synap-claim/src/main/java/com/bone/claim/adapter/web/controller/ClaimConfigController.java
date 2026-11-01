@@ -1,5 +1,6 @@
 package com.bone.claim.adapter.web.controller;
 
+import com.bone.claim.adapter.web.CsvExport;
 import com.bone.claim.adapter.web.dto.request.ClaimConfigRequests;
 import com.bone.claim.application.ClaimConfigApplicationService;
 import com.bone.claim.application.ClaimConfigApplicationService.CoverageView;
@@ -14,6 +15,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -71,6 +73,45 @@ public class ClaimConfigController {
         HttpStatus.OK.value(), claimConfigApplicationService.getPolicy(policyNo));
   }
 
+  @Operation(
+      summary = "导出保单（CSV）",
+      description = "按与列表一致的关键字/规则开关条件导出全量（不分页）；UTF-8 BOM，Excel 直开不乱码")
+  @PreAuthorize("hasAuthority('claim:policy:read')")
+  @GetMapping(value = "/policies/export", produces = "text/csv;charset=UTF-8")
+  public ResponseEntity<byte[]> exportPolicies(
+      @Parameter(description = "保单号/名称关键字") String keyword,
+      @Parameter(description = "规则开关：INACTIVE/ACTIVE/PAUSE") String configStatus) {
+    List<PolicyView> records = claimConfigApplicationService.exportPolicies(keyword, configStatus);
+    List<String[]> rows =
+        records.stream()
+            .map(
+                r ->
+                    new String[] {
+                      r.policyNo(),
+                      r.policyName(),
+                      r.insurerName(),
+                      r.branchName(),
+                      r.insureName(),
+                      r.bizIdentityCode(),
+                      r.productType(),
+                      r.policyType(),
+                      String.valueOf(r.effectiveStart()),
+                      String.valueOf(r.effectiveEnd()),
+                      String.valueOf(r.waitingPeriod()),
+                      r.policyVersion(),
+                      r.configStatus(),
+                      String.valueOf(r.updatedAt())
+                    })
+            .toList();
+    return CsvExport.response(
+        "policies",
+        new String[] {
+          "保单号", "保单名称", "保险公司", "保险分公司", "投保公司", "业务主体码", "产品类型", "保单类型", "生效起", "生效止", "等待期(天)",
+          "保单版本", "规则开关", "更新时间"
+        },
+        rows);
+  }
+
   @Operation(summary = "新建保单", description = "新建后规则开关为「未启用」，需另行启用才接受报案")
   @PreAuthorize("hasAuthority('claim:policy:write')")
   @ResponseStatus(HttpStatus.CREATED)
@@ -88,6 +129,7 @@ public class ClaimConfigController {
                 request.insureName(),
                 request.bizIdentityCode(),
                 request.productType(),
+                request.policyType(),
                 request.effectiveStart(),
                 request.effectiveEnd(),
                 request.waitingPeriod() == null ? 0 : request.waitingPeriod(),
@@ -130,6 +172,7 @@ public class ClaimConfigController {
                 request.insureName(),
                 request.bizIdentityCode(),
                 request.productType(),
+                request.policyType(),
                 request.effectiveStart(),
                 request.effectiveEnd(),
                 request.waitingPeriod() == null ? 0 : request.waitingPeriod(),
@@ -147,6 +190,39 @@ public class ClaimConfigController {
       @Parameter(description = "保单号") @ModelAttribute("policyNo") String policyNo) {
     return ApiResponse.success(
         HttpStatus.OK.value(), claimConfigApplicationService.listPlans(policyNo));
+  }
+
+  @Operation(summary = "导出计划（CSV）", description = "导出某保单下的全部计划（不分页）；UTF-8 BOM，Excel 直开不乱码")
+  @PreAuthorize("hasAuthority('claim:policy:read')")
+  @GetMapping(value = "/plans/export", produces = "text/csv;charset=UTF-8")
+  public ResponseEntity<byte[]> exportPlans(
+      @Parameter(description = "保单号") @ModelAttribute("policyNo") String policyNo) {
+    List<PlanView> records = claimConfigApplicationService.listPlans(policyNo);
+    List<String[]> rows =
+        records.stream()
+            .map(
+                r ->
+                    new String[] {
+                      r.planId(),
+                      r.policyNo(),
+                      r.planCode(),
+                      r.planName(),
+                      money(r.planLimit()),
+                      String.valueOf(r.waitingPeriod()),
+                      r.versionNo(),
+                      r.status(),
+                      String.valueOf(r.updatedAt())
+                    })
+            .toList();
+    return CsvExport.response(
+        "plans",
+        new String[] {"计划ID", "保单号", "计划编码", "计划名称", "计划额度", "等待期(天)", "计划版本", "状态", "更新时间"},
+        rows);
+  }
+
+  /** 金额统一普通计数法（BigDecimal 直接 toString 可能是 {@code 1E+2} 科学计数，Excel 当文本）。 */
+  private static String money(java.math.BigDecimal value) {
+    return value == null ? "0.00" : value.toPlainString();
   }
 
   @Operation(summary = "新建计划")

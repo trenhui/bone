@@ -405,6 +405,8 @@ class AdjustmentSemanticGapInventoryTest {
             "L-CAT",
             "v1",
             7L,
+            // coverageId：本用例考察目录准入剔除，与险种归属无关，显式给 null（方案级责任）
+            null,
             "R01",
             "REIMBURSEMENT",
             new BigDecimal("100"),

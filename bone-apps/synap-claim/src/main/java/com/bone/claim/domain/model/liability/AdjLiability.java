@@ -4,6 +4,7 @@ import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
+import com.bone.metadata.sdk.domain.annotation.Version;
 import java.math.BigDecimal;
 import lombok.Getter;
 
@@ -30,6 +31,10 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
 
   @Column(name = "plan_id")
   private Long planId;
+
+  /** 所属保障/险种 ID（四级建模：保单→方案→保障→责任）。 */
+  @Column(name = "coverage_id")
+  private Long coverageId;
 
   /** 责任编码（R01…）。 */
   @Column(name = "liability_code")
@@ -103,6 +108,16 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
   /** 状态：DRAFT/GRAY/ACTIVE/RETIRED。 */
   @Column(name = "status")
   private String status;
+
+  /** 审计时间（框架注入列 NOT NULL 无默认值，必须在工厂里显式赋值，见 ClaimPlan 同约定）。 */
+  @Column(name = "created_at", nullable = false)
+  private java.time.Instant createdAt;
+
+  @Column(name = "updated_at", nullable = false)
+  private java.time.Instant updatedAt;
+
+  /** SDK 乐观锁版本（并发编辑/发布/下线冲突检测，领域层不手写）。所有兄弟聚合均有此列。 */
+  @Version private Long version;
 
   /**
    * 责任配置工厂（运营/迁移导入入口）。
@@ -183,10 +198,9 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
   }
 
   /**
-   * 含日限额（Q-05）的完整责任配置工厂。
+   * 含日限额（Q-05）的责任配置工厂（无保障归属，兼容历史数据，{@code coverageId} 置 null）。
    *
-   * <p>日限额必须「金额 + 口径」一起给：只给金额无法判定"同日"是哪一天（发票日期 or 赔案受理日）， 装载期即被 {@code LiabilityRule#validate()}
-   * 拒绝——这是 V1 §7.4 两档口径落地的配置入口。
+   * <p>本重载不接收 {@code coverageId}，统一按 null 归并到最终构造器， 责任不强制归属某个保障（历史未分级数据允许挂在计划级）。
    */
   public static AdjLiability of(
       Long id,
@@ -206,15 +220,62 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
       Integer socialOnly,
       Integer waitingPeriod,
       String status) {
+    return of(
+        id,
+        tenantId,
+        liabilityUuid,
+        liabilityVersion,
+        planId,
+        null,
+        liabilityCode,
+        liabilityType,
+        payPercent,
+        liabilityDeduct,
+        liabilityLimit,
+        invoiceDeduct,
+        adjustDeduct,
+        dailyLimit,
+        dailyLimitBasis,
+        socialOnly,
+        waitingPeriod,
+        status);
+  }
+
+  /**
+   * 含保障关联（四级建模：保单→方案→保障→责任）的<b>最终落地构造器</b>。
+   *
+   * <p>其余 {@code of(...)} 重载（含/不含日限额、限定、目录）都把参数收敛到此方法； 责任归属到某个 {@code coverageId}（保障/险种），缺失时置
+   * null（DDL 列 {@code coverage_id DEFAULT NULL}）， 表示该责任挂在计划级（兼容历史未分级数据）。
+   */
+  public static AdjLiability of(
+      Long id,
+      Long tenantId,
+      String liabilityUuid,
+      String liabilityVersion,
+      Long planId,
+      Long coverageId,
+      String liabilityCode,
+      String liabilityType,
+      java.math.BigDecimal payPercent,
+      java.math.BigDecimal liabilityDeduct,
+      java.math.BigDecimal liabilityLimit,
+      java.math.BigDecimal invoiceDeduct,
+      java.math.BigDecimal adjustDeduct,
+      java.math.BigDecimal dailyLimit,
+      String dailyLimitBasis,
+      Integer socialOnly,
+      Integer waitingPeriod,
+      String status) {
     AdjLiability liability = new AdjLiability();
     liability.setId(id);
     liability.setTenantId(tenantId);
     liability.liabilityUuid = liabilityUuid;
     liability.liabilityVersion = liabilityVersion;
     liability.planId = planId;
+    liability.coverageId = coverageId;
     liability.liabilityCode = liabilityCode == null ? "" : liabilityCode;
     liability.liabilityType = liabilityType == null ? "REIMBURSEMENT" : liabilityType;
-    liability.payPercent = payPercent == null ? java.math.BigDecimal.ZERO : payPercent;
+    liability.payPercent = payPercent == null ? BigDecimal.ZERO : payPercent;
     liability.liabilityDeduct =
         liabilityDeduct == null ? java.math.BigDecimal.ZERO : liabilityDeduct;
     liability.liabilityLimit = liabilityLimit == null ? java.math.BigDecimal.ZERO : liabilityLimit;
@@ -229,6 +290,9 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
     liability.socialOnly = socialOnly == null ? 1 : socialOnly;
     liability.waitingPeriod = waitingPeriod == null ? 0 : waitingPeriod;
     liability.status = status == null ? "DRAFT" : status;
+    java.time.Instant now = java.time.Instant.now();
+    liability.createdAt = now;
+    liability.updatedAt = now;
     return liability;
   }
 
@@ -303,6 +367,7 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
       String liabilityUuid,
       String liabilityVersion,
       Long planId,
+      Long coverageId,
       String liabilityCode,
       String liabilityType,
       java.math.BigDecimal payPercent,
@@ -327,6 +392,7 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
             liabilityUuid,
             liabilityVersion,
             planId,
+            coverageId,
             liabilityCode,
             liabilityType,
             payPercent,
@@ -336,9 +402,6 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
             adjustDeduct,
             dailyLimit,
             dailyLimitBasis,
-            limitMode,
-            limitHospitalCodes,
-            limitDiagnosisCodes,
             socialOnly,
             waitingPeriod,
             status);
@@ -441,5 +504,50 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
   /** 下线责任（ACTIVE/DRAFT → RETIRED）：不再参与理算，历史版本保留可查。 */
   public void retire() {
     this.status = "RETIRED";
+  }
+
+  /**
+   * 原地应用编辑（DRAFT 草稿可改；ACTIVE 走新版本由服务层负责）。
+   *
+   * <p>只改参数、不动 id/uuid/版本/状态，并保留 SDK 管理的 {@link #version}（乐观锁）， 使并发编辑在 flush 时抛 {@code
+   * OptimisticLockingFailureException} 而非静默覆盖。
+   */
+  public void applyEdit(
+      String liabilityCode,
+      String liabilityType,
+      java.math.BigDecimal payPercent,
+      java.math.BigDecimal liabilityDeduct,
+      java.math.BigDecimal liabilityLimit,
+      java.math.BigDecimal invoiceDeduct,
+      java.math.BigDecimal adjustDeduct,
+      java.math.BigDecimal dailyLimit,
+      String dailyLimitBasis,
+      String limitMode,
+      String limitHospitalCodes,
+      String limitDiagnosisCodes,
+      String catalogPolicy,
+      String catalogCode,
+      Integer socialOnly,
+      Integer waitingPeriod,
+      Long coverageId) {
+    this.liabilityCode = liabilityCode == null ? "" : liabilityCode;
+    this.liabilityType = liabilityType == null ? "REIMBURSEMENT" : liabilityType;
+    this.payPercent = payPercent == null ? BigDecimal.ZERO : payPercent;
+    this.liabilityDeduct = liabilityDeduct == null ? java.math.BigDecimal.ZERO : liabilityDeduct;
+    this.liabilityLimit = liabilityLimit == null ? java.math.BigDecimal.ZERO : liabilityLimit;
+    this.invoiceDeduct = invoiceDeduct == null ? java.math.BigDecimal.ZERO : invoiceDeduct;
+    this.adjustDeduct = adjustDeduct == null ? java.math.BigDecimal.ZERO : adjustDeduct;
+    this.dailyLimit = dailyLimit == null ? java.math.BigDecimal.ZERO : dailyLimit;
+    this.dailyLimitBasis =
+        dailyLimitBasis == null || dailyLimitBasis.isBlank() ? "NONE" : dailyLimitBasis;
+    this.limitMode = limitMode == null || limitMode.isBlank() ? "NONE" : limitMode;
+    this.limitHospitalCodes = limitHospitalCodes == null ? "" : limitHospitalCodes;
+    this.limitDiagnosisCodes = limitDiagnosisCodes == null ? "" : limitDiagnosisCodes;
+    this.catalogPolicy = catalogPolicy == null || catalogPolicy.isBlank() ? "NONE" : catalogPolicy;
+    this.catalogCode = catalogCode == null ? "" : catalogCode;
+    this.socialOnly = socialOnly == null ? 1 : socialOnly;
+    this.waitingPeriod = waitingPeriod == null ? 0 : waitingPeriod;
+    this.coverageId = coverageId;
+    this.updatedAt = java.time.Instant.now();
   }
 }

@@ -4,6 +4,7 @@ import com.bone.claim.adapter.web.dto.request.LiabilityRequests;
 import com.bone.claim.application.LiabilityConfigApplicationService;
 import com.bone.claim.application.LiabilityConfigApplicationService.LiabilityView;
 import com.bone.core.model.ApiResponse;
+import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,7 +12,9 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +38,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class LiabilityConfigController {
 
   private final LiabilityConfigApplicationService liabilityConfigApplicationService;
+
+  private static final org.slf4j.Logger log =
+      org.slf4j.LoggerFactory.getLogger(LiabilityConfigController.class);
 
   @Operation(summary = "新建责任", description = "草稿态新建一条责任配置（版本 v1）")
   @PreAuthorize("hasAuthority('claim:policy:write')")
@@ -81,5 +87,20 @@ public class LiabilityConfigController {
       @Parameter(description = "计划ID") @PathVariable long planId) {
     return ApiResponse.success(
         HttpStatus.OK.value(), liabilityConfigApplicationService.listByPlan(planId));
+  }
+
+  /**
+   * 乐观锁冲突（并发编辑/发布/下线同一责任）：返回 409 让用户刷新列表后重试，而非冒泡成 500 系统异常。
+   *
+   * <p>与全局 {@code IdempotentException → 409} 同语义：这是可纠正的并发冲突，不是服务端故障。
+   * 版本化写路径（publish/retire/update）已通过 {@code @Version} 真正启用乐观锁，冲突会抛 {@link
+   * OptimisticLockingFailureException}。
+   */
+  @ExceptionHandler(OptimisticLockingFailureException.class)
+  public ResponseEntity<ApiResponse<?>> optimisticLockConflict(
+      OptimisticLockingFailureException ex) {
+    log.warn("[LiabilityConfigController] 责任配置并发冲突(乐观锁): {}", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.CONFLICT.value())
+        .body(ApiResponse.error(HttpStatus.CONFLICT.value(), "数据已被他人修改，请刷新列表后重试"));
   }
 }

@@ -54,6 +54,20 @@ public class ClaimConfigApplicationService {
     return PageResult.of(records.stream().map(PolicyView::from).toList(), total, page, size);
   }
 
+  /**
+   * 同筛选条件的全量保单（CSV 导出用，不翻页）。
+   *
+   * <p>与 {@link #listPolicies} 共用 {@code policyListCriteria}：导出必须与列表页所见一致， 否则"页面 3 条、导出 300
+   * 条"会让运营对数据失去信任。
+   */
+  @Transactional(readOnly = true)
+  public List<PolicyView> exportPolicies(String keyword, String configStatus) {
+    long tenantId = tenantPort.currentTenantId();
+    return claimPolicyRepository.findPolicyAll(tenantId, keyword, configStatus).stream()
+        .map(PolicyView::from)
+        .toList();
+  }
+
   /** 保单详情。 */
   @Transactional(readOnly = true)
   public PolicyView getPolicy(String policyNo) {
@@ -78,6 +92,7 @@ public class ClaimConfigApplicationService {
             command.insureName(),
             command.bizIdentityCode(),
             command.productType(),
+            command.policyType(),
             command.effectiveStart(),
             command.effectiveEnd(),
             command.waitingPeriod(),
@@ -121,6 +136,7 @@ public class ClaimConfigApplicationService {
         command.insureName(),
         command.bizIdentityCode(),
         command.productType(),
+        command.policyType(),
         command.effectiveStart(),
         command.effectiveEnd(),
         command.waitingPeriod(),
@@ -309,6 +325,7 @@ public class ClaimConfigApplicationService {
       String insureName,
       String bizIdentityCode,
       String productType,
+      String policyType,
       Instant effectiveStart,
       Instant effectiveEnd,
       int waitingPeriod,
@@ -340,6 +357,7 @@ public class ClaimConfigApplicationService {
       String insureName,
       String bizIdentityCode,
       String productType,
+      String policyType,
       Instant effectiveStart,
       Instant effectiveEnd,
       int waitingPeriod,
@@ -366,6 +384,7 @@ public class ClaimConfigApplicationService {
       String insureName,
       String bizIdentityCode,
       String productType,
+      String policyType,
       Instant effectiveStart,
       Instant effectiveEnd,
       int waitingPeriod,
@@ -386,6 +405,7 @@ public class ClaimConfigApplicationService {
           p.getInsureName(),
           p.getBizIdentityCode(),
           p.getProductType(),
+          p.getPolicyType(),
           p.getEffectiveStart(),
           p.getEffectiveEnd(),
           p.waitingPeriodDays(),

@@ -3,6 +3,7 @@ SELECT
        liability_uuid,
        liability_version,
        plan_id,
+       coverage_id,
        liability_code,
        liability_type,
        pay_percent,
@@ -26,7 +27,6 @@ SELECT
        version,
        deleted
 FROM t_adj_liability
-WHERE id = :id
-  AND deleted = 0 AND
+WHERE id = :id AND
   /*bone:tenant*/
-LIMIT 1
+  AND deleted = 0

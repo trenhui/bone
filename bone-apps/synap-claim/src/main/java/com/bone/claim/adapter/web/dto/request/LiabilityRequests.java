@@ -1,6 +1,7 @@
 package com.bone.claim.adapter.web.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -21,6 +22,7 @@ public final class LiabilityRequests {
       @Schema(description = "所属计划ID", requiredMode = Schema.RequiredMode.REQUIRED)
           @NotNull(message = "计划ID不能为空")
           Long planId,
+      @Schema(description = "所属保障/险种ID（四级建模：保单→方案→保障→责任）") Long coverageId,
       @Schema(description = "责任编码(R01…)", requiredMode = Schema.RequiredMode.REQUIRED)
           @NotBlank(message = "责任编码不能为空")
           String liabilityCode,
@@ -37,7 +39,7 @@ public final class LiabilityRequests {
       @Schema(description = "限定病种编码名单(分隔串)") String limitDiagnosisCodes,
       @Schema(description = "目录准入策略 NONE/MANDATORY") String catalogPolicy,
       @Schema(description = "目录编码(如 NATIONAL_2024)") String catalogCode,
-      @Schema(description = "是否仅赔社保内(1是0否)") Integer socialOnly,
+      @Schema(description = "是否仅赔社保内(1是0否)") @Min(0) @Max(1) Integer socialOnly,
       @Schema(description = "等待期(天)") @Min(value = 0, message = "等待期不能为负") Integer waitingPeriod,
       @Schema(description = "初始状态 DRAFT/ACTIVE/RETIRED") String status) {}
 
@@ -45,6 +47,7 @@ public final class LiabilityRequests {
   @Schema(description = "编辑责任请求")
   public record UpdateLiabilityReq(
       String liabilityCode,
+      Long coverageId,
       String liabilityType,
       String payPercent,
       String liabilityDeduct,
@@ -58,6 +61,12 @@ public final class LiabilityRequests {
       String limitDiagnosisCodes,
       String catalogPolicy,
       String catalogCode,
-      Integer socialOnly,
-      Integer waitingPeriod) {}
+      @Min(0) @Max(1) Integer socialOnly,
+      Integer waitingPeriod,
+      @Schema(
+              description =
+                  "解除保障归属（把责任退回方案级）。JSON 里 coverageId 传 null 与\"不传\"无法区分，"
+                      + "故用显式标志位；为 true 时忽略 coverageId 并清空归属。",
+              defaultValue = "false")
+          Boolean detachCoverage) {}
 }

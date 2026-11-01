@@ -10,6 +10,7 @@ import com.bone.claim.domain.repository.ClaimPlanRepository;
 import com.bone.claim.domain.repository.QuotaAccountRepository;
 import com.bone.claim.domain.repository.QuotaChangeLogRepository;
 import com.bone.core.annotation.NoDomainEvent;
+import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -58,10 +59,37 @@ public class QuotaConfigApplicationService {
   private final ClaimPlanRepository claimPlanRepository;
   private final TenantPort tenantPort;
 
-  /** 某保单下的额度账户列表（配置面）。 */
+  /**
+   * 某保单下的额度账户（配置面列表：分页 + 被保人关键字 / 维度 / 减人状态筛选）。
+   *
+   * <p><b>为什么分页而不是全量返回</b>：团体险单个保单下可有成百上千个被保人账户（每人 × 每计划 × 每年度）， 全量返回会让列表页一次拉几 MB、渲染卡死；分页 +
+   * 服务端筛选后，运营按人搜也无需把全表拉到浏览器再过滤。
+   */
   @Transactional(readOnly = true)
-  public List<QuotaAccountView> listByPolicy(String policyNo) {
-    return quotaAccountRepository.findAccountsByPolicyNo(policyNo).stream()
+  public PageResult<QuotaAccountView> listByPolicy(
+      String policyNo, String keyword, String quotaType, Boolean removed, int page, int size) {
+    long tenantId = tenantPort.currentTenantId();
+    List<QuotaAccount> records =
+        quotaAccountRepository.findAccountsPage(
+            tenantId, policyNo, keyword, quotaType, removed, page, size);
+    long total =
+        quotaAccountRepository.countAccountsPage(tenantId, policyNo, keyword, quotaType, removed);
+    return PageResult.of(records.stream().map(QuotaAccountView::from).toList(), total, page, size);
+  }
+
+  /**
+   * 同筛选条件的全量账户（CSV 导出用）。
+   *
+   * <p>与 {@link #listByPolicy} 共用 {@code accountListCriteria}：导出必须与列表页所见一致， 否则"页面 3 条、导出 300
+   * 条"会让运营对数据失去信任。
+   */
+  @Transactional(readOnly = true)
+  public List<QuotaAccountView> exportByPolicy(
+      String policyNo, String keyword, String quotaType, Boolean removed) {
+    long tenantId = tenantPort.currentTenantId();
+    return quotaAccountRepository
+        .findAccountsFiltered(tenantId, policyNo, keyword, quotaType, removed)
+        .stream()
         .map(QuotaAccountView::from)
         .toList();
   }
@@ -73,6 +101,117 @@ public class QuotaConfigApplicationService {
         .map(QuotaAccountView::from)
         .toList();
   }
+
+  /**
+   * 公账汇总：把某保单下所有 LIABILITY_CAP（公账/责任额度池）账户按责任 UUID 聚合， 给运营一个"这项责任今年总共还能赔多少"的对账口径——逐条明细只能看单人占用，
+   * 汇总才能发现"整个责任池快赔完了"这类池级风险。
+   *
+   * <p><b>为什么内存聚合而非 SQL GROUP BY</b>：责任账账户数 = 被保人数 × 责任数， 单保单量级在万级以内，一次性拉取后聚合足够；且 Criteria DSL 无
+   * groupBy 表达， 为此引入原生 SQL 会破坏仓库层抽象（且与既有 findAccountsFiltered 口径不一致）。
+   */
+  @Transactional(readOnly = true)
+  public List<PublicQuotaSummaryView> summarizePublic(String policyNo) {
+    long tenantId = tenantPort.currentTenantId();
+    List<QuotaAccount> accounts =
+        quotaAccountRepository.findAccountsFiltered(
+            tenantId, policyNo, null, "LIABILITY_CAP", null);
+    return accounts.stream()
+        .collect(java.util.stream.Collectors.groupingBy(QuotaAccount::getLiabilityUuid))
+        .values()
+        .stream()
+        .map(
+            group -> {
+              QuotaAccount first = group.get(0);
+              return new PublicQuotaSummaryView(
+                  first.getLiabilityUuid(),
+                  first.getPolicyNo(),
+                  first.getPlanId(),
+                  group.size(),
+                  group.stream().filter(QuotaAccount::isRemoved).count(),
+                  group.stream()
+                      .map(QuotaAccount::getQuotaInitial)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add),
+                  group.stream()
+                      .map(QuotaAccount::getQuotaClaimed)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add),
+                  group.stream()
+                      .map(QuotaAccount::getQuotaFrozen)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add),
+                  group.stream()
+                      .map(QuotaAccount::available)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add));
+            })
+        .sorted(java.util.Comparator.comparing(PublicQuotaSummaryView::liabilityUuid))
+        .toList();
+  }
+
+  /**
+   * 责任发布联动：为该计划下所有已开户的个账（PERSONAL、未减人）被保人， 自动开立对应责任的 LIABILITY_CAP 公账账户（额度 = 责任的责任限额）。
+   *
+   * <p><b>为什么挂在发布动作上</b>：公账额度池的生命周期应跟随责任生效—— 人工逐个被保人初始化责任账既易漏配（漏的人理算时 {@code
+   * CLAIM_QUOTA_NOT_FOUND}） 又易错配额度；发布是责任"开始起赔"的唯一入口，在这里联动一步到位。
+   *
+   * <p><b>幂等</b>：复用 openAccount 的同键幂等（已存在直接返回），重复发布/重发布新版本不会覆盖既有占用。
+   *
+   * @return 已覆盖的被保人账户数（含幂等命中既有账户）
+   */
+  @Transactional
+  public int initPublicAccountsForLiability(
+      long planId, String liabilityUuid, java.math.BigDecimal initialLimit) {
+    ClaimPlan plan = claimPlanRepository.findPlanById(planId);
+    if (plan == null) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_PLAN_NOT_FOUND, planId);
+    }
+    String policyNo = plan.policyNo();
+    List<QuotaAccount> personalAccounts =
+        quotaAccountRepository.findAccountsByPolicyNo(policyNo).stream()
+            .filter(
+                a ->
+                    a.getPlanId() == planId
+                        && "PERSONAL".equals(a.getQuotaType())
+                        && !a.isRemoved())
+            .toList();
+    int quotaYear = Year.now().getValue();
+    for (QuotaAccount personal : personalAccounts) {
+      openAccount(
+          new OpenQuota(
+              personal.getInsuredIdHash(),
+              policyNo,
+              planId,
+              quotaYear,
+              "LIABILITY_CAP",
+              liabilityUuid,
+              initialLimit == null ? BigDecimal.ZERO : initialLimit,
+              "system",
+              "责任发布联动",
+              "责任发布自动初始化"));
+    }
+    return personalAccounts.size();
+  }
+
+  /**
+   * 公账（责任额度池）汇总视图：按责任 UUID 聚合的池级口径。
+   *
+   * @param liabilityUuid 责任 UUID（理算按它占用/归还）
+   * @param policyNo 保单号
+   * @param planId 计划 ID
+   * @param accountCount 账户数（= 覆盖的被保人数）
+   * @param removedCount 已减人账户数
+   * @param initialTotal 初始额度合计
+   * @param claimedTotal 已扣减合计
+   * @param frozenTotal 已冻结合计
+   * @param availableTotal 可用额度合计
+   */
+  public record PublicQuotaSummaryView(
+      String liabilityUuid,
+      String policyNo,
+      long planId,
+      long accountCount,
+      long removedCount,
+      BigDecimal initialTotal,
+      BigDecimal claimedTotal,
+      BigDecimal frozenTotal,
+      BigDecimal availableTotal) {}
 
   /** 某额度账户的保全记录（时间正序）。 */
   @Transactional(readOnly = true)

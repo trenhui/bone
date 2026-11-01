@@ -7,6 +7,7 @@ SELECT
        insure_name,
        biz_identity_code,
        product_type,
+       policy_type,
        effective_start,
        effective_end,
        waiting_period,

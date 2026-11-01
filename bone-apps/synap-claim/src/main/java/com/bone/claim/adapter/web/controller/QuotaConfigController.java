@@ -1,10 +1,12 @@
 package com.bone.claim.adapter.web.controller;
 
+import com.bone.claim.adapter.web.CsvExport;
 import com.bone.claim.adapter.web.dto.request.ClaimConfigRequests;
 import com.bone.claim.application.QuotaConfigApplicationService;
 import com.bone.claim.application.QuotaConfigApplicationService.QuotaAccountView;
 import com.bone.claim.application.QuotaConfigApplicationService.QuotaChangeView;
 import com.bone.core.model.ApiResponse;
+import com.bone.core.model.PageResult;
 import com.bone.core.security.auth.CurrentOperator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,6 +15,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -40,13 +43,67 @@ public class QuotaConfigController {
 
   private final QuotaConfigApplicationService quotaConfigApplicationService;
 
-  @Operation(summary = "额度账户列表", description = "按保单号查该保单下的全部额度账户")
+  @Operation(summary = "额度账户列表", description = "分页查该保单下的额度账户；支持被保人假名化ID关键字、额度维度、减人状态筛选")
   @PreAuthorize("hasAuthority('claim:quota:read')")
   @GetMapping
-  public ApiResponse<List<QuotaAccountView>> accounts(
-      @Parameter(description = "保单号") @ModelAttribute("policyNo") String policyNo) {
+  public ApiResponse<PageResult<QuotaAccountView>> accounts(
+      @Parameter(description = "保单号") @ModelAttribute("policyNo") String policyNo,
+      @Parameter(description = "被保人假名化ID关键字（模糊匹配）") String keyword,
+      @Parameter(description = "额度维度：PERSONAL/LIABILITY_CAP/LIABILITY_PERSONAL") String quotaType,
+      @Parameter(description = "减人状态：true=已减人 false=正常，缺省不过滤") Boolean removed,
+      @Parameter(description = "页码（缺省 1）") Integer page,
+      @Parameter(description = "每页条数（缺省 20，上限 100）") Integer size) {
+    int p = page == null || page < 1 ? 1 : page;
+    int s = size == null || size < 1 ? 20 : Math.min(size, 100);
     return ApiResponse.success(
-        HttpStatus.OK.value(), quotaConfigApplicationService.listByPolicy(policyNo));
+        HttpStatus.OK.value(),
+        quotaConfigApplicationService.listByPolicy(policyNo, keyword, quotaType, removed, p, s));
+  }
+
+  @Operation(summary = "导出额度账户（CSV）", description = "按与列表一致的筛选条件导出全量（不分页）；UTF-8 BOM，Excel 直开不乱码")
+  @PreAuthorize("hasAuthority('claim:quota:read')")
+  @GetMapping(value = "/export", produces = "text/csv;charset=UTF-8")
+  public ResponseEntity<byte[]> export(
+      @Parameter(description = "保单号") @ModelAttribute("policyNo") String policyNo,
+      @Parameter(description = "被保人假名化ID关键字（模糊匹配）") String keyword,
+      @Parameter(description = "额度维度") String quotaType,
+      @Parameter(description = "减人状态：true=已减人 false=正常，缺省不过滤") Boolean removed) {
+    List<QuotaAccountView> records =
+        quotaConfigApplicationService.exportByPolicy(policyNo, keyword, quotaType, removed);
+    List<String[]> rows =
+        records.stream()
+            .map(
+                r ->
+                    new String[] {
+                      r.quotaAccountId(),
+                      r.insuredIdHash(),
+                      r.policyNo(),
+                      r.planId(),
+                      String.valueOf(r.quotaYear()),
+                      r.quotaType(),
+                      r.liabilityUuid(),
+                      money(r.initial()),
+                      money(r.claimed()),
+                      money(r.frozen()),
+                      money(r.available()),
+                      money(r.deductibleUsed()),
+                      money(r.capUsed()),
+                      r.removed() ? "REMOVED" : "ACTIVE",
+                      String.valueOf(r.updatedAt())
+                    })
+            .toList();
+    return CsvExport.response(
+        "quota-accounts",
+        new String[] {
+          "额度账户ID", "被保人假名ID", "保单号", "计划ID", "额度年度", "额度维度", "责任UUID", "初始额度", "已扣减", "已冻结",
+          "可用额度", "年免赔已用", "封顶已用", "状态", "更新时间"
+        },
+        rows);
+  }
+
+  /** 金额统一两位小数（BigDecimal 直接 toString 可能是 {@code 1E+2} 之类科学计数，Excel 会当文本）。 */
+  private static String money(java.math.BigDecimal value) {
+    return value == null ? "0.00" : value.toPlainString();
   }
 
   @Operation(summary = "某被保人的额度账户", description = "按保单号 + 被保人假名化ID查")
@@ -58,6 +115,16 @@ public class QuotaConfigController {
     return ApiResponse.success(
         HttpStatus.OK.value(),
         quotaConfigApplicationService.listByPolicyAndInsured(policyNo, insuredIdHash));
+  }
+
+  /** 公账汇总：责任额度池（LIABILITY_CAP）按责任 UUID 聚合。 */
+  @Operation(summary = "公账额度池汇总", description = "按责任 UUID 聚合责任额度账户：账户数、减人数、初始/已扣减/冻结/可用合计")
+  @PreAuthorize("hasAuthority('claim:quota:read')")
+  @GetMapping("/public-summary")
+  public ApiResponse<List<QuotaConfigApplicationService.PublicQuotaSummaryView>> publicSummary(
+      @ModelAttribute("policyNo") String policyNo) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(), quotaConfigApplicationService.summarizePublic(policyNo));
   }
 
   @Operation(summary = "额度保全记录", description = "某额度账户的历次变更（谁、何时、从多少改到多少）")

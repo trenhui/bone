@@ -31,6 +31,7 @@ class ClaimConfigEditContractTest {
         "投保方",
         "BIZ-1",
         "OUTPATIENT",
+        "GROUP",
         Instant.parse("2026-01-01T00:00:00Z"),
         Instant.parse("2026-12-31T00:00:00Z"),
         30,
@@ -62,6 +63,7 @@ class ClaimConfigEditContractTest {
         "投保方-改",
         "BIZ-9",
         "INPATIENT",
+        "GROUP",
         Instant.parse("2026-02-01T00:00:00Z"),
         Instant.parse("2027-01-31T00:00:00Z"),
         45,
@@ -93,6 +95,7 @@ class ClaimConfigEditContractTest {
                     "x",
                     "x",
                     "x",
+                    "x",
                     Instant.parse("2026-02-01T00:00:00Z"),
                     Instant.parse("2027-01-31T00:00:00Z"),
                     -1,
@@ -111,6 +114,7 @@ class ClaimConfigEditContractTest {
     assertThatThrownBy(
             () ->
                 p.edit(
+                    "x",
                     "x",
                     "x",
                     "x",
@@ -137,6 +141,7 @@ class ClaimConfigEditContractTest {
         "x",
         "x",
         "x",
+        "GROUP",
         p.getEffectiveStart(),
         p.getEffectiveEnd(),
         30,
@@ -152,6 +157,7 @@ class ClaimConfigEditContractTest {
     assertThatThrownBy(
             () ->
                 p.edit(
+                    "x",
                     "x",
                     "x",
                     "x",

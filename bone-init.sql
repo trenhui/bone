@@ -2925,6 +2925,7 @@ CREATE TABLE t_claim_policy (
   insure_name         VARCHAR(128)  NOT NULL DEFAULT '' COMMENT '投保公司(企业客户)',
   biz_identity_code   VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '业务主体码(保司/分公司/投保公司/保单四级匹配,集成路由依据)',
   product_type        VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '产品类型(门诊等)',
+  policy_type         VARCHAR(16)   DEFAULT NULL COMMENT '保单类型:GROUP团体/INDIVIDUAL个人(空视为团体)',
   effective_start     DATETIME(3)   NOT NULL COMMENT '生效起',
   effective_end       DATETIME(3)   NOT NULL COMMENT '生效止',
   waiting_period      INT           NOT NULL DEFAULT 0 COMMENT '等待期(天)',

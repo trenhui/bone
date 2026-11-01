@@ -3,6 +3,7 @@ SELECT
        liability_uuid,
        liability_version,
        plan_id,
+       coverage_id,
        liability_code,
        liability_type,
        pay_percent,
