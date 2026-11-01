@@ -4,13 +4,16 @@ import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.domain.model.adjustment.Adjustment;
 import com.bone.claim.domain.model.claim.projection.ClaimSettlementRef;
 import com.bone.claim.domain.model.quota.QuotaAccount;
+import com.bone.claim.domain.model.quota.QuotaLedgerChain;
 import com.bone.claim.domain.model.quota.QuotaProjection;
+import com.bone.claim.domain.model.quota.QuotaTransaction;
 import com.bone.claim.domain.model.reconciliation.DiffType;
 import com.bone.claim.domain.model.reconciliation.ReconciliationDiff;
 import com.bone.claim.domain.model.reconciliation.ReconciliationReport;
 import com.bone.claim.domain.model.settlement.FundingEvent;
 import com.bone.claim.domain.model.settlement.FundingStage;
 import com.bone.claim.domain.model.settlement.FundingStageChain;
+import com.bone.claim.domain.model.settlement.ReviewEvidence;
 import com.bone.claim.domain.model.settlement.SettlementOrder;
 import com.bone.claim.domain.repository.AdjustmentRepository;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
@@ -43,24 +46,27 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>由 {@code adapter.schedule} 的 {@code ReconciliationJob} 逐租户驱动（ADR-0030）。一期三条通道：
  *
  * <ul>
- *   <li>{@link ReconciliationReport#CHANNEL_QUOTA}：额度账户两条判据——①守恒式 {@code initial == claimed +
+ *   <li>{@link ReconciliationReport#CHANNEL_QUOTA}：额度账户三条判据——①守恒式 {@code initial == claimed +
  *       frozen + available}，破坏记 {@link DiffType#QUOTA_BREAK}；②<b>投影 = 事实</b>：按 {@code
  *       t_quota_transaction} 重算 {@code frozen/claimed/deductible_used/cap_used} 并与账户行比对，不等记 {@link
- *       DiffType#PROJECTION_DRIFT}（§11.7 不变量 1 ①）。
- *   <li>{@link ReconciliationReport#CHANNEL_PAYMENT}：结算单 vs 资金流水三判据——①{@code PAID} 结算单须有等额 {@code
+ *       DiffType#PROJECTION_DRIFT}（§11.7 不变量 1 ①）；③<b>余额串链</b>：逐条校验 {@code before_amount} 接得上上一条同列
+ *       {@code after_amount}、且差额等于本笔金额，断裂记 {@link DiffType#LEDGER_CHAIN_BREAK}（不变量 1 ④）。
+ *   <li>{@link ReconciliationReport#CHANNEL_PAYMENT}：结算单 vs 资金流水四判据——①{@code PAID} 结算单须有等额 {@code
  *       PAID} 流水；②非 {@code PAID} 结算单末条流水阶段须与结算阶段一致；③<b>阶段单调</b>：整条流水按状态机串一遍，非法迁移与事件时间倒序记 {@link
- *       DiffType#STAGE_REGRESSION}（不变量 3）。
+ *       DiffType#STAGE_REGRESSION}（不变量 3）；④<b>双人复核留痕</b>：大额结算的 {@code review_first_approver}
+ *       与两条认证事件身份 须构成两次独立认证，缺失记 {@link DiffType#REVIEW_EVIDENCE_MISSING}（不变量 5）。
  *   <li>{@link ReconciliationReport#CHANNEL_CASE_SETTLE}：案件 ↔ 结算金额一致（不变量 6）——结案了却没有结算单记 {@link
  *       DiffType#MISSING_LOCAL}；净已付（{@code Σ PAID − Σ REFUNDED}）≠ 最新理算总额记 {@link
  *       DiffType#CASE_SETTLE_MISMATCH}。
  * </ul>
  *
- * <p><b>为什么额度通道要两条判据</b>：守恒式只校验账户内部三值自洽，一根指针错到底（{@code claimed} 少记一笔、 {@code deductible_used}
- * 多记一次）照样"自洽"；反过来，投影漂移也不一定破坏守恒（{@code claimed} 与 {@code frozen} 一增一减）。只查前者时，错的值会被当成"平账"放过去——这正是
- * §11.7 不变量 1 把 "账户 = Σ流水"和"三值自洽"并列的原因。
+ * <p><b>为什么额度通道要三条判据</b>：守恒式只校验账户内部三值自洽，一根指针错到底（{@code claimed} 少记一笔、 {@code deductible_used}
+ * 多记一次）照样"自洽"；投影判据能证明"现值 = Σ流水"，但证明不了"流水之间接得上"——并发丢失更新后两笔流水都从同一个旧值出发， 而投影仍等于 Σ流水（投影本就是按流水算的）。
+ * 三者分别回答"三值自洽吗""值等于事实吗""过程连得上吗"，任何一条被省掉，另一条都会在它管不到的场景里恒绿。
  *
- * <p><b>为什么支付通道要三条判据</b>：①②只看「末条」与「PAID 等额」，一串被倒拨过的流水（PAID 后又追加 SOFT）在末条同步改过之后与结算单仍然相等；
- * ③把整条链按状态机串一遍才看得出「钱的状态被往回拨过」，且它是唯一能发现「事件时间倒序」（补数/乱序重放）的判据。
+ * <p><b>为什么支付通道要四条判据</b>：①②只看「末条」与「PAID 等额」，一串被倒拨过的流水（PAID 后又追加 SOFT）在末条同步改过之后与结算单仍然相等；
+ * ③把整条链按状态机串一遍才看得出「钱的状态被往回拨过」，且它是唯一能发现「事件时间倒序」（补数/乱序重放）的判据；④判的不是钱的走向而是<b>谁点的</b>——
+ * 绕过复核门的单子在流水上完全合法（SOFT→HARD→PAID 逐条都对），只有把发起人与两条认证事件的身份并起来看，才知道双人复核是否真的发生过。
  *
  * <p>外部支付网关/TPA 对账（{@link ReconciliationReport#CHANNEL_TPA}）需外部对账文件接入，二期启用。报告与差异均 append-only，
  * 同日同通道已生成则跳过（重跑幂等）。
@@ -128,9 +134,8 @@ public class ReconciliationApplicationService {
       }
       // 判据 ②：账户是投影，流水是事实（§11.7 不变量 1 ①）。重算口径与写侧自愈共用
       // QuotaProjection#rebuild——两处若各写一遍，就会出现"自愈按 A 口径修、对账按 B 口径判"。
-      List<QuotaProjection.Drift> drifts =
-          QuotaProjection.rebuild(quotaAccountRepository.findTransactions(account.getId()))
-              .driftAgainst(account);
+      List<QuotaTransaction> ledger = quotaAccountRepository.findTransactions(account.getId());
+      List<QuotaProjection.Drift> drifts = QuotaProjection.rebuild(ledger).driftAgainst(account);
       for (QuotaProjection.Drift drift : drifts) {
         // 差异单无"列名"字段，用 remote_status 承载漂移列名（"哪一列错了"是派单的第一条信息）。
         violations.add(
@@ -142,6 +147,20 @@ public class ReconciliationApplicationService {
                 drift.ledger(),
                 "QUOTA",
                 drift.field()));
+        differingAccounts.add(account);
+      }
+      // 判据 ③：余额串链（不变量 1 ④）。判据 ② 判"账户现值 = Σ流水"，对"两笔操作从同一个旧值出发"无感——
+      // 并发丢失更新后投影仍等于 Σ流水（投影本就是按流水算的），只有逐条串 before/after 才看得见。
+      for (QuotaLedgerChain.Break chainBreak : QuotaLedgerChain.check(ledger)) {
+        violations.add(
+            new Violation(
+                "",
+                "",
+                DiffType.LEDGER_CHAIN_BREAK,
+                chainBreak.recorded(),
+                chainBreak.expected(),
+                "QUOTA",
+                chainBreak.column() + ":" + chainBreak.kind().name()));
         differingAccounts.add(account);
       }
     }
@@ -227,6 +246,25 @@ public class ReconciliationApplicationService {
                 null,
                 breach.from(),
                 breach.to()));
+      }
+      // 判据 ④：大额双人复核留痕（不变量 5）。判据 ①②③ 判的是钱的走向，判不出"这次放款是不是一个人点的"——
+      // 绕过复核门的单子在流水上完全合法（SOFT→HARD→PAID），只有把 review_first_approver 与两条认证事件
+      // 的身份并起来看，才知道"两次认证"是否真的存在过。
+      for (ReviewEvidence.Gap gap :
+          ReviewEvidence.check(
+              settlement.getAmount(),
+              SettlementOrder.reviewThreshold(),
+              settlement.getReviewFirstApprover(),
+              events)) {
+        violations.add(
+            new Violation(
+                settlement.getClaimNo(),
+                settlement.getSettlementNo(),
+                DiffType.REVIEW_EVIDENCE_MISSING,
+                settlement.getAmount(),
+                null,
+                settlement.getFundingStage(),
+                gap.name()));
       }
     }
     saveReport(

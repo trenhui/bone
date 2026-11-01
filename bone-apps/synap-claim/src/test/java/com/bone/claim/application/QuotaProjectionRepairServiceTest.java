@@ -11,7 +11,9 @@ import static org.mockito.Mockito.when;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.domain.model.quota.QuotaAccount;
 import com.bone.claim.domain.model.quota.QuotaTransaction;
+import com.bone.claim.domain.model.reconciliation.ReconciliationAction;
 import com.bone.claim.domain.repository.QuotaAccountRepository;
+import com.bone.claim.domain.repository.ReconciliationActionRepository;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
 import java.util.List;
@@ -19,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -33,13 +36,15 @@ class QuotaProjectionRepairServiceTest {
   private static final long ACCOUNT_ID = 8001L;
 
   @Mock private QuotaAccountRepository quotaAccountRepository;
+  @Mock private ReconciliationActionRepository actionRepository;
   @Mock private TenantPort tenantPort;
 
   private QuotaProjectionRepairService service;
 
   @BeforeEach
   void setUp() {
-    service = new QuotaProjectionRepairService(quotaAccountRepository, tenantPort);
+    service =
+        new QuotaProjectionRepairService(quotaAccountRepository, actionRepository, tenantPort);
     when(tenantPort.currentTenantId()).thenReturn(TENANT);
   }
 
@@ -59,6 +64,8 @@ class QuotaProjectionRepairServiceTest {
     assertThat(result.changed()).isFalse();
     assertThat(result.deltas()).isEmpty();
     verify(quotaAccountRepository, never()).save(any());
+    // 没发生的事不该有动作记录：changed=false 不落处置流水
+    verify(actionRepository, never()).save(any());
   }
 
   @Test
@@ -82,6 +89,31 @@ class QuotaProjectionRepairServiceTest {
     assertThat(result.deltas().get(0).after()).isEqualByComparingTo("300.00");
     assertThat(account.getQuotaFrozen()).isEqualByComparingTo("300.00");
     verify(quotaAccountRepository).save(account);
+  }
+
+  @Test
+  @DisplayName("修复成功 ⇒ 落一条 PROJECTION_REBUILD 处置流水（此前只打日志，库内不可查）")
+  void recordsActionLedgerEntry() {
+    QuotaAccount account = account("20000.00");
+    account.reconcileProjection(
+        new BigDecimal("500.00"), new BigDecimal("200.00"), BigDecimal.ZERO);
+    when(quotaAccountRepository.findById(ACCOUNT_ID)).thenReturn(account);
+    List<QuotaTransaction> ledger = consistentLedger();
+    when(quotaAccountRepository.findTransactions(ACCOUNT_ID)).thenReturn(ledger);
+
+    service.rebuildProjection(ACCOUNT_ID, "ops-1");
+
+    ArgumentCaptor<ReconciliationAction> captor =
+        ArgumentCaptor.forClass(ReconciliationAction.class);
+    verify(actionRepository).save(captor.capture());
+    ReconciliationAction action = captor.getValue();
+    assertThat(action.getTargetType()).isEqualTo(ReconciliationAction.TARGET_QUOTA_ACCOUNT);
+    assertThat(action.getTargetId()).isEqualTo(ACCOUNT_ID);
+    assertThat(action.getActionType()).isEqualTo(ReconciliationAction.ACTION_PROJECTION_REBUILD);
+    assertThat(action.getOperatorId()).isEqualTo("ops-1");
+    assertThat(action.getTenantId()).isEqualTo(TENANT);
+    // detail 要能回答"改了哪一列、从多少到多少"，否则派单后还得回查账户
+    assertThat(action.getDetail()).isEqualTo("quota_frozen 500.00->300.00");
   }
 
   @Test

@@ -134,4 +134,17 @@ public final class ClaimErrorCodes {
 
   /** 险种编码重复（同计划下 {@code coverage_code} 唯一）。 */
   public static final String CLAIM_COVERAGE_DUPLICATED = "SC_CLAIM_COVERAGE_DUPLICATED";
+
+  // ===== 资金对账处置 =====
+
+  /** 对账差异不存在（或不属于本租户）。 */
+  public static final String CLAIM_RECON_DIFF_NOT_FOUND = "SC_CLAIM_RECON_DIFF_NOT_FOUND";
+
+  /**
+   * 对账差异处置冲突：已处置过（处置态只允许 {@code PENDING} 单向迁移一次），或处置结论非法。
+   *
+   * <p>为什么"已处置"用 409 而不是 200 幂等返回：处置结论是有语义的（RESOLVED / ADJUSTED / WAIVED 代表三种不同的后续动作），
+   * 第二次提交的结论可能与第一次不同，静默返回首次结果会让调用方以为"我的结论生效了"。
+   */
+  public static final String CLAIM_RECON_DIFF_CONFLICT = "SC_CLAIM_RECON_DIFF_CONFLICT";
 }
