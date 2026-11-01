@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import {
   App as AntApp,
   Button,
@@ -30,6 +30,7 @@ import dayjs from 'dayjs';
 import { AuthButton } from '@bone/ui';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
+import { FORM_VALIDATION_MESSAGE, isFormValidationError } from '../utils/formError';
 import {
   QUOTA_CHANGE_TYPE_META,
   claimConfigApi,
@@ -101,19 +102,21 @@ export function QuotaConfigPage(): ReactElement {
   }, [loadAccounts]);
 
   const openCreate = () => {
-    openForm.resetFields();
-    openForm.setFieldsValue({
-      quotaYear: new Date().getFullYear(),
-      quotaType: 'PERSONAL',
-      quotaInitial: 0,
-    });
+    // Modal 未打开时 setFieldsValue 会静默失效（Form 未挂载）⇒ 初值改由 initialValues 承担。
     setOpenModalOpen(true);
   };
 
+  /** 开户表单初值（不缓存，避免跨年后仍写旧年度）。 */
+  const openInitialValues = {
+    quotaYear: new Date().getFullYear(),
+    quotaType: 'PERSONAL' as QuotaType,
+    quotaInitial: 0,
+  };
+
   const submitOpen = async () => {
-    const values = await openForm.validateFields();
     setSubmitting(true);
     try {
+      const values = await openForm.validateFields();
       await claimConfigApi.openQuotaAccount({
         insuredIdHash: values.insuredIdHash.trim(),
         policyNo,
@@ -128,7 +131,9 @@ export function QuotaConfigPage(): ReactElement {
       setOpenModalOpen(false);
       await loadAccounts();
     } catch (err) {
-      if (resolveErrorCode(err)) {
+      if (isFormValidationError(err)) {
+        message.error(FORM_VALIDATION_MESSAGE);
+      } else {
         message.error(resolveErrorMessage(err, '开户失败'));
       }
     } finally {
@@ -137,25 +142,44 @@ export function QuotaConfigPage(): ReactElement {
   };
 
   const openAdjust = (row: QuotaAccountView) => {
+    // Modal 未打开时 setFieldsValue 会静默失效（Form 未挂载）⇒ 初值改由 initialValues 承担。
     setAdjustTarget(row);
-    adjustForm.resetFields();
-    adjustForm.setFieldsValue({ newInitial: row.initial, remark: '' });
   };
+
+  /** 调额表单初值（当前初始额度 + 空说明）。 */
+  const adjustInitialValues = useMemo(
+    () =>
+      adjustTarget
+        ? { newInitial: adjustTarget.initial, remark: '' }
+        : undefined,
+    [adjustTarget],
+  );
 
   const submitAdjust = async () => {
     if (!adjustTarget) return;
-    const values = await adjustForm.validateFields();
     setSubmitting(true);
     try {
+      const values = await adjustForm.validateFields();
       await claimConfigApi.adjustQuota(adjustTarget.quotaAccountId, {
         newInitial: values.newInitial,
         remark: values.remark?.trim(),
+        version: adjustTarget.version,
       });
       message.success('额度已调整');
       setAdjustTarget(null);
       await loadAccounts();
     } catch (err) {
-      if (resolveErrorCode(err)) {
+      if (isFormValidationError(err)) {
+        message.error(FORM_VALIDATION_MESSAGE);
+        return;
+      }
+      const code = resolveErrorCode(err);
+      if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
+        // 乐观锁冲突：调整期间被他人改过。关闭弹窗并刷新，提示用户重新打开调整。
+        setAdjustTarget(null);
+        await loadAccounts();
+        message.warning('该额度账户已被其他人修改，请重新打开调整并保存');
+      } else {
         message.error(resolveErrorMessage(err, '调额失败'));
       }
     } finally {
@@ -166,15 +190,21 @@ export function QuotaConfigPage(): ReactElement {
   const toggleRemoved = async (row: QuotaAccountView, action: 'remove' | 'restore') => {
     try {
       if (action === 'remove') {
-        await claimConfigApi.removeInsured(row.quotaAccountId, {});
+        await claimConfigApi.removeInsured(row.quotaAccountId, { version: row.version });
         message.success('已减人（该被保人不再参与额度累计）');
       } else {
-        await claimConfigApi.restoreInsured(row.quotaAccountId, {});
+        await claimConfigApi.restoreInsured(row.quotaAccountId, { version: row.version });
         message.success('已恢复');
       }
       await loadAccounts();
     } catch (err) {
-      message.error(resolveErrorMessage(err, action === 'remove' ? '减人失败' : '恢复失败'));
+      const code = resolveErrorCode(err);
+      if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
+        await loadAccounts();
+        message.warning('该额度账户已被其他人修改，请重新操作');
+      } else {
+        message.error(resolveErrorMessage(err, action === 'remove' ? '减人失败' : '恢复失败'));
+      }
     }
   };
 
@@ -370,7 +400,13 @@ export function QuotaConfigPage(): ReactElement {
         okText="开户"
         destroyOnHidden
       >
-        <Form form={openForm} layout="vertical" preserve={false}>
+        <Form
+          key="quota-open"
+          form={openForm}
+          layout="vertical"
+          preserve={false}
+          initialValues={openInitialValues}
+        >
           <Form.Item
             name="insuredIdHash"
             label="被保人假名化 ID"
@@ -433,7 +469,13 @@ export function QuotaConfigPage(): ReactElement {
             新的初始额度不得低于该值，否则可用额度会变为负数、后续占额将被守恒校验拦下。
           </Typography.Paragraph>
         )}
-        <Form form={adjustForm} layout="vertical" preserve={false}>
+        <Form
+          key={adjustTarget?.quotaAccountId ?? 'adjust-none'}
+          form={adjustForm}
+          layout="vertical"
+          preserve={false}
+          initialValues={adjustInitialValues}
+        >
           <Form.Item
             name="newInitial"
             label="新初始额度"

@@ -120,12 +120,21 @@ async function api(method, path, body, opts = {}) {
   const base = opts.base || BASE;
   const url = /^https?:/.test(path) ? path : String(base).replace(/\/$/, '') + (path.startsWith('/') ? path : '/' + path);
   const headers = {};
-  const hasBody = body !== undefined;
+  // GET/HEAD 绝不允许带请求体：浏览器原生 fetch 会直接抛
+  // "Request with GET/HEAD method cannot have body."（且 `body !== undefined`
+  // 的旧写法会把调用方顺手传的 `null` 也算成有体 ⇒ 探针在 GET 处莫名崩掉）。
+  // 这里按方法而非按实参判定，与 HTTP 语义一致。
+  const httpMethod = String(method).toUpperCase();
+  const hasBody = body !== undefined && body !== null && httpMethod !== 'GET' && httpMethod !== 'HEAD';
   if (hasBody) headers['Content-Type'] = 'application/json';
   headers.Authorization = `Bearer ${opts.token || (await login(opts.loginBase || base))}`;
   if (!('X-Tenant-Id' in (opts.headers || {}))) headers['X-Tenant-Id'] = TENANT;
   Object.assign(headers, opts.headers || {});
-  const res = await fetch(url, { method, headers, body: hasBody ? JSON.stringify(body) : undefined });
+  const res = await fetch(url, {
+    method: httpMethod,
+    headers,
+    body: hasBody ? JSON.stringify(body) : undefined,
+  });
   const text = await res.text();
   let data = null;
   try {

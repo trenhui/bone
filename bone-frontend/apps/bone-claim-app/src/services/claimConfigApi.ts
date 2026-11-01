@@ -49,8 +49,14 @@ export interface PolicyView {
   stale: boolean;
   createdAt: string;
   updatedAt: string;
-  /** 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）。 */
-  version?: number;
+  /**
+   * 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）。
+   *
+   * <p><b>类型是 string 而非 number</b>：后端版本号是 {@code Long}，平台按「Long 全局序列化为
+   * JSON 字符串」下发（如 {@code "1"}）。声明成 number 会让 TS 撒谎——真去比较大小就会踩
+   * 「字符串被隐式转数字」的坑。这里保持与下发形态一致，**只透传、不做数值运算**。
+   */
+  version?: string;
 }
 
 export interface PlanView {
@@ -65,8 +71,14 @@ export interface PlanView {
   status: ConfigStatus;
   createdAt: string;
   updatedAt: string;
-  /** 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）。 */
-  version?: number;
+  /**
+   * 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）。
+   *
+   * <p><b>类型是 string 而非 number</b>：后端版本号是 {@code Long}，平台按「Long 全局序列化为
+   * JSON 字符串」下发（如 {@code "1"}）。声明成 number 会让 TS 撒谎——真去比较大小就会踩
+   * 「字符串被隐式转数字」的坑。这里保持与下发形态一致，**只透传、不做数值运算**。
+   */
+  version?: string;
 }
 
 export interface CoverageView {
@@ -79,8 +91,14 @@ export interface CoverageView {
   status: ConfigStatus;
   createdAt: string;
   updatedAt: string;
-  /** 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）。 */
-  version?: number;
+  /**
+   * 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）。
+   *
+   * <p><b>类型是 string 而非 number</b>：后端版本号是 {@code Long}，平台按「Long 全局序列化为
+   * JSON 字符串」下发（如 {@code "1"}）。声明成 number 会让 TS 撒谎——真去比较大小就会踩
+   * 「字符串被隐式转数字」的坑。这里保持与下发形态一致，**只透传、不做数值运算**。
+   */
+  version?: string;
 }
 
 export interface QuotaAccountView {
@@ -104,6 +122,14 @@ export interface QuotaAccountView {
   /** 是否已减人（减人后不再参与额度累计）。 */
   removed: boolean;
   updatedAt: string;
+  /**
+   * 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）。
+   *
+   * <p><b>类型是 string 而非 number</b>：后端版本号是 {@code Long}，平台按「Long 全局序列化为
+   * JSON 字符串」下发（如 {@code "1"}）。声明成 number 会让 TS 撒谎——真去比较大小就会踩
+   * 「字符串被隐式转数字」的坑。这里保持与下发形态一致，**只透传、不做数值运算**。
+   */
+  version?: string;
 }
 
 export interface QuotaChangeView {
@@ -181,8 +207,11 @@ export interface UpdatePolicyReq {
   policyVersion?: string;
   /** 被保人清单：假名化 ID 数组（后端接受 JSON 数组字符串或数组）。 */
   insuredSnapshot?: string | string[];
-  /** 乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）。 */
-  version?: number;
+  /**
+   * 乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）。
+   * 后端是 {@code Long}，平台按「Long 全局序列化为 JSON 字符串」下发 ⇒ 用 string 承接，只透传。
+   */
+  version?: string;
 }
 
 /** 编辑计划请求（不改动计划编码与状态）。 */
@@ -191,8 +220,11 @@ export interface UpdatePlanReq {
   planLimit?: number;
   waitingPeriod?: number;
   versionNo?: string;
-  /** 乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）。 */
-  version?: number;
+  /**
+   * 乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）。
+   * 后端是 {@code Long}，平台按「Long 全局序列化为 JSON 字符串」下发 ⇒ 用 string 承接，只透传。
+   */
+  version?: string;
 }
 
 /** 编辑险种请求（不改动险种编码与状态）。 */
@@ -200,8 +232,11 @@ export interface UpdateCoverageReq {
   coverageName?: string;
   coverageLimit?: number;
   liabilityType?: LiabilityType;
-  /** 乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）。 */
-  version?: number;
+  /**
+   * 乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）。
+   * 后端是 {@code Long}，平台按「Long 全局序列化为 JSON 字符串」下发 ⇒ 用 string 承接，只透传。
+   */
+  version?: string;
 }
 
 /** 开户请求。 */
@@ -220,11 +255,21 @@ export interface OpenQuotaReq {
 export interface AdjustQuotaReq {
   newInitial: number;
   remark?: string;
+  /**
+   * 乐观锁版本号（来自账户列表，提交时原样带回用于并发冲突检测）。
+   * 后端是 {@code Long}，平台按「Long 全局序列化为 JSON 字符串」下发 ⇒ 用 string 承接，只透传。
+   */
+  version?: string;
 }
 
 /** 减人/恢复请求。 */
 export interface InsuredStateReq {
   remark?: string;
+  /**
+   * 乐观锁版本号（来自账户列表，提交时原样带回用于并发冲突检测）。
+   * 后端是 {@code Long}，平台按「Long 全局序列化为 JSON 字符串」下发 ⇒ 用 string 承接，只透传。
+   */
+  version?: string;
 }
 
 /** 规则开关展示元数据（唯一真源，避免多处各写一份文案）。 */
@@ -348,6 +393,20 @@ export const claimConfigApi = {
     return client.put<UpdateCoverageReq, ApiResponse<CoverageView>>(
       `/coverages/${encodeURIComponent(coverageId)}`,
       req,
+    );
+  },
+
+  /** 发布险种（DRAFT → ACTIVE）：与计划同语义的二级发布。 */
+  publishCoverage(coverageId: string): Promise<ApiResponse<CoverageView>> {
+    return client.post<never, ApiResponse<CoverageView>>(
+      `/coverages/${encodeURIComponent(coverageId)}/publish`,
+    );
+  },
+
+  /** 下线险种（ACTIVE/DRAFT → RETIRED）。 */
+  retireCoverage(coverageId: string): Promise<ApiResponse<CoverageView>> {
+    return client.post<never, ApiResponse<CoverageView>>(
+      `/coverages/${encodeURIComponent(coverageId)}/retire`,
     );
   },
 

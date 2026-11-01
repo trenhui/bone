@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type Key, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type Key, type ReactElement } from 'react';
 import {
   App as AntApp,
   Button,
@@ -23,6 +23,7 @@ import {
 import { AuthButton } from '@bone/ui';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
+import { FORM_VALIDATION_MESSAGE, isFormValidationError } from '../utils/formError';
 import {
   CONFIG_STATUS_META,
   claimConfigApi,
@@ -127,15 +128,17 @@ export function PlanConfigPage(): ReactElement {
   };
 
   const openCreatePlan = () => {
-    planForm.resetFields();
-    planForm.setFieldsValue({ planLimit: 0, waitingPeriod: 0, versionNo: 'v1' });
+    // Modal 未打开时 setFieldsValue 会静默失效（Form 未挂载）⇒ 初值改由 initialValues 承担。
     setPlanModalOpen(true);
   };
 
+  /** 新建计划表单初值。 */
+  const planCreateInitialValues = { planLimit: 0, waitingPeriod: 0, versionNo: 'v1' };
+
   const submitPlan = async () => {
-    const values = await planForm.validateFields();
     setSubmitting(true);
     try {
+      const values = await planForm.validateFields();
       await claimConfigApi.createPlan({
         policyNo,
         planCode: values.planCode.trim(),
@@ -148,7 +151,9 @@ export function PlanConfigPage(): ReactElement {
       setPlanModalOpen(false);
       await loadPlans();
     } catch (err) {
-      if (resolveErrorCode(err)) {
+      if (isFormValidationError(err)) {
+        message.error(FORM_VALIDATION_MESSAGE);
+      } else {
         message.error(resolveErrorMessage(err, '计划创建失败'));
       }
     } finally {
@@ -158,16 +163,17 @@ export function PlanConfigPage(): ReactElement {
 
   const openCreateCoverage = (plan: PlanView) => {
     setCurrentPlan(plan);
-    coverageForm.resetFields();
-    coverageForm.setFieldsValue({ coverageLimit: 0, liabilityType: 'REIMBURSEMENT' });
     setCoverageModalOpen(true);
   };
 
+  /** 新建险种表单初值。 */
+  const coverageCreateInitialValues = { coverageLimit: 0, liabilityType: 'REIMBURSEMENT' };
+
   const submitCoverage = async () => {
-    const values = await coverageForm.validateFields();
     if (!currentPlan) return;
     setSubmitting(true);
     try {
+      const values = await coverageForm.validateFields();
       await claimConfigApi.createCoverage({
         planId: currentPlan.planId,
         coverageCode: values.coverageCode.trim(),
@@ -179,7 +185,9 @@ export function PlanConfigPage(): ReactElement {
       setCoverageModalOpen(false);
       await loadCoverages(currentPlan.planId);
     } catch (err) {
-      if (resolveErrorCode(err)) {
+      if (isFormValidationError(err)) {
+        message.error(FORM_VALIDATION_MESSAGE);
+      } else {
         message.error(resolveErrorMessage(err, '险种创建失败'));
       }
     } finally {
@@ -207,21 +215,52 @@ export function PlanConfigPage(): ReactElement {
     }
   };
 
-  const openPlanEdit = (plan: PlanView) => {
-    setPlanEditTarget(plan);
-    planEditForm.setFieldsValue({
-      planName: plan.planName,
-      planLimit: plan.planLimit,
-      waitingPeriod: plan.waitingPeriod,
-      versionNo: plan.versionNo,
-    });
+  /** 发布险种（DRAFT → ACTIVE）：与计划同语义的二级发布。 */
+  const publishCoverage = async (coverage: CoverageView) => {
+    try {
+      await claimConfigApi.publishCoverage(coverage.coverageId);
+      message.success('险种已发布');
+      await loadCoverages(coverage.planId);
+    } catch (err) {
+      message.error(resolveErrorMessage(err, '险种发布失败'));
+    }
   };
+
+  /** 下线险种（ACTIVE/DRAFT → RETIRED）。 */
+  const retireCoverage = async (coverage: CoverageView) => {
+    try {
+      await claimConfigApi.retireCoverage(coverage.coverageId);
+      message.success('险种已下线');
+      await loadCoverages(coverage.planId);
+    } catch (err) {
+      message.error(resolveErrorMessage(err, '险种下线失败'));
+    }
+  };
+
+  const openPlanEdit = (plan: PlanView) => {
+    // 同 openCreatePlan：Modal 未打开时 setFieldsValue 静默失效 ⇒ 初值交给 initialValues。
+    setPlanEditTarget(plan);
+  };
+
+  /** 编辑计划表单初值。 */
+  const planEditInitialValues = useMemo(
+    () =>
+      planEditTarget
+        ? {
+            planName: planEditTarget.planName,
+            planLimit: planEditTarget.planLimit,
+            waitingPeriod: planEditTarget.waitingPeriod,
+            versionNo: planEditTarget.versionNo,
+          }
+        : undefined,
+    [planEditTarget],
+  );
 
   const submitPlanEdit = async () => {
     if (!planEditTarget) return;
-    const values = await planEditForm.validateFields();
     setSubmitting(true);
     try {
+      const values = await planEditForm.validateFields();
       await claimConfigApi.updatePlan(planEditTarget.planId, {
         planName: values.planName?.trim(),
         planLimit: values.planLimit ?? 0,
@@ -233,12 +272,16 @@ export function PlanConfigPage(): ReactElement {
       setPlanEditTarget(null);
       await loadPlans();
     } catch (err) {
+      if (isFormValidationError(err)) {
+        message.error(FORM_VALIDATION_MESSAGE);
+        return;
+      }
       const code = resolveErrorCode(err);
       if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
         setPlanEditTarget(null);
         await loadPlans();
         message.warning('该计划已被其他人修改，请重新打开编辑并保存');
-      } else if (code) {
+      } else {
         message.error(resolveErrorMessage(err, '计划更新失败'));
       }
     } finally {
@@ -248,18 +291,26 @@ export function PlanConfigPage(): ReactElement {
 
   const openCoverageEdit = (coverage: CoverageView) => {
     setCoverageEditTarget(coverage);
-    coverageEditForm.setFieldsValue({
-      coverageName: coverage.coverageName,
-      coverageLimit: coverage.coverageLimit,
-      liabilityType: coverage.liabilityType,
-    });
   };
+
+  /** 编辑险种表单初值。 */
+  const coverageEditInitialValues = useMemo(
+    () =>
+      coverageEditTarget
+        ? {
+            coverageName: coverageEditTarget.coverageName,
+            coverageLimit: coverageEditTarget.coverageLimit,
+            liabilityType: coverageEditTarget.liabilityType,
+          }
+        : undefined,
+    [coverageEditTarget],
+  );
 
   const submitCoverageEdit = async () => {
     if (!coverageEditTarget) return;
-    const values = await coverageEditForm.validateFields();
     setSubmitting(true);
     try {
+      const values = await coverageEditForm.validateFields();
       await claimConfigApi.updateCoverage(coverageEditTarget.coverageId, {
         coverageName: values.coverageName?.trim(),
         coverageLimit: values.coverageLimit ?? 0,
@@ -270,12 +321,16 @@ export function PlanConfigPage(): ReactElement {
       setCoverageEditTarget(null);
       await loadCoverages(coverageEditTarget.planId);
     } catch (err) {
+      if (isFormValidationError(err)) {
+        message.error(FORM_VALIDATION_MESSAGE);
+        return;
+      }
       const code = resolveErrorCode(err);
       if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
         setCoverageEditTarget(null);
         await loadCoverages(coverageEditTarget.planId);
         message.warning('该险种已被其他人修改，请重新打开编辑并保存');
-      } else if (code) {
+      } else {
         message.error(resolveErrorMessage(err, '险种更新失败'));
       }
     } finally {
@@ -362,17 +417,40 @@ export function PlanConfigPage(): ReactElement {
                     },
                     {
                       title: '操作',
-                      width: 100,
+                      width: 230,
                       render: (_, c) => (
-                        <AuthButton
-                          code="claim:policy:write"
-                          type="link"
-                          size="small"
-                          icon={<EditOutlined />}
-                          onClick={() => openCoverageEdit(c)}
-                        >
-                          编辑
-                        </AuthButton>
+                        <Space size={4}>
+                          <AuthButton
+                            code="claim:policy:write"
+                            type="link"
+                            size="small"
+                            icon={<EditOutlined />}
+                            onClick={() => openCoverageEdit(c)}
+                          >
+                            编辑
+                          </AuthButton>
+                          <AuthButton
+                            code="claim:policy:write"
+                            type="link"
+                            size="small"
+                            icon={<CloudUploadOutlined />}
+                            disabled={c.status === 'ACTIVE'}
+                            onClick={() => void publishCoverage(c)}
+                          >
+                            发布
+                          </AuthButton>
+                          <AuthButton
+                            code="claim:policy:write"
+                            type="link"
+                            size="small"
+                            danger
+                            icon={<StopOutlined />}
+                            disabled={c.status === 'RETIRED'}
+                            onClick={() => void retireCoverage(c)}
+                          >
+                            下线
+                          </AuthButton>
+                        </Space>
                       ),
                     },
                   ]}
@@ -470,7 +548,13 @@ export function PlanConfigPage(): ReactElement {
         okText="创建"
         destroyOnHidden
       >
-        <Form form={planForm} layout="vertical" preserve={false}>
+        <Form
+          key="plan-create"
+          form={planForm}
+          layout="vertical"
+          preserve={false}
+          initialValues={planCreateInitialValues}
+        >
           <Form.Item
             name="planCode"
             label="计划编码"
@@ -510,7 +594,13 @@ export function PlanConfigPage(): ReactElement {
         okText="创建"
         destroyOnHidden
       >
-        <Form form={coverageForm} layout="vertical" preserve={false}>
+        <Form
+          key="coverage-create"
+          form={coverageForm}
+          layout="vertical"
+          preserve={false}
+          initialValues={coverageCreateInitialValues}
+        >
           <Form.Item
             name="coverageCode"
             label="险种编码"
@@ -549,7 +639,13 @@ export function PlanConfigPage(): ReactElement {
         okText="保存"
         destroyOnHidden
       >
-        <Form form={planEditForm} layout="vertical" preserve={false}>
+        <Form
+          key={planEditTarget?.planId ?? 'plan-edit-none'}
+          form={planEditForm}
+          layout="vertical"
+          preserve={false}
+          initialValues={planEditInitialValues}
+        >
           <Form.Item name="planName" label="计划名称">
             <Input placeholder="选填" />
           </Form.Item>
@@ -582,7 +678,13 @@ export function PlanConfigPage(): ReactElement {
         okText="保存"
         destroyOnHidden
       >
-        <Form form={coverageEditForm} layout="vertical" preserve={false}>
+        <Form
+          key={coverageEditTarget?.coverageId ?? 'coverage-edit-none'}
+          form={coverageEditForm}
+          layout="vertical"
+          preserve={false}
+          initialValues={coverageEditInitialValues}
+        >
           <Form.Item name="coverageName" label="险种名称">
             <Input placeholder="选填" />
           </Form.Item>

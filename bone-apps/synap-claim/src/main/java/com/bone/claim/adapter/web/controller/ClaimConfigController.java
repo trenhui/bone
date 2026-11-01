@@ -47,7 +47,7 @@ public class ClaimConfigController {
 
   // ===================== 保单 =====================
 
-  @Operation(summary = "保单列表", description = "分页查保单；支持保单号模糊匹配与规则开关过滤")
+  @Operation(summary = "保单列表", description = "分页查保单；支持保单号/保单名称模糊匹配与规则开关过滤")
   @PreAuthorize("hasAuthority('claim:policy:read')")
   @GetMapping("/policies")
   public ApiResponse<PageResult<PolicyView>> policies(
@@ -246,5 +246,23 @@ public class ClaimConfigController {
                 request.coverageLimit(),
                 request.liabilityType(),
                 request.version())));
+  }
+
+  @Operation(summary = "发布险种", description = "草稿 → 已发布；与计划同语义的二级发布")
+  @PreAuthorize("hasAuthority('claim:policy:write')")
+  @PostMapping("/coverages/{coverageId}/publish")
+  public ApiResponse<CoverageView> publishCoverage(
+      @Parameter(description = "险种ID") @PathVariable long coverageId) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(), claimConfigApplicationService.publishCoverage(coverageId));
+  }
+
+  @Operation(summary = "下线险种")
+  @PreAuthorize("hasAuthority('claim:policy:write')")
+  @PostMapping("/coverages/{coverageId}/retire")
+  public ApiResponse<CoverageView> retireCoverage(
+      @Parameter(description = "险种ID") @PathVariable long coverageId) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(), claimConfigApplicationService.retireCoverage(coverageId));
   }
 }

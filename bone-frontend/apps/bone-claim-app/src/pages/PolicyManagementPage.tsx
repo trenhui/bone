@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import {
   App as AntApp,
   Button,
@@ -19,6 +19,7 @@ import dayjs from 'dayjs';
 import { AuthButton } from '@bone/ui';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
+import { FORM_VALIDATION_MESSAGE, isFormValidationError } from '../utils/formError';
 import {
   POLICY_CONFIG_STATUS_META,
   claimConfigApi,
@@ -76,20 +77,25 @@ export function PolicyManagementPage(): ReactElement {
   }, [load]);
 
   const openCreate = () => {
-    form.resetFields();
-    form.setFieldsValue({
-      waitingPeriod: 0,
-      policyVersion: 'v1',
-      effectiveStart: dayjs(),
-      effectiveEnd: dayjs().add(1, 'year'),
-    });
+    // 注意：这里**不能**再调 form.setFieldsValue(...)。
+    // Modal 此刻还没打开、Form 还没挂载，antd 的 useForm 实例未连接到任何 Form 元素，
+    // setFieldsValue 会**静默失效** ⇒ 弹窗打开是一张空表单（连默认承保期间都没有），
+    // 用户点「保存」才在必填校验上炸掉。改为把初值交给 Form 的 initialValues（挂载即生效）。
     setModalOpen(true);
   };
 
+  /** 新建表单初值（Modal 打开时挂载 ⇒ 一次到位；不缓存，避免跨天取到过期承保期间）。 */
+  const createInitialValues = {
+    waitingPeriod: 0,
+    policyVersion: 'v1',
+    effectiveStart: dayjs(),
+    effectiveEnd: dayjs().add(1, 'year'),
+  };
+
   const submit = async () => {
-    const values = await form.validateFields();
     setSubmitting(true);
     try {
+      const values = await form.validateFields();
       // 被保人是逗号分隔的假名化 ID 文本 → 后端要 JSON 数组串
       const insured = String(values.insuredHashes ?? '')
         .split(',')
@@ -114,7 +120,10 @@ export function PolicyManagementPage(): ReactElement {
       setPage(1);
       await load();
     } catch (err) {
-      if (resolveErrorCode(err)) {
+      if (isFormValidationError(err)) {
+        message.error(FORM_VALIDATION_MESSAGE);
+      } else {
+        // 兜底：任何异常都要有提示，绝不静默（原实现只在有 errorCode 时提示 ⇒ 其余全静默）
         message.error(resolveErrorMessage(err, '保单创建失败'));
       }
     } finally {
@@ -138,27 +147,37 @@ export function PolicyManagementPage(): ReactElement {
   };
 
   const openEdit = (row: PolicyView) => {
+    // 同 openCreate：Modal 未打开时 setFieldsValue 会静默失效（Form 还没挂载），
+    // 初值改由 Form 的 initialValues 承担，见下方 policyEditInitial。
     setEditTarget(row);
-    editForm.setFieldsValue({
-      policyName: row.policyName,
-      insurerName: row.insurerName,
-      branchName: row.branchName,
-      insureName: row.insureName,
-      bizIdentityCode: row.bizIdentityCode,
-      productType: row.productType,
-      waitingPeriod: row.waitingPeriod,
-      policyVersion: row.policyVersion,
-      effectiveStart: dayjs(row.effectiveStart),
-      effectiveEnd: dayjs(row.effectiveEnd),
-      insuredHashes: parseInsuredSnapshot(row.insuredSnapshot).join(','),
-    });
   };
+
+  /** 编辑表单初值：按被编辑保单派生，配合 <Form key=...> 在挂载时一次性灌入。 */
+  const policyEditInitial = useMemo(
+    () =>
+      editTarget
+        ? {
+            policyName: editTarget.policyName,
+            insurerName: editTarget.insurerName,
+            branchName: editTarget.branchName,
+            insureName: editTarget.insureName,
+            bizIdentityCode: editTarget.bizIdentityCode,
+            productType: editTarget.productType,
+            waitingPeriod: editTarget.waitingPeriod,
+            policyVersion: editTarget.policyVersion,
+            effectiveStart: dayjs(editTarget.effectiveStart),
+            effectiveEnd: dayjs(editTarget.effectiveEnd),
+            insuredHashes: parseInsuredSnapshot(editTarget.insuredSnapshot).join(','),
+          }
+        : undefined,
+    [editTarget],
+  );
 
   const submitEdit = async () => {
     if (!editTarget) return;
-    const values = await editForm.validateFields();
     setSubmitting(true);
     try {
+      const values = await editForm.validateFields();
       const insured = String(values.insuredHashes ?? '')
         .split(',')
         .map((v: string) => v.trim())
@@ -181,14 +200,18 @@ export function PolicyManagementPage(): ReactElement {
       setEditTarget(null);
       await load();
     } catch (err) {
+      if (isFormValidationError(err)) {
+        message.error(FORM_VALIDATION_MESSAGE);
+        return;
+      }
       const code = resolveErrorCode(err);
       if (code === 'SC_CLAIM_CONCURRENT_CONFLICT') {
         // 乐观锁冲突：编辑期间被他人改过。关闭弹窗并刷新，提示用户重新打开编辑。
         setEditTarget(null);
         await load();
         message.warning('该保单已被其他人修改，请重新打开编辑并保存');
-      } else if (code) {
-        // 启用中改承保期间会被后端拒绝（返回 400 + 「启用中的保单不允许修改承保期间，请先停用」），此处透传同口径提示
+      } else {
+        // 兜底：启用中改承保期间等业务错误走这里；未知异常也必须有提示，绝不静默。
         message.error(resolveErrorMessage(err, '保单更新失败'));
       }
     } finally {
@@ -360,7 +383,13 @@ export function PolicyManagementPage(): ReactElement {
         width={720}
         destroyOnHidden
       >
-        <Form form={form} layout="vertical" preserve={false}>
+        <Form
+          key="policy-create"
+          form={form}
+          layout="vertical"
+          preserve={false}
+          initialValues={createInitialValues}
+        >
           <Space size="middle" wrap style={{ width: '100%' }}>
             <Form.Item
               name="policyNo"
@@ -443,7 +472,13 @@ export function PolicyManagementPage(): ReactElement {
         width={720}
         destroyOnHidden
       >
-        <Form form={editForm} layout="vertical" preserve={false}>
+        <Form
+          key={editTarget?.policyNo ?? 'policy-edit-none'}
+          form={editForm}
+          layout="vertical"
+          preserve={false}
+          initialValues={policyEditInitial}
+        >
           <Space size="middle" wrap style={{ width: '100%' }}>
             <Form.Item name="policyName" label="保单名称" style={{ width: 260 }}>
               <Input placeholder="选填" />

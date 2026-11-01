@@ -3,8 +3,10 @@ package com.bone.claim.application;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
+import com.bone.claim.domain.model.policy.ClaimPlan;
 import com.bone.claim.domain.model.quota.QuotaAccount;
 import com.bone.claim.domain.model.quota.QuotaChangeLog;
+import com.bone.claim.domain.repository.ClaimPlanRepository;
 import com.bone.claim.domain.repository.QuotaAccountRepository;
 import com.bone.claim.domain.repository.QuotaChangeLogRepository;
 import com.bone.core.annotation.NoDomainEvent;
@@ -53,6 +55,7 @@ public class QuotaConfigApplicationService {
 
   private final QuotaAccountRepository quotaAccountRepository;
   private final QuotaChangeLogRepository quotaChangeLogRepository;
+  private final ClaimPlanRepository claimPlanRepository;
   private final TenantPort tenantPort;
 
   /** 某保单下的额度账户列表（配置面）。 */
@@ -103,6 +106,16 @@ public class QuotaConfigApplicationService {
     if (existing != null) {
       return QuotaAccountView.from(existing);
     }
+    // 外键完整性：额度账户必须挂在**真实存在且属于本保单**的计划上。
+    //
+    // <p><b>为什么这是必需的一道闸</b>：额度账户自身（额度/占用/守恒）全对，只有"按计划查账户"或理算时
+    // 才会发现计划为 null，且没有任何一条错误信息指向真因 ⇒ 孤儿账户极难排查。
+    // 这条洞真实可达：雪花 ID 是 18~19 位、超出 JS Number 上限 2^53，调用方让 ID 经过一次 {@code Number()}
+    // 往返末位就被静默截断，后端照单全收 ⇒ 账户挂到"一个不存在的计划"上，全程零报错。
+    //
+    // <p><b>为什么放在幂等分支之后</b>：已存在同键账户时直接返回（运营重复点"初始化"是正常操作），
+    // 该路径不做计划存在性校验——否则计划已下线/删除的历史数据会让运营再也点不动"初始化"。
+    requirePlanOfPolicy(command.planId(), command.policyNo());
     QuotaAccount account =
         QuotaAccount.open(
             DistributedIdGenerator.generateLongId(),
@@ -136,6 +149,8 @@ public class QuotaConfigApplicationService {
   @Transactional(propagation = Propagation.REQUIRED)
   public QuotaAccountView adjustInitial(AdjustQuota command) {
     QuotaAccount account = requireAccount(command.quotaAccountId());
+    ClaimConfigApplicationService.assertEditableVersion(
+        "额度账户", account.getVersion(), command.version());
     BigDecimal before = account.adjustInitial(command.newInitial());
     quotaAccountRepository.save(account);
     appendChangeLog(
@@ -153,6 +168,8 @@ public class QuotaConfigApplicationService {
   @Transactional(propagation = Propagation.REQUIRED)
   public QuotaAccountView removeInsured(AdjustQuota command) {
     QuotaAccount account = requireAccount(command.quotaAccountId());
+    ClaimConfigApplicationService.assertEditableVersion(
+        "额度账户", account.getVersion(), command.version());
     BigDecimal before = account.initial();
     account.markRemoved();
     quotaAccountRepository.save(account);
@@ -171,6 +188,8 @@ public class QuotaConfigApplicationService {
   @Transactional(propagation = Propagation.REQUIRED)
   public QuotaAccountView restoreInsured(AdjustQuota command) {
     QuotaAccount account = requireAccount(command.quotaAccountId());
+    ClaimConfigApplicationService.assertEditableVersion(
+        "额度账户", account.getVersion(), command.version());
     BigDecimal before = account.initial();
     account.restore();
     quotaAccountRepository.save(account);
@@ -193,6 +212,19 @@ public class QuotaConfigApplicationService {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_QUOTA_NOT_FOUND, quotaAccountId);
     }
     return account;
+  }
+
+  /**
+   * 外键完整性闸：计划必须存在且属于该保单。
+   *
+   * <p>复用既有的 {@code CLAIM_PLAN_NOT_FOUND}，不新增错误码——语义上「该保单下没有这个计划」
+   * 与「计划不存在」对调用方是同一件事（都是"你传的计划用不了"），拆两个码只会让前端多写一个分支。
+   */
+  private void requirePlanOfPolicy(long planId, String policyNo) {
+    ClaimPlan plan = claimPlanRepository.findPlanById(planId);
+    if (plan == null || !policyNo.equals(plan.policyNo())) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_PLAN_NOT_FOUND, planId);
+    }
   }
 
   private void appendChangeLog(
@@ -240,7 +272,9 @@ public class QuotaConfigApplicationService {
       BigDecimal newInitial,
       String operatorId,
       String operatorName,
-      String remark) {}
+      String remark,
+      /** 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）；为空时放行以兼容非前端调用方。 */
+      Long version) {}
 
   /** 额度账户视图（配置面读模型；含三值与可用额度）。 */
   public record QuotaAccountView(
@@ -258,7 +292,9 @@ public class QuotaConfigApplicationService {
       BigDecimal deductibleUsed,
       BigDecimal capUsed,
       boolean removed,
-      Instant updatedAt) {
+      Instant updatedAt,
+      /** 乐观锁版本号（编辑提交时原样带回，用于并发冲突检测）。 */
+      Long version) {
 
     static QuotaAccountView from(QuotaAccount a) {
       return new QuotaAccountView(
@@ -276,7 +312,8 @@ public class QuotaConfigApplicationService {
           a.getDeductibleUsed(),
           a.getCapUsed(),
           a.isRemoved(),
-          a.getUpdatedAt());
+          a.getUpdatedAt(),
+          a.getVersion());
     }
   }
 

@@ -50,35 +50,49 @@ public interface ClaimPolicyRepository extends Repository<ClaimPolicy, Long> {
    */
   default List<ClaimPolicy> findPolicyPage(
       Long tenantId, String keyword, String configStatus, int page, int size) {
-    Criteria<ClaimPolicy> criteria =
-        Criteria.<ClaimPolicy>create()
-            .eq(ClaimPolicy::getTenantId, tenantId)
-            .like(
-                keyword != null && !keyword.isBlank(),
-                ClaimPolicy::getPolicyNo,
-                keyword == null ? null : "%" + keyword.trim() + "%")
-            .eq(
-                configStatus != null && !configStatus.isBlank(),
-                ClaimPolicy::getConfigStatus,
-                configStatus)
-            .orderByDesc(ClaimPolicy::getCreatedAt)
-            .page(page, size);
+    Criteria<ClaimPolicy> criteria = policyListCriteria(tenantId, keyword, configStatus);
+    criteria.orderByDesc(ClaimPolicy::getCreatedAt).page(page, size);
     return findByCriteria(criteria);
   }
 
   /** 分页总数（与 {@link #findPolicyPage} 同口径）。 */
   default long countPolicyPage(Long tenantId, String keyword, String configStatus) {
+    return countByCriteria(policyListCriteria(tenantId, keyword, configStatus));
+  }
+
+  /**
+   * 列表查询条件（list 与 count 共用，避免两端口径漂移）。
+   *
+   * <p><b>关键字必须跨两列 OR</b>：前端搜索框 placeholder 承诺「保单号 / 名称」两维搜索，API 契约同样写明 「保单号/名称模糊匹配」。此前实现只对 {@code
+   * policy_no} 单列做 LIKE —— 按保单名称搜索恒返回 0 条， 属"注释宣称 X ≠ 代码做了 X"的契约违背。
+   *
+   * <p><b>为何用 {@link Criteria#or(Consumer)} 条件组而非扁平 {@code or()} 链</b>：条件组会把子条件括号包裹成一个原生片段， 与外层 AND
+   * 安全组合为 {@code (policy_no LIKE ? OR policy_name LIKE ?) AND config_status = ?}； 扁平 {@code or()}
+   * 链在后续还有 {@code and()} 时会被 SQL 优先级退化为 {@code a OR (b AND c)}—— 「仅保单号命中、却不满足规则开关过滤」的行会从 OR
+   * 左支漏过过滤（参照 {@code bone-system} 的 {@code RepositoryKeywordOrSearchTest} 同类回归用例）。
+   *
+   * <p>排序固定 {@code createdAt} 倒序：自然序在 OR 查询下不保证跨页稳定，分页可能重复/丢行。
+   *
+   * @param tenantId 租户
+   * @param keyword 关键字（空/空白视为不过滤）
+   * @param configStatus 规则开关（空/空白视为不过滤）
+   */
+  static Criteria<ClaimPolicy> policyListCriteria(
+      Long tenantId, String keyword, String configStatus) {
     Criteria<ClaimPolicy> criteria =
-        Criteria.<ClaimPolicy>create()
-            .eq(ClaimPolicy::getTenantId, tenantId)
-            .like(
-                keyword != null && !keyword.isBlank(),
-                ClaimPolicy::getPolicyNo,
-                keyword == null ? null : "%" + keyword.trim() + "%")
-            .eq(
-                configStatus != null && !configStatus.isBlank(),
-                ClaimPolicy::getConfigStatus,
-                configStatus);
-    return countByCriteria(criteria);
+        Criteria.<ClaimPolicy>create().eq(ClaimPolicy::getTenantId, tenantId);
+    boolean hasKeyword = keyword != null && !keyword.isBlank();
+    if (hasKeyword) {
+      String pattern = "%" + keyword.trim() + "%";
+      criteria.or(
+          sub ->
+              sub.like(ClaimPolicy::getPolicyNo, pattern)
+                  .like(ClaimPolicy::getPolicyName, pattern));
+    }
+    criteria.eq(
+        configStatus != null && !configStatus.isBlank(),
+        ClaimPolicy::getConfigStatus,
+        configStatus);
+    return criteria;
   }
 }

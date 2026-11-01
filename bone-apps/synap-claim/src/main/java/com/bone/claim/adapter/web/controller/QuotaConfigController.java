@@ -105,7 +105,12 @@ public class QuotaConfigController {
         HttpStatus.OK.value(),
         quotaConfigApplicationService.adjustInitial(
             new QuotaConfigApplicationService.AdjustQuota(
-                quotaAccountId, request.newInitial(), operatorId, operatorId, request.remark())));
+                quotaAccountId,
+                request.newInitial(),
+                operatorId,
+                operatorId,
+                request.remark(),
+                request.version())));
   }
 
   @Operation(summary = "减人", description = "该被保人不再参与额度累计（不删除账户与历史）")
@@ -119,7 +124,12 @@ public class QuotaConfigController {
         HttpStatus.OK.value(),
         quotaConfigApplicationService.removeInsured(
             new QuotaConfigApplicationService.AdjustQuota(
-                quotaAccountId, null, operatorId, operatorId, request.remark())));
+                quotaAccountId,
+                null,
+                operatorId,
+                operatorId,
+                request.remark(),
+                request.version())));
   }
 
   @Operation(summary = "恢复", description = "撤销减人，重新参与额度累计")
@@ -133,6 +143,11 @@ public class QuotaConfigController {
         HttpStatus.OK.value(),
         quotaConfigApplicationService.restoreInsured(
             new QuotaConfigApplicationService.AdjustQuota(
-                quotaAccountId, null, operatorId, operatorId, request.remark())));
+                quotaAccountId,
+                null,
+                operatorId,
+                operatorId,
+                request.remark(),
+                request.version())));
   }
 }
