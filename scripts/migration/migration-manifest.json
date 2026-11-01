@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 94,
+  "executableCount": 96,
   "retired": [],
   "entries": [
     {
@@ -615,6 +615,18 @@
       "file": "0088_approver_id_inert_relabel.sql",
       "kind": "dml",
       "summary": "决策 D1 收口：把 approver_id 的惰性弃用语义显式标注——仅 FIELD/INITIATOR_SELECT 指定审批人使用，组织策略(LINE_MANAGER/DEPT_HEAD/LEVEL_UP)不读，v1/v2 在途实例仍按启动版本读、禁止删列（expand/contract）；只改注释不动物理列与数据"
+    },
+    {
+      "order": 95,
+      "file": "0089_synap_claim_reconciliation_action.sql",
+      "kind": "ddl",
+      "summary": "给资金对账补一张处置流水 t_reconciliation_action，让「差异处置」与「额度投影重建」从只打日志变成库内可查。此前 §11.7 的六类差异只能看不能处置（t_reconciliation_diff.resolution 恒为 PENDING、实体 append-only、零写路径），待处置清单只增不减；投影重建入口虽已建，但只写应用日志（[额度投影重建]），谁在何时重算了哪个账户、改了哪几列只能翻轮转过的日志文件。取舍：处置不回写 diff 行（那是证据，允许更新等于允许改写证据），动作一律追加；同一差异的并发处置因此不会互相覆盖。建表带 updated_at/updated_by/deleted 是因为 SDK 的 INSERT 列清单由实体元数据生成（UpsertBuilder → ctx.getTable().getColumns()），审计列被映射，缺列即 ERROR 1054；append-only 由代码不写 update 保证，不由缺列保证。配套断言：表存在 / 14 列齐全 / 两个索引存在 / operator_id 非空——无操作人的处置流水等于没有留痕。"
+    },
+    {
+      "order": 96,
+      "file": "0090_synap_claim_liability_v12_v15.sql",
+      "kind": "ddl",
+      "summary": "把 synap-claim 的 Flyway 孤儿脚本 V12-V15 落到本仓生效迁移通道：t_adj_liability 补 invoice_deduct/adjust_deduct/daily_limit/daily_limit_basis/limit_mode/limit_hospital_codes/limit_diagnosis_codes/catalog_policy/catalog_code 九列 + t_quota_transaction 补 biz_date，动态 DDL 幂等 + 终态断言（与 0085 配置表/列补丁同源，独立成条以便追溯该批次）。"
     }
   ],
   "ordinalConflicts": [

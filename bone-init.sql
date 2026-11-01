@@ -3575,6 +3575,28 @@ CREATE TABLE `t_expense_reimbursement_item` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- ── t_reconciliation_action（建自 0089_synap_claim_reconciliation_action.sql） ──
+DROP TABLE IF EXISTS `t_reconciliation_action`;
+CREATE TABLE `t_reconciliation_action` (
+  `id` bigint NOT NULL COMMENT '处置动作ID(分布式ID)',
+  `target_type` varchar(24) NOT NULL COMMENT '目标类型(DIFF=对账差异/QUOTA_ACCOUNT=额度账户)',
+  `target_id` bigint NOT NULL COMMENT '目标ID(差异ID 或 额度账户ID)',
+  `action_type` varchar(32) NOT NULL COMMENT '动作类型(DIFF_RESOLVE=差异处置/PROJECTION_REBUILD=按流水重建投影)',
+  `resolution` varchar(16) NOT NULL DEFAULT '' COMMENT '处置结论(仅 DIFF_RESOLVE: RESOLVED/ADJUSTED/WAIVED)',
+  `detail` varchar(512) NOT NULL DEFAULT '' COMMENT '处置说明/重算逐列 before->after',
+  `operator_id` varchar(64) NOT NULL COMMENT '操作人(取自鉴权身份，不接受请求体自报)',
+  `occurred_at` datetime(3) NOT NULL COMMENT '动作发生时间',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间(随创建写一次，业务不再改)',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '逻辑删除(业务不删，列由框架注入)',
+  PRIMARY KEY (`id`),
+  KEY `idx_target` (`tenant_id`,`target_type`,`target_id`,`occurred_at`),
+  KEY `idx_action` (`tenant_id`,`action_type`,`occurred_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='资金对账处置流水(append-only)';
+
 -- ── t_reconciliation_diff（建自 0072_synap_claim_missing_tables.sql） ──
 DROP TABLE IF EXISTS `t_reconciliation_diff`;
 CREATE TABLE `t_reconciliation_diff` (

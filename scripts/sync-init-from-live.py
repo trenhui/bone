@@ -89,6 +89,10 @@ MERGED_SOURCES: dict[str, str] = {
     "t_domain_event_outbox": "0072_synap_claim_missing_tables.sql",
     "t_reconciliation_report": "0072_synap_claim_missing_tables.sql",
     "t_reconciliation_diff": "0072_synap_claim_missing_tables.sql",
+    # 0089：资金对账处置流水（append-only）。补登记：9e406b454 把该表 DDL 并入了
+    # bone-init.sql 的托管区块，却没登记进本清单 ⇒ sync 脚本按 MERGED_SOURCES 重建区块时
+    # 会把它抹掉，--check 也会判「多表（init 有、活库无）」。归档只增不改，此处补齐。
+    "t_reconciliation_action": "0089_synap_claim_reconciliation_action.sql",
 }
 
 

@@ -48,7 +48,10 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.CLAIM_PLAN_NOT_FOUND, 404),
           Map.entry(ClaimErrorCodes.CLAIM_PLAN_DUPLICATED, 409),
           Map.entry(ClaimErrorCodes.CLAIM_COVERAGE_NOT_FOUND, 404),
-          Map.entry(ClaimErrorCodes.CLAIM_COVERAGE_DUPLICATED, 409));
+          Map.entry(ClaimErrorCodes.CLAIM_COVERAGE_DUPLICATED, 409),
+          // 对账处置：404 = 差异不存在/不属本租户；409 = 已处置或结论非法（不静默幂等，见错误码注释）
+          Map.entry(ClaimErrorCodes.CLAIM_RECON_DIFF_NOT_FOUND, 404),
+          Map.entry(ClaimErrorCodes.CLAIM_RECON_DIFF_CONFLICT, 409));
 
   static {
     checkEveryCodeRegistered();

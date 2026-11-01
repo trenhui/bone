@@ -334,6 +334,64 @@ class ReconciliationApplicationServiceTest {
   }
 
   @Test
+  @DisplayName("两笔流水从同一个旧值出发 ⇒ LEDGER_CHAIN_BREAK（投影照样等于 Σ流水，投影判据看不见）")
+  void detectsLedgerChainBreak() {
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_QUOTA))
+        .thenReturn(null);
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_PAYMENT))
+        .thenReturn(mock(ReconciliationReport.class));
+
+    // 账户投影与 Σ流水一致（冻结 500 = 300 + 200），守恒也平：只有"第二笔又从 0 起"这件事是错的
+    QuotaAccount account =
+        quotaAccount(1L, "20000.00", "0.00", "500.00", "19500.00", "0.00", "0.00");
+    List<QuotaTransaction> ledger =
+        List.of(
+            chainTxn("SOFT", "OCCUPY", "300.00", "0.00", "300.00", "S1", "K1"),
+            chainTxn("SOFT", "OCCUPY", "200.00", "0.00", "200.00", "S2", "K2"));
+    when(quotaAccountRepository.findTransactions(1L)).thenReturn(ledger);
+    when(quotaAccountRepository.findAllAccounts()).thenReturn(List.of(account));
+
+    service.reconcileForTenant(BIZ_DATE);
+
+    ArgumentCaptor<ReconciliationDiff> diffCaptor =
+        ArgumentCaptor.forClass(ReconciliationDiff.class);
+    verify(diffRepository).save(diffCaptor.capture());
+    ReconciliationDiff diff = diffCaptor.getValue();
+    assertEquals("LEDGER_CHAIN_BREAK", diff.getDiffType());
+    // 差异单要能回答"哪一列、哪种断法"
+    assertEquals("quota_frozen:CONTINUITY", diff.getRemoteStatus());
+    assertEquals(0, diff.getLocalAmount().compareTo(new BigDecimal("0.00")));
+    assertEquals(0, diff.getRemoteAmount().compareTo(new BigDecimal("300.00")));
+  }
+
+  @Test
+  @DisplayName("大额已付款却从未进复核冻结 ⇒ REVIEW_EVIDENCE_MISSING（流水逐条合法，缺的是「谁点的」）")
+  void detectsReviewEvidenceGap() {
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_QUOTA))
+        .thenReturn(mock(ReconciliationReport.class));
+    when(reportRepository.findReport(TENANT, BIZ_DATE, ReconciliationReport.CHANNEL_PAYMENT))
+        .thenReturn(null);
+
+    SettlementOrder settlement = settlement(5L, 25L, "C25", "SO25", "20000.00", FundingStage.PAID);
+    when(settlementRepository.findByBizDate(BIZ_DATE)).thenReturn(List.of(settlement));
+    List<FundingEvent> events =
+        List.of(
+            eventAmount("SOFT_RESERVED", 0, "20000.00"),
+            eventAmount("HARD_RESERVED", 1, "20000.00"),
+            eventAmount("PAID", 2, "20000.00"));
+    when(settlementRepository.findFundingEventsBySettlementId(5L)).thenReturn(events);
+
+    service.reconcileForTenant(BIZ_DATE);
+
+    ArgumentCaptor<ReconciliationDiff> diffCaptor =
+        ArgumentCaptor.forClass(ReconciliationDiff.class);
+    verify(diffRepository).save(diffCaptor.capture());
+    ReconciliationDiff diff = diffCaptor.getValue();
+    assertEquals("REVIEW_EVIDENCE_MISSING", diff.getDiffType());
+    assertEquals("MISSING_REVIEW_EVENT", diff.getRemoteStatus());
+  }
+
+  @Test
   void skipsWhenReportAlreadyExists() {
     when(reportRepository.findReport(any(), any(), any()))
         .thenReturn(mock(ReconciliationReport.class));
@@ -409,5 +467,28 @@ class ReconciliationApplicationServiceTest {
     when(t.getAmount()).thenReturn(new BigDecimal(amount));
     when(t.getSettlementNo()).thenReturn(settlementNo);
     return t;
+  }
+
+  /** 带 before/after 的流水桩（串链判据要读前后值；投影判据不读，故只在串链用例里给）。 */
+  private static QuotaTransaction chainTxn(
+      String txnType,
+      String direction,
+      String amount,
+      String before,
+      String after,
+      String settlementNo,
+      String idempotencyKey) {
+    QuotaTransaction t = txn(txnType, direction, amount, settlementNo);
+    when(t.getBeforeAmount()).thenReturn(new BigDecimal(before));
+    when(t.getAfterAmount()).thenReturn(new BigDecimal(after));
+    when(t.getIdempotencyKey()).thenReturn(idempotencyKey);
+    return t;
+  }
+
+  /** 带金额的资金流水桩（复核留痕判据按大额门判，金额必须真的够大）。 */
+  private static FundingEvent eventAmount(String stage, long offsetSeconds, String amount) {
+    FundingEvent e = event(stage, offsetSeconds);
+    when(e.getAmount()).thenReturn(new BigDecimal(amount));
+    return e;
   }
 }

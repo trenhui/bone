@@ -14,7 +14,7 @@ MySQL/TiDB 直接 Duplicate column name），且同批索引引用并不存在�
   D5 CREATE TABLE 块以 `) ENGINE=InnoDB` 收尾（无悬空逗号）
   D6 禁注入表的建表块不得含 updated_at/updated_by/deleted/version
      （名单**从本文 §9.2 矩阵现读**，不在脚本里手抄——见下方 append_only_tables）
-  D7 §9.5 建表数 = 35（与 §9.1 表清单口径一致；改表数须同步 §9.1/§11.13）
+  D7 §9.5 建表数 = 36（与 §9.1 表清单口径一致；改表数须同步 §9.1/§11.13）
 
 关于 D6 的名单来源（2026-10-30 修正）：
   原先本脚本硬编码一份 APPEND_ONLY 副本，注释却写着「本文 §9.2 矩阵登记的名单」——
@@ -128,8 +128,8 @@ def main():
                 errors.append('D6 %s（L%d）：§9.2 矩阵判其禁注入变更列，却声明了 %s'
                               % (n, t['line'], sorted(bad)))
 
-    if len(tables) != 35:
-        errors.append('D7 §9.5 建表数 %d ≠ 35（与 §9.1 表清单/§11.13 口径不一致）' % len(tables))
+    if len(tables) != 36:
+        errors.append('D7 §9.5 建表数 %d ≠ 36（与 §9.1 表清单/§11.13 口径不一致）' % len(tables))
 
     if errors:
         print('=== DDL 可执行性机检 ===')
@@ -138,7 +138,7 @@ def main():
         print('共 %d 项失败' % len(errors))
         return 1
     print('=== DDL 可执行性机检 ===')
-    print('【OK】35 表全部通过：单 id 主键 / 列名唯一 / PK 存在 / 索引列已声明 / 围栏收尾 / append-only 无变更列')
+    print('【OK】36 表全部通过：单 id 主键 / 列名唯一 / PK 存在 / 索引列已声明 / 围栏收尾 / append-only 无变更列')
     return 0
 
 

@@ -147,11 +147,23 @@ DELETE FROM t_quota_transaction WHERE claim_id=$CLAIM_ID;
 DELETE FROM t_adj_calculation WHERE claim_id=$CLAIM_ID;
 DELETE FROM t_adj_calculation WHERE id=900000091;
 INSERT INTO t_adj_calculation (id, claim_id, liability_uuid, liability_version, rule_version, formula_snapshot, formula_hash, total_amount, result_status, tenant_id, created_at, updated_at)
-VALUES (900000091, $CLAIM_ID, 'e2e-liability', 'v1', 'v1', '{\"e2e\":true}', REPEAT('a',64), 15000.00, 'CONFIRMED', $TENANT, NOW(3), NOW(3));
+VALUES (900000091, $CLAIM_ID, 'e2e-liab-9001', 'v1', 'v1', '{\"e2e\":true}', REPEAT('a',64), 15000.00, 'CONFIRMED', $TENANT, NOW(3), NOW(3));
+-- 两本账: 个人账(PERSONAL) 与 责任账(LIABILITY_CAP). 只开个人账时 A6 读不到责任账,
+-- accumulationAvailable=false, A7 结算按 fail-closed 拒单 SC_CLAIM_QUOTA_NOT_FOUND.
 INSERT INTO t_quota_account (id, insured_id_hash, policy_no, plan_id, quota_year, quota_type, liability_uuid, quota_initial, quota_claimed, quota_frozen, tenant_id, created_at, updated_at)
 VALUES (900000092, '$INSH', '$POLICY', $PLAN, YEAR(NOW()), 'PERSONAL', '', 200000.00, 0, 0, $TENANT, NOW(3), NOW(3))
-ON DUPLICATE KEY UPDATE quota_initial=200000.00, quota_claimed=0, quota_frozen=0;" 2>&1 | grep -v "Using a password" || true
-check "夹具就绪（理算 15000 + 额度 200000）" "$(sql "SELECT COUNT(*) FROM t_adj_calculation WHERE claim_id=$CLAIM_ID;")" "1"
+ON DUPLICATE KEY UPDATE quota_initial=200000.00, quota_claimed=0, quota_frozen=0;
+INSERT INTO t_quota_account (id, insured_id_hash, policy_no, plan_id, quota_year, quota_type, liability_uuid, quota_initial, quota_claimed, quota_frozen, tenant_id, created_at, updated_at)
+VALUES (900000094, '$INSH', '$POLICY', $PLAN, YEAR(NOW()), 'LIABILITY_CAP', 'e2e-liab-9001', 500000.00, 0, 0, $TENANT, NOW(3), NOW(3))
+ON DUPLICATE KEY UPDATE quota_initial=500000.00, quota_claimed=0, quota_frozen=0;
+-- 责任配置: 责任属运营导入, dev 库默认无种子, 缺则建单必 422 SC_CLAIM_LIABILITY_NOT_FOUND.
+-- 此处按 E2E 口径幂等补一条 ACTIVE 责任, 保证可重复跑.
+INSERT INTO t_adj_liability (id, liability_uuid, liability_version, plan_id, liability_code, liability_type, pay_percent, liability_deduct, liability_limit, social_only, waiting_period, status, tenant_id, created_at, updated_at, deleted)
+VALUES (900000093, 'e2e-liab-9001', 'v1', ${PLAN}, 'MED_REIMB', 'REIMBURSEMENT', 100.00, 0.00, 500000.00, 0, 0, 'ACTIVE', ${TENANT}, NOW(3), NOW(3), 0)
+ON DUPLICATE KEY UPDATE status='ACTIVE', pay_percent=100.00, liability_limit=500000.00, deleted=0;" 2>&1 | grep -v "Using a password" || true
+check "夹具就绪（理算 15000 + 额度 200000）" "$(sql "SELECT COUNT(*) FROM t_adj_calculation WHERE claim_id=${CLAIM_ID};")" "1"
+check "责任配置就绪（有 ACTIVE 责任）" "$(sql "SELECT COUNT(*) FROM t_adj_liability WHERE plan_id=${PLAN} AND status='ACTIVE' AND deleted=0;")" "1"
+check "两本账就绪（PERSONAL + LIABILITY_CAP）" "$(sql "SELECT COUNT(*) FROM t_quota_account WHERE policy_no='${POLICY}' AND plan_id=${PLAN} AND quota_type IN ('PERSONAL','LIABILITY_CAP');")" "2"
 
 # ---------- Step 3：建单（软占） ----------
 echo ""
@@ -159,7 +171,9 @@ echo "[Step 3] 建结算单（软占额度）"
 R=$(req POST "$GW/api/v1/claims/$CLAIM_ID/settlement" "${AUTH3[@]}" -d '{"attempt":1,"accountType":"PERSONAL"}')
 check "POST /settlement" "$(code_of "$R")" "201"
 check "初始阶段 SOFT_RESERVED" "$(body_of "$R" | jget data.fundingStage)" "SOFT_RESERVED"
-check "软占落额度 frozen" "$(sql "SELECT quota_frozen FROM t_quota_account WHERE policy_no='$POLICY' AND plan_id=$PLAN;")" "15000.00"
+# 断言对象必须限定 quota_type='PERSONAL'：夹具现已开两本账（PERSONAL + LIABILITY_CAP），
+# 不限定会得到两行，"15000.00\n15000.00" 与期望值不等 ⇒ 判据因多返回一行而假红。
+check "软占落额度 frozen" "$(sql "SELECT quota_frozen FROM t_quota_account WHERE policy_no='$POLICY' AND plan_id=$PLAN AND quota_type='PERSONAL';")" "15000.00"
 
 # ---------- Step 4：大额审核通过（第一道认证） ----------
 echo ""
@@ -200,7 +214,7 @@ R=$(req POST "$GW/api/v1/claims/$CLAIM_ID/settlement/pay" "${AUTH2[@]}")
 check "POST /settlement/pay" "$(code_of "$R")" "200"
 check "阶段 PAID" "$(body_of "$R" | jget data.fundingStage)" "PAID"
 check "额度已确认扣减（claimed=15000, frozen=0）" \
-  "$(sql "SELECT CONCAT(quota_claimed,'/',quota_frozen) FROM t_quota_account WHERE policy_no='$POLICY' AND plan_id=$PLAN;")" \
+  "$(sql "SELECT CONCAT(quota_claimed,'/',quota_frozen) FROM t_quota_account WHERE policy_no='$POLICY' AND plan_id=$PLAN AND quota_type='PERSONAL';")" \
   "15000.00/0.00"
 
 # ---------- Step 8：台账（两次认证各一条流水） ----------

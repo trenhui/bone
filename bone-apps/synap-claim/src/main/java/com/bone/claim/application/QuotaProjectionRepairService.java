@@ -6,9 +6,12 @@ import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.quota.QuotaAccount;
 import com.bone.claim.domain.model.quota.QuotaProjection;
 import com.bone.claim.domain.model.quota.QuotaTransaction;
+import com.bone.claim.domain.model.reconciliation.ReconciliationAction;
 import com.bone.claim.domain.repository.QuotaAccountRepository;
+import com.bone.claim.domain.repository.ReconciliationActionRepository;
 import com.bone.core.annotation.NoDomainEvent;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -41,8 +44,9 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li><b>没有漂移 ⇒ 什么都不做</b>（{@code changed=false}），不写库、不打"已修复"的假日志。
  * </ol>
  *
- * <p><b>留痕边界（已知缺口，别当成已闭环）</b>：动作走结构化日志（前缀 {@code [额度投影重建]}，含操作人、账户、逐列 before/after）。 独立处置流水（{@code
- * t_reconciliation_action}）尚未建表，故"谁在何时重算过哪个账户"目前<b>不在库内可查</b>，只能查应用日志。
+ * <p><b>留痕</b>：动作落 {@code t_reconciliation_action}（{@code target_type=QUOTA_ACCOUNT}、{@code
+ * action_type=PROJECTION_REBUILD}、{@code detail} 记逐列 before->after），同时保留一条 {@code WARN} 日志——
+ * 日志是排障时的第一现场，流水是审计与回溯的台账，两者不互相替代。 {@code changed=false}（本来就没漂移）不落流水：没发生的事不该有动作记录。
  */
 @Slf4j
 @NoDomainEvent
@@ -53,6 +57,7 @@ public class QuotaProjectionRepairService {
   private static final BigDecimal ZERO = new BigDecimal("0.00");
 
   private final QuotaAccountRepository quotaAccountRepository;
+  private final ReconciliationActionRepository reconciliationActionRepository;
   private final TenantPort tenantPort;
 
   /** 单列修复前后（差异单里"哪一列错了、差多少"的直接来源）。 */
@@ -104,10 +109,20 @@ public class QuotaProjectionRepairService {
     account.reconcileProjection(
         projection.frozen(), projection.claimed(), projection.deductibleUsed());
     quotaAccountRepository.save(account);
+    long tenantId = tenantPort.currentTenantId();
+    reconciliationActionRepository.save(
+        ReconciliationAction.projectionRebuilt(
+            tenantId,
+            accountId,
+            deltas.stream()
+                .map(d -> new ReconciliationAction.QuotaDelta(d.field(), d.before(), d.after()))
+                .toList(),
+            operatorId,
+            Instant.now()));
     log.warn(
         "[额度投影重建] operator={}, tenantId={}, accountId={}, deltas={}",
         operatorId,
-        tenantPort.currentTenantId(),
+        tenantId,
         accountId,
         deltas);
     return new RepairResult(accountId, true, List.copyOf(deltas));

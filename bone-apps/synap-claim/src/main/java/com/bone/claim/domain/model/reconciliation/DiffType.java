@@ -35,5 +35,21 @@ public enum DiffType {
    * AutoApprovalApplicationService} 的金额口径说明）。核减过的案件两者天然不等， 按 {@code approved_amount}
    * 判会把正常案件全判成差异——判决式写错比没有判决式更糟。
    */
-  CASE_SETTLE_MISMATCH
+  CASE_SETTLE_MISMATCH,
+  /**
+   * 额度流水的余额链断裂（§11.7 不变量 1 ④）：某笔流水的 {@code before_amount} 接不上上一条同列流水的 {@code after_amount}， 或
+   * {@code after_amount − before_amount} 与本笔金额（含方向）不等。
+   *
+   * <p>与 {@link #PROJECTION_DRIFT} 分开：后者判"账户现值 ≠ Σ流水"（结果是错的），本类型判"流水之间接不上"（过程是错的）。
+   * 一笔并发丢失更新可以只让链断、而投影照样等于 Σ流水（因为投影本来就是按流水算的）——那时 {@code PROJECTION_DRIFT} 恒绿，
+   * 只有串链看得见"两笔操作从同一个旧值出发"。判定表见 {@code QuotaLedgerChain}。
+   */
+  LEDGER_CHAIN_BREAK,
+  /**
+   * 大额双人复核留痕缺失（§11.7 不变量 5）：{@code review_first_approver} 为空、流水里没有 {@code REVIEW_FREEZE}、
+   * 放行那条没留操作人，或复核人与审核发起人同一身份。
+   *
+   * <p>判定见 {@code ReviewEvidence}。它是<b>回溯取证</b>，与聚合在写路径上的前置拦截不是同一件事：后者防未来，前者证明过去（补数/迁移/直接改库绕不过它）。
+   */
+  REVIEW_EVIDENCE_MISSING
 }

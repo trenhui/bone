@@ -1,5 +1,6 @@
 package com.bone.claim.domain.model.reconciliation;
 
+import com.bone.core.exception.DomainException;
 import com.bone.core.tenant.TenantAbstractEntity;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
@@ -7,16 +8,43 @@ import java.math.BigDecimal;
 import lombok.Getter;
 
 /**
- * 对账差异明细（append-only，§11.7 / §9.5）。
+ * 对账差异明细（finding append-only，§11.7 / §9.5）。
  *
- * <p>{@code resolution} 默认 {@code PENDING}，人工处置（RESOLVED/ADJUSTED/WAIVED）为 V2（处置写路径未建）。
- * append-only：差异一经落库只追加，不 UPDATE（处置字段的演进留待 V2 以独立处置流水承载）。
+ * <p><b>什么不变、什么变</b>：{@code diff_type/金额/阶段/对方状态} 是对账<b>结论</b>，一经落库不可改（改它就等于 改写证据）；{@code
+ * resolution/resolved_by} 是<b>处置态</b>，只允许从 {@code PENDING} 单向迁移一次。 每次迁移同时追加一条 {@code
+ * t_reconciliation_action}（处置全历史），因此"谁在何时把它标成什么、为什么" 不会因为后续再次处置而丢失。
+ *
+ * <p><b>为什么处置态不整体搬到处置流水里</b>：{@code idx_resolution(resolution, created_at)} 与 {@code findPending}
+ * 都要按"还没处置"筛，处置态留一行是最直接的过滤条件；全历史仍以流水为准。
+ *
+ * <p><b>{@code resolved_at} 为什么没有映射</b>：§9.5 目标态与 {@code db/migration/V7} 里都有这一列，但**生效通道** （{@code
+ * scripts/migration/0072} 与 {@code bone-init.sql}）没有建它。写一个库里不存在的列 = 运行期 ERROR 1054，
+ * 且只在真正处置差异时才炸——故处置时间以 {@code t_reconciliation_action.occurred_at} 为准（同一事务内写入，两者等价）。
+ * 要补这一列须先走生效通道迁移，不能只在实体上加字段。
  */
 @Getter
 @Table("t_reconciliation_diff")
 public class ReconciliationDiff extends TenantAbstractEntity<Long> {
 
   public static final String RESOLUTION_PENDING = "PENDING";
+
+  /** 已消除（重跑对账不再出现，或人工确认账实已一致）。 */
+  public static final String RESOLUTION_RESOLVED = "RESOLVED";
+
+  /** 已调账（走了补偿流水 / 更正单据，账已改）。 */
+  public static final String RESOLUTION_ADJUSTED = "ADJUSTED";
+
+  /** 已豁免（确认属可接受的差异，不做处理，须写明理由）。 */
+  public static final String RESOLUTION_WAIVED = "WAIVED";
+
+  /**
+   * 允许的处置结论集合（{@code PENDING} 不是可写入的结论）。
+   *
+   * <p>用 {@code List} 而不是 {@code Set}：这个集合同时被接口层当作"可选值"渲染（前端下拉）， 无序集合会让每次重建的顺序都可能不同。元素只有三个，{@code
+   * contains} 的线性查找可忽略。
+   */
+  public static final java.util.List<String> RESOLUTIONS =
+      java.util.List.of(RESOLUTION_RESOLVED, RESOLUTION_ADJUSTED, RESOLUTION_WAIVED);
 
   @Column(name = "report_id", nullable = false)
   private Long reportId;
@@ -77,5 +105,34 @@ public class ReconciliationDiff extends TenantAbstractEntity<Long> {
     diff.setCreatedAt(now);
     diff.setUpdatedAt(now);
     return diff;
+  }
+
+  /** 是否尚未处置（处置队列与"重复处置"判定的唯一判据）。 */
+  public boolean isPending() {
+    return RESOLUTION_PENDING.equals(resolution);
+  }
+
+  /**
+   * 给出处置结论（{@code PENDING → RESOLVED/ADJUSTED/WAIVED}，单向一次）。
+   *
+   * <p>不变量放在领域层：应用层负责把"差异不存在 / 已处置 / 结论非法"翻译成可读错误码，领域层保证不管从哪条路径进来都改不出 一个非法状态（例如将来加批量处置接口时，谁能少写一个
+   * if，它不会跟着漏）。
+   *
+   * @param targetResolution 处置结论，取值见 {@link #RESOLUTIONS}
+   * @param operatorId 处置人（鉴权身份）
+   */
+  public void resolve(String targetResolution, String operatorId) {
+    if (!isPending()) {
+      throw new DomainException("差异已处置（" + resolution + "），处置态只允许从 PENDING 单向迁移一次；要更正请追加新的处置流水");
+    }
+    if (targetResolution == null || !RESOLUTIONS.contains(targetResolution)) {
+      throw new DomainException("非法处置结论: " + targetResolution + "（允许 " + RESOLUTIONS + "）");
+    }
+    if (operatorId == null || operatorId.isBlank()) {
+      throw new DomainException("处置人不能为空");
+    }
+    this.resolution = targetResolution;
+    this.resolvedBy = operatorId;
+    this.setUpdatedAt(new java.util.Date());
   }
 }

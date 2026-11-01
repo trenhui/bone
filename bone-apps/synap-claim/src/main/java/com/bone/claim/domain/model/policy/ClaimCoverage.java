@@ -163,6 +163,33 @@ public class ClaimCoverage extends TenantAggregateRoot<Long> {
     this.updatedAt = Instant.now();
   }
 
+  /**
+   * 发布险种（DRAFT → ACTIVE）：与计划同语义的二级发布，激活后其下配置可被理算引用。
+   *
+   * <p><b>为什么要给险种也上发布态</b>：参考实现 pk-tpa-saas 的计划/险种/责任三层都走 「草稿 → 生效」状态机；本仓计划已有 {@code
+   * publish/retire}，险种此前只有草稿 + 编辑， 导致险种永远停在 DRAFT、与计划的生命周期不对齐。补齐后，保单 → 计划 → 险种的三级
+   * 配置面口径一致（草稿态不参与理算，与 {@link ClaimPlan} 同约定）。
+   */
+  public void publish(String operatorId) {
+    if (ClaimPlan.STATUS_ACTIVE.equals(status)) {
+      return;
+    }
+    if (ClaimPlan.STATUS_RETIRED.equals(status)) {
+      throw new DomainException("险种已下线，不可再发布");
+    }
+    this.status = ClaimPlan.STATUS_ACTIVE;
+    this.updatedAt = Instant.now();
+  }
+
+  /** 下线险种（ACTIVE/DRAFT → RETIRED）：不再接受新配置，历史责任保留可查。 */
+  public void retire(String operatorId) {
+    if (ClaimPlan.STATUS_RETIRED.equals(status)) {
+      return;
+    }
+    this.status = ClaimPlan.STATUS_RETIRED;
+    this.updatedAt = Instant.now();
+  }
+
   /** 险种状态（与计划同语义：DRAFT/ACTIVE/RETIRED）。 */
   public String status() {
     return status;

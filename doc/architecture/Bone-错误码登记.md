@@ -626,6 +626,8 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_COVERAGE_DUPLICATED` | 409 | 险种编码已存在（同计划下 `coverage_code` 唯一） |
 | `SC_CLAIM_DECISION_NOT_FOUND` | 404 | 案件尚无决策执行记录（轨迹回放无对象，区别于案件不存在） |
 | `SC_CLAIM_DECISION_ACTIVE_CONFLICT` | 409 | 同案已有活跃决策执行（不允许并发重跑；工作台「决策图」改为只读取最近轨迹，不该命中此码） |
+| `SC_CLAIM_RECON_DIFF_NOT_FOUND` | 404 | 对账差异不存在或不可见（租户隔离下的统一 404 语义，防枚举） |
+| `SC_CLAIM_RECON_DIFF_CONFLICT` | 409 | 对账差异状态冲突（已处置不可再次处置 / 处置结论非法；不静默幂等） |
 
 ---
 

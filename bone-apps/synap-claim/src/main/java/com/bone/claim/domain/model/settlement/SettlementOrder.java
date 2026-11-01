@@ -32,6 +32,16 @@ public class SettlementOrder extends TenantAggregateRoot<Long> {
 
   private static final BigDecimal REVIEW_THRESHOLD = new BigDecimal("10000.00");
 
+  /**
+   * 触发双人复核的金额门（≥ 该值即须两人认证）。
+   *
+   * <p><b>公开是为了让巡检用同一个数</b>：对账要不变量 5（双人复核留痕）必须知道哪些单"本应"复核， 若在对账侧再写一个 {@code 10000}，两处各自演进时
+   * 巡检会静默失效——阈值调高了，巡检还在按旧门判，报的是一片"本该复核却没有"的假红。
+   */
+  public static BigDecimal reviewThreshold() {
+    return REVIEW_THRESHOLD;
+  }
+
   @Column(name = "settlement_no", nullable = false)
   private String settlementNo;
 

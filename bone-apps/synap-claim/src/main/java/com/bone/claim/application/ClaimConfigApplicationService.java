@@ -238,6 +238,26 @@ public class ClaimConfigApplicationService {
     return CoverageView.from(coverage);
   }
 
+  /** 发布险种（DRAFT → ACTIVE）：与计划同语义的二级发布。 */
+  @Transactional
+  public CoverageView publishCoverage(long coverageId) {
+    ClaimCoverage coverage = requireCoverage(coverageId);
+    coverage.publish(CurrentOperator.requireId());
+    claimCoverageRepository.save(coverage);
+    domainEventPublisher.publishFrom(coverage);
+    return CoverageView.from(coverage);
+  }
+
+  /** 下线险种（ACTIVE/DRAFT → RETIRED）。 */
+  @Transactional
+  public CoverageView retireCoverage(long coverageId) {
+    ClaimCoverage coverage = requireCoverage(coverageId);
+    coverage.retire(CurrentOperator.requireId());
+    claimCoverageRepository.save(coverage);
+    domainEventPublisher.publishFrom(coverage);
+    return CoverageView.from(coverage);
+  }
+
   // ===================== 内部 =====================
 
   private ClaimPolicy requirePolicy(String policyNo) {
