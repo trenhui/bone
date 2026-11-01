@@ -34,8 +34,11 @@ function ClaimRoutes(): JSX.Element {
 function DevNav({ collapsed }: { collapsed?: boolean }): JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
-  const selectedKey =
+  const activePath =
     CLAIM_ROUTES.map((r) => r.path).find((k) => location.pathname.startsWith(k)) ?? CLAIM_DEFAULT_PATH;
+  // hidden 路由不占菜单项：/plan（保单配置下钻页）高亮归到其入口「保单管理」，
+  // 否则菜单无项可高亮、用户会迷失当前位置。
+  const selectedKey = activePath === '/plan' ? '/policy' : activePath;
 
   return (
     <Layout.Sider theme="light" breakpoint="lg" collapsedWidth={0} collapsed={collapsed}>
@@ -50,7 +53,11 @@ function DevNav({ collapsed }: { collapsed?: boolean }): JSX.Element {
       <Menu
         mode="inline"
         selectedKeys={[selectedKey]}
-        items={CLAIM_ROUTES.map((r) => ({ key: r.path, icon: r.icon, label: r.name }))}
+        items={CLAIM_ROUTES.filter((r) => !r.hidden).map((r) => ({
+          key: r.path,
+          icon: r.icon,
+          label: r.name,
+        }))}
         onClick={({ key }) => navigate(key)}
       />
     </Layout.Sider>

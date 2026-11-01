@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
+  Alert,
   App as AntApp,
   Button,
   Card,
@@ -11,6 +12,7 @@ import {
   Space,
   Table,
   Tag,
+  Typography,
 } from 'antd';
 import {
   CloudUploadOutlined,
@@ -22,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import { AuthButton } from '@bone/ui';
 import { resolveErrorMessage } from '@bone/shared-utils';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
 import { usePolicyOptions } from '../hooks/usePolicyOptions';
@@ -31,6 +34,7 @@ import {
   CONFIG_STATUS_META,
   claimConfigApi,
   type ConfigStatus,
+  type CoverageView,
   type CreateLiabilityReq,
   type LiabilityType,
   type LiabilityView,
@@ -61,6 +65,7 @@ const CATALOG_POLICY_OPTIONS = [
 /** 责任批量导入列定义（模板表头用英文键）。 */
 const liabilityImportColumns: ImportColumn[] = [
   { key: 'planId', label: '计划ID', required: true, example: '' },
+  { key: 'coverageId', label: '保障ID', required: false, example: '' },
   { key: 'liabilityCode', label: '责任编码', required: true, example: 'R01' },
   { key: 'liabilityType', label: '责任类型', example: 'REIMBURSEMENT' },
   { key: 'payPercent', label: '赔付比例(%)', example: '90' },
@@ -83,6 +88,7 @@ const liabilityImportColumns: ImportColumn[] = [
 function buildLiabilityRequest(row: Record<string, string>): CreateLiabilityReq | null {
   return {
     planId: row.planId.trim(),
+    coverageId: row.coverageId?.trim() || undefined,
     liabilityCode: row.liabilityCode.trim(),
     liabilityType: (row.liabilityType?.trim() || undefined) as LiabilityType | undefined,
     payPercent: row.payPercent?.trim() || undefined,
@@ -122,9 +128,20 @@ export function LiabilityConfigPage(): ReactElement {
   const { message } = AntApp.useApp();
   const confirm = useConfirmAction();
   const { policies } = usePolicyOptions();
+  // 支持 /liability?policyNo=xxx 深链：从保单管理「配置」跳入时带保单上下文
+  const [searchParams] = useSearchParams();
   const [policyNo, setPolicyNo] = useState('');
   const [plans, setPlans] = useState<PlanView[]>([]);
   const [planId, setPlanId] = useState('');
+  const [coverages, setCoverages] = useState<CoverageView[]>([]);
+  /**
+   * 保障维度筛选桶。
+   *
+   * <p>`ALL` = 全部；`UNASSIGNED` = 未挂保障（历史未分级 / 只配到方案级）；其它值为具体 coverageId。
+   * 为什么不用「空字符串代表全部、null 代表未分配」：空串与 null 在 JSX 的 `value=` 与 URL 参数里
+   * 都会退化成同一个"无值"，两个语义会互相吞掉。
+   */
+  const [bucket, setBucket] = useState<string>('ALL');
   const [liabilities, setLiabilities] = useState<LiabilityView[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -132,6 +149,8 @@ export function LiabilityConfigPage(): ReactElement {
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
   const [importOpen, setImportOpen] = useState(false);
+  /** 正在执行发布/下线的责任行（防重复提交并发控制）。 */
+  const [processingId, setProcessingId] = useState('');
 
   const loadPlans = useCallback(async (pn: string) => {
     if (!pn) {
@@ -143,6 +162,19 @@ export function LiabilityConfigPage(): ReactElement {
       setPlans(res.data ?? []);
     } catch (err) {
       message.error(resolveErrorMessage(err, '计划列表加载失败'));
+    }
+  }, [message]);
+
+  const loadCoverages = useCallback(async (pid: string) => {
+    if (!pid) {
+      setCoverages([]);
+      return;
+    }
+    try {
+      const res = await claimConfigApi.listCoverages(pid);
+      setCoverages(res.data ?? []);
+    } catch (err) {
+      message.error(resolveErrorMessage(err, '保障列表加载失败'));
     }
   }, [message]);
 
@@ -162,25 +194,131 @@ export function LiabilityConfigPage(): ReactElement {
     }
   }, [message]);
 
+  /**
+   * 保单初值：优先 URL 深链（从保单管理「配置」跳入），否则取列表首条，并随之加载计划。
+   *
+   * <p>为什么不能只 {@code setPolicyNo}：加载计划的入口是保单下拉的 onChange，
+   * 初值若绕过 onChange，页面会停在"已选中保单、计划列表却为空"的状态。</p>
+   */
   useEffect(() => {
-    setPolicyNo((prev) => prev || policies[0]?.policyNo || '');
-  }, [policies]);
+    if (policyNo || policies.length === 0) {
+      return;
+    }
+    const initial = searchParams.get('policyNo') || policies[0]?.policyNo || '';
+    if (!initial) {
+      return;
+    }
+    setPolicyNo(initial);
+    void loadPlans(initial);
+    // searchParams 只用于初始化，不进依赖：URL 变化不应触发重复加载
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [policies, policyNo, loadPlans]);
+
+  /** 保障按 ID 索引（表格列与筛选桶共用，避免每行都 find 一次）。 */
+  const coverageById = useMemo(() => {
+    const m = new Map<string, CoverageView>();
+    coverages.forEach((c) => m.set(c.coverageId, c));
+    return m;
+  }, [coverages]);
+
+  /**
+   * 各桶责任数：让「四级建模」在筛选条上直接可读，而不是逐个点开才知道有没有责任。
+   *
+   * <p>`l.coverageId === 'null'` 是**防御历史数据**：旧版视图把 `null` 序列化成了字面量 `"null"`，
+   * 这类行若只按 `!coverageId` 判断会被归进"某个保障"，从界面上彻底消失（既不在具体保障下，
+   * 也不在未分配里）。两种形态一律按"未分配"处理。
+   */
+  const bucketCounts = useMemo(() => {
+    const byCoverage = new Map<string, number>();
+    let unassigned = 0;
+    liabilities.forEach((l) => {
+      if (!l.coverageId || l.coverageId === 'null') {
+        unassigned += 1;
+      } else {
+        byCoverage.set(l.coverageId, (byCoverage.get(l.coverageId) ?? 0) + 1);
+      }
+    });
+    return { byCoverage, unassigned, total: liabilities.length };
+  }, [liabilities]);
+
+  /** 当前筛选桶下的责任行。 */
+  const visibleLiabilities = useMemo(() => {
+    if (bucket === 'ALL') {
+      return liabilities;
+    }
+    if (bucket === 'UNASSIGNED') {
+      return liabilities.filter((l) => !l.coverageId || l.coverageId === 'null');
+    }
+    return liabilities.filter((l) => l.coverageId === bucket);
+  }, [bucket, liabilities]);
+
+  /** 当前桶对应的保障（新建时预填；ALL / UNASSIGNED 不预填）。 */
+  const bucketCoverageId = bucket !== 'ALL' && bucket !== 'UNASSIGNED' ? bucket : undefined;
+
+  /**
+   * 桶失效自愈：切换方案后原选中保障可能已不属于当前列表（换了方案 / 险种被下线）。
+   *
+   * <p>不处理的表现是"筛选条上一个高亮都没有、表格却空着"——用户会以为责任全丢了。
+   * 这里在保障列表非空（已加载完）时才回退，避免加载中的空数组把选择清掉。
+   */
+  useEffect(() => {
+    if (bucket === 'ALL' || bucket === 'UNASSIGNED') {
+      return;
+    }
+    if (coverages.length > 0 && !coverages.some((c) => c.coverageId === bucket)) {
+      setBucket('ALL');
+    }
+  }, [bucket, coverages]);
 
   const onPolicyChange = async (pn: string) => {
     setPolicyNo(pn);
     setPlanId('');
+    setBucket('ALL');
+    setCoverages([]);
     setLiabilities([]);
     await loadPlans(pn);
   };
 
   const onPlanChange = async (pid: string) => {
     setPlanId(pid);
+    setBucket('ALL');
+    setLiabilities([]);
+    await loadCoverages(pid);
     await loadLiabilities(pid);
   };
 
+  /**
+   * 计划深链：`/liability?policyNo=P&planId=X`（从计划配置行「责任配置」跳入）。
+   *
+   * <p>必须等计划列表加载完再校验归属：把 URL 里的 planId 直接塞进 state 会让
+   * 「不属于当前保单的过期链接」也选中一个不存在于列表的计划——页面看起来正常，
+   * 但下拉是空的、责任表恒空，用户无法判断是没配还是跳错了。校验失败就退回
+   * 「未选计划 + 明确提示」，比静默空表可诊断。
+   *
+   * <p>{@code consumed} 保证只消费一次：否则用户切保单时 {@code plans} 变化会让
+   * 该 effect 重跑，把 URL 里那张旧计划又硬塞回选择框（切了保单却跳回原计划）。
+   */
+  const planDeepLinkConsumed = useRef(false);
+  useEffect(() => {
+    if (planDeepLinkConsumed.current || planId || plans.length === 0) {
+      return;
+    }
+    const want = searchParams.get('planId');
+    if (!want) {
+      return;
+    }
+    planDeepLinkConsumed.current = true;
+    if (!plans.some((p) => p.planId === want)) {
+      void message.warning('链接中的计划不属于当前保单（可能已下线或换了保单），请重新选择计划');
+      return;
+    }
+    void onPlanChange(want);
+    // searchParams 只用于初始化，不进依赖：URL 变化不应触发重复加载
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plans, planId]);
+
   const openCreate = () => {
     setEditTarget(null);
-    form.resetFields();
     setModalOpen(true);
   };
 
@@ -188,6 +326,7 @@ export function LiabilityConfigPage(): ReactElement {
     if (!editTarget) return undefined;
     return {
       liabilityCode: editTarget.liabilityCode,
+      coverageId: editTarget.coverageId ?? undefined,
       liabilityType: editTarget.liabilityType,
       payPercent: editTarget.payPercent,
       liabilityDeduct: editTarget.liabilityDeduct,
@@ -206,6 +345,19 @@ export function LiabilityConfigPage(): ReactElement {
     };
   }, [editTarget]);
 
+  /**
+   * 弹窗表单初值：编辑取行值；新建取当前保障桶预填（在「未分配保障」桶里新建则留空）。
+   *
+   * <p>为什么用 {@code initialValues} 而不是打开后再 {@code setFieldsValue}：弹窗首次打开时
+   * Form 尚未挂载，命令式赋值会静默失效（表现为"编辑弹窗一片空白"）；声明式初值 + {@code key}
+   * 让每次打开都拿到一份干净的表单。</p>
+   */
+  const liabilityFormInitial = editTarget
+    ? liabilityEditInitial
+    : bucketCoverageId
+      ? { coverageId: bucketCoverageId }
+      : undefined;
+
   const openEdit = (row: LiabilityView) => {
     setEditTarget(row);
     setModalOpen(true);
@@ -219,6 +371,7 @@ export function LiabilityConfigPage(): ReactElement {
         v === undefined || v === null || v === '' ? undefined : v;
       const base: Record<string, unknown> = {
         liabilityCode: values.liabilityCode?.trim(),
+        coverageId: values.coverageId ? String(values.coverageId) : undefined,
         liabilityType: clean(values.liabilityType),
         payPercent: clean(values.payPercent),
         liabilityDeduct: clean(values.liabilityDeduct),
@@ -242,10 +395,13 @@ export function LiabilityConfigPage(): ReactElement {
             : Number(values.waitingPeriod),
       };
       if (editTarget) {
-        await claimConfigApi.updateLiability(
-          editTarget.liabilityId,
-          base as unknown as UpdateLiabilityReq,
-        );
+        await claimConfigApi.updateLiability(editTarget.liabilityId, {
+          ...(base as unknown as UpdateLiabilityReq),
+          // 清空"所属保障"是显式解除归属：coverageId 传空后端无法与"没传"区分，
+          // 必须带 detachCoverage，否则界面清空了、库里还挂着旧保障。
+          detachCoverage:
+            !values.coverageId && editTarget.coverageId ? true : undefined,
+        });
         message.success('责任已更新（生效版本将生成新版本草稿）');
       } else {
         await claimConfigApi.createLiability({
@@ -263,28 +419,74 @@ export function LiabilityConfigPage(): ReactElement {
     }
   };
 
-  const publish = async (row: LiabilityView) => {
-    try {
-      await claimConfigApi.publishLiability(row.liabilityId);
-      message.success('责任已发布');
-      await loadLiabilities(planId);
-    } catch (err) {
-      message.error(resolveErrorMessage(err, '发布失败'));
-    }
+  const publish = (row: LiabilityView) => {
+    confirm({
+      title: '发布责任',
+      content: `确认发布「${row.liabilityCode}」（${row.liabilityVersion}）？发布后该 UUID 的旧生效版本将自动下线，且立即参与新赔案理算。`,
+      okText: '确认发布',
+      danger: false,
+      onOk: () => {
+        setProcessingId(row.liabilityId);
+        return claimConfigApi
+          .publishLiability(row.liabilityId)
+          .then(() => {
+            message.success('责任已发布');
+            return loadLiabilities(planId);
+          })
+          .catch((err) => {
+            message.error(resolveErrorMessage(err, '发布失败'));
+            throw err;
+          })
+          .finally(() => setProcessingId(''));
+      },
+    });
   };
 
-  const retire = async (row: LiabilityView) => {
-    try {
-      await claimConfigApi.retireLiability(row.liabilityId);
-      message.success('责任已下线');
-      await loadLiabilities(planId);
-    } catch (err) {
-      message.error(resolveErrorMessage(err, '下线失败'));
-    }
+  const retire = (row: LiabilityView) => {
+    confirm({
+      title: '下线责任',
+      content: `确认下线「${row.liabilityCode}」（${row.liabilityVersion}）？下线后将不再参与理算，历史版本保留可查。`,
+      okText: '确认下线',
+      onOk: () => {
+        setProcessingId(row.liabilityId);
+        return claimConfigApi
+          .retireLiability(row.liabilityId)
+          .then(() => {
+            message.success('责任已下线');
+            return loadLiabilities(planId);
+          })
+          .catch((err) => {
+            message.error(resolveErrorMessage(err, '下线失败'));
+            throw err;
+          })
+          .finally(() => setProcessingId(''));
+      },
+    });
   };
 
   const columns = [
     { title: '责任编码', dataIndex: 'liabilityCode', width: 110 },
+    {
+      /*
+       * 「所属保障」列：四级建模下责任可能分属不同险种，只显示一张平表时运营无从判断
+       * 某条责任归谁。空值渲染成「方案级」标签而不是留空——留白会被读成"数据缺失"，
+       * 而它其实是合法形态（历史未分级 / 只配到方案级）。
+       */
+      title: '所属保障',
+      dataIndex: 'coverageId',
+      width: 190,
+      ellipsis: true,
+      render: (v: string | null) => {
+        if (!v || v === 'null') {
+          return <Tag>方案级</Tag>;
+        }
+        const coverage = coverageById.get(v);
+        if (!coverage) {
+          return <Typography.Text type="secondary">{`未知保障 ${v}`}</Typography.Text>;
+        }
+        return `${coverage.coverageCode}${coverage.coverageName ? ` ${coverage.coverageName}` : ''}`;
+      },
+    },
     {
       title: '类型',
       dataIndex: 'liabilityType',
@@ -325,13 +527,8 @@ export function LiabilityConfigPage(): ReactElement {
             size="small"
             icon={<CloudUploadOutlined />}
             disabled={row.status === 'ACTIVE'}
-            onClick={() =>
-              confirm({
-                title: '确认发布该责任？',
-                content: '发布后旧版本将自动下线，新版本立即生效。',
-                onOk: () => publish(row),
-              })
-            }
+            loading={processingId === row.liabilityId}
+            onClick={() => publish(row)}
           >
             发布
           </AuthButton>
@@ -342,13 +539,8 @@ export function LiabilityConfigPage(): ReactElement {
             danger
             icon={<StopOutlined />}
             disabled={row.status === 'RETIRED'}
-            onClick={() =>
-              confirm({
-                title: '确认下线该责任？',
-                content: '下线后该责任版本停止生效，已受理案件按历史快照不受影响。',
-                onOk: () => retire(row),
-              })
-            }
+            loading={processingId === row.liabilityId}
+            onClick={() => retire(row)}
           >
             下线
           </AuthButton>
@@ -411,13 +603,72 @@ export function LiabilityConfigPage(): ReactElement {
             刷新
           </Button>
         </Space>
+
+        {planId && coverages.length === 0 && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="该方案尚未配置保障（险种）"
+            description="责任会挂在方案级，配置与理算不受影响；如需「保单 → 方案 → 保障 → 责任」四级建模，请先在「保单配置 → 责任规则」为该方案新增险种。"
+          />
+        )}
+
+        {planId && (
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              alignItems: 'center',
+              marginBottom: 12,
+            }}
+          >
+            <Typography.Text type="secondary">保障维度</Typography.Text>
+            <Button
+              size="small"
+              type={bucket === 'ALL' ? 'primary' : 'default'}
+              onClick={() => setBucket('ALL')}
+            >
+              {`全部 ${bucketCounts.total}`}
+            </Button>
+            {coverages.map((c) => {
+              const count = bucketCounts.byCoverage.get(c.coverageId) ?? 0;
+              const statusSuffix =
+                c.status === 'ACTIVE' ? '' : c.status === 'RETIRED' ? '（已下线）' : '（草稿）';
+              const name = c.coverageName ? ` ${c.coverageName}` : '';
+              return (
+                <Button
+                  key={c.coverageId}
+                  size="small"
+                  type={bucket === c.coverageId ? 'primary' : 'default'}
+                  onClick={() => setBucket(c.coverageId)}
+                >
+                  {`${c.coverageCode}${name}${statusSuffix} ${count}`}
+                </Button>
+              );
+            })}
+            {(bucketCounts.unassigned > 0 || bucket === 'UNASSIGNED') && (
+              <Button
+                size="small"
+                type={bucket === 'UNASSIGNED' ? 'primary' : 'default'}
+                onClick={() => setBucket('UNASSIGNED')}
+              >
+                {`未分配保障 ${bucketCounts.unassigned}`}
+              </Button>
+            )}
+          </div>
+        )}
+
         <Table<LiabilityView>
           rowKey="liabilityId"
           size="small"
           loading={loading}
-          dataSource={liabilities}
+          dataSource={visibleLiabilities}
           columns={columns}
-          pagination={liabilities.length > 10 ? { pageSize: 10 } : false}
+          /* 加了「所属保障」列后总宽 >1200：不给横向滚动，窄屏下金额列会被挤到折行 */
+          scroll={{ x: 'max-content' }}
+          pagination={visibleLiabilities.length > 10 ? { pageSize: 10 } : false}
         />
       </Card>
 
@@ -427,85 +678,155 @@ export function LiabilityConfigPage(): ReactElement {
         onCancel={() => setModalOpen(false)}
         onOk={() => void submit()}
         confirmLoading={submitting}
-        destroyOnClose
+        destroyOnHidden
         width={760}
       >
         <Form
           form={form}
           layout="vertical"
-          key={editTarget?.liabilityId ?? 'liability-create-none'}
-          initialValues={liabilityEditInitial}
+          key={editTarget?.liabilityId ?? `liability-create-${bucketCoverageId ?? 'none'}`}
+          initialValues={liabilityFormInitial}
         >
-          <Form.Item
-            label="责任编码"
-            name="liabilityCode"
-            rules={[{ required: true, message: '责任编码不能为空' }]}
-          >
-            <Input placeholder="如 R01" disabled={!!editTarget} />
-          </Form.Item>
-          <Space size="large" wrap>
-            <Form.Item label="责任类型" name="liabilityType">
-              <Select
-                options={LIABILITY_TYPE_OPTIONS}
-                style={{ width: 240 }}
-                placeholder="REIMBURSEMENT"
-              />
-            </Form.Item>
-            <Form.Item label="赔付比例(%)" name="payPercent">
-              <Input placeholder="90" style={{ width: 160 }} />
-            </Form.Item>
-            <Form.Item label="年度免赔额" name="liabilityDeduct">
-              <Input placeholder="0" style={{ width: 160 }} />
-            </Form.Item>
-            <Form.Item label="责任额度上限" name="liabilityLimit">
-              <Input placeholder="0=不限" style={{ width: 160 }} />
-            </Form.Item>
-            <Form.Item label="发票级免赔" name="invoiceDeduct">
-              <Input placeholder="0" style={{ width: 160 }} />
-            </Form.Item>
-            <Form.Item label="理算级免赔" name="adjustDeduct">
-              <Input placeholder="0" style={{ width: 160 }} />
-            </Form.Item>
-            <Form.Item label="日赔付限额" name="dailyLimit">
-              <Input placeholder="0=不启用" style={{ width: 160 }} />
-            </Form.Item>
-            <Form.Item label="日窗口口径" name="dailyLimitBasis">
-              <Select
-                options={DAILY_BASIS_OPTIONS}
-                style={{ width: 200 }}
-                placeholder="NONE"
-              />
-            </Form.Item>
-            <Form.Item label="适用限定方式" name="limitMode">
-              <Select
-                options={LIMIT_MODE_OPTIONS}
-                style={{ width: 200 }}
-                placeholder="NONE"
-              />
-            </Form.Item>
-            <Form.Item label="限定医院编码" name="limitHospitalCodes">
-              <Input placeholder="逗号分隔" style={{ width: 220 }} />
-            </Form.Item>
-            <Form.Item label="限定病种编码" name="limitDiagnosisCodes">
-              <Input placeholder="逗号分隔" style={{ width: 220 }} />
-            </Form.Item>
-            <Form.Item label="目录准入策略" name="catalogPolicy">
-              <Select
-                options={CATALOG_POLICY_OPTIONS}
-                style={{ width: 200 }}
-                placeholder="NONE"
-              />
-            </Form.Item>
-            <Form.Item label="目录编码" name="catalogCode">
-              <Input placeholder="如 NATIONAL_2024" style={{ width: 200 }} />
-            </Form.Item>
-            <Form.Item label="仅赔社保内(1/0)" name="socialOnly">
-              <InputNumber min={0} max={1} style={{ width: 160 }} />
-            </Form.Item>
-            <Form.Item label="等待期(天)" name="waitingPeriod">
-              <InputNumber min={0} style={{ width: 160 }} />
-            </Form.Item>
-          </Space>
+          <Card size="small" title="基础信息" style={{ marginBottom: 12 }}>
+            <Space size="large" wrap>
+              <Form.Item
+                label="责任编码"
+                name="liabilityCode"
+                rules={[{ required: true, message: '责任编码不能为空' }]}
+              >
+                <Input placeholder="如 R01" disabled={!!editTarget} />
+              </Form.Item>
+              <Form.Item
+                label="所属保障"
+                name="coverageId"
+                rules={
+                  coverages.length > 0 && !editTarget
+                    ? [{ required: true, message: '请选择保障（或先在计划配置中新增险种）' }]
+                    : []
+                }
+              >
+                <Select
+                  options={coverages.map((c) => ({
+                    value: c.coverageId,
+                    label: `${c.coverageCode} ${c.coverageName ?? ''}`,
+                  }))}
+                  style={{ width: 260 }}
+                  placeholder={
+                    coverages.length > 0 ? '选择保障' : '该方案暂无保障，可留空（方案级）'
+                  }
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                />
+              </Form.Item>
+              <Form.Item label="责任类型" name="liabilityType">
+                <Select
+                  options={LIABILITY_TYPE_OPTIONS}
+                  style={{ width: 240 }}
+                  placeholder="REIMBURSEMENT"
+                />
+              </Form.Item>
+            </Space>
+          </Card>
+
+          <Card size="small" title="赔付与限额" style={{ marginBottom: 12 }}>
+            <Space size="large" wrap>
+              <Form.Item
+                label="赔付比例(%)"
+                name="payPercent"
+                rules={[{ type: 'number', min: 0, max: 100, message: '赔付比例必须在 0-100 之间' }]}
+              >
+                <InputNumber
+                  stringMode
+                  min={0}
+                  max={100}
+                  placeholder="90"
+                  style={{ width: 160 }}
+                />
+              </Form.Item>
+              <Form.Item label="年度免赔额" name="liabilityDeduct">
+                <InputNumber stringMode min={0} placeholder="0" style={{ width: 160 }} />
+              </Form.Item>
+              <Form.Item label="责任额度上限" name="liabilityLimit">
+                <InputNumber stringMode min={0} placeholder="0=不限" style={{ width: 160 }} />
+              </Form.Item>
+            </Space>
+          </Card>
+
+          <Card size="small" title="多层免赔与日限额" style={{ marginBottom: 12 }}>
+            <Space size="large" wrap>
+              <Form.Item label="发票级免赔" name="invoiceDeduct">
+                <InputNumber stringMode min={0} placeholder="0" style={{ width: 160 }} />
+              </Form.Item>
+              <Form.Item label="理算级免赔" name="adjustDeduct">
+                <InputNumber stringMode min={0} placeholder="0" style={{ width: 160 }} />
+              </Form.Item>
+              <Form.Item label="日赔付限额" name="dailyLimit">
+                <InputNumber stringMode min={0} placeholder="0=不启用" style={{ width: 160 }} />
+              </Form.Item>
+              <Form.Item label="日窗口口径" name="dailyLimitBasis">
+                <Select
+                  options={DAILY_BASIS_OPTIONS}
+                  style={{ width: 200 }}
+                  placeholder="NONE"
+                />
+              </Form.Item>
+            </Space>
+          </Card>
+
+          <Card size="small" title="适用限定" style={{ marginBottom: 12 }}>
+            <Space size="large" wrap>
+              <Form.Item label="适用限定方式" name="limitMode">
+                <Select
+                  options={LIMIT_MODE_OPTIONS}
+                  style={{ width: 200 }}
+                  placeholder="NONE"
+                />
+              </Form.Item>
+              <Form.Item label="限定医院编码" name="limitHospitalCodes">
+                <Input placeholder="逗号分隔" style={{ width: 220 }} />
+              </Form.Item>
+              <Form.Item label="限定病种编码" name="limitDiagnosisCodes">
+                <Input placeholder="逗号分隔" style={{ width: 220 }} />
+              </Form.Item>
+            </Space>
+          </Card>
+
+          <Card size="small" title="目录准入" style={{ marginBottom: 12 }}>
+            <Space size="large" wrap>
+              <Form.Item label="目录准入策略" name="catalogPolicy">
+                <Select
+                  options={CATALOG_POLICY_OPTIONS}
+                  style={{ width: 200 }}
+                  placeholder="NONE"
+                />
+              </Form.Item>
+              <Form.Item label="目录编码" name="catalogCode">
+                <Input placeholder="如 NATIONAL_2024" style={{ width: 200 }} />
+              </Form.Item>
+            </Space>
+          </Card>
+
+          <Card size="small" title="其他" style={{ marginBottom: 0 }}>
+            <Space size="large" wrap>
+              <Form.Item label="社保范围限制" name="socialOnly">
+                <Select
+                  style={{ width: 200 }}
+                  options={[
+                    { value: 1, label: '仅赔社保范围内' },
+                    { value: 0, label: '社保内外均可' },
+                  ]}
+                />
+              </Form.Item>
+              <Form.Item
+                label="等待期(天)"
+                name="waitingPeriod"
+                rules={[{ type: 'number', min: 0, message: '等待期不能为负' }]}
+              >
+                <InputNumber min={0} style={{ width: 160 }} />
+              </Form.Item>
+            </Space>
+          </Card>
         </Form>
       </Modal>
 
@@ -515,7 +836,7 @@ export function LiabilityConfigPage(): ReactElement {
         title="批量导入责任"
         fileName="liability-template"
         columns={liabilityImportColumns}
-        defaults={{ planId }}
+        defaults={{ planId, coverageId: bucketCoverageId ?? '' }}
         buildRequest={buildLiabilityRequest}
         validateRow={validateLiabilityRow}
         createOne={(req) => claimConfigApi.createLiability(req)}

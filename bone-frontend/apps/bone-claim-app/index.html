@@ -8,6 +8,21 @@
   </head>
   <body>
     <div id="root"></div>
+    <!--
+      独立调试（`:3013` 直开）由本标签直接挂载；qiankun 嵌入模式仍走 /qiankun-entry.js 的生命周期（与 bone-iam-app 一致）。
+      下面的 stub 是因为 shared-config 的 removeReactRefreshPlugin 移除了 plugin-react 注入的
+      react-refresh preamble，而组件模块的 HMR 包装仍会检查 window.$RefreshReg$，直开时会抛
+      「can't detect preamble」，这里补一个空实现（不影响 qiankun 嵌入：嵌入时不加载本页）。
+    -->
+    <script>
+      window.$RefreshReg$ = function () {};
+      window.$RefreshSig$ = function () {
+        return function (type) {
+          return type;
+        };
+      };
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
     <script src="/qiankun-entry.js"></script>
   </body>
 </html>

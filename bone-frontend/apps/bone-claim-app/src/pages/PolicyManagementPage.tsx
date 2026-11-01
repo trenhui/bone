@@ -4,17 +4,32 @@ import {
   Button,
   Card,
   DatePicker,
+  Descriptions,
+  Drawer,
   Form,
   Input,
   InputNumber,
   Modal,
+  Radio,
   Select,
   Space,
+  Spin,
   Table,
   Tag,
   Typography,
 } from 'antd';
-import { EditOutlined, PauseCircleOutlined, PlayCircleOutlined, PlusOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
+import {
+  DownloadOutlined,
+  EditOutlined,
+  EyeOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SettingOutlined,
+  UploadOutlined,
+} from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { AuthButton } from '@bone/ui';
 import { useConfirmAction } from '../hooks/useConfirmAction';
@@ -24,10 +39,12 @@ import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
 import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
 import { FORM_VALIDATION_MESSAGE, isFormValidationError } from '../utils/formError';
+import { csvFilename, downloadBlob } from '../utils/downloadBlob';
 import {
   POLICY_CONFIG_STATUS_META,
   claimConfigApi,
   parseInsuredSnapshot,
+  policyTypeLabel,
   toTotal,
   type CreatePolicyReq,
   type PolicyConfigStatus,
@@ -53,6 +70,7 @@ const policyImportColumns: ImportColumn[] = [
   { key: 'insureName', label: '投保公司', example: '某科技有限公司' },
   { key: 'bizIdentityCode', label: '业务主体码', example: 'BIZ-001' },
   { key: 'productType', label: '产品类型', example: 'OUTPATIENT' },
+  { key: 'policyType', label: '保单类型(GROUP/INDIVIDUAL,空为团体)', example: 'GROUP' },
   { key: 'effectiveStart', label: '生效起(ISO时间)', required: true, example: '2026-01-01T00:00:00.000Z' },
   { key: 'effectiveEnd', label: '生效止(ISO时间)', required: true, example: '2026-12-31T23:59:59.000Z' },
   { key: 'waitingPeriod', label: '等待期(天)', example: '0' },
@@ -73,6 +91,7 @@ function buildPolicyRequest(row: Record<string, string>): CreatePolicyReq | null
     insureName: row.insureName?.trim() || undefined,
     bizIdentityCode: row.bizIdentityCode?.trim() || undefined,
     productType: row.productType?.trim() || undefined,
+    policyType: row.policyType?.trim() || undefined,
     effectiveStart: row.effectiveStart.trim(),
     effectiveEnd: row.effectiveEnd.trim(),
     waitingPeriod: row.waitingPeriod ? Number(row.waitingPeriod) : 0,
@@ -91,6 +110,7 @@ function validatePolicyRow(row: Record<string, string>): string | null {
 export function PolicyManagementPage(): ReactElement {
   const { message } = AntApp.useApp();
   const confirm = useConfirmAction();
+  const navigate = useNavigate();
   const [rows, setRows] = useState<PolicyView[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
@@ -104,6 +124,14 @@ export function PolicyManagementPage(): ReactElement {
   const [editTarget, setEditTarget] = useState<PolicyView | null>(null);
   const [editForm] = Form.useForm();
   const [importOpen, setImportOpen] = useState(false);
+  /** 正在执行启用/停用的保单号（行级 loading，防重复提交）。 */
+  const [processingKey, setProcessingKey] = useState('');
+  /** 详情抽屉：正在查看的保单号（null 关闭）。 */
+  const [detailPolicyNo, setDetailPolicyNo] = useState<string | null>(null);
+  /** 详情数据（走 getPolicy 单查接口，含列表不展示的全字段）。 */
+  const [detail, setDetail] = useState<PolicyView | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -158,6 +186,7 @@ export function PolicyManagementPage(): ReactElement {
         insurerName: values.insurerName?.trim(),
         branchName: values.branchName?.trim(),
         insureName: values.insureName?.trim(),
+        policyType: values.policyType,
         bizIdentityCode: values.bizIdentityCode?.trim(),
         productType: values.productType?.trim(),
         effectiveStart: values.effectiveStart.toISOString(),
@@ -182,25 +211,69 @@ export function PolicyManagementPage(): ReactElement {
     }
   };
 
-  const toggle = async (row: PolicyView, action: 'activate' | 'pause') => {
-    try {
-      if (action === 'activate') {
-        await claimConfigApi.activatePolicy(row.policyNo);
-        message.success('保单责任已启用');
-      } else {
-        await claimConfigApi.pausePolicy(row.policyNo);
-        message.success('保单责任已停用');
-      }
-      await load();
-    } catch (err) {
-      message.error(resolveErrorMessage(err, action === 'activate' ? '启用失败' : '停用失败'));
-    }
+  const toggle = (row: PolicyView, action: 'activate' | 'pause') => {
+    const activating = action === 'activate';
+    confirm({
+      title: activating ? '启用保单责任' : '停用保单责任',
+      content: activating
+        ? `确认启用保单「${row.policyNo}」？启用后该保单将接受新报案。`
+        : `确认停用保单「${row.policyNo}」？停用后该保单将不再接受新报案（存量赔案不受影响）。`,
+      okText: activating ? '确认启用' : '确认停用',
+      danger: !activating,
+      onOk: () => {
+        setProcessingKey(row.policyNo);
+        const call = activating
+          ? claimConfigApi.activatePolicy(row.policyNo)
+          : claimConfigApi.pausePolicy(row.policyNo);
+        return call
+          .then(() => {
+            message.success(activating ? '保单责任已启用' : '保单责任已停用');
+            return load();
+          })
+          .catch((err) => {
+            message.error(resolveErrorMessage(err, activating ? '启用失败' : '停用失败'));
+            throw err;
+          })
+          .finally(() => setProcessingKey(''));
+      },
+    });
   };
 
   const openEdit = (row: PolicyView) => {
     // 同 openCreate：Modal 未打开时 setFieldsValue 会静默失效（Form 还没挂载），
     // 初值改由 Form 的 initialValues 承担，见下方 policyEditInitial。
     setEditTarget(row);
+  };
+
+  /** 打开详情抽屉：重新单查一次（列表数据可能已过期，详情要显示当前全量字段）。 */
+  const openDetail = async (row: PolicyView) => {
+    setDetailPolicyNo(row.policyNo);
+    setDetail(row); // 先用列表行兜底，避免抽屉闪空白
+    setDetailLoading(true);
+    try {
+      const res = await claimConfigApi.getPolicy(row.policyNo);
+      setDetail(res.data ?? row);
+    } catch (err) {
+      message.error(resolveErrorMessage(err, '保单详情加载失败'));
+      setDetailPolicyNo(null);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const blob = await claimConfigApi.exportPolicies({
+        keyword: keyword.trim() || undefined,
+        configStatus,
+      });
+      downloadBlob(blob, csvFilename('policies'));
+    } catch (err) {
+      message.error(resolveErrorMessage(err, '导出失败'));
+    } finally {
+      setExporting(false);
+    }
   };
 
   /** 编辑表单初值：按被编辑保单派生，配合 <Form key=...> 在挂载时一次性灌入。 */
@@ -212,6 +285,7 @@ export function PolicyManagementPage(): ReactElement {
           insurerName: editTarget.insurerName,
           branchName: editTarget.branchName,
           insureName: editTarget.insureName,
+          policyType: editTarget.policyType || 'GROUP',
           bizIdentityCode: editTarget.bizIdentityCode,
           productType: editTarget.productType,
           waitingPeriod: editTarget.waitingPeriod,
@@ -238,6 +312,7 @@ export function PolicyManagementPage(): ReactElement {
         insurerName: values.insurerName?.trim(),
         branchName: values.branchName?.trim(),
         insureName: values.insureName?.trim(),
+        policyType: values.policyType,
         bizIdentityCode: values.bizIdentityCode?.trim(),
         productType: values.productType?.trim(),
         effectiveStart: values.effectiveStart.toISOString(),
@@ -306,6 +381,14 @@ export function PolicyManagementPage(): ReactElement {
             刷新
           </Button>
           <AuthButton
+            code={PERMISSIONS.POLICY_READ}
+            icon={<DownloadOutlined />}
+            loading={exporting}
+            onClick={() => void exportCsv()}
+          >
+            导出 CSV
+          </AuthButton>
+          <AuthButton
             code={PERMISSIONS.POLICY_WRITE}
             type="primary"
             icon={<PlusOutlined />}
@@ -345,6 +428,15 @@ export function PolicyManagementPage(): ReactElement {
           columns={[
             { title: '保单号', dataIndex: 'policyNo', width: 160, fixed: 'left' },
             { title: '保单名称', dataIndex: 'policyName', width: 180, ellipsis: true },
+            {
+              title: '保单类型',
+              dataIndex: 'policyType',
+              width: 90,
+              render: (v: string) => {
+                const meta = policyTypeLabel(v);
+                return <Tag color={meta.color}>{meta.label}</Tag>;
+              },
+            },
             { title: '保险公司', dataIndex: 'insurerName', width: 140, ellipsis: true },
             { title: '分公司', dataIndex: 'branchName', width: 140, ellipsis: true },
             { title: '投保公司', dataIndex: 'insureName', width: 160, ellipsis: true },
@@ -390,10 +482,33 @@ export function PolicyManagementPage(): ReactElement {
             },
             {
               title: '操作',
-              width: 170,
+              width: 220,
               fixed: 'right',
               render: (_, r) => (
                 <Space size={4}>
+                  <AuthButton
+                    code={PERMISSIONS.POLICY_READ}
+                    type="link"
+                    size="small"
+                    icon={<EyeOutlined />}
+                    onClick={() => void openDetail(r)}
+                  >
+                    详情
+                  </AuthButton>
+                  {/* 层级下钻：保单 → 计划配置（配置面第一层：计划 → 险种 → 责任 → 额度）。
+                      不做「保单配置中心」单页聚合是刻意的取舍：把三件事塞进一屏会让
+                      计划/险种/责任/额度四层结构在滚动里失去层级，且与侧栏「计划配置/
+                      责任配置/额度管理」形成两套入口（同一功能两个名字、两份交互）。
+                      这里只负责把保单上下文带进去，后续层级在各自页面内下钻。 */}
+                  <AuthButton
+                    code={PERMISSIONS.POLICY_READ}
+                    type="link"
+                    size="small"
+                    icon={<SettingOutlined />}
+                    onClick={() => navigate(`/plan?policyNo=${encodeURIComponent(r.policyNo)}`)}
+                  >
+                    配置
+                  </AuthButton>
                   <AuthButton
                     code={PERMISSIONS.POLICY_WRITE}
                     type="link"
@@ -409,13 +524,8 @@ export function PolicyManagementPage(): ReactElement {
                     size="small"
                     icon={<PlayCircleOutlined />}
                     disabled={r.configStatus === 'ACTIVE'}
-                    onClick={() =>
-                      confirm({
-                        title: '确认启用该保单？',
-                        content: `保单 ${r.policyNo} 启用后将可正常收案。`,
-                        onOk: () => toggle(r, 'activate'),
-                      })
-                    }
+                    loading={processingKey === r.policyNo}
+                    onClick={() => toggle(r, 'activate')}
                   >
                     启用
                   </AuthButton>
@@ -426,13 +536,8 @@ export function PolicyManagementPage(): ReactElement {
                     danger
                     icon={<PauseCircleOutlined />}
                     disabled={r.configStatus === 'PAUSE'}
-                    onClick={() =>
-                      confirm({
-                        title: '确认停用该保单？',
-                        content: `保单 ${r.policyNo} 停用后将无法收案，在途案件不受影响。`,
-                        onOk: () => toggle(r, 'pause'),
-                      })
-                    }
+                    loading={processingKey === r.policyNo}
+                    onClick={() => toggle(r, 'pause')}
                   >
                     停用
                   </AuthButton>
@@ -490,6 +595,20 @@ export function PolicyManagementPage(): ReactElement {
           <Space size="middle" wrap style={{ width: '100%' }}>
             <Form.Item name="bizIdentityCode" label="业务主体码" style={{ width: 220 }}>
               <Input placeholder="保司/分公司/投保公司/保单四级匹配" />
+            </Form.Item>
+            <Form.Item
+              name="policyType"
+              label="保单类型"
+              style={{ width: 220 }}
+              initialValue="GROUP"
+              tooltip="团体：企业/机构投保，多名被保人共享责任与额度池；个人：自然人投保，单人单账户"
+            >
+              <Radio.Group
+                options={[
+                  { label: '团体', value: 'GROUP' },
+                  { label: '个人', value: 'INDIVIDUAL' },
+                ]}
+              />
             </Form.Item>
             <Form.Item name="productType" label="产品类型" style={{ width: 220 }}>
               <Input placeholder="如 OUTPATIENT" />
@@ -572,6 +691,20 @@ export function PolicyManagementPage(): ReactElement {
             <Form.Item name="bizIdentityCode" label="业务主体码" style={{ width: 220 }}>
               <Input placeholder="保司/分公司/投保公司/保单四级匹配" />
             </Form.Item>
+            <Form.Item
+              name="policyType"
+              label="保单类型"
+              style={{ width: 220 }}
+              initialValue="GROUP"
+              tooltip="团体：企业/机构投保，多名被保人共享责任与额度池；个人：自然人投保，单人单账户"
+            >
+              <Radio.Group
+                options={[
+                  { label: '团体', value: 'GROUP' },
+                  { label: '个人', value: 'INDIVIDUAL' },
+                ]}
+              />
+            </Form.Item>
             <Form.Item name="productType" label="产品类型" style={{ width: 220 }}>
               <Input placeholder="如 OUTPATIENT" />
             </Form.Item>
@@ -620,6 +753,79 @@ export function PolicyManagementPage(): ReactElement {
           )}
         </Form>
       </Modal>
+
+      <Drawer
+        title={detailPolicyNo ? `保单详情（${detailPolicyNo}）` : '保单详情'}
+        open={detailPolicyNo !== null}
+        onClose={() => setDetailPolicyNo(null)}
+        width={640}
+      >
+        {detailLoading && !detail ? (
+          <Spin />
+        ) : (
+          detail && (
+            <Descriptions column={1} size="small" bordered>
+              <Descriptions.Item label="保单号">{detail.policyNo}</Descriptions.Item>
+              <Descriptions.Item label="保单名称">
+                {detail.policyName || '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="规则开关">
+                <Tag
+                  color={POLICY_CONFIG_STATUS_META[detail.configStatus]?.color ?? 'default'}
+                >
+                  {POLICY_CONFIG_STATUS_META[detail.configStatus]?.label ?? detail.configStatus}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="保险公司">
+                {detail.insurerName || '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="保险分公司">
+                {detail.branchName || '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="投保公司">
+                {detail.insureName || '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="业务主体码">
+                {detail.bizIdentityCode || '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="产品类型">
+                {detail.productType || '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="保单类型">
+                {(() => {
+                  const meta = policyTypeLabel(detail.policyType);
+                  return <Tag color={meta.color}>{meta.label}</Tag>;
+                })()}
+              </Descriptions.Item>
+              <Descriptions.Item label="承保期间">
+                {dayjs(detail.effectiveStart).format('YYYY-MM-DD HH:mm')} ~{' '}
+                {dayjs(detail.effectiveEnd).format('YYYY-MM-DD HH:mm')}
+              </Descriptions.Item>
+              <Descriptions.Item label="等待期">
+                {detail.waitingPeriod > 0 ? `${detail.waitingPeriod} 天` : '无'}
+              </Descriptions.Item>
+              <Descriptions.Item label="保单版本">
+                {detail.policyVersion || '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="更新时间">
+                {detail.updatedAt ? dayjs(detail.updatedAt).format('YYYY-MM-DD HH:mm:ss') : '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="创建时间">
+                {detail.createdAt ? dayjs(detail.createdAt).format('YYYY-MM-DD HH:mm:ss') : '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="被保人清单（假名化 ID）">
+                {parseInsuredSnapshot(detail.insuredSnapshot).length ? (
+                  <Typography.Paragraph style={{ marginBottom: 0 }} copyable>
+                    {parseInsuredSnapshot(detail.insuredSnapshot).join(',')}
+                  </Typography.Paragraph>
+                ) : (
+                  '未录入'
+                )}
+              </Descriptions.Item>
+            </Descriptions>
+          )
+        )}
+      </Drawer>
 
       <BatchImportModal
         open={importOpen}

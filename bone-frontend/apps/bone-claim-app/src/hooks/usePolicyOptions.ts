@@ -10,11 +10,13 @@ import { resolveErrorMessage } from '@bone/shared-utils';
  * 原先三页各自写了一份 {@code loadPolicies({ page: 1, size: 200 })}（逐字重复，且失败处理也各写一份）。
  * 抽到本 hook 后只需一行调用，保单列表的加载与失败提示只有一份真源。</p>
  */
-export function usePolicyOptions(): {
+export interface PolicyOptions {
   policies: PolicyView[];
   loading: boolean;
   reload: () => void;
-} {
+}
+
+export function usePolicyOptions(): PolicyOptions {
   const { message } = AntApp.useApp();
   const [policies, setPolicies] = useState<PolicyView[]>([]);
   const [loading, setLoading] = useState(false);

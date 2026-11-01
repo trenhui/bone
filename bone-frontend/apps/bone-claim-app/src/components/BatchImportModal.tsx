@@ -161,7 +161,7 @@ export function BatchImportModal<TReq = Record<string, unknown>>(
   };
 
   const parseAndLoad = (rawText: string) => {
-    const text = rawText.replace(/^﻿/, '');
+    const text = rawText.replace(/^\uFEFF/, '');
     const matrix = parseCsv(text);
     if (matrix.length < 2) {
       message.warning('文件没有可导入的数据行（至少需表头 + 1 行数据）');

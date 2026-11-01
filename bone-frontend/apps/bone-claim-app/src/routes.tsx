@@ -75,6 +75,20 @@ export interface ClaimRoute {
   element: ReactElement;
   /** 进入 `/claim` 时的落点（内勤主入口）。 */
   isDefault?: boolean;
+  /**
+   * 不进导航菜单（路由仍然可达）。
+   *
+   * <p>/plan 是保单配置的<b>下钻页</b>而非独立工作台：计划/险种配置天然属于某张保单
+   * （页面顶部就是保单上下文），独立入口会让用户先选保单再选计划——多一次无上下文的选择。
+   * 业界形态（含参考站 policyRuleConfig）：这类页面有独立路由，但从对象列表
+   * （保单管理 → 配置）进入，不占顶级菜单。
+   *
+   * <p>配置面只有一套页面：保单管理（保单）→ 计划配置（计划/险种）→ 责任配置（责任）
+   * → 额度管理（个人额度），层间靠带上下文的深链串联（`?policyNo=` / `?planId=`）。
+   * 曾短暂存在过的 `/policy-config` 单页聚合（三页能力并集）已删除——同一功能两套界面
+   * 必然漂移，且与侧栏三个配置菜单形成重复入口。
+   */
+  hidden?: boolean;
 }
 
 export const CLAIM_ROUTES: ClaimRoute[] = [
@@ -89,7 +103,7 @@ export const CLAIM_ROUTES: ClaimRoute[] = [
   { path: '/submit', name: '理赔申请', icon: <FormOutlined />, element: <ClaimSubmitPage /> },
   { path: '/progress', name: '理赔进度', icon: <HistoryOutlined />, element: <ClaimProgressPage /> },
   { path: '/policy', name: '保单管理', icon: <FileTextOutlined />, element: <PolicyManagementPage /> },
-  { path: '/plan', name: '计划配置', icon: <DeploymentUnitOutlined />, element: <PlanConfigPage /> },
+  { path: '/plan', name: '计划配置', icon: <DeploymentUnitOutlined />, element: <PlanConfigPage />, hidden: true },
   { path: '/quota', name: '额度管理', icon: <ClusterOutlined />, element: <QuotaConfigPage /> },
   { path: '/liability', name: '责任配置', icon: <TagsOutlined />, element: <LiabilityConfigPage /> },
 ];

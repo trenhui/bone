@@ -19,7 +19,7 @@ import {
   LineChartOutlined, AlertOutlined, CloudOutlined, CloudServerOutlined,
   BellOutlined, ApartmentOutlined, MenuOutlined, ClockCircleOutlined,
   ShoppingOutlined, TransactionOutlined, DownOutlined,
-  DeploymentUnitOutlined, CloudUploadOutlined, InboxOutlined, CarOutlined,
+  DeploymentUnitOutlined, CloudUploadOutlined, InboxOutlined, CarOutlined, TagsOutlined,
 } from '@ant-design/icons';
 import {
   applyTheme,
@@ -307,6 +307,7 @@ const MENU_ICON_MAP: Record<string, JSX.Element> = {
   OrderedListOutlined: <OrderedListOutlined />,
   ProfileOutlined: <ProfileOutlined />,
   FileTextOutlined: <FileTextOutlined />,
+  TagsOutlined: <TagsOutlined />,
   UnorderedListOutlined: <UnorderedListOutlined />,
   ReconciliationOutlined: <ReconciliationOutlined />,
   AlertOutlined: <AlertOutlined />,

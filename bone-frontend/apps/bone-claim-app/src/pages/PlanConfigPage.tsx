@@ -15,10 +15,12 @@ import {
 } from 'antd';
 import {
   CloudUploadOutlined,
+  DownloadOutlined,
   EditOutlined,
   PlusOutlined,
   ReloadOutlined,
   StopOutlined,
+  TagsOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import { AuthButton } from '@bone/ui';
@@ -26,10 +28,12 @@ import { useConfirmAction } from '../hooks/useConfirmAction';
 import { PERMISSIONS } from '../constants/permissions';
 import { ERROR_CODES } from '../constants/errorCodes';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
 import { usePolicyOptions } from '../hooks/usePolicyOptions';
 import { FORM_VALIDATION_MESSAGE, isFormValidationError } from '../utils/formError';
+import { csvFilename, downloadBlob } from '../utils/downloadBlob';
 import {
   CONFIG_STATUS_META,
   claimConfigApi,
@@ -86,7 +90,10 @@ function validatePlanRow(row: Record<string, string>): string | null {
 export function PlanConfigPage(): ReactElement {
   const { message } = AntApp.useApp();
   const confirm = useConfirmAction();
+  const navigate = useNavigate();
   const { policies } = usePolicyOptions();
+  // 支持 /plan?policyNo=xxx 深链：从保单列表「配置」跳入时带保单上下文
+  const [searchParams] = useSearchParams();
   const [policyNo, setPolicyNo] = useState<string>('');
   const [plans, setPlans] = useState<PlanView[]>([]);
   const [loading, setLoading] = useState(false);
@@ -102,8 +109,26 @@ export function PlanConfigPage(): ReactElement {
   const [coverageEditTarget, setCoverageEditTarget] = useState<CoverageView | null>(null);
   const [coverageEditForm] = Form.useForm();
   const [planImportOpen, setPlanImportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  /** 正在执行发布/下线的计划或险种主键（行级 loading，防重复提交）。 */
+  const [processingKey, setProcessingKey] = useState('');
   /** 险种按计划缓存（展开时才加载，避免一次性拉全量）。 */
   const [coverageMap, setCoverageMap] = useState<Record<string, CoverageView[]>>({});
+
+  /**
+   * 保单初值：优先 URL 深链（从保单列表「配置」跳入时用户选的是那张保单），否则取列表首条。
+   *
+   * <p>列表本身由 {@link usePolicyOptions} 拉取，这里只做「初值选择」——
+   * 用 {@code prev ||} 保证用户已手动切换的选择不被覆盖。</p>
+   */
+  useEffect(() => {
+    if (policies.length === 0) {
+      return;
+    }
+    setPolicyNo((prev) => prev || searchParams.get('policyNo') || policies[0]?.policyNo || '');
+    // searchParams 只用于初始化，不进依赖：URL 变化不应触发重复设置
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [policies]);
 
   const loadPlans = useCallback(async () => {
     if (!policyNo) {
@@ -130,6 +155,19 @@ export function PlanConfigPage(): ReactElement {
     setExpanded([]);
     setCoverageMap({});
   }, [loadPlans]);
+
+  const exportCsv = async () => {
+    if (!policyNo) return;
+    setExporting(true);
+    try {
+      const blob = await claimConfigApi.exportPlans(policyNo);
+      downloadBlob(blob, csvFilename('plans'));
+    } catch (err) {
+      message.error(resolveErrorMessage(err, '导出失败'));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const loadCoverages = async (planId: string) => {
     try {
@@ -219,46 +257,96 @@ export function PlanConfigPage(): ReactElement {
     }
   };
 
-  const publishPlan = async (plan: PlanView) => {
-    try {
-      await claimConfigApi.publishPlan(plan.planId);
-      message.success('计划已发布');
-      await loadPlans();
-    } catch (err) {
-      message.error(resolveErrorMessage(err, '计划发布失败'));
-    }
+  const publishPlan = (plan: PlanView) => {
+    confirm({
+      title: '发布计划',
+      content: `确认发布计划「${plan.planCode}」（${plan.versionNo}）？发布后其下生效责任/险种才参与理算。`,
+      okText: '确认发布',
+      danger: false,
+      onOk: () => {
+        setProcessingKey(plan.planId);
+        return claimConfigApi
+          .publishPlan(plan.planId)
+          .then(() => {
+            message.success('计划已发布');
+            return loadPlans();
+          })
+          .catch((err) => {
+            message.error(resolveErrorMessage(err, '计划发布失败'));
+            throw err;
+          })
+          .finally(() => setProcessingKey(''));
+      },
+    });
   };
 
-  const retirePlan = async (plan: PlanView) => {
-    try {
-      await claimConfigApi.retirePlan(plan.planId);
-      message.success('计划已下线');
-      await loadPlans();
-    } catch (err) {
-      message.error(resolveErrorMessage(err, '计划下线失败'));
-    }
+  const retirePlan = (plan: PlanView) => {
+    confirm({
+      title: '下线计划',
+      content: `确认下线计划「${plan.planCode}」（${plan.versionNo}）？下线后其下责任/险种将不再参与理算，历史计划保留可查。`,
+      okText: '确认下线',
+      onOk: () => {
+        setProcessingKey(plan.planId);
+        return claimConfigApi
+          .retirePlan(plan.planId)
+          .then(() => {
+            message.success('计划已下线');
+            return loadPlans();
+          })
+          .catch((err) => {
+            message.error(resolveErrorMessage(err, '计划下线失败'));
+            throw err;
+          })
+          .finally(() => setProcessingKey(''));
+      },
+    });
   };
 
   /** 发布险种（DRAFT → ACTIVE）：与计划同语义的二级发布。 */
-  const publishCoverage = async (coverage: CoverageView) => {
-    try {
-      await claimConfigApi.publishCoverage(coverage.coverageId);
-      message.success('险种已发布');
-      await loadCoverages(coverage.planId);
-    } catch (err) {
-      message.error(resolveErrorMessage(err, '险种发布失败'));
-    }
+  const publishCoverage = (coverage: CoverageView) => {
+    confirm({
+      title: '发布险种',
+      content: `确认发布险种「${coverage.coverageCode}」？发布后该险种下的生效责任才参与理算。`,
+      okText: '确认发布',
+      danger: false,
+      onOk: () => {
+        setProcessingKey(coverage.coverageId);
+        return claimConfigApi
+          .publishCoverage(coverage.coverageId)
+          .then(() => {
+            message.success('险种已发布');
+            return loadCoverages(coverage.planId);
+          })
+          .catch((err) => {
+            message.error(resolveErrorMessage(err, '险种发布失败'));
+            throw err;
+          })
+          .finally(() => setProcessingKey(''));
+      },
+    });
   };
 
   /** 下线险种（ACTIVE/DRAFT → RETIRED）。 */
-  const retireCoverage = async (coverage: CoverageView) => {
-    try {
-      await claimConfigApi.retireCoverage(coverage.coverageId);
-      message.success('险种已下线');
-      await loadCoverages(coverage.planId);
-    } catch (err) {
-      message.error(resolveErrorMessage(err, '险种下线失败'));
-    }
+  const retireCoverage = (coverage: CoverageView) => {
+    confirm({
+      title: '下线险种',
+      content: `确认下线险种「${coverage.coverageCode}」？下线后该险种不再参与理算，历史险种保留可查。`,
+      okText: '确认下线',
+      onOk: () => {
+        setProcessingKey(coverage.coverageId);
+        return claimConfigApi
+          .retireCoverage(coverage.coverageId)
+          .then(() => {
+            message.success('险种已下线');
+            return loadCoverages(coverage.planId);
+          })
+          .catch((err) => {
+            message.error(resolveErrorMessage(err, '险种下线失败'));
+            throw err;
+          })
+          .finally(() => setProcessingKey(''));
+      },
+    });
   };
 
   const openPlanEdit = (plan: PlanView) => {
@@ -374,6 +462,8 @@ export function PlanConfigPage(): ReactElement {
           <Select
             placeholder="选择保单"
             style={{ width: 280 }}
+            showSearch
+            optionFilterProp="label"
             value={policyNo || undefined}
             onChange={(v) => setPolicyNo(v)}
             options={policies.map((p) => ({
@@ -384,6 +474,15 @@ export function PlanConfigPage(): ReactElement {
           <Button icon={<ReloadOutlined />} onClick={() => void loadPlans()}>
             刷新
           </Button>
+          <AuthButton
+            code={PERMISSIONS.POLICY_READ}
+            icon={<DownloadOutlined />}
+            loading={exporting}
+            disabled={!policyNo}
+            onClick={() => void exportCsv()}
+          >
+            导出 CSV
+          </AuthButton>
           <AuthButton
             code={PERMISSIONS.POLICY_WRITE}
             type="primary"
@@ -467,13 +566,8 @@ export function PlanConfigPage(): ReactElement {
                             size="small"
                             icon={<CloudUploadOutlined />}
                             disabled={c.status === 'ACTIVE'}
-                            onClick={() =>
-  confirm({
-    title: '确认发布该险种？',
-    content: '发布后险种生效，可参与理算；已受理案件按受理时快照不受影响。',
-    onOk: () => publishCoverage(c),
-  })
-}
+                            loading={processingKey === c.coverageId}
+                            onClick={() => publishCoverage(c)}
                           >
                             发布
                           </AuthButton>
@@ -484,13 +578,8 @@ export function PlanConfigPage(): ReactElement {
                             danger
                             icon={<StopOutlined />}
                             disabled={c.status === 'RETIRED'}
-                            onClick={() =>
-  confirm({
-    title: '确认下线该险种？',
-    content: '下线后险种停止生效，已受理案件按受理时快照不受影响。',
-    onOk: () => retireCoverage(c),
-  })
-}
+                            loading={processingKey === c.coverageId}
+                            onClick={() => retireCoverage(c)}
                           >
                             下线
                           </AuthButton>
@@ -529,7 +618,7 @@ export function PlanConfigPage(): ReactElement {
             },
             {
               title: '操作',
-              width: 230,
+              width: 330,
               render: (_, r) => (
                 <Space size={4}>
                   <AuthButton
@@ -550,19 +639,31 @@ export function PlanConfigPage(): ReactElement {
                   >
                     新增险种
                   </AuthButton>
+                  {/*
+                    层级下钻：计划 → 责任（带 policyNo + planId 上下文）。
+                    为什么不是独立一级菜单：责任挂在具体计划下，脱离上下文的入口会逼用户
+                    在责任页再选一次保单+计划，而两次选择之间任何一次错位都会落到空列表。
+                  */}
+                  <AuthButton
+                    code={PERMISSIONS.POLICY_READ}
+                    type="link"
+                    size="small"
+                    icon={<TagsOutlined />}
+                    onClick={() =>
+                      navigate(
+                        `/liability?policyNo=${encodeURIComponent(policyNo)}&planId=${encodeURIComponent(r.planId)}`,
+                      )
+                    }
+                  >
+                    责任配置
+                  </AuthButton>
                   <AuthButton
                     code={PERMISSIONS.POLICY_WRITE}
                     type="link"
                     size="small"
-                    icon={<CloudUploadOutlined />}
                     disabled={r.status === 'ACTIVE'}
-                    onClick={() =>
-  confirm({
-    title: '确认发布该计划？',
-    content: '发布后计划生效，险种可挂接；已受理案件按受理时快照不受影响。',
-    onOk: () => publishPlan(r),
-  })
-}
+                    loading={processingKey === r.planId}
+                    onClick={() => publishPlan(r)}
                   >
                     发布
                   </AuthButton>
@@ -571,15 +672,9 @@ export function PlanConfigPage(): ReactElement {
                     type="link"
                     size="small"
                     danger
-                    icon={<StopOutlined />}
                     disabled={r.status === 'RETIRED'}
-                    onClick={() =>
-  confirm({
-    title: '确认下线该计划？',
-    content: '下线后计划停止生效，已受理案件按受理时快照不受影响。',
-    onOk: () => retirePlan(r),
-  })
-}
+                    loading={processingKey === r.planId}
+                    onClick={() => retirePlan(r)}
                   >
                     下线
                   </AuthButton>
