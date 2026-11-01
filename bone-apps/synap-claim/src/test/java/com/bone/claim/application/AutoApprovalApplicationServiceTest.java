@@ -12,6 +12,8 @@ import static org.mockito.Mockito.when;
 
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.decision.DecisionExecution;
+import com.bone.claim.domain.model.decision.DecisionResult;
+import com.bone.claim.domain.model.decision.DecisionTier;
 import com.bone.claim.domain.model.settlement.AccountType;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
@@ -181,9 +183,97 @@ class AutoApprovalApplicationServiceTest {
     verify(settlementApplicationService).create(CLAIM, 1, AccountType.NO_ACCOUNT, "u-1001");
   }
 
+  @Test
+  @DisplayName("人工快捷赔付：金额 ≥ 双人复核门（1 万）→ DUAL_REVIEW_REQUIRED，不触碰聚合")
+  void manualFastPay_blockedOverReviewThreshold() {
+    when(indemnityApplicationService.latest(CLAIM))
+        .thenReturn(
+            new IndemnityApplicationService.AdjustmentResult(
+                null, new BigDecimal("10000.00"), "h", "s", null, "", BigDecimal.ZERO, true));
+
+    AutoApprovalApplicationService.AutoApprovalOutcome outcome =
+        service.approveAndSettle(CLAIM, "u-1001");
+
+    assertThat(outcome.applied()).isFalse();
+    assertThat(outcome.reason()).isEqualTo("DUAL_REVIEW_REQUIRED");
+    verify(claimCaseApplicationService, never()).autoApprove(anyLong(), anyString());
+    verify(settlementApplicationService, never()).create(anyLong(), anyInt(), any(), anyString());
+  }
+
+  @Test
+  @DisplayName("人工快捷赔付：决策结论 SUGGEST_REJECT → RISK_GATE_BLOCKED，不触碰聚合")
+  void manualFastPay_blockedBySuggestReject() {
+    // 嵌套桩陷阱：内层 when() 会打断外层 thenReturn()，桩对象必须先建成局部变量
+    DecisionExecution rejected = execution("SUGGEST_REJECT");
+    when(decisionExecutionApplicationService.findLatest(CLAIM)).thenReturn(rejected);
+
+    AutoApprovalApplicationService.AutoApprovalOutcome outcome =
+        service.approveAndSettle(CLAIM, "u-1001");
+
+    assertThat(outcome.applied()).isFalse();
+    assertThat(outcome.reason()).isEqualTo("RISK_GATE_BLOCKED");
+    verify(claimCaseApplicationService, never()).autoApprove(anyLong(), anyString());
+  }
+
+  @Test
+  @DisplayName("人工快捷赔付：分诊原因 RISK_HIT（风控命中落库）→ RISK_GATE_BLOCKED:RISK_HIT")
+  void manualFastPay_blockedByRiskHitTriage() {
+    DecisionExecution riskHit = execution("MANUAL_REQUIRED", "RISK_HIT");
+    when(decisionExecutionApplicationService.findLatest(CLAIM)).thenReturn(riskHit);
+
+    AutoApprovalApplicationService.AutoApprovalOutcome outcome =
+        service.approveAndSettle(CLAIM, "u-1001");
+
+    assertThat(outcome.applied()).isFalse();
+    assertThat(outcome.reason()).isEqualTo("RISK_GATE_BLOCKED:RISK_HIT");
+    verify(claimCaseApplicationService, never()).autoApprove(anyLong(), anyString());
+    verify(settlementApplicationService, never()).create(anyLong(), anyInt(), any(), anyString());
+  }
+
+  @Test
+  @DisplayName("人工快捷赔付：分诊原因 FRAUD_GATE_NOT_PASSED（反欺诈硬闸未过）→ 拦截")
+  void manualFastPay_blockedByFraudGateTriage() {
+    DecisionExecution fraudGate = execution("MANUAL_REQUIRED", "FRAUD_GATE_NOT_PASSED");
+    when(decisionExecutionApplicationService.findLatest(CLAIM)).thenReturn(fraudGate);
+
+    AutoApprovalApplicationService.AutoApprovalOutcome outcome =
+        service.approveAndSettle(CLAIM, "u-1001");
+
+    assertThat(outcome.applied()).isFalse();
+    assertThat(outcome.reason()).isEqualTo("RISK_GATE_BLOCKED:FRAUD_GATE_NOT_PASSED");
+  }
+
+  @Test
+  @DisplayName("人工快捷赔付：非风控类转人工原因（如 AI 低置信）不拦——闸只对已知判否生效")
+  void manualFastPay_notBlockedByNonRiskTriage() {
+    ReflectionTestUtils.setField(service, "enabled", false);
+    ClaimCase pending = claim(false);
+    settlementResult = settlement();
+    DecisionExecution lowConfidence = execution("MANUAL_REQUIRED", "AI_CONFIDENCE_LOW");
+    when(decisionExecutionApplicationService.findLatest(CLAIM)).thenReturn(lowConfidence);
+    when(claimCaseApplicationService.getClaimAggregate(CLAIM)).thenReturn(pending);
+    when(settlementApplicationService.create(anyLong(), anyInt(), any(), anyString()))
+        .thenReturn(settlementResult);
+
+    AutoApprovalApplicationService.AutoApprovalOutcome outcome =
+        service.approveAndSettle(CLAIM, "u-1001");
+
+    assertThat(outcome.applied()).isTrue();
+  }
+
   private static DecisionExecution execution(String result) {
-    DecisionExecution execution = mock(DecisionExecution.class);
-    when(execution.getDecisionResult()).thenReturn(result);
+    return execution(result, null);
+  }
+
+  /** 真实聚合而非 mock：结论判断与原因码读取必须走真实状态（mock 聚合的字段恒 null， 会让任何基于字段语义的判断静默失效——拒绝 mock 聚合）。 */
+  private static DecisionExecution execution(String result, String triageReason) {
+    DecisionExecution execution =
+        DecisionExecution.start(
+            9001L, 42L, "t-1", CLAIM, "graph-v1", "rule-v1", "model-v1", "prompt-v1", "cat-v1");
+    execution.complete(DecisionResult.valueOf(result), DecisionTier.MANUAL, null, false);
+    if (triageReason != null) {
+      execution.markTriageReason(triageReason);
+    }
     return execution;
   }
 

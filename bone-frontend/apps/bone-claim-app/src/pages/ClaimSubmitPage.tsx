@@ -16,6 +16,7 @@ import {
 } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { resolveErrorCode } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
 import { claimApi, type ClaimItemReq, type ItemCategory, type SubmitClaimReq } from '../services/claimApi';
 
@@ -53,7 +54,9 @@ export function ClaimSubmitPage(): ReactElement {
       message.success(`报案已受理：${data?.claimNo ?? ''}`);
       form.resetFields();
     } catch (err) {
-      const errorCode = (err as { errorCode?: string }).errorCode;
+      // 统一错误通道（resolveErrorCode）：类型收窄与多形态信封解析收口在 shared-utils，
+      // 页面只按码分支，避免每页各写一套 `as { errorCode?: string }` 强转而语义漂移
+      const errorCode = resolveErrorCode(err);
       const text =
         errorCode === 'SC_CLAIM_POLICY_NOT_ACTIVE'
           ? '保单不存在或未生效，请核对保单号/计划'

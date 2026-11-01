@@ -85,6 +85,18 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
   private Integer durationMs;
 
   /**
+   * 分诊受控原因码（{@code DecisionTriage.Outcome.reason}：RISK_HIT / AMOUNT_OVER_LIMIT / AI_CONFIDENCE_LOW
+   * 等； {@code null} = 执行异常中止未经分诊，无原因可记）。
+   *
+   * <p><b>为什么必须落库</b>：结论（{@code decision_result}）只说「落点」，原因码才说「为什么」。此前原因只存在于
+   * 决策响应里，读侧（快捷赔付风险闸、核赔工作台、对账不变量 5 处置归因）一律看不见——例如"RISK_HIT 命中风控转人工"
+   * 的案件，事后无法从库内证明它曾被风控拦截，快捷赔付闸也只能拦"建议拒赔"而拦不住"风控命中"。 与 {@link #consumptionReason}
+   * 同理：取决于执行当时的事实，事后重算推不出来。
+   */
+  @Column(name = "triage_reason")
+  private String triageReason;
+
+  /**
    * 自动通过结论的消费结果（受控码；{@code null} = 本次执行没有可消费的自动通过结论）。
    *
    * <p>为什么要落库：消费结果取决于<b>执行当时</b>的开关与单笔上限，事后用当前配置重算只会得到 「现在重跑会怎样」，而不是「当时为什么没放款」。这个字段此前只存在于 {@code
@@ -232,6 +244,24 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
     this.durationMs = (int) (this.finishedAt.toEpochMilli() - this.startedAt.toEpochMilli());
     this.activeFlag = null;
     this.updatedAt = this.finishedAt;
+  }
+
+  /**
+   * 回填分诊受控原因码（与结论同一时点落库；异常中止路径无原因可记，保持 NULL）。
+   *
+   * <p><b>为什么不由 {@link #complete} 一并传参</b>：结论四元组（result/tier/confidence/fallback）是分诊的
+   * 「落点」，原因码是分诊的「依据」；执行器在分诊后才调用本方法，异常路径（{@link #fail}）天然跳过。 与 {@link #recordConsumption}
+   * 同风格：同一聚合、两个写入动作、各自的守卫。
+   */
+  public void markTriageReason(String reason) {
+    if (isBlank(reason)) {
+      throw new DomainException("分诊原因码不得为空（异常中止路径应保持 NULL 而非写空串）");
+    }
+    if (!isBlank(this.triageReason)) {
+      return;
+    }
+    this.triageReason = reason;
+    this.updatedAt = Instant.now();
   }
 
   /** 执行失败（如确定性节点异常中止）：置失败并释放活跃位，结论强制转人工。 */

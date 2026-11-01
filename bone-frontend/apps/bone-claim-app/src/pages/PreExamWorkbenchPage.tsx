@@ -17,7 +17,12 @@ import {
   message,
 } from 'antd';
 import { CheckCircleOutlined, ReloadOutlined, ThunderboltOutlined, UserSwitchOutlined } from '@ant-design/icons';
-import { claimApi, type ClaimHeadProjection, type ClaimStatusName } from '../services/claimApi';
+import {
+  claimApi,
+  REVIEW_THRESHOLD,
+  type ClaimHeadProjection,
+  type ClaimStatusName,
+} from '../services/claimApi';
 import { PRE_EXAM_TODO_STATUSES, claimStatusMeta, statusOptions } from '../services/claimStatus';
 import { PageHeader } from '../components/PageHeader';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
@@ -255,7 +260,11 @@ export function PreExamWorkbenchPage(): ReactElement {
               title: '大额',
               width: 100,
               render: (_, r) =>
-                Number(r.claimAmount) >= 10000 ? <Badge color="red" text="≥1万" /> : <span>-</span>,
+                Number(r.claimAmount) >= REVIEW_THRESHOLD ? (
+                  <Badge color="red" text="≥1万" />
+                ) : (
+                  <span>-</span>
+                ),
             },
             { title: '渠道', dataIndex: 'sourceChannel', width: 110 },
             { title: '受理时间', dataIndex: 'createdAt', width: 180 },

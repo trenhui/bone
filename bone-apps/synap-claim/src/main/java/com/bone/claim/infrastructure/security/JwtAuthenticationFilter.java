@@ -30,10 +30,11 @@ public class JwtAuthenticationFilter extends AbstractJwtAuthenticationFilter {
   @Override
   protected void onAuthenticated(JwtPrincipal principal, HttpServletRequest request) {
     putIfPresent("userId", principal.userId());
-    // 租户取 token 内已签名 claim；该头此时也已被本过滤器归一化为同一值，二者等价
-    putIfPresent(
-        "tenantId",
-        principal.tenantId() != null ? principal.tenantId() : request.getHeader("X-Tenant-Id"));
+    // 租户只取 token 内已签名 claim。基类的归一化发生在本回调之后（AbstractJwtAuthenticationFilter
+    // 先 onAuthenticated 再 normalizeTenantHeader），此时 request.getHeader("X-Tenant-Id") 读到的
+    // 是调用方原始头——回退到它等于把可被任意伪造的值写进观测字段（日志/MDC 键），故删除：
+    // 无 claim 就不写，宁可观测字段缺失，不可写入未经验证的值（B7）。
+    putIfPresent("tenantId", principal.tenantId());
   }
 
   /** 值为空时不写入，避免 MDC 出现 "userId=null" 这类噪声。 */

@@ -284,6 +284,9 @@ public class DecisionGraphExecutor {
     execution.backfillAiVersions(
         aiVersion(outputs, "aiModel"), aiVersion(outputs, "aiPromptVersion"));
     execution.complete(outcome.result(), outcome.tier(), confidence, fallback);
+    // 分诊原因码随结论落库（RISK_HIT / AMOUNT_OVER_LIMIT / AI_CONFIDENCE_LOW 等）：
+    // 读侧（快捷赔付风险闸、核赔工作台、处置归因）要能从库内证明"为什么转人工"，而非翻决策响应日志。
+    execution.markTriageReason(outcome.reason());
     decisionExecutionApplicationService.persist(execution);
     decisionMetricsPort.recordDecision(
         new DecisionMetricsPort.DecisionMetric(

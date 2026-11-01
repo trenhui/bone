@@ -217,6 +217,57 @@ class DecisionGraphExecutorTest {
     assertThat(execution.traces().get(0).getNodeName()).isEqualTo(DecisionGraph.EVIDENCE_LOAD);
     assertThat(execution.traces().get(4).getNodeName()).isEqualTo(DecisionGraph.ARBITRATE);
     assertThat(execution.getActiveFlag()).isNull();
+    // 分诊原因码随结论落库：读侧（快捷赔付风险闸/核赔工作台）要能从库内证明"为什么"
+    assertThat(execution.getTriageReason()).isEqualTo("ALL_GATES_PASSED");
+  }
+
+  @Test
+  @DisplayName("风控命中 → MANUAL_REQUIRED，分诊原因 RISK_HIT 落库（快捷赔付风险闸的判据来源）")
+  void riskHitPersistsTriageReason() {
+    List<DecisionNodeHandler> handlers =
+        List.of(
+            node(
+                DecisionGraph.EVIDENCE_LOAD,
+                DecisionNodeStatus.SUCCEEDED,
+                Map.of(
+                    "hasEvidence",
+                    true,
+                    "evidenceParsed",
+                    true,
+                    "ocrConfidence",
+                    new BigDecimal("0.95")),
+                null),
+            node(
+                DecisionGraph.RULE_CHECK,
+                DecisionNodeStatus.SUCCEEDED,
+                Map.of(
+                    "ruleConflict",
+                    false,
+                    "fraudGatePassed",
+                    true,
+                    "riskHit",
+                    true,
+                    "ruleConfidence",
+                    new BigDecimal("0.90")),
+                new BigDecimal("0.90")),
+            node(
+                DecisionGraph.AI_ASSESS,
+                DecisionNodeStatus.SUCCEEDED,
+                Map.of("rejectSuggested", false),
+                new BigDecimal("0.93")),
+            node(
+                DecisionGraph.ADJUST,
+                DecisionNodeStatus.SUCCEEDED,
+                Map.of("amount", new BigDecimal("300.00")),
+                null),
+            node(DecisionGraph.ARBITRATE, DecisionNodeStatus.SUCCEEDED, Map.of(), null));
+
+    DecisionGraphExecutor.DecisionExecutionResult result =
+        executor(handlers).execute(1001L, versions());
+
+    assertThat(result.decisionResult()).isEqualTo("MANUAL_REQUIRED");
+    verify(decisionExecutionApplicationService).persist(persisted.capture());
+    assertThat(persisted.getValue().getTriageReason()).isEqualTo("RISK_HIT");
   }
 
   @Test
@@ -285,6 +336,8 @@ class DecisionGraphExecutorTest {
     assertThat(result.decisionResult()).isEqualTo("MANUAL_REQUIRED");
     verify(decisionExecutionApplicationService).persist(persisted.capture());
     assertThat(persisted.getValue().statusEnum()).isEqualTo(DecisionExecution.Status.FAILED);
+    // 异常中止路径未经分诊：原因码保持 NULL（不猜测、不写空串），风险闸对 NULL 不误拦
+    assertThat(persisted.getValue().getTriageReason()).isNull();
   }
 
   @Test

@@ -3151,6 +3151,7 @@ CREATE TABLE claim_decision_execution (
   started_at        DATETIME(3)   NOT NULL COMMENT '开始时间',
   finished_at       DATETIME(3)   DEFAULT NULL COMMENT '结束时间',
   duration_ms       INT           DEFAULT NULL COMMENT '耗时',
+  triage_reason     VARCHAR(32)   DEFAULT NULL COMMENT '分诊受控原因码(RISK_HIT/AMOUNT_OVER_LIMIT/AI_CONFIDENCE_LOW/OCR_CONFIDENCE_LOW/FRAUD_GATE_NOT_PASSED/EVIDENCE_MISSING等); NULL=异常中止未经分诊或历史行无原因',
   consumption_reason VARCHAR(32)  DEFAULT NULL COMMENT '自动通过结论的消费结果(APPLIED/AUTO_APPROVE_DISABLED/CAP_EXCEEDED/ALREADY_SETTLED); NULL=结论非自动通过或尚未消费',
   consumed_at       DATETIME(3)   DEFAULT NULL COMMENT '结论消费(或受控跳过)的判定时间',
   tenant_id         BIGINT        NOT NULL COMMENT '租户',

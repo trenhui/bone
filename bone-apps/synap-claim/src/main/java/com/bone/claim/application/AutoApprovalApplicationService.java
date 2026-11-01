@@ -3,7 +3,6 @@ package com.bone.claim.application;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.ClaimCase;
-import com.bone.claim.domain.model.decision.DecisionResult;
 import com.bone.claim.domain.model.settlement.AccountType;
 import com.bone.claim.domain.model.settlement.SettlementOrder;
 import java.math.BigDecimal;
@@ -103,7 +102,9 @@ public class AutoApprovalApplicationService {
    * <ul>
    *   <li><b>大额双人复核门</b>：金额 ≥ {@link SettlementOrder#reviewThreshold()}（1 万）一律拒绝单点快捷赔付， 必须走 {@code
    *       audit-pass} + {@code review-confirm} 双人流程（与结算引擎、对账不变量 5 同一阈值，单一真源）。
-   *   <li><b>风险闸</b>：决策结论显式 {@code SUGGEST_REJECT} 的，快捷赔付不得绕过（fraud/risk 判否后不应被一键放款）。
+   *   <li><b>风险闸</b>：决策链显式判否的不得绕过——结论 {@code SUGGEST_REJECT}，或分诊原因码为 {@code RISK_HIT} （风控命中）/
+   *       {@code FRAUD_GATE_NOT_PASSED}（反欺诈硬闸未过）。其余转人工原因（缺证据、OCR 低置信等）不拦：
+   *       那些案件经人工实质审核后本就可放，风险闸只针对"风控/欺诈判否"这一类。
    * </ul>
    *
    * <p>以上任一拦截都返回 {@code applied=false}（带受控原因码），<b>不触碰任何聚合</b>——「拦截」与「放行」共用同一段 「结案 +
@@ -124,13 +125,20 @@ public class AutoApprovalApplicationService {
           SettlementOrder.reviewThreshold());
       return AutoApprovalOutcome.skipped("DUAL_REVIEW_REQUIRED");
     }
-    // 风险闸：决策结论显式建议拒赔的，快捷赔付不得绕过。
-    // 注：RISK_HIT 仅作分诊原因码、未持久化到执行记录，故此处只能可靠拦截 SUGGEST_REJECT；
-    // RISK_HIT 类案件建议后续把风险原因落库后再拦截（见优化说明）。
+    // 风险闸：决策链显式判否的不得一键放款。triageReason 由决策执行落库（claim_decision_execution.triage_reason），
+    // 无执行记录或原因缺失（历史行）时不误拦——闸只对"已知判否"生效，不做猜测式拒绝。
     var latest = decisionExecutionApplicationService.findLatest(claimId);
-    if (latest != null && DecisionResult.SUGGEST_REJECT == latest.decisionResultEnum()) {
-      log.info("[快捷赔付] 风险闸拦截: claimId={}, decision={}", claimId, latest.getDecisionResult());
-      return AutoApprovalOutcome.skipped("RISK_GATE_BLOCKED");
+    if (latest != null) {
+      // 与 applyAutoDecision 的结论判断同风格（字符串比较，不绕道 enum 解析）
+      if ("SUGGEST_REJECT".equals(latest.getDecisionResult())) {
+        log.info("[快捷赔付] 风险闸拦截: claimId={}, decision={}", claimId, latest.getDecisionResult());
+        return AutoApprovalOutcome.skipped("RISK_GATE_BLOCKED");
+      }
+      String triageReason = latest.getTriageReason();
+      if ("RISK_HIT".equals(triageReason) || "FRAUD_GATE_NOT_PASSED".equals(triageReason)) {
+        log.info("[快捷赔付] 风险闸拦截(风控命中): claimId={}, triageReason={}", claimId, triageReason);
+        return AutoApprovalOutcome.skipped("RISK_GATE_BLOCKED:" + triageReason);
+      }
     }
     return approveAndSettleInternal(claimId, operatorId, amount);
   }

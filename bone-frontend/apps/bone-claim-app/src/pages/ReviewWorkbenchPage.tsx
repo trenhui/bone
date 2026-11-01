@@ -23,6 +23,7 @@ import { ReloadOutlined, NodeIndexOutlined, CheckCircleOutlined } from '@ant-des
 import {
   claimApi,
   reviewTaskApi,
+  REVIEW_THRESHOLD,
   type ClaimHeadProjection,
   type Decision,
   type DecisionExecutionSummary,
@@ -277,7 +278,7 @@ export function ReviewWorkbenchPage(): ReactElement {
 
   const pendingCount = rows.filter((r) => r.status === 'PENDING_ADJUST').length;
   const processingCount = rows.filter((r) => r.status === 'ADJUSTING').length;
-  const riskCount = rows.filter((r) => r.claimAmount >= 10000).length;
+  const riskCount = rows.filter((r) => r.claimAmount >= REVIEW_THRESHOLD).length;
 
   return (
     <div style={{ padding: 24 }}>
@@ -359,7 +360,8 @@ export function ReviewWorkbenchPage(): ReactElement {
             {
               title: '大额',
               width: 90,
-              render: (_, r) => (r.claimAmount >= 10000 ? <Badge color="red" text="≥1万" /> : '-'),
+              render: (_, r) =>
+                r.claimAmount >= REVIEW_THRESHOLD ? <Badge color="red" text="≥1万" /> : '-',
             },
             { title: '第一审核人', dataIndex: 'firstReviewerId', width: 140 },
             { title: '受理时间', dataIndex: 'createdAt', width: 180 },
@@ -401,7 +403,7 @@ export function ReviewWorkbenchPage(): ReactElement {
                       </Button>
                     </>
                   )}
-                  {row.status === 'ADJUSTED' && row.claimAmount >= 10000 && (
+                  {row.status === 'ADJUSTED' && row.claimAmount >= REVIEW_THRESHOLD && (
                     <Button
                       type="link"
                       size="small"

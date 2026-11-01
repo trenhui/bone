@@ -140,7 +140,7 @@ export interface AdjustmentLine {
   liabilityUuid?: string;
   /** 输入快照 JSON（仅 INPUT 行有）。 */
   inputSnapshot?: string;
-  /** 六归因成分金额（DECIMAL(20,6) 序列化为 number）。 */
+  /** 六归因成分金额（DDL `DECIMAL(12,2)`，§9.2 通用列约定；12,2 在 JS 双精度安全整数范围内无损）。 */
   feeCalculate?: number;
   feeDeduct?: number;
   ratioPayout?: number;
@@ -323,11 +323,36 @@ export function newIdempotencyKey(): string {
   return uuid();
 }
 
+/**
+ * 大额双人复核门（后端 {@code SettlementOrder.reviewThreshold()} 单一真源，1 万元）。
+ *
+ * 前端仅用于列表「≥1万」徽标与计数展示，不参与任何资金判定；阈值调整必须与后端
+ * 同批同步（结算引擎、对账不变量 5 共用同一后端常量），禁止在前端另立口径。
+ */
+export const REVIEW_THRESHOLD = 10000;
+
+/**
+ * 提交幂等键（C3）：优先由稳定业务键 `batchNo + invoiceNo` 派生——同一批次同一张发票
+ * 重试/双提交天然同键，后端幂等表可直接去重；默认的「每次新 UUID」只在**无业务键可依**
+ * 时兜底。不把 UUID 当默认值：键不稳定比缺键更隐蔽——每次重试都是新键等于关掉幂等，
+ * 网络超时后的重试会真的再建一个案件。
+ */
+function stableSubmitKey(req: SubmitClaimReq): string {
+  return req.batchNo && req.invoiceNo
+    ? `claim:${req.batchNo}:${req.invoiceNo}`
+    : newIdempotencyKey();
+}
+
 export const claimApi = {
-  /** 提交理赔申请（201；带 Idempotency-Key）。 */
-  submit(req: SubmitClaimReq, idempotencyKey = newIdempotencyKey()): Promise<ApiResponse<ClaimCaseResp>> {
+  /**
+   * 提交理赔申请（201；带 Idempotency-Key）。
+   *
+   * @param idempotencyKey 显式指定（如「重试同一动作必须复用同一键」的场景）；
+   *                       缺省时由稳定业务键派生（见 {@link stableSubmitKey}）。
+   */
+  submit(req: SubmitClaimReq, idempotencyKey?: string): Promise<ApiResponse<ClaimCaseResp>> {
     return client.post<never, ApiResponse<ClaimCaseResp>>('/', req, {
-      headers: { 'Idempotency-Key': idempotencyKey },
+      headers: { 'Idempotency-Key': idempotencyKey ?? stableSubmitKey(req) },
     });
   },
 
@@ -455,12 +480,18 @@ export const evidenceApi = {
   list(claimId: string): Promise<ApiResponse<EvidenceResp[]>> {
     return client.get<never, ApiResponse<EvidenceResp[]>>(`/${claimId}/evidences`);
   },
-  register(claimId: string, req: RegisterEvidenceReq, idempotencyKey = newIdempotencyKey()): Promise<ApiResponse<number>> {
-    return client.post<RegisterEvidenceReq, ApiResponse<number>>(`/${claimId}/evidences`, req, {
+  /**
+   * 登记材料，返回 evidenceId。
+   *
+   * 类型必须是 `string` 而非 `number`：后端返回 `ApiResponse<Long>`（雪花 ID），平台
+   * Long→String 序列化后 JSON 里是字符串（ADR-0040：`number` 在 2^53 截断的真实事故）。
+   */
+  register(claimId: string, req: RegisterEvidenceReq, idempotencyKey = newIdempotencyKey()): Promise<ApiResponse<string>> {
+    return client.post<RegisterEvidenceReq, ApiResponse<string>>(`/${claimId}/evidences`, req, {
       headers: { 'Idempotency-Key': idempotencyKey },
     });
   },
-  /** 锁定证据集（理算前置）。 */
+  /** 锁定证据集（理算前置）。返回锁定的材料条数（小整数，`number` 无损）。 */
   lock(claimId: string): Promise<ApiResponse<number>> {
     return client.post<never, ApiResponse<number>>(`/${claimId}/evidences/lock`);
   },
