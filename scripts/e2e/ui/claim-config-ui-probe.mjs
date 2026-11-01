@@ -118,6 +118,43 @@ async function gotoPage(name) {
   return waitStable();
 }
 
+/**
+ * 下钻到「计划配置」页。
+ *
+ * 0093 起「计划配置」不再是侧栏叶子菜单（route 标 hidden），唯一入口是
+ * 「保单管理」行内「配置」按钮 → /plan?policyNo=xxx（深链自带保单上下文）。
+ * 探针必须走这条真实动线：点侧栏「计划配置」在产品形态下已不存在，
+ * 继续按旧菜单点击会把「入口形态变了」误报成「功能不可达」。
+ *
+ * @param {string} policyNo 从哪张保单行下钻（默认用例保单）
+ * @param {string} [fromRowText] 该行的文本特征（默认整表按 policyNo 过滤）
+ */
+async function drillIntoPlan(policyNo = POLICY_NO, fromRowText = policyNo) {
+  await gotoPage('保单管理');
+  await search(policyNo);
+  const row = page
+    .locator('#subapp-viewport .ant-table-tbody tr.ant-table-row')
+    .filter({ hasText: fromRowText })
+    .first();
+  await row.waitFor({ state: 'visible' });
+  await row.locator('button').filter({ hasText: /配\s*置/ }).first().click();
+  // 深链会带 ?policyNo=，页面用 searchParams 初始化选中态 ⇒ 无需再选保单
+  await page.waitForURL(/\/plan\?/, { timeout: 15000 });
+  return waitStable();
+}
+
+/** 下钻到「责任配置」页：计划配置行内「责任配置」→ /liability?policyNo=&planId=。 */
+async function drillIntoLiability(planCode) {
+  const planRow = page
+    .locator('#subapp-viewport .ant-table-tbody tr.ant-table-row')
+    .filter({ hasText: planCode })
+    .first();
+  await planRow.waitFor({ state: 'visible' });
+  await planRow.locator('button').filter({ hasText: /责任配置/ }).first().click();
+  await page.waitForURL(/\/liability\?/, { timeout: 15000 });
+  return waitStable();
+}
+
 /** 等最近一次 message 提示出现（antd message 挂 body 下）。 */
 async function waitMessage(re, ms = 8000) {
   const deadline = Date.now() + ms;
@@ -297,9 +334,13 @@ try {
     `API policyName=${readBack.data?.data?.policyName}`,
   );
 
-  // ---------- 4. 计划配置：行内编辑 ----------
-  body = await gotoPage('计划配置');
-  await pickPolicy();
+  // ---------- 4. 计划配置：行内编辑（经保单行「配置」下钻，0093 后唯一入口） ----------
+  body = await drillIntoPlan();
+  check(
+    '[计划配置] 经保单行「配置」下钻可达（0093 撤菜单后的唯一入口）',
+    /\/plan\?/.test(page.url()) && page.url().includes(POLICY_NO),
+    `url=${page.url()}`,
+  );
   const planRow = page
     .locator('#subapp-viewport .ant-table-tbody tr.ant-table-row')
     .filter({ hasText: PLAN_CODE });
@@ -332,7 +373,23 @@ try {
     `API planName=${planRec?.planName}`,
   );
 
-  // ---------- 5. 额度管理：行内调额 ----------
+  // ---------- 5. 责任配置：经计划行「责任配置」下钻（0093 撤菜单后的唯一入口） ----------
+  // 覆盖缺口：0093 把「责任配置」撤出侧栏后，功能可达性只由
+  // 「计划行 → 责任配置」深链保证。探针不覆盖这条动线 ⇒ 入口坏了也没人发现。
+  body = await drillIntoLiability(PLAN_CODE);
+  check(
+    '[责任配置] 经计划行「责任配置」下钻可达（0093 撤菜单后的唯一入口）',
+    /\/liability\?/.test(page.url()) && page.url().includes('planId='),
+    `url=${page.url()}`,
+  );
+  const liabBody = await page.locator('#subapp-viewport').innerText().catch(() => '');
+  check(
+    '[责任配置] 页面渲染出责任配置界面（深链带保单+计划上下文，非空白）',
+    liabBody.length > 0 && /责任/.test(liabBody),
+    `文本 ${liabBody.length} 字`,
+  );
+
+  // ---------- 6. 额度管理：行内调额 ----------
   body = await gotoPage('额度管理');
   await pickPolicy();
 

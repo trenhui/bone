@@ -3574,6 +3574,7 @@ CREATE TABLE `t_expense_reimbursement_item` (
   `created_by` varchar(64) DEFAULT NULL,
   `updated_by` varchar(64) DEFAULT NULL,
   `ext_str_01` varchar(255) DEFAULT NULL,
+  `ext_str_02` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 

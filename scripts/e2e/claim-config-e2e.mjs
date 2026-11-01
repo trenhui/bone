@@ -436,7 +436,127 @@ async function main() {
     covStale.status === 409 && errCode(covStale) === 'SC_CLAIM_CONCURRENT_CONFLICT',
     `实际 ${covStale.status} ${errCode(covStale) || JSON.stringify(covStale.data).slice(0, 140)}`);
 
-  // ================= 6. 额度账户 =================
+  // ================= 6. 责任配置端 =================
+  // 覆盖缺口（此前为零）：责任配置端 8 个路由（create/update/publish/retire/
+  // listByPlan/feeRules×2）在本 E2E 中完全没被调用过。上轮「加了仓储方法却漏了
+  // SQL 模板 ⇒ 服务启动即崩」的 P0 正是从这个洞漏出来的：接口在、测试不覆盖，
+  // 于是模板缺失能一路跑到线上。⇒ 这里补端到端覆盖（正 + 负）。
+  const liabCode = ds.doc_no('R01');
+  const liabCreate = await call('POST', `${P}/liabilities`, {
+    planId: planIds[PLANS[0].code],
+    coverageId: firstCoverageId,
+    liabilityCode: liabCode,
+    liabilityType: 'REIMBURSEMENT',
+    payPercent: '90',
+    liabilityDeduct: '100',
+    liabilityLimit: '10000',
+    dailyLimit: '500',
+    dailyLimitBasis: 'SAME_DAY_INVOICE',
+    limitMode: 'WHITELIST',
+    limitHospitalCodes: 'H001,H002',
+    catalogPolicy: 'MANDATORY',
+    catalogCode: 'NATIONAL_2024',
+    socialOnly: 0,
+    waitingPeriod: 30,
+  });
+  // 注：责任配置端的 create 显式返回 HttpStatus.OK（与保单/计划的 201 不同口径），
+  // 这里按控制器真实契约断言 200，不臆造 201。
+  check('建责任 → 200（控制器显式 OK 口径）', liabCreate.status === 200,
+    `实际 ${liabCreate.status} ${JSON.stringify(liabCreate.data).slice(0, 200)}`);
+  const liabilityId = liabCreate.data?.data?.liabilityId;
+  check('新建责任初始为草稿（DRAFT）',
+    liabCreate.data?.data?.status === 'DRAFT', String(liabCreate.data?.data?.status));
+  // **全列回读**：模板漏 SELECT ⇒ 字段恒 null（"建得进读不出"）。
+  // 逐项断言业务列，杜绝"接口 200 但数据是空的"这种假绿。
+  const liabView = liabCreate.data?.data ?? {};
+  const liabCols = [
+    ['payPercent', '90'], ['liabilityDeduct', '100'], ['liabilityLimit', '10000'],
+    ['dailyLimit', '500'], ['dailyLimitBasis', 'SAME_DAY_INVOICE'],
+    ['limitMode', 'WHITELIST'], ['limitHospitalCodes', 'H001,H002'],
+    ['catalogPolicy', 'MANDATORY'], ['catalogCode', 'NATIONAL_2024'],
+  ];
+  const badCols = liabCols.filter(([k, v]) => String(liabView[k] ?? '') !== v);
+  check('新建责任回读业务列齐全（模板漏 SELECT 会在此暴露）',
+    badCols.length === 0,
+    badCols.length === 0 ? `已核对 ${liabCols.length} 列`
+      : `不一致列=${badCols.map(([k, v]) => `${k}:期望${v}/实际${liabView[k]}`).join(', ')}`);
+
+  const liabList = await call('GET', `${P}/liabilities/plan/${planIds[PLANS[0].code]}`);
+  check('按计划查责任列表 → 200 且含新建责任',
+    liabList.status === 200 && rowsOf(liabList).some((r) => r.liabilityId === liabilityId),
+    `实际 ${liabList.status} ${JSON.stringify(liabList.data).slice(0, 160)}`);
+
+  // 负向：日限额无口径 ⇒ 写期自洽校验拦截（0094：把"配了不生效"拦在保存时）
+  const badShape = await call('POST', `${P}/liabilities`, {
+    planId: planIds[PLANS[0].code],
+    coverageId: firstCoverageId,
+    liabilityCode: ds.doc_no('R02'),
+    liabilityType: 'REIMBURSEMENT',
+    payPercent: '90',
+    dailyLimit: '500',
+    dailyLimitBasis: 'NONE',
+  });
+  check('建责任（日限额配了但口径为 NONE）→ 4xx（0094 写期自洽校验）',
+    badShape.status >= 400 && badShape.status < 500,
+    `实际 ${badShape.status} ${JSON.stringify(badShape.data).slice(0, 200)}`);
+
+  // 负向：免赔额/日限额为负 ⇒ 拦截（负数会被引擎静默夹成 0 = 少扣钱）
+  const negAmount = await call('POST', `${P}/liabilities`, {
+    planId: planIds[PLANS[0].code],
+    coverageId: firstCoverageId,
+    liabilityCode: ds.doc_no('R03'),
+    liabilityType: 'REIMBURSEMENT',
+    payPercent: '90',
+    liabilityDeduct: '-100',
+  });
+  check('建责任（年度免赔额为负）→ 4xx（金额非负守卫）',
+    negAmount.status >= 400 && negAmount.status < 500,
+    `实际 ${negAmount.status} ${JSON.stringify(negAmount.data).slice(0, 200)}`);
+
+  // **契约固化（不是缺陷断言）**：责任额度上限为负，当前实现按「不封顶」解释
+  // （LiabilityRule#liabilityUncapped：limit<=0 ⇒ 不封顶，见 assertRuleUsable
+  // 注释「责任额度为负按不封顶解释」）。该语义目前**无文档背书**，是并行会话
+  // 写进代码的既定契约；此处断言"行为未被静默改动"，改动该语义需同步改此断言。
+  const negLimit = await call('POST', `${P}/liabilities`, {
+    planId: planIds[PLANS[0].code],
+    coverageId: firstCoverageId,
+    liabilityCode: ds.doc_no('R05'),
+    liabilityType: 'REIMBURSEMENT',
+    payPercent: '90',
+    liabilityLimit: '-100',
+  });
+  check('建责任（责任额度上限为负）→ 200 且按「不封顶」语义落库（契约固化）',
+    negLimit.status === 200 && String(negLimit.data?.data?.liabilityLimit) === '-100',
+    `实际 ${negLimit.status} limit=${negLimit.data?.data?.liabilityLimit}`);
+
+  // 负向：计划不存在 ⇒ 4xx（外键完整性，不造孤儿责任）
+  const badPlanLiab = await call('POST', `${P}/liabilities`, {
+    planId: '999999999999999999',
+    liabilityCode: ds.doc_no('R04'),
+    liabilityType: 'REIMBURSEMENT',
+    payPercent: '90',
+  });
+  check('建责任（计划不存在）→ 4xx（外键完整性）',
+    badPlanLiab.status >= 400 && badPlanLiab.status < 500,
+    `实际 ${badPlanLiab.status} ${JSON.stringify(badPlanLiab.data).slice(0, 160)}`);
+
+  const liabPublish = await call('POST', `${P}/liabilities/${liabilityId}/publish`);
+  check('发布责任 → 200 且状态 ACTIVE',
+    liabPublish.status === 200 && liabPublish.data?.data?.status === 'ACTIVE',
+    `实际 ${liabPublish.status} ${liabPublish.data?.data?.status || JSON.stringify(liabPublish.data).slice(0, 160)}`);
+
+  const liabRetire = await call('POST', `${P}/liabilities/${liabilityId}/retire`);
+  check('下线责任 → 200 且状态 RETIRED',
+    liabRetire.status === 200 && liabRetire.data?.data?.status === 'RETIRED',
+    `实际 ${liabRetire.status} ${liabRetire.data?.data?.status || JSON.stringify(liabRetire.data).slice(0, 160)}`);
+
+  // 负向：已下线责任再发布 ⇒ 领域守卫拦截（不可复活）
+  const liabRepublish = await call('POST', `${P}/liabilities/${liabilityId}/publish`);
+  check('已下线责任再发布 → 4xx（领域守卫：不可复活）',
+    liabRepublish.status >= 400 && liabRepublish.status < 500,
+    `实际 ${liabRepublish.status} ${JSON.stringify(liabRepublish.data).slice(0, 160)}`);
+
+  // ================= 7. 额度账户 =================
   // 外键完整性：不存在的计划不得开账户（否则会造出指向不存在计划的孤儿账户，且全程零报错）
   const openBadPlan = await call('POST', `${P}/quota-accounts`, {
     insuredIdHash: `${insuredHashes[0]}-fk-probe`,
