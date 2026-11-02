@@ -631,6 +631,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_DECISION_ACTIVE_CONFLICT` | 409 | 同案已有活跃决策执行（不允许并发重跑；工作台「决策图」改为只读取最近轨迹，不该命中此码） |
 | `SC_CLAIM_RECON_DIFF_NOT_FOUND` | 404 | 对账差异不存在或不可见（租户隔离下的统一 404 语义，防枚举） |
 | `SC_CLAIM_RECON_DIFF_CONFLICT` | 409 | 对账差异状态冲突（已处置不可再次处置 / 处置结论非法；不静默幂等） |
+| `SC_CLAIM_CONSENT_WITHDRAWN` | 422 | 被保险人已撤回同意（PIPL 第 15 条）：处理类用例（分配/初审/理算回填/核赔/复核/自动通过/补件）一律拒绝，请求本身合法而处理前提已失效；关单/挂起/申诉不受限——撤回语义是「停止新处理」而非「冻结案件」，否则案件永久悬空 |
 
 ---
 
