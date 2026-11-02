@@ -326,10 +326,7 @@ public class LiabilityConfigApplicationService {
     //
     // 放行 0 与不填（null ⇒ toDecimal → ZERO）：那是"不封顶"的唯一合法写法，不能一并拦掉
     // （否则运营无路可走，只能乱填）。错误消息要写清后果与正确写法，便于运营自查。
-    assertNonNegative(
-        "责任额度上限",
-        v.liabilityLimit(),
-        "负数会被按「不封顶」解释，等于取消限额；不封顶请填 0 或留空");
+    assertNonNegative("责任额度上限", v.liabilityLimit(), "负数会被按「不封顶」解释，等于取消限额；不封顶请填 0 或留空");
     //
     // 日限额的「金额 ↔ 口径」在这里<b>按原始值</b>判一次：装配器 {@code LiabilityRule.fromLegacy} 在
     // {@code dailyLimit <= 0} 时会把口径直接置回 NONE（它把"没有金额"当作"不启用日限额"），
@@ -402,8 +399,8 @@ public class LiabilityConfigApplicationService {
   /**
    * 金额类配置非负校验。
    *
-   * @param consequence 可选的"负数会造成什么后果"说明；拼进错误消息，让运营知道该改成什么
-   *     而不是只知道"不合法"。原因见 {@link #assertRuleUsable} 里对责任额度上限的论证。
+   * @param consequence 可选的"负数会造成什么后果"说明；拼进错误消息，让运营知道该改成什么 而不是只知道"不合法"。原因见 {@link #assertRuleUsable}
+   *     里对责任额度上限的论证。
    */
   private static void assertNonNegative(String label, BigDecimal value, String consequence) {
     if (value != null && value.signum() < 0) {

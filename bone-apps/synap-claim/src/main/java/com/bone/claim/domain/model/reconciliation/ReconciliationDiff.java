@@ -4,6 +4,7 @@ import com.bone.core.exception.DomainException;
 import com.bone.core.tenant.TenantAbstractEntity;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
+import com.bone.metadata.sdk.domain.annotation.Version;
 import java.math.BigDecimal;
 import lombok.Getter;
 
@@ -75,6 +76,25 @@ public class ReconciliationDiff extends TenantAbstractEntity<Long> {
 
   @Column(name = "resolved_by", nullable = false)
   private String resolvedBy;
+
+  /**
+   * 乐观锁版本（并发处置的唯一仲裁者）。
+   *
+   * <p><b>它挡住的是什么</b>：两个运维同时打开同一条差异，各自读到 {@code PENDING}。{@link #resolve} 的前置检查只能 保证"读到的这一份是
+   * PENDING"，无法保证"写回时仍是 PENDING"。没有版本条件时，后写者整行覆盖先写者的处置态，
+   * 界面表现为"我明明标了已调账，刷新后变成了已豁免"，而两条处置流水都在——查得到历史，查不出谁覆盖了谁。
+   *
+   * <p><b>为什么默认值是 0 而不是 null</b>：SDK 遇到 {@code @Version} 为 null 会直接拒绝写入（无法构造 {@code version = :old}
+   * 条件）。生效通道（{@code scripts/migration/0098} 与 {@code bone-init.sql}）给了 {@code DEFAULT 0}， 存量行等价于"第
+   * 0 版"，首次处置即 0 → 1，与新建行一致，无需数据迁移。
+   *
+   * <p><b>失败如何呈现</b>：版本条件命中 0 行时 SDK 抛 {@code OptimisticLockingFailureException}，由 {@code
+   * ReconciliationDispositionService} 翻译成 409 {@code SC_CLAIM_RECON_DIFF_CONFLICT}
+   * 并提示"刷新后重试"。不在此处吞掉 异常——静默忽略会让调用方以为处置成功。
+   */
+  @Version
+  @Column(name = "version")
+  private Long version;
 
   ReconciliationDiff() {}
 

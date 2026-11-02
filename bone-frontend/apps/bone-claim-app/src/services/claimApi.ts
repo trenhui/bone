@@ -4,7 +4,14 @@ import type { ApiResponse } from '@bone/shared-types';
 /**
  * synapClaim 理赔 API（后端 `synap-claim` 模块，`/api/v1/claims`）。
  *
- * 复用平台 `createApiClient`：统一 Bearer 注入、ApiResponse 信封解包、401 过期广播。
+ * 复用平台 `createApiClient`：统一 Bearer 注入、**把 axios 响应解包为 `ApiResponse` 信封**
+ * （返回体仍是 `{ code, message, data }`，业务数据须经 `.data` 取用）、401 过期广播。
+ *
+ * <p><b>注意（解包语义，勿再误读）</b>：拦截器只解 `axios.response → ApiResponse`，**不会**再解一层
+ * `ApiResponse → data`，也**不按业务码 reject**。因此「HTTP 200 + 业务 `code !== 200`」会被正常
+ * resolve，调用方若不检查 `code` 就会把错误响应当成功数据渲染。两条统一写法二选一：
+ * ① 用 `apiCall(...)` 取 `.data`（不做业务码校验，适合确信只成功分支的场景）；
+ * ② 显式 `if (res.code !== 200) throw ...`。同一模块内不要两种混用。
  * 幂等：写请求带 `Idempotency-Key` 请求头（UUID v4），同键同参返回首次结果。
  */
 
@@ -51,6 +58,13 @@ export interface SubmitClaimReq {
   claimType?: string;
   invoiceCode?: string;
   invoiceNo?: string;
+  /**
+   * PIPL 单独同意记录号（后端 `consent_record_id`，选填）。
+   *
+   * 医疗数据属敏感个人信息，PIPL 第 29 条要求**单独同意**。选填而非必填：存量渠道与旁路同步尚无此字段，
+   * 一刀切必填会让存量报案全线被拒；留痕一旦登记则不可改写（后端强约束）。
+   */
+  consentRecordId?: string;
   outInsureTime: string;
   batchNo?: string;
   items: ClaimItemReq[];
@@ -98,6 +112,13 @@ export interface ClaimWithItemsProjection {
   policyNo: string;
   planId: string;
   insuredIdHash: string;
+  /**
+   * PIPL 单独同意记录号（后端 `t_claim_case.consent_record_id`）。
+   * `null` = 未登记引用（存量案件/该渠道未接同意流水），**不等于**未取得同意。
+   */
+  consentRecordId: string | null;
+  /** 同意撤回标记（0 未撤回 / 1 已撤回）。撤回后后端处理类动作一律 422。 */
+  consentWithdrawnFlag: number;
   claimType: string;
   status: ClaimStatusName;
   externalStatus: string;
@@ -641,6 +662,17 @@ export const attachmentApi = {
         ? (e) => opts.onProgress?.(e.total ? Math.round((e.loaded / e.total) * 100) : 0)
         : undefined,
     });
+  },
+
+  /**
+   * 下载地址（`fileRef` → bone-file `GET /files/{objectName}`）。
+   *
+   * <p>与 {@link #upload} 共用同一前缀（`[VITE_API_BASE_URL] + /api/v1/file`）。页面里裸写
+   * `/api/v1/file/files/...` 会绕过 `VITE_API_BASE_URL`，在网关前缀变更、多环境或子应用独立部署时
+   * 必然失配（上传走客户端、下载走硬编码，两边不同源）。**所有文件下载地址都应经此方法生成**。
+   */
+  downloadUrl(objectName: string): string {
+    return `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/file/files/${encodeURIComponent(objectName)}`;
   },
 };
 

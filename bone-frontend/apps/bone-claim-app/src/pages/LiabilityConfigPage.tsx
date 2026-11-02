@@ -40,6 +40,7 @@ import {
 import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
 import { usePolicyOptions } from '../hooks/usePolicyOptions';
 import { useConfirmAction } from '../hooks/useConfirmAction';
+import { LIBRARY_MAX_PAGES, LIBRARY_PAGE_SIZE, fetchAllPages } from '../utils/libraryPaging';
 import { PERMISSIONS } from '../constants/permissions';
 import {
   CONFIG_STATUS_META,
@@ -242,7 +243,7 @@ export function LiabilityConfigPage(): ReactElement {
 
   // ===================== 基础目录库（0094）：库选择器数据源 =====================
 
-  /** 目录下拉选项（value=编码，label=`编码 名称`；加载大页一次，列表页维护目录）。 */
+  /** 目录下拉选项（value=编码，label=`编码 名称`；挂载时分页取尽，目录维护在「基础目录库」页）。 */
   const [hospitalOptions, setHospitalOptions] = useState<LibraryOption[]>([]);
   const [diseaseOptions, setDiseaseOptions] = useState<LibraryOption[]>([]);
   const [drugOptions, setDrugOptions] = useState<LibraryOption[]>([]);
@@ -252,25 +253,25 @@ export function LiabilityConfigPage(): ReactElement {
     void (async () => {
       try {
         const [hosp, dise, drug, fee] = await Promise.all([
-          claimConfigApi.listHospitals({ page: 1, size: 500 }),
-          claimConfigApi.listDiseases({ page: 1, size: 500 }),
-          claimConfigApi.listDrugs({ page: 1, size: 500 }),
+          fetchAllPages((page, size) => claimConfigApi.listHospitals({ page, size })),
+          fetchAllPages((page, size) => claimConfigApi.listDiseases({ page, size })),
+          fetchAllPages((page, size) => claimConfigApi.listDrugs({ page, size })),
           claimConfigApi.listAllFeeCategories(),
         ]);
         setHospitalOptions(
-          (hosp.data?.records ?? []).map((x) => ({
+          hosp.rows.map((x) => ({
             value: x.hospitalCode,
             label: `${x.hospitalCode} ${x.hospitalName}`,
           })),
         );
         setDiseaseOptions(
-          (dise.data?.records ?? []).map((x) => ({
+          dise.rows.map((x) => ({
             value: x.diseaseCode,
             label: `${x.diseaseCode} ${x.diseaseName}`,
           })),
         );
         setDrugOptions(
-          (drug.data?.records ?? []).map((x) => ({
+          drug.rows.map((x) => ({
             value: x.drugCode,
             label: `${x.drugCode} ${x.drugName}`,
           })),
@@ -278,6 +279,12 @@ export function LiabilityConfigPage(): ReactElement {
         setFeeCategoryOptions(
           (fee.data ?? []).map((x) => ({ value: x.feeCode, label: `${x.feeCode} ${x.feeName}` })),
         );
+        // 触达硬上限 ⇒ 下拉不完整：显式告警（不阻断配置，但必须让配置岗知道要改用目录页检索）
+        if (hosp.truncated || dise.truncated || drug.truncated) {
+          message.warning(
+            `基础目录库超过单次加载上限（${LIBRARY_MAX_PAGES * LIBRARY_PAGE_SIZE} 条），下拉未取全；请到「基础目录库」页检索`,
+          );
+        }
       } catch {
         // 目录加载失败不阻断责任配置：选择器仍可手输编码（tags 模式），与旧行为兼容
         message.error('基础目录库加载失败，名单选择器降级为手动输入编码');

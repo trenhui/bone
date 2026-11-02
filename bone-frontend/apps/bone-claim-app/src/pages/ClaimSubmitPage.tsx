@@ -138,6 +138,18 @@ export function ClaimSubmitPage(): ReactElement {
             <Form.Item name="invoiceNo" label="发票号码">
               <Input placeholder="12345678" style={{ width: 200 }} />
             </Form.Item>
+            {/*
+              PIPL 单独同意留痕（选填）：医疗数据属敏感个人信息，第 29 条要求单独同意。
+              选填而非必填——存量渠道/旁路同步没有这个号，做成必填会把存量报案全挡在门口；
+              登记后后端不可改写（覆盖 = 证据失效），故不给「修改」入口。
+            */}
+            <Form.Item
+              name="consentRecordId"
+              label="同意记录号"
+              tooltip="PIPL 单独同意记录号（选填）。仅在已接同意流水时填写；登记后不可修改，填错请走数据更正工单。"
+            >
+              <Input placeholder="选填，如 CONSENT-2026-0001" style={{ width: 240 }} />
+            </Form.Item>
           </Space>
 
           <Form.List name="items" initialValue={[{}]}>

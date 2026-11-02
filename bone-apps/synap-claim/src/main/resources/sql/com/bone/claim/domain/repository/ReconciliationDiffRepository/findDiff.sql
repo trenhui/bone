@@ -10,6 +10,7 @@ SELECT
        remote_status,
        resolution,
        resolved_by,
+       version,
        tenant_id,
        created_at,
        updated_at

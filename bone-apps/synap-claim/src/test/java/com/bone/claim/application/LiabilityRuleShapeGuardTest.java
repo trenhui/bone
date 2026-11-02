@@ -275,11 +275,9 @@ class LiabilityRuleShapeGuardTest {
   /**
    * 负数责任额度必须被拒。
    *
-   * <p><b>为什么</b>：负数额度在理算期被解释为「不封顶」（{@code LiabilityRule#liabilityUncapped}），
-   * 也就是<b>手滑写错一个数 ⇒ 该责任静默变成无限额赔付</b>——比"少扣钱"风险更高（赔得更多）。
-   * 同域的三个同类字段早已一致地拒绝负数（计划额度 ClaimPlan / 险种额度 ClaimCoverage /
-   * 额度账户 QuotaAccount），责任额度是唯一漏网的；而 reference-impl S25 的原文也是
-   * 「额度 <b>0</b> 表示不限制」，负数从未被定义过。
+   * <p><b>为什么</b>：负数额度在理算期被解释为「不封顶」（{@code LiabilityRule#liabilityUncapped}）， 也就是<b>手滑写错一个数 ⇒
+   * 该责任静默变成无限额赔付</b>——比"少扣钱"风险更高（赔得更多）。 同域的三个同类字段早已一致地拒绝负数（计划额度 ClaimPlan / 险种额度 ClaimCoverage /
+   * 额度账户 QuotaAccount），责任额度是唯一漏网的；而 reference-impl S25 的原文也是 「额度 <b>0</b> 表示不限制」，负数从未被定义过。
    */
   @Test
   void create_negativeLiabilityLimit_isRejected() {
@@ -292,10 +290,7 @@ class LiabilityRuleShapeGuardTest {
     verify(liabilityRepository, never()).save(any());
   }
 
-  /**
-   * 编辑路径同样要拦：编辑会把命令值与库里原值<b>合并</b>后求值，
-   * 负数可能从库里沿用下来（存量脏数据），不能只拦"命令里显式写了负数"。
-   */
+  /** 编辑路径同样要拦：编辑会把命令值与库里原值<b>合并</b>后求值， 负数可能从库里沿用下来（存量脏数据），不能只拦"命令里显式写了负数"。 */
   @Test
   void update_negativeLiabilityLimit_isRejected() {
     when(liabilityRepository.findById(1L)).thenReturn(liability("ACTIVE"));
@@ -310,8 +305,7 @@ class LiabilityRuleShapeGuardTest {
   /**
    * 边界钉子：<b>0</b> 仍然合法，且语义是「不封顶」。
    *
-   * <p>这条是"别把收紧做成过度收紧"的防线——若守卫写成 {@code signum() <= 0}，
-   * "不封顶"这个唯一合法表达方式就会被拒掉（运营将无路可走，只能乱填）。
+   * <p>这条是"别把收紧做成过度收紧"的防线——若守卫写成 {@code signum() <= 0}， "不封顶"这个唯一合法表达方式就会被拒掉（运营将无路可走，只能乱填）。
    */
   @Test
   void create_zeroLiabilityLimit_isAcceptedAsUncapped() {

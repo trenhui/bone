@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 102,
+  "executableCount": 104,
   "retired": [],
   "entries": [
     {
@@ -663,6 +663,18 @@
       "file": "0096_normalize_negative_liability_limit.sql",
       "kind": "mixed",
       "summary": "把责任额度上限的存量负数归一为 0（=「不封顶」），与配置期收紧配套：负数额度在理算期被解释为不封顶（LiabilityRule#liabilityUncapped），即运营手滑写错一个数就让该责任静默变成无限额赔付（赔得更多，风险方向与免赔/日限额相反）；而 reference-impl S25 的契约是「额度 0 表示不限制」，负数从未被定义过，属隐式哨兵反模式。同批次配置期改为拒绝负数额度（0 与不填仍合法），本脚本负责存量收口。归 0 是零行为变更（理算期 signum()<=0 ⇒ 负数与 0 同义，赔付金额完全不变），只把不可见的歧义变成明确的 0。同步 bump version，避免仍持旧 version 的应用实例用陈旧对象覆盖修复结果。审计留痕（先列待修复行）+ 终态断言（不得再有 liability_limit<0 的行，否则说明仍有写入路径漏掉守卫，必须 fail-fast）。"
+    },
+    {
+      "order": 103,
+      "file": "0097_synap_claim_consent_trace.sql",
+      "kind": "ddl",
+      "summary": "给赔案主表 t_claim_case 增加 PIPL 同意留痕两列：consent_record_id VARCHAR(64) NULL（单独同意记录号，指向上游同意流水；NULL=存量未登记）与 consent_withdrawn_flag TINYINT NOT NULL DEFAULT 0（撤回标记）。依据三处契约：工程落地版 §9.5 t_claim_case DDL、07-delivery/05 数据字典补录、08-go-live/06 DSAR 册 G10（P0 合规前置）。补列前全仓 grep consent 零命中，即「声称合规、实则无一条留痕」，且属监管报批时才暴露、历史数据不可回溯的一类缺口。默认 0 保证存量行行为不变；撤回后由应用层在处理类用例前 fail-closed 拦截（SC_CLAIM_CONSENT_WITHDRAWN），关单/挂起等收尾动作不拦。幂等 ALTER + 双列就位与默认值 NOT NULL 0 的终态断言。bone-init.sql 同步补列。"
+    },
+    {
+      "order": 104,
+      "file": "0098_synap_claim_reconciliation_diff_version.sql",
+      "kind": "ddl",
+      "summary": "给对账差异明细 t_reconciliation_diff 增加乐观锁列 version BIGINT NOT NULL DEFAULT 0，闭环「两个运维同时处置同一条差异时后写者静默覆盖当前态」的缺口。该缺口在代码与契约里各登记过一次：ReconciliationDispositionService 类注释的「并发」段写明「要彻底消除需给差异行加乐观锁列，已记为待办」，契约 §11.7 留痕边界① 与 §12.2.1「对账差异处置乐观锁」行写明落地前提「必须同批，缺一即炸」。本脚本负责前提①，实体 @Version 与应用层冲突翻译（SDK OptimisticLockingFailureException → 409 SC_CLAIM_RECON_DIFF_CONFLICT）在同一次提交完成。两个半成品都比不改更危险：只加注解不加列 ⇒ 任何 save 报 ERROR 1054；只加列不加注解 ⇒ 列恒为 0，乐观锁形同虚设而界面像是已加固。默认 0 而非 NULL：SDK 对 @Version 为 null 直接拒绝（Optimistic lock cannot proceed），NULL 会让存量行首次处置即失败；DEFAULT 0 等价于「第 0 版」，零数据迁移。终态断言列就位 + NOT NULL + DEFAULT 0 三者同时成立。bone-init.sql 同批补列。"
     }
   ],
   "ordinalConflicts": [

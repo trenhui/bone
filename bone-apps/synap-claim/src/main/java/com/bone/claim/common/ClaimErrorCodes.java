@@ -35,6 +35,17 @@ public final class ClaimErrorCodes {
   /** 双人复核人必须为非第一审核人（职责分离）。 */
   public static final String CLAIM_REVIEWER_CONFLICT = "SC_CLAIM_REVIEWER_CONFLICT";
 
+  /**
+   * 该赔案的个人信息主体已撤回同意（PIPL 第 15 条）：拒绝继续处理其数据。
+   *
+   * <p>为什么单独给码、不复用 {@code SC_CLAIM_STATUS_CONFLICT}：撤回同意是**合规事件**，必须能被单独聚合与告警
+   * （"有多少笔理赔因为撤回同意而停摆"是合规月报的口径）。混进状态冲突会让它消失在一堆普通流转失败里—— 与"无依据出金被聚合成案件没理算"同一种掩盖。
+   *
+   * <p>为什么是 422 而不是 409：请求本身合法、操作人也有权限，是"该主体数据已不得用于新处理"这一业务前提不成立 （与 {@code
+   * SC_CLAIM_POLICY_NOT_ACTIVE} 同口径）。
+   */
+  public static final String CLAIM_CONSENT_WITHDRAWN = "SC_CLAIM_CONSENT_WITHDRAWN";
+
   // ===== A2 证据 =====
 
   /** 材料不存在或不可见。 */

@@ -296,6 +296,7 @@ class ClaimE2EScenarioTest {
             null,
             Instant.now(),
             "BATCH-1",
+            null,
             dtos);
 
     BizException ex = assertThrows(BizException.class, () -> h.claimSvc.submit(req));
@@ -533,6 +534,7 @@ class ClaimE2EScenarioTest {
             null,
             Instant.now(),
             "BATCH-1",
+            null,
             dtos);
     ClaimCaseApplicationService.SubmittedClaim submitted = h.claimSvc.submit(req);
     long claimId = submitted.claimId();

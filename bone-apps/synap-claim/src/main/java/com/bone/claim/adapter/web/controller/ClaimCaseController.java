@@ -291,6 +291,37 @@ public class ClaimCaseController {
     return ApiResponse.success();
   }
 
+  /**
+   * 撤回同意（PIPL 第 15 条；DSAR 册 {@code POST /consent/revoke}，G10 合规前置）。
+   *
+   * <p><b>为什么挂在赔案下而不是全局 {@code /consent/revoke}</b>：本系统的个人信息处理是按<b>赔案</b>组织的
+   * （额度、决策、材料、审计都挂在案件上），撤回的影响面天然是"这个主体的这一批处理"。全局端点在没有主体主键
+   * 的模型里无法定位到具体赔案，只能靠额外索引再猜。上游同意服务若需全局撤回，按其自身流水反查本模块案件后 逐案调用即可。
+   *
+   * <p><b>幂等</b>：重复撤回返回 200 + {@code data=false}（本来就已撤回），不报错、不 bump version。
+   *
+   * <p><b>权限</b>：沿用 {@code claim:claims:write}。DSAR 独立权限码（查阅/删除/撤回分权，避免同一岗位既能查又能删） 属 G10
+   * 剩余范围，拆码时在此改一行即可——<b>不</b>因为"以后要拆"就先造一个没人绑定的权限码（配了不生效）。
+   */
+  @Operation(
+      summary = "撤回同意（PIPL 15 条）",
+      description =
+          "置撤回标记后，分配/初审/核赔/复核/自动通过等处理类用例一律 422 拒绝；" + "关单、挂起等收尾动作不受影响。幂等：重复撤回返回 data=false。")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "已撤回（data=true）/ 本来就已撤回（data=false）"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "404",
+        description = "SC_CLAIM_NOT_FOUND")
+  })
+  @PreAuthorize("hasAuthority('claim:claims:write')")
+  @PostMapping("/{id}/consent/revoke")
+  public ApiResponse<Boolean> revokeConsent(
+      @Parameter(description = "案件ID") @PathVariable long id) {
+    return ApiResponse.success(claimCaseApplicationService.revokeConsent(id));
+  }
+
   @SuppressWarnings("unchecked")
   private static ApiResponse<ClaimCaseResp> toReplayedResponse(
       IdempotencyService.ReplayedResponse snapshot) {

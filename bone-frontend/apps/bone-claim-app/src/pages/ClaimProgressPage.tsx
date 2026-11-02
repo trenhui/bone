@@ -10,6 +10,7 @@ import {
   Steps,
   Table,
   Tag,
+  Typography,
   message,
 } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
@@ -101,6 +102,15 @@ export function ClaimProgressPage(): ReactElement {
 
       {head && (
         <>
+          {head.consentWithdrawnFlag === 1 && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message="该案的个人信息主体已撤回同意"
+              description="按 PIPL 第 15 条，撤回后不再开展新的处理（分配初审、核赔、复核、自动通过均会被拒绝）；已完成的留存与法定审计记录不受影响。如被保人重新同意，须由上游重新采集并签发新的同意记录号。"
+            />
+          )}
           <Card title="案件信息" style={{ marginBottom: 16 }}>
             <Descriptions column={2} size="small">
               <Descriptions.Item label="报案号">{head.claimNo}</Descriptions.Item>
@@ -114,6 +124,26 @@ export function ClaimProgressPage(): ReactElement {
                 {head.approvedAmount === null ? '待核定' : `¥${Number(head.approvedAmount).toFixed(2)}`}
               </Descriptions.Item>
               <Descriptions.Item label="受理时间">{head.createdAt}</Descriptions.Item>
+              {/**
+               * 同意留痕必须「可被看见」：只写库不在界面呈现，等于合规抽查时还要开发跑 SQL。
+               * 未登记显示「未登记」而不是「无」——两者的合规含义不同（见 claimApi 类型注释）。
+               */}
+              <Descriptions.Item label="同意记录号">
+                {head.consentRecordId ? (
+                  <Typography.Text copyable={{ text: head.consentRecordId }}>
+                    {head.consentRecordId}
+                  </Typography.Text>
+                ) : (
+                  <Typography.Text type="secondary">未登记</Typography.Text>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="同意状态">
+                {head.consentWithdrawnFlag === 1 ? (
+                  <Tag color="red">已撤回</Tag>
+                ) : (
+                  <Tag color="green">有效</Tag>
+                )}
+              </Descriptions.Item>
               {head.rejectComment && (
                 <Descriptions.Item label="拒赔说明" span={2}>
                   <Alert type="error" showIcon message={head.rejectComment} />

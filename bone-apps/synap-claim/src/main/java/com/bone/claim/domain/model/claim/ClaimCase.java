@@ -56,6 +56,30 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   @Column(name = "insured_id_hash", nullable = false)
   private String insuredIdHash;
 
+  /**
+   * PIPL 单独同意记录号（工程落地版 §9.5；delivery/05 数据字典）。
+   *
+   * <p>医疗健康数据属<b>敏感个人信息</b>，PIPL 第 29 条要求单独同意、不得以保单条款概括同意替代。 本系统不建同意台账（同意在投保/授权环节由上游采集），
+   * 此处只保存<b>可回查的引用</b>；{@code null} = 未登记（存量案件与未接同意流水的渠道）。
+   *
+   * <p>写入后<b>不可改写</b>（见 {@link #recordConsent}）：同意证据一旦被覆盖，就等于"合规记录可被后来者编辑"， 留痕失去证明力。
+   */
+  @Column(name = "consent_record_id")
+  private String consentRecordId;
+
+  /**
+   * 同意撤回标记（1 = 已撤回；PIPL 第 15 条）。
+   *
+   * <p><b>用 int 而非布尔/枚举</b>：与 {@code hangUpStatus}、{@code deleted} 同口径落 TINYINT，避免"枚举带 code 落
+   * varchar 列 ⇒ 建得进读不出"那类历史坑。
+   *
+   * <p><b>消费方</b>：应用层在处理类用例（分配/初审/核赔/复核/自动通过）前 fail-closed 拦截（{@code
+   * SC_CLAIM_CONSENT_WITHDRAWN}）；关单、挂起等<b>收尾</b>动作不拦——撤回的语义是"停止新的处理"，不是"把案子卡死"。 异步擦除作业（DSAR 册
+   * §三，G10 归口）落地后同样以本标记为触发条件。
+   */
+  @Column(name = "consent_withdrawn_flag", nullable = false)
+  private int consentWithdrawnFlag;
+
   @Column(name = "claim_type", nullable = false)
   private String claimType;
 
@@ -562,6 +586,73 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
             "RESUME",
             operatorId,
             Instant.now()));
+  }
+
+  // ===================== PIPL 同意留痕（工程落地版 §11.3 / DSAR 册 G10） =====================
+
+  /**
+   * 登记单独同意记录号（受理前补录，PIPL 第 29 条）。
+   *
+   * <p><b>为什么不可改写</b>：同意留痕的价值在于"事后能证明当时确已取得同意"。若允许覆盖，运营改一个号就能让
+   * 一笔原本无同意的赔案看起来合规——留痕失去证明力。登记错误应走数据更正工单（DSAR 第 46 条， 保留前后值），而不是就地改写。同一记录号重复登记按幂等返回 {@code
+   * false}（渠道重试是常态，不是错误）。
+   *
+   * @return 是否发生了变更（false = 同值重试）
+   * @throws DomainException 记录号为空 / 与已登记值冲突 / 该主体已撤回同意
+   */
+  public boolean recordConsent(String consentRecordId) {
+    if (consentRecordId == null || consentRecordId.isBlank()) {
+      throw new DomainException("单独同意记录号不能为空（PIPL 29 条：医疗健康属敏感个人信息，须单独同意，不得以保单条款概括同意替代）");
+    }
+    String normalized = consentRecordId.trim();
+    if (normalized.equals(this.consentRecordId)) {
+      return false;
+    }
+    if (this.consentRecordId != null && !this.consentRecordId.isBlank()) {
+      throw new DomainException(
+          "同意记录号已登记为 "
+              + this.consentRecordId
+              + "，不允许改写为 "
+              + normalized
+              + "：同意证据必须可回溯，就地覆盖会让历史留痕失去证明力；"
+              + "若确属登记错误，须走数据更正工单（DSAR 第 46 条）并保留前后值");
+    }
+    if (consentWithdrawnFlag == 1) {
+      throw new DomainException(
+          "该主体已撤回同意，不能补登记同意记录号：撤回后不得继续基于该同意处理其数据（PIPL 15 条）；" + "若被保人重新同意，应由上游重新采集并签发新的同意记录号后再登记");
+    }
+    this.consentRecordId = normalized;
+    this.updatedAt = Instant.now();
+    return true;
+  }
+
+  /**
+   * 撤回同意（PIPL 第 15 条）：置标记，此后处理类用例一律拒绝。
+   *
+   * <p>幂等：已撤回返回 {@code false}——数据主体重复提交不是错误，报错只会让柜面以为"撤回失败"而反复重试。
+   *
+   * <p><b>这里只做状态标记，不做擦除</b>：擦除涉及多表去标识化 + 归档密文块销毁（DSAR 册 §三），属异步作业， 由 {@code consent_withdrawn_flag}
+   * 触发；把它塞进本方法会把一个跨聚合的长事务塞进赔案状态机。
+   *
+   * @return 是否发生了变更（false = 已是撤回态）
+   */
+  public boolean withdrawConsent() {
+    if (consentWithdrawnFlag == 1) {
+      return false;
+    }
+    this.consentWithdrawnFlag = 1;
+    this.updatedAt = Instant.now();
+    return true;
+  }
+
+  /** 是否已撤回同意（意图揭示查询：状态解释权归聚合，应用层不得直接比较字段）。 */
+  public boolean consentWithdrawn() {
+    return consentWithdrawnFlag == 1;
+  }
+
+  /** 是否已登记单独同意记录号（未登记 ≠ 未同意，只表示本系统没有引用，见字段注释）。 */
+  public boolean consentRecorded() {
+    return consentRecordId != null && !consentRecordId.isBlank();
   }
 
   // ===================== 意图揭示查询（状态解释权归聚合） =====================

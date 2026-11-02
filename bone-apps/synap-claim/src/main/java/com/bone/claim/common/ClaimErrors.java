@@ -23,6 +23,8 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.CLAIM_INSURED_MISMATCH, 403),
           Map.entry(ClaimErrorCodes.CLAIM_REJECT_REASON_REQUIRED, 400),
           Map.entry(ClaimErrorCodes.CLAIM_REVIEWER_CONFLICT, 409),
+          // 422 而非 409：请求合法、操作人有权限，是"该主体已撤回同意、不得再处理其数据"这一前提不成立
+          Map.entry(ClaimErrorCodes.CLAIM_CONSENT_WITHDRAWN, 422),
           Map.entry(ClaimErrorCodes.CLAIM_EVIDENCE_NOT_FOUND, 404),
           Map.entry(ClaimErrorCodes.CLAIM_EVIDENCE_DUPLICATED, 409),
           Map.entry(ClaimErrorCodes.CLAIM_EVIDENCE_LIMIT_EXCEEDED, 400),

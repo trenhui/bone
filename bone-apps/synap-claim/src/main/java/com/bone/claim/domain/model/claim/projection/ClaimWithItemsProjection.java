@@ -31,6 +31,17 @@ public class ClaimWithItemsProjection {
   private String policyNo;
   private Long planId;
   private String insuredIdHash;
+
+  /**
+   * PIPL 单独同意记录号（{@code t_claim_case.consent_record_id}；未登记为 {@code null}）。
+   *
+   * <p><b>为什么详情里要带出来</b>：同意留痕的价值只在"能被查"时才成立——合规抽查、DSAR 查阅（第 45 条）都要 看到这笔案子的处理依据是哪个同意记录。只写不读等于没留痕。
+   */
+  private String consentRecordId;
+
+  /** 同意撤回标记（{@code t_claim_case.consent_withdrawn_flag}；0 未撤回 / 1 已撤回）。 */
+  private int consentWithdrawnFlag;
+
   private String claimType;
   private String status;
   private String stage;

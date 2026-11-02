@@ -10,12 +10,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.claim.application.port.out.TenantPort;
+import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.domain.model.reconciliation.DiffType;
 import com.bone.claim.domain.model.reconciliation.ReconciliationAction;
 import com.bone.claim.domain.model.reconciliation.ReconciliationDiff;
 import com.bone.claim.domain.repository.ReconciliationActionRepository;
 import com.bone.claim.domain.repository.ReconciliationDiffRepository;
 import com.bone.core.exception.BizException;
+import com.bone.metadata.sdk.domain.annotation.Column;
+import com.bone.metadata.sdk.domain.annotation.Version;
+import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -116,6 +121,38 @@ class ReconciliationDispositionServiceTest {
         .isInstanceOf(BizException.class)
         .hasMessageContaining("SC_CLAIM_RECON_DIFF_CONFLICT");
     verify(actionRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("并发处置：版本条件命中 0 行 ⇒ 409 且不写处置流水（不静默覆盖，也不留「我已处置」的假流水）")
+  void concurrentResolveConflicts() {
+    when(diffRepository.findDiff(DIFF_ID)).thenReturn(pendingDiff());
+    // SDK 在 `UPDATE ... WHERE version = :old` 命中 0 行时抛此异常（见 BaseRepository）
+    when(diffRepository.save(any()))
+        .thenThrow(new OptimisticLockingFailureException("ReconciliationDiff", DIFF_ID, 0L));
+
+    assertThatThrownBy(
+            () ->
+                service.resolveDiff(
+                    DIFF_ID, ReconciliationDiff.RESOLUTION_ADJUSTED, "已走补偿流水", "ops-1"))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getErrorCode())
+                    .isEqualTo(ClaimErrorCodes.CLAIM_RECON_DIFF_CONFLICT))
+        .hasMessageContaining("刷新");
+    // 流水必须在差异行之后写；差异行没写成，流水也不能留——否则流水声称的结论库里并不存在
+    verify(actionRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("实体必须声明 @Version(version)：注解被删则上一条用例仍绿，但线上又会静默覆盖")
+  void entityDeclaresVersionForConcurrency() throws NoSuchFieldException {
+    Field version = ReconciliationDiff.class.getDeclaredField("version");
+    assertThat(version.isAnnotationPresent(Version.class))
+        .as("并发仲裁只由 @Version 提供；删掉它，冲突翻译代码即成为死代码")
+        .isTrue();
+    assertThat(version.getAnnotation(Column.class).name()).isEqualTo("version");
   }
 
   @Test

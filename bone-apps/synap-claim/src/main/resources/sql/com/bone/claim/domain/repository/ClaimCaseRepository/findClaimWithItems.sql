@@ -4,6 +4,8 @@ SELECT
        c.policy_no,
        c.plan_id,
        c.insured_id_hash,
+       c.consent_record_id,
+       c.consent_withdrawn_flag,
        c.claim_type,
        c.status,
        c.stage,

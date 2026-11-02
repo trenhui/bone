@@ -10,7 +10,8 @@ SELECT
        idempotency_key,
        event_time,
        tenant_id,
-       created_at
+       created_at,
+       updated_at
 FROM settle_funding_event
 WHERE settlement_id = :settlementId AND
   /*bone:tenant*/

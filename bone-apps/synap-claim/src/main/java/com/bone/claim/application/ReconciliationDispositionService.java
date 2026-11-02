@@ -9,6 +9,7 @@ import com.bone.claim.domain.model.reconciliation.projection.PendingDiff;
 import com.bone.claim.domain.repository.ReconciliationActionRepository;
 import com.bone.claim.domain.repository.ReconciliationDiffRepository;
 import com.bone.core.annotation.NoDomainEvent;
+import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,9 +31,15 @@ import org.springframework.transaction.annotation.Transactional;
  * 调账走补偿流水（§6.4，已有双人复核），投影重算走 {@code QuotaProjectionRepairService}（无目标值入参、只写派生列）。
  * 给"标记已处理"加审批，只会让人误以为它是改账入口。
  *
- * <p><b>并发</b>：两个运维同时处置同一条差异时，各自读到 {@code PENDING} 都可能通过前置检查（先读后写）。后写者覆盖先写者的
- * 处置态，但<b>两条流水都在</b>，处置历史完整——所以丢的是"当前态"的一次覆盖，不是审计证据。要彻底消除需给差异行加乐观锁列， 那要求先改生效通道的表结构（{@code
- * t_reconciliation_diff} 现无 {@code version} 列），已记为待办。
+ * <p><b>并发</b>：两个运维同时处置同一条差异时，各自读到 {@code PENDING} 都可能通过前置检查（先读后写）。此路径靠 {@code
+ * t_reconciliation_diff.version}（{@code @Version}，生效通道 {@code scripts/migration/0098}）仲裁：后写者的
+ * {@code UPDATE ... WHERE version = :old} 命中 0 行，SDK 抛 {@code
+ * OptimisticLockingFailureException}，本服务翻译成 409 {@code SC_CLAIM_RECON_DIFF_CONFLICT}
+ * 并提示"刷新后重试"。<b>为什么不静默幂等或静默跳过</b>：处置结论有三种且后续动作不同（RESOLVED 收口 / ADJUSTED 走补偿流水 / WAIVED
+ * 记账为可接受差异），静默忽略会让操作人以为自己的结论已生效，实际生效的是别人的——比报错更难排查。
+ *
+ * <p><b>遗留边界</b>：乐观锁只保证"不覆盖"，不保证"处置及时"。{@code PENDING} 差异不会因超时自动升级告警，派单仍靠 §11.7 的 15min/1h 人工流程（见契约
+ * §11.7 留痕边界③）。
  */
 @Slf4j
 @NoDomainEvent
@@ -85,7 +92,20 @@ public class ReconciliationDispositionService {
           "非法处置结论: " + resolution + "，允许 " + ReconciliationDiff.RESOLUTIONS);
     }
     diff.resolve(resolution, operatorId);
-    diffRepository.save(diff);
+    try {
+      diffRepository.save(diff);
+    } catch (OptimisticLockingFailureException e) {
+      // 版本条件命中 0 行 = 读到的这一份已被别人改过。必须报错而不是续跑：若继续写处置流水，
+      // 流水会声称"我把它改成了 X"，而库里的当前态是 Y —— 两条流水都"合法"，反而更难查。
+      throw ClaimErrors.of(
+          ClaimErrorCodes.CLAIM_RECON_DIFF_CONFLICT,
+          "并发处置冲突：diffId="
+              + diffId
+              + " 已被他人处置，本次结论（"
+              + resolution
+              + "）未生效；请刷新后确认当前处置态，确需更正请追加新的处置流水",
+          e);
+    }
     Instant occurredAt = Instant.now();
     actionRepository.save(
         ReconciliationAction.diffResolved(

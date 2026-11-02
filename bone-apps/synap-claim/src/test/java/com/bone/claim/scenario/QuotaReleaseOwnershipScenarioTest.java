@@ -382,6 +382,7 @@ class QuotaReleaseOwnershipScenarioTest {
             null,
             Instant.now(),
             "BATCH-REL",
+            null,
             dtos);
     long claimId = h.claimSvc.submit(req).claimId();
     h.seedClaimItems(claimId, items);

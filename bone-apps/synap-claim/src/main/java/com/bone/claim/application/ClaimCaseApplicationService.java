@@ -123,6 +123,12 @@ public class ClaimCaseApplicationService {
     // 只加列不写入等于"配了不生效"，理算侧会一律判定为维度缺失。
     claim.bindInvoiceContext(
         command.invoiceDate(), command.hospitalCode(), command.diagnosisCode());
+    // PIPL 单独同意留痕（§9.5 / DSAR G10）：命令带记录号才落库，不带则保持 NULL。
+    // 只写不校验格式——记录号的形状由同意服务定义；空值不拒收（存量渠道/旁路同步尚无此字段，
+    // 一刀切 fail-closed 会让存量报案全线 400），真正的闸门在撤回侧。
+    if (command.consentRecordId() != null && !command.consentRecordId().isBlank()) {
+      claim.recordConsent(command.consentRecordId());
+    }
     // 报案即受理签收（员工端提交 = 已受理；缺件走后续 requestEvidence，不阻塞受理）
     claim.accept();
 
@@ -134,7 +140,7 @@ public class ClaimCaseApplicationService {
   /** 分配初审（7 → 10）。 */
   @Transactional
   public void allocate(long claimId, String operatorId) {
-    ClaimCase claim = loadForUpdate(claimId);
+    ClaimCase claim = loadForProcessing(claimId);
     claim.allocateToPreExam(operatorId);
     save(claim);
   }
@@ -142,7 +148,7 @@ public class ClaimCaseApplicationService {
   /** 开始初审（10 → 11/13）。 */
   @Transactional
   public void startPreExam(long claimId, boolean automated, String operatorId) {
-    ClaimCase claim = loadForUpdate(claimId);
+    ClaimCase claim = loadForProcessing(claimId);
     claim.startPreExam(automated, operatorId);
     save(claim);
   }
@@ -150,7 +156,7 @@ public class ClaimCaseApplicationService {
   /** 决策图完成（11/13 → 12，回填理算核定金额）。 */
   @Transactional
   public void completePreExam(long claimId, BigDecimal approvedAmount, String operatorId) {
-    ClaimCase claim = loadForUpdate(claimId);
+    ClaimCase claim = loadForProcessing(claimId);
     claim.completePreExam(operatorId, approvedAmount);
     save(claim);
     backfillItemValidAmounts(claimId, approvedAmount);
@@ -159,7 +165,7 @@ public class ClaimCaseApplicationService {
   /** 转人工核赔（12 → 40）。 */
   @Transactional
   public void escalate(long claimId, String operatorId) {
-    ClaimCase claim = loadForUpdate(claimId);
+    ClaimCase claim = loadForProcessing(claimId);
     claim.escalateToAdjust(operatorId);
     save(claim);
   }
@@ -167,7 +173,7 @@ public class ClaimCaseApplicationService {
   /** 领取核赔任务（40 → 41）。 */
   @Transactional
   public void claimAdjustTask(long claimId, String reviewerId) {
-    ClaimCase claim = loadForUpdate(claimId);
+    ClaimCase claim = loadForProcessing(claimId);
     claim.claimAdjustTask(reviewerId);
     save(claim);
   }
@@ -185,7 +191,7 @@ public class ClaimCaseApplicationService {
       String comment,
       String rejectType,
       BigDecimal approvedAmount) {
-    ClaimCase claim = loadForUpdate(claimId);
+    ClaimCase claim = loadForProcessing(claimId);
     claim.decide(decision, reviewerId, comment, rejectType, approvedAmount);
     save(claim);
     if (decision == Decision.APPROVED) {
@@ -196,7 +202,7 @@ public class ClaimCaseApplicationService {
   /** 发起双人复核（42 → 44；≥1 万）。 */
   @Transactional
   public void submitForSecondReview(long claimId, String reviewerId) {
-    ClaimCase claim = loadForUpdate(claimId);
+    ClaimCase claim = loadForProcessing(claimId);
     claim.submitForSecondReview(reviewerId);
     save(claim);
   }
@@ -204,7 +210,7 @@ public class ClaimCaseApplicationService {
   /** 复核结论（44 → 50/45）。 */
   @Transactional
   public void completeSecondReview(long claimId, boolean approved, String reviewerId) {
-    ClaimCase claim = loadForUpdate(claimId);
+    ClaimCase claim = loadForProcessing(claimId);
     claim.completeSecondReview(approved, reviewerId);
     save(claim);
   }
@@ -212,7 +218,7 @@ public class ClaimCaseApplicationService {
   /** 自动通过（12 → 50；R-FAST-01 快赔路径）。 */
   @Transactional
   public void autoApprove(long claimId, String operatorId) {
-    ClaimCase claim = loadForUpdate(claimId);
+    ClaimCase claim = loadForProcessing(claimId);
     claim.autoApprove(operatorId);
     save(claim);
   }
@@ -220,7 +226,7 @@ public class ClaimCaseApplicationService {
   /** 缺件补录（→ 21）。 */
   @Transactional
   public void requestEvidence(long claimId, String operatorId) {
-    ClaimCase claim = loadForUpdate(claimId);
+    ClaimCase claim = loadForProcessing(claimId);
     claim.requestEvidence(operatorId);
     save(claim);
   }
@@ -228,7 +234,7 @@ public class ClaimCaseApplicationService {
   /** 补录完成回流（21 → 10）。 */
   @Transactional
   public void evidenceSubmitted(long claimId, String operatorId) {
-    ClaimCase claim = loadForUpdate(claimId);
+    ClaimCase claim = loadForProcessing(claimId);
     claim.evidenceSubmitted(operatorId);
     save(claim);
   }
@@ -261,6 +267,25 @@ public class ClaimCaseApplicationService {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_STATUS_CONFLICT, e.getMessage());
     }
     save(claim);
+  }
+
+  /**
+   * 撤回同意（PIPL 第 15 条；DSAR 册 {@code POST /consent/revoke}）。
+   *
+   * <p><b>幂等且不报错</b>：数据主体重复撤回不是错误，返回 {@code false} 让调用方知道"本来就已撤回"。 已在撤回态时<b>不落库</b>——避免用一次空的事务去
+   * bump {@code version}， 把并发中的核赔动作无谓地打成乐观锁冲突。
+   *
+   * <p><b>为什么不在本方法里做擦除</b>：擦除是跨表去标识化 + 归档密文块销毁（DSAR 册 §三），属异步作业，
+   * 触发条件就是本方法置的标记；塞进请求事务会让一次撤回拖住整条资金链路。
+   */
+  @Transactional
+  public boolean revokeConsent(long claimId) {
+    ClaimCase claim = loadForUpdate(claimId);
+    boolean changed = claim.withdrawConsent();
+    if (changed) {
+      save(claim);
+    }
+    return changed;
   }
 
   /** 超期关单（21 → 45；schedule 扫描触发）。 */
@@ -311,6 +336,23 @@ public class ClaimCaseApplicationService {
   // ===================== 内部 =====================
 
   /** 加载聚合（租户内可见，404 语义统一）。 */
+  /**
+   * 加载并校验「可继续处理」，供一切**处理类**用例使用（分配/初审/理算回填/核赔/复核/自动通过/补件）。
+   *
+   * <p><b>为什么闸门在应用层而不是聚合</b>：错误码与 HTTP 语义是应用层职责（域层只表达"不许"，不携带协议码—— 同 {@link #hangUp} 注释里那条教训）。聚合侧提供
+   * {@link ClaimCase#consentWithdrawn()} 这个意图揭示查询， 判据只有一处定义，不出现"两处各判一遍"的漂移。
+   *
+   * <p><b>为什么关单/挂起/撤回本身不走这里</b>：撤回同意的语义是"停止<b>新的处理</b>"（PIPL 第 15 条），不是"把案子永久卡死"。
+   * 超期关单、挂起/恢复属收尾与管理动作，若一并拦截，撤回反而会让案件既不能推进也不能结案—— 把合规要求执行成了运营事故。
+   */
+  private ClaimCase loadForProcessing(long claimId) {
+    ClaimCase claim = loadForUpdate(claimId);
+    if (claim.consentWithdrawn()) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_CONSENT_WITHDRAWN, claim.getClaimNo());
+    }
+    return claim;
+  }
+
   private ClaimCase loadForUpdate(long claimId) {
     long tenantId = tenantPort.currentTenantId();
     ClaimCase claim = claimCaseRepository.findById(claimId);
@@ -421,6 +463,13 @@ public class ClaimCaseApplicationService {
       String diagnosisCode,
       java.time.Instant outInsureTime,
       String batchNo,
+      /**
+       * PIPL 单独同意记录号（上游同意流水引用；空 = 该渠道未接同意流水，留痕字段保持 NULL）。
+       *
+       * <p>只透传、不校验格式：记录号的形状由同意服务定义，本模块无权假设。空值<b>不拒收</b>—— 存量渠道与旁路同步尚无此字段，一键 fail-closed 会让存量报案全线
+       * 400；真正的合规闸门放在 <b>撤回</b>侧（撤回后拒绝继续处理），而不是"没填就拒收"。
+       */
+      String consentRecordId,
       List<ClaimItemDto> items) {
 
     /**
@@ -444,6 +493,7 @@ public class ClaimCaseApplicationService {
           diagnosisCode,
           outInsureTime,
           batchNo,
+          consentRecordId,
           items);
     }
 
@@ -462,6 +512,7 @@ public class ClaimCaseApplicationService {
           diagnosisCode,
           outInsureTime,
           batchNo,
+          consentRecordId,
           items);
     }
 
@@ -480,6 +531,7 @@ public class ClaimCaseApplicationService {
           diagnosisCode,
           outInsureTime,
           batchNo,
+          consentRecordId,
           items);
     }
 

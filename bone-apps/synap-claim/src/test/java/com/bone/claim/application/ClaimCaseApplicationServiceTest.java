@@ -75,6 +75,7 @@ class ClaimCaseApplicationServiceTest {
         null,
         OUT_INSURE,
         "B1",
+        null,
         List.of(
             new SubmitClaim.ClaimItemDto(
                 "诊查费",
@@ -121,6 +122,7 @@ class ClaimCaseApplicationServiceTest {
             "DX-01",
             OUT_INSURE,
             "B1",
+            null,
             List.of(
                 new SubmitClaim.ClaimItemDto(
                     "诊查费",
@@ -146,6 +148,50 @@ class ClaimCaseApplicationServiceTest {
         .as("科室是行级分组维度，必须随明细落库")
         .extracting(ClaimItem::getDepartment)
         .containsExactly("内科");
+  }
+
+  @Test
+  @DisplayName("报案落库：同意记录号随案写入（只加列不写入 = 配了不生效）")
+  void submitPersistsConsentRecordId() {
+    when(policyQueryPort.findActivePolicy("EG20260001", 7L)).thenReturn(Optional.of(snapshot));
+    when(claimCaseRepository.findByIdempotencyKey(TENANT_ID, "idem-consent")).thenReturn(null);
+
+    SubmitClaim command =
+        new SubmitClaim(
+            "idem-consent",
+            "EG20260001",
+            7L,
+            "hash-abc",
+            "OUTPATIENT",
+            "04400001",
+            "12345678",
+            null,
+            null,
+            null,
+            OUT_INSURE,
+            "B1",
+            "CONSENT-2026-0001",
+            List.of(
+                new SubmitClaim.ClaimItemDto(
+                    "诊查费",
+                    "",
+                    ItemCategory.SERVICE,
+                    BigDecimal.ONE,
+                    BigDecimal.TEN,
+                    new BigDecimal("10.00"),
+                    null,
+                    "")));
+
+    service.submit(command);
+
+    org.mockito.ArgumentCaptor<ClaimCase> captor =
+        org.mockito.ArgumentCaptor.forClass(ClaimCase.class);
+    verify(claimCaseRepository).insert(captor.capture());
+    // 只加列 + 只加字段而不在 submit 里写入，是"PIPL 留痕"最容易出现的假完成：
+    // 接口 200、库里永远 NULL、合规抽查时才发现一条证据都没有。
+    assertThat(captor.getValue().getConsentRecordId()).isEqualTo("CONSENT-2026-0001");
+    assertThat(captor.getValue().consentRecorded()).isTrue();
+    assertThat(captor.getValue().consentWithdrawn()).isFalse();
   }
 
   @Test
@@ -230,6 +276,21 @@ class ClaimCaseApplicationServiceTest {
   @Test
   @DisplayName("决策：加载聚合 → decide → save + publishFrom")
   void decideSuccess() {
+    ClaimCase claim = adjustingClaim();
+    when(claimCaseRepository.findById(1001L)).thenReturn(claim);
+
+    service.decide(1001L, Decision.APPROVED, "reviewer-1", null, null, new BigDecimal("10.00"));
+
+    verify(claimCaseRepository).save(any(ClaimCase.class));
+    verify(domainEventPublisher).publishFrom(any(ClaimCase.class));
+  }
+
+  /**
+   * 造一个停在「核赔中（41）」的案件——这是"处理类用例"的原型状态。
+   *
+   * <p>刻意走真实领域方法逐级推进（而不是反射改字段）：状态机的守卫本身就是被测对象的一部分，绕过它造的夹具 会让"撤回拦截"用例在一个现实中不存在的状态上通过。
+   */
+  private static ClaimCase adjustingClaim() {
     ClaimCase claim =
         ClaimCase.draft(
             1001L,
@@ -260,12 +321,78 @@ class ClaimCaseApplicationServiceTest {
     claim.completePreExam("op-1");
     claim.escalateToAdjust("op-1");
     claim.claimAdjustTask("reviewer-1");
+    return claim;
+  }
+
+  @Test
+  @DisplayName("撤回同意后核赔决策 → SC_CLAIM_CONSENT_WITHDRAWN(422)，且不落库、不发事件")
+  void decideBlockedAfterConsentWithdrawn() {
+    ClaimCase claim = adjustingClaim();
+    claim.withdrawConsent();
     when(claimCaseRepository.findById(1001L)).thenReturn(claim);
 
-    service.decide(1001L, Decision.APPROVED, "reviewer-1", null, null, new BigDecimal("10.00"));
+    assertThatThrownBy(
+            () ->
+                service.decide(
+                    1001L, Decision.APPROVED, "reviewer-1", null, null, new BigDecimal("10.00")))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getErrorCode())
+                    .as("必须是独立的合规码，不能混进 SC_CLAIM_STATUS_CONFLICT——否则合规月报数不出来")
+                    .isEqualTo(ClaimErrorCodes.CLAIM_CONSENT_WITHDRAWN));
+    verify(claimCaseRepository, never()).save(any(ClaimCase.class));
+    verify(domainEventPublisher, never()).publishFrom(any(ClaimCase.class));
+  }
+
+  @Test
+  @DisplayName("撤回是「停止新处理」而非「冻结案件」：撤回后仍可超期关单（否则案件永久悬空）")
+  void closeForStaleAllowedAfterConsentWithdrawn() {
+    ClaimCase claim =
+        ClaimCase.draft(
+            1001L,
+            TENANT_ID,
+            "EG20260001",
+            7L,
+            "hash-abc",
+            "OUTPATIENT",
+            "",
+            "",
+            OUT_INSURE,
+            "B1",
+            "v3",
+            List.of(
+                ClaimItem.of(
+                    2001L,
+                    1L,
+                    1001L,
+                    "诊查费",
+                    "",
+                    ItemCategory.SERVICE,
+                    BigDecimal.ONE,
+                    BigDecimal.TEN,
+                    BigDecimal.TEN)));
+    claim.accept();
+    claim.requestEvidence("op-1");
+    claim.withdrawConsent();
+    when(claimCaseRepository.findById(1001L)).thenReturn(claim);
+
+    service.closeForStale(1001L, "SYSTEM");
 
     verify(claimCaseRepository).save(any(ClaimCase.class));
-    verify(domainEventPublisher).publishFrom(any(ClaimCase.class));
+  }
+
+  @Test
+  @DisplayName("撤回同意：首次落库，重复调用不再 save（不空转 bump version）")
+  void revokeConsentIsIdempotent() {
+    ClaimCase claim = adjustingClaim();
+    when(claimCaseRepository.findById(1001L)).thenReturn(claim);
+
+    assertThat(service.revokeConsent(1001L)).isTrue();
+    assertThat(service.revokeConsent(1001L)).as("重复撤回应返回 false，让调用方知道「本来就已撤回」而不是「刚撤的」").isFalse();
+
+    verify(claimCaseRepository, org.mockito.Mockito.times(1)).save(any(ClaimCase.class));
+    assertThat(claim.consentWithdrawn()).isTrue();
   }
 
   @Test

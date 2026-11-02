@@ -25,6 +25,11 @@ public record SubmitClaimReq(
             requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "被保人假名化ID不能为空")
         String insuredIdHash,
+    @Schema(
+            description =
+                "PIPL 单独同意记录号（上游同意流水引用）。医疗数据属敏感个人信息，PIPL 第 29 条要求单独同意；"
+                    + "不传则不登记引用（存量渠道/旁路同步），但撤回同意后本模块一律拒绝继续处理")
+        String consentRecordId,
     @Schema(description = "险种（一期仅 OUTPATIENT）", defaultValue = "OUTPATIENT") String claimType,
     @Schema(description = "发票代码") String invoiceCode,
     @Schema(description = "发票号码") String invoiceNo,

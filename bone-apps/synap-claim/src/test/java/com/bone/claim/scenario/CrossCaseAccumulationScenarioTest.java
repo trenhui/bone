@@ -213,6 +213,7 @@ class CrossCaseAccumulationScenarioTest {
             null,
             Instant.now(),
             "BATCH-1",
+            null,
             dtos);
     long claimId = h.claimSvc.submit(req).claimId();
     h.seedClaimItems(claimId, items);

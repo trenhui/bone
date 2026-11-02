@@ -10,8 +10,10 @@ SELECT
        after_amount,
        idempotency_key,
        occurred_at,
+       biz_date,
        tenant_id,
-       created_at
+       created_at,
+       updated_at
 FROM t_quota_transaction
 WHERE
   /*bone:tenant*/

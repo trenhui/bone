@@ -103,7 +103,7 @@ const columns: TableColumnsType<EvidenceResp> = [
     ellipsis: true,
     render: (v?: string) =>
       v ? (
-        <a onClick={() => window.open(`/api/v1/file/files/${encodeURIComponent(v)}`, '_blank')}>
+        <a onClick={() => window.open(attachmentApi.downloadUrl(v), '_blank')}>
           <DownloadOutlined /> {v.length > 24 ? `${v.slice(0, 12)}…${v.slice(-8)}` : v}
         </a>
       ) : (

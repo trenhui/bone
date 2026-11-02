@@ -2721,6 +2721,13 @@ CREATE TABLE t_claim_case (
   policy_no         VARCHAR(32)   NOT NULL COMMENT '保单号',
   plan_id           BIGINT        NOT NULL COMMENT '计划ID',
   insured_id_hash   CHAR(64)      NOT NULL COMMENT '假名化被保人(服务端 HMAC 计算)',
+  -- PIPL 同意留痕（第 29 条单独同意 / 第 15 条撤回同意，建自 0097）：
+  -- 医疗数据属敏感个人信息，"已取得单独同意"必须有可回查的证据，不能只写在协议里。
+  -- consent_record_id 指向**上游**同意流水（本系统不建同意台账）；NULL = 存量案件未登记。
+  -- consent_withdrawn_flag=1 时处理类用例 fail-closed 拒绝（SC_CLAIM_CONSENT_WITHDRAWN），
+  -- 关单/挂起等收尾动作不受限；默认 0 保证存量行行为不变。
+  consent_record_id VARCHAR(64)  DEFAULT NULL COMMENT 'PIPL 单独同意记录号(外部同意流水引用; NULL=未登记)',
+  consent_withdrawn_flag TINYINT NOT NULL DEFAULT 0 COMMENT '同意撤回标记(1=已撤回, 新处理链拒绝使用该主体数据)',
   claim_type        VARCHAR(32)   NOT NULL DEFAULT 'OUTPATIENT' COMMENT '险种(一期仅门诊)',
   status            VARCHAR(32)   NOT NULL COMMENT '状态码(枚举name; pk-tpa数字码见代码 ClaimStatus#code)',
   status_sub        VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '子状态(如录入中 22+sub 1普康/2外包)',
@@ -3715,6 +3722,7 @@ CREATE TABLE `t_reconciliation_diff` (
   `remote_status` varchar(32) NOT NULL COMMENT '对方状态',
   `resolution` varchar(16) NOT NULL COMMENT '处理状态(PENDING/...)',
   `resolved_by` varchar(64) NOT NULL DEFAULT '' COMMENT '处理人',
+  `version` bigint NOT NULL DEFAULT '0' COMMENT '乐观锁版本(SDK @Version 维护; 并发处置后写者须失败)',
   `tenant_id` bigint NOT NULL COMMENT '租户',
   `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
   `created_at` datetime(3) NOT NULL COMMENT '创建时间',
