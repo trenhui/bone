@@ -422,8 +422,12 @@ public final class QuotaStack {
   /**
    * 责任额度这一层的快捷构造（V1 §4.3 最外层 Min）。
    *
-   * <p>{@code configured <= 0} 在责任配置里表示<b>不封顶</b>（reference-impl S25），故返回 {@code null} 可用额（无限），而不是
-   * 0——把"不封顶"当成"额度已耗尽"会让所有未配额度的责任一分不赔。
+   * <p>配置面的契约是「{@code 0} 表示不封顶」（reference-impl S25），故返回 {@code null} 可用额（无限），
+   * 而不是 0——把"不封顶"当成"额度已耗尽"会让所有未配额度的责任一分不赔。
+   *
+   * <p>判据写成 {@code <= 0} 而非 {@code == 0}：写入期已拒绝负数（见
+   * {@code LiabilityConfigApplicationService#assertRuleUsable}），负数只可能是历史存量，
+   * 此处按"不封顶"兜底而非当成负限额（后者会算出 0 赔付，比不限额更糟）。
    */
   public static LayerQuota liabilityLayer(String key, BigDecimal configured, BigDecimal used) {
     if (configured == null || configured.signum() <= 0) {

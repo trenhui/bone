@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 101,
+  "executableCount": 102,
   "retired": [],
   "entries": [
     {
@@ -657,6 +657,12 @@
       "file": "0095_claim_item_fee_code.sql",
       "kind": "ddl",
       "summary": "给费用明细项 t_claim_item 增加 fee_code 列（费用类别编码，取 t_ref_fee_category.fee_code：床位费/检查费/手术费…十类），作为责任「费用类别规则」的唯一判定维度；与 category 四分类粗目并存、缺失按未分类处理。引擎据此把费用池切成「费用类型 × 费用类别」单元，按类别比例/次内限额差异化理算（0094 建的规则表至此被引擎真正消费）。幂等 ALTER + 终态断言（列就位）。bone-init.sql 同步补列。"
+    },
+    {
+      "order": 102,
+      "file": "0096_normalize_negative_liability_limit.sql",
+      "kind": "mixed",
+      "summary": "把责任额度上限的存量负数归一为 0（=「不封顶」），与配置期收紧配套：负数额度在理算期被解释为不封顶（LiabilityRule#liabilityUncapped），即运营手滑写错一个数就让该责任静默变成无限额赔付（赔得更多，风险方向与免赔/日限额相反）；而 reference-impl S25 的契约是「额度 0 表示不限制」，负数从未被定义过，属隐式哨兵反模式。同批次配置期改为拒绝负数额度（0 与不填仍合法），本脚本负责存量收口。归 0 是零行为变更（理算期 signum()<=0 ⇒ 负数与 0 同义，赔付金额完全不变），只把不可见的歧义变成明确的 0。同步 bump version，避免仍持旧 version 的应用实例用陈旧对象覆盖修复结果。审计留痕（先列待修复行）+ 终态断言（不得再有 liability_limit<0 的行，否则说明仍有写入路径漏掉守卫，必须 fail-fast）。"
     }
   ],
   "ordinalConflicts": [

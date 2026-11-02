@@ -311,8 +311,25 @@ public class LiabilityConfigApplicationService {
     assertNonNegative("发票级免赔", v.invoiceDeduct());
     assertNonNegative("理算级免赔", v.adjustDeduct());
     assertNonNegative("日赔付限额", v.dailyLimit());
-    // 责任额度为负按"不封顶"解释（见 LimitSet#liabilityUncapped），故只挡"配了负数的免赔/日限额"这类
-    // 会被静默夹成 0 的形态——静默夹紧等于少扣钱，属于典型的"配了不生效"。
+    // 责任额度上限：负数必须拒。
+    //
+    // 为什么单独一条、而不是"沿用负数=不封顶"的老口径：负数额度在理算期被解释为**不封顶**
+    // （见 LiabilityRule#liabilityUncapped），也就是"运营手滑写错一个数 ⇒ 该责任静默变成
+    // 无限额赔付"——它不是"少扣钱"，而是**赔得更多**，风险方向与免赔/日限额相反。
+    //
+    // 三条依据：
+    // ① reference-impl S25 的原文是「额度 **0** 表示不限制」（见 AdjustmentDualTrackFixture
+    //    场景 S25-零额度不封顶），负数从未被定义过——老注释"负数按不封顶解释"是 Bone 的自行扩展；
+    // ② 同域的三个同类字段早已一致地拒绝负数（计划额度 ClaimPlan / 险种额度 ClaimCoverage /
+    //    额度账户 QuotaAccount），责任额度是唯一漏网的；
+    // ③ 「不封顶」有 0 与不填两种明确表达，负数不承载任何额外信息 ⇒ 属隐式哨兵反模式。
+    //
+    // 放行 0 与不填（null ⇒ toDecimal → ZERO）：那是"不封顶"的唯一合法写法，不能一并拦掉
+    // （否则运营无路可走，只能乱填）。错误消息要写清后果与正确写法，便于运营自查。
+    assertNonNegative(
+        "责任额度上限",
+        v.liabilityLimit(),
+        "负数会被按「不封顶」解释，等于取消限额；不封顶请填 0 或留空");
     //
     // 日限额的「金额 ↔ 口径」在这里<b>按原始值</b>判一次：装配器 {@code LiabilityRule.fromLegacy} 在
     // {@code dailyLimit <= 0} 时会把口径直接置回 NONE（它把"没有金额"当作"不启用日限额"），
@@ -379,10 +396,23 @@ public class LiabilityConfigApplicationService {
 
   /** 金额类配置非负校验（负数会被引擎按 0 静默处理 = 少扣钱）。 */
   private static void assertNonNegative(String label, BigDecimal value) {
+    assertNonNegative(label, value, null);
+  }
+
+  /**
+   * 金额类配置非负校验。
+   *
+   * @param consequence 可选的"负数会造成什么后果"说明；拼进错误消息，让运营知道该改成什么
+   *     而不是只知道"不合法"。原因见 {@link #assertRuleUsable} 里对责任额度上限的论证。
+   */
+  private static void assertNonNegative(String label, BigDecimal value, String consequence) {
     if (value != null && value.signum() < 0) {
       throw ClaimErrors.of(
           ClaimErrorCodes.CLAIM_LIABILITY_INVALID_ARGUMENT,
-          label + "不能为负: " + value.toPlainString());
+          label
+              + "不能为负: "
+              + value.toPlainString()
+              + (consequence == null ? "" : "（" + consequence + "）"));
     }
   }
 

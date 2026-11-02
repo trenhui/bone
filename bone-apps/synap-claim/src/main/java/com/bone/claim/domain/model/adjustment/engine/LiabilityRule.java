@@ -258,10 +258,21 @@ public record LiabilityRule(
           DailyBasis.NONE);
     }
 
-    /** 责任额度是否不封顶（{@code 0} 或负 ⇒ 不封顶，对齐 reference-impl S25）。 */
-    public boolean liabilityUncapped() {
-      return liabilityLimit.signum() <= 0;
-    }
+  /**
+   * 责任额度是否不封顶。
+   *
+   * <p><b>契约语义</b>：{@code 0} 表示不封顶（不填即落库 0），对齐 reference-impl S25
+   * 「额度 <b>0</b> 表示不限制」（见 {@code AdjustmentDualTrackFixture} 场景 S25-零额度不封顶）。
+   *
+   * <p><b>为什么判据是 {@code <= 0} 而不是 {@code == 0}</b>：配置写入期已拒绝负数
+   * （{@code LiabilityConfigApplicationService#assertRuleUsable}），负数只可能来自
+   * ①写入期收紧之前的历史存量 ②绕过应用层的直连写入。理算期把它按「不封顶」兜底，
+   * 而不是当成「负限额」——后者会让所有赔案算出 0 赔付（比不限额更糟）。
+   * 即<b>读取期容错</b>，而非配置面认可的语义：新数据不会出现负数。
+   */
+  public boolean liabilityUncapped() {
+    return liabilityLimit.signum() <= 0;
+  }
 
     public boolean hasOccurrenceLimit() {
       return occurrenceLimit.signum() > 0;
