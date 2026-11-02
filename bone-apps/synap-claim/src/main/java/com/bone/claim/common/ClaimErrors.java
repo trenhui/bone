@@ -29,8 +29,6 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.CLAIM_EVIDENCE_LOCKED, 409),
           Map.entry(ClaimErrorCodes.CLAIM_LIABILITY_NOT_FOUND, 422),
           Map.entry(ClaimErrorCodes.CLAIM_LIABILITY_INVALID_ARGUMENT, 400),
-          // 422 而非 400：请求本身合法，是"该规则维度尚无理算口径"这一业务前提不成立
-          Map.entry(ClaimErrorCodes.CLAIM_LIABILITY_FEE_RULE_UNSUPPORTED, 422),
           Map.entry(ClaimErrorCodes.CLAIM_ADJUST_NOT_FOUND, 404),
           Map.entry(ClaimErrorCodes.CLAIM_SETTLEMENT_NOT_FOUND, 404),
           Map.entry(ClaimErrorCodes.CLAIM_SETTLEMENT_CONFLICT, 409),

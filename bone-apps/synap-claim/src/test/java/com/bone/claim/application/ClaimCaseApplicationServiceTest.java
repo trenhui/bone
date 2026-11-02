@@ -83,7 +83,8 @@ class ClaimCaseApplicationServiceTest {
                 BigDecimal.ONE,
                 BigDecimal.TEN,
                 new BigDecimal("10.00"),
-                null)));
+                null,
+                "")));
   }
 
   @Test
@@ -128,7 +129,8 @@ class ClaimCaseApplicationServiceTest {
                     BigDecimal.ONE,
                     BigDecimal.TEN,
                     new BigDecimal("10.00"),
-                    "内科")));
+                    "内科",
+                    "")));
 
     service.submit(command);
 

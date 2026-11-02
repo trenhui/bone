@@ -37,6 +37,8 @@ export interface ClaimItemReq {
   itemName: string;
   itemCode?: string;
   category?: ItemCategory;
+  /** 费用类别编码（t_ref_fee_category.fee_code）；空 = 未分类，理算按责任主比例并落诊断提示。 */
+  feeCode?: string;
   quantity?: number;
   unitPrice?: number;
   amount: number;

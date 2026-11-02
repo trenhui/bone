@@ -46,6 +46,7 @@ import com.bone.claim.domain.model.evidence.valueobject.DocType;
 import com.bone.claim.domain.model.evidence.valueobject.OcrStatus;
 import com.bone.claim.domain.model.inspection.InspectionRecord;
 import com.bone.claim.domain.model.liability.AdjLiability;
+import com.bone.claim.domain.model.liability.LiabilityFeeRule;
 import com.bone.claim.domain.model.quota.QuotaAccount;
 import com.bone.claim.domain.model.quota.QuotaTransaction;
 import com.bone.claim.domain.model.settlement.FundingEvent;
@@ -57,6 +58,7 @@ import com.bone.claim.domain.repository.ClaimItemRepository;
 import com.bone.claim.domain.repository.DecisionExecutionRepository;
 import com.bone.claim.domain.repository.EvidenceRepository;
 import com.bone.claim.domain.repository.InspectionRepository;
+import com.bone.claim.domain.repository.LiabilityFeeRuleRepository;
 import com.bone.claim.domain.repository.LiabilityRepository;
 import com.bone.claim.domain.repository.QuotaAccountRepository;
 import com.bone.claim.domain.repository.SettlementRepository;
@@ -115,6 +117,8 @@ public class ScenarioHarness {
   public final InMemoryClaimCaseRepository claimRepo;
   public final InMemoryAdjustmentRepository adjRepo = new InMemoryAdjustmentRepository();
   public final InMemoryLiabilityRepository liabRepo = new InMemoryLiabilityRepository();
+  public final InMemoryLiabilityFeeRuleRepository feeRuleRepo =
+      new InMemoryLiabilityFeeRuleRepository();
   public final InMemoryEvidenceRepository eviRepo = new InMemoryEvidenceRepository();
   public final InMemoryDecisionExecutionRepository decRepo =
       new InMemoryDecisionExecutionRepository();
@@ -146,6 +150,7 @@ public class ScenarioHarness {
         new IndemnityApplicationService(
             adjRepo,
             liabRepo,
+            feeRuleRepo,
             eviRepo,
             claimSvc,
             accumulationPort,
@@ -712,6 +717,9 @@ public class ScenarioHarness {
           .orElse(null);
     }
   }
+
+  static class InMemoryLiabilityFeeRuleRepository extends InMemoryRepository<LiabilityFeeRule>
+      implements LiabilityFeeRuleRepository {}
 
   static class InMemoryEvidenceRepository extends InMemoryRepository<Evidence>
       implements EvidenceRepository {

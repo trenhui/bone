@@ -40,6 +40,8 @@ public class IndemnityApplicationService {
 
   private final AdjustmentRepository adjustmentRepository;
   private final LiabilityRepository liabilityRepository;
+  private final com.bone.claim.domain.repository.LiabilityFeeRuleRepository
+      liabilityFeeRuleRepository;
   private final EvidenceRepository evidenceRepository;
   private final ClaimCaseApplicationService claimCaseApplicationService;
   private final AccumulationPort accumulationPort;
@@ -102,7 +104,8 @@ public class IndemnityApplicationService {
               accumulation,
               claimDateOf(rows),
               catalog.asOf(),
-              catalog.verdicts());
+              catalog.verdicts(),
+              feeRulesOf(liability));
     } catch (DomainException ex) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_LIABILITY_NOT_FOUND, claimId, ex);
     }
@@ -127,7 +130,8 @@ public class IndemnityApplicationService {
         accumulate(rows, liability),
         claimDateOf(rows),
         catalog.asOf(),
-        catalog.verdicts());
+        catalog.verdicts(),
+        feeRulesOf(liability));
     adjustmentRepository.save(latest);
     domainEventPublisher.publishFrom(latest);
     return toResult(latest);
@@ -320,6 +324,26 @@ public class IndemnityApplicationService {
     }
     return java.time.LocalDate.ofInstant(
         rows.get(0).getCreatedAt(), java.time.ZoneId.systemDefault());
+  }
+
+  /**
+   * 取该责任生效的费用类别规则（{@code t_adj_liability_fee_rule}）。
+   *
+   * <p><b>为什么在这里读、而不是在聚合里读</b>：规则是"这一案生效的输入"，读库属应用层职责。
+   * 聚合拿到的必须是显式参数——它同时要被快照物化、被复算复现；若聚合自己去查，复算时就变成"读今天的配置算昨天的账"， 快照也证明不了到底用了哪一版规则。
+   *
+   * <p><b>读不到就按"未细化"处理</b>（空集合）：这是配置面的正常形态，绝大多数责任没有类别规则；
+   * 但<b>不会</b>因此静默忽略已配的规则——配了的规则一定被读到并进快照，这是本方法存在的意义。
+   */
+  private List<com.bone.claim.domain.model.liability.LiabilityFeeRule> feeRulesOf(
+      AdjLiability liability) {
+    if (liability == null
+        || liability.getLiabilityUuid() == null
+        || liability.getLiabilityUuid().isBlank()) {
+      return List.of();
+    }
+    return liabilityFeeRuleRepository.findByLiabilityUuid(
+        tenantPort.currentTenantId(), liability.getLiabilityUuid());
   }
 
   private AdjustmentResult toResult(Adjustment adjustment) {

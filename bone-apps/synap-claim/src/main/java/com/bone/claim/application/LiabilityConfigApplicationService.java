@@ -40,8 +40,6 @@ public class LiabilityConfigApplicationService {
   private final ClaimCoverageRepository claimCoverageRepository;
   private final com.bone.claim.domain.repository.ClaimPlanRepository claimPlanRepository;
   private final com.bone.claim.domain.repository.ClaimPolicyRepository claimPolicyRepository;
-  private final com.bone.claim.domain.repository.LiabilityFeeRuleRepository
-      liabilityFeeRuleRepository;
   private final TenantPort tenantPort;
   private final DomainEventPublisher domainEventPublisher;
   private final QuotaConfigApplicationService quotaConfigApplicationService;
@@ -169,7 +167,6 @@ public class LiabilityConfigApplicationService {
     if ("RETIRED".equals(liability.getStatus())) {
       throw new DomainException("责任已下线，不可发布");
     }
-    assertNoUnconsumedFeeRules(liability);
     AdjLiability oldActive = liabilityRepository.findActiveByUuid(liability.getLiabilityUuid());
     if (oldActive != null && !oldActive.getId().equals(liability.getId())) {
       oldActive.retire();
@@ -227,26 +224,6 @@ public class LiabilityConfigApplicationService {
     if (!policy.isConfigActive()) {
       throw new DomainException(
           "保单「" + plan.policyNo() + "」的责任规则未启用（当前：" + policy.configStatus() + "），请先在保单管理启用后再配置责任");
-    }
-  }
-
-  /**
-   * 费用类别规则尚无理算口径时禁止发布（fail-closed）。
-   *
-   * <p>规则表 {@code t_adj_liability_fee_rule} 由配置面写入，但理算内核的归集维度只有「医保范围内 / 自付二 / 总自费」（{@link
-   * com.bone.claim.domain.model.adjustment.engine.FeePools.Bucket}）， {@code Adjustment#apply} 也只从
-   * {@link AdjLiability} 装配 {@link LiabilityRule}——<b>规则存了但不参与任何算术</b>。放行发布即等于"界面写着手术费
-   * 60%、实赔按责任统一比例"， 且快照里看不出这条规则被忽略过，事后无法复盘。
-   *
-   * <p><b>为什么不在保存时拦</b>：规则可以先配、后随引擎支持一起生效；堵在发布（规则真正"生效"的唯一动作）上，
-   * 既保住预配置能力，又保证不会有赔案按被忽略的规则结案。引擎支持后删除本方法即可放开，无需改数据。
-   */
-  private void assertNoUnconsumedFeeRules(AdjLiability liability) {
-    List<com.bone.claim.domain.model.liability.LiabilityFeeRule> rules =
-        liabilityFeeRuleRepository.findByLiabilityUuid(
-            tenantPort.currentTenantId(), liability.getLiabilityUuid());
-    if (!rules.isEmpty()) {
-      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_LIABILITY_FEE_RULE_UNSUPPORTED, rules.size());
     }
   }
 

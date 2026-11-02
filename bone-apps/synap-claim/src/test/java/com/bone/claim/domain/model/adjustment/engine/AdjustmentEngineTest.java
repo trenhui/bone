@@ -1289,8 +1289,9 @@ class AdjustmentEngineTest {
         left.zeroReason(),
         left.rejectType(),
         left.cappedBy(),
-        null,
-        null);
+        left.itemId(),
+        left.itemName(),
+        left.feeCode());
   }
 
   @Nested
@@ -1754,6 +1755,164 @@ class AdjustmentEngineTest {
 
     private CatalogAdmission admission(Map<Long, CatalogAdmission.Verdict> verdicts) {
       return new CatalogAdmission(CatalogAdmission.Mode.MANDATORY, "NATIONAL_TEST", day, verdicts);
+    }
+  }
+
+  // ===================== 费用类别规则参与理算（0095：明细 fee_code × t_adj_liability_fee_rule）
+  // =====================
+
+  /**
+   * 费用类别规则被引擎真正消费（而非「存了不算」）。
+   *
+   * <p><b>这组用例堵的是静默错赔</b>：规则表由配置面写入，若引擎不读，界面写着「手术费 100%」而实赔按责任统一比例，
+   * 快照里还看不出规则被忽略过——事后只能等客户对账才发现。五条口径（比例覆盖 / 类别限额 / 社保取严 / 未分类兜底 /
+   * 未配置类别兜底）每条都配了「反向会得多少」的说明，删掉实现任一条都会红。
+   */
+  @Nested
+  @DisplayName("费用类别规则参与理算（明细 fee_code × t_adj_liability_fee_rule）")
+  class FeeCategoryRuleConsumption {
+
+    @Test
+    @DisplayName("类别比例覆盖责任统一比例：手术费 100% 而非责任 80%")
+    void categoryPercentOverridesLiabilityPercent() {
+      LiabilityRule rule =
+          rule(
+                  "80",
+                  ratios(entry(FeePools.Bucket.REASONABLE, "80", null)),
+                  DeductibleRule.none(),
+                  NO_CAP)
+              .withFeeRules(List.of(feeRule("SURGERY", "手术费", "100", null, false)));
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, List.of(item(2001L, "IN", "SURGERY", "1000")), rule, Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount())
+          .as("配了手术费 100% 就按 100% 赔；得 800 说明类别规则被存了却没被消费")
+          .isEqualByComparingTo("1000.00");
+      AdjustmentEngine.Line line = line(outcome, "REASONABLE");
+      assertThat(line.feeCode()).isEqualTo("SURGERY");
+      assertThat(line.ratioPercent()).isEqualByComparingTo("100");
+    }
+
+    @Test
+    @DisplayName("类别限额跨池合计：同类别跨合理金额+总自费，超限按占比截断并标记 FEE_CATEGORY")
+    void categoryLimitCapsAcrossBuckets() {
+      LiabilityRule rule =
+          rule(
+                  "100",
+                  ratios(
+                      entry(FeePools.Bucket.REASONABLE, "100", null),
+                      entry(FeePools.Bucket.TOTAL_SELF_PAY, "100", null)),
+                  DeductibleRule.none(),
+                  NO_CAP)
+              .withFeeRules(List.of(feeRule("SURGERY", "手术费", "100", "300", false)));
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L,
+                  List.of(item(2001L, "IN", "SURGERY", "1000", "500")),
+                  rule,
+                  Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount())
+          .as("手术费本类别应付 1500，限 300 ⇒ 只赔 300（按池各限会赔 300+300=600，超赔一倍）")
+          .isEqualByComparingTo("300.00");
+      // 按 1000:500 占比把 300 摊到两池 ⇒ 200 / 100（证明「跨池合计」而不是「各池各限」）
+      assertThat(line(outcome, "REASONABLE").feePayout()).isEqualByComparingTo("200.00");
+      assertThat(line(outcome, "TOTAL_SELF_PAY").feePayout()).isEqualByComparingTo("100.00");
+      assertThat(line(outcome, "REASONABLE").cappedBy()).contains("FEE_CATEGORY:SURGERY");
+    }
+
+    @Test
+    @DisplayName("社保内外取严：类别要求社保内 ⇒ 范围外金额不参与赔付（责任未要求也不放宽）")
+    void categorySocialOnlyRestrictsToInScope() {
+      LiabilityRule rule =
+          rule(
+                  "100",
+                  ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+                  DeductibleRule.none(),
+                  NO_CAP)
+              .withFeeRules(List.of(feeRule("SURGERY", "手术费", "100", null, true)));
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L,
+                  List.of(
+                      item(2001L, "IN", "SURGERY", "600"), item(2002L, "OUT", "SURGERY", "400")),
+                  rule,
+                  Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount())
+          .as("类别仅赔社保内 ⇒ 只有范围内 600 参与；得 1000 说明范围外 400 被错赔")
+          .isEqualByComparingTo("600.00");
+    }
+
+    @Test
+    @DisplayName("明细未分类（fee_code 空）⇒ 回落责任统一比例，并落诊断提示补录")
+    void unclassifiedItemFallsBackToLiabilityPercent() {
+      LiabilityRule rule =
+          rule(
+                  "80",
+                  ratios(entry(FeePools.Bucket.REASONABLE, "80", null)),
+                  DeductibleRule.none(),
+                  NO_CAP)
+              .withFeeRules(List.of(feeRule("SURGERY", "手术费", "100", null, false)));
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, List.of(item(2001L, "IN", "", "1000")), rule, Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount())
+          .as("未分类不猜类别：按责任统一 80% 赔；得 1000 说明被当成某类别 100% 错赔")
+          .isEqualByComparingTo("800.00");
+      assertThat(outcome.diagnostics()).anyMatch(d -> d.contains("缺费用类别编码"));
+    }
+
+    @Test
+    @DisplayName("明细类别未配规则 ⇒ 回落责任统一比例，并诊断列出该类别")
+    void unconfiguredCategoryFallsBackToLiabilityPercent() {
+      LiabilityRule rule =
+          rule(
+                  "80",
+                  ratios(entry(FeePools.Bucket.REASONABLE, "80", null)),
+                  DeductibleRule.none(),
+                  NO_CAP)
+              .withFeeRules(List.of(feeRule("SURGERY", "手术费", "100", null, false)));
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(
+                  1L, List.of(item(2001L, "IN", "MATERIAL", "1000")), rule, Accumulation.FIRST));
+
+      assertThat(outcome.totalAmount())
+          .as("未配 MATERIAL 规则 ⇒ 按责任统一 80%；得 1000 说明误用了别的类别规则")
+          .isEqualByComparingTo("800.00");
+      assertThat(outcome.diagnostics())
+          .anyMatch(d -> d.contains("MATERIAL") && d.contains("未配置规则"));
+    }
+
+    private LiabilityRule.FeeCategoryRule feeRule(
+        String code, String name, String percent, String limit, boolean socialOnly) {
+      return new LiabilityRule.FeeCategoryRule(
+          code,
+          name,
+          new BigDecimal(percent),
+          limit == null ? null : new BigDecimal(limit),
+          socialOnly);
+    }
+
+    /** 带费用类别编码、只落合理金额的单行明细。 */
+    private ClaimWithItemsProjection item(
+        long itemId, String socialFlag, String feeCode, String reasonable) {
+      return item(itemId, socialFlag, feeCode, reasonable, "0");
+    }
+
+    /** 带费用类别编码、合理金额 + 总自费的明细行（用于验证类别限额跨池合计）。 */
+    private ClaimWithItemsProjection item(
+        long itemId, String socialFlag, String feeCode, String reasonable, String totalSelfPay) {
+      ClaimWithItemsProjection row = row(itemId, socialFlag, reasonable, "0", totalSelfPay);
+      row.setItemFeeCode(feeCode);
+      return row;
     }
   }
 

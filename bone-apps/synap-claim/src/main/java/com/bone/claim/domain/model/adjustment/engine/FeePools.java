@@ -4,6 +4,7 @@ import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 费用池：把赔案明细归集成"承担费用类型 × 医保内外"的可赔基数（V1 §3.5 / §3.6 / §4.2 步 6）。
@@ -34,10 +35,17 @@ public record FeePools(List<Pool> pools, List<ItemContribution> contributions) {
    * 各费用项 ≡ 池）。
    */
   public record ItemContribution(
-      Long itemId, String itemName, Bucket bucket, BigDecimal amount, boolean inScope) {
+      Long itemId,
+      String itemName,
+      Bucket bucket,
+      BigDecimal amount,
+      boolean inScope,
+      /** 费用类别编码（{@code t_claim_item.fee_code}）；空串 = 未分类。类别规则据此命中，逐项归因也据此分单元。 */
+      String feeCode) {
     public ItemContribution {
       amount = Money.nz(amount);
       itemName = itemName == null ? "" : itemName;
+      feeCode = feeCode == null ? "" : feeCode.trim();
     }
   }
 
@@ -161,7 +169,8 @@ public record FeePools(List<Pool> pools, List<ItemContribution> contributions) {
               row.getItemName(),
               Bucket.REASONABLE,
               inSocialScope ? netReasonable : (socialOnly ? Money.ZERO : netReasonable),
-              inSocialScope));
+              inSocialScope,
+              feeCodeOf(row)));
       BigDecimal sp2 = Money.nz(row.getItemSelfPay2());
       selfPay2 = selfPay2.add(sp2);
       contributions.add(
@@ -170,7 +179,8 @@ public record FeePools(List<Pool> pools, List<ItemContribution> contributions) {
               row.getItemName(),
               Bucket.SELF_PAY_2,
               socialOnly ? Money.ZERO : sp2,
-              false));
+              false,
+              feeCodeOf(row)));
       BigDecimal spc = Money.nz(row.getItemSelfPayC());
       selfPayC = selfPayC.add(spc);
       contributions.add(
@@ -179,7 +189,8 @@ public record FeePools(List<Pool> pools, List<ItemContribution> contributions) {
               row.getItemName(),
               Bucket.TOTAL_SELF_PAY,
               socialOnly ? Money.ZERO : spc,
-              false));
+              false,
+              feeCodeOf(row)));
     }
     List<Pool> pools = new ArrayList<>(3);
     // socialOnly 时范围外合理金额不参与赔付，但**仍要登记**：归因明细必须能解释"钱为什么没赔"，
@@ -242,6 +253,78 @@ public record FeePools(List<Pool> pools, List<ItemContribution> contributions) {
       }
     }
     return new Pool(bucket, bucket.name(), Money.ZERO, Money.ZERO);
+  }
+
+  /**
+   * 按「费用类型 × 费用类别」切成可赔基数单元（费用类别规则的执行单元）。
+   *
+   * <p><b>为什么要切到这一层</b>：类别规则（手术费 100%、材料费 60% 且限 5000）的判定单位是"某类别的费用"，
+   * 而费用池的单位是"某医保段（范围内/自付二/总自费）"。同一个类别会横跨多个费用池（合理金额 + 自付二 + 总自费），
+   * 同一个费用池也会横跨多个类别——两个维度正交，必须做笛卡尔切分，否则"按类别打折"和"按费用段控额" 会互相覆盖：先按池算完再按类别拆，等于把池级金额按名头重贴标签。
+   *
+   * <p><b>为什么从 {@link #contributions()} 汇总而不是再扫一遍明细</b>：贡献记录是逐项归因的唯一事实源， 且已包含"统筹+第三方已付净扣"与 {@code
+   * socialOnly} 的置零处理。另写一条汇总路径必然在某次改动后与归集口径分叉， 而分叉只在"某类别既有范围内又有范围外费用"的案子上暴露。
+   *
+   * <p><b>为什么丢掉金额全为零的切片</b>：那意味着该类别的这类费用压根没发生（或已被上游核减）， 给它出行只会让明细里堆满 0 元噪声；而"有金额但基数被 socialOnly
+   * 剔除"的切片必须保留——那是要向客户解释的少赔原因。
+   */
+  public List<Slice> slices() {
+    Map<String, Slice> merged = new java.util.LinkedHashMap<>();
+    for (ItemContribution item : contributions) {
+      String key = item.bucket().name() + "/" + item.feeCode();
+      Slice current =
+          merged.computeIfAbsent(
+              key, ignored -> new Slice(item.bucket(), item.feeCode(), Money.ZERO, Money.ZERO));
+      merged.put(key, current.plus(item.amount(), item.inScope()));
+    }
+    List<Slice> slices = new ArrayList<>(merged.size());
+    for (Slice slice : merged.values()) {
+      if (slice.total().signum() > 0) {
+        slices.add(slice);
+      }
+    }
+    return List.copyOf(slices);
+  }
+
+  /**
+   * 一个「费用类型 × 费用类别」切片的基数。
+   *
+   * @param inScope 医保范围内金额
+   * @param outOfScope 医保范围外金额（自付二 / 总自费 / 目录外）
+   */
+  public record Slice(Bucket bucket, String feeCode, BigDecimal inScope, BigDecimal outOfScope) {
+
+    public Slice {
+      inScope = Money.nz(inScope);
+      outOfScope = Money.nz(outOfScope);
+      feeCode = feeCode == null ? "" : feeCode.trim();
+    }
+
+    Slice plus(BigDecimal amount, boolean inScopeAmount) {
+      BigDecimal money = Money.nz(amount);
+      return inScopeAmount
+          ? new Slice(bucket, feeCode, inScope.add(money), outOfScope)
+          : new Slice(bucket, feeCode, inScope, outOfScope.add(money));
+    }
+
+    public BigDecimal total() {
+      return inScope.add(outOfScope);
+    }
+
+    /** 该切片在给定范围内口径下的基数（{@code socialOnly} 时只剩范围内）。 */
+    public BigDecimal base(boolean inScopeOnly) {
+      return inScopeOnly ? inScope : total();
+    }
+
+    /** 是否未分类（{@code fee_code} 缺失）：类别规则不会命中，引擎会落诊断提示补数据。 */
+    public boolean unclassified() {
+      return feeCode.isEmpty();
+    }
+  }
+
+  /** 明细的费用类别编码（缺列/空值统一成空串，避免 {@code null} 与 {@code ""} 在分组键上分成两类）。 */
+  private static String feeCodeOf(ClaimWithItemsProjection row) {
+    return row.getItemFeeCode() == null ? "" : row.getItemFeeCode().trim();
   }
 
   /**

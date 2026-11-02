@@ -280,7 +280,8 @@ class ClaimE2EScenarioTest {
                 BigDecimal.ONE,
                 new BigDecimal("300"),
                 new BigDecimal("300"),
-                null));
+                null,
+                ""));
     ClaimCaseApplicationService.SubmitClaim req =
         new ClaimCaseApplicationService.SubmitClaim(
             "idem-expired",
@@ -515,7 +516,8 @@ class ClaimE2EScenarioTest {
                         it.quantity(),
                         it.unitPrice(),
                         it.amount(),
-                        null))
+                        null,
+                        ""))
             .toList();
     ClaimCaseApplicationService.SubmitClaim req =
         new ClaimCaseApplicationService.SubmitClaim(

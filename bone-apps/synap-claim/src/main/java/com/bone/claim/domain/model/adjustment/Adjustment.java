@@ -6,6 +6,7 @@ import com.bone.claim.domain.model.adjustment.engine.LiabilityRule;
 import com.bone.claim.domain.model.adjustment.engine.RuleGap;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
 import com.bone.claim.domain.model.liability.AdjLiability;
+import com.bone.claim.domain.model.liability.LiabilityFeeRule;
 import com.bone.core.annotation.Transient;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
@@ -192,6 +193,41 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       java.time.LocalDate claimDate,
       java.time.LocalDate catalogAsOf,
       java.util.Map<Long, CatalogAdmission.Verdict> catalogVerdicts) {
+    return calculate(
+        id,
+        tenantId,
+        claimId,
+        rows,
+        liability,
+        ruleVersion,
+        accumulation,
+        claimDate,
+        catalogAsOf,
+        catalogVerdicts,
+        List.of());
+  }
+
+  /**
+   * 执行理算（带目录准入结论与<b>费用类别规则</b>）。
+   *
+   * <p><b>为什么类别规则由调用方传进来</b>：规则存在 {@code t_adj_liability_fee_rule}（配置态，挂 {@code
+   * liability_uuid}），读它是应用层的职责。聚合只消费"这一案生效的规则"，才能保持"同输入同输出"——
+   * 聚合自己去查库，复算时的输入就不再是显式参数，快照也无从证明用的是哪一版规则。
+   *
+   * @param feeRules 生效的费用类别规则（空 = 责任未做类别细化，引擎行为与引入前逐字一致）
+   */
+  public static Adjustment calculate(
+      Long id,
+      Long tenantId,
+      Long claimId,
+      List<ClaimWithItemsProjection> rows,
+      AdjLiability liability,
+      String ruleVersion,
+      Accumulation accumulation,
+      java.time.LocalDate claimDate,
+      java.time.LocalDate catalogAsOf,
+      java.util.Map<Long, CatalogAdmission.Verdict> catalogVerdicts,
+      List<LiabilityFeeRule> feeRules) {
     if (rows == null || rows.isEmpty()) {
       throw new DomainException("理算明细不能为空");
     }
@@ -205,7 +241,8 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       throw new DomainException("跨案累计快照缺失，无法理算（⑩：禁止按『已用 0』隐式计算）");
     }
     Adjustment adjustment = new Adjustment(id, tenantId, claimId, ruleVersion);
-    adjustment.apply(rows, liability, accumulation, claimDate, catalogAsOf, catalogVerdicts);
+    adjustment.apply(
+        rows, liability, accumulation, claimDate, catalogAsOf, catalogVerdicts, feeRules);
     return adjustment;
   }
 
@@ -232,8 +269,20 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       java.time.LocalDate claimDate,
       java.time.LocalDate catalogAsOf,
       java.util.Map<Long, CatalogAdmission.Verdict> catalogVerdicts) {
+    recalculate(rows, liability, accumulation, claimDate, catalogAsOf, catalogVerdicts, List.of());
+  }
+
+  /** 重算（带费用类别规则，口径同 {@code calculate} 的十一参重载）。 */
+  public void recalculate(
+      List<ClaimWithItemsProjection> rows,
+      AdjLiability liability,
+      Accumulation accumulation,
+      java.time.LocalDate claimDate,
+      java.time.LocalDate catalogAsOf,
+      java.util.Map<Long, CatalogAdmission.Verdict> catalogVerdicts,
+      List<LiabilityFeeRule> feeRules) {
     requireModifiable("已确认的理算结果禁止重算");
-    apply(rows, liability, accumulation, claimDate, catalogAsOf, catalogVerdicts);
+    apply(rows, liability, accumulation, claimDate, catalogAsOf, catalogVerdicts, feeRules);
     this.updatedAt = java.time.Instant.now();
   }
 
@@ -281,23 +330,25 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       Accumulation accumulation,
       java.time.LocalDate claimDate,
       java.time.LocalDate catalogAsOf,
-      java.util.Map<Long, CatalogAdmission.Verdict> catalogVerdicts) {
+      java.util.Map<Long, CatalogAdmission.Verdict> catalogVerdicts,
+      List<LiabilityFeeRule> feeRules) {
     LiabilityRule rule =
         LiabilityRule.fromLegacy(
-            liability.getLiabilityUuid(),
-            liability.getLiabilityVersion(),
-            liability.getPayPercent(),
-            liability.deduct(),
-            liability.limit(),
-            liability.isSocialOnly(),
-            liability.invoiceDeduct(),
-            liability.adjustDeduct(),
-            liability.dailyLimit(),
-            LiabilityRule.DailyBasis.fromCode(liability.dailyLimitBasis()),
-            LiabilityRule.LimitedConditions.of(
-                LiabilityRule.LimitedConditions.Mode.fromCode(liability.limitMode()),
-                liability.limitHospitalCodes(),
-                liability.limitDiagnosisCodes()));
+                liability.getLiabilityUuid(),
+                liability.getLiabilityVersion(),
+                liability.getPayPercent(),
+                liability.deduct(),
+                liability.limit(),
+                liability.isSocialOnly(),
+                liability.invoiceDeduct(),
+                liability.adjustDeduct(),
+                liability.dailyLimit(),
+                LiabilityRule.DailyBasis.fromCode(liability.dailyLimitBasis()),
+                LiabilityRule.LimitedConditions.of(
+                    LiabilityRule.LimitedConditions.Mode.fromCode(liability.limitMode()),
+                    liability.limitHospitalCodes(),
+                    liability.limitDiagnosisCodes()))
+            .withFeeRules(feeRulesOf(feeRules));
 
     AdjustmentEngine.Outcome outcome;
     try {
@@ -350,6 +401,35 @@ public class Adjustment extends TenantAggregateRoot<Long> {
   }
 
   /**
+   * 费用类别规则：实体 → 引擎规则值对象。
+   *
+   * <p><b>为什么不把实体直接塞进 {@link LiabilityRule}</b>：引擎是纯计算的领域对象，它的规则集必须能被快照、 被复算、被单测直接构造；带
+   * {@code @Table}/{@code @Version} 的持久化实体进来，会让"能不能算"取决于 "这行有没有落过库"。映射放在这一层，口径只有一处。
+   *
+   * <p>{@code socialOnly} 实体是 {@code Integer}(1/0)，{@code null} 按<b>社保内</b>处理（与 {@link
+   * LiabilityFeeRule#of} 的默认值一致）：取严的那一侧是安全侧，放宽才会超赔。
+   */
+  private static List<LiabilityRule.FeeCategoryRule> feeRulesOf(List<LiabilityFeeRule> feeRules) {
+    if (feeRules == null || feeRules.isEmpty()) {
+      return List.of();
+    }
+    List<LiabilityRule.FeeCategoryRule> rules = new ArrayList<>(feeRules.size());
+    for (LiabilityFeeRule entity : feeRules) {
+      if (entity == null) {
+        continue;
+      }
+      rules.add(
+          new LiabilityRule.FeeCategoryRule(
+              entity.getFeeCode(),
+              entity.getFeeName(),
+              entity.getPayPercent(),
+              entity.getLimitAmount(),
+              entity.getSocialOnly() == null || entity.getSocialOnly() == 1));
+    }
+    return rules;
+  }
+
+  /**
    * 行快照（{@code t_adj_calculation_line.input_snapshot}）。
    *
    * <p><b>为什么把 bucketLabel / ratioPercent 一起落库</b>：引擎的 {@code Line} 已算出这两个值， 但外壳只写了 {@code bucket}
@@ -362,6 +442,11 @@ public class Adjustment extends TenantAggregateRoot<Long> {
    */
   private static String inputSnapshotOf(AdjustmentEngine.Line line) {
     String ratio = line.ratioPercent() == null ? "null" : line.ratioPercent().toPlainString();
+    // 费用类别仅在拆过类别时输出：未配类别规则的责任沿用旧形态，存量行的快照不会因本次改动而变样。
+    String feeTag =
+        line.feeCode() == null || line.feeCode().isEmpty()
+            ? ""
+            : ",\"feeCode\":\"" + jsonEscape(line.feeCode()) + "\"";
     return "{\"bucket\":\""
         + line.bucket()
         + "\",\"bucketLabel\":\""
@@ -370,6 +455,7 @@ public class Adjustment extends TenantAggregateRoot<Long> {
         + line.scope()
         + "\",\"ratioPercent\":"
         + ratio
+        + feeTag
         + ",\"itemId\":"
         + (line.itemId() == null ? "null" : line.itemId())
         + ",\"itemName\":\""

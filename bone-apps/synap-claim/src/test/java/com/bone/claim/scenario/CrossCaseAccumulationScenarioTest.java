@@ -196,7 +196,8 @@ class CrossCaseAccumulationScenarioTest {
                         it.quantity(),
                         it.unitPrice(),
                         it.amount(),
-                        null))
+                        null,
+                        ""))
             .toList();
     ClaimCaseApplicationService.SubmitClaim req =
         new ClaimCaseApplicationService.SubmitClaim(

@@ -28,6 +28,7 @@ SELECT
        i.item_name,
        i.item_code,
        i.category       AS item_category,
+       i.fee_code       AS item_fee_code,
        i.quantity       AS item_quantity,
        i.unit_price     AS item_unit_price,
        i.amount         AS item_amount,

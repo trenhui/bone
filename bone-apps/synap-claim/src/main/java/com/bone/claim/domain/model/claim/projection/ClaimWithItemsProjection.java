@@ -54,6 +54,15 @@ public class ClaimWithItemsProjection {
   private String itemName;
   private String itemCode;
   private String itemCategory;
+
+  /**
+   * 费用类别编码（{@code t_claim_item.fee_code}，取值见 {@code t_ref_fee_category}）。
+   *
+   * <p><b>与 {@code itemCategory}（DRUG/SERVICE/EXAM/MATERIAL）不是一回事</b>：后者是"项目类型"四分类，
+   * 前者是收费类别（床位费/检查费/手术费…十类），责任费用规则的差异化维度是后者。缺省空串 = 未分类， 引擎按责任统一比例算并落诊断，不按粗类目猜类别。
+   */
+  private String itemFeeCode;
+
   private BigDecimal itemQuantity;
   private BigDecimal itemUnitPrice;
   private BigDecimal itemAmount;

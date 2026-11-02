@@ -2773,6 +2773,10 @@ CREATE TABLE t_claim_item (
   item_name        VARCHAR(128)  NOT NULL COMMENT '项目名称',
   item_code        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '医保项目/药品编码(目录编码匹配唯一键)',
   category         VARCHAR(32)   NOT NULL COMMENT 'DRUG/SERVICE/EXAM/MATERIAL',
+  -- 费用类别编码：责任「费用类别规则」的唯一判定维度（t_ref_fee_category.fee_code）。
+  -- 与 category（四分类粗目）并存——粗目无法反推十类收费类别，归类事实只能由报案端提供，
+  -- 缺失时引擎按责任统一比例算并落诊断，绝不按粗目猜类别。
+  fee_code         VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '费用类别编码(责任费用规则判定维度; 空=未分类)',
   quantity         DECIMAL(10,2) NOT NULL DEFAULT 1 COMMENT '数量',
   unit_price       DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '单价',
   amount           DECIMAL(12,2) NOT NULL COMMENT '金额',

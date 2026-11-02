@@ -59,5 +59,7 @@ public record SubmitClaimReq(
           @NotNull(message = "金额不能为空")
           @DecimalMin(value = "0", message = "金额不能为负")
           BigDecimal amount,
-      @Schema(description = "就诊科室（行级「次」分组维度；一张发票可跨科室）") String department) {}
+      @Schema(description = "就诊科室（行级「次」分组维度；一张发票可跨科室）") String department,
+      @Schema(description = "费用类别编码（t_ref_fee_category.fee_code；床位费/检查费/手术费…空 = 未分类，按责任统一比例算）")
+          String feeCode) {}
 }

@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import {
   Alert,
   Button,
@@ -19,6 +19,7 @@ import dayjs from 'dayjs';
 import { resolveErrorCode } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
 import { claimApi, type ClaimItemReq, type ItemCategory, type SubmitClaimReq } from '../services/claimApi';
+import { claimConfigApi, type FeeCategoryView } from '../services/claimConfigApi';
 
 /**
  * 员工端 · 报案页（synapClaim 一期：企业补充医疗 · 门诊小额快赔）。
@@ -39,6 +40,15 @@ export function ClaimSubmitPage(): ReactElement {
   const [form] = Form.useForm<SubmitFormValues>();
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ claimNo: string; status: string } | null>(null);
+  // 费用类别目录（t_ref_fee_category）：明细按类别落 fee_code，理算侧「责任 × 费用类别」规则据此命中。
+  // 取不到时下拉为空但不阻塞报案——未分类明细按责任主比例算，并在理算诊断里提示补录。
+  const [feeCategories, setFeeCategories] = useState<FeeCategoryView[]>([]);
+  useEffect(() => {
+    claimConfigApi
+      .listAllFeeCategories()
+      .then((res) => setFeeCategories(res?.data ?? []))
+      .catch(() => setFeeCategories([]));
+  }, []);
 
   const onFinish = async (values: SubmitFormValues) => {
     setSubmitting(true);
@@ -150,6 +160,24 @@ export function ClaimSubmitPage(): ReactElement {
                           style={{ marginBottom: 0 }}
                         >
                           <Input placeholder="诊查费" />
+                        </Form.Item>
+                      ),
+                    },
+                    {
+                      title: '费用类别',
+                      width: 170,
+                      render: (_, __, i) => (
+                        <Form.Item name={[i, 'feeCode']} style={{ marginBottom: 0 }}>
+                          <Select
+                            allowClear
+                            showSearch
+                            optionFilterProp="label"
+                            placeholder="选择类别"
+                            options={feeCategories.map((c) => ({
+                              value: c.feeCode,
+                              label: c.feeName,
+                            }))}
+                          />
                         </Form.Item>
                       ),
                     },

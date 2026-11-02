@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 100,
+  "executableCount": 101,
   "retired": [],
   "entries": [
     {
@@ -650,7 +650,13 @@
       "order": 100,
       "file": "0094_claim_reference_libraries.sql",
       "kind": "mixed",
-      "summary": "补齐理赔配置的基础目录库底座（对标参考站 policyRuleConfig 差距项）：① 医院/疾病/药品/费用类别四张租户级主数据表（t_ref_hospital/t_ref_disease/t_ref_drug/t_ref_fee_category，UK(tenant,code)）+ 责任×费用类别差异化规则表 t_adj_liability_fee_rule（挂 liability_uuid 配置态，比例/限额/社保内）；② t_claim_policy 补 doc_claim_apply/doc_claim_notice 两个作业开关（NEED/NOT_NEED，默认 NEED 兼容存量）；③ 「基础目录库」侧栏菜单（/claim#/library，叶子 id=目录 id+24、order 15、icon DatabaseOutlined、permission=claim:policy:read）；④ 标准费用类别 10 类种子（租户 0/1001 各一份）+ 医院/疾病/药品示例各 4 条（显式小 ID 94xxxxxx）。责任表单仍存编码分隔串，理算引擎零改动，只换录入方式（前端从库选择器选取）；但费用类别规则当前**不被理算消费**（归集维度只有医保范围内/自付二/总自费），故责任存在规则时发布被 SC_CLAIM_LIABILITY_FEE_RULE_UNSUPPORTED(422) 拒绝，避免静默错赔。动态 DDL 幂等 + 终态断言（五表关键列齐全/作业列就位/种子齐/13 条叶子/order 覆盖 1..11,13,15/名称·权限·icon 不漂移）。bone-init.sql 同提交补齐表与列。"
+      "summary": "补齐理赔配置的基础目录库底座（对标参考站 policyRuleConfig 差距项）：① 医院/疾病/药品/费用类别四张租户级主数据表（t_ref_hospital/t_ref_disease/t_ref_drug/t_ref_fee_category，UK(tenant,code)）+ 责任×费用类别差异化规则表 t_adj_liability_fee_rule（挂 liability_uuid 配置态，比例/限额/社保内）；② t_claim_policy 补 doc_claim_apply/doc_claim_notice 两个作业开关（NEED/NOT_NEED，默认 NEED 兼容存量）；③ 「基础目录库」侧栏菜单（/claim#/library，叶子 id=目录 id+24、order 15、icon DatabaseOutlined、permission=claim:policy:read）；④ 标准费用类别 10 类种子（租户 0/1001 各一份）+ 医院/疾病/药品示例各 4 条（显式小 ID 94xxxxxx）。责任表单仍存编码分隔串，只换录入方式（前端从库选择器选取）；费用类别规则经 0095 打通明细 fee_code 后已由理算引擎消费（按「费用类型 × 费用类别」拆分理算单元：类别比例覆盖责任统一比例、类别限额控额前截断、社保内外取严），不再拒绝发布。动态 DDL 幂等 + 终态断言（五表关键列齐全/作业列就位/种子齐/13 条叶子/order 覆盖 1..11,13,15/名称·权限·icon 不漂移）。bone-init.sql 同提交补齐表与列。"
+    },
+    {
+      "order": 101,
+      "file": "0095_claim_item_fee_code.sql",
+      "kind": "ddl",
+      "summary": "给费用明细项 t_claim_item 增加 fee_code 列（费用类别编码，取 t_ref_fee_category.fee_code：床位费/检查费/手术费…十类），作为责任「费用类别规则」的唯一判定维度；与 category 四分类粗目并存、缺失按未分类处理。引擎据此把费用池切成「费用类型 × 费用类别」单元，按类别比例/次内限额差异化理算（0094 建的规则表至此被引擎真正消费）。幂等 ALTER + 终态断言（列就位）。bone-init.sql 同步补列。"
     }
   ],
   "ordinalConflicts": [

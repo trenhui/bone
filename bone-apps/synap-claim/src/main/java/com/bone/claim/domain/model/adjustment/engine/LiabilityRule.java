@@ -1,7 +1,11 @@
 package com.bone.claim.domain.model.adjustment.engine;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -52,7 +56,16 @@ public record LiabilityRule(
     /** 发票级免赔（GAP②）：在比例之前、作用于各费用池基数；与年度免赔（{@link #deductible}）是两层独立免赔。 */
     DeductibleRule invoiceDeductible,
     /** 理算级免赔（GAP⑥）：在比例之后、控额之前，对理算金额再做一次绝对额扣减；是第二个免赔层。 */
-    DeductibleRule adjustDeductible) {
+    DeductibleRule adjustDeductible,
+    /**
+     * 费用类别规则（{@code t_adj_liability_fee_rule}）：在统一比例/限额之上按<b>费用类别</b>差异化。
+     *
+     * <p><b>为什么必须进规则而不是留在配置面</b>：规则存了不被引擎读取时，界面写着"手术费 60%"、实赔按责任统一比例，
+     * 且快照里看不出这条规则被忽略过——事后无法复盘，只能等客户对账时才发现。<b>能配的必须能算</b>， 这是本类把类别规则收进规则集的唯一理由。
+     *
+     * <p>空集合表示"未做类别细化"，引擎行为与引入前<b>逐字一致</b>（不拆单元、不改快照、不改比例命中记录）。
+     */
+    List<FeeCategoryRule> feeRules) {
 
   /** 责任形式（V1 §2 要素 1）。 */
   public enum LiabilityForm {
@@ -116,6 +129,73 @@ public record LiabilityRule(
           RuleGap.Code.INVALID_INPUT,
           "无法识别的日限额口径「%s」：仅支持 NONE / SAME_DAY_INVOICE / SAME_DAY_CLAIM",
           code);
+    }
+  }
+
+  /**
+   * 费用类别规则（责任 × 费用类别）：一条 = 该类别在本责任下的赔付比例、次内限额、社保内外口径。
+   *
+   * <p><b>五个口径都是拍板结论，不是实现细节</b>（条款语料里没有"类别规则与责任统一比例谁优先"的原文， 但三种选择会产生不同金额，必须显式定一个并在此固定下来）：
+   *
+   * <ol>
+   *   <li><b>类别规则优先于责任统一比例</b>：配了该类别就按类别比例算，未配的类别<b>继承</b>责任统一比例。
+   *       不采用"未配即拒赔"——那会把所有未做类别细化的历史配置一并变成不可赔，属于用配置缺省制造拒赔；
+   *       也不采用"两者取严"——条款里类别比例是<b>约定值</b>而非上限，取严会把"手术费 100%"永久压到责任比例之下；
+   *   <li><b>类别限额是该类别在本「次」内的赔付上限（子限额）</b>：截断发生在免赔与比例之后、控额栈之前，
+   *       被截掉的部分不占责任额度；它<b>不</b>单开额度池——赔款仍从责任额度里扣，责任额度是总闸；
+   *   <li><b>免赔仍然只扣一次</b>（责任级）：按类别各自扣一份会放大免赔额，属系统性少赔，且金额"看起来更保守"、 复核时几乎不会发现；
+   *   <li><b>社保内外取严</b>：类别 {@code socialOnly=1} 与责任 {@code socialOnly} 是「与」关系——任一要求社保内，
+   *       该类别就只赔范围内金额。取严不会超赔，取宽则直接违反"仅赔社保内"的约定；
+   *   <li><b>未分类明细不猜类别</b>：明细缺 {@code fee_code} 时按责任统一比例算并落诊断，由人工补数据； 按 4
+   *       值粗类目（DRUG/SERVICE/EXAM/MATERIAL）推断 10 类费用类别属于猜——SERVICE 一项就覆盖床位/手术/ 治疗/护理/诊查/化验，猜错即错赔。
+   * </ol>
+   *
+   * @param feeCode 费用类别编码（{@code t_ref_fee_category.fee_code}，服务层已校验存在性）
+   * @param feeName 类别名称（冗余，供快照与诊断展示）
+   * @param payPercent 该类别赔付比例（百分数 0–100，<b>总是覆盖</b>责任统一比例）
+   * @param limitAmount 该类别次内赔付上限（{@code 0} = 不限）
+   * @param socialOnly 该类别是否仅赔社保范围内
+   */
+  public record FeeCategoryRule(
+      String feeCode,
+      String feeName,
+      BigDecimal payPercent,
+      BigDecimal limitAmount,
+      boolean socialOnly) {
+
+    private static final BigDecimal HUNDRED = new BigDecimal("100");
+
+    public FeeCategoryRule {
+      feeCode = feeCode == null ? "" : feeCode.trim();
+      feeName = feeName == null ? "" : feeName.trim();
+      payPercent = Money.nz(payPercent);
+      limitAmount = Money.nz(limitAmount);
+      if (feeCode.isEmpty()) {
+        throw RuleGap.of(RuleGap.Code.INVALID_INPUT, "费用类别规则缺少类别编码：无法与明细归类结果对上");
+      }
+      if (payPercent.signum() < 0 || payPercent.compareTo(HUNDRED) > 0) {
+        // 比例越界在引擎里会被 percentToRate 钳到 100%，那时"配错"与"配成 100%"在账面上无法区分。
+        // 配置面已经拦过一道，这里再拦一次：规则也可能来自快照复算或直连数据库的修补。
+        throw RuleGap.of(
+            RuleGap.Code.INVALID_INPUT,
+            "费用类别「%s」的赔付比例 %s 超出 0–100",
+            feeCode,
+            payPercent.toPlainString());
+      }
+      if (limitAmount.signum() < 0) {
+        throw RuleGap.of(
+            RuleGap.Code.INVALID_INPUT, "费用类别「%s」的限额 %s 为负", feeCode, limitAmount.toPlainString());
+      }
+    }
+
+    /** 是否配置了类别限额（{@code 0} = 不限，与"限额 0 = 一分不赔"区分开）。 */
+    public boolean hasLimit() {
+      return limitAmount.signum() > 0;
+    }
+
+    /** 展示名：优先类别名称，缺名称回落编码（诊断与快照里不能出现空标签）。 */
+    public String label() {
+      return feeName.isEmpty() ? feeCode : feeName;
     }
   }
 
@@ -384,6 +464,35 @@ public record LiabilityRule(
         limitedConditions == null ? LimitedConditions.disabled() : limitedConditions;
     invoiceDeductible = invoiceDeductible == null ? DeductibleRule.none() : invoiceDeductible;
     adjustDeductible = adjustDeductible == null ? DeductibleRule.none() : adjustDeductible;
+    feeRules = normalizeFeeRules(feeRules);
+  }
+
+  /**
+   * 归一化费用类别规则：去重校验 + 按编码定序。
+   *
+   * <p><b>为什么要定序</b>：快照里的规则数组参与 {@code formula_hash}，若顺序随数据库返回行序漂移，
+   * 同一份配置两次理算会得出两个哈希，"同输入同输出"当场失效（复算校验会把正常案子判成被篡改）。 类别编码是规则的身份，按它定序即可稳定。同一类别出现两条同样不可接受：哪条生效取决于行序，
+   * 等于把金额交给数据库返回顺序决定。
+   */
+  private static List<FeeCategoryRule> normalizeFeeRules(List<FeeCategoryRule> rules) {
+    if (rules == null || rules.isEmpty()) {
+      return List.of();
+    }
+    Map<String, FeeCategoryRule> byCode = new LinkedHashMap<>();
+    for (FeeCategoryRule rule : rules) {
+      if (rule == null) {
+        continue;
+      }
+      if (byCode.putIfAbsent(rule.feeCode(), rule) != null) {
+        throw RuleGap.of(
+            RuleGap.Code.INVALID_INPUT,
+            "费用类别「%s」配置了多条规则：哪条生效取决于行序，等于让数据库返回顺序决定赔付金额",
+            rule.feeCode());
+      }
+    }
+    List<FeeCategoryRule> ordered = new ArrayList<>(byCode.values());
+    ordered.sort(Comparator.comparing(FeeCategoryRule::feeCode));
+    return List.copyOf(ordered);
   }
 
   /**
@@ -419,7 +528,8 @@ public record LiabilityRule(
         relation,
         limitedConditions,
         DeductibleRule.none(),
-        DeductibleRule.none());
+        DeductibleRule.none(),
+        List.of());
   }
 
   /** 设置发票级免赔层（GAP②）：返回新规则实例，原实例不变。 */
@@ -439,7 +549,8 @@ public record LiabilityRule(
         relation,
         limitedConditions,
         deductible,
-        adjustDeductible);
+        adjustDeductible,
+        feeRules);
   }
 
   /** 设置理算级免赔层（GAP⑥）：返回新规则实例，原实例不变。 */
@@ -459,7 +570,8 @@ public record LiabilityRule(
         relation,
         limitedConditions,
         invoiceDeductible,
-        deductible);
+        deductible,
+        feeRules);
   }
 
   /** 设置额度集合（日限额等需要整体替换 {@link LimitSet} 时使用）：返回新规则实例。 */
@@ -479,7 +591,8 @@ public record LiabilityRule(
         relation,
         limitedConditions,
         invoiceDeductible,
-        adjustDeductible);
+        adjustDeductible,
+        feeRules);
   }
 
   /** 设置适用限定（医院/病种白黑名单）：返回新规则实例，原实例不变。 */
@@ -499,7 +612,29 @@ public record LiabilityRule(
         relation,
         conditions,
         invoiceDeductible,
-        adjustDeductible);
+        adjustDeductible,
+        feeRules);
+  }
+
+  /** 设置费用类别规则（{@code t_adj_liability_fee_rule} 的生效快照）：返回新规则实例，原实例不变。 */
+  public LiabilityRule withFeeRules(List<FeeCategoryRule> rules) {
+    return new LiabilityRule(
+        liabilityUuid,
+        liabilityVersion,
+        form,
+        socialOnly,
+        coveredBuckets,
+        waitingPeriodDays,
+        deductible,
+        ratios,
+        limits,
+        quota,
+        occurrences,
+        relation,
+        limitedConditions,
+        invoiceDeductible,
+        adjustDeductible,
+        rules);
   }
 
   /**
@@ -765,6 +900,25 @@ public record LiabilityRule(
   /** 承担该费用类型。 */
   public boolean covers(FeePools.Bucket bucket) {
     return coveredBuckets.contains(bucket);
+  }
+
+  /** 是否配置了费用类别规则（空 ⇒ 引擎走"不拆类别"的老路径，输出与引入前逐字一致）。 */
+  public boolean hasFeeRules() {
+    return !feeRules.isEmpty();
+  }
+
+  /** 取某费用类别的规则；未配置该类别返回 {@code null}（调用方据此回落责任统一比例）。 */
+  public FeeCategoryRule feeRuleOf(String feeCode) {
+    if (feeCode == null || feeCode.isBlank() || feeRules.isEmpty()) {
+      return null;
+    }
+    String code = feeCode.trim();
+    for (FeeCategoryRule rule : feeRules) {
+      if (rule.feeCode().equals(code)) {
+        return rule;
+      }
+    }
+    return null;
   }
 
   /** 责任额度是否封顶。 */

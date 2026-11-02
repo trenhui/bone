@@ -35,6 +35,16 @@ public class ClaimItem extends TenantAbstractEntity<Long> {
   @Column(name = "category", nullable = false)
   private String category;
 
+  /**
+   * 费用类别编码（{@code t_ref_fee_category.fee_code}：床位费/检查费/手术费…十类；空 = 未分类）。
+   *
+   * <p><b>为什么与 {@link #category} 并存而不是替代它</b>：{@code category} 是"项目类型"四分类
+   * （DRUG/SERVICE/EXAM/MATERIAL），用于目录匹配与展示分组；{@code fee_code} 是收费类别，是责任费用规则 （"手术费 100%、材料费 60% 且限
+   * 5000"）的唯一判定维度。四分类无法表达十类：SERVICE 一项就横跨床位/手术/治疗/ 护理/诊查/化验——用粗类目推断细类目，等于让引擎猜类别，猜错即错赔。
+   */
+  @Column(name = "fee_code")
+  private String feeCode = "";
+
   @Column(name = "quantity", nullable = false)
   private BigDecimal quantity;
 
@@ -87,6 +97,17 @@ public class ClaimItem extends TenantAbstractEntity<Long> {
   /** 补录就诊科室（报案/OCR 回填；空白按未提供处理，不保留脏串）。 */
   public void assignDepartment(String department) {
     this.department = department == null ? "" : department.trim();
+    setUpdatedAt(new java.util.Date());
+  }
+
+  /**
+   * 补录费用类别（报案/OCR 回填；空白 = 未分类，引擎按责任统一比例算并落诊断）。
+   *
+   * <p><b>与 {@link #assignDepartment} 同级、同为可补录维度</b>：费用类别是责任费用规则的判定维度，
+   * 缺失时不能当作"DRUG/SERVICE/EXAM/MATERIAL"之一去猜（粗类目无法反推十类收费类别）。归类事实只能由报账端提供。
+   */
+  public void assignFeeCode(String feeCode) {
+    this.feeCode = feeCode == null ? "" : feeCode.trim();
     setUpdatedAt(new java.util.Date());
   }
 

@@ -98,6 +98,8 @@ public class ClaimCaseApplicationService {
                           dto.amount());
                   // 科室是行级「次」分组维度（V1 §7.3）：随明细落库，否则"同院同科室"责任无法分组。
                   item.assignDepartment(dto.department());
+                  // 费用类别是责任费用规则的判定维度：随明细落库，缺失则引擎按责任统一比例算并落诊断。
+                  item.assignFeeCode(dto.feeCode());
                   return item;
                 })
             .toList();
@@ -489,7 +491,9 @@ public class ClaimCaseApplicationService {
         BigDecimal quantity,
         BigDecimal unitPrice,
         BigDecimal amount,
-        String department) {}
+        String department,
+        /** 费用类别编码（t_ref_fee_category.fee_code；空 = 未分类，引擎按责任统一比例算并落诊断）。 */
+        String feeCode) {}
   }
 
   /** 状态跃迁事件类型再导出（供订阅方引用，避免直接 import domain.event 包）。 */

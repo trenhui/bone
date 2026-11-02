@@ -201,7 +201,19 @@ public final class AdjustmentEngine {
       String rejectType,
       String cappedBy,
       Long itemId,
-      String itemName) {}
+      String itemName,
+      /**
+       * 费用类别编码（未分类为空串）。
+       *
+       * <p>落这一列的理由：类别规则生效后，同一个费用池会拆成多行（手术费一行、材料费一行）， 只有池名无法说明"这一行为什么比例是 100%、上限为什么是
+       * 5000"；客户对账与后督抽检都要能按类别核对。
+       */
+      String feeCode) {
+
+    public Line {
+      feeCode = feeCode == null ? "" : feeCode;
+    }
+  }
 
   /** 理算结果。 */
   public record Outcome(
@@ -616,6 +628,234 @@ public final class AdjustmentEngine {
       BigDecimal afterAdjust) {}
 
   /**
+   * 构建理算单元。
+   *
+   * <p><b>单元粒度是"能独立适用一条比例/限额规则的最小单位"</b>：没配费用类别规则时 = 费用池（范围内/自付二/总自费），
+   * 与引入类别规则前完全一致（不拆、快照不变、比例命中记录不变）；配了类别规则时 = 费用池 × 费用类别， 因为"手术费 100%、材料费 60%"必须按类别分别乘比例、分别受类别限额约束。
+   *
+   * <p><b>为什么用开关而不是永远拆</b>：拆单元会改变明细行数、免赔分摊权重与费用子限额的挂载点。
+   * 对没配类别规则的责任（绝大多数存量配置）做这种改动，等于用一次"功能新增"顺带改写全部历史案件的归因形态—— 复算哈希与审计对照会全线漂移，收益为零。
+   */
+  private static List<Cell> buildCells(
+      FeePools pools,
+      LiabilityRule rule,
+      Request request,
+      List<String> diagnostics,
+      List<String> ratioHits) {
+    if (!rule.hasFeeRules()) {
+      return cellsByBucket(pools, rule, request, diagnostics, ratioHits);
+    }
+    List<Cell> cells = cellsByCategory(pools, rule, request, diagnostics, ratioHits);
+    // 全部明细都被目录剔除/核减为 0 时没有切片可拆，退回按池出零行：零赔付仍要能回答"为什么是 0"。
+    return cells.isEmpty() ? cellsByBucket(pools, rule, request, diagnostics, ratioHits) : cells;
+  }
+
+  /** 按费用池建单元（未配费用类别规则时的唯一路径，行为与引入前逐字一致）。 */
+  private static List<Cell> cellsByBucket(
+      FeePools pools,
+      LiabilityRule rule,
+      Request request,
+      List<String> diagnostics,
+      List<String> ratioHits) {
+    boolean inScopeOnly = rule.socialOnly();
+    List<Cell> cells = new ArrayList<>();
+    for (FeePools.Pool pool : pools.pools()) {
+      if (!rule.covers(pool.bucket())) {
+        if (pool.total().signum() > 0) {
+          diagnostics.add("责任不承担费用类型 " + pool.label() + "，金额 " + pool.total() + " 不参与理算");
+        }
+        continue;
+      }
+      BigDecimal base = pool.base(inScopeOnly);
+      if (base.signum() == 0) {
+        // 零金额的池不查表：没有金额可乘，"该池缺格"不等于配置缺失。
+        // 若此处仍查表，一张只有合理金额的发票会因为"总自费没配比例"被整案拒绝——把缺省当缺陷。
+        cells.add(
+            new Cell(
+                pool.bucket(),
+                "",
+                true,
+                pool.label(),
+                Money.ZERO,
+                pool.inScope(),
+                Money.ZERO,
+                Money.ZERO,
+                null));
+        continue;
+      }
+      PayRatioTable.Resolution resolution = resolve(rule, pool.bucket(), pool.total(), request);
+      ratioHits.add(ratioHitOf(pool.bucket(), resolution));
+      cells.add(
+          new Cell(
+              pool.bucket(),
+              "",
+              true,
+              pool.label(),
+              base,
+              pool.inScope(),
+              Money.percentToRate(resolution.percent()),
+              resolution.percent(),
+              resolution.hasFeeLimit() ? resolution.feeLimit() : null));
+      if (Money.isRateOverflow(resolution.percent())) {
+        diagnostics.add(
+            "费用类型 " + pool.label() + " 配置比例 " + resolution.percent() + "% 超 100%，已钳制（配置错误，须复核）");
+      }
+    }
+    return cells;
+  }
+
+  /**
+   * 按「费用池 × 费用类别」建单元（配了费用类别规则时）。
+   *
+   * <p>三类情形必须分开处理，否则就是"配了不生效"或"配了乱生效"：
+   *
+   * <ul>
+   *   <li><b>命中类别规则</b>：比例取规则值（<b>覆盖</b>责任统一比例），社保内外取严；
+   *   <li><b>未配该类别</b>：回落责任统一比例（含多维查表），并留一条诊断——运营要能看出"这条规则没覆盖到它"；
+   *   <li><b>明细未分类</b>（{@code fee_code} 为空）：同样回落责任统一比例，另计一条汇总诊断。 不按 4 值粗类目猜 10 类费用类别：SERVICE
+   *       一项覆盖床位/手术/治疗/护理/诊查/化验，猜错就是错赔。
+   * </ul>
+   *
+   * <p>多维查表（医院等级/累计区间）<b>按费用池查一次</b>再分给该池的各类别：区间因子与"哪一类费用"无关，
+   * 若每个类别各查一次，同一张票的各类别会拿到不同累计值——那是把比例表当成按类别累计的表在用。
+   */
+  private static List<Cell> cellsByCategory(
+      FeePools pools,
+      LiabilityRule rule,
+      Request request,
+      List<String> diagnostics,
+      List<String> ratioHits) {
+    List<FeePools.Slice> slices = pools.slices();
+    if (slices.isEmpty()) {
+      return List.of();
+    }
+    boolean liabilitySocialOnly = rule.socialOnly();
+    Map<FeePools.Bucket, PayRatioTable.Resolution> resolutions =
+        new EnumMap<>(FeePools.Bucket.class);
+    List<Cell> cells = new ArrayList<>();
+    List<String> unconfigured = new ArrayList<>();
+    BigDecimal unclassifiedAmount = Money.ZERO;
+    int unclassifiedItems = 0;
+
+    for (FeePools.Slice slice : slices) {
+      if (!rule.covers(slice.bucket())) {
+        diagnostics.add(
+            "责任不承担费用类型 %s，金额 %s 不参与理算"
+                .formatted(poolLabelOf(pools, slice.bucket()), slice.total()));
+        continue;
+      }
+      LiabilityRule.FeeCategoryRule feeRule = rule.feeRuleOf(slice.feeCode());
+      // 社保内外取严：责任"仅赔社保内"与类别"仅赔社保内"是「与」关系，任一要求即只取范围内金额。
+      boolean inScopeOnly = liabilitySocialOnly || (feeRule != null && feeRule.socialOnly());
+      BigDecimal base = slice.base(inScopeOnly);
+      String label = labelOf(pools, slice, feeRule);
+
+      if (slice.unclassified()) {
+        unclassifiedItems++;
+        unclassifiedAmount = unclassifiedAmount.add(slice.total());
+      } else if (feeRule == null) {
+        unconfigured.add(slice.feeCode());
+      }
+
+      if (base.signum() == 0) {
+        // 有金额但基数被 socialOnly 剔光：保留零行，少赔原因才写得出（与按池出零行同一口径）。
+        cells.add(
+            new Cell(
+                slice.bucket(),
+                slice.feeCode(),
+                false,
+                label,
+                Money.ZERO,
+                slice.inScope(),
+                Money.ZERO,
+                Money.ZERO,
+                null));
+        continue;
+      }
+
+      PayRatioTable.Resolution bucketRatio =
+          resolutions.computeIfAbsent(
+              slice.bucket(), bucket -> resolve(rule, bucket, pools.pool(bucket).total(), request));
+      BigDecimal percent;
+      BigDecimal rate;
+      if (feeRule != null) {
+        percent = feeRule.payPercent();
+        rate = Money.percentToRate(percent);
+        ratioHits.add(
+            "%s/%s=%s%%(类别规则)"
+                .formatted(
+                    slice.bucket(), feeRule.label(), percent.stripTrailingZeros().toPlainString()));
+        if (Money.isRateOverflow(percent)) {
+          diagnostics.add(
+              "费用类别「%s」配置比例 %s%% 超 100%%，已钳制（配置错误，须复核）".formatted(feeRule.label(), percent));
+        }
+      } else {
+        percent = bucketRatio.percent();
+        rate = Money.percentToRate(percent);
+        ratioHits.add(ratioHitOf(slice.bucket(), bucketRatio));
+        if (Money.isRateOverflow(percent)) {
+          diagnostics.add(
+              "费用类型 %s 配置比例 %s%% 超 100%%，已钳制（配置错误，须复核）"
+                  .formatted(poolLabelOf(pools, slice.bucket()), percent));
+        }
+      }
+      cells.add(
+          new Cell(
+              slice.bucket(),
+              slice.feeCode(),
+              false,
+              label,
+              base,
+              slice.inScope(),
+              rate,
+              percent,
+              bucketRatio.hasFeeLimit() ? bucketRatio.feeLimit() : null));
+    }
+
+    if (unclassifiedItems > 0) {
+      diagnostics.add(
+          "有 %d 个费用池单元缺费用类别编码（合计 %s），按责任统一比例计算：类别规则对这些费用不生效，须补录明细费用类别"
+              .formatted(unclassifiedItems, Money.round(unclassifiedAmount)));
+    }
+    if (!unconfigured.isEmpty()) {
+      diagnostics.add("费用类别 %s 未配置规则，按责任统一比例计算".formatted(unconfigured));
+    }
+    return cells;
+  }
+
+  private static String ratioHitOf(FeePools.Bucket bucket, PayRatioTable.Resolution resolution) {
+    return bucket
+        + "="
+        + resolution.percent().stripTrailingZeros().toPlainString()
+        + "%"
+        + (resolution.label().isBlank() ? "" : "(" + resolution.label() + ")");
+  }
+
+  private static String poolLabelOf(FeePools pools, FeePools.Bucket bucket) {
+    return pools.pool(bucket).label();
+  }
+
+  /** 单元展示名：池名 + 类别（命中规则用类别名，未配置用编码，未分类标「未分类」）。 */
+  private static String labelOf(
+      FeePools pools, FeePools.Slice slice, LiabilityRule.FeeCategoryRule feeRule) {
+    String poolLabel = poolLabelOf(pools, slice.bucket());
+    if (feeRule != null) {
+      return poolLabel + "·" + feeRule.label();
+    }
+    return slice.unclassified() ? poolLabel + "·未分类" : poolLabel + "·" + slice.feeCode();
+  }
+
+  /**
+   * 单元在控额栈里的组键。
+   *
+   * <p>未拆类别时等于费用池名（与历史行为一致：快照与归因里的 {@code FEE_TYPE:REASONABLE} 不变）；
+   * 拆了类别时必须带类别后缀，否则同一池的多个类别共用组键，费用子限额会互相吃掉额度。
+   */
+  private static String cellKey(Cell cell) {
+    return cell.feeCode.isEmpty() ? cell.bucket.name() : cell.bucket.name() + "/" + cell.feeCode;
+  }
+
+  /**
    * 一组（一次）的完整理算：比例 → 免赔 → 控额。
    *
    * <p>顺序固定，理由见类注释。
@@ -632,51 +872,8 @@ public final class AdjustmentEngine {
       List<String> quotaTrace) {
     boolean inScopeOnly = rule.socialOnly();
 
-    // ① 逐池取基数与比例（多维查表；未命中即 fail-closed）
-    List<Cell> cells = new ArrayList<>();
-    for (FeePools.Pool pool : pools.pools()) {
-      if (!rule.covers(pool.bucket())) {
-        if (pool.total().signum() > 0) {
-          diagnostics.add("责任不承担费用类型 " + pool.label() + "，金额 " + pool.total() + " 不参与理算");
-        }
-        continue;
-      }
-      BigDecimal base = pool.base(inScopeOnly);
-      if (base.signum() == 0) {
-        // 零金额的池不查表：没有金额可乘，"该池缺格"不等于配置缺失。
-        // 若此处仍查表，一张只有合理金额的发票会因为"总自费没配比例"被整案拒绝——把缺省当缺陷。
-        cells.add(
-            new Cell(
-                pool.bucket(),
-                pool.label(),
-                Money.ZERO,
-                pool.inScope(),
-                Money.ZERO,
-                Money.ZERO,
-                null));
-        continue;
-      }
-      PayRatioTable.Resolution resolution = resolve(rule, pool, request);
-      ratioHits.add(
-          pool.bucket()
-              + "="
-              + resolution.percent().stripTrailingZeros().toPlainString()
-              + "%"
-              + (resolution.label().isBlank() ? "" : "(" + resolution.label() + ")"));
-      cells.add(
-          new Cell(
-              pool.bucket(),
-              pool.label(),
-              base,
-              base.signum() > 0 ? pool.inScope() : pool.inScope(),
-              Money.percentToRate(resolution.percent()),
-              resolution.percent(),
-              resolution.hasFeeLimit() ? resolution.feeLimit() : null));
-      if (Money.isRateOverflow(resolution.percent())) {
-        diagnostics.add(
-            "费用类型 " + pool.label() + " 配置比例 " + resolution.percent() + "% 超 100%，已钳制（配置错误，须复核）");
-      }
-    }
+    // ① 逐单元取基数与比例（多维查表；未命中即 fail-closed）
+    List<Cell> cells = buildCells(pools, rule, request, diagnostics, ratioHits);
 
     BigDecimal baseTotal = Money.ZERO;
     for (Cell cell : cells) {
@@ -706,6 +903,9 @@ public final class AdjustmentEngine {
     for (Cell cell : cells) {
       afterAdjust = afterAdjust.add(cell.payable);
     }
+
+    // ⑦ 费用类别次内限额（子限额）：比例与三层免赔之后、控额之前
+    applyCategoryLimits(cells, rule, diagnostics, quotaTrace);
 
     // ③ 控额（分池截断 → 责任 → 共保 → 险种 → 计划）
     QuotaStack.Result capped = quotaPool.cap(cells, rule, quotaTrace);
@@ -759,6 +959,8 @@ public final class AdjustmentEngine {
     List<FeePools.ItemContribution> items =
         pools.contributions().stream()
             .filter(item -> item.bucket() == cell.bucket && item.amount().signum() > 0)
+            // 拆了类别时只取本类别的费用项：否则同一笔费用会被多个单元各分一次，Σ明细 > 总额（I1 破裂）。
+            .filter(item -> cell.bucketWide || item.feeCode().equals(cell.feeCode))
             .toList();
     if (items.isEmpty()) {
       // 零基数池（或自定义费用类型无费用项映射）：没有权重可分，退回池级单行，
@@ -790,7 +992,8 @@ public final class AdjustmentEngine {
               rejectType,
               cell.cappedBy,
               item.itemId(),
-              item.itemName()));
+              item.itemName(),
+              cell.feeCode));
     }
     return lines;
   }
@@ -812,14 +1015,15 @@ public final class AdjustmentEngine {
         rejectType,
         cell.cappedBy,
         null,
-        null);
+        null,
+        cell.feeCode);
   }
 
   /** 比例查表（累计区间因子 = 历史累计 + 本池当前金额，§5.4）。 */
   private static PayRatioTable.Resolution resolve(
-      LiabilityRule rule, FeePools.Pool pool, Request request) {
-    BigDecimal historical = Money.nz(request.historicalAccumulated().get(pool.bucket()));
-    BigDecimal accumulated = PayRatioTable.accumulatedOf(historical, pool.total());
+      LiabilityRule rule, FeePools.Bucket bucket, BigDecimal poolTotal, Request request) {
+    BigDecimal historical = Money.nz(request.historicalAccumulated().get(bucket));
+    BigDecimal accumulated = PayRatioTable.accumulatedOf(historical, poolTotal);
     BigDecimal invoiceTotal =
         request.invoiceTotal() != null
             ? request.invoiceTotal()
@@ -830,7 +1034,7 @@ public final class AdjustmentEngine {
                     .toList());
     PayRatioTable.RatioQuery query =
         new PayRatioTable.RatioQuery(
-            pool.bucket(),
+            bucket,
             null,
             accumulated,
             invoiceTotal,
@@ -1008,6 +1212,74 @@ public final class AdjustmentEngine {
     return Money.round(applied);
   }
 
+  /**
+   * 费用类别次内限额（子限额）：该类别在本「次」的赔付上限。
+   *
+   * <p><b>位置为什么必须在控额之前</b>：控额栈按"当前应付金额"去占用责任/计划额度。先占额再按类别限额截断，
+   * 被截掉的那部分额度已被占住且不会退回——同一责任的后续赔案会少赔，而少赔的钱在账上找不到出处。 故类别限额是<b>占用前的最后一道削减</b>。
+   *
+   * <p><b>位置为什么必须在免赔之后</b>：免赔是"先扣掉不赔的部分"，类别限额是"赔的部分不超过上限"。
+   * 颠倒会让免赔额度被白扣：先按上限截断再扣免赔，同一笔钱既受子限额约束又受免赔约束， 免赔吃掉的空间无法回补（客户两头吃亏）。
+   *
+   * <p><b>为什么按类别跨费用池合计</b>：一条"材料费限 5000"约束的是材料费这一路费用，不论它落在合理金额、 自付二还是总自费里。按池分别限会让同一类别拿到 3 份上限（超赔 3
+   * 倍）。
+   */
+  private static void applyCategoryLimits(
+      List<Cell> cells, LiabilityRule rule, List<String> diagnostics, List<String> quotaTrace) {
+    if (!rule.hasFeeRules()) {
+      return;
+    }
+    Map<String, List<Cell>> byCategory = new LinkedHashMap<>();
+    for (Cell cell : cells) {
+      if (cell.feeCode.isEmpty()) {
+        continue;
+      }
+      LiabilityRule.FeeCategoryRule feeRule = rule.feeRuleOf(cell.feeCode);
+      if (feeRule == null || !feeRule.hasLimit()) {
+        continue;
+      }
+      byCategory.computeIfAbsent(cell.feeCode, ignored -> new ArrayList<>()).add(cell);
+    }
+    for (Map.Entry<String, List<Cell>> entry : byCategory.entrySet()) {
+      LiabilityRule.FeeCategoryRule feeRule = rule.feeRuleOf(entry.getKey());
+      List<Cell> group = entry.getValue();
+      List<BigDecimal> payables = new ArrayList<>(group.size());
+      for (Cell cell : group) {
+        payables.add(cell.payable);
+      }
+      BigDecimal total = Money.sum(payables);
+      BigDecimal limit = feeRule.limitAmount();
+      if (total.compareTo(limit) <= 0) {
+        continue;
+      }
+      List<BigDecimal> shares = Money.proRata(limit, payables);
+      for (int i = 0; i < group.size(); i++) {
+        Cell cell = group.get(i);
+        cell.payable = shares.get(i);
+        cell.cappedBy = appendCapped(cell.cappedBy, "FEE_CATEGORY:" + feeRule.feeCode());
+      }
+      quotaTrace.add(
+          "FEE_CATEGORY:%s 上限 %s（申请 %s）"
+              .formatted(feeRule.label(), Money.round(limit), Money.round(total)));
+      diagnostics.add(
+          "费用类别「%s」次内限额 %s 生效：本类别应付 %s，按上限赔付 %s，少赔 %s"
+              .formatted(
+                  feeRule.label(),
+                  Money.round(limit),
+                  Money.round(total),
+                  Money.round(limit),
+                  Money.round(total.subtract(limit))));
+    }
+  }
+
+  /** 归因串拼接：同一单元可能先撞类别限额、再撞责任额度，只留最后一维会让"为什么少赔"答错一半。 */
+  private static String appendCapped(String existing, String added) {
+    if (added == null || added.isBlank()) {
+      return existing == null ? "" : existing;
+    }
+    return existing == null || existing.isBlank() ? added : existing + "," + added;
+  }
+
   private static void distributeBase(List<Cell> cells, BigDecimal totalPayableBase) {
     List<BigDecimal> weights = cells.stream().map(cell -> cell.base).toList();
     List<BigDecimal> shares = Money.proRata(totalPayableBase, weights);
@@ -1036,6 +1308,40 @@ public final class AdjustmentEngine {
       map.computeIfAbsent(cell.bucket, ignored -> new ArrayList<>()).add(cell);
     }
     return map;
+  }
+
+  /**
+   * 费用子限额（{@link PayRatioTable.Entry#feeLimit()}，层②）挂到单元的组键上。
+   *
+   * <p>未拆类别时一个池一个单元 ⇒ 整额挂上，与引入类别规则前逐字一致；拆了类别时同一池的多个类别共用一份
+   * <b>池级</b>子限额，按当前应付额占比分摊——不这么分，每个类别各拿一份整额，等于把子限额放大 N 倍（超赔）。 分摊后 Σ各单元上限 ≡
+   * 池级上限，池级截断的总额不变，只是把"谁被截"落到具体类别上。
+   */
+  private static Map<String, BigDecimal> groupCapsOf(List<Cell> cells) {
+    Map<String, BigDecimal> caps = new LinkedHashMap<>();
+    for (Map.Entry<FeePools.Bucket, List<Cell>> entry : byBucket(cells).entrySet()) {
+      List<Cell> group = entry.getValue();
+      BigDecimal limit = null;
+      for (Cell cell : group) {
+        if (cell.feeLimit != null && cell.feeLimit.signum() > 0) {
+          limit = cell.feeLimit;
+          break;
+        }
+      }
+      if (limit == null) {
+        continue;
+      }
+      if (group.size() == 1) {
+        caps.put(cellKey(group.get(0)), limit);
+        continue;
+      }
+      List<BigDecimal> shares =
+          Money.proRata(limit, group.stream().map(cell -> cell.payable).toList());
+      for (int i = 0; i < group.size(); i++) {
+        caps.put(cellKey(group.get(i)), shares.get(i));
+      }
+    }
+    return caps;
   }
 
   /** 各池<b>扣除发票级免赔后的</b>有效基数之和（GAP②）。年度免赔（GAP④）必须基于这一基数， 否则发票级免赔会被年度免赔重新叠加（双重计数 ⇒ 系统性多扣）。 */
@@ -1189,13 +1495,10 @@ public final class AdjustmentEngine {
      */
     QuotaStack.Result cap(List<Cell> cells, LiabilityRule liabilityRule, List<String> trace) {
       List<QuotaStack.Group> groups = new ArrayList<>(cells.size());
-      Map<String, BigDecimal> groupCaps = new LinkedHashMap<>();
       for (Cell cell : cells) {
-        groups.add(new QuotaStack.Group(cell.bucket.name(), cell.payable));
-        if (cell.feeLimit != null && cell.feeLimit.signum() > 0) {
-          groupCaps.put(cell.bucket.name(), cell.feeLimit);
-        }
+        groups.add(new QuotaStack.Group(cellKey(cell), cell.payable));
       }
+      Map<String, BigDecimal> groupCaps = groupCapsOf(cells);
 
       List<QuotaStack.LayerQuota> layers = new ArrayList<>();
       // 顺序即截断顺序，按 V1 §7.2：③ 次限额（在 Demand 内预截断）→ ④ 共保 → ⑤ 责任 → ⑥ 险种 → ⑦ 计划
@@ -1238,7 +1541,7 @@ public final class AdjustmentEngine {
         cell.remaining = remainingAfter;
         // 控额归因必须逐组带回来：QuotaStack 已经算好"这一组被哪一维截断"，此处不接就等于白算——
         // 少赔的客户解释、双跑差异归因（MOU「差异可归因率 ≥95%」）、后督抽检都要这一维标识。
-        cell.cappedBy = group.cappedBy();
+        cell.cappedBy = appendCapped(cell.cappedBy, group.cappedBy());
       }
       // "本年度额度已用尽"与"本案单次超限"的解释不同，靠截断层可用额为 0 来区分
       for (QuotaStack.Step step : result.steps()) {
@@ -1724,6 +2027,7 @@ public final class AdjustmentEngine {
     sb.append("\"feeRemain\":").append(num(Money.round(remain))).append(',');
     sb.append("\"total\":").append(num(Money.round(total))).append(',');
     append(sb, "zeroReason", zeroReason);
+    appendFeeRules(sb, rule);
     sb.append("\"pools\":{");
     boolean firstPool = true;
     for (FeePools.Pool pool : pools.pools()) {
@@ -1766,11 +2070,14 @@ public final class AdjustmentEngine {
    */
   private static List<Line> poolLevelLines(List<Line> lines) {
     // 只合并**相邻**同池行：跨分组（次限额分组）的同名池必须各自成行，否则快照会把两组的
-    // 赔付混成一条，复算时看不出"这一次为什么只赔这么多"。
+    // 赔付混成一条，复算时看不出"这一次为什么只赔这么多"。同一池内不同费用类别同理：类别比例不同，
+    // 合并会让复算时找不到"这一行是按哪个比例算的"。
     List<Line> merged = new ArrayList<>();
     for (Line line : lines) {
       int last = merged.size() - 1;
-      if (last >= 0 && merged.get(last).bucket().equals(line.bucket())) {
+      if (last >= 0
+          && merged.get(last).bucket().equals(line.bucket())
+          && merged.get(last).feeCode().equals(line.feeCode())) {
         merged.set(last, mergeLine(merged.get(last), line));
       } else {
         merged.add(line);
@@ -1795,10 +2102,15 @@ public final class AdjustmentEngine {
         left.rejectType(),
         left.cappedBy(),
         null,
-        null);
+        null,
+        left.feeCode());
   }
 
   private static String lineJson(Line line) {
+    // feeCode 仅在非空时输出：未配类别规则的责任快照必须与引入前逐字一致，
+    // 否则每个历史案子的 formula_hash 都会变，"同输入同输出"这条硬不变量当场失效。
+    String feeTag =
+        line.feeCode().isEmpty() ? "" : ",\"feeCode\":\"" + jsonText(line.feeCode()) + "\"";
     return "{"
         + "\"bucket\":\""
         + line.bucket()
@@ -1814,7 +2126,35 @@ public final class AdjustmentEngine {
         + line.zeroReason()
         + "\",\"cappedBy\":\""
         + line.cappedBy()
-        + "\"}";
+        + "\""
+        + feeTag
+        + "}";
+  }
+
+  /** 最小 JSON 文本转义（类别编码来自配置表，也可能被直连数据库改坏；一个引号就能让整段快照失效）。 */
+  private static String jsonText(String value) {
+    if (value == null || value.isEmpty()) {
+      return "";
+    }
+    StringBuilder sb = new StringBuilder(value.length() + 4);
+    for (int i = 0; i < value.length(); i++) {
+      char ch = value.charAt(i);
+      switch (ch) {
+        case '"' -> sb.append("\\\"");
+        case '\\' -> sb.append("\\\\");
+        case '\n' -> sb.append("\\n");
+        case '\r' -> sb.append("\\r");
+        case '\t' -> sb.append("\\t");
+        default -> {
+          if (ch < 0x20) {
+            sb.append(' ');
+          } else {
+            sb.append(ch);
+          }
+        }
+      }
+    }
+    return sb.toString();
   }
 
   private static String itemsJson(List<ClaimWithItemsProjection> rows) {
@@ -1853,6 +2193,41 @@ public final class AdjustmentEngine {
     sb.append('"').append(key).append("\":\"").append(value == null ? "" : value).append("\",");
   }
 
+  /**
+   * 物化生效的费用类别规则（{@code formula_snapshot.feeRules}）。
+   *
+   * <p><b>为什么必须进快照</b>：类别规则挂在配置态（{@code liability_uuid}，非版本态），库里随时可改。 若快照只记 {@code
+   * liabilityUuid}，历史案件复算时会读到"今天"的规则，算出与当初不同的金额—— 复算校验（{@code
+   * formula_hash}）当场报不一致，而真正的原因是规则被改过、不是账错了。物化后每个案子自带它当时的口径。
+   *
+   * <p><b>未配置时一个字节都不追加</b>：否则存量案件的快照形态整体改变，{@code formula_hash} 全线漂移。
+   */
+  private static void appendFeeRules(StringBuilder sb, LiabilityRule rule) {
+    if (!rule.hasFeeRules()) {
+      return;
+    }
+    sb.append("\"feeRules\":[");
+    boolean first = true;
+    for (LiabilityRule.FeeCategoryRule feeRule : rule.feeRules()) {
+      if (!first) {
+        sb.append(',');
+      }
+      first = false;
+      sb.append("{\"feeCode\":\"")
+          .append(jsonText(feeRule.feeCode()))
+          .append("\",\"feeName\":\"")
+          .append(jsonText(feeRule.feeName()))
+          .append("\",\"payPercent\":")
+          .append(num(feeRule.payPercent()))
+          .append(",\"limitAmount\":")
+          .append(num(Money.round(feeRule.limitAmount())))
+          .append(",\"socialOnly\":")
+          .append(feeRule.socialOnly())
+          .append('}');
+    }
+    sb.append("],");
+  }
+
   private static void appendArray(StringBuilder sb, String key, List<String> values) {
     sb.append('"').append(key).append("\":[");
     for (int i = 0; i < values.size(); i++) {
@@ -1873,6 +2248,22 @@ public final class AdjustmentEngine {
   /** 一个费用池的理算中间态（局部可变，不逃逸出引擎）。 */
   private static final class Cell {
     private final FeePools.Bucket bucket;
+
+    /**
+     * 费用类别编码（{@code ""} = 未拆类别 / 未配置规则 / 未分类）。
+     *
+     * <p>三者都用空串是刻意的：它们对控额与归因的影响完全相同（都按责任统一比例、都进池级子限额）， 差别只在诊断文案里。若为此造三个状态位，后续每个分支都要判三次，而金额结果一模一样。
+     */
+    private final String feeCode;
+
+    /**
+     * 单元是否"整池一个"（未拆类别）。
+     *
+     * <p>逐项归因要靠它决定"按池取全部费用项"还是"只取该类别的那几项"：未拆类别时池内所有费用项都参与， 拆了类别时只能取本类别的项，否则同一笔费用会被多个单元各分一次（Σ 明细
+     * &gt; 总额，I1 立刻破裂）。
+     */
+    private final boolean bucketWide;
+
     private final String label;
     private final BigDecimal base;
     private final BigDecimal inScope;
@@ -1908,6 +2299,8 @@ public final class AdjustmentEngine {
 
     Cell(
         FeePools.Bucket bucket,
+        String feeCode,
+        boolean bucketWide,
         String label,
         BigDecimal base,
         BigDecimal inScope,
@@ -1915,6 +2308,8 @@ public final class AdjustmentEngine {
         BigDecimal ratioPercent,
         BigDecimal feeLimit) {
       this.bucket = bucket;
+      this.feeCode = feeCode == null ? "" : feeCode;
+      this.bucketWide = bucketWide;
       this.label = label;
       this.base = base;
       this.inScope = inScope;
