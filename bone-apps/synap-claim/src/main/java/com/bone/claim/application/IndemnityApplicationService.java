@@ -132,6 +132,10 @@ public class IndemnityApplicationService {
         catalog.asOf(),
         catalog.verdicts(),
         feeRulesOf(liability));
+    // 重算 = 用同一 calculation_id 重出一套归因。聚合级联写的 orphanRemoval 是 false
+    // （否则 confirm() 这类"只改状态、不带集合"的 save 会把归因行全软删），
+    // 故旧行不会自动清理——不显式删，同一 calculation_id 下会叠出多套互相矛盾的逐行归因。
+    adjustmentRepository.supersedeLinesByCalculationId(latest.getId());
     adjustmentRepository.save(latest);
     domainEventPublisher.publishFrom(latest);
     return toResult(latest);

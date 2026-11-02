@@ -112,6 +112,7 @@ parts = ds.split(total, 2)           # Σ == total
 | `app-to-data-full-chain-e2e.py` | 设备巡检工单：应用→模块→模型→界面→发布→数据全生命周期 + MySQL 落库核查 | 54 |
 | `ui-schema-samples-e2e.py` | 界面协议样例对账：submitRules/linkage 服务端强制（直连 metadata :9001） | 31 |
 | `claim-full-chain-e2e.mjs` | 智能理赔 A1-A9 全链：7 分支（小额直付/大额双人复核/拒赔申诉维持·推翻/补件/挂起/决策图/后督抽检）+ SoD + 负向 + MySQL 落库对账 + 额度夹具跨轮整备（可用额度回种子水位，保证复跑可绿）；造数全走 `fixtures`（同 STAMP 同数据） | 59 |
+| `claim-fee-category-e2e.mjs` | **费用类别规则真的进入理算**（0094 规则 → 0095 明细 `fee_code` → 引擎消费）：配规则（手术费 100% / 材料费 60% 限 500）→ 报案三笔带 `feeCode` 明细 → 理算逐行归因（比例/封顶/回落 + `cappedBy`）；**双向判别**：撤规则同案重算必须回到责任统一比例 90%，两向总额不同才算规则真生效；另含「写回不许抹列」回归守卫（`fee_code`/`department` 在初审回填后仍须存在）、重算不叠加旧归因（在用行数恒 3）、目录校验负向探针；收尾无条件还原共享责任规则 | 28 |
 | `workflow-org-routing-e2e.py` | **组织路由 + 审批人解析**（见 [ADR-0045](../../doc/architecture/adr/0045-org-modeling-frontend-backend-integration-defect-closure.md)）：企业组织基线**全走 IAM HTTP API 自建**（5 部门 / 8 账号 / 1 角色 / 6 权限，非 SQL 直插）；S1 LINE_MANAGER 路由（表单故意塞 CEO 当 `approver_id` 干扰值 ⇒ 待办仍派给直属主管，**判别力来自诱饵**）/ S2 DEPT_HEAD / S3 审批闭环 / S4 fail-closed 挂起（无主管 ⇒ SUSPENDED + 原因落 `wf_status_outbox` + **不建 `wf_task`**）/ S5 大额会签（幽灵账号 9104/9105 种子债）/ S6 安全红线（`iam_account ∉ meta_entity`）；双证据源 = HTTP 断言 + MySQL 直查；**幂等**（连跑部门恒 5、账号恒 8） | 32 |
 
 ### 4.2 跨模块联调链（走网关）

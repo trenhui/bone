@@ -208,7 +208,7 @@ public class ScenarioHarness {
     quotaSvc = new QuotaApplicationService(quotaRepo);
     settleSvc =
         new SettlementApplicationService(
-            settleRepo, quotaSvc, indemnitySvc, claimSvc, tenantPort, events);
+            settleRepo, quotaSvc, indemnitySvc, claimSvc, tenantPort, events, adjRepo);
     autoApproveSvc =
         new AutoApprovalApplicationService(claimSvc, settleSvc, indemnitySvc, decExecSvc);
     decisionRun = new DecisionRunApplicationService(decisionExecutor, autoApproveSvc, decExecSvc);
@@ -670,6 +670,17 @@ public class ScenarioHarness {
           .filter(a -> Objects.equals(a.getClaimId(), claimId))
           .max(Comparator.comparingLong(Adjustment::getId))
           .orElse(null);
+    }
+
+    /**
+     * 内存态：归因行挂在聚合内、重算即整体替换集合，故"清旧行"无副作用。
+     *
+     * <p>真实库的旧行叠加只出现在 SQL 层（级联写 orphanRemoval=false），由 {@code
+     * scripts/e2e/claim-fee-category-e2e.mjs} 的「撤规则后逐行比例全为 90%」守住。
+     */
+    @Override
+    public int supersedeLinesByCalculationId(long id) {
+      return 0;
     }
 
     @Override
