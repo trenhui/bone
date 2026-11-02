@@ -513,10 +513,11 @@ async function main() {
     negAmount.status >= 400 && negAmount.status < 500,
     `实际 ${negAmount.status} ${JSON.stringify(negAmount.data).slice(0, 200)}`);
 
-  // **契约固化（不是缺陷断言）**：责任额度上限为负，当前实现按「不封顶」解释
-  // （LiabilityRule#liabilityUncapped：limit<=0 ⇒ 不封顶，见 assertRuleUsable
-  // 注释「责任额度为负按不封顶解释」）。该语义目前**无文档背书**，是并行会话
-  // 写进代码的既定契约；此处断言"行为未被静默改动"，改动该语义需同步改此断言。
+  // 负向：责任额度上限为负 ⇒ 4xx。
+  // 负数额度在理算期被解释为「不封顶」（LiabilityRule#liabilityUncapped：signum()<=0），
+  // 也就是「运营手滑写错一个数 ⇒ 该责任静默变成无限额赔付」——赔得**更多**，风险方向
+  // 与免赔/日限额相反。reference-impl S25 的契约是「额度 0 表示不限制」，负数从未被定义过。
+  // 写入期已收紧为「拒绝负数、0 与不填仍合法」（0096 同步把存量负数归一为 0）。
   const negLimit = await call('POST', `${P}/liabilities`, {
     planId: planIds[PLANS[0].code],
     coverageId: firstCoverageId,
@@ -525,9 +526,22 @@ async function main() {
     payPercent: '90',
     liabilityLimit: '-100',
   });
-  check('建责任（责任额度上限为负）→ 200 且按「不封顶」语义落库（契约固化）',
-    negLimit.status === 200 && String(negLimit.data?.data?.liabilityLimit) === '-100',
-    `实际 ${negLimit.status} limit=${negLimit.data?.data?.liabilityLimit}`);
+  check('建责任（责任额度上限为负）→ 4xx（负数会被按「不封顶」解释，须拒绝）',
+    negLimit.status >= 400 && negLimit.status < 500,
+    `实际 ${negLimit.status} ${JSON.stringify(negLimit.data).slice(0, 200)}`);
+
+  // 正向钉子：**0 仍合法**且语义是「不封顶」——收紧不得做成过度收紧（否则运营无路可走）。
+  const zeroLimit = await call('POST', `${P}/liabilities`, {
+    planId: planIds[PLANS[0].code],
+    coverageId: firstCoverageId,
+    liabilityCode: ds.doc_no('R06'),
+    liabilityType: 'REIMBURSEMENT',
+    payPercent: '90',
+    liabilityLimit: '0',
+  });
+  check('建责任（责任额度上限为 0）→ 200 且按「不封顶」落库（防过度收紧的正向钉子）',
+    zeroLimit.status === 200 && String(zeroLimit.data?.data?.liabilityLimit) === '0',
+    `实际 ${zeroLimit.status} limit=${zeroLimit.data?.data?.liabilityLimit}`);
 
   // 负向：计划不存在 ⇒ 4xx（外键完整性，不造孤儿责任）
   const badPlanLiab = await call('POST', `${P}/liabilities`, {
