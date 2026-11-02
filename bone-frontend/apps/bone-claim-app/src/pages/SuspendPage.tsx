@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
-import { Alert, Button, Card, Descriptions, Select, Space, Tag, Typography, message } from 'antd';
+import { Alert, Card, Descriptions, Select, Space, Tag, Typography, message } from 'antd';
 import { PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { PageHeader } from '../components/PageHeader';
 import { CaseIdBar, CaseNotSelected } from '../components/CaseIdBar';
@@ -7,6 +7,8 @@ import { useClaimIdParam } from '../hooks/useClaimIdParam';
 import { claimApi, type ClaimWithItemsProjection, type HangUpType } from '../services/claimApi';
 import { claimStatusMeta } from '../services/claimStatus';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
+import { AuthButton } from '@bone/ui';
+import { PERMISSIONS } from '../constants/permissions';
 
 /**
  * 挂起/恢复（正交挂起机制，不改状态码；FRAUD 仅风控岗可恢复）。
@@ -151,7 +153,8 @@ export function SuspendPage(): ReactElement {
                 options={HANGUP_TYPES}
                 disabled={hung}
               />
-              <Button
+              <AuthButton
+                code={PERMISSIONS.REVIEW_WRITE}
                 danger
                 icon={<PauseCircleOutlined />}
                 loading={acting}
@@ -159,15 +162,16 @@ export function SuspendPage(): ReactElement {
                 onClick={() => void onHangUp()}
               >
                 挂起
-              </Button>
-              <Button
+              </AuthButton>
+              <AuthButton
+                code={PERMISSIONS.REVIEW_WRITE}
                 icon={<PlayCircleOutlined />}
                 loading={acting}
                 disabled={!hung}
                 onClick={() => void onResume()}
               >
                 恢复
-              </Button>
+              </AuthButton>
               {hung && (
                 <Typography.Text type="secondary">
                   已挂起，须先恢复才能重新挂起

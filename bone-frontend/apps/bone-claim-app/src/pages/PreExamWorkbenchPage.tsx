@@ -26,6 +26,8 @@ import {
 import { PRE_EXAM_TODO_STATUSES, claimStatusMeta, statusOptions } from '../services/claimStatus';
 import { PageHeader } from '../components/PageHeader';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
+import { AuthButton } from '@bone/ui';
+import { PERMISSIONS } from '../constants/permissions';
 
 /**
  * 初审工作台（打通案件 7→10→11/13→12→40 这一段）。
@@ -282,21 +284,27 @@ export function PreExamWorkbenchPage(): ReactElement {
                       cancelText="取消"
                       onConfirm={() => onAllocate(row)}
                     >
-                      <Button type="link" size="small" loading={rowBusy(row)}>
+                      <AuthButton
+                        code={PERMISSIONS.REVIEW_WRITE}
+                        type="link"
+                        size="small"
+                        loading={rowBusy(row)}
+                      >
                         分配初审
-                      </Button>
+                      </AuthButton>
                     </Popconfirm>
                   )}
                   {row.status === 'PENDING_PRE_EXAM' && (
                     <>
-                      <Button
+                      <AuthButton
+                        code={PERMISSIONS.REVIEW_WRITE}
                         type="link"
                         size="small"
                         loading={rowBusy(row)}
                         onClick={() => onStart(row, false)}
                       >
                         开始初审
-                      </Button>
+                      </AuthButton>
                       <Popconfirm
                         title="自动化初审"
                         description="交给决策图自动初审？结论仍受确定性规则约束。"
@@ -304,15 +312,22 @@ export function PreExamWorkbenchPage(): ReactElement {
                         cancelText="取消"
                         onConfirm={() => onStart(row, true)}
                       >
-                        <Button type="link" size="small" icon={<ThunderboltOutlined />} loading={rowBusy(row)}>
+                        <AuthButton
+                          code={PERMISSIONS.REVIEW_WRITE}
+                          type="link"
+                          size="small"
+                          icon={<ThunderboltOutlined />}
+                          loading={rowBusy(row)}
+                        >
                           自动化
-                        </Button>
+                        </AuthButton>
                       </Popconfirm>
                     </>
                   )}
                   {(row.status === 'PRE_EXAMINING' || row.status === 'AUTO_PRE_EXAMINING') && (
                     <>
-                      <Button
+                      <AuthButton
+                        code={PERMISSIONS.REVIEW_WRITE}
                         type="link"
                         size="small"
                         icon={<CheckCircleOutlined />}
@@ -320,7 +335,7 @@ export function PreExamWorkbenchPage(): ReactElement {
                         onClick={() => openComplete(row)}
                       >
                         完成初审
-                      </Button>
+                      </AuthButton>
                       <Popconfirm
                         title="转人工核赔"
                         description="初审后仍需资金/责任判断，转核赔工作台处理？"
@@ -328,9 +343,15 @@ export function PreExamWorkbenchPage(): ReactElement {
                         cancelText="取消"
                         onConfirm={() => onEscalate(row)}
                       >
-                        <Button type="link" size="small" icon={<UserSwitchOutlined />} loading={rowBusy(row)}>
+                        <AuthButton
+                          code={PERMISSIONS.REVIEW_WRITE}
+                          type="link"
+                          size="small"
+                          icon={<UserSwitchOutlined />}
+                          loading={rowBusy(row)}
+                        >
                           转核赔
-                        </Button>
+                        </AuthButton>
                       </Popconfirm>
                     </>
                   )}

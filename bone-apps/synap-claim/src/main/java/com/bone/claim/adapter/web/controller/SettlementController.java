@@ -3,20 +3,25 @@ package com.bone.claim.adapter.web.controller;
 import com.bone.claim.application.SettlementApplicationService;
 import com.bone.claim.application.SettlementApplicationService.SettlementResult;
 import com.bone.claim.domain.model.settlement.AccountType;
+import com.bone.core.idempotency.IdempotencyService;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.security.auth.CurrentOperator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class SettlementController {
 
   private final SettlementApplicationService settlementApplicationService;
+  private final IdempotencyService idempotencyService;
 
   public record CreateSettlementReq(
       @NotNull(message = "占额周期序号必填") Integer attempt, AccountType accountType) {}
@@ -74,13 +80,37 @@ public class SettlementController {
         settlementApplicationService.confirmReview(claimId, CurrentOperator.requireId()));
   }
 
-  @Operation(summary = "支付成功（额度 frozen→claim）")
+  @Operation(
+      summary = "支付成功（额度 frozen→claim）",
+      description = "出金幂等：同 Idempotency-Key 重复请求返回首次结果，防「已付但响应丢失」的重试二次出金")
   @PreAuthorize("hasAuthority('claim:settlement:write')")
   @PostMapping("/pay")
   public ApiResponse<SettlementResult> pay(
-      @Parameter(description = "案件ID") @PathVariable long claimId) {
-    return ApiResponse.success(
-        settlementApplicationService.pay(claimId, CurrentOperator.requireId()));
+      @Parameter(description = "案件ID") @PathVariable long claimId,
+      @Parameter(description = "幂等键（UUID v4）；不传则不启用幂等")
+          @RequestHeader(value = IdempotencyService.IDEMPOTENCY_KEY_HEADER, required = false)
+          String idempotencyKey,
+      HttpServletRequest httpRequest) {
+    Optional<IdempotencyService.ReplayedResponse> replayed =
+        idempotencyService.replay(
+            idempotencyKey,
+            MDC.get("userId"),
+            httpRequest.getMethod(),
+            httpRequest.getRequestURI(),
+            claimId);
+    if (replayed.isPresent()) {
+      return replayOf(replayed.get());
+    }
+    ApiResponse<SettlementResult> body =
+        ApiResponse.success(settlementApplicationService.pay(claimId, CurrentOperator.requireId()));
+    idempotencyService.remember(
+        idempotencyKey,
+        MDC.get("userId"),
+        httpRequest.getMethod(),
+        httpRequest.getRequestURI(),
+        claimId,
+        new IdempotencyService.ReplayedResponse(HttpStatus.OK.value(), null, body));
+    return body;
   }
 
   @Operation(summary = "撤销/拒赔/支付失败（释放预占）")
@@ -94,13 +124,36 @@ public class SettlementController {
             claimId, CurrentOperator.requireId(), Boolean.TRUE.equals(request.payFailed())));
   }
 
-  @Operation(summary = "已付退票退款（红冲并回冲额度）")
+  @Operation(summary = "已付退票退款（红冲并回冲额度）", description = "退款幂等：同 Idempotency-Key 重复请求返回首次结果，防重复红冲")
   @PreAuthorize("hasAuthority('claim:settlement:write')")
   @PostMapping("/refund")
   public ApiResponse<SettlementResult> refund(
-      @Parameter(description = "案件ID") @PathVariable long claimId) {
-    return ApiResponse.success(
-        settlementApplicationService.refund(claimId, CurrentOperator.requireId()));
+      @Parameter(description = "案件ID") @PathVariable long claimId,
+      @Parameter(description = "幂等键（UUID v4）；不传则不启用幂等")
+          @RequestHeader(value = IdempotencyService.IDEMPOTENCY_KEY_HEADER, required = false)
+          String idempotencyKey,
+      HttpServletRequest httpRequest) {
+    Optional<IdempotencyService.ReplayedResponse> replayed =
+        idempotencyService.replay(
+            idempotencyKey,
+            MDC.get("userId"),
+            httpRequest.getMethod(),
+            httpRequest.getRequestURI(),
+            claimId);
+    if (replayed.isPresent()) {
+      return replayOf(replayed.get());
+    }
+    ApiResponse<SettlementResult> body =
+        ApiResponse.success(
+            settlementApplicationService.refund(claimId, CurrentOperator.requireId()));
+    idempotencyService.remember(
+        idempotencyKey,
+        MDC.get("userId"),
+        httpRequest.getMethod(),
+        httpRequest.getRequestURI(),
+        claimId,
+        new IdempotencyService.ReplayedResponse(HttpStatus.OK.value(), null, body));
+    return body;
   }
 
   @Operation(summary = "查询最新结算单")
@@ -109,5 +162,12 @@ public class SettlementController {
   public ApiResponse<SettlementResult> latest(
       @Parameter(description = "案件ID") @PathVariable long claimId) {
     return ApiResponse.success(settlementApplicationService.latest(claimId));
+  }
+
+  /** 幂等重放：快照里存的是首次成功响应（含统一信封），直接还原为同一响应体。 */
+  @SuppressWarnings("unchecked")
+  private static ApiResponse<SettlementResult> replayOf(
+      IdempotencyService.ReplayedResponse snapshot) {
+    return (ApiResponse<SettlementResult>) snapshot.body();
   }
 }

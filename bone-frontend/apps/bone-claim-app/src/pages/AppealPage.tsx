@@ -19,6 +19,8 @@ import { useClaimIdParam } from '../hooks/useClaimIdParam';
 import { appealApi, type AppealReviewResult, type AppealResult } from '../services/claimApi';
 import { claimStatusMeta } from '../services/claimStatus';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
+import { AuthButton } from '@bone/ui';
+import { PERMISSIONS } from '../constants/permissions';
 
 /**
  * 申诉复议页（A8）。
@@ -186,9 +188,14 @@ export function AppealPage(): ReactElement {
                     cancelText="取消"
                     onConfirm={() => void onSubmit()}
                   >
-                    <Button type="primary" icon={<FileProtectOutlined />} loading={acting}>
+                    <AuthButton
+                      code={PERMISSIONS.APPEAL_WRITE}
+                      type="primary"
+                      icon={<FileProtectOutlined />}
+                      loading={acting}
+                    >
                       发起申诉
-                    </Button>
+                    </AuthButton>
                   </Popconfirm>
                 </Space>
               </Card>
@@ -219,9 +226,9 @@ export function AppealPage(): ReactElement {
                     cancelText="取消"
                     onConfirm={() => void onReview()}
                   >
-                    <Button type="primary" loading={acting}>
+                    <AuthButton code={PERMISSIONS.APPEAL_WRITE} type="primary" loading={acting}>
                       提交复议结论
-                    </Button>
+                    </AuthButton>
                   </Popconfirm>
                 </Space>
               </Card>

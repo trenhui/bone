@@ -26,6 +26,8 @@ import { PageHeader } from '../components/PageHeader';
 import { CaseIdBar, CaseNotSelected } from '../components/CaseIdBar';
 import { useClaimIdParam } from '../hooks/useClaimIdParam';
 import { resolveErrorMessage } from '@bone/shared-utils';
+import { AuthButton } from '@bone/ui';
+import { PERMISSIONS } from '../constants/permissions';
 
 /**
  * 材料上传页（synapClaim A2，登记 + 展示）。
@@ -286,9 +288,14 @@ export function EvidenceUploadPage(): ReactElement {
                 placeholder="材料类型"
               />
               <Upload beforeUpload={beforeUpload} showUploadList={false} multiple>
-                <Button type="primary" icon={<UploadOutlined />} loading={jobList.length > 0}>
+                <AuthButton
+                  code={PERMISSIONS.CLAIMS_WRITE}
+                  type="primary"
+                  icon={<UploadOutlined />}
+                  loading={jobList.length > 0}
+                >
                   选择并上传材料
-                </Button>
+                </AuthButton>
               </Upload>
               <Popconfirm
                 title="锁定后不可再上传或回填"
@@ -298,13 +305,14 @@ export function EvidenceUploadPage(): ReactElement {
                 disabled={allLocked || rows.length === 0}
                 onConfirm={() => void onLock()}
               >
-                <Button
+                <AuthButton
+                  code={PERMISSIONS.CLAIMS_WRITE}
                   icon={<LockOutlined />}
                   loading={locking}
                   disabled={allLocked || rows.length === 0}
                 >
                   锁定证据集{allLocked ? '（已锁定）' : ''}
-                </Button>
+                </AuthButton>
               </Popconfirm>
               <Typography.Text type="secondary">
                 单案件最多 20 份；相同内容哈希的材料会被去重。

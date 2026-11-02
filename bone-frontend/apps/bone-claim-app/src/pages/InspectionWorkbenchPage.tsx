@@ -26,6 +26,8 @@ import { PageHeader } from '../components/PageHeader';
 import { CaseIdBar, CaseNotSelected } from '../components/CaseIdBar';
 import { useClaimIdParam } from '../hooks/useClaimIdParam';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
+import { AuthButton } from '@bone/ui';
+import { PERMISSIONS } from '../constants/permissions';
 
 /**
  * 后督抽检工作台（A9 / §7.6）。
@@ -321,9 +323,13 @@ export function InspectionWorkbenchPage(): ReactElement {
                   title="登记抽检结论（#14）"
                   extra={
                     inspection.status === 'PENDING' ? (
-                      <Button loading={acting} onClick={onClaim}>
+                      <AuthButton
+                        code={PERMISSIONS.INSPECTION_WRITE}
+                        loading={acting}
+                        onClick={onClaim}
+                      >
                         领取任务
-                      </Button>
+                      </AuthButton>
                     ) : null
                   }
                 >
@@ -438,9 +444,14 @@ export function InspectionWorkbenchPage(): ReactElement {
                     )}
 
                     <Space style={{ marginTop: 16 }}>
-                      <Button type="primary" loading={acting} onClick={onConclude}>
+                      <AuthButton
+                        code={PERMISSIONS.INSPECTION_WRITE}
+                        type="primary"
+                        loading={acting}
+                        onClick={onConclude}
+                      >
                         提交结论（终态）
-                      </Button>
+                      </AuthButton>
                       <Typography.Text type="secondary">
                         提交后不可修改；差异案件的重算/退款编排属 V2，本期只登记处置意图。
                       </Typography.Text>

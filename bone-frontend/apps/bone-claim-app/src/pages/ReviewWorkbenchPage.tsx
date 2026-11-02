@@ -36,6 +36,8 @@ import { claimStatusMeta } from '../services/claimStatus';
 import { consumptionReasonMeta } from '../services/decisionConsumption';
 import { rejectReasonGroups } from '../services/rejectReason';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
+import { AuthButton } from '@bone/ui';
+import { PERMISSIONS } from '../constants/permissions';
 
 /**
  * 核赔工作台 · 待办审核页（synapClaim 一期）。
@@ -379,7 +381,8 @@ export function ReviewWorkbenchPage(): ReactElement {
                     决策图
                   </Button>
                   {row.status === 'PENDING_ADJUST' && (
-                    <Button
+                    <AuthButton
+                      code={PERMISSIONS.REVIEW_WRITE}
                       type="link"
                       size="small"
                       loading={actingId === row.claimId}
@@ -388,23 +391,40 @@ export function ReviewWorkbenchPage(): ReactElement {
                       }
                     >
                       领取
-                    </Button>
+                    </AuthButton>
                   )}
                   {row.status === 'ADJUSTING' && (
                     <>
-                      <Button type="link" size="small" onClick={() => openDecision(row, 'APPROVED')}>
+                      <AuthButton
+                        code={PERMISSIONS.REVIEW_WRITE}
+                        type="link"
+                        size="small"
+                        onClick={() => openDecision(row, 'APPROVED')}
+                      >
                         通过
-                      </Button>
-                      <Button type="link" size="small" danger onClick={() => openDecision(row, 'REJECTED')}>
+                      </AuthButton>
+                      <AuthButton
+                        code={PERMISSIONS.REVIEW_WRITE}
+                        type="link"
+                        size="small"
+                        danger
+                        onClick={() => openDecision(row, 'REJECTED')}
+                      >
                         拒赔
-                      </Button>
-                      <Button type="link" size="small" onClick={() => openDecision(row, 'REQUEST_MORE_EVIDENCE')}>
+                      </AuthButton>
+                      <AuthButton
+                        code={PERMISSIONS.REVIEW_WRITE}
+                        type="link"
+                        size="small"
+                        onClick={() => openDecision(row, 'REQUEST_MORE_EVIDENCE')}
+                      >
                         补件
-                      </Button>
+                      </AuthButton>
                     </>
                   )}
                   {row.status === 'ADJUSTED' && row.claimAmount >= REVIEW_THRESHOLD && (
-                    <Button
+                    <AuthButton
+                      code={PERMISSIONS.REVIEW_WRITE}
                       type="link"
                       size="small"
                       loading={actingId === row.claimId}
@@ -418,17 +438,18 @@ export function ReviewWorkbenchPage(): ReactElement {
                       }
                     >
                       发起双人复核
-                    </Button>
+                    </AuthButton>
                   )}
                   {row.status === 'REVIEWING' && (
-                    <Button
+                    <AuthButton
+                      code={PERMISSIONS.REVIEW_WRITE}
                       type="link"
                       size="small"
                       icon={<CheckCircleOutlined />}
                       onClick={() => setReviewTarget(row)}
                     >
                       复核结论
-                    </Button>
+                    </AuthButton>
                   )}
                 </Space>
               ),

@@ -30,6 +30,8 @@ import { PageHeader } from '../components/PageHeader';
 import { CaseIdBar, CaseNotSelected } from '../components/CaseIdBar';
 import { useClaimIdParam } from '../hooks/useClaimIdParam';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
+import { AuthButton } from '@bone/ui';
+import { PERMISSIONS } from '../constants/permissions';
 
 /**
  * 资金工作台（synapClaim A7，手写不低代码化）。
@@ -200,35 +202,69 @@ export function FundWorkbenchPage(): ReactElement {
                       { value: 'NO_ACCOUNT', label: '无账户' },
                     ]}
                   />
-                  <Button type="primary" icon={<PlusOutlined />} loading={acting} onClick={onCreate}>
-                  建结算单
-                  </Button>
+                  <AuthButton
+                    code={PERMISSIONS.SETTLEMENT_WRITE}
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    loading={acting}
+                    onClick={onCreate}
+                  >
+                    建结算单
+                  </AuthButton>
                 </>
               )}
               {stage === 'SOFT_RESERVED' && (
-                <Button type="primary" icon={<CheckCircleOutlined />} loading={acting} onClick={onAuditPass}>
-                审核通过
-                </Button>
+                <AuthButton
+                  code={PERMISSIONS.SETTLEMENT_WRITE}
+                  type="primary"
+                  icon={<CheckCircleOutlined />}
+                  loading={acting}
+                  onClick={onAuditPass}
+                >
+                  审核通过
+                </AuthButton>
               )}
               {stage === 'REVIEW_FREEZE' && (
-                <Button type="primary" icon={<CheckCircleOutlined />} loading={acting} onClick={onConfirmReview}>
-                复核放行（第二人）
-                </Button>
+                <AuthButton
+                  code={PERMISSIONS.SETTLEMENT_WRITE}
+                  type="primary"
+                  icon={<CheckCircleOutlined />}
+                  loading={acting}
+                  onClick={onConfirmReview}
+                >
+                  复核放行（第二人）
+                </AuthButton>
               )}
               {stage === 'HARD_RESERVED' && (
-                <Button type="primary" icon={<BankOutlined />} loading={acting} onClick={onPay}>
-                支付
-                </Button>
+                <AuthButton
+                  code={PERMISSIONS.SETTLEMENT_WRITE}
+                  type="primary"
+                  icon={<BankOutlined />}
+                  loading={acting}
+                  onClick={onPay}
+                >
+                  支付
+                </AuthButton>
               )}
               {(stage === 'SOFT_RESERVED' || isOccupied(stage)) && (
-                <Button icon={<StopOutlined />} loading={acting} onClick={onCancel}>
-                撤销/拒赔
-                </Button>
+                <AuthButton
+                  code={PERMISSIONS.SETTLEMENT_WRITE}
+                  icon={<StopOutlined />}
+                  loading={acting}
+                  onClick={onCancel}
+                >
+                  撤销/拒赔
+                </AuthButton>
               )}
               {stage === 'PAID' && (
-                <Button icon={<RollbackOutlined />} loading={acting} onClick={onRefund}>
-                退票退款
-                </Button>
+                <AuthButton
+                  code={PERMISSIONS.SETTLEMENT_WRITE}
+                  icon={<RollbackOutlined />}
+                  loading={acting}
+                  onClick={onRefund}
+                >
+                  退票退款
+                </AuthButton>
               )}
               {terminal && stage && (
                 <Tag color={STAGE_META[stage]?.color ?? 'default'}>{STAGE_META[stage]?.label ?? stage}</Tag>
