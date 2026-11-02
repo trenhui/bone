@@ -14,6 +14,8 @@ import { SchemaRenderer, resolveVisibleActions } from '@bone/ui-schema';
 import type { BoneUiSchema } from '@bone/ui-schema';
 import adjustSchema from '../schemas/adjust-attribution.ui-schema.json';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
+import { AuthButton } from '@bone/ui';
+import { PERMISSIONS } from '../constants/permissions';
 
 /**
  * 理算归因页（synapClaim A6，只读展示）—— **由 UI Schema JSON 真正驱动**。
@@ -248,8 +250,9 @@ export function AdjustmentAttributionPage(): ReactElement {
               刷新
             </Button>
             {visibleActions.map((a, i) => (
-              <Button
+              <AuthButton
                 key={a.actionCode}
+                code={PERMISSIONS.REVIEW_WRITE}
                 type={i === 0 ? 'primary' : 'default'}
                 loading={acting}
                 // 未选案件时禁用：理算/确认都针对具体案件，点了只会白跑一次请求再报错。
@@ -257,7 +260,7 @@ export function AdjustmentAttributionPage(): ReactElement {
                 onClick={() => void handleAction(a.actionCode)}
               >
                 {ACTION_LABELS[a.actionCode] ?? a.actionCode}
-              </Button>
+              </AuthButton>
             ))}
           </Space>
         }

@@ -241,14 +241,15 @@ export function InspectionWorkbenchPage(): ReactElement {
                     label: DIMENSION_LABEL[key],
                   }))}
                 />
-                <Button
+                <AuthButton
+                  code={PERMISSIONS.INSPECTION_WRITE}
                   type="primary"
                   icon={<FileSearchOutlined />}
                   loading={acting}
                   onClick={onOpen}
                 >
                   发起人工抽检
-                </Button>
+                </AuthButton>
                 <Typography.Text type="secondary">
                   仅已结案（50）/拒赔生效（45）案件可抽检
                 </Typography.Text>

@@ -524,22 +524,24 @@ export function ReviewWorkbenchPage(): ReactElement {
           <Button key="cancel" disabled={reviewing} onClick={() => setReviewTarget(null)}>
             取消
           </Button>,
-          <Button
+          <AuthButton
             key="reject"
+            code={PERMISSIONS.REVIEW_WRITE}
             danger
             loading={reviewing}
             onClick={() => void onCompleteSecondReview(false)}
           >
             复核拒绝（转拒赔生效）
-          </Button>,
-          <Button
+          </AuthButton>,
+          <AuthButton
             key="pass"
+            code={PERMISSIONS.REVIEW_WRITE}
             type="primary"
             loading={reviewing}
             onClick={() => void onCompleteSecondReview(true)}
           >
             复核通过（结案）
-          </Button>,
+          </AuthButton>,
         ]}
       >
         <Alert
