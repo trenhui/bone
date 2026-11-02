@@ -124,7 +124,7 @@ REQUIRED = [
     ('存证可选口径（选型表）', 'landing', r'第三方区块链存证为\*\*可选\*\*'),
     ('超期关单 Job 已建登记（分线：CloseExpiredClaimJob 已建 / 其余 3 Job 待建）', 'landing', r'CloseExpiredClaimJob.{0,8}已建'),
     ('端点路径分歧登记（§10.6 偏离 #6）', 'landing', r'任务中心路径'),
-    ('单测计数核码登记（641=615+26）', 'landing', r'615 例 JUnit \+ 26 条 ArchUnit'),
+    ('单测计数核码登记（670=644+26）', 'landing', r'644 例 JUnit \+ 26 条 ArchUnit'),
     ('I1 文本层子集口径（PRD 验收）', 'prd', r'数电票文本层子集'),
     ('质检三件未落地登记', 'landing', r'质检三件'),
     ('adapter/schedule 入口未建登记', 'landing', r'adapter/schedule` 触发入口'),
