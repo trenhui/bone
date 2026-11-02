@@ -1,6 +1,7 @@
 package com.bone.claim.adapter.web.dto.request;
 
 import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
+import com.bone.core.model.PageParam;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -23,7 +24,8 @@ public record ClaimPageReq(
         Integer page,
     @Schema(description = "每页条数（缺省 20，上限 100）", defaultValue = "20")
         @Min(value = 1, message = "每页至少 1 条")
-        @Max(value = 100, message = "每页最多 100 条")
+        // 上限引用框架常量而不是再写一个 100：两处数字各自维护必然漂移（框架注释已记录该事故）
+        @Max(value = PageParam.MAX_PAGE_SIZE, message = "每页最多 100 条")
         Integer size) {
 
   /** 缺省页码（不传 page 时用）。 */

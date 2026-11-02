@@ -3,6 +3,7 @@ package com.bone.claim.application;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
+import com.bone.claim.common.PageBounds;
 import com.bone.claim.domain.model.policy.ClaimPlan;
 import com.bone.claim.domain.model.policy.ClaimPolicy;
 import com.bone.claim.domain.model.quota.QuotaAccount;
@@ -72,12 +73,14 @@ public class QuotaConfigApplicationService {
   public PageResult<QuotaAccountView> listByPolicy(
       String policyNo, String keyword, String quotaType, Boolean removed, int page, int size) {
     long tenantId = tenantPort.currentTenantId();
+    PageBounds bounds = PageBounds.of(page, size);
     List<QuotaAccount> records =
         quotaAccountRepository.findAccountsPage(
-            tenantId, policyNo, keyword, quotaType, removed, page, size);
+            tenantId, policyNo, keyword, quotaType, removed, bounds.page(), bounds.size());
     long total =
         quotaAccountRepository.countAccountsPage(tenantId, policyNo, keyword, quotaType, removed);
-    return PageResult.of(records.stream().map(QuotaAccountView::from).toList(), total, page, size);
+    return PageResult.of(
+        records.stream().map(QuotaAccountView::from).toList(), total, bounds.page(), bounds.size());
   }
 
   /**

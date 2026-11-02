@@ -3,6 +3,7 @@ package com.bone.claim.application;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
+import com.bone.claim.common.PageBounds;
 import com.bone.claim.domain.model.policy.ClaimCoverage;
 import com.bone.claim.domain.model.policy.ClaimPlan;
 import com.bone.claim.domain.model.policy.ClaimPolicy;
@@ -48,10 +49,13 @@ public class ClaimConfigApplicationService {
   public PageResult<PolicyView> listPolicies(
       String keyword, String configStatus, int page, int size) {
     long tenantId = tenantPort.currentTenantId();
+    PageBounds bounds = PageBounds.of(page, size);
     List<ClaimPolicy> records =
-        claimPolicyRepository.findPolicyPage(tenantId, keyword, configStatus, page, size);
+        claimPolicyRepository.findPolicyPage(
+            tenantId, keyword, configStatus, bounds.page(), bounds.size());
     long total = claimPolicyRepository.countPolicyPage(tenantId, keyword, configStatus);
-    return PageResult.of(records.stream().map(PolicyView::from).toList(), total, page, size);
+    return PageResult.of(
+        records.stream().map(PolicyView::from).toList(), total, bounds.page(), bounds.size());
   }
 
   /**

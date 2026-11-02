@@ -1,6 +1,7 @@
 package com.bone.claim;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.bone.architecture.BoneDddArchRules;
@@ -12,6 +13,8 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
  * synap-claim 架构门禁（复用 bone-architecture-test 共享规则，《Bone-DDD》§21 / G-1）。
@@ -205,6 +208,32 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule spring_bean_names_unique =
       BoneDddArchRules.springComponentBeanNamesMustBeUnique();
+
+  /**
+   * 安全门禁：每个 HTTP 端点都必须声明 {@code @PreAuthorize}（安全要求前移到编译/CI 期）。
+   *
+   * <p><b>为什么需要它</b>：{@code anyRequest().authenticated()} 只保证「登录过」，不保证「有该权限」。漏写
+   * {@code @PreAuthorize} 的端点对<strong>任意已认证用户</strong>开放——理赔场景下就是「只读岗能触发赔付」。这类遗漏
+   * 不会编译失败、不会让既有用例转红，只能靠人肉 review；本规则把「新增端点必须自带权限码」变成构建期失败。
+   *
+   * <p><b>为什么用 {@code
+   * areMetaAnnotatedWith(RequestMapping)}</b>：{@code @GetMapping}/{@code @PostMapping} 都以
+   * {@code @RequestMapping} 为元注解，逐一声明会漏掉未来新增的组合注解（{@code @PatchMapping} 等）。
+   *
+   * <p><b>刻意不设 {@code allowEmptyShould}</b>：ArchUnit 默认「一条都没匹配到」即失败，正好当作规则自身的守卫——
+   * 包名或注解改了导致扫不到端点时，规则会转红而不是静默恒绿。
+   */
+  @ArchTest
+  static final ArchRule controller_endpoints_must_declare_preauthorize =
+      methods()
+          .that()
+          .areDeclaredInClassesThat()
+          .resideInAPackage("..adapter.web.controller..")
+          .and()
+          .areMetaAnnotatedWith(RequestMapping.class)
+          .should()
+          .beAnnotatedWith(PreAuthorize.class)
+          .because("每个理赔端点都必须声明权限码，否则任意已认证用户即可调用（SecurityConfig 只做认证不做授权细分）");
 
   /**
    * bone-ai 共享内核实现包谓词。仓库内既有 {@code com.bone.ai}、{@code com.bone.airules}、{@code com.bone.aiapp}

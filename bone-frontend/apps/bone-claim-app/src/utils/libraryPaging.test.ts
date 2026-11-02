@@ -15,15 +15,16 @@ describe('fetchAllPages', () => {
   });
 
   it('多页拼接到末页（回归：>500 条不再静默截断）', async () => {
-    const fetchPage = vi.fn(async (page: number) =>
-      page === 1
-        ? { data: { records: make(1, LIBRARY_PAGE_SIZE), total: 205 } }
-        : { data: { records: make(201, 5), total: 205 } },
-    );
+    const total = LIBRARY_PAGE_SIZE * 2 + 5;
+    const fetchPage = vi.fn(async (page: number) => {
+      const start = (page - 1) * LIBRARY_PAGE_SIZE + 1;
+      const n = Math.min(LIBRARY_PAGE_SIZE, total - start + 1);
+      return { data: { records: make(start, Math.max(n, 0)), total } };
+    });
     const r = await fetchAllPages(fetchPage);
-    expect(r.rows).toHaveLength(205);
+    expect(r.rows).toHaveLength(total);
     expect(r.truncated).toBe(false);
-    expect(fetchPage).toHaveBeenCalledTimes(2);
+    expect(fetchPage).toHaveBeenCalledTimes(3);
   });
 
   it('total 为字符串时也能正确终止', async () => {
@@ -59,5 +60,33 @@ describe('fetchAllPages', () => {
     const r = await fetchAllPages(fetchPage);
     expect(r.rows).toEqual([]);
     expect(r.truncated).toBe(false);
+  });
+
+  it('服务端把每页收窄到更小值时仍取尽（回归：不能把「本页未满」当末页）', async () => {
+    // 服务端单页上限 100，这里模拟 50——正是「请求 200 却被钳到 100」的真实形态
+    const serverPageSize = 50;
+    const total = 205;
+    const fetchPage = vi.fn(async (page: number) => {
+      const start = (page - 1) * serverPageSize + 1;
+      const n = Math.min(serverPageSize, total - start + 1);
+      return { data: { records: make(start, Math.max(n, 0)), total } };
+    });
+    const r = await fetchAllPages(fetchPage);
+    expect(r.rows).toHaveLength(total);
+    expect(r.rows[total - 1]).toEqual({ id: total });
+    expect(r.truncated).toBe(false);
+    expect(fetchPage).toHaveBeenCalledTimes(Math.ceil(total / serverPageSize));
+  });
+
+  it('total 缺失（null）时不因 Number(null)=0 在首页误判取尽', async () => {
+    const fetchPage = vi.fn(async (page: number) =>
+      page === 1
+        ? { data: { records: make(1, LIBRARY_PAGE_SIZE), total: null as unknown as number } }
+        : { data: { records: make(101, 3), total: null as unknown as number } },
+    );
+    const r = await fetchAllPages(fetchPage);
+    expect(r.rows).toHaveLength(LIBRARY_PAGE_SIZE + 3);
+    expect(r.truncated).toBe(false);
+    expect(fetchPage).toHaveBeenCalledTimes(2);
   });
 });

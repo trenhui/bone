@@ -1,6 +1,7 @@
 package com.bone.claim.application;
 
 import com.bone.claim.application.port.out.TenantPort;
+import com.bone.claim.common.PageBounds;
 import com.bone.claim.domain.model.reference.RefDisease;
 import com.bone.claim.domain.model.reference.RefDrug;
 import com.bone.claim.domain.model.reference.RefFeeCategory;
@@ -41,12 +42,13 @@ public class ReferenceLibraryApplicationService {
   @Transactional(readOnly = true)
   public Page<HospitalView> listHospitals(String keyword, int page, int size) {
     long tenantId = tenantPort.currentTenantId();
+    PageBounds bounds = PageBounds.of(page, size);
     List<HospitalView> records =
-        hospitalRepository.findPage(tenantId, keyword, page, size).stream()
+        hospitalRepository.findPage(tenantId, keyword, bounds.page(), bounds.size()).stream()
             .map(HospitalView::from)
             .toList();
     long total = hospitalRepository.countPage(tenantId, keyword);
-    return new Page<>(records, total, page, size);
+    return new Page<>(records, total, bounds.page(), bounds.size());
   }
 
   @Transactional
@@ -92,12 +94,13 @@ public class ReferenceLibraryApplicationService {
   @Transactional(readOnly = true)
   public Page<DiseaseView> listDiseases(String keyword, int page, int size) {
     long tenantId = tenantPort.currentTenantId();
+    PageBounds bounds = PageBounds.of(page, size);
     List<DiseaseView> records =
-        diseaseRepository.findPage(tenantId, keyword, page, size).stream()
+        diseaseRepository.findPage(tenantId, keyword, bounds.page(), bounds.size()).stream()
             .map(DiseaseView::from)
             .toList();
     long total = diseaseRepository.countPage(tenantId, keyword);
-    return new Page<>(records, total, page, size);
+    return new Page<>(records, total, bounds.page(), bounds.size());
   }
 
   @Transactional
@@ -134,12 +137,13 @@ public class ReferenceLibraryApplicationService {
   @Transactional(readOnly = true)
   public Page<DrugView> listDrugs(String keyword, int page, int size) {
     long tenantId = tenantPort.currentTenantId();
+    PageBounds bounds = PageBounds.of(page, size);
     List<DrugView> records =
-        drugRepository.findPage(tenantId, keyword, page, size).stream()
+        drugRepository.findPage(tenantId, keyword, bounds.page(), bounds.size()).stream()
             .map(DrugView::from)
             .toList();
     long total = drugRepository.countPage(tenantId, keyword);
-    return new Page<>(records, total, page, size);
+    return new Page<>(records, total, bounds.page(), bounds.size());
   }
 
   @Transactional
@@ -182,12 +186,13 @@ public class ReferenceLibraryApplicationService {
   @Transactional(readOnly = true)
   public Page<FeeCategoryView> listFeeCategories(String keyword, int page, int size) {
     long tenantId = tenantPort.currentTenantId();
+    PageBounds bounds = PageBounds.of(page, size);
     List<FeeCategoryView> records =
-        feeCategoryRepository.findPage(tenantId, keyword, page, size).stream()
+        feeCategoryRepository.findPage(tenantId, keyword, bounds.page(), bounds.size()).stream()
             .map(FeeCategoryView::from)
             .toList();
     long total = feeCategoryRepository.countPage(tenantId, keyword);
-    return new Page<>(records, total, page, size);
+    return new Page<>(records, total, bounds.page(), bounds.size());
   }
 
   /** 全量下拉（费用规则编辑用，不分页）。 */

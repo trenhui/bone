@@ -4,6 +4,7 @@ import com.bone.claim.application.port.out.PolicyQueryPort;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
+import com.bone.claim.common.PageBounds;
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.ClaimItem;
 import com.bone.claim.domain.model.claim.event.ClaimStatusChangedEvent;
@@ -315,7 +316,10 @@ public class ClaimCaseApplicationService {
     long tenantId = tenantPort.currentTenantId();
     List<ClaimStatus> effective =
         statuses == null || statuses.isEmpty() ? List.of(ClaimStatus.PENDING_ADJUST) : statuses;
-    return claimCaseRepository.findClaimPage(tenantId, effective, sourceChannel, page, size);
+    // 调用方可能直接透传裸 @RequestParam（ReviewTaskController），收窄只能落在服务入口
+    PageBounds bounds = PageBounds.of(page, size);
+    return claimCaseRepository.findClaimPage(
+        tenantId, effective, sourceChannel, bounds.page(), bounds.size());
   }
 
   /**

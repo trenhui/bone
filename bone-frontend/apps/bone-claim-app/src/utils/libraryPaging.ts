@@ -9,11 +9,17 @@
  * 绝不静默返回部分数据。
  */
 
-/** 单页条数（在服务端分页接口单页上限内取较大值，减少往返）。 */
-export const LIBRARY_PAGE_SIZE = 200;
+/**
+ * 单页条数。
+ *
+ * <p>必须 ≤ 服务端单页上限（`PageParam.MAX_PAGE_SIZE = 100`）：服务端会把 `size` 收窄到 100，
+ * 若这里仍要 200，第一页只会回来 100 条，而「本页未满 ⇒ 已到末页」的判定会把 101 条之后的数据
+ * **静默丢掉**——正是本文件要消灭的那类缺陷，只是换了个触发点。
+ */
+export const LIBRARY_PAGE_SIZE = 100;
 
-/** 页数硬上限（20 × 200 = 4000 条），防配置异常时无限翻页。 */
-export const LIBRARY_MAX_PAGES = 20;
+/** 页数硬上限（50 × 100 = 5000 条），防配置异常时无限翻页。 */
+export const LIBRARY_MAX_PAGES = 50;
 
 /** 分页响应的最小结构。`total` 线上类型为 `string | number`（分页组件序列化差异）。 */
 export interface PageLike<T> {
@@ -30,6 +36,9 @@ export interface FetchAllResult<T> {
 /**
  * 逐页拉取直到取尽。
  *
+ * <p>终止判定**以 `total` 为准**，`records.length < 请求页大小` 只作为无 `total` 时的兜底：
+ * 服务端可能把 `size` 收窄到比请求更小的值，此时「本页未满」并不代表已到末页。
+ *
  * @param fetchPage 取一页的方法（page 从 1 开始）
  */
 export async function fetchAllPages<T>(
@@ -40,10 +49,16 @@ export async function fetchAllPages<T>(
     const resp = await fetchPage(page, LIBRARY_PAGE_SIZE);
     const records = resp.data?.records ?? [];
     rows.push(...records);
-    // 本页未满 ⇒ 已到末页；有 total 时以其为准（服务端可能限制单页上限）
-    if (records.length < LIBRARY_PAGE_SIZE) return { rows, truncated: false };
-    const total = Number(resp.data?.total);
+    // 空页一定到尽（也防 total 与实际不一致时死循环）
+    if (records.length === 0) return { rows, truncated: false };
+    const rawTotal = resp.data?.total;
+    // 注意不能用 Number(null)：null 会被转成 0，导致首页就误判「已取尽」
+    const total = rawTotal === undefined || rawTotal === null ? Number.NaN : Number(rawTotal);
     if (Number.isFinite(total) && rows.length >= total) return { rows, truncated: false };
+    // 无 total 时只能按「本页未满」判断末页
+    if (!Number.isFinite(total) && records.length < LIBRARY_PAGE_SIZE) {
+      return { rows, truncated: false };
+    }
   }
   return { rows, truncated: true };
 }
