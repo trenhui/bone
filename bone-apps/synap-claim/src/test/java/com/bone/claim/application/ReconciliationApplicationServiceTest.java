@@ -84,17 +84,17 @@ class ReconciliationApplicationServiceTest {
 
     QuotaAccount balanced =
         quotaAccount(1L, "1000.00", "100.00", "200.00", "700.00", "0.00", "100.00");
-    // 与账户投影一致的流水（SOFT 200 + PAID 100）⇒ 只命中守恒判据，不产生投影漂移。
-    // 流水桩必须先建好再 thenReturn：在 when(...) 之后才创建 mock 会撞 Mockito 的 UnfinishedStubbing。
-    List<QuotaTransaction> balancedLedger =
-        List.of(txn("SOFT", "OCCUPY", "200.00", "S1"), txn("PAID", "OCCUPY", "100.00", "S2"));
-    when(quotaAccountRepository.findTransactions(1L)).thenReturn(balancedLedger);
     QuotaAccount broken =
         quotaAccount(
             2L, "1000.00", "500.00", "600.00", "0.00", "0.00", "500.00"); // 500+600+0=1100 ≠ 1000
-    List<QuotaTransaction> brokenLedger =
-        List.of(txn("SOFT", "OCCUPY", "600.00", "S1"), txn("PAID", "OCCUPY", "500.00", "S2"));
-    when(quotaAccountRepository.findTransactions(2L)).thenReturn(brokenLedger);
+    // 与账户投影一致的流水（SOFT 200 + PAID 100 / SOFT 600 + PAID 500）⇒ 只命中守恒判据，不产生投影漂移。
+    // N+1 修复后 reconcileQuota 一次性批量取全部流水再按账户分组，故桩 findAllTransactions 返回合并流水（每条带账户 id）。
+    // 流水桩必须先建成局部变量再 thenReturn：txn(...) 内部也调 when(...)，嵌进 thenReturn 参数里会撞 UnfinishedStubbing。
+    QuotaTransaction b1 = txn(1L, "SOFT", "OCCUPY", "200.00", "S1");
+    QuotaTransaction b2 = txn(1L, "PAID", "OCCUPY", "100.00", "S2");
+    QuotaTransaction k1 = txn(2L, "SOFT", "OCCUPY", "600.00", "S1");
+    QuotaTransaction k2 = txn(2L, "PAID", "OCCUPY", "500.00", "S2");
+    when(quotaAccountRepository.findAllTransactions()).thenReturn(List.of(b1, b2, k1, k2));
     when(quotaAccountRepository.findAllAccounts()).thenReturn(List.of(balanced, broken));
 
     service.reconcileForTenant(BIZ_DATE);
@@ -129,7 +129,7 @@ class ReconciliationApplicationServiceTest {
     // 三值自洽（0+0+20000=20000），但 deductible_used=300 而流水里没有任何 DEDUCTIBLE
     QuotaAccount drifted =
         quotaAccount(1L, "20000.00", "0.00", "0.00", "20000.00", "300.00", "0.00");
-    when(quotaAccountRepository.findTransactions(1L)).thenReturn(List.of());
+    when(quotaAccountRepository.findAllTransactions()).thenReturn(List.of());
     when(quotaAccountRepository.findAllAccounts()).thenReturn(List.of(drifted));
 
     service.reconcileForTenant(BIZ_DATE);
@@ -160,7 +160,7 @@ class ReconciliationApplicationServiceTest {
 
     // 守恒被破坏 + 投影与流水完全不符：两条判据都红
     QuotaAccount broken = quotaAccount(1L, "1000.00", "500.00", "600.00", "0.00", "0.00", "500.00");
-    when(quotaAccountRepository.findTransactions(1L)).thenReturn(List.of());
+    when(quotaAccountRepository.findAllTransactions()).thenReturn(List.of());
     when(quotaAccountRepository.findAllAccounts()).thenReturn(List.of(broken));
 
     service.reconcileForTenant(BIZ_DATE);
@@ -344,11 +344,10 @@ class ReconciliationApplicationServiceTest {
     // 账户投影与 Σ流水一致（冻结 500 = 300 + 200），守恒也平：只有"第二笔又从 0 起"这件事是错的
     QuotaAccount account =
         quotaAccount(1L, "20000.00", "0.00", "500.00", "19500.00", "0.00", "0.00");
-    List<QuotaTransaction> ledger =
-        List.of(
-            chainTxn("SOFT", "OCCUPY", "300.00", "0.00", "300.00", "S1", "K1"),
-            chainTxn("SOFT", "OCCUPY", "200.00", "0.00", "200.00", "S2", "K2"));
-    when(quotaAccountRepository.findTransactions(1L)).thenReturn(ledger);
+    // N+1 修复后 reconcileQuota 按账户分组，流水桩需带账户 id；先建局部变量避免嵌套桩（UnfinishedStubbing）
+    QuotaTransaction c1 = chainTxn(1L, "SOFT", "OCCUPY", "300.00", "0.00", "300.00", "S1", "K1");
+    QuotaTransaction c2 = chainTxn(1L, "SOFT", "OCCUPY", "200.00", "0.00", "200.00", "S2", "K2");
+    when(quotaAccountRepository.findAllTransactions()).thenReturn(List.of(c1, c2));
     when(quotaAccountRepository.findAllAccounts()).thenReturn(List.of(account));
 
     service.reconcileForTenant(BIZ_DATE);
@@ -469,8 +468,17 @@ class ReconciliationApplicationServiceTest {
     return t;
   }
 
+  /** 带账户 id 的流水桩（N+1 修复后 reconcileQuota 按账户分组需要 quotaAccountId）。 */
+  private static QuotaTransaction txn(
+      long accountId, String txnType, String direction, String amount, String settlementNo) {
+    QuotaTransaction t = txn(txnType, direction, amount, settlementNo);
+    when(t.getQuotaAccountId()).thenReturn(accountId);
+    return t;
+  }
+
   /** 带 before/after 的流水桩（串链判据要读前后值；投影判据不读，故只在串链用例里给）。 */
   private static QuotaTransaction chainTxn(
+      long accountId,
       String txnType,
       String direction,
       String amount,
@@ -482,6 +490,7 @@ class ReconciliationApplicationServiceTest {
     when(t.getBeforeAmount()).thenReturn(new BigDecimal(before));
     when(t.getAfterAmount()).thenReturn(new BigDecimal(after));
     when(t.getIdempotencyKey()).thenReturn(idempotencyKey);
+    when(t.getQuotaAccountId()).thenReturn(accountId);
     return t;
   }
 

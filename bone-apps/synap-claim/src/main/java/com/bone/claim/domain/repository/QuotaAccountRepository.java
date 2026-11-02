@@ -36,6 +36,15 @@ public interface QuotaAccountRepository extends Repository<QuotaAccount, Long> {
   @TenantScope(TenantScopeMode.AUTO)
   List<QuotaTransaction> findTransactions(@Param("quotaAccountId") long quotaAccountId);
 
+  /**
+   * 全租户额度流水（对账批量取数用，避免逐账户 {@code findTransactions} 的 N+1）。
+   *
+   * <p>流水 append-only，逐账户查的总行数与一次取回相同；对账本就是全租户扫描，故一次取回不额外放大数据量， 只把查询次数从 N 降为 1。调用方按 {@code
+   * quotaAccountId} 分组还原每账户流水。
+   */
+  @TenantScope(TenantScopeMode.AUTO)
+  List<QuotaTransaction> findAllTransactions();
+
   /** 本租户全部额度账户（对账守恒核对用，{@code ReconciliationApplicationService} 在租户上下文内调用）。 */
   @TenantScope(TenantScopeMode.AUTO)
   List<QuotaAccount> findAllAccounts();

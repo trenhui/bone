@@ -844,6 +844,17 @@ public class ScenarioHarness {
     }
 
     @Override
+    public List<QuotaTransaction> findAllTransactions() {
+      List<QuotaTransaction> all = new ArrayList<>();
+      for (QuotaAccount a : store.values()) {
+        if (a.getTransactions() != null) {
+          all.addAll(a.getTransactions());
+        }
+      }
+      return all;
+    }
+
+    @Override
     public List<QuotaAccount> findAllAccounts() {
       return new ArrayList<>(store.values());
     }

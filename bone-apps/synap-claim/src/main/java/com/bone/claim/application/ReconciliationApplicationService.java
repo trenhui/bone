@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -108,6 +109,8 @@ public class ReconciliationApplicationService {
       return; // 幂等：同日同通道已生成
     }
     List<QuotaAccount> accounts = quotaAccountRepository.findAllAccounts();
+    // 批量取全租户额度流水一次（IN 账户 id），按账户分组——替代逐账户 findTransactions 的 N+1（数据量等价，查询 N→1）。
+    Map<Long, List<QuotaTransaction>> ledgerByAccount = fetchLedgers(accounts);
     int total = accounts.size();
     BigDecimal totalInitial = ZERO;
     BigDecimal totalParts = ZERO;
@@ -135,7 +138,7 @@ public class ReconciliationApplicationService {
       }
       // 判据 ②：账户是投影，流水是事实（§11.7 不变量 1 ①）。重算口径与写侧自愈共用
       // QuotaProjection#rebuild——两处若各写一遍，就会出现"自愈按 A 口径修、对账按 B 口径判"。
-      List<QuotaTransaction> ledger = quotaAccountRepository.findTransactions(account.getId());
+      List<QuotaTransaction> ledger = ledgerByAccount.getOrDefault(account.getId(), List.of());
       List<QuotaProjection.Drift> drifts = QuotaProjection.rebuild(ledger).driftAgainst(account);
       for (QuotaProjection.Drift drift : drifts) {
         // 差异单无"列名"字段，用 remote_status 承载漂移列名（"哪一列错了"是派单的第一条信息）。
@@ -174,6 +177,19 @@ public class ReconciliationApplicationService {
         totalInitial,
         totalParts,
         violations);
+  }
+
+  /**
+   * 批量取全租户额度流水一次，按账户分组——替代逐账户 {@code findTransactions} 的 N+1。
+   *
+   * <p>对账本就是全租户扫描：逐账户查的总行数与一次取回的总行数相同，但查询次数从 N 降为 1。无账户时直接返回 空映射（跳过查询）。
+   */
+  private Map<Long, List<QuotaTransaction>> fetchLedgers(List<QuotaAccount> accounts) {
+    if (accounts.isEmpty()) {
+      return Map.of();
+    }
+    return quotaAccountRepository.findAllTransactions().stream()
+        .collect(Collectors.groupingBy(QuotaTransaction::getQuotaAccountId));
   }
 
   private void reconcilePayment(long tenantId, LocalDate bizDate) {
