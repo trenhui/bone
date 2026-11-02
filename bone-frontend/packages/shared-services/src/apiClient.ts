@@ -71,7 +71,21 @@ export function createApiClient(baseURL: string, config?: AxiosRequestConfig): A
       if (etag && response.data && typeof response.data === 'object') {
         (response.data as Record<string, unknown>).etag = etag;
       }
-      return response.data;
+      const data = response.data;
+      // C2（P1→潜在 P0）闭合「2xx + 业务失败」错误判定：后端可能以 HTTP 200 + success:false
+      // 返回乐观锁冲突 / 额度不足等业务错误。若不拦截，前端会误判成功继续推进资金流。
+      // 后端 ApiResponse 真实错误语义由 success 布尔承载（无 kind 字段），故以此为准；
+      // 错误码 / 文案沿用与错误拦截器同一套口径（data.data.errorCode / message），保证统一错误通道。
+      if (data && typeof data === 'object' && (data as { success?: boolean }).success === false) {
+        const err = new Error(
+          (data as { message?: string }).message || 'business error',
+        ) as Error & { errorCode?: string; displayMessage?: string };
+        const inner = (data as { data?: { errorCode?: string } }).data;
+        if (inner?.errorCode) err.errorCode = inner.errorCode;
+        err.displayMessage = (data as { message?: string }).message;
+        return Promise.reject(err);
+      }
+      return data;
     },
     (error) => {
       if (error.response?.status === 401) {

@@ -61,6 +61,46 @@ class AiGatewayPortAdapterTest {
   }
 
   @Test
+  @DisplayName("B9：缺失/越界置信度一律置 null ⇒ DecisionTriage.CONFIDENCE_UNKNOWN 强制人工，绝不缺省 0.5")
+  void missingOrOutOfRangeConfidenceForcesNull() {
+    // 缺失字段
+    assertThat(
+            new AiGatewayPortAdapter(
+                    gatewayWith(
+                        new RecordingLlmClient("{\"rejectSuggested\":false}"), policiesWith(null)))
+                .assess(SAMPLE)
+                .confidence())
+        .isNull();
+    // 显式 null
+    assertThat(
+            new AiGatewayPortAdapter(
+                    gatewayWith(
+                        new RecordingLlmClient("{\"rejectSuggested\":false,\"confidence\":null}"),
+                        policiesWith(null)))
+                .assess(SAMPLE)
+                .confidence())
+        .isNull();
+    // 越界 > 1
+    assertThat(
+            new AiGatewayPortAdapter(
+                    gatewayWith(
+                        new RecordingLlmClient("{\"rejectSuggested\":false,\"confidence\":1.5}"),
+                        policiesWith(null)))
+                .assess(SAMPLE)
+                .confidence())
+        .isNull();
+    // 越界 < 0
+    assertThat(
+            new AiGatewayPortAdapter(
+                    gatewayWith(
+                        new RecordingLlmClient("{\"rejectSuggested\":false,\"confidence\":-0.1}"),
+                        policiesWith(null)))
+                .assess(SAMPLE)
+                .confidence())
+        .isNull();
+  }
+
+  @Test
   void failClosedWhenGatewayThrows() {
     LlmClient failing =
         req -> {

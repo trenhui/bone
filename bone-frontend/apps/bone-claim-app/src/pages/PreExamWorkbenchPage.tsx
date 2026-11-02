@@ -19,6 +19,7 @@ import {
 import { CheckCircleOutlined, ReloadOutlined, ThunderboltOutlined, UserSwitchOutlined } from '@ant-design/icons';
 import {
   claimApi,
+  normalizeTotal,
   REVIEW_THRESHOLD,
   type ClaimHeadProjection,
   type ClaimStatusName,
@@ -80,7 +81,7 @@ export function PreExamWorkbenchPage(): ReactElement {
     try {
       const resp = await claimApi.page({ statuses: effectiveStatuses, page, size });
       setRows(resp?.data?.records ?? []);
-      setTotal(resp?.data?.total ?? 0);
+      setTotal(normalizeTotal(resp?.data?.total));
     } catch (err) {
       message.error({ content: resolveErrorMessage(err, '初审待办加载失败'), key: MSG_KEY_LOAD });
     } finally {
@@ -99,7 +100,7 @@ export function PreExamWorkbenchPage(): ReactElement {
       );
       const next: Record<string, number> = {};
       COUNT_GROUPS.forEach((g, i) => {
-        next[g.key] = results[i]?.data?.total ?? 0;
+        next[g.key] = normalizeTotal(results[i]?.data?.total);
       });
       setCounts(next);
     } catch {

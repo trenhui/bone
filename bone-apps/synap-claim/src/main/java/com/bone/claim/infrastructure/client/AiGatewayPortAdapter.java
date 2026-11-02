@@ -89,9 +89,15 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
     try {
       JsonNode node = objectMapper.readTree(response.content());
       boolean reject = node.path("rejectSuggested").asBoolean(false);
-      BigDecimal confidence = BigDecimal.valueOf(node.path("confidence").asDouble(0.5d));
-      if (confidence.compareTo(BigDecimal.ZERO) < 0 || confidence.compareTo(BigDecimal.ONE) > 0) {
-        confidence = new BigDecimal("0.5");
+      // 置信度 fail-closed（B9）：缺失 / 显式 null / 越界（<0 或 >1）一律视为"无法判定" → null。
+      // null 经 DecisionTriage.CONFIDENCE_UNKNOWN 强制转人工，绝不因缺省 0.5 滑入自动通过或复核档。
+      JsonNode confNode = node.path("confidence");
+      BigDecimal confidence = null;
+      if (!confNode.isMissingNode() && !confNode.isNull()) {
+        confidence = BigDecimal.valueOf(confNode.asDouble());
+        if (confidence.compareTo(BigDecimal.ZERO) < 0 || confidence.compareTo(BigDecimal.ONE) > 0) {
+          confidence = null;
+        }
       }
       // 仅当建议拒赔时解析原因码，并经白名单归一化（未知码丢弃、空则兜底 OTHER）—— 保证"拒赔必有可解释原因"
       List<String> reasons =

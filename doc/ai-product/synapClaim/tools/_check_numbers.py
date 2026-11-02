@@ -124,7 +124,7 @@ REQUIRED = [
     ('存证可选口径（选型表）', 'landing', r'第三方区块链存证为\*\*可选\*\*'),
     ('超期关单 Job 已建登记（分线：CloseExpiredClaimJob 已建 / 其余 3 Job 待建）', 'landing', r'CloseExpiredClaimJob.{0,8}已建'),
     ('端点路径分歧登记（§10.6 偏离 #6）', 'landing', r'任务中心路径'),
-    ('单测计数核码登记（136=112+24）', 'landing', r'112 例 JUnit \+ 24 条 ArchUnit'),
+    ('单测计数核码登记（641=615+26）', 'landing', r'615 例 JUnit \+ 26 条 ArchUnit'),
     ('I1 文本层子集口径（PRD 验收）', 'prd', r'数电票文本层子集'),
     ('质检三件未落地登记', 'landing', r'质检三件'),
     ('adapter/schedule 入口未建登记', 'landing', r'adapter/schedule` 触发入口'),
@@ -169,6 +169,11 @@ REQUIRED = [
      'design/理算引擎设计.md', r'显式拒绝，而不是猜一个算法'),
     ('synap-claim-oracle 定位声明在位（非产品代码 + 不并入生产 + 独立 CI 入口）',
      '../synap-claim-oracle/synap-claim-settlement/README.md', r'这不是产品代码'),
+    # --- 2026-11-02 P0-2（租户隔离 CI 护栏 golive.04 已落地）---
+    #  防设计回退为「靠人守」：SSOT §12.2.1 必须登记租户隔离反例测试类，
+    #  该测试类 + 两条租户读取结构锁（tenant_context_read_only_by_tenant_port_adapter）是
+    #  OWASP A01 身份边界的自动化护栏，缺位即回退为人工守门。
+    ('租户隔离 ArchUnit 反例测试在位（防设计回退为靠人守）', 'landing', r'TenantIsolationGuardrailTest'),
 ]
 
 

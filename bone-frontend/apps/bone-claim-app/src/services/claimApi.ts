@@ -127,9 +127,18 @@ export interface ClaimWithItemsProjection {
 
 export interface PageResult<T> {
   records: T[];
-  total: number;
+  // C1（P0）后端全局把 Long 序列化为字符串，分页 total 可能为 string；
+  // 与 claimConfigApi 同口径用 string | number 容错，避免 JS 安全整数截断与类型漂移。
+  total: string | number;
   page: number;
   size: number;
+}
+
+/** 把可能为 string 的分页 total 归一为 number（C1 容错；claimConfigApi.normalizeTotal 同语义）。 */
+export function normalizeTotal(total: string | number | undefined): number {
+  if (total == null) return 0;
+  const n = typeof total === 'string' ? Number(total) : total;
+  return Number.isFinite(n) ? n : 0;
 }
 
 /* ===================== A6 理算归因（只读展示；§7.4 六归因成分） ===================== */

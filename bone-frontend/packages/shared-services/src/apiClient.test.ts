@@ -107,4 +107,29 @@ describe('createApiClient 拦截器', () => {
     expect(events[0].status).toBe(401);
     expect(err.displayMessage).toBe('unauthorized');
   });
+
+  it('2xx + success:true 正常解包', async () => {
+    createApiClient('/api/v1/iam');
+    const h = store.resHandlers[0];
+    const wrapped = { data: { success: true, code: 200, message: 'ok', data: { id: 1 } } };
+    const result = await h.onFulfilled(wrapped);
+    expect(result).toEqual({ success: true, code: 200, message: 'ok', data: { id: 1 } });
+  });
+
+  it('2xx + success:false 视为业务错误并 reject（C2）', async () => {
+    createApiClient('/api/v1/iam');
+    const h = store.resHandlers[0];
+    const wrapped = {
+      data: {
+        success: false,
+        code: 409,
+        message: '额度不足',
+        data: { errorCode: 'QUOTA_EXCEEDED' },
+      },
+    };
+    await expect(h.onFulfilled(wrapped)).rejects.toMatchObject({
+      errorCode: 'QUOTA_EXCEEDED',
+      displayMessage: '额度不足',
+    });
+  });
 });

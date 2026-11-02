@@ -1675,7 +1675,6 @@ public final class AdjustmentEngine {
   private static void checkSettlementConsistency(
       Request request, FeePools pools, List<String> diagnostics) {
     FeePools.Reconciliation reconciliation = pools.reconcile(request.rows());
-    BigDecimal tolerance = new BigDecimal("0.01");
 
     for (ClaimWithItemsProjection row : request.rows()) {
       if (row == null || row.getItemId() == null) {
@@ -1685,8 +1684,10 @@ public final class AdjustmentEngine {
       BigDecimal priorPaid =
           Money.nz(row.getItemPoolingAmount()).add(Money.nz(row.getItemThirdPartyPaid()));
 
-      // 不可获利硬约束：已付（统筹+第三方）不得超过合理费用，否则"已付又赔"必然超赔。
-      if (priorPaid.compareTo(valid.add(tolerance)) > 0) {
+      // 不可获利硬约束（fail-closed）：已付（统筹+第三方）不得超过合理费用，否则"已付又赔"必然超赔。
+      // 不做任何容忍带——valid/priorPaid 同为库内 2 位小数金额，priorPaid 哪怕多 1 分也是真实数据矛盾，
+      // 必须交人工核对票面拆分，而非静默放过（A4 消除 0.01 容忍带）。
+      if (priorPaid.compareTo(valid) > 0) {
         throw RuleGap.of(
             RuleGap.Code.INVOICE_SETTLEMENT_INCONSISTENT,
             "费用项「%s」的统筹+第三方已付 %s 超过合理费用 %s：已付超过实际损失，疑似重复计入，" + "须先核对票面拆分",

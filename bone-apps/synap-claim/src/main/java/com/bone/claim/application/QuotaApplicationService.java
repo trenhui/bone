@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -49,12 +50,105 @@ public class QuotaApplicationService {
   private final QuotaAccountRepository quotaAccountRepository;
 
   /**
+   * 同账户额度扣减的<b>单写者串行队列</b>（striped lock）。
+   *
+   * <p><b>背景</b>：额度扣减是「读账户 → 改三值余额 → {@code save}（SDK 按 {@code @Version} 乐观锁 {@code WHERE id=? AND
+   * version=?} 更新）」的高冲突写。多笔案件并发占同一被保人账户时，落后方会因 {@code OptimisticLockException} 回滚并重试， 在峰值下频繁撞「重试≤3
+   * 次转人工」阈值（§5.3）——既损害自动化率，又制造"自动未占、人工又占"的竞态窗口（潜在超赔）。
+   *
+   * <p><b>本锁的作用</b>：在<b>单副本内</b>对同一账户串行化扣减，使同副本同时刻至多 1 笔在途，跨副本竞争退化为「副本数」并发——
+   * 乐观锁几乎不再冲突、永不触达"转人工"阈值。跨副本正确性仍由 {@code @Version} 兜底（它本就正确，只是高并发下重试代价大）。
+   *
+   * <p><b>为何 striped 而非逐账户锁</b>：账户数可达千万级，逐账户 {@code ConcurrentHashMap} 会持续泄漏内存；固定 4096 把锁的
+   * 条带化把内存收敛为常量，且<b>同一账户永远映射到同一把锁</b>（哈希稳定），正确性不因此损失——仅可能出现"不同账户共用一把锁"的
+   * 额外串行（纯性能代价，可接受）。调用方对同一案件固定以「个人账 → 责任账」顺序进入（见类注释 CORE-06 例外），且每笔扣减只占一把账户锁、 不在方法间嵌套持有，故无死锁。
+   *
+   * <p><b>与多副本的边界</b>：本锁不跨 JVM，故<b>真正的多副本 DB 级并发正确性压测（golive.12 / G16）仍是最终验证</b>，本锁只是把
+   * "单副本内同账户并发"这一最现实、最频繁的冲突源消掉。详见《工程落地版》§5.3 与 golive.12。
+   */
+  private static final int ACCOUNT_LOCK_STRIPES = 1 << 12; // 4096 条带，内存恒定
+
+  private final ReentrantLock[] accountLockStripes = new ReentrantLock[ACCOUNT_LOCK_STRIPES];
+
+  {
+    for (int i = 0; i < ACCOUNT_LOCK_STRIPES; i++) {
+      accountLockStripes[i] = new ReentrantLock();
+    }
+  }
+
+  private ReentrantLock stripeFor(String key) {
+    return accountLockStripes[(key.hashCode() & Integer.MAX_VALUE) % ACCOUNT_LOCK_STRIPES];
+  }
+
+  private void withAccountLock(String key, Runnable action) {
+    ReentrantLock lock = stripeFor(key);
+    lock.lock();
+    try {
+      action.run();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  /** 账户行键（与 {@code findAccount} 的 UK 同构），用作同账户串行化的锁标识。 */
+  private static String accountKey(
+      long tenantId,
+      String insuredIdHash,
+      String policyNo,
+      long planId,
+      int quotaYear,
+      String quotaType,
+      String liabilityUuid) {
+    return tenantId
+        + ":"
+        + insuredIdHash
+        + ":"
+        + policyNo
+        + ":"
+        + planId
+        + ":"
+        + quotaYear
+        + ":"
+        + quotaType
+        + ":"
+        + (liabilityUuid == null ? "" : liabilityUuid);
+  }
+
+  /**
    * 软占（SOFT_RESERVED）：理算已算未确认的额度预占，计入 {@code frozen}。
    *
    * @param quotaYear 额度年度（由 {@code QuotaYearResolver} 单点裁决；年度是账户行键的一部分， 不在本类就地取"当前年"——那会让读写两侧各算一次）
    */
   @Transactional(propagation = Propagation.REQUIRED)
   public void reserve(
+      long tenantId,
+      String insuredIdHash,
+      String policyNo,
+      long planId,
+      int quotaYear,
+      long claimId,
+      String claimNo,
+      BigDecimal amount,
+      String settlementNo,
+      int attempt) {
+    String ak = accountKey(tenantId, insuredIdHash, policyNo, planId, quotaYear, "PERSONAL", "");
+    withAccountLock(
+        ak,
+        () ->
+            doReserve(
+                tenantId,
+                insuredIdHash,
+                policyNo,
+                planId,
+                quotaYear,
+                claimId,
+                claimNo,
+                amount,
+                settlementNo,
+                attempt));
+  }
+
+  private void doReserve(
       long tenantId,
       String insuredIdHash,
       String policyNo,
@@ -78,6 +172,34 @@ public class QuotaApplicationService {
   /** 确认支付（PAID）：{@code frozen → claim} 同额转移，不二次占用。 */
   @Transactional(propagation = Propagation.REQUIRED)
   public void confirmPay(
+      long tenantId,
+      String insuredIdHash,
+      String policyNo,
+      long planId,
+      int quotaYear,
+      long claimId,
+      String claimNo,
+      BigDecimal amount,
+      String settlementNo,
+      int attempt) {
+    String ak = accountKey(tenantId, insuredIdHash, policyNo, planId, quotaYear, "PERSONAL", "");
+    withAccountLock(
+        ak,
+        () ->
+            doConfirmPay(
+                tenantId,
+                insuredIdHash,
+                policyNo,
+                planId,
+                quotaYear,
+                claimId,
+                claimNo,
+                amount,
+                settlementNo,
+                attempt));
+  }
+
+  private void doConfirmPay(
       long tenantId,
       String insuredIdHash,
       String policyNo,
@@ -115,6 +237,34 @@ public class QuotaApplicationService {
       BigDecimal amount,
       String settlementNo,
       int attempt) {
+    String ak = accountKey(tenantId, insuredIdHash, policyNo, planId, quotaYear, "PERSONAL", "");
+    withAccountLock(
+        ak,
+        () ->
+            doRelease(
+                tenantId,
+                insuredIdHash,
+                policyNo,
+                planId,
+                quotaYear,
+                claimId,
+                claimNo,
+                amount,
+                settlementNo,
+                attempt));
+  }
+
+  private void doRelease(
+      long tenantId,
+      String insuredIdHash,
+      String policyNo,
+      long planId,
+      int quotaYear,
+      long claimId,
+      String claimNo,
+      BigDecimal amount,
+      String settlementNo,
+      int attempt) {
     QuotaAccount account = loadPersonal(tenantId, insuredIdHash, policyNo, planId, quotaYear);
     String key = claimNo + ":RELEASE:" + attempt;
     if (alreadyOccupied(account, key)) {
@@ -133,6 +283,34 @@ public class QuotaApplicationService {
   /** 退款（REFUNDED）：已付退票，红冲发票并回冲 {@code claimed}。 */
   @Transactional(propagation = Propagation.REQUIRED)
   public void refund(
+      long tenantId,
+      String insuredIdHash,
+      String policyNo,
+      long planId,
+      int quotaYear,
+      long claimId,
+      String claimNo,
+      BigDecimal amount,
+      String settlementNo,
+      int attempt) {
+    String ak = accountKey(tenantId, insuredIdHash, policyNo, planId, quotaYear, "PERSONAL", "");
+    withAccountLock(
+        ak,
+        () ->
+            doRefund(
+                tenantId,
+                insuredIdHash,
+                policyNo,
+                planId,
+                quotaYear,
+                claimId,
+                claimNo,
+                amount,
+                settlementNo,
+                attempt));
+  }
+
+  private void doRefund(
       long tenantId,
       String insuredIdHash,
       String policyNo,
@@ -181,6 +359,42 @@ public class QuotaApplicationService {
    */
   @Transactional(propagation = Propagation.REQUIRED)
   public void reserveLiability(
+      long tenantId,
+      String insuredIdHash,
+      String policyNo,
+      long planId,
+      int quotaYear,
+      String liabilityUuid,
+      long claimId,
+      String claimNo,
+      BigDecimal amount,
+      BigDecimal deductibleApplied,
+      String settlementNo,
+      int attempt,
+      java.time.LocalDate businessDate) {
+    String ak =
+        accountKey(
+            tenantId, insuredIdHash, policyNo, planId, quotaYear, "LIABILITY_CAP", liabilityUuid);
+    withAccountLock(
+        ak,
+        () ->
+            doReserveLiability(
+                tenantId,
+                insuredIdHash,
+                policyNo,
+                planId,
+                quotaYear,
+                liabilityUuid,
+                claimId,
+                claimNo,
+                amount,
+                deductibleApplied,
+                settlementNo,
+                attempt,
+                businessDate));
+  }
+
+  private void doReserveLiability(
       long tenantId,
       String insuredIdHash,
       String policyNo,
@@ -248,6 +462,38 @@ public class QuotaApplicationService {
       BigDecimal amount,
       String settlementNo,
       int attempt) {
+    String ak =
+        accountKey(
+            tenantId, insuredIdHash, policyNo, planId, quotaYear, "LIABILITY_CAP", liabilityUuid);
+    withAccountLock(
+        ak,
+        () ->
+            doConfirmLiabilityPay(
+                tenantId,
+                insuredIdHash,
+                policyNo,
+                planId,
+                quotaYear,
+                liabilityUuid,
+                claimId,
+                claimNo,
+                amount,
+                settlementNo,
+                attempt));
+  }
+
+  private void doConfirmLiabilityPay(
+      long tenantId,
+      String insuredIdHash,
+      String policyNo,
+      long planId,
+      int quotaYear,
+      String liabilityUuid,
+      long claimId,
+      String claimNo,
+      BigDecimal amount,
+      String settlementNo,
+      int attempt) {
     QuotaAccount account =
         loadLiability(tenantId, insuredIdHash, policyNo, planId, quotaYear, liabilityUuid);
     String key = claimNo + ":LIABILITY_PAID:" + attempt;
@@ -271,6 +517,40 @@ public class QuotaApplicationService {
    */
   @Transactional(propagation = Propagation.REQUIRED)
   public void releaseLiability(
+      long tenantId,
+      String insuredIdHash,
+      String policyNo,
+      long planId,
+      int quotaYear,
+      String liabilityUuid,
+      long claimId,
+      String claimNo,
+      BigDecimal amount,
+      BigDecimal deductibleApplied,
+      String settlementNo,
+      int attempt) {
+    String ak =
+        accountKey(
+            tenantId, insuredIdHash, policyNo, planId, quotaYear, "LIABILITY_CAP", liabilityUuid);
+    withAccountLock(
+        ak,
+        () ->
+            doReleaseLiability(
+                tenantId,
+                insuredIdHash,
+                policyNo,
+                planId,
+                quotaYear,
+                liabilityUuid,
+                claimId,
+                claimNo,
+                amount,
+                deductibleApplied,
+                settlementNo,
+                attempt));
+  }
+
+  private void doReleaseLiability(
       long tenantId,
       String insuredIdHash,
       String policyNo,
@@ -332,6 +612,40 @@ public class QuotaApplicationService {
   /** 责任账退款回冲（REFUNDED）：{@code claimed} 归还 + 免赔回退。 */
   @Transactional(propagation = Propagation.REQUIRED)
   public void refundLiability(
+      long tenantId,
+      String insuredIdHash,
+      String policyNo,
+      long planId,
+      int quotaYear,
+      String liabilityUuid,
+      long claimId,
+      String claimNo,
+      BigDecimal amount,
+      BigDecimal deductibleApplied,
+      String settlementNo,
+      int attempt) {
+    String ak =
+        accountKey(
+            tenantId, insuredIdHash, policyNo, planId, quotaYear, "LIABILITY_CAP", liabilityUuid);
+    withAccountLock(
+        ak,
+        () ->
+            doRefundLiability(
+                tenantId,
+                insuredIdHash,
+                policyNo,
+                planId,
+                quotaYear,
+                liabilityUuid,
+                claimId,
+                claimNo,
+                amount,
+                deductibleApplied,
+                settlementNo,
+                attempt));
+  }
+
+  private void doRefundLiability(
       long tenantId,
       String insuredIdHash,
       String policyNo,

@@ -119,8 +119,11 @@ public final class Money {
     }
     BigDecimal residue = target.subtract(allocated);
     if (residue.signum() != 0) {
+      // 残差全额回补到权重最大的一份，保证 Σ各份 ≡ target（I1 分位守恒契约）。
+      // 此处刻意【不】再对 round(weight) 钳制：残差是「本应属于该份、却因 DOWN 取整被暂扣」的差额，
+      // 钳制会破坏 Σ≡total（亚分尾差被吞）。逐份「≤ base」是软约束，已由下游 remaining=nonNegative(base-share) 吸收亚分溢出。
       BigDecimal patched = shares.get(largest).add(residue);
-      shares.set(largest, patched.min(round(weights.get(largest))).max(ZERO));
+      shares.set(largest, patched.max(ZERO));
     }
     return shares;
   }

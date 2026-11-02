@@ -890,6 +890,28 @@ class AdjustmentEngineTest {
     }
 
     @Test
+    @DisplayName("统筹+第三方已付仅超合理 1 分 ⇒ 仍拒绝（A4：消除 0.01 容忍带，fail-closed 不静默放过）")
+    void priorPaidExceedsByOneCentRejected() {
+      LiabilityRule rule =
+          rule(
+              "100",
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none(),
+              NO_CAP);
+      // 合理 1000.00，但统筹+第三方已付记了 1000.01（仅超 1 分，仍是真实数据矛盾）⇒ 拒绝
+      ClaimWithItemsProjection row = row(2002L, "IN", "1000.00", "0", "0");
+      row.setItemAmount(new BigDecimal("1000.00"));
+      row.setItemPoolingAmount(new BigDecimal("1000.01"));
+
+      assertThatThrownBy(
+              () ->
+                  AdjustmentEngine.calculate(
+                      AdjustmentEngine.Request.of(1L, List.of(row), rule, Accumulation.FIRST)))
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("INVOICE_SETTLEMENT_INCONSISTENT");
+    }
+
+    @Test
     @DisplayName("控额归因：费用子限额截断 ⇒ cappedBy 指出 FEE_TYPE，而不是把来源说成责任额度")
     void cappedByNamesFeeTypeSubLimit() {
       // 合理金额 10000，比例 100%，费用类型子限额 3000 ⇒ 该池只赔 3000
