@@ -30,6 +30,8 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.CLAIM_LIABILITY_NOT_FOUND, 422),
           Map.entry(ClaimErrorCodes.CLAIM_LIABILITY_INVALID_ARGUMENT, 400),
           Map.entry(ClaimErrorCodes.CLAIM_ADJUST_NOT_FOUND, 404),
+          // 422 而非 400：请求合法，是"这一版理算已不作为出金依据"这一资金前提不成立
+          Map.entry(ClaimErrorCodes.CLAIM_ADJUST_STATUS_INVALID, 422),
           Map.entry(ClaimErrorCodes.CLAIM_SETTLEMENT_NOT_FOUND, 404),
           Map.entry(ClaimErrorCodes.CLAIM_SETTLEMENT_CONFLICT, 409),
           Map.entry(ClaimErrorCodes.CLAIM_APPEAL_NOT_FOUND, 404),

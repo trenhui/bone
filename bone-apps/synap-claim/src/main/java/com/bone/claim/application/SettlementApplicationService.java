@@ -3,9 +3,11 @@ package com.bone.claim.application;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
+import com.bone.claim.domain.model.adjustment.Adjustment;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
 import com.bone.claim.domain.model.settlement.AccountType;
 import com.bone.claim.domain.model.settlement.SettlementOrder;
+import com.bone.claim.domain.repository.AdjustmentRepository;
 import com.bone.claim.domain.repository.SettlementRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.util.DistributedIdGenerator;
@@ -37,6 +39,7 @@ public class SettlementApplicationService {
   private final ClaimCaseApplicationService claimCaseApplicationService;
   private final TenantPort tenantPort;
   private final DomainEventPublisher domainEventPublisher;
+  private final AdjustmentRepository adjustmentRepository;
 
   public record SettlementResult(
       String settlementNo, Long claimId, BigDecimal amount, String fundingStage, Integer attempt) {}
@@ -73,6 +76,11 @@ public class SettlementApplicationService {
     if (!adj.accumulationAvailable()) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_QUOTA_NOT_FOUND, claimId);
     }
+    // 状态闸：能读到金额 ≠ 可据此出金。此前只判「有理算」，不判这一版理算是否还有效——
+    //   · ROLLBACKED（已回滚）→ 建单等于为已作废的理算重新占额；
+    //   · UNFROZEN（已解冻、待重算）→ 依据是上一版口径。
+    // 金额对不对看 totalAmount，能不能用要看 resultStatus：同一行记录，两个不同判据。
+    requireSettleableAdjustment(claimId);
 
     BigDecimal amount = adj.totalAmount();
     ClaimWithItemsProjection ctx = claimCaseApplicationService.getClaimWithItems(claimId).get(0);
@@ -322,6 +330,27 @@ public class SettlementApplicationService {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_ADJUST_NOT_FOUND, claimId);
     }
     return adj;
+  }
+
+  /**
+   * 出金依据状态闸：仅有「定稿且未作废」的理算结果可作为结算建单依据。
+   *
+   * <p>放过 {@code FROZEN}（理算定稿，等 A7 占额）与 {@code CONFIRMED}（核赔已确认）——两者都是「这一版算数」； 拒绝 {@code
+   * UNFROZEN}（已解冻待重算）与 {@code ROLLBACKED}（已回滚作废）。重复建单由 {@code claim+attempt} 幂等挡， 不需要靠状态闸兼任，故
+   * {@code CONFIRMED} 不必拦。
+   *
+   * <p>与 {@link #adjustment(long)} 的读侧职责分开：那边回答「金额是多少」，这里回答「这一版还算不算数」。不合并进 {@code AdjustmentResult}
+   * 是刻意的——查询端点（{@code GET /adjustment}）必须能展示任何状态的理算， 而资金侧要有硬前置，两者的失败语义不能共用同一条读取路径。
+   */
+  private void requireSettleableAdjustment(long claimId) {
+    Adjustment latest = adjustmentRepository.findLatestByClaimId(claimId);
+    if (latest == null) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_ADJUST_NOT_FOUND, claimId);
+    }
+    Adjustment.ResultStatus status = latest.resultStatusEnum();
+    if (status != Adjustment.ResultStatus.FROZEN && status != Adjustment.ResultStatus.CONFIRMED) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_ADJUST_STATUS_INVALID, claimId);
+    }
   }
 
   private SettlementOrder requireMutable(long claimId) {

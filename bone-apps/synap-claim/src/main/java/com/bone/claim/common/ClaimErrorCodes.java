@@ -67,6 +67,16 @@ public final class ClaimErrorCodes {
   /** 理算记录不存在。 */
   public static final String CLAIM_ADJUST_NOT_FOUND = "SC_CLAIM_ADJUST_NOT_FOUND";
 
+  /**
+   * 理算结果的状态不允许作为出金依据（{@code UNFROZEN} / {@code ROLLBACKED}）。
+   *
+   * <p>为什么单独给码而不复用 {@code CLAIM_ADJUST_NOT_FOUND}：理算记录<b>存在</b>，金额也读得到， 问题出在「这一版理算是否还算数」—— {@code
+   * UNFROZEN}（已解冻，待重算）与 {@code ROLLBACKED}（已回滚作废）都不能作为付款依据。 两者混淆会让监控把「无依据出金」聚合成「案件没理算」，恰好掩盖资金风险。
+   *
+   * <p>与 {@code CLAIM_ADJUST_EVIDENCE_NOT_LOCKED} 同为 422：请求本身合法，是资金前置的业务前提不成立。
+   */
+  public static final String CLAIM_ADJUST_STATUS_INVALID = "SC_CLAIM_ADJUST_STATUS_INVALID";
+
   /** 结算单不存在。 */
   public static final String CLAIM_SETTLEMENT_NOT_FOUND = "SC_CLAIM_SETTLEMENT_NOT_FOUND";
 

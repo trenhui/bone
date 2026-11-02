@@ -24,6 +24,7 @@
     "SC_CLAIM_LIABILITY_NOT_FOUND": "No effective liability configuration found (plan unconfigured or expired)",
     "SC_CLAIM_LIABILITY_INVALID_ARGUMENT": "Invalid liability configuration numbers (ratio/deductible/limit not parseable; write rejected)",
     "SC_CLAIM_ADJUST_NOT_FOUND": "Adjustment record not found",
+    "SC_CLAIM_ADJUST_STATUS_INVALID": "The adjustment is void or pending recalculation and cannot be used as a payment basis",
     "SC_CLAIM_ADJUST_EVIDENCE_NOT_LOCKED": "Cannot start adjustment before evidence is locked",
     "SC_CLAIM_QUOTA_NOT_FOUND": "Quota account not found",
     "SC_CLAIM_QUOTA_INSUFFICIENT": "Insufficient available quota (occupancy rejected)",
