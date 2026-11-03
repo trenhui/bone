@@ -15,6 +15,7 @@ import {
   FileTextOutlined,
   TagsOutlined,
   DatabaseOutlined,
+  SwapOutlined,
 } from '@ant-design/icons';
 import { ClaimSubmitPage } from './pages/ClaimSubmitPage';
 import { ReviewWorkbenchPage } from './pages/ReviewWorkbenchPage';
@@ -31,6 +32,8 @@ import { PlanConfigPage } from './pages/PlanConfigPage';
 import { QuotaConfigPage } from './pages/QuotaConfigPage';
 import { LiabilityConfigPage } from './pages/LiabilityConfigPage';
 import { LibraryPage } from './pages/LibraryPage';
+import { InsurerManagementPage } from './pages/InsurerManagementPage';
+import { MappingPage } from './pages/MappingPage';
 
 /**
  * 智能理赔 · 路由与页面名的**唯一真源**（单导航架构的前端侧锚点）。
@@ -113,6 +116,11 @@ export const CLAIM_ROUTES: ClaimRoute[] = [
   { path: '/quota', name: '额度管理', icon: <ClusterOutlined />, element: <QuotaConfigPage /> },
   { path: '/liability', name: '责任配置', icon: <TagsOutlined />, element: <LiabilityConfigPage />, hidden: true },
   { path: '/library', name: '基础目录库', icon: <DatabaseOutlined />, element: <LibraryPage /> },
+  // 多保司主数据映射链路（承保主体 + 保司码→标准码 crosswalk）。
+  // 当前 hidden：导航菜单由 shell 依据 IAM 菜单渲染，新增菜单位置需 IAM 侧 seed（迁移脚本，
+  // 属 L3 架构师审批项）后才能进入侧栏；hidden 让单导航探针豁免其菜单全等，本地直链可先行验证。
+  { path: '/insurers', name: '承保主体', icon: <BankOutlined />, element: <InsurerManagementPage />, hidden: true },
+  { path: '/mappings', name: '主数据映射', icon: <SwapOutlined />, element: <MappingPage />, hidden: true },
 ];
 
 /** shell（qiankun activeRule）侧的路由前缀；菜单 path 形如 `/claim#/<hash>`。 */

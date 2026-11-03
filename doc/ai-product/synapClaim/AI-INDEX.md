@@ -81,8 +81,9 @@ currency: current
 | `ai-index` | `AI-INDEX.md` | navigation | 机器优先入口：语料模型+按来意路由+ACTIVE/DRAFT/FROZEN 三段清单，供 AI 确定性检索 |
 | `index` | `README.md` | navigation | 3 分钟入口：按「你这次来做什么」路由到唯一该读的文档；不再按目录树猜 |
 
-## 四、DRAFT 草案（role=draft，待合入 L3，不当现行契约，共 13 份）
+## 四、DRAFT 草案（role=draft，待合入 L3，不当现行契约，共 14 份）
 
+- `design.multi-insurer-mapping` → `04-design/多保司保单配置面与主数据映射设计.md`：提案：多保司保单配置面（单页控制台/责任规则分区）与主数据映射（标准码表+保司码表+映射+字段绑定）的借鉴取舍、数据模型与分期验收
 - `golive.01` → `08-go-live/01-生产准入合规包.md`：PIA/DPIA、等保备案、AI 算法备案、SBOM、渗透测试门禁
 - `golive.02` → `08-go-live/02-外部依赖SLA与降级责任矩阵.md`：外部依赖清单、SLA 与降级责任矩阵、支付实时对账契约
 - `golive.03` → `08-go-live/03-容量性能韧性基线.md`：连接池、OCR 背压、网关 WAF、水平扩展模型、压测计划

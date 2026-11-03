@@ -917,6 +917,249 @@ export const claimConfigApi = {
   },
 };
 
+// ===================== 多保司主数据映射（承保主体 / 保司码表 / 码值映射 / 未命中队列） =====================
+// 后端 `CodeMappingController`，挂在 `/api/v1/claim-config/mappings`。
+//
+// <p><b>为什么需要这一族接口</b>：保单上的 `insurer_name` 此前只是自由文本，无法作为映射键——同一家保司被写成
+// "永诚财险" / "永诚财产保险股份有限公司" 时映射会分裂成两套。承保主体（insurer）是受控替代：保单通过
+// `bizIdentityCode` 引用 `insurer_code`；不同保司对同一主数据（医院/疾病/药品/费用类别）的码值、名称、标准不同，
+// 由「保司码 → 标准码」映射层消化，责任规则只认标准码。
+
+/** 主数据域（与后端 `MasterDataDomain` 对齐）。 */
+export type MappingDomain = 'HOSPITAL' | 'DISEASE' | 'DRUG' | 'FEE_CATEGORY' | 'CERT_TYPE';
+
+/** 映射类型（与后端 `MappingType` 对齐）。 */
+export type MappingType = 'EXACT' | 'SYNONYM' | 'GROUP';
+
+/** 匹配规则（与后端 `MatchRule` 对齐）。 */
+export type MatchRule =
+  | 'CODE_EQUAL'
+  | 'CREDIT_CODE'
+  | 'NAME_NORM'
+  | 'FUZZY'
+  | 'MANUAL'
+  | 'AI_SUGGEST';
+
+/** 映射来源（与后端 `MappingSource` 对齐）。 */
+export type MappingSource = 'MANUAL' | 'IMPORT' | 'SUGGEST_CONFIRMED';
+
+/** 承保主体类型（与后端 `InsurerType` 对齐）。 */
+export type InsurerType = 'DIRECT' | 'BROKER' | 'AGENT';
+
+/** 承保主体状态（与后端 `InsurerStatus` 对齐）。 */
+export type InsurerStatus = 'ACTIVE' | 'DISABLED' | 'TERMINATED';
+
+/** 承保主体视图。 */
+export interface InsurerView {
+  id: string;
+  insurerCode: string;
+  insurerName: string;
+  insurerShortName?: string;
+  insurerType?: InsurerType;
+  creditCode?: string;
+  parentCode?: string;
+  status?: InsurerStatus;
+}
+
+/** 码值映射视图（保司码 → 标准码）。 */
+export interface MappingView {
+  id: string;
+  insurerCode: string;
+  domain: MappingDomain;
+  insurerItemCode: string;
+  disambiguationKey?: string;
+  standardCode: string;
+  status: string;
+  active: boolean;
+  versionNo?: string;
+}
+
+/** 未命中队列项（收单侧遇保司码无映射时入队，供运营补映射）。 */
+export interface MissView {
+  id: string;
+  insurerCode: string;
+  domain: MappingDomain;
+  rawCode: string;
+  rawName?: string;
+  occurCount: number;
+  reopenCount: number;
+  status: string;
+  lastCaseNo?: string;
+  resolvedMappingId?: string;
+}
+
+/** 保司码表项（这家保司怎么叫某条主数据）。 */
+export interface CodeItemView {
+  id: string;
+  insurerCode: string;
+  domain: MappingDomain;
+  itemCode: string;
+  itemName: string;
+  nameNormalized?: string;
+  status?: string;
+}
+
+/** 主数据域展示标签（前端单选用，与库内 `domain` 码值一一对应）。 */
+export const DOMAIN_LABEL: Record<MappingDomain, string> = {
+  HOSPITAL: '医院',
+  DISEASE: '疾病',
+  DRUG: '药品',
+  FEE_CATEGORY: '费用类别',
+  CERT_TYPE: '证件类型',
+};
+
+/** 承保主体类型展示标签。 */
+export const INSURER_TYPE_LABEL: Record<InsurerType, string> = {
+  DIRECT: '直保',
+  BROKER: '经纪',
+  AGENT: '代理',
+};
+
+/** 承保主体状态展示标签。 */
+export const INSURER_STATUS_LABEL: Record<InsurerStatus, string> = {
+  ACTIVE: '启用',
+  DISABLED: '停用',
+  TERMINATED: '终止合作',
+};
+
+export interface RegisterInsurerReq {
+  insurerCode: string;
+  insurerName: string;
+  insurerShortName?: string;
+  insurerType?: InsurerType;
+  creditCode?: string;
+  parentCode?: string;
+}
+
+export interface PublishMappingReq {
+  insurerCode: string;
+  domain: MappingDomain;
+  insurerItemCode: string;
+  disambiguationKey?: string;
+  standardCode: string;
+  mappingType?: MappingType;
+  matchRule?: MatchRule;
+  matchScore?: number;
+  disambiguationJson?: string;
+  source?: MappingSource;
+  versionNo?: string;
+  reviewerId?: string;
+}
+
+export interface UpsertCodeItemReq {
+  insurerCode: string;
+  domain: MappingDomain;
+  itemCode: string;
+  itemName: string;
+  extraJson?: string;
+  sourceBatchNo?: string;
+}
+
+export const mappingApi = {
+  /** 注册承保主体。 */
+  registerInsurer(req: RegisterInsurerReq): Promise<ApiResponse<InsurerView>> {
+    return client.post<RegisterInsurerReq, ApiResponse<InsurerView>>('/mappings/insurers', req);
+  },
+
+  /** 承保主体分页列表（keyword 模糊匹配编码/名称）。 */
+  listInsurers(params: { keyword?: string; page?: number; size?: number }): Promise<
+    ApiResponse<PageResult<InsurerView>>
+  > {
+    return client.get<never, ApiResponse<PageResult<InsurerView>>>('/mappings/insurers', { params });
+  },
+
+  /** 维护保司码表项（同键 upsert）。 */
+  upsertCodeItem(req: UpsertCodeItemReq): Promise<ApiResponse<CodeItemView>> {
+    return client.post<UpsertCodeItemReq, ApiResponse<CodeItemView>>('/mappings/code-items', req);
+  },
+
+  /** 保司码表项分页列表。 */
+  listCodeItems(params: {
+    insurerCode?: string;
+    domain?: MappingDomain;
+    keyword?: string;
+    page?: number;
+    size?: number;
+  }): Promise<ApiResponse<PageResult<CodeItemView>>> {
+    return client.get<never, ApiResponse<PageResult<CodeItemView>>>('/mappings/code-items', {
+      params,
+    });
+  },
+
+  /** 发布一条映射（同键旧行自动失效）。 */
+  publishMapping(req: PublishMappingReq): Promise<ApiResponse<MappingView>> {
+    return client.post<PublishMappingReq, ApiResponse<MappingView>>('/mappings', req);
+  },
+
+  /** 当前生效映射分页。 */
+  listMappings(params: {
+    insurerCode?: string;
+    domain?: MappingDomain;
+    page?: number;
+    size?: number;
+  }): Promise<ApiResponse<PageResult<MappingView>>> {
+    return client.get<never, ApiResponse<PageResult<MappingView>>>('/mappings', { params });
+  },
+
+  /** 停用映射（保留历史行）。 */
+  disableMapping(id: string, reasonCode?: string): Promise<ApiResponse<MappingView>> {
+    return client.post<unknown, ApiResponse<MappingView>>(
+      `/mappings/${encodeURIComponent(id)}/disable`,
+      null,
+      { params: { reasonCode } },
+    );
+  },
+
+  /** 未命中队列分页。 */
+  listMisses(params: {
+    status?: string;
+    page?: number;
+    size?: number;
+  }): Promise<ApiResponse<PageResult<MissView>>> {
+    return client.get<never, ApiResponse<PageResult<MissView>>>('/mappings/misses', { params });
+  },
+
+  /** 处置未命中：建立映射并关闭队列项。 */
+  resolveMiss(id: string, req: PublishMappingReq): Promise<ApiResponse<MissView>> {
+    return client.post<PublishMappingReq, ApiResponse<MissView>>(
+      `/mappings/misses/${encodeURIComponent(id)}/resolve`,
+      req,
+    );
+  },
+
+  /** 忽略未命中（运营判定该码无需映射）。 */
+  ignoreMiss(id: string, reason: string): Promise<ApiResponse<MissView>> {
+    return client.post<unknown, ApiResponse<MissView>>(
+      `/mappings/misses/${encodeURIComponent(id)}/ignore`,
+      null,
+      { params: { reason } },
+    );
+  },
+
+  /** 解析保司码到标准码（试算；未命中会入队）。 */
+  resolve(req: {
+    insurerCode: string;
+    domain: MappingDomain;
+    rawCode: string;
+    rawName?: string;
+    disambiguationKey?: string;
+    caseNo?: string;
+  }): Promise<
+    ApiResponse<{ status: string; standardCode?: string; mappingId?: string; reasonCode?: string; missRecorded: boolean }>
+  > {
+    return client.post<
+      unknown,
+      ApiResponse<{
+        status: string;
+        standardCode?: string;
+        mappingId?: string;
+        reasonCode?: string;
+        missRecorded: boolean;
+      }>
+    >('/mappings/resolve', req);
+  },
+};
+
 /** 把后端分页信封的 total 归一成 number（后端 Long 序列化为字符串）。 */
 export function toTotal(result: PageResult<unknown> | undefined): number {
   return normalizeTotal(result?.total);

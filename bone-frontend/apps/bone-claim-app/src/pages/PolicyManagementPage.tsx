@@ -37,6 +37,7 @@ import { PERMISSIONS } from '../constants/permissions';
 import { ERROR_CODES } from '../constants/errorCodes';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
+import { InsurerSelect } from '../components/InsurerSelect';
 import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
 import { FORM_VALIDATION_MESSAGE, isFormValidationError } from '../utils/formError';
 import { csvFilename, downloadBlob } from '../utils/downloadBlob';
@@ -594,8 +595,19 @@ export function PolicyManagementPage(): ReactElement {
             </Form.Item>
           </Space>
           <Space size="middle" wrap style={{ width: '100%' }}>
-            <Form.Item name="insurerName" label="保险公司" style={{ width: 220 }}>
-              <Input placeholder="选填" />
+            <Form.Item
+              name="bizIdentityCode"
+              label="承保主体（保险公司）"
+              style={{ width: 260 }}
+              tooltip="从受控承保主体中选择；保单通过业务主体码引用，避免同一家保司写成多种名称导致映射分裂"
+            >
+              <InsurerSelect
+                style={{ width: '100%' }}
+                onChange={(_code, name) => form.setFieldsValue({ insurerName: name })}
+              />
+            </Form.Item>
+            <Form.Item name="insurerName" hidden>
+              <Input />
             </Form.Item>
             <Form.Item name="branchName" label="保险分公司" style={{ width: 220 }}>
               <Input placeholder="选填" />
@@ -605,9 +617,7 @@ export function PolicyManagementPage(): ReactElement {
             </Form.Item>
           </Space>
           <Space size="middle" wrap style={{ width: '100%' }}>
-            <Form.Item name="bizIdentityCode" label="业务主体码" style={{ width: 220 }}>
-              <Input placeholder="保司/分公司/投保公司/保单四级匹配" />
-            </Form.Item>
+
             <Form.Item
               name="policyType"
               label="保单类型"
@@ -689,8 +699,19 @@ export function PolicyManagementPage(): ReactElement {
             </Form.Item>
           </Space>
           <Space size="middle" wrap style={{ width: '100%' }}>
-            <Form.Item name="insurerName" label="保险公司" style={{ width: 220 }}>
-              <Input placeholder="选填" />
+            <Form.Item
+              name="bizIdentityCode"
+              label="承保主体（保险公司）"
+              style={{ width: 260 }}
+              tooltip="从受控承保主体中选择；保单通过业务主体码引用，避免同一家保司写成多种名称导致映射分裂"
+            >
+              <InsurerSelect
+                style={{ width: '100%' }}
+                onChange={(_code, name) => form.setFieldsValue({ insurerName: name })}
+              />
+            </Form.Item>
+            <Form.Item name="insurerName" hidden>
+              <Input />
             </Form.Item>
             <Form.Item name="branchName" label="保险分公司" style={{ width: 220 }}>
               <Input placeholder="选填" />
@@ -700,9 +721,7 @@ export function PolicyManagementPage(): ReactElement {
             </Form.Item>
           </Space>
           <Space size="middle" wrap style={{ width: '100%' }}>
-            <Form.Item name="bizIdentityCode" label="业务主体码" style={{ width: 220 }}>
-              <Input placeholder="保司/分公司/投保公司/保单四级匹配" />
-            </Form.Item>
+
             <Form.Item
               name="policyType"
               label="保单类型"

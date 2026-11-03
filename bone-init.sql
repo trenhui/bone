@@ -3705,6 +3705,31 @@ CREATE TABLE `meta_runtime_record_audit` (
   KEY `idx_audit_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='运行时记录级变更审计（RC-009，append-only）';
 
+-- ── t_adj_fee_type（建自 0101_synap_claim_phase1_record_tables.sql） ──
+DROP TABLE IF EXISTS `t_adj_fee_type`;
+CREATE TABLE `t_adj_fee_type` (
+  `id` bigint NOT NULL COMMENT '费用类型ID(分布式ID)',
+  `fee_type_code` varchar(32) NOT NULL COMMENT '费用类型编码',
+  `fee_type_name` varchar(64) NOT NULL COMMENT '费用类型名称',
+  `source` varchar(16) NOT NULL COMMENT 'INPUT 录入项 / CALCULATE 计算项',
+  `input_code` varchar(64) NOT NULL DEFAULT '' COMMENT 'source=INPUT 时的录入编码',
+  `calculate_formula` varchar(256) NOT NULL DEFAULT '' COMMENT 'source=CALCULATE 时的计算式',
+  `parent_code` varchar(32) NOT NULL DEFAULT '' COMMENT '父费用类型编码',
+  `is_default` tinyint NOT NULL DEFAULT '0' COMMENT '是否默认适用全部责任',
+  `sort_no` int NOT NULL DEFAULT '0' COMMENT '排序',
+  `status` varchar(16) NOT NULL DEFAULT 'ACTIVE' COMMENT 'ACTIVE/RETIRED',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `version` bigint NOT NULL DEFAULT '0' COMMENT '乐观锁版本',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_fee_type_code` (`tenant_id`,`fee_type_code`),
+  KEY `idx_parent` (`tenant_id`,`parent_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='费用类型字典(录入项/计算项)';
+
 -- ── t_claim_case_sla（建自 0072_synap_claim_missing_tables.sql） ──
 DROP TABLE IF EXISTS `t_claim_case_sla`;
 CREATE TABLE `t_claim_case_sla` (
@@ -3803,6 +3828,79 @@ CREATE TABLE `t_claim_inspection` (
   KEY `idx_tenant_claim` (`tenant_id`,`claim_id`,`created_at`),
   KEY `idx_tenant_status` (`tenant_id`,`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='后督抽检单(任务+结论同表)';
+
+-- ── t_claim_review_record（建自 0101_synap_claim_phase1_record_tables.sql） ──
+DROP TABLE IF EXISTS `t_claim_review_record`;
+CREATE TABLE `t_claim_review_record` (
+  `id` bigint NOT NULL COMMENT '复核记录ID(分布式ID)',
+  `claim_id` bigint NOT NULL COMMENT '案件ID',
+  `settlement_no` varchar(64) NOT NULL DEFAULT '' COMMENT '结算单号(资金侧复核时填)',
+  `role` varchar(24) NOT NULL COMMENT 'REVIEW 核赔 / SECOND_REVIEW 双人复核 / APPROVE 调账审批',
+  `reviewer_id` varchar(64) NOT NULL COMMENT '复核人',
+  `operator_id` varchar(64) NOT NULL DEFAULT '' COMMENT '发起人(校验 reviewer_id != operator_id, §11.10)',
+  `amount` decimal(12,2) NOT NULL DEFAULT '0.00' COMMENT '本次复核金额',
+  `decision` varchar(24) NOT NULL COMMENT 'APPROVED/REJECTED/REQUEST_MORE_EVIDENCE',
+  `comment` varchar(2000) NOT NULL DEFAULT '' COMMENT '复核意见(拒赔五要素)',
+  `created_at` datetime(3) NOT NULL COMMENT '复核时间',
+  `tenant_id` bigint NOT NULL COMMENT '租户(安全隔离+按租户对账)',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间(随创建写一次，业务不再改)',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记(业务不删，列由框架注入)',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_claim_role_reviewer` (`claim_id`,`role`,`reviewer_id`),
+  KEY `idx_claim` (`claim_id`),
+  KEY `idx_reviewer` (`tenant_id`,`reviewer_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='复核/审核留痕(append-only)';
+
+-- ── t_claim_rule_hit（建自 0101_synap_claim_phase1_record_tables.sql） ──
+DROP TABLE IF EXISTS `t_claim_rule_hit`;
+CREATE TABLE `t_claim_rule_hit` (
+  `id` bigint NOT NULL COMMENT '命中ID(分布式ID)',
+  `claim_id` bigint NOT NULL COMMENT '案件ID',
+  `execution_id` bigint NOT NULL COMMENT '决策执行ID',
+  `rule_code` varchar(64) NOT NULL COMMENT '规则编码',
+  `rule_version` varchar(32) NOT NULL COMMENT '规则版本',
+  `rule_category` varchar(16) NOT NULL COMMENT 'R-AREA/R-DIR/R-DED/R-RAT/R-CAP/R-DEC/R-FAST/R-MAN/R-FRAUD',
+  `priority` int NOT NULL DEFAULT '5' COMMENT '裁决优先级 P0-P5',
+  `input_snapshot` json DEFAULT NULL COMMENT '命中时输入快照',
+  `conclusion` varchar(512) NOT NULL DEFAULT '' COMMENT '规则结论',
+  `hit_at` datetime(3) NOT NULL COMMENT '命中时间',
+  `tenant_id` bigint NOT NULL COMMENT '租户(安全隔离+按租户对账)',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间(随创建写一次，业务不再改)',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记(业务不删，列由框架注入)',
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_claim` (`tenant_id`,`claim_id`),
+  KEY `idx_rule` (`rule_code`,`rule_version`),
+  KEY `idx_execution` (`execution_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='规则命中记录(append-only)';
+
+-- ── t_claim_stakeholder（建自 0101_synap_claim_phase1_record_tables.sql） ──
+DROP TABLE IF EXISTS `t_claim_stakeholder`;
+CREATE TABLE `t_claim_stakeholder` (
+  `id` bigint NOT NULL COMMENT '干系人ID(分布式ID)',
+  `claim_id` bigint NOT NULL COMMENT '案件ID',
+  `role` varchar(16) NOT NULL COMMENT 'REPORTER/INSURED/APPLICANT/PAYEE',
+  `person_id_hash` char(64) NOT NULL COMMENT '假名化人员ID(PIPL 29 擦除锚点)',
+  `name_masked` varchar(64) NOT NULL COMMENT '姓名(遮蔽)',
+  `relation` varchar(32) NOT NULL DEFAULT '' COMMENT '与被保人关系',
+  `phone_masked` varchar(32) NOT NULL DEFAULT '' COMMENT '手机号(前后4位)',
+  `collect_type` varchar(32) NOT NULL DEFAULT '' COMMENT '领款人类型',
+  `bank_ref` varchar(256) NOT NULL DEFAULT '' COMMENT '领款账户引用(加密)',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `version` bigint NOT NULL DEFAULT '0' COMMENT '乐观锁版本',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记',
+  PRIMARY KEY (`id`),
+  KEY `idx_claim` (`claim_id`),
+  KEY `idx_person` (`tenant_id`,`person_id_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='赔案干系人(报案人/被保人/申请人/领款人)';
 
 -- ── t_domain_event_outbox（建自 0072_synap_claim_missing_tables.sql） ──
 DROP TABLE IF EXISTS `t_domain_event_outbox`;
@@ -3911,6 +4009,7 @@ CREATE TABLE `t_feature_toggle` (
   `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
   `version` bigint NOT NULL DEFAULT '0' COMMENT '乐观锁版本',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记',
+  `config_json` text COMMENT '开关附带参数(JSON：阈值/灰度细分；NULL=沿用代码常量)',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_tenant_feature` (`tenant_id`,`feature_key`),
   KEY `idx_key` (`feature_key`)
@@ -4160,103 +4259,5 @@ CREATE TABLE `wf_task` (
   KEY `idx_instance` (`tenant_id`,`instance_id`,`deleted`),
   KEY `idx_wf_task_node_round` (`tenant_id`,`instance_id`,`node_code`,`node_round`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='审批任务（办理人在节点进入时一次性解析并冻结）';
-
--- ── t_claim_stakeholder（建自 0101_synap_claim_phase1_record_tables.sql） ──
-DROP TABLE IF EXISTS `t_claim_stakeholder`;
-CREATE TABLE `t_claim_stakeholder` (
-  `id` bigint NOT NULL COMMENT '干系人ID(分布式ID)',
-  `claim_id` bigint NOT NULL COMMENT '案件ID',
-  `role` varchar(16) NOT NULL COMMENT 'REPORTER/INSURED/APPLICANT/PAYEE',
-  `person_id_hash` char(64) NOT NULL COMMENT '假名化人员ID(PIPL 29 擦除锚点)',
-  `name_masked` varchar(64) NOT NULL COMMENT '姓名(遮蔽)',
-  `relation` varchar(32) NOT NULL DEFAULT '' COMMENT '与被保人关系',
-  `phone_masked` varchar(32) NOT NULL DEFAULT '' COMMENT '手机号(前后4位)',
-  `collect_type` varchar(32) NOT NULL DEFAULT '' COMMENT '领款人类型',
-  `bank_ref` varchar(256) NOT NULL DEFAULT '' COMMENT '领款账户引用(加密)',
-  `tenant_id` bigint NOT NULL COMMENT '租户',
-  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
-  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
-  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
-  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
-  `version` bigint NOT NULL DEFAULT '0' COMMENT '乐观锁版本',
-  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记',
-  PRIMARY KEY (`id`),
-  KEY `idx_claim` (`claim_id`),
-  KEY `idx_person` (`tenant_id`,`person_id_hash`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='赔案干系人(报案人/被保人/申请人/领款人)';
-
--- ── t_claim_rule_hit（建自 0101_synap_claim_phase1_record_tables.sql） ──
-DROP TABLE IF EXISTS `t_claim_rule_hit`;
-CREATE TABLE `t_claim_rule_hit` (
-  `id` bigint NOT NULL COMMENT '命中ID(分布式ID)',
-  `claim_id` bigint NOT NULL COMMENT '案件ID',
-  `execution_id` bigint NOT NULL COMMENT '决策执行ID',
-  `rule_code` varchar(64) NOT NULL COMMENT '规则编码',
-  `rule_version` varchar(32) NOT NULL COMMENT '规则版本',
-  `rule_category` varchar(16) NOT NULL COMMENT 'R-AREA/R-DIR/R-DED/R-RAT/R-CAP/R-DEC/R-FAST/R-MAN/R-FRAUD',
-  `priority` int NOT NULL DEFAULT '5' COMMENT '裁决优先级 P0-P5',
-  `input_snapshot` json DEFAULT NULL COMMENT '命中时输入快照',
-  `conclusion` varchar(512) NOT NULL DEFAULT '' COMMENT '规则结论',
-  `hit_at` datetime(3) NOT NULL COMMENT '命中时间',
-  `tenant_id` bigint NOT NULL COMMENT '租户(安全隔离+按租户对账)',
-  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
-  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
-  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
-  `updated_at` datetime(3) NOT NULL COMMENT '更新时间(随创建写一次，业务不再改)',
-  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记(业务不删，列由框架注入)',
-  PRIMARY KEY (`id`),
-  KEY `idx_tenant_claim` (`tenant_id`,`claim_id`),
-  KEY `idx_rule` (`rule_code`,`rule_version`),
-  KEY `idx_execution` (`execution_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='规则命中记录(append-only)';
-
--- ── t_claim_review_record（建自 0101_synap_claim_phase1_record_tables.sql） ──
-DROP TABLE IF EXISTS `t_claim_review_record`;
-CREATE TABLE `t_claim_review_record` (
-  `id` bigint NOT NULL COMMENT '复核记录ID(分布式ID)',
-  `claim_id` bigint NOT NULL COMMENT '案件ID',
-  `settlement_no` varchar(64) NOT NULL DEFAULT '' COMMENT '结算单号(资金侧复核时填)',
-  `role` varchar(24) NOT NULL COMMENT 'REVIEW 核赔 / SECOND_REVIEW 双人复核 / APPROVE 调账审批',
-  `reviewer_id` varchar(64) NOT NULL COMMENT '复核人',
-  `operator_id` varchar(64) NOT NULL DEFAULT '' COMMENT '发起人(校验 reviewer_id != operator_id, §11.10)',
-  `amount` decimal(12,2) NOT NULL DEFAULT '0.00' COMMENT '本次复核金额',
-  `decision` varchar(24) NOT NULL COMMENT 'APPROVED/REJECTED/REQUEST_MORE_EVIDENCE',
-  `comment` varchar(2000) NOT NULL DEFAULT '' COMMENT '复核意见(拒赔五要素)',
-  `created_at` datetime(3) NOT NULL COMMENT '复核时间',
-  `tenant_id` bigint NOT NULL COMMENT '租户(安全隔离+按租户对账)',
-  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
-  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
-  `updated_at` datetime(3) NOT NULL COMMENT '更新时间(随创建写一次，业务不再改)',
-  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记(业务不删，列由框架注入)',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_claim_role_reviewer` (`claim_id`,`role`,`reviewer_id`),
-  KEY `idx_claim` (`claim_id`),
-  KEY `idx_reviewer` (`tenant_id`,`reviewer_id`,`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='复核/审核留痕(append-only)';
-
--- ── t_adj_fee_type（建自 0101_synap_claim_phase1_record_tables.sql） ──
-DROP TABLE IF EXISTS `t_adj_fee_type`;
-CREATE TABLE `t_adj_fee_type` (
-  `id` bigint NOT NULL COMMENT '费用类型ID(分布式ID)',
-  `fee_type_code` varchar(32) NOT NULL COMMENT '费用类型编码',
-  `fee_type_name` varchar(64) NOT NULL COMMENT '费用类型名称',
-  `source` varchar(16) NOT NULL COMMENT 'INPUT 录入项 / CALCULATE 计算项',
-  `input_code` varchar(64) NOT NULL DEFAULT '' COMMENT 'source=INPUT 时的录入编码',
-  `calculate_formula` varchar(256) NOT NULL DEFAULT '' COMMENT 'source=CALCULATE 时的计算式',
-  `parent_code` varchar(32) NOT NULL DEFAULT '' COMMENT '父费用类型编码',
-  `is_default` tinyint NOT NULL DEFAULT '0' COMMENT '是否默认适用全部责任',
-  `sort_no` int NOT NULL DEFAULT '0' COMMENT '排序',
-  `status` varchar(16) NOT NULL DEFAULT 'ACTIVE' COMMENT 'ACTIVE/RETIRED',
-  `tenant_id` bigint NOT NULL COMMENT '租户',
-  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
-  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
-  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
-  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
-  `version` bigint NOT NULL DEFAULT '0' COMMENT '乐观锁版本',
-  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_fee_type_code` (`tenant_id`,`fee_type_code`),
-  KEY `idx_parent` (`tenant_id`,`parent_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='费用类型字典(录入项/计算项)';
 
 -- <<< END managed: migration-merged

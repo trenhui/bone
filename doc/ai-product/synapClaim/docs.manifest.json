@@ -180,6 +180,19 @@
       "currency": "current"
     },
     {
+      "id": "design.multi-insurer-mapping",
+      "path": "04-design/多保司保单配置面与主数据映射设计.md",
+      "layer": "L4",
+      "diataxis": "explanation",
+      "status": "active",
+      "summary": "提案：多保司保单配置面（单页控制台/责任规则分区）与主数据映射（标准码表+保司码表+映射+字段绑定）的借鉴取舍、数据模型与分期验收",
+      "shortNames": [
+        "多保司映射设计"
+      ],
+      "role": "draft",
+      "currency": "draft"
+    },
+    {
       "id": "plan.mvp",
       "path": "05-plan/MVP可落地执行方案.md",
       "layer": "L5",

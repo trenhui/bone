@@ -96,6 +96,13 @@ MERGED_SOURCES: dict[str, str] = {
     # 0099：两个「实体+仓储已提交、物理表从未建」的配置聚合（§6.7 流程配置 / §11.4 三态开关）
     "t_claim_flow_config": "0099_synap_claim_flow_config_feature_toggle.sql",
     "t_feature_toggle": "0099_synap_claim_flow_config_feature_toggle.sql",
+    # 0101：§9.5 一期「无代码无表」四张记录/字典表。补登记（0089 同款）：建表迁移已提交，
+    # DDL 已并入 bone-init.sql 托管区块，但漏登记本清单 ⇒ sync 重建区块会抹掉它们，
+    # --check 判「多表（init 有、活库无）」。归档只增不改，此处补齐。
+    "t_claim_stakeholder": "0101_synap_claim_phase1_record_tables.sql",
+    "t_claim_rule_hit": "0101_synap_claim_phase1_record_tables.sql",
+    "t_claim_review_record": "0101_synap_claim_phase1_record_tables.sql",
+    "t_adj_fee_type": "0101_synap_claim_phase1_record_tables.sql",
 }
 
 
