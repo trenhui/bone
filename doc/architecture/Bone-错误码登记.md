@@ -632,6 +632,8 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_RECON_DIFF_NOT_FOUND` | 404 | 对账差异不存在或不可见（租户隔离下的统一 404 语义，防枚举） |
 | `SC_CLAIM_RECON_DIFF_CONFLICT` | 409 | 对账差异状态冲突（已处置不可再次处置 / 处置结论非法；不静默幂等） |
 | `SC_CLAIM_CONSENT_WITHDRAWN` | 422 | 被保险人已撤回同意（PIPL 第 15 条）：处理类用例（分配/初审/理算回填/核赔/复核/自动通过/补件）一律拒绝，请求本身合法而处理前提已失效；关单/挂起/申诉不受限——撤回语义是「停止新处理」而非「冻结案件」，否则案件永久悬空 |
+| `SC_CLAIM_MAPPING_IMPORT_REJECTED` | 400 | 映射批量导入被整批拒绝（文件不可解析或超过单批 2000 行上限）：行级错误走结果对象不抛异常，只有「整批不可用」才用此码；覆盖项维度非法/覆盖项不存在同用此码（请求内容不合法，故 400） |
+| `SC_CLAIM_BIZ_IDENTITY_INVALID` | 422 | 引用的业务主体（bizIdentityCode）不合法：主体不存在，或已停用/终止。请求本身合法，是引用的主数据前提不成立，故 422；主体码是映射层的键，挂着不存在的主体码会在该键下建出无人维护的映射队列，挂着已停用主体等于绕过「停用保司冻结映射面」的运营动作 |
 
 ---
 

@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 109,
+  "executableCount": 111,
   "retired": [],
   "entries": [
     {
@@ -659,6 +659,18 @@
       "summary": "补建 §9.5 一期表清单里「既无实体也无表」的四张记录/字典表：t_claim_stakeholder（干系人，可变+@Version）、t_claim_rule_hit（规则命中，append-only）、t_claim_review_record（复核留痕，append-only）、t_adj_fee_type（费用类型字典，可变+@Version）。列清单以实体元数据为准：append-only 两表仍带框架审计列（updated_at/updated_by/deleted）但无 @Version，可变两表带 @Version 且 version NOT NULL DEFAULT 0——缺列令 SDK 写入报 ERROR 1054、缺 @Version 列令乐观锁失效（0089/0099 同款）。幂等 CREATE TABLE IF NOT EXISTS + 终态断言（四表存在 / 逐列齐全 / 唯一键存在 / version 约束）。bone-init.sql 同批并入托管区块。"
     },
     {
+      "order": 109,
+      "file": "0102_seed_claim_mapping_menus.sql",
+      "kind": "mixed",
+      "summary": "给「智能理赔」目录补两条运营配置面叶子菜单「承保主体」(/claim#/insurers) 与「主数据映射」(/claim#/mappings)，与 bone-claim-app/src/routes.tsx 逐字对齐，闭合多保司映射链路的导航缺口（菜单是侧栏唯一来源，缺则探针判红且真实环境看不见入口）。"
+    },
+    {
+      "order": 110,
+      "file": "0102_synap_claim_item_dual_code.sql",
+      "kind": "ddl",
+      "summary": "收单落双码的落库列（主设计 §6.5/§14 P0 判据①-④）：t_claim_item 加 std_fee_code/mapping_version，t_claim_case 加 std_hospital_code/std_diagnosis_code/mapping_version。raw 侧三列已有承载（fee_code/hospital_code/diagnosis_code）不加；空串=未解析（与 fee_code 口径一致），消费方须按维度缺失 fail-closed。幂等 information_schema 判定 + 动态 SQL + 终态断言（5 列齐全且带默认值）。bone-init.sql 两表 CREATE 同批加列。"
+    },
+    {
       "order": null,
       "file": "0008_README.md",
       "kind": "doc",
@@ -701,7 +713,7 @@
       "summary": "scripts/migration 总索引：三条路径、并入全量的闭环、下线与归档纪律"
     },
     {
-      "order": 109,
+      "order": 111,
       "file": "0103_synap_claim_flow_config_unique_active.sql",
       "kind": "ddl",
       "summary": "给 t_claim_flow_config 补「同租户同 flow_key 至多一条生效版本」的数据库级约束：新增 VIRTUAL 生成列 active_key = IF(active_flag=1 AND deleted=0, flow_key, NULL) + 唯一键 uk_tenant_flow_active(tenant_id, active_key)。背景：0099 的唯一键是 uk_tenant_flow_version(tenant_id, flow_key, config_version)，约束的是**版本**而非**生效行**；active_flag 只有普通索引 idx_flow，同一 flow_key 可合法存在多条 active_flag=1，于是「当前配置」成了无解歧义，且原仓储 ClaimFlowConfigRepository.findByFlowKey 用 findOneByCriteria 只按 (tenant_id, flow_key) 过滤、不看 active_flag，命中多行时 SDK 抛 MultipleResultsException（报错文本 'Expected single result, found: N' 完全看不出成因）。为何用生成列而非「唯一键加 active_flag」：后者会要求同 flow_key 下所有历史版本(active_flag=0)也只能有一行，而版本化配置的本质就是多行历史——用「把历史版本标成非历史」表达版本推进会污染语义。MySQL 无 partial unique index（PostgreSQL 的 CREATE UNIQUE INDEX ... WHERE 才有），业界标准解法即生成列 + 唯一键：MySQL 唯一索引不视 NULL 为重复，于是生效行受约束、历史行(active_key=NULL)可任意多行；把 deleted 纳入条件是必需的，否则「软删旧生效版本后激活新版本」会被自己的历史行挡住，而那正是版本推进的常规动作。生成列不进实体：SDK 的 SELECT/INSERT 列清单均取自实体元数据（SqlBuilder 取 TableMetadata，非 SELECT *），故既不会被读出也不会被写入（否则 MySQL 报 1067 generated column in DEFAULT clause）。存量脏数据处置：不自动删数据——保留哪一版属业务决定（代码无法推断哪个 config_version 才是当前版本），脚本在加约束前先探测，多 active 则打印逐条处置清单并 SIGNAL 中止，且 MESSAGE_TEXT 只放简短指引（该字段有 128 字符上限，实测超长报 ERROR 1648 'Data too long for condition item'）。幂等：information_schema 探测 + 动态 DDL（0085/0090/0097/0098 同范式），重复执行 RC=0 且不重复添加；终态断言生成列表达式含 active_flag/flow_key、唯一键列序为 (tenant_id, active_key)、存量多 active 组数为 0。"
@@ -782,6 +794,15 @@
       ],
       "independentChanges": true,
       "verdict": "并行双线各自占用 0101 号段：feature_toggle_config_payload（t_feature_toggle 补 config_json 承载列，order 107）与 phase1_record_tables（补建 §9.5 四张记录/字典表，order 108）互不触碰对方对象；order 按 M4 词典序排列（f < p），两者作用于不同表，无依赖冲突。"
+    },
+    {
+      "ordinal": "0102",
+      "files": [
+        "0102_seed_claim_mapping_menus.sql",
+        "0102_synap_claim_item_dual_code.sql"
+      ],
+      "independentChanges": true,
+      "verdict": "并行双线各自占用 0102 号段：seed_claim_mapping_menus（映射菜单/权限种子）与 synap_claim_item_dual_code（收单双码回填列）互不触碰对方对象；order 按 M4 词典序排列（seed < synap），无依赖冲突。"
     }
   ],
   "appliesTo": "store-incremental",

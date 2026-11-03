@@ -2762,6 +2762,11 @@ CREATE TABLE t_claim_case (
   invoice_date      DATE          DEFAULT NULL COMMENT '发票开票日期(「次」分组维度；历史案件为 NULL，不得用出险时间顶替)',
   hospital_code     VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '医院编码(「次」分组维度；按编码比对，不按名称——名称可改，编码是身份)',
   diagnosis_code    VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '病种/诊断编码(「次」分组维度；一次就诊一个主要诊断)',
+  -- 双码回填列（0102，主设计 §6.5）：raw 已有承载（hospital_code/diagnosis_code），
+  -- std 侧解析成功才写；空串=未解析，消费方必须按维度缺失 fail-closed。
+  std_hospital_code VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '标准医院码(映射解析回填;空串=未解析)',
+  std_diagnosis_code VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '标准诊断码(ICD-10 医保版;映射解析回填;空串=未解析)',
+  mapping_version   VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '命中的映射行版本号(回放/复算依据;空串=未解析)',
   PRIMARY KEY (id),
   UNIQUE KEY uk_tenant_claim_no (tenant_id, claim_no),
   UNIQUE KEY uk_tenant_idem (tenant_id, idempotency_key),
@@ -2784,6 +2789,8 @@ CREATE TABLE t_claim_item (
   -- 与 category（四分类粗目）并存——粗目无法反推十类收费类别，归类事实只能由报案端提供，
   -- 缺失时引擎按责任统一比例算并落诊断，绝不按粗目猜类别。
   fee_code         VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '费用类别编码(责任费用规则判定维度; 空=未分类)',
+  std_fee_code     VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '标准费用类别码(映射解析回填;空串=未解析,消费方须按维度缺失fail-closed)',
+  mapping_version  VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '命中的映射行版本号(回放/复算依据;空串=未解析)',
   quantity         DECIMAL(10,2) NOT NULL DEFAULT 1 COMMENT '数量',
   unit_price       DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '单价',
   amount           DECIMAL(12,2) NOT NULL COMMENT '金额',
@@ -3500,6 +3507,7 @@ CREATE TABLE t_claim_mapping_miss (
   status              VARCHAR(16)  NOT NULL DEFAULT 'OPEN' COMMENT 'OPEN/RESOLVED/IGNORED',
   ignore_reason       VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '忽略理由',
   resolved_mapping_id BIGINT       DEFAULT NULL COMMENT '解决该未命中的映射ID',
+  resolved_by         VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '处置人(operatorId;系统恢复=SYSTEM)',
   tenant_id           BIGINT       NOT NULL COMMENT '租户',
   created_by          BIGINT       DEFAULT NULL COMMENT '创建人ID',
   created_at          DATETIME(3)  NOT NULL COMMENT '创建时间',
@@ -3511,6 +3519,26 @@ CREATE TABLE t_claim_mapping_miss (
   UNIQUE KEY uk_miss (tenant_id, insurer_code, domain, raw_code),
   KEY idx_open (tenant_id, status, last_seen_at)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '收单映射未命中队列';
+
+CREATE TABLE t_claim_coverage_override (
+  id                  BIGINT       NOT NULL COMMENT '主键(分布式ID)',
+  biz_identity_code   VARCHAR(64)  NOT NULL COMMENT '业务主体编码',
+  coverage_uuid       VARCHAR(64)  NOT NULL COMMENT '责任UUID(各版本共享)',
+  override_field      VARCHAR(128) NOT NULL COMMENT '覆盖维度:LIMIT_HOSPITAL_CODES/LIMIT_DIAGNOSIS_CODES/FEE_RULE.<feeCode>',
+  standard_value      TEXT         NOT NULL COMMENT '标准值快照(留痕;合并取实时标准)',
+  override_value      TEXT         NOT NULL COMMENT '覆盖值(名单=分隔串;费用规则=JSON)',
+  status              VARCHAR(16)  NOT NULL DEFAULT 'DISABLED' COMMENT 'DISABLED/ACTIVE',
+  tenant_id           BIGINT       NOT NULL COMMENT '租户',
+  created_by          BIGINT       DEFAULT NULL COMMENT '创建人ID',
+  created_at          DATETIME(3)  NOT NULL COMMENT '创建时间',
+  updated_by          BIGINT       DEFAULT NULL COMMENT '修改人ID',
+  updated_at          DATETIME(3)  NOT NULL COMMENT '更新时间',
+  version             BIGINT       NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  deleted             TINYINT      NOT NULL DEFAULT 0 COMMENT '软删标记(不参与唯一键)',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_coverage_override (tenant_id, biz_identity_code, coverage_uuid, override_field),
+  KEY idx_coverage_override_lookup (tenant_id, coverage_uuid, status)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '责任配置保司覆盖项(两段式)';
 
 -- >>> BEGIN managed: migration-merged
 -- 本区块由 scripts/sync-init-from-live.py 从活库导出，禁止手工编辑（改了 --check 即红）。

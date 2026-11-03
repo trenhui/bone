@@ -268,7 +268,9 @@
     "SC_CLAIM_PLAN_NOT_FOUND": "保障计划不存在（或不属于当前租户）",
     "SC_CLAIM_PLAN_DUPLICATED": "计划编码已存在（同保单下计划编码唯一）",
     "SC_CLAIM_COVERAGE_NOT_FOUND": "保障项/险种不存在（或不属于当前租户）",
-    "SC_CLAIM_COVERAGE_DUPLICATED": "险种编码已存在（同计划下险种编码唯一）"
+    "SC_CLAIM_COVERAGE_DUPLICATED": "险种编码已存在（同计划下险种编码唯一）",
+    "SC_CLAIM_MAPPING_IMPORT_REJECTED": "映射批量导入被整批拒绝（文件不可解析或超过单批 2000 行上限）",
+    "SC_CLAIM_BIZ_IDENTITY_INVALID": "引用的业务主体不存在，或已停用/终止"
   },
   "enums": {
     "ORDER_STATUS": {

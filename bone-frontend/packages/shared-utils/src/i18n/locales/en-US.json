@@ -268,7 +268,9 @@
     "SC_CLAIM_PLAN_NOT_FOUND": "Coverage plan not found or not visible in the current tenant",
     "SC_CLAIM_PLAN_DUPLICATED": "Plan code already exists (unique per policy)",
     "SC_CLAIM_COVERAGE_NOT_FOUND": "Coverage item not found or not visible in the current tenant",
-    "SC_CLAIM_COVERAGE_DUPLICATED": "Coverage code already exists (unique per plan)"
+    "SC_CLAIM_COVERAGE_DUPLICATED": "Coverage code already exists (unique per plan)",
+    "SC_CLAIM_MAPPING_IMPORT_REJECTED": "Mapping batch import rejected as a whole (unparsable file or above the 2000-row batch limit)",
+    "SC_CLAIM_BIZ_IDENTITY_INVALID": "The referenced business entity does not exist, or has been deactivated/terminated"
   },
   "enums": {
     "ORDER_STATUS": {
