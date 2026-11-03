@@ -55,7 +55,28 @@ public class FeatureTenantToggleService implements TriageLimitsPort {
       // 未显式配置：继承全局「开启」，兼容存量行为（全局默认关闭时早已在上一行拦截）
       return true;
     }
+    warnOnUnsupportedState(toggle, tenantId, featureKey);
     return toggle.isOn(tenantId);
+  }
+
+  /**
+   * 状态取值非法时打 WARN——让「配错了」可见。
+   *
+   * <p><b>为什么读取侧不能只是静默当关闭</b>：fail-closed 的方向是对的（未知状态按关闭处理，绝不放量资金策略）， 但<b>静默</b>是缺陷：运维把 state 写成
+   * {@code ENABLE}（少个 D）或 {@code enabled}（小写）， 开关永远不生效，页面与日志都看不出异常，只能靠业务方报「功能没反应」才发现。
+   * 写入期已拒绝非法值（{@code FeatureToggle.create}），但库里可能已有历史脏数据或直连写入的非法值， 故读取侧补一条 WARN：既不改变判定结果，又让问题可被发现。
+   */
+  private void warnOnUnsupportedState(FeatureToggle toggle, Long tenantId, String featureKey) {
+    if (toggle.hasSupportedState()) {
+      return;
+    }
+    log.warn(
+        "[特性开关] state 取值非法，已按「关闭」处理（fail-closed，不放量）：tenantId={}, feature={}, state={}。"
+            + "合法取值为 ENABLED/DISABLED（大小写敏感）。该开关当前**不会生效**，"
+            + "若期望开启请修正为 ENABLED；AI 介入档位（SHADOW/ASSISTED/AUTOMATED）请另设特性键，不要复用本列。",
+        tenantId,
+        featureKey,
+        toggle.getState());
   }
 
   /**
@@ -78,6 +99,7 @@ public class FeatureTenantToggleService implements TriageLimitsPort {
     }
     if (!toggle.isOn(tenantId)) {
       // 显式 DISABLED 或未命中灰度：按基线跑（这是运维的「回滚到默认」手段，不该报错）
+      warnOnUnsupportedState(toggle, tenantId, FeatureToggle.FEATURE_TRIAGE_LIMITS);
       return new TriageLimits.Resolution(TriageLimits.defaults(), Map.of());
     }
     String raw = toggle.getConfigJson();

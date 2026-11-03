@@ -20,6 +20,7 @@ import io
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -237,6 +238,160 @@ class MigrationManifestGateTest(unittest.TestCase):
         ], extra={"retired": [{"file": "0000_old.sql", "since": "2026-10-30",
                                "reason": "已并入 bone-init.sql，存量环境均已越过该版本"}]})
         self.assertEqual(self.run_gate(), 0)
+
+
+class MigrationManifestTrackedGateTest(unittest.TestCase):
+    """M11：登记项必须已被 git 跟踪。
+
+    为什么单独一个测试类
+    ------------------
+    M11 判的是「文件在不在 git 索引里」，必须有一个**真实的 git 仓库**才能构造。
+    上面那个类用 `tempfile.mkdtemp()` 造裸目录（不是 git 仓库），M11 在那里只能跳过——
+    所以本类自己 `git init` 一个真仓库，并逐条验证三种形态：
+
+      · 文件已 add（未 commit）→ 放行（提交过程中的正常中间态）
+      · 文件完全没 add（只在工作树）→ 判红（这就是 0100 丢失缺陷的形态）
+      · 文件被登记但 git 不可用 → 跳过而非误红（无 git 环境的最小化夹具仍能跑）
+    """
+
+    def setUp(self) -> None:
+        self.root = Path(tempfile.mkdtemp(prefix="mig-manifest-git-"))
+        self.mig = self.root / "scripts" / "migration"
+        self.mig.mkdir(parents=True)
+        self.manifest = self.mig / "migration-manifest.json"
+        self.git("init", "-q")
+        self.git("config", "user.email", "gate@test.local")
+        self.git("config", "user.name", "gate")
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def git(self, *args: str, env_index: str | None = None) -> str:
+        """跑 git 命令。
+
+        默认**剥离 GIT_INDEX_FILE / GIT_DIR / GIT_WORK_TREE**：本测试可能运行在
+        `git commit` 的 pre-commit 环境里，而那套环境带着 commit 用的**临时索引**
+        （只含本次提交涉及的文件）与 worktree 相关的 GIT_DIR/GIT_WORK_TREE。
+        若不剥离，夹具里的 `git commit` / `git add` 会写到**临时索引**上——
+        表现为 `git commit` 返回 1、或 `git add` 之后 `ls-files` 仍查不到文件。
+        """
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("GIT_INDEX_FILE", "GIT_DIR", "GIT_WORK_TREE")}
+        if env_index is not None:
+            env["GIT_INDEX_FILE"] = env_index
+        return subprocess.run(
+            ["git", *args], cwd=self.root, capture_output=True, text=True, check=True, env=env
+        ).stdout
+
+    def write(self, name: str, content: str = DDL_SQL) -> None:
+        (self.mig / name).write_text(content, encoding="utf-8")
+
+    def manifest_of(self, entries, conflicts=None) -> None:
+        doc = {
+            "entries": entries,
+            "executableCount": sum(1 for e in entries if isinstance(e.get("order"), int)),
+            "ordinalConflicts": conflicts or [],
+        }
+        self.manifest.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+
+    def run_gate(self) -> int:
+        argv = ["check-migration-manifest.py", "--root", str(self.root),
+                "--migration-dir", str(self.mig), "--manifest", str(self.manifest)]
+        buf = io.StringIO()
+        old = sys.argv
+        try:
+            sys.argv = argv
+            with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+                return gate.main()
+        finally:
+            sys.argv = old
+
+    def one_entry(self):
+        return [{"order": 1, "file": "0001_a.sql", "kind": "ddl", "summary": "建表 t（id 主键）"}]
+
+    def test_M11_文件未入索引必须判红(self):
+        """0100 丢失缺陷的形态：清单已登记、文件在工作树，但从未 git add。"""
+        self.write("0001_a.sql")
+        self.manifest_of(self.one_entry())
+        # 注意：刻意**不** git add
+        self.assertEqual(self.run_gate(), 1, "工作树有文件但未入索引 ⇒ 必须判红")
+
+    def test_M11_已入索引未提交应放行(self):
+        """「已 add 未 commit」是提交过程中的正常中间态，不能误红。"""
+        self.write("0001_a.sql")
+        self.manifest_of(self.one_entry())
+        self.git("add", "-f", "scripts/migration/0001_a.sql")
+        self.assertEqual(self.run_gate(), 0, "已 add 即放行")
+
+    def test_M11_已提交应放行(self):
+        self.write("0001_a.sql")
+        self.manifest_of(self.one_entry())
+        self.git("add", "-f", "scripts/migration/0001_a.sql", "scripts/migration/migration-manifest.json")
+        self.git("commit", "-q", "-m", "init")
+        self.assertEqual(self.run_gate(), 0)
+
+    def test_M11_跳过开关应放行(self):
+        """无 git 能力的最小化夹具（裸目录）必须仍能跑门禁——跳过而非误红。"""
+        self.root2 = Path(tempfile.mkdtemp(prefix="mig-manifest-nogit-"))
+        try:
+            mig2 = self.root2 / "migration"
+            mig2.mkdir()
+            man2 = self.root2 / "migration-manifest.json"
+            (mig2 / "0001_a.sql").write_text(DDL_SQL, encoding="utf-8")
+            man2.write_text(json.dumps({
+                "entries": self.one_entry(),
+                "executableCount": 1,
+                "ordinalConflicts": [],
+            }, ensure_ascii=False), encoding="utf-8")
+            argv = ["check-migration-manifest.py", "--root", str(self.root2),
+                    "--migration-dir", str(mig2), "--manifest", str(man2), "--skip-tracked"]
+            buf = io.StringIO()
+            old = sys.argv
+            try:
+                sys.argv = argv
+                with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+                    rc = gate.main()
+            finally:
+                sys.argv = old
+            self.assertEqual(rc, 0)
+        finally:
+            shutil.rmtree(self.root2, ignore_errors=True)
+
+    def test_M11_临时索引环境不得误判(self):
+        """**回归用例**：`git commit --only` 会构造临时索引（GIT_INDEX_FILE）。
+
+        那个索引只含**本次提交涉及**的文件。若门禁在 pre-commit 里直接读它，就会把
+        「真实索引里已跟踪、但本次没提交的文件」误判成「完全没 add」⇒ M11 在每一次
+        pre-commit 里都误红（实测：手动跑全绿，`git commit --only` 时门禁自身用例
+        7 红 1 错——且误红的是**原有**用例，说明是判据本身坏了）。
+
+        本用例构造同样的环境：GIT_INDEX_FILE 指向一个只含其它文件的临时索引，
+        断言门禁仍按**真实索引**判定（已 add 的文件不该被误判成未跟踪）。
+        """
+        self.write("0001_a.sql")
+        self.manifest_of(self.one_entry())
+        self.git("add", "-f", "scripts/migration/0001_a.sql")
+
+        # 构造一个「只含无关文件」的临时索引，模拟 commit --only 的中间态
+        other = self.root / "other.sql"
+        other.write_text("-- unrelated\n", encoding="utf-8")
+        self.git("add", "-f", "other.sql")
+        tmp_index = self.root / "tmp-index"
+        # 用 --empty 而不是 read-tree HEAD：夹具仓库此刻可能还没有任何 commit，
+        # 而这里要的正是「临时索引里没有目标文件」这一形态。
+        self.git("read-tree", "--empty", env_index=str(tmp_index))
+
+        old = os.environ.get("GIT_INDEX_FILE")
+        os.environ["GIT_INDEX_FILE"] = str(tmp_index)
+        try:
+            self.assertEqual(
+                self.run_gate(), 0,
+                "GIT_INDEX_FILE 指向临时索引时，不得把真实索引里已跟踪的文件误判成未跟踪")
+        finally:
+            if old is None:
+                os.environ.pop("GIT_INDEX_FILE", None)
+            else:
+                os.environ["GIT_INDEX_FILE"] = old
 
 
 if __name__ == "__main__":

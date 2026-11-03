@@ -3793,8 +3793,10 @@ CREATE TABLE `t_claim_flow_config` (
   `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
   `version` bigint NOT NULL DEFAULT '0' COMMENT '乐观锁版本',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记',
+  `active_key` varchar(64) GENERATED ALWAYS AS (if(((`active_flag` = 1) and (`deleted` = 0)),`flow_key`,NULL)) VIRTUAL COMMENT '生效版本唯一键载体(active_flag=1 且未软删时等于 flow_key, 否则 NULL；MySQL 唯一索引不视 NULL 为重复)',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_tenant_flow_version` (`tenant_id`,`flow_key`,`config_version`),
+  UNIQUE KEY `uk_tenant_flow_active` (`tenant_id`,`active_key`),
   KEY `idx_flow` (`tenant_id`,`flow_key`,`active_flag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='租户级流程/钩子配置(版本化, 改配置不发版)';
 

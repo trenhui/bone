@@ -41,6 +41,19 @@ check-migration-manifest.py  (G38 · 迁移清单完整性)
                  scripts/migrate.py 的 JOURNAL 常量一致——两处各写一遍就是下一次漂移的种子。
   M10 retired    下线登记：文件必须已不在磁盘、且未出现在 entries，理由非占位。
                  没有这条，「把迁移并入 bone-init.sql 后归档」会让已应用环境永久报「账本残留」。
+  M11 入库       登记的每个文件必须已被 git 跟踪（进入索引）。
+                 M2 只比「工作树里有没有这个文件」——它管的是**当前 checkout**。
+                 但清单是**要提交进仓库的产物**：如果某人在自己工作树里写了迁移脚本、
+                 同时把清单条目提交了（清单在 HEAD、脚本只在工作树），M2 在他的机器上完全绿，
+                 而**任何干净 clone 都缺这个脚本**——执行序里凭空少一步，或者更糟：
+                 该步骤的 DDL 内容永久丢失，谁也不知道少了什么。
+                 2026-11-03 实测：`0100_synap_claim_calculation_version_chain.sql`（171 行 DDL）
+                 被清单登记为 order=106，却只存在于并行会话的工作树，从未进入任何分支。
+                 干净 clone 直接卡死在 M2 ⇒ 该迁移在所有新环境永久丢失。
+                 故本判据把「文件在不在索引里」纳入门禁：未跟踪即红，提交前必须 git add。
+                 用 `git ls-files`（而非 `git log`）判定，因为工作树里的新文件在索引中，
+                 `git ls-files` 能区分「已 add 未 commit」与「完全没 add」——前者允许（正在提交中），
+                 后者判红。
 
 防假绿自检
 ----------
@@ -55,6 +68,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 
 MANIFEST_REL = os.path.join("scripts", "migration", "migration-manifest.json")
@@ -93,6 +107,35 @@ def strip_sql_noise(text):
     return text
 
 
+def git_tracked_files(root, migration_rel):
+    """返回该目录下**已被 git 索引跟踪**的文件名集合；无法判定时返回 None（跳过而非误红）。
+
+    为什么用 `git ls-files` 而不是 `git log -- <path>`：
+      · `ls-files` 给出的是**索引**状态，能区分「已 add 未 commit」与「完全没 add」；
+        前者是提交过程中的正常中间态，允许；后者是丢失风险，必须拦。
+      · `log` 只看提交历史，看不到暂存区，会把「正在提交」误判成「没提交」。
+
+    **必须清掉 GIT_INDEX_FILE（实测踩坑）**：`git commit --only` 会构造一个**临时索引**
+    （通过 GIT_INDEX_FILE 指向），它只含本次提交涉及的文件。此时在本进程里跑 `git ls-files`，
+    读到的就是那个临时索引——于是「真实索引里已跟踪但本次没提交的文件」会被误判成
+    「完全没 add」，M11 在**每一次 pre-commit 里都会误红**（实测：`git commit --only` 提交时
+    门禁自身用例 7 红 1 错，而手动跑全绿）。
+    故这里显式剥离 GIT_INDEX_FILE / GIT_DIR 等环境变量，让查询回到真实索引。
+    """
+    env = {k: v for k, v in os.environ.items()
+           if k not in ("GIT_INDEX_FILE", "GIT_DIR", "GIT_WORK_TREE")}
+    try:
+        out = subprocess.run(
+            ["git", "ls-files", "-z", "--", os.path.relpath(migration_rel, root)],
+            cwd=root, capture_output=True, text=True, timeout=30, env=env,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if out.returncode != 0:
+        return None
+    return {os.path.basename(p) for p in out.stdout.split("\0") if p}
+
+
 def kind_of(path):
     """按内容判 kind，与清单声明比对（M5）。"""
     if path.endswith(".md"):
@@ -116,6 +159,8 @@ def main():
     ap.add_argument("--root")
     ap.add_argument("--migration-dir")
     ap.add_argument("--manifest")
+    ap.add_argument("--skip-tracked", action="store_true",
+                    help="跳过 M11（登记项是否已被 git 跟踪）——供无 git 仓库的最小化夹具使用")
     args = ap.parse_args()
 
     global MIGRATION_REL
@@ -296,6 +341,22 @@ def main():
             errors.append(f"M10 `{f}` 在 retired 登记为下线，但文件仍在目录里（应作为正常 entry 登记）")
         if len(str(r.get("reason") or "").strip()) < 8:
             errors.append(f"M10 retired `{f}` 缺理由（≥8 字：为什么可以下线、凭什么已并入基线）")
+
+    # ---- M11 登记项必须已被 git 跟踪 ----
+    # 判据只查「是否已进索引」，不查「是否已 commit」：提交过程中索引先于 HEAD 更新，
+    # 允许「已 add 未 commit」的中间态（那正是提交者此刻应有的状态），只拦「完全没 add」。
+    if not args.skip_tracked:
+        tracked = git_tracked_files(root, MIGRATION_REL)
+        if tracked is None:
+            print("⚠️  跳过 M11：无法读取 git 索引（非 git 仓库或 git 不可用）")
+        else:
+            for f in registered:
+                if f in on_disk and f not in tracked:
+                    errors.append(
+                        f"M11 `{f}` 已在清单登记、文件也在工作树，但**未被 git 跟踪**——"
+                        "提交后干净 clone 将缺这个文件 ⇒ 执行序里凭空少一步，该迁移的 DDL 内容永久丢失。"
+                        "请 git add 后再提交（清单与脚本必须同批入库）"
+                    )
 
     if errors:
         print(f"❌ 迁移清单校验失败：{len(errors)} 项\n")

@@ -6,6 +6,7 @@ import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.metadata.sdk.domain.annotation.Version;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Set;
 import lombok.Getter;
 
 /**
@@ -33,6 +34,30 @@ public class FeatureToggle extends TenantAbstractEntity<Long> {
 
   public static final String STATE_ENABLED = "ENABLED";
   public static final String STATE_DISABLED = "DISABLED";
+
+  /**
+   * 当前已支持的开关状态全集。
+   *
+   * <p><b>为什么显式枚举而不是「非 ENABLED 即 DISABLED」</b>：{@code state} 列是自由 {@code varchar}，若读取侧只认 {@code
+   * ENABLED}，那么任何拼写错误（{@code ENABLE} / {@code enabled} / {@code Enabled}）或未来新增的档位都会<b>静默
+   * 当成「关闭」</b>——而「关闭」是 fail-closed 的安全方向，于是配置者以为开关已开、实际一直没开，<b>且没有任何
+   * 痕迹</b>。这类「配了不生效且无人知晓」的缺陷比直接报错更难发现。
+   *
+   * <p>契约 §11.4 的 AI 介入三档（{@code SHADOW / ASSISTED / AUTOMATED}）属于<b>另一个维度</b>（AI 介入程度），
+   * 不是本列的开关态——它们必须另设特性键或专用列，<b>不得复用本列</b>：{@link #isOn(long)} 只认 {@code ENABLED}，若把 {@code
+   * AUTOMATED} 写进本列，会被当成关闭而使「自动化介入」静默失效。
+   */
+  private static final Set<String> SUPPORTED_STATES = Set.of(STATE_ENABLED, STATE_DISABLED);
+
+  /**
+   * 状态是否属于当前支持的取值。
+   *
+   * @param state 状态字符串（可为 null）
+   * @return true 表示取值合法
+   */
+  public static boolean isSupportedState(String state) {
+    return state != null && SUPPORTED_STATES.contains(state);
+  }
 
   @Column(name = "feature_key", nullable = false)
   private String featureKey;
@@ -77,10 +102,30 @@ public class FeatureToggle extends TenantAbstractEntity<Long> {
       String remark,
       String configJson,
       Instant now) {
+    // 写入期拒绝非法状态：让「配错」在入口就失败，而不是等到读侧静默当成关闭。
+    // 错误消息带**后果**（不只说「不合法」），否则调用方不知道该怎么改。
+    if (!isSupportedState(state)) {
+      throw new IllegalArgumentException(
+          "feature_toggle.state 取值非法：`"
+              + state
+              + "`。当前只支持 "
+              + SUPPORTED_STATES
+              + "（大小写敏感）。写入非法值的后果：读取侧只认 ENABLED，该开关会被**静默当成关闭**——"
+              + "配置者以为已开启，实际从未生效且无任何痕迹。若本意是 AI 介入档位"
+              + "（SHADOW/ASSISTED/AUTOMATED），请另设特性键或专用列，不要复用本列。");
+    }
+    if (rolloutPct < 0 || rolloutPct > 100) {
+      throw new IllegalArgumentException(
+          "feature_toggle.rollout_pct 越界：`"
+              + rolloutPct
+              + "`。合法范围 0-100。"
+              + "越界值的后果：读取侧把 >=100 视为全量、<=0 视为全关，中间的非法值会按"
+              + "floorMod(tenantId,100) < pct 判定，灰度比例与预期不符且难以察觉。");
+    }
     FeatureToggle toggle = new FeatureToggle();
     toggle.setTenantId(tenantId);
     toggle.featureKey = featureKey;
-    toggle.state = state == null ? STATE_DISABLED : state;
+    toggle.state = state;
     toggle.rolloutPct = rolloutPct;
     toggle.remark = remark == null ? "" : remark;
     toggle.configJson = configJson;
@@ -92,7 +137,13 @@ public class FeatureToggle extends TenantAbstractEntity<Long> {
     return toggle;
   }
 
-  /** 是否处于开启态（ENABLED 且灰度命中）。 */
+  /**
+   * 是否处于开启态（ENABLED 且灰度命中）。
+   *
+   * <p><b>读取期的兜底口径</b>：状态不是 {@code ENABLED} 一律当关闭（fail-closed）。这一条<b>不能收紧</b>—— 收紧成「只对 DISABLED
+   * 关闭、其余交给上层判断」会让未知值（如 {@code AUTOMATED}）变成 「不确定的开启」，反而把安全方向倒过来。合法的收紧方式是在<b>写入期</b>拒绝（见 {@link
+   * #create}），读取期只负责兜底。
+   */
   public boolean isOn(long tenantId) {
     if (!STATE_ENABLED.equals(state)) {
       return false;
@@ -104,5 +155,17 @@ public class FeatureToggle extends TenantAbstractEntity<Long> {
       return false;
     }
     return Math.floorMod(tenantId, 100) < rolloutPct;
+  }
+
+  /**
+   * 状态是否为已支持的取值（用于「配错了但读侧仍要兜底为关闭」时的可观测性）。
+   *
+   * <p>存在意义：读取侧对未知状态<b>只能</b>当关闭（安全方向），但「静默」本身是缺陷——运维配了个 {@code ENABLE}，开关永远不生效，页面也看不出异常。调用方据此打
+   * WARN 日志，让「配错」可见。
+   *
+   * @return true 表示状态合法；false 表示这是历史脏数据或直连写入的非法值
+   */
+  public boolean hasSupportedState() {
+    return isSupportedState(state);
   }
 }
