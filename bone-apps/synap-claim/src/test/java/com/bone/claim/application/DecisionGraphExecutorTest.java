@@ -16,6 +16,7 @@ import com.bone.claim.domain.model.claim.valueobject.ItemCategory;
 import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.claim.domain.model.decision.DecisionGraph;
 import com.bone.claim.domain.model.decision.DecisionNodeStatus;
+import com.bone.claim.domain.model.decision.TriageLimits;
 import com.bone.claim.infrastructure.metrics.MicrometerDecisionMetricsAdapter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
@@ -121,6 +122,7 @@ class DecisionGraphExecutorTest {
         claimCaseApplicationService,
         tenantPort,
         decisionMetricsPort,
+        tenantId -> TriageLimits.defaultResolution(),
         handlers);
   }
 

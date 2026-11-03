@@ -106,6 +106,77 @@ def ops_of(path):
     return events
 
 
+ALTER_RX = re.compile(r"ALTER\s+TABLE\s+`?([A-Za-z0-9_]+)`?\s+([^;]*);", re.I | re.S)
+ADD_COL_RX = re.compile(r"\bADD\s+(?:COLUMN\s+)?`?([A-Za-z0-9_]+)`?", re.I)
+DROP_COL_RX = re.compile(r"\bDROP\s+(?:COLUMN\s+)?`?([A-Za-z0-9_]+)`?", re.I)
+CHANGE_COL_RX = re.compile(
+    r"\bCHANGE\s+(?:COLUMN\s+)?`?([A-Za-z0-9_]+)`?\s+`?([A-Za-z0-9_]+)`?", re.I)
+# ADD/DROP 后面跟这些词时是索引/约束，不是列。漏排除会把 `uk_xxx` 当成列名，制造假缺口。
+NON_COLUMN_WORDS = {
+    "index", "key", "unique", "constraint", "primary", "foreign",
+    "check", "fulltext", "spatial", "partition",
+}
+COL_DEF_RX = re.compile(
+    r"^\s*`?([A-Za-z0-9_]+)`?\s+(?:BIGINT|INT|INTEGER|VARCHAR|DATETIME|DATE|DECIMAL|NUMERIC"
+    r"|TINYINT|SMALLINT|CHAR|TEXT|MEDIUMTEXT|LONGTEXT|JSON|TIME|TIMESTAMP|DOUBLE|FLOAT|BIT|ENUM|BLOB)",
+    re.I | re.M)
+
+
+def strip_comments_only(text):
+    """只删注释、**保留字符串字面量**。
+
+    列级判据必须看见动态 SQL：迁移里常见 `SET @ddl := 'ALTER TABLE t ADD COLUMN c ...'` +
+    `PREPARE`，列名在字符串里。表级判据用 strip_sql_noise（清空字符串）是对的——它只关心
+    真正的 CREATE TABLE 语句；列级若照抄，就会漏掉这一整类「幂等加列」写法，而 0101 正是
+    这种写法（MySQL 无 ADD COLUMN IF NOT EXISTS）。宁可保守（字符串里出现即要求 init 有该列），
+    也不要漏判。
+    """
+    text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
+    text = re.sub(r"--[^\n]*", " ", text)
+    return text
+
+
+def columns_of(path):
+    """init 侧：{表: {列}}。括号配对取表体，避免把 CHECK/索引里的标识符当列。"""
+    text = strip_comments_only(open(path, encoding="utf-8", errors="ignore").read())
+    out = {}
+    for m in re.finditer(
+        r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?([A-Za-z0-9_]+)`?\s*\(", text, re.I):
+        table = m.group(1).lower()
+        i, depth = m.end(), 1
+        while i < len(text) and depth:
+            if text[i] == "(":
+                depth += 1
+            elif text[i] == ")":
+                depth -= 1
+            i += 1
+        out[table] = {c.lower() for c in COL_DEF_RX.findall(text[m.end():i - 1])}
+    return out
+
+
+def column_ops_of(path):
+    """迁移侧：[(pos, 'add'|'drop', 表, 列)]，按文本位置排序以便同文件内先加后删。"""
+    text = strip_comments_only(open(path, encoding="utf-8", errors="ignore").read())
+    events = []
+    for m in ALTER_RX.finditer(text):
+        table = m.group(1).lower()
+        body = m.group(2)
+        for mm in ADD_COL_RX.finditer(body):
+            col = mm.group(1).lower()
+            if col not in NON_COLUMN_WORDS:
+                events.append((m.start() + mm.start(), "add", table, col))
+        for mm in DROP_COL_RX.finditer(body):
+            col = mm.group(1).lower()
+            if col not in NON_COLUMN_WORDS:
+                events.append((m.start() + mm.start(), "drop", table, col))
+        for mm in CHANGE_COL_RX.finditer(body):
+            old, new = mm.group(1).lower(), mm.group(2).lower()
+            events.append((m.start() + mm.start(), "drop", table, old))
+            events.append((m.start() + mm.start(), "add", table, new))
+    events.sort(key=lambda x: x[0])
+    return events, len(ALTER_RX.findall(text))
+
+
 def live_tables(db, timeout=5):
     """活库表集合；不可用返回 None（调用方据此 SKIP，不得静默当成空集）。"""
     host = os.environ.get("BONE_DB_HOST", "127.0.0.1")
@@ -154,6 +225,7 @@ def main():
     ap.add_argument("--manifest")
     ap.add_argument("--baseline")
     ap.add_argument("--no-live", action="store_true", help="跳过活库探测（CI 无库时用）")
+    ap.add_argument("--no-columns", action="store_true", help="跳过列级覆盖判据（仅调试门禁自身时用）")
     ap.add_argument("--live-db", default=os.environ.get("BONE_DB_NAME", "bone"))
     args = ap.parse_args()
 
@@ -257,6 +329,88 @@ def main():
         if t not in alive and t not in dropped_at:
             errors.append(f"blocked 里的 `{t}` 没有任何迁移建过它 ⇒ 悬空登记，请核实表名或删除")
 
+    # ---- 列级：迁移新增的列，init 的同名建表必须有 ----
+    #
+    # 表级判据只保证「表在」，不保证「列在」。而 SDK 的 INSERT/UPDATE 列清单由**实体元数据**
+    # 生成：表缺列时，读侧手写模板（SELECT 只取已有列）仍能过、写侧直接 ERROR 1054。于是缺陷
+    # 呈现为「建得进读不出」的一半，且只在有数据写入的那一刻暴露。2026-11-03 实测：
+    # t_claim_item 的 ext_int_01/ext_str_01 活库有、init 无——正是这一类。
+    if not args.no_columns:
+        init_columns = columns_of(init_path)
+        if not init_columns:
+            print("❌ 自检失败：init 未解析出任何列——列级判据已失效，此时任何缺口对比都会恒过")
+            return 1
+        col_alive = {}
+        alter_total = 0
+        for e in executable:
+            path = os.path.join(mig_dir, e["file"])
+            events, n_alter = column_ops_of(path)
+            alter_total += n_alter
+            for _, op, t, c in events:
+                if op == "add":
+                    col_alive.setdefault((t, c), e["file"])
+                else:
+                    col_alive.pop((t, c), None)
+        # 防空集：判据是「**有 ALTER 却解析不出列**」，而不是「没有 ALTER」。
+        # 后者是正常形态（尚未引入列级变更的迁移集），把它判红会让门禁在空集上恒红、
+        # 逼人加 --no-columns 绕过——那才是真正的假绿。
+        if alter_total and not col_alive:
+            print("❌ 自检失败：迁移里有 {} 条 ALTER TABLE，却未解析出任何新增列——列级解析已失效".format(alter_total))
+            return 1
+
+        col_sources = {}
+        for r in baseline_doc.get("columnSources") or []:
+            f = str(r.get("file") or "").strip()
+            if not f:
+                errors.append("columnSources 条目缺 file")
+                continue
+            if len(str(r.get("reason") or "").strip()) < 8:
+                errors.append(f"columnSources `{f}` 缺理由（≥8 字：为什么该迁移新增的列不要求并入 init）")
+            if len(str(r.get("evidence") or "").strip()) < 8:
+                errors.append(f"columnSources `{f}` 缺证据（evidence：凭什么说它不是缺口）")
+            col_sources[f] = r
+
+        col_pending = {}
+        for r in baseline_doc.get("columns") or []:
+            t = str(r.get("table") or "").strip().lower()
+            c = str(r.get("column") or "").strip().lower()
+            if not t or not c:
+                errors.append("columns 基线条目缺 table / column")
+                continue
+            if (t, c) in col_pending:
+                errors.append(f"columns 基线里 `{t}.{c}` 重复登记")
+            if len(str(r.get("reason") or "").strip()) < 8:
+                errors.append(f"columns 基线 `{t}.{c}` 缺理由（≥8 字：为什么它可以暂时不并入 init）")
+            col_pending[(t, c)] = r
+
+        col_gap = {
+            k: src
+            for k, src in col_alive.items()
+            if k[0] in init_columns
+            and k[1] not in init_columns[k[0]]
+            and src not in col_sources
+            and k not in col_pending
+        }
+        for (t, c), src in sorted(col_gap.items()):
+            errors.append(
+                f"`{t}.{c}` 由 {src} 新增且终态存在，但 bone-init.sql 的 `{t}` 建表里没有该列 ⇒ "
+                f"新环境灌 init 后缺列：SDK 按实体元数据写入即 ERROR 1054，而读侧手写模板会绕开它，"
+                f"表现为「建得进读不出」。请把该列并入 init（新迁移必须同批并入）；确实暂不并入须登记 "
+                f"columns 基线，或按来源文件登记 columnSources 并写明依据"
+            )
+        # 反向：只可收缩
+        for (t, c) in sorted(set(col_pending) - set(col_alive)):
+            errors.append(f"columns 基线里的 `{t}.{c}` 已无迁移新增它（或已被 DROP）⇒ 基线只可收缩，请删除该条")
+        for (t, c) in sorted(set(col_pending) & set(col_alive)):
+            if c in init_columns.get(t, set()):
+                errors.append(f"columns 基线里的 `{t}.{c}` 已并入 init ⇒ 基线只可收缩，请删除该条")
+        for f in sorted(set(col_sources) - set(col_alive.values())):
+            errors.append(f"columnSources 里的 `{f}` 已不再新增任何列 ⇒ 豁免失去对象，请删除该条")
+        col_note = "{} 列新增 / 缺口 {} / 逐列豁免 {} / 按文件豁免 {}".format(
+            len(col_alive), len(col_gap), len(col_pending), len(col_sources))
+    else:
+        col_note = "SKIP(--no-columns)"
+
     live_note = "未探测"
     if not args.no_live:
         live = live_tables(args.live_db)
@@ -280,8 +434,9 @@ def main():
         return 1
 
     print(
-        "OK: 全量基线覆盖迁移建表终态（init {} 张 / 终态存活 {} 张 / 已覆盖 {} / 待并入 {} / blocked {} / 活库探测 {}）".format(
-            len(init_tables), len(alive), len(alive) - len(gap), len(pending), len(blocked), live_note)
+        "OK: 全量基线覆盖迁移建表终态（init {} 张 / 终态存活 {} 张 / 已覆盖 {} / 待并入 {} / blocked {} / 活库探测 {}）"
+        "；列级：{}".format(
+            len(init_tables), len(alive), len(alive) - len(gap), len(pending), len(blocked), live_note, col_note)
     )
     return 0
 

@@ -2,6 +2,7 @@ package com.bone.claim.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -37,12 +38,14 @@ import org.springframework.test.util.ReflectionTestUtils;
 class AutoApprovalApplicationServiceTest {
 
   private static final long CLAIM = 11L;
+  private static final long TENANT = 7L;
   private static final BigDecimal AMOUNT = new BigDecimal("300.00");
 
   @Mock private ClaimCaseApplicationService claimCaseApplicationService;
   @Mock private SettlementApplicationService settlementApplicationService;
   @Mock private IndemnityApplicationService indemnityApplicationService;
   @Mock private DecisionExecutionApplicationService decisionExecutionApplicationService;
+  @Mock private FeatureTenantToggleService featureTenantToggleService;
 
   private AutoApprovalApplicationService service;
 
@@ -56,9 +59,14 @@ class AutoApprovalApplicationServiceTest {
             claimCaseApplicationService,
             settlementApplicationService,
             indemnityApplicationService,
-            decisionExecutionApplicationService);
+            decisionExecutionApplicationService,
+            featureTenantToggleService);
     ReflectionTestUtils.setField(service, "enabled", true);
     ReflectionTestUtils.setField(service, "maxAmount", new BigDecimal("1000"));
+    // 租户级三态开关默认放行：本类测的是「全局开关 + 单笔上限」这两道闸，
+    // 租户开关关闭的场景由开关服务自身的用例覆盖（FeatureTenantToggleServiceTest）。
+    when(featureTenantToggleService.isFeatureAllowed(anyLong(), anyBoolean(), anyString()))
+        .thenReturn(true);
     when(indemnityApplicationService.latest(CLAIM))
         .thenReturn(
             new IndemnityApplicationService.AdjustmentResult(
@@ -66,14 +74,14 @@ class AutoApprovalApplicationServiceTest {
   }
 
   @Test
-  @DisplayName("开关关闭 → AUTO_APPROVE_DISABLED，且不触碰任何聚合（策略未签核时零资金动作）")
+  @DisplayName("开关关闭 → AUTO_APPROVE_TOGGLE_OFF，且不触碰任何聚合（策略未签核时零资金动作）")
   void disabledBySwitch() {
     ReflectionTestUtils.setField(service, "enabled", false);
 
     AutoApprovalApplicationService.AutoApprovalOutcome outcome = service.applyAutoDecision(CLAIM);
 
     assertThat(outcome.applied()).isFalse();
-    assertThat(outcome.reason()).isEqualTo("AUTO_APPROVE_DISABLED");
+    assertThat(outcome.reason()).isEqualTo("AUTO_APPROVE_TOGGLE_OFF");
     verify(claimCaseApplicationService, never()).autoApprove(anyLong(), anyString());
     verify(settlementApplicationService, never()).create(anyLong(), anyInt(), any(), anyString());
   }
@@ -280,6 +288,8 @@ class AutoApprovalApplicationServiceTest {
   private static ClaimCase claim(boolean finished) {
     ClaimCase claim = mock(ClaimCase.class);
     when(claim.getId()).thenReturn(CLAIM);
+    // 租户级开关裁决要用 tenantId（生产为非空列，mock 必须显式给，否则拆箱 NPE）
+    when(claim.getTenantId()).thenReturn(TENANT);
     when(claim.finished()).thenReturn(finished);
     return claim;
   }

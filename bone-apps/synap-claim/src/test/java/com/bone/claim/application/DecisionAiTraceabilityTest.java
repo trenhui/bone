@@ -19,6 +19,7 @@ import com.bone.claim.domain.model.decision.DecisionGraph;
 import com.bone.claim.domain.model.decision.DecisionNodeStatus;
 import com.bone.claim.domain.model.decision.DecisionResult;
 import com.bone.claim.domain.model.decision.DecisionTier;
+import com.bone.claim.domain.model.decision.TriageLimits;
 import com.bone.core.exception.DomainException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -128,6 +129,7 @@ class DecisionAiTraceabilityTest {
         claimCaseApplicationService,
         tenantPort,
         DecisionMetricsPort.NOOP,
+        tenantId -> TriageLimits.defaultResolution(),
         handlers);
   }
 

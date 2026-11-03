@@ -6,6 +6,7 @@ import com.bone.claim.application.ClaimCaseApplicationService;
 import com.bone.claim.application.DecisionExecutionApplicationService;
 import com.bone.claim.application.DecisionGraphExecutor;
 import com.bone.claim.application.DecisionRunApplicationService;
+import com.bone.claim.application.FeatureTenantToggleService;
 import com.bone.claim.application.IndemnityApplicationService;
 import com.bone.claim.application.InspectionApplicationService;
 import com.bone.claim.application.QuotaApplicationService;
@@ -41,6 +42,7 @@ import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
 import com.bone.claim.domain.model.claim.valueobject.ItemCategory;
 import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.claim.domain.model.decision.DecisionTraceNode;
+import com.bone.claim.domain.model.decision.TriageLimits;
 import com.bone.claim.domain.model.evidence.Evidence;
 import com.bone.claim.domain.model.evidence.valueobject.DocType;
 import com.bone.claim.domain.model.evidence.valueobject.OcrStatus;
@@ -203,14 +205,27 @@ public class ScenarioHarness {
             new ArbitrateNodeHandler());
     DecisionMetricsPort metrics = DecisionMetricsPort.NOOP;
     decisionExecutor =
-        new DecisionGraphExecutor(decExecSvc, claimSvc, tenantPort, metrics, handlers);
+        new DecisionGraphExecutor(
+            decExecSvc,
+            claimSvc,
+            tenantPort,
+            metrics,
+            tenantId -> TriageLimits.defaultResolution(),
+            handlers);
 
     quotaSvc = new QuotaApplicationService(quotaRepo);
     settleSvc =
         new SettlementApplicationService(
             settleRepo, quotaSvc, indemnitySvc, claimSvc, tenantPort, events, adjRepo);
+    // 场景基座不注入 @Value，auto-approve 全局开关因此为 false（= 关闭态），开关服务不会被真正问询；
+    // 传 null 仓储即可，若日后场景要验证「自动放款开启」须换成内存仓储实现。
     autoApproveSvc =
-        new AutoApprovalApplicationService(claimSvc, settleSvc, indemnitySvc, decExecSvc);
+        new AutoApprovalApplicationService(
+            claimSvc,
+            settleSvc,
+            indemnitySvc,
+            decExecSvc,
+            new FeatureTenantToggleService(null, null));
     decisionRun = new DecisionRunApplicationService(decisionExecutor, autoApproveSvc, decExecSvc);
     appealSvc = new AppealApplicationService(appealRepo, claimSvc, tenantPort, events);
     inspectionSvc = new InspectionApplicationService(inspectionRepo, claimSvc, tenantPort, events);

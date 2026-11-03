@@ -23,6 +23,7 @@ import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.ClaimItem;
 import com.bone.claim.domain.model.claim.valueobject.ItemCategory;
 import com.bone.claim.domain.model.decision.DecisionExecution;
+import com.bone.claim.domain.model.decision.TriageLimits;
 import com.bone.claim.infrastructure.ai.LocalAiGatewayPortAdapter;
 import com.bone.claim.infrastructure.forensics.LocalVisualForensicsPortAdapter;
 import com.bone.claim.infrastructure.fraud.LocalGraphFraudPortAdapter;
@@ -339,7 +340,12 @@ class DecisionGraphFunctionalTest {
             new ArbitrateNodeHandler());
     TenantPort tenantPort = () -> TENANT_ID;
     return new DecisionGraphExecutor(
-        execSvc, claimSvc, tenantPort, DecisionMetricsPort.NOOP, handlers);
+        execSvc,
+        claimSvc,
+        tenantPort,
+        DecisionMetricsPort.NOOP,
+        tenantId -> TriageLimits.defaultResolution(),
+        handlers);
   }
 
   /** 规则引擎已接入（C2）：真实执行核责、无冲突、验真通过、规则置信度 0.90。 */

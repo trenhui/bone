@@ -3721,6 +3721,7 @@ CREATE TABLE `t_feature_toggle` (
   `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
   `version` bigint NOT NULL DEFAULT '0' COMMENT '乐观锁版本',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记',
+  `config_json` text COMMENT '开关附带参数(JSON：阈值/灰度细分；NULL=沿用代码常量)',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_tenant_feature` (`tenant_id`,`feature_key`),
   KEY `idx_key` (`feature_key`)

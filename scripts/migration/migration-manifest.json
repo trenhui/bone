@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 105,
+  "executableCount": 106,
   "retired": [],
   "entries": [
     {
@@ -681,6 +681,12 @@
       "file": "0099_synap_claim_flow_config_feature_toggle.sql",
       "kind": "ddl",
       "summary": "补建两张「实体 + 仓储已提交、物理表从未建」的配置表：t_claim_flow_config（§6.7 租户级流程/钩子配置，「新保司接入≤7天」的承载）与 t_feature_toggle（§11.4 三态开关 + 灰度比例）。缺陷证据：对 31 个 @Table 实体做「实体→DDL」机械比对，29 个在 bone-init.sql 有同名建表，唯独这两个全仓零 DDL（init / scripts/migration / db/migration 均无命中，活库亦无此表），而两个聚合的实体（含 @Version）、仓储接口、建表意图注释一应俱全——ClaimFlowConfig 类注释原文即「本批补齐表 + 实体 + 仓储，闭合方案 §9.5 表清单」，即表在计划里、只是没落地。为何不是「少一张表」：① 仓储是 SDK Criteria 形态，编译期与单测都用内存替身、不碰真表，故该缺口在 CI 恒绿，只在首个消费方接入那一刻 1146；② 实体已声明 @Version 而表缺 version 列，即便手工建表补业务列，UPDATE 仍会因乐观锁列缺失失败（0098 同款）；③ §9.5「一期建表」是契约条款，缺表则 R-FAST/R-MAN 阈值外置与流程配置化都只能是代码常量，即「配了不生效」。列清单以**实体元数据**为准而非契约 DDL：SDK 的 INSERT/UPDATE 列由实体元数据生成，表列必须是实体超集否则 ERROR 1054；契约 §9.5 的 feature_toggle 版（toggle_key/scope_type/config_json/effective_from-to）与当前实体语义不同（作用域维度与生效窗口未建模），收敛涉及作用域键与版本链、须与该特性作者同批做，本次不混入，差异已登记到工程落地版 §12.2。幂等 CREATE TABLE IF NOT EXISTS + 终态断言（两表存在 / 逐列齐全 / 唯一键存在 / version NOT NULL DEFAULT 0）。"
+    },
+    {
+      "order": 106,
+      "file": "0101_synap_claim_feature_toggle_config_payload.sql",
+      "kind": "ddl",
+      "summary": "给 t_feature_toggle 补 config_json 承载列，闭合「契约声称阈值可配、实现里是编译期常量」的最后一处硬缺口。证据：工程落地版 §11.4 原文「R-FAST/R-MAN 阈值一期即从 feature_toggle.config_json 读取（§8.3 配置外部化铁律的最小动作），不落编译期常量」，§8.3 表内 R-FAST 复合阈值同样指向该列；而 0099 按实体元数据建的表只有 feature_key/state/rollout_pct/remark 四列。后果不是「少一列」：风险事件发生时想收紧自动通过口径，只能改 DecisionTriage 的 static final 常量并重新发布——恰是配置外部化要消灭的动作。本次只补 config_json，**不补** §9.5 那版 scope_type/scope_value/effective_from-to 与 append 版本链：① 作用域当前唯一语义是 TenantAbstractEntity.tenant_id，INSURER 级无业务诉求，GLOBAL 行在多租户下还需 tenant_id=0 哨兵（与 TenantScope.AUTO 冲突）；② 生效窗口只有查询侧按「当前时间取最新」才生效，而目前没有这种查询，加列即制造「配了不生效」的第三口径；③ append 链让「同 key 多行谁生效」成为查询侧必须回答的问题，而 SDK Criteria 表达不了时态条件——业界（Unleash/LaunchDarkly/OpenFeature）均为「单行当前态 + 变更审计」，本项目已有 @Version 乐观锁 + created/updated 审计列。以上取舍同步回写 §9.5 与 §12.2。幂等：information_schema 判定 + 动态 SQL（MySQL 无 ADD COLUMN IF NOT EXISTS）+ 终态断言（列存在且可空——TEXT 无字面量默认值，未配置即 NULL，被建成 NOT NULL 则未带该列的 INSERT 报 1364）。"
     }
   ],
   "ordinalConflicts": [
