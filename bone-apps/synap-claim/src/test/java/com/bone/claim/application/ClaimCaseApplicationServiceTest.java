@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.claim.application.ClaimCaseApplicationService.SubmitClaim;
 import com.bone.claim.application.ClaimCaseApplicationService.SubmittedClaim;
+import com.bone.claim.application.CodeMappingApplicationService.ResolveView;
 import com.bone.claim.application.CodeMappingApplicationService.StpGateView;
 import com.bone.claim.application.port.out.PolicyQueryPort;
 import com.bone.claim.application.port.out.TenantPort;
@@ -17,6 +18,7 @@ import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.ClaimItem;
 import com.bone.claim.domain.model.claim.valueobject.Decision;
 import com.bone.claim.domain.model.claim.valueobject.ItemCategory;
+import com.bone.claim.domain.model.mapping.ResolutionStatus;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.ClaimItemRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
@@ -583,6 +585,32 @@ class ClaimCaseApplicationServiceTest {
     org.assertj.core.api.Assertions.assertThat(saved.getStdHospitalCode())
         .as("码已解析仍须落标准码")
         .isEqualTo("STD-FEE-001");
+  }
+
+  @Test
+  @DisplayName("§16-1 P0 域白名单：禁用 DISEASE 域时该域不参与解析与 STP 评估，启用域照常")
+  void submitSkipsDisabledDomain() {
+    mockInsurerRegistered();
+    when(codeMappingApplicationService.resolve(any()))
+        .thenReturn(
+            new ResolveView(ResolutionStatus.RESOLVED.name(), "STD-RESOLVED", 1L, "", "v1", false));
+    // 仅启用医院域：P0 先只做医院+药品时，疾病域须整体退出解析/评估链路
+    service.setEnabledDomainsForTest("HOSPITAL");
+    try {
+      service.submit(commandWithInsurer("idem-scope", "YCBX", "H-9901", "FEE-01"));
+
+      org.mockito.ArgumentCaptor<ClaimCase> captor =
+          org.mockito.ArgumentCaptor.forClass(ClaimCase.class);
+      verify(claimCaseRepository).insert(captor.capture());
+      ClaimCase saved = captor.getValue();
+      assertThat(saved.getStdHospitalCode()).as("启用域照常解析落标准码").isEqualTo("STD-RESOLVED");
+      assertThat(saved.getStdDiagnosisCode()).as("禁用域（DISEASE）不参与解析，标准码留空而非静默兜底").isEmpty();
+      // STP 闸门同样跳过禁用域：禁用域不应产生质量评估调用
+      verify(codeMappingApplicationService, never()).stpGate("YCBX", "DISEASE");
+    } finally {
+      // 复位共享实例状态，避免泄漏到其它用例（默认 ALL＝全开）
+      service.setEnabledDomainsForTest("ALL");
+    }
   }
 
   @Test

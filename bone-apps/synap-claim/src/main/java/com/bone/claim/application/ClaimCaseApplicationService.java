@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +52,19 @@ public class ClaimCaseApplicationService {
   private final DomainEventPublisher domainEventPublisher;
   private final CodeMappingApplicationService codeMappingApplicationService;
   private final ClaimInsurerRepository claimInsurerRepository;
+
+  /**
+   * 启用主数据域白名单（§16-1 P0 范围：一期只做医院+药品）。
+   *
+   * <p><b>默认 {@code ALL}</b>＝全部域启用，与上线前行为逐位一致；配置为逗号分隔的域 code（如 {@code
+   * HOSPITAL,DRUG}）时只启用列出的域。收单码解析与 STP 闸门按此白名单跳过被禁用域——
+   * 禁用某域意味着该域不参与解析/质量评估（而非静默兜底），符合「配了不生效必须有可见行为」的原则。
+   *
+   * <p><b>为什么是 {@code ALL} 而非空串默认</b>：空串在解析侧容易被误读成「无域可解析」而整体跳过，与「未配置＝全开」 的语义相反；显式 {@code ALL}
+   * 让「未配置」与「全开」逐位一致，也便于 {@link #isDomainEnabled} 单分支判定。
+   */
+  @Value("${bone.claim.mapping.enabled-domains:ALL}")
+  private String enabledDomainsCsv = "ALL";
 
   // ===================== 写操作 =====================
 
@@ -187,7 +201,7 @@ public class ClaimCaseApplicationService {
     String stdHospital = null;
     String stdDiagnosis = null;
     String caseMappingVersion = "";
-    if (!claim.getHospitalCode().isBlank()) {
+    if (isDomainEnabled(MasterDataDomain.HOSPITAL) && !claim.getHospitalCode().isBlank()) {
       CodeMappingApplicationService.ResolveView hospital =
           codeMappingApplicationService.resolve(
               new CodeMappingApplicationService.ResolveCommand(
@@ -204,7 +218,7 @@ public class ClaimCaseApplicationService {
         pending = true;
       }
     }
-    if (!claim.getDiagnosisCode().isBlank()) {
+    if (isDomainEnabled(MasterDataDomain.DISEASE) && !claim.getDiagnosisCode().isBlank()) {
       CodeMappingApplicationService.ResolveView diagnosis =
           codeMappingApplicationService.resolve(
               new CodeMappingApplicationService.ResolveCommand(
@@ -229,6 +243,9 @@ public class ClaimCaseApplicationService {
     // 明细级：费用类别（FEE_CATEGORY）
     for (ClaimItem item : items) {
       if (item.getFeeCode() == null || item.getFeeCode().isBlank()) {
+        continue;
+      }
+      if (!isDomainEnabled(MasterDataDomain.FEE_CATEGORY)) {
         continue;
       }
       CodeMappingApplicationService.ResolveView fee =
@@ -263,13 +280,15 @@ public class ClaimCaseApplicationService {
       return false;
     }
     boolean blocked = false;
-    if (!claim.getHospitalCode().isBlank()
+    if (isDomainEnabled(MasterDataDomain.HOSPITAL)
+        && !claim.getHospitalCode().isBlank()
         && !codeMappingApplicationService
             .stpGate(insurerCode, MasterDataDomain.HOSPITAL.code())
             .allowAuto()) {
       blocked = true;
     }
-    if (!claim.getDiagnosisCode().isBlank()
+    if (isDomainEnabled(MasterDataDomain.DISEASE)
+        && !claim.getDiagnosisCode().isBlank()
         && !codeMappingApplicationService
             .stpGate(insurerCode, MasterDataDomain.DISEASE.code())
             .allowAuto()) {
@@ -277,13 +296,37 @@ public class ClaimCaseApplicationService {
     }
     boolean anyFee =
         command.items().stream().anyMatch(it -> it.feeCode() != null && !it.feeCode().isBlank());
-    if (anyFee
+    if (isDomainEnabled(MasterDataDomain.FEE_CATEGORY)
+        && anyFee
         && !codeMappingApplicationService
             .stpGate(insurerCode, MasterDataDomain.FEE_CATEGORY.code())
             .allowAuto()) {
       blocked = true;
     }
     return blocked;
+  }
+
+  /**
+   * 某主数据域是否在当前启用白名单内（§16-1 P0 范围）。
+   *
+   * <p>默认 {@code enabledDomainsCsv=ALL} ⇒ 全部启用（与上线前行为逐位一致）；配置为逗号分隔的域 code 时只放行列出的域。 收单解析与 STP
+   * 闸门据此跳过被禁用域——禁用即「该域不参与」，而非静默兜底。
+   */
+  private boolean isDomainEnabled(MasterDataDomain domain) {
+    if ("ALL".equals(enabledDomainsCsv)) {
+      return true;
+    }
+    for (String code : enabledDomainsCsv.split(",")) {
+      if (domain.code().equals(code.trim())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** 测试用：覆盖启用域白名单（默认 ALL）。生产值由 {@code @Value} 注入，本方法仅为单测提供受控入口， 不改变「未配置＝全开」的语义。 */
+  void setEnabledDomainsForTest(String csv) {
+    this.enabledDomainsCsv = csv;
   }
 
   /** 分配初审（7 → 10）。 */
