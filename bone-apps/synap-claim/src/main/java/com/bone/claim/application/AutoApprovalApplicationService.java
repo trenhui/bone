@@ -3,6 +3,7 @@ package com.bone.claim.application;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.ClaimCase;
+import com.bone.claim.domain.model.config.FeatureToggle;
 import com.bone.claim.domain.model.settlement.AccountType;
 import com.bone.claim.domain.model.settlement.SettlementOrder;
 import java.math.BigDecimal;
@@ -44,6 +45,7 @@ public class AutoApprovalApplicationService {
   private final SettlementApplicationService settlementApplicationService;
   private final IndemnityApplicationService indemnityApplicationService;
   private final DecisionExecutionApplicationService decisionExecutionApplicationService;
+  private final FeatureTenantToggleService featureToggleService;
 
   /** 自动放款总开关（默认关闭：策略须签核）。 */
   @Value("${bone.claim.auto-approve.enabled:false}")
@@ -69,9 +71,6 @@ public class AutoApprovalApplicationService {
    */
   @Transactional
   public AutoApprovalOutcome applyAutoDecision(long claimId) {
-    if (!enabled) {
-      return AutoApprovalOutcome.skipped("AUTO_APPROVE_DISABLED");
-    }
     var execution = decisionExecutionApplicationService.findLatest(claimId);
     if (execution == null) {
       return AutoApprovalOutcome.skipped("NO_DECISION");
@@ -85,6 +84,12 @@ public class AutoApprovalApplicationService {
     }
     if (claim.finished()) {
       return AutoApprovalOutcome.skipped("ALREADY_SETTLED");
+    }
+    // §11.4 三态开关（fail-closed）：全局开关开启时仍须租户级特性开关/灰度裁决；
+    // 未配置＝继承全局，全局默认关闭（bone.claim.auto-approve.enabled=false）即一律不自动放款。
+    if (!featureToggleService.isFeatureAllowed(
+        claim.getTenantId(), enabled, FeatureToggle.FEATURE_AUTO_APPROVE)) {
+      return AutoApprovalOutcome.skipped("AUTO_APPROVE_TOGGLE_OFF");
     }
     BigDecimal amount = adjustmentAmount(claimId);
     if (maxAmount != null && amount.compareTo(maxAmount) > 0) {
