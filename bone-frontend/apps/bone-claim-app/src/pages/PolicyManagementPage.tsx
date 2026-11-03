@@ -15,6 +15,7 @@ import {
   Space,
   Spin,
   Table,
+  Tabs,
   Tag,
   Typography,
 } from 'antd';
@@ -49,6 +50,7 @@ import {
   toTotal,
   type CreatePolicyReq,
   type PolicyConfigStatus,
+  type PolicyDetail,
   type PolicyView,
 } from '../services/claimConfigApi';
 
@@ -132,6 +134,8 @@ export function PolicyManagementPage(): ReactElement {
   /** 详情数据（走 getPolicy 单查接口，含列表不展示的全字段）。 */
   const [detail, setDetail] = useState<PolicyView | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  /** 聚合详情（主体健康度 + 计划→责任树 + 覆盖差异）；加载失败静默降级为基础信息。 */
+  const [policyDetail, setPolicyDetail] = useState<PolicyDetail | null>(null);
   const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async () => {
@@ -251,6 +255,7 @@ export function PolicyManagementPage(): ReactElement {
     setDetailPolicyNo(row.policyNo);
     setDetail(row); // 先用列表行兜底，避免抽屉闪空白
     setDetailLoading(true);
+    setPolicyDetail(null); // 换保单时清掉上一单的聚合详情
     try {
       const res = await claimConfigApi.getPolicy(row.policyNo);
       setDetail(res.data ?? row);
@@ -259,6 +264,13 @@ export function PolicyManagementPage(): ReactElement {
       setDetailPolicyNo(null);
     } finally {
       setDetailLoading(false);
+    }
+    // 聚合详情并行加载：失败不阻断基础信息展示（详情抽屉降级为只有基础信息）
+    try {
+      const res = await claimConfigApi.getPolicyDetail(row.policyNo);
+      if (res.code === 200) setPolicyDetail(res.data ?? null);
+    } catch {
+      /* 聚合详情是增强信息，失败静默降级 */
     }
   };
 
@@ -817,71 +829,236 @@ export function PolicyManagementPage(): ReactElement {
         title={detailPolicyNo ? `保单详情（${detailPolicyNo}）` : '保单详情'}
         open={detailPolicyNo !== null}
         onClose={() => setDetailPolicyNo(null)}
-        width={640}
+        width={860}
       >
         {detailLoading && !detail ? (
           <Spin />
         ) : (
           detail && (
-            <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label="保单号">{detail.policyNo}</Descriptions.Item>
-              <Descriptions.Item label="保单名称">
-                {detail.policyName || '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="规则开关">
-                <Tag
-                  color={POLICY_CONFIG_STATUS_META[detail.configStatus]?.color ?? 'default'}
-                >
-                  {POLICY_CONFIG_STATUS_META[detail.configStatus]?.label ?? detail.configStatus}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="保险公司">
-                {detail.insurerName || '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="保险分公司">
-                {detail.branchName || '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="投保公司">
-                {detail.insureName || '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="业务主体码">
-                {detail.bizIdentityCode || '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="产品类型">
-                {detail.productType || '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="保单类型">
-                {(() => {
-                  const meta = policyTypeLabel(detail.policyType);
-                  return <Tag color={meta.color}>{meta.label}</Tag>;
-                })()}
-              </Descriptions.Item>
-              <Descriptions.Item label="承保期间">
-                {dayjs(detail.effectiveStart).format('YYYY-MM-DD HH:mm')} ~{' '}
-                {dayjs(detail.effectiveEnd).format('YYYY-MM-DD HH:mm')}
-              </Descriptions.Item>
-              <Descriptions.Item label="等待期">
-                {detail.waitingPeriod > 0 ? `${detail.waitingPeriod} 天` : '无'}
-              </Descriptions.Item>
-              <Descriptions.Item label="保单版本">
-                {detail.policyVersion || '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="更新时间">
-                {detail.updatedAt ? dayjs(detail.updatedAt).format('YYYY-MM-DD HH:mm:ss') : '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="创建时间">
-                {detail.createdAt ? dayjs(detail.createdAt).format('YYYY-MM-DD HH:mm:ss') : '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="被保人清单（假名化 ID）">
-                {parseInsuredSnapshot(detail.insuredSnapshot).length ? (
-                  <Typography.Paragraph style={{ marginBottom: 0 }} copyable>
-                    {parseInsuredSnapshot(detail.insuredSnapshot).join(',')}
-                  </Typography.Paragraph>
-                ) : (
-                  '未录入'
-                )}
-              </Descriptions.Item>
-            </Descriptions>
+            <Tabs
+              defaultActiveKey="basic"
+              items={[
+                {
+                  key: 'basic',
+                  label: '基础信息',
+                  children: (
+                    <Descriptions column={1} size="small" bordered>
+                      <Descriptions.Item label="保单号">{detail.policyNo}</Descriptions.Item>
+                      <Descriptions.Item label="保单名称">
+                        {detail.policyName || '—'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="规则开关">
+                        <Tag
+                          color={POLICY_CONFIG_STATUS_META[detail.configStatus]?.color ?? 'default'}
+                        >
+                          {POLICY_CONFIG_STATUS_META[detail.configStatus]?.label ??
+                            detail.configStatus}
+                        </Tag>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="保险公司">
+                        {detail.insurerName || '—'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="保险分公司">
+                        {detail.branchName || '—'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="投保公司">
+                        {detail.insureName || '—'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="业务主体码">
+                        {detail.bizIdentityCode || '—'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="产品类型">
+                        {detail.productType || '—'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="保单类型">
+                        {(() => {
+                          const meta = policyTypeLabel(detail.policyType);
+                          return <Tag color={meta.color}>{meta.label}</Tag>;
+                        })()}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="承保期间">
+                        {dayjs(detail.effectiveStart).format('YYYY-MM-DD HH:mm')} ~{' '}
+                        {dayjs(detail.effectiveEnd).format('YYYY-MM-DD HH:mm')}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="等待期">
+                        {detail.waitingPeriod > 0 ? `${detail.waitingPeriod} 天` : '无'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="保单版本">
+                        {detail.policyVersion || '—'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="更新时间">
+                        {detail.updatedAt
+                          ? dayjs(detail.updatedAt).format('YYYY-MM-DD HH:mm:ss')
+                          : '—'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="创建时间">
+                        {detail.createdAt
+                          ? dayjs(detail.createdAt).format('YYYY-MM-DD HH:mm:ss')
+                          : '—'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="被保人清单（假名化 ID）">
+                        {parseInsuredSnapshot(detail.insuredSnapshot).length ? (
+                          <Typography.Paragraph style={{ marginBottom: 0 }} copyable>
+                            {parseInsuredSnapshot(detail.insuredSnapshot).join(',')}
+                          </Typography.Paragraph>
+                        ) : (
+                          '未录入'
+                        )}
+                      </Descriptions.Item>
+                    </Descriptions>
+                  ),
+                },
+                {
+                  key: 'health',
+                  label: '主体映射健康度',
+                  children: policyDetail ? (
+                    policyDetail.insurerHealth.length === 0 ? (
+                      <Typography.Text type="secondary">
+                        该保单未挂业务主体（存量保单），无映射健康度。
+                      </Typography.Text>
+                    ) : (
+                      <Table
+                        rowKey="domain"
+                        size="small"
+                        pagination={false}
+                        dataSource={policyDetail.insurerHealth}
+                        columns={[
+                          {
+                            title: '主数据域',
+                            dataIndex: 'domain',
+                            width: 140,
+                          },
+                          {
+                            title: '标准目录总数',
+                            dataIndex: 'catalogTotal',
+                            width: 120,
+                          },
+                          {
+                            title: '已映射标准码',
+                            dataIndex: 'mappedStandardCodes',
+                            width: 120,
+                          },
+                          {
+                            title: '覆盖率',
+                            dataIndex: 'coverage',
+                            width: 100,
+                            render: (v: number) =>
+                              v < 0 ? '—' : `${(v * 100).toFixed(1)}%`,
+                          },
+                          {
+                            title: '未处理未命中',
+                            dataIndex: 'openMissCount',
+                            width: 120,
+                            render: (v: number) => (
+                              <span style={{ color: v > 0 ? '#cf1322' : undefined }}>{v}</span>
+                            ),
+                          },
+                          {
+                            title: '近7天新未命中',
+                            dataIndex: 'recentMissCount',
+                            width: 130,
+                          },
+                        ]}
+                      />
+                    )
+                  ) : (
+                    <Spin size="small" />
+                  ),
+                },
+                {
+                  key: 'liabilities',
+                  label: '责任全貌',
+                  children: policyDetail ? (
+                    policyDetail.plans.length === 0 ? (
+                      <Typography.Text type="secondary">该保单尚未配置计划与责任。</Typography.Text>
+                    ) : (
+                      <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                        {policyDetail.plans.map((plan) => (
+                          <Card
+                            key={plan.planId}
+                            size="small"
+                            title={`${plan.planName}（${plan.planCode}）`}
+                          >
+                            <Table
+                              rowKey="liabilityUuid"
+                              size="small"
+                              pagination={false}
+                              dataSource={plan.liabilities}
+                              columns={[
+                                { title: '责任码', dataIndex: 'liabilityCode', width: 90 },
+                                {
+                                  title: '类型',
+                                  dataIndex: 'liabilityType',
+                                  width: 140,
+                                },
+                                {
+                                  title: '赔付比例',
+                                  dataIndex: 'payPercent',
+                                  width: 90,
+                                  render: (v: number) => `${v}%`,
+                                },
+                                {
+                                  title: '责任额度',
+                                  dataIndex: 'liabilityLimit',
+                                  width: 110,
+                                },
+                                {
+                                  title: '适用名单',
+                                  ellipsis: true,
+                                  render: (_: unknown, r) => {
+                                    const parts: string[] = [];
+                                    if (r.limitHospitalCodes)
+                                      parts.push(`医院:${r.limitHospitalCodes}`);
+                                    if (r.limitDiagnosisCodes)
+                                      parts.push(`病种:${r.limitDiagnosisCodes}`);
+                                    return parts.length ? parts.join('；') : '不限定';
+                                  },
+                                },
+                                {
+                                  title: '费用规则',
+                                  dataIndex: 'feeRules',
+                                  width: 90,
+                                  render: (v: unknown[]) => v?.length ?? 0,
+                                },
+                                {
+                                  title: '主体覆盖差异',
+                                  dataIndex: 'overrides',
+                                  render: (rows: { overrideField: string; status: string }[]) =>
+                                    rows?.length
+                                      ? rows.map((o) => (
+                                          <Tag
+                                            key={o.overrideField}
+                                            color={o.status === 'ACTIVE' ? 'green' : 'orange'}
+                                          >
+                                            {o.overrideField}
+                                            {o.status === 'ACTIVE' ? '·生效' : '·未发布'}
+                                          </Tag>
+                                        ))
+                                      : '—',
+                                },
+                                {
+                                  title: '状态',
+                                  dataIndex: 'status',
+                                  width: 90,
+                                  render: (s: string) =>
+                                    s === 'ACTIVE' ? (
+                                      <Tag color="green">{s}</Tag>
+                                    ) : (
+                                      <Tag>{s}</Tag>
+                                    ),
+                                },
+                              ]}
+                            />
+                          </Card>
+                        ))}
+                      </Space>
+                    )
+                  ) : (
+                    <Spin size="small" />
+                  ),
+                },
+              ]}
+            />
           )
         )}
       </Drawer>

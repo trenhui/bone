@@ -15,7 +15,7 @@ import {
   FileTextOutlined,
   TagsOutlined,
   DatabaseOutlined,
-  SwapOutlined,
+  LinkOutlined,
 } from '@ant-design/icons';
 import { ClaimSubmitPage } from './pages/ClaimSubmitPage';
 import { ReviewWorkbenchPage } from './pages/ReviewWorkbenchPage';
@@ -117,10 +117,10 @@ export const CLAIM_ROUTES: ClaimRoute[] = [
   { path: '/liability', name: '责任配置', icon: <TagsOutlined />, element: <LiabilityConfigPage />, hidden: true },
   { path: '/library', name: '基础目录库', icon: <DatabaseOutlined />, element: <LibraryPage /> },
   // 多保司主数据映射链路（承保主体 + 保司码→标准码 crosswalk）。
-  // 当前 hidden：导航菜单由 shell 依据 IAM 菜单渲染，新增菜单位置需 IAM 侧 seed（迁移脚本，
-  // 属 L3 架构师审批项）后才能进入侧栏；hidden 让单导航探针豁免其菜单全等，本地直链可先行验证。
-  { path: '/insurers', name: '承保主体', icon: <BankOutlined />, element: <InsurerManagementPage />, hidden: true },
-  { path: '/mappings', name: '主数据映射', icon: <SwapOutlined />, element: <MappingPage />, hidden: true },
+  // 侧栏入口由 IAM 菜单提供（见 scripts/migration/0102_seed_claim_mapping_menus.sql，与 routes.tsx 同提交），
+  // 菜单名 / 顺序 / 图标必须与本文件逐字一致，否则 scripts/e2e/ui/claim-single-nav-probe.mjs 判红。
+  { path: '/insurers', name: '承保主体', icon: <SafetyCertificateOutlined />, element: <InsurerManagementPage /> },
+  { path: '/mappings', name: '主数据映射', icon: <LinkOutlined />, element: <MappingPage /> },
 ];
 
 /** shell（qiankun activeRule）侧的路由前缀；菜单 path 形如 `/claim#/<hash>`。 */

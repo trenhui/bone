@@ -32,6 +32,22 @@ public interface RefDrugRepository extends Repository<RefDrug, Long> {
     return countByCriteria(listCriteria(tenantId, keyword));
   }
 
+  /** 目录总数（映射健康度覆盖率的分母）。 */
+  default long countAll(Long tenantId) {
+    return countByCriteria(Criteria.<RefDrug>create().eq(RefDrug::getTenantId, tenantId));
+  }
+
+  /** 按编码批量取目录项（映射列表回填标准名称，避免逐行 N+1）。 */
+  default List<RefDrug> findByCodes(Long tenantId, List<String> codes) {
+    if (codes == null || codes.isEmpty()) {
+      return List.of();
+    }
+    return findByCriteria(
+        Criteria.<RefDrug>create()
+            .eq(RefDrug::getTenantId, tenantId)
+            .in(RefDrug::getDrugCode, codes.toArray()));
+  }
+
   static Criteria<RefDrug> listCriteria(Long tenantId, String keyword) {
     Criteria<RefDrug> criteria = Criteria.<RefDrug>create().eq(RefDrug::getTenantId, tenantId);
     if (keyword != null && !keyword.isBlank()) {

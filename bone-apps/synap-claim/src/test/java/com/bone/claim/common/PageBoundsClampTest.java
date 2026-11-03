@@ -37,7 +37,9 @@ class PageBoundsClampTest {
   @BeforeEach
   void setUp() {
     // 只装配本测试用到的两个依赖；page() 不触碰其余端口
-    service = new ClaimCaseApplicationService(claimCaseRepository, null, null, tenantPort, null);
+    service =
+        new ClaimCaseApplicationService(
+            claimCaseRepository, null, null, tenantPort, null, null, null);
   }
 
   @Test

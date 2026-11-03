@@ -3,6 +3,7 @@ package com.bone.claim.scenario;
 import com.bone.claim.application.AppealApplicationService;
 import com.bone.claim.application.AutoApprovalApplicationService;
 import com.bone.claim.application.ClaimCaseApplicationService;
+import com.bone.claim.application.CodeMappingApplicationService;
 import com.bone.claim.application.DecisionExecutionApplicationService;
 import com.bone.claim.application.DecisionGraphExecutor;
 import com.bone.claim.application.DecisionRunApplicationService;
@@ -145,7 +146,18 @@ public class ScenarioHarness {
   public ScenarioHarness() {
     TenantPort tenantPort = () -> tenantId;
     claimRepo = new InMemoryClaimCaseRepository(itemRepo);
-    claimSvc = new ClaimCaseApplicationService(claimRepo, itemRepo, policyPort, tenantPort, events);
+    // 映射解析依赖：场景报案的 insurerCode 恒为空（存量行为），解析分支不会被触达；
+    // 需要验证「收单落双码」的场景应在 ClaimCaseApplicationServiceTest 单测层覆盖。
+    claimSvc =
+        new ClaimCaseApplicationService(
+            claimRepo,
+            itemRepo,
+            policyPort,
+            tenantPort,
+            events,
+            org.mockito.Mockito.mock(CodeMappingApplicationService.class),
+            org.mockito.Mockito.mock(
+                com.bone.claim.domain.repository.ClaimInsurerRepository.class));
     // 累计读侧用真实适配器（不是桩）：场景里 A7 占额写的行，A6 下一次理算就能读到 —— 跨案闭环必须走同一条读路径
     AccumulationPort accumulationPort = new QuotaDrivenAccumulationPortAdapter(quotaRepo);
     indemnitySvc =

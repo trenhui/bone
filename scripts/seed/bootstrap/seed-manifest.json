@@ -1,6 +1,6 @@
 {
   "_comment": "bootstrap 种子的行数下限清单。由 scripts/seed-bootstrap.py 生成；--verify 用它判断「灌完 init+seed 的库是否还是空壳」。",
-  "generatedAt": "2026-11-02 20:24:41",
+  "generatedAt": "2026-11-03 14:16:18",
   "tables": {
     "iam_permission": {
       "rows": 102,
@@ -18,15 +18,15 @@
     },
     "sys_dict_type": {
       "rows": 34,
-      "source_rows": 91,
-      "excluded": 57,
+      "source_rows": 92,
+      "excluded": 58,
       "where": "deleted = 0 AND code NOT REGEXP 'E2E|e2e' AND name NOT REGEXP 'E2E|e2e|测试'",
       "why": "字典类型：下拉/枚举的取值域定义；排除 E2E 联调字典"
     },
     "sys_dict_item": {
       "rows": 176,
-      "source_rows": 252,
-      "excluded": 76,
+      "source_rows": 253,
+      "excluded": 77,
       "where": "deleted = 0 AND type_code NOT REGEXP 'E2E|e2e' AND code NOT REGEXP 'E2E|e2e' AND value NOT REGEXP 'E2E|e2e'",
       "why": "字典项：有类型无项等于没有字典；排除 E2E 类型及其项下所有项"
     }

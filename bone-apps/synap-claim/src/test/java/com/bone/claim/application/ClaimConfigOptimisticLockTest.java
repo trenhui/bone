@@ -7,8 +7,10 @@ import static org.mockito.Mockito.when;
 import com.bone.claim.application.ClaimConfigApplicationService.PolicyView;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
+import com.bone.claim.domain.model.mapping.ClaimInsurer;
 import com.bone.claim.domain.model.policy.ClaimPolicy;
 import com.bone.claim.domain.repository.ClaimCoverageRepository;
+import com.bone.claim.domain.repository.ClaimInsurerRepository;
 import com.bone.claim.domain.repository.ClaimPlanRepository;
 import com.bone.claim.domain.repository.ClaimPolicyRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
@@ -42,6 +44,7 @@ class ClaimConfigOptimisticLockTest {
   @Mock ClaimPolicyRepository claimPolicyRepository;
   @Mock ClaimPlanRepository claimPlanRepository;
   @Mock ClaimCoverageRepository claimCoverageRepository;
+  @Mock ClaimInsurerRepository claimInsurerRepository;
   @Mock TenantPort tenantPort;
   @Mock DomainEventPublisher domainEventPublisher;
 
@@ -114,6 +117,7 @@ class ClaimConfigOptimisticLockTest {
   @Test
   void matchingVersion_appliesEdit() {
     when(claimPolicyRepository.findByPolicyNo(POLICY_NO)).thenReturn(savedPolicy(5L));
+    stubActiveInsurer("biz");
 
     PolicyView view = service.updatePolicy(POLICY_NO, editCmd(5L));
     assertThat(view.policyName()).isEqualTo("新名称");
@@ -123,8 +127,16 @@ class ClaimConfigOptimisticLockTest {
   @Test
   void nullSubmittedVersion_bypassesGuard() {
     when(claimPolicyRepository.findByPolicyNo(POLICY_NO)).thenReturn(savedPolicy(5L));
+    stubActiveInsurer("biz");
 
     PolicyView view = service.updatePolicy(POLICY_NO, editCmd(null));
     assertThat(view.policyName()).isEqualTo("新名称");
+  }
+
+  /** 主体引用收紧后，编辑非空 bizIdentityCode 必须能解析到 ACTIVE 主体。 */
+  private void stubActiveInsurer(String code) {
+    when(claimInsurerRepository.findByInsurerCode(1L, code))
+        .thenReturn(ClaimInsurer.of(9L, 1L, code, "永诚财险", "永诚", "DIRECT", "", "", T0));
+    when(tenantPort.currentTenantId()).thenReturn(1L);
   }
 }

@@ -6,6 +6,7 @@ import com.bone.claim.application.ClaimConfigApplicationService;
 import com.bone.claim.application.ClaimConfigApplicationService.CoverageView;
 import com.bone.claim.application.ClaimConfigApplicationService.PlanView;
 import com.bone.claim.application.ClaimConfigApplicationService.PolicyView;
+import com.bone.claim.application.PolicyDetailApplicationService;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,6 +47,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ClaimConfigController {
 
   private final ClaimConfigApplicationService claimConfigApplicationService;
+  private final PolicyDetailApplicationService policyDetailApplicationService;
 
   // ===================== 保单 =====================
 
@@ -71,6 +73,17 @@ public class ClaimConfigController {
       @Parameter(description = "保单号") @PathVariable String policyNo) {
     return ApiResponse.success(
         HttpStatus.OK.value(), claimConfigApplicationService.getPolicy(policyNo));
+  }
+
+  @Operation(
+      summary = "保单聚合详情（主体健康度 + 计划→责任树 + 覆盖差异）",
+      description = "一张视图回答「这个保单按什么规则赔、各主体差异化在哪」；主体为空的存量保单不含健康度")
+  @PreAuthorize("hasAuthority('claim:policy:read')")
+  @GetMapping("/policies/{policyNo}/detail")
+  public ApiResponse<PolicyDetailApplicationService.PolicyDetail> policyDetail(
+      @Parameter(description = "保单号") @PathVariable String policyNo) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(), policyDetailApplicationService.detail(policyNo));
   }
 
   @Operation(

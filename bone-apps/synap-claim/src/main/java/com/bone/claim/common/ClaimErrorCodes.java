@@ -163,6 +163,17 @@ public final class ClaimErrorCodes {
    */
   public static final String CLAIM_POLICY_TYPE_CONFLICT = "SC_CLAIM_POLICY_TYPE_CONFLICT";
 
+  /** 映射批量导入被整批拒绝：文件不可解析或超过 2000 行上限（行级错误走结果对象，不抛异常）。 */
+  public static final String CLAIM_MAPPING_IMPORT_REJECTED = "SC_CLAIM_MAPPING_IMPORT_REJECTED";
+
+  /**
+   * 保单引用的业务主体（bizIdentityCode）不合法：主体不存在，或已停用/终止。
+   *
+   * <p>为什么单独给码：主体码是映射层的键——保单挂着不存在的主体码，收单解析会在该键下建出 一条永远没人维护的映射队列；挂着已停用主体则等于绕过「停用保司冻结映射面」的运营动作。
+   * 与「参数格式错」不同：请求本身合法，是引用的主数据前提不成立，故 422。
+   */
+  public static final String CLAIM_BIZ_IDENTITY_INVALID = "SC_CLAIM_BIZ_IDENTITY_INVALID";
+
   /** 计划不存在（按 planId 查）。 */
   public static final String CLAIM_PLAN_NOT_FOUND = "SC_CLAIM_PLAN_NOT_FOUND";
 

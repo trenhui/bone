@@ -12,6 +12,8 @@ export const PERMISSIONS = {
   // ---- 配置面 ----
   POLICY_READ: 'claim:policy:read',
   POLICY_WRITE: 'claim:policy:write',
+  /** 映射处置独立权限点：未命中的建立映射/忽略是「翻译外部码」的高权操作，与一般配置写分开授权。 */
+  MAPPING_DISPOSE: 'claim:mapping:dispose',
   QUOTA_READ: 'claim:quota:read',
   QUOTA_WRITE: 'claim:quota:write',
   // ---- 作业面（与后端方法级 @PreAuthorize 对齐）----

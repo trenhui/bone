@@ -4,10 +4,12 @@ import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.common.PageBounds;
+import com.bone.claim.domain.model.mapping.ClaimInsurer;
 import com.bone.claim.domain.model.policy.ClaimCoverage;
 import com.bone.claim.domain.model.policy.ClaimPlan;
 import com.bone.claim.domain.model.policy.ClaimPolicy;
 import com.bone.claim.domain.repository.ClaimCoverageRepository;
+import com.bone.claim.domain.repository.ClaimInsurerRepository;
 import com.bone.claim.domain.repository.ClaimPlanRepository;
 import com.bone.claim.domain.repository.ClaimPolicyRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
@@ -39,6 +41,7 @@ public class ClaimConfigApplicationService {
   private final ClaimPolicyRepository claimPolicyRepository;
   private final ClaimPlanRepository claimPlanRepository;
   private final ClaimCoverageRepository claimCoverageRepository;
+  private final ClaimInsurerRepository claimInsurerRepository;
   private final TenantPort tenantPort;
   private final DomainEventPublisher domainEventPublisher;
 
@@ -85,6 +88,7 @@ public class ClaimConfigApplicationService {
     if (claimPolicyRepository.findByPolicyNo(command.policyNo()) != null) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_POLICY_DUPLICATED, command.policyNo());
     }
+    assertBizIdentityUsable(command.bizIdentityCode());
     ClaimPolicy policy =
         ClaimPolicy.open(
             DistributedIdGenerator.generateLongId(),
@@ -134,6 +138,7 @@ public class ClaimConfigApplicationService {
   public PolicyView updatePolicy(String policyNo, UpdatePolicy command) {
     ClaimPolicy policy = requirePolicy(policyNo);
     assertEditableVersion("保单", policy.getVersion(), command.version());
+    assertBizIdentityUsable(command.bizIdentityCode());
     policy.edit(
         command.policyName(),
         command.insurerName(),
@@ -282,6 +287,28 @@ public class ClaimConfigApplicationService {
   }
 
   // ===================== 内部 =====================
+
+  /**
+   * 主体引用收紧：{@code bizIdentityCode} 非空时必须引用本租户 ACTIVE 的承保主体。
+   *
+   * <p><b>空值放行是刻意的</b>：存量保单的主体是自由文本迁移过来的，读取不强校验（spec：reading 不 enforce），
+   * 只挡「新写入一个注定解析不出来的键」。停用主体也拒绝新引用——否则「停用保司冻结映射面」 会被新保单绕开。校验放在写入侧而非数据库外键，因为主体码是业务键而非主键，且空值合法。
+   */
+  private void assertBizIdentityUsable(String bizIdentityCode) {
+    if (bizIdentityCode == null || bizIdentityCode.isBlank()) {
+      return;
+    }
+    String code = bizIdentityCode.trim();
+    ClaimInsurer insurer =
+        claimInsurerRepository.findByInsurerCode(tenantPort.currentTenantId(), code);
+    if (insurer == null) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_BIZ_IDENTITY_INVALID, "承保主体不存在: " + code);
+    }
+    if (!insurer.isActive()) {
+      throw ClaimErrors.of(
+          ClaimErrorCodes.CLAIM_BIZ_IDENTITY_INVALID, "承保主体已停用或终止，不允许新引用: " + code);
+    }
+  }
 
   private ClaimPolicy requirePolicy(String policyNo) {
     ClaimPolicy policy = claimPolicyRepository.findByPolicyNo(policyNo);

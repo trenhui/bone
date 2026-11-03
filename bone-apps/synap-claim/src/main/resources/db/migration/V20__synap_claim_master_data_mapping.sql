@@ -168,6 +168,7 @@ CREATE TABLE t_claim_mapping_miss (
   status              VARCHAR(16)  NOT NULL DEFAULT 'OPEN' COMMENT 'OPEN/RESOLVED/IGNORED',
   ignore_reason       VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '忽略理由',
   resolved_mapping_id BIGINT       DEFAULT NULL COMMENT '解决该未命中的映射ID',
+  resolved_by         VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '处置人(operatorId;系统恢复=SYSTEM)',
   tenant_id           BIGINT       NOT NULL COMMENT '租户',
   created_by          BIGINT       DEFAULT NULL COMMENT '创建人ID',
   created_at          DATETIME(3)  NOT NULL COMMENT '创建时间',

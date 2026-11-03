@@ -44,6 +44,12 @@ public record SubmitClaimReq(
         @NotNull(message = "出险时间不能为空")
         Instant outInsureTime,
     @Schema(description = "批次号（报案号生成前缀，可空）") String batchNo,
+    @Schema(
+            description =
+                "承保主体编码（多保司映射解析维度；空 = 跳过解析走存量行为）。"
+                    + "已登记保司的报案会按保司码表翻译费用类别/医院/诊断码并落标准码；"
+                    + "存在未命中码值时案件将挂起待补，映射解决后自动恢复")
+        String insurerCode,
     @Schema(description = "费用明细（至少一项）", requiredMode = Schema.RequiredMode.REQUIRED)
         @Valid
         @NotNull(message = "费用明细不能为空")

@@ -3,12 +3,16 @@ package com.bone.claim.adapter.web.controller;
 import com.bone.claim.application.CodeMappingApplicationService;
 import com.bone.claim.application.CodeMappingApplicationService.AliasCommand;
 import com.bone.claim.application.CodeMappingApplicationService.AliasView;
+import com.bone.claim.application.CodeMappingApplicationService.BatchResolveItem;
+import com.bone.claim.application.CodeMappingApplicationService.BatchResolveResultView;
 import com.bone.claim.application.CodeMappingApplicationService.BindingCommand;
 import com.bone.claim.application.CodeMappingApplicationService.BindingView;
 import com.bone.claim.application.CodeMappingApplicationService.CodeItemCommand;
 import com.bone.claim.application.CodeMappingApplicationService.CodeItemView;
+import com.bone.claim.application.CodeMappingApplicationService.ImportResultView;
 import com.bone.claim.application.CodeMappingApplicationService.InsurerCommand;
 import com.bone.claim.application.CodeMappingApplicationService.InsurerView;
+import com.bone.claim.application.CodeMappingApplicationService.MappingHealthView;
 import com.bone.claim.application.CodeMappingApplicationService.MappingView;
 import com.bone.claim.application.CodeMappingApplicationService.MissView;
 import com.bone.claim.application.CodeMappingApplicationService.PageView;
@@ -18,10 +22,12 @@ import com.bone.claim.application.CodeMappingApplicationService.ResolveView;
 import com.bone.claim.application.CodeMappingApplicationService.SplitCommand;
 import com.bone.claim.application.CodeMappingApplicationService.SplitView;
 import com.bone.claim.domain.model.mapping.AliasRelation;
+import com.bone.claim.domain.model.mapping.InsurerStatus;
 import com.bone.claim.domain.model.mapping.MappingSource;
 import com.bone.claim.domain.model.mapping.MappingType;
 import com.bone.claim.domain.model.mapping.MatchRule;
 import com.bone.core.model.ApiResponse;
+import com.bone.core.security.auth.CurrentOperator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -68,17 +74,57 @@ public class CodeMappingController {
                 req.caseNo())));
   }
 
-  @Operation(summary = "当前生效映射分页")
+  @Operation(summary = "映射分页（默认当前生效；includeHistory=true 展开历史回放链）")
   @PreAuthorize("hasAuthority('claim:policy:read')")
   @GetMapping
   public ApiResponse<PageView<MappingView>> list(
       @RequestParam(required = false) String insurerCode,
       @RequestParam(required = false) String domain,
+      @RequestParam(required = false) String keyword,
+      @RequestParam(defaultValue = "false") boolean includeHistory,
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "10") int size) {
     return ApiResponse.success(
         HttpStatus.OK.value(),
-        codeMappingApplicationService.listMappings(insurerCode, domain, page, size));
+        codeMappingApplicationService.listMappings(
+            insurerCode, domain, keyword, includeHistory, page, size));
+  }
+
+  @Operation(summary = "批量导入映射（.xlsx，整批校验，内容指纹幂等，上限 2000 行）")
+  @PreAuthorize("hasAuthority('claim:policy:write')")
+  @PostMapping(value = "/import", consumes = "multipart/form-data")
+  public ApiResponse<ImportResultView> importMappings(
+      @RequestParam String insurerCode,
+      @RequestParam String domain,
+      @RequestParam("file") org.springframework.web.multipart.MultipartFile file)
+      throws java.io.IOException {
+    return ApiResponse.success(
+        HttpStatus.OK.value(),
+        codeMappingApplicationService.importMappings(insurerCode, domain, file.getBytes()));
+  }
+
+  @Operation(summary = "下载映射批量导入模板（列头 + 示例行）")
+  @PreAuthorize("hasAuthority('claim:policy:read')")
+  @GetMapping("/import/template")
+  public org.springframework.http.ResponseEntity<byte[]> importTemplate() {
+    byte[] bytes = codeMappingApplicationService.importTemplate();
+    return org.springframework.http.ResponseEntity.ok()
+        .header(
+            org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=mapping-import-template.xlsx")
+        .contentType(
+            org.springframework.http.MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+        .body(bytes);
+  }
+
+  @Operation(summary = "主体×域映射健康度（覆盖率/OPEN 未命中/近 7 天新增）")
+  @PreAuthorize("hasAuthority('claim:policy:read')")
+  @GetMapping("/health")
+  public ApiResponse<MappingHealthView> health(
+      @RequestParam String insurerCode, @RequestParam String domain) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(), codeMappingApplicationService.mappingHealth(insurerCode, domain));
   }
 
   @Operation(summary = "发布映射（同键旧行自动失效）")
@@ -112,19 +158,21 @@ public class CodeMappingController {
         HttpStatus.OK.value(), codeMappingApplicationService.disable(id, reasonCode));
   }
 
-  @Operation(summary = "未命中队列分页")
+  @Operation(summary = "未命中队列分页（sortBy=occurCount 按频次，默认按最近发生）")
   @PreAuthorize("hasAuthority('claim:policy:read')")
   @GetMapping("/misses")
   public ApiResponse<PageView<MissView>> listMisses(
       @RequestParam(required = false) String status,
+      @RequestParam(required = false) String sortBy,
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "10") int size) {
     return ApiResponse.success(
-        HttpStatus.OK.value(), codeMappingApplicationService.listMisses(status, page, size));
+        HttpStatus.OK.value(),
+        codeMappingApplicationService.listMisses(status, sortBy, page, size));
   }
 
-  @Operation(summary = "处置未命中：建立映射并关闭队列项")
-  @PreAuthorize("hasAuthority('claim:policy:write')")
+  @Operation(summary = "处置未命中：建立映射并关闭队列项（独立处置权限，操作人留痕；触发受影响案件重解析）")
+  @PreAuthorize("hasAuthority('claim:mapping:dispose')")
   @PostMapping("/misses/{id}/resolve")
   public ApiResponse<MissView> resolveMiss(@PathVariable long id, @RequestBody PublishReq req) {
     return ApiResponse.success(
@@ -143,16 +191,38 @@ public class CodeMappingController {
                 req.disambiguationJson(),
                 parse(MappingSource.class, req.source()),
                 req.versionNo(),
-                req.reviewerId())));
+                req.reviewerId()),
+            CurrentOperator.requireId()));
   }
 
-  @Operation(summary = "忽略未命中（运营判定该码无需映射）")
-  @PreAuthorize("hasAuthority('claim:policy:write')")
+  @Operation(summary = "忽略未命中（运营判定该码无需映射；独立处置权限，操作人留痕）")
+  @PreAuthorize("hasAuthority('claim:mapping:dispose')")
   @PostMapping("/misses/{id}/ignore")
   public ApiResponse<MissView> ignoreMiss(@PathVariable long id, @RequestParam String reason) {
     return ApiResponse.success(
-        HttpStatus.OK.value(), codeMappingApplicationService.ignoreMiss(id, reason));
+        HttpStatus.OK.value(),
+        codeMappingApplicationService.ignoreMiss(id, reason, CurrentOperator.requireId()));
   }
+
+  @Operation(summary = "批量解析（试算/预检，逐项独立 fail-closed，上限 200 条）")
+  @PreAuthorize("hasAuthority('claim:policy:read')")
+  @PostMapping("/resolve-batch")
+  public ApiResponse<BatchResolveResultView> resolveBatch(
+      @RequestParam String insurerCode, @RequestBody java.util.List<BatchResolveReq> reqs) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(),
+        codeMappingApplicationService.resolveBatch(
+            insurerCode,
+            reqs.stream()
+                .map(
+                    r ->
+                        new BatchResolveItem(
+                            r.domain(), r.rawCode(), r.rawName(), r.disambiguationKey()))
+                .toList()));
+  }
+
+  public record BatchResolveReq(
+      String domain, String rawCode, String rawName, String disambiguationKey) {}
 
   @Operation(summary = "注册承保主体")
   @PreAuthorize("hasAuthority('claim:policy:write')")
@@ -179,6 +249,36 @@ public class CodeMappingController {
       @RequestParam(defaultValue = "10") int size) {
     return ApiResponse.success(
         HttpStatus.OK.value(), codeMappingApplicationService.listInsurers(keyword, page, size));
+  }
+
+  @Operation(summary = "编辑承保主体", description = "编码不可改（它是保单/映射的外键锚点），仅名称/简称/类型/信用代码可编辑")
+  @PreAuthorize("hasAuthority('claim:policy:write')")
+  @PostMapping("/insurers/{insurerCode}")
+  public ApiResponse<InsurerView> updateInsurer(
+      @PathVariable String insurerCode, @RequestBody InsurerReq req) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(),
+        codeMappingApplicationService.updateInsurer(
+            insurerCode,
+            new InsurerCommand(
+                insurerCode,
+                req.insurerName(),
+                req.insurerShortName(),
+                req.insurerType(),
+                req.creditCode(),
+                req.parentCode())));
+  }
+
+  @Operation(
+      summary = "主体启停/终止合作",
+      description = "目标状态 target=ACTIVE/DISABLED/TERMINATED；不删行只改状态，历史单据仍显示该主体")
+  @PreAuthorize("hasAuthority('claim:policy:write')")
+  @PostMapping("/insurers/{insurerCode}/status")
+  public ApiResponse<InsurerView> changeInsurerStatus(
+      @PathVariable String insurerCode, @RequestParam InsurerStatus target) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(),
+        codeMappingApplicationService.changeInsurerStatus(insurerCode, target));
   }
 
   @Operation(summary = "维护保司码表项")

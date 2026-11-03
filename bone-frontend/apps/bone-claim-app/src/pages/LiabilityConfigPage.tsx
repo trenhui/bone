@@ -38,6 +38,7 @@ import {
   catalogPairProblem,
 } from '../utils/liabilityRules';
 import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
+import { InsurerSelect } from '../components/InsurerSelect';
 import { usePolicyOptions } from '../hooks/usePolicyOptions';
 import { useConfirmAction } from '../hooks/useConfirmAction';
 import { LIBRARY_MAX_PAGES, LIBRARY_PAGE_SIZE, fetchAllPages } from '../utils/libraryPaging';
@@ -46,12 +47,14 @@ import {
   CONFIG_STATUS_META,
   POLICY_CONFIG_STATUS_META,
   claimConfigApi,
+  coverageOverrideApi,
   type ConfigStatus,
   type CoverageView,
   type CreateLiabilityReq,
   type FeeRuleView,
   type LiabilityType,
   type LiabilityView,
+  type MergePreviewRow,
   type PlanView,
   type UpdateLiabilityReq,
 } from '../services/claimConfigApi';
@@ -396,6 +399,142 @@ export function LiabilityConfigPage(): ReactElement {
     } finally {
       setFeeRuleSaving(false);
     }
+  };
+
+  // ===================== 主体覆盖（两段式：标准不动 → 覆盖 DISABLED → 发布 ACTIVE） =====================
+
+  /** 覆盖维度展示名（FEE_RULE.<feeCode> 动态拼接）。 */
+  const overrideFieldLabel = (f: string) => {
+    if (f === 'limit_hospital_codes') return '医院名单';
+    if (f === 'limit_diagnosis_codes') return '病种名单';
+    if (f.startsWith('FEE_RULE.')) return `费用规则 ${f.substring('FEE_RULE.'.length)}`;
+    return f;
+  };
+
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideTarget, setOverrideTarget] = useState<LiabilityView | null>(null);
+  /** 覆盖所属业务主体（保司）；预览/新增/发布都以此 + liabilityUuid 为键。 */
+  const [overrideBiz, setOverrideBiz] = useState('');
+  const [previewRows, setPreviewRows] = useState<MergePreviewRow[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [overrideSaving, setOverrideSaving] = useState(false);
+  /** 新增覆盖表单：维度 + 值（名单维度为逗号分隔编码）。 */
+  const [overrideField, setOverrideField] = useState<string>('limit_hospital_codes');
+  const [overrideValue, setOverrideValue] = useState('');
+
+  const loadPreview = useCallback(async (biz: string, uuid: string) => {
+    if (!biz || !uuid) {
+      setPreviewRows([]);
+      return;
+    }
+    setPreviewLoading(true);
+    try {
+      const res = await coverageOverrideApi.preview(biz, uuid);
+      setPreviewRows(res.data ?? []);
+    } catch {
+      setPreviewRows([]);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, []);
+
+  const openOverrides = (row: LiabilityView) => {
+    setOverrideTarget(row);
+    const biz = currentPolicy?.bizIdentityCode ?? '';
+    setOverrideBiz(biz);
+    setOverrideValue('');
+    setOverrideField('limit_hospital_codes');
+    setOverrideOpen(true);
+    void loadPreview(biz, row.liabilityUuid);
+  };
+
+  const addOverride = async () => {
+    if (!overrideTarget) return;
+    if (!overrideBiz) {
+      message.error('请先选择业务主体（承保主体）');
+      return;
+    }
+    const value = overrideValue.trim();
+    if (!value) {
+      message.error('覆盖值不能为空（停用已有覆盖请用「停用」按钮回落标准）');
+      return;
+    }
+    setOverrideSaving(true);
+    try {
+      const res = await coverageOverrideApi.upsert({
+        bizIdentityCode: overrideBiz,
+        coverageUuid: overrideTarget.liabilityUuid,
+        overrideField,
+        overrideValue: value,
+      });
+      if (res.code !== 200) {
+        message.error(resolveErrorMessage(res, '覆盖项保存失败'));
+        return;
+      }
+      message.success('覆盖项已保存（未发布状态，发布后才对理算生效）');
+      setOverrideValue('');
+      void loadPreview(overrideBiz, overrideTarget.liabilityUuid);
+    } catch (err) {
+      message.error(resolveErrorMessage(err, '覆盖项保存失败'));
+    } finally {
+      setOverrideSaving(false);
+    }
+  };
+
+  const disableOverride = (row: MergePreviewRow) => {
+    if (!overrideTarget || !row.overrideId) return;
+    Modal.confirm({
+      title: '停用覆盖项',
+      content: `确认停用「${overrideFieldLabel(row.overrideField)}」的覆盖？生效值将回落标准配置。`,
+      okText: '确认停用',
+      okButtonProps: { danger: true },
+      onOk: () =>
+        coverageOverrideApi
+          .disable(row.overrideId as string)
+          .then(() => {
+            message.success('已停用，生效值回落标准');
+            return loadPreview(overrideBiz, overrideTarget.liabilityUuid);
+          })
+          .catch((err) => {
+            message.error(resolveErrorMessage(err, '停用失败'));
+            throw err;
+          }),
+    });
+  };
+
+  const publishOverrides = () => {
+    if (!overrideTarget) return;
+    if (!overrideBiz) {
+      message.error('请先选择业务主体');
+      return;
+    }
+    const pending = previewRows.filter((r) => r.overrideId && r.overrideStatus === 'DISABLED');
+    if (pending.length === 0) {
+      message.info('没有待发布的覆盖项');
+      return;
+    }
+    coverageOverrideApi
+      .affectedCount(overrideBiz)
+      .then((res) => {
+        const count = res.data?.affectedCount ?? 0;
+        Modal.confirm({
+          title: '发布覆盖项',
+          content: `将把 ${pending.length} 条未发布覆盖项生效，影响 ${count} 张启用中的保单。确认发布？`,
+          okText: '确认发布',
+          onOk: () =>
+            coverageOverrideApi
+              .publish(overrideBiz, overrideTarget.liabilityUuid)
+              .then((r2) => {
+                message.success(`已发布 ${r2.data ?? 0} 条覆盖项`);
+                return loadPreview(overrideBiz, overrideTarget.liabilityUuid);
+              })
+              .catch((err) => {
+                message.error(resolveErrorMessage(err, '发布失败'));
+                throw err;
+              }),
+        });
+      })
+      .catch((err) => message.error(resolveErrorMessage(err, '受影响保单数查询失败')));
   };
 
   // ===================== 启用联动（0094） =====================
@@ -801,6 +940,14 @@ export function LiabilityConfigPage(): ReactElement {
             onClick={() => void openFeeRules(row)}
           >
             费用规则
+          </AuthButton>
+          <AuthButton
+            code={PERMISSIONS.POLICY_WRITE}
+            type="link"
+            size="small"
+            onClick={() => openOverrides(row)}
+          >
+            主体覆盖
           </AuthButton>
           <AuthButton
             code={PERMISSIONS.POLICY_WRITE}
@@ -1287,6 +1434,121 @@ export function LiabilityConfigPage(): ReactElement {
             ))}
           </Space>
         )}
+      </Drawer>
+
+      <Drawer
+        title={`主体覆盖 · ${overrideTarget?.liabilityCode ?? ''}`}
+        width={860}
+        open={overrideOpen}
+        onClose={() => setOverrideOpen(false)}
+        destroyOnHidden
+        extra={
+          <Button type="primary" onClick={publishOverrides}>
+            发布覆盖项
+          </Button>
+        }
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+          <Alert
+            type="info"
+            showIcon
+            message="两段式生效：覆盖项先以未发布（DISABLED）落库，预览确认后一键发布（ACTIVE）；标准配置保持只读，停用覆盖即回落标准。"
+          />
+          <Space wrap>
+            <span>业务主体：</span>
+            <InsurerSelect
+              value={overrideBiz || undefined}
+              style={{ width: 260 }}
+              onChange={(code) => {
+                setOverrideBiz(code);
+                void loadPreview(code, overrideTarget?.liabilityUuid ?? '');
+              }}
+            />
+          </Space>
+          <Table<MergePreviewRow>
+            rowKey={(r) => r.overrideField}
+            size="small"
+            loading={previewLoading}
+            pagination={false}
+            dataSource={previewRows}
+            columns={[
+              {
+                title: '维度',
+                dataIndex: 'overrideField',
+                width: 160,
+                render: (f: string) => overrideFieldLabel(f),
+              },
+              {
+                title: '标准值（实时）',
+                dataIndex: 'standardValue',
+                ellipsis: true,
+                render: (v) => v || <Typography.Text type="secondary">空</Typography.Text>,
+              },
+              {
+                title: '覆盖值',
+                dataIndex: 'overrideValue',
+                ellipsis: true,
+                render: (v) => v || '—',
+              },
+              {
+                title: '生效值',
+                dataIndex: 'effectiveValue',
+                ellipsis: true,
+                render: (v) => v || <Typography.Text type="secondary">空</Typography.Text>,
+              },
+              {
+                title: '状态',
+                width: 110,
+                render: (_: unknown, r) => {
+                  if (!r.overrideId) return <Tag>标准</Tag>;
+                  return r.overrideStatus === 'ACTIVE' ? (
+                    <Tag color="green">覆盖·已发布</Tag>
+                  ) : (
+                    <Tag color="orange">覆盖·未发布</Tag>
+                  );
+                },
+              },
+              {
+                title: '操作',
+                width: 90,
+                render: (_: unknown, r) =>
+                  r.overrideId && r.overrideStatus === 'ACTIVE' ? (
+                    <Button type="link" size="small" danger onClick={() => disableOverride(r)}>
+                      停用
+                    </Button>
+                  ) : (
+                    <span>—</span>
+                  ),
+              },
+            ]}
+          />
+          <Card size="small" title="新增 / 更新覆盖项">
+            <Space align="baseline" wrap>
+              <Select
+                value={overrideField}
+                style={{ width: 180 }}
+                options={[
+                  { value: 'limit_hospital_codes', label: '医院名单' },
+                  { value: 'limit_diagnosis_codes', label: '病种名单' },
+                ]}
+                onChange={setOverrideField}
+              />
+              <Input
+                style={{ width: 380 }}
+                placeholder="逗号分隔编码，如 H001,H002（空白名单 = 不限定）"
+                value={overrideValue}
+                onChange={(e) => setOverrideValue(e.target.value)}
+              />
+              <Button type="primary" loading={overrideSaving} onClick={() => void addOverride()}>
+                保存（未发布）
+              </Button>
+            </Space>
+            <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
+              同一维度只有一条覆盖：重复保存即替换值；已发布的覆盖项需先停用才能修改（防止改了立即生效）。
+              费用规则的覆盖（FEE_RULE.）由发布流程内部生成，名单维度在此维护。
+            </Typography.Paragraph>
+          </Card>
+        </Space>
       </Drawer>
 
       <BatchImportModal

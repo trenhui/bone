@@ -32,6 +32,22 @@ public interface RefDiseaseRepository extends Repository<RefDisease, Long> {
     return countByCriteria(listCriteria(tenantId, keyword));
   }
 
+  /** 目录总数（映射健康度覆盖率的分母）。 */
+  default long countAll(Long tenantId) {
+    return countByCriteria(Criteria.<RefDisease>create().eq(RefDisease::getTenantId, tenantId));
+  }
+
+  /** 按编码批量取目录项（映射列表回填标准名称，避免逐行 N+1）。 */
+  default List<RefDisease> findByCodes(Long tenantId, List<String> codes) {
+    if (codes == null || codes.isEmpty()) {
+      return List.of();
+    }
+    return findByCriteria(
+        Criteria.<RefDisease>create()
+            .eq(RefDisease::getTenantId, tenantId)
+            .in(RefDisease::getDiseaseCode, codes.toArray()));
+  }
+
   static Criteria<RefDisease> listCriteria(Long tenantId, String keyword) {
     Criteria<RefDisease> criteria =
         Criteria.<RefDisease>create().eq(RefDisease::getTenantId, tenantId);

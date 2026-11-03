@@ -72,6 +72,23 @@ public interface ClaimPolicyRepository extends Repository<ClaimPolicy, Long> {
     return findByCriteria(criteria);
   }
 
+  /** 发布覆盖前确认用的受影响保单数（规则开关 ACTIVE 且挂该主体的保单）。 */
+  default long countActiveByBizIdentity(Long tenantId, String bizIdentityCode) {
+    return countByCriteria(
+        Criteria.<ClaimPolicy>create()
+            .eq(ClaimPolicy::getTenantId, tenantId)
+            .eq(ClaimPolicy::getBizIdentityCode, bizIdentityCode)
+            .eq(ClaimPolicy::getConfigStatus, "ACTIVE"));
+  }
+
+  /** 主体管理页展示用的关联保单数（不分规则开关口径——停用中的保单也是"已关联"）。 */
+  default long countByBizIdentity(Long tenantId, String bizIdentityCode) {
+    return countByCriteria(
+        Criteria.<ClaimPolicy>create()
+            .eq(ClaimPolicy::getTenantId, tenantId)
+            .eq(ClaimPolicy::getBizIdentityCode, bizIdentityCode));
+  }
+
   /**
    * 列表查询条件（list 与 count 共用，避免两端口径漂移）。
    *

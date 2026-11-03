@@ -124,6 +124,23 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   @Column(name = "diagnosis_code", nullable = false)
   private String diagnosisCode = "";
 
+  /**
+   * 标准医院码（映射解析回填；空串 = 未解析）。
+   *
+   * <p>raw 侧 {@link #hospitalCode} 保留保司原值——双码 + 版本号才能同时回答 "当时按哪条映射翻译"（可复现）与"规则跨保司复用"（可归一），见主设计
+   * §6.5。 空串是合法初始态，消费方须按维度缺失 fail-closed，不得拿 raw 冒充。
+   */
+  @Column(name = "std_hospital_code")
+  private String stdHospitalCode = "";
+
+  /** 标准诊断码（ICD-10 医保版；映射解析回填；空串 = 未解析）。 */
+  @Column(name = "std_diagnosis_code")
+  private String stdDiagnosisCode = "";
+
+  /** 命中的映射行版本号（回放/复算依据；空串 = 未解析）。 */
+  @Column(name = "mapping_version")
+  private String mappingVersion = "";
+
   @Column(name = "out_insure_time", nullable = false)
   private Instant outInsureTime;
 
@@ -334,6 +351,34 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
     this.invoiceDate = invoiceDate;
     this.hospitalCode = normalise(hospitalCode);
     this.diagnosisCode = normalise(diagnosisCode);
+  }
+
+  /**
+   * 回填案件级映射解析结果（医院/诊断两域；收单与重解析共用）。
+   *
+   * <p><b>只接受真正解析成功的结果</b>：任一入参非空才写入、且非空入参必须真有标准码 （构造期断言，钉死判据④"未命中不得回落 raw 冒充标准码"——调用方在 MISSING 态
+   * 不调用本方法，改走挂起 + miss 入队）。两域各自独立：医院命中而诊断未命中的案件 只回填医院列；{@code mappingVersion} 记录命中的映射行版本，供已结案案件复现。
+   *
+   * @param stdHospitalCode 标准医院码；{@code null}/空 = 该域本次未解析成功，跳过不覆盖
+   * @param stdDiagnosisCode 标准诊断码；同上
+   */
+  public void assignStdCodes(
+      String stdHospitalCode, String stdDiagnosisCode, String mappingVersion) {
+    boolean wrote = false;
+    if (stdHospitalCode != null && !stdHospitalCode.isBlank()) {
+      this.stdHospitalCode = stdHospitalCode.trim();
+      wrote = true;
+    }
+    if (stdDiagnosisCode != null && !stdDiagnosisCode.isBlank()) {
+      this.stdDiagnosisCode = stdDiagnosisCode.trim();
+      wrote = true;
+    }
+    if (wrote && mappingVersion != null && !mappingVersion.isBlank()) {
+      this.mappingVersion = mappingVersion.trim();
+    }
+    if (wrote) {
+      this.updatedAt = Instant.now();
+    }
   }
 
   private static String normalise(String value) {

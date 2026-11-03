@@ -68,6 +68,64 @@ export interface PolicyView {
   version?: string;
 }
 
+// ===================== 保单聚合详情（/policies/{policyNo}/detail） =====================
+
+/** 主体映射健康度（四域各一行；与 mappingApi.mappingHealth 同构）。 */
+export interface MappingHealthRow {
+  insurerCode: string;
+  domain: MappingDomain;
+  catalogTotal: number;
+  mappedStandardCodes: number;
+  /** 覆盖率 0~1；CERT_TYPE 域恒为 -1（无标准目录，不参与覆盖率口径）。 */
+  coverage: number;
+  openMissCount: number;
+  recentMissCount: number;
+}
+
+/** 覆盖差异行（本保单主体在该责任上的覆盖行，含未发布——详情页可见但不标"生效"）。 */
+export interface PolicyOverrideRow {
+  overrideField: string;
+  overrideValue: string;
+  /** DISABLED 未发布 / ACTIVE 生效。 */
+  status: string;
+}
+
+/** 责任节点（计划→责任树叶子）。 */
+export interface PolicyLiabilityNode {
+  liabilityUuid: string;
+  liabilityCode: string;
+  liabilityType: string;
+  payPercent: number;
+  liabilityLimit: number;
+  limitHospitalCodes: string;
+  limitDiagnosisCodes: string;
+  status: string;
+  feeRules: {
+    feeCode: string;
+    feeName: string;
+    payPercent: number;
+    limitAmount: number;
+    socialOnly: number;
+  }[];
+  overrides: PolicyOverrideRow[];
+}
+
+/** 计划节点。 */
+export interface PolicyPlanNode {
+  planId: string;
+  planCode: string;
+  planName: string;
+  liabilities: PolicyLiabilityNode[];
+}
+
+/** 保单聚合详情响应体。 */
+export interface PolicyDetail {
+  summary: Omit<PolicyView, 'insuredSnapshot' | 'stale' | 'createdAt' | 'docClaimApply' | 'docClaimNotice'>;
+  /** 主体映射健康度（bizIdentityCode 为空时为空数组——存量保单尚未对齐主体）。 */
+  insurerHealth: MappingHealthRow[];
+  plans: PolicyPlanNode[];
+}
+
 export interface PlanView {
   /** 计划 ID（雪花 ID，序列化为 string）。 */
   planId: string;
@@ -555,6 +613,18 @@ export const claimConfigApi = {
   },
 
   /**
+   * 保单聚合详情：一张视图回答「这个保单按什么规则赔、各主体差异化在哪」。
+   *
+   * <p>聚合保单概要 + 主体映射健康度（四域覆盖率/未命中）+ 计划→责任树（含费用规则与覆盖差异）。
+   * 主体为空的存量保单不含健康度（insurerHealth 为空数组）。
+   */
+  getPolicyDetail(policyNo: string): Promise<ApiResponse<PolicyDetail>> {
+    return client.get<never, ApiResponse<PolicyDetail>>(
+      `/policies/${encodeURIComponent(policyNo)}/detail`,
+    );
+  },
+
+  /**
    * 导出保单列表（CSV，UTF-8 BOM）。
    *
    * <p><b>为什么返回 Blob 而不是走通用 client</b>：`responseType: 'blob'` 时响应拦截器
@@ -959,6 +1029,8 @@ export interface InsurerView {
   creditCode?: string;
   parentCode?: string;
   status?: InsurerStatus;
+  /** 关联保单数（不分规则开关口径——停用中的保单也是"已关联"）。 */
+  policyCount?: number;
 }
 
 /** 码值映射视图（保司码 → 标准码）。 */
@@ -969,6 +1041,8 @@ export interface MappingView {
   insurerItemCode: string;
   disambiguationKey?: string;
   standardCode: string;
+  /** 标准名称（按域回填自基础目录库；幽灵码为空串）。 */
+  standardName?: string;
   status: string;
   active: boolean;
   versionNo?: string;
@@ -986,6 +1060,8 @@ export interface MissView {
   status: string;
   lastCaseNo?: string;
   resolvedMappingId?: string;
+  /** 处置人（建立映射/忽略时的操作人 ID；未处置为空）。 */
+  resolvedBy?: string;
 }
 
 /** 保司码表项（这家保司怎么叫某条主数据）。 */
@@ -1091,10 +1167,12 @@ export const mappingApi = {
     return client.post<PublishMappingReq, ApiResponse<MappingView>>('/mappings', req);
   },
 
-  /** 当前生效映射分页。 */
+  /** 当前生效映射分页（includeHistory=true 时回放历史行——含已停用/被替代的旧版本）。 */
   listMappings(params: {
     insurerCode?: string;
     domain?: MappingDomain;
+    keyword?: string;
+    includeHistory?: boolean;
     page?: number;
     size?: number;
   }): Promise<ApiResponse<PageResult<MappingView>>> {
@@ -1110,9 +1188,11 @@ export const mappingApi = {
     );
   },
 
-  /** 未命中队列分页。 */
+  /** 未命中队列分页（可选按承保主体过滤；sortBy=occurCount 按出现次数降序，缺省按最近出现）。 */
   listMisses(params: {
+    insurerCode?: string;
     status?: string;
+    sortBy?: string;
     page?: number;
     size?: number;
   }): Promise<ApiResponse<PageResult<MissView>>> {
@@ -1157,6 +1237,122 @@ export const mappingApi = {
         missRecorded: boolean;
       }>
     >('/mappings/resolve', req);
+  },
+
+  /** 编辑承保主体（编码不可改——保单/映射的外键锚点）。 */
+  updateInsurer(insurerCode: string, req: RegisterInsurerReq): Promise<ApiResponse<InsurerView>> {
+    return client.post<RegisterInsurerReq, ApiResponse<InsurerView>>(
+      `/mappings/insurers/${encodeURIComponent(insurerCode)}`,
+      req,
+    );
+  },
+
+  /** 主体启停/终止合作（target=ACTIVE/DISABLED/TERMINATED；不删行只改状态）。 */
+  changeInsurerStatus(insurerCode: string, target: InsurerStatus): Promise<ApiResponse<InsurerView>> {
+    return client.post<unknown, ApiResponse<InsurerView>>(
+      `/mappings/insurers/${encodeURIComponent(insurerCode)}/status`,
+      null,
+      { params: { target } },
+    );
+  },
+
+  /** 主体映射健康度（四域覆盖率 + 未命中数；覆盖率 CERT_TYPE 恒 -1）。 */
+  mappingHealth(insurerCode: string, domain: MappingDomain): Promise<ApiResponse<MappingHealthRow>> {
+    return client.get<never, ApiResponse<MappingHealthRow>>('/mappings/health', {
+      params: { insurerCode, domain },
+    });
+  },
+
+  /**
+   * Excel 批量导入映射（整批 validate-then-commit：任一行非法则整批拒绝，不产生半批数据）。
+   *
+   * <p>内容 SHA-256 指纹作幂等键：同一文件重复上传直接返回上次结果，不产生重复映射。
+   */
+  importMappings(insurerCode: string, domain: MappingDomain, file: File): Promise<ApiResponse<MappingImportResult>> {
+    const form = new FormData();
+    form.append('file', file);
+    return client.post<unknown, ApiResponse<MappingImportResult>>(
+      `/mappings/import?insurerCode=${encodeURIComponent(insurerCode)}&domain=${encodeURIComponent(domain)}`,
+      form,
+    );
+  },
+
+  /** 导入模板下载（xlsx；Blob 直下，见 exportPolicies 同款注释）。 */
+  importTemplate(): Promise<Blob> {
+    return client.get<never, Blob>('/mappings/import/template', { responseType: 'blob' });
+  },
+};
+
+// ===================== 两段式覆盖（标准配置不动，覆盖项 DISABLED→ACTIVE 两段生效） =====================
+
+/** 合并预览行：标准值实时取 + 覆盖值叠加 = 生效值。 */
+export interface MergePreviewRow {
+  /** 覆盖维度：limit_hospital_codes / limit_diagnosis_codes / FEE_RULE.<feeCode>。 */
+  overrideField: string;
+  standardValue: string;
+  overrideValue: string;
+  effectiveValue: string;
+  /** STANDARD 无覆盖或未发布 / OVERRIDE 覆盖已生效。 */
+  source: string;
+  /** 覆盖行 ID（无覆盖为 null；按行停用需要它）。 */
+  overrideId?: string;
+  /** 覆盖行状态 DISABLED/ACTIVE（无覆盖为 null）。 */
+  overrideStatus?: string;
+}
+
+/** 受影响保单数（发布确认页）。 */
+export interface AffectedPoliciesView {
+  bizIdentityCode: string;
+  affectedCount: number;
+}
+
+/** Excel 导入结果（幂等：重复文件返回上次结果，created=0）。 */
+export interface MappingImportResult {
+  totalRows: number;
+  createdCount: number;
+  unchangedCount: number;
+  failedCount: number;
+  /** 批次号（导入指纹，复用发布批次 version_no 承载）。 */
+  versionNo: string;
+  errors: { rowNo: number; message: string }[];
+}
+
+export const coverageOverrideApi = {
+  /** 创建/更新覆盖项（同维度唯一；已发布行须先停用再改）。 */
+  upsert(req: {
+    bizIdentityCode: string;
+    coverageUuid: string;
+    overrideField: string;
+    overrideValue: string;
+  }): Promise<ApiResponse<MergePreviewRow>> {
+    return client.post<typeof req, ApiResponse<MergePreviewRow>>('/coverage-overrides', req);
+  },
+
+  /** 合并预览（只读；标准行实时 + 覆盖行叠加，"同步标准"无需写操作）。 */
+  preview(bizIdentityCode: string, coverageUuid: string): Promise<ApiResponse<MergePreviewRow[]>> {
+    return client.get<never, ApiResponse<MergePreviewRow[]>>('/coverage-overrides/preview', {
+      params: { bizIdentityCode, coverageUuid },
+    });
+  },
+
+  /** 受影响保单数（规则开关 ACTIVE 且挂该主体的保单）。 */
+  affectedCount(bizIdentityCode: string): Promise<ApiResponse<AffectedPoliciesView>> {
+    return client.get<never, ApiResponse<AffectedPoliciesView>>('/coverage-overrides/affected-count', {
+      params: { bizIdentityCode },
+    });
+  },
+
+  /** 发布该主体该责任的全部未发布覆盖项（DISABLED→ACTIVE）。 */
+  publish(bizIdentityCode: string, coverageUuid: string): Promise<ApiResponse<number>> {
+    return client.post<unknown, ApiResponse<number>>(
+      `/coverage-overrides/publish?bizIdentityCode=${encodeURIComponent(bizIdentityCode)}&coverageUuid=${encodeURIComponent(coverageUuid)}`,
+      null,
+    );
+  },
+
+  /** 停用单条覆盖项（生效值回落标准）。 */
+  disable(id: string): Promise<ApiResponse<void>> {
+    return client.post<unknown, ApiResponse<void>>(`/coverage-overrides/${encodeURIComponent(id)}/disable`, null);
   },
 };
 

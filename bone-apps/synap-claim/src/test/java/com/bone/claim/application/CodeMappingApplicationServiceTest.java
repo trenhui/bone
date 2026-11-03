@@ -72,7 +72,9 @@ class CodeMappingApplicationServiceTest {
   @Mock private RefDrugRepository refDrugRepository;
   @Mock private RefDiseaseRepository refDiseaseRepository;
   @Mock private RefFeeCategoryRepository refFeeCategoryRepository;
+  @Mock private com.bone.claim.domain.repository.ClaimPolicyRepository claimPolicyRepository;
   @Mock private TenantPort tenantPort;
+  @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
   private CodeMappingApplicationService service;
 
@@ -91,7 +93,9 @@ class CodeMappingApplicationServiceTest {
             refDrugRepository,
             refDiseaseRepository,
             refFeeCategoryRepository,
-            tenantPort);
+            claimPolicyRepository,
+            tenantPort,
+            eventPublisher);
     when(tenantPort.currentTenantId()).thenReturn(TENANT);
     // 默认：保司可用、标准医院码存在（个别用例自行覆盖）
     when(claimInsurerRepository.findByInsurerCode(anyLong(), anyString()))
@@ -156,6 +160,29 @@ class CodeMappingApplicationServiceTest {
     assertThat(view.mappingId()).isEqualTo(101L);
     assertThat(view.missRecorded()).isFalse();
     verify(mappingMissRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("批量解析：逐项独立，命中项计数，未命中项落队列且不中断整批")
+  void resolveBatchIsolatesFailures() {
+    when(codeMappingRepository.findCandidates(TENANT, INSURER, "HOSPITAL", "H1"))
+        .thenReturn(List.of(activeMapping("H1", "STD-H1")));
+    when(codeMappingRepository.findCandidates(TENANT, INSURER, "HOSPITAL", "H9"))
+        .thenReturn(List.of());
+
+    var result =
+        service.resolveBatch(
+            INSURER,
+            java.util.List.of(
+                new CodeMappingApplicationService.BatchResolveItem("HOSPITAL", "H1", "协和", null),
+                new CodeMappingApplicationService.BatchResolveItem("HOSPITAL", "H9", "幽灵", null)));
+
+    assertThat(result.total()).isEqualTo(2);
+    assertThat(result.resolved()).isEqualTo(1);
+    assertThat(result.items().get(0).status()).isEqualTo("RESOLVED");
+    assertThat(result.items().get(0).standardCode()).isEqualTo("STD-H1");
+    assertThat(result.items().get(1).status()).isEqualTo("MISSING");
+    verify(mappingMissRepository).save(any(MappingMiss.class));
   }
 
   // ===================== 负向：删掉映射必须转人工且落队列 =====================
@@ -271,7 +298,7 @@ class CodeMappingApplicationServiceTest {
             501L, TENANT, INSURER, MasterDataDomain.HOSPITAL, "H9", "某某医院", "C1", NOW);
     when(mappingMissRepository.findById(501L)).thenReturn(miss);
 
-    MissView view = service.resolveMiss(501L, publish("H9", "STD-H9"));
+    MissView view = service.resolveMiss(501L, publish("H9", "STD-H9"), "op-77");
 
     assertThat(view.status()).isEqualTo(MissStatus.RESOLVED.code());
     assertThat(Long.valueOf(view.resolvedMappingId())).isPositive();

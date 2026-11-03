@@ -13,7 +13,11 @@ import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
 import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
 import com.bone.claim.domain.model.claim.valueobject.Decision;
 import com.bone.claim.domain.model.claim.valueobject.HangUpType;
+import com.bone.claim.domain.model.mapping.MappingMissResolvedEvent;
+import com.bone.claim.domain.model.mapping.MasterDataDomain;
+import com.bone.claim.domain.model.mapping.ResolutionStatus;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
+import com.bone.claim.domain.repository.ClaimInsurerRepository;
 import com.bone.claim.domain.repository.ClaimItemRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.DomainException;
@@ -45,6 +49,8 @@ public class ClaimCaseApplicationService {
   private final PolicyQueryPort policyQueryPort;
   private final TenantPort tenantPort;
   private final DomainEventPublisher domainEventPublisher;
+  private final CodeMappingApplicationService codeMappingApplicationService;
+  private final ClaimInsurerRepository claimInsurerRepository;
 
   // ===================== 写操作 =====================
 
@@ -124,6 +130,10 @@ public class ClaimCaseApplicationService {
     // 只加列不写入等于"配了不生效"，理算侧会一律判定为维度缺失。
     claim.bindInvoiceContext(
         command.invoiceDate(), command.hospitalCode(), command.diagnosisCode());
+    // 多保司映射解析（主设计 §6.5，P0 判据①-④）：raw 码 → 标准码，落双码 + 版本号。
+    // 只对「已登记承保主体」的报案生效（接一家配一家）；未带 insurerCode 或保司未登记
+    // 的报案走存量行为（零变化），映射面灰度推进。
+    boolean codeResolutionPending = resolveSubmissionCodes(command, claim, items);
     // PIPL 单独同意留痕（§9.5 / DSAR G10）：命令带记录号才落库，不带则保持 NULL。
     // 只写不校验格式——记录号的形状由同意服务定义；空值不拒收（存量渠道/旁路同步尚无此字段，
     // 一刀切 fail-closed 会让存量报案全线 400），真正的闸门在撤回侧。
@@ -132,10 +142,106 @@ public class ClaimCaseApplicationService {
     }
     // 报案即受理签收（员工端提交 = 已受理；缺件走后续 requestEvidence，不阻塞受理）
     claim.accept();
+    // 解析有未命中（判据②「收单转人工且写 miss」）：挂起阻断自动推进——挂起是与状态码
+    // 正交的机制（不改状态），映射解决后由重解析自动恢复。fail-closed 的落点是"阻断自动
+    // 理算"，而不是"拒收报案"——拒收会让渠道重推，且保司码值问题不该由报案人承担。
+    if (codeResolutionPending) {
+      claim.hangUp(HangUpType.EVIDENCE, "SYSTEM");
+    }
 
     claimCaseRepository.insert(claim);
     domainEventPublisher.publishFrom(claim);
     return new SubmittedClaim(claim.getId(), claim.getClaimNo());
+  }
+
+  /**
+   * 收单码解析（明细 FEE_CATEGORY + 案件 HOSPITAL/DISEASE 三域；§6.5）。
+   *
+   * <p><b>解析与落库的分工</b>：{@link CodeMappingApplicationService#resolve} 负责「查映射 + MISS
+   * 入队」（同一事务），本方法负责「把结果落到聚合」（{@code std_*} 列 + 版本号）。 MISSED 时<b>不</b>把 raw 码写进 std 列（判据④：空串 =
+   * 未解析，消费方按维度缺失 fail-closed）， 但案件必须挂起——放行会让"没配映射"静默变成"按缺维度兜底赔付"。
+   *
+   * <p>逐域独立：医院命中而费用类别未命中时，医院的标准码照常回填（部分正确信息不因 其他域失败而丢弃）；整体 pending 状态由「任一域未命中」决定。
+   *
+   * @return true = 存在未解析成功的码（调用方须挂起案件）
+   */
+  private boolean resolveSubmissionCodes(
+      SubmitClaim command, ClaimCase claim, List<ClaimItem> items) {
+    String insurerCode = command.insurerCode() == null ? "" : command.insurerCode().trim();
+    if (insurerCode.isEmpty()) {
+      return false;
+    }
+    long tenantId = claim.getTenantId();
+    // 保司未登记 = 该报案来自未接映射面的渠道/主体：跳过解析（存量行为），不挂起。
+    if (claimInsurerRepository.findByInsurerCode(tenantId, insurerCode) == null) {
+      return false;
+    }
+    boolean pending = false;
+    String caseNo = claim.getClaimNo();
+    // 案件级两域：医院 / 诊断
+    String stdHospital = null;
+    String stdDiagnosis = null;
+    String caseMappingVersion = "";
+    if (!claim.getHospitalCode().isBlank()) {
+      CodeMappingApplicationService.ResolveView hospital =
+          codeMappingApplicationService.resolve(
+              new CodeMappingApplicationService.ResolveCommand(
+                  insurerCode,
+                  MasterDataDomain.HOSPITAL.code(),
+                  claim.getHospitalCode(),
+                  null,
+                  null,
+                  caseNo));
+      if (hospital.status().equals(ResolutionStatus.RESOLVED.name())) {
+        stdHospital = hospital.standardCode();
+        caseMappingVersion = hospital.mappingVersion();
+      } else {
+        pending = true;
+      }
+    }
+    if (!claim.getDiagnosisCode().isBlank()) {
+      CodeMappingApplicationService.ResolveView diagnosis =
+          codeMappingApplicationService.resolve(
+              new CodeMappingApplicationService.ResolveCommand(
+                  insurerCode,
+                  MasterDataDomain.DISEASE.code(),
+                  claim.getDiagnosisCode(),
+                  null,
+                  null,
+                  caseNo));
+      if (diagnosis.status().equals(ResolutionStatus.RESOLVED.name())) {
+        stdDiagnosis = diagnosis.standardCode();
+        if (caseMappingVersion.isEmpty()) {
+          caseMappingVersion = diagnosis.mappingVersion();
+        }
+      } else {
+        pending = true;
+      }
+    }
+    if (stdHospital != null || stdDiagnosis != null) {
+      claim.assignStdCodes(stdHospital, stdDiagnosis, caseMappingVersion);
+    }
+    // 明细级：费用类别（FEE_CATEGORY）
+    for (ClaimItem item : items) {
+      if (item.getFeeCode() == null || item.getFeeCode().isBlank()) {
+        continue;
+      }
+      CodeMappingApplicationService.ResolveView fee =
+          codeMappingApplicationService.resolve(
+              new CodeMappingApplicationService.ResolveCommand(
+                  insurerCode,
+                  MasterDataDomain.FEE_CATEGORY.code(),
+                  item.getFeeCode(),
+                  null,
+                  null,
+                  caseNo));
+      if (fee.status().equals(ResolutionStatus.RESOLVED.name())) {
+        item.assignStdFeeCode(fee.standardCode(), fee.mappingVersion());
+      } else {
+        pending = true;
+      }
+    }
+    return pending;
   }
 
   /** 分配初审（7 → 10）。 */
@@ -474,6 +580,14 @@ public class ClaimCaseApplicationService {
        * 400；真正的合规闸门放在 <b>撤回</b>侧（撤回后拒绝继续处理），而不是"没填就拒收"。
        */
       String consentRecordId,
+      /**
+       * 承保主体编码（多保司映射的解析维度；空 = 该渠道未接映射链路，跳过解析走存量行为）。
+       *
+       * <p><b>为什么可空而不是必填</b>：映射面按保司逐步建设（接一家配一家），存量渠道与 旁路同步尚无此字段——一键 fail-closed 会让存量报案全线 400。已登记保司
+       * + 命令带码 才触发解析；MISSING 才挂起 + 入队。P0 由报案渠道显式携带；待保单快照扩容 {@code bizIdentityCode}
+       * 后切换为保单推导（届时本字段退化为校验位），见主设计 §6.5。
+       */
+      String insurerCode,
       List<ClaimItemDto> items) {
 
     /**
@@ -498,6 +612,7 @@ public class ClaimCaseApplicationService {
           outInsureTime,
           batchNo,
           consentRecordId,
+          insurerCode,
           items);
     }
 
@@ -517,6 +632,7 @@ public class ClaimCaseApplicationService {
           outInsureTime,
           batchNo,
           consentRecordId,
+          insurerCode,
           items);
     }
 
@@ -536,6 +652,7 @@ public class ClaimCaseApplicationService {
           outInsureTime,
           batchNo,
           consentRecordId,
+          insurerCode,
           items);
     }
 
@@ -555,5 +672,115 @@ public class ClaimCaseApplicationService {
   /** 状态跃迁事件类型再导出（供订阅方引用，避免直接 import domain.event 包）。 */
   public static Class<ClaimStatusChangedEvent> statusChangedEventType() {
     return ClaimStatusChangedEvent.class;
+  }
+
+  // ===================== 未命中解决后的自动重解析（主设计 §14 判据⑨） =====================
+
+  /**
+   * 映射未命中解决后，重扫受影响的在办案件并回填标准码。
+   *
+   * <p><b>为什么挂在 AFTER_COMMIT 而不是 resolveMiss 同事务内</b>：重解析要读刚建立的映射，
+   * 同事务内读得到（同连接可见未提交数据），但监听器若与发布方同事务，赔案侧的乐观锁冲突 会把「映射已解决」整体回滚——队列项已关、映射已建，只因顺带重扫失败而全部作废，
+   * 运营得重做一遍。补偿动作独立成事务，失败可重试（下次 resolveMiss 或人工再触发）。
+   *
+   * <p><b>幂等</b>：扫描条件是 {@code std = ''}（未解析行），已解析行不被重扫覆盖—— 重复消费不重复落账；已结案案件不入扫描集（历史事实不改写）。
+   *
+   * <p><b>恢复口径</b>：案件因解析失败被挂起（EVIDENCE + SYSTEM），当其全部非空 raw 码 （案件级医院/诊断 +
+   * 明细级费用类别）都有标准码时自动恢复；仅部分解决不恢复—— 半解释状态的案件放行进理算，等于把"没配完映射"伪装成"配置完整"。
+   */
+  @org.springframework.transaction.event.TransactionalEventListener(
+      phase = org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT)
+  @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+  public void onMissResolved(MappingMissResolvedEvent event) {
+    MasterDataDomain domain;
+    try {
+      domain = MasterDataDomain.fromCode(event.domain());
+    } catch (IllegalArgumentException e) {
+      return; // 非映射域（防御），跳过
+    }
+    switch (domain) {
+      case FEE_CATEGORY -> rescanFeeCategory(
+          event.tenantId(), event.insurerCode(), event.rawCode());
+      case HOSPITAL -> rescanCaseLevel(
+          event.tenantId(), event.insurerCode(), event.rawCode(), true);
+      case DISEASE -> rescanCaseLevel(
+          event.tenantId(), event.insurerCode(), event.rawCode(), false);
+      default -> {
+        /* 其余域暂无案件级落点（CERT_TYPE 案件不落），跳过 */
+      }
+    }
+  }
+
+  /** 明细级重扫：该原始费用类别码的全部未解析行。 */
+  private void rescanFeeCategory(long tenantId, String insurerCode, String rawCode) {
+    List<ClaimItem> pending = claimItemRepository.findPendingByFeeCode(tenantId, rawCode);
+    for (ClaimItem item : pending) {
+      CodeMappingApplicationService.ResolveView fee =
+          codeMappingApplicationService.resolve(
+              new CodeMappingApplicationService.ResolveCommand(
+                  insurerCode, MasterDataDomain.FEE_CATEGORY.code(), rawCode, null, null, null));
+      if (!fee.status().equals(ResolutionStatus.RESOLVED.name())) {
+        continue; // 仍解析失败（如拆分父码）：留着下次，行保持未解析态
+      }
+      item.assignStdFeeCode(fee.standardCode(), fee.mappingVersion());
+      claimItemRepository.save(item);
+      tryResumeIfFullyResolved(claimCaseRepository.findById(item.getClaimId()));
+    }
+  }
+
+  /** 案件级重扫：{@code isHospital=true} 扫医院域，否则诊断域。 */
+  private void rescanCaseLevel(
+      long tenantId, String insurerCode, String rawCode, boolean isHospital) {
+    List<ClaimCase> pending =
+        isHospital
+            ? claimCaseRepository.findPendingByHospitalCode(tenantId, rawCode)
+            : claimCaseRepository.findPendingByDiagnosisCode(tenantId, rawCode);
+    for (ClaimCase claim : pending) {
+      CodeMappingApplicationService.ResolveView view =
+          codeMappingApplicationService.resolve(
+              new CodeMappingApplicationService.ResolveCommand(
+                  insurerCode,
+                  (isHospital ? MasterDataDomain.HOSPITAL : MasterDataDomain.DISEASE).code(),
+                  rawCode,
+                  null,
+                  null,
+                  null));
+      if (!view.status().equals(ResolutionStatus.RESOLVED.name())) {
+        continue;
+      }
+      if (isHospital) {
+        claim.assignStdCodes(view.standardCode(), null, view.mappingVersion());
+      } else {
+        claim.assignStdCodes(null, view.standardCode(), view.mappingVersion());
+      }
+      save(claim);
+      tryResumeIfFullyResolved(claim);
+    }
+  }
+
+  /** 全部码已解析则自动恢复挂起（仅 EVIDENCE + SYSTEM 挂起——人工挂的起因不是码， 自动恢复会越过当初挂起的人的判断；FRAUD 恢复有独立权限闸门，系统绝不代行）。 */
+  private void tryResumeIfFullyResolved(ClaimCase claim) {
+    if (claim == null
+        || claim.getHangUpStatus() != 1
+        || !HangUpType.EVIDENCE.name().equals(claim.getHangUpType())) {
+      return;
+    }
+    boolean caseLevelComplete =
+        (claim.getHospitalCode().isBlank() || !claim.getStdHospitalCode().isBlank())
+            && (claim.getDiagnosisCode().isBlank() || !claim.getStdDiagnosisCode().isBlank());
+    if (!caseLevelComplete) {
+      return;
+    }
+    boolean itemsComplete =
+        claimItemRepository.findByClaimId(claim.getId()).stream()
+            .allMatch(
+                i ->
+                    i.getFeeCode() == null
+                        || i.getFeeCode().isBlank()
+                        || (i.getStdFeeCode() != null && !i.getStdFeeCode().isBlank()));
+    if (itemsComplete) {
+      claim.resume("SYSTEM");
+      save(claim);
+    }
   }
 }

@@ -65,8 +65,19 @@ public interface CodeMappingRepository extends Repository<CodeMapping, Long> {
             .eq(CodeMapping::getVersionNo, versionNo));
   }
 
+  /**
+   * 管理面分页：默认只看当前生效行；{@code includeHistory} 展开历史（RETIRED/DISABLED）供回放链排查。
+   *
+   * <p>关键字同时命中保司码值或标准码（运营只知道其中一个时也能搜到）。
+   */
   default List<CodeMapping> findPage(
-      Long tenantId, String insurerCode, String domain, int page, int size) {
+      Long tenantId,
+      String insurerCode,
+      String domain,
+      String keyword,
+      boolean includeHistory,
+      int page,
+      int size) {
     Criteria<CodeMapping> criteria =
         Criteria.<CodeMapping>create().eq(CodeMapping::getTenantId, tenantId);
     if (insurerCode != null && !insurerCode.isBlank()) {
@@ -75,21 +86,51 @@ public interface CodeMappingRepository extends Repository<CodeMapping, Long> {
     if (domain != null && !domain.isBlank()) {
       criteria.eq(CodeMapping::getDomain, domain);
     }
-    criteria.eq(CodeMapping::getActiveFlag, "Y").page(page, size);
+    if (keyword != null && !keyword.isBlank()) {
+      String pattern = "%" + keyword.trim() + "%";
+      criteria.or(
+          sub ->
+              sub.like(CodeMapping::getInsurerItemCode, pattern)
+                  .like(CodeMapping::getStandardCode, pattern));
+    }
+    if (!includeHistory) {
+      criteria.eq(CodeMapping::getActiveFlag, "Y");
+    }
+    criteria.orderByDesc(CodeMapping::getUpdatedAt).page(page, size);
     return findByCriteria(criteria);
   }
 
-  default long countPage(Long tenantId, String insurerCode, String domain) {
+  default long countPage(
+      Long tenantId, String insurerCode, String domain, String keyword, boolean includeHistory) {
     Criteria<CodeMapping> criteria =
-        Criteria.<CodeMapping>create()
-            .eq(CodeMapping::getTenantId, tenantId)
-            .eq(CodeMapping::getActiveFlag, "Y");
+        Criteria.<CodeMapping>create().eq(CodeMapping::getTenantId, tenantId);
     if (insurerCode != null && !insurerCode.isBlank()) {
       criteria.eq(CodeMapping::getInsurerCode, insurerCode);
     }
     if (domain != null && !domain.isBlank()) {
       criteria.eq(CodeMapping::getDomain, domain);
     }
+    if (keyword != null && !keyword.isBlank()) {
+      String pattern = "%" + keyword.trim() + "%";
+      criteria.or(
+          sub ->
+              sub.like(CodeMapping::getInsurerItemCode, pattern)
+                  .like(CodeMapping::getStandardCode, pattern));
+    }
+    if (!includeHistory) {
+      criteria.eq(CodeMapping::getActiveFlag, "Y");
+    }
     return countByCriteria(criteria);
+  }
+
+  /** 当前生效映射全量（健康度统计做 distinct 去重；映射面按保司×域有界）。 */
+  default List<CodeMapping> findActiveByInsurerDomain(
+      Long tenantId, String insurerCode, String domain) {
+    return findByCriteria(
+        Criteria.<CodeMapping>create()
+            .eq(CodeMapping::getTenantId, tenantId)
+            .eq(CodeMapping::getInsurerCode, insurerCode)
+            .eq(CodeMapping::getDomain, domain)
+            .eq(CodeMapping::getActiveFlag, "Y"));
   }
 }

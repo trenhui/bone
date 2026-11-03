@@ -98,8 +98,14 @@ public class CodeMapping extends TenantAggregateRoot<Long> {
   @Column(name = "version")
   private Long version;
 
-  /** 生效止的闭合哨兵：用固定值而非 NULL，范围查询不踩三值逻辑。 */
-  public static final Instant OPEN_ENDED = Instant.parse("9999-12-31T23:59:59Z");
+  /**
+   * 生效止的闭合哨兵：用固定值而非 NULL，范围查询不踩三值逻辑。
+   *
+   * <p><b>必须是 UTC {@code 9999-12-31T15:59:59Z}（北京时间 9999-12-31 23:59:59）</b>： MySQL DATETIME 上限是
+   * {@code 9999-12-31 23:59:59}（<b>会话本地时区</b>字面量）。若用 {@code 23:59:59Z}（UTC），东八区会话写入时换算成 {@code
+   * 10000-01-01 07:59:59} 直接越界—— 发布任何映射都会 Data truncation（E2E 实测）。业务语义"开放到期"按北京日历日表达。
+   */
+  public static final Instant OPEN_ENDED = Instant.parse("9999-12-31T15:59:59Z");
 
   public static CodeMapping of(
       Long id,

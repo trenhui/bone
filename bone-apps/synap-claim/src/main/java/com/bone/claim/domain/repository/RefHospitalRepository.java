@@ -32,6 +32,22 @@ public interface RefHospitalRepository extends Repository<RefHospital, Long> {
     return countByCriteria(listCriteria(tenantId, keyword));
   }
 
+  /** 目录总数（映射健康度覆盖率的分母）。 */
+  default long countAll(Long tenantId) {
+    return countByCriteria(Criteria.<RefHospital>create().eq(RefHospital::getTenantId, tenantId));
+  }
+
+  /** 按编码批量取目录项（映射列表回填标准名称，避免逐行 N+1）。 */
+  default List<RefHospital> findByCodes(Long tenantId, List<String> codes) {
+    if (codes == null || codes.isEmpty()) {
+      return List.of();
+    }
+    return findByCriteria(
+        Criteria.<RefHospital>create()
+            .eq(RefHospital::getTenantId, tenantId)
+            .in(RefHospital::getHospitalCode, codes.toArray()));
+  }
+
   static Criteria<RefHospital> listCriteria(Long tenantId, String keyword) {
     Criteria<RefHospital> criteria =
         Criteria.<RefHospital>create().eq(RefHospital::getTenantId, tenantId);

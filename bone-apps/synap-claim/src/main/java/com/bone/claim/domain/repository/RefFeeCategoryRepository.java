@@ -39,6 +39,23 @@ public interface RefFeeCategoryRepository extends Repository<RefFeeCategory, Lon
     return countByCriteria(listCriteria(tenantId, keyword));
   }
 
+  /** 目录总数（映射健康度覆盖率的分母）。 */
+  default long countAll(Long tenantId) {
+    return countByCriteria(
+        Criteria.<RefFeeCategory>create().eq(RefFeeCategory::getTenantId, tenantId));
+  }
+
+  /** 按编码批量取目录项（映射列表回填标准名称，避免逐行 N+1）。 */
+  default List<RefFeeCategory> findByCodes(Long tenantId, List<String> codes) {
+    if (codes == null || codes.isEmpty()) {
+      return List.of();
+    }
+    return findByCriteria(
+        Criteria.<RefFeeCategory>create()
+            .eq(RefFeeCategory::getTenantId, tenantId)
+            .in(RefFeeCategory::getFeeCode, codes.toArray()));
+  }
+
   static Criteria<RefFeeCategory> listCriteria(Long tenantId, String keyword) {
     Criteria<RefFeeCategory> criteria =
         Criteria.<RefFeeCategory>create().eq(RefFeeCategory::getTenantId, tenantId);

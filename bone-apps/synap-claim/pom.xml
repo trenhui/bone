@@ -97,6 +97,12 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- POI：映射批量导入解析 .xlsx（模板下载/上传，与 bone-masterdata 同版本，版本由 bone-parent 集中管理） -->
+        <dependency><groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>${poi.version}</version>
+        </dependency>
+
         <!-- MapStruct（assembler 协议 DTO <-> Command/Resp） -->
         <dependency><groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>

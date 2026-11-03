@@ -13,11 +13,12 @@ import {
   Tag,
   Tabs,
 } from 'antd';
-import { EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { EditOutlined, LinkOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { AuthButton } from '@bone/ui';
 import { resolveErrorMessage } from '@bone/shared-utils';
 import type { ColumnsType } from 'antd/es/table';
 import { PERMISSIONS } from '../constants/permissions';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { toTotal } from '../services/claimConfigApi';
 import {
@@ -101,11 +102,20 @@ const TAB_ITEMS: { key: LibraryKey; label: string }[] = [
   { key: 'fee-categories', label: '费用类别库' },
 ];
 
+/** 目录库分类 → 映射域（供「配置跨保司映射」跳转到映射页并预选域）。 */
+const DOMAIN_BY_KEY: Record<LibraryKey, string> = {
+  hospitals: 'HOSPITAL',
+  diseases: 'DISEASE',
+  drugs: 'DRUG',
+  'fee-categories': 'FEE_CATEGORY',
+};
+
 export function LibraryPage(): ReactElement {
   const { message } = AntApp.useApp();
   const [form] = Form.useForm<LibraryFormValues>();
 
   const [activeKey, setActiveKey] = useState<LibraryKey>('hospitals');
+  const navigate = useNavigate();
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(20);
@@ -319,6 +329,14 @@ export function LibraryPage(): ReactElement {
                   >
                     新建
                   </AuthButton>
+                  <Button
+                    icon={<LinkOutlined />}
+                    onClick={() =>
+                      navigate(`/claim/mappings?domain=${DOMAIN_BY_KEY[activeKey]}`)
+                    }
+                  >
+                    配置跨保司映射
+                  </Button>
                 </Space>
                 <Table<LibraryRow>
                   rowKey="id"

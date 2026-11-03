@@ -44,6 +44,8 @@ class ClaimCaseApplicationServiceTest {
   @Mock private PolicyQueryPort policyQueryPort;
   @Mock private TenantPort tenantPort;
   @Mock private DomainEventPublisher domainEventPublisher;
+  @Mock private CodeMappingApplicationService codeMappingApplicationService;
+  @Mock private com.bone.claim.domain.repository.ClaimInsurerRepository claimInsurerRepository;
   @InjectMocks private ClaimCaseApplicationService service;
 
   private PolicyQueryPort.PolicySnapshot snapshot;
@@ -58,7 +60,7 @@ class ClaimCaseApplicationServiceTest {
             java.util.List.of("hash-abc"),
             Instant.parse("2026-01-01T00:00:00Z"),
             Instant.parse("2026-12-31T23:59:59Z"));
-    when(tenantPort.currentTenantId()).thenReturn(TENANT_ID);
+    org.mockito.Mockito.lenient().when(tenantPort.currentTenantId()).thenReturn(TENANT_ID);
   }
 
   private SubmitClaim command(String idempotencyKey) {
@@ -75,6 +77,7 @@ class ClaimCaseApplicationServiceTest {
         null,
         OUT_INSURE,
         "B1",
+        null,
         null,
         List.of(
             new SubmitClaim.ClaimItemDto(
@@ -122,6 +125,7 @@ class ClaimCaseApplicationServiceTest {
             "DX-01",
             OUT_INSURE,
             "B1",
+            null,
             null,
             List.of(
                 new SubmitClaim.ClaimItemDto(
@@ -171,6 +175,7 @@ class ClaimCaseApplicationServiceTest {
             OUT_INSURE,
             "B1",
             "CONSENT-2026-0001",
+            null,
             List.of(
                 new SubmitClaim.ClaimItemDto(
                     "诊查费",
@@ -430,5 +435,179 @@ class ClaimCaseApplicationServiceTest {
             ex ->
                 assertThat(((BizException) ex).getErrorCode())
                     .isEqualTo(ClaimErrorCodes.CLAIM_NOT_FOUND));
+  }
+
+  // ===================== 多保司收单落双码（主设计 §14 判据①②④⑨） =====================
+
+  private SubmitClaim commandWithInsurer(
+      String idempotencyKey, String insurerCode, String hospital, String feeCode) {
+    return new SubmitClaim(
+        idempotencyKey,
+        "EG20260001",
+        7L,
+        "hash-abc",
+        "OUTPATIENT",
+        "04400001",
+        "12345678",
+        null,
+        hospital,
+        null,
+        OUT_INSURE,
+        "B1",
+        null,
+        insurerCode,
+        List.of(
+            new SubmitClaim.ClaimItemDto(
+                "诊查费",
+                "",
+                ItemCategory.SERVICE,
+                BigDecimal.ONE,
+                BigDecimal.TEN,
+                new BigDecimal("10.00"),
+                null,
+                feeCode)));
+  }
+
+  private void mockInsurerRegistered() {
+    when(claimInsurerRepository.findByInsurerCode(TENANT_ID, "YCBX"))
+        .thenReturn(
+            org.mockito.Mockito.mock(com.bone.claim.domain.model.mapping.ClaimInsurer.class));
+    when(policyQueryPort.findActivePolicy("EG20260001", 7L)).thenReturn(Optional.of(snapshot));
+    when(claimCaseRepository.findByIdempotencyKey(
+            org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyString()))
+        .thenReturn(null);
+  }
+
+  @Test
+  @DisplayName("判据①③：已登记保司 + 映射命中 → 明细/案件落标准码与版本，不挂起")
+  void submitResolvesCodesAndBackfills() {
+    mockInsurerRegistered();
+    when(codeMappingApplicationService.resolve(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(
+            new CodeMappingApplicationService.ResolveView(
+                "RESOLVED", "STD-FEE-001", 9L, "", "V3", false));
+
+    service.submit(commandWithInsurer("idem-map-1", "YCBX", "H-9901", "FEE-01"));
+
+    org.mockito.ArgumentCaptor<ClaimCase> caseCaptor =
+        org.mockito.ArgumentCaptor.forClass(ClaimCase.class);
+    verify(claimCaseRepository).insert(caseCaptor.capture());
+    ClaimCase saved = caseCaptor.getValue();
+    org.assertj.core.api.Assertions.assertThat(saved.getStdHospitalCode())
+        .as("医院域命中必须落标准码（判据①）")
+        .isEqualTo("STD-FEE-001");
+    org.assertj.core.api.Assertions.assertThat(saved.getMappingVersion()).isEqualTo("V3");
+    org.assertj.core.api.Assertions.assertThat(saved.getHangUpStatus()).as("全部命中不得挂起").isZero();
+    org.assertj.core.api.Assertions.assertThat(saved.getItems())
+        .as("明细标准码随聚合级联落库")
+        .anyMatch(i -> "STD-FEE-001".equals(i.getStdFeeCode()));
+  }
+
+  @Test
+  @DisplayName("判据②④：映射缺失 → 案件挂起转人工 + std 不回落 raw（空串=未解析）")
+  void submitWithMissingMappingHangsUpWithoutFallback() {
+    mockInsurerRegistered();
+    when(codeMappingApplicationService.resolve(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(
+            new CodeMappingApplicationService.ResolveView(
+                "MISSING", null, null, "NO_ACTIVE_MAPPING", "", true));
+
+    service.submit(commandWithInsurer("idem-map-2", "YCBX", "H-9901", "FEE-01"));
+
+    org.mockito.ArgumentCaptor<ClaimCase> captor =
+        org.mockito.ArgumentCaptor.forClass(ClaimCase.class);
+    verify(claimCaseRepository).insert(captor.capture());
+    ClaimCase saved = captor.getValue();
+    org.assertj.core.api.Assertions.assertThat(saved.getHangUpStatus())
+        .as("存在未命中必须挂起转人工（判据②）")
+        .isEqualTo(1);
+    org.assertj.core.api.Assertions.assertThat(saved.getHangUpType()).isEqualTo("EVIDENCE");
+    org.assertj.core.api.Assertions.assertThat(saved.getStdHospitalCode())
+        .as("未命中不得把 raw 码冒充标准码（判据④：空串=未解析）")
+        .isEmpty();
+    org.assertj.core.api.Assertions.assertThat(saved.getHospitalCode())
+        .as("raw 侧必须保留原值（双码的可复现基础）")
+        .isEqualTo("H-9901");
+  }
+
+  @Test
+  @DisplayName("保司未登记 → 跳过解析走存量行为（映射面灰度推进，不拦存量报案）")
+  void submitSkipsResolutionForUnregisteredInsurer() {
+    when(policyQueryPort.findActivePolicy("EG20260001", 7L)).thenReturn(Optional.of(snapshot));
+    when(claimCaseRepository.findByIdempotencyKey(
+            org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyString()))
+        .thenReturn(null);
+    when(claimInsurerRepository.findByInsurerCode(TENANT_ID, "YCBX")).thenReturn(null);
+
+    service.submit(commandWithInsurer("idem-map-3", "YCBX", "H-9901", "FEE-01"));
+
+    verify(codeMappingApplicationService, org.mockito.Mockito.never())
+        .resolve(org.mockito.ArgumentMatchers.any());
+    org.mockito.ArgumentCaptor<ClaimCase> captor =
+        org.mockito.ArgumentCaptor.forClass(ClaimCase.class);
+    verify(claimCaseRepository).insert(captor.capture());
+    org.assertj.core.api.Assertions.assertThat(captor.getValue().getHangUpStatus()).isZero();
+  }
+
+  @Test
+  @DisplayName("判据⑨：miss 解决后重解析 → 明细回填标准码 + 挂起案件自动恢复")
+  void rescanBackfillsAndResumesHungUpClaim() {
+    // 案件：raw 医院码 + EVIDENCE 挂起（模拟收单时映射缺失）。
+    // std 列用可变桩：assignStdCodes 是 void，mock 默认 no-op 不会真改状态，
+    // 用 Answer 联动才能让「回填后重判完成度」的路径真实走通。
+    ClaimCase claim = org.mockito.Mockito.mock(ClaimCase.class);
+    // 案件未携带医院/诊断码（raw 空 = 该域无待解析项），唯一缺口是明细费用类别码——
+    // 该域 miss 解决后案件即「全解析」，应自动恢复（部分解决不恢复的口径见实现注释）。
+    when(claim.getHospitalCode()).thenReturn("");
+    when(claim.getDiagnosisCode()).thenReturn("");
+    when(claim.getHangUpStatus()).thenReturn(1);
+    when(claim.getHangUpType()).thenReturn("EVIDENCE");
+    when(claim.getId()).thenReturn(501L);
+
+    ClaimItem pending =
+        ClaimItem.of(
+            601L,
+            TENANT_ID,
+            501L,
+            "诊查费",
+            "",
+            ItemCategory.SERVICE,
+            null,
+            null,
+            new BigDecimal("10.00"));
+    pending.assignFeeCode("FEE-01");
+    when(claimItemRepository.findPendingByFeeCode(TENANT_ID, "FEE-01"))
+        .thenReturn(List.of(pending));
+    when(claimCaseRepository.findById(501L)).thenReturn(claim);
+    when(claimItemRepository.findByClaimId(501L)).thenReturn(List.of(pending));
+    when(codeMappingApplicationService.resolve(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(
+            new CodeMappingApplicationService.ResolveView(
+                "RESOLVED", "STD-FEE-001", 9L, "", "V3", false));
+
+    service.onMissResolved(
+        new com.bone.claim.domain.model.mapping.MappingMissResolvedEvent(
+            TENANT_ID, "YCBX", "FEE_CATEGORY", "FEE-01", 77L));
+
+    org.assertj.core.api.Assertions.assertThat(pending.getStdFeeCode())
+        .as("重解析回填标准码（判据⑨）")
+        .isEqualTo("STD-FEE-001");
+    verify(claimItemRepository).save(pending);
+    verify(claim).resume("SYSTEM");
+    verify(claimCaseRepository).save(claim);
+  }
+
+  @Test
+  @DisplayName("判据⑨幂等：已解析行不被重扫覆盖（重复消费不重复落账）")
+  void rescanSkipsAlreadyResolvedItems() {
+    when(claimItemRepository.findPendingByFeeCode(TENANT_ID, "FEE-01"))
+        .thenReturn(List.of()); // 仓储条件 std=''，已解析行根本不进扫描集
+
+    service.onMissResolved(
+        new com.bone.claim.domain.model.mapping.MappingMissResolvedEvent(
+            TENANT_ID, "YCBX", "FEE_CATEGORY", "FEE-01", 78L));
+
+    verify(claimItemRepository, org.mockito.Mockito.never())
+        .save(org.mockito.ArgumentMatchers.any());
   }
 }

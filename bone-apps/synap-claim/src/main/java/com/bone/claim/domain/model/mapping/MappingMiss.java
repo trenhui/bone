@@ -62,6 +62,10 @@ public class MappingMiss extends TenantAggregateRoot<Long> {
   @Column(name = "resolved_mapping_id")
   private Long resolvedMappingId;
 
+  /** 处置操作人（RESOLVED/IGNORED 时留痕；OPEN 为空串）。 */
+  @Column(name = "resolved_by")
+  private String resolvedBy = "";
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
@@ -125,19 +129,21 @@ public class MappingMiss extends TenantAggregateRoot<Long> {
     this.updatedAt = now;
   }
 
-  public void resolve(Long mappingId, Instant now) {
+  public void resolve(Long mappingId, String operatorId, Instant now) {
     if (mappingId == null) {
       throw new IllegalArgumentException("解决未命中必须指向具体映射");
     }
     this.status = MissStatus.RESOLVED.code();
     this.resolvedMappingId = mappingId;
+    this.resolvedBy = operatorId == null ? "" : operatorId.trim();
     this.ignoreReason = "";
     this.updatedAt = now;
   }
 
-  public void ignore(String reason, Instant now) {
+  public void ignore(String reason, String operatorId, Instant now) {
     this.status = MissStatus.IGNORED.code();
     this.ignoreReason = reason == null ? "" : reason.trim();
+    this.resolvedBy = operatorId == null ? "" : operatorId.trim();
     this.updatedAt = now;
   }
 

@@ -45,6 +45,20 @@ public class ClaimItem extends TenantAbstractEntity<Long> {
   @Column(name = "fee_code")
   private String feeCode = "";
 
+  /**
+   * 标准费用类别码（映射解析回填；空串 = 未解析）。
+   *
+   * <p><b>为什么必须有独立列而不能用 {@link #feeCode} 就地翻译</b>：映射会变（保司改码、纠错），
+   * 只存标准码无法回答"当时为什么这么判"；只存保司码则规则无法跨保司复用。双码 + 版本号 = 可重算、可审计（主设计 §6.5）。空串是合法初始态，但消费方（理算/规则）必须把空串
+   * 按"维度缺失"处理（fail-closed），<b>不得</b>把 {@link #feeCode} 的原始值冒充标准码。
+   */
+  @Column(name = "std_fee_code")
+  private String stdFeeCode = "";
+
+  /** 命中的映射行版本号（回放/复算依据；空串 = 未解析）。 */
+  @Column(name = "mapping_version")
+  private String mappingVersion = "";
+
   @Column(name = "quantity", nullable = false)
   private BigDecimal quantity;
 
@@ -108,6 +122,22 @@ public class ClaimItem extends TenantAbstractEntity<Long> {
    */
   public void assignFeeCode(String feeCode) {
     this.feeCode = feeCode == null ? "" : feeCode.trim();
+    setUpdatedAt(new java.util.Date());
+  }
+
+  /**
+   * 回填映射解析结果（收单/重解析共用）。
+   *
+   * <p><b>只接受真正解析成功的结果</b>：{@code standardCode} 非空才允许写入——调用方在 MISSING/SPLIT
+   * 等失败态不得把原始码或空串当结果传进来（构造期断言，钉死判据④ "未命中不得回落空串/raw 冒充标准码"）。重解析幂等语义：重复回填同值无害，值不同
+   * 以最近一次解析为准（映射纠错后重扫，新值是更正确的翻译）。
+   */
+  public void assignStdFeeCode(String standardCode, String mappingVersion) {
+    if (standardCode == null || standardCode.isBlank()) {
+      throw new IllegalArgumentException("标准费用类别码不能为空——解析失败态不得回填");
+    }
+    this.stdFeeCode = standardCode.trim();
+    this.mappingVersion = mappingVersion == null ? "" : mappingVersion.trim();
     setUpdatedAt(new java.util.Date());
   }
 

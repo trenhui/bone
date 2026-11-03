@@ -114,4 +114,40 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
             .page(page, size);
     return pageByCriteria(criteria).map(ClaimHeadProjection::from);
   }
+
+  /**
+   * 待重解析案件：指定原始码、案件级标准码尚未回填的<b>在办</b>案件（映射解决后重扫的输入）。
+   *
+   * <p>两个域各一个方法而不是按 {@code domain} 分支拼 Criteria：字段引用（{@code ::getHospitalCode} vs {@code
+   * ::getDiagnosisCode}）在编译期绑定，无法用变量切换——用 if 在两个方法间分派更诚实。
+   *
+   * <p>只扫在办（状态集取反终态）：已结案案件的解析结果是历史事实，重扫不改写—— 映射纠错对存量终态案件的追溯属显式重放，不走隐式回填（同 {@link
+   * ClaimItemRepository} 的幂等口径）。
+   */
+  default List<ClaimCase> findPendingByHospitalCode(Long tenantId, String rawHospitalCode) {
+    return findByCriteria(
+        Criteria.<ClaimCase>create()
+            .eq(ClaimCase::getTenantId, tenantId)
+            .eq(ClaimCase::getHospitalCode, rawHospitalCode)
+            .eq(ClaimCase::getStdHospitalCode, "")
+            .notIn(
+                true,
+                ClaimCase::getStatus,
+                ClaimStatus.FINISHED.name(),
+                ClaimStatus.CLOSED_REJECTED.name()));
+  }
+
+  /** 同 {@link #findPendingByHospitalCode}，诊断域（DISEASE）。 */
+  default List<ClaimCase> findPendingByDiagnosisCode(Long tenantId, String rawDiagnosisCode) {
+    return findByCriteria(
+        Criteria.<ClaimCase>create()
+            .eq(ClaimCase::getTenantId, tenantId)
+            .eq(ClaimCase::getDiagnosisCode, rawDiagnosisCode)
+            .eq(ClaimCase::getStdDiagnosisCode, "")
+            .notIn(
+                true,
+                ClaimCase::getStatus,
+                ClaimStatus.FINISHED.name(),
+                ClaimStatus.CLOSED_REJECTED.name()));
+  }
 }

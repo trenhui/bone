@@ -42,9 +42,10 @@ class MappingMissTest {
   @DisplayName("A7 已解决后再次未命中：回 OPEN、reopenCount+1、清空解决指向")
   void resolvedThenMissShouldReopen() {
     MappingMiss miss = first();
-    miss.resolve(88L, T1);
+    miss.resolve(88L, "op-1001", T1);
     assertThat(miss.getStatus()).isEqualTo(MissStatus.RESOLVED.code());
     assertThat(miss.getResolvedMappingId()).isEqualTo(88L);
+    assertThat(miss.getResolvedBy()).isEqualTo("op-1001");
 
     miss.recordOccurrence(T2, "C-009");
 
@@ -58,7 +59,8 @@ class MappingMissTest {
   @DisplayName("A7b 已忽略的码再次出现：只累加次数，保持 IGNORED（不制造假回归）")
   void ignoredThenMissShouldStayIgnored() {
     MappingMiss miss = first();
-    miss.ignore("HIS_LEGACY_CODE", T1);
+    miss.ignore("HIS_LEGACY_CODE", "op-1002", T1);
+    assertThat(miss.getResolvedBy()).isEqualTo("op-1002");
 
     miss.recordOccurrence(T2, "C-010");
 

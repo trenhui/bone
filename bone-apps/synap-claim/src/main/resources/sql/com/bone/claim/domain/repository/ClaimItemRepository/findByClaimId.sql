@@ -5,6 +5,8 @@ SELECT
        item_code,
        category,
        fee_code,
+       std_fee_code,
+       mapping_version,
        quantity,
        unit_price,
        amount,
