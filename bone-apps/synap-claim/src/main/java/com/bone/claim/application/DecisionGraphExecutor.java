@@ -131,6 +131,16 @@ public class DecisionGraphExecutor {
             effective.promptVersion(),
             effective.catalogVersion());
 
+    // TODO(claim 规则命中留痕): 决策图规则引擎落地、算出 ruleHits 后，在此注册领域事件即可自动落
+    //   t_claim_rule_hit（消费者 ClaimRuleHitRecorder 已就绪并通过单测 + ArchUnit 27 规则）。取消下一行注释并填入真实命中：
+    // execution.addDomainEvent(new ClaimRulesEvaluatedEvent(
+    //     tenantPort.currentTenantId(), claimId, execution.getId(),
+    //     ruleHits.stream().map(r -> new ClaimRulesEvaluatedEvent.RuleHit(
+    //         r.getCode(), r.getVersion(), r.getCategory(), r.getPriority(),
+    //         r.getInputSnapshot(), r.getConclusion(), Instant.now())).toList(),
+    //     Instant.now()));
+    // 当前未计算 ruleHits，故不注册；即便注册空列表，recorder 也会跳过，无副作用。
+
     Map<String, Object> outputs = new HashMap<>();
     BigDecimal confidence = null;
     boolean fallback = false;

@@ -424,6 +424,9 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
       throw new DomainException("只有草稿状态可以受理签收，当前状态: " + describe(status()));
     }
     transition(ClaimStatus.ACCEPTED, "SIGN");
+    // TODO(claim 干系人富化): 受理命令携带报案人/申请人/领款人后，给 ClaimSubmittedEvent 增补 stakeholder 列表字段，
+    //   并在消费者 ClaimStakeholderRecorder.onClaimSubmitted 由「只落 INSURED」改为循环落全部角色
+    //   （ClaimStakeholder.create 入参已对齐，零新依赖）。当前仅落被保人（PIPL 假名化锚点，明文不落库）。
     addDomainEvent(new ClaimSubmittedEvent(getId(), getTenantId(), claimNo, Instant.now()));
     return true;
   }

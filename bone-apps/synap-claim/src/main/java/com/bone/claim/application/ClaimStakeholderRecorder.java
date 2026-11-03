@@ -50,6 +50,8 @@ public class ClaimStakeholderRecorder {
               // 未携带被保人假名化 ID（不应发生）：不写空锚点行，避免噪音台账。
               return;
             }
+            // TODO(claim 干系人富化): 受理命令携报案人/申请人/领款人后，将下方「只落 INSURED」改为遍历事件中的
+            //   stakeholder 列表按 role 逐条 create+save（ClaimStakeholder.create 入参已对齐，零新依赖）。
             stakeholderRepository.save(
                 ClaimStakeholder.create(
                     event.tenantId(),
