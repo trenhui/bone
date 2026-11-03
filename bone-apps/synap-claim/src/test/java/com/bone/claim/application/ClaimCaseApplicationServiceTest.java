@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.claim.application.ClaimCaseApplicationService.SubmitClaim;
 import com.bone.claim.application.ClaimCaseApplicationService.SubmittedClaim;
+import com.bone.claim.application.CodeMappingApplicationService.StpGateView;
 import com.bone.claim.application.port.out.PolicyQueryPort;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
@@ -61,6 +62,11 @@ class ClaimCaseApplicationServiceTest {
             Instant.parse("2026-01-01T00:00:00Z"),
             Instant.parse("2026-12-31T23:59:59Z"));
     org.mockito.Mockito.lenient().when(tenantPort.currentTenantId()).thenReturn(TENANT_ID);
+    // STP 闸门默认健康（allowAuto=true），保证既有收单用例不因新增的 stpGate 调用而 NPE/置标；
+    // 验证「闸门阻断」的用例自行覆盖此桩。
+    org.mockito.Mockito.lenient()
+        .when(codeMappingApplicationService.stpGate(any(), any()))
+        .thenReturn(StpGateView.allow());
   }
 
   private SubmitClaim command(String idempotencyKey) {
@@ -547,6 +553,36 @@ class ClaimCaseApplicationServiceTest {
         org.mockito.ArgumentCaptor.forClass(ClaimCase.class);
     verify(claimCaseRepository).insert(captor.capture());
     org.assertj.core.api.Assertions.assertThat(captor.getValue().getHangUpStatus()).isZero();
+  }
+
+  @Test
+  @DisplayName("STP 闸门：码已解析但映射质量不达标 → 标记转人工（不挂起、不拦受理，与挂起正交）")
+  void submitWithStpGateBlockedMarksManualReview() {
+    mockInsurerRegistered();
+    when(codeMappingApplicationService.resolve(any()))
+        .thenReturn(
+            new CodeMappingApplicationService.ResolveView(
+                "RESOLVED", "STD-FEE-001", 9L, "", "V3", false));
+    // 映射质量不达标：STP 闸门对该 (保司×域) 返回阻断（allowAuto=false）
+    org.mockito.Mockito.lenient()
+        .when(codeMappingApplicationService.stpGate(any(), any()))
+        .thenReturn(StpGateView.blocked());
+
+    service.submit(commandWithInsurer("idem-stp-1", "YCBX", "H-9901", "FEE-01"));
+
+    org.mockito.ArgumentCaptor<ClaimCase> captor =
+        org.mockito.ArgumentCaptor.forClass(ClaimCase.class);
+    verify(claimCaseRepository).insert(captor.capture());
+    ClaimCase saved = captor.getValue();
+    org.assertj.core.api.Assertions.assertThat(saved.isManualReviewRequired())
+        .as("STP 闸门不达标必须标记转人工（§6.9）")
+        .isTrue();
+    org.assertj.core.api.Assertions.assertThat(saved.getHangUpStatus())
+        .as("码已解析（无未命中）不得挂起——闸门与挂起正交")
+        .isZero();
+    org.assertj.core.api.Assertions.assertThat(saved.getStdHospitalCode())
+        .as("码已解析仍须落标准码")
+        .isEqualTo("STD-FEE-001");
   }
 
   @Test

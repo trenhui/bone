@@ -134,6 +134,8 @@ public class ClaimCaseApplicationService {
     // 只对「已登记承保主体」的报案生效（接一家配一家）；未带 insurerCode 或保司未登记
     // 的报案走存量行为（零变化），映射面灰度推进。
     boolean codeResolutionPending = resolveSubmissionCodes(command, claim, items);
+    // STP 闸门（§6.9）：映射质量不达标 ⇒ 标记转人工（与挂起正交，不影响受理/挂起判定）。
+    boolean stpBlocked = evaluateStpGate(command, claim);
     // PIPL 单独同意留痕（§9.5 / DSAR G10）：命令带记录号才落库，不带则保持 NULL。
     // 只写不校验格式——记录号的形状由同意服务定义；空值不拒收（存量渠道/旁路同步尚无此字段，
     // 一刀切 fail-closed 会让存量报案全线 400），真正的闸门在撤回侧。
@@ -147,6 +149,9 @@ public class ClaimCaseApplicationService {
     // 理算"，而不是"拒收报案"——拒收会让渠道重推，且保司码值问题不该由报案人承担。
     if (codeResolutionPending) {
       claim.hangUp(HangUpType.EVIDENCE, "SYSTEM");
+    }
+    if (stpBlocked) {
+      claim.requireManualReview();
     }
 
     claimCaseRepository.insert(claim);
@@ -242,6 +247,43 @@ public class ClaimCaseApplicationService {
       }
     }
     return pending;
+  }
+
+  /**
+   * STP 闸门（主设计 §6.9）：逐 (保司×域) 评估映射质量，任一不达标即标记赔案转人工。
+   *
+   * <p>与挂起正交：挂起阻断自动推进（映射缺失未解析），本闸门阻断自动理算路由（码已解析但质量差）。 未带 insurerCode 或保司未登记走存量行为（灰度推进），不评估、不置标。
+   */
+  private boolean evaluateStpGate(SubmitClaim command, ClaimCase claim) {
+    String insurerCode = command.insurerCode() == null ? "" : command.insurerCode().trim();
+    if (insurerCode.isEmpty()) {
+      return false;
+    }
+    if (claimInsurerRepository.findByInsurerCode(claim.getTenantId(), insurerCode) == null) {
+      return false;
+    }
+    boolean blocked = false;
+    if (!claim.getHospitalCode().isBlank()
+        && !codeMappingApplicationService
+            .stpGate(insurerCode, MasterDataDomain.HOSPITAL.code())
+            .allowAuto()) {
+      blocked = true;
+    }
+    if (!claim.getDiagnosisCode().isBlank()
+        && !codeMappingApplicationService
+            .stpGate(insurerCode, MasterDataDomain.DISEASE.code())
+            .allowAuto()) {
+      blocked = true;
+    }
+    boolean anyFee =
+        command.items().stream().anyMatch(it -> it.feeCode() != null && !it.feeCode().isBlank());
+    if (anyFee
+        && !codeMappingApplicationService
+            .stpGate(insurerCode, MasterDataDomain.FEE_CATEGORY.code())
+            .allowAuto()) {
+      blocked = true;
+    }
+    return blocked;
   }
 
   /** 分配初审（7 → 10）。 */

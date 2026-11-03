@@ -21,6 +21,7 @@ import com.bone.claim.application.CodeMappingApplicationService.ResolveCommand;
 import com.bone.claim.application.CodeMappingApplicationService.ResolveView;
 import com.bone.claim.application.CodeMappingApplicationService.SplitCommand;
 import com.bone.claim.application.CodeMappingApplicationService.SplitView;
+import com.bone.claim.application.CodeMappingApplicationService.StpGateView;
 import com.bone.claim.domain.model.mapping.AliasRelation;
 import com.bone.claim.domain.model.mapping.InsurerStatus;
 import com.bone.claim.domain.model.mapping.MappingSource;
@@ -127,6 +128,15 @@ public class CodeMappingController {
         HttpStatus.OK.value(), codeMappingApplicationService.mappingHealth(insurerCode, domain));
   }
 
+  @Operation(summary = "STP 闸门状态（映射质量→业务风险开关，按保司×域；五把尺任一不达标即阻断自动理算）")
+  @PreAuthorize("hasAuthority('claim:policy:read')")
+  @GetMapping("/stp-gate")
+  public ApiResponse<StpGateView> stpGate(
+      @RequestParam String insurerCode, @RequestParam String domain) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(), codeMappingApplicationService.stpGate(insurerCode, domain));
+  }
+
   @Operation(summary = "发布映射（同键旧行自动失效）")
   @PreAuthorize("hasAuthority('claim:policy:write')")
   @PostMapping
@@ -158,17 +168,18 @@ public class CodeMappingController {
         HttpStatus.OK.value(), codeMappingApplicationService.disable(id, reasonCode));
   }
 
-  @Operation(summary = "未命中队列分页（sortBy=occurCount 按频次，默认按最近发生）")
+  @Operation(summary = "未命中队列分页（insurerCode 按保司过滤；sortBy=occurCount 按频次，默认按最近发生）")
   @PreAuthorize("hasAuthority('claim:policy:read')")
   @GetMapping("/misses")
   public ApiResponse<PageView<MissView>> listMisses(
       @RequestParam(required = false) String status,
       @RequestParam(required = false) String sortBy,
+      @RequestParam(required = false) String insurerCode,
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "10") int size) {
     return ApiResponse.success(
         HttpStatus.OK.value(),
-        codeMappingApplicationService.listMisses(status, sortBy, page, size));
+        codeMappingApplicationService.listMisses(status, sortBy, insurerCode, page, size));
   }
 
   @Operation(summary = "处置未命中：建立映射并关闭队列项（独立处置权限，操作人留痕；触发受影响案件重解析）")

@@ -18,10 +18,14 @@ import com.bone.claim.domain.model.mapping.MappingSource;
 import com.bone.claim.domain.model.mapping.MappingType;
 import com.bone.claim.domain.model.mapping.MasterDataDomain;
 import com.bone.claim.domain.model.mapping.MatchRule;
+import com.bone.claim.domain.model.mapping.MissStatus;
 import com.bone.claim.domain.model.mapping.NameNormalizer;
 import com.bone.claim.domain.model.mapping.ResolutionStatus;
 import com.bone.claim.domain.model.mapping.StdCodeAlias;
 import com.bone.claim.domain.model.mapping.StdCodeSplit;
+import com.bone.claim.domain.model.mapping.stp.StpGateEvaluator;
+import com.bone.claim.domain.model.mapping.stp.StpGateVerdict;
+import com.bone.claim.domain.model.mapping.stp.StpMetrics;
 import com.bone.claim.domain.repository.ClaimInsurerRepository;
 import com.bone.claim.domain.repository.CodeMappingRepository;
 import com.bone.claim.domain.repository.FieldBindingRepository;
@@ -37,9 +41,11 @@ import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.exception.BizException;
 import com.bone.core.exception.DomainException;
 import com.bone.core.util.DistributedIdGenerator;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -444,19 +450,109 @@ public class CodeMappingApplicationService {
         recentMissCount);
   }
 
+  /**
+   * STP 闸门状态（主设计 §6.9）：把「映射质量」翻译成「业务风险开关」。
+   *
+   * <p>按 (保司×域) 采集五把尺——明细级命中率、赔案级直通率、OPEN 未命中数、近 7 天纠错(reopen)、 冲突数——交由纯评估器 {@link
+   * StpGateEvaluator} 判定。评估器无仓储依赖，可独立单测 + 变异验证； 本方法只负责数据采集（代理口径见 {@link StpMetrics} 注释）。
+   */
+  @Transactional(readOnly = true)
+  public StpGateView stpGate(String insurerCode, String domain) {
+    long tenantId = tenantPort.currentTenantId();
+    MasterDataDomain d = MasterDataDomain.fromCode(domain);
+    String dCode = d.code();
+
+    long openMiss = mappingMissRepository.countOpen(tenantId, insurerCode, dCode);
+    long resolvedMiss =
+        mappingMissRepository.countByStatus(
+            tenantId, insurerCode, dCode, MissStatus.RESOLVED.code());
+    long totalMiss = openMiss + resolvedMiss;
+    double itemHitRate = totalMiss == 0 ? 100.0 : (double) resolvedMiss / totalMiss * 100.0;
+
+    long correction7d =
+        mappingMissRepository.countReopenedSince(
+            tenantId, insurerCode, dCode, Instant.now().minus(Duration.ofDays(7)));
+
+    // 冲突：同保司码出现 >1 个标准码候选（active 映射里按 insurer_item_code 分组，标准码去重后 >1）。
+    long conflict =
+        codeMappingRepository.findActiveByInsurerDomain(tenantId, insurerCode, dCode).stream()
+            .collect(
+                Collectors.groupingBy(
+                    CodeMapping::getInsurerItemCode,
+                    Collectors.mapping(CodeMapping::getStandardCode, Collectors.toSet())))
+            .values()
+            .stream()
+            .filter(standards -> standards.size() > 1)
+            .count();
+
+    double caseStraightThroughRate = computeCaseStraightThroughRate(tenantId, insurerCode, dCode);
+
+    StpMetrics metrics =
+        new StpMetrics(
+            tenantId,
+            insurerCode,
+            dCode,
+            itemHitRate,
+            caseStraightThroughRate,
+            openMiss,
+            correction7d,
+            conflict);
+    StpGateVerdict verdict = StpGateEvaluator.evaluate(metrics);
+    return new StpGateView(
+        insurerCode,
+        domain,
+        verdict.allowAuto(),
+        round1(itemHitRate),
+        round1(caseStraightThroughRate),
+        openMiss,
+        correction7d,
+        conflict,
+        verdict.conditions());
+  }
+
+  /** 赔案级直通率代理：曾命中未命中的案件中、当前未卡在 OPEN/reopen 的占比（按 last_case_no 去重）。 */
+  private double computeCaseStraightThroughRate(long tenantId, String insurerCode, String domain) {
+    List<MappingMiss> all = mappingMissRepository.findAll(tenantId, insurerCode, domain);
+    long totalCases =
+        all.stream()
+            .map(MappingMiss::getLastCaseNo)
+            .filter(s -> s != null && !s.isBlank())
+            .distinct()
+            .count();
+    if (totalCases == 0) {
+      return 100.0;
+    }
+    long blockingCases =
+        all.stream()
+            .filter(
+                m ->
+                    MissStatus.OPEN.code().equals(m.getStatus())
+                        || (m.getReopenCount() != null && m.getReopenCount() > 0))
+            .map(MappingMiss::getLastCaseNo)
+            .filter(s -> s != null && !s.isBlank())
+            .distinct()
+            .count();
+    return Math.round((1.0 - (double) blockingCases / totalCases) * 1000.0) / 10.0;
+  }
+
+  private static double round1(double v) {
+    return Math.round(v * 10.0) / 10.0;
+  }
+
   // ===================== 未命中队列 =====================
 
   @Transactional(readOnly = true)
-  public PageView<MissView> listMisses(String status, String sortBy, int page, int size) {
+  public PageView<MissView> listMisses(
+      String status, String sortBy, String insurerCode, int page, int size) {
     long tenantId = tenantPort.currentTenantId();
     PageBounds bounds = PageBounds.of(page, size);
     List<MissView> records =
         mappingMissRepository
-            .findPage(tenantId, status, sortBy, bounds.page(), bounds.size())
+            .findPage(tenantId, status, sortBy, insurerCode, bounds.page(), bounds.size())
             .stream()
             .map(MissView::from)
             .toList();
-    long total = mappingMissRepository.countPage(tenantId, status);
+    long total = mappingMissRepository.countPage(tenantId, status, insurerCode);
     return new PageView<>(records, total, bounds.page(), bounds.size());
   }
 
@@ -909,6 +1005,28 @@ public class CodeMappingApplicationService {
       double coverage,
       long openMissCount,
       long recentMissCount) {}
+
+  /** STP 闸门视图（映射质量→业务风险开关，按保司×域）：conditions 逐条件明细，前端可渲染「为什么不能直通」。 */
+  public record StpGateView(
+      String insurerCode,
+      String domain,
+      boolean allowAuto,
+      double itemHitRate,
+      double caseStraightThroughRate,
+      long openMissCount,
+      long correctionEvents7d,
+      long conflictCount,
+      List<StpGateVerdict.ConditionResult> conditions) {
+    /** 闸门全绿（可直通）的桩工厂，供调用方默认桩使用。 */
+    public static StpGateView allow() {
+      return new StpGateView(null, null, true, 100.0, 100.0, 0L, 0L, 0L, List.of());
+    }
+
+    /** 闸门阻断（强制转人工）的桩工厂，供调用方覆盖桩使用。 */
+    public static StpGateView blocked() {
+      return new StpGateView(null, null, false, 0.0, 0.0, 1L, 1L, 1L, List.of());
+    }
+  }
 
   public record MissView(
       String id,

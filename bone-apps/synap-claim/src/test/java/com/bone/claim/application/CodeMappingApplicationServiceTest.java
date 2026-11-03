@@ -366,4 +366,45 @@ class CodeMappingApplicationServiceTest {
     assertThat(view.status()).isEqualTo("ALIAS_CYCLE");
     assertThat(view.standardCode()).isNull();
   }
+
+  // ===================== STP 闸门（§6.9）采集逻辑 =====================
+
+  @Test
+  @DisplayName("STP：无未命中/无冲突 → allowAuto=true，命中率与直通率均 100%")
+  void stpGateHealthy() {
+    when(mappingMissRepository.countOpen(anyLong(), anyString(), anyString())).thenReturn(0L);
+    when(mappingMissRepository.countByStatus(anyLong(), anyString(), anyString(), anyString()))
+        .thenReturn(0L);
+    when(mappingMissRepository.countReopenedSince(anyLong(), anyString(), anyString(), any()))
+        .thenReturn(0L);
+    when(mappingMissRepository.findAll(anyLong(), anyString(), anyString())).thenReturn(List.of());
+    when(codeMappingRepository.findActiveByInsurerDomain(anyLong(), anyString(), anyString()))
+        .thenReturn(List.of());
+
+    var view = service.stpGate(INSURER, "HOSPITAL");
+
+    assertThat(view.allowAuto()).isTrue();
+    assertThat(view.itemHitRate()).isEqualTo(100.0);
+    assertThat(view.caseStraightThroughRate()).isEqualTo(100.0);
+    assertThat(view.conflictCount()).isZero();
+  }
+
+  @Test
+  @DisplayName("STP：同保司码出现两个标准码候选（冲突）→ 阻断自动理算")
+  void stpGateConflictBlocks() {
+    when(mappingMissRepository.countOpen(anyLong(), anyString(), anyString())).thenReturn(0L);
+    when(mappingMissRepository.countByStatus(anyLong(), anyString(), anyString(), anyString()))
+        .thenReturn(0L);
+    when(mappingMissRepository.countReopenedSince(anyLong(), anyString(), anyString(), any()))
+        .thenReturn(0L);
+    when(mappingMissRepository.findAll(anyLong(), anyString(), anyString())).thenReturn(List.of());
+    // 同 raw=H1 但两个不同标准码 ⇒ 冲突数=1（设计 §6.9：冲突该域禁自动理算）
+    when(codeMappingRepository.findActiveByInsurerDomain(anyLong(), anyString(), anyString()))
+        .thenReturn(List.of(activeMapping("H1", "STD-A"), activeMapping("H1", "STD-B")));
+
+    var view = service.stpGate(INSURER, "HOSPITAL");
+
+    assertThat(view.conflictCount()).isEqualTo(1);
+    assertThat(view.allowAuto()).isFalse();
+  }
 }

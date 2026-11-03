@@ -28,11 +28,14 @@ public interface MappingMissRepository extends Repository<MappingMiss, Long> {
    * last_seen_at，不抛错——管理台不因排序参数打摆。
    */
   default List<MappingMiss> findPage(
-      Long tenantId, String status, String sortBy, int page, int size) {
+      Long tenantId, String status, String sortBy, String insurerCode, int page, int size) {
     Criteria<MappingMiss> criteria =
         Criteria.<MappingMiss>create().eq(MappingMiss::getTenantId, tenantId);
     if (status != null && !status.isBlank()) {
       criteria.eq(MappingMiss::getStatus, status);
+    }
+    if (insurerCode != null && !insurerCode.isBlank()) {
+      criteria.eq(MappingMiss::getInsurerCode, insurerCode);
     }
     if ("occurCount".equals(sortBy)) {
       criteria.orderByDesc(MappingMiss::getOccurCount).orderByDesc(MappingMiss::getLastSeenAt);
@@ -43,11 +46,14 @@ public interface MappingMissRepository extends Repository<MappingMiss, Long> {
     return findByCriteria(criteria);
   }
 
-  default long countPage(Long tenantId, String status) {
+  default long countPage(Long tenantId, String status, String insurerCode) {
     Criteria<MappingMiss> criteria =
         Criteria.<MappingMiss>create().eq(MappingMiss::getTenantId, tenantId);
     if (status != null && !status.isBlank()) {
       criteria.eq(MappingMiss::getStatus, status);
+    }
+    if (insurerCode != null && !insurerCode.isBlank()) {
+      criteria.eq(MappingMiss::getInsurerCode, insurerCode);
     }
     return countByCriteria(criteria);
   }
@@ -71,5 +77,39 @@ public interface MappingMissRepository extends Repository<MappingMiss, Long> {
             .eq(MappingMiss::getInsurerCode, insurerCode)
             .eq(MappingMiss::getDomain, domain)
             .gte(MappingMiss::getFirstSeenAt, since));
+  }
+
+  /** 指定状态未命中数（命中率代理：RESOLVED / OPEN 分别计数，不建新表）。 */
+  default long countByStatus(Long tenantId, String insurerCode, String domain, String status) {
+    return countByCriteria(
+        Criteria.<MappingMiss>create()
+            .eq(MappingMiss::getTenantId, tenantId)
+            .eq(MappingMiss::getInsurerCode, insurerCode)
+            .eq(MappingMiss::getDomain, domain)
+            .eq(MappingMiss::getStatus, status));
+  }
+
+  /**
+   * 近 N 天纠错（reopen）事件数：{@code reopen_count>0} 且最近一次发生（last_seen_at）落在窗口内。
+   * reopen=「以为修好其实没修好」，是比新增未命中更危险的高危信号（§6.9）。
+   */
+  default long countReopenedSince(
+      Long tenantId, String insurerCode, String domain, java.time.Instant since) {
+    return countByCriteria(
+        Criteria.<MappingMiss>create()
+            .eq(MappingMiss::getTenantId, tenantId)
+            .eq(MappingMiss::getInsurerCode, insurerCode)
+            .eq(MappingMiss::getDomain, domain)
+            .gt(MappingMiss::getReopenCount, 0)
+            .gte(MappingMiss::getLastSeenAt, since));
+  }
+
+  /** 该 (保司,域) 全量未命中（STP 赔案级直通率代理：按 last_case_no 去重计数，无 DISTINCT SQL）。 */
+  default List<MappingMiss> findAll(Long tenantId, String insurerCode, String domain) {
+    return findByCriteria(
+        Criteria.<MappingMiss>create()
+            .eq(MappingMiss::getTenantId, tenantId)
+            .eq(MappingMiss::getInsurerCode, insurerCode)
+            .eq(MappingMiss::getDomain, domain));
   }
 }

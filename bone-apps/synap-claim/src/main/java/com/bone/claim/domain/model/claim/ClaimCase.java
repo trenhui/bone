@@ -141,6 +141,13 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   @Column(name = "mapping_version")
   private String mappingVersion = "";
 
+  /**
+   * STP 闸门标记（主设计 §6.9）：收单时该 (保司×域) 映射质量不达标 ⇒ 强制转人工。 false=可走直通；true=阻断自动理算、路由到人工复核。不改状态码、不阻塞受理——
+   * 与挂起（hangUp）正交：映射缺失走挂起，映射质量差走本标记，两者都让案子不静默进自动理算。
+   */
+  @Column(name = "manual_review_required")
+  private boolean manualReviewRequired = false;
+
   @Column(name = "out_insure_time", nullable = false)
   private Instant outInsureTime;
 
@@ -379,6 +386,15 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
     if (wrote) {
       this.updatedAt = Instant.now();
     }
+  }
+
+  /**
+   * STP 闸门命中：标记本赔案需人工复核（不阻塞受理，仅路由到人工）。
+   *
+   * <p>幂等：重复调用无副作用（布尔置位，不累加）。与挂起正交——挂起阻断自动推进、本标记只影响自动理算路由。
+   */
+  public void requireManualReview() {
+    this.manualReviewRequired = true;
   }
 
   private static String normalise(String value) {
