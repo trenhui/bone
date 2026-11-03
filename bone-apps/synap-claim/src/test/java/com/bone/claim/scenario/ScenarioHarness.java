@@ -1,11 +1,17 @@
 package com.bone.claim.scenario;
 
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.bone.claim.application.AppealApplicationService;
 import com.bone.claim.application.AutoApprovalApplicationService;
 import com.bone.claim.application.ClaimCaseApplicationService;
 import com.bone.claim.application.DecisionExecutionApplicationService;
 import com.bone.claim.application.DecisionGraphExecutor;
 import com.bone.claim.application.DecisionRunApplicationService;
+import com.bone.claim.application.FeatureTenantToggleService;
 import com.bone.claim.application.IndemnityApplicationService;
 import com.bone.claim.application.InspectionApplicationService;
 import com.bone.claim.application.QuotaApplicationService;
@@ -57,6 +63,7 @@ import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.ClaimItemRepository;
 import com.bone.claim.domain.repository.DecisionExecutionRepository;
 import com.bone.claim.domain.repository.EvidenceRepository;
+import com.bone.claim.domain.repository.FeatureToggleRepository;
 import com.bone.claim.domain.repository.InspectionRepository;
 import com.bone.claim.domain.repository.LiabilityFeeRuleRepository;
 import com.bone.claim.domain.repository.LiabilityRepository;
@@ -143,7 +150,9 @@ public class ScenarioHarness {
   public ScenarioHarness() {
     TenantPort tenantPort = () -> tenantId;
     claimRepo = new InMemoryClaimCaseRepository(itemRepo);
-    claimSvc = new ClaimCaseApplicationService(claimRepo, itemRepo, policyPort, tenantPort, events);
+    claimSvc =
+        new ClaimCaseApplicationService(
+            claimRepo, itemRepo, policyPort, tenantPort, events, adjRepo);
     // 累计读侧用真实适配器（不是桩）：场景里 A7 占额写的行，A6 下一次理算就能读到 —— 跨案闭环必须走同一条读路径
     AccumulationPort accumulationPort = new QuotaDrivenAccumulationPortAdapter(quotaRepo);
     indemnitySvc =
@@ -209,8 +218,13 @@ public class ScenarioHarness {
     settleSvc =
         new SettlementApplicationService(
             settleRepo, quotaSvc, indemnitySvc, claimSvc, tenantPort, events, adjRepo);
+    // 特性开关仓储默认「未配置」→ isFeatureAllowed 继承全局开关，对场景保持透明（不改写既有 auto-approve 行为）。
+    FeatureToggleRepository featureToggleRepo = mock(FeatureToggleRepository.class);
+    when(featureToggleRepo.findByFeatureKey(anyLong(), anyString())).thenReturn(null);
+    FeatureTenantToggleService featureToggleSvc = new FeatureTenantToggleService(featureToggleRepo);
     autoApproveSvc =
-        new AutoApprovalApplicationService(claimSvc, settleSvc, indemnitySvc, decExecSvc);
+        new AutoApprovalApplicationService(
+            claimSvc, settleSvc, indemnitySvc, decExecSvc, featureToggleSvc);
     decisionRun = new DecisionRunApplicationService(decisionExecutor, autoApproveSvc, decExecSvc);
     appealSvc = new AppealApplicationService(appealRepo, claimSvc, tenantPort, events);
     inspectionSvc = new InspectionApplicationService(inspectionRepo, claimSvc, tenantPort, events);

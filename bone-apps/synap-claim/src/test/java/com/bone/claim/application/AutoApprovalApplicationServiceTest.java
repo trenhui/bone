@@ -2,6 +2,7 @@ package com.bone.claim.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -43,6 +44,7 @@ class AutoApprovalApplicationServiceTest {
   @Mock private SettlementApplicationService settlementApplicationService;
   @Mock private IndemnityApplicationService indemnityApplicationService;
   @Mock private DecisionExecutionApplicationService decisionExecutionApplicationService;
+  @Mock private FeatureTenantToggleService featureToggleService;
 
   private AutoApprovalApplicationService service;
 
@@ -56,9 +58,13 @@ class AutoApprovalApplicationServiceTest {
             claimCaseApplicationService,
             settlementApplicationService,
             indemnityApplicationService,
-            decisionExecutionApplicationService);
+            decisionExecutionApplicationService,
+            featureToggleService);
     ReflectionTestUtils.setField(service, "enabled", true);
     ReflectionTestUtils.setField(service, "maxAmount", new BigDecimal("1000"));
+    // 默认放开租户级三态开关，使既有 happy-path 用例仍走通；特定用例再覆盖为 false。
+    when(featureToggleService.isFeatureAllowed(anyLong(), anyBoolean(), anyString()))
+        .thenReturn(true);
     when(indemnityApplicationService.latest(CLAIM))
         .thenReturn(
             new IndemnityApplicationService.AdjustmentResult(
@@ -74,6 +80,24 @@ class AutoApprovalApplicationServiceTest {
 
     assertThat(outcome.applied()).isFalse();
     assertThat(outcome.reason()).isEqualTo("AUTO_APPROVE_DISABLED");
+    verify(claimCaseApplicationService, never()).autoApprove(anyLong(), anyString());
+    verify(settlementApplicationService, never()).create(anyLong(), anyInt(), any(), anyString());
+  }
+
+  @Test
+  @DisplayName("全局开关开启但租户级三态开关未放行 → AUTO_APPROVE_TOGGLE_OFF，不结案（§11.4 fail-closed）")
+  void toggledOffAtTenantLevel() {
+    DecisionExecution auto = execution("AUTO_APPROVE");
+    ClaimCase pending = claim(false);
+    when(decisionExecutionApplicationService.findLatest(CLAIM)).thenReturn(auto);
+    when(claimCaseApplicationService.getClaimAggregate(CLAIM)).thenReturn(pending);
+    when(featureToggleService.isFeatureAllowed(anyLong(), anyBoolean(), anyString()))
+        .thenReturn(false);
+
+    AutoApprovalApplicationService.AutoApprovalOutcome outcome = service.applyAutoDecision(CLAIM);
+
+    assertThat(outcome.applied()).isFalse();
+    assertThat(outcome.reason()).isEqualTo("AUTO_APPROVE_TOGGLE_OFF");
     verify(claimCaseApplicationService, never()).autoApprove(anyLong(), anyString());
     verify(settlementApplicationService, never()).create(anyLong(), anyInt(), any(), anyString());
   }
@@ -280,6 +304,7 @@ class AutoApprovalApplicationServiceTest {
   private static ClaimCase claim(boolean finished) {
     ClaimCase claim = mock(ClaimCase.class);
     when(claim.getId()).thenReturn(CLAIM);
+    when(claim.getTenantId()).thenReturn(1000L);
     when(claim.finished()).thenReturn(finished);
     return claim;
   }

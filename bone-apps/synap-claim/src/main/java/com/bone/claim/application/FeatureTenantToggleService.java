@@ -26,9 +26,13 @@ public class FeatureTenantToggleService {
    * @param featureKey 特性键（如 {@link FeatureToggle#FEATURE_AUTO_APPROVE}）
    * @return 允许放行则返回 true
    */
-  public boolean isFeatureAllowed(long tenantId, boolean globalEnabled, String featureKey) {
+  public boolean isFeatureAllowed(Long tenantId, boolean globalEnabled, String featureKey) {
     if (!globalEnabled) {
       return false;
+    }
+    if (tenantId == null) {
+      // 缺租户（不应发生，防御性）：按「无配置继承全局」处理
+      return true;
     }
     FeatureToggle toggle = featureToggleRepository.findByFeatureKey(tenantId, featureKey);
     if (toggle == null) {

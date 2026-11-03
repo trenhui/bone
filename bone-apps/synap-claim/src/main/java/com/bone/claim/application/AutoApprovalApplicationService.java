@@ -71,6 +71,10 @@ public class AutoApprovalApplicationService {
    */
   @Transactional
   public AutoApprovalOutcome applyAutoDecision(long claimId) {
+    // 全局开关关闭：策略未签核，零资金动作（保留原原因码，向后兼容监控/看板）。
+    if (!enabled) {
+      return AutoApprovalOutcome.skipped("AUTO_APPROVE_DISABLED");
+    }
     var execution = decisionExecutionApplicationService.findLatest(claimId);
     if (execution == null) {
       return AutoApprovalOutcome.skipped("NO_DECISION");
@@ -85,7 +89,7 @@ public class AutoApprovalApplicationService {
     if (claim.finished()) {
       return AutoApprovalOutcome.skipped("ALREADY_SETTLED");
     }
-    // §11.4 三态开关（fail-closed）：全局开关开启时仍须租户级特性开关/灰度裁决；
+    // §11.4 三态开关（fail-closed）：全局开启时仍须租户级特性开关/灰度裁决；
     // 未配置＝继承全局，全局默认关闭（bone.claim.auto-approve.enabled=false）即一律不自动放款。
     if (!featureToggleService.isFeatureAllowed(
         claim.getTenantId(), enabled, FeatureToggle.FEATURE_AUTO_APPROVE)) {

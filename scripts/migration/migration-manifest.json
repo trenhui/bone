@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 105,
+  "executableCount": 107,
   "retired": [],
   "entries": [
     {
@@ -681,6 +681,18 @@
       "file": "0099_synap_claim_flow_config_feature_toggle.sql",
       "kind": "ddl",
       "summary": "补建两张「实体 + 仓储已提交、物理表从未建」的配置表：t_claim_flow_config（§6.7 租户级流程/钩子配置，「新保司接入≤7天」的承载）与 t_feature_toggle（§11.4 三态开关 + 灰度比例）。缺陷证据：对 31 个 @Table 实体做「实体→DDL」机械比对，29 个在 bone-init.sql 有同名建表，唯独这两个全仓零 DDL（init / scripts/migration / db/migration 均无命中，活库亦无此表），而两个聚合的实体（含 @Version）、仓储接口、建表意图注释一应俱全——ClaimFlowConfig 类注释原文即「本批补齐表 + 实体 + 仓储，闭合方案 §9.5 表清单」，即表在计划里、只是没落地。为何不是「少一张表」：① 仓储是 SDK Criteria 形态，编译期与单测都用内存替身、不碰真表，故该缺口在 CI 恒绿，只在首个消费方接入那一刻 1146；② 实体已声明 @Version 而表缺 version 列，即便手工建表补业务列，UPDATE 仍会因乐观锁列缺失失败（0098 同款）；③ §9.5「一期建表」是契约条款，缺表则 R-FAST/R-MAN 阈值外置与流程配置化都只能是代码常量，即「配了不生效」。列清单以**实体元数据**为准而非契约 DDL：SDK 的 INSERT/UPDATE 列由实体元数据生成，表列必须是实体超集否则 ERROR 1054；契约 §9.5 的 feature_toggle 版（toggle_key/scope_type/config_json/effective_from-to）与当前实体语义不同（作用域维度与生效窗口未建模），收敛涉及作用域键与版本链、须与该特性作者同批做，本次不混入，差异已登记到工程落地版 §12.2。幂等 CREATE TABLE IF NOT EXISTS + 终态断言（两表存在 / 逐列齐全 / 唯一键存在 / version NOT NULL DEFAULT 0）。"
+    },
+    {
+      "order": 106,
+      "file": "0100_synap_claim_calculation_version_chain.sql",
+      "kind": "ddl",
+      "summary": "给理算记录 t_adj_calculation 补齐契约 §9.4 的七版本链缺口的五列（plan/catalog/model/prompt/graph_version，全版本链是回放与复算、审计链 SEC-05 可重建性的硬前提；此前模块内 V2 只落了 liability/rule 两列，理算侧与 claim_decision_execution 的版本列不对称），并给理算明细 t_adj_calculation_line 补 §9.2 通用乐观锁列 version。只加列不改实体：SDK 的 INSERT/UPDATE 列清单由实体元数据生成，表列是实体超集即安全；写入侧接线（受理时锁定各版本）属行为变更，须与消费方同批设计。版本列默认 '' 与契约 §9.4 及决策执行表口径一致（空=该维度未参与本次理算）。幂等 ALTER + 终态断言（五列齐全 / line.version NOT NULL DEFAULT 0）。bone-init.sql 同批补列。"
+    },
+    {
+      "order": 107,
+      "file": "0101_synap_claim_phase1_record_tables.sql",
+      "kind": "ddl",
+      "summary": "补建 §9.5 一期表清单里「既无实体也无表」的四张记录/字典表：t_claim_stakeholder（干系人，可变+@Version）、t_claim_rule_hit（规则命中，append-only）、t_claim_review_record（复核留痕，append-only）、t_adj_fee_type（费用类型字典，可变+@Version）。列清单以实体元数据为准：append-only 两表仍带框架审计列（updated_at/updated_by/deleted）但无 @Version，可变两表带 @Version 且 version NOT NULL DEFAULT 0——缺列令 SDK 写入报 ERROR 1054、缺 @Version 列令乐观锁失效（0089/0099 同款）。幂等 CREATE TABLE IF NOT EXISTS + 终态断言（四表存在 / 逐列齐全 / 唯一键存在 / version 约束）。bone-init.sql 同批并入托管区块。"
     }
   ],
   "ordinalConflicts": [
