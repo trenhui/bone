@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 111,
+  "executableCount": 116,
   "retired": [],
   "entries": [
     {
@@ -713,10 +713,40 @@
       "summary": "scripts/migration 总索引：三条路径、并入全量的闭环、下线与归档纪律"
     },
     {
+      "order": 112,
+      "file": "0110_fix_meta_entity_ui_schema_audit_columns.sql",
+      "kind": "ddl",
+      "summary": "补齐 meta_entity_ui_schema 的两个审计列（created_by / updated_by），逐列独立探测：修 0046「一次 ADD 两列、只探测一列」的半幂等缺陷（存量库只有一列时要么永远补不上、要么 ADD 重复报 ERROR 1060）。不回改 0046 是因为 scripts/migrate.py 按 sha256 记 journal（已应用脚本内容变更 = drift），业界惯例同样是已发迁移不回改、用新迁移修。幂等：缺哪列补哪列，连跑不报错；终态断言两列都在，否则 SIGNAL 中止（fail-closed，不留半补状态）。"
+    },
+    {
       "order": 111,
       "file": "0103_synap_claim_flow_config_unique_active.sql",
       "kind": "ddl",
       "summary": "给 t_claim_flow_config 补「同租户同 flow_key 至多一条生效版本」的数据库级约束：新增 VIRTUAL 生成列 active_key = IF(active_flag=1 AND deleted=0, flow_key, NULL) + 唯一键 uk_tenant_flow_active(tenant_id, active_key)。背景：0099 的唯一键是 uk_tenant_flow_version(tenant_id, flow_key, config_version)，约束的是**版本**而非**生效行**；active_flag 只有普通索引 idx_flow，同一 flow_key 可合法存在多条 active_flag=1，于是「当前配置」成了无解歧义，且原仓储 ClaimFlowConfigRepository.findByFlowKey 用 findOneByCriteria 只按 (tenant_id, flow_key) 过滤、不看 active_flag，命中多行时 SDK 抛 MultipleResultsException（报错文本 'Expected single result, found: N' 完全看不出成因）。为何用生成列而非「唯一键加 active_flag」：后者会要求同 flow_key 下所有历史版本(active_flag=0)也只能有一行，而版本化配置的本质就是多行历史——用「把历史版本标成非历史」表达版本推进会污染语义。MySQL 无 partial unique index（PostgreSQL 的 CREATE UNIQUE INDEX ... WHERE 才有），业界标准解法即生成列 + 唯一键：MySQL 唯一索引不视 NULL 为重复，于是生效行受约束、历史行(active_key=NULL)可任意多行；把 deleted 纳入条件是必需的，否则「软删旧生效版本后激活新版本」会被自己的历史行挡住，而那正是版本推进的常规动作。生成列不进实体：SDK 的 SELECT/INSERT 列清单均取自实体元数据（SqlBuilder 取 TableMetadata，非 SELECT *），故既不会被读出也不会被写入（否则 MySQL 报 1067 generated column in DEFAULT clause）。存量脏数据处置：不自动删数据——保留哪一版属业务决定（代码无法推断哪个 config_version 才是当前版本），脚本在加约束前先探测，多 active 则打印逐条处置清单并 SIGNAL 中止，且 MESSAGE_TEXT 只放简短指引（该字段有 128 字符上限，实测超长报 ERROR 1648 'Data too long for condition item'）。幂等：information_schema 探测 + 动态 DDL（0085/0090/0097/0098 同范式），重复执行 RC=0 且不重复添加；终态断言生成列表达式含 active_flag/flow_key、唯一键列序为 (tenant_id, active_key)、存量多 active 组数为 0。"
+    },
+    {
+      "order": 113,
+      "file": "0111_seed_claim_mapping_dispose_permission.sql",
+      "kind": "mixed",
+      "summary": "注册处置独立权限码 claim:mapping:dispose（id 9153005，接续 0087 的 claim 域段）并绑定超管 role 1。背景：多保司映射 task 2.3 要求未命中处置（resolve/ignore）独立于 claim:policy:write 分权，CodeMappingController 处置端点已挂 @PreAuthorize、前端 permissions.ts 已定义常量，但该码从未播种——任何角色 scope 都不可能包含它，处置端点对所有人 403，处置闭环名存实亡。只绑 role 1 与 0087 理赔域授权同口径；幂等 WHERE NOT EXISTS；终态断言权限码存在且超管已绑定（fail-closed）。"
+    },
+    {
+      "order": 114,
+      "file": "0112_synap_claim_coverage_override.sql",
+      "kind": "ddl",
+      "summary": "生效通道补建两段式覆盖表 t_claim_coverage_override（对应参考态 db/migration/V22，DDL 逐字一致）。背景：task 3 的 DDL 此前只落在 bone-init.sql（fresh-install）与参考态（无 runner 不自动执行），生效通道缺位——既有活库建不出表，/coverage-overrides/** 全部 500。不变量：UK(tenant_id,biz_identity_code,coverage_uuid,override_field) 同维度至多一行、@Version 乐观锁、无物理删除（停用置 status）。幂等 CREATE TABLE IF NOT EXISTS；终态断言表与 UK 存在。"
+    },
+    {
+      "order": 115,
+      "file": "0115_synap_claim_stp_manual_review.sql",
+      "kind": "ddl",
+      "summary": "STP 闸门标记列（主设计 §6.9）：t_claim_case 加 manual_review_required(TINYINT,默认0)。收单时按(保司×域)映射质量五把尺评估，不达标即标记转人工，与挂起正交。幂等 information_schema 判定 + 动态 SQL + 终态断言。bone-init.sql t_claim_case CREATE 同批加列。"
+    },
+    {
+      "order": 116,
+      "file": "0116_assert_claim_case_item_absent.sql",
+      "kind": "ddl",
+      "summary": "把「早期原型表 t_claim_case_item 已被清理」固化成可执行终态断言。起因是文档漂移：0058 §0 注释称「0047 仅在 meta_entity 目录登记旧 demo 实体名，非物理 DDL」，而 0047 实际建了三张物理表（bak_0047_uischema / t_claim_case 原型 / t_claim_case_item 废弃子表）——0058 恰恰 DROP 了它自己注释里说「不存在」的那张表，逻辑自相矛盾。不回改 0058：migrate.py 按 sha256(文件字节) 记账，改已发脚本（含改注释）会让所有已应用环境报「校验和不符」并拒绝 apply，业界惯例同样是已发迁移不回改、用新迁移修。本脚本不做 DDL，只断言 t_claim_case_item 不存在；仍存在则 SIGNAL 中止（fail-closed）并提示人工确认空表后 DROP——不静默 DROP 是因为断言时点的库可能已有数据（0058 §0 的处置前提是「0 行、无引用」）。幂等：纯断言无副作用。"
     }
   ],
   "ordinalConflicts": [

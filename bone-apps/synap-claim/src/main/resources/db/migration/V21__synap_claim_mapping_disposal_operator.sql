@@ -1,7 +1,18 @@
--- V21: 未命中处置操作人留痕
+-- V21: 未命中处置操作人留痕（列的建立归 V20；本脚本锚定语义并断言，不重复声明结构）
 --
 -- 背景（多保司配置面 task 2.3）：spec 要求处置动作留痕「操作人、时间、动作、reason_code」。
 -- V20 只留了时间/动作/理由，缺操作人——「谁把这条队列项标成 IGNORED」查不到，
 -- 误处置无法追责也无法回放。加一列，OPEN 时为空串（与 ignore_reason 同口径）。
-ALTER TABLE t_claim_mapping_miss
-  ADD COLUMN resolved_by VARCHAR(64) NOT NULL DEFAULT '' COMMENT '处置操作人(RESOLVED/IGNORED时留痕)' AFTER resolved_mapping_id;
+--
+-- 为什么本脚本不再 ADD COLUMN（2026-11-03 修正）：
+--   V20 的建表语句**已经包含** resolved_by，口径为
+--     resolved_by VARCHAR(64) NOT NULL DEFAULT '' COMMENT '处置人(operatorId;系统恢复=SYSTEM)'
+--   与 bone-init.sql / 活库一致。本脚本原先无条件 ADD 同一列，两处叠加即
+--   ERROR 1060 Duplicate column name 'resolved_by' —— 任何按 V20→V21 顺序执行的环境
+--   都会在 V21 中止。db/migration 虽无 runner（仅参考态），但它是设计真源：下游按它
+--   落地 Flyway/Liquibase 时会把这条重复声明一起带走，故必须在此消除矛盾。
+--
+-- 口径以 V20 为准（init 与活库已按该口径定稿，两处须一字不差，否则 init↔活库漂移）。
+-- 本脚本的职责收敛为「锚定处置留痕需求 + 断言列存在」：列不存在即中止（fail-closed），
+-- 暴露「V20 未执行 / 结构漂移」，而不是把列再声明一遍。
+SELECT resolved_by FROM t_claim_mapping_miss LIMIT 0;

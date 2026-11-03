@@ -1,0 +1,26 @@
+{
+  "_comment": "IAM 运行时数据下界清单（只可上移）。判据见 scripts/check-iam-runtime-baseline.py：bone-init.sql 是新环境唯一入口，它的数据段必须能让系统登进去且有权限。行数下限按业务闭环定，不按当前实况定。下界被降低须先改脚本里的 MIN_ROWS 并在此登记理由——否则「调小下界」会退化成永远绿。",
+  "generatedAt": "2026-11-03",
+  "tables": {
+    "iam_account": {
+      "min_rows": 1,
+      "why": "至少一个可登录账号（admin）；没有它新环境连登录页都过不去"
+    },
+    "iam_tenant": {
+      "min_rows": 1,
+      "why": "至少一个租户；账号的 tenant_id 指向它，缺了账号无法归属租户"
+    },
+    "iam_role": {
+      "min_rows": 1,
+      "why": "至少一个角色；没有角色就没有任何可授予的权限集合"
+    },
+    "iam_account_role": {
+      "min_rows": 1,
+      "why": "至少一条账号-角色绑定；没有它账号登进去也是零权限（静默失败）"
+    },
+    "iam_role_permission": {
+      "min_rows": 1,
+      "why": "至少一条角色-权限绑定；没有它角色是白板，登录后侧栏全空"
+    }
+  }
+}

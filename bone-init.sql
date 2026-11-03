@@ -2767,6 +2767,7 @@ CREATE TABLE t_claim_case (
   std_hospital_code VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '标准医院码(映射解析回填;空串=未解析)',
   std_diagnosis_code VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '标准诊断码(ICD-10 医保版;映射解析回填;空串=未解析)',
   mapping_version   VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '命中的映射行版本号(回放/复算依据;空串=未解析)',
+  manual_review_required TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'STP闸门标记(主设计§6.9):收单时该(保司×域)映射质量不达标强制转人工;0=可直通',
   PRIMARY KEY (id),
   UNIQUE KEY uk_tenant_claim_no (tenant_id, claim_no),
   UNIQUE KEY uk_tenant_idem (tenant_id, idempotency_key),
