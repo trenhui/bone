@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 104,
+  "executableCount": 105,
   "retired": [],
   "entries": [
     {
@@ -675,6 +675,12 @@
       "file": "0098_synap_claim_reconciliation_diff_version.sql",
       "kind": "ddl",
       "summary": "给对账差异明细 t_reconciliation_diff 增加乐观锁列 version BIGINT NOT NULL DEFAULT 0，闭环「两个运维同时处置同一条差异时后写者静默覆盖当前态」的缺口。该缺口在代码与契约里各登记过一次：ReconciliationDispositionService 类注释的「并发」段写明「要彻底消除需给差异行加乐观锁列，已记为待办」，契约 §11.7 留痕边界① 与 §12.2.1「对账差异处置乐观锁」行写明落地前提「必须同批，缺一即炸」。本脚本负责前提①，实体 @Version 与应用层冲突翻译（SDK OptimisticLockingFailureException → 409 SC_CLAIM_RECON_DIFF_CONFLICT）在同一次提交完成。两个半成品都比不改更危险：只加注解不加列 ⇒ 任何 save 报 ERROR 1054；只加列不加注解 ⇒ 列恒为 0，乐观锁形同虚设而界面像是已加固。默认 0 而非 NULL：SDK 对 @Version 为 null 直接拒绝（Optimistic lock cannot proceed），NULL 会让存量行首次处置即失败；DEFAULT 0 等价于「第 0 版」，零数据迁移。终态断言列就位 + NOT NULL + DEFAULT 0 三者同时成立。bone-init.sql 同批补列。"
+    },
+    {
+      "order": 105,
+      "file": "0099_synap_claim_flow_config_feature_toggle.sql",
+      "kind": "ddl",
+      "summary": "补建两张「实体 + 仓储已提交、物理表从未建」的配置表：t_claim_flow_config（§6.7 租户级流程/钩子配置，「新保司接入≤7天」的承载）与 t_feature_toggle（§11.4 三态开关 + 灰度比例）。缺陷证据：对 31 个 @Table 实体做「实体→DDL」机械比对，29 个在 bone-init.sql 有同名建表，唯独这两个全仓零 DDL（init / scripts/migration / db/migration 均无命中，活库亦无此表），而两个聚合的实体（含 @Version）、仓储接口、建表意图注释一应俱全——ClaimFlowConfig 类注释原文即「本批补齐表 + 实体 + 仓储，闭合方案 §9.5 表清单」，即表在计划里、只是没落地。为何不是「少一张表」：① 仓储是 SDK Criteria 形态，编译期与单测都用内存替身、不碰真表，故该缺口在 CI 恒绿，只在首个消费方接入那一刻 1146；② 实体已声明 @Version 而表缺 version 列，即便手工建表补业务列，UPDATE 仍会因乐观锁列缺失失败（0098 同款）；③ §9.5「一期建表」是契约条款，缺表则 R-FAST/R-MAN 阈值外置与流程配置化都只能是代码常量，即「配了不生效」。列清单以**实体元数据**为准而非契约 DDL：SDK 的 INSERT/UPDATE 列由实体元数据生成，表列必须是实体超集否则 ERROR 1054；契约 §9.5 的 feature_toggle 版（toggle_key/scope_type/config_json/effective_from-to）与当前实体语义不同（作用域维度与生效窗口未建模），收敛涉及作用域键与版本链、须与该特性作者同批做，本次不混入，差异已登记到工程落地版 §12.2。幂等 CREATE TABLE IF NOT EXISTS + 终态断言（两表存在 / 逐列齐全 / 唯一键存在 / version NOT NULL DEFAULT 0）。"
     }
   ],
   "ordinalConflicts": [

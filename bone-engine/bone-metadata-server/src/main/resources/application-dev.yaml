@@ -90,21 +90,6 @@ eureka:
       registry-fetch-interval-seconds: 5
 
 
-#################### 登录模块相关配置 ####################
-sa-token:
-  disable: true #关闭权限功能
-  sign:
-    secret-key: ${SA_TOKEN_SECRET:}
-  timeout: 28800
-  token-name: Satoken
-  alone-redis:
-    database: 11
-    host: 47.105.112.106
-    port: 6379
-    password: ${BONE_REDIS_PASSWORD:}
-    connect-timeout: 10s
-
-
 #####################################################################################################
 ##OSS
 oss:

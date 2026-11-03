@@ -3563,6 +3563,26 @@ CREATE TABLE `t_claim_case_track` (
   KEY `idx_tenant_to_status` (`tenant_id`,`to_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='案件状态流转流水(append-only)';
 
+-- ── t_claim_flow_config（建自 0099_synap_claim_flow_config_feature_toggle.sql） ──
+DROP TABLE IF EXISTS `t_claim_flow_config`;
+CREATE TABLE `t_claim_flow_config` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `flow_key` varchar(64) NOT NULL COMMENT '流程键(如 ADJUSTMENT_ORDER；生命周期引擎按此读取)',
+  `config_version` int NOT NULL COMMENT '配置发版号(禁止热改线上运行配置)',
+  `config_json` text COMMENT '流程/钩子配置 JSON(节点编排/跳转/条件)',
+  `active_flag` int NOT NULL DEFAULT '1' COMMENT '生效标记(1=当前生效版本, 0=历史版本)',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `version` bigint NOT NULL DEFAULT '0' COMMENT '乐观锁版本',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_flow_version` (`tenant_id`,`flow_key`,`config_version`),
+  KEY `idx_flow` (`tenant_id`,`flow_key`,`active_flag`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='租户级流程/钩子配置(版本化, 改配置不发版)';
+
 -- ── t_claim_inspection（建自 0072_synap_claim_missing_tables.sql） ──
 DROP TABLE IF EXISTS `t_claim_inspection`;
 CREATE TABLE `t_claim_inspection` (
@@ -3685,6 +3705,26 @@ CREATE TABLE `t_expense_reimbursement_item` (
   `ext_str_02` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ── t_feature_toggle（建自 0099_synap_claim_flow_config_feature_toggle.sql） ──
+DROP TABLE IF EXISTS `t_feature_toggle`;
+CREATE TABLE `t_feature_toggle` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `feature_key` varchar(64) NOT NULL COMMENT '特性键(如 AUTO_APPROVE)',
+  `state` varchar(16) NOT NULL COMMENT 'ENABLED/DISABLED(三态: 无记录=继承全局开关)',
+  `rollout_pct` int NOT NULL DEFAULT '0' COMMENT '灰度比例 0-100(按租户哈希命中)',
+  `remark` varchar(255) NOT NULL DEFAULT '' COMMENT '备注/变更原因',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `version` bigint NOT NULL DEFAULT '0' COMMENT '乐观锁版本',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '软删标记',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_feature` (`tenant_id`,`feature_key`),
+  KEY `idx_key` (`feature_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='租户级特性开关与灰度比例(三态)';
 
 -- ── t_reconciliation_action（建自 0089_synap_claim_reconciliation_action.sql） ──
 DROP TABLE IF EXISTS `t_reconciliation_action`;

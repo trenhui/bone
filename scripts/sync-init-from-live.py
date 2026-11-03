@@ -93,6 +93,9 @@ MERGED_SOURCES: dict[str, str] = {
     # bone-init.sql 的托管区块，却没登记进本清单 ⇒ sync 脚本按 MERGED_SOURCES 重建区块时
     # 会把它抹掉，--check 也会判「多表（init 有、活库无）」。归档只增不改，此处补齐。
     "t_reconciliation_action": "0089_synap_claim_reconciliation_action.sql",
+    # 0099：两个「实体+仓储已提交、物理表从未建」的配置聚合（§6.7 流程配置 / §11.4 三态开关）
+    "t_claim_flow_config": "0099_synap_claim_flow_config_feature_toggle.sql",
+    "t_feature_toggle": "0099_synap_claim_flow_config_feature_toggle.sql",
 }
 
 

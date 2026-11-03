@@ -789,6 +789,46 @@
       ],
       "reason": "workflow-sample",
       "note": "文档 §9.2 以 `*SubmitHandler` 通配指代报销/采购各自的提交处理器实现（真实类为各模块 WorkflowSubmitHandler，实现 RuntimeActionHandler），属通配示意命名，非独立类名"
+    },
+    {
+      "symbol": "PortAdapter",
+      "docs": [
+        "doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md"
+      ],
+      "reason": "workflow-sample",
+      "note": "通配命名模式 *PortAdapter（端口适配器统一后缀），非具体类名；见 §3.2 模块组织图与 §3.2.1 命名空间说明"
+    },
+    {
+      "symbol": "XxxPortAdapter",
+      "docs": [
+        "doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md"
+      ],
+      "reason": "workflow-sample",
+      "note": "示例类名，用于说明「*PortAdapter 按功能分散到 infrastructure.{ai,rule,...} 子包」的目标态命名"
+    },
+    {
+      "symbol": "LocalXxxPortAdapter",
+      "docs": [
+        "doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md"
+      ],
+      "reason": "workflow-sample",
+      "note": "示例类名，指「本地桩适配器」这一类（如 LocalAiGatewayPortAdapter），非单一确定类"
+    },
+    {
+      "symbol": "CrudRepository",
+      "docs": [
+        "doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md"
+      ],
+      "reason": "false-positive",
+      "note": "Spring Data 通用接口（文中作为 bone-metadata-sdk 自动生成实现的父接口引用），非本仓类"
+    },
+    {
+      "symbol": "PaymentGatewayPortAdapter",
+      "docs": [
+        "doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md"
+      ],
+      "reason": "tobe-named",
+      "note": "§9 支付网关一栏明确写「无独立 PaymentGatewayPortAdapter 实现」，属 Phase C 目标态名"
     }
   ]
 }
