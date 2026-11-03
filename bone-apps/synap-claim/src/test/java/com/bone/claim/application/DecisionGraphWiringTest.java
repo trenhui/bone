@@ -13,6 +13,8 @@ import com.bone.claim.application.handler.EvidenceLoadNodeHandler;
 import com.bone.claim.application.handler.RuleCheckNodeHandler;
 import com.bone.claim.application.port.out.DecisionMetricsPort;
 import com.bone.claim.application.port.out.TenantPort;
+import com.bone.claim.application.port.out.TriageLimitsPort;
+import com.bone.claim.domain.model.decision.TriageLimits;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.EvidenceRepository;
 import com.bone.claim.infrastructure.client.AiGatewayPortAdapter;
@@ -126,6 +128,17 @@ class DecisionGraphWiringTest {
     @Bean
     TenantPort tenantPort() {
       return Mockito.mock(TenantPort.class);
+    }
+
+    /**
+     * 分诊阈值读取端口：装配测试不关心阈值从哪来，给「永远基线」的实现。
+     *
+     * <p>这里刻意只提供端口而不引入 {@code FeatureTenantToggleService}：执行器依赖的是端口，不是具体服务—— 若有人把它改成直接依赖服务实现，本测试会因缺
+     * bean 立刻红，正好钉住这层解耦。
+     */
+    @Bean
+    TriageLimitsPort triageLimitsPort() {
+      return tenantId -> TriageLimits.defaultResolution();
     }
 
     // Phase B：提供真实网关门面（默认回落内置 MockLlmClient），使 AiGatewayPortAdapter 可被装配

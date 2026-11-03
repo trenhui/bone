@@ -2,6 +2,50 @@
   "_comment": "init-coverage 基线：谁还需要从**迁移集**并入 bone-init.sql。两个域语义互斥——`tables` 是待并入的欠账（**只可收缩**：并入后必须删除，否则判红）；`blocked` 是明确决定不并入的表（须 reason + evidence），它不是欠账而是决定，但决定会被现实推翻：一旦该表出现在活库，就说明脚本已执行、必须并入。2026-10-30 收口：原 31 项缺口里 25 张已由 scripts/sync-init-from-live.py 从活库导出并入（逐列逐索引与 dev 零差异），1 张 t_claim_case_item 经终态解析确认是废弃表（0047 建、0058 DROP），剩余 5 张 fin_* 属 L3 未批准，转入 blocked。",
   "generatedAt": "2026-10-30",
   "tables": [],
+  "columns": [
+      {
+        "table": "meta_model_template",
+        "column": "ui_schema_json",
+        "from": "0046_entity_ui_schema.sql",
+        "reason": "元数据模型模板的 UI Schema 承载列：0046 已加列、活库已存在，但全量基线未并入",
+        "evidence": "information_schema 实测活库 meta_model_template 有 ui_schema_json；bone-init.sql 同名建表无此列 ⇒ 新环境灌 init 后写该列即 ERROR 1054"
+      },
+      {
+        "table": "meta_model_template",
+        "column": "ui_schema_version",
+        "from": "0046_entity_ui_schema.sql",
+        "reason": "UI Schema 版本号列：0046 已加列、活库已存在，但全量基线未并入",
+        "evidence": "information_schema 实测活库 meta_model_template 有 ui_schema_version；bone-init.sql 同名建表无此列"
+      },
+      {
+        "table": "meta_model_template_field",
+        "column": "enum_values",
+        "from": "0028_meta_template_enum.sql",
+        "reason": "字段枚举值定义列：0028 已加列、活库已存在，但全量基线未并入",
+        "evidence": "information_schema 实测活库 meta_model_template_field 有 enum_values；bone-init.sql 同名建表无此列"
+      },
+      {
+        "table": "meta_model_template_field",
+        "column": "validation_rules",
+        "from": "0028_meta_template_enum.sql",
+        "reason": "字段校验规则列：0028 已加列、活库已存在，但全量基线未并入",
+        "evidence": "information_schema 实测活库 meta_model_template_field 有 validation_rules；bone-init.sql 同名建表无此列"
+      },
+      {
+        "table": "t_expense_reimbursement",
+        "column": "approver_id",
+        "from": "0038_runtime_row_policies.sql",
+        "reason": "单据指定审批人列（行策略 owner_or_approver 的判据）：0038 脚本存在但从未在任何环境执行，属未落地迁移",
+        "evidence": "information_schema 实测本地 dev 库 t_expense_reimbursement 无 approver_id（COUNT=0），bone-init.sql 亦无 ⇒ 该迁移未落地；行策略引用该列，一旦启用即时失败。属费用模块结构债，并入须按 L3 与 0038 脚本一并评审"
+      }
+    ],
+  "columnSources": [
+      {
+        "file": "0013_blueprint_reserved_columns.sql",
+        "reason": "该脚本给三张宿主表固定预置 ext_* 预留列池（STRING 20 / NUMBER·INTEGER·DATE 10 / TEXT·BOOLEAN 5 / JSON 3），是 SDK ColumnAllocator『机制 B』的物理容量底座；池子按上限预置而非按需建列，因此与 init 的差集是设计形态而不是逐列遗漏",
+        "evidence": "脚本头注明池容量须对齐 ColumnAllocator.validateLimit（allocate 取 MAX(column_index)+1，池不满会指向不存在的列）；189 个 ext_* 列在活库均存在（2026-11-03 information_schema 实测）而 init 无 —— 仍属真实结构债（新环境灌 init 后机制 B 一启用即缺列），只因属 blueprint 模块、需 L3 批量并入，本轮不混入 synap-claim 变更；并入后必须删除本豁免（脚本已按『只可收缩』校验）"
+      }
+    ],
   "blocked": [
     {
       "table": "fin_voucher",

@@ -5,6 +5,7 @@ import com.bone.claim.application.port.out.DecisionNodeHandler;
 import com.bone.claim.application.port.out.DecisionNodeHandler.DecisionNodeContext;
 import com.bone.claim.application.port.out.DecisionNodeHandler.DecisionNodeOutcome;
 import com.bone.claim.application.port.out.TenantPort;
+import com.bone.claim.application.port.out.TriageLimitsPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.ClaimCase;
@@ -16,6 +17,7 @@ import com.bone.claim.domain.model.decision.DecisionNodeType;
 import com.bone.claim.domain.model.decision.DecisionResult;
 import com.bone.claim.domain.model.decision.DecisionTier;
 import com.bone.claim.domain.model.decision.DecisionTriage;
+import com.bone.claim.domain.model.decision.TriageLimits;
 import com.bone.core.util.DistributedIdGenerator;
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -47,6 +49,7 @@ public class DecisionGraphExecutor {
   private final ClaimCaseApplicationService claimCaseApplicationService;
   private final TenantPort tenantPort;
   private final DecisionMetricsPort decisionMetricsPort;
+  private final TriageLimitsPort triageLimitsPort;
   private final Map<String, DecisionNodeHandler> handlers;
 
   public DecisionGraphExecutor(
@@ -54,11 +57,13 @@ public class DecisionGraphExecutor {
       ClaimCaseApplicationService claimCaseApplicationService,
       TenantPort tenantPort,
       DecisionMetricsPort decisionMetricsPort,
+      TriageLimitsPort triageLimitsPort,
       List<DecisionNodeHandler> handlers) {
     this.decisionExecutionApplicationService = decisionExecutionApplicationService;
     this.claimCaseApplicationService = claimCaseApplicationService;
     this.tenantPort = tenantPort;
     this.decisionMetricsPort = decisionMetricsPort;
+    this.triageLimitsPort = triageLimitsPort;
     this.handlers =
         handlers.stream()
             .collect(
@@ -258,6 +263,9 @@ public class DecisionGraphExecutor {
           new DecisionTriage.Outcome(
               DecisionResult.MANUAL_REQUIRED, DecisionTier.MANUAL, "CAPABILITY_MISSING");
     } else {
+      // 阈值外置（§8.3 / §11.4）：按案件所属租户取生效阈值；无配置 / 配置非法 / 越界项均回落代码基线，
+      // 因此「不加配置」时本行与硬编码常量的结果逐位一致。
+      TriageLimits.Resolution limits = triageLimitsPort.triageLimits(claim.getTenantId());
       outcome =
           DecisionTriage.evaluate(
               new DecisionTriage.Input(
@@ -269,7 +277,8 @@ public class DecisionGraphExecutor {
                   asDecimal(outputs.get("ocrConfidence")),
                   asBoolean(outputs.get("riskHit")),
                   asBoolean(outputs.get("fraudGatePassed")),
-                  asBoolean(outputs.get("rejectSuggested"))));
+                  asBoolean(outputs.get("rejectSuggested"))),
+              limits.limits());
       // 能力缺失只兜"唯一危险态"：本会 AUTO_APPROVE（自动放款）但存在"无法判定"的能力环节。
       // 其余结论本就走人工/复核档，且带更精确的原因码（大额复核档位、风控命中、验真未过等），不得被本兜底覆盖，
       // 否则会把"大额双人复核"降级成"普通人工"，或把"有依据的拒赔建议"抹成"无法判定"。

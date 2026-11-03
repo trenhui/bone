@@ -71,9 +71,11 @@ public class AutoApprovalApplicationService {
    */
   @Transactional
   public AutoApprovalOutcome applyAutoDecision(long claimId) {
-    // 全局开关关闭：策略未签核，零资金动作（保留原原因码，向后兼容监控/看板）。
+    // 全局总开关不依赖任何查询，必须最先判：关闭态是常态（默认 false，策略未签核），
+    // 若排在查执行记录、查案件之后，每个案件都要多打两次 SQL 才得出「本来就不该做」的结论。
+    // 这里也修掉一处「注释与实现相反」：方法注释写「判定顺序即先便宜后昂贵」，实现却把最便宜的开关放在第 5 位。
     if (!enabled) {
-      return AutoApprovalOutcome.skipped("AUTO_APPROVE_DISABLED");
+      return AutoApprovalOutcome.skipped("AUTO_APPROVE_TOGGLE_OFF");
     }
     var execution = decisionExecutionApplicationService.findLatest(claimId);
     if (execution == null) {
@@ -89,10 +91,10 @@ public class AutoApprovalApplicationService {
     if (claim.finished()) {
       return AutoApprovalOutcome.skipped("ALREADY_SETTLED");
     }
-    // §11.4 三态开关（fail-closed）：全局开启时仍须租户级特性开关/灰度裁决；
-    // 未配置＝继承全局，全局默认关闭（bone.claim.auto-approve.enabled=false）即一律不自动放款。
+    // §11.4 三态开关（fail-closed）：全局开关已在上方裁决为开启，此处做租户级细化
+    // （显式 DISABLED / 灰度未命中即不放款；未配置＝继承全局）。
     if (!featureToggleService.isFeatureAllowed(
-        claim.getTenantId(), enabled, FeatureToggle.FEATURE_AUTO_APPROVE)) {
+        claim.getTenantId(), true, FeatureToggle.FEATURE_AUTO_APPROVE)) {
       return AutoApprovalOutcome.skipped("AUTO_APPROVE_TOGGLE_OFF");
     }
     BigDecimal amount = adjustmentAmount(claimId);

@@ -24,6 +24,13 @@ public class FeatureToggle extends TenantAbstractEntity<Long> {
   /** 自动放款特性键（§11.4 / AutoApprovalApplicationService）。 */
   public static final String FEATURE_AUTO_APPROVE = "AUTO_APPROVE";
 
+  /**
+   * 分诊阈值特性键（§8.3 配置外部化 / §11.4 阈值外置）。
+   *
+   * <p>{@code config_json} 支持的键见 {@code TriageLimits} 的 {@code CONFIG_*} 常量；缺键即用代码常量。
+   */
+  public static final String FEATURE_TRIAGE_LIMITS = "TRIAGE_LIMITS";
+
   public static final String STATE_ENABLED = "ENABLED";
   public static final String STATE_DISABLED = "DISABLED";
 
@@ -39,6 +46,18 @@ public class FeatureToggle extends TenantAbstractEntity<Long> {
   @Column(name = "remark")
   private String remark;
 
+  /**
+   * 开关附带参数（JSON 对象，见 {@link #FEATURE_TRIAGE_LIMITS} 的键约定）。
+   *
+   * <p><b>为什么是一列 JSON 而不是逐字段建列</b>：附带参数按特性不同而不同（分诊阈值 / 灰度细分 / 预算上限），逐字段建列会让 「新增一个可配参数」变成 DDL
+   * 变更；JSON 把可变结构收在值里，表结构只留一个稳定的承载位。
+   *
+   * <p><b>null 的语义是「未配置」而不是「空配置」</b>：消费方据此回落到代码常量，保证「不给配置 ⇒ 行为与上线前逐位一致」。 解析与校验在应用层（{@code
+   * FeatureTenantToggleService}），领域层只承载原文——避免 domain 依赖 JSON 库。
+   */
+  @Column(name = "config_json")
+  private String configJson;
+
   @Version
   @Column(name = "version", nullable = false)
   private Long version;
@@ -47,12 +66,24 @@ public class FeatureToggle extends TenantAbstractEntity<Long> {
 
   public static FeatureToggle create(
       Long tenantId, String featureKey, String state, int rolloutPct, String remark, Instant now) {
+    return create(tenantId, featureKey, state, rolloutPct, remark, null, now);
+  }
+
+  public static FeatureToggle create(
+      Long tenantId,
+      String featureKey,
+      String state,
+      int rolloutPct,
+      String remark,
+      String configJson,
+      Instant now) {
     FeatureToggle toggle = new FeatureToggle();
     toggle.setTenantId(tenantId);
     toggle.featureKey = featureKey;
     toggle.state = state == null ? STATE_DISABLED : state;
     toggle.rolloutPct = rolloutPct;
     toggle.remark = remark == null ? "" : remark;
+    toggle.configJson = configJson;
     toggle.version = 0L;
     // 审计列由 SDK 映射但**不会自动填充**：DDL 两列 NOT NULL 无默认值，必须显式赋值
     Date nowDate = Date.from(now);

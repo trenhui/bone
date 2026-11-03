@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 107,
+  "executableCount": 108,
   "retired": [],
   "entries": [
     {
@@ -47,12 +47,6 @@
       "file": "0007_dict_hierarchy_split.sql",
       "kind": "mixed",
       "summary": "字典 v2（父指针内联） → v3（值扁平 + 层级关系独立）"
-    },
-    {
-      "order": null,
-      "file": "0008_README.md",
-      "kind": "doc",
-      "summary": "0008 的两条执行路线（A 纯 SQL 直跑 / B 应用层端点 repair-entity-names）与选择依据"
     },
     {
       "order": 8,
@@ -125,12 +119,6 @@
       "file": "0019_qcheck_task_updated_at.sql",
       "kind": "mixed",
       "summary": "HC-008 要求新增表含 tenant_id / created_at / updated_at / deleted 四列。"
-    },
-    {
-      "order": null,
-      "file": "0020_RUNBOOK.md",
-      "kind": "doc",
-      "summary": "database=bone \\"
     },
     {
       "order": 20,
@@ -326,12 +314,6 @@
       "summary": "把「企业报销应用」的 §4 模型规格落成"
     },
     {
-      "order": null,
-      "file": "0052_PR_DESCRIPTION.md",
-      "kind": "doc",
-      "summary": "0052 改名迁移的 PR 说明（变更动机与影响面）"
-    },
-    {
       "order": 52,
       "file": "0052_mdm_entity_workflow.sql",
       "kind": "ddl",
@@ -342,12 +324,6 @@
       "file": "0052_rename_expense_claim_to_reimbursement.sql",
       "kind": "mixed",
       "summary": "报销实体 expense_claim 改名 expense_reimbursement（与理赔 claim_case 并存，避免同名歧义），含表/实体/动作/权限点/UI schema 全链改名"
-    },
-    {
-      "order": null,
-      "file": "0052_rename_expense_claim_to_reimbursement_RUNBOOK.md",
-      "kind": "doc",
-      "summary": "0052 改名迁移的运维手册（执行/校验/回滚四节，0052_verify.sql 的判据出自第四节）"
     },
     {
       "order": 54,
@@ -575,24 +551,6 @@
       "summary": "补齐部门负责人向父部门负责人的汇报线，修掉 0082 留下的结构性空洞：0082 让负责人自己的 manager_id 恒为 NULL（假设「负责人没有上级」），但真实三层部门树里科室负责人要向事业部负责人汇报。实测后果（scripts/audit-org-coverage.py，分母取 wf_instance.started_by）：租户 1001 的 24 个真实发起人中有 10 个是部门负责人，在 v3 定义下mgr(LINE_MANAGER) 因 manager_id 为空、dept(DEPT_HEAD) 因解析到本人，双双挂起——42% 的报销提交直接卡死。本脚本 ① 负责人主管=父部门负责人 ② 普通成员主管=本部门负责人（补 tenant 0 遗漏）③ 根部门负责人保持 NULL（他确实无上级，由 assignTask 特批，是正确结局）。必须与解析器侧的「自审批上溯」一起生效：只补数据，DEPT_HEAD 仍解析到本人；只改解析器，上溯目标 manager_id 为空无处可去。"
     },
     {
-      "order": null,
-      "file": "verify_0052.py",
-      "kind": "tool",
-      "summary": "0052 的自动化校验（pymysql 连真实 MySQL 8，CI migration-verify.yml 调用）"
-    },
-    {
-      "order": null,
-      "file": "init-coverage-baseline.json",
-      "kind": "tool",
-      "summary": "G39 覆盖率基线：迁移建表但 bone-init.sql 未并入的 31 张表（23 待并入 / 2 待裁决 / 6 疑未执行，只可收缩）"
-    },
-    {
-      "order": null,
-      "file": "README.md",
-      "kind": "doc",
-      "summary": "scripts/migration 总索引：三条路径、并入全量的闭环、下线与归档纪律"
-    },
-    {
       "order": 91,
       "file": "0085_synap_claim_policy_plan_quota_config.sql",
       "kind": "ddl",
@@ -690,9 +648,57 @@
     },
     {
       "order": 107,
+      "file": "0101_synap_claim_feature_toggle_config_payload.sql",
+      "kind": "ddl",
+      "summary": "给 t_feature_toggle 补 config_json 承载列，闭合「契约声称阈值可配、实现里是编译期常量」的最后一处硬缺口。证据：工程落地版 §11.4 原文「R-FAST/R-MAN 阈值一期即从 feature_toggle.config_json 读取（§8.3 配置外部化铁律的最小动作），不落编译期常量」，§8.3 表内 R-FAST 复合阈值同样指向该列；而 0099 按实体元数据建的表只有 feature_key/state/rollout_pct/remark 四列。后果不是「少一列」：风险事件发生时想收紧自动通过口径，只能改 DecisionTriage 的 static final 常量并重新发布——恰是配置外部化要消灭的动作。本次只补 config_json，**不补** §9.5 那版 scope_type/scope_value/effective_from-to 与 append 版本链：① 作用域当前唯一语义是 TenantAbstractEntity.tenant_id，INSURER 级无业务诉求，GLOBAL 行在多租户下还需 tenant_id=0 哨兵（与 TenantScope.AUTO 冲突）；② 生效窗口只有查询侧按「当前时间取最新」才生效，而目前没有这种查询，加列即制造「配了不生效」的第三口径；③ append 链让「同 key 多行谁生效」成为查询侧必须回答的问题，而 SDK Criteria 表达不了时态条件——业界（Unleash/LaunchDarkly/OpenFeature）均为「单行当前态 + 变更审计」，本项目已有 @Version 乐观锁 + created/updated 审计列。以上取舍同步回写 §9.5 与 §12.2。幂等：information_schema 判定 + 动态 SQL（MySQL 无 ADD COLUMN IF NOT EXISTS）+ 终态断言（列存在且可空——TEXT 无字面量默认值，未配置即 NULL，被建成 NOT NULL 则未带该列的 INSERT 报 1364）。"
+    },
+    {
+      "order": 108,
       "file": "0101_synap_claim_phase1_record_tables.sql",
       "kind": "ddl",
       "summary": "补建 §9.5 一期表清单里「既无实体也无表」的四张记录/字典表：t_claim_stakeholder（干系人，可变+@Version）、t_claim_rule_hit（规则命中，append-only）、t_claim_review_record（复核留痕，append-only）、t_adj_fee_type（费用类型字典，可变+@Version）。列清单以实体元数据为准：append-only 两表仍带框架审计列（updated_at/updated_by/deleted）但无 @Version，可变两表带 @Version 且 version NOT NULL DEFAULT 0——缺列令 SDK 写入报 ERROR 1054、缺 @Version 列令乐观锁失效（0089/0099 同款）。幂等 CREATE TABLE IF NOT EXISTS + 终态断言（四表存在 / 逐列齐全 / 唯一键存在 / version 约束）。bone-init.sql 同批并入托管区块。"
+    },
+    {
+      "order": null,
+      "file": "0008_README.md",
+      "kind": "doc",
+      "summary": "0008 的两条执行路线（A 纯 SQL 直跑 / B 应用层端点 repair-entity-names）与选择依据"
+    },
+    {
+      "order": null,
+      "file": "0020_RUNBOOK.md",
+      "kind": "doc",
+      "summary": "database=bone \\"
+    },
+    {
+      "order": null,
+      "file": "0052_PR_DESCRIPTION.md",
+      "kind": "doc",
+      "summary": "0052 改名迁移的 PR 说明（变更动机与影响面）"
+    },
+    {
+      "order": null,
+      "file": "0052_rename_expense_claim_to_reimbursement_RUNBOOK.md",
+      "kind": "doc",
+      "summary": "0052 改名迁移的运维手册（执行/校验/回滚四节，0052_verify.sql 的判据出自第四节）"
+    },
+    {
+      "order": null,
+      "file": "verify_0052.py",
+      "kind": "tool",
+      "summary": "0052 的自动化校验（pymysql 连真实 MySQL 8，CI migration-verify.yml 调用）"
+    },
+    {
+      "order": null,
+      "file": "init-coverage-baseline.json",
+      "kind": "tool",
+      "summary": "G39 覆盖率基线：迁移建表但 bone-init.sql 未并入的 31 张表（23 待并入 / 2 待裁决 / 6 疑未执行，只可收缩）"
+    },
+    {
+      "order": null,
+      "file": "README.md",
+      "kind": "doc",
+      "summary": "scripts/migration 总索引：三条路径、并入全量的闭环、下线与归档纪律"
     }
   ],
   "ordinalConflicts": [
@@ -761,6 +767,15 @@
       ],
       "independentChanges": true,
       "verdict": "两个独立变更共用序号：expense_purchase_countersign_v2 触及 wf_process_def/iam_account，seed_purchase_menu 触及 iam_menu，触及表无交集。"
+    },
+    {
+      "ordinal": "0101",
+      "files": [
+        "0101_synap_claim_phase1_record_tables.sql",
+        "0101_synap_claim_feature_toggle_config_payload.sql"
+      ],
+      "independentChanges": true,
+      "verdict": "并行双线各自占用 0101 号段：feature_toggle_config_payload（t_feature_toggle 补 config_json 承载列，order 107）与 phase1_record_tables（补建 §9.5 四张记录/字典表，order 108）互不触碰对方对象；order 按 M4 词典序排列（f < p），两者作用于不同表，无依赖冲突。"
     }
   ],
   "appliesTo": "store-incremental",

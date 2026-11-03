@@ -66,6 +66,19 @@ public final class DecisionTriage {
 
   /** 分诊：按 fail-safe 优先级依次判定，任一命中即终止。 */
   public static Outcome evaluate(Input in) {
+    return evaluate(in, TriageLimits.defaults());
+  }
+
+  /**
+   * 分诊（带可配阈值）。
+   *
+   * <p>阈值来自 {@link TriageLimits}（§11.4 外置）而非硬编码常量：未配置时构造出的就是 {@link #evaluate(Input)} 的同一组常量，
+   * 因此「不加配置」的分诊结果与历史版本逐位一致。判定顺序与原因码不随阈值改变——阈值只挪动档位边界，不改规则结构， 否则「同一原因码在不同租户下含义不同」，审计会读不懂。
+   *
+   * @param in 分诊输入
+   * @param limits 生效阈值（不得为 null；调用方无配置时传 {@link TriageLimits#defaults()}）
+   */
+  public static Outcome evaluate(Input in, TriageLimits limits) {
     if (!in.hasEvidence()) {
       return new Outcome(
           DecisionResult.NEED_MORE_EVIDENCE, DecisionTier.MANUAL, "EVIDENCE_MISSING");
@@ -80,7 +93,7 @@ public final class DecisionTriage {
     if (in.amount() == null) {
       return new Outcome(DecisionResult.MANUAL_REQUIRED, DecisionTier.MANUAL, "AMOUNT_UNKNOWN");
     }
-    if (in.amount().compareTo(AUTO_AMOUNT_LIMIT) >= 0) {
+    if (in.amount().compareTo(limits.autoAmountLimit()) >= 0) {
       return new Outcome(DecisionResult.MANUAL_REQUIRED, DecisionTier.REVIEW, "AMOUNT_OVER_LIMIT");
     }
     if (in.riskHit()) {
@@ -90,16 +103,17 @@ public final class DecisionTriage {
       return new Outcome(
           DecisionResult.MANUAL_REQUIRED, DecisionTier.MANUAL, "FRAUD_GATE_NOT_PASSED");
     }
-    if (in.ocrConfidence() != null && in.ocrConfidence().compareTo(OCR_MANUAL_THRESHOLD) < 0) {
+    if (in.ocrConfidence() != null
+        && in.ocrConfidence().compareTo(limits.ocrManualThreshold()) < 0) {
       return new Outcome(DecisionResult.MANUAL_REQUIRED, DecisionTier.MANUAL, "OCR_CONFIDENCE_LOW");
     }
     if (in.confidence() == null) {
       return new Outcome(DecisionResult.MANUAL_REQUIRED, DecisionTier.MANUAL, "CONFIDENCE_UNKNOWN");
     }
-    if (in.confidence().compareTo(AI_MANUAL_THRESHOLD) < 0) {
+    if (in.confidence().compareTo(limits.aiManualThreshold()) < 0) {
       return new Outcome(DecisionResult.MANUAL_REQUIRED, DecisionTier.MANUAL, "AI_CONFIDENCE_LOW");
     }
-    if (in.confidence().compareTo(AI_REVIEW_THRESHOLD) < 0) {
+    if (in.confidence().compareTo(limits.aiReviewThreshold()) < 0) {
       return new Outcome(
           DecisionResult.MANUAL_REQUIRED, DecisionTier.REVIEW, "AI_CONFIDENCE_REVIEW_TIER");
     }
