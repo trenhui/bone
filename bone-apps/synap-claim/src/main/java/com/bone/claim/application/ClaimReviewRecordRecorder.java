@@ -15,9 +15,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
 /**
  * 核赔决策留痕记录器（§9.5 A1 / §11.7 不变量 5 / §11.10）。
  *
- * <p>订阅进程内 {@link ClaimDecisionMadeEvent}（人工核赔决策生效必发，由 {@code ClaimCase.makeDecision}
- * 在原事务发布），在事务提交后 append 一笔 {@code t_claim_review_record}。写路径显式 {@link TenantContextRunner#runAs}
- * 声明租户（AFTER_COMMIT 后线程上下文已清空，写路径须显式租户，否则漏落； 同 {@code ClaimCaseTrackRecorder}）。
+ * <p>订阅进程内 {@link ClaimDecisionMadeEvent}（人工核赔决策生效必发，由 {@code ClaimCase.decide} 在原事务发布），在事务提交后
+ * append 一笔 {@code t_claim_review_record}。写路径显式 {@link TenantContextRunner#runAs} 声明租户（AFTER_COMMIT
+ * 后线程上下文已清空，写路径须显式租户，否则漏落； 同 {@code ClaimCaseTrackRecorder}）。
  *
  * <p>这是「大额双人复核 / 权限校验」的不可篡改事实来源：谁在何时以什么依据批准/驳回了一笔赔付。 {@code ClaimCase.decide} 是<b>人工核赔初审</b>（设
  * firstReviewerId、41→42），故本记录 role 必须是 {@link ClaimReviewRecord#ROLE_REVIEW}（核赔初审）；{@code
