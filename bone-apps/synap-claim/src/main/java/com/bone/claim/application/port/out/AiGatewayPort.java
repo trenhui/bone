@@ -105,4 +105,9 @@ public interface AiGatewayPort {
           || !discrepancies.isEmpty();
     }
   }
+
+  /** 部署态能力声明（监管 §15）；未覆盖一律 UNKNOWN，绝不默认成 READY。 */
+  default AiCapabilityDeclaration declaration() {
+    return AiCapabilityDeclaration.unknown("C5_LLM");
+  }
 }

@@ -4,6 +4,7 @@ import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
+import com.bone.claim.application.port.out.AiCapabilityDeclaration;
 import com.bone.claim.application.port.out.AiGatewayPort;
 import com.bone.claim.application.port.out.AiGatewayPort.Fact;
 import com.bone.claim.application.port.out.AiGatewayUnavailableException;
@@ -15,6 +16,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -34,6 +36,19 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class AiGatewayPortAdapter implements AiGatewayPort {
+
+  @Override
+  public AiCapabilityDeclaration declaration() {
+    // 网关适配器虽无条件装配，但未配 base-url 时会回落内置 Mock 并被本类显式拒绝（G0-2），
+    // 因此必须按真实配置判 NOT_CONFIGURED，不能因"bean 存在"就报 READY。
+    return gatewayBaseUrl == null || gatewayBaseUrl.isBlank()
+        ? AiCapabilityDeclaration.notConfigured(
+            "C5_LLM",
+            "AI_GATEWAY_BASE_URL_MISSING",
+            "配置 bone.ai.gateway.base-url 接入真实 provider（Mock 响应被显式拒绝）")
+        : AiCapabilityDeclaration.ready(
+            "C5_LLM", "停用：bone.claim.auto-approve.enabled=false 或切 mode=local");
+  }
 
   /** 业务场景标签：供网关 {@code ModelRouter} 做模型档位路由（简单场景走廉价模型）。 */
   static final String SCENARIO = "claim-ai-assess";
@@ -65,6 +80,10 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
 
   private final LlmGatewayApplicationService gateway;
   private final ObjectMapper objectMapper = new ObjectMapper();
+
+  /** 真实 provider 地址；未配置时网关回落内置 Mock，本适配器显式拒绝其响应（见类注释 G0-2）。 */
+  @Value("${bone.ai.gateway.base-url:}")
+  private String gatewayBaseUrl;
 
   public AiGatewayPortAdapter(LlmGatewayApplicationService gateway) {
     this.gateway = gateway;

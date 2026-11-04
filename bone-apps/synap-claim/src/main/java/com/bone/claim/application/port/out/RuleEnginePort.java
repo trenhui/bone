@@ -67,4 +67,14 @@ public interface RuleEnginePort {
       Integer priority,
       String inputSnapshot,
       String conclusion) {}
+
+  /**
+   * 部署态能力声明（监管 §15 应用清单 / 分级管控）：本实现是否具备真实核责规则能力。
+   *
+   * <p>与 {@link RuleCheckResult#available()} 的「本次是否真实执行」不是一回事，清单不参与任何案件判定。 未覆盖的实现一律 {@code
+   * UNKNOWN}（fail-closed），绝不默认成 READY。
+   */
+  default AiCapabilityDeclaration declaration() {
+    return AiCapabilityDeclaration.unknown("C2_RULE");
+  }
 }

@@ -2,6 +2,7 @@ package com.bone.claim.infrastructure.rule;
 
 import com.bone.airules.domain.gateway.RuleEngine;
 import com.bone.airules.infrastructure.engine.QlExpressRuleEngine;
+import com.bone.claim.application.port.out.AiCapabilityDeclaration;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.application.port.out.RuleEnginePort;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +33,16 @@ import org.springframework.stereotype.Component;
     havingValue = "ql",
     matchIfMissing = true)
 public class QlExpressRuleEnginePortAdapter implements RuleEnginePort {
+
+  @Override
+  public AiCapabilityDeclaration declaration() {
+    // 真实求值已装配，但规则集仍是代码内 4 条常量：属「可实现能力、规则资产待治理」，不夸大为可热更规则中台。
+    return new AiCapabilityDeclaration(
+        "C2_RULE",
+        AiCapabilityDeclaration.STATE_READY,
+        "CONSTANT_RULESET_ONLY",
+        "bone.claim.rule-engine.mode=stub 秒级回退到 fail-closed 桩；规则热更/版本化待建");
+  }
 
   /** 规则集版本：改动任一表达式 / 结论码必须同步 bump，否则回放无法回到当时那套规则。 */
   static final String RULE_VERSION = "claim-ruleset-v1";

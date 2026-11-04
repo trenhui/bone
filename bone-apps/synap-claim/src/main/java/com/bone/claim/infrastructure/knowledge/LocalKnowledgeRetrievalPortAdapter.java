@@ -1,5 +1,6 @@
 package com.bone.claim.infrastructure.knowledge;
 
+import com.bone.claim.application.port.out.AiCapabilityDeclaration;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.application.port.out.KnowledgeRetrievalPort;
 import java.math.BigDecimal;
@@ -17,6 +18,14 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class LocalKnowledgeRetrievalPortAdapter implements KnowledgeRetrievalPort {
+
+  @Override
+  public AiCapabilityDeclaration declaration() {
+    return AiCapabilityDeclaration.stub(
+        "E3_KNOWLEDGE",
+        "KNOWLEDGE_UNAVAILABLE",
+        "接入受控 RAG/GraphRAG（引用强制 + GroundingGuard）并同步覆盖本声明");
+  }
 
   @Override
   public KnowledgeResult match(ClaimContextPort.ClaimContextView ctx) {

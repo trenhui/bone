@@ -19,4 +19,9 @@ public interface GraphFraudPort {
    * @param available 本次是否真实执行了图计算反欺诈筛查（本地桩=false；E2 接入后=true）
    */
   record FraudResult(boolean hit, String clusterId, boolean available) {}
+
+  /** 部署态能力声明（监管 §15）；未覆盖一律 UNKNOWN，绝不默认成 READY。 */
+  default AiCapabilityDeclaration declaration() {
+    return AiCapabilityDeclaration.unknown("E2_GRAPH");
+  }
 }
