@@ -67,6 +67,7 @@ import {
 /** 保单批量导入列定义（模板表头用英文键，避免中文编码坑）。 */
 const policyImportColumns: ImportColumn[] = [
   { key: 'policyNo', label: '保单号', required: true, example: 'POL-2026-0001' },
+  { key: 'insurerPolicyNo', label: '保司保单号', example: 'INS-POL-2026-0001' },
   { key: 'policyName', label: '保单名称', example: '2026团体门诊险' },
   { key: 'insurerName', label: '保险公司', example: '某保险公司' },
   { key: 'branchName', label: '保险分公司', example: '华东分公司' },
@@ -88,6 +89,7 @@ function buildPolicyRequest(row: Record<string, string>): CreatePolicyReq | null
     .filter(Boolean);
   return {
     policyNo: row.policyNo.trim(),
+    insurerPolicyNo: row.insurerPolicyNo?.trim() || undefined,
     policyName: row.policyName?.trim() || undefined,
     insurerName: row.insurerName?.trim() || undefined,
     branchName: row.branchName?.trim() || undefined,
@@ -187,6 +189,7 @@ export function PolicyManagementPage(): ReactElement {
         .filter(Boolean);
       await claimConfigApi.createPolicy({
         policyNo: values.policyNo.trim(),
+        insurerPolicyNo: values.insurerPolicyNo?.trim() || undefined,
         policyName: values.policyName?.trim(),
         insurerName: values.insurerName?.trim(),
         branchName: values.branchName?.trim(),
@@ -295,6 +298,7 @@ export function PolicyManagementPage(): ReactElement {
       editTarget
         ? {
           policyName: editTarget.policyName,
+          insurerPolicyNo: editTarget.insurerPolicyNo ?? '',
           insurerName: editTarget.insurerName,
           branchName: editTarget.branchName,
           insureName: editTarget.insureName,
@@ -324,6 +328,8 @@ export function PolicyManagementPage(): ReactElement {
         .map((v: string) => v.trim())
         .filter(Boolean);
       await claimConfigApi.updatePolicy(editTarget.policyNo, {
+        // 显式传空串=清空保司号；不传(undefined)=沿用原值（后端按 null 判定，避免普通编辑抹掉存量号）
+        insurerPolicyNo: values.insurerPolicyNo?.trim() ?? undefined,
         policyName: values.policyName?.trim(),
         insurerName: values.insurerName?.trim(),
         branchName: values.branchName?.trim(),
@@ -373,9 +379,9 @@ export function PolicyManagementPage(): ReactElement {
       <Card>
         <Space style={{ marginBottom: 16 }} wrap>
           <Input.Search
-            placeholder="保单号 / 名称"
+            placeholder="保单号 / 保司保单号 / 名称"
             allowClear
-            style={{ width: 240 }}
+            style={{ width: 280 }}
             onSearch={(v) => {
               setKeyword(v);
               setPage(1);
@@ -445,6 +451,13 @@ export function PolicyManagementPage(): ReactElement {
           }}
           columns={[
             { title: '保单号', dataIndex: 'policyNo', width: 160, fixed: 'left' },
+            {
+              title: '保司保单号',
+              dataIndex: 'insurerPolicyNo',
+              width: 170,
+              ellipsis: true,
+              render: (v: string) => v || '—',
+            },
             { title: '保单名称', dataIndex: 'policyName', width: 180, ellipsis: true },
             {
               title: '保单类型',
@@ -599,6 +612,14 @@ export function PolicyManagementPage(): ReactElement {
             >
               <Input placeholder="如 POL-2026-0001" />
             </Form.Item>
+            <Form.Item
+              name="insurerPolicyNo"
+              label="保司保单号"
+              style={{ width: 220 }}
+              tooltip="保司自己的保单号（§16-2 双保单号）。保司来单/对账只认这个号；平台号（上面的保单号）不可变、作内部主键。可空。"
+            >
+              <Input placeholder="选填，如 INS-POL-2026-0001" maxLength={64} />
+            </Form.Item>
             <Form.Item name="policyName" label="保单名称" style={{ width: 260 }}>
               <Input placeholder="选填" />
             </Form.Item>
@@ -705,6 +726,14 @@ export function PolicyManagementPage(): ReactElement {
           <Space size="middle" wrap style={{ width: '100%' }}>
             <Form.Item name="policyName" label="保单名称" style={{ width: 260 }}>
               <Input placeholder="选填" />
+            </Form.Item>
+            <Form.Item
+              name="insurerPolicyNo"
+              label="保司保单号"
+              style={{ width: 220 }}
+              tooltip="保司自己的保单号（§16-2）。清空后保存=显式删除该号；不动=沿用原值。"
+            >
+              <Input placeholder="选填，如 INS-POL-2026-0001" maxLength={64} />
             </Form.Item>
             <Form.Item name="policyVersion" label="保单版本" style={{ width: 140 }}>
               <Input placeholder="v1" />
@@ -844,6 +873,9 @@ export function PolicyManagementPage(): ReactElement {
                   children: (
                     <Descriptions column={1} size="small" bordered>
                       <Descriptions.Item label="保单号">{detail.policyNo}</Descriptions.Item>
+                      <Descriptions.Item label="保司保单号">
+                        {detail.insurerPolicyNo || '—'}
+                      </Descriptions.Item>
                       <Descriptions.Item label="保单名称">
                         {detail.policyName || '—'}
                       </Descriptions.Item>

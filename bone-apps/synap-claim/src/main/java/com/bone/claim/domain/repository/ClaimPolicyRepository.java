@@ -53,7 +53,7 @@ public interface ClaimPolicyRepository extends Repository<ClaimPolicy, Long> {
    * 分页查保单（配置面）。
    *
    * @param tenantId 租户
-   * @param keyword 保单号/名称模糊匹配（可空）
+   * @param keyword 保单号/保司保单号/名称模糊匹配（可空）
    * @param configStatus 规则开关过滤（可空）
    * @param page 页码（从 1 起）
    * @param size 每页条数
@@ -102,8 +102,9 @@ public interface ClaimPolicyRepository extends Repository<ClaimPolicy, Long> {
   /**
    * 列表查询条件（list 与 count 共用，避免两端口径漂移）。
    *
-   * <p><b>关键字必须跨两列 OR</b>：前端搜索框 placeholder 承诺「保单号 / 名称」两维搜索，API 契约同样写明 「保单号/名称模糊匹配」。此前实现只对 {@code
-   * policy_no} 单列做 LIKE —— 按保单名称搜索恒返回 0 条， 属"注释宣称 X ≠ 代码做了 X"的契约违背。
+   * <p><b>关键字必须跨三列 OR</b>：前端搜索框承诺「保单号 / 保司保单号 / 名称」三维搜索，API 契约同样写明 「保单号/名称模糊匹配」。此前实现只对 {@code
+   * policy_no} 单列做 LIKE —— 按保单名称搜索恒返回 0 条， 属"注释宣称 X ≠ 代码做了 X"的契约违背；{@code insurer_policy_no} 则是
+   * §16-2 落地后新出现的"只写得进、搜不出来"缺口（保司来单/对账只带保司自己的号，运营按该号检索必须有结果）。
    *
    * <p><b>为何用 {@link Criteria#or(Consumer)} 条件组而非扁平 {@code or()} 链</b>：条件组会把子条件括号包裹成一个原生片段， 与外层 AND
    * 安全组合为 {@code (policy_no LIKE ? OR policy_name LIKE ?) AND config_status = ?}； 扁平 {@code or()}
@@ -126,7 +127,8 @@ public interface ClaimPolicyRepository extends Repository<ClaimPolicy, Long> {
       criteria.or(
           sub ->
               sub.like(ClaimPolicy::getPolicyNo, pattern)
-                  .like(ClaimPolicy::getPolicyName, pattern));
+                  .like(ClaimPolicy::getPolicyName, pattern)
+                  .like(ClaimPolicy::getInsurerPolicyNo, pattern));
     }
     criteria.eq(
         configStatus != null && !configStatus.isBlank(),

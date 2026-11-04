@@ -203,6 +203,8 @@ class ClaimConfigBizIdentityGuardTest {
         "[\"h1\"]",
         null,
         null,
+        // insurerPolicyNo：本用例只关心主体校验，不修改保司号（null=沿用原值）
+        null,
         version);
   }
 }

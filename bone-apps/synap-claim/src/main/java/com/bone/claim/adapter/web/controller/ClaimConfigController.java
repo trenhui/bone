@@ -101,6 +101,7 @@ public class ClaimConfigController {
                 r ->
                     new String[] {
                       r.policyNo(),
+                      r.insurerPolicyNo(),
                       r.policyName(),
                       r.insurerName(),
                       r.branchName(),
@@ -119,8 +120,8 @@ public class ClaimConfigController {
     return CsvExport.response(
         "policies",
         new String[] {
-          "保单号", "保单名称", "保险公司", "保险分公司", "投保公司", "业务主体码", "产品类型", "保单类型", "生效起", "生效止", "等待期(天)",
-          "保单版本", "规则开关", "更新时间"
+          "保单号", "保司保单号", "保单名称", "保险公司", "保险分公司", "投保公司", "业务主体码", "产品类型", "保单类型", "生效起", "生效止",
+          "等待期(天)", "保单版本", "规则开关", "更新时间"
         },
         rows);
   }
@@ -196,6 +197,7 @@ public class ClaimConfigController {
                 request.insuredSnapshot(),
                 request.docClaimApply(),
                 request.docClaimNotice(),
+                request.insurerPolicyNo(),
                 request.version())));
   }
 

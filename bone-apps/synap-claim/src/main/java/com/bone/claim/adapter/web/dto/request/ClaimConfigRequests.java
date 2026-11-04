@@ -39,6 +39,7 @@ public final class ClaimConfigRequests {
       @Schema(description = "理赔申请书作业开关：NEED需生成/NOT_NEED无需生成（缺省 NEED）") String docClaimApply,
       @Schema(description = "理赔通知单作业开关：NEED需生成/NOT_NEED无需生成（缺省 NEED）") String docClaimNotice,
       @Schema(description = "保司侧保单号(§16-2 双保单号：policy_no 为平台号，本字段为保司侧保单号；缺省空)")
+          @Size(max = 64, message = "保司保单号长度不能超过64")
           String insurerPolicyNo) {}
 
   /** 新建计划。 */
@@ -94,6 +95,12 @@ public final class ClaimConfigRequests {
       @Schema(description = "被保人清单（假名化ID数组；不存明文证件）") String insuredSnapshot,
       @Schema(description = "理赔申请书作业开关：NEED需生成/NOT_NEED无需生成（不传沿用原值）") String docClaimApply,
       @Schema(description = "理赔通知单作业开关：NEED需生成/NOT_NEED无需生成（不传沿用原值）") String docClaimNotice,
+      @Schema(
+              description =
+                  "保司侧保单号(§16-2)。不传=沿用原值；传空串=显式清空；传值=覆盖。"
+                      + "注意与\"不传沿用原值\"的开关字段语义一致，避免一次普通编辑抹掉存量保司号")
+          @Size(max = 64, message = "保司保单号长度不能超过64")
+          String insurerPolicyNo,
       @Schema(description = "乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）") Long version) {}
 
   /** 编辑计划（不改动计划编码与状态）。 */

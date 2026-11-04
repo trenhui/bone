@@ -47,7 +47,7 @@ public class ClaimConfigApplicationService {
 
   // ===================== 保单 =====================
 
-  /** 保单列表（分页；支持保单号模糊查 + 规则开关过滤）。 */
+  /** 保单列表（分页；支持保单号 / 保司保单号 / 名称模糊查 + 规则开关过滤）。 */
   @Transactional(readOnly = true)
   public PageResult<PolicyView> listPolicies(
       String keyword, String configStatus, int page, int size) {
@@ -155,6 +155,11 @@ public class ClaimConfigApplicationService {
         command.insuredSnapshot(),
         command.docClaimApply(),
         command.docClaimNotice());
+    // 保司侧保单号单独的写入闸门：null 视为"本次不改"（旧前端不传该字段时不得抹掉存量值），
+    // 空串才是显式清空。若直接 assign（null→""），一次普通编辑就会把保司号静默清零。
+    if (command.insurerPolicyNo() != null) {
+      policy.assignInsurerPolicyNo(command.insurerPolicyNo());
+    }
     claimPolicyRepository.save(policy);
     domainEventPublisher.publishFrom(policy);
     return PolicyView.from(policy);
@@ -403,6 +408,8 @@ public class ClaimConfigApplicationService {
       String insuredSnapshot,
       String docClaimApply,
       String docClaimNotice,
+      /** 保司侧保单号（§16-2）。<b>null = 不修改</b>（旧前端/脚本不传该字段时不得抹掉存量值）；空串 = 显式清空。 */
+      String insurerPolicyNo,
       Long version) {}
 
   /** 编辑计划命令（不改动计划编码与状态）。 */

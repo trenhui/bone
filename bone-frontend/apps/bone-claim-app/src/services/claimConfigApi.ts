@@ -50,6 +50,8 @@ export interface PolicyView {
   policyVersion: string;
   /** 被保人清单（假名化 ID 的 JSON 数组字符串；不含明文证件）。 */
   insuredSnapshot: string;
+  /** 保司侧保单号（§16-2 双保单号：policyNo 为平台号，本字段为保司自己的号；可能为空）。 */
+  insurerPolicyNo?: string;
   configStatus: PolicyConfigStatus;
   /** 理赔申请书作业开关：NEED 需生成 / NOT_NEED 无需生成。 */
   docClaimApply: DocFlag;
@@ -357,6 +359,8 @@ export interface CreatePolicyReq {
   docClaimApply?: DocFlag;
   /** 理赔通知单作业开关（缺省 NEED）。 */
   docClaimNotice?: DocFlag;
+  /** 保司侧保单号（§16-2；缺省空）。保司来单/对账只带保司自己的号，平台号另存 policyNo。 */
+  insurerPolicyNo?: string;
 }
 
 /** 新建计划请求。 */
@@ -398,6 +402,8 @@ export interface UpdatePolicyReq {
   docClaimApply?: DocFlag;
   /** 理赔通知单作业开关（不传沿用原值）。 */
   docClaimNotice?: DocFlag;
+  /** 保司侧保单号（§16-2）。不传=沿用原值；空串=显式清空；传值=覆盖（首尾空白后端归一）。 */
+  insurerPolicyNo?: string;
   /**
    * 乐观锁版本号（来自列表/详情，提交时原样带回用于并发冲突检测）。
    * 后端是 {@code Long}，平台按「Long 全局序列化为 JSON 字符串」下发 ⇒ 用 string 承接，只透传。
