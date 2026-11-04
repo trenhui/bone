@@ -31,6 +31,7 @@ import {
   type ReviewTaskStatus,
 } from '../services/claimApi';
 import { PageHeader } from '../components/PageHeader';
+import { AiDisclosureCard } from '../components/AiDisclosureCard';
 import { explainNode, toneColor, type ExplainFact } from '../services/decisionExplain';
 import { claimStatusMeta } from '../services/claimStatus';
 import { consumptionReasonMeta } from '../services/decisionConsumption';
@@ -573,6 +574,8 @@ export function ReviewWorkbenchPage(): ReactElement {
         loading={traceLoading}
         onClose={() => setTraceTarget(null)}
       >
+        {/* §21 生成内容显著标识：与轨迹并列只读展示，绝不触发决策执行 */}
+        <AiDisclosureCard claimId={traceTarget?.claimId} />
         {(() => {
           // 自动通过结论的消费结果是这一屏最该被看见的事实：结论说「可自动放款」而资金没动，
           // 才是真正会变成客诉的状态。没有消费动作（结论非自动通过）时不渲染，避免噪声。

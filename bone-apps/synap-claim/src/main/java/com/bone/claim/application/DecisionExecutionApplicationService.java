@@ -55,6 +55,17 @@ public class DecisionExecutionApplicationService {
     return latest == null ? null : latest.getTraceId();
   }
 
+  /**
+   * 按 traceId 取执行记录（只读；供 AI 参与决策披露复现历史执行）。
+   *
+   * <p>与 {@link #replay(String)} 分工：轨迹回答「怎么判出来的」，执行行回答「当时用的是哪套版本快照、结论落点在哪」。 调用方必须校验该记录属于请求的
+   * claimId，否则显式传入他人 traceId 会跨案泄漏决策路径。
+   */
+  @Transactional(readOnly = true)
+  public DecisionExecution findByTraceId(String traceId) {
+    return decisionExecutionRepository.findByTraceId(traceId);
+  }
+
   /** 按 traceId 回放全链轨迹。 */
   @Transactional(readOnly = true)
   public List<DecisionTraceNode> replay(String traceId) {

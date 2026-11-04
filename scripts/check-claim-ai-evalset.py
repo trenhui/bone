@@ -45,15 +45,20 @@ EVALSET_REL = Path("bone-apps/synap-claim/eval/ai-decision-evalset.json")
 TEST_ROOT_REL = Path("bone-apps/synap-claim/src/test/java")
 
 # 下界硬编码在脚本里，不读 JSON —— 否则「把 minCases 一起改小」就能让门禁变轻。
-MIN_CASES = 30
+# 39 = 30（P0-2 基线）+ 9（P0-3 AI 参与决策披露回归）；只许上调，不许随清单一起下调。
+MIN_CASES = 39
 MIN_NEGATIVE_RATIO = 0.5
 REQUIRED_SUITES: Tuple[str, ...] = (
     "decisionTriage",
     "aiAssessNode",
     "capabilityReadiness",
     "readinessController",
+    "aiDisclosureDomain",
+    "aiDisclosureService",
+    "aiDisclosureController",
 )
-# 监管最在意的七条负向探针：删掉任何一条都等于抹掉「无法判定≠拒赔 / 清单≠放款许可」的护栏。
+# 监管最在意的十条负向探针：删掉任何一条都等于抹掉
+# 「无法判定≠拒赔 / 清单≠放款许可 / 无法确认≠AI 未参与 / 快照≠参与证据 / 跨案不得泄漏」的护栏。
 REQUIRED_NEGATIVE_IDS: Tuple[str, ...] = (
     "AIASSESS-01",
     "AIASSESS-05",
@@ -62,6 +67,9 @@ REQUIRED_NEGATIVE_IDS: Tuple[str, ...] = (
     "READY-04",
     "READY-05",
     "CTRL-02",
+    "DISC-02",
+    "DISC-03",
+    "DISC-06",
 )
 CASE_FIELDS: Tuple[str, ...] = (
     "id", "name", "suite", "kind", "expected", "groundTruthRef",
@@ -88,7 +96,7 @@ def read_source(path: Path) -> Tuple[Any, str, List[str]]:
         return None, "", [f"A1: 评测集真源解析失败 {path.name}: {exc}"]
 
 
-# 单次 check() 内的扫描缓存：30 条用例若各自 rglob + 读文件，门禁会从毫秒级退化到分钟级。
+# 单次 check() 内的扫描缓存：每条用例若各自 rglob + 读文件，门禁会从毫秒级退化到分钟级。
 # 缓存由 check() 在入口清空，跨调用绝不复用 —— 否则「删掉测试源码」的负向探针会命中旧缓存而恒绿。
 _SOURCE_CACHE: Dict[str, List[Path]] = {}
 _TEXT_CACHE: Dict[Path, str] = {}
@@ -325,8 +333,8 @@ def main(argv: List[str] | None = None) -> int:
             print("  · " + e)
         return 1
     print(
-        "OK: 理赔 AI 决策回归评测集通过（30 例登记 / ground truth 可达 / 负向探针齐全 / "
-        "PII 零命中 / 判据自证有效）"
+        f"OK: 理赔 AI 决策回归评测集通过（用例库存 ≥ {MIN_CASES} 条硬编码下界 / "
+        "ground truth 可达 / 负向探针齐全 / PII 零命中 / 判据自证有效）"
     )
     return 0
 

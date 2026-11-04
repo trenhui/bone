@@ -112,6 +112,21 @@ class ClaimAiEvalsetGateTest(unittest.TestCase):
         _write(self.tmp, bad)
         self.assertTrue(_errors(gate.check(self.tmp), "A2"))
 
+    def test_a2_deleting_p03_disclosure_suite_is_red(self):
+        """P0-3 新增套件不可被静默删除：下界与 REQUIRED_SUITES 同时收紧才防得住。"""
+        bad = json.loads(json.dumps(self.doc))
+        bad["suites"] = [s for s in bad["suites"] if s["id"] != "aiDisclosureDomain"]
+        bad["cases"] = [c for c in bad["cases"] if c["suite"] != "aiDisclosureDomain"]
+        _write(self.tmp, bad)
+        self.assertTrue(_errors(gate.check(self.tmp), "A2"))
+
+    def test_a6_deleting_cross_claim_negative_probe_is_red(self):
+        """抹掉「跨案 traceId 不得泄漏」这条护栏必须当场红。"""
+        bad = json.loads(json.dumps(self.doc))
+        bad["cases"] = [c for c in bad["cases"] if c["id"] != "DISC-06"]
+        _write(self.tmp, bad)
+        self.assertTrue(_errors(gate.check(self.tmp), "A6"))
+
     def test_a3_pii_free_false_is_red(self):
         bad = json.loads(json.dumps(self.doc))
         bad["cases"][0]["piiFree"] = False
