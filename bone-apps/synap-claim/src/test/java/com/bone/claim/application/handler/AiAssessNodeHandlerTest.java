@@ -141,4 +141,43 @@ class AiAssessNodeHandlerTest {
     assertThat(outcome.output().get("aiAvailable")).isEqualTo(false);
     assertThat(outcome.output().get("capabilityMissing")).isEqualTo(true);
   }
+
+  @Test
+  @DisplayName("v1.2：AI 结构化认知随节点输出进入决策轨迹，且不改变拒赔结论")
+  void cognitiveOutputIsWrittenToNodeOutputs() {
+    AiGatewayPort.Fact fact = new AiGatewayPort.Fact("DIAGNOSIS", "J06.900", "EV-1");
+    AiGatewayPort ai =
+        ctx ->
+            new AiGatewayPort.AiAssessment(
+                true,
+                false,
+                new BigDecimal("0.93"),
+                List.of(),
+                "m",
+                "p",
+                List.of(fact),
+                List.of("EV-1"),
+                List.of("CLAUSE-3.2"),
+                List.of("AMOUNT_MISMATCH"));
+
+    DecisionNodeOutcome outcome = run(ai, knowledge(true, true));
+
+    assertThat(outcome.output().get("aiFacts")).isEqualTo(List.of(fact));
+    assertThat(outcome.output().get("aiEvidenceRefs")).isEqualTo(List.of("EV-1"));
+    assertThat(outcome.output().get("aiClauseRefs")).isEqualTo(List.of("CLAUSE-3.2"));
+    assertThat(outcome.output().get("aiDiscrepancies")).isEqualTo(List.of("AMOUNT_MISMATCH"));
+    // 认知层只做留痕：不得因此产生不利结论
+    assertThat(outcome.output().get("rejectSuggested")).isEqualTo(false);
+  }
+
+  @Test
+  @DisplayName("v1.2：降级路径也输出同一套认知层空键，读侧不做 null 分支")
+  void fallbackKeepsCognitiveSchema() {
+    DecisionNodeOutcome outcome = run(aiDown(), knowledge(false, false));
+
+    assertThat(outcome.output())
+        .containsKeys("aiFacts", "aiEvidenceRefs", "aiClauseRefs", "aiDiscrepancies");
+    assertThat(outcome.output().get("aiFacts")).isEqualTo(List.of());
+    assertThat(outcome.output().get("aiDiscrepancies")).isEqualTo(List.of());
+  }
 }

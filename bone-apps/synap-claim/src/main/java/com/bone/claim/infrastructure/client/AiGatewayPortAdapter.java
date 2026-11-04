@@ -5,6 +5,7 @@ import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
 import com.bone.claim.application.port.out.AiGatewayPort;
+import com.bone.claim.application.port.out.AiGatewayPort.Fact;
 import com.bone.claim.application.port.out.AiGatewayUnavailableException;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.domain.security.RejectReasonCodes;
@@ -45,7 +46,22 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
    * <p>决策复算要求"回到当时那套配置"——同一案件用新提示词重跑会得到不同结论，故提示词版本属审计必留字段 （V5 {@code
    * claim_decision_execution.prompt_version} 注释即"回放与复算必需"）。
    */
-  static final String PROMPT_VERSION = "claim-assess-v2";
+  static final String PROMPT_VERSION = "claim-assess-v3";
+
+  /** 差异提示受控码白名单：模型不得臆造自由文本结论。 */
+  static final List<String> DISCREPANCY_CODES =
+      List.of(
+          "AMOUNT_MISMATCH",
+          "DIAGNOSIS_FEE_MISMATCH",
+          "DRUG_INDICATION_MISMATCH",
+          "EVIDENCE_MISSING",
+          "DUPLICATE_ITEM",
+          "OTHER");
+
+  /** 认知层数组与字符串上限：防模型输出膨胀撑爆决策轨迹。 */
+  static final int MAX_COGNITIVE_ITEMS = 20;
+
+  static final int MAX_COGNITIVE_TEXT = 200;
 
   private final LlmGatewayApplicationService gateway;
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -67,7 +83,14 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
                         + "rejectReasons(array of string，仅当 rejectSuggested=true 时给出，最多3个，"
                         + "取值严格限定于 [EVIDENCE_INSUFFICIENT, CLINICAL_UNREASONABLE, POLICY_EXCLUSION,"
                         + " AMOUNT_MISMATCH, FRAUD_SUSPECTED, OTHER]；不在清单内的码一律不得输出)。"
-                        + "不要输出任何解释性自由文本；rejectReasons 只取上述枚举码，禁止臆造。"),
+                        + "不要输出任何解释性自由文本；rejectReasons 只取上述枚举码，禁止臆造。"
+                        + "另可给出认知层字段（缺失即视为空数组，禁止臆造）："
+                        + "facts(array of {code,value,evidenceRef}，从材料抽取的结构化事实)、"
+                        + "evidenceRefs(array of string，证据定位)、clauseRefs(array of string，条款引用)、"
+                        + "discrepancies(array of string，取值限定于 [AMOUNT_MISMATCH, "
+                        + "DIAGNOSIS_FEE_MISMATCH, DRUG_INDICATION_MISMATCH, EVIDENCE_MISSING, "
+                        + "DUPLICATE_ITEM, OTHER])。每个数组最多20项、每项字符串最多200字符。"
+                        + "认知层字段仅供人工核赔与留痕，不得影响 rejectSuggested 或 confidence。"),
                 LlmMessage.user(prompt)),
             null,
             null,
@@ -110,8 +133,18 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
       // 仅当建议拒赔时解析原因码，并经白名单归一化（未知码丢弃、空则兜底 OTHER）—— 保证"拒赔必有可解释原因"
       List<String> reasons =
           reject ? normalizeRejectReasons(node.path("rejectReasons")) : List.of();
+      // v1.2 认知层：缺失字段 fail-soft 为空列表，绝不因"认知字段没给全"把一次可用评估判成不可用
       return new AiAssessment(
-          true, reject, confidence, reasons, resolvedModel(response), PROMPT_VERSION);
+          true,
+          reject,
+          confidence,
+          reasons,
+          resolvedModel(response),
+          PROMPT_VERSION,
+          parseFacts(node.path("facts")),
+          parseBoundedTexts(node.path("evidenceRefs"), null),
+          parseBoundedTexts(node.path("clauseRefs"), null),
+          parseBoundedTexts(node.path("discrepancies"), DISCREPANCY_CODES));
     } catch (AiGatewayUnavailableException ex) {
       // 替身拒绝属于显式降级：保留可运维的原始消息，不要被「解析失败」二次包装掉
       throw ex;
@@ -137,6 +170,60 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
     List<Object> values = new ArrayList<>();
     raw.forEach(v -> values.add(v.isTextual() ? v.asText() : v.toString()));
     return RejectReasonCodes.normalize(values);
+  }
+
+  /** 解析结构化事实：只取对象形状，三字段均截断，数量封顶——展示数据不得撑爆决策轨迹。 */
+  private List<Fact> parseFacts(JsonNode raw) {
+    if (raw == null || !raw.isArray()) {
+      return List.of();
+    }
+    List<Fact> facts = new ArrayList<>();
+    for (JsonNode item : raw) {
+      if (facts.size() >= MAX_COGNITIVE_ITEMS) {
+        break;
+      }
+      if (!item.isObject()) {
+        continue;
+      }
+      facts.add(
+          new Fact(
+              bounded(item.path("code").asText("")),
+              bounded(item.path("value").asText("")),
+              bounded(item.path("evidenceRef").asText(""))));
+    }
+    return List.copyOf(facts);
+  }
+
+  /** 解析受控字符串数组：白名单（null = 只截断）、长度与数量三重收敛。 */
+  private List<String> parseBoundedTexts(JsonNode raw, List<String> whitelist) {
+    if (raw == null || !raw.isArray()) {
+      return List.of();
+    }
+    List<String> values = new ArrayList<>();
+    for (JsonNode item : raw) {
+      if (values.size() >= MAX_COGNITIVE_ITEMS) {
+        break;
+      }
+      if (!item.isTextual()) {
+        continue;
+      }
+      String value = bounded(item.asText());
+      if (value.isEmpty() || (whitelist != null && !whitelist.contains(value))) {
+        continue;
+      }
+      values.add(value);
+    }
+    return List.copyOf(values);
+  }
+
+  private static String bounded(String text) {
+    if (text == null) {
+      return "";
+    }
+    String trimmed = text.trim();
+    return trimmed.length() <= MAX_COGNITIVE_TEXT
+        ? trimmed
+        : trimmed.substring(0, MAX_COGNITIVE_TEXT);
   }
 
   private String buildPrompt(ClaimContextPort.ClaimContextView ctx) {

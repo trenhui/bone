@@ -242,6 +242,87 @@ class AiGatewayPortAdapterTest {
     assertThat(a.promptVersion()).isEmpty();
   }
 
+  @Test
+  @DisplayName("v1.2：AI 结构化认知输出被解析，可进入决策轨迹")
+  void parsesCognitiveOutput() {
+    RecordingLlmClient client =
+        new RecordingLlmClient(
+            "{\"rejectSuggested\":false,\"confidence\":0.9,"
+                + "\"facts\":[{\"code\":\"DIAGNOSIS\",\"value\":\"J06.900\",\"evidenceRef\":\"EV-1\"}],"
+                + "\"evidenceRefs\":[\"EV-1\"],\"clauseRefs\":[\"CLAUSE-3.2\"],"
+                + "\"discrepancies\":[\"AMOUNT_MISMATCH\"]}");
+    AiGatewayPort port = new AiGatewayPortAdapter(gatewayWith(client, policiesWith(null)));
+
+    AiGatewayPort.AiAssessment a = port.assess(SAMPLE);
+
+    assertThat(a.hasCognitiveOutput()).isTrue();
+    assertThat(a.facts()).hasSize(1);
+    assertThat(a.facts().get(0).code()).isEqualTo("DIAGNOSIS");
+    assertThat(a.facts().get(0).evidenceRef()).isEqualTo("EV-1");
+    assertThat(a.evidenceRefs()).containsExactly("EV-1");
+    assertThat(a.clauseRefs()).containsExactly("CLAUSE-3.2");
+    assertThat(a.discrepancies()).containsExactly("AMOUNT_MISMATCH");
+    // 认知层只做留痕与展示，不得改变结论与置信度（P1：AI 不碰钱）
+    assertThat(a.rejectSuggested()).isFalse();
+    assertThat(a.confidence()).isEqualByComparingTo("0.9");
+  }
+
+  @Test
+  @DisplayName("v1.2：模型未给认知字段时 fail-soft，不把可用评估判成不可用")
+  void missingCognitiveFieldsFailSoft() {
+    AiGatewayPort port =
+        new AiGatewayPortAdapter(
+            gatewayWith(
+                new RecordingLlmClient("{\"rejectSuggested\":false,\"confidence\":0.9}"),
+                policiesWith(null)));
+
+    AiGatewayPort.AiAssessment a = port.assess(SAMPLE);
+
+    assertThat(a.available()).isTrue();
+    assertThat(a.hasCognitiveOutput()).isFalse();
+    assertThat(a.facts()).isEmpty();
+    assertThat(a.discrepancies()).isEmpty();
+  }
+
+  @Test
+  @DisplayName("v1.2：未知差异码丢弃、认知字符串截断")
+  void cognitiveOutputIsWhitelistedAndTruncated() {
+    String longText = "x".repeat(250);
+    String json =
+        "{\"rejectSuggested\":false,\"confidence\":0.9,"
+            + "\"discrepancies\":[\"AMOUNT_MISMATCH\",\"MADE_UP_CODE\",\"DUPLICATE_ITEM\"],"
+            + "\"clauseRefs\":[\""
+            + longText
+            + "\"]}";
+    AiGatewayPort port =
+        new AiGatewayPortAdapter(gatewayWith(new RecordingLlmClient(json), policiesWith(null)));
+
+    AiGatewayPort.AiAssessment a = port.assess(SAMPLE);
+
+    assertThat(a.discrepancies()).containsExactly("AMOUNT_MISMATCH", "DUPLICATE_ITEM");
+    assertThat(a.clauseRefs().get(0)).hasSize(AiGatewayPortAdapter.MAX_COGNITIVE_TEXT);
+  }
+
+  @Test
+  @DisplayName("v1.2：认知数组最多 20 项，防输出膨胀撑爆决策轨迹")
+  void cognitiveArraysAreCapped() {
+    StringBuilder sb =
+        new StringBuilder("{\"rejectSuggested\":false,\"confidence\":0.9,\"evidenceRefs\":[");
+    for (int i = 0; i < 30; i++) {
+      if (i > 0) {
+        sb.append(",");
+      }
+      sb.append("\"EV-").append(i).append("\"");
+    }
+    sb.append("]}");
+    AiGatewayPort port =
+        new AiGatewayPortAdapter(
+            gatewayWith(new RecordingLlmClient(sb.toString()), policiesWith(null)));
+
+    assertThat(port.assess(SAMPLE).evidenceRefs())
+        .hasSize(AiGatewayPortAdapter.MAX_COGNITIVE_ITEMS);
+  }
+
   private static LlmGatewayApplicationService gatewayWith(
       LlmClient client, LlmGatewayPolicies policies) {
     DomainEventPublisher publisher = Mockito.mock(DomainEventPublisher.class);

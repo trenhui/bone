@@ -86,6 +86,8 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
       out.put("rejectSuggested", rejectSuggested);
       // 可解释性：显式标注 AI 能力不可用（降级纯规则），供核赔员/审计区分"AI 未评估"与"AI 评估为无风险"
       out.put("aiAvailable", false);
+      // v1.2：降级路径也输出同一套认知层键（空值），保证决策轨迹 schema 稳定，读侧不必判空分支
+      putCognitiveEmpty(out);
       putCapability(out, knowledgeAvailable);
       if (rejectSuggested) {
         notificationPort.alert("WARN", "AI_RISK", v, out);
@@ -103,11 +105,25 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
     out.put("aiPromptVersion", a == null ? "" : a.promptVersion());
     // 可解释性：AI 与临床知识能力是否真实参与（false=降级/未集成，核赔员须据此提高人工审查力度）
     out.put("aiAvailable", true);
+    // v1.2 AI 原生：结构化认知随节点输出进入 claim_decision_trace —— 核赔员可解释材料 +
+    // 独立盲标与评测集的候选样本源。只做留痕与展示，不参与金额、不改变 rejectSuggested 与分诊
+    out.put("aiFacts", a == null ? List.of() : a.facts());
+    out.put("aiEvidenceRefs", a == null ? List.of() : a.evidenceRefs());
+    out.put("aiClauseRefs", a == null ? List.of() : a.clauseRefs());
+    out.put("aiDiscrepancies", a == null ? List.of() : a.discrepancies());
     putCapability(out, knowledgeAvailable);
     if (rejectSuggested) {
       notificationPort.alert("WARN", "AI_RISK", v, out);
     }
     return DecisionNodeOutcome.success(out, confidence, "ai assess", "OK");
+  }
+
+  /** 降级路径的认知层空值：保持与成功路径相同的键集合，读侧不做 null 分支。 */
+  private static void putCognitiveEmpty(Map<String, Object> out) {
+    out.put("aiFacts", List.of());
+    out.put("aiEvidenceRefs", List.of());
+    out.put("aiClauseRefs", List.of());
+    out.put("aiDiscrepancies", List.of());
   }
 
   /**
