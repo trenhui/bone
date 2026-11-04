@@ -66,7 +66,7 @@ public class ClaimCaseController {
         description = "受理成功"),
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "400",
-        description = "参数校验失败"),
+        description = "参数校验失败 / SC_CLAIM_POLICY_KEY_REQUIRED（平台保单号与保司保单号都未提供）"),
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "403",
         description = "被保人不匹配"),
@@ -75,7 +75,10 @@ public class ClaimCaseController {
         description = "COMMON_IDEMPOTENCY_CONFLICT: 同幂等键不同请求体"),
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "422",
-        description = "SC_CLAIM_POLICY_NOT_ACTIVE / SC_CLAIM_OUT_OF_POLICY_PERIOD")
+        description =
+            "SC_CLAIM_POLICY_NOT_ACTIVE / SC_CLAIM_OUT_OF_POLICY_PERIOD / "
+                + "SC_CLAIM_POLICY_AMBIGUOUS（保司保单号命中多张，须改传平台号）/ "
+                + "SC_CLAIM_POLICY_NUMBER_CONFLICT（两个保单号指向不同保单）")
   })
   @PreAuthorize("hasAuthority('claim:claims:write')")
   @ResponseStatus(HttpStatus.CREATED)
