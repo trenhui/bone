@@ -98,7 +98,7 @@ currency: current
 - `golive.12` → `08-go-live/12-资金累计DB级并发正确性.md`：累计扣减的 DB 级并发正确性（单测契约不足）
 - `golive.13` → `08-go-live/13-理算引擎三重路径收敛与护栏移植（F1）.md`：唯一权威资金路径决策、整改步骤、双路径歧义根除
 
-## 五、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 13 份）
+## 五、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 14 份）
 
 - `records.impl.14` → `09-records/impl-log/14-主链路闭环体检与P0修复记录.md`：四本账未对齐的体检与 3 项 P0 修复（含变异证据）  ⚠️ 已被 `09-records/impl-log/15-跨案累计读侧与责任账接线（P0-4）.md` 撤销/修正：impl-log/15 已撤销本册"额度服务 0 调用方"判断
 - `records.impl.15` → `09-records/impl-log/15-跨案累计读侧与责任账接线（P0-4）.md`：跨案累计读侧与 A7 责任账接线
@@ -107,6 +107,7 @@ currency: current
 - `records.impl.18` → `09-records/impl-log/18-次分组维度落地与降级判据.md`：「次」分组维度落地与 fail-closed 降级判据
 - `records.impl.19` → `09-records/impl-log/19-额度释放原子性与占用归属（P0-5）.md`：额度释放的占用归属校验与跨账原子性（含 CORE-06 例外登记与 4 项变异证据）
 - `records.impl.20` → `09-records/impl-log/20-额度投影自愈与释放阻塞（P0-6）.md`：额度投影自愈：共享池被越权释放抽干时，本单自有 hold 足额仍须能正常取消（含口径自洽性验算与 7 项变异证据）
+- `records.review.L3-draft` → `09-records/reviews/L3-待架构评审-草稿.md`：§16 裁定项 #2/#3/#10 的技术草稿（#2/#3 已授权落地，#10 仍待 SDK owner 双签）
 - `records.review.TPA-` → `09-records/reviews/TPA-SAAS基线差距分析.md`：上游飞书 TPA-SAAS 源系统盘点与差距（护城河与欠账）
 - `records.review.业界对标` → `09-records/reviews/业界对标整改台账.md`：业界对标量化基线、已落地整改项、V1.0 执行清单
 - `records.review.代码整改` → `09-records/reviews/代码整改清单.md`：待架构评审的代码整改项（含已闭环项的备查记录）
