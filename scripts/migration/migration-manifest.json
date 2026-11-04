@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 117,
+  "executableCount": 119,
   "retired": [],
   "entries": [
     {
@@ -753,6 +753,18 @@
       "file": "0117_synap_claim_policy_insurer_no.sql",
       "kind": "ddl",
       "summary": "双保单号方案 B（§16-2）：t_claim_policy 新增 insurer_policy_no(VARCHAR(64),默认'')承载保司侧保单号，policy_no 保留平台号不动。冗余列方案迁移面最小，写入期双号各自落库；幂等 information_schema 判定+动态 SQL+终态断言；bone-init.sql 同批加列；查询/匹配优先用 insurer_policy_no（ClaimPolicyRepository.findByInsurerPolicyNo）。"
+    },
+    {
+      "order": 118,
+      "file": "0118_synap_claim_shared_limit.sql",
+      "kind": "ddl",
+      "summary": "责任域共享额度（共保代码）落地：t_adj_liability 新增 shared_code(VARCHAR(64),默认'')与 prior_liability_uuid(VARCHAR(64),默认'')，t_adj_calculation 新增 shared_code(VARCHAR(64),默认'')。shared_code 非空=该责任走 SHARED_POOL 维度（按共保代码分行，复用 liability_uuid 列承载共保代码、不新增列、不改唯一索引），同组多责任共用同一额度池；prior_liability_uuid 为「先赔后赔」链标注（V1 金额推导公式未定义，仍由引擎显式拒绝）。t_adj_calculation.shared_code 与 liability_uuid 同源，结算时据此选共享池账户。幂等 information_schema 判定+动态 SQL+终态断言；bone-init.sql 同批加列；DDL 与参考态 V23 逐字一致。"
+    },
+    {
+      "order": 119,
+      "file": "0119_synap_claim_policy_insurer_no_index.sql",
+      "kind": "ddl",
+      "summary": "收单侧「按保司保单号解析」（§16-2 读侧最后一环）的索引支撑：t_claim_policy 新增 (tenant_id, insurer_policy_no) 组合索引。0117 只加了列、没建索引，而报案前置校验现在允许只传保司号，每次收单都会按该列过滤（叠加生效期/规则开关谓词），无索引即全表扫描且发生在收单主链路。列序 tenant_id 在左：租户条件由 SDK /*bone:tenant*/ 恒注入，放最左才对「同租户内按保司号查」生效。刻意不加唯一约束——团险/续保场景同一保司号本就对应多张平台保单，多命中由应用层按被保人收敛并 fail-closed（SC_CLAIM_POLICY_AMBIGUOUS），不靠数据库兜。幂等 information_schema.statistics 判定+动态 SQL；终态断言校验索引存在且列序严格为 tenant_id,insurer_policy_no（列序错等于没建对）；bone-init.sql 同批补 KEY。"
     }
   ],
   "ordinalConflicts": [
