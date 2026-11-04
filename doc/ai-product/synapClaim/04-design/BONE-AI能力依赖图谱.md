@@ -49,7 +49,7 @@ currency: current
 
 | 断层 | 现状 | 后果 |
 |---|---|---|
-| RAG 推到二期 | `KnowledgeRetrievalPort` 标注"二期"；§7.3 注"一期无目录落地，仅 LLM 通用推理"；AI 技术方案 §6.4 "一期无 RAG 链路" | 临床合理性、目录匹配、条款语义匹配无法落地——正是"搭车收费/过度医疗/诊断-用药不匹配"渗漏主因 |
+| 受控 RAG / GraphRAG 仍在二期 | **一期已接线目录准入核验**（v1.4 核码）：`CatalogKnowledgeRetrievalPortAdapter` 消费 `DocumentParsePort` 结构化事实，在 `t_ref_disease`/`t_ref_drug` 做准入，命中且事实齐备才 `available=true`，核验范围写入 `basis` 受控码；`bone.claim.knowledge.mode=stub` 可切回恒不可用桩。语义检索、适应症图谱、GraphRAG 未接线 | 目录准入可判「该不该进可赔基数」，但模型级临床合理性（诊断-用药-诊疗矛盾）、条款语义匹配仍缺，搭车收费 / 过度医疗的语义层识别待 Phase B |
 | 未接 C9/C10/C11 | 仅"挂起>72h 告警"顺带提 C9；C10/C11 全未出现在端口表 | 直付通道无三态灰度机制、信任额度无内核、反欺诈告警无统一触达闭环 |
 | §7.2 安全三件套 vs C8 重复 | 自研"PII 遮蔽管道+数据槽位+交叉验证" | 与网关 `PiiRedactor`/`PromptInjectionGuard`/`ContentSafetyGuard` 双份实现，策略漂移、且漏接 ADR-1 内容安全默认开 |
 | MRM 治理缺失 | 仅 300 条评测集 + 提及合规 | 监管总局《AI 安全开发应用指导意见》32 项 + 金发8号要求模型治理架构/漂移监控/偏差——平台 C7 无模型卡片/champion-challenger |

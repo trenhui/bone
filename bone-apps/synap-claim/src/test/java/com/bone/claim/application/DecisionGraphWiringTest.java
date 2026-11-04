@@ -12,17 +12,20 @@ import com.bone.claim.application.handler.ArbitrateNodeHandler;
 import com.bone.claim.application.handler.EvidenceLoadNodeHandler;
 import com.bone.claim.application.handler.RuleCheckNodeHandler;
 import com.bone.claim.application.port.out.DecisionMetricsPort;
+import com.bone.claim.application.port.out.KnowledgeRetrievalPort;
 import com.bone.claim.application.port.out.RuleEnginePort;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.application.port.out.TriageLimitsPort;
 import com.bone.claim.domain.model.decision.TriageLimits;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.EvidenceRepository;
+import com.bone.claim.domain.repository.RefDiseaseRepository;
+import com.bone.claim.domain.repository.RefDrugRepository;
 import com.bone.claim.infrastructure.client.AiGatewayPortAdapter;
 import com.bone.claim.infrastructure.context.LocalClaimContextPortAdapter;
 import com.bone.claim.infrastructure.forensics.LocalVisualForensicsPortAdapter;
 import com.bone.claim.infrastructure.fraud.LocalGraphFraudPortAdapter;
-import com.bone.claim.infrastructure.knowledge.LocalKnowledgeRetrievalPortAdapter;
+import com.bone.claim.infrastructure.knowledge.CatalogKnowledgeRetrievalPortAdapter;
 import com.bone.claim.infrastructure.metrics.MicrometerDecisionMetricsAdapter;
 import com.bone.claim.infrastructure.notify.LocalNotificationPortAdapter;
 import com.bone.claim.infrastructure.rule.QlExpressRuleEnginePortAdapter;
@@ -69,7 +72,11 @@ class DecisionGraphWiringTest {
           assertThat(ctx.getBean(RuleEnginePort.class))
               .isInstanceOf(QlExpressRuleEnginePortAdapter.class);
           assertThat(ctx).hasSingleBean(AiGatewayPortAdapter.class);
-          assertThat(ctx).hasSingleBean(LocalKnowledgeRetrievalPortAdapter.class);
+          // 知识层默认装配目录核验实现；恒不可用的本地桩仅在 mode=stub 时装配。
+          // 断言端口而非具体实现，避免实现替换时夹具反向锁死架构演进（同 RuleEnginePort）。
+          assertThat(ctx).hasSingleBean(KnowledgeRetrievalPort.class);
+          assertThat(ctx.getBean(KnowledgeRetrievalPort.class))
+              .isInstanceOf(CatalogKnowledgeRetrievalPortAdapter.class);
           assertThat(ctx).hasSingleBean(LocalVisualForensicsPortAdapter.class);
           assertThat(ctx).hasSingleBean(LocalGraphFraudPortAdapter.class);
           assertThat(ctx).hasSingleBean(LocalNotificationPortAdapter.class);
@@ -118,6 +125,17 @@ class DecisionGraphWiringTest {
     @Bean
     EvidenceRepository evidenceRepository() {
       return Mockito.mock(EvidenceRepository.class);
+    }
+
+    /** 知识层一期实现对租户医学目录做准入核验，装配图必须提供这两个端口。 */
+    @Bean
+    RefDiseaseRepository refDiseaseRepository() {
+      return Mockito.mock(RefDiseaseRepository.class);
+    }
+
+    @Bean
+    RefDrugRepository refDrugRepository() {
+      return Mockito.mock(RefDrugRepository.class);
     }
 
     @Bean

@@ -18,7 +18,9 @@ currency: current
 |v1.0|2026-10-14|BONE 平台架构|初版技术方案（可评审）|
 |v1.1|2026-10-21|BONE 平台架构|结构治理：§8 数据模型删除内联 DDL、改指工程落地版 §9；文首明确「本文不定义契约」；§9.1/§10.2 对齐 07-delivery/04-05 真源；品牌统一 synapClaim|
 |v1.2|2026-11-04|BONE 平台架构|**AI 原生目标态回写**：§1.1 定位由「AI 只产边缘建议」升级为「AI 承担感知与认知、确定性代码承担资金、人承担终审」的分阶段目标；§1.2 增补 P7–P9；新增 §1.4 成熟度分级与三层智能分工、§11.3 数据飞轮与 MRM；§12.2 补 AI 原生判据。P1「AI 不碰钱」与 §6.5 三重校验门禁**不变**，红线不放宽|
-|v1.3|2026-11-04|BONE 平台架构|**AI 原生落地态回写（本轮）**：① §1.4 把"目标态"与"代码实测态"分线——生产 `synap-claim` 已接线结构化认知契约（`AiGatewayPort.AiAssessment` + `AiAssessNodeHandler` 三态安全 + `DecisionTriage` 确定性三档），POC 主机 `ClaimService` 此前滞后，本轮现代化为同契约输出；② 新增 §1.5「AI 原生契约（代码引用）」作为 AI 输出的 SSOT；③ 知识层（受控 RAG）与学习层（飞轮/MRM）诚实定级 L0/L3 并给出路线，不再把目标态写成现状；④ `LocalAiGatewayPortAdapter` 补最小确定性认知，使演示轨迹非空。红线与三档分诊**不变**|
+|v1.3|2026-11-04|BONE 平台架构|**AI 原生落地态回写**：① §1.4 把"目标态"与"代码实测态"分线——生产 `synap-claim` 已接线结构化认知契约（`AiGatewayPort.AiAssessment` + `AiAssessNodeHandler` 三态安全 + `DecisionTriage` 确定性三档），POC 主机 `ClaimService` 此前滞后，本轮现代化为同契约输出；② 新增 §1.5「AI 原生契约（代码引用）」作为 AI 输出的 SSOT；③ 知识层（受控 RAG）与学习层（飞轮/MRM）诚实定级 L0/L3 并给出路线，不再把目标态写成现状；④ `LocalAiGatewayPortAdapter` 补最小确定性认知，使演示轨迹非空。红线与三档分诊**不变**|
+|v1.4|2026-11-04|BONE 平台架构|**AI 原生主链接线**：① 感知层接 `DocumentParsePort`（数电票文本层结构化解析，字段级置信度 + 原文坐标 + 完整性，主动解析端点）；② 知识层以租户医学目录准入核验替换恒 `available=false` 桩，无法判定仍 fail-closed；③ 决策层新增 `AiDiscrepancyRouting`，白名单差异码首次驱动**非资金**流程状态（自动通过 → 补件/复核），原因码可回放；④ 学习层把后督 DIFF 转成结构化评测样本事件；⑤ 新增 §1.6 落地规格、验收判据与未落地边界。§1.4 状态列、§1.5 不变量同步回写。**P1 红线、三档分诊、G0–G4 门禁不变；真实 provider、图像多模态、受控 RAG、MRM 仍未落地，不得据此宣称 L3**|
+|v1.5|2026-11-04|BONE 平台架构|**复核建议落地**：① 发票验真 / 验重前移到材料阶段（票面要素 + 跨案去重，查实问题落 `FAIL`，本地核验通过仍落 `UNVERIFIABLE` 转人工，不放宽 R-FRAUD-06）；② 核责规则资产化（资源文件可替换 + 版本随命中留痕，配置不可信时回退）；③ 链路联动（案件级锁定事件 → 自动触发决策图，默认关闭、G3 前置）；④ §1.6 补验收判据、未落地边界与「建议采纳 / 未采纳理由」对照表。**红线与成熟度定级不变，仍不得对外宣称 L3**|
 
 ---
 
@@ -79,22 +81,22 @@ currency: current
 
 **三层智能 + 资金 + 学习的分工**
 
-| 层 | 由谁承担 | 输入 → 输出 | 2026-11-04 核码状态 |
+| 层 | 由谁承担 | 输入 → 输出 | 2026-11-04 核码状态（v1.4 复核） |
 |---|---|---|---|
-| 感知层 | 多模态模型 / OCR / 版面分析 | 影像 → 结构化单证事实（字段、坐标、置信度、完整性） | **确定性派生已落地**：POC 主机 `ClaimService` 与产线 `LocalAiGatewayPortAdapter` 均从解析结果（条款切片/页码/span）派生 `clauseRefs`/`evidenceRefs`/`facts`；真实多模态/OCR 模型未接入（Phase B，L3） |
-| 知识层 | 受控 RAG / 医学目录 / 临床合理性 | 事实 + 条款 → 证据定位、条款引用、合规差异提示 | **诚实 fail-closed 桩**：`LocalKnowledgeRetrievalPortAdapter` 返回 `available=false` → 决策图统一转人工；受控 RAG 未集成（L3 Phase B） |
-| 决策层 | 确定性规则 + 分诊策略 | 事实 + 规则命中 → 通过 / 复核 / 人工 / 补件 | **已实现且已落地 AI 原生契约**：`AiGatewayPort.AiAssessment` 携带结构化认知（`facts`/`evidenceRefs`/`clauseRefs`/`discrepancies`）+ 模型/提示词自溯源；`AiAssessNodeHandler` 三态安全；`DecisionTriage` 确定性三档 |
+| 感知层 | 多模态模型 / OCR / 版面分析 | 影像 → 结构化单证事实（字段、坐标、置信度、完整性） | **一期已接线（文本层子集）**：`DocumentParsePort` + `TextLayerDocumentParsePortAdapter` 从数电票文本层抽字段，落 `extracted_json`（置信度 + 原文坐标 + 完整性），`POST /evidences/{id}/parse` 主动触发；无文本层即 `FAILED` 转人工。图像 / 翻拍 / 多模态模型未接入（Phase B） |
+| 知识层 | 受控 RAG / 医学目录 / 临床合理性 | 事实 + 条款 → 证据定位、条款引用、合规差异提示 | **一期已接线（目录准入）**：`CatalogKnowledgeRetrievalPortAdapter` 消费感知层事实，在 `t_ref_disease` / `t_ref_drug` 做准入核验；`available=true` 仅在事实齐备且目录命中时，核验范围写进 `basis` 受控码。无事实 / 目录未命中 / 装配不全一律 `available=false`。语义检索、适应症图谱与受控 RAG 未集成（Phase B） |
+| 决策层 | 确定性规则 + 分诊策略 | 事实 + 规则命中 → 通过 / 复核 / 人工 / 补件 | **AI 认知已能驱动非资金流程状态**：`AiGatewayPort.AiAssessment` 携带结构化认知 + 模型/提示词自溯源；`AiDiscrepancyRouting` 把白名单差异码映射为补件 / 复核档，原因码 `AI_DISCREPANCY:<码>` 落 `triage_reason`；`AiAssessNodeHandler` 三态安全与 `DecisionTriage` 确定性三档不变 |
 | 资金层 | 领域聚合 + 事务 | 理算额 → 结算 / 支付 / 对账 | 已实现且为护城河，**AI 不得进入** |
-| 学习层 | 评测集 + 标注回流 + MRM | 人工干预 → 下一版模型 / 提示词 / 阈值 | **缺失；本轮补最小脚手架**（模型卡记录 + 评测集哈希校验），真实飞轮/MRM 为 L3 路线 |
+| 学习层 | 评测集 + 标注回流 + MRM | 人工干预 → 下一版模型 / 提示词 / 阈值 | **回流触发器已接线**：`InspectionFeedbackRecorder` 订阅 `InspectionConcludedEvent`，DIFF 结论转 `AiEvalSampleCollectedEvent`（评测集 / 规则修正 / 控制修正三类 + 幂等指纹），经 `AiEvalSamplePort` 出站。样本消费方、独立盲标、校准曲线、champion-challenger 与 MRM 仍属 Phase B / V2 |
 
 **成熟度分级（判定以代码为准，不以叙事为准）**
 
-| 级别 | 形态 | 可证伪判据 | 本平台（v1.3 实测） |
+| 级别 | 形态 | 可证伪判据 | 本平台（v1.4 实测） |
 |---|---|---|---|
-| L0 | 规则自动化 | 无 AI 参与 | 知识层检索桩（available=false → 转人工）、学习层（飞轮/MRM 未建） |
-| L1 | AI 辅助 | AI 产边缘建议，摘除后主链路不变 | **代码实测位置**：POC 主机 `ClaimService` 此前为旧范式，本轮现代化后产出结构化认知，与产线契约对齐 |
-| L2 | AI 增强 | AI 承担感知 / 知识主负载，摘除即断流 | 阶段 1 目标；产线结构化认知契约（`AiAssessment`）已承载感知/认知主负载的**输出**，模型接入前由确定性派生兜底 |
-| L3 | AI 原生 | 概率输出驱动全流程，数据飞轮驱动能力演进 | 阶段 2–3 目标（真实模型 + 飞轮 + MRM 全链路） |
+| L0 | 规则自动化 | 无 AI 参与 | 未配真实 provider 时 LLM 节点降级纯规则；图像多模态、受控 RAG、MRM 仍未接入 |
+| L1 | AI 辅助 | AI 产边缘建议，摘除后主链路不变 | **已越过**：v1.3 的 AI 认知只进决策轨迹，摘除不影响主链路 |
+| L2 | AI 增强 | AI 承担感知 / 知识主负载，摘除即断流 | **部分达到，仍非完整 L2**：感知 / 知识 / 决策 / 学习四层均已接线且知识层不再恒转人工，但一期感知是文本层确定性解析、知识是目录准入核验，真实模型与受控 RAG 接入前，摘除 AI 后主链路仍能靠确定性路径运行 |
+| L3 | AI 原生 | 概率输出驱动全流程，数据飞轮驱动能力演进 | 阶段 2–3 目标（真实模型 + 飞轮消费方 + MRM 全链路）；当前 AI 输出仅驱动非资金流程状态，资金 / 拒赔 / 理算仍由确定性代码与人工独占 |
 | L4 | 自治智能体 | 多智能体协同、工具调用、自主规划 | 探索项，不进 MVP |
 
 **演进门禁（按依赖顺序，不是重要性排序）**
@@ -109,18 +111,18 @@ currency: current
 
 > **排序依据**：Google《Rules of ML》#1 / #2 要求先有非 ML 基线与指标埋点、再引入模型。跳过 G0 直接接模型，会让效率提升百分比既不可验证也不可回退。G0 不依赖任何外部 provider，可立即启动。
 >
-> **诚实定位**：v1.0–v1.1 的设计叙事处于 L2，代码实现处于 L1，未配真实 provider 时运行态接近 L0。本节**不把目标态写成现状**；宣称态 / 契约态 / 实现态的分线由交付验收逐列对账，禁止先改文档宣告完成。
+> **诚实定位（v1.4）**：四层主链均已接线，代码实现处于「L1 已越过、L2 部分达到」，未配真实 provider 时运行态仍以确定性路径为主、接近 L0。本节**不把目标态写成现状**；宣称态 / 契约态 / 实现态的分线由交付验收逐列对账，禁止先改文档宣告完成。对外仍按 L1/L2 分阶段表述，L3 须以 G0–G4 全通过为前提。
 
 ### 1.5 AI 原生契约（代码引用，v1.3 落地）
 
-> **"原生"的判据不在模型多大，而在 AI 成为感知与认知的主执行体，且其输出能被业务、审计、评测三方消费。** v1.2 写的是原则，v1.3 落的是契约——以下三处代码是 AI 输出的**唯一真源**，文档只引用、不重述：
+> **"原生"的判据不在模型多大，而在 AI 成为感知与认知的主执行体，且其输出能被业务、审计、评测三方消费。** v1.2 写的是原则，v1.3 落的是契约，v1.4 补上流程路由——以下三处代码是 AI 输出契约的**唯一真源**，文档只引用、不重述；输出如何驱动流程见 §1.6。
 
 **① AI 输出契约：`AiGatewayPort.AiAssessment`**
 `bone-apps/synap-claim/.../application/port/out/AiGatewayPort.java`
 
 - 结构化认知：`facts`（受控码 + 值 + 证据定位）/ `evidenceRefs` / `clauseRefs` / `discrepancies`（差异提示受控码白名单）。
 - 溯源自报：`modelVersion` / `promptVersion` 由**适配器自报**（真实上游模型 + 提示词契约版本），**不经调用方传入**——模型版本是决策复算、算法备案、投诉举证的先决条件，交给 HTTP 调用方填会静默留空。
-- 不变量：认知字段 `fail-soft`（缺失即空列表），**绝不因"认知没给全"把一次可用评估判成不可用**；认知层只进决策轨迹供核赔员/审计/评测样本消费，**不参与金额、不产拒赔结论、不改分诊**（P1 不变）。
+- 不变量：认知字段 `fail-soft`（缺失即空列表），**绝不因"认知没给全"把一次可用评估判成不可用**；认知层进决策轨迹供核赔员/审计/评测样本消费，白名单内的差异码另经 §1.6 路由驱动非资金流程状态。**不参与金额、不产拒赔结论、不改分诊阈值与输入**（P1 不变）。
 
 **② 确定性分诊：`DecisionTriage`**
 `bone-apps/synap-claim/.../domain/model/decision/DecisionTriage.java`
@@ -135,7 +137,83 @@ currency: current
 
 **POC 主机对齐（本轮）**：`ClaimService`（`bone-ai/bone-ai-server/.../claim/ClaimService.java`）此前为"AI 只产布尔 + 置信度"旧范式，与 v1.2 叙事矛盾。本轮对齐契约：`underwrite` 从 `DocumentIR`（条款切片 / 页码 / span）**确定性派生** `clauseRefs` / `evidenceRefs` / `facts`（感知层结构化抽取），解析 LLM 结构化认知（同四字段），自报 `modelVersion` / `promptVersion`（标 `local-stub` 防误读），保持三档分诊与 P1 红线不变。
 
-> **与 P1 红线关系**：契约只向决策轨迹供"可解释材料 + 评测样本源"，资金 / 拒赔 / 分诊仍由确定性代码 + 人工独占，AI 输出被结构性隔离在判定之外。
+> **与 P1 红线关系**：契约向决策轨迹供"可解释材料 + 评测样本源"，并向流程路由供受控差异码；资金 / 拒赔 / 理算 / 分诊阈值仍由确定性代码 + 人工独占，AI 输出只做安全方向的单向收紧（自动通过 → 补件 / 复核）。
+
+### 1.6 AI 原生落地规格（v1.4 代码契约）
+
+> 本节写**已接线的规格**，不写愿景。代码位置、端口与输出契约是判据，文档不重述实现细节。未落地项集中在末表，避免把目标态混进现状。
+
+**① 四层端口矩阵**
+
+| 层 | 端口（application/port/out） | 一期实现（infrastructure） | 输入 → 输出 | 无法判定时的处置 |
+|---|---|---|---|---|
+| 感知 | `DocumentParsePort` | `TextLayerDocumentParsePortAdapter` | 单证原文 → `ParsedDocument`（字段 / 置信度 / 原文坐标 / 完整性 / 受控原因码） | `available=false` → `ocr_status=FAILED`，转人工补录；关键字段不齐 → `MANUAL` |
+| 知识 | `KnowledgeRetrievalPort` | `CatalogKnowledgeRetrievalPortAdapter`（默认）；`LocalKnowledgeRetrievalPortAdapter` 仅在 `bone.claim.knowledge.mode=stub` 装配 | 感知层结构化事实 + 租户医学目录 → 目录准入三态 + `basis` 范围码 | 无事实 / 目录未命中 / 装配不全 → `available=false`，决策图转人工；**不映射为"临床不合理"** |
+| 决策 | `AiGatewayPort` / `DecisionNodeHandler` | `AiGatewayPortAdapter` + `AiAssessNodeHandler` + `AiDiscrepancyRouting` | 事实 + 规则 + 模型认知 → 结论 / 档位 / 原因码 / 全链轨迹 | LLM 不可用 → `FALLBACK` 纯规则；能力缺失 → `MANUAL_REQUIRED` |
+| 学习 | `AiEvalSamplePort` | `EventAiEvalSamplePortAdapter` | `InspectionConcludedEvent`（DIFF）→ `AiEvalSampleCollectedEvent`（三类归因 + 幂等指纹） | 投递失败只记 `[FEEDBACK_WRITE_FAILED]`，不回滚抽检结论 |
+
+`clinicallyReasonable=true` 的准确含义是「在 `basis` 声明的受控范围（事实齐备性 + 目录准入）内未发现差异」，**不是模型临床推理结论**；适应症图谱与语义检索接入前不得扩大解释。
+
+**② 流程路由契约（AI 认知 → 非资金状态）**
+
+| 输入 | 前置条件 | 结论 | 档位 | 原因码 |
+|---|---|---|---|---|
+| `EVIDENCE_MISSING` | 当前为 `AUTO_APPROVE` | `NEED_MORE_EVIDENCE` | `MANUAL` | `AI_DISCREPANCY:EVIDENCE_MISSING` |
+| 其余白名单码 | 当前为 `AUTO_APPROVE` | `MANUAL_REQUIRED` | `REVIEW` | `AI_DISCREPANCY:<码>` |
+| 白名单外 / 自由文本 | 任意 | 忽略 | 不变 | 不变 |
+| 任意码 | 当前非 `AUTO_APPROVE` | 保持原结论 | 不变 | 保持更精确的原因码 |
+
+白名单唯一真源 `AiDiscrepancyCodes.ALL`（`AMOUNT_MISMATCH` / `DIAGNOSIS_FEE_MISMATCH` / `DRUG_INDICATION_MISMATCH` / `EVIDENCE_MISSING` / `DUPLICATE_ITEM` / `OTHER`），同时用于网关输出白名单、提示词枚举与流程路由；差异码语义变化须同步 bump `PROMPT_VERSION`（v1.4 为 `claim-assess-v4`）。
+
+**③ 红线矩阵**
+
+| AI 可以做 | AI 不得做 |
+|---|---|
+| 抽取事实、定位证据、提示差异 | 计算赔付金额、写入结算 / 支付状态 |
+| 把自动通过拉回补件 / 复核档 | 产出拒赔结论、改分诊阈值与输入 |
+| 供核赔员可解释材料与评测样本 | 在 `available=false` 时冒充"已核验"或"无风险" |
+
+**④ 验收判据（可证伪）**
+
+1. `mvn -o -pl bone-apps/synap-claim clean test` 全绿（当前 `Tests run: 919, Failures: 0, Errors: 0, Skipped: 5`），含感知 / 知识 / 路由 / 回流 / 验真 / 规则 / 联动七组用例；
+2. 数电票文本层样例产出字段级置信度与原文坐标，坐标可回读原文；无文本层样例落 `FAILED`；
+3. 知识层「无事实 / 仅票面事实 / 目录未命中」三类均返回 `available=false`；
+4. AI 差异码把 `AUTO_APPROVE` 降为补件或复核档，且原因码落 `triage_reason` 可回放；非自动通过结论不被覆盖；
+5. 后督 DIFF 按归因产出三类样本事件，指纹稳定，投递失败不抛回抽检事务；
+6. 验真 / 验重：缺关键字段 → `available=false`；格式错误 / 金额差额 >1 元 / 跨案重复 → `FAIL`；本地核验通过 → `UNVERIFIABLE`（**绝不落 `PASS`**）；验真回填不重置 `ocr_status` 与置信度，锁定后拒写；
+7. 规则资产化：外部规则集替换生效且版本随命中明细落 `rule_version`；配置缺失 / 损坏 / 为空回退内置集；
+8. 链路联动：开关默认关闭；开启后一次锁定只触发一次决策；触发异常不抛回锁定事务；
+9. 本族 6 道机检（`_check_manifest` / `_check_xref` / `_check_contract_drift` / `_check_ddl` / `_check_numbers` / `_gen_ai_index --check`）与 `scripts/check.sh` 全绿。
+
+**⑤ 未落地边界（不得写成现状）**
+
+| 能力 | 状态 | 前置门禁 |
+|---|---|---|
+| 真实 LLM provider | 未配置；未配时网关回落 `MockLlmClient` 被适配器显式拒绝，LLM 节点降级纯规则 | G3 放量演练通过后才配置 |
+| 图像 / 翻拍件 OCR、多模态影像分类与旋转纠偏 | 一期只做数电票文本层，图像件转人工补录 | G1 感知层 Shadow + 平台 C1 文档 IR |
+| 受控 RAG / GraphRAG / 适应症图谱 / 向量检索 | 一期为目录准入确定性核验 | G2 规则与知识接线、平台 C6 |
+| 视觉反诈 E1 / 图计算反欺诈 E2 | 仍为 `available=false` 桩 | 平台侧能力交付 |
+| 评测集消费方、独立盲标、ECE 校准、champion-challenger、MRM | 一期只完成回流触发器与样本分类 | G4 飞轮与治理 |
+| 税局 / 电子票据平台验真通道 | 一期只做票面要素核验 + 跨案去重；本地通过仍落 `UNVERIFIABLE` 转人工 | G2 + 外部通道接入 |
+| 规则 DB 热更 / 灰度 / 回归门禁 | 一期为资源文件级替换 + 版本留痕 | bone-ai C2 RuleAsset（Phase B） |
+| 自动放款全链路 | 案件级触发已落地但开关默认关闭；`AUTO_APPROVE` 仍受 E1/E2 硬闸约束 | G3 渐进放量 |
+| 理赔分析数据 / 运营大盘 | 评测样本导出已由平台侧承接；运营大盘仍缺 | G3 / 交付排期 |
+
+**⑥ 复核建议落地对照（v1.5）**
+
+| 复核建议 | 处置 | 判据 / 理由 |
+|---|---|---|
+| P0-1 感知层解析 | 已落地（文本层） | 字段级置信度、原文坐标、完整性；影像分类 / 旋转纠偏需平台 C1 文档 IR，标 Phase B，不用桩冒充 |
+| P0-2 验真 / 验重前移 | 已落地 | 结论经既有 `verify_valid` → R-FRAUD-06 → 决策图硬闸生效，无需扩展决策上下文；不放宽「通道未接一律转人工」 |
+| P0-3 分级反欺诈硬闸 | **未采纳** | 与 `capabilityMissing` 兜底及「AI 不碰钱」冲突。E1/E2 未交付时 `AUTO_APPROVE` 不可达是 G3 门禁的有意行为；放宽等于在能力未集成时放款 |
+| P0-3 真实 provider / `domain.security` 接生产链 | 部分未采纳 | provider 是部署配置，代码不得伪造；`domain.security` 三件套接进生产链会与 §7.2「安全基线一律复用网关 C8、synapClaim 不重复实现」形成双份实现，保持不接线 |
+| P1-1 知识层三层 | 已落地（目录准入） | 临床合理性与语义检索需平台 C6；`basis` 受控码写明核验范围，不冒充临床推理 |
+| P1-2 规则资产化 | 已落地 | 资源文件可替换 + 版本留痕 + 损坏回退；DB 热更属 Phase B；风控维度按真实业务补（验真 / 验重），不按对标宣传口径凑数 |
+| P1-3 链路联动 | 已落地（默认关闭） | 案件级事件一次触发，G3 前置开关；理赔分析数据由并发交付的评测样本导出承接，不重复实现 |
+| P2-1 飞轮 | 已落地触发器 | 独立盲标 / ECE 校准 / MRM 需 G4 |
+| P2-2 口径治理 | 已落地 | 对外按 L1/L2 分阶段表述；效率口径用 PRD 分阶段自动化率与单案人工工时下降，不套用竞品效率数字 |
+
+**放量纪律**：E1/E2 未交付时 `fraudGatePassed` 恒为 `false`、`AUTO_APPROVE` 逻辑不可达，是 G3 门禁与「AI 不碰钱」共同约束下的**有意行为**，不是待修补的缺陷。放行路径是交付 E1/E2 并通过放量演练，不得靠放宽硬闸或删除 `capabilityMissing` 兜底实现。
 
 ---
 
@@ -553,9 +631,26 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 - **漂移与事件响应**：分数分布、切片指标、特征新鲜度设监控；超阈触发强制复验，并预先写明谁有权下线模型、回滚路径与监管留痕。
 - **红线不变**：§6.5 三重校验上线门禁、P1「AI 不碰钱」、P4 人工终审权保留，均不因本节的能力升级而放宽。
 
+> **v1.3 实现态与 L3 门禁（本轮回写，诚实分级）**
+>
+> 本节 v1.2 写的是**目标态**；本轮按代码实测把"已落地"与"待架构师审批"分线，禁止把目标态写成现状：
+>
+> | 能力 | 2026-11-04 实测 | 缺口与门禁 |
+> |---|---|---|
+> | 样本采集 | **已落地**：决策轨迹节点序列 + `AiAssessment` 自报 `modelVersion`/`promptVersion` + 结构化认知（`facts`/`evidenceRefs`/`clauseRefs`/`discrepancies`）随 `claim_decision_trace` 落库，已是候选样本源 | 缺"独立盲标队列"与"样本→评测集"回流管道（L3） |
+> | 独立盲标 | **未建**：`LocalKnowledgeRetrievalPortAdapter` 为诚实 fail-closed 桩（`available=false`→转人工）；真实 C6 受控 RAG 未集成 | 受控 RAG 全链 + 盲标队列 = **L3 Phase B**，需架构师审批（新依赖 / DDL / CI 门禁） |
+> | 冻结集 | **仅契约**：评测集哈希校验是 G0 判据，但冻结集存储与哈希校验器**尚未落地** | 评测集存储 + 哈希校验器 = **L3**（DDL / 独立存储） |
+> | 切片评估 | **未建**：指标按整体口径，无票据类型 / 医院等级 / 金额段切片看板 | 切片看板 = L3（指标管道） |
+> | 阈值校准 | **硬编码**：0.7 / 0.85 与 OCR 阈值来自 `TriageLimits`/历史常量，未接 ECE / Brier 校准 | 校准曲线产出 = L3（需评测集 + 离线管线） |
+> | MRM 模型卡 / 清单 | **仅溯源**：模型 / 提示词版本随轨迹自报，但无模型卡登记库与独立验证报告台账 | 模型卡 + 模型清单 + 独立验证 = **L3**（DDL / 审计台账） |
+>
+> **L3 待架构师审批清单（AI 不代执行）**：① 受控 RAG（C6 GraphRAG）接入与盲标队列 DDL；② 冻结评测集存储 + 哈希校验器落 CI；③ 切片指标看板与校准曲线离线管线；④ 模型卡 / 模型清单 / 独立验证报告台账；⑤ 对应 CI 门禁（G0–G4 全绿）。以上任一落地前，对外表述维持 L1/L2 分阶段，**不得宣称 AI 原生（L3）**。
+>
+> **本轮已交付的最小契约基座**（非 L3，已落地）：AI 输出 SSOT（`AiGatewayPort.AiAssessment`）+ 确定性分诊（`DecisionTriage`）+ 三态安全节点（`AiAssessNodeHandler`）+ POC 主机与本地桩对齐同契约——使"可复算四元组"的**溯源字段**已就位，待 L3 补全样本回流与治理台账后即满足 G0–G4 准入。
+
 ### 11.4 评测样本出口与弱标签口径（v1.5 落地）
 
-> §11.3 把「样本采集」列为数据飞轮第一环，但只写到「随决策轨迹落库，作为候选样本」——**落库 ≠ 可取用**。本节交付的是这条管道的**上游出口**：让已经落库的决策事实能被评测侧取走。**下游（冻结集存储、盲标队列、切片看板）仍未建**，本文不据此宣称闭环完成。
+> §11.3 的实测表把「缺『样本→评测集』回流管道」列为 L3 缺口。本节交付的是这条管道的**上游出口**：让已经落库的决策事实能被评测侧取走。**下游（冻结集存储、盲标队列、切片看板）仍未建**，本文不据此宣称闭环完成。
 
 **为什么先做出口**：AI 认知已能驱动流程（业务侧消费）、已随轨迹落库（审计侧消费），但没有任何通道把「AI 判断过什么、最后实际发生了什么」变成评测样本——评测侧等于零消费。没有出口，冻结集只能是手写骨架，准确率永远停在 `declared`。
 
@@ -572,7 +667,7 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 
 **弱标签口径（本节最容易被误用的地方）**
 
-标签来自案件**最终状态**（`FINISHED` 已结案 / `CLOSED_REJECTED` 拒赔生效），它混合了人工判断、时效、客户撤诉等因素，**不等于核赔员的独立判定**。因此导出**只用于一致性统计与样本筛选**，不得当作金标准；金标准需要独立盲标（屏蔽 AI 建议后重判）。
+标签来自案件**最终状态**（`FINISHED` 已结案 / `CLOSED_REJECTED` 拒赔生效），它混合了人工判断、时效、客户撤诉等因素，**不等于核赔员的独立判定**。因此导出**只用于一致性统计与样本筛选**，不得当作金标准；金标准需要 §11.3 的独立盲标（屏蔽 AI 建议后重判）。
 
 | AI 结论 | 案件终态 | 判定 | 依据 |
 |---|---|---|---|
@@ -607,13 +702,13 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 - 返回体带 `splitPolicy=eval-only`：这些样本**已被 AI 判断过**，用于训练会让模型在自己的判断上自我强化；与冻结集的 train/tune 互斥约束同一立场。
 - `samplesHash = sha256(规范化样本集)`：用于核对两次导出是否同源、是否被中间环节篡改。它**不是**冻结集哈希（不承担「样本改动即拒绝评测」的职责）。
 
-**三条样本源的互补关系（避免重复建设）**
+**三条样本源的分工（避免重复建设）**
 
-| 来源 | 采集什么 | 偏向 |
-|---|---|---|
-| 后督差异回流 | 质检判定为差异的案件，按评测集 / 规则修正 / 控制修正三向分流 | **负例定向** |
-| 版本化回归集（`eval/ai-decision-evalset.json`） | 手写确定性回归用例，带 `expected` 与监管依据 | **防退化** |
-| 本节弱标签导出 | 时间窗内全部收敛决策 + 终态一致性 | **分布全量（含正例）** |
+| 来源 | 采集什么 | 偏向 | 状态 |
+|---|---|---|---|
+| 后督差异回流（`AiEvalSampleCollectedEvent`） | 质检判定为差异的案件，按 `EVAL_SET` / `RULE_FIX` / `CONTROL_FIX` 三向分流 | **负例定向** | 已落地（事件 + 端口） |
+| 版本化回归集（`eval/ai-decision-evalset.json`） | 手写 30 例确定性回归，带 `expected` 与监管依据 | **防退化** | 已落地（含 A1–A9 门禁） |
+| 本节弱标签导出 | 时间窗内全部收敛决策 + 终态一致性 | **分布全量（含正例）** | 本轮落地 |
 
 > 只看负例会高估错误率、只看回归集会漏掉真实分布漂移——三者互补，不应合并成一套。
 

@@ -45,6 +45,9 @@ public class EvidenceController {
       DocType docType,
       String verifyValid) {}
 
+  /** 主动解析请求：单证原文（数电票 PDF 文本层）。 */
+  public record ParseEvidenceReq(@NotBlank(message = "单证原文不能为空") String rawText) {}
+
   /** 解析回填请求（OCR/LLM 回调或人工补录）。 */
   public record ParseResultReq(
       OcrStatus ocrStatus, BigDecimal ocrConfidence, String extractedJson, String verifyValid) {}
@@ -76,6 +79,18 @@ public class EvidenceController {
                 request.contentHash(),
                 request.verifyValid()));
     return ApiResponse.success(HttpStatus.CREATED.value(), id);
+  }
+
+  @Operation(
+      summary = "主动解析单证",
+      description = "感知层入口：提交数电票 PDF 文本层，返回字段级置信度与原文坐标；" + "文本层缺失或关键字段不齐时 fail-closed 转人工补录")
+  @PreAuthorize("hasAuthority('claim:claims:write')")
+  @PostMapping("/{evidenceId}/parse")
+  public ApiResponse<EvidenceApplicationService.ParseOutcome> parse(
+      @Parameter(description = "案件ID") @PathVariable long claimId,
+      @Parameter(description = "材料ID") @PathVariable long evidenceId,
+      @Valid @RequestBody ParseEvidenceReq request) {
+    return ApiResponse.success(evidenceApplicationService.parse(evidenceId, request.rawText()));
   }
 
   @Operation(summary = "回填解析结果", description = "OCR/LLM 解析回调；置信度 <0.7 自动置 MANUAL 转人工补录")

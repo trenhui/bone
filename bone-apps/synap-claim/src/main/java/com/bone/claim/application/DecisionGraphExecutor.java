@@ -11,6 +11,7 @@ import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
+import com.bone.claim.domain.model.decision.AiDiscrepancyRouting;
 import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.claim.domain.model.decision.DecisionGraph;
 import com.bone.claim.domain.model.decision.DecisionNodeStatus;
@@ -41,7 +42,9 @@ import org.springframework.stereotype.Service;
  *   <li><b>执行不在事务内</b>：节点可能含 LLM 调用（秒级），先在内存聚合轨迹，收敛后单次短事务落库， 避免长事务持锁（AGENTS §7 禁悲观锁）；
  *   <li><b>LLM 不可用 → 降级纯规则路径</b>（不是直接失败），执行状态记 FALLBACK；
  *   <li><b>确定性节点失败 → 中止并转人工</b>（fail-safe）；
- *   <li><b>结论由确定性分诊计算</b>，AI 只产建议与置信度（"AI 不碰钱"）；
+ *   <li><b>结论由确定性分诊计算</b>，资金、拒赔、理算仍由确定性代码与人工独占（"AI 不碰钱"）；
+ *   <li><b>AI 认知驱动非资金流程状态</b>：白名单内的差异提示可把「自动通过」拉回补件/复核档 （{@link
+ *       AiDiscrepancyRouting}），原因码落轨迹可回放——这是 AI 输出首次真正改变流程走向；
  *   <li><b>可观测 + 可追溯</b>：终态分布与单节点耗时经 {@link DecisionMetricsPort} 出站埋点；调用方漏传模型/提示词 版本时，用 AI
  *       节点自报值回填，避免"回放与复算必需"的溯源字段静默留空。
  * </ul>
@@ -295,6 +298,11 @@ public class DecisionGraphExecutor {
                 DecisionResult.MANUAL_REQUIRED, DecisionTier.MANUAL, capabilityReason);
       }
     }
+
+    // v1.4：AI 结构化认知驱动非资金流程状态。放在能力缺失兜底之后，保证「无法判定」优先于 AI 建议；
+    // 且路由只做安全方向的单向收紧（AUTO_APPROVE → 补件/复核），绝不产生拒赔或改动金额。
+    outcome = AiDiscrepancyRouting.apply(outputs.get("aiDiscrepancies"), outcome);
+
     // AI 溯源回填：调用方漏传 model/prompt 版本时，用 AI 节点自报的真实上游模型与提示词契约版本兜底
     // （显式传入优先，见 DecisionExecution#backfillAiVersions）——避免"回放与复算必需"的字段静默为空。
     execution.backfillAiVersions(

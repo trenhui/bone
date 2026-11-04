@@ -35,8 +35,16 @@ public class LocalClaimContextPortAdapter implements ClaimContextPort {
     ClaimCase claim = claimCaseRepository.findById(claimId);
     List<Evidence> evidences = evidenceRepository.findByClaimId(claimId);
     boolean hasEvidence = !evidences.isEmpty();
+    // 只有 DONE（解析完成）与 MANUAL（人工补录完成）算「证据已解析」。
+    // 原判据只排除 PENDING，会把 FAILED/PARSING 也当成已解析——感知层一旦落地 FAILED 状态，
+    // 决策图就会拿「没有事实输入」的材料继续核责，属于静默放行。
     boolean allParsed =
-        hasEvidence && evidences.stream().allMatch(e -> e.ocrStatusEnum() != OcrStatus.PENDING);
+        hasEvidence
+            && evidences.stream()
+                .allMatch(
+                    e ->
+                        e.ocrStatusEnum() == OcrStatus.DONE
+                            || e.ocrStatusEnum() == OcrStatus.MANUAL);
     BigDecimal minOcr =
         evidences.stream()
             .map(Evidence::getOcrConfidence)

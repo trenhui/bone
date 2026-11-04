@@ -15,15 +15,15 @@ public interface VisualForensicsPort {
 
   ForensicsResult inspect(ClaimContextPort.ClaimContextView ctx);
 
+  /** 部署态声明兜底：适配器未覆盖时一律 UNKNOWN（fail-closed）。 */
+  default AiCapabilityDeclaration declaration() {
+    return AiCapabilityDeclaration.unknown("E1_VISUAL");
+  }
+
   /**
    * @param tampered 是否检出篡改（仅当 {@code available=true} 时可信）
    * @param similarityRisk 跨案重复/相似度风险（0~1，仅当 {@code available=true} 时可信）
    * @param available 本次是否真实执行了视觉反欺诈筛查（本地桩=false；E1 接入后=true）
    */
   record ForensicsResult(boolean tampered, BigDecimal similarityRisk, boolean available) {}
-
-  /** 部署态能力声明（监管 §15）；未覆盖一律 UNKNOWN，绝不默认成 READY。 */
-  default AiCapabilityDeclaration declaration() {
-    return AiCapabilityDeclaration.unknown("E1_VISUAL");
-  }
 }

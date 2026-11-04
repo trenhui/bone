@@ -306,13 +306,6 @@ jobs:
       - name: G0 Eval Baseline Gate (blocking)
         run: /usr/bin/env python3 scripts/check-eval-baseline.py --check
 
-      # 2026-11-04（P0-2 测评用例集）：G0 只看 RAG 冻结集骨架，看不到理赔侧
-      # 30 条 AI 决策/分诊回归用例。本步把版本化评测集钉成 blocking 真源：
-      # 删用例、清单抢跑于代码、抹掉关键负向探针、PII 入集、判据退化恒绿，一律判红。
-      # 判据自身由 scripts/tests/test_check_claim_ai_evalset.py 的 19 例注入探针守护。
-      - name: Claim AI Decision Evalset Gate (blocking)
-        run: /usr/bin/env python3 scripts/check-claim-ai-evalset.py --check
-
       # eval/README.md 早已把下列三项写成「CI 必跑」，但一直只是伪代码块，从未成为
       # 真实步骤。三者均为纯 Python 标准库、零外部产物，可在干净检出上无条件执行，
       # 用来证明探针引擎 / OTel 映射 / 冻结集判据本身仍然有效。

@@ -198,6 +198,21 @@ public class Evidence extends TenantAggregateRoot<Long> {
     return OcrStatus.valueOf(ocrStatus);
   }
 
+  /**
+   * 验真结果回填（材料阶段前置，与解析状态正交）。
+   *
+   * <p>刻意不走 {@link #markParsed}：验真只改 {@code verify_valid}，不得顺带把已完成的 {@code ocr_status=DONE}
+   * 重置成解析中，也不得覆盖字段级置信度与原文坐标。
+   */
+  public void markVerified(String verifyValid) {
+    requireUnlocked("证据已锁定，禁止回填验真结果");
+    if (verifyValid == null || verifyValid.isBlank()) {
+      throw new DomainException("验真结果不能为空");
+    }
+    this.verifyValid = verifyValid;
+    this.updatedAt = Instant.now();
+  }
+
   /** 验真是否可用于快赔（PASS 方可，其余转人工，R-FRAUD-06 从严）。 */
   public boolean isVerifyPassed() {
     return "PASS".equals(verifyValid);

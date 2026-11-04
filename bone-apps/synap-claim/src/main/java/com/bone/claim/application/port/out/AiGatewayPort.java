@@ -9,14 +9,20 @@ import java.util.List;
  * <p>{@link #assess} 在网关不可用时抛 {@link AiGatewayUnavailableException}——决策执行器据此对 LLM 节点
  * 降级纯规则路径（FALLBACK），符合"AI 不可用→降级而非失败"纪律。
  *
- * <p><b>v1.2 AI 原生目标态</b>：AI 不再只产一个布尔建议，还需产出可解释的<b>结构化认知</b>——
- * 抽取事实、证据定位、条款引用、差异提示。这些字段只进入决策轨迹供核赔员、审计与后续评测样本消费， <b>不参与金额计算、不参与拒赔结论、不改变分诊</b>（P1「AI 不碰钱」不变）。
- * 模型缺失这些字段时按空列表 fail-soft 处理，绝不因"认知字段没给全"把一次可用评估判成不可用。
+ * <p><b>v1.4 AI 原生契约</b>：AI 不再只产一个布尔建议，还需产出可解释的<b>结构化认知</b>——
+ * 抽取事实、证据定位、条款引用、差异提示。这些字段进入决策轨迹供核赔员、审计与评测样本消费， 其中<b>白名单内的差异码</b>经 {@code AiDiscrepancyRouting}
+ * 驱动非资金流程状态（自动通过 → 补件/复核）。 红线不变（P1「AI 不碰钱」）：不参与金额计算、不参与理算、不产拒赔结论、不改变分诊阈值与输入。 模型缺失这些字段时按空列表
+ * fail-soft 处理，绝不因"认知字段没给全"把一次可用评估判成不可用。
  */
 public interface AiGatewayPort {
 
   /** AI 评估：建议拒赔 + 置信度（>=0.85 方可直出，<0.7 强制人工，见 {@code DecisionTriage}）。 */
   AiAssessment assess(ClaimContextPort.ClaimContextView ctx);
+
+  /** 部署态声明兜底：适配器未覆盖时一律 UNKNOWN（fail-closed），不得推断为 READY。 */
+  default AiCapabilityDeclaration declaration() {
+    return AiCapabilityDeclaration.unknown("C5_LLM");
+  }
 
   /** AI 从材料抽取的单条结构化事实（受控码 + 值 + 证据定位；值仅用于展示与留痕，不参与判定）。 */
   record Fact(String code, String value, String evidenceRef) {}
@@ -104,10 +110,5 @@ public interface AiGatewayPort {
           || !clauseRefs.isEmpty()
           || !discrepancies.isEmpty();
     }
-  }
-
-  /** 部署态能力声明（监管 §15）；未覆盖一律 UNKNOWN，绝不默认成 READY。 */
-  default AiCapabilityDeclaration declaration() {
-    return AiCapabilityDeclaration.unknown("C5_LLM");
   }
 }

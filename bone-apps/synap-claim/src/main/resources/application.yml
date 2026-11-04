@@ -47,6 +47,18 @@ bone:
       # 提交理赔的 Idempotency-Key 快照落库开关（表 claim_idempotency_record）；
       # false 时退化为「不记录快照」（同 blueprint bone.blueprint.idempotency.enabled 口径）。
       enabled: ${BONE_CLAIM_IDEMPOTENCY_ENABLED:true}
+    ruleset:
+      # 核责规则资产位置：默认 classpath 内的 claim-ruleset.json；指向外部文件即可不发版调整规则。
+      # 配置文件缺失/损坏/为空时适配器回退内置规则集（fail-closed 方向），不会静默放行。
+      location: ${BONE_CLAIM_RULESET_LOCATION:classpath:claim-ruleset.json}
+    document-parse:
+      # 感知层实现：text = 数电票文本层确定性解析（默认）；llm = 模型驱动结构化抽取（需真实 provider）。
+      # llm 模式未配 provider 时网关回落 MockLlmClient，适配器显式拒绝并转人工，绝不伪造解析产物。
+      mode: ${BONE_CLAIM_DOCUMENT_PARSE_MODE:text}
+    auto-decision:
+      # 材料锁定 → 自动触发决策图。默认关闭：须 G3 放量演练通过后才按租户打开，
+      # 打开后仍受「AI 不碰钱」、反欺诈硬闸与自动放款开关三重约束。
+      enabled: ${BONE_CLAIM_AUTO_DECISION_ENABLED:false}
     quota-year:
       # 额度年度口径（额度账户行键的一部分，读写两侧共用 QuotaYearResolver 裁决）：
       #   CALENDAR    自然年（默认）。业务日缺失的历史案件退回处理日，与切换前行为一致。

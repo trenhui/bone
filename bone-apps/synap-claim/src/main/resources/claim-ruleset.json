@@ -1,0 +1,37 @@
+{
+  "version": "claim-ruleset-v2",
+  "rules": [
+    {
+      "code": "R-FRAUD-06",
+      "category": "FRAUD",
+      "priority": 10,
+      "expression": "verifyPassed == false",
+      "conclusion": "VERIFY_NOT_PASSED",
+      "risk": true
+    },
+    {
+      "code": "R-EVID-01",
+      "category": "EVIDENCE",
+      "priority": 20,
+      "expression": "evidenceParsed == false",
+      "conclusion": "EVIDENCE_PARSE_FAILED",
+      "risk": true
+    },
+    {
+      "code": "R-OCR-01",
+      "category": "EVIDENCE",
+      "priority": 30,
+      "expression": "minOcrConfidence < 0.7",
+      "conclusion": "OCR_CONFIDENCE_LOW",
+      "risk": true
+    },
+    {
+      "code": "R-AMOUNT-01",
+      "category": "AMOUNT",
+      "priority": 40,
+      "expression": "claimAmount >= 10000",
+      "conclusion": "AMOUNT_OVER_LIMIT",
+      "risk": false
+    }
+  ]
+}

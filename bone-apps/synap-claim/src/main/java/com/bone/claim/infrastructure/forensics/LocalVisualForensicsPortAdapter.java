@@ -1,6 +1,5 @@
 package com.bone.claim.infrastructure.forensics;
 
-import com.bone.claim.application.port.out.AiCapabilityDeclaration;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.application.port.out.VisualForensicsPort;
 import java.math.BigDecimal;
@@ -15,12 +14,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class LocalVisualForensicsPortAdapter implements VisualForensicsPort {
-
-  @Override
-  public AiCapabilityDeclaration declaration() {
-    return AiCapabilityDeclaration.stub(
-        "E1_VISUAL", "ANTI_FRAUD_E1_NOT_INTEGRATED", "接入私有化视觉模型（权重禁云端）并同步覆盖本声明");
-  }
 
   @Override
   public ForensicsResult inspect(ClaimContextPort.ClaimContextView ctx) {

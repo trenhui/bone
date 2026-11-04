@@ -2,16 +2,18 @@ package com.bone.claim.infrastructure.rule;
 
 import com.bone.airules.domain.gateway.RuleEngine;
 import com.bone.airules.infrastructure.engine.QlExpressRuleEngine;
-import com.bone.claim.application.port.out.AiCapabilityDeclaration;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.application.port.out.RuleEnginePort;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,8 +26,10 @@ import org.springframework.stereotype.Component;
  * 规则都不碰钱）；{@link #calculatePayout} 仍只返回分诊估算额。 视觉 E1 / 图计算 E2 未接入前，{@code RuleCheckNodeHandler}
  * 的三路硬闸依然判不过——故接入本引擎 <b>不会</b>解锁自动放款，只让规则结论与命中留痕从「默认值」变成「真实事实」。
  *
- * <p>规则集为版本化常量（{@link #RULE_VERSION}），表达式与 Rulebook 的 R-FRAUD / R-EVID / R-AMOUNT 口径对齐；后续接
- * bone-ai-rules 的 RuleAsset 热更 / 灰度 / 回归门禁时，只需把 {@link #RULES} 换成 按租户加载的版本链，调用方零改动。
+ * <p><b>规则资产化（v2）</b>：规则集从代码常量迁到 {@code claim-ruleset.json}，可由 {@code bone.claim.ruleset.location}
+ * 指向外部文件替换，改规则不再需要改 Java / 发版；版本号随每条命中明细落 {@code
+ * t_claim_rule_hit.rule_version}，保证回放能回到当时那套规则。配置文件缺失、损坏或为空时回退内置默认集 （fail-closed 方向：不可信配置不生效），并保留
+ * {@link #RULE_VERSION} 作回退版本。DB 热更 / 灰度 / 回归门禁仍属 bone-ai C2 RuleAsset 的 Phase B 范围，本类不冒充已具备。
  */
 @Component
 @ConditionalOnProperty(
@@ -34,23 +38,13 @@ import org.springframework.stereotype.Component;
     matchIfMissing = true)
 public class QlExpressRuleEnginePortAdapter implements RuleEnginePort {
 
-  @Override
-  public AiCapabilityDeclaration declaration() {
-    // 真实求值已装配，但规则集仍是代码内 4 条常量：属「可实现能力、规则资产待治理」，不夸大为可热更规则中台。
-    return new AiCapabilityDeclaration(
-        "C2_RULE",
-        AiCapabilityDeclaration.STATE_READY,
-        "CONSTANT_RULESET_ONLY",
-        "bone.claim.rule-engine.mode=stub 秒级回退到 fail-closed 桩；规则热更/版本化待建");
-  }
-
-  /** 规则集版本：改动任一表达式 / 结论码必须同步 bump，否则回放无法回到当时那套规则。 */
+  /** 内置回退规则集版本：改动任一表达式 / 结论码必须同步 bump，否则回放无法回到当时那套规则。 */
   static final String RULE_VERSION = "claim-ruleset-v1";
 
-  /** 规则路径置信度：确定性规则的语义是「已执行且结论唯一」，不是统计置信度；沿用一期基线值， 不引入虚假校准。真正需要数据驱动校准的是 AI 置信度（见 G4-1）。 */
+  /** 规则路径置信度：确定性规则的语义是「已执行且结论唯一」，不是统计置信度；沿用一期基线值， 不引入虚假校准。 */
   private static final BigDecimal RULE_CONFIDENCE = new BigDecimal("0.90");
 
-  private static final List<RuleSpec> RULES =
+  private static final List<RuleSpec> DEFAULT_RULES =
       List.of(
           new RuleSpec(
               "R-FRAUD-06", "FRAUD", 10, "verifyPassed == false", "VERIFY_NOT_PASSED", true),
@@ -69,20 +63,26 @@ public class QlExpressRuleEnginePortAdapter implements RuleEnginePort {
   private final RuleEngine engine = new QlExpressRuleEngine();
   private final ObjectMapper mapper = new ObjectMapper();
 
+  @Value("${bone.claim.ruleset.location:classpath:claim-ruleset.json}")
+  private Resource rulesetResource;
+
+  private volatile boolean resolved;
+  private ClaimRuleSet cached;
+
   @Override
   public RuleCheckResult check(ClaimContextPort.ClaimContextView ctx) {
     Map<String, Object> facts = factsOf(ctx);
     String snapshot = snapshotOf(facts);
     List<RuleHit> hits = new ArrayList<>();
     boolean riskHit = false;
-    for (RuleSpec rule : RULES) {
+    for (RuleSpec rule : rules()) {
       RuleEngine.RuleEvaluation evaluation = engine.evaluate(rule.expression(), facts, false);
       // 求值异常按未命中处理由 QlExpressRuleEngine 负责；此处只采信 hit=true 的确定性结论
       if (evaluation.hit()) {
         hits.add(
             new RuleHit(
                 rule.code(),
-                RULE_VERSION,
+                ruleVersion(),
                 rule.category(),
                 rule.priority(),
                 snapshot,
@@ -100,6 +100,56 @@ public class QlExpressRuleEnginePortAdapter implements RuleEnginePort {
   public BigDecimal calculatePayout(ClaimContextPort.ClaimContextView ctx) {
     // F1：分诊估算额（= 申请金额），仅供档位判断，绝不进入资金链路
     return ctx.claimAmount();
+  }
+
+  /** 配置不可用 → 内置默认集；无 Spring 装配的单元夹具同样走这条回退。 */
+  private List<RuleSpec> rules() {
+    ClaimRuleSet set = ruleSet();
+    if (set == null) {
+      return DEFAULT_RULES;
+    }
+    return set.rules().stream()
+        .map(
+            r ->
+                new RuleSpec(
+                    r.code(), r.category(), r.priority(), r.expression(), r.conclusion(), r.risk()))
+        .toList();
+  }
+
+  private String ruleVersion() {
+    ClaimRuleSet set = ruleSet();
+    return set == null ? RULE_VERSION : set.version();
+  }
+
+  private ClaimRuleSet ruleSet() {
+    if (!resolved) {
+      synchronized (this) {
+        if (!resolved) {
+          cached = loadRuleSet();
+          resolved = true;
+        }
+      }
+    }
+    return cached;
+  }
+
+  private ClaimRuleSet loadRuleSet() {
+    if (rulesetResource == null) {
+      return null;
+    }
+    try (InputStream in = rulesetResource.getInputStream()) {
+      ClaimRuleSet set = mapper.readValue(in, ClaimRuleSet.class);
+      if (set == null
+          || set.version() == null
+          || set.version().isBlank()
+          || set.rules() == null
+          || set.rules().isEmpty()) {
+        return null;
+      }
+      return set;
+    } catch (Exception ex) {
+      return null;
+    }
   }
 
   /** 只读上下文 → 规则求值变量；数值统一转 double，避免 BigDecimal 与 DSL 字面量比较的类型歧义。 */

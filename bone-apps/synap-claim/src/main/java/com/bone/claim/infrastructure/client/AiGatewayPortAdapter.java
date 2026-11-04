@@ -4,11 +4,11 @@ import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
-import com.bone.claim.application.port.out.AiCapabilityDeclaration;
 import com.bone.claim.application.port.out.AiGatewayPort;
 import com.bone.claim.application.port.out.AiGatewayPort.Fact;
 import com.bone.claim.application.port.out.AiGatewayUnavailableException;
 import com.bone.claim.application.port.out.ClaimContextPort;
+import com.bone.claim.domain.model.decision.AiDiscrepancyCodes;
 import com.bone.claim.domain.security.RejectReasonCodes;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,7 +16,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -37,19 +36,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class AiGatewayPortAdapter implements AiGatewayPort {
 
-  @Override
-  public AiCapabilityDeclaration declaration() {
-    // 网关适配器虽无条件装配，但未配 base-url 时会回落内置 Mock 并被本类显式拒绝（G0-2），
-    // 因此必须按真实配置判 NOT_CONFIGURED，不能因"bean 存在"就报 READY。
-    return gatewayBaseUrl == null || gatewayBaseUrl.isBlank()
-        ? AiCapabilityDeclaration.notConfigured(
-            "C5_LLM",
-            "AI_GATEWAY_BASE_URL_MISSING",
-            "配置 bone.ai.gateway.base-url 接入真实 provider（Mock 响应被显式拒绝）")
-        : AiCapabilityDeclaration.ready(
-            "C5_LLM", "停用：bone.claim.auto-approve.enabled=false 或切 mode=local");
-  }
-
   /** 业务场景标签：供网关 {@code ModelRouter} 做模型档位路由（简单场景走廉价模型）。 */
   static final String SCENARIO = "claim-ai-assess";
 
@@ -61,17 +47,12 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
    * <p>决策复算要求"回到当时那套配置"——同一案件用新提示词重跑会得到不同结论，故提示词版本属审计必留字段 （V5 {@code
    * claim_decision_execution.prompt_version} 注释即"回放与复算必需"）。
    */
-  static final String PROMPT_VERSION = "claim-assess-v3";
+  // v4：差异提示不再只做留痕，白名单内的码会驱动非资金流程状态（见 AiDiscrepancyRouting），
+  // 提示词契约随语义变化 bump，保证回放能区分「差异码仅展示」与「差异码参与路由」。
+  static final String PROMPT_VERSION = "claim-assess-v4";
 
-  /** 差异提示受控码白名单：模型不得臆造自由文本结论。 */
-  static final List<String> DISCREPANCY_CODES =
-      List.of(
-          "AMOUNT_MISMATCH",
-          "DIAGNOSIS_FEE_MISMATCH",
-          "DRUG_INDICATION_MISMATCH",
-          "EVIDENCE_MISSING",
-          "DUPLICATE_ITEM",
-          "OTHER");
+  /** 差异提示受控码白名单（唯一真源在领域层）：模型不得臆造自由文本结论。 */
+  static final List<String> DISCREPANCY_CODES = AiDiscrepancyCodes.ALL;
 
   /** 认知层数组与字符串上限：防模型输出膨胀撑爆决策轨迹。 */
   static final int MAX_COGNITIVE_ITEMS = 20;
@@ -80,10 +61,6 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
 
   private final LlmGatewayApplicationService gateway;
   private final ObjectMapper objectMapper = new ObjectMapper();
-
-  /** 真实 provider 地址；未配置时网关回落内置 Mock，本适配器显式拒绝其响应（见类注释 G0-2）。 */
-  @Value("${bone.ai.gateway.base-url:}")
-  private String gatewayBaseUrl;
 
   public AiGatewayPortAdapter(LlmGatewayApplicationService gateway) {
     this.gateway = gateway;
@@ -106,10 +83,11 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
                         + "另可给出认知层字段（缺失即视为空数组，禁止臆造）："
                         + "facts(array of {code,value,evidenceRef}，从材料抽取的结构化事实)、"
                         + "evidenceRefs(array of string，证据定位)、clauseRefs(array of string，条款引用)、"
-                        + "discrepancies(array of string，取值限定于 [AMOUNT_MISMATCH, "
-                        + "DIAGNOSIS_FEE_MISMATCH, DRUG_INDICATION_MISMATCH, EVIDENCE_MISSING, "
-                        + "DUPLICATE_ITEM, OTHER])。每个数组最多20项、每项字符串最多200字符。"
-                        + "认知层字段仅供人工核赔与留痕，不得影响 rejectSuggested 或 confidence。"),
+                        + "discrepancies(array of string，取值严格限定于 ["
+                        + String.join(", ", AiDiscrepancyCodes.ALL)
+                        + "]；不在清单内的码一律不得输出)。每个数组最多20项、每项字符串最多200字符。"
+                        + "认知层字段不得影响金额、rejectSuggested 或 confidence；"
+                        + "白名单内的差异码仅供系统把案件从自动通过拉回补件/复核，不是拒赔结论。"),
                 LlmMessage.user(prompt)),
             null,
             null,

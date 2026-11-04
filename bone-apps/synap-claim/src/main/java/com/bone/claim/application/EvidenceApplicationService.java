@@ -1,5 +1,6 @@
 package com.bone.claim.application;
 
+import com.bone.claim.application.port.out.DocumentParsePort;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
@@ -28,10 +29,20 @@ public class EvidenceApplicationService {
   private final TenantPort tenantPort;
   private final DomainEventPublisher domainEventPublisher;
   private final com.bone.claim.domain.repository.ClaimCaseRepository claimCaseRepository;
+  private final DocumentParsePort documentParsePort;
 
   /** 登记材料入参。 */
   public record RegisterEvidence(
       long claimId, DocType docType, String fileRef, String contentHash, String verifyValid) {}
+
+  /** 解析结果（供工作台展示与解析成功率埋点；{@code reason} 为受控码）。 */
+  public record ParseOutcome(
+      String status,
+      boolean available,
+      boolean complete,
+      BigDecimal minConfidence,
+      int fieldCount,
+      String reason) {}
 
   /**
    * 登记材料（重；复内容哈希 → 409）。
@@ -66,6 +77,45 @@ public class EvidenceApplicationService {
     evidenceRepository.insert(evidence);
     domainEventPublisher.publishFrom(evidence);
     return evidence.getId();
+  }
+
+  /**
+   * 主动解析（感知层入口）：把单证原文交给 {@link DocumentParsePort} 抽成结构化事实后回填。
+   *
+   * <p>与 {@link #markParsed} 的分工：本方法由域内触发，字段级置信度与原文坐标由解析器产出； {@code markParsed} 保留给外部 OCR/LLM
+   * 回调与人工补录（调用方自报结果）。 文本层缺失或关键字段不齐一律落 {@code FAILED}/{@code MANUAL}，绝不默写缺失值。
+   */
+  @Transactional
+  public ParseOutcome parse(long evidenceId, String rawText) {
+    Evidence evidence = load(evidenceId);
+    DocumentParsePort.ParsedDocument document =
+        documentParsePort.parse(evidence.docTypeEnum(), rawText);
+
+    OcrStatus status;
+    BigDecimal confidence;
+    if (!document.available()) {
+      // 传 null 而非 0：markParsed 会在 <0.7 时把状态覆盖成 MANUAL，
+      // 而「没有文本层」必须保持 FAILED（人工补录入口），两者不是同一件事。
+      status = OcrStatus.FAILED;
+      confidence = null;
+    } else if (!document.complete()) {
+      status = OcrStatus.MANUAL;
+      confidence = document.minConfidence();
+    } else {
+      status = OcrStatus.DONE;
+      confidence = document.minConfidence();
+    }
+
+    evidence.markParsed(status, confidence, document.extractedJson(), null);
+    evidenceRepository.save(evidence);
+    domainEventPublisher.publishFrom(evidence);
+    return new ParseOutcome(
+        evidence.ocrStatusEnum().name(),
+        document.available(),
+        document.complete(),
+        document.minConfidence(),
+        document.fields().size(),
+        document.reason());
   }
 
   /** 解析结果回填（OCR/LLM 回调入口）。 */
@@ -108,6 +158,15 @@ public class EvidenceApplicationService {
       domainEventPublisher.publishFrom(evidence);
     }
     reflowEvidenceSubmitting(claimId, operatorId);
+    // 案件级事件（一次锁定一条）：供自动决策触发器串联「材料齐备 → 审核」，
+    // 逐份 EvidenceLockedEvent 仍是审计事件，不被当作 N 次决策触发点。
+    domainEventPublisher.publish(
+        new com.bone.claim.domain.model.evidence.event.EvidenceSetLockedEvent(
+            claimId,
+            tenantPort.currentTenantId(),
+            evidences.size(),
+            operatorId,
+            java.time.Instant.now()));
     return evidences.size();
   }
 

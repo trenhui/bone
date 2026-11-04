@@ -1,6 +1,5 @@
 package com.bone.claim.infrastructure.ai;
 
-import com.bone.claim.application.port.out.AiCapabilityDeclaration;
 import com.bone.claim.application.port.out.AiGatewayPort;
 import com.bone.claim.application.port.out.AiGatewayPort.Fact;
 import com.bone.claim.application.port.out.AiGatewayUnavailableException;
@@ -39,12 +38,6 @@ import org.springframework.stereotype.Component;
     havingValue = "local",
     matchIfMissing = false)
 public class LocalAiGatewayPortAdapter implements AiGatewayPort {
-
-  @Override
-  public AiCapabilityDeclaration declaration() {
-    return AiCapabilityDeclaration.stub(
-        "C5_LLM", "LLM_UNAVAILABLE", "synap.claim.ai.gateway.mode=local 是紧急回退态；去掉即走真实网关适配器");
-  }
 
   private static final BigDecimal AI_CONFIDENCE = new BigDecimal("0.93");
 
@@ -112,5 +105,11 @@ public class LocalAiGatewayPortAdapter implements AiGatewayPort {
 
   private static String nullToEmpty(String s) {
     return s == null ? "" : s;
+  }
+
+  @Override
+  public com.bone.claim.application.port.out.AiCapabilityDeclaration declaration() {
+    return com.bone.claim.application.port.out.AiCapabilityDeclaration.stub(
+        "C5_LLM", "本地确定性桩：未接真实 LLM provider", "配置 bone.ai.gateway.base-url 接入真实 provider");
   }
 }

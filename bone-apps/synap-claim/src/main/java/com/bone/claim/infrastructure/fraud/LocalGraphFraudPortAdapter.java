@@ -1,6 +1,5 @@
 package com.bone.claim.infrastructure.fraud;
 
-import com.bone.claim.application.port.out.AiCapabilityDeclaration;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.application.port.out.GraphFraudPort;
 import org.springframework.stereotype.Component;
@@ -14,12 +13,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class LocalGraphFraudPortAdapter implements GraphFraudPort {
-
-  @Override
-  public AiCapabilityDeclaration declaration() {
-    return AiCapabilityDeclaration.stub(
-        "E2_GRAPH", "ANTI_FRAUD_E2_NOT_INTEGRATED", "接入国产图库做多跳关联/社区发现并同步覆盖本声明");
-  }
 
   @Override
   public FraudResult screen(ClaimContextPort.ClaimContextView ctx) {

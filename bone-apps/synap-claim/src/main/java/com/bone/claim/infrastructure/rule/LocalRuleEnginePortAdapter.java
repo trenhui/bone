@@ -1,6 +1,5 @@
 package com.bone.claim.infrastructure.rule;
 
-import com.bone.claim.application.port.out.AiCapabilityDeclaration;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.application.port.out.RuleEnginePort;
 import java.math.BigDecimal;
@@ -36,12 +35,6 @@ import org.springframework.stereotype.Component;
     havingValue = "stub",
     matchIfMissing = false)
 public class LocalRuleEnginePortAdapter implements RuleEnginePort {
-
-  @Override
-  public AiCapabilityDeclaration declaration() {
-    return AiCapabilityDeclaration.stub(
-        "C2_RULE", "RULE_ENGINE_STUB", "mode=stub 是紧急回退态；缺省装配走 QlExpressRuleEnginePortAdapter");
-  }
 
   private static final BigDecimal RULE_CONFIDENCE = new BigDecimal("0.90");
 

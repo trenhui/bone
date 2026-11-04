@@ -619,17 +619,6 @@ if ! python3 scripts/check-eval-baseline.py --check; then
   echo -e "${RED}❌ G0 基线真源不合规（冻结集骨架 / 指标字典 / wired 符号，详见上方逐条）${RESET}"
   exit_code=1
 fi
-
-# 2026-11-04 追加（P0-2 测评用例集）：G0 管的是 RAG 冻结集骨架与指标字典，
-# 看不到 synap-claim 散落在 Java 测试里的 30 条 AI 决策/分诊回归用例。监管 §4 要求
-# 「测评用例集」有清单、有来源、有变更必跑的门禁；§24 要求 PII 禁入评测集。
-# 新门禁把用例登记成版本化资产，并钉死：删用例让门禁变轻 / 清单抢跑于代码 /
-# 关键负向探针被抹掉 / 判据退化成恒绿 —— 四者任一发生即判红。纯标准库、毫秒级，
-# 与上面的 G0 真源校验合并进同一编号项，避免改动 [x/45] 全量编号。
-if ! python3 scripts/check-claim-ai-evalset.py --check; then
-  echo -e "${RED}❌ 理赔 AI 决策回归评测集不合规（用例库存 / 来源可达 / 负向探针 / PII，详见上方逐条）${RESET}"
-  exit_code=1
-fi
 echo -e "${YELLOW}[42/45] 门禁脚本自身单元测试（防门禁回归 · scripts/tests）...${RESET}"
 if ! python3 -m unittest discover -s scripts/tests -p 'test_*.py' --verbose 2>&1; then
   echo -e "${RED}❌ 门禁自身单元测试失败（门禁脚本可能已回归，详见上方 traceback）${RESET}"

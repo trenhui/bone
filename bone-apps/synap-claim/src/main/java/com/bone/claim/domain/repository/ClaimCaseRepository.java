@@ -23,6 +23,20 @@ import java.util.List;
 public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
 
   /**
+   * 跨案发票去重（R-FRAUD-07 的业务前置）：同租户下同一发票代码 + 号码对应的赔案。
+   *
+   * <p>显式带 tenantId 条件，不依赖 SDK 自动租户过滤；DB 唯一约束 {@code uk_tenant_invoice} 仍是并发下的最后防线。
+   * 调用方须排除本案自身，用于「建单时才 409」提前为「材料阶段就拦截」。
+   */
+  default List<ClaimCase> findByInvoice(Long tenantId, String invoiceCode, String invoiceNo) {
+    return findByCriteria(
+        Criteria.<ClaimCase>create()
+            .eq(ClaimCase::getTenantId, tenantId)
+            .eq(ClaimCase::getInvoiceCode, invoiceCode)
+            .eq(ClaimCase::getInvoiceNo, invoiceNo));
+  }
+
+  /**
    * 赔案头 + 明细扁平投影（每明细一行，头字段逐行重复）。
    *
    * <p>AUTO 租户：SQL 模板放 {@code /*bone:tenant*}{@code /} 锚点，SDK 自动注入 {@code c.tenant_id =
