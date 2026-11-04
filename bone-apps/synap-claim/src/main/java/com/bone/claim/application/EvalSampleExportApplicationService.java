@@ -8,6 +8,7 @@ import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.DecisionExecutionRepository;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -107,7 +108,56 @@ public class EvalSampleExportApplicationService {
     }
 
     return new EvalSampleExport(
-        from, to, limit, samples.size(), truncated, hashSamples(samples), samples);
+        from,
+        to,
+        limit,
+        samples.size(),
+        truncated,
+        hashSamples(samples),
+        summarize(samples),
+        samples);
+  }
+
+  /**
+   * 按判定态聚合，并给出「可计算一致率的样本数」。
+   *
+   * <p><b>{@code evaluableCount == 0} 时必须让调用方看见</b>：那是「没有可比结论」，不是「一致率 0%」。前者说明这批数据
+   * 根本不支持任何准确率结论（例如当期 AI 全部转人工），后者说明模型全错——两者的处置动作完全相反。若不出聚合字段， 调用方要么自己数（各写一套、口径漂移），要么把空结果当「达标」。
+   *
+   * <p>{@code agreementRate} 在无可比结论时返回 {@code null} 而不是 {@code 0}：0 会被下游当作有效测量值写进看板与回归基线， {@code
+   * null} 会迫使下游显式判空（NaN / 除零在多数报表里也是「静默变 0」）。
+   */
+  static AgreementSummary summarize(List<EvalSampleExport.Sample> samples) {
+    if (samples == null || samples.isEmpty()) {
+      return new AgreementSummary(0, 0, 0, 0, 0, null);
+    }
+    int agree = 0;
+    int disagree = 0;
+    int noBinary = 0;
+    int notConverged = 0;
+    for (EvalSampleExport.Sample sample : samples) {
+      // valueOf 遇未知取值直接抛（快速失败）；下面的求和校验兜住「新增判定态却忘了归类」。
+      switch (Agreement.valueOf(sample.agreement())) {
+        case AGREE -> agree++;
+        case DISAGREE -> disagree++;
+        case UNKNOWN_NO_BINARY_VERDICT -> noBinary++;
+        case UNKNOWN_NOT_CONVERGED -> notConverged++;
+      }
+    }
+    int counted = agree + disagree + noBinary + notConverged;
+    if (counted != samples.size()) {
+      // 新增判定态而这里没跟上时，四态之和会小于样本数。静默漏统会让一致率虚高、总量看着正常，
+      // 所以宁可让整次导出失败，也不输出一个自己都对不上账的聚合。
+      throw new IllegalStateException(
+          "判定态聚合与样本数不一致：" + counted + " != " + samples.size() + "，存在未归类的判定态");
+    }
+    int evaluable = agree + disagree;
+    BigDecimal rate =
+        evaluable == 0
+            ? null
+            : BigDecimal.valueOf(agree)
+                .divide(BigDecimal.valueOf(evaluable), 4, RoundingMode.HALF_UP);
+    return new AgreementSummary(agree, disagree, noBinary, notConverged, evaluable, rate);
   }
 
   /** AI 建议与最终结果的一致性判定（纯函数，供单测与变异验证）。 */
@@ -268,6 +318,28 @@ public class EvalSampleExportApplicationService {
   }
 
   /**
+   * 一次导出的判定态分布。
+   *
+   * @param evaluableCount {@code agree + disagree}，即真正能进入一致率计算的样本数
+   * @param agreementRate 弱标签一致率（{@code agree / evaluableCount}，4 位小数）；{@code evaluableCount == 0}
+   *     时为 {@code null}
+   */
+  public record AgreementSummary(
+      int agree,
+      int disagree,
+      int unknownNoBinaryVerdict,
+      int unknownNotConverged,
+      int evaluableCount,
+      BigDecimal agreementRate) {
+
+    /** 派生字段：显式声明名称，避免下游把 {@code agreementRate} 直接当模型准确率对外报。 */
+    @JsonProperty("rateMeaning")
+    public String rateMeaning() {
+      return "弱标签一致率（AI 建议 vs 案件终态）；evaluableCount=0 时 agreementRate 为 null，表示无可比结论，不是 0%";
+    }
+  }
+
+  /**
    * 一次导出的完整结果（清单 + 样本）。
    *
    * <p>{@code splitPolicy} 恒为 {@code eval-only}：这些样本已经「被 AI 判断过」，用于训练会让模型在自己的
@@ -280,10 +352,20 @@ public class EvalSampleExportApplicationService {
       int returned,
       boolean truncated,
       String samplesHash,
+      AgreementSummary agreementSummary,
       List<Sample> samples) {
 
     static EvalSampleExport empty(Instant from, Instant to, int limit) {
-      return new EvalSampleExport(from, to, limit, 0, false, hashSamples(List.of()), List.of());
+      return new EvalSampleExport(
+          from,
+          to,
+          limit,
+          0,
+          false,
+          hashSamples(List.of()),
+          // 空集也走同一个聚合函数：null 语义只在一处实现，避免两处各自判空后逐渐走偏。
+          summarize(List.of()),
+          List.of());
     }
 
     @JsonProperty("generatedAt")

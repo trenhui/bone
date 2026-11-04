@@ -39,6 +39,8 @@ public class EvalSampleController {
           "按决策收敛时间窗导出「AI 建议 + 案件最终状态」的弱标签样本。"
               + "标签来自案件终态（FINISHED / CLOSED_REJECTED），不是独立盲标金标准；"
               + "AI 转人工/补件的样本标记为 UNKNOWN，不计入准确率。"
+              + "返回体 agreementSummary 给出各判定态条数：evaluableCount=0 表示这批数据没有可比结论"
+              + "（此时 agreementRate=null，不是一致率 0%）。"
               + "时间窗最多 31 天、单次最多 500 条——越界直接 400，不静默裁剪。"
               + "返回体不含报案号与被保人标识，仅供 eval-only 使用。")
   @PreAuthorize("hasAuthority('claim:claims:read')")

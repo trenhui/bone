@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
+import com.bone.claim.application.EvalSampleExportApplicationService.AgreementSummary;
 import com.bone.claim.application.EvalSampleExportApplicationService.EvalSampleExport;
 import com.bone.claim.application.EvalSampleExportApplicationService.EvalSampleExport.Sample;
 import com.bone.claim.common.ClaimErrorCodes;
@@ -173,6 +174,66 @@ class EvalSampleExportApplicationServiceTest {
         .hasSize(64);
   }
 
+  // ===== 聚合口径：0 条可比结论 ≠ 一致率 0% =====
+
+  @Test
+  void summaryCountsEveryState() {
+    List<Sample> samples =
+        List.of(
+            sample("a", "AUTO_APPROVE", "FINISHED", "AGREE"),
+            sample("b", "SUGGEST_REJECT", "CLOSED_REJECTED", "AGREE"),
+            sample("c", "AUTO_APPROVE", "CLOSED_REJECTED", "DISAGREE"),
+            sample("d", "MANUAL_REQUIRED", "FINISHED", "UNKNOWN_NO_BINARY_VERDICT"),
+            sample("e", "AUTO_APPROVE", "PRE_EXAMINED", "UNKNOWN_NOT_CONVERGED"));
+
+    AgreementSummary summary = EvalSampleExportApplicationService.summarize(samples);
+
+    assertThat(summary.agree()).isEqualTo(2);
+    assertThat(summary.disagree()).isEqualTo(1);
+    assertThat(summary.unknownNoBinaryVerdict()).isEqualTo(1);
+    assertThat(summary.unknownNotConverged()).isEqualTo(1);
+    assertThat(summary.evaluableCount()).isEqualTo(3);
+    assertThat(summary.agreementRate()).isEqualByComparingTo("0.6667");
+    // 四态之和必须等于样本数：漏统计某个状态会让一致率虚高，而总量看上去仍然正常。
+    assertThat(
+            summary.agree()
+                + summary.disagree()
+                + summary.unknownNoBinaryVerdict()
+                + summary.unknownNotConverged())
+        .isEqualTo(samples.size());
+  }
+
+  /** 关键负向：全部「AI 转人工」时必须给 null，不能给 0——0 会被下游当作「模型全错」写进基线。 */
+  @Test
+  void noComparableVerdictYieldsNullRate() {
+    List<Sample> samples =
+        List.of(
+            sample("a", "MANUAL_REQUIRED", "FINISHED", "UNKNOWN_NO_BINARY_VERDICT"),
+            sample("b", "NEED_MORE_EVIDENCE", "CLOSED_REJECTED", "UNKNOWN_NO_BINARY_VERDICT"));
+
+    AgreementSummary summary = EvalSampleExportApplicationService.summarize(samples);
+
+    assertThat(summary.evaluableCount()).isZero();
+    assertThat(summary.agreementRate()).isNull();
+  }
+
+  @Test
+  void emptySummaryHasNullRate() {
+    AgreementSummary summary = EvalSampleExportApplicationService.summarize(List.of());
+
+    assertThat(summary.evaluableCount()).isZero();
+    assertThat(summary.agreementRate()).isNull();
+  }
+
+  /** 新增判定态却忘了更新聚合时必须炸：静默漏统会让「条数之和 ≠ 样本数」永远无人发现。 */
+  @Test
+  void unknownAgreementValueFailsFast() {
+    Sample stranger = sample("a", "AUTO_APPROVE", "FINISHED", "SOME_FUTURE_STATE");
+
+    assertThatThrownBy(() -> EvalSampleExportApplicationService.summarize(List.of(stranger)))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
   // ===== 组装：缺失案件跳过、截断标记、依据随样本 =====
 
   @Test
@@ -233,6 +294,10 @@ class EvalSampleExportApplicationServiceTest {
     assertThat(only.agreement()).isEqualTo("UNKNOWN_NO_BINARY_VERDICT");
     assertThat(only.agreementBasis()).contains("不计入准确率");
     assertThat(only.humanInvolved()).isFalse();
+    // 导出路径也要带上聚合：只有样本、没有聚合，调用方就会自己去数（多套口径）。
+    assertThat(export.agreementSummary().unknownNoBinaryVerdict()).isEqualTo(1);
+    assertThat(export.agreementSummary().evaluableCount()).isZero();
+    assertThat(export.agreementSummary().agreementRate()).isNull();
   }
 
   /** 派生字段必须真的出现在 JSON 里：文档承诺了 labelSource / splitPolicy，返回体缺字段就是静默失约。 */
@@ -251,6 +316,9 @@ class EvalSampleExportApplicationServiceTest {
         .contains("\"splitPolicy\"")
         .contains("\"generatedAt\"");
     assertThat(json).contains("eval-only");
+    // 聚合与「不可计算」语义必须出现在返回体里：null 被吞掉，调用方就只能看到「没这个字段」。
+    assertThat(json).contains("\"agreementSummary\"").contains("\"rateMeaning\"");
+    assertThat(json).contains("\"agreementRate\":null");
   }
 
   // ===== 夹具 =====

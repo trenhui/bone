@@ -585,6 +585,21 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 
 > **为什么 `MANUAL_REQUIRED` 不算一致**：把「AI 建议转人工、人工也处理了」记成「AI 判断对了」，会让准确率被「AI 没给结论」的样本持续抬高，且从报表上看不出异常——这是指标造假的经典形态，不是口径选择问题。
 
+**聚合口径：返回体自带「这批数据能不能算一致率」**
+
+导出体含 `agreementSummary`，按判定态计数并给出可计算率：
+
+| 字段 | 含义 |
+|---|---|
+| `agree` / `disagree` / `unknownNoBinaryVerdict` / `unknownNotConverged` | 四种判定态的条数；四者之和恒等于 `returned`（不足即抛错，不输出自己都对不上账的聚合） |
+| `evaluableCount` | `agree + disagree`，真正能进入一致率计算的样本数 |
+| `agreementRate` | `agree / evaluableCount`（4 位小数）；**`evaluableCount=0` 时为 `null`** |
+| `rateMeaning` | 固定说明串：弱标签一致率，不得直接当模型准确率对外报 |
+
+> **为什么 `evaluableCount=0` 要显式给出、且 `agreementRate` 用 `null` 而非 `0`**：这是两件不同的事实——`0%` 是「模型全错」，`null` 是「这批判据根本不成立」。多数报表把 null/NaN 静默变成 0，于是「当期一条可比结论都没有」被写成「一致率 0%，严重退化」，触发一轮并不存在的排障；**反向更危险**：调度器把空结果当「达标」，从此没人发现评测已经空转。
+>
+> 不是假设。当期 dev 库实测（2026-11-05，31 天窗口）：`claim_decision_execution` 84 条收敛记录 **100% 为 `FALLBACK`，`decision_result` 全为 `MANUAL_REQUIRED`** ⇒ `evaluableCount=0`、`agreementRate=null`。不看这个字段，导出物看起来「有 84 条样本」，实际一条也不能用于准确率；若把它们当正例计入，一致率会显示成 100%。
+
 **脱敏与泄漏防护**
 
 - 样本键 = `sha256(域前缀 + claimId)` 前 16 位：可去重、不可直接反查案件号（导出物会离开系统边界）。
