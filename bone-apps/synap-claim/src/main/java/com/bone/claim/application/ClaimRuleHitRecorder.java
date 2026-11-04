@@ -51,12 +51,13 @@ public class ClaimRuleHitRecorder {
             }
           });
     } catch (Exception e) {
-      // 留痕落库失败不应回滚主流程；记录日志供人工 / 对账兜底。
+      // 留痕落库失败不应回滚主流程；[AUDIT_WRITE_FAILED] 结构化标记供合规监控告警 + 人工 / 对账兜底。
       log.error(
-          "规则命中留痕落库失败: claimId={}, executionId={}, tenantId={}",
+          "[AUDIT_WRITE_FAILED] rule_hit claimId={} executionId={} tenantId={} event={}",
           event.claimId(),
           event.executionId(),
           event.tenantId(),
+          event.getClass().getSimpleName(),
           e);
     }
   }

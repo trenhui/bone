@@ -66,8 +66,13 @@ public class ClaimStakeholderRecorder {
                     event.occurredAt()));
           });
     } catch (Exception e) {
-      // 留痕落库失败不应回滚主流程；记录日志供人工 / 对账兜底。
-      log.error("报案干系人留痕落库失败: claimId={}, tenantId={}", event.claimId(), event.tenantId(), e);
+      // 留痕落库失败不应回滚主流程；[AUDIT_WRITE_FAILED] 结构化标记供合规监控告警 + 人工 / 对账兜底。
+      log.error(
+          "[AUDIT_WRITE_FAILED] stake_holder claimId={} tenantId={} event={}",
+          event.claimId(),
+          event.tenantId(),
+          event.getClass().getSimpleName(),
+          e);
     }
   }
 }
