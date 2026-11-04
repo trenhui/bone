@@ -55,6 +55,15 @@ public class AutoApprovalApplicationService {
   @Value("${bone.claim.auto-approve.max-amount:1000}")
   private BigDecimal maxAmount;
 
+  /**
+   * 部署态只读：自动放款总开关当前是否开启（供 §15 治理清单 / 可达性查询使用）。
+   *
+   * <p><b>只暴露状态，不提供任何修改入口</b>：开关属资金策略，变更须走签核与配置发布，不能由一次 HTTP 调用打开。
+   */
+  public boolean isAutoApproveEnabled() {
+    return enabled;
+  }
+
   /** 消费结果（{@code applied=false} 时 {@code reason} 必为受控原因码，便于聚合「为什么没自动放款」）。 */
   public record AutoApprovalOutcome(
       boolean applied, String reason, String settlementNo, BigDecimal amount) {
