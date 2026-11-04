@@ -1,5 +1,6 @@
 package com.bone.claim.application.port.out;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -11,6 +12,21 @@ public interface PolicyQueryPort {
 
   /** 保单快照（**按"此刻生效中"过滤**，不存在/已过期返回 {@link Optional#empty()}）。 */
   Optional<PolicySnapshot> findActivePolicy(String policyNo, Long planId);
+
+  /**
+   * 按<b>保司侧保单号</b>查"此刻生效中"的保单（可能 0 条、1 条或多条）。
+   *
+   * <p><b>为什么必须返回列表、且不能在这里替调用方"取第一条"</b>：保司保单号在多保司/团险场景下不唯一——
+   * 一张团险保单可以按成员或计划拆成多张平台保单，续保时也可能沿用同一保司号。若端口层静默取首条，
+   * "这笔赔案记在哪张保单、扣哪个额度池"就由数据库返回顺序决定，属于<b>无提示的错记</b>（金额风险）， 而不是"查不到"这种显性失败。
+   *
+   * <p>消歧责任在应用层：先按被保人清单收敛，仍不唯一则 fail-closed（要求调用方补平台保单号）。
+   *
+   * @param insurerPolicyNo 保司侧保单号（调用方保证非空白）
+   * @param planId 计划 ID（透传进快照，不参与本查询的过滤）
+   * @return 命中列表（无命中返回空列表，不返回 {@code null}）
+   */
+  List<PolicySnapshot> findActivePoliciesByInsurerNo(String insurerPolicyNo, Long planId);
 
   /**
    * 保单快照（**不按"此刻是否生效中"过滤**，只回答该保单的期间）。
@@ -32,7 +48,15 @@ public interface PolicyQueryPort {
 
   /** 保单快照（报案校验最小字段集）。 */
   record PolicySnapshot(
+      /** 平台保单号（本仓对外业务号，赔案表 {@code policy_no} 只存这个）。 */
       String policyNo,
+      /**
+       * 保司侧保单号（§16-2 双保单号）。
+       *
+       * <p><b>为什么快照要带它</b>：渠道可能同时上报平台号与保司号。只按平台号解析、把保司号丢掉，
+       * 就无法发现"两个号指向不同保单"这种录入错误——赔案会静默记到平台号那张保单上，而渠道侧认的是另一张， 对账时才暴露。带上它才能做交叉校验（fail-closed）。
+       */
+      String insurerPolicyNo,
       Long planId,
       String planVersion,
       /**

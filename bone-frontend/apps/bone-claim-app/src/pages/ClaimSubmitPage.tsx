@@ -51,6 +51,12 @@ export function ClaimSubmitPage(): ReactElement {
   }, []);
 
   const onFinish = async (values: SubmitFormValues) => {
+    // 「至少一个保单标识」是后端同一条约束的前置提示：两个都空提交上去只会换回一个 400 错误码，
+    // 在表单内就挡住能少一次无意义的往返（规则本身不放松——后端仍是唯一判定方）。
+    if (!values.policyNo?.trim() && !values.insurerPolicyNo?.trim()) {
+      message.error('请填写平台保单号或保司保单号（至少一个）');
+      return;
+    }
     setSubmitting(true);
     try {
       const req: SubmitClaimReq = {
@@ -74,7 +80,13 @@ export function ClaimSubmitPage(): ReactElement {
             ? '出险时间不在保单有效期内'
             : errorCode === 'SC_CLAIM_INSURED_MISMATCH'
               ? '当前登录账号与该保单被保人不匹配'
-              : '提交失败，请稍后重试或联系核赔员';
+              : errorCode === 'SC_CLAIM_POLICY_AMBIGUOUS'
+                ? '该保司保单号对应多张保单，无法确定归属：请改填平台保单号，或联系核赔员确认'
+                : errorCode === 'SC_CLAIM_POLICY_NUMBER_CONFLICT'
+                  ? '平台保单号与保司保单号指向不同保单，请核对后重新提交'
+                  : errorCode === 'SC_CLAIM_POLICY_KEY_REQUIRED'
+                    ? '请填写平台保单号或保司保单号（至少一个）'
+                    : '提交失败，请稍后重试或联系核赔员';
       message.error(text);
     } finally {
       setSubmitting(false);
@@ -111,8 +123,24 @@ export function ClaimSubmitPage(): ReactElement {
           initialValues={{ claimType: 'OUTPATIENT', items: [] as ClaimItemReq[] }}
         >
           <Space size="large" wrap>
-            <Form.Item name="policyNo" label="保单号" rules={[{ required: true, message: '请输入保单号' }]}>
+            <Form.Item
+              name="policyNo"
+              label="保单号"
+              tooltip="平台保单号。与「保司保单号」至少填一个；两者都填时以本字段为准，号码不一致会被拒收。"
+            >
               <Input placeholder="EG20260001" style={{ width: 220 }} />
+            </Form.Item>
+            {/*
+              保司侧保单号（§16-2）：员工手上常常只有保司给的号（保司来单/保险卡）。
+              选填而非必填——平台号仍是主键，两个都必填只会让日常报案多一次无谓录入；
+              「至少填一个」的约束在提交前统一校验（后端也有同一道闸，返回 400 可见）。
+            */}
+            <Form.Item
+              name="insurerPolicyNo"
+              label="保司保单号"
+              tooltip="保险卡/保司通知上的保单号（选填）。保司号可能对应多张平台保单，若无法唯一确定，系统会提示改填平台保单号。"
+            >
+              <Input placeholder="如 INS-2026-0001" style={{ width: 220 }} />
             </Form.Item>
             <Form.Item name="planId" label="计划ID" rules={[{ required: true, message: '请输入计划ID' }]}>
               <InputNumber placeholder="7" stringMode style={{ width: 160 }} />

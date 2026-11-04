@@ -26,8 +26,8 @@ import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
  * ClaimErrorCodes#CLAIM_CONCURRENT_CONFLICT}（409）——禁业务层 {@code SELECT ... FOR UPDATE}。
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ClaimCaseApplicationService {
 
@@ -86,19 +87,16 @@ public class ClaimCaseApplicationService {
       return new SubmittedClaim(existing.getId(), existing.getClaimNo());
     }
 
-    // 报案前置校验：保单生效中 + 被保人匹配（§7.1）；快照缺失即拒收，不进入状态机
-    Optional<PolicyQueryPort.PolicySnapshot> policy =
-        policyQueryPort.findActivePolicy(command.policyNo(), command.planId());
-    if (policy.isEmpty()) {
-      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_POLICY_NOT_ACTIVE, command.policyNo());
-    }
-    PolicyQueryPort.PolicySnapshot snapshot = policy.get();
+    // 报案前置校验：保单生效中 + 被保人匹配（§7.1）；快照缺失即拒收，不进入状态机。
+    // 入参可以是平台保单号，也可以是保司侧保单号（§16-2 双保单号）：解析/消歧规则集中在 resolvePolicy，
+    // 下游一律只用解析出的平台号（赔案表 policy_no 的语义永远是平台号，不因入参写法而变）。
+    PolicyQueryPort.PolicySnapshot snapshot = resolvePolicy(command);
     if (!snapshot.covers(command.insuredIdHash())) {
-      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_INSURED_MISMATCH, command.policyNo());
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_INSURED_MISMATCH, snapshot.policyNo());
     }
     if (command.outInsureTime().isBefore(snapshot.effectiveFrom())
         || command.outInsureTime().isAfter(snapshot.effectiveTo())) {
-      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_OUT_OF_POLICY_PERIOD, command.policyNo());
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_OUT_OF_POLICY_PERIOD, snapshot.policyNo());
     }
 
     long claimId = DistributedIdGenerator.generateLongId();
@@ -129,7 +127,9 @@ public class ClaimCaseApplicationService {
         ClaimCase.draft(
             claimId,
             tenantId,
-            command.policyNo(),
+            // 落库的是**解析后的平台保单号**：入参给的是保司号时 command.policyNo() 为空，
+            // 直接用会把 NOT NULL 列写成空串（等于把"按保司号收的单"变成孤儿赔案，额度/对账两侧都对不上）。
+            snapshot.policyNo(),
             command.planId(),
             command.insuredIdHash(),
             command.claimType(),
@@ -644,10 +644,133 @@ public class ClaimCaseApplicationService {
 
   private static final int MAX_RETRY = 3;
 
+  /**
+   * 报案入参 → 唯一一张"此刻可用"的平台保单（§16-2 双保单号的收单侧闭环）。
+   *
+   * <p><b>解析顺序（顺序本身是业务规则，不可调换）</b>：
+   *
+   * <ol>
+   *   <li><b>有平台号就只按平台号查</b>，不回退到保司号。回退会把"平台号打错一个字"变成"恰好命中同保司号的另一张保单"—— 通道报错本应立即暴露，回退却把它变成一次静默错记；
+   *   <li><b>只有保司号</b>时按保司号查可用保单列表。保司号<b>没有唯一约束</b>（团险一张保司保单号可按成员/计划 拆成多张平台保单，续保也可能沿用同号），故：
+   *       <ul>
+   *         <li>0 条 → 拒收（保单不存在/未生效）；
+   *         <li>1 条 → 直接采用；
+   *         <li>多条 → 用<b>被保人是否在该保单承保名单内</b>收敛（唯一有业务含义的判据）：唯一命中即采用； 全部不命中 → 403 被保人不匹配；仍有多条命中 →
+   *             fail-closed（{@code SC_CLAIM_POLICY_AMBIGUOUS}）， 要求调用方补平台号，<b>绝不按生效期/ID 取第一条</b>。
+   *       </ul>
+   *   <li>两个号都填 → 平台号解析结果为准，并用保司号做<b>交叉校验</b>：渠道手上的两个号指向不同保单时立刻拒收， 否则赔案记在 A 保单、渠道按 B
+   *       保单对账，月底才暴露且无法自动纠正。
+   * </ol>
+   *
+   * <p><b>为什么不把"按保司号"也做成 SQL 单条 + LIMIT 1</b>：那等于把消歧交给数据库返回顺序，
+   * 多命中时"赔哪张、扣哪个额度池"就是偶然结果——这是无提示的错记，比拒收严重得多。
+   */
+  private PolicyQueryPort.PolicySnapshot resolvePolicy(SubmitClaim command) {
+    String platformNo = trimToNull(command.policyNo());
+    String insurerNo = trimToNull(command.insurerPolicyNo());
+    if (platformNo == null && insurerNo == null) {
+      // 两个号都能为空（为支持"只拿得到保司号"的渠道），故这条约束只能在这里兜：不能交给请求体上的 @NotBlank，
+      // 否则要么把保司号渠道挡在门外，要么让"两个都空"的请求一路走到金额链路。
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_POLICY_KEY_REQUIRED);
+    }
+
+    if (platformNo != null) {
+      PolicyQueryPort.PolicySnapshot snapshot =
+          policyQueryPort
+              .findActivePolicy(platformNo, command.planId())
+              .orElseThrow(
+                  ClaimErrors.supplier(ClaimErrorCodes.CLAIM_POLICY_NOT_ACTIVE, platformNo));
+      verifyInsurerNoConsistency(snapshot, insurerNo);
+      return snapshot;
+    }
+
+    List<PolicyQueryPort.PolicySnapshot> candidates =
+        policyQueryPort.findActivePoliciesByInsurerNo(insurerNo, command.planId());
+    if (candidates.isEmpty()) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_POLICY_NOT_ACTIVE, insurerNo);
+    }
+    if (candidates.size() == 1) {
+      return resolvedByInsurerNo(candidates.get(0), insurerNo);
+    }
+
+    List<PolicyQueryPort.PolicySnapshot> covered =
+        candidates.stream().filter(c -> c.covers(command.insuredIdHash())).toList();
+    if (covered.size() == 1) {
+      return resolvedByInsurerNo(covered.get(0), insurerNo);
+    }
+    if (covered.isEmpty()) {
+      // 保单确实存在（至少一张），只是这个被保人不在任何一张的承保名单里——403 比"保单不存在"更准确，
+      // 也避免运营去查一个其实没问题的保单号。
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_INSURED_MISMATCH, insurerNo);
+    }
+    // 命中多张且被保人同时在其中多张（常见于同一员工被重复承保、或主险/附加险各建一张）：
+    // 报错里只回条数，不回平台号列表——同租户内这些号可能属于其他被保人，回显等于越权泄露。
+    log.warn(
+        "[POLICY_AMBIGUOUS] insurerPolicyNo={} candidates={} coveredByInsured={}",
+        insurerNo,
+        candidates.size(),
+        covered.size());
+    throw ClaimErrors.of(ClaimErrorCodes.CLAIM_POLICY_AMBIGUOUS, "命中 " + covered.size() + " 张可用保单");
+  }
+
+  /**
+   * 双号交叉校验：请求同时带了保司号时，必须与保单上登记的一致。
+   *
+   * <p>保单<b>未登记</b>保司号（0117 之前建的存量行）时只告警不拒收：平台号仍是权威归属依据， 拒收会让"存量保单 +
+   * 新渠道"这个组合在灰度期全线不可用；但缺口必须可见（结构化标记供补录统计）。
+   */
+  private void verifyInsurerNoConsistency(
+      PolicyQueryPort.PolicySnapshot snapshot, String requestInsurerPolicyNo) {
+    if (requestInsurerPolicyNo == null) {
+      return;
+    }
+    String stored = trimToNull(snapshot.insurerPolicyNo());
+    if (stored == null) {
+      log.warn(
+          "[POLICY_INSURER_NO_ABSENT] policyNo={} requestInsurerPolicyNo={}",
+          snapshot.policyNo(),
+          requestInsurerPolicyNo);
+      return;
+    }
+    if (!stored.equals(requestInsurerPolicyNo)) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_POLICY_NUMBER_CONFLICT, snapshot.policyNo());
+    }
+  }
+
+  /** 按保司号解析成功后留痕：赔案落的是平台号，此处是"这个平台号是怎么找出来的"的唯一线索。 */
+  private PolicyQueryPort.PolicySnapshot resolvedByInsurerNo(
+      PolicyQueryPort.PolicySnapshot snapshot, String insurerPolicyNo) {
+    log.info(
+        "[POLICY_RESOLVED_BY_INSURER_NO] insurerPolicyNo={} policyNo={}",
+        insurerPolicyNo,
+        snapshot.policyNo());
+    return snapshot;
+  }
+
+  private static String trimToNull(String value) {
+    if (value == null) {
+      return null;
+    }
+    String trimmed = value.trim();
+    return trimmed.isEmpty() ? null : trimmed;
+  }
+
   /** 报案提交命令（应用层入站契约，平铺于 {@code application/}，无 handler 子包——ADR-0028）。 */
   public record SubmitClaim(
       String idempotencyKey,
+      /**
+       * 平台保单号（{@code t_claim_policy.policy_no}）。
+       *
+       * <p>与 {@link #insurerPolicyNo} 二者至少填一个（都为空的请求在应用层被拒，返回 400）。 两者都填时<b>平台号优先</b>，保司号退化为交叉校验位。
+       */
       String policyNo,
+      /**
+       * 保司侧保单号（{@code t_claim_policy.insurer_policy_no}，§16-2）。
+       *
+       * <p>用于"渠道只拿得到保司自己的号"的收单场景（保司来单/团险成员卡面）。<b>不能唯一命中时 fail-closed</b>： 保司号没有唯一约束，多命中不替调用方猜（猜错 =
+       * 金额记到别的保单/额度池上），而是要求补平台号。
+       */
+      String insurerPolicyNo,
       Long planId,
       String insuredIdHash,
       String claimType,
@@ -686,6 +809,7 @@ public class ClaimCaseApplicationService {
       return new SubmitClaim(
           idempotencyKey,
           policyNo,
+          insurerPolicyNo,
           planId,
           insuredIdHash,
           claimType,
@@ -706,6 +830,7 @@ public class ClaimCaseApplicationService {
       return new SubmitClaim(
           idempotencyKey,
           policyNo,
+          insurerPolicyNo,
           planId,
           insuredIdHash,
           claimType,
@@ -726,6 +851,7 @@ public class ClaimCaseApplicationService {
       return new SubmitClaim(
           idempotencyKey,
           policyNo,
+          insurerPolicyNo,
           planId,
           insuredIdHash,
           claimType,

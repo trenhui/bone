@@ -43,7 +43,20 @@ export interface ClaimItemReq {
 }
 
 export interface SubmitClaimReq {
-  policyNo: string;
+  /**
+   * 平台保单号（t_claim_policy.policy_no）。
+   *
+   * 与 insurerPolicyNo 二者**至少填一个**（都为空后端返回 400 SC_CLAIM_POLICY_KEY_REQUIRED）。
+   * 两者都填时以本字段为准，保司号作为交叉校验——两号指向不同保单会被拒收（422 SC_CLAIM_POLICY_NUMBER_CONFLICT）。
+   */
+  policyNo?: string;
+  /**
+   * 保司侧保单号（t_claim_policy.insurer_policy_no，§16-2）。
+   *
+   * 用于只拿得到保司自己保单号的场景（保司来单/团险成员卡面）。该号不唯一：命中多张可用保单且
+   * 无法按被保人收敛时，后端返回 422 SC_CLAIM_POLICY_AMBIGUOUS，需改传平台保单号。
+   */
+  insurerPolicyNo?: string;
   planId: string;
   insuredIdHash: string;
   claimType?: string;

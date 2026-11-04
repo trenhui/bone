@@ -39,12 +39,20 @@ class QuotaYearResolverTest {
       public Optional<PolicySnapshot> findByPolicy(String policyNo, Long planId) {
         return Optional.ofNullable(snapshot);
       }
+
+      /** 年度裁决不走保司号解析（那是收单前置校验的职责），这里恒空。 */
+      @Override
+      public java.util.List<PolicySnapshot> findActivePoliciesByInsurerNo(
+          String insurerPolicyNo, Long planId) {
+        return java.util.List.of();
+      }
     };
   }
 
   private static PolicyQueryPort.PolicySnapshot term(LocalDate inception, LocalDate expiry) {
     return new PolicyQueryPort.PolicySnapshot(
         POLICY,
+        "",
         PLAN,
         "v1",
         java.util.List.of("h-insured"),
@@ -140,6 +148,7 @@ class QuotaYearResolverTest {
               portReturning(
                   new PolicyQueryPort.PolicySnapshot(
                       POLICY,
+                      "",
                       PLAN,
                       "v1",
                       java.util.List.of("h-insured"),

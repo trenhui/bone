@@ -943,12 +943,22 @@ public class ScenarioHarness {
     void seed(String policyNo, Long planId, String insuredIdHash, Instant from, Instant to) {
       map.put(
           policyNo + "|" + planId,
-          new PolicySnapshot(policyNo, planId, "v1", java.util.List.of(insuredIdHash), from, to));
+          new PolicySnapshot(
+              policyNo, "", planId, "v1", java.util.List.of(insuredIdHash), from, to));
     }
 
     @Override
     public Optional<PolicySnapshot> findActivePolicy(String policyNo, Long planId) {
       return Optional.ofNullable(map.get(policyNo + "|" + planId));
+    }
+
+    /** 场景夹具不建保司号（seed 一律写空串）⇒ 本方法恒返回空；解析规则由应用层单测直接覆盖。 */
+    @Override
+    public java.util.List<PolicySnapshot> findActivePoliciesByInsurerNo(
+        String insurerPolicyNo, Long planId) {
+      return map.values().stream()
+          .filter(s -> insurerPolicyNo != null && insurerPolicyNo.equals(s.insurerPolicyNo()))
+          .toList();
     }
 
     /** 场景里不区分"生效中"与"仅期间"：年度口径需要能回答已满期保单。 */

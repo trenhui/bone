@@ -598,6 +598,9 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_STATUS_CONFLICT` | 409 | 状态冲突（当前状态不允许该动作） |
 | `SC_CLAIM_CONCURRENT_CONFLICT` | 409 | 乐观锁冲突（版本竞争重试后仍失败） |
 | `SC_CLAIM_POLICY_NOT_ACTIVE` | 400 | 保单不存在/未生效（报案前置校验） |
+| `SC_CLAIM_POLICY_KEY_REQUIRED` | 400 | 报案未提供任何保单标识（平台保单号与保司保单号均为空） |
+| `SC_CLAIM_POLICY_AMBIGUOUS` | 422 | 保司保单号命中多张可用保单，无法唯一确定赔案归属（须改传平台保单号） |
+| `SC_CLAIM_POLICY_NUMBER_CONFLICT` | 422 | 同一请求的平台保单号与保司保单号指向不同保单 |
 | `SC_CLAIM_OUT_OF_POLICY_PERIOD` | 400 | 出险时间不在保单有效期内 |
 | `SC_CLAIM_INSURED_MISMATCH` | 400 | 被保人不匹配（假名化 ID 比对失败） |
 | `SC_CLAIM_REJECT_REASON_REQUIRED` | 400 | 拒赔五要素缺失（REJECTED 必填） |

@@ -81,12 +81,13 @@ class ClaimPolicyKeywordSearchTest {
     String group = orGroup(captureListCriteria("智联", null).whereSql());
 
     assertThat(group)
-        .as("关键字须同时匹配保单号与保单名称两列")
+        .as("关键字须匹配保单号、保单名称、保司侧保单号三列")
         .contains("policy_no LIKE")
         .contains("policy_name LIKE")
+        .contains("insurer_policy_no LIKE")
         .contains("OR");
-    // 组内恰好两个 LIKE：防止多/少匹配列时静默漂移
-    assertThat(group.split("LIKE", -1)).as("条件组内应恰有两个 LIKE 谓词").hasSize(3);
+    // 组内恰好三个 LIKE：防止多/少匹配列时静默漂移
+    assertThat(group.split("LIKE", -1)).as("条件组内应恰有三个 LIKE 谓词").hasSize(4);
   }
 
   @Test

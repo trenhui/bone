@@ -1,6 +1,7 @@
 SELECT
        id,
        policy_no,
+       insurer_policy_no,
        policy_name,
        insurer_name,
        branch_name,

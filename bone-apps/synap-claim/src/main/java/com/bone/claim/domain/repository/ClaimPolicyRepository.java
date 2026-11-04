@@ -40,14 +40,31 @@ public interface ClaimPolicyRepository extends Repository<ClaimPolicy, Long> {
   ClaimPolicy findUsablePolicy(@Param("policyNo") String policyNo);
 
   /**
-   * 按保司侧保单号查全部匹配保单（§16-2 双保单号方案 B：policy_no 为平台号，insurer_policy_no 为保司号）。
+   * 按保司侧保单号查<b>全部</b>匹配保单（§16-2 双保单号方案 B：policy_no 为平台号，insurer_policy_no 为保司号）。
    *
-   * <p>返回列表：insurer_policy_no 未加唯一约束（同一保司号可对应多张平台保单），调用方按需取首条或做归属校验。
+   * <p><b>不按"此刻生效中"过滤</b>，只用于对账/检索这类"该保司号历史上对应过哪些平台保单"的问题。
+   * <b>收单前置校验不要用本方法</b>——已满期/已停用/快照过期的保单也会被查出来，直接放行会把"过期保单还能报案" 这个错误变成金额风险；收单侧必须用 {@link
+   * #findUsablePoliciesByInsurerNo}。
+   *
+   * <p>返回列表：insurer_policy_no 未加唯一约束（同一保司号可对应多张平台保单，团险尤甚）， 调用方不得假设唯一。
    */
   default List<ClaimPolicy> findByInsurerPolicyNo(String insurerPolicyNo) {
     return findByCriteria(
         Criteria.<ClaimPolicy>create().eq(ClaimPolicy::getInsurerPolicyNo, insurerPolicyNo));
   }
+
+  /**
+   * 按保司侧保单号查<b>此刻可用</b>的保单（生效期内 + 规则启用 + 快照未过期）。
+   *
+   * <p><b>为什么返回列表而不是单条</b>：{@code insurer_policy_no} 没有唯一约束——团险一张保司保单号
+   * 可能对应多张平台保单（按成员/计划拆分），配置面也允许同一保司号在不同期间各建一张。这里若像 {@code findUsablePolicy} 那样 {@code LIMIT
+   * 1}，就会在多命中时<b>静默取一条</b>，把"该赔哪张保单"变成数据库返回顺序 决定的偶然结果（金额直接记到错误的保单/额度池上）。故由调用方显式判定"唯一命中/多命中"。
+   *
+   * <p>排序 {@code effective_start DESC, id DESC}：多命中时给调用方一个稳定顺序（用于日志与人工核查时的可复现性），
+   * 但<b>不得</b>拿"取第一条"当消歧规则——消歧必须走业务判据（被保人是否在承保名单内）。
+   */
+  @TenantScope(TenantScopeMode.AUTO)
+  List<ClaimPolicy> findUsablePoliciesByInsurerNo(@Param("insurerPolicyNo") String insurerPolicyNo);
 
   /**
    * 分页查保单（配置面）。

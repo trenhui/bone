@@ -372,6 +372,7 @@ class QuotaReleaseOwnershipScenarioTest {
         new ClaimCaseApplicationService.SubmitClaim(
             "idem-rel-" + seq,
             POLICY,
+            null,
             PLAN,
             INSURED,
             "OUTPATIENT",

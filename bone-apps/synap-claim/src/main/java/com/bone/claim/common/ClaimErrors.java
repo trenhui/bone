@@ -19,6 +19,12 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.CLAIM_STATUS_CONFLICT, 409),
           Map.entry(ClaimErrorCodes.CLAIM_CONCURRENT_CONFLICT, 409),
           Map.entry(ClaimErrorCodes.CLAIM_POLICY_NOT_ACTIVE, 422),
+          // 400：请求体缺字段（两个保单标识都为空），不是业务前提不成立
+          Map.entry(ClaimErrorCodes.CLAIM_POLICY_KEY_REQUIRED, 400),
+          // 422：号码存在但仅凭入参无法唯一确定归属 ⇒ 补平台号或合单，不是"保单不存在"
+          Map.entry(ClaimErrorCodes.CLAIM_POLICY_AMBIGUOUS, 422),
+          // 422：两个保单号互相矛盾 ⇒ 先修正号对再收单
+          Map.entry(ClaimErrorCodes.CLAIM_POLICY_NUMBER_CONFLICT, 422),
           Map.entry(ClaimErrorCodes.CLAIM_OUT_OF_POLICY_PERIOD, 422),
           Map.entry(ClaimErrorCodes.CLAIM_INSURED_MISMATCH, 403),
           Map.entry(ClaimErrorCodes.CLAIM_REJECT_REASON_REQUIRED, 400),

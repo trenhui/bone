@@ -203,6 +203,7 @@ class CrossCaseAccumulationScenarioTest {
         new ClaimCaseApplicationService.SubmitClaim(
             "idem-cross-" + seq,
             POLICY,
+            null,
             PLAN,
             INSURED,
             "OUTPATIENT",

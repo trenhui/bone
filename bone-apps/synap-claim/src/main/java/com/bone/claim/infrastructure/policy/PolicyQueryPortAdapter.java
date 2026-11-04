@@ -31,6 +31,9 @@ import org.springframework.stereotype.Component;
  *   <li>{@link #findByPolicy}：额度年度裁决"这笔费用落在第几个保单年度"——<b>必须能回答已满期保单</b>，
  *       否则年末发票跨年理赔、已满期保单的补赔/申诉复议/退票红冲会被一律误判成"保单不存在"。
  * </ul>
+ *
+ * <p>第三个方法 {@link #findActivePoliciesByInsurerNo} 是 {@link #findActivePolicy} 的"按保司侧保单号"版本：
+ * 生效判据逐条相同，只因保司号不唯一而返回列表（消歧在应用层，不在本适配器里"取第一条"）。
  */
 @Component
 @RequiredArgsConstructor
@@ -68,6 +71,23 @@ public class PolicyQueryPortAdapter implements PolicyQueryPort {
   }
 
   /**
+   * 按保司侧保单号查"此刻生效中"的保单（0/1/多张）。
+   *
+   * <p>与 {@link #findActivePolicy} 同一套生效判据（生效期内 + 规则启用 + 快照未过期），差别只在匹配列： 平台号唯一，故那边返回 {@code
+   * Optional}；保司号不唯一，这里必须原样返回全部命中，由应用层判定是否可以唯一收敛。
+   */
+  @Override
+  public java.util.List<PolicySnapshot> findActivePoliciesByInsurerNo(
+      String insurerPolicyNo, Long planId) {
+    java.util.List<ClaimPolicy> policies =
+        claimPolicyRepository.findUsablePoliciesByInsurerNo(insurerPolicyNo);
+    if (policies == null || policies.isEmpty()) {
+      return java.util.List.of();
+    }
+    return policies.stream().map(policy -> toSnapshot(policy, planId)).toList();
+  }
+
+  /**
    * 实体 → 端口快照。
    *
    * <p><b>{@code insuredIdHashes} 是整份被保人清单</b>（不是其中一个）：一张团险保单承保一群人，
@@ -76,6 +96,7 @@ public class PolicyQueryPortAdapter implements PolicyQueryPort {
   private PolicySnapshot toSnapshot(ClaimPolicy policy, Long planId) {
     return new PolicySnapshot(
         policy.getPolicyNo(),
+        policy.getInsurerPolicyNo(),
         planId,
         policy.getPolicyVersion(),
         parseInsuredHashes(policy.getInsuredSnapshot()),

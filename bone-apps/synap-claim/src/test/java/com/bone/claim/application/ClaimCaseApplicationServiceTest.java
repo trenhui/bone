@@ -58,6 +58,7 @@ class ClaimCaseApplicationServiceTest {
     snapshot =
         new PolicyQueryPort.PolicySnapshot(
             "EG20260001",
+            "INS-EG20260001",
             7L,
             "v3",
             java.util.List.of("hash-abc"),
@@ -75,6 +76,7 @@ class ClaimCaseApplicationServiceTest {
     return new SubmitClaim(
         idempotencyKey,
         "EG20260001",
+        null,
         7L,
         "hash-abc",
         "OUTPATIENT",
@@ -123,6 +125,7 @@ class ClaimCaseApplicationServiceTest {
         new SubmitClaim(
             "idem-ctx",
             "EG20260001",
+            null,
             7L,
             "hash-abc",
             "OUTPATIENT",
@@ -172,6 +175,7 @@ class ClaimCaseApplicationServiceTest {
         new SubmitClaim(
             "idem-consent",
             "EG20260001",
+            null,
             7L,
             "hash-abc",
             "OUTPATIENT",
@@ -284,6 +288,193 @@ class ClaimCaseApplicationServiceTest {
             ex ->
                 assertThat(((BizException) ex).getErrorCode())
                     .isEqualTo(ClaimErrorCodes.CLAIM_INSURED_MISMATCH));
+  }
+
+  // ===================== §16-2 双保单号：按保司号收单（解析/消歧/fail-closed） =====================
+  //
+  // 这一组用例守的是"保司号能收单"这条链路的**判定**，而不是"代码里有个 if"：
+  // ① 平台号与保司号都可为空（保司来单只带自己的号），但两个都空必须 400；
+  // ② 保司号命中多张时不替调用方猜——按被保人收敛，收敛不了就拒收，绝不按生效期/ID 取第一条；
+  // ③ 有平台号时只按平台号查，不回退保司号（否则"打错一个字"会静默命中另一张保单）。
+
+  @Test
+  @DisplayName("只传保司号且唯一命中 → 建案，落库的是**平台号**（不是入参的保司号）")
+  void submitByInsurerNoResolvesPlatformPolicyNo() {
+    when(policyQueryPort.findActivePoliciesByInsurerNo("INS-001", 7L))
+        .thenReturn(List.of(snapshotOf("EG20260001", "INS-001", "hash-abc")));
+    when(claimCaseRepository.findByIdempotencyKey(TENANT_ID, "idem-ins")).thenReturn(null);
+
+    service.submit(insurerKeyedCommand("idem-ins", "INS-001"));
+
+    org.mockito.ArgumentCaptor<ClaimCase> captor =
+        org.mockito.ArgumentCaptor.forClass(ClaimCase.class);
+    verify(claimCaseRepository).insert(captor.capture());
+    // 入参是保司号，但赔案表 policy_no 的语义永远是平台号：写成保司号会让额度/对账两侧都指不到保单
+    assertThat(captor.getValue().getPolicyNo()).isEqualTo("EG20260001");
+  }
+
+  @Test
+  @DisplayName("只传保司号且命中多张 → 按被保人承保名单收敛到唯一一张")
+  void submitByInsurerNoDisambiguatesByInsured() {
+    when(policyQueryPort.findActivePoliciesByInsurerNo("INS-001", 7L))
+        .thenReturn(
+            List.of(
+                snapshotOf("EG-GROUP-A", "INS-001", "hash-other"),
+                snapshotOf("EG-GROUP-B", "INS-001", "hash-abc")));
+    when(claimCaseRepository.findByIdempotencyKey(TENANT_ID, "idem-ins2")).thenReturn(null);
+
+    service.submit(insurerKeyedCommand("idem-ins2", "INS-001"));
+
+    org.mockito.ArgumentCaptor<ClaimCase> captor =
+        org.mockito.ArgumentCaptor.forClass(ClaimCase.class);
+    verify(claimCaseRepository).insert(captor.capture());
+    assertThat(captor.getValue().getPolicyNo()).isEqualTo("EG-GROUP-B");
+  }
+
+  @Test
+  @DisplayName("只传保司号且被保人同时在多张保单内 → SC_CLAIM_POLICY_AMBIGUOUS（422），不建案")
+  void submitByInsurerNoAmbiguousFailsClosed() {
+    when(policyQueryPort.findActivePoliciesByInsurerNo("INS-001", 7L))
+        .thenReturn(
+            List.of(
+                snapshotOf("EG-GROUP-A", "INS-001", "hash-abc"),
+                snapshotOf("EG-GROUP-B", "INS-001", "hash-abc")));
+
+    assertThatThrownBy(() -> service.submit(insurerKeyedCommand("idem-ins3", "INS-001")))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getErrorCode())
+                    .as("多命中必须显性拒收：取第一条 = 把金额错记到另一张保单，且无人能发现")
+                    .isEqualTo(ClaimErrorCodes.CLAIM_POLICY_AMBIGUOUS));
+    verify(claimCaseRepository, never()).insert(any());
+  }
+
+  @Test
+  @DisplayName("只传保司号命中多张但被保人不在任何一张 → SC_CLAIM_INSURED_MISMATCH（403）")
+  void submitByInsurerNoNotCoveringInsured() {
+    when(policyQueryPort.findActivePoliciesByInsurerNo("INS-001", 7L))
+        .thenReturn(
+            List.of(
+                snapshotOf("EG-GROUP-A", "INS-001", "hash-other"),
+                snapshotOf("EG-GROUP-B", "INS-001", "hash-other2")));
+
+    assertThatThrownBy(() -> service.submit(insurerKeyedCommand("idem-ins4", "INS-001")))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getErrorCode())
+                    .as("保单是存在的，只是这个被保人不在名单里——报成『保单不存在』会让运营去查一个没问题的号")
+                    .isEqualTo(ClaimErrorCodes.CLAIM_INSURED_MISMATCH));
+  }
+
+  @Test
+  @DisplayName("只传保司号且无任何可用保单 → SC_CLAIM_POLICY_NOT_ACTIVE（422）")
+  void submitByInsurerNoNotFound() {
+    when(policyQueryPort.findActivePoliciesByInsurerNo("INS-404", 7L)).thenReturn(List.of());
+
+    assertThatThrownBy(() -> service.submit(insurerKeyedCommand("idem-ins5", "INS-404")))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getErrorCode())
+                    .isEqualTo(ClaimErrorCodes.CLAIM_POLICY_NOT_ACTIVE));
+  }
+
+  @Test
+  @DisplayName("平台号查不到时不回退保司号 → 仍按 NOT_ACTIVE 拒收（防『打错一个字』静默命中另一张保单）")
+  void submitPlatformNoMissDoesNotFallBackToInsurerNo() {
+    when(policyQueryPort.findActivePolicy("EG-TYPO", 7L)).thenReturn(Optional.empty());
+    SubmitClaim command = bothKeysCommand("idem-fb", "EG-TYPO", "INS-001");
+
+    assertThatThrownBy(() -> service.submit(command))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getErrorCode())
+                    .isEqualTo(ClaimErrorCodes.CLAIM_POLICY_NOT_ACTIVE));
+    verify(policyQueryPort, never()).findActivePoliciesByInsurerNo(any(), any());
+  }
+
+  @Test
+  @DisplayName("平台号与保司号自洽 → 正常建案")
+  void submitWithConsistentNumberPair() {
+    when(policyQueryPort.findActivePolicy("EG20260001", 7L)).thenReturn(Optional.of(snapshot));
+    when(claimCaseRepository.findByIdempotencyKey(TENANT_ID, "idem-pair")).thenReturn(null);
+
+    service.submit(bothKeysCommand("idem-pair", "EG20260001", "INS-EG20260001"));
+
+    verify(claimCaseRepository).insert(any(ClaimCase.class));
+  }
+
+  @Test
+  @DisplayName("平台号与保司号指向不同保单 → SC_CLAIM_POLICY_NUMBER_CONFLICT（422），不建案")
+  void submitWithConflictingNumberPair() {
+    when(policyQueryPort.findActivePolicy("EG20260001", 7L)).thenReturn(Optional.of(snapshot));
+
+    assertThatThrownBy(
+            () -> service.submit(bothKeysCommand("idem-pair2", "EG20260001", "INS-WRONG")))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getErrorCode())
+                    .as("两个号必须自洽：否则赔案记在平台号那张、渠道按保司号那张对账，月底才发现且无法自动纠正")
+                    .isEqualTo(ClaimErrorCodes.CLAIM_POLICY_NUMBER_CONFLICT));
+    verify(claimCaseRepository, never()).insert(any());
+  }
+
+  @Test
+  @DisplayName("两个保单标识都为空 → SC_CLAIM_POLICY_KEY_REQUIRED（400），且不触发任何保单查询")
+  void submitWithoutAnyPolicyKey() {
+    assertThatThrownBy(() -> service.submit(bothKeysCommand("idem-none", null, "  ")))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getErrorCode())
+                    .isEqualTo(ClaimErrorCodes.CLAIM_POLICY_KEY_REQUIRED));
+    verify(policyQueryPort, never()).findActivePolicy(any(), any());
+    verify(policyQueryPort, never()).findActivePoliciesByInsurerNo(any(), any());
+  }
+
+  /** 报案命令的"只带保司号"变体（平台号置空）。 */
+  private SubmitClaim insurerKeyedCommand(String idempotencyKey, String insurerPolicyNo) {
+    return bothKeysCommand(idempotencyKey, null, insurerPolicyNo);
+  }
+
+  /** 报案命令的"双号"变体：只覆盖两个保单标识，其余沿用 {@link #command(String)} 的默认值。 */
+  private SubmitClaim bothKeysCommand(
+      String idempotencyKey, String policyNo, String insurerPolicyNo) {
+    SubmitClaim base = command(idempotencyKey);
+    return new SubmitClaim(
+        base.idempotencyKey(),
+        policyNo,
+        insurerPolicyNo,
+        base.planId(),
+        base.insuredIdHash(),
+        base.claimType(),
+        base.invoiceCode(),
+        base.invoiceNo(),
+        base.invoiceDate(),
+        base.hospitalCode(),
+        base.diagnosisCode(),
+        base.outInsureTime(),
+        base.batchNo(),
+        base.consentRecordId(),
+        base.insurerCode(),
+        base.items());
+  }
+
+  /** 指定保单号与承保名单的快照（承保名单决定多命中时能否唯一收敛）。 */
+  private static PolicyQueryPort.PolicySnapshot snapshotOf(
+      String policyNo, String insurerPolicyNo, String insuredIdHash) {
+    return new PolicyQueryPort.PolicySnapshot(
+        policyNo,
+        insurerPolicyNo,
+        7L,
+        "v3",
+        List.of(insuredIdHash),
+        Instant.parse("2026-01-01T00:00:00Z"),
+        Instant.parse("2026-12-31T23:59:59Z"));
   }
 
   @Test
@@ -452,6 +643,7 @@ class ClaimCaseApplicationServiceTest {
     return new SubmitClaim(
         idempotencyKey,
         "EG20260001",
+        null,
         7L,
         "hash-abc",
         "OUTPATIENT",

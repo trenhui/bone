@@ -14,9 +14,17 @@ import java.util.List;
 /** 报案提交请求（员工端 / 存量旁路 sync 共用）。 */
 @Schema(description = "报案提交请求")
 public record SubmitClaimReq(
-    @Schema(description = "保单号", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotBlank(message = "保单号不能为空")
+    @Schema(
+            description =
+                "平台保单号（t_claim_policy.policy_no）。与 insurerPolicyNo 二者至少填一个；"
+                    + "两者都填时以本字段为准，保司号作为交叉校验（不一致即拒收 422）")
         String policyNo,
+    @Schema(
+            description =
+                "保司侧保单号（t_claim_policy.insurer_policy_no，§16-2）。用于只拿得到保司自己保单号的渠道；"
+                    + "该号不唯一，命中多张可用保单且无法按被保人收敛时返回 422 SC_CLAIM_POLICY_AMBIGUOUS，"
+                    + "需改传平台保单号")
+        String insurerPolicyNo,
     @Schema(description = "计划ID", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull(message = "计划ID不能为空")
         Long planId,

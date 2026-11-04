@@ -23,6 +23,30 @@ public final class ClaimErrorCodes {
   /** 保单不存在/未生效/被保人不匹配（报案前置校验）。 */
   public static final String CLAIM_POLICY_NOT_ACTIVE = "SC_CLAIM_POLICY_NOT_ACTIVE";
 
+  /**
+   * 报案未提供任何保单标识（平台保单号与保司保单号都为空）。
+   *
+   * <p>400 而非 422：这是请求体缺字段（形状问题），不是"业务前提不成立"。 为什么不在请求体上给 {@code policyNo} 加
+   * {@code @NotBlank}：保司来单/成员卡面只有保司自己的号，必填会把这类渠道整体挡在门外； 而"两个都空"又必须在进入金额链路之前拦住，故把约束放在应用层解析入口。
+   */
+  public static final String CLAIM_POLICY_KEY_REQUIRED = "SC_CLAIM_POLICY_KEY_REQUIRED";
+
+  /**
+   * 保司保单号命中多张可用保单，无法唯一确定赔案归属（团险同号多单 / 重复承保）。
+   *
+   * <p>422 而非 409：请求合法、操作人有权限，是"仅凭入参无法判定该记在哪张保单"这一前提不成立。 <b>不复用 {@code
+   * SC_CLAIM_POLICY_NOT_ACTIVE}</b>：那会把"号码没问题、只是不唯一"报成"保单不存在"，运营会去查一个 其实存在的保单号，真正的处置（补平台号 /
+   * 合单）反而被掩盖。
+   */
+  public static final String CLAIM_POLICY_AMBIGUOUS = "SC_CLAIM_POLICY_AMBIGUOUS";
+
+  /**
+   * 同一请求里的平台保单号与保司保单号指向不同保单。
+   *
+   * <p>422：两个号都必须自洽才允许收单——否则赔案记在平台号那张、渠道按保司号那张对账，属于月底才暴露、 且无法自动纠正的错记。
+   */
+  public static final String CLAIM_POLICY_NUMBER_CONFLICT = "SC_CLAIM_POLICY_NUMBER_CONFLICT";
+
   /** 出险时间不在保单有效期内。 */
   public static final String CLAIM_OUT_OF_POLICY_PERIOD = "SC_CLAIM_OUT_OF_POLICY_PERIOD";
 

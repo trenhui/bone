@@ -38,7 +38,11 @@ currency: current
 **请求体**
 ```json
 {
-  "policyNo": "EG20260001",          // 保单号（A类，假名化前校验）
+  "policyNo": "EG20260001",          // 平台保单号（A类，假名化前校验）；与 insurerPolicyNo 二者至少填一个
+  // "insurerPolicyNo": "INS-2026-0001",  // 保司侧保单号（选填，§16-2）：渠道只拿得到保司自己的号时填这里。
+  //                                      // 有 policyNo 时以平台号为准、本字段作交叉校验（不一致拒绝）；只填本字段时
+  //                                      // 系统按"此刻可用"保单解析，命中多张且无法按被保人收敛则 422 要求改传平台号。
+  //                                      // 落库的赔案 policy_no 恒为平台号。
   // "insuredIdHash" 为 readOnly：由服务端按 HMAC-SHA256+盐计算（盐存 KMS/HSM 双人分片托管），客户端/上游不传该字段，仅传业务主键，明文不上送不落地
   "claimType": "OUTPATIENT",          // 枚举：OUTPATIENT/INPATIENT/...
   "hospitalLevel": "SECONDARY",       // 枚举：PRIMARY/SECONDARY/TERTIARY
@@ -54,7 +58,7 @@ currency: current
 
 **响应**：`201` 返回 claimId、状态（PENDING_EVIDENCE/REVIEWING）、处理结果类型（若已决策）。
 
-**错误码**：`400` 参数校验失败（含字段级原因）；`409` 业务键或状态冲突（同报案号但请求体不一致 / 并发占用 / 同幂等键不同参；**不回传已存在案件引用**，防枚举见工程落地版 §11.3；**同幂等键重复请求不返回 409**，按幂等语义返回首次结果）；`422` 业务规则拒绝（如等待期内）；`424` 保单快照过期/失效；`503` 依赖不可用（可重试，间隔 1s 最多 2 次）。
+**错误码**：`400` 参数校验失败（含字段级原因；`SC_CLAIM_POLICY_KEY_REQUIRED` = `policyNo` 与 `insurerPolicyNo` 都未提供）；`409` 业务键或状态冲突（同报案号但请求体不一致 / 并发占用 / 同幂等键不同参；**不回传已存在案件引用**，防枚举见工程落地版 §11.3；**同幂等键重复请求不返回 409**，按幂等语义返回首次结果）；`422` 业务规则拒绝（如等待期内、`SC_CLAIM_POLICY_NOT_ACTIVE` 保单未生效、`SC_CLAIM_POLICY_AMBIGUOUS` 保司号命中多张可用保单需改传平台号、`SC_CLAIM_POLICY_NUMBER_CONFLICT` 两个保单号指向不同保单）；`424` 保单快照过期/失效；`503` 依赖不可用（可重试，间隔 1s 最多 2 次）。
 
 ### 2.2 审核决策 POST /api/v1/review/tasks/{id}/decision
 

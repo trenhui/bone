@@ -286,6 +286,7 @@ class ClaimE2EScenarioTest {
         new ClaimCaseApplicationService.SubmitClaim(
             "idem-expired",
             "POL-EXPIRED",
+            null,
             9004L,
             "ins-ddd",
             "OUTPATIENT",
@@ -525,6 +526,7 @@ class ClaimE2EScenarioTest {
         new ClaimCaseApplicationService.SubmitClaim(
             "idem-" + policyNo,
             policyNo,
+            null,
             planId,
             insured,
             "OUTPATIENT",
