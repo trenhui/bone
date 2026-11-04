@@ -1,7 +1,9 @@
 package com.bone.claim.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -65,5 +67,17 @@ class ClaimStakeholderRecorderTest {
     recorder.onClaimSubmitted(event);
 
     verify(stakeholderRepository, never()).save(any());
+  }
+
+  /** 守护契约：审计落库失败必须被吞掉、绝不回滚主流程（合规留痕失败不应阻断业务）。 */
+  @Test
+  void swallowsRepositoryExceptionSoMainFlowIsNotRolledBack() {
+    ClaimSubmittedEvent event = new ClaimSubmittedEvent(11L, 7L, "C1", Instant.now());
+    ClaimCase claim = mock(ClaimCase.class);
+    when(claim.getInsuredIdHash()).thenReturn("hash-abc");
+    when(claimCaseRepository.findByClaimNo(7L, "C1")).thenReturn(claim);
+    doThrow(new RuntimeException("db down")).when(stakeholderRepository).save(any());
+
+    assertDoesNotThrow(() -> recorder.onClaimSubmitted(event));
   }
 }

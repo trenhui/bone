@@ -1,7 +1,9 @@
 package com.bone.claim.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -64,5 +66,19 @@ class ClaimRuleHitRecorderTest {
     recorder.onRulesEvaluated(event);
 
     verify(ruleHitRepository, never()).save(any());
+  }
+
+  /** 守护契约：审计落库失败必须被吞掉、绝不回滚主流程（合规留痕失败不应阻断业务）。 */
+  @Test
+  void swallowsRepositoryExceptionSoMainFlowIsNotRolledBack() {
+    Instant now = Instant.now();
+    List<ClaimRulesEvaluatedEvent.RuleHit> hits =
+        List.of(
+            new ClaimRulesEvaluatedEvent.RuleHit(
+                "R-AREA-01", "v1", ClaimRuleHit.CATEGORY_AREA, 1, "{}", "HIT", now));
+    ClaimRulesEvaluatedEvent event = new ClaimRulesEvaluatedEvent(7L, 11L, 99L, hits, now);
+    doThrow(new RuntimeException("db down")).when(ruleHitRepository).save(any());
+
+    assertDoesNotThrow(() -> recorder.onRulesEvaluated(event));
   }
 }

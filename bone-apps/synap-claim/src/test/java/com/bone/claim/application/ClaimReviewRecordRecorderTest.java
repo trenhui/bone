@@ -1,6 +1,9 @@
 package com.bone.claim.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 import com.bone.claim.domain.model.claim.event.ClaimDecisionMadeEvent;
@@ -61,5 +64,16 @@ class ClaimReviewRecordRecorderTest {
     ArgumentCaptor<ClaimReviewRecord> captor = ArgumentCaptor.forClass(ClaimReviewRecord.class);
     verify(reviewRecordRepository).save(captor.capture());
     assertEquals(ClaimReviewRecord.DECISION_REJECTED, captor.getValue().getDecision());
+  }
+
+  /** 守护契约：审计落库失败必须被吞掉、绝不回滚主流程（合规留痕失败不应阻断业务）。 */
+  @Test
+  void swallowsRepositoryExceptionSoMainFlowIsNotRolledBack() {
+    ClaimDecisionMadeEvent event =
+        new ClaimDecisionMadeEvent(
+            11L, 7L, "C1", Decision.APPROVED, "rev-1", "五要素齐全", Instant.now());
+    doThrow(new RuntimeException("db down")).when(reviewRecordRepository).save(any());
+
+    assertDoesNotThrow(() -> recorder.onClaimDecisionMade(event));
   }
 }
