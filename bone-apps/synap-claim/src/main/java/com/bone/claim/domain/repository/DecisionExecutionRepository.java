@@ -6,6 +6,7 @@ import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.domain.annotation.Param;
 import com.bone.metadata.sdk.domain.annotation.TenantScope;
 import com.bone.metadata.sdk.domain.annotation.TenantScopeMode;
+import java.time.Instant;
 import java.util.List;
 
 /** A3 决策执行仓储（执行记录 + 轨迹分开查询：轨迹 append-only 且量大，不随聚合回填）。 */
@@ -33,4 +34,19 @@ public interface DecisionExecutionRepository extends Repository<DecisionExecutio
 
   /** 按 traceId 取全链轨迹（回放）。 */
   List<DecisionTraceNode> findTracesByTraceId(@Param("traceId") String traceId);
+
+  /**
+   * 按收敛时间窗取已完成的执行（评测样本导出的数据源）。
+   *
+   * <p><b>为什么只取 {@code SUCCESS} / {@code FALLBACK}</b>：{@code RUNNING} 尚未产出结论，{@code FAILED}
+   * 是异常中止、没有可比较的决策结果——把这两类混进评测样本会让「AI 准确率」被未完成项稀释。 {@code FALLBACK} 必须保留：它代表 LLM
+   * 不可用时规则路径的结论，正是「降级后还准不准」的评测对象。
+   *
+   * <p><b>为什么上界写死在 SQL（{@code LIMIT 500}）</b>：评测导出是离线批处理入口，不是全库扫描器。 参数化 LIMIT
+   * 在不同数据库/驱动上的绑定行为不一致，写死上界 + 服务层再按请求条数截断，能保证 「最坏情况也只读 500 行」，不会因调用方传大数把库拖死。
+   *
+   * <p>租户条件由 SQL 模板的 tenant 占位符注入，<b>不接受入参租户</b>——防止越权导出他人样本。
+   */
+  List<DecisionExecution> findConvergedInWindow(
+      @Param("from") Instant from, @Param("to") Instant to);
 }

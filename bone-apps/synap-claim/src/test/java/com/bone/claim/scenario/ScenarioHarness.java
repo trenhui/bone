@@ -806,6 +806,25 @@ public class ScenarioHarness {
           .findFirst()
           .orElse(null);
     }
+
+    /**
+     * 评测样本导出的数据源替身：与真实 SQL 同口径——只取收敛态（SUCCESS/FALLBACK）、按完成时间倒序。
+     *
+     * <p>替身必须复制真实 SQL 的<b>过滤语义</b>而不是「返回全部」：否则评测导出在用例里看起来能用， 上生产却因为把 RUNNING/FAILED
+     * 也算进去而让准确率被未完成项稀释。
+     */
+    @Override
+    public List<DecisionExecution> findConvergedInWindow(Instant from, Instant to) {
+      return store.values().stream()
+          .filter(e -> "SUCCESS".equals(e.getStatus()) || "FALLBACK".equals(e.getStatus()))
+          .filter(
+              e ->
+                  e.getFinishedAt() != null
+                      && !e.getFinishedAt().isBefore(from)
+                      && e.getFinishedAt().isBefore(to))
+          .sorted(Comparator.comparing(DecisionExecution::getFinishedAt).reversed())
+          .toList();
+    }
   }
 
   static class InMemorySettlementRepository extends InMemoryRepository<SettlementOrder>

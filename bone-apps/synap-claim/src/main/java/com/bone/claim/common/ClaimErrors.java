@@ -66,7 +66,9 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.CLAIM_COVERAGE_DUPLICATED, 409),
           // 对账处置：404 = 差异不存在/不属本租户；409 = 已处置或结论非法（不静默幂等，见错误码注释）
           Map.entry(ClaimErrorCodes.CLAIM_RECON_DIFF_NOT_FOUND, 404),
-          Map.entry(ClaimErrorCodes.CLAIM_RECON_DIFF_CONFLICT, 409));
+          Map.entry(ClaimErrorCodes.CLAIM_RECON_DIFF_CONFLICT, 409),
+          // 400：调用方参数越界（时间窗/条数），不是业务前提不成立，也不是服务端故障
+          Map.entry(ClaimErrorCodes.CLAIM_EVAL_SAMPLE_QUERY_INVALID, 400));
 
   static {
     checkEveryCodeRegistered();

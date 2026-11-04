@@ -222,4 +222,15 @@ public final class ClaimErrorCodes {
    * 第二次提交的结论可能与第一次不同，静默返回首次结果会让调用方以为"我的结论生效了"。
    */
   public static final String CLAIM_RECON_DIFF_CONFLICT = "SC_CLAIM_RECON_DIFF_CONFLICT";
+
+  // ===== 评测样本导出 =====
+
+  /**
+   * 评测样本查询参数非法：时间窗缺失/倒置/跨度过大，或条数超出上界。
+   *
+   * <p>为什么单独给码而不是让 {@link IllegalArgumentException} 冒泡：全局兜底会把非受检异常翻成 <b>500
+   * COMMON_INTERNAL_ERROR</b>，运维看到的是「服务器故障」而实际是调用方参数错——既误导排查， 又污染 SLI（5xx 率）。 时间窗上界（31
+   * 天）与条数上界（500）是<b>防全库扫描</b>的护栏，必须显式拒绝而不是静默裁剪： 静默裁剪会让调用方以为「导出了全量」。
+   */
+  public static final String CLAIM_EVAL_SAMPLE_QUERY_INVALID = "SC_CLAIM_EVAL_SAMPLE_QUERY_INVALID";
 }
