@@ -108,6 +108,7 @@ public class ClaimConfigApplicationService {
             command.insuredSnapshot(),
             Instant.now());
     policy.configureDocs(command.docClaimApply(), command.docClaimNotice());
+    policy.assignInsurerPolicyNo(command.insurerPolicyNo());
     claimPolicyRepository.save(policy);
     domainEventPublisher.publishFrom(policy);
     return PolicyView.from(policy);
@@ -366,7 +367,8 @@ public class ClaimConfigApplicationService {
       String policyVersion,
       String insuredSnapshot,
       String docClaimApply,
-      String docClaimNotice) {}
+      String docClaimNotice,
+      String insurerPolicyNo) {}
 
   /** 新建计划命令。 */
   public record CreatePlan(
@@ -428,6 +430,7 @@ public class ClaimConfigApplicationService {
       int waitingPeriod,
       String policyVersion,
       String insuredSnapshot,
+      String insurerPolicyNo,
       String configStatus,
       String docClaimApply,
       String docClaimNotice,
@@ -451,6 +454,7 @@ public class ClaimConfigApplicationService {
           p.waitingPeriodDays(),
           p.getPolicyVersion(),
           p.getInsuredSnapshot(),
+          p.getInsurerPolicyNo(),
           p.configStatus(),
           normalizeDocFlag(p.getDocClaimApply()),
           normalizeDocFlag(p.getDocClaimNotice()),

@@ -37,7 +37,9 @@ public final class ClaimConfigRequests {
       @Schema(description = "保单版本") String policyVersion,
       @Schema(description = "被保人清单（假名化ID数组；不存明文证件）") String insuredSnapshot,
       @Schema(description = "理赔申请书作业开关：NEED需生成/NOT_NEED无需生成（缺省 NEED）") String docClaimApply,
-      @Schema(description = "理赔通知单作业开关：NEED需生成/NOT_NEED无需生成（缺省 NEED）") String docClaimNotice) {}
+      @Schema(description = "理赔通知单作业开关：NEED需生成/NOT_NEED无需生成（缺省 NEED）") String docClaimNotice,
+      @Schema(description = "保司侧保单号(§16-2 双保单号：policy_no 为平台号，本字段为保司侧保单号；缺省空)")
+          String insurerPolicyNo) {}
 
   /** 新建计划。 */
   @Schema(description = "新建计划请求")

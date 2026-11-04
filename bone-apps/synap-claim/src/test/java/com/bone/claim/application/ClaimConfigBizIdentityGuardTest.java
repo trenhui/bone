@@ -54,7 +54,7 @@ class ClaimConfigBizIdentityGuardTest {
   private static final Instant T1 = Instant.parse("2026-12-31T00:00:00Z");
   private static final String POLICY_NO = "POL-BIZ-001";
 
-  private CreatePolicy createCmd(String bizIdentityCode) {
+  private CreatePolicy createCmd(String bizIdentityCode, String insurerPolicyNo) {
     return new CreatePolicy(
         POLICY_NO,
         "团险",
@@ -70,7 +70,8 @@ class ClaimConfigBizIdentityGuardTest {
         "v1",
         "[\"h1\"]",
         null,
-        null);
+        null,
+        insurerPolicyNo);
   }
 
   private ClaimInsurer insurerWithStatus(InsurerStatus status) {
@@ -91,7 +92,7 @@ class ClaimConfigBizIdentityGuardTest {
     when(claimInsurerRepository.findByInsurerCode(1L, "YCBX")).thenReturn(null);
     when(tenantPort.currentTenantId()).thenReturn(1L);
 
-    assertThatThrownBy(() -> service.createPolicy(createCmd("YCBX")))
+    assertThatThrownBy(() -> service.createPolicy(createCmd("YCBX", null)))
         .isInstanceOf(BizException.class)
         .satisfies(
             ex ->
@@ -103,7 +104,7 @@ class ClaimConfigBizIdentityGuardTest {
   void createPolicy_withDisabledInsurer_rejected() {
     stubLookup(insurerWithStatus(InsurerStatus.DISABLED));
 
-    assertThatThrownBy(() -> service.createPolicy(createCmd("YCBX")))
+    assertThatThrownBy(() -> service.createPolicy(createCmd("YCBX", null)))
         .isInstanceOf(BizException.class)
         .satisfies(
             ex ->
@@ -115,7 +116,7 @@ class ClaimConfigBizIdentityGuardTest {
   void createPolicy_withTerminatedInsurer_rejected() {
     stubLookup(insurerWithStatus(InsurerStatus.TERMINATED));
 
-    assertThatThrownBy(() -> service.createPolicy(createCmd("YCBX")))
+    assertThatThrownBy(() -> service.createPolicy(createCmd("YCBX", null)))
         .isInstanceOf(BizException.class)
         .hasMessageContaining("停用或终止");
   }
@@ -125,7 +126,7 @@ class ClaimConfigBizIdentityGuardTest {
     when(claimPolicyRepository.findByPolicyNo(POLICY_NO)).thenReturn(null);
     when(tenantPort.currentTenantId()).thenReturn(1L);
 
-    PolicyView view = service.createPolicy(createCmd("  "));
+    PolicyView view = service.createPolicy(createCmd("  ", null));
     assertThat(view.bizIdentityCode()).isBlank();
     verifyNoInteractions(claimInsurerRepository);
   }
@@ -134,8 +135,16 @@ class ClaimConfigBizIdentityGuardTest {
   void createPolicy_withActiveInsurer_accepted() {
     stubLookup(insurerWithStatus(InsurerStatus.ACTIVE));
 
-    PolicyView view = service.createPolicy(createCmd("YCBX"));
+    PolicyView view = service.createPolicy(createCmd("YCBX", null));
     assertThat(view.bizIdentityCode()).isEqualTo("YCBX");
+  }
+
+  @Test
+  void createPolicy_capturesInsurerPolicyNo() {
+    stubLookup(insurerWithStatus(InsurerStatus.ACTIVE));
+
+    var view = service.createPolicy(createCmd("YCBX", "INS-POL-001"));
+    assertThat(view.insurerPolicyNo()).isEqualTo("INS-POL-001");
   }
 
   @Test

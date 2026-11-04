@@ -40,6 +40,16 @@ public interface ClaimPolicyRepository extends Repository<ClaimPolicy, Long> {
   ClaimPolicy findUsablePolicy(@Param("policyNo") String policyNo);
 
   /**
+   * 按保司侧保单号查全部匹配保单（§16-2 双保单号方案 B：policy_no 为平台号，insurer_policy_no 为保司号）。
+   *
+   * <p>返回列表：insurer_policy_no 未加唯一约束（同一保司号可对应多张平台保单），调用方按需取首条或做归属校验。
+   */
+  default List<ClaimPolicy> findByInsurerPolicyNo(String insurerPolicyNo) {
+    return findByCriteria(
+        Criteria.<ClaimPolicy>create().eq(ClaimPolicy::getInsurerPolicyNo, insurerPolicyNo));
+  }
+
+  /**
    * 分页查保单（配置面）。
    *
    * @param tenantId 租户

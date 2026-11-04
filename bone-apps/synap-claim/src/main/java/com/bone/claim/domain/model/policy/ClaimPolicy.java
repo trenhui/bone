@@ -65,6 +65,15 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
   private String policyNo;
 
   /**
+   * 保司侧保单号（§16-2 双保单号方案 B：policy_no 为平台号，insurer_policy_no 为保司侧保单号）。
+   *
+   * <p>冗余列方案：policy_no 保留平台号不动，insurer_policy_no 由保司在注册时提供，用于按保司号检索/匹配。 写入期由 {@link
+   * #assignInsurerPolicyNo} 落库；空串表示「保司号尚未登记」。
+   */
+  @Column(name = "insurer_policy_no", nullable = false)
+  private String insurerPolicyNo = "";
+
+  /**
    * 保单类型（{@link #TYPE_GROUP} / {@link #TYPE_INDIVIDUAL}；历史数据为空按 GROUP 处理）。
    *
    * <p><b>为什么是分类字段而非两套模型</b>：团单与个单在配置结构上同构（保单→计划→险种→责任、 额度账户按被保人开立），差异只在业务语义与入口交互（团单批量导入被保人、个单单人）。
@@ -239,6 +248,16 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
   public void configureDocs(String docClaimApply, String docClaimNotice) {
     this.docClaimApply = normalizeDocFlag(docClaimApply, DOC_NEED);
     this.docClaimNotice = normalizeDocFlag(docClaimNotice, DOC_NEED);
+  }
+
+  /**
+   * 登记保司侧保单号（§16-2 双保单号：policy_no 为平台号，本字段为保司侧保单号）。
+   *
+   * <p>冗余列方案：policy_no 保留平台号不动，insurer_policy_no 单独承载保司号，二者写入期各自落库、 互不影响。空值按空串归一（与 {@link
+   * #policyNo} 的「不可为空」语义区分：保司号允许暂未登记）。
+   */
+  public void assignInsurerPolicyNo(String insurerPolicyNo) {
+    this.insurerPolicyNo = insurerPolicyNo == null ? "" : insurerPolicyNo.trim();
   }
 
   /** 启用保单责任（INACTIVE/PAUSE → ACTIVE）。 */

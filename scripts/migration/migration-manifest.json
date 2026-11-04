@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 116,
+  "executableCount": 117,
   "retired": [],
   "entries": [
     {
@@ -747,6 +747,12 @@
       "file": "0116_assert_claim_case_item_absent.sql",
       "kind": "ddl",
       "summary": "把「早期原型表 t_claim_case_item 已被清理」固化成可执行终态断言。起因是文档漂移：0058 §0 注释称「0047 仅在 meta_entity 目录登记旧 demo 实体名，非物理 DDL」，而 0047 实际建了三张物理表（bak_0047_uischema / t_claim_case 原型 / t_claim_case_item 废弃子表）——0058 恰恰 DROP 了它自己注释里说「不存在」的那张表，逻辑自相矛盾。不回改 0058：migrate.py 按 sha256(文件字节) 记账，改已发脚本（含改注释）会让所有已应用环境报「校验和不符」并拒绝 apply，业界惯例同样是已发迁移不回改、用新迁移修。本脚本不做 DDL，只断言 t_claim_case_item 不存在；仍存在则 SIGNAL 中止（fail-closed）并提示人工确认空表后 DROP——不静默 DROP 是因为断言时点的库可能已有数据（0058 §0 的处置前提是「0 行、无引用」）。幂等：纯断言无副作用。"
+    },
+    {
+      "order": 117,
+      "file": "0117_synap_claim_policy_insurer_no.sql",
+      "kind": "ddl",
+      "summary": "双保单号方案 B（§16-2）：t_claim_policy 新增 insurer_policy_no(VARCHAR(64),默认'')承载保司侧保单号，policy_no 保留平台号不动。冗余列方案迁移面最小，写入期双号各自落库；幂等 information_schema 判定+动态 SQL+终态断言；bone-init.sql 同批加列；查询/匹配优先用 insurer_policy_no（ClaimPolicyRepository.findByInsurerPolicyNo）。"
     }
   ],
   "ordinalConflicts": [

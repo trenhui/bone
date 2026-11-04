@@ -149,7 +149,8 @@ public class ClaimConfigController {
                 request.policyVersion(),
                 request.insuredSnapshot(),
                 request.docClaimApply(),
-                request.docClaimNotice())));
+                request.docClaimNotice(),
+                request.insurerPolicyNo())));
   }
 
   @Operation(summary = "启用保单责任", description = "规则开关置为启用中；此后保单方可接受新报案")
