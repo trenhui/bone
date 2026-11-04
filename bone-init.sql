@@ -2870,6 +2870,8 @@ CREATE TABLE t_adj_liability (
   social_only       TINYINT       NOT NULL DEFAULT 1 COMMENT '1仅赔社保内(R-DIR-01)',
   waiting_period    INT           NOT NULL DEFAULT 0 COMMENT '等待期(天)',
   status            VARCHAR(16)   NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT/GRAY/ACTIVE/RETIRED',
+  shared_code       VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '共享保额共保代码(空=独立责任)',
+  prior_liability_uuid VARCHAR(64) NOT NULL DEFAULT '' COMMENT '先赔后赔前序责任UUID(空=无)',
   tenant_id         BIGINT        NOT NULL COMMENT '租户',
   created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
   created_at        DATETIME(3)   NOT NULL COMMENT '创建时间',
@@ -2889,6 +2891,7 @@ CREATE TABLE t_adj_calculation (
   claim_id          BIGINT      NOT NULL COMMENT '案件ID',
   liability_uuid    VARCHAR(64)   NOT NULL COMMENT '命中责任UUID',
   liability_version VARCHAR(32)   NOT NULL COMMENT '责任版本(复算锁定)',
+  shared_code       VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '本案所属共享池代码(与 liability_uuid 同源, 结算选账户用)',
   rule_version      VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '规则版本',
   plan_version      VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '计划版本(与 claim_case.plan_version 一致, §9.4; 0100)',
   catalog_version   VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '目录版本(医保目录锁定值, §8.2/§9.4; 0100)',
@@ -2971,6 +2974,7 @@ CREATE TABLE t_claim_policy (
   deleted             TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
   PRIMARY KEY (id),
   UNIQUE KEY uk_tenant_policy_no (tenant_id, policy_no),
+  KEY idx_tenant_insurer_policy_no (tenant_id, insurer_policy_no),
   KEY idx_tenant_policy_status (tenant_id, config_status, effective_start)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '保单(被保人身份+承保期间+规则开关)';
 
@@ -3522,25 +3526,27 @@ CREATE TABLE t_claim_mapping_miss (
   KEY idx_open (tenant_id, status, last_seen_at)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '收单映射未命中队列';
 
+-- 与生效通道 0112 / 参考态 V22 / 活库逐字一致：已发迁移按 sha256 记 journal 不可回改，
+-- 故由全量基线向已部署形态收敛（否则新装环境得到 DATETIME(3)+BIGINT 审计列，与升级环境分叉）。
 CREATE TABLE t_claim_coverage_override (
-  id                  BIGINT       NOT NULL COMMENT '主键(分布式ID)',
-  biz_identity_code   VARCHAR(64)  NOT NULL COMMENT '业务主体编码',
-  coverage_uuid       VARCHAR(64)  NOT NULL COMMENT '责任UUID(各版本共享)',
-  override_field      VARCHAR(128) NOT NULL COMMENT '覆盖维度:LIMIT_HOSPITAL_CODES/LIMIT_DIAGNOSIS_CODES/FEE_RULE.<feeCode>',
-  standard_value      TEXT         NOT NULL COMMENT '标准值快照(留痕;合并取实时标准)',
-  override_value      TEXT         NOT NULL COMMENT '覆盖值(名单=分隔串;费用规则=JSON)',
-  status              VARCHAR(16)  NOT NULL DEFAULT 'DISABLED' COMMENT 'DISABLED/ACTIVE',
-  tenant_id           BIGINT       NOT NULL COMMENT '租户',
-  created_by          BIGINT       DEFAULT NULL COMMENT '创建人ID',
-  created_at          DATETIME(3)  NOT NULL COMMENT '创建时间',
-  updated_by          BIGINT       DEFAULT NULL COMMENT '修改人ID',
-  updated_at          DATETIME(3)  NOT NULL COMMENT '更新时间',
-  version             BIGINT       NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
-  deleted             TINYINT      NOT NULL DEFAULT 0 COMMENT '软删标记(不参与唯一键)',
+  id                BIGINT        NOT NULL AUTO_INCREMENT,
+  tenant_id         BIGINT        NOT NULL COMMENT '租户ID',
+  biz_identity_code VARCHAR(64)   NOT NULL COMMENT '业务主体编码（映射键，须为 ACTIVE 主体）',
+  coverage_uuid     VARCHAR(64)   NOT NULL COMMENT '责任UUID（t_adj_liability.liability_uuid，各版本共享）',
+  override_field    VARCHAR(128)  NOT NULL COMMENT '覆盖维度：LIMIT_HOSPITAL_CODES / LIMIT_DIAGNOSIS_CODES / FEE_RULE.<feeCode>',
+  standard_value    TEXT          NOT NULL COMMENT '创建/发布时的标准值快照（留痕；合并永远取实时标准）',
+  override_value    TEXT          NOT NULL COMMENT '覆盖值（名单=分隔串；费用规则=JSON）',
+  status            VARCHAR(16)   NOT NULL DEFAULT 'DISABLED' COMMENT 'DISABLED(未生效)/ACTIVE(已发布)',
+  created_by        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+  created_at        TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_by        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '更新人',
+  updated_at        TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  deleted           TINYINT       NOT NULL DEFAULT 0 COMMENT 'SDK 软删标记（本域恒 0，见 §6.8 偏离说明）',
+  version           BIGINT        NOT NULL DEFAULT 0 COMMENT 'SDK 乐观锁版本',
   PRIMARY KEY (id),
   UNIQUE KEY uk_coverage_override (tenant_id, biz_identity_code, coverage_uuid, override_field),
   KEY idx_coverage_override_lookup (tenant_id, coverage_uuid, status)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '责任配置保司覆盖项(两段式)';
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '责任配置保司覆盖项（两段式）';
 
 -- >>> BEGIN managed: migration-merged
 -- 本区块由 scripts/sync-init-from-live.py 从活库导出，禁止手工编辑（改了 --check 即红）。
