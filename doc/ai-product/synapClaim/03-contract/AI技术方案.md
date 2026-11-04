@@ -598,7 +598,7 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 
 > **为什么 `evaluableCount=0` 要显式给出、且 `agreementRate` 用 `null` 而非 `0`**：这是两件不同的事实——`0%` 是「模型全错」，`null` 是「这批判据根本不成立」。多数报表把 null/NaN 静默变成 0，于是「当期一条可比结论都没有」被写成「一致率 0%，严重退化」，触发一轮并不存在的排障；**反向更危险**：调度器把空结果当「达标」，从此没人发现评测已经空转。
 >
-> 不是假设。当期 dev 库实测（2026-11-05，31 天窗口）：`claim_decision_execution` 84 条收敛记录 **100% 为 `FALLBACK`，`decision_result` 全为 `MANUAL_REQUIRED`** ⇒ `evaluableCount=0`、`agreementRate=null`。不看这个字段，导出物看起来「有 84 条样本」，实际一条也不能用于准确率；若把它们当正例计入，一致率会显示成 100%。
+> 不是假设。当期 dev 库实测（2026-11-04，31 天窗口）：`claim_decision_execution` 84 条收敛记录 **100% 为 `FALLBACK`，`decision_result` 全为 `MANUAL_REQUIRED`** ⇒ `evaluableCount=0`、`agreementRate=null`。不看这个字段，导出物看起来「有 84 条样本」，实际一条也不能用于准确率；若把它们当正例计入，一致率会显示成 100%。
 
 **脱敏与泄漏防护**
 
