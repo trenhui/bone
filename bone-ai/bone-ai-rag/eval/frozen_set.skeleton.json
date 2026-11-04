@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "datasetVersion": "g0-skeleton-0",
+  "status": "skeleton",
+  "frozenHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "targetSize": 300,
+  "collected": 0,
+  "sliceDimensions": {
+    "ticketType": "票据类型（门诊发票/费用清单/医保结算单…）",
+    "hospitalTier": "医院等级",
+    "amountBand": "金额段",
+    "tenant": "租户",
+    "rephotographed": "翻拍件（是/否）"
+  },
+  "strata": [
+    "positive",
+    "negative",
+    "boundary",
+    "adversarial"
+  ],
+  "cases": [],
+  "datasheet": {
+    "source": {
+      "status": "pending",
+      "owner": "G0-3",
+      "why": "真实脱敏票据来源与权属待业务确认"
+    },
+    "rights": {
+      "status": "pending",
+      "owner": "G0-3",
+      "why": "授权 / 使用范围待法务确认"
+    },
+    "desensitization": {
+      "status": "pending",
+      "owner": "G0-3",
+      "why": "脱敏标准待确认"
+    },
+    "temporal": {
+      "status": "pending",
+      "owner": "G0-3",
+      "why": "采集时间窗与样本时效待确认"
+    }
+  },
+  "splitPolicy": {
+    "frozen": "冻结集：只用于评测，永不参与训练与调优；每次发布绑定 datasetVersion + frozenHash",
+    "train": "训练集：与冻结集按 caseId / payloadHash 双通道互斥",
+    "tune": "调优集：阈值校准与提示词调优，与冻结集互斥且不得回流人工复核结论"
+  },
+  "collectionChecklist": [
+    "G0-1 业务确认四项基线的统计窗口、切片维度取值域、每切片样本量下界",
+    "G0-3 确认 ≥300 条真实脱敏票据来源 / 权属 / 脱敏标准（报告 §九 第 3 条）",
+    "按五维切片 + 四层分层抽样建采样框，正负例 / 边界 / 对抗各自留量",
+    "独立盲标队列屏蔽 AI 建议，人工结论与 AI 建议分字段存储",
+    "每条样本落 payloadHash，computed frozenHash 写入本清单并纳入版本绑定",
+    "status 改 active 前，CI 的 V7 会要求每个切片维度至少 2 个取值"
+  ]
+}

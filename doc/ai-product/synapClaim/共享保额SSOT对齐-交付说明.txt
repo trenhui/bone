@@ -1,0 +1,52 @@
+共享保额 slice-1 · SSOT 对齐交付说明（2026-11-04）
+
+一、补丁状态
+- 5 个文档 / 18 处替换已在当前工作区生效并进入暂存区，逐条精确校验 18/18（new 命中 1 次、剥离 new 后无残留 old）。
+- 分布：落地版 8、业务规则 V1 5、理算引擎设计 3、AI 技术方案 1、PRD 1。
+- 落地版 6 个 hunk 全部位于 §4.3 / §8.3 / §9.1 / §9.5；§12.2.1（行 3156 起）未被触碰。
+- 复核命令：git --no-pager diff HEAD -- doc/ai-product/synapClaim/02-requirements/产品需求文档.md doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md doc/ai-product/synapClaim/03-contract/智能理算引擎业务规则V1.md doc/ai-product/synapClaim/03-contract/AI技术方案.md doc/ai-product/synapClaim/04-design/理算引擎设计.md
+
+二、补丁收敛口径
+- 落地版 §4.3：一期 5 维 + 共保池账户维度 `SHARED_POOL` 单池形态已落地；写侧分行键改由 `capQuotaType(sharedCode)` / `capSubKey(sharedCode, liabilityUuid)` 推导，共保代码复用 `liability_uuid` 列，不新增列、不改唯一键。
+- 落地版 §8.3：共保池已按单池形态落地，Q-02 标为部分关闭。
+- 落地版 §9.1：不建独立共保表，共享关系由 `adj_liability.shared_code` / `prior_liability_uuid` 承载，额度池落在 `quota_account` 的 `SHARED_POOL` 行。
+- 落地版 §9.5：`adj_liability` 补 `shared_code` / `prior_liability_uuid`；`adj_calculation` 补 `shared_code`；`quota_account.quota_type` 注释补 `SHARED_POOL`，`liability_uuid` 注释改为分行键。
+- 业务规则 V1 §8.2 / §10 Q-02 / §11：池额度来源已裁定并落地；Q-02 部分关闭。
+- AI 技术方案：引擎七层 `QuotaStack.Layer.SHARED` / `limits.sharedLimit()` 与 `quota_account.SHARED_POOL` 跨案占额落点是两套机制，不互相替代。
+- 理算引擎设计：V1〔缺〕能力 4 → 3；`SHARED_LIMIT_UNSUPPORTED` 原因码保留在 `RuleGap.Code`，但 `validateConfigShape` 不再因 `sharedCode` 抛出。
+- PRD：共保共享单池已落地，多池 / 耗尽回落仍为二期。
+- 残余项（Q-02 未关闭部分）：池耗尽回落、多池截断顺序、共保代码 2/5 数量约束；未定义组合按 fail-closed 拒绝。
+- Q-01 先赔后赔（`PRIORITY_CHAIN`）与 Q-07 外部控额仍显式拒绝；`AdjustmentEngineTest#unsupportedRelationsRejected` 已加共享代码 + 前置责任组合护栏。
+- `09-records/impl-log` 16/17 为 L9 冻结证据，不改写。
+
+三、§12.2.1 建议登记文（L4：AI 不修改 §12，待架构师应用）
+
+3.1 新增表格行
+插入位置：`03-contract/工程详细设计-落地版.md` §12.2.1 落地范围表，末行「**DDL 单一真源**（ADR-0001 增量迁移）」之前。
+| 范围 | 落地状态 | 说明 |
+|---|---|---|
+| **共享保额单池**（`quota_account.SHARED_POOL`） | 已落地（单池形态，2026-11-04） | 一个 `sharedCode` 一行池账户，同组责任共用；写侧 `QuotaApplicationService` / `SettlementApplicationService` 与读侧 `QuotaDrivenAccumulationPortAdapter` 同用 `capQuotaType(sharedCode)` / `capSubKey(sharedCode, liabilityUuid)` 推导分行键，共保代码复用 `liability_uuid` 列。配置列 `adj_liability.shared_code` / `prior_liability_uuid`，理算锁定值 `adj_calculation.shared_code`。释放一单只归还本单自有量，不按池余额释放。守护用例：`SharedPoolRoutingScenarioTest` 2 例（写侧路由 + 释放安全）、`SharedPoolCrossCaseScenarioTest` 1 例（首案结算/支付写 `SHARED_POOL.claimed` → 次案理算读同一池并截断剩余限额）、`QuotaDrivenAccumulationPortAdapterTest#sharedPoolIsSharedAcrossLiabilities` 1 例（读侧同源）。**未落地**：池耗尽回落、多池截断顺序、共保代码 2/5 数量约束（Q-02 残余项）；Q-01 先赔后赔仍显式拒绝 |
+
+3.2 计数登记修正（消除同一格内 745 / 718+27 / 650+27 三套数字并存）
+定位：`03-contract/工程详细设计-落地版.md` 行 3170「决策图执行 / 轨迹回放」行。
+原片段：
+模块合计单测 **745 例（718 例 JUnit + 27 条 ArchUnit）**全绿（**2026-11-02 实机复验**：`mvn -o -pl bone-apps/synap-claim clean test` → `Tests run: 745, Failures: 0, Errors: 0, Skipped: 5`，BUILD SUCCESS = **650 例 JUnit + 27 条 ArchUnit**；
+建议替换为：
+模块合计单测 **839 例（含 27 条 ArchUnit）**全绿（**2026-11-04 实机复验**：`mvn -o -pl bone-apps/synap-claim clean test`（跨模块复验加 `-am`） → `Tests run: 839, Failures: 0, Errors: 0, Skipped: 5`；
+说明：保留 `mvn -o -pl bone-apps/synap-claim clean test` 字面量与同行 `Tests run:` 汇总，满足 `tools/_check_numbers.py` 的结构在位断言；该断言已改为不锁死绝对计数，数值由本登记承载。
+
+四、机检与测试
+- `tools/_check_manifest.py`：【OK】57 条登记 ↔ 磁盘一致。
+- `tools/_check_xref.py`：【OK】所有 § 引用可解析、无遗留 synapClaim § 引用。
+- `tools/_check_ddl.py`：【OK】36 表全部通过。
+- `tools/_check_contract_drift.py`：【OK】规则 ID / 枚举双向 / 错误码 / 表清单 / 分层真源一致。
+- `tools/_check_numbers.py`：【OK】51 项禁用表述零命中、54 项关键口径在位；旧断言「644 例 JUnit + 26 条 ArchUnit」已改为结构在位断言。
+- `docs.manifest.json`：登记 `09-records/reviews/L3-待架构评审-草稿.md`；`AI-INDEX.md` 已由 `_gen_ai_index.py` 重生成（125 行）。
+- 测试：`mvn -o -pl bone-apps/synap-claim -am clean test -Dspotless.check.skip=true` → BUILD SUCCESS，`Tests run: 839, Failures: 0, Errors: 0, Skipped: 5`；`SharedPoolCrossCaseScenarioTest` / `SharedPoolRoutingScenarioTest` 各 2 例均执行。
+- 单模块 `mvn -o -pl bone-apps/synap-claim clean test` 出现 1 例假红（`AiGatewayPortAdapterTest#mockSubstituteResponseIsExplicitlyRejected`）：`.m2` 中 `bone-ai-gateway-1.0.0-SNAPSHOT.jar` 为 10-26 版本，`MockLlmClient` 的 G0-2 JSON + `mock:true` 契约随 11-04 提交入库但未进本地 jar，旧实现返回 `MOCK[...]` 字面量，Jackson 解析失败而非走生产侧的显式拒绝分支。`-am` 用 reactor 内新编译类后该例转绿。
+- `-am` 不加 `-Dspotless.check.skip=true` 时被 `spotless:check` 拦截，违规文件 `application/port/out/AiGatewayPort.java`（并发会话正在编辑的 AI 原生 v1.2 注释，未格式化）。本 slice 未触碰该文件。
+
+五、待人工决策
+1. 是否应用第三节 §12.2.1 登记文（§12 属 L4，AI 不执行）。
+2. 已在暂存区的 5 个文档改动是否随本次提交入库。
+3. 并发会话的 `AiAssessNodeHandler.java` / `AiGatewayPort.java` / `AiGatewayPortAdapter.java` 由其作者执行 `mvn spotless:apply`，或安装新版 `bone-ai-gateway` 到本地仓库后再用单模块命令复验。

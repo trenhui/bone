@@ -300,6 +300,24 @@ jobs:
       - name: Security Fail-Open Default Negative Probe
         run: /usr/bin/env python3 scripts/ci/probe-security-fail-open-default.py
 
+      # G0 度量与契约基线（复核报告 §7.3 / AI技术方案 §12.2）。此前「非 ML 基线 +
+      # 切片指标 + 冻结集哈希可校验」只写在文档里、ci.yml 零调用，属于典型的文档
+      # 抢跑。门禁本身带独立哨兵与 self_test，防止判据退化成恒绿。
+      - name: G0 Eval Baseline Gate (blocking)
+        run: /usr/bin/env python3 scripts/check-eval-baseline.py --check
+
+      # eval/README.md 早已把下列三项写成「CI 必跑」，但一直只是伪代码块，从未成为
+      # 真实步骤。三者均为纯 Python 标准库、零外部产物，可在干净检出上无条件执行，
+      # 用来证明探针引擎 / OTel 映射 / 冻结集判据本身仍然有效。
+      - name: RAG Eval Contract Self-Test (blocking)
+        run: /usr/bin/env python3 bone-ai/bone-ai-rag/eval/eval_rag.py --mode contract
+
+      - name: OTel gen_ai Mapping Self-Test (blocking)
+        run: /usr/bin/env python3 bone-ai/bone-ai-rag/eval/otel_genai_conventions.py --self-test
+
+      - name: Frozen Set Verdict Self-Test (blocking)
+        run: /usr/bin/env python3 bone-ai/bone-ai-rag/eval/frozen_set.py --self-test
+
   backend-security:
     name: Backend Security Scan
     runs-on: ubuntu-latest

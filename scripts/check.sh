@@ -611,6 +611,14 @@ fi
 # importlib 加载真实门禁脚本、monkeypatch 模块级 REPO/LEDGER 到临时目录，锁定 R1/R2/R3 与
 # R4 判据。接进 pre-commit 后，任何门禁脚本回归都会在提交时被本地自检拦截——门禁本身不再是
 # "无人看护的守卫"。
+# 2026-11-04 追加：G0 基线门禁的**真源校验**。上面的 unittest 用临时夹具验证判据逻辑，
+# 不会扫仓库里真实的 frozen_set.skeleton.json / baseline-metrics.json；若有人改坏真源
+# 或删掉 wired 符号对应的源码类，本地自检仍会全绿、要等 CI 才红。门禁本身纯 Python
+# 标准库、零依赖、毫秒级，适合放进提交前快反馈；CI 侧 ci.yml 有同名 blocking 步骤兜底。
+if ! python3 scripts/check-eval-baseline.py --check; then
+  echo -e "${RED}❌ G0 基线真源不合规（冻结集骨架 / 指标字典 / wired 符号，详见上方逐条）${RESET}"
+  exit_code=1
+fi
 echo -e "${YELLOW}[42/45] 门禁脚本自身单元测试（防门禁回归 · scripts/tests）...${RESET}"
 if ! python3 -m unittest discover -s scripts/tests -p 'test_*.py' --verbose 2>&1; then
   echo -e "${RED}❌ 门禁自身单元测试失败（门禁脚本可能已回归，详见上方 traceback）${RESET}"

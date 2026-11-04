@@ -17,6 +17,9 @@
 | `golden_set.sample.json` | 金标准样例（查询 → 预期 chunkRef 集合），按真实业务语料补齐 |
 | `negative_probes.sample.json` | 负向探针规格样例（4 个合规红线探针的 expect 契约 + 注入样本） |
 | `otel_genai_conventions.py` | **OTel `gen_ai.*` 映射与校验器**（诊断 §3.1 收口动作）：BONE meter → OpenTelemetry GenAI 语义约定版本化映射 + 零依赖自校验 + 桥接预览 |
+| `frozen_set.py` | **G0-3 冻结评测集骨架**：清单 schema + 11 条可证伪判据（V0–V10）+ `--emit` / `--check` / `--self-test` |
+| `frozen_set.skeleton.json` | 冻结集骨架清单（status=skeleton、cases 空、datasheet 全 pending）；哈希由 `--emit` 实算写入 |
+| `baseline-metrics.json` | **G0-1 非 ML 基线指标字典**：6 项基线口径 + 五维切片 + 接线状态（declared/wired）+ 真实可复用埋点清单 |
 
 ## 使用
 
@@ -113,21 +116,26 @@ python eval_rag.py --mode contract   # 退出码 0=通过，2=探针引擎异常
 结构性检查只能证明「护栏已接线、数据已被围栏隔离」；「模型是否真的忽略注入」属行为级判定，需接
 LLM/NLI 裁判（faithfulness 接入点）——本探针不替代，仅把最易回归的「围栏失踪 / 注入被当指令」挡在 CI 门外。
 
-## 接入 CI 的建议形态
+## 接入 CI 的真实状态（2026-11-04 收口）
 
-```yaml
-# 伪代码：回归流水线
-- name: RAG eval contract (zero-dep)
-  run: python eval_rag.py --mode contract          # 永远跑，证明引擎在
-- name: RAG eval probes (captured)
-  run: |
-    ./export_rag_artifacts.sh artifacts/            # 从评测环境导出实际产物
-    python eval_rag.py --mode probes --probes negative_probes.sample.json --artifacts-dir artifacts/
-- name: RAG eval recall gate
-  run: python eval_rag.py --golden golden_set.sample.json --actual actual_retrieve.json --recall-gate 0.8
-- name: OTel gen_ai.* mapping self-test (zero-dep)
-  run: python otel_genai_conventions.py --self-test # 永远跑，证明映射本身正确
-```
+此前这一节是**伪代码**：三个零依赖自校验早在文档里被写成「CI 必跑」，但 `ci.yml`
+从未调用过它们——典型的「文档抢跑」。现已全部接成 `backend-quality` 的 blocking 步骤：
+
+| CI 步骤 | 命令 | 作用 |
+| --- | --- | --- |
+| `G0 Eval Baseline Gate` | `python3 scripts/check-eval-baseline.py --check` | 冻结集骨架 / 指标字典 / 切片五维 / wired 符号源码可达 / 判据自身有效性 |
+| `RAG Eval Contract Self-Test` | `eval_rag.py --mode contract` | 四个合规红线探针引擎仍有效 |
+| `OTel gen_ai Mapping Self-Test` | `otel_genai_conventions.py --self-test` | 映射表 9 探针仍有效 |
+| `Frozen Set Verdict Self-Test` | `frozen_set.py --self-test` | 冻结集 11 条判据每条都有精确归因的反例 |
+
+本地 pre-commit 同步：`scripts/check.sh` 的 `[42/45]` 段先跑真源门禁，再用
+`unittest discover` 跑 `scripts/tests/test_check_eval_baseline.py`（29 例）。
+两者分工：**门禁扫仓库真实真源，单测用临时夹具验证判据逻辑**——只跑其中一个
+都会留下盲区（前者可被改成恒绿，后者不扫真源）。
+
+**仍为设计态、未接 CI**（依赖真实产物，不能在干净检出上无条件跑）：
+`--mode probes`（需先导出 artifacts）与 `--recall-gate` 打分（需金标准 + 实际检索结果）。
+它们需要评测环境的真实语料，属于 G1/G2 阶段动作，不在此处假装已接线。
 
 ## 可观测映射：BONE meter → OpenTelemetry `gen_ai.*`（诊断 §3.1 收口动作）
 
@@ -163,4 +171,48 @@ LLM/NLI 裁判（faithfulness 接入点）——本探针不替代，仅把最�
 python otel_genai_conventions.py --self-test     # CI 必跑：9 探针全 PASS（合规放行 / 违规+未知捕获）
 python otel_genai_conventions.py --report        # 打印人类可读映射表
 python otel_genai_conventions.py --emit-otel bone_meters.json   # 把一个 BONE meter 样本转 OTel 等价 JSON
+```
+
+---
+
+## G0 度量与契约基线：为什么只交付「骨架」
+
+`AI技术方案.md` §12.2 把「非 ML 基线 + 切片指标 + 契约测试进入 CI；冻结集哈希可校验」
+写成 AI 原生准入判据，且明确「任一缺失不得对外宣称 AI 原生」。但本轮复核发现这三项
+**只存在于文档**：没有冻结集、没有哈希、没有切片定义、没有数据说明书，ci.yml 也从未
+调用 eval sidecar。文档说「必须有」而代码里无人看着，等于「改了文档就算完成」。
+
+本轮落地的是**结构真源 + 机检护栏**，不是 300 条假样本：
+
+- `frozen_set.py` 的 11 条判据（V0–V10）覆盖：格式/版本漂移、必备字段、
+  `frozenHash == sha256(规范化 cases)`（**任一样本改动即拒绝执行**）、
+  `collected == len(cases)`（禁止把 targetSize 冒充已采集）、样本结构、
+  **frozen 与 train/tune 按 caseId + payloadHash 双通道互斥**（Hidden Feedback Loops）、
+  skeleton/active 态约束、active 态每切片维度 ≥2 取值（总体指标不得掩盖小样本）、
+  数据说明书四字段带 owner、splitPolicy 三态、skeleton 态禁止「已达标」字段。
+- `baseline-metrics.json` 如实把 6 项基线全标 `declared` 并逐条写明 `blockingReason`；
+  `wiredObservability` 只登记**源码中真实存在**的可复用埋点类，由门禁 `E6` 用
+  `finditer` 全量扫源码声明来验证（删掉任一埋点类 ⇒ 门禁红）。
+- 门禁 `check-eval-baseline.py` 的 `E2` 带**独立哨兵**：不只问引擎「你自证通过吗」，
+  而是自己造哈希篡改 / 数字冒充两类违规，断言判据精确命中——把引擎改成恒绿也会被抓。
+
+### 进入 active 态的前置条件（刻意不代业务决定）
+
+| 缺口 | 归属 | 为什么不能在本轮编造 |
+| --- | --- | --- |
+| ≥300 条真实脱敏票据、来源 / 权属 / 脱敏标准 | G0-3，报告 §九 第 3 条 | 编样本等于把文档抢跑升级成数据抢跑 |
+| 统计窗口、切片取值域、每切片样本量下界 | G0-1，报告 §九 第 2 条 | 需业务侧确认，硬编码阈值只会逼出假数据 |
+| 实测准确率 / 自动化率 / 单案成本 | G3 之后 | 报告 §7.4 第 3 条：无基线不得宣称效率提升 |
+
+采集完成后：把 `cases` 填入真实 `payloadHash` 与五维切片 → `--emit` / 实算
+`frozenHash` → `status` 改 `active`。此时 `V7` 会额外要求每个切片维度至少 2 个取值，
+`skeleton` 态的「禁止已达标字段」保护自动解除。
+
+### 命令
+
+```bash
+python frozen_set.py --self-test                       # 11 条判据有效性自证（CI 必跑）
+python frozen_set.py --check frozen_set.skeleton.json # 校验清单
+python frozen_set.py --emit > frozen_set.skeleton.json # 重新生成骨架（哈希实算）
+python3 scripts/check-eval-baseline.py --check        # 仓库真源门禁（CI + pre-commit）
 ```

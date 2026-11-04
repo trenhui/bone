@@ -18,8 +18,10 @@ import com.bone.aiorch.application.OrchestrationResult;
 import com.bone.aiorch.domain.hitl.HitlItem;
 import com.bone.aiorch.domain.hitl.HitlItem.Disposition;
 import com.bone.aiorch.domain.hitl.ReasonType;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -57,6 +59,27 @@ public class ClaimService {
    * <p>只在目标范围<b>尚未登记上限</b>时登记——产品域已登记的额度不被演示默认值覆盖（额度是产品的钱，不该被宿主改写）。
    */
   private static final BigDecimal SINGLE_CLAIM_LIMIT = new BigDecimal("50000");
+
+  /** 本地演示提示词契约版本（POC 主机自报，与产线 {@code claim-assess-v3} 不同源）。 */
+  private static final String PROMPT_VERSION_LOCAL = "claim-assess-local-v1";
+
+  /** 差异提示受控码白名单（mirror 产线 DISCREPANCY_CODES；POC 仅做展示与留痕，不参与判定）。 */
+  private static final List<String> DISCREPANCY_CODES =
+      List.of(
+          "AMOUNT_MISMATCH",
+          "DIAGNOSIS_FEE_MISMATCH",
+          "DRUG_INDICATION_MISMATCH",
+          "EVIDENCE_MISSING",
+          "DUPLICATE_ITEM",
+          "OTHER");
+
+  /** 认知层数组与字符串上限（mirror 产线 MAX_COGNITIVE_ITEMS / MAX_COGNITIVE_TEXT）。 */
+  private static final int MAX_COGNITIVE_ITEMS = 20;
+
+  private static final int MAX_COGNITIVE_TEXT = 200;
+
+  private static final com.fasterxml.jackson.databind.ObjectMapper OBJECT_MAPPER =
+      new com.fasterxml.jackson.databind.ObjectMapper();
 
   private final OrchestrationApplicationService orchestration;
   private final DocumentParser documentParser;
@@ -100,6 +123,13 @@ public class ClaimService {
       InputStream policyPdf,
       String sourceRef) {}
 
+  /**
+   * AI 原生结构化认知单元（mirror {@code AiGatewayPort.Fact}）：受控码 + 值 + 证据定位。
+   *
+   * <p>值仅用于展示与留痕，<b>不参与判定</b>（P1「AI 不碰钱」不变）。证据定位指向解析结果（条款切片 / 页码 / span），使决策可回放、可解释。
+   */
+  public record Fact(String code, String value, String evidenceRef) {}
+
   /** 理赔决策结果（平台输出，业务状态机据此流转）。 */
   public record ClaimDecision(
       String claimId,
@@ -117,9 +147,18 @@ public class ClaimService {
        *
        * <p>不靠文案聚合决策原因：{@code HITL_PENDING} 既可能是置信度不足也可能是超限，两者后续路由完全不同——故以稳定码承载（前端 i18n 键 / 监控口径同源）。
        */
-      String reasonCode) {
+      String reasonCode,
+      // v1.3 AI 原生：结构化认知（感知层确定性派生 + LLM 解析；mirror AiGatewayPort.AiAssessment）
+      List<Fact> facts,
+      List<String> evidenceRefs,
+      List<String> clauseRefs,
+      List<String> discrepancies,
+      /** 模型溯源：适配器自报真实上游模型；本地/无模型标 {@code local-stub}，防误读为"已接入真实模型"。 */
+      String modelVersion,
+      /** 提示词契约版本：改动结构化字段集须同步 bump，供决策复算与算法备案。 */
+      String promptVersion) {
 
-    /** 兼容旧构造（9 参）：原因码按 mode + verdict 推导能确定的两种，其余置空（须由调用方显式给出精确原因码）。 */
+    /** 兼容旧构造（9 参）：原因码按 mode + verdict 推导；认知与溯源置空（须由调用方显式给出精确值）。 */
     public ClaimDecision(
         String claimId,
         String mode,
@@ -140,7 +179,13 @@ public class ClaimService {
           confidence,
           hitlStatus,
           traceId,
-          deriveReasonCode(mode, verdict));
+          deriveReasonCode(mode, verdict),
+          List.of(),
+          List.of(),
+          List.of(),
+          List.of(),
+          "",
+          "");
     }
 
     private static String deriveReasonCode(String mode, String verdict) {
@@ -172,6 +217,11 @@ public class ClaimService {
             parsed.provider(),
             clauses);
 
+    // v1.3 AI 原生：感知层确定性派生结构化认知（条款切片 → 证据定位 + 条款引用 + 结构化事实）
+    List<Fact> perceptionFacts = derivePerceptionFacts(ir);
+    List<String> clauseRefs = deriveClauseRefs(ir);
+    List<String> evidenceRefs = deriveEvidenceRefs(ir);
+
     // ② orchestration：规则预检短路 | LLM 评估
     LlmRequest llmRequest =
         LlmRequest.of("claim-assessor", List.of(LlmMessage.user(request.patientDesc())), traceId);
@@ -201,11 +251,25 @@ public class ClaimService {
           1.0,
           null,
           traceId,
-          ClaimReason.RULE_EXCLUDED.name());
+          ClaimReason.RULE_EXCLUDED.name(),
+          perceptionFacts,
+          evidenceRefs,
+          clauseRefs,
+          List.of(),
+          "rule-short-circuit",
+          PROMPT_VERSION_LOCAL);
     }
 
     // LLM 评估出置信度（从响应解析）
     double confidence = orch.llmResponse() == null ? 0.0 : extractConfidence(orch.llmResponse());
+
+    // v1.3 AI 原生：源自 LLM 的结构化认知 + 模型/提示词溯源（模型未返回则标 local-stub，防误读为已接入真实模型）
+    LlmResponse llmResponse = orch.llmResponse();
+    String modelVersion =
+        llmResponse == null || llmResponse.model() == null || llmResponse.model().isBlank()
+            ? "local-stub"
+            : llmResponse.model();
+    List<String> discrepancies = parseCognitionTexts(llmResponse, "discrepancies");
 
     // ③ 确定性原因分档（AI 可用性 → 风险等级 → 置信度区间）：同一案件可能同时命中多个原因，判定顺序必须固定
     ClaimReason reason = classifyHitlReason(orch.llmResponse(), confidence, request.riskLevel());
@@ -261,7 +325,13 @@ public class ClaimService {
           confidence,
           item.getStatus().name(),
           traceId,
-          reasonCode);
+          reasonCode,
+          perceptionFacts,
+          evidenceRefs,
+          clauseRefs,
+          discrepancies,
+          modelVersion,
+          PROMPT_VERSION_LOCAL);
     }
 
     // 自动通过 ⇒ 占位即实扣（无需人工再收尾）
@@ -278,7 +348,13 @@ public class ClaimService {
         confidence,
         null,
         traceId,
-        ClaimReason.AUTO_APPROVED.name());
+        ClaimReason.AUTO_APPROVED.name(),
+        perceptionFacts,
+        evidenceRefs,
+        clauseRefs,
+        discrepancies,
+        modelVersion,
+        PROMPT_VERSION_LOCAL);
   }
 
   // ---- 额度内核（可选接入）辅助 ----
@@ -396,6 +472,84 @@ public class ClaimService {
       }
     }
     return 0.0;
+  }
+
+  // ---- v1.3 AI 原生：感知层确定性认知派生（mirror AiGatewayPort.AiAssessment） ----
+
+  /** 感知层：从解析 IR 派生条款引用（条款切片 → 稳定引用，供证据定位）。 */
+  private static List<String> deriveClauseRefs(DocumentIR ir) {
+    List<String> refs = new ArrayList<>();
+    for (int i = 0; i < ir.clauses().size(); i++) {
+      DocumentClause c = ir.clauses().get(i);
+      refs.add(ir.sourceRef() + "#clause-" + (c.clauseNo() != null ? c.clauseNo() : (i + 1)));
+    }
+    return List.copyOf(refs);
+  }
+
+  /** 感知层：从解析 IR 派生证据定位（页码 + span，供回放定位原文）。 */
+  private static List<String> deriveEvidenceRefs(DocumentIR ir) {
+    List<String> refs = new ArrayList<>();
+    for (DocumentClause c : ir.clauses()) {
+      refs.add(ir.sourceRef() + "#p" + c.page() + ":" + c.spanStart() + "-" + c.spanEnd());
+    }
+    return List.copyOf(refs);
+  }
+
+  /** 感知层：从解析 IR 派生结构化事实（受控码 + 文本截断 + 证据定位）。 */
+  private static List<Fact> derivePerceptionFacts(DocumentIR ir) {
+    List<Fact> facts = new ArrayList<>();
+    for (int i = 0; i < ir.clauses().size(); i++) {
+      DocumentClause c = ir.clauses().get(i);
+      String ref = ir.sourceRef() + "#clause-" + (c.clauseNo() != null ? c.clauseNo() : (i + 1));
+      String code = c.clauseNo() != null ? c.clauseNo() : "CLAUSE";
+      facts.add(new Fact(code, truncate(c.text()), ref));
+    }
+    return List.copyOf(facts);
+  }
+
+  /** 文本截断（≤200 字符，mirror 产线 MAX_COGNITIVE_TEXT）。 */
+  private static String truncate(String text) {
+    if (text == null) {
+      return "";
+    }
+    String t = text.trim();
+    return t.length() <= MAX_COGNITIVE_TEXT ? t : t.substring(0, MAX_COGNITIVE_TEXT);
+  }
+
+  /**
+   * 解析 LLM 结构化认知文本数组（白名单 + 数量封顶，fail-soft 为空）。
+   *
+   * <p>模型未遵循结构化输出契约 → 空列表，绝不因"认知字段没给全"把一次可用评估判成不可用。
+   */
+  private static List<String> parseCognitionTexts(LlmResponse response, String field) {
+    if (response == null || response.content() == null) {
+      return List.of();
+    }
+    try {
+      JsonNode node = OBJECT_MAPPER.readTree(response.content());
+      JsonNode raw = node.path(field);
+      if (raw == null || !raw.isArray()) {
+        return List.of();
+      }
+      List<String> values = new ArrayList<>();
+      for (JsonNode item : raw) {
+        if (values.size() >= MAX_COGNITIVE_ITEMS) {
+          break;
+        }
+        if (!item.isTextual()) {
+          continue;
+        }
+        String value = truncate(item.asText());
+        if (value.isEmpty()
+            || (field.equals("discrepancies") && !DISCREPANCY_CODES.contains(value))) {
+          continue;
+        }
+        values.add(value);
+      }
+      return List.copyOf(values);
+    } catch (Exception ignored) {
+      return List.of();
+    }
   }
 
   /**

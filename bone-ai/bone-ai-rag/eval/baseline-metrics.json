@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "status": "skeleton",
+  "note": "G0-1 非 ML 基线指标字典。只登记口径与接线状态，不登记任何实测值/达成值：报告 §7.4 第 3 条禁止在无基线时宣称效率提升，AI技术方案 §12.2 要求任一缺失不得宣称 AI 原生。targetRef 仅指向契约出处，不是已达标承诺。",
+  "contractRef": [
+    "doc/ai-product/synapClaim/02-requirements/产品需求文档.md §15 成功指标（KPI）",
+    "doc/ai-product/synapClaim/03-contract/AI技术方案.md §11.1 / §11.3 / §12.2",
+    "复核报告 §7.3 G0-1"
+  ],
+  "sliceDimensions": [
+    "ticketType",
+    "hospitalTier",
+    "amountBand",
+    "tenant",
+    "rephotographed"
+  ],
+  "metrics": [
+    {
+      "id": "manual_case_minutes",
+      "name": "单案人工工时",
+      "definition": "人工完成单案从收单到决策输出的净处理分钟数；基线取接入 AI 前的连续样本中位数",
+      "unit": "min/case",
+      "targetRef": "PRD §15 核赔员人效 / 单案处理时长",
+      "slices": ["ticketType", "hospitalTier", "amountBand", "tenant", "rephotographed"],
+      "status": "declared",
+      "sourceSymbol": null,
+      "blockingReason": "统计窗口与工时采集方式需业务侧确认（报告 §九 第 2 条）；当前无人工工时事实表"
+    },
+    {
+      "id": "field_extraction_accuracy",
+      "name": "字段提取准确率",
+      "definition": "AI 提取字段与人工独立标注一致率；按五维切片单独报，不得只看总体",
+      "unit": "ratio(0..1)",
+      "targetRef": "AI技术方案 §11.1 ≥95%（契约目标，非实测）",
+      "slices": ["ticketType", "hospitalTier", "amountBand", "tenant", "rephotographed"],
+      "status": "declared",
+      "sourceSymbol": null,
+      "blockingReason": "依赖 G1 OCR 接线与 ≥300 条冻结集人工标注（G0-3）；当前无标注事实源"
+    },
+    {
+      "id": "adjustment_accuracy",
+      "name": "理算准确率",
+      "definition": "机器理算结论与人工核责结论一致率；赔付金额由确定性引擎产生，AI 不参与计算",
+      "unit": "ratio(0..1)",
+      "targetRef": "AI技术方案 §11.1 规则命中准确率 ≥90%（契约目标，非实测）",
+      "slices": ["ticketType", "hospitalTier", "amountBand", "tenant", "rephotographed"],
+      "status": "declared",
+      "sourceSymbol": null,
+      "blockingReason": "需人工核责结论与机器结论的成对标注，且冻结集未采集"
+    },
+    {
+      "id": "leakage_rate",
+      "name": "漏出率（自动通过错误）",
+      "definition": "自动通过结论中经事后质检判定为错赔/漏赔的占比；生产口径须与评测集口径分列",
+      "unit": "ratio(0..1)",
+      "targetRef": "PRD §15 重大错误率 0",
+      "slices": ["ticketType", "hospitalTier", "amountBand", "tenant", "rephotographed"],
+      "status": "declared",
+      "sourceSymbol": null,
+      "blockingReason": "自动放款未解锁（视觉 E1 / 图计算 E2 仍为 available=false 桩），生产口径不可测"
+    },
+    {
+      "id": "ai_cost_per_case",
+      "name": "单案 AI 成本",
+      "definition": "单案 OCR 调用费 + LLM token 费（按 prompt/completion 分列）+ 向量检索成本的合计，与自动化率同表报出",
+      "unit": "CNY/case",
+      "targetRef": "PRD §1.3 单案处理成本 ≤8 元",
+      "slices": ["ticketType", "hospitalTier", "amountBand", "tenant", "rephotographed"],
+      "status": "declared",
+      "sourceSymbol": null,
+      "blockingReason": "真实 provider 未接（G3-4），OCR 未选型（G1）；token 用量虽已有 Micrometer 计数但无金额换算与按案归集"
+    },
+    {
+      "id": "manual_review_rate",
+      "name": "人工复核率（评测集口径）",
+      "definition": "≥300 条冻结集上需人工介入的案件占比；与生产口径分列，Phase A/B 只报评测集口径",
+      "unit": "ratio(0..1)",
+      "targetRef": "AI技术方案 §11.1 ≤30%（评测集口径）/ PRD §15 ≤30%（Phase C 生产口径）",
+      "slices": ["ticketType", "hospitalTier", "amountBand", "tenant", "rephotographed"],
+      "status": "declared",
+      "sourceSymbol": null,
+      "blockingReason": "冻结集未采集；且 Phase A/B 自动化率按 PRD §15 恒为 0/100%，不得用它冒充生产结论"
+    }
+  ],
+  "wiredObservability": [
+    {
+      "id": "decision.executions",
+      "sourceSymbol": "MicrometerDecisionMetricsAdapter",
+      "note": "决策执行计数（result/tier/fallback 标签）；是 G0-1 埋点可复用的挂载点，不等于基线指标已建成",
+      "status": "wired"
+    },
+    {
+      "id": "decision.port",
+      "sourceSymbol": "DecisionMetricsPort",
+      "note": "决策指标出站端口，DecisionGraphExecutor 已在调用 recordDecision/recordNode",
+      "status": "wired"
+    },
+    {
+      "id": "llm.tokens",
+      "sourceSymbol": "MicrometerLlmMetrics",
+      "note": "网关 token/latency Micrometer 埋点；为单案 AI 成本提供用量事实，但尚未按案归集与金额换算",
+      "status": "wired"
+    }
+  ]
+}
