@@ -31,9 +31,11 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.security.auth.CurrentOperator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -356,6 +358,47 @@ public class CodeMappingController {
         codeMappingApplicationService.bindField(
             new BindingCommand(
                 req.fieldCode(), req.insurerCode(), req.sourceType(), req.refCode())));
+  }
+
+  @Operation(summary = "字段-选项集绑定列表（平台基线 '*' + 指定保司专属；字段归一用）")
+  @PreAuthorize("hasAuthority('claim:policy:read')")
+  @GetMapping("/field-bindings")
+  public ApiResponse<List<BindingView>> listFieldBindings(
+      @RequestParam(required = false) String insurerCode) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(), codeMappingApplicationService.listFieldBindings(insurerCode));
+  }
+
+  @Operation(summary = "标准码别名列表（按域；别名是标准码维度，跨保司生效）")
+  @PreAuthorize("hasAuthority('claim:policy:read')")
+  @GetMapping("/aliases")
+  public ApiResponse<List<AliasView>> listAliases(@RequestParam String domain) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(), codeMappingApplicationService.listAliases(domain));
+  }
+
+  @Operation(summary = "标准码拆分列表（按域；拆分是标准码维度，跨保司生效）")
+  @PreAuthorize("hasAuthority('claim:policy:read')")
+  @GetMapping("/splits")
+  public ApiResponse<List<SplitView>> listSplits(@RequestParam String domain) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(), codeMappingApplicationService.listSplits(domain));
+  }
+
+  @Operation(summary = "停用标准码别名（保留行，解析不再自动归并）")
+  @PreAuthorize("hasAuthority('claim:policy:write')")
+  @DeleteMapping("/aliases/{id}")
+  public ApiResponse<AliasView> disableAlias(@PathVariable long id) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(), codeMappingApplicationService.disableAlias(id));
+  }
+
+  @Operation(summary = "停用标准码拆分（保留行，解析不再据此父码转人工拆分）")
+  @PreAuthorize("hasAuthority('claim:policy:write')")
+  @DeleteMapping("/splits/{id}")
+  public ApiResponse<SplitView> disableSplit(@PathVariable long id) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(), codeMappingApplicationService.disableSplit(id));
   }
 
   private static <E extends Enum<E>> E parse(Class<E> type, String value) {

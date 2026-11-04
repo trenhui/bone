@@ -4,6 +4,7 @@ import com.bone.claim.application.port.out.DecisionMetricsPort;
 import com.bone.claim.application.port.out.DecisionNodeHandler;
 import com.bone.claim.application.port.out.DecisionNodeHandler.DecisionNodeContext;
 import com.bone.claim.application.port.out.DecisionNodeHandler.DecisionNodeOutcome;
+import com.bone.claim.application.port.out.RuleEnginePort;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.application.port.out.TriageLimitsPort;
 import com.bone.claim.common.ClaimErrorCodes;
@@ -18,8 +19,11 @@ import com.bone.claim.domain.model.decision.DecisionResult;
 import com.bone.claim.domain.model.decision.DecisionTier;
 import com.bone.claim.domain.model.decision.DecisionTriage;
 import com.bone.claim.domain.model.decision.TriageLimits;
+import com.bone.claim.domain.model.rule.event.ClaimRulesEvaluatedEvent;
 import com.bone.core.util.DistributedIdGenerator;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -131,15 +135,8 @@ public class DecisionGraphExecutor {
             effective.promptVersion(),
             effective.catalogVersion());
 
-    // TODO(claim 规则命中留痕): 决策图规则引擎落地、算出 ruleHits 后，在此注册领域事件即可自动落
-    //   t_claim_rule_hit（消费者 ClaimRuleHitRecorder 已就绪并通过单测 + ArchUnit 27 规则）。取消下一行注释并填入真实命中：
-    // execution.addDomainEvent(new ClaimRulesEvaluatedEvent(
-    //     tenantPort.currentTenantId(), claimId, execution.getId(),
-    //     ruleHits.stream().map(r -> new ClaimRulesEvaluatedEvent.RuleHit(
-    //         r.getCode(), r.getVersion(), r.getCategory(), r.getPriority(),
-    //         r.getInputSnapshot(), r.getConclusion(), Instant.now())).toList(),
-    //     Instant.now()));
-    // 当前未计算 ruleHits，故不注册；即便注册空列表，recorder 也会跳过，无副作用。
+    // G2-1：规则命中留痕在节点执行完毕、outputs 汇总后注册（见下方 execution.recordRuleHits）。
+    // 不在此处注册：此刻节点尚未执行、命中明细还未产生，且基类 addDomainEvent 是 protected。
 
     Map<String, Object> outputs = new HashMap<>();
     BigDecimal confidence = null;
@@ -306,6 +303,27 @@ public class DecisionGraphExecutor {
     // 分诊原因码随结论落库（RISK_HIT / AMOUNT_OVER_LIMIT / AI_CONFIDENCE_LOW 等）：
     // 读侧（快捷赔付风险闸、核赔工作台、处置归因）要能从库内证明"为什么转人工"，而非翻决策响应日志。
     execution.markTriageReason(outcome.reason());
+    // G2-1：规则节点真实命中明细 → 聚合发布领域事件 → ClaimRuleHitRecorder 在 AFTER_COMMIT 落
+    // t_claim_rule_hit。空命中不发事件；非 RuleHit 的脏数据忽略，避免一次异常输出打断整条决策链。
+    Object rawRuleHits = outputs.get("ruleHits");
+    if (rawRuleHits instanceof List<?> raw && !raw.isEmpty()) {
+      Instant hitAt = Instant.now();
+      List<ClaimRulesEvaluatedEvent.RuleHit> ruleHits = new ArrayList<>();
+      for (Object item : raw) {
+        if (item instanceof RuleEnginePort.RuleHit hit) {
+          ruleHits.add(
+              new ClaimRulesEvaluatedEvent.RuleHit(
+                  hit.code(),
+                  hit.version(),
+                  hit.category(),
+                  hit.priority(),
+                  hit.inputSnapshot(),
+                  hit.conclusion(),
+                  hitAt));
+        }
+      }
+      execution.recordRuleHits(ruleHits);
+    }
     decisionExecutionApplicationService.persist(execution);
     decisionMetricsPort.recordDecision(
         new DecisionMetricsPort.DecisionMetric(

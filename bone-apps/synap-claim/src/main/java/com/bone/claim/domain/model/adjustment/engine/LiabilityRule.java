@@ -338,6 +338,12 @@ public record LiabilityRule(
       return new Relation("", "");
     }
 
+    public static Relation of(String sharedCode, String priorLiabilityUuid) {
+      return new Relation(
+          sharedCode == null ? "" : sharedCode,
+          priorLiabilityUuid == null ? "" : priorLiabilityUuid);
+    }
+
     public boolean hasAny() {
       return (sharedCode != null && !sharedCode.isBlank())
           || (priorLiabilityUuid != null && !priorLiabilityUuid.isBlank());
@@ -586,6 +592,27 @@ public record LiabilityRule(
 
   /** 设置额度集合（日限额等需要整体替换 {@link LimitSet} 时使用）：返回新规则实例。 */
   public LiabilityRule withLimits(LimitSet limits) {
+    return new LiabilityRule(
+        liabilityUuid,
+        liabilityVersion,
+        form,
+        socialOnly,
+        coveredBuckets,
+        waitingPeriodDays,
+        this.deductible,
+        ratios,
+        limits,
+        quota,
+        occurrences,
+        relation,
+        limitedConditions,
+        invoiceDeductible,
+        adjustDeductible,
+        feeRules);
+  }
+
+  /** 设置共享额度关系（共保代码 / 先赔后赔前序责任）：返回新规则实例，原实例不变。 */
+  public LiabilityRule withRelation(Relation relation) {
     return new LiabilityRule(
         liabilityUuid,
         liabilityVersion,
@@ -876,12 +903,6 @@ public record LiabilityRule(
           RuleGap.Code.INVALID_INPUT,
           "启用了适用限定（%s）但医院与病种名单都为空：白名单空等于全不赔、黑名单空等于不设限，" + "两种都不是业务意图，须补齐名单或关闭限定",
           limitedConditions.mode());
-    }
-    if (relation.sharedCode != null && !relation.sharedCode.isBlank()) {
-      throw RuleGap.of(
-          RuleGap.Code.SHARED_LIMIT_UNSUPPORTED,
-          "责任配置了共享保额（共保代码 %s）：池额度来源、耗尽回落、多池截断顺序均未定义（Q-02）",
-          relation.sharedCode);
     }
     if (relation.priorLiabilityUuid != null && !relation.priorLiabilityUuid.isBlank()) {
       throw RuleGap.of(

@@ -464,6 +464,8 @@ class LiabilityRuleShapeGuardTest {
           catalogCode,
           1,
           0,
+          null,
+          null,
           null);
     }
 
@@ -485,6 +487,8 @@ class LiabilityRuleShapeGuardTest {
           limitDiagnosisCodes,
           catalogPolicy,
           catalogCode,
+          null,
+          null,
           null,
           null,
           null);

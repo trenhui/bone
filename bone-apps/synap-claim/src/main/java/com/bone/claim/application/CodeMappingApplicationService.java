@@ -869,6 +869,48 @@ public class CodeMappingApplicationService {
     return SplitView.from(split);
   }
 
+  @Transactional(readOnly = true)
+  public List<AliasView> listAliases(String domain) {
+    long tenantId = tenantPort.currentTenantId();
+    return stdCodeAliasRepository
+        .findByDomain(tenantId, MasterDataDomain.fromCode(domain).code())
+        .stream()
+        .map(AliasView::from)
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<SplitView> listSplits(String domain) {
+    long tenantId = tenantPort.currentTenantId();
+    return stdCodeSplitRepository
+        .findByDomain(tenantId, MasterDataDomain.fromCode(domain).code())
+        .stream()
+        .map(SplitView::from)
+        .toList();
+  }
+
+  @Transactional
+  public AliasView disableAlias(long id) {
+    StdCodeAlias alias = stdCodeAliasRepository.findById(id);
+    if (alias == null) {
+      throw new DomainException("标准码别名不存在: " + id);
+    }
+    alias.disable(Instant.now());
+    stdCodeAliasRepository.save(alias);
+    return AliasView.from(alias);
+  }
+
+  @Transactional
+  public SplitView disableSplit(long id) {
+    StdCodeSplit split = stdCodeSplitRepository.findById(id);
+    if (split == null) {
+      throw new DomainException("标准码拆分不存在: " + id);
+    }
+    split.disable(Instant.now());
+    stdCodeSplitRepository.save(split);
+    return SplitView.from(split);
+  }
+
   // ===================== 字段绑定 =====================
 
   @Transactional
@@ -897,6 +939,25 @@ public class CodeMappingApplicationService {
             now);
     fieldBindingRepository.save(created);
     return BindingView.from(created);
+  }
+
+  @Transactional(readOnly = true)
+  public List<BindingView> listFieldBindings(String insurerCode) {
+    long tenantId = tenantPort.currentTenantId();
+    List<BindingView> views = new ArrayList<>();
+    views.addAll(
+        fieldBindingRepository.findByInsurer(tenantId, FieldBinding.BASELINE).stream()
+            .map(BindingView::from)
+            .toList());
+    if (insurerCode != null
+        && !insurerCode.isBlank()
+        && !FieldBinding.BASELINE.equals(insurerCode.trim())) {
+      views.addAll(
+          fieldBindingRepository.findByInsurer(tenantId, insurerCode.trim()).stream()
+              .map(BindingView::from)
+              .toList());
+    }
+    return views;
   }
 
   // ===================== 内部校验 =====================

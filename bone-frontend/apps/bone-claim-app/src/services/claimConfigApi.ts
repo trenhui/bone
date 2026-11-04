@@ -84,6 +84,87 @@ export interface MappingHealthRow {
   recentMissCount: number;
 }
 
+/** STP 闸门单条件判定明细（保司×域映射质量→业务风险开关）。 */
+export interface StpConditionRow {
+  /** StpCondition 枚举名：ITEM_HIT_RATE / CASE_STRAIGHT_THROUGH_RATE / OPEN_MISS / CORRECTION_EVENTS_7D / CONFLICT。 */
+  condition: string;
+  passed: boolean;
+  detail?: string;
+}
+
+/** STP 闸门视图（映射质量→业务风险开关，按保司×域）：allowAuto=false 即不得自动理算、赔案转人工。 */
+export interface StpGateRow {
+  insurerCode: string;
+  domain: MappingDomain;
+  allowAuto: boolean;
+  itemHitRate: number;
+  caseStraightThroughRate: number;
+  openMissCount: number;
+  correctionEvents7d: number;
+  conflictCount: number;
+  conditions: StpConditionRow[];
+}
+
+/** 标准码别名（1:1 归并/更名；标准码维度，跨保司生效，解析时 canonicalize）。 */
+export interface AliasRow {
+  id: string;
+  domain: MappingDomain;
+  /** 别名码（来件里可能出现的写法）。 */
+  aliasCode: string;
+  /** 标准码（别名应归并到的规范码）。 */
+  canonicalCode: string;
+}
+
+/** 新增/编辑标准码别名请求。 */
+export interface AddAliasReq {
+  domain: MappingDomain;
+  aliasCode: string;
+  canonicalCode: string;
+  /** MERGE 归并 / RENAME 更名；缺省 MERGE。 */
+  relation?: string;
+}
+
+/** 标准码拆分（1:N；父码在解析时转人工拆分）。 */
+export interface SplitRow {
+  id: string;
+  domain: MappingDomain;
+  /** 拆分父码（来件里出现的打包码）。 */
+  parentCode: string;
+  /** 子码（拆分后的标准码）。 */
+  childCode: string;
+}
+
+/** 新增标准码拆分请求。 */
+export interface AddSplitReq {
+  domain: MappingDomain;
+  parentCode: string;
+  childCode: string;
+  /** 拆分规则（JSON，可选）。 */
+  splitRuleJson?: string;
+}
+
+/** 字段-选项集绑定行（字段归一：保司字段 → 标准选项集；insurerCode='*' 为平台基线）。 */
+export interface FieldBindingRow {
+  id: string;
+  /** 字段编码（如 gender / visit_type）。 */
+  fieldCode: string;
+  /** 承保主体；'*' 表示平台标准基线。 */
+  insurerCode: string;
+  /** 来源类型（可选）。 */
+  sourceType: string;
+  /** 绑定的标准选项集编码。 */
+  refCode: string;
+}
+
+/** 绑定/更新字段到选项集请求（insurerCode 空 = 平台标准基线；已存在则覆盖更新）。 */
+export interface BindFieldReq {
+  fieldCode: string;
+  /** 空 = 平台基线 '*'。 */
+  insurerCode?: string;
+  sourceType?: string;
+  refCode: string;
+}
+
 /** 覆盖差异行（本保单主体在该责任上的覆盖行，含未发布——详情页可见但不标"生效"）。 */
 export interface PolicyOverrideRow {
   overrideField: string;
@@ -1267,6 +1348,60 @@ export const mappingApi = {
     return client.get<never, ApiResponse<MappingHealthRow>>('/mappings/health', {
       params: { insurerCode, domain },
     });
+  },
+
+  /**
+   * STP 闸门状态（映射质量→业务风险开关，按保司×域）。
+   *
+   * <p>任一条件不达标即 {@code allowAuto=false}：该保司×域不得自动理算，赔案须转人工。 条件明细随返回，前端直接渲染
+   * 「为什么这单不能直通」，而不是只给一个布尔黑盒——运营据此知道该优先补哪类映射缺口。
+   */
+  stpGate(insurerCode: string, domain: MappingDomain): Promise<ApiResponse<StpGateRow>> {
+    return client.get<never, ApiResponse<StpGateRow>>('/mappings/stp-gate', {
+      params: { insurerCode, domain },
+    });
+  },
+
+  /** 标准码别名列表（按域；标准码维度，跨保司生效）。 */
+  listAliases(domain: MappingDomain): Promise<ApiResponse<AliasRow[]>> {
+    return client.get<never, ApiResponse<AliasRow[]>>('/mappings/aliases', { params: { domain } });
+  },
+
+  /** 登记标准码别名（归并/更名）。 */
+  addAlias(req: AddAliasReq): Promise<ApiResponse<AliasRow>> {
+    return client.post<AddAliasReq, ApiResponse<AliasRow>>('/mappings/aliases', req);
+  },
+
+  /** 标准码拆分列表（按域；标准码维度，跨保司生效）。 */
+  listSplits(domain: MappingDomain): Promise<ApiResponse<SplitRow[]>> {
+    return client.get<never, ApiResponse<SplitRow[]>>('/mappings/splits', { params: { domain } });
+  },
+
+  /** 登记标准码拆分（1:N，父码解析时转人工）。 */
+  addSplit(req: AddSplitReq): Promise<ApiResponse<SplitRow>> {
+    return client.post<AddSplitReq, ApiResponse<SplitRow>>('/mappings/splits', req);
+  },
+
+  /** 停用标准码别名（保留行，解析不再自动归并）。 */
+  disableAlias(id: string): Promise<ApiResponse<AliasRow>> {
+    return client.delete<unknown, ApiResponse<AliasRow>>(`/mappings/aliases/${encodeURIComponent(id)}`);
+  },
+
+  /** 停用标准码拆分（保留行，解析不再据此父码转人工拆分）。 */
+  disableSplit(id: string): Promise<ApiResponse<SplitRow>> {
+    return client.delete<unknown, ApiResponse<SplitRow>>(`/mappings/splits/${encodeURIComponent(id)}`);
+  },
+
+  /** 字段-选项集绑定列表（平台基线 '*' + 指定保司专属；insurerCode 空 = 仅基线）。 */
+  listFieldBindings(insurerCode?: string): Promise<ApiResponse<FieldBindingRow[]>> {
+    return client.get<never, ApiResponse<FieldBindingRow[]>>('/mappings/field-bindings', {
+      params: insurerCode ? { insurerCode } : {},
+    });
+  },
+
+  /** 绑定/更新字段到选项集（已存在同 (fieldCode, insurerCode) 则覆盖更新）。 */
+  bindField(req: BindFieldReq): Promise<ApiResponse<FieldBindingRow>> {
+    return client.post<BindFieldReq, ApiResponse<FieldBindingRow>>('/mappings/field-bindings', req);
   },
 
   /**

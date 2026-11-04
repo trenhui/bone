@@ -54,7 +54,7 @@ public class LiabilityConfigApplicationService {
     RuleValues values = RuleValues.ofCreate(command);
     assertRuleUsable(values);
     AdjLiability liability =
-        AdjLiability.of(
+        AdjLiability.ofWithShared(
             DistributedIdGeneratorHolder.next(),
             tenantId,
             UUID.randomUUID().toString(),
@@ -77,6 +77,8 @@ public class LiabilityConfigApplicationService {
             values.catalogCode(),
             values.socialOnly(),
             values.waitingPeriod(),
+            command.sharedCode(),
+            command.priorLiabilityUuid(),
             command.status() == null || command.status().isBlank() ? "DRAFT" : command.status());
     liabilityRepository.save(liability);
     domainEventPublisher.publishFrom(liability);
@@ -105,8 +107,15 @@ public class LiabilityConfigApplicationService {
     assertRuleUsable(values);
     if (existing.isActive()) {
       // 已生效版本不可改：生成同 UUID 的新版本草稿（新行，无需乐观锁）
+      // 共享关系（共保代码 / 前序责任）：命令显式传了就用命令值，否则沿用原值（与 RuleValues.merge 的空字段沿用原值一致）
+      String sharedCode =
+          command.sharedCode() != null ? command.sharedCode() : existing.getSharedCode();
+      String priorLiabilityUuid =
+          command.priorLiabilityUuid() != null
+              ? command.priorLiabilityUuid()
+              : existing.getPriorLiabilityUuid();
       AdjLiability next =
-          AdjLiability.of(
+          AdjLiability.ofWithShared(
               DistributedIdGeneratorHolder.next(),
               tenantPort.currentTenantId(),
               existing.getLiabilityUuid(),
@@ -129,6 +138,8 @@ public class LiabilityConfigApplicationService {
               values.catalogCode(),
               values.socialOnly(),
               values.waitingPeriod(),
+              sharedCode,
+              priorLiabilityUuid,
               "DRAFT");
       liabilityRepository.save(next);
       domainEventPublisher.publishFrom(next);
@@ -180,7 +191,10 @@ public class LiabilityConfigApplicationService {
     // 漏开的后果是理算时 CLAIM_QUOTA_NOT_FOUND——把这道初始化挂在发布唯一入口上，
     // 避免运营逐人手工开公账。
     quotaConfigApplicationService.initPublicAccountsForLiability(
-        liability.getPlanId(), liability.getLiabilityUuid(), liability.getLiabilityLimit());
+        liability.getPlanId(),
+        liability.getLiabilityUuid(),
+        liability.getSharedCode(),
+        liability.getLiabilityLimit());
     return LiabilityView.from(liability);
   }
 
@@ -546,7 +560,9 @@ public class LiabilityConfigApplicationService {
       String catalogCode,
       Integer socialOnly,
       Integer waitingPeriod,
-      String status) {
+      String status,
+      String sharedCode,
+      String priorLiabilityUuid) {
 
     static LiabilityView from(AdjLiability l) {
       return new LiabilityView(
@@ -571,7 +587,9 @@ public class LiabilityConfigApplicationService {
           l.getCatalogCode(),
           l.getSocialOnly(),
           l.getWaitingPeriod(),
-          l.getStatus());
+          l.getStatus(),
+          l.getSharedCode(),
+          l.getPriorLiabilityUuid());
     }
 
     private static String plain(BigDecimal v) {

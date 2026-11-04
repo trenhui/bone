@@ -83,4 +83,10 @@ public class StdCodeSplit extends TenantAggregateRoot<Long> {
   public boolean isActive() {
     return "ACTIVE".equals(status);
   }
+
+  /** 停用拆分（保留行；解析层不再据此父码转人工拆分）。 */
+  public void disable(Instant now) {
+    this.status = "DISABLED";
+    this.updatedAt = now;
+  }
 }

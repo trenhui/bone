@@ -103,6 +103,23 @@ public class ReconciliationApplicationService {
     reconcileCaseSettle(tenantId, bizDate);
   }
 
+  /** 日终对账报告查询视图：当日各通道报告 + 报告下全量差异明细（含已处置）。 */
+  public record ReconciliationView(
+      List<ReconciliationReport> reports, List<ReconciliationDiff> diffs) {}
+
+  /**
+   * 查询某业务日的对账结果与差异明细（§10.2 对账报告查询端点，纯读）。
+   *
+   * <p>报告未生成（当日还没跑到 {@code ReconciliationJob}）返回空列表而非 404： 「今天还没有对账」是正常态，编排层按空集处理即可。
+   */
+  @Transactional(readOnly = true)
+  public ReconciliationView findReportView(LocalDate bizDate) {
+    List<ReconciliationReport> reports =
+        reportRepository.findReportsByBizDate(tenantPort.currentTenantId(), bizDate);
+    List<Long> reportIds = reports.stream().map(ReconciliationReport::getId).toList();
+    return new ReconciliationView(reports, diffRepository.findByReportIds(reportIds));
+  }
+
   private void reconcileQuota(long tenantId, LocalDate bizDate) {
     if (reportRepository.findReport(tenantId, bizDate, ReconciliationReport.CHANNEL_QUOTA)
         != null) {

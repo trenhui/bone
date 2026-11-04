@@ -10,13 +10,18 @@ import com.bone.core.util.DistributedIdGenerator;
 import java.math.BigDecimal;
 
 /**
- * 责任账（{@code LIABILITY_CAP}，按 {@code liability_uuid} 分行）写侧。
+ * 责任账（按 {@code liability_uuid} 或共享池共保代码分行）写侧。
  *
  * <p>从 {@link QuotaApplicationService} 按限界上下文拆出：个人账回答「这个人今年总共能赔多少」，责任账回答「这项责任今年能赔多少」，
  * 两组用例的入参、幂等键、归属口径都不同，混在一个类里（原 849 行）任一改动都要通读另一半。
  *
  * <p><b>为什么必须有第二本账</b>：只占 {@code PERSONAL} 的话，责任限额就是责任配置里的一个常量——跨案各用一次满额，直接系统性超赔。 两本账共用同一张 {@code
  * t_quota_account}、同一套三值模型与守恒校验，不另立表（多一本表就多一次对账）。
+ *
+ * <p><b>共享池（共保代码）</b>：责任带 {@code sharedCode} 时，其责任账走 {@code SHARED_POOL} 维度（共保代码为分行键， 复用 {@code
+ * liability_uuid} 列），同组多个责任共用同一额度池。账户键由 {@link QuotaAccount#capQuotaType} / {@link
+ * QuotaAccount#capSubKey} 推导——写侧（本类）与读侧（{@code QuotaDrivenAccumulationPortAdapter}）必须同源， 否则读侧读成「已用
+ * 0」而超赔。
  *
  * <p><b>事务边界不在本类</b>：本类不是 Spring bean，方法上的 {@code @Transactional} 不会被代理。事务由调用方 {@link
  * QuotaApplicationService} 的公开方法（{@code Propagation.REQUIRED}）开启——那正是「结算单 + 两本账同事务」的
@@ -44,7 +49,8 @@ final class LiabilityQuotaService {
    * 责任账软占 + 免赔消抵累计（A7 建结算单时调用，与个人账软占分属两个事务： 一次只写一个账户，守住 CORE-06 一事务一聚合）。
    *
    * @param quotaYear 额度年度
-   * @param liabilityUuid 责任 UUID（分行键）
+   * @param liabilityUuid 责任 UUID（独立责任的责任账分行键；共享责任时让位于 {@code sharedCode}）
+   * @param sharedCode 共享池代码（空=独立责任走 {@code LIABILITY_CAP}；非空走 {@code SHARED_POOL}，按共保代码分行）
    * @param amount 本次占用（= 理算实付）
    * @param deductibleApplied 本次实际消抵的免赔（理算产出；回写后次案才只扣剩余免赔）
    * @param businessDate 本次的业务日（Q-05 日限额累计键：发票日期 / 赔案受理日；{@code null} = 本案不配日限额， 此时不落按日流水，而非记成"某天已用
@@ -57,6 +63,7 @@ final class LiabilityQuotaService {
       long planId,
       int quotaYear,
       String liabilityUuid,
+      String sharedCode,
       long claimId,
       String claimNo,
       BigDecimal amount,
@@ -65,8 +72,8 @@ final class LiabilityQuotaService {
       int attempt,
       java.time.LocalDate businessDate) {
     String ak =
-        QuotaLedgerSupport.accountKey(
-            tenantId, insuredIdHash, policyNo, planId, quotaYear, "LIABILITY_CAP", liabilityUuid);
+        capAccountKey(
+            tenantId, insuredIdHash, policyNo, planId, quotaYear, liabilityUuid, sharedCode);
     support.withAccountLock(
         ak,
         () ->
@@ -77,6 +84,7 @@ final class LiabilityQuotaService {
                 planId,
                 quotaYear,
                 liabilityUuid,
+                sharedCode,
                 claimId,
                 claimNo,
                 amount,
@@ -93,6 +101,7 @@ final class LiabilityQuotaService {
       long planId,
       int quotaYear,
       String liabilityUuid,
+      String sharedCode,
       long claimId,
       String claimNo,
       BigDecimal amount,
@@ -101,7 +110,8 @@ final class LiabilityQuotaService {
       int attempt,
       java.time.LocalDate businessDate) {
     QuotaAccount account =
-        loadLiability(tenantId, insuredIdHash, policyNo, planId, quotaYear, liabilityUuid);
+        loadLiability(
+            tenantId, insuredIdHash, policyNo, planId, quotaYear, liabilityUuid, sharedCode);
     boolean touched = false;
     String softKey = claimNo + ":LIABILITY_SOFT:" + attempt;
     if (!support.alreadyOccupied(account, softKey) && amount != null && amount.signum() > 0) {
@@ -148,14 +158,15 @@ final class LiabilityQuotaService {
       long planId,
       int quotaYear,
       String liabilityUuid,
+      String sharedCode,
       long claimId,
       String claimNo,
       BigDecimal amount,
       String settlementNo,
       int attempt) {
     String ak =
-        QuotaLedgerSupport.accountKey(
-            tenantId, insuredIdHash, policyNo, planId, quotaYear, "LIABILITY_CAP", liabilityUuid);
+        capAccountKey(
+            tenantId, insuredIdHash, policyNo, planId, quotaYear, liabilityUuid, sharedCode);
     support.withAccountLock(
         ak,
         () ->
@@ -166,6 +177,7 @@ final class LiabilityQuotaService {
                 planId,
                 quotaYear,
                 liabilityUuid,
+                sharedCode,
                 claimId,
                 claimNo,
                 amount,
@@ -180,13 +192,15 @@ final class LiabilityQuotaService {
       long planId,
       int quotaYear,
       String liabilityUuid,
+      String sharedCode,
       long claimId,
       String claimNo,
       BigDecimal amount,
       String settlementNo,
       int attempt) {
     QuotaAccount account =
-        loadLiability(tenantId, insuredIdHash, policyNo, planId, quotaYear, liabilityUuid);
+        loadLiability(
+            tenantId, insuredIdHash, policyNo, planId, quotaYear, liabilityUuid, sharedCode);
     String key = claimNo + ":LIABILITY_PAID:" + attempt;
     if (support.alreadyOccupied(account, key)) {
       return;
@@ -213,6 +227,7 @@ final class LiabilityQuotaService {
       long planId,
       int quotaYear,
       String liabilityUuid,
+      String sharedCode,
       long claimId,
       String claimNo,
       BigDecimal amount,
@@ -220,8 +235,8 @@ final class LiabilityQuotaService {
       String settlementNo,
       int attempt) {
     String ak =
-        QuotaLedgerSupport.accountKey(
-            tenantId, insuredIdHash, policyNo, planId, quotaYear, "LIABILITY_CAP", liabilityUuid);
+        capAccountKey(
+            tenantId, insuredIdHash, policyNo, planId, quotaYear, liabilityUuid, sharedCode);
     support.withAccountLock(
         ak,
         () ->
@@ -232,6 +247,7 @@ final class LiabilityQuotaService {
                 planId,
                 quotaYear,
                 liabilityUuid,
+                sharedCode,
                 claimId,
                 claimNo,
                 amount,
@@ -247,6 +263,7 @@ final class LiabilityQuotaService {
       long planId,
       int quotaYear,
       String liabilityUuid,
+      String sharedCode,
       long claimId,
       String claimNo,
       BigDecimal amount,
@@ -254,7 +271,8 @@ final class LiabilityQuotaService {
       String settlementNo,
       int attempt) {
     QuotaAccount account =
-        loadLiability(tenantId, insuredIdHash, policyNo, planId, quotaYear, liabilityUuid);
+        loadLiability(
+            tenantId, insuredIdHash, policyNo, planId, quotaYear, liabilityUuid, sharedCode);
     boolean touched = false;
     String relKey = claimNo + ":LIABILITY_RELEASE:" + attempt;
     if (!support.alreadyOccupied(account, relKey) && amount != null && amount.signum() > 0) {
@@ -307,6 +325,7 @@ final class LiabilityQuotaService {
       long planId,
       int quotaYear,
       String liabilityUuid,
+      String sharedCode,
       long claimId,
       String claimNo,
       BigDecimal amount,
@@ -314,8 +333,8 @@ final class LiabilityQuotaService {
       String settlementNo,
       int attempt) {
     String ak =
-        QuotaLedgerSupport.accountKey(
-            tenantId, insuredIdHash, policyNo, planId, quotaYear, "LIABILITY_CAP", liabilityUuid);
+        capAccountKey(
+            tenantId, insuredIdHash, policyNo, planId, quotaYear, liabilityUuid, sharedCode);
     support.withAccountLock(
         ak,
         () ->
@@ -326,6 +345,7 @@ final class LiabilityQuotaService {
                 planId,
                 quotaYear,
                 liabilityUuid,
+                sharedCode,
                 claimId,
                 claimNo,
                 amount,
@@ -341,6 +361,7 @@ final class LiabilityQuotaService {
       long planId,
       int quotaYear,
       String liabilityUuid,
+      String sharedCode,
       long claimId,
       String claimNo,
       BigDecimal amount,
@@ -348,7 +369,8 @@ final class LiabilityQuotaService {
       String settlementNo,
       int attempt) {
     QuotaAccount account =
-        loadLiability(tenantId, insuredIdHash, policyNo, planId, quotaYear, liabilityUuid);
+        loadLiability(
+            tenantId, insuredIdHash, policyNo, planId, quotaYear, liabilityUuid, sharedCode);
     boolean touched = false;
     String refKey = claimNo + ":LIABILITY_REFUND:" + attempt;
     if (!support.alreadyOccupied(account, refKey) && amount != null && amount.signum() > 0) {
@@ -385,24 +407,45 @@ final class LiabilityQuotaService {
     }
   }
 
+  /**
+   * 责任账键（与 {@code findAccount} 的 UK 同构）；共享责任走 {@code SHARED_POOL}+共保代码，否则 {@code
+   * LIABILITY_CAP}+责任UUID。
+   */
+  private String capAccountKey(
+      long tenantId,
+      String insuredIdHash,
+      String policyNo,
+      long planId,
+      int quotaYear,
+      String liabilityUuid,
+      String sharedCode) {
+    return QuotaLedgerSupport.accountKey(
+        tenantId,
+        insuredIdHash,
+        policyNo,
+        planId,
+        quotaYear,
+        QuotaAccount.capQuotaType(sharedCode),
+        QuotaAccount.capSubKey(sharedCode, liabilityUuid));
+  }
+
   private QuotaAccount loadLiability(
       long tenantId,
       String insuredIdHash,
       String policyNo,
       long planId,
       int quotaYear,
-      String liabilityUuid) {
+      String liabilityUuid,
+      String sharedCode) {
+    String quotaType = QuotaAccount.capQuotaType(sharedCode);
+    String subKey = QuotaAccount.capSubKey(sharedCode, liabilityUuid);
     QuotaAccount account =
         quotaAccountRepository.findAccount(
-            insuredIdHash,
-            policyNo,
-            planId,
-            quotaYear,
-            "LIABILITY_CAP",
-            liabilityUuid == null ? "" : liabilityUuid);
+            insuredIdHash, policyNo, planId, quotaYear, quotaType, subKey);
     if (account == null) {
       throw ClaimErrors.of(
-          ClaimErrorCodes.CLAIM_QUOTA_NOT_FOUND, policyNo + "/" + liabilityUuid + "@" + quotaYear);
+          ClaimErrorCodes.CLAIM_QUOTA_NOT_FOUND,
+          policyNo + "/" + liabilityUuid + "/" + sharedCode + "@" + quotaYear);
     }
     return account;
   }

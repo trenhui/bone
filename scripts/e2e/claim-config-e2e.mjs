@@ -110,6 +110,10 @@ const TAX_NO = ds.tax_no();                         // 统一社会信用代码�
 const INSURER = '中国人民财产保险股份有限公司';
 const BRANCH = `${ds.city}中心支公司`;
 const POLICY_NO = ds.doc_no('POL');                 // POL-20261101-NNNN（可读单号）
+// 承保主体业务码：保单 bizIdentityCode 必须引用 t_claim_insurer.insurer_code（见
+// ClaimConfigApplicationService#assertBizIdentityUsable，按 insurer_code 查 ACTIVE 主体）。
+// 造数须先注册该承保主体，再用其 insurer_code 作为保单的 bizIdentityCode。
+const INSURER_CODE = ds.doc_no('BIZ');              // 承保主体业务码（唯一，避免与种子数据冲突）
 const NAME_ONLY = '团体补充医疗保险';                // 只出现在保单名称里、不在保单号里的检索词
 const PRODUCT_TYPE = 'GROUP_SUPPLEMENTARY_MEDICAL'; // 团体补充医疗保险
 const START_AT = `${ds.days_ago(45)}T00:00:00Z`;   // 承保起（运行日倒推）
@@ -176,6 +180,20 @@ async function main() {
   TOKEN = await login(`${IAM_BASE}/api/v1`);
   check('管理员登录（tenant 0，IAM 直连取 token）', Boolean(TOKEN));
 
+  // ---------- 前置：注册承保主体（保单 bizIdentityCode 必须引用其 insurer_code） ----------
+  // 承保主体主档注册在「多保司映射」域：/api/v1/claim-config/mappings/insurers
+  const regIns = await call('POST', `${P}/mappings/insurers`, {
+    insurerCode: INSURER_CODE,
+    insurerName: COMPANY,
+    insurerShortName: ds.dept,
+    insurerType: 'DIRECT',
+    creditCode: TAX_NO,
+  });
+  check('注册承保主体 → 201（保单 bizIdentityCode 的前置引用）',
+    regIns.status === 200 || regIns.status === 201, `实际 ${regIns.status} ${JSON.stringify(regIns.data).slice(0, 160)}`);
+  check('承保主体初始状态为 ACTIVE',
+    regIns.data?.data?.status === 'ACTIVE', String(regIns.data?.data?.status));
+
   // ---------- 被保人清单（假名化 ID，不存明文证件） ----------
   const insuredHashes = [];
   for (const person of [ds.employee, ds.manager, ds.person()]) {
@@ -190,7 +208,7 @@ async function main() {
     insurerName: INSURER,
     branchName: BRANCH,
     insureName: COMPANY,
-    bizIdentityCode: TAX_NO,
+    bizIdentityCode: INSURER_CODE,
     productType: PRODUCT_TYPE,
     effectiveStart: START_AT,
     effectiveEnd: END_AT,
@@ -240,7 +258,7 @@ async function main() {
     insurerName: INSURER,
     branchName: BRANCH,
     insureName: COMPANY,
-    bizIdentityCode: TAX_NO,
+    bizIdentityCode: INSURER_CODE,
     productType: PRODUCT_TYPE,
     effectiveStart: START_AT,
     effectiveEnd: END_AT,

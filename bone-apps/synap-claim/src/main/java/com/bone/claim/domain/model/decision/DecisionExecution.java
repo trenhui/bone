@@ -1,5 +1,6 @@
 package com.bone.claim.domain.model.decision;
 
+import com.bone.claim.domain.model.rule.event.ClaimRulesEvaluatedEvent;
 import com.bone.core.annotation.Transient;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
@@ -315,6 +316,23 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
 
   public DecisionTier decisionTierEnum() {
     return decisionTier == null ? null : DecisionTier.valueOf(decisionTier);
+  }
+
+  /**
+   * 登记本次执行真实命中的规则（G2-1），随 {@code persist} 的 {@code publishFrom} 发布 {@link
+   * ClaimRulesEvaluatedEvent}，由 {@code ClaimRuleHitRecorder} 在 AFTER_COMMIT append 到 {@code
+   * t_claim_rule_hit}。
+   *
+   * <p>为什么由聚合自己发布：基类 {@code addDomainEvent} 是 {@code protected}，应用层无法直接调用—— 这正是决策图里那段 TODO
+   * 一直无法落地的技术原因。领域事件由聚合内聚发布，同时守住「一事务一聚合」 与事件归属边界。空命中不发事件（recorder 会跳过，无副作用）。
+   */
+  public void recordRuleHits(List<ClaimRulesEvaluatedEvent.RuleHit> hits) {
+    if (hits == null || hits.isEmpty()) {
+      return;
+    }
+    addDomainEvent(
+        new ClaimRulesEvaluatedEvent(
+            getTenantId(), getClaimId(), getId(), List.copyOf(hits), Instant.now()));
   }
 
   /** 节点轨迹（包级可见；理由同 blueprint：findById 不回填集合）。 */

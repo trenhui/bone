@@ -105,10 +105,39 @@ class QuotaDrivenAccumulationPortAdapterTest {
     when(repo.findAccount(INSURED, POLICY, PLAN, YEAR, "LIABILITY_CAP", "LIAB-A")).thenReturn(a);
     when(repo.findAccount(INSURED, POLICY, PLAN, YEAR, "LIABILITY_CAP", "LIAB-B")).thenReturn(b);
 
-    assertThat(adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, "LIAB-A", null).limitUsed())
+    assertThat(adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, "LIAB-A", null, null).limitUsed())
         .isEqualByComparingTo("10000.00");
-    assertThat(adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, "LIAB-B", null).limitUsed())
+    assertThat(adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, "LIAB-B", null, null).limitUsed())
         .isEqualByComparingTo("0.00");
+  }
+
+  @Test
+  @DisplayName("共享池：同组两责任读同一 SHARED_POOL 账户，无共保代码则走独立账（读侧键须与写侧同源）")
+  void sharedPoolIsSharedAcrossLiabilities() {
+    // 共享池已被历史案件占用 9000（claimed）
+    QuotaAccount pool = account("SHARED_POOL", "POOL-SH", new BigDecimal("100000.00"));
+    pool.reserveSoft(1L, new BigDecimal("9000.00"), 1001L, "SO1", "CL1:LIABILITY_SOFT:1");
+    pool.confirm(2L, new BigDecimal("9000.00"), 1001L, "SO1", "CL1:LIABILITY_PAID:1");
+    when(repo.findAccount(INSURED, POLICY, PLAN, YEAR, "SHARED_POOL", "POOL-SH")).thenReturn(pool);
+
+    Accumulation viaA =
+        adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, "LIAB-A", "POOL-SH", null);
+    Accumulation viaB =
+        adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, "LIAB-B", "POOL-SH", null);
+
+    assertThat(viaA.available()).isTrue();
+    assertThat(viaA.limitUsed())
+        .as("共享池已占 9000：责任 A 必须读到该池占用，而非自己的 LIABILITY_CAP")
+        .isEqualByComparingTo("9000.00");
+    assertThat(viaB.limitUsed())
+        .as("同组责任 B 读到同一池的占用（共享保额的核心：多责任共用一个额度池）")
+        .isEqualByComparingTo("9000.00");
+
+    Accumulation independent =
+        adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, "LIAB-A", null, null);
+    assertThat(independent.available())
+        .as("无共保代码走 LIABILITY_CAP（本例未开户）→ MISSING：证明 sharedCode 决定读哪本账")
+        .isFalse();
   }
 
   @Test
@@ -117,7 +146,8 @@ class QuotaDrivenAccumulationPortAdapterTest {
     when(repo.findAccount(INSURED, POLICY, PLAN, YEAR, "LIABILITY_CAP", ""))
         .thenReturn(account("LIABILITY_CAP", "", new BigDecimal("100000.00")));
 
-    assertThat(adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, null, null).available()).isTrue();
+    assertThat(adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, null, null, null).available())
+        .isTrue();
   }
 
   @Test
@@ -133,9 +163,10 @@ class QuotaDrivenAccumulationPortAdapterTest {
         .thenReturn(account);
     when(repo.findTransactions(2L)).thenReturn(account.getTransactions());
 
-    Accumulation todayAcc = adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, today);
+    Accumulation todayAcc =
+        adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, null, today);
     Accumulation tomorrowAcc =
-        adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, tomorrow);
+        adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, null, tomorrow);
 
     assertThat(todayAcc.dailyUsed())
         .as("同一天两笔必须相加：120 + 80 = 200；若为 120 说明只取了第一笔")
@@ -160,7 +191,8 @@ class QuotaDrivenAccumulationPortAdapterTest {
         .thenReturn(account);
     when(repo.findTransactions(2L)).thenReturn(account.getTransactions());
 
-    assertThat(adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, today).dailyUsed())
+    assertThat(
+            adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, null, today).dailyUsed())
         .as("占用 200 后回退 200 ⇒ 当日已用回到 0")
         .isEqualByComparingTo("0.00");
   }
@@ -177,7 +209,7 @@ class QuotaDrivenAccumulationPortAdapterTest {
         .thenReturn(account);
     when(repo.findTransactions(2L)).thenReturn(account.getTransactions());
 
-    Accumulation acc = adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, today);
+    Accumulation acc = adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, null, today);
 
     assertThat(acc.available())
         .as("负的日用量是账实不符信号：必须交给 A7 fail-closed，而不是把当日已用当 0（日限额重新满额=超赔）")
@@ -185,7 +217,7 @@ class QuotaDrivenAccumulationPortAdapterTest {
   }
 
   private Accumulation load() {
-    return adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, null);
+    return adapter.load(TENANT, INSURED, POLICY, PLAN, YEAR, LIABILITY, null, null);
   }
 
   private static QuotaAccount account(String type, String liabilityUuid, BigDecimal initial) {

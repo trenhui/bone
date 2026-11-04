@@ -85,6 +85,13 @@
             <artifactId>bone-ai-gateway</artifactId>
         </dependency>
 
+        <!-- G2-1：核责规则引擎（bone-ai C2）。QLExpress4 沙箱求值 + 真实规则命中留痕；
+             版本由 bone-parent dependencyManagement 统一托管（1.0.0-SNAPSHOT）。
+             回退开关 bone.claim.rule-engine.mode=stub 可切回一期本地桩。 -->
+        <dependency><groupId>com.bone</groupId>
+            <artifactId>bone-ai-rules</artifactId>
+        </dependency>
+
         <!-- MySQL Driver -->
         <dependency><groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>

@@ -6,6 +6,7 @@ import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.domain.annotation.Param;
 import com.bone.metadata.sdk.domain.annotation.TenantScope;
 import com.bone.metadata.sdk.domain.annotation.TenantScopeMode;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;
 
 /**
@@ -34,4 +35,19 @@ public interface ReconciliationDiffRepository extends Repository<ReconciliationD
    */
   @TenantScope(TenantScopeMode.AUTO)
   List<PendingDiff> findPending(@Param("limit") int limit);
+
+  /**
+   * 取报告下的全部差异明细（§10.2 对账报告查询端点）。
+   *
+   * <p>与 {@link #findPending} 的分工：那里是「待处置队列」（LEFT JOIN 处置流水），这里是「当日报告的
+   * 全量差异」——已处置的也要返回，否则日终报告只看得见没处理的，处置率无从对账。
+   */
+  default List<ReconciliationDiff> findByReportIds(List<Long> reportIds) {
+    if (reportIds == null || reportIds.isEmpty()) {
+      return List.of();
+    }
+    return findByCriteria(
+        Criteria.<ReconciliationDiff>create()
+            .in(ReconciliationDiff::getReportId, reportIds.toArray()));
+  }
 }

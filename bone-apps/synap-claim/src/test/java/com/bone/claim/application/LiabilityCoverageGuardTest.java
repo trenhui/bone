@@ -277,6 +277,8 @@ class LiabilityCoverageGuardTest {
         null,
         null,
         null,
+        null,
+        null,
         null);
   }
 
@@ -292,6 +294,8 @@ class LiabilityCoverageGuardTest {
 
   private static UpdateLiabilityReq updateReq(Boolean detachCoverage) {
     return new UpdateLiabilityReq(
+        null,
+        null,
         null,
         null,
         null,

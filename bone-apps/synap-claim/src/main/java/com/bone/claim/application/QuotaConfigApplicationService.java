@@ -168,7 +168,7 @@ public class QuotaConfigApplicationService {
    */
   @Transactional
   public int initPublicAccountsForLiability(
-      long planId, String liabilityUuid, java.math.BigDecimal initialLimit) {
+      long planId, String liabilityUuid, String sharedCode, java.math.BigDecimal initialLimit) {
     ClaimPlan plan = claimPlanRepository.findPlanById(planId);
     if (plan == null) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_PLAN_NOT_FOUND, planId);
@@ -185,18 +185,34 @@ public class QuotaConfigApplicationService {
     assertPolicyTypeMatchesInsuredCount(policyNo, personalAccounts.size());
     int quotaYear = Year.now().getValue();
     for (QuotaAccount personal : personalAccounts) {
-      openAccount(
-          new OpenQuota(
-              personal.getInsuredIdHash(),
-              policyNo,
-              planId,
-              quotaYear,
-              "LIABILITY_CAP",
-              liabilityUuid,
-              initialLimit == null ? BigDecimal.ZERO : initialLimit,
-              "system",
-              "责任发布联动",
-              "责任发布自动初始化"));
+      if (QuotaAccount.isShared(sharedCode)) {
+        // 共享责任：责任限额账走 SHARED_POOL 维度，按共保代码分行（liability_uuid 列存共保代码，与运行期路由键同源）
+        openAccount(
+            new OpenQuota(
+                personal.getInsuredIdHash(),
+                policyNo,
+                planId,
+                quotaYear,
+                QuotaAccount.QUOTA_TYPE_SHARED_POOL,
+                sharedCode,
+                initialLimit == null ? BigDecimal.ZERO : initialLimit,
+                "system",
+                "共享池发布联动",
+                "共享池发布自动初始化"));
+      } else {
+        openAccount(
+            new OpenQuota(
+                personal.getInsuredIdHash(),
+                policyNo,
+                planId,
+                quotaYear,
+                "LIABILITY_CAP",
+                liabilityUuid,
+                initialLimit == null ? BigDecimal.ZERO : initialLimit,
+                "system",
+                "责任发布联动",
+                "责任发布自动初始化"));
+      }
     }
     return personalAccounts.size();
   }

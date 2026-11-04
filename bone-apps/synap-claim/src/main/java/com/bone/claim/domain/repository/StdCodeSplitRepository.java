@@ -19,4 +19,11 @@ public interface StdCodeSplitRepository extends Repository<StdCodeSplit, Long> {
             .eq(StdCodeSplit::getParentCode, parentCode)
             .eq(StdCodeSplit::getStatus, "ACTIVE"));
   }
+
+  default List<StdCodeSplit> findByDomain(Long tenantId, String domain) {
+    return findByCriteria(
+        Criteria.<StdCodeSplit>create()
+            .eq(StdCodeSplit::getTenantId, tenantId)
+            .eq(StdCodeSplit::getDomain, domain));
+  }
 }

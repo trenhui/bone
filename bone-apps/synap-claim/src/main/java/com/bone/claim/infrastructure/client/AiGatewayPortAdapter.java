@@ -23,9 +23,10 @@ import org.springframework.stereotype.Component;
  * LLM02）、提示注入检测（OWASP LLM01）、结构化输出校验、证据链（LlmCallRecorded）、 成本红线与配额全部由平台网关统一收口（ADR-002 / 能力图谱 §7.2
  * 安全三件套复用 C8）。 synap-claim 只负责"拼 prompt + 解析结构化结论"，不碰任何安全 / 治理实现。
  *
- * <p>网关未配置真实 provider（{@code bone.ai.gateway.base-url}）时自动回落网关内置 MockLlmClient， 返回自然语言；本适配器解析失败时按
- * fail-closed 抛 {@link AiGatewayUnavailableException}， 决策图对 LLM 节点降级 FALLBACK（绝不拿非结构化 /
- * 不可信输出做自动赔付结论）。
+ * <p>网关未配置真实 provider（{@code bone.ai.gateway.base-url}）时自动回落网关内置 MockLlmClient。 G0-2
+ * 起该替身遵守结构化输出契约并自报 {@code mock:true}，本适配器<b>显式拒绝</b>替身响应，按 fail-closed 抛 {@link
+ * AiGatewayUnavailableException}（消息携带可运维的修法指引），决策图对 LLM 节点降级 FALLBACK—— 绝不拿非结构化 / 不可信 /
+ * 替身输出做自动赔付结论。
  *
  * <p>接线位置（ADR-002/§3.2.1）：bone-ai 实现类只在此 {@code infrastructure.client} 包被引入， 业务层经 {@link
  * AiGatewayPort} 防腐层消费，杜绝"绕过防腐层的偷接"。
@@ -88,6 +89,13 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
   private AiAssessment parse(LlmResponse response) {
     try {
       JsonNode node = objectMapper.readTree(response.content());
+      // G0-2：替身响应显式拒绝。未配 provider 时网关回落 MockLlmClient（自报 mock:true）；
+      // 若继续解析会得到「rejectSuggested=false + confidence=null → 转人工」的退化结论，
+      // 且 model_version 被伪报成替身模型。显式失败才能给出可运维的修法指引（Rules of ML #10）。
+      if (node.path("mock").asBoolean(false)) {
+        throw new AiGatewayUnavailableException(
+            "检测到 Mock 替身响应，禁止用于自动赔付结论：请配置 bone.ai.gateway.base-url 接入真实 provider");
+      }
       boolean reject = node.path("rejectSuggested").asBoolean(false);
       // 置信度 fail-closed（B9）：缺失 / 显式 null / 越界（<0 或 >1）一律视为"无法判定" → null。
       // null 经 DecisionTriage.CONFIDENCE_UNKNOWN 强制转人工，绝不因缺省 0.5 滑入自动通过或复核档。
@@ -104,6 +112,9 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
           reject ? normalizeRejectReasons(node.path("rejectReasons")) : List.of();
       return new AiAssessment(
           true, reject, confidence, reasons, resolvedModel(response), PROMPT_VERSION);
+    } catch (AiGatewayUnavailableException ex) {
+      // 替身拒绝属于显式降级：保留可运维的原始消息，不要被「解析失败」二次包装掉
+      throw ex;
     } catch (Exception ex) {
       throw new AiGatewayUnavailableException("AI 结构化结论解析失败，降级纯规则路径: " + ex.getMessage(), ex);
     }

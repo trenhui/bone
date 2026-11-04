@@ -131,6 +131,30 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
     this.updatedAt = now;
   }
 
+  /** 共享池维度（按共保代码分行，复用 {@code liability_uuid} 列承载共保代码）。 */
+  public static final String QUOTA_TYPE_SHARED_POOL = "SHARED_POOL";
+
+  /** 责任限额维度（按责任 UUID 分行）。 */
+  public static final String QUOTA_TYPE_LIABILITY_CAP = "LIABILITY_CAP";
+
+  /** 责任是否走共享池（按共保代码分行，而非按责任 UUID）。 */
+  public static boolean isShared(String sharedCode) {
+    return sharedCode != null && !sharedCode.isBlank();
+  }
+
+  /** 责任限额账的 quota_type：共享池 {@link #QUOTA_TYPE_SHARED_POOL}，否则 {@link #QUOTA_TYPE_LIABILITY_CAP}。 */
+  public static String capQuotaType(String sharedCode) {
+    return isShared(sharedCode) ? QUOTA_TYPE_SHARED_POOL : QUOTA_TYPE_LIABILITY_CAP;
+  }
+
+  /**
+   * 责任限额账的子键（复用既有 {@code liability_uuid} 列，避免改唯一索引）：共享池=共保代码，否则=责任 UUID。
+   * 写侧（预留/释放/确认/回冲）与读侧（跨案累计）必须一致调用本方法，否则读侧会读成「已用 0」而超赔。
+   */
+  public static String capSubKey(String sharedCode, String liabilityUuid) {
+    return isShared(sharedCode) ? sharedCode : (liabilityUuid == null ? "" : liabilityUuid);
+  }
+
   public static QuotaAccount open(
       Long id,
       Long tenantId,

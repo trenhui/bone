@@ -9,6 +9,7 @@ import com.bone.claim.application.port.out.DecisionMetricsPort;
 import com.bone.claim.application.port.out.DecisionNodeHandler;
 import com.bone.claim.application.port.out.DecisionNodeHandler.DecisionNodeContext;
 import com.bone.claim.application.port.out.DecisionNodeHandler.DecisionNodeOutcome;
+import com.bone.claim.application.port.out.RuleEnginePort;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.ClaimItem;
@@ -17,10 +18,12 @@ import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.claim.domain.model.decision.DecisionGraph;
 import com.bone.claim.domain.model.decision.DecisionNodeStatus;
 import com.bone.claim.domain.model.decision.TriageLimits;
+import com.bone.claim.domain.model.rule.event.ClaimRulesEvaluatedEvent;
 import com.bone.claim.infrastructure.metrics.MicrometerDecisionMetricsAdapter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -368,5 +371,45 @@ class DecisionGraphExecutorTest {
     DecisionGraphExecutor.DecisionExecutionResult result =
         executor(handlers).execute(1001L, versions());
     assertThat(result.decisionResult()).isEqualTo("NEED_MORE_EVIDENCE");
+  }
+
+  @Test
+  @DisplayName("G2-1：规则节点产出的 ruleHits 必须随执行聚合发布 ClaimRulesEvaluatedEvent")
+  void ruleHitsArePublishedWithExecution() {
+    List<DecisionNodeHandler> handlers = new ArrayList<>(happyHandlers());
+    var hit =
+        new RuleEnginePort.RuleHit(
+            "R-FRAUD-06", "claim-ruleset-v1", "FRAUD", 10, "{}", "VERIFY_NOT_PASSED");
+    handlers.set(
+        1,
+        node(
+            DecisionGraph.RULE_CHECK,
+            DecisionNodeStatus.SUCCEEDED,
+            Map.of(
+                "ruleConflict",
+                false,
+                "fraudGatePassed",
+                false,
+                "riskHit",
+                true,
+                "ruleConfidence",
+                new BigDecimal("0.90"),
+                "ruleHits",
+                List.of(hit)),
+            new BigDecimal("0.90")));
+
+    executor(handlers).execute(1001L, versions());
+
+    verify(decisionExecutionApplicationService).persist(persisted.capture());
+    assertThat(persisted.getValue().getDomainEvents())
+        .anySatisfy(
+            event -> {
+              assertThat(event).isInstanceOf(ClaimRulesEvaluatedEvent.class);
+              var evaluated = (ClaimRulesEvaluatedEvent) event;
+              assertThat(evaluated.hits()).hasSize(1);
+              assertThat(evaluated.hits().get(0).ruleCode()).isEqualTo("R-FRAUD-06");
+              assertThat(evaluated.hits().get(0).ruleVersion()).isEqualTo("claim-ruleset-v1");
+              assertThat(evaluated.tenantId()).isEqualTo(42L);
+            });
   }
 }

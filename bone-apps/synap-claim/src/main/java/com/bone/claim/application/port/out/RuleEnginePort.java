@@ -1,6 +1,7 @@
 package com.bone.claim.application.port.out;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 规则/理算引擎端口（出站，对接 bone-ai C2 双引擎：核责规则 + 理算）。
@@ -40,5 +41,30 @@ public interface RuleEnginePort {
       boolean ruleConflict,
       boolean riskHit,
       boolean fraudGatePassed,
-      BigDecimal ruleConfidence) {}
+      BigDecimal ruleConfidence,
+      List<RuleHit> hits) {
+
+    /** 兼容既有调用点（一期桩 / 测试夹具）：未产出命中明细时为空列表。 */
+    public RuleCheckResult(
+        boolean available,
+        boolean ruleConflict,
+        boolean riskHit,
+        boolean fraudGatePassed,
+        BigDecimal ruleConfidence) {
+      this(available, ruleConflict, riskHit, fraudGatePassed, ruleConfidence, List.of());
+    }
+  }
+
+  /**
+   * 单条规则命中明细（G2-1）。端口层不携带时间戳——由应用层在组装 {@code ClaimRulesEvaluatedEvent} 时统一取时钟，保证一次执行的留痕时间一致。
+   *
+   * @param conclusion 受控结论码（禁自由文本），供审计与核赔员归因
+   */
+  record RuleHit(
+      String code,
+      String version,
+      String category,
+      Integer priority,
+      String inputSnapshot,
+      String conclusion) {}
 }

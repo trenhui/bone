@@ -1,6 +1,7 @@
 package com.bone.claim.domain.model.adjustment.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.bone.claim.domain.model.adjustment.Accumulation;
@@ -1039,10 +1040,14 @@ class AdjustmentEngineTest {
     @Test
     @DisplayName("共享保额 / 先赔后赔 / 外部控额：各自给出专属原因码；日限额改为校验口径一致性")
     void unsupportedRelationsRejected() {
-      assertThatThrownBy(() -> ruleWithRelation("SHARED-1", "").validate())
-          .isInstanceOf(RuleGap.class)
-          .hasMessageContaining("SHARED_LIMIT_UNSUPPORTED");
+      // 共享额度（共保代码）现已落地：责任带 sharedCode 时责任限额账走 SHARED_POOL，validate 不再拒绝
+      assertThatCode(() -> ruleWithRelation("SHARED-1", "").validate()).doesNotThrowAnyException();
+      // 先赔后赔（Q-01）金额推导公式缺失，仍显式拒绝
       assertThatThrownBy(() -> ruleWithRelation("", "L-PRIOR").validate())
+          .isInstanceOf(RuleGap.class)
+          .hasMessageContaining("PRIORITY_CHAIN_UNSUPPORTED");
+      // 共享 + 先赔后赔同时配置：共享落地不得吞掉 Q-01 的显式拒绝（先赔后赔仍是无金额公式的〔缺〕）
+      assertThatThrownBy(() -> ruleWithRelation("SHARED-1", "L-PRIOR").validate())
           .isInstanceOf(RuleGap.class)
           .hasMessageContaining("PRIORITY_CHAIN_UNSUPPORTED");
       // 日限额（Q-05）已落地：配了金额却没配「日」的口径 ⇒ 仍然拒绝装载——

@@ -149,7 +149,7 @@ class SettlementSettleableGuardTest {
 
   private static IndemnityApplicationService.AdjustmentResult adjustmentResult() {
     return new IndemnityApplicationService.AdjustmentResult(
-        77L, AMOUNT, "hash-1", "{}", List.of(), "liability-uuid-1", BigDecimal.ZERO, true);
+        77L, AMOUNT, "hash-1", "{}", List.of(), "liability-uuid-1", null, BigDecimal.ZERO, true);
   }
 
   private static Adjustment adjustmentWith(Adjustment.ResultStatus status) {

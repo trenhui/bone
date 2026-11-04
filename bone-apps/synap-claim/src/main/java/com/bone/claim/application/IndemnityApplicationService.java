@@ -10,11 +10,15 @@ import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.adjustment.Accumulation;
 import com.bone.claim.domain.model.adjustment.Adjustment;
 import com.bone.claim.domain.model.adjustment.AdjustmentLine;
+import com.bone.claim.domain.model.adjustment.CalculationVersions;
 import com.bone.claim.domain.model.adjustment.engine.CatalogAdmission;
+import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
+import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.claim.domain.model.evidence.Evidence;
 import com.bone.claim.domain.model.liability.AdjLiability;
 import com.bone.claim.domain.repository.AdjustmentRepository;
+import com.bone.claim.domain.repository.DecisionExecutionRepository;
 import com.bone.claim.domain.repository.EvidenceRepository;
 import com.bone.claim.domain.repository.LiabilityRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
@@ -43,6 +47,7 @@ public class IndemnityApplicationService {
   private final com.bone.claim.domain.repository.LiabilityFeeRuleRepository
       liabilityFeeRuleRepository;
   private final EvidenceRepository evidenceRepository;
+  private final DecisionExecutionRepository decisionExecutionRepository;
   private final ClaimCaseApplicationService claimCaseApplicationService;
   private final AccumulationPort accumulationPort;
   private final ItemCatalogGateway itemCatalogGateway;
@@ -64,6 +69,7 @@ public class IndemnityApplicationService {
       String snapshot,
       List<AdjustmentLine> lines,
       String liabilityUuid,
+      String sharedCode,
       BigDecimal deductibleApplied,
       boolean accumulationAvailable) {}
 
@@ -75,8 +81,6 @@ public class IndemnityApplicationService {
    */
   @Transactional
   public AdjustmentResult calculate(long claimId, String ruleVersion) {
-    long tenantId = tenantPort.currentTenantId();
-
     List<Evidence> evidences = evidenceRepository.findByClaimId(claimId);
     if (evidences.isEmpty()) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_EVIDENCE_NOT_FOUND, claimId);
@@ -86,26 +90,23 @@ public class IndemnityApplicationService {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_ADJUST_EVIDENCE_NOT_LOCKED, claimId);
     }
 
-    List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
-    AdjLiability liability = resolveLiability(rows);
-    Accumulation accumulation = accumulate(rows, liability);
-    CatalogFacts catalog = catalogFactsOf(rows, liability);
-
+    CalculationInput input = prepare(claimId);
     Adjustment adjustment;
     try {
       adjustment =
           Adjustment.calculate(
               DistributedIdGenerator.generateLongId(),
-              tenantId,
+              tenantPort.currentTenantId(),
               claimId,
-              rows,
-              liability,
+              input.rows(),
+              input.liability(),
               ruleVersion,
-              accumulation,
-              claimDateOf(rows),
-              catalog.asOf(),
-              catalog.verdicts(),
-              feeRulesOf(liability));
+              input.accumulation(),
+              claimDateOf(input.rows()),
+              input.catalog().asOf(),
+              input.catalog().verdicts(),
+              feeRulesOf(input.liability()),
+              versionChainOf(claimId));
     } catch (DomainException ex) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_LIABILITY_NOT_FOUND, claimId, ex);
     }
@@ -113,6 +114,73 @@ public class IndemnityApplicationService {
     domainEventPublisher.publishFrom(adjustment);
     return toResult(adjustment);
   }
+
+  /** 理算输入（共享准备路径：明细投影 → 责任 → 跨案累计 → 目录事实）。 */
+  private record CalculationInput(
+      List<ClaimWithItemsProjection> rows,
+      AdjLiability liability,
+      Accumulation accumulation,
+      CatalogFacts catalog) {}
+
+  private CalculationInput prepare(long claimId) {
+    List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
+    AdjLiability liability = resolveLiability(rows);
+    return new CalculationInput(
+        rows, liability, accumulate(rows, liability), catalogFactsOf(rows, liability));
+  }
+
+  /**
+   * 试算预览（§10.2 规则变更前试算比对）：<b>只算不落库</b>，产出候选结果与现行基线的差异。
+   *
+   * <p>与 {@link #calculate} 的三点差异：不做证据锁定前置（预览是"what-if"沙盘，输入允许尚未定格）； 不写 {@code
+   * t_adj_calculation}（同输入同输出的落库语义只属于正式受理）；返回值携带新旧对照而非单边结果。 幂等天然成立：纯读路径。
+   */
+  @Transactional(readOnly = true)
+  public AdjustmentPreview preview(long claimId, String ruleVersion) {
+    CalculationInput input = prepare(claimId);
+    Adjustment candidate;
+    try {
+      candidate =
+          Adjustment.calculate(
+              DistributedIdGenerator.generateLongId(),
+              tenantPort.currentTenantId(),
+              claimId,
+              input.rows(),
+              input.liability(),
+              ruleVersion,
+              input.accumulation(),
+              claimDateOf(input.rows()),
+              input.catalog().asOf(),
+              input.catalog().verdicts(),
+              feeRulesOf(input.liability()),
+              versionChainOf(claimId));
+    } catch (DomainException ex) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_LIABILITY_NOT_FOUND, claimId, ex);
+    }
+    Adjustment baseline = adjustmentRepository.findLatestByClaimId(claimId);
+    return new AdjustmentPreview(
+        claimId,
+        ruleVersion,
+        baseline == null ? null : baseline.getId(),
+        baseline == null ? null : baseline.getTotalAmount(),
+        baseline == null ? null : baseline.getFormulaHash(),
+        candidate.getTotalAmount(),
+        candidate.getFormulaHash(),
+        baseline == null || candidate.getTotalAmount().compareTo(baseline.getTotalAmount()) != 0,
+        baseline == null || !candidate.getFormulaHash().equals(baseline.getFormulaHash()));
+  }
+
+  /** 试算预览结果：候选（未落库）对照现行基线（最新一次已落库理算）。 */
+  public record AdjustmentPreview(
+      Long claimId,
+      String ruleVersion,
+      Long baselineCalculationId,
+      BigDecimal baselineTotalAmount,
+      String baselineFormulaHash,
+      BigDecimal candidateTotalAmount,
+      String candidateFormulaHash,
+      boolean totalChanged,
+      boolean formulaHashChanged) {}
 
   /** 重算（规则/责任版本变更后；已 CONFIRMED 拒绝，由聚合抛领域异常）。 */
   @Transactional
@@ -131,7 +199,8 @@ public class IndemnityApplicationService {
         claimDateOf(rows),
         catalog.asOf(),
         catalog.verdicts(),
-        feeRulesOf(liability));
+        feeRulesOf(liability),
+        versionChainOf(claimId));
     // 重算 = 用同一 calculation_id 重出一套归因。聚合级联写的 orphanRemoval 是 false
     // （否则 confirm() 这类"只改状态、不带集合"的 save 会把归因行全软删），
     // 故旧行不会自动清理——不显式删，同一 calculation_id 下会叠出多套互相矛盾的逐行归因。
@@ -188,6 +257,7 @@ public class IndemnityApplicationService {
         base.snapshot(),
         base.lines(),
         base.liabilityUuid(),
+        base.sharedCode(),
         base.deductibleApplied(),
         accumulationAvailable);
   }
@@ -217,6 +287,7 @@ public class IndemnityApplicationService {
         head.getPlanId(),
         quotaYearOf(rows),
         liability.getLiabilityUuid(),
+        liability.getSharedCode(),
         dailyWindowOf(rows, liability));
   }
 
@@ -350,6 +421,21 @@ public class IndemnityApplicationService {
         tenantPort.currentTenantId(), liability.getLiabilityUuid());
   }
 
+  /**
+   * 版本链取值（§9.4 受理时刻锁定）：计划取案件 {@code plan_version}， 目录/模型/提示词/决策图取该案<b>最新一次</b>决策执行——与
+   * claim_decision_execution 对齐到同一次执行，审计回放时两侧可互证。未跑决策图（人工直受理算）时决策四维落空串。
+   */
+  private CalculationVersions versionChainOf(long claimId) {
+    ClaimCase claim = claimCaseApplicationService.getClaimAggregate(claimId);
+    DecisionExecution execution = decisionExecutionRepository.findLatestByClaimId(claimId);
+    return new CalculationVersions(
+        claim.getPlanVersion(),
+        execution == null ? null : execution.getCatalogVersion(),
+        execution == null ? null : execution.getModelVersion(),
+        execution == null ? null : execution.getPromptVersion(),
+        execution == null ? null : execution.getGraphVersion());
+  }
+
   private AdjustmentResult toResult(Adjustment adjustment) {
     return new AdjustmentResult(
         adjustment.getId(),
@@ -358,6 +444,7 @@ public class IndemnityApplicationService {
         adjustment.getFormulaSnapshot(),
         adjustmentRepository.findLinesByCalculationId(adjustment.getId()),
         adjustment.getLiabilityUuid(),
+        adjustment.getSharedCode(),
         adjustment.getDeductibleApplied(),
         adjustment.isAccumulationAvailable());
   }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
+  Alert,
   App as AntApp,
   Button,
   Card,
@@ -42,6 +43,10 @@ import {
   type MissView,
   type PublishMappingReq,
   type MappingHealthRow,
+  type StpGateRow,
+  type AliasRow,
+  type SplitRow,
+  type FieldBindingRow,
 } from '../services/claimConfigApi';
 
 const DOMAIN_OPTIONS = (Object.entries(DOMAIN_LABEL) as [MappingDomain, string][])
@@ -62,6 +67,15 @@ const MATCH_RULE_OPTIONS: { value: MatchRule; label: string }[] = [
   { value: 'MANUAL', label: '人工' },
   { value: 'AI_SUGGEST', label: 'AI建议' },
 ];
+
+/** STP 五把尺中文标签（与后端 StpCondition 枚举一一对应）。 */
+const STP_CONDITION_LABEL: Record<string, string> = {
+  ITEM_HIT_RATE: '明细级命中率 ≥99.5%',
+  CASE_STRAIGHT_THROUGH_RATE: '赔案级直通率 ≥95%',
+  OPEN_MISS: 'OPEN 未命中 = 0',
+  CORRECTION_EVENTS_7D: '近7天无映射纠错(reopen)',
+  CONFLICT: '冲突数 = 0',
+};
 
 /** 按域从基础目录库拉取标准码选项（映射必须指向存在的标准码，否则是幽灵码）。 */
 async function loadStandardOptions(domain: MappingDomain): Promise<{ label: string; value: string }[]> {
@@ -97,6 +111,24 @@ interface PublishFormValues {
   versionNo?: string;
 }
 
+interface AliasFormValues {
+  aliasCode: string;
+  canonicalCode: string;
+  relation?: string;
+}
+
+interface SplitFormValues {
+  parentCode: string;
+  childCode: string;
+}
+
+interface BindFieldValues {
+  fieldCode: string;
+  insurerCode?: string;
+  sourceType?: string;
+  refCode: string;
+}
+
 /**
  * 多保司主数据映射（保司码 → 标准码 的 crosswalk）。
  *
@@ -105,8 +137,11 @@ interface PublishFormValues {
  * 收单遇无映射的保司码会落入「未命中队列」，运营在此补映射后关闭。
  */
 export function MappingPage(): ReactElement {
-  const { message } = AntApp.useApp();
+  const { message, modal } = AntApp.useApp();
   const [form] = Form.useForm<PublishFormValues>();
+  const [aliasForm] = Form.useForm<AliasFormValues>();
+  const [splitForm] = Form.useForm<SplitFormValues>();
+  const [bindForm] = Form.useForm<BindFieldValues>();
   const [searchParams] = useSearchParams();
 
   const VALID_DOMAINS: MappingDomain[] = ['HOSPITAL', 'DISEASE', 'DRUG', 'FEE_CATEGORY'];
@@ -139,6 +174,21 @@ export function MappingPage(): ReactElement {
 
   // 主体健康度（当前 insurer + domain）
   const [health, setHealth] = useState<MappingHealthRow | null>(null);
+  // STP 闸门（映射质量→业务风险开关；allowAuto=false 即该保司×域不得自动理算）
+  const [stpGate, setStpGate] = useState<StpGateRow | null>(null);
+
+  // 标准码别名 / 拆分（标准码维度，跨保司，按域，与承保主体无关）
+  const [aliases, setAliases] = useState<AliasRow[]>([]);
+  const [aliasesLoading, setAliasesLoading] = useState(false);
+  const [aliasModalOpen, setAliasModalOpen] = useState(false);
+  const [splits, setSplits] = useState<SplitRow[]>([]);
+  const [splitsLoading, setSplitsLoading] = useState(false);
+  const [splitModalOpen, setSplitModalOpen] = useState(false);
+
+  // 字段-选项集绑定（字段归一；按承保主体，含平台基线 '*'；与域无关）
+  const [bindings, setBindings] = useState<FieldBindingRow[]>([]);
+  const [bindingsLoading, setBindingsLoading] = useState(false);
+  const [bindModalOpen, setBindModalOpen] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingMiss, setEditingMiss] = useState<MissView | null>(null);
@@ -241,6 +291,27 @@ export function MappingPage(): ReactElement {
     [],
   );
 
+  const loadStpGate = useCallback(
+    async (code: string, dom: MappingDomain) => {
+      if (!code) {
+        setStpGate(null);
+        return;
+      }
+      try {
+        const res = await mappingApi.stpGate(code, dom);
+        if (res.code !== 200) {
+          setStpGate(null);
+          return;
+        }
+        setStpGate(res.data ?? null);
+      } catch {
+        // STP 闸门是辅助风险信号，加载失败不打扰主流程
+        setStpGate(null);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     void loadMappings(insurerCode, domain, page, size, keyword, includeHistory);
   }, [loadMappings, insurerCode, domain, page, size, keyword, includeHistory]);
@@ -252,6 +323,58 @@ export function MappingPage(): ReactElement {
   useEffect(() => {
     void loadHealth(insurerCode, domain);
   }, [loadHealth, insurerCode, domain]);
+
+  useEffect(() => {
+    void loadStpGate(insurerCode, domain);
+  }, [loadStpGate, insurerCode, domain]);
+
+  const loadAliases = useCallback(async (dom: MappingDomain) => {
+    setAliasesLoading(true);
+    try {
+      const res = await mappingApi.listAliases(dom);
+      setAliases(res.code === 200 ? res.data : []);
+    } catch {
+      setAliases([]);
+    } finally {
+      setAliasesLoading(false);
+    }
+  }, []);
+
+  const loadSplits = useCallback(async (dom: MappingDomain) => {
+    setSplitsLoading(true);
+    try {
+      const res = await mappingApi.listSplits(dom);
+      setSplits(res.code === 200 ? res.data : []);
+    } catch {
+      setSplits([]);
+    } finally {
+      setSplitsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadAliases(domain);
+  }, [loadAliases, domain]);
+
+  useEffect(() => {
+    void loadSplits(domain);
+  }, [loadSplits, domain]);
+
+  const loadFieldBindings = useCallback(async (code: string) => {
+    setBindingsLoading(true);
+    try {
+      const res = await mappingApi.listFieldBindings(code || undefined);
+      setBindings(res.code === 200 ? res.data : []);
+    } catch {
+      setBindings([]);
+    } finally {
+      setBindingsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadFieldBindings(insurerCode);
+  }, [loadFieldBindings, insurerCode]);
 
   const openAdd = () => {
     setEditingMiss(null);
@@ -327,6 +450,93 @@ export function MappingPage(): ReactElement {
     }
     message.success('已忽略');
     void loadMisses(insurerCode, missPage, missSize, missSortBy);
+  };
+
+  const submitAlias = async (v: AliasFormValues) => {
+    const res = await mappingApi.addAlias({
+      domain,
+      aliasCode: v.aliasCode.trim(),
+      canonicalCode: v.canonicalCode.trim(),
+      relation: v.relation,
+    });
+    if (res.code !== 200) {
+      message.error(resolveErrorMessage(res, '别名登记失败'));
+      return;
+    }
+    message.success('已登记标准码别名');
+    setAliasModalOpen(false);
+    void loadAliases(domain);
+    void loadHealth(insurerCode, domain);
+  };
+
+  const submitSplit = async (v: SplitFormValues) => {
+    const res = await mappingApi.addSplit({
+      domain,
+      parentCode: v.parentCode.trim(),
+      childCode: v.childCode.trim(),
+    });
+    if (res.code !== 200) {
+      message.error(resolveErrorMessage(res, '拆分登记失败'));
+      return;
+    }
+    message.success('已登记标准码拆分');
+    setSplitModalOpen(false);
+    void loadSplits(domain);
+    void loadHealth(insurerCode, domain);
+  };
+
+  const disableAlias = async (row: AliasRow) => {
+    modal.confirm({
+      title: '停用该别名',
+      content: `确认停用「${row.aliasCode} → ${row.canonicalCode}」？停用后该写法不再自动归并到标准码。`,
+      okText: '停用',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        const res = await mappingApi.disableAlias(row.id);
+        if (res.code !== 200) {
+          message.error(resolveErrorMessage(res, '停用失败'));
+          return;
+        }
+        message.success('已停用');
+        void loadAliases(domain);
+        void loadHealth(insurerCode, domain);
+      },
+    });
+  };
+
+  const disableSplit = async (row: SplitRow) => {
+    modal.confirm({
+      title: '停用该拆分',
+      content: `确认停用「${row.parentCode} → ${row.childCode}」？停用后该父码不再转人工拆分。`,
+      okText: '停用',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        const res = await mappingApi.disableSplit(row.id);
+        if (res.code !== 200) {
+          message.error(resolveErrorMessage(res, '停用失败'));
+          return;
+        }
+        message.success('已停用');
+        void loadSplits(domain);
+        void loadHealth(insurerCode, domain);
+      },
+    });
+  };
+
+  const submitBinding = async (v: BindFieldValues) => {
+    const res = await mappingApi.bindField({
+      fieldCode: v.fieldCode.trim(),
+      insurerCode: (v.insurerCode ?? '').trim() || undefined,
+      sourceType: v.sourceType?.trim() || undefined,
+      refCode: v.refCode.trim(),
+    });
+    if (res.code !== 200) {
+      message.error(resolveErrorMessage(res, '绑定失败'));
+      return;
+    }
+    message.success('已绑定/更新字段');
+    setBindModalOpen(false);
+    void loadFieldBindings(insurerCode);
   };
 
   /** Excel 导入：整批 validate-then-commit，任一行非法整批拒绝（后端保证，无半批数据）。 */
@@ -432,6 +642,48 @@ export function MappingPage(): ReactElement {
     },
   ];
 
+  const aliasColumns: ColumnsType<AliasRow> = [
+    { title: '别名码（来件写法）', dataIndex: 'aliasCode', width: 200 },
+    { title: '标准码（归并目标）', dataIndex: 'canonicalCode', width: 200 },
+    { title: '域', dataIndex: 'domain', width: 90, render: (v) => DOMAIN_LABEL[v as MappingDomain] },
+    {
+      title: '操作',
+      width: 80,
+      render: (_: unknown, row) => (
+        <AuthButton type="link" size="small" code={PERMISSIONS.POLICY_WRITE} onClick={() => void disableAlias(row)}>
+          停用
+        </AuthButton>
+      ),
+    },
+  ];
+
+  const splitColumns: ColumnsType<SplitRow> = [
+    { title: '父码（打包码）', dataIndex: 'parentCode', width: 200 },
+    { title: '子码（标准码）', dataIndex: 'childCode', width: 200 },
+    { title: '域', dataIndex: 'domain', width: 90, render: (v) => DOMAIN_LABEL[v as MappingDomain] },
+    {
+      title: '操作',
+      width: 80,
+      render: (_: unknown, row) => (
+        <AuthButton type="link" size="small" code={PERMISSIONS.POLICY_WRITE} onClick={() => void disableSplit(row)}>
+          停用
+        </AuthButton>
+      ),
+    },
+  ];
+
+  const bindingColumns: ColumnsType<FieldBindingRow> = [
+    { title: '字段编码', dataIndex: 'fieldCode', width: 180 },
+    {
+      title: '承保主体',
+      dataIndex: 'insurerCode',
+      width: 150,
+      render: (v: string) => (v === '*' ? <Tag color="blue">平台基线</Tag> : v),
+    },
+    { title: '来源类型', dataIndex: 'sourceType', width: 140, render: (v) => v || '—' },
+    { title: '标准选项集', dataIndex: 'refCode', width: 200 },
+  ];
+
   return (
     <>
       <PageHeader
@@ -484,6 +736,33 @@ export function MappingPage(): ReactElement {
             />
             <Statistic title="近7天新未命中" value={health.recentMissCount} />
           </Space>
+        )}
+        {stpGate && (
+          <Alert
+            style={{ marginBottom: 12 }}
+            type={stpGate.allowAuto ? 'success' : 'error'}
+            showIcon
+            message={
+              stpGate.allowAuto
+                ? 'STP 自动理算：放行（该保司×域映射质量达标，赔案可自动理算）'
+                : 'STP 自动理算：阻断（该保司×域映射质量不达标，赔案须转人工）'
+            }
+            description={
+              <div>
+                {stpGate.conditions.map((c) => (
+                  <div key={c.condition} style={{ lineHeight: 1.9 }}>
+                    <Typography.Text type={c.passed ? 'success' : 'danger'}>
+                      {c.passed ? '✓ ' : '✗ '}
+                      {STP_CONDITION_LABEL[c.condition] ?? c.condition}
+                    </Typography.Text>
+                    {!c.passed && c.detail ? (
+                      <Typography.Text type="secondary"> — {c.detail}</Typography.Text>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            }
+          />
         )}
         <Tabs
           items={[
@@ -583,6 +862,104 @@ export function MappingPage(): ReactElement {
                 </Space>
               ),
             },
+            {
+              key: 'aliases',
+              label: '标准码别名',
+              children: (
+                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                  <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                    别名是<b>标准码维度（跨保司生效）</b>：把来件里可能出现的不同写法（别名码）归并到规范标准码，
+                    解析时自动 canonicalize。与承保主体无关，按当前主数据域维护。
+                  </Typography.Paragraph>
+                  <AuthButton
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    code={PERMISSIONS.POLICY_WRITE}
+                    onClick={() => {
+                      aliasForm.resetFields();
+                      setAliasModalOpen(true);
+                    }}
+                  >
+                    新增别名
+                  </AuthButton>
+                  <Table<AliasRow>
+                    rowKey="id"
+                    size="small"
+                    loading={aliasesLoading}
+                    columns={aliasColumns}
+                    dataSource={aliases}
+                    pagination={false}
+                    locale={{ emptyText: '暂无别名' }}
+                  />
+                </Space>
+              ),
+            },
+            {
+              key: 'splits',
+              label: '标准码拆分',
+              children: (
+                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                  <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                    拆分是<b>标准码维度（跨保司生效）</b>：把来件里的打包父码拆成多个标准子码。
+                    命中父码时解析层标记为需人工拆分。与承保主体无关，按当前主数据域维护。
+                  </Typography.Paragraph>
+                  <AuthButton
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    code={PERMISSIONS.POLICY_WRITE}
+                    onClick={() => {
+                      splitForm.resetFields();
+                      setSplitModalOpen(true);
+                    }}
+                  >
+                    新增拆分
+                  </AuthButton>
+                  <Table<SplitRow>
+                    rowKey="id"
+                    size="small"
+                    loading={splitsLoading}
+                    columns={splitColumns}
+                    dataSource={splits}
+                    pagination={false}
+                    locale={{ emptyText: '暂无拆分' }}
+                  />
+                </Space>
+              ),
+            },
+            {
+              key: 'field-bindings',
+              label: '字段归一',
+              children: (
+                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                  <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                    字段归一是<b>字段维度（与域无关）</b>：把保司来件里的字段绑定到平台标准选项集。
+                    insurerCode 空 = 平台基线 <Tag color="blue">*</Tag>；选中承保主体时同时展示基线与该保司的专属覆盖。
+                    同一 (字段, 保司) 重复提交会覆盖更新。
+                  </Typography.Paragraph>
+                  <AuthButton
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    code={PERMISSIONS.POLICY_WRITE}
+                    onClick={() => {
+                      bindForm.resetFields();
+                      bindForm.setFieldsValue({ insurerCode });
+                      setBindModalOpen(true);
+                    }}
+                  >
+                    绑定/更新字段
+                  </AuthButton>
+                  <Table<FieldBindingRow>
+                    rowKey="id"
+                    size="small"
+                    loading={bindingsLoading}
+                    columns={bindingColumns}
+                    dataSource={bindings}
+                    pagination={false}
+                    locale={{ emptyText: '暂无绑定' }}
+                  />
+                </Space>
+              ),
+            },
           ]}
         />
       </Card>
@@ -666,6 +1043,96 @@ export function MappingPage(): ReactElement {
           )}
         </Space>
       </Modal>
-    </>
-  );
-}
+      <Modal
+        title="新增标准码别名"
+        open={aliasModalOpen}
+        onOk={() => aliasForm.submit()}
+        onCancel={() => setAliasModalOpen(false)}
+        destroyOnHidden
+      >
+        <Form form={aliasForm} layout="vertical" onFinish={(v) => void submitAlias(v)}>
+          <Form.Item
+            name="aliasCode"
+            label="别名码（来件写法）"
+            rules={[{ required: true, message: '请输入别名码' }]}
+          >
+            <Input maxLength={64} placeholder="来件里可能出现的写法" />
+          </Form.Item>
+          <Form.Item
+            name="canonicalCode"
+            label="标准码（归并目标）"
+            rules={[{ required: true, message: '请输入标准码' }]}
+          >
+            <Input maxLength={64} placeholder="规范标准码" />
+          </Form.Item>
+          <Form.Item name="relation" label="关系" initialValue="MERGE">
+            <Select
+              options={[
+                { value: 'MERGE', label: '归并 MERGE' },
+                { value: 'RENAME', label: '更名 RENAME' },
+              ]}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+      <Modal
+        title="新增标准码拆分"
+        open={splitModalOpen}
+        onOk={() => splitForm.submit()}
+        onCancel={() => setSplitModalOpen(false)}
+        destroyOnHidden
+      >
+        <Form form={splitForm} layout="vertical" onFinish={(v) => void submitSplit(v)}>
+          <Form.Item
+            name="parentCode"
+            label="父码（打包码）"
+            rules={[{ required: true, message: '请输入父码' }]}
+          >
+            <Input maxLength={64} placeholder="来件里的打包码" />
+          </Form.Item>
+          <Form.Item
+            name="childCode"
+            label="子码（标准码）"
+            rules={[{ required: true, message: '请输入子码' }]}
+          >
+            <Input maxLength={64} placeholder="拆分后的标准码" />
+          </Form.Item>
+        </Form>
+        </Modal>
+        <Modal
+        title="绑定/更新字段到选项集"
+        open={bindModalOpen}
+        onOk={() => bindForm.submit()}
+        onCancel={() => setBindModalOpen(false)}
+        destroyOnHidden
+        >
+        <Form form={bindForm} layout="vertical" onFinish={(v) => void submitBinding(v)}>
+        <Form.Item
+          name="fieldCode"
+          label="字段编码"
+          rules={[{ required: true, message: '请输入字段编码' }]}
+        >
+          <Input maxLength={64} placeholder="如 gender / visit_type" />
+        </Form.Item>
+        <Form.Item
+          name="insurerCode"
+          label="承保主体（空 = 平台基线）"
+          tooltip="空值表示平台标准基线 '*'；填值表示该保司的专属覆盖"
+        >
+          <Input maxLength={64} placeholder="空 = 平台基线 '*'" />
+        </Form.Item>
+        <Form.Item name="sourceType" label="来源类型" initialValue="">
+          <Input maxLength={64} placeholder="可选" />
+        </Form.Item>
+        <Form.Item
+          name="refCode"
+          label="标准选项集编码"
+          rules={[{ required: true, message: '请输入标准选项集编码' }]}
+        >
+          <Input maxLength={64} placeholder="绑定的标准选项集" />
+        </Form.Item>
+        </Form>
+        </Modal>
+        </>
+        );
+        }

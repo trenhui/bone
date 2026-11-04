@@ -3,6 +3,7 @@ package com.bone.claim.infrastructure.rule;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.application.port.out.RuleEnginePort;
 import java.math.BigDecimal;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,7 +25,15 @@ import org.springframework.stereotype.Component;
  * 结算未接线"系当时 grep 漏检 {@code IndemnityApplicationService} 的误判，已撤销。本适配器估算额仅作分诊档位输入， 禁止当赔付额。二期接 bone-ai
  * C2（§7.3）真实引擎时，应装配能取数并委托 {@code Adjustment} 的真实适配器替换本类。
  */
+/**
+ * G2-1 起本桩<b>默认不装配</b>：生产由 {@code QlExpressRuleEnginePortAdapter} 真实执行核责规则。 保留为显式回退开关（{@code
+ * bone.claim.rule-engine.mode=stub}）——规则引擎出问题时可秒级切回 fail-closed 桩，不删代码、不改调用方。
+ */
 @Component
+@ConditionalOnProperty(
+    name = "bone.claim.rule-engine.mode",
+    havingValue = "stub",
+    matchIfMissing = false)
 public class LocalRuleEnginePortAdapter implements RuleEnginePort {
 
   private static final BigDecimal RULE_CONFIDENCE = new BigDecimal("0.90");

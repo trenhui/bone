@@ -41,6 +41,8 @@ public final class LiabilityRequests {
       @Schema(description = "目录编码(如 NATIONAL_2024)") String catalogCode,
       @Schema(description = "是否仅赔社保内(1是0否)") @Min(0) @Max(1) Integer socialOnly,
       @Schema(description = "等待期(天)") @Min(value = 0, message = "等待期不能为负") Integer waitingPeriod,
+      @Schema(description = "共享保额共保代码(空=独立责任，不共享)") String sharedCode,
+      @Schema(description = "先赔后赔前序责任UUID(空=无)") String priorLiabilityUuid,
       @Schema(description = "初始状态 DRAFT/ACTIVE/RETIRED") String status) {}
 
   /** 编辑责任（空字段沿用原值；ACTIVE 责任将生成新版本）。 */
@@ -63,6 +65,8 @@ public final class LiabilityRequests {
       String catalogCode,
       @Min(0) @Max(1) Integer socialOnly,
       Integer waitingPeriod,
+      @Schema(description = "共享保额共保代码(空=独立责任，不共享)") String sharedCode,
+      @Schema(description = "先赔后赔前序责任UUID(空=无)") String priorLiabilityUuid,
       @Schema(
               description =
                   "解除保障归属（把责任退回方案级）。JSON 里 coverageId 传 null 与\"不传\"无法区分，"

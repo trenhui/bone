@@ -30,4 +30,12 @@ public interface ReconciliationReportRepository extends Repository<Reconciliatio
             .eq(ReconciliationReport::getChannel, channel);
     return findOneByCriteria(criteria);
   }
+
+  /** 某业务日全部通道的报告（§10.2 对账报告查询端点：QUOTA/PAYMENT/CASE_SETTLE 一次取齐）。 */
+  default List<ReconciliationReport> findReportsByBizDate(Long tenantId, LocalDate bizDate) {
+    return findByCriteria(
+        Criteria.<ReconciliationReport>create()
+            .eq(ReconciliationReport::getTenantId, tenantId)
+            .eq(ReconciliationReport::getBizDate, bizDate));
+  }
 }

@@ -1,5 +1,11 @@
 server:
   port: ${BONE_CLAIM_PORT:8087}
+  # 请求头上限：默认 8192 字节。实测 BONE 平台签发的 JWT 携带全部角色 scope 时约 4.5KB，
+  # 叠加浏览器全套默认头（UA / sec-ch-ua / Accept-Language / Cookie 等 ~3KB）后已达上限——
+  # 表现为「浏览器发起的请求稳定 400（Tomcat HTML 错误页）、curl 同接口却 200」，
+  # 因为 curl 头部极少永远不超限，问题只在真实浏览器复现，极具迷惑性。
+  # 16KB 给当前最坏情况留一倍余量；再多的鉴权信息膨胀应优先瘦身 token 而非无线上调。
+  max-http-request-header-size: 16KB
 
 spring:
   application:

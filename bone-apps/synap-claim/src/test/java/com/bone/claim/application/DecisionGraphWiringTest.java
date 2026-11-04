@@ -12,6 +12,7 @@ import com.bone.claim.application.handler.ArbitrateNodeHandler;
 import com.bone.claim.application.handler.EvidenceLoadNodeHandler;
 import com.bone.claim.application.handler.RuleCheckNodeHandler;
 import com.bone.claim.application.port.out.DecisionMetricsPort;
+import com.bone.claim.application.port.out.RuleEnginePort;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.application.port.out.TriageLimitsPort;
 import com.bone.claim.domain.model.decision.TriageLimits;
@@ -24,7 +25,7 @@ import com.bone.claim.infrastructure.fraud.LocalGraphFraudPortAdapter;
 import com.bone.claim.infrastructure.knowledge.LocalKnowledgeRetrievalPortAdapter;
 import com.bone.claim.infrastructure.metrics.MicrometerDecisionMetricsAdapter;
 import com.bone.claim.infrastructure.notify.LocalNotificationPortAdapter;
-import com.bone.claim.infrastructure.rule.LocalRuleEnginePortAdapter;
+import com.bone.claim.infrastructure.rule.QlExpressRuleEnginePortAdapter;
 import com.bone.core.domain.event.DomainEventPublisher;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -62,7 +63,11 @@ class DecisionGraphWiringTest {
 
           // 7 个智能化出站端口均有实现（防腐层落地，Phase B：AiGateway 接 bone-ai C5 网关）
           assertThat(ctx).hasSingleBean(LocalClaimContextPortAdapter.class);
-          assertThat(ctx).hasSingleBean(LocalRuleEnginePortAdapter.class);
+          // G2-1：默认装配真实 QLExpress 引擎；LocalRuleEnginePortAdapter 已降为 mode=stub 回退桩。
+          // 断言端口而非具体实现，避免实现替换时夹具反向锁死架构演进。
+          assertThat(ctx).hasSingleBean(RuleEnginePort.class);
+          assertThat(ctx.getBean(RuleEnginePort.class))
+              .isInstanceOf(QlExpressRuleEnginePortAdapter.class);
           assertThat(ctx).hasSingleBean(AiGatewayPortAdapter.class);
           assertThat(ctx).hasSingleBean(LocalKnowledgeRetrievalPortAdapter.class);
           assertThat(ctx).hasSingleBean(LocalVisualForensicsPortAdapter.class);

@@ -12,6 +12,7 @@ import com.bone.ai.gateway.domain.LlmUsage;
 import com.bone.ai.gateway.domain.gateway.PiiRedactor;
 import com.bone.ai.gateway.domain.gateway.PromptInjectionGuard;
 import com.bone.ai.gateway.domain.gateway.TenantProvider;
+import com.bone.ai.gateway.infrastructure.MockLlmClient;
 import com.bone.ai.gateway.infrastructure.security.HeuristicInjectionGuard;
 import com.bone.ai.gateway.infrastructure.security.RegexPiiRedactor;
 import com.bone.claim.application.port.out.AiGatewayPort;
@@ -110,6 +111,19 @@ class AiGatewayPortAdapterTest {
 
     AiGatewayPort port = new AiGatewayPortAdapter(gateway);
     assertThatThrownBy(() -> port.assess(SAMPLE)).isInstanceOf(AiGatewayUnavailableException.class);
+  }
+
+  @Test
+  @DisplayName("G0-2：默认 Mock 替身响应必须被显式拒绝，且给出可运维的修法指引")
+  void mockSubstituteResponseIsExplicitlyRejected() {
+    // 真实装配路径：未配 base-url ⇒ 网关回落 MockLlmClient（jsonResponse=true 时自报 mock:true）
+    AiGatewayPort port =
+        new AiGatewayPortAdapter(gatewayWith(new MockLlmClient(), policiesWith(null)));
+
+    assertThatThrownBy(() -> port.assess(SAMPLE))
+        .isInstanceOf(AiGatewayUnavailableException.class)
+        .hasMessageContaining("Mock")
+        .hasMessageContaining("bone.ai.gateway.base-url");
   }
 
   @Test

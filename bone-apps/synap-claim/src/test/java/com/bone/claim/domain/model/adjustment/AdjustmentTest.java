@@ -240,4 +240,102 @@ class AdjustmentTest {
 
     assertThat(adjustment.getTotalAmount()).isEqualByComparingTo("30.00");
   }
+
+  private static final CalculationVersions CHAIN =
+      new CalculationVersions("plan-v2", "cat-2026Q3", "gpt-x-1", "prompt-9", "graph-4");
+
+  @Test
+  @DisplayName("版本链：受理时刻锁定进聚合（§9.4 全版本链，回放与复算必需）")
+  void versionChainLockedAtCalculation() {
+    Adjustment adjustment =
+        Adjustment.calculate(
+            9003L,
+            TENANT,
+            CLAIM,
+            List.of(row("诊查费", "IN", new BigDecimal("200.00"), new BigDecimal("200.00"))),
+            liability("90", "50", "10000", 1),
+            "r1",
+            Accumulation.FIRST,
+            null,
+            null,
+            java.util.Map.of(),
+            List.of(),
+            CHAIN);
+
+    assertThat(adjustment.getPlanVersion()).isEqualTo("plan-v2");
+    assertThat(adjustment.getCatalogVersion()).isEqualTo("cat-2026Q3");
+    assertThat(adjustment.getModelVersion()).isEqualTo("gpt-x-1");
+    assertThat(adjustment.getPromptVersion()).isEqualTo("prompt-9");
+    assertThat(adjustment.getGraphVersion()).isEqualTo("graph-4");
+  }
+
+  @Test
+  @DisplayName("版本链：旧重载与 null 均落空串（0100 口径：空串=该维度未参与，不用 null）")
+  void versionChainDefaultsToEmptyString() {
+    Adjustment viaLegacyOverload =
+        adjust(
+            List.of(row("诊查费", "IN", new BigDecimal("200.00"), new BigDecimal("200.00"))),
+            liability("90", "50", "10000", 1));
+    assertThat(viaLegacyOverload.getPlanVersion()).isEmpty();
+    assertThat(viaLegacyOverload.getGraphVersion()).isEmpty();
+
+    Adjustment viaNull =
+        Adjustment.calculate(
+            9004L,
+            TENANT,
+            CLAIM,
+            List.of(row("诊查费", "IN", new BigDecimal("200.00"), new BigDecimal("200.00"))),
+            liability("90", "50", "10000", 1),
+            "r1",
+            Accumulation.FIRST,
+            null,
+            null,
+            java.util.Map.of(),
+            List.of(),
+            null);
+    assertThat(viaNull.getPlanVersion()).isEmpty();
+  }
+
+  @Test
+  @DisplayName("重算版本链：显式传入才刷新；旧签名重算保持原链不抹掉（审计可重建）")
+  void recalculateRefreshesChainOnlyWhenProvided() {
+    List<ClaimWithItemsProjection> rows =
+        List.of(row("诊查费", "IN", new BigDecimal("200.00"), new BigDecimal("200.00")));
+    AdjLiability liab = liability("90", "50", "10000", 1);
+    Adjustment adjustment =
+        Adjustment.calculate(
+            9005L,
+            TENANT,
+            CLAIM,
+            rows,
+            liab,
+            "r1",
+            Accumulation.FIRST,
+            null,
+            null,
+            java.util.Map.of(),
+            List.of(),
+            CHAIN);
+
+    // 旧签名重算（不带版本链）→ 原链保持，绝不能被空串覆盖
+    adjustment.recalculate(rows, liab, Accumulation.FIRST);
+    assertThat(adjustment.getPlanVersion()).isEqualTo("plan-v2");
+    assertThat(adjustment.getGraphVersion()).isEqualTo("graph-4");
+
+    // 显式传入新链 → 刷新（规则/模型版本变更后的回溯重算场景）
+    adjustment.recalculate(
+        rows,
+        liab,
+        Accumulation.FIRST,
+        null,
+        null,
+        java.util.Map.of(),
+        List.of(),
+        new CalculationVersions("plan-v3", "cat-2026Q4", "gpt-x-2", "prompt-10", "graph-5"));
+    assertThat(adjustment.getPlanVersion()).isEqualTo("plan-v3");
+    assertThat(adjustment.getCatalogVersion()).isEqualTo("cat-2026Q4");
+    assertThat(adjustment.getModelVersion()).isEqualTo("gpt-x-2");
+    assertThat(adjustment.getPromptVersion()).isEqualTo("prompt-10");
+    assertThat(adjustment.getGraphVersion()).isEqualTo("graph-5");
+  }
 }

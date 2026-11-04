@@ -25,7 +25,8 @@ public interface AccumulationPort {
    * @param policyNo 保单号
    * @param planId 计划 ID
    * @param quotaYear 额度年度
-   * @param liabilityUuid 责任 UUID（责任账的分行键）
+   * @param liabilityUuid 责任 UUID（独立责任的责任账分行键；共享责任时让位于 {@code sharedCode}）
+   * @param sharedCode 共享池代码（空=独立责任，读 {@code LIABILITY_CAP} 账；非空读 {@code SHARED_POOL} 账，按共保代码分行）
    * @param dailyWindow 日限额的业务日（{@code null} = 本案不配日限额，不读日用量）
    * @return 累计快照；未解析到责任账时返回 {@link Accumulation#MISSING}（{@code available=false}）
    */
@@ -36,5 +37,6 @@ public interface AccumulationPort {
       long planId,
       int quotaYear,
       String liabilityUuid,
+      String sharedCode,
       java.time.LocalDate dailyWindow);
 }

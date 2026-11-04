@@ -109,6 +109,14 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
   @Column(name = "status")
   private String status;
 
+  /** 共享保额共保代码（空串 = 独立责任，不共享；非空时责任限额账走 {@code SHARED_POOL} 维度）。 */
+  @Column(name = "shared_code")
+  private String sharedCode;
+
+  /** 先赔后赔前序责任 UUID（空串 = 无；金额推导公式 V1 未定义，仍显式拒绝）。 */
+  @Column(name = "prior_liability_uuid")
+  private String priorLiabilityUuid;
+
   /** 审计时间（框架注入列 NOT NULL 无默认值，必须在工厂里显式赋值，见 ClaimPlan 同约定）。 */
   @Column(name = "created_at", nullable = false)
   private java.time.Instant createdAt;
@@ -414,6 +422,73 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
     liability.catalogPolicy =
         catalogPolicy == null || catalogPolicy.isBlank() ? "NONE" : catalogPolicy;
     liability.catalogCode = catalogCode == null ? "" : catalogCode;
+    return liability;
+  }
+
+  /**
+   * 含共享额度关系（共保代码 / 先赔后赔前序责任）的完整责任配置工厂。
+   *
+   * <p>责任带 {@code sharedCode} 时，其责任限额账走 {@code SHARED_POOL} 维度（按共保代码分行，见 {@link
+   * com.bone.claim.domain.model.quota.QuotaAccount#capSubKey}）；{@code priorLiabilityUuid} 为「先赔后赔」
+   * 链标注——金额推导公式 V1 未定义，仍由 {@link
+   * com.bone.claim.domain.model.adjustment.engine.LiabilityRule#validateConfigShape} 显式拒绝。
+   *
+   * @param sharedCode 共保代码（空 = 独立责任，不共享）
+   * @param priorLiabilityUuid 先赔后赔前序责任 UUID（空 = 无）
+   */
+  public static AdjLiability ofWithShared(
+      Long id,
+      Long tenantId,
+      String liabilityUuid,
+      String liabilityVersion,
+      Long planId,
+      Long coverageId,
+      String liabilityCode,
+      String liabilityType,
+      java.math.BigDecimal payPercent,
+      java.math.BigDecimal liabilityDeduct,
+      java.math.BigDecimal liabilityLimit,
+      java.math.BigDecimal invoiceDeduct,
+      java.math.BigDecimal adjustDeduct,
+      java.math.BigDecimal dailyLimit,
+      String dailyLimitBasis,
+      String limitMode,
+      String limitHospitalCodes,
+      String limitDiagnosisCodes,
+      String catalogPolicy,
+      String catalogCode,
+      Integer socialOnly,
+      Integer waitingPeriod,
+      String sharedCode,
+      String priorLiabilityUuid,
+      String status) {
+    AdjLiability liability =
+        of(
+            id,
+            tenantId,
+            liabilityUuid,
+            liabilityVersion,
+            planId,
+            coverageId,
+            liabilityCode,
+            liabilityType,
+            payPercent,
+            liabilityDeduct,
+            liabilityLimit,
+            invoiceDeduct,
+            adjustDeduct,
+            dailyLimit,
+            dailyLimitBasis,
+            limitMode,
+            limitHospitalCodes,
+            limitDiagnosisCodes,
+            catalogPolicy,
+            catalogCode,
+            socialOnly,
+            waitingPeriod,
+            status);
+    liability.sharedCode = sharedCode == null ? "" : sharedCode;
+    liability.priorLiabilityUuid = priorLiabilityUuid == null ? "" : priorLiabilityUuid;
     return liability;
   }
 

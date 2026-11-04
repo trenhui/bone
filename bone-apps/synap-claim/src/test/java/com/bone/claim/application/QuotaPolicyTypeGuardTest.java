@@ -69,7 +69,7 @@ class QuotaPolicyTypeGuardTest {
     assertThatThrownBy(
             () ->
                 service.initPublicAccountsForLiability(
-                    PLAN_ID, "liability-uuid", new BigDecimal("5000")))
+                    PLAN_ID, "liability-uuid", null, new BigDecimal("5000")))
         .isInstanceOf(BizException.class)
         .satisfies(
             ex ->
@@ -92,7 +92,8 @@ class QuotaPolicyTypeGuardTest {
             anyString(), anyString(), anyLong(), anyInt(), anyString(), anyString()))
         .thenReturn(existingCapAccount());
 
-    assertThat(service.initPublicAccountsForLiability(PLAN_ID, "liability-uuid", BigDecimal.TEN))
+    assertThat(
+            service.initPublicAccountsForLiability(PLAN_ID, "liability-uuid", null, BigDecimal.TEN))
         .isEqualTo(2);
   }
 
@@ -106,7 +107,8 @@ class QuotaPolicyTypeGuardTest {
             anyString(), anyString(), anyLong(), anyInt(), anyString(), anyString()))
         .thenReturn(existingCapAccount());
 
-    assertThat(service.initPublicAccountsForLiability(PLAN_ID, "liability-uuid", BigDecimal.TEN))
+    assertThat(
+            service.initPublicAccountsForLiability(PLAN_ID, "liability-uuid", null, BigDecimal.TEN))
         .isEqualTo(1);
     verify(claimPolicyRepository, never()).findByPolicyNo(anyString());
   }
@@ -123,7 +125,9 @@ class QuotaPolicyTypeGuardTest {
         .thenReturn(existingCapAccount());
 
     assertThatCode(
-            () -> service.initPublicAccountsForLiability(PLAN_ID, "liability-uuid", BigDecimal.TEN))
+            () ->
+                service.initPublicAccountsForLiability(
+                    PLAN_ID, "liability-uuid", null, BigDecimal.TEN))
         .doesNotThrowAnyException();
   }
 

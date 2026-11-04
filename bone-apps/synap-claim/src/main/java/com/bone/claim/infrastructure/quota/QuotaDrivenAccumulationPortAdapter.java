@@ -35,9 +35,6 @@ public class QuotaDrivenAccumulationPortAdapter implements AccumulationPort {
   private static final Logger log =
       LoggerFactory.getLogger(QuotaDrivenAccumulationPortAdapter.class);
 
-  /** 责任账维度（§5.3）：与 {@code QuotaApplicationService} 写侧必须同源，否则读写两侧各记一本账。 */
-  private static final String QUOTA_TYPE_LIABILITY_CAP = "LIABILITY_CAP";
-
   private final QuotaAccountRepository quotaAccountRepository;
 
   @Override
@@ -48,19 +45,22 @@ public class QuotaDrivenAccumulationPortAdapter implements AccumulationPort {
       long planId,
       int quotaYear,
       String liabilityUuid,
+      String sharedCode,
       java.time.LocalDate dailyWindow) {
-    String uuid = liabilityUuid == null ? "" : liabilityUuid;
+    String quotaType = QuotaAccount.capQuotaType(sharedCode);
+    String subKey = QuotaAccount.capSubKey(sharedCode, liabilityUuid);
     QuotaAccount account =
         quotaAccountRepository.findAccount(
-            insuredIdHash, policyNo, planId, quotaYear, QUOTA_TYPE_LIABILITY_CAP, uuid);
+            insuredIdHash, policyNo, planId, quotaYear, quotaType, subKey);
     if (account == null) {
       log.warn(
-          "累计读侧未解析到责任账 → 返回 MISSING（A7 将拒绝占额）：tenant={} policy={} plan={} year={} liability={}",
+          "累计读侧未解析到责任账 → 返回 MISSING（A7 将拒绝占额）：tenant={} policy={} plan={} year={} type={} key={}",
           tenantId,
           policyNo,
           planId,
           quotaYear,
-          uuid);
+          quotaType,
+          subKey);
       return Accumulation.MISSING;
     }
     BigDecimal limitUsed = account.getQuotaClaimed().add(account.getQuotaFrozen());

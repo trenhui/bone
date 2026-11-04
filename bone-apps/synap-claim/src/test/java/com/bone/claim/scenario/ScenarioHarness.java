@@ -166,6 +166,7 @@ public class ScenarioHarness {
             liabRepo,
             feeRuleRepo,
             eviRepo,
+            decRepo,
             claimSvc,
             accumulationPort,
             // 目录端口未接线：场景里没有责任配 catalog_policy=MANDATORY，故走与引入前一致的路径
@@ -952,7 +953,12 @@ public class ScenarioHarness {
       return Optional.ofNullable(map.get(policyNo + "|" + planId));
     }
 
-    /** 场景夹具不建保司号（seed 一律写空串）⇒ 本方法恒返回空；解析规则由应用层单测直接覆盖。 */
+    /**
+     * 场景夹具不建保司号（{@code seed} 一律写空串）⇒ 本方法恒返回空。
+     *
+     * <p>按保司号收单的解析规则（唯一命中 / 按被保人收敛 / 多命中 fail-closed）由 {@code ClaimCaseApplicationServiceTest}
+     * 直接覆盖：那几条是纯编排判定，不需要拖整套场景夹具。
+     */
     @Override
     public java.util.List<PolicySnapshot> findActivePoliciesByInsurerNo(
         String insurerPolicyNo, Long planId) {

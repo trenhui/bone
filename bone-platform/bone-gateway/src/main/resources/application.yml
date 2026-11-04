@@ -1,5 +1,9 @@
 server:
   port: ${BONE_GATEWAY_PORT:8888}
+  # Netty 入站请求头上限：reactor-netty 默认 8192 字节，超限返回 431。实测平台 JWT
+  # （全 scope 约 4.5KB）+ 浏览器默认头已逼近上限，真实浏览器偶发 431/400 而 curl 正常。
+  # 网关是南北向入口，必须先于上游 Tomcat（见各服务 server.max-http-header-size）容纳满额头。
+  max-http-request-header-size: 16KB
 
 spring:
   application:

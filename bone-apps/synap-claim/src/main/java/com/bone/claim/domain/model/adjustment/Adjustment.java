@@ -61,8 +61,36 @@ public class Adjustment extends TenantAggregateRoot<Long> {
   @Column(name = "liability_version", nullable = false)
   private String liabilityVersion;
 
+  /** 本案所属共享池代码（与 liability_uuid 同源，结算选账户用）。 */
+  @Column(name = "shared_code", nullable = false)
+  private String sharedCode;
+
   @Column(name = "rule_version")
   private String ruleVersion;
+
+  // ── §9.4 版本链（0100 迁移备列，受理时刻锁定；空串 = 该维度未参与本次理算）──
+  // 与 formula_snapshot 的分工：快照物化"责任参数"，版本链物化"环境指纹"——
+  // 审计链 SEC-05 的可重建性缺了环境维度就无法与 claim_decision_execution 对齐到同一次执行。
+
+  /** 计划版本（与 claim_case.plan_version 一致）。 */
+  @Column(name = "plan_version")
+  private String planVersion;
+
+  /** 目录版本（医保目录锁定值）。 */
+  @Column(name = "catalog_version")
+  private String catalogVersion;
+
+  /** 模型版本（AI 评估节点）。 */
+  @Column(name = "model_version")
+  private String modelVersion;
+
+  /** 提示词版本（AI 评估节点）。 */
+  @Column(name = "prompt_version")
+  private String promptVersion;
+
+  /** 决策图版本（与 claim_decision_execution 一致）。 */
+  @Column(name = "graph_version")
+  private String graphVersion;
 
   /** 公式快照（物化的责任参数，JSON；复算的唯一依据）。 */
   @Column(name = "formula_snapshot", nullable = false)
@@ -228,6 +256,39 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       java.time.LocalDate catalogAsOf,
       java.util.Map<Long, CatalogAdmission.Verdict> catalogVerdicts,
       List<LiabilityFeeRule> feeRules) {
+    return calculate(
+        id,
+        tenantId,
+        claimId,
+        rows,
+        liability,
+        ruleVersion,
+        accumulation,
+        claimDate,
+        catalogAsOf,
+        catalogVerdicts,
+        feeRules,
+        CalculationVersions.NONE);
+  }
+
+  /**
+   * 执行理算（带目录准入结论、费用类别规则与<b>版本链</b>，终态工厂）。
+   *
+   * <p>版本链在受理时刻锁定（§9.4 全版本链，回放与复算必需）：计划取案件、 目录/模型/提示词/决策图取当次决策执行；未跑决策图等维度落空串。
+   */
+  public static Adjustment calculate(
+      Long id,
+      Long tenantId,
+      Long claimId,
+      List<ClaimWithItemsProjection> rows,
+      AdjLiability liability,
+      String ruleVersion,
+      Accumulation accumulation,
+      java.time.LocalDate claimDate,
+      java.time.LocalDate catalogAsOf,
+      java.util.Map<Long, CatalogAdmission.Verdict> catalogVerdicts,
+      List<LiabilityFeeRule> feeRules,
+      CalculationVersions versions) {
     if (rows == null || rows.isEmpty()) {
       throw new DomainException("理算明细不能为空");
     }
@@ -240,7 +301,14 @@ public class Adjustment extends TenantAggregateRoot<Long> {
     if (accumulation == null) {
       throw new DomainException("跨案累计快照缺失，无法理算（⑩：禁止按『已用 0』隐式计算）");
     }
+    CalculationVersions chain = versions == null ? CalculationVersions.NONE : versions;
     Adjustment adjustment = new Adjustment(id, tenantId, claimId, ruleVersion);
+    adjustment.sharedCode = liability.getSharedCode();
+    adjustment.planVersion = chain.planVersion();
+    adjustment.catalogVersion = chain.catalogVersion();
+    adjustment.modelVersion = chain.modelVersion();
+    adjustment.promptVersion = chain.promptVersion();
+    adjustment.graphVersion = chain.graphVersion();
     adjustment.apply(
         rows, liability, accumulation, claimDate, catalogAsOf, catalogVerdicts, feeRules);
     return adjustment;
@@ -281,7 +349,33 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       java.time.LocalDate catalogAsOf,
       java.util.Map<Long, CatalogAdmission.Verdict> catalogVerdicts,
       List<LiabilityFeeRule> feeRules) {
+    recalculate(
+        rows, liability, accumulation, claimDate, catalogAsOf, catalogVerdicts, feeRules, null);
+  }
+
+  /**
+   * 重算（带费用类别规则与<b>版本链刷新</b>，终态重载）。
+   *
+   * <p><b>{@code versions == null} 表示"保持原版本链"而不是清空</b>：旧签名调用方 并不知道版本链的存在，若把 null
+   * 当空串写回，等于让"重算"把审计链的环境维度 抹掉——审计视角下"重算用了哪版规则/模型"永远不可知。只有显式传入新链 （应用层从当前决策执行/案件重新取值）才刷新。
+   */
+  public void recalculate(
+      List<ClaimWithItemsProjection> rows,
+      AdjLiability liability,
+      Accumulation accumulation,
+      java.time.LocalDate claimDate,
+      java.time.LocalDate catalogAsOf,
+      java.util.Map<Long, CatalogAdmission.Verdict> catalogVerdicts,
+      List<LiabilityFeeRule> feeRules,
+      CalculationVersions versions) {
     requireModifiable("已确认的理算结果禁止重算");
+    if (versions != null) {
+      this.planVersion = versions.planVersion();
+      this.catalogVersion = versions.catalogVersion();
+      this.modelVersion = versions.modelVersion();
+      this.promptVersion = versions.promptVersion();
+      this.graphVersion = versions.graphVersion();
+    }
     apply(rows, liability, accumulation, claimDate, catalogAsOf, catalogVerdicts, feeRules);
     this.updatedAt = java.time.Instant.now();
   }
@@ -348,7 +442,10 @@ public class Adjustment extends TenantAggregateRoot<Long> {
                     LiabilityRule.LimitedConditions.Mode.fromCode(liability.limitMode()),
                     liability.limitHospitalCodes(),
                     liability.limitDiagnosisCodes()))
-            .withFeeRules(feeRulesOf(feeRules));
+            .withFeeRules(feeRulesOf(feeRules))
+            .withRelation(
+                LiabilityRule.Relation.of(
+                    liability.getSharedCode(), liability.getPriorLiabilityUuid()));
 
     AdjustmentEngine.Outcome outcome;
     try {

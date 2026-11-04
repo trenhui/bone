@@ -88,6 +88,9 @@ public class RuleCheckNodeHandler implements DecisionNodeHandler {
     out.put("riskHit", riskHit);
     out.put("fraudGatePassed", fraudGatePassed);
     out.put("ruleConfidence", r.ruleConfidence());
+    // G2-1：真实规则命中明细随节点输出进入决策图全局 outputs，由 DecisionGraphExecutor 汇总后
+    // 交给 DecisionExecution.recordRuleHits 发布领域事件，ClaimRuleHitRecorder 落 t_claim_rule_hit
+    out.put("ruleHits", r.hits());
     // 可解释性：把"闸为什么没过"落成受控原因码（而非只给布尔）——核赔员/审计据此区分
     // 「能力未集成（无法确认安全）」与「真实命中风险」，避免把能力缺失误读为已核验无风险。
     out.put("ruleAvailable", ruleAvailable);

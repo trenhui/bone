@@ -20,6 +20,8 @@ SELECT
        catalog_code,
        social_only,
        waiting_period,
+       shared_code,
+       prior_liability_uuid,
        status,
        tenant_id,
        created_at,
