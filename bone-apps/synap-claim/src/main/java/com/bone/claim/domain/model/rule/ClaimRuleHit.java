@@ -16,14 +16,26 @@ import lombok.Getter;
  * / {@code deleted}，且本实体在工厂里显式赋值 {@code created_at}/{@code updated_at}（NOT NULL 无默认）， 否则 SDK 的
  * INSERT 列清单会因缺列报 ERROR 1054（0089 同款教训）。无 {@code @Version}：无 UPDATE 路径，乐观锁无意义。
  *
- * <p><b>用途</b>：决策图产出 {@code AUTO_APPROVE} 后，命中了哪些规则（R-AREA/R-DIR/R-DED/R-RAT/R-CAP/R-DEC/
- * R-FAST/R-MAN/R-FRAUD）全部留痕，是「推翻率 / 命中分析 / 人工确认率」指标的事实来源。
+ * <p><b>用途</b>：决策图每次执行完毕（{@code complete} 后、{@code persist} 前，<b>与结论无关</b>—— fail-closed 下多数是
+ * {@code MANUAL_REQUIRED}），只要规则节点产出命中明细即逐条留痕，是「推翻率 / 命中分析 / 人工确认率」指标的事实来源。生产者链路见 {@code
+ * ClaimRulesEvaluatedEvent}。
+ *
+ * <p><b>rule_category 两套域（口径待产品/架构拍板，勿按下列常量全量过滤）</b>：本类九个 {@code R-*} 常量取自 {@code 07-delivery/04
+ * 业务规则书}（{@code AI-INDEX.md} 标注为规则 ID 定义 SSOT），属<b>理算 / 责任范围规则</b> 类别，二期 bone-ai C2
+ * 引擎接入后才会产出；而当前已落地的 G2-1 是决策图 {@code RuleCheck} 节点的 <b>核责 / 反欺诈 / 分诊规则</b>，{@code
+ * QlExpressRuleEnginePortAdapter} 写入的是 {@code FRAUD} / {@code EVIDENCE} / {@code AMOUNT}
+ * 裸类别码（规则编码形如 {@code R-FRAUD-06}，与类别码不同层）。 两侧尚未收敛，按 {@code WHERE rule_category IN ('R-AREA', ...)}
+ * 聚合会<b>漏掉全部 G2-1 命中</b>， 按 {@code R-FRAUD} 归因也查不到 {@code FRAUD}。收敛须先定归属，消费侧不擅自改写以免造第三种口径。
  */
 @Getter
 @Table("t_claim_rule_hit")
 public class ClaimRuleHit extends TenantAbstractEntity<Long> {
 
-  /** 规则类别（与决策引擎裁决优先级一致）。 */
+  /**
+   * 理算 / 责任范围规则类别（业务规则书 SSOT，九个 {@code R-} 前缀码）。
+   *
+   * <p>注意：这不是当前 G2-1 写入值的全集，详见类注释「两套域」。
+   */
   public static final String CATEGORY_AREA = "R-AREA";
 
   public static final String CATEGORY_DIR = "R-DIR";
