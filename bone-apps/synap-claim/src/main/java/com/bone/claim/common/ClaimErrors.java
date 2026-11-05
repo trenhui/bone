@@ -69,7 +69,9 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.CLAIM_RECON_DIFF_CONFLICT, 409),
           // 400：调用方参数越界（时间窗/条数），不是业务前提不成立，也不是服务端故障
           Map.entry(ClaimErrorCodes.CLAIM_EVAL_SAMPLE_QUERY_INVALID, 400),
-          Map.entry(ClaimErrorCodes.CLAIM_AI_RUNTIME_HEALTH_QUERY_INVALID, 400));
+          Map.entry(ClaimErrorCodes.CLAIM_AI_RUNTIME_HEALTH_QUERY_INVALID, 400),
+          // 400：时间窗缺失/倒置/超 31 天属调用方参数错，不是服务器故障（5xx 会污染 SLI 指标）
+          Map.entry(ClaimErrorCodes.CLAIM_AI_ROLLOUT_QUERY_INVALID, 400));
 
   static {
     checkEveryCodeRegistered();

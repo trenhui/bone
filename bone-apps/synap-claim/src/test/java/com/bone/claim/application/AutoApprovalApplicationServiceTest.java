@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.claim.domain.model.claim.ClaimCase;
+import com.bone.claim.domain.model.config.AiRolloutStage;
 import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.claim.domain.model.decision.DecisionResult;
 import com.bone.claim.domain.model.decision.DecisionTier;
@@ -47,6 +48,7 @@ class AutoApprovalApplicationServiceTest {
   @Mock private IndemnityApplicationService indemnityApplicationService;
   @Mock private DecisionExecutionApplicationService decisionExecutionApplicationService;
   @Mock private FeatureTenantToggleService featureTenantToggleService;
+  @Mock private AiRolloutApplicationService aiRolloutApplicationService;
 
   private AutoApprovalApplicationService service;
 
@@ -61,13 +63,20 @@ class AutoApprovalApplicationServiceTest {
             settlementApplicationService,
             indemnityApplicationService,
             decisionExecutionApplicationService,
-            featureTenantToggleService);
+            featureTenantToggleService,
+            aiRolloutApplicationService);
     ReflectionTestUtils.setField(service, "enabled", true);
     ReflectionTestUtils.setField(service, "maxAmount", new BigDecimal("1000"));
     // 租户级三态开关默认放行：本类测的是「全局开关 + 单笔上限」这两道闸，
     // 租户开关关闭的场景由开关服务自身的用例覆盖（FeatureTenantToggleServiceTest）。
     when(featureTenantToggleService.isFeatureAllowed(anyLong(), anyBoolean(), anyString()))
         .thenReturn(true);
+    // 放量闸默认放行：本类测的是「全局开关 + 单笔上限」这两道闸，放量闸的拒绝场景由本条与
+    // AiRolloutApplicationServiceTest 各自覆盖（见下方两个 blockedByRollout* 用例）。
+    when(aiRolloutApplicationService.admit(anyLong(), anyLong()))
+        .thenReturn(
+            new AiRolloutApplicationService.Admission(
+                true, "ADMITTED", AiRolloutStage.AUTOMATED, null, "WITHIN_BUDGET", false));
     when(indemnityApplicationService.latest(CLAIM))
         .thenReturn(
             new IndemnityApplicationService.AdjustmentResult(
@@ -281,6 +290,67 @@ class AutoApprovalApplicationServiceTest {
   }
 
   /** 真实聚合而非 mock：结论判断与原因码读取必须走真实状态（mock 聚合的字段恒 null， 会让任何基于字段语义的判断静默失效——拒绝 mock 聚合）。 */
+  @Test
+  @DisplayName("放量阶段为 SHADOW → AI_STAGE_SHADOW，不结案不建单（全局开关打开不等于可自动出金）")
+  void blockedByRolloutStage() {
+    DecisionExecution auto = execution("AUTO_APPROVE");
+    ClaimCase pending = claim(false);
+    when(decisionExecutionApplicationService.findLatest(CLAIM)).thenReturn(auto);
+    when(claimCaseApplicationService.getClaimAggregate(CLAIM)).thenReturn(pending);
+    when(aiRolloutApplicationService.admit(anyLong(), anyLong()))
+        .thenReturn(
+            new AiRolloutApplicationService.Admission(
+                false, "AI_STAGE_SHADOW", AiRolloutStage.SHADOW, null, "NO_EVIDENCE", false));
+
+    AutoApprovalApplicationService.AutoApprovalOutcome outcome = service.applyAutoDecision(CLAIM);
+
+    assertThat(outcome.applied()).isFalse();
+    assertThat(outcome.reason()).isEqualTo("AI_STAGE_SHADOW");
+    verify(claimCaseApplicationService, never()).autoApprove(anyLong(), anyString());
+    verify(settlementApplicationService, never()).create(anyLong(), anyInt(), any(), anyString());
+  }
+
+  @Test
+  @DisplayName("错误预算击穿 → 拒绝出金，原因码可与「未配置阶段」区分（处置方向不同）")
+  void blockedByBudgetBreach() {
+    DecisionExecution auto = execution("AUTO_APPROVE");
+    ClaimCase pending = claim(false);
+    when(decisionExecutionApplicationService.findLatest(CLAIM)).thenReturn(auto);
+    when(claimCaseApplicationService.getClaimAggregate(CLAIM)).thenReturn(pending);
+    when(aiRolloutApplicationService.admit(anyLong(), anyLong()))
+        .thenReturn(
+            new AiRolloutApplicationService.Admission(
+                false,
+                "AI_BUDGET_EXCEEDED_AUTO_ROLLBACK",
+                AiRolloutStage.ASSISTED,
+                new BigDecimal("0.0500"),
+                "OVER_TARGET",
+                true));
+
+    AutoApprovalApplicationService.AutoApprovalOutcome outcome = service.applyAutoDecision(CLAIM);
+
+    assertThat(outcome.applied()).isFalse();
+    assertThat(outcome.reason()).isEqualTo("AI_BUDGET_EXCEEDED_AUTO_ROLLBACK");
+    verify(claimCaseApplicationService, never()).autoApprove(anyLong(), anyString());
+    verify(settlementApplicationService, never()).create(anyLong(), anyInt(), any(), anyString());
+  }
+
+  @Test
+  @DisplayName("放量闸以（案件租户, 案件号）问询——不是以调用方传入的租户，避免分桶错位")
+  void rolloutGateUsesClaimTenant() {
+    DecisionExecution auto = execution("AUTO_APPROVE");
+    ClaimCase pending = claim(false);
+    settlementResult = settlement();
+    when(decisionExecutionApplicationService.findLatest(CLAIM)).thenReturn(auto);
+    when(claimCaseApplicationService.getClaimAggregate(CLAIM)).thenReturn(pending);
+    when(settlementApplicationService.create(anyLong(), anyInt(), any(), anyString()))
+        .thenReturn(settlementResult);
+
+    service.applyAutoDecision(CLAIM);
+
+    verify(aiRolloutApplicationService).admit(TENANT, CLAIM);
+  }
+
   private static DecisionExecution execution(String result, String triageReason) {
     DecisionExecution execution =
         DecisionExecution.start(

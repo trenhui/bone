@@ -1,5 +1,6 @@
 package com.bone.claim.scenario;
 
+import com.bone.claim.application.AiRolloutApplicationService;
 import com.bone.claim.application.AppealApplicationService;
 import com.bone.claim.application.AutoApprovalApplicationService;
 import com.bone.claim.application.ClaimCaseApplicationService;
@@ -79,6 +80,7 @@ import com.bone.core.model.SortingField;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -245,7 +247,9 @@ public class ScenarioHarness {
             settleSvc,
             indemnitySvc,
             decExecSvc,
-            new FeatureTenantToggleService(null, null));
+            new FeatureTenantToggleService(null, null),
+            new AiRolloutApplicationService(
+                null, inspectionRepo, decRepo, tenantPort, new ObjectMapper()));
     decisionRun =
         new DecisionRunApplicationService(
             decisionExecutor, autoApproveSvc, decExecSvc, claimSvc, indemnitySvc);
@@ -981,6 +985,20 @@ public class ScenarioHarness {
           .filter(r -> Objects.equals(r.getClaimId(), claimId))
           .max(Comparator.comparingLong(InspectionRecord::getId))
           .orElse(null);
+    }
+
+    @Override
+    public java.util.List<InspectionRecord> findConcludedInWindow(
+        java.time.Instant from, java.time.Instant to) {
+      return store.values().stream()
+          .filter(r -> "CONCLUDED".equals(r.getStatus()))
+          .filter(
+              r ->
+                  r.getInspectedAt() != null
+                      && !r.getInspectedAt().isBefore(from)
+                      && r.getInspectedAt().isBefore(to))
+          .sorted(Comparator.comparingLong(InspectionRecord::getId).reversed())
+          .toList();
     }
   }
 

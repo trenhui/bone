@@ -244,4 +244,13 @@ public final class ClaimErrorCodes {
    */
   public static final String CLAIM_AI_RUNTIME_HEALTH_QUERY_INVALID =
       "SC_CLAIM_AI_RUNTIME_HEALTH_QUERY_INVALID";
+
+  // ===== AI 放量阶段与错误预算 =====
+
+  /**
+   * 放量快照查询参数非法：时间窗缺失 / 倒置 / 跨度超过 31 天。
+   *
+   * <p>沿用「护栏显式拒绝、不静默裁剪」的口径。单独给码是因为排查方向不同——看到健康度的码会去查轨迹聚合， 而错在放量窗口，会被引到另一个端点上。
+   */
+  public static final String CLAIM_AI_ROLLOUT_QUERY_INVALID = "SC_CLAIM_AI_ROLLOUT_QUERY_INVALID";
 }

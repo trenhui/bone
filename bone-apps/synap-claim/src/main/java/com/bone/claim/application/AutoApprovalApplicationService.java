@@ -46,6 +46,7 @@ public class AutoApprovalApplicationService {
   private final IndemnityApplicationService indemnityApplicationService;
   private final DecisionExecutionApplicationService decisionExecutionApplicationService;
   private final FeatureTenantToggleService featureToggleService;
+  private final AiRolloutApplicationService aiRolloutApplicationService;
 
   /** 自动放款总开关（默认关闭：策略须签核）。 */
   @Value("${bone.claim.auto-approve.enabled:false}")
@@ -106,6 +107,21 @@ public class AutoApprovalApplicationService {
     if (maxAmount != null && amount.compareTo(maxAmount) > 0) {
       log.info("[自动放款] 超单笔上限转人工: claimId={}, amount={}, cap={}", claimId, amount, maxAmount);
       return AutoApprovalOutcome.skipped("CAP_EXCEEDED");
+    }
+    // G3-1/G3-2 放量阶段闸 + 错误预算熔断：上面三道闸只回答「这个能力开没开」，本闸回答「开到什么程度」。
+    // 未显式配置阶段的行一律是 SHADOW（不放量）——「全局开关打开」不等于「可以自动出金」，
+    // 否则运维改一行 SQL 就能从零放量跳到全量，中间没有任何观察期。
+    AiRolloutApplicationService.Admission admission =
+        aiRolloutApplicationService.admit(claim.getTenantId(), claimId);
+    if (!admission.allowed()) {
+      log.info(
+          "[自动放款] 放量闸拒绝: claimId={}, reason={}, stage={}, errorRate={}, verdict={}",
+          claimId,
+          admission.reason(),
+          admission.stage(),
+          admission.errorRate(),
+          admission.verdict());
+      return AutoApprovalOutcome.skipped(admission.reason());
     }
     return approveAndSettleInternal(claimId, SYSTEM_OPERATOR, amount);
   }

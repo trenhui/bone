@@ -138,6 +138,25 @@ public class FeatureToggle extends TenantAbstractEntity<Long> {
   }
 
   /**
+   * 覆写附带参数（放量阶段 / 预算阈值 / 回滚现场）。
+   *
+   * <p><b>为什么不新增 {@code setConfigJson}</b>：无约束的 setter 让任何调用方都能改配置而不用说明原因，事后在审计里 只剩「时间 +
+   * 新值」，无法回答「谁在什么证据下把它降档的」。本方法强制随写一句 {@code auditNote}，并把它写进 {@code
+   * remark}（该列本就是给运维备注用的），使回滚动作自带现场说明。
+   *
+   * <p><b>{@code null} 是合法入参</b>：语义是「清空附带参数、回落到代码基线」，与读取侧「null = 未配置」一致。
+   *
+   * @param configJson 新的 JSON 原文（null 表示清空）
+   * @param auditNote 本次变更的现场说明（自动回滚时由调用方写入击穿指标）
+   * @param now 变更时间
+   */
+  public void overwriteConfigJson(String configJson, String auditNote, Instant now) {
+    this.configJson = configJson;
+    this.remark = auditNote == null ? "" : auditNote;
+    this.setUpdatedAt(Date.from(now));
+  }
+
+  /**
    * 是否处于开启态（ENABLED 且灰度命中）。
    *
    * <p><b>读取期的兜底口径</b>：状态不是 {@code ENABLED} 一律当关闭（fail-closed）。这一条<b>不能收紧</b>—— 收紧成「只对 DISABLED
