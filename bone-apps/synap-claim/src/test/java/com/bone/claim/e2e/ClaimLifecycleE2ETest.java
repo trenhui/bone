@@ -178,6 +178,16 @@ class ClaimLifecycleE2ETest {
             + " traceId="
             + traceId);
 
+    // 6.5) 结论必须被消费：案件离开「初审中」并落到该去的地方
+    // 修复前实测：决策结论 MANUAL_REQUIRED 执行成功，案件仍停在 AUTO_PRE_EXAMINING（进不了核赔队列、
+    // 不会结案、评测导出拿不到弱标签）。这里同时校验「响应里的落点」与「详情接口读到的落点」一致，
+    // 避免只改了响应而没真正落库。
+    String routedStatus = decision.get("claimStatus").asText();
+    assertThat(routedStatus).isNotEqualTo("AUTO_PRE_EXAMINING");
+    JsonNode detail = body(exchange(HttpMethod.GET, "/api/v1/claims/" + claimId, null));
+    assertThat(detail.get(0).get("status").asText()).isEqualTo(routedStatus);
+    System.out.println("[E2E] 案件落点=" + routedStatus + " routing=" + decision.get("routingReason"));
+
     // 7) 轨迹回放
     String traceUrl = "/api/v1/claims/" + claimId + "/decision/trace?traceId=" + traceId;
     JsonNode trace = body(exchange(HttpMethod.GET, traceUrl, null));

@@ -246,7 +246,9 @@ public class ScenarioHarness {
             indemnitySvc,
             decExecSvc,
             new FeatureTenantToggleService(null, null));
-    decisionRun = new DecisionRunApplicationService(decisionExecutor, autoApproveSvc, decExecSvc);
+    decisionRun =
+        new DecisionRunApplicationService(
+            decisionExecutor, autoApproveSvc, decExecSvc, claimSvc, indemnitySvc);
     appealSvc = new AppealApplicationService(appealRepo, claimSvc, tenantPort, events);
     inspectionSvc = new InspectionApplicationService(inspectionRepo, claimSvc, tenantPort, events);
   }
