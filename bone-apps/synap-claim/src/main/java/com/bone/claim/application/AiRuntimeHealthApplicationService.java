@@ -91,6 +91,8 @@ public class AiRuntimeHealthApplicationService {
     Map<String, Integer> capabilityByReason = new TreeMap<>();
     Map<String, Integer> knowledgeBasisByReason = new TreeMap<>();
     int knowledgeBasisUnattributed = 0;
+    int unverifiableLocators = 0;
+    int locatorUnattributed = 0;
 
     for (DecisionTraceNode node : nodes) {
       JsonNode output = parse(node.getOutput());
@@ -111,6 +113,14 @@ public class AiRuntimeHealthApplicationService {
           case PROVIDER -> participated++;
           case STUB -> stubbed++;
           case UNKNOWN -> modelUnproven++;
+        }
+        // 幻觉计量：模型给出但在我送进去的材料里找不到出处的定位条数（适配器已丢弃那些条目）。
+        // 只统计「模型确实跑过」的节点——降级节点没有模型输出，把它的 0 计入分母会把编造率稀释。
+        JsonNode locators = output.get("aiUnverifiableLocators");
+        if (locators == null || !locators.isIntegralNumber()) {
+          locatorUnattributed++;
+        } else {
+          unverifiableLocators += locators.intValue();
         }
       } else {
         degraded++;
@@ -158,7 +168,9 @@ public class AiRuntimeHealthApplicationService {
         capabilityMissing,
         Map.copyOf(capabilityByReason),
         Map.copyOf(knowledgeBasisByReason),
-        knowledgeBasisUnattributed);
+        knowledgeBasisUnattributed,
+        unverifiableLocators,
+        locatorUnattributed);
   }
 
   /**
@@ -245,6 +257,10 @@ public class AiRuntimeHealthApplicationService {
    *     「目录未收录」「能力仍是桩」——四者处置动作互斥，合并成一个 {@code KNOWLEDGE_UNAVAILABLE} 等于不可归因
    * @param knowledgeBasisUnattributed 能力缺失但没落基据码的节点数（尚未落基据的历史行）。单列而不并入具名基据：并入会把
    *     「老数据没这个字段」读成一种真实成因，从而把运维引向错误的处置方向
+   * @param aiUnverifiableLocators 模型给出、但在送进去的材料里找不到出处的定位条数（事实 + 证据引用）。它们已被适配器丢弃，
+   *     故不会出现在轨迹的事实列表里——本字段是这条丢弃动作的唯一可观测出口。大于 0 通常意味着提示词与材料格式错配 （模型在编 {@code claimContext}
+   *     这类定位）或模型在复述输入
+   * @param aiLocatorUnattributed 模型参与但没落幻觉计量键的节点数（v1.9 之前的历史行）。单列而不当作 0： 把「老数据缺字段」算成「零编造」会让幻觉率虚低
    */
   public record AiRuntimeHealth(
       Instant windowFrom,
@@ -263,7 +279,9 @@ public class AiRuntimeHealthApplicationService {
       int capabilityMissing,
       Map<String, Integer> capabilityByReason,
       Map<String, Integer> knowledgeBasisByReason,
-      int knowledgeBasisUnattributed) {
+      int knowledgeBasisUnattributed,
+      int aiUnverifiableLocators,
+      int aiLocatorUnattributed) {
 
     /** 派生字段：显式声明，避免下游把参与率当准确率对外报。 */
     @JsonProperty("note")
@@ -273,7 +291,9 @@ public class AiRuntimeHealthApplicationService {
           + "分母为所有已明确表态的节点；分母为 0 时为 null，不是 0%。"
           + "attributionCoverage 是降级中带受控原因码的占比。两者都不是准确率——准确率见 /claims/eval/samples 的 agreementRate。"
           + "knowledgeBasisByReason 是能力缺失的二级归因（知识层为什么判不了），"
-          + "knowledgeBasisUnattributed 是没落基据的老数据；两者皆空表示这段时间没有能力缺失。";
+          + "knowledgeBasisUnattributed 是没落基据的老数据；两者皆空表示这段时间没有能力缺失。"
+          + "aiUnverifiableLocators 是模型给出但材料里无出处的定位条数（已被丢弃，不在事实列表里），"
+          + "aiLocatorUnattributed 是没落该计量的老数据；它们衡量「模型是否在有材料可依的情况下编造」。";
     }
   }
 }

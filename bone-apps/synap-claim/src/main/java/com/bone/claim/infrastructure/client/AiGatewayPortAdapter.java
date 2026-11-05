@@ -11,6 +11,7 @@ import com.bone.claim.application.port.out.AiGatewayUnavailableException;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.domain.model.decision.AiDegradationReason;
 import com.bone.claim.domain.model.decision.AiDiscrepancyCodes;
+import com.bone.claim.domain.model.evidence.EvidenceFactPolicy;
 import com.bone.claim.domain.security.RejectReasonCodes;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,9 +19,13 @@ import java.math.BigDecimal;
 import java.net.SocketTimeoutException;
 import java.net.http.HttpTimeoutException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -62,8 +67,9 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
    * claim_decision_execution.prompt_version} 注释即"回放与复算必需"）。
    */
   // v4：差异提示不再只做留痕，白名单内的码会驱动非资金流程状态（见 AiDiscrepancyRouting），
-  // 提示词契约随语义变化 bump，保证回放能区分「差异码仅展示」与「差异码参与路由」。
-  static final String PROMPT_VERSION = "claim-assess-v4";
+  // v5：输入侧补入材料解析事实，并要求 facts / evidenceRefs 必须落回材料定位。
+  // 提示词契约随语义变化 bump，回放需能区分「差异码仅展示」「差异码参与路由」「事实必须有出处」三代语义。
+  static final String PROMPT_VERSION = "claim-assess-v5";
 
   /** 差异提示受控码白名单（唯一真源在领域层）：模型不得臆造自由文本结论。 */
   static final List<String> DISCREPANCY_CODES = AiDiscrepancyCodes.ALL;
@@ -105,6 +111,16 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
   @Override
   public AiAssessment assess(ClaimContextPort.ClaimContextView ctx) {
     String prompt = buildPrompt(ctx);
+    // 材料索引（code|value → 材料事实）：模型给的事实必须能在里面找到同 code 同 value 的条目，
+    // 才承认它是"从材料抽取"，而不是复述输入或凭空生成。空索引是合法状态（没有材料）——
+    // 此时任何"事实"都无出处，一律丢弃，这正是「无材料案件不得凭空产事实」的落点。
+    Map<String, ClaimContextPort.EvidenceFact> materials = materialIndex(ctx.evidenceFacts());
+    // 证据定位白名单：evidenceRefs 只含定位不含内容，没有第二条可交叉校验的凭据，故只能按成员资格核。
+    Set<String> allowedRefs =
+        ctx.evidenceFacts().stream()
+            .map(ClaimContextPort.EvidenceFact::evidenceRef)
+            .filter(ref -> ref != null && !ref.isBlank())
+            .collect(Collectors.toUnmodifiableSet());
     LlmRequest request =
         new LlmRequest(
             requestModel(properties),
@@ -117,13 +133,16 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
                         + " AMOUNT_MISMATCH, FRAUD_SUSPECTED, OTHER]；不在清单内的码一律不得输出)。"
                         + "不要输出任何解释性自由文本；rejectReasons 只取上述枚举码，禁止臆造。"
                         + "另可给出认知层字段（缺失即视为空数组，禁止臆造）："
-                        + "facts(array of {code,value,evidenceRef}，从材料抽取的结构化事实)、"
-                        + "evidenceRefs(array of string，证据定位)、clauseRefs(array of string，条款引用)、"
+                        + "facts(array of {code,value,evidenceRef}，只能取自下文「材料事实」行：code 照抄该行 code，evidenceRef 必须原样照抄该行 evidenceRef)、"
+                        + "evidenceRefs(array of string，只能取自「材料事实」行的 evidenceRef)、clauseRefs(array of string，条款引用)、"
                         + "discrepancies(array of string，取值严格限定于 ["
                         + String.join(", ", AiDiscrepancyCodes.ALL)
                         + "]；不在清单内的码一律不得输出)。每个数组最多20项、每项字符串最多200字符。"
                         + "认知层字段不得影响金额、rejectSuggested 或 confidence；"
-                        + "白名单内的差异码仅供系统把案件从自动通过拉回补件/复核，不是拒赔结论。"),
+                        + "白名单内的差异码仅供系统把案件从自动通过拉回补件/复核，不是拒赔结论。"
+                        + "禁止把案件上下文字段（claimType/claimAmount/hasEvidence 等）复述为 facts："
+                        + "那是输入回显，不是从材料抽取的事实，系统会按不可核定位丢弃并计数。"
+                        + "若材料中的 total_amount 与 claimAmount 不一致，discrepancies 必须包含 AMOUNT_MISMATCH。"),
                 LlmMessage.user(prompt)),
             null,
             null,
@@ -141,10 +160,13 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
           "AI 网关评估失败，降级纯规则路径: " + ex.getMessage(), ex, classify(ex));
     }
     // 模型未遵循结构化输出契约 → 视为不可信，fail-closed 降级
-    return parse(response);
+    return parse(response, materials, allowedRefs);
   }
 
-  private AiAssessment parse(LlmResponse response) {
+  private AiAssessment parse(
+      LlmResponse response,
+      Map<String, ClaimContextPort.EvidenceFact> materials,
+      Set<String> allowedRefs) {
     try {
       JsonNode node = objectMapper.readTree(response.content());
       // G0-2：替身响应显式拒绝。未配 provider 时网关回落 MockLlmClient（自报 mock:true）；
@@ -170,6 +192,7 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
       List<String> reasons =
           reject ? normalizeRejectReasons(node.path("rejectReasons")) : List.of();
       // v1.2 认知层：缺失字段 fail-soft 为空列表，绝不因"认知字段没给全"把一次可用评估判成不可用
+      int[] rejected = {0};
       return new AiAssessment(
           true,
           reject,
@@ -177,10 +200,12 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
           reasons,
           resolvedModel(response),
           PROMPT_VERSION,
-          parseFacts(node.path("facts")),
-          parseBoundedTexts(node.path("evidenceRefs"), null),
+          groundedFacts(node.path("facts"), materials, rejected),
+          verifiedLocators(
+              parseBoundedTexts(node.path("evidenceRefs"), null), allowedRefs, rejected),
           parseBoundedTexts(node.path("clauseRefs"), null),
-          parseBoundedTexts(node.path("discrepancies"), DISCREPANCY_CODES));
+          parseBoundedTexts(node.path("discrepancies"), DISCREPANCY_CODES),
+          rejected[0]);
     } catch (AiGatewayUnavailableException ex) {
       // 替身拒绝属于显式降级：保留可运维的原始消息，不要被「解析失败」二次包装掉
       throw ex;
@@ -230,8 +255,18 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
     return RejectReasonCodes.normalize(values);
   }
 
-  /** 解析结构化事实：只取对象形状，三字段均截断，数量封顶——展示数据不得撑爆决策轨迹。 */
-  private List<Fact> parseFacts(JsonNode raw) {
+  /**
+   * 解析结构化事实并逐条做「材料落地」校验：保留下来的是<b>材料侧事实的投影</b>，不是模型的自由输出。
+   *
+   * <p><b>判据是内容，不是定位</b>：模型自报的 {@code evidenceRef} 只是一个字符串——它可以把真实定位配给编造的值， 也可以给真值配一个不存在的定位。故这里按
+   * {@code code|value} 在材料索引里查找：找不到即说明这条"事实"在材料里 并不存在（复述输入 / 凭空生成 /
+   * 数值改写），丢弃并计数；找到则<b>连定位一起取材料侧的</b>，模型自报的定位不作为凭据。
+   *
+   * <p>这是唯一能把「事实是否可核」从人工抽查变成机器判据的位置：实测里模型把案件上下文原样复述成 {@code facts}、 把 {@code claimContext}
+   * 编成证据定位，人眼与总量报表都发现不了。
+   */
+  private List<Fact> groundedFacts(
+      JsonNode raw, Map<String, ClaimContextPort.EvidenceFact> materials, int[] rejected) {
     if (raw == null || !raw.isArray()) {
       return List.of();
     }
@@ -243,13 +278,52 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
       if (!item.isObject()) {
         continue;
       }
-      facts.add(
-          new Fact(
-              bounded(item.path("code").asText("")),
-              bounded(item.path("value").asText("")),
-              bounded(item.path("evidenceRef").asText(""))));
+      String code = bounded(item.path("code").asText(""));
+      String value = bounded(item.path("value").asText(""));
+      ClaimContextPort.EvidenceFact material = materials.get(factKey(code, value));
+      if (material == null) {
+        rejected[0]++;
+        continue;
+      }
+      // 一律取材料侧的 code / value / evidenceRef：轨迹里出现的必须是"材料里确有的那一条"，
+      // 而不是模型改写后的版本——否则展示面与材料会悄悄分叉。
+      facts.add(new Fact(material.code(), material.value(), material.evidenceRef()));
     }
     return List.copyOf(facts);
+  }
+
+  /** 材料索引：归一化 code + 去空白 value 作键；同一 (code,value) 出现多次取首条（定位等价）。 */
+  private static Map<String, ClaimContextPort.EvidenceFact> materialIndex(
+      List<ClaimContextPort.EvidenceFact> facts) {
+    Map<String, ClaimContextPort.EvidenceFact> index = new LinkedHashMap<>();
+    for (ClaimContextPort.EvidenceFact fact : facts) {
+      index.putIfAbsent(factKey(fact.code(), fact.value()), fact);
+    }
+    return Map.copyOf(index);
+  }
+
+  /**
+   * 事实键：字段码归一（大小写与分隔符无关），值去首尾空白。
+   *
+   * <p>只做这两步归一：数值格式改写（{@code 1234.56 → 1,234.56}）不被接受——那属于模型改写材料内容，
+   * 丢弃并计入不可核条数是正确方向（可观测），而不是宽容到「看起来像就放行」。
+   */
+  static String factKey(String code, String value) {
+    return EvidenceFactPolicy.normalizeCode(code) + "|" + (value == null ? "" : value.trim());
+  }
+
+  /** 证据定位同样要可核：引用一个我没给过的定位，与编造事实是同一类问题。 */
+  private static List<String> verifiedLocators(
+      List<String> refs, Set<String> allowedRefs, int[] rejected) {
+    List<String> verified = new ArrayList<>();
+    for (String ref : refs) {
+      if (allowedRefs.contains(ref)) {
+        verified.add(ref);
+      } else {
+        rejected[0]++;
+      }
+    }
+    return List.copyOf(verified);
   }
 
   /** 解析受控字符串数组：白名单（null = 只截断）、长度与数量三重收敛。 */
@@ -284,21 +358,50 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
         : trimmed.substring(0, MAX_COGNITIVE_TEXT);
   }
 
+  /**
+   * 拼装提示词：聚合标量（案件面）+ 材料事实（证据面）。
+   *
+   * <p><b>为什么必须带材料</b>：只有聚合标量时，模型能做的只有「复述输入」——实测轨迹里 {@code aiFacts} 的 code 就是 {@code
+   * claimType}/{@code claimAmount}/{@code minOcrConfidence}，{@code aiEvidenceRefs} 恒为 {@code
+   * [claimContext]}。那不是抽取，只是把提示词抄回来：对核赔员零信息量，也让「事实是否可核」无从校验。
+   *
+   * <p>材料事实已由 {@code EvidenceFactPolicy} 过滤与截断（姓名 / 证件 / 病历号不出域），按 {@code
+   * docType|code=value|evidenceRef} 逐行给出，便于模型原样引用定位。
+   */
   private String buildPrompt(ClaimContextPort.ClaimContextView ctx) {
-    return "案件上下文（已脱敏）："
-        + "claimId="
-        + ctx.claimId()
-        + ", claimType="
-        + ctx.claimType()
-        + ", claimAmount="
-        + ctx.claimAmount()
-        + ", hasEvidence="
-        + ctx.hasEvidence()
-        + ", evidenceAllParsed="
-        + ctx.evidenceAllParsed()
-        + ", minOcrConfidence="
-        + ctx.minOcrConfidence()
-        + ", evidenceAllVerifyPassed="
-        + ctx.evidenceAllVerifyPassed();
+    StringBuilder prompt =
+        new StringBuilder("案件上下文（已脱敏）：")
+            .append("claimId=")
+            .append(ctx.claimId())
+            .append(", claimType=")
+            .append(ctx.claimType())
+            .append(", claimAmount=")
+            .append(ctx.claimAmount())
+            .append(", hasEvidence=")
+            .append(ctx.hasEvidence())
+            .append(", evidenceAllParsed=")
+            .append(ctx.evidenceAllParsed())
+            .append(", minOcrConfidence=")
+            .append(ctx.minOcrConfidence())
+            .append(", evidenceAllVerifyPassed=")
+            .append(ctx.evidenceAllVerifyPassed())
+            .append("\n材料事实（感知层解析结果，每行 docType|code=value|evidenceRef；无材料时为「无」）：");
+    List<ClaimContextPort.EvidenceFact> facts = ctx.evidenceFacts();
+    if (facts.isEmpty()) {
+      prompt.append("\n无");
+    } else {
+      for (ClaimContextPort.EvidenceFact fact : facts) {
+        prompt
+            .append("\n- ")
+            .append(fact.docType())
+            .append('|')
+            .append(fact.code())
+            .append('=')
+            .append(fact.value())
+            .append('|')
+            .append(fact.evidenceRef());
+      }
+    }
+    return prompt.toString();
   }
 }

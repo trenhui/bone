@@ -41,6 +41,9 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
   /** 能力不可用受控原因码（禁自由文本，随 trace 落库供审计区分"没查"与"查出了问题"）。 */
   static final String REASON_KNOWLEDGE_UNAVAILABLE = "KNOWLEDGE_UNAVAILABLE";
 
+  /** 轨迹键：模型给出但无材料出处的定位条数（幻觉计量，运行期健康度按此聚合）。 */
+  static final String KEY_UNVERIFIABLE_LOCATORS = "aiUnverifiableLocators";
+
   private final ClaimContextPort claimContextPort;
   private final AiGatewayPort aiGatewayPort;
   private final KnowledgeRetrievalPort knowledgeRetrievalPort;
@@ -93,6 +96,9 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
       // v1.2：降级路径也输出同一套认知层键（空值），保证决策轨迹 schema 稳定，读侧不必判空分支
       putCognitiveEmpty(out);
       putCapability(out, knowledgeAvailable, k.basis());
+      // 降级 = 模型没跑，不存在"编造定位"，此处恒 0。但键必须出现：读侧按 schema 稳定取数，
+      // 用"键缺失"表达 0 会让「老数据没这字段」与「模型零编造」混为一谈。
+      out.put(KEY_UNVERIFIABLE_LOCATORS, 0);
       if (rejectSuggested) {
         notificationPort.alert("WARN", "AI_RISK", v, out);
       }
@@ -116,6 +122,10 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
     out.put("aiClauseRefs", a == null ? List.of() : a.clauseRefs());
     out.put("aiDiscrepancies", a == null ? List.of() : a.discrepancies());
     putCapability(out, knowledgeAvailable, k.basis());
+    // 幻觉计量：模型给出但在我送进去的材料里找不到出处的定位条数（适配器已丢弃那些条目）。
+    // 丢弃保证展示面干净，计数保证「模型什么都没抽到」与「抽了一堆全不可核」在报表上可区分——
+    // 后者是提示词/材料格式错配的典型信号，只看展示面永远发现不了。
+    out.put(KEY_UNVERIFIABLE_LOCATORS, a == null ? 0 : a.unverifiableLocators());
     if (rejectSuggested) {
       notificationPort.alert("WARN", "AI_RISK", v, out);
     }

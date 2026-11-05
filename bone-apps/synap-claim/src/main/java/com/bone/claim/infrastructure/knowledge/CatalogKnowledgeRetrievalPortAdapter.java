@@ -8,8 +8,7 @@ import com.bone.claim.domain.model.evidence.Evidence;
 import com.bone.claim.domain.repository.EvidenceRepository;
 import com.bone.claim.domain.repository.RefDiseaseRepository;
 import com.bone.claim.domain.repository.RefDrugRepository;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.bone.claim.infrastructure.evidence.EvidenceFieldReader;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +45,6 @@ public class CatalogKnowledgeRetrievalPortAdapter implements KnowledgeRetrievalP
   private final RefDiseaseRepository refDiseaseRepository;
   private final RefDrugRepository refDrugRepository;
   private final TenantPort tenantPort;
-  private final ObjectMapper objectMapper = new ObjectMapper();
 
   public CatalogKnowledgeRetrievalPortAdapter(
       EvidenceRepository evidenceRepository,
@@ -65,19 +63,19 @@ public class CatalogKnowledgeRetrievalPortAdapter implements KnowledgeRetrievalP
     List<String> drugs = new ArrayList<>();
     boolean anyParsedFact = false;
 
+    // 字段解析收敛到 EvidenceFieldReader（与案件上下文层共用同一入口）：两处各写一份 fieldsOf，
+    // 一旦对「坏 JSON / 缺 fields 键」的处置分叉，就会出现「知识层说有事实、认知层说没材料」的互相矛盾。
     for (Evidence evidence : evidenceRepository.findByClaimId(ctx.claimId())) {
-      JsonNode fields = fieldsOf(evidence.getExtractedJson());
-      for (JsonNode field : fields) {
-        String code = field.path("code").asText("");
-        String value = field.path("value").asText("");
-        if (value.isBlank()) {
+      for (EvidenceFieldReader.ParsedField field :
+          EvidenceFieldReader.read(evidence.getExtractedJson())) {
+        if (field.value().isBlank()) {
           continue;
         }
         anyParsedFact = true;
-        if ("diagnosis_code".equals(code)) {
-          diagnoses.add(value);
-        } else if ("drug_code".equals(code)) {
-          drugs.add(value);
+        if ("diagnosis_code".equals(field.code())) {
+          diagnoses.add(field.value());
+        } else if ("drug_code".equals(field.code())) {
+          drugs.add(field.value());
         }
       }
     }
@@ -102,19 +100,6 @@ public class CatalogKnowledgeRetrievalPortAdapter implements KnowledgeRetrievalP
       }
     }
     return new KnowledgeResult(true, CONFIDENCE_DELTA, BASIS_VERIFIED, true);
-  }
-
-  /** 非结构化 / 损坏的解析结果一律视为「没有事实」，不抛异常打断决策图。 */
-  private JsonNode fieldsOf(String extractedJson) {
-    if (extractedJson == null || extractedJson.isBlank()) {
-      return objectMapper.createArrayNode();
-    }
-    try {
-      JsonNode fields = objectMapper.readTree(extractedJson).path("fields");
-      return fields.isArray() ? fields : objectMapper.createArrayNode();
-    } catch (Exception ex) {
-      return objectMapper.createArrayNode();
-    }
   }
 
   private static KnowledgeResult unavailable(String basis) {

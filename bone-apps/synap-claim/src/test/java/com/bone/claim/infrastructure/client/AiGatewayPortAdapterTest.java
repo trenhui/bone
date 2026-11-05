@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmClient;
 import com.bone.ai.gateway.domain.LlmGatewayPolicies;
+import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
 import com.bone.ai.gateway.domain.LlmUsage;
@@ -22,6 +23,8 @@ import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.domain.model.decision.AiDegradationReason;
 import com.bone.core.domain.event.DomainEventPublisher;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -43,6 +46,21 @@ class AiGatewayPortAdapterTest {
   private static final ClaimContextPort.ClaimContextView SAMPLE =
       new ClaimContextPort.ClaimContextView(
           1001L, "MEDICAL", new BigDecimal("3200.00"), true, true, new BigDecimal("0.95"), true);
+
+  /** 带材料事实的上下文：认知层的事实必须落回这些条目才算"抽取"。 */
+  private static final ClaimContextPort.ClaimContextView WITH_MATERIAL =
+      new ClaimContextPort.ClaimContextView(
+          1001L,
+          "MEDICAL",
+          new BigDecimal("3200.00"),
+          true,
+          true,
+          new BigDecimal("0.95"),
+          true,
+          List.of(
+              new ClaimContextPort.EvidenceFact("INVOICE", "total_amount", "3200.00", "text@67:8"),
+              new ClaimContextPort.EvidenceFact(
+                  "OUTPATIENT_RECORD", "diagnosis_code", "J06.900", "text@10:5")));
 
   @Test
   void delegatesToGatewayAndMapsStructuredAssessment() {
@@ -299,18 +317,20 @@ class AiGatewayPortAdapterTest {
     RecordingLlmClient client =
         new RecordingLlmClient(
             "{\"rejectSuggested\":false,\"confidence\":0.9,"
-                + "\"facts\":[{\"code\":\"DIAGNOSIS\",\"value\":\"J06.900\",\"evidenceRef\":\"EV-1\"}],"
-                + "\"evidenceRefs\":[\"EV-1\"],\"clauseRefs\":[\"CLAUSE-3.2\"],"
+                + "\"facts\":[{\"code\":\"diagnosis_code\",\"value\":\"J06.900\",\"evidenceRef\":\"text@10:5\"}],"
+                + "\"evidenceRefs\":[\"text@10:5\"],\"clauseRefs\":[\"CLAUSE-3.2\"],"
                 + "\"discrepancies\":[\"AMOUNT_MISMATCH\"]}");
     AiGatewayPort port = new AiGatewayPortAdapter(gatewayWith(client, policiesWith(null)));
 
-    AiGatewayPort.AiAssessment a = port.assess(SAMPLE);
+    AiGatewayPort.AiAssessment a = port.assess(WITH_MATERIAL);
 
     assertThat(a.hasCognitiveOutput()).isTrue();
     assertThat(a.facts()).hasSize(1);
-    assertThat(a.facts().get(0).code()).isEqualTo("DIAGNOSIS");
-    assertThat(a.facts().get(0).evidenceRef()).isEqualTo("EV-1");
-    assertThat(a.evidenceRefs()).containsExactly("EV-1");
+    // 保留的事实是材料侧那一条的投影（code / value / 定位都取材料侧）
+    assertThat(a.facts().get(0).code()).isEqualTo("diagnosis_code");
+    assertThat(a.facts().get(0).evidenceRef()).isEqualTo("text@10:5");
+    assertThat(a.unverifiableLocators()).isZero();
+    assertThat(a.evidenceRefs()).containsExactly("text@10:5");
     assertThat(a.clauseRefs()).containsExactly("CLAUSE-3.2");
     assertThat(a.discrepancies()).containsExactly("AMOUNT_MISMATCH");
     // 认知层只做留痕与展示，不得改变结论与置信度（P1：AI 不碰钱）
@@ -357,21 +377,137 @@ class AiGatewayPortAdapterTest {
   @Test
   @DisplayName("v1.2：认知数组最多 20 项，防输出膨胀撑爆决策轨迹")
   void cognitiveArraysAreCapped() {
+    List<ClaimContextPort.EvidenceFact> materials = new ArrayList<>();
     StringBuilder sb =
         new StringBuilder("{\"rejectSuggested\":false,\"confidence\":0.9,\"evidenceRefs\":[");
     for (int i = 0; i < 30; i++) {
       if (i > 0) {
         sb.append(",");
       }
-      sb.append("\"EV-").append(i).append("\"");
+      sb.append("\"text@").append(i).append(":1\"");
+      materials.add(
+          new ClaimContextPort.EvidenceFact("INVOICE", "f" + i, "v" + i, "text@" + i + ":1"));
     }
     sb.append("]}");
+    ClaimContextPort.ClaimContextView view =
+        new ClaimContextPort.ClaimContextView(
+            1001L,
+            "MEDICAL",
+            new BigDecimal("3200.00"),
+            true,
+            true,
+            new BigDecimal("0.95"),
+            true,
+            materials);
     AiGatewayPort port =
         new AiGatewayPortAdapter(
             gatewayWith(new RecordingLlmClient(sb.toString()), policiesWith(null)));
 
-    assertThat(port.assess(SAMPLE).evidenceRefs())
-        .hasSize(AiGatewayPortAdapter.MAX_COGNITIVE_ITEMS);
+    assertThat(port.assess(view).evidenceRefs()).hasSize(AiGatewayPortAdapter.MAX_COGNITIVE_ITEMS);
+  }
+
+  // ===== 认知层输入侧：材料事实下发 + 事实落地校验 =====
+
+  @Test
+  @DisplayName("材料事实随提示词下发：AI 看到的是带原文定位的字段，而不是只有聚合标量")
+  void promptCarriesMaterialFacts() {
+    RecordingLlmClient client =
+        new RecordingLlmClient("{\"rejectSuggested\":false,\"confidence\":0.9}");
+    new AiGatewayPortAdapter(gatewayWith(client, policiesWith(null))).assess(WITH_MATERIAL);
+
+    String userMessage =
+        client.recorded().messages().stream()
+            .filter(m -> "user".equalsIgnoreCase(m.role()))
+            .map(LlmMessage::content)
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(userMessage)
+        .contains("材料事实")
+        .contains("INVOICE|total_amount=3200.00|text@67:8")
+        .contains("OUTPATIENT_RECORD|diagnosis_code=J06.900|text@10:5");
+  }
+
+  @Test
+  @DisplayName("无材料时模型不得凭空产事实：回显上下文的条目一律丢弃并计数，但评估本身仍可用")
+  void factsWithoutMaterialAreDroppedButAssessmentStaysUsable() {
+    RecordingLlmClient client =
+        new RecordingLlmClient(
+            "{\"rejectSuggested\":false,\"confidence\":0.9,\"facts\":["
+                + "{\"code\":\"claimType\",\"value\":\"MEDICAL\"},"
+                + "{\"code\":\"claimAmount\",\"value\":\"3200.00\"}]}");
+
+    AiGatewayPort.AiAssessment a =
+        new AiGatewayPortAdapter(gatewayWith(client, policiesWith(null))).assess(SAMPLE);
+
+    assertThat(a.facts()).isEmpty();
+    assertThat(a.unverifiableLocators()).isEqualTo(2);
+    // 认知层缺出处 ≠ 模型不可用：fail-soft（认知字段）与 fail-closed（结论不可信）是两条线
+    assertThat(a.available()).isTrue();
+    assertThat(a.confidence()).isEqualByComparingTo("0.9");
+  }
+
+  @Test
+  @DisplayName("材料里没有的取值被丢弃：模型改写金额不算抽取")
+  void factWithValueNotInMaterialIsDropped() {
+    RecordingLlmClient client =
+        new RecordingLlmClient(
+            "{\"rejectSuggested\":false,\"confidence\":0.9,\"facts\":["
+                + "{\"code\":\"total_amount\",\"value\":\"1,234.56\",\"evidenceRef\":\"text@67:8\"}]}");
+
+    AiGatewayPort.AiAssessment a =
+        new AiGatewayPortAdapter(gatewayWith(client, policiesWith(null))).assess(WITH_MATERIAL);
+
+    // 数值格式改写（3200.00 → 1,234.56 / 带千分位）属于改写材料内容，不被宽容接受
+    assertThat(a.facts()).isEmpty();
+    assertThat(a.unverifiableLocators()).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("定位以材料为准：模型给真值配假定位时，轨迹里落的是材料侧定位")
+  void locatorIsCanonicalizedToMaterial() {
+    RecordingLlmClient client =
+        new RecordingLlmClient(
+            "{\"rejectSuggested\":false,\"confidence\":0.9,\"facts\":["
+                + "{\"code\":\"total_amount\",\"value\":\"3200.00\",\"evidenceRef\":\"made-up@0:0\"}]}");
+
+    AiGatewayPort.AiAssessment a =
+        new AiGatewayPortAdapter(gatewayWith(client, policiesWith(null))).assess(WITH_MATERIAL);
+
+    assertThat(a.facts()).hasSize(1);
+    // 内容在材料里成立 ⇒ 保留；但定位不采信模型自报，一律取材料侧
+    assertThat(a.facts().get(0).evidenceRef()).isEqualTo("text@67:8");
+    assertThat(a.unverifiableLocators()).isZero();
+  }
+
+  @Test
+  @DisplayName("证据定位白名单：编造的 claimContext 不进轨迹，但必须计数")
+  void fabricatedEvidenceRefIsDroppedAndCounted() {
+    RecordingLlmClient client =
+        new RecordingLlmClient(
+            "{\"rejectSuggested\":false,\"confidence\":0.9,"
+                + "\"evidenceRefs\":[\"claimContext\",\"text@67:8\"]}");
+
+    AiGatewayPort.AiAssessment a =
+        new AiGatewayPortAdapter(gatewayWith(client, policiesWith(null))).assess(WITH_MATERIAL);
+
+    assertThat(a.evidenceRefs()).containsExactly("text@67:8");
+    assertThat(a.unverifiableLocators()).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("字段码归一后匹配：模型输出 totalAmount 也能落回材料里的 total_amount")
+  void factCodeIsNormalizedBeforeMatching() {
+    RecordingLlmClient client =
+        new RecordingLlmClient(
+            "{\"rejectSuggested\":false,\"confidence\":0.9,\"facts\":["
+                + "{\"code\":\"totalAmount\",\"value\":\"3200.00\"}]}");
+
+    AiGatewayPort.AiAssessment a =
+        new AiGatewayPortAdapter(gatewayWith(client, policiesWith(null))).assess(WITH_MATERIAL);
+
+    assertThat(a.facts()).hasSize(1);
+    assertThat(a.facts().get(0).code()).isEqualTo("total_amount");
   }
 
   private static LlmGatewayApplicationService gatewayWith(

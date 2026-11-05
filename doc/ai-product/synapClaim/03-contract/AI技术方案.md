@@ -23,6 +23,7 @@ currency: current
 |v1.6|2026-11-04|BONE 平台架构|**降级可归因**：新增 `AiDegradationReason` 四码（`MOCK_NOT_ALLOWED` / `OUTPUT_CONTRACT_VIOLATION` / `PROVIDER_TIMEOUT` / `GATEWAY_ERROR`），按异常类型走 cause 链分类，不匹配消息文本；见 §11.5|
 |v1.7|2026-11-05|BONE 平台架构|**运行期口径**：新增 `GET /claim-ops/ai-runtime-health`（参与/桩/来源不明/降级/无法判定五桶 + 归因覆盖率），并按 `AiModelProvenance` 把「桩跑过」从参与分子中剔除；见 §11.6|
 |v1.8|2026-11-05|BONE 平台架构|**连通态补齐 + 真实 provider 实测**：① 新增 `GET /claim-ops/ai-provider-probe`（一次最小真实调用，判词含未配置/通/四个受控原因码 + 处置动作），补上「配了 ≠ 通了 ≠ 契约对」这一层；② 修真实 provider 下必然失败的缺陷——业务请求曾把逻辑别名 `synap-claim-ai` 当模型名发给上游，探活却用配置模型，造成「探活绿灯、业务全量降级」，现探活与业务共用 `requestModel()` 唯一真源；③ 知识基据 `KnowledgeBasis` 随轨迹落库并进健康度二级归因，四类成因不再被压成一个 `KNOWLEDGE_UNAVAILABLE`；④ §11.7 记录实测前后对照（`0.0000 / 0.0112` → `0.5556 / 1.0000`）。**P1 红线、三档分诊、G0–G4 门禁不变**|
+|v1.9|2026-11-05|BONE 平台架构|**认知层输入侧补齐 + 事实落地校验**：① 感知层早已抽出带 `text@67:8` 定位的票面/临床字段，但 AI 只收到 6 个聚合标量，只能把标量复述成 `aiFacts`、把 `claimContext` 编成证据定位（实测取证）；现 `ClaimContextView.evidenceFacts` 把材料事实送进提示词（v5）；② 新增 `EvidenceFactPolicy` 出域策略（姓名/证件/病历号不出域，与网关 PII 脱敏构成两层）；③ 事实必须有材料出处——按 `code|value` 在材料索引里比对，定位一律取材料侧，不可核条目丢弃并计数 `aiUnverifiableLocators`（进轨迹与健康度）；④ §11.8 记录实测对照（`aiFacts` 由 6 条回显变为 4 条真实票面事实，`aiDiscrepancies` 首次有依据地出现 `AMOUNT_MISMATCH`）。**P1 红线、三档分诊、G0–G4 门禁不变**|
 |v1.5|2026-11-04|BONE 平台架构|**复核建议落地**：① 发票验真 / 验重前移到材料阶段（票面要素 + 跨案去重，查实问题落 `FAIL`，本地核验通过仍落 `UNVERIFIABLE` 转人工，不放宽 R-FRAUD-06）；② 核责规则资产化（资源文件可替换 + 版本随命中留痕，配置不可信时回退）；③ 链路联动（案件级锁定事件 → 自动触发决策图，默认关闭、G3 前置）；④ §1.6 补验收判据、未落地边界与「建议采纳 / 未采纳理由」对照表。**红线与成熟度定级不变，仍不得对外宣称 L3**|
 
 ---
@@ -954,6 +955,105 @@ export BONE_AI_GATEWAY_MODEL=deepseek-chat                 # 必须是该 provid
 
 **仍未做**：告警阈值与看板（需稳定流量才定得出阈值）；知识层接受控 RAG / 条款口径核验（L3，需材料侧与合规措辞一起定）；`confidence_source` 列（L3）；历史 `UNATTRIBUTED` 回填（不可行，见上）。
 
+
+### 11.8 AI 到底看到了什么：认知层的输入侧（v1.9 落地）
+
+§11.5–§11.7 一路把「AI 在不在线、为什么降级、知识层为什么判不了」都变成了可查的事实。这一节补的是更前面的一段——**AI 到底看到了什么材料**。前几节修好的是「AI 跑起来了吗」，本节修的是「跑起来的 AI 手里有没有东西可看」。
+
+#### 11.8.1 症状：事实栏里全是输入回显
+
+配好真实 provider 后，直接从 `claim_decision_trace` 取两条 `AiAssess` 节点输出：
+
+| 字段 | 实测值（v4，修前） |
+|---|---|
+| `aiFacts` | `[code=claimType,value=OUTPATIENT]`、`[code=claimAmount,value=100.00]`、`[code=hasEvidence,value=true]`、`[code=evidenceAllParsed,value=true]`、`[code=minOcrConfidence,value=0.9200]`、`[code=evidenceAllVerifyPassed,value=false]` |
+| `aiEvidenceRefs` | `[claimContext]`（编造：提示词里从未出现过这个标识） |
+| `aiDiscrepancies` | `[]` |
+
+这些「事实」的 code 恰好就是 `buildPrompt()` 里那 6 个标量的名字。也就是说：**模型没有抽取任何东西，它把输入抄回来了**。合同里写的「从材料抽取的结构化事实」从未发生。
+
+根因不在模型，在输入侧。完整链路本该是：
+
+```
+材料 → 感知层解析（已抽出 invoice_no / total_amount，带 text@67:8 定位，落 t_claim_evidence.extracted_json）
+     → 案件上下文端口  ← 断在这里：只上送 hasEvidence / evidenceAllParsed / minOcrConfidence 等聚合标量
+     → 提示词（v4 只有聚合标量）
+     → 认知层（模型只能复述标量）
+```
+
+感知层做了 99% 的工作，最后一步把明细丢了。这不是「模型能力不足」，是**接口没把材料交出去**——所以它也不可能靠换更大的模型修好。
+
+#### 11.8.2 修复：把材料事实交出去，并且要求可核
+
+三件事，缺一件都会退化成三种不同的坏状态：
+
+**① 把材料事实带进上下文（`ClaimContextPort.ClaimContextView#evidenceFacts`）**
+
+`EvidenceFact(docType, code, value, evidenceRef)` 从 `extracted_json.fields` 投影而来，条数封顶 40、单值截断 120 字符。提示词 v5 按 `docType|code=value|evidenceRef` 逐行给出，模型可原样引用定位。
+
+只交事实不交定位，等于让模型"凭印象说"——核赔员拿到一句没有出处的结论，与没有结论同等无用。
+
+**② 出域边界（`EvidenceFactPolicy`）：denylist，不是 allowlist**
+
+| 方向 | 决策 | 理由 |
+|---|---|---|
+| 为什么是 denylist | 新码默认放行 | allowlist 的失败形态是「新材料送不进去，AI 看到空材料」，**静默失效**且报表上看不出来（模型照样返回一份像样的结论）；denylist 的失败形态是「新出现的个人标识被送出」，由第二层兜住 |
+| 为什么按整码而非片段 | 精确匹配归一后的码 | 按 `name` 片段拦会把 `item_name`（药品名）、`seller_name` 一起拦掉——那正是「配了不生效」的典型形态 |
+| 拦哪些 | 姓名 / 证件 / 联系方式 / 账户 / 病历号 / 生日 | 权威控制点在 LLM 网关出口（`RegexPiiRedactor`，默认开启，覆盖身份证/手机号/银行卡/邮箱/IP）；**姓名与病历号是正则覆盖不到或即便脱敏也不该出域的**，故应用层再设一层 |
+
+两层互不替代：网关那层是平台级兜底（所有场景共用），本层是业务语义级（知道哪些字段属于"材料事实"）。
+
+**③ 事实必须有材料出处（`groundedFacts`）**
+
+判据是**内容**，不是模型自报的定位：
+
+- 按 `normalizeCode(code)|value` 在材料索引里查找；
+- 找不到 → 该条"事实"在材料里根本不存在（复述输入 / 凭空生成 / 数值改写），**丢弃并计入 `aiUnverifiableLocators`**；
+- 找到 → **连 `code` / `value` / `evidenceRef` 一起取材料侧的**，模型自报的定位不作为凭据。
+
+为什么不信定位：定位只是一个字符串，模型可以把真定位配给编造的值，也可以给真值配一个不存在的定位（`claimContext` 就是后者）。按内容比对同时否掉这两种。
+
+`evidenceRefs`（纯定位数组，没有可交叉校验的内容）只能按成员资格核——不在材料定位集合里的一律丢弃并同样计数。
+
+**丢弃与计数必须成对**：只丢不计数，会把「模型什么都没抽到」与「模型抽了一堆全不可核」在报表上抹平成同一个 0；后者才是提示词与材料格式错配的早期信号。计数进轨迹 `aiUnverifiableLocators`，并由运行期健康度聚合为 `aiUnverifiableLocators` + `aiLocatorUnattributed`（历史行缺字段单列，不当 0）。
+
+#### 11.8.3 实测对照（同一批案件、同一 provider、前后两个构建）
+
+| 观测 | v4（修前） | v5（修后） |
+|---|---|---|
+| `aiPromptVersion` | `claim-assess-v4` | `claim-assess-v5` |
+| `aiFacts` | 6 条，全是 `claimType/claimAmount/hasEvidence/…` 的输入回显 | **4 条真实票面事实**：`invoice_code=0440000123|text@16:10`、`invoice_no=12345678|text@32:8`、`invoice_date=2026-11-01|text@46:11`、`total_amount=1234.56|text@67:8` |
+| `aiEvidenceRefs` | `[claimContext]`（编造） | `[text@16:10, text@32:8, text@46:11, text@67:8]`（全部可回溯到材料） |
+| `aiDiscrepancies` | `[]` | **`[AMOUNT_MISMATCH]`**（票面 1234.56 vs 报案 100.00，第一次有依据） |
+| `aiUnverifiableLocators` | 字段不存在 | `0`（三条节点全部为 0） |
+| `participationRate`（今日 12 节点） | 0.5556（9 节点） | **0.6667**（8/12 参与，4 条为 v4 之前的降级存量） |
+| `aiCoverage`（评测出口今日 12 样本） | 0.6667 | 0.6667（AI 参与 8 条） |
+
+#### 11.8.4 三个必须一起读的结论
+
+1. **金额差异码第一次有了依据，但它没有改变结论**。`AMOUNT_MISMATCH` 已落轨迹，`triage_reason` 仍是规则引擎给的 `RISK_HIT`。原因是 `AiDiscrepancyRouting` 只在**本会 `AUTO_APPROVE`** 时把结论收紧，本案的结论已是 `MANUAL_REQUIRED`（知识层 fail-closed），比差异码要求的处置更严——按 P1「只向安全方向收紧、不得被 AI 输出覆盖」，此处保持原样是设计意图，不是路由失效。
+2. **一致率仍是 `null`，但原因换了**。上一轮是「84/84 全 `MANUAL_REQUIRED`」；现在是 12 个样本中 **8 条 `UNKNOWN_NOT_CONVERGED`**——`finalStatus` 停在 `AUTO_PRE_EXAMINING`，案件根本没结案。弱标签来自案件终态，**案件不结案就没有标签**，`evaluableCount=0` 是数据前提不成立，不是代码缺陷。要拿到第一个真实一致率，需要让案件走到 `FINISHED`/`CLOSED_REJECTED`，属于流程侧动作（数据准备），不是再改一版导出逻辑。
+3. **模型跑通、事实可核，仍然不等于能自动放款**。11 条能力缺失全部落在 `INSUFFICIENT_CLINICAL_FACTS`：发票只有票面事实，没有 `diagnosis_code`/`drug_code`，目录准入无从谈起。这次补齐的是"AI 看得到票面"，不是"AI 能判临床"——后者要病历/处方类材料，或条款口径核验能力（L3）。
+
+#### 11.8.5 明确不做的两件事
+
+- **AI 抽出的事实不参与目录准入**。知识层仍只读感知层落库的 `extracted_json`，不接受模型自证的临床编码。理由：模型可被材料内容引导（提示注入面之一），让它既产事实又用该事实做准入判定，等于自己给自己发许可证。认知层的事实只做**展示、评测与差异提示**，这是 P1 边界的延伸，不是保守。
+- **不回填历史 `aiFacts`**。v4 的回显记录留在原处，只在健康度里单列为 `aiLocatorUnattributed`——改写历史轨迹等于伪造审计证据。
+
+#### 11.8.6 验收清单
+
+| 判据 | 位置 |
+|---|---|
+| 材料事实随提示词下发（code/value/定位齐备） | `AiGatewayPortAdapterTest#promptCarriesMaterialFacts` |
+| 无材料时不得凭空产事实，且评估仍可用 | `#factsWithoutMaterialAreDroppedButAssessmentStaysUsable` |
+| 材料里没有的取值被丢弃（改写金额不算抽取） | `#factWithValueNotInMaterialIsDropped` |
+| 定位以材料为准（假定位被替换为材料侧） | `#locatorIsCanonicalizedToMaterial` |
+| 编造的 `claimContext` 被丢弃并计数 | `#fabricatedEvidenceRefIsDroppedAndCounted` |
+| 身份字段不出域 + 临床字段仍放行（双向） | `EvidenceFactPolicyTest` / `LocalClaimContextPortAdapterTest#identityFieldsAreStrippedButClinicalFactsSurvive` |
+| 幻觉计量进轨迹（含降级路径恒 0） | `AiAssessNodeHandlerLocatorTest` |
+| 幻觉计量聚合口径（老数据不当 0） | `AiRuntimeHealthLocatorTest` |
+
+变异验证（双向）：去掉 `groundedFacts` 的材料索引校验 ⇒ 回显/编造用例转红；把 `EvidenceFactPolicy.exportable` 恒 `true` ⇒ 出域用例转红，恒 `false` ⇒ 临床字段正向用例转红。每次均字节级还原。
 
 ---
 

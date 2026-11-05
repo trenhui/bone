@@ -39,6 +39,9 @@ public interface AiGatewayPort {
    * <p>{@code facts} / {@code evidenceRefs} / {@code clauseRefs} / {@code discrepancies} 是 AI
    * 原生的认知层产物： 随节点输出进入 {@code claim_decision_trace}，既是核赔员的可解释材料，也是独立盲标与评测集的候选样本源。
    * 由适配器做白名单、长度与数量收敛，禁止模型自由文本外溢。
+   *
+   * <p><b>{@code unverifiableLocators} 是幻觉计量</b>：模型给出的事实 / 证据定位若在我送进去的材料里找不到对应定位，
+   * 就不是"抽取"而是编造。适配器把它们丢弃并在此计数——丢弃是安全动作，计数是可观测动作；只丢不计数， 会让"模型什么都没抽到"与"模型抽了一堆但全不可核"在报表上长得一样。
    */
   record AiAssessment(
       boolean available,
@@ -50,7 +53,8 @@ public interface AiGatewayPort {
       List<Fact> facts,
       List<String> evidenceRefs,
       List<String> clauseRefs,
-      List<String> discrepancies) {
+      List<String> discrepancies,
+      int unverifiableLocators) {
 
     /** 归一化：空值不落 {@code null}，避免下游 NPE 与"null 字符串"入库。 */
     public AiAssessment {
@@ -61,6 +65,32 @@ public interface AiGatewayPort {
       evidenceRefs = evidenceRefs == null ? List.of() : List.copyOf(evidenceRefs);
       clauseRefs = clauseRefs == null ? List.of() : List.copyOf(clauseRefs);
       discrepancies = discrepancies == null ? List.of() : List.copyOf(discrepancies);
+    }
+
+    /** 向后兼容：v1.2 的 10 参构造（尚未做定位可核校验时）。 */
+    public AiAssessment(
+        boolean available,
+        boolean rejectSuggested,
+        BigDecimal confidence,
+        List<String> rejectReasons,
+        String modelVersion,
+        String promptVersion,
+        List<Fact> facts,
+        List<String> evidenceRefs,
+        List<String> clauseRefs,
+        List<String> discrepancies) {
+      this(
+          available,
+          rejectSuggested,
+          confidence,
+          rejectReasons,
+          modelVersion,
+          promptVersion,
+          facts,
+          evidenceRefs,
+          clauseRefs,
+          discrepancies,
+          0);
     }
 
     /** 向后兼容：v1.1 的 6 参构造（无结构化认知输出）。 */
