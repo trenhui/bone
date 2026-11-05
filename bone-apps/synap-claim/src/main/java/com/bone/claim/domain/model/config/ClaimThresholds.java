@@ -1,4 +1,4 @@
-package com.bone.claim.domain.model;
+package com.bone.claim.domain.model.config;
 
 import java.math.BigDecimal;
 

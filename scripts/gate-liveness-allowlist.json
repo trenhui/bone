@@ -1,5 +1,5 @@
 {
-  "_comment": "未接线门禁的豁免清单（R4 判据的唯一真源）。规则：① 只有「有意暂缓接线」才能登记，判据本身有缺陷请修判据而不是豁免；② 理由必须可复核——写清为什么不接、接了会违反什么约束、由谁解除；③ 条目只可收缩：脚本接线后、或脚本被删除后，条目必须同步删除，否则 R4b 判红（防止用豁免清单把 R4 泡成永远绿）。",
+  "_comment": "门禁豁免清单（R4/R6 判据的唯一真源）。两类豁免：① unwired = 判据已写好但全仓零接线，登记理由与裁决人即为「有意暂缓」（R4 豁免）；② partial_wire = 已接 CI/人工入口但未进 pre-commit，须显式声明 kind（ci_only=刻意只跑 CI；known_incomplete=存量缺口未清零、暂不能拦每次提交）。规则：只有「有意暂缓」才能登记，判据本身有缺陷请修判据而不是豁免；理由必须可复核（≥20 字符、owner 非空、unblock 写清由谁解除）；条目只可收缩——脚本接线后、或脚本被删除后，条目必须同步删除，否则 R4b/R4c 判红（防用豁免清单把门禁泡成永远绿）。",
   "version": 1,
   "unwired": [
     {
@@ -13,6 +13,29 @@
       "reason": "脚本头部明确要求接线前走架构师评审：它比对 doc 真源、后端 classpath 拷贝与前端 lint 白名单三方 SHA/逐项一致性，契约口径变更影响面跨前后端，先评审再进 CI 阻断。",
       "owner": "UI 协议评审（架构师）",
       "unblock": "三方契约口径评审通过并确认存量一致后，接入 check.sh 与 ci.yml 并删除本条"
+    }
+  ],
+  "partial_wire": [
+    {
+      "script": "scripts/check-event-envelope-version.py",
+      "kind": "ci_only",
+      "reason": "L3 口径门禁：事件信封/Topic 版本契约须架构师在 doc/architecture/gate-state.json 登记真实载体并接入 check.sh 后方可阻断；且全量扫描集成事件实现与 Topic 常量约 22s，进 pre-commit 会拖慢每次提交。先在 CI 跑以暴露契约 drift。",
+      "owner": "消息与事件规范评审（架构师）",
+      "unblock": "架构师在 gate-state.json 登记真实载体并评审通过口径后，接入 check.sh 并删除本条"
+    },
+    {
+      "script": "scripts/check-tenant-entity-declaration.py",
+      "kind": "known_incomplete",
+      "reason": "多租户口径门禁（ADR-0034 派生）：DDL 有 tenant_id 但实体不声明 tenantId 会静默跨租户读。存量缺口登记在 doc/architecture/tenant-entity-baseline.json（只可收缩），尚有 12 张表待补声明+数据归属迁移；直接进 pre-commit 会因存量缺口误拦正常提交。CI 跑以抓新增缺口。",
+      "owner": "多租户规范评审（架构师）",
+      "unblock": "tenant-entity-baseline.json 缺口清零（所有 tenant 表均有实体声明）后，接入 check.sh 并删除本条"
+    },
+    {
+      "script": "scripts/check-tenant-deletion-coverage.py",
+      "kind": "known_incomplete",
+      "reason": "租户离场清除覆盖门禁（R8①）：含 tenant_id 的表须被 TenantDeletionGatewayAdapter 清退清单覆盖。当前 DDL 约 73 张租户表与清退清单存在缺口（增量表未登记），直接进 pre-commit 会误拦。CI 跑以暴露新增缺口、驱动清单收敛。",
+      "owner": "多租户规范评审（架构师）",
+      "unblock": "清退清单覆盖全部增量租户表、缺口清零后，接入 check.sh 并删除本条"
     }
   ]
 }

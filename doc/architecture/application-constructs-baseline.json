@@ -12,5 +12,15 @@
     "R1-role-package": "文件级动作：每个文件按 ADR-0035 D3 的四个落点归位；文件清空后删除角色包目录（不要为保目录留占位类）。integration 的 application/service 里混着端口（FlowRuntime）与实现（LinearSyncFlowRuntime / CamelFlowRuntime / FlowNodeExecutor）：端口迁 application/port/out，实现迁 infrastructure（E-10.1）。",
     "direction-conflict": "2026-09-22 收口：bone-iam/README.md 一度把复用类定位到 application/binding/ 与 application/policy/（另有根目录 *Resolver），与 ADR-0035 白名单相反。已按用户决定（应用层只保留 *ApplicationService）统一：该 README 改为 ADR-0035 D3 的落点表，三处按存量处理；@Service 不构成留在应用层的理由——domainCoreShouldOnlyDependOnAllowedPackages 禁止 domain 依赖 Spring stereotype，正解是让领域类不带 stereotype（应用层构造或 config 里 @Bean 装配）。"
   },
-  "violations": {}
+  "violations": {
+    "R2:bone-ai/bone-ai-rag/src/main/java/com/bone/airag/application/RagAnswerService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-ai/bone-ai-rag/src/main/java/com/bone/airag/application/RagAnswerService.java",
+      "name": "RagAnswerService",
+      "package": "(root)",
+      "classification": "pending",
+      "owner": "bone-ai/bone-ai-rag",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    }
+  }
 }

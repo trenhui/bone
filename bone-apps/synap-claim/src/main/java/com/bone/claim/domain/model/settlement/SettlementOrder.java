@@ -1,6 +1,6 @@
 package com.bone.claim.domain.model.settlement;
 
-import com.bone.claim.domain.model.ClaimThresholds;
+import com.bone.claim.domain.model.config.ClaimThresholds;
 import com.bone.core.annotation.Transient;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;

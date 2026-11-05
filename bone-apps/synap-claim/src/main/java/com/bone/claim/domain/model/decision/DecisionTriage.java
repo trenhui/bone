@@ -1,5 +1,6 @@
 package com.bone.claim.domain.model.decision;
 
+import com.bone.claim.domain.model.config.ClaimThresholds;
 import java.math.BigDecimal;
 
 /**
@@ -28,7 +29,7 @@ public final class DecisionTriage {
 
   /** 自动通过金额上限（≥1 万不自动通过）。基线回指 {@link ClaimThresholds#DUAL_REVIEW_AMOUNT}，与双审门同源。 */
   public static final BigDecimal AUTO_AMOUNT_LIMIT =
-      com.bone.claim.domain.model.ClaimThresholds.DUAL_REVIEW_AMOUNT;
+      com.bone.claim.domain.model.config.ClaimThresholds.DUAL_REVIEW_AMOUNT;
 
   private DecisionTriage() {}
 

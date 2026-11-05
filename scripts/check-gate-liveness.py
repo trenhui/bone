@@ -336,7 +336,18 @@ def entry_reachability(root: Path, corpus: dict[str, str]) -> list[str]:
 
 
 def load_allowlist(root: Path) -> tuple[dict[str, dict], list[str]]:
-    """返回 (script → 条目, 违规)。清单缺失视为"无豁免"，不是错误。"""
+    """返回 (script → 条目, 违规)。清单缺失视为"无豁免"，不是错误。
+
+    两类豁免共存在同一份清单、同一张 ``script → 条目`` 表里，便于「过期条目」清理
+    （R4b）与「重复登记」检测统一处理：
+
+      · ``unwired``     —— 判据已写好但全仓零接线（R4 豁免）。条目无需 ``kind``。
+      · ``partial_wire`` —— 已接 CI/人工入口但未进 pre-commit（R6 豁免）。条目**必须**
+        声明 ``kind`` ∈ {ci_only, known_incomplete}，否则判红。
+
+    两类条目都强制 ``reason`` ≥ :data:`MIN_REASON_CHARS` 且 ``owner`` 非空——
+    理由太短或无人负责等同永久豁免，是 R4c 要拦的形态。
+    """
     path = root / ALLOWLIST_REL
     if not path.is_file():
         return {}, []
@@ -344,23 +355,49 @@ def load_allowlist(root: Path) -> tuple[dict[str, dict], list[str]]:
         doc = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         return {}, [f"R4c: 豁免清单解析失败 {ALLOWLIST_REL.as_posix()}: {exc}"]
-    entries = doc.get("unwired") if isinstance(doc, dict) else None
-    if not isinstance(entries, list):
-        return {}, [f"R4c: {ALLOWLIST_REL.as_posix()} 顶层必须有 unwired 数组"]
+    if not isinstance(doc, dict):
+        return {}, [f"R4c: {ALLOWLIST_REL.as_posix()} 顶层必须是对象"]
     out: dict[str, dict] = {}
     violations: list[str] = []
-    for idx, entry in enumerate(entries):
-        if not isinstance(entry, dict):
-            violations.append(f"R4c: unwired[{idx}] 必须为对象")
+    for section in ("unwired", "partial_wire"):
+        entries = doc.get(section)
+        if entries is None:
             continue
-        script = entry.get("script")
-        if not isinstance(script, str) or not script.strip():
-            violations.append(f"R4c: unwired[{idx}].script 必须非空")
+        if not isinstance(entries, list):
+            violations.append(
+                f"R4c: {ALLOWLIST_REL.as_posix()} 的 {section} 必须是数组"
+            )
             continue
-        key = script.strip()
-        if key in out:
-            violations.append(f"R4c: {key} 在豁免清单中重复登记")
-        out[key] = entry
+        for idx, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                violations.append(f"R4c: {section}[{idx}] 必须为对象")
+                continue
+            script = entry.get("script")
+            if not isinstance(script, str) or not script.strip():
+                violations.append(f"R4c: {section}[{idx}].script 必须非空")
+                continue
+            key = script.strip()
+            if key in out:
+                violations.append(
+                    f"R4c: {key} 在豁免清单中重复登记（unwired 与 partial_wire 不可重复）"
+                )
+                continue
+            if section == "partial_wire":
+                kind = entry.get("kind")
+                if kind not in ("ci_only", "known_incomplete"):
+                    violations.append(
+                        f"R4c: {key} (partial_wire) 的 kind 必须是 ci_only / known_incomplete"
+                    )
+            reason = entry.get("reason")
+            owner = entry.get("owner")
+            if not isinstance(reason, str) or len(reason.strip()) < MIN_REASON_CHARS:
+                violations.append(
+                    f"R4c: {key} 的豁免理由不足 {MIN_REASON_CHARS} 字符或为空"
+                    "（须写明：为什么现在不接 pre-commit / 接了会违反什么约束、由谁解除）"
+                )
+            if not isinstance(owner, str) or not owner.strip():
+                violations.append(f"R4c: {key} 的豁免缺 owner（无人负责的豁免等于永久豁免）")
+            out[key] = entry
     return out, violations
 
 
@@ -372,7 +409,13 @@ def orphan_violations(root: Path) -> tuple[list[str], dict]:
     「61/61 已接线」被读成「每次提交都拦」——那是假绿的另一种说法。
     """
     gates = gate_scripts(root)
-    stats: dict = {"gates": len(gates), "wired": 0, "exempt": 0, "not_in_precommit": []}
+    stats: dict = {
+        "gates": len(gates),
+        "wired": 0,
+        "exempt": 0,
+        "ci_only": 0,
+        "unaccounted_unwired": [],
+    }
     if not gates:
         return [], stats
     corpus = entry_corpus(root)
@@ -392,12 +435,21 @@ def orphan_violations(root: Path) -> tuple[list[str], dict]:
         wired_by = referenced_by(gate.name, corpus)
         if wired_by:
             stats["wired"] += 1
-            if PRE_COMMIT_ENTRY.as_posix() not in wired_by:
-                stats["not_in_precommit"].append(rel)
-            if rel in allowlist:
-                violations.append(
-                    f"R4b: {rel} 已接线，但豁免清单仍有条目（豁免只可收缩，请删除该条目）"
-                )
+            if PRE_COMMIT_ENTRY.as_posix() in wired_by:
+                # 已进 pre-commit —— 最高优先级，任何豁免条目都应删除（R4b）
+                if rel in allowlist:
+                    violations.append(
+                        f"R4b: {rel} 已进 pre-commit，但豁免清单仍有条目"
+                        "（豁免只可收缩，请删除该条目）"
+                    )
+                continue
+            # 接线了但不在 pre-commit：必须「登记过刻意留 CI-only」才算数
+            entry = allowlist.get(rel)
+            if entry and entry.get("kind") in ("ci_only", "known_incomplete"):
+                stats["ci_only"] += 1
+                continue
+            # 没登记就留 CI-only ⇒ R6 强制（--strict 下判红），信息上单列
+            stats["unaccounted_unwired"].append(rel)
             continue
         entry = allowlist.get(rel)
         if entry is None:
@@ -424,6 +476,24 @@ def orphan_violations(root: Path) -> tuple[list[str], dict]:
                 f"R4b: 豁免清单条目 {script} 指向的门禁脚本不存在（条目过期，请删除）"
             )
     return violations, stats
+
+
+def r6_notes(stats: dict) -> list[str]:
+    """R6：未进 pre-commit 且未在 allowlist 登记的门禁 = 漏接。
+
+    与 R4（孤儿）互补：R4 管「零调用者」，R6 管「有 CI 调用但没进 pre-commit 也没登记」。
+    故意留 CI-only 的门禁必须显式登记（kind=ci_only/known_incomplete），否则等于
+    「写了判据却不在每次提交跑」这种静默失效。返回的提示既作信息行、也在 --strict 下
+    转成违规（main 负责 append 到 violations）。纯函数，单测可直接注入 stats。
+    """
+    out: list[str] = []
+    for rel in stats.get("unaccounted_unwired", []):
+        out.append(
+            f"R6: {rel} 已接线但不在 pre-commit，且未在 allowlist 登记刻意留 CI-only"
+            "——请接入 check.sh，或在 gate-liveness-allowlist.json 登记"
+            "（kind=ci_only/known_incomplete，须写明理由+owner+fallback）"
+        )
+    return out
 
 
 def main() -> int:
@@ -469,6 +539,15 @@ def main() -> int:
     r4_violations, gate_stats = orphan_violations(REPO)
     violations.extend(r4_violations)
 
+    # R6（2026-11-05 新增）：未进 pre-commit 且未在 allowlist 登记的门禁 = 漏接。
+    # 与 R4（孤儿）互补：R4 管「零调用者」，R6 管「有 CI 调用但没进 pre-commit 也没登记」。
+    # 故意留 CI-only 的门禁必须显式登记（kind=ci_only/known_incomplete），否则等于
+    # 「写了判据却不在每次提交跑」这种静默失效。--strict 下判红；非 strict 只给信息。
+    r6 = r6_notes(gate_stats)
+    notes.extend(r6)
+    if args.strict:
+        violations.extend(r6)
+
     if violations:
         for v in violations:
             print(f"{RED}❌ {v}{RESET}")
@@ -487,15 +566,16 @@ def main() -> int:
         f"backend-quality blocking 门禁 {len(blocking)} 条（基线 {MIN_BLOCKING}）；"
         f"空壳步骤 0 条；"
         f"门禁脚本 {gate_stats['wired']}/{gate_stats['gates']} 已接线"
-        f"（豁免 {gate_stats['exempt']}）{RESET}"
+        f"（其中 {gate_stats['ci_only']} 个刻意留 CI-only，{gate_stats['exempt']} 个孤儿豁免，"
+        f"均已在 allowlist 登记）{RESET}"
     )
-    missing = gate_stats["not_in_precommit"]
-    if missing:
-        preview = "、".join(Path(p).name for p in missing[:5])
-        suffix = f" 等 {len(missing)} 个" if len(missing) > 5 else ""
+    unaccounted = gate_stats["unaccounted_unwired"]
+    if unaccounted:
+        preview = "、".join(Path(p).name for p in unaccounted[:5])
+        suffix = f" 等 {len(unaccounted)} 个" if len(unaccounted) > 5 else ""
         print(
-            f"   ℹ️  {len(missing)} 个门禁未进 pre-commit（仅人工/CI 入口，"
-            f"日常提交不会执行）：{preview}{suffix}"
+            f"   ℹ️  {len(unaccounted)} 个门禁既不在 pre-commit、也没在 allowlist 登记"
+            f"（视为「漏接」而非「刻意留 CI」）：{preview}{suffix}"
         )
     for n in notes:
         print(f"   ℹ️  {n}")

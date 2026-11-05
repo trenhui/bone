@@ -3,7 +3,7 @@ package com.bone.claim.domain.model.settlement;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.bone.claim.domain.model.ClaimThresholds;
+import com.bone.claim.domain.model.config.ClaimThresholds;
 import com.bone.core.exception.DomainException;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;

@@ -6,8 +6,8 @@ import static org.mockito.Mockito.when;
 
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.application.port.out.RuleEnginePort;
-import com.bone.claim.domain.model.ClaimThresholds;
 import com.bone.claim.domain.model.claim.ClaimCase;
+import com.bone.claim.domain.model.config.ClaimThresholds;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.EvidenceRepository;
 import java.math.BigDecimal;

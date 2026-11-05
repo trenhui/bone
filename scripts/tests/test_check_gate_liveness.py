@@ -14,8 +14,10 @@ import importlib.util
 import json
 import os
 import shutil
+import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 SCRIPT = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -64,7 +66,10 @@ class OrphanGateTest(unittest.TestCase):
         violations, stats = mod.orphan_violations(self.root)
 
         self.assertEqual(violations, [])
-        self.assertEqual(stats, {"gates": 1, "wired": 1, "exempt": 0, "not_in_precommit": []})
+        self.assertEqual(
+            stats,
+            {"gates": 1, "wired": 1, "exempt": 0, "ci_only": 0, "unaccounted_unwired": []},
+        )
 
     def test_workflow_counts_as_entry(self):
         self._gate()
@@ -239,23 +244,204 @@ class OrphanGateTest(unittest.TestCase):
 
         self.assertFalse(any(v.startswith("R4e:") for v in violations), violations)
 
-    def test_gate_wired_only_outside_precommit_is_listed_not_failed(self):
-        # 接在人工入口也是真接线（不判红），但必须单列：日常提交不会执行它。
+    def test_gate_wired_only_outside_precommit_without_registration_is_unaccounted(self):
+        # 接在人工入口也是真接线（orphan_violations 不判红），但因未在 allowlist 登记
+        # 刻意留 CI-only，落入 unaccounted_unwired —— 由 R6 在 --strict 下判红。
         self._gate()
         _write(self.root, "scripts/ci-local.sh", "python3 scripts/check-orphan.py\n")
 
         violations, stats = mod.orphan_violations(self.root)
 
         self.assertEqual(violations, [])
-        self.assertEqual(stats["not_in_precommit"], ["scripts/check-orphan.py"])
+        self.assertEqual(stats["unaccounted_unwired"], ["scripts/check-orphan.py"])
+        self.assertEqual(stats["ci_only"], 0)
 
-    def test_gate_wired_in_precommit_is_not_listed(self):
+    def test_gate_wired_in_precommit_is_not_unaccounted(self):
         self._gate()
         self._check_sh("python3 scripts/check-orphan.py\n")
 
         _, stats = mod.orphan_violations(self.root)
 
-        self.assertEqual(stats["not_in_precommit"], [])
+        self.assertEqual(stats["unaccounted_unwired"], [])
+
+    # ---- R6：partial_wire 豁免 -------------------------------------------
+    def test_partial_wire_ci_only_counts_and_passes(self):
+        # 已接人工/CI 入口但未进 pre-commit，且 allowlist 登记 kind=ci_only ⇒ 算 CI-only，不判红。
+        self._gate()
+        _write(self.root, "scripts/ci-local.sh", "python3 scripts/check-orphan.py\n")
+        self._allowlist(
+            None,
+            raw={
+                "unwired": [],
+                "partial_wire": [
+                    {
+                        "script": "scripts/check-orphan.py",
+                        "kind": "ci_only",
+                        "reason": "L3 口径门禁须架构师在 gate-state.json 登记真实载体后方可阻断，且全量扫描约 22s，进 pre-commit 会拖慢每次提交。",
+                        "owner": "架构师评审",
+                    }
+                ],
+            },
+        )
+
+        violations, stats = mod.orphan_violations(self.root)
+
+        self.assertEqual(violations, [])
+        self.assertEqual(stats["ci_only"], 1)
+        self.assertEqual(stats["unaccounted_unwired"], [])
+
+    def test_partial_wire_known_incomplete_counts_and_passes(self):
+        self._gate()
+        _write(self.root, "scripts/ci-local.sh", "python3 scripts/check-orphan.py\n")
+        self._allowlist(
+            None,
+            raw={
+                "unwired": [],
+                "partial_wire": [
+                    {
+                        "script": "scripts/check-orphan.py",
+                        "kind": "known_incomplete",
+                        "reason": "存量缺口登记在 baseline.json（只可收缩），尚有 12 张表待补声明；直接进 pre-commit 会因存量缺口误拦正常提交。",
+                        "owner": "架构师评审",
+                    }
+                ],
+            },
+        )
+
+        violations, stats = mod.orphan_violations(self.root)
+
+        self.assertEqual(violations, [])
+        self.assertEqual(stats["ci_only"], 1)
+
+    def test_partial_wire_entry_for_precommit_gate_is_r4b(self):
+        # 豁免只可收缩：门禁已进 pre-commit 还挂着 partial_wire 条目 ⇒ R4b 判红。
+        self._gate()
+        self._check_sh("python3 scripts/check-orphan.py\n")
+        self._allowlist(
+            None,
+            raw={
+                "unwired": [],
+                "partial_wire": [
+                    {
+                        "script": "scripts/check-orphan.py",
+                        "kind": "ci_only",
+                        "reason": "L3 口径门禁须架构师评审后方可阻断，且扫描较慢。",
+                        "owner": "架构师评审",
+                    }
+                ],
+            },
+        )
+
+        violations, _ = mod.orphan_violations(self.root)
+
+        self.assertTrue(any(v.startswith("R4b:") for v in violations), violations)
+
+    def test_partial_wire_missing_kind_is_reported(self):
+        self._gate()
+        _write(self.root, "scripts/ci-local.sh", "python3 scripts/check-orphan.py\n")
+        self._allowlist(
+            None,
+            raw={
+                "unwired": [],
+                "partial_wire": [
+                    {
+                        "script": "scripts/check-orphan.py",
+                        "reason": "缺少 kind 字段。",
+                        "owner": "架构师评审",
+                    }
+                ],
+            },
+        )
+
+        violations, _ = mod.orphan_violations(self.root)
+
+        self.assertTrue(
+            any("kind 必须是" in v for v in violations), violations
+        )
+
+    def test_r6_notes_fires_for_unaccounted(self):
+        stats = {
+            "gates": 1,
+            "wired": 0,
+            "exempt": 0,
+            "ci_only": 0,
+            "unaccounted_unwired": ["scripts/check-orphan.py"],
+        }
+
+        notes = mod.r6_notes(stats)
+
+        self.assertEqual(len(notes), 1)
+        self.assertIn("R6:", notes[0])
+
+    def test_r6_notes_empty_when_all_registered(self):
+        stats = {
+            "gates": 1,
+            "wired": 1,
+            "exempt": 0,
+            "ci_only": 1,
+            "unaccounted_unwired": [],
+        }
+
+        self.assertEqual(mod.r6_notes(stats), [])
+
+    def test_r6_strict_integration_exit_codes(self):
+        # 在进程内跑 main()（monkeypatch REPO/CI_YML 指向夹具），证明 --strict 下
+        # 漏接门禁 exit 1、登记后 exit 0。ci.yml 给 15 条 (blocking) 步骤以满足 R2。
+        self._gate()
+        self._check_sh("echo precommit-only\n")  # pre-commit 入口不调该门禁
+        _write(self.root, "scripts/ci-local.sh", "python3 scripts/check-orphan.py\n")
+
+        def ci_with_blocking(n):
+            head = (
+                "on:\n"
+                "  push:\n"
+                "    branches: [dev]\n"
+                "  pull_request:\n"
+                "    branches: [dev]\n"
+                "jobs:\n"
+                "  backend-quality:\n"
+                "    runs-on: ubuntu-latest\n"
+                "    steps:\n"
+            )
+            steps = "".join(
+                f"      - name: gate {i} (blocking)\n        run: echo ok\n" for i in range(n)
+            )
+            return head + steps
+
+        self._ci(ci_with_blocking(15))
+
+        saved_repo, saved_ci = mod.REPO, mod.CI_YML
+        saved_argv = sys.argv
+        mod.REPO = Path(self.root)
+        mod.CI_YML = Path(self.root) / ".github" / "workflows" / "ci.yml"
+        try:
+            # 未登记 ⇒ 漏接 ⇒ --strict 判红 ⇒ exit 1
+            self._allowlist(None, raw={"unwired": [], "partial_wire": []})
+            sys.argv = ["check-gate-liveness.py", "--strict"]
+            code_unregistered = mod.main()
+
+            # 登记 kind=ci_only ⇒ exit 0
+            self._allowlist(
+                None,
+                raw={
+                    "unwired": [],
+                    "partial_wire": [
+                        {
+                            "script": "scripts/check-orphan.py",
+                            "kind": "ci_only",
+                            "reason": "L3 口径门禁须架构师评审后方可阻断，且全量扫描约 22s。",
+                            "owner": "架构师评审",
+                        }
+                    ],
+                },
+            )
+            code_registered = mod.main()
+        finally:
+            mod.REPO, mod.CI_YML = saved_repo, saved_ci
+            sys.argv = saved_argv
+
+        self.assertEqual(code_unregistered, 1)
+        self.assertEqual(code_registered, 0)
 
 
 class TriggerCoverageTest(unittest.TestCase):
