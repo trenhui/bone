@@ -128,7 +128,7 @@ LLM/NLI 裁判（faithfulness 接入点）——本探针不替代，仅把最�
 | `OTel gen_ai Mapping Self-Test` | `otel_genai_conventions.py --self-test` | 映射表 9 探针仍有效 |
 | `Frozen Set Verdict Self-Test` | `frozen_set.py --self-test` | 冻结集 11 条判据每条都有精确归因的反例 |
 
-本地 pre-commit 同步：`scripts/check.sh` 的 `[42/49]` 段先跑真源门禁，再用
+本地 pre-commit 同步：`scripts/check.sh` 的 `[42/50]` 段先跑真源门禁，再用
 `unittest discover` 跑 `scripts/tests/test_check_eval_baseline.py`（29 例）。
 两者分工：**门禁扫仓库真实真源，单测用临时夹具验证判据逻辑**——只跑其中一个
 都会留下盲区（前者可被改成恒绿，后者不扫真源）。

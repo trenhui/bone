@@ -333,6 +333,12 @@ jobs:
       - name: Repository SQL Entity Column Coverage (blocking)
         run: /usr/bin/env python3 scripts/check-sql-entity-column-coverage.py
 
+      # 2026-11-05：97c6593a7 提交了 `claim.requiresSecondReview(ClaimThresholds.DUAL_REVIEW_AMOUNT)`
+      # 及其 import，而 `ClaimThresholds.java` 至今 untracked ⇒ 干净检出直接编不过。
+      # 编译器与单测都抓不到（作者机器的工作树里有那个文件），只能在索引层查引用完整性。
+      - name: Java Import Integrity (blocking)
+        run: /usr/bin/env python3 scripts/check-java-import-integrity.py --check
+
   backend-security:
     name: Backend Security Scan
     runs-on: ubuntu-latest
