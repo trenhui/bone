@@ -10,13 +10,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.claim.domain.model.config.AiRolloutPolicy;
+import com.bone.claim.domain.model.config.AiRolloutScopeDimension;
 import com.bone.claim.domain.model.config.AiRolloutStage;
 import com.bone.claim.domain.model.config.FeatureToggle;
+import com.bone.claim.domain.model.config.FeatureToggleChange;
+import com.bone.claim.domain.model.config.event.FeatureToggleChangedEvent;
 import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.claim.domain.model.inspection.InspectionRecord;
 import com.bone.claim.domain.repository.DecisionExecutionRepository;
 import com.bone.claim.domain.repository.FeatureToggleRepository;
 import com.bone.claim.domain.repository.InspectionRepository;
+import com.bone.core.domain.event.DomainEventPublisher;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -47,6 +51,7 @@ class AiRolloutApplicationServiceTest {
   @Mock private FeatureToggleRepository featureToggleRepository;
   @Mock private InspectionRepository inspectionRepository;
   @Mock private DecisionExecutionRepository decisionExecutionRepository;
+  @Mock private DomainEventPublisher domainEventPublisher;
 
   private AiRolloutApplicationService service;
 
@@ -58,7 +63,8 @@ class AiRolloutApplicationServiceTest {
             inspectionRepository,
             decisionExecutionRepository,
             () -> TENANT,
-            new ObjectMapper());
+            new ObjectMapper(),
+            domainEventPublisher);
   }
 
   @Test
@@ -66,7 +72,7 @@ class AiRolloutApplicationServiceTest {
   void unconfiguredIsShadow() {
     when(featureToggleRepository.findByFeatureKey(anyLong(), any())).thenReturn(null);
 
-    AiRolloutApplicationService.Admission admission = service.admit(TENANT, CLAIM);
+    AiRolloutApplicationService.Admission admission = service.admit(TENANT, CLAIM, "CH1");
 
     assertThat(admission.allowed()).isFalse();
     assertThat(admission.reason()).isEqualTo("AI_STAGE_SHADOW");
@@ -81,7 +87,7 @@ class AiRolloutApplicationServiceTest {
     when(featureToggleRepository.findByFeatureKey(anyLong(), any()))
         .thenReturn(toggle("DISABLED", 100, "{\"stage\":\"AUTOMATED\"}"));
 
-    AiRolloutApplicationService.Admission admission = service.admit(TENANT, CLAIM);
+    AiRolloutApplicationService.Admission admission = service.admit(TENANT, CLAIM, "CH1");
 
     assertThat(admission.allowed()).isFalse();
     assertThat(admission.reason()).isEqualTo("AI_STAGE_SHADOW");
@@ -98,8 +104,8 @@ class AiRolloutApplicationServiceTest {
 
     int misses = 0;
     for (long claimId = 1; claimId <= 20; claimId++) {
-      AiRolloutApplicationService.Admission admission = service.admit(TENANT, claimId);
-      assertThat(admission.allowed()).isEqualTo(expected.admitsCase(TENANT, claimId));
+      AiRolloutApplicationService.Admission admission = service.admit(TENANT, claimId, "CH1");
+      assertThat(admission.allowed()).isEqualTo(expected.admitsCase(TENANT, claimId, "CH1"));
       if (!admission.allowed()) {
         misses++;
         assertThat(admission.reason()).isEqualTo("AI_CANARY_MISS");
@@ -116,7 +122,7 @@ class AiRolloutApplicationServiceTest {
         .thenReturn(toggle("ENABLED", 100, "{\"stage\":\"AUTOMATED\"}"));
     when(decisionExecutionRepository.findConvergedInWindow(any(), any())).thenReturn(List.of());
 
-    AiRolloutApplicationService.Admission admission = service.admit(TENANT, CLAIM);
+    AiRolloutApplicationService.Admission admission = service.admit(TENANT, CLAIM, "CH1");
 
     assertThat(admission.allowed()).isTrue();
     assertThat(admission.reason()).isEqualTo("ADMITTED");
@@ -134,7 +140,7 @@ class AiRolloutApplicationServiceTest {
     when(decisionExecutionRepository.findConvergedInWindow(any(), any())).thenReturn(executions);
     when(inspectionRepository.findConcludedInWindow(any(), any())).thenReturn(concluded);
 
-    AiRolloutApplicationService.Admission admission = service.admit(TENANT, CLAIM);
+    AiRolloutApplicationService.Admission admission = service.admit(TENANT, CLAIM, "CH1");
 
     assertThat(admission.allowed()).isFalse();
     assertThat(admission.reason()).isEqualTo("AI_BUDGET_EXCEEDED_AUTO_ROLLBACK");
@@ -149,6 +155,22 @@ class AiRolloutApplicationServiceTest {
     assertThat(saved.getConfigJson()).contains("lastRollback");
     assertThat(saved.getConfigJson()).contains("rollbackCount");
     assertThat(saved.getRemark()).contains("自动降档");
+
+    // 配置变更必须进事件总线（E-5.4：save 已配 publishFrom；移除 @NoDomainEvent 豁免）。
+    // 多字段断言：任一字段被变异改写都会让对应断言失败，证明该事件携带的是「真实降档事实」而非占位。
+    ArgumentCaptor<FeatureToggleChange> changeCaptor =
+        ArgumentCaptor.forClass(FeatureToggleChange.class);
+    verify(domainEventPublisher).publishFrom(changeCaptor.capture());
+    FeatureToggleChangedEvent event =
+        (FeatureToggleChangedEvent) changeCaptor.getValue().getDomainEvents().get(0);
+    assertThat(event.tenantId()).isEqualTo(TENANT);
+    assertThat(event.changeType()).isEqualTo(FeatureToggleChangedEvent.TYPE_AUTO_ROLLBACK);
+    assertThat(event.beforeStage()).isEqualTo("AUTOMATED");
+    assertThat(event.afterStage()).isEqualTo("CANARY");
+    assertThat(event.reason()).isEqualTo("ERROR_BUDGET_EXCEEDED");
+    assertThat(event.operator()).isEqualTo("SYSTEM");
+    assertThat(event.beforeConfigJson()).contains("\"stage\":\"AUTOMATED\"");
+    assertThat(event.afterConfigJson()).contains("\"stage\":\"CANARY\"");
   }
 
   @Test
@@ -161,11 +183,13 @@ class AiRolloutApplicationServiceTest {
     when(decisionExecutionRepository.findConvergedInWindow(any(), any())).thenReturn(executions);
     when(inspectionRepository.findConcludedInWindow(any(), any())).thenReturn(concluded);
 
-    AiRolloutApplicationService.Admission admission = service.admit(TENANT, CLAIM);
+    AiRolloutApplicationService.Admission admission = service.admit(TENANT, CLAIM, "CH1");
 
     assertThat(admission.allowed()).isTrue();
     assertThat(admission.verdict()).isEqualTo("INSUFFICIENT_SAMPLES");
     verify(featureToggleRepository, never()).save(any());
+    // 未发生真实降档 ⇒ 不得发射配置变更事件（事件只对应「档位真被收紧」这一事实）。
+    verify(domainEventPublisher, never()).publishFrom(any());
   }
 
   @Test
@@ -178,7 +202,7 @@ class AiRolloutApplicationServiceTest {
     when(decisionExecutionRepository.findConvergedInWindow(any(), any())).thenReturn(executions);
     when(inspectionRepository.findConcludedInWindow(any(), any())).thenReturn(concluded);
 
-    AiRolloutApplicationService.Admission admission = service.admit(TENANT, CLAIM);
+    AiRolloutApplicationService.Admission admission = service.admit(TENANT, CLAIM, "CH1");
 
     assertThat(admission.allowed()).isTrue();
     assertThat(admission.verdict()).isEqualTo("NO_EVIDENCE");
@@ -236,6 +260,75 @@ class AiRolloutApplicationServiceTest {
   }
 
   // ===================== 夹具 =====================
+
+  @Test
+  @DisplayName("第二作用域维度 CHANNEL：仅白名单渠道放量，其余（含缺失）fail-closed 转人工")
+  void channelScopeFailClosed() {
+    when(featureToggleRepository.findByFeatureKey(anyLong(), any()))
+        .thenReturn(
+            toggle(
+                "ENABLED",
+                100,
+                "{\"stage\":\"CANARY\",\"scopeDimension\":\"CHANNEL\",\"scopeValues\":[\"CH1\"]}"));
+    when(decisionExecutionRepository.findConvergedInWindow(any(), any())).thenReturn(List.of());
+
+    // 白名单内渠道：命中分桶（pct=100）→ 放行。
+    AiRolloutApplicationService.Admission inWhitelist = service.admit(TENANT, CLAIM, "CH1");
+    assertThat(inWhitelist.allowed()).isTrue();
+
+    // 白名单外渠道：渠道维度 fail-closed → 转人工，原因仍是 AI_CANARY_MISS（不暴露内部维度细节）。
+    AiRolloutApplicationService.Admission offWhitelist = service.admit(TENANT, CLAIM, "CH2");
+    assertThat(offWhitelist.allowed()).isFalse();
+    assertThat(offWhitelist.reason()).isEqualTo("AI_CANARY_MISS");
+
+    // 渠道缺失（null）：与「不在白名单」同一风险类，fail-closed。
+    AiRolloutApplicationService.Admission missing = service.admit(TENANT, CLAIM, null);
+    assertThat(missing.allowed()).isFalse();
+    assertThat(missing.reason()).isEqualTo("AI_CANARY_MISS");
+  }
+
+  @Test
+  @DisplayName("定时生效窗：未到起点即使 AUTOMATED 也 fail-closed，且原因区别于「开关关闭」")
+  void scheduledWindowInactive() {
+    when(featureToggleRepository.findByFeatureKey(anyLong(), any()))
+        .thenReturn(
+            toggle(
+                "ENABLED",
+                100,
+                "{\"stage\":\"AUTOMATED\",\"effectiveFrom\":\"2099-01-01T00:00:00Z\"}"));
+
+    AiRolloutApplicationService.Admission admission = service.admit(TENANT, CLAIM, "CH1");
+
+    assertThat(admission.allowed()).isFalse();
+    assertThat(admission.reason()).isEqualTo("AI_SCHEDULED_INACTIVE");
+    // 与开关关闭（AI_STAGE_SHADOW）区分，运维面板能看到「不是关了、是还没到生效时间」。
+    assertThat(admission.reason()).isNotEqualTo("AI_STAGE_SHADOW");
+  }
+
+  @Test
+  @DisplayName("快照暴露第二维度与生效窗：scopeDimension/scopeValues/effectiveFrom/active")
+  void snapshotReportsScopeAndWindow() {
+    when(featureToggleRepository.findByFeatureKey(anyLong(), any()))
+        .thenReturn(
+            toggle(
+                "ENABLED",
+                50,
+                "{\"stage\":\"CANARY\",\"scopeDimension\":\"CHANNEL\",\"scopeValues\":[\"CH1\",\"CH2\"],"
+                    + "\"effectiveFrom\":\"2099-01-01T00:00:00Z\"}"));
+    when(decisionExecutionRepository.findConvergedInWindow(any(), any())).thenReturn(List.of());
+    when(inspectionRepository.findConcludedInWindow(any(), any())).thenReturn(List.of());
+
+    AiRolloutApplicationService.RolloutSnapshot snapshot =
+        service.snapshot(
+            TENANT, Instant.parse("2026-11-01T00:00:00Z"), Instant.parse("2026-11-05T00:00:00Z"));
+
+    assertThat(snapshot.scopeDimension()).isEqualTo(AiRolloutScopeDimension.CHANNEL);
+    assertThat(snapshot.scopeValues()).containsExactlyInAnyOrder("CH1", "CH2");
+    assertThat(snapshot.effectiveFrom()).isEqualTo(Instant.parse("2099-01-01T00:00:00Z"));
+    assertThat(snapshot.effectiveTo()).isNull();
+    // 生效起点在未来 ⇒ 当前未激活（区别于「关闭」）。
+    assertThat(snapshot.active()).isFalse();
+  }
 
   private static FeatureToggle toggle(String state, int pct, String configJson) {
     return FeatureToggle.create(

@@ -249,7 +249,7 @@ public class ScenarioHarness {
             decExecSvc,
             new FeatureTenantToggleService(null, null),
             new AiRolloutApplicationService(
-                null, inspectionRepo, decRepo, tenantPort, new ObjectMapper()));
+                null, inspectionRepo, decRepo, tenantPort, new ObjectMapper(), events));
     decisionRun =
         new DecisionRunApplicationService(
             decisionExecutor, autoApproveSvc, decExecSvc, claimSvc, indemnitySvc);

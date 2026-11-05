@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -73,7 +74,7 @@ class AutoApprovalApplicationServiceTest {
         .thenReturn(true);
     // 放量闸默认放行：本类测的是「全局开关 + 单笔上限」这两道闸，放量闸的拒绝场景由本条与
     // AiRolloutApplicationServiceTest 各自覆盖（见下方两个 blockedByRollout* 用例）。
-    when(aiRolloutApplicationService.admit(anyLong(), anyLong()))
+    when(aiRolloutApplicationService.admit(anyLong(), anyLong(), any()))
         .thenReturn(
             new AiRolloutApplicationService.Admission(
                 true, "ADMITTED", AiRolloutStage.AUTOMATED, null, "WITHIN_BUDGET", false));
@@ -297,7 +298,7 @@ class AutoApprovalApplicationServiceTest {
     ClaimCase pending = claim(false);
     when(decisionExecutionApplicationService.findLatest(CLAIM)).thenReturn(auto);
     when(claimCaseApplicationService.getClaimAggregate(CLAIM)).thenReturn(pending);
-    when(aiRolloutApplicationService.admit(anyLong(), anyLong()))
+    when(aiRolloutApplicationService.admit(anyLong(), anyLong(), any()))
         .thenReturn(
             new AiRolloutApplicationService.Admission(
                 false, "AI_STAGE_SHADOW", AiRolloutStage.SHADOW, null, "NO_EVIDENCE", false));
@@ -317,7 +318,7 @@ class AutoApprovalApplicationServiceTest {
     ClaimCase pending = claim(false);
     when(decisionExecutionApplicationService.findLatest(CLAIM)).thenReturn(auto);
     when(claimCaseApplicationService.getClaimAggregate(CLAIM)).thenReturn(pending);
-    when(aiRolloutApplicationService.admit(anyLong(), anyLong()))
+    when(aiRolloutApplicationService.admit(anyLong(), anyLong(), any()))
         .thenReturn(
             new AiRolloutApplicationService.Admission(
                 false,
@@ -348,7 +349,7 @@ class AutoApprovalApplicationServiceTest {
 
     service.applyAutoDecision(CLAIM);
 
-    verify(aiRolloutApplicationService).admit(TENANT, CLAIM);
+    verify(aiRolloutApplicationService).admit(eq(TENANT), eq(CLAIM), any());
   }
 
   private static DecisionExecution execution(String result, String triageReason) {

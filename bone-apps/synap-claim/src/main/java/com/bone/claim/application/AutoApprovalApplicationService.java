@@ -112,7 +112,7 @@ public class AutoApprovalApplicationService {
     // 未显式配置阶段的行一律是 SHADOW（不放量）——「全局开关打开」不等于「可以自动出金」，
     // 否则运维改一行 SQL 就能从零放量跳到全量，中间没有任何观察期。
     AiRolloutApplicationService.Admission admission =
-        aiRolloutApplicationService.admit(claim.getTenantId(), claimId);
+        aiRolloutApplicationService.admit(claim.getTenantId(), claimId, claim.getSourceChannel());
     if (!admission.allowed()) {
       log.info(
           "[自动放款] 放量闸拒绝: claimId={}, reason={}, stage={}, errorRate={}, verdict={}",

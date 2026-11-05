@@ -45,7 +45,9 @@ public class AiRolloutController {
               + "错误率在无样本时返回 null（不是 0%）——「没抽过」与「抽了没错」是两件事；"
               + "样本量未达门槛时不会判定超限，但会阻止晋升（promotionBlockers）。"
               + "truncated=true 表示窗口内样本超过 500 行上界，此时错误率只代表被取回的子集。"
-              + "时间窗最多 31 天，越界直接 400，不静默裁剪。")
+              + "时间窗最多 31 天，越界直接 400，不静默裁剪。"
+              + "快照另含第二作用域维度（scopeDimension/scopeValues：CHANNEL 模式下仅白名单渠道放量，其余 fail-closed）"
+              + "与定时生效窗（effectiveFrom/effectiveTo/active：未到起点或已过期视作未放量但区别于「关闭」）。")
   @PreAuthorize("hasAuthority('claim:claims:read')")
   @GetMapping("/ai-rollout")
   public ApiResponse<RolloutSnapshot> rollout(

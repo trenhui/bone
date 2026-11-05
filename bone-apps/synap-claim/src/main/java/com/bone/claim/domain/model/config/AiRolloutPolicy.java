@@ -1,8 +1,14 @@
 package com.bone.claim.domain.model.config;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * AI 放量策略（{@code feature_toggle.config_json} 的解析结果，G3-1）。
@@ -13,15 +19,26 @@ import java.util.Map;
  *
  * <p><b>案件级分桶，而不是租户级</b>：既有的 {@code rollout_pct} 按 {@code floorMod(tenantId, 100)} 判定，
  * 在<b>单租户部署</b>（本方案 MVP 的形态：一个保司一个租户）下会退化成「要么 0%、要么 100%」——灰度比例形同虚设。 因此 {@link #admitsCase(long,
- * long)} 用 {@code (tenantId, claimId)} 混合后取模，让同一租户内的案件可被稳定地分成
+ * long, String)} 用 {@code (tenantId, claimId)} 混合后取模，让同一租户内的案件可被稳定地分成
  * 两个桶：命中的自动出金、未命中的照旧走人工。同一案件多次调用结果必须一致（幂等），否则重试会「时放时不放」。
+ *
+ * <p><b>第二作用域维度（G3-3）</b>：{@code scopeDimension + scopeValues} 让放量可以只在白名单内的渠道放量， 其余渠道 fail-closed
+ * 转人工（见 {@link #admitsCase(long, long, String)}）。默认 {@link
+ * AiRolloutScopeDimension#NONE}（不切分，与旧行为逐位一致）。
+ *
+ * <p><b>定时生效窗（G3-3）</b>：{@code effectiveFrom / effectiveTo} 让一次放量可以「排期生效 / 自动过期」，
+ * 未到生效时间或已过期一律视作未放量（fail-closed），但与「开关关闭」区分以保留可观测性（见 {@link #isEffective(Instant)}）。
  */
 public record AiRolloutPolicy(
     AiRolloutStage stage,
     int rolloutPct,
     BigDecimal errorRateTarget,
     int minInspectedSamples,
-    int observationDays) {
+    int observationDays,
+    AiRolloutScopeDimension scopeDimension,
+    Set<String> scopeValues,
+    Instant effectiveFrom,
+    Instant effectiveTo) {
 
   /** 代码基线：SHADOW + 2% 错误率目标 + 30 个已抽检样本 + 7 天观察窗。 */
   private static final AiRolloutStage DEFAULT_STAGE = AiRolloutStage.SHADOW;
@@ -37,6 +54,10 @@ public record AiRolloutPolicy(
   public static final String KEY_ERROR_RATE_TARGET = "errorRateTarget";
   public static final String KEY_MIN_INSPECTED_SAMPLES = "minInspectedSamples";
   public static final String KEY_OBSERVATION_DAYS = "observationDays";
+  public static final String KEY_SCOPE_DIMENSION = "scopeDimension";
+  public static final String KEY_SCOPE_VALUES = "scopeValues";
+  public static final String KEY_EFFECTIVE_FROM = "effectiveFrom";
+  public static final String KEY_EFFECTIVE_TO = "effectiveTo";
 
   /** 零配置基线：不放量、不误判（与「未配置即 SHADOW」完全一致）。 */
   public static AiRolloutPolicy defaults() {
@@ -45,7 +66,33 @@ public record AiRolloutPolicy(
         0,
         DEFAULT_ERROR_RATE_TARGET,
         DEFAULT_MIN_INSPECTED_SAMPLES,
-        DEFAULT_OBSERVATION_DAYS);
+        DEFAULT_OBSERVATION_DAYS,
+        AiRolloutScopeDimension.NONE,
+        Set.of(),
+        null,
+        null);
+  }
+
+  /**
+   * 只含「阶段 + 比例 + 预算阈值」的便捷构造（不切第二作用域维度、不配时间窗），等价于 {@link #defaults()}
+   * 的形态换一组成值。供既有测试与无需渠道/排期能力的调用方使用。
+   */
+  public AiRolloutPolicy(
+      AiRolloutStage stage,
+      int rolloutPct,
+      BigDecimal errorRateTarget,
+      int minInspectedSamples,
+      int observationDays) {
+    this(
+        stage,
+        rolloutPct,
+        errorRateTarget,
+        minInspectedSamples,
+        observationDays,
+        AiRolloutScopeDimension.NONE,
+        Set.of(),
+        null,
+        null);
   }
 
   /**
@@ -84,7 +131,11 @@ public record AiRolloutPolicy(
               pct,
               DEFAULT_ERROR_RATE_TARGET,
               DEFAULT_MIN_INSPECTED_SAMPLES,
-              DEFAULT_OBSERVATION_DAYS),
+              DEFAULT_OBSERVATION_DAYS,
+              AiRolloutScopeDimension.NONE,
+              Set.of(),
+              null,
+              null),
           Map.of());
     }
     Map<String, String> rejected = new LinkedHashMap<>();
@@ -98,26 +149,58 @@ public record AiRolloutPolicy(
     BigDecimal target = parseTarget(raw.get(KEY_ERROR_RATE_TARGET), rejected);
     int minSamples = parseMinSamples(raw.get(KEY_MIN_INSPECTED_SAMPLES), rejected);
     int days = parseDays(raw.get(KEY_OBSERVATION_DAYS), rejected);
+    AiRolloutScopeDimension dimension = parseDimension(raw.get(KEY_SCOPE_DIMENSION), rejected);
+    Set<String> values = parseScopeValues(raw.get(KEY_SCOPE_VALUES), rejected);
+    Instant from = parseInstant(raw.get(KEY_EFFECTIVE_FROM), KEY_EFFECTIVE_FROM, rejected);
+    Instant to = parseInstant(raw.get(KEY_EFFECTIVE_TO), KEY_EFFECTIVE_TO, rejected);
 
-    return new Resolution(new AiRolloutPolicy(stage, pct, target, minSamples, days), rejected);
+    return new Resolution(
+        new AiRolloutPolicy(stage, pct, target, minSamples, days, dimension, values, from, to),
+        rejected);
   }
 
   /**
-   * 本策略是否允许该案件自动出金（阶段闸 + 分桶闸）。
-   *
-   * <p><b>只判「允许」，不判「应当」</b>：金额上限、反欺诈硬闸、知识能力缺失兜底仍在各自的位置，本方法不重复也不越权。
+   * 本策略是否允许该案件自动出金（阶段闸 + 分桶闸；不携带渠道上下文时的便捷重载，等价于 {@link #admitsCase(long, long, String)} 传 {@code
+   * null} 渠道）。
    *
    * @param tenantId 租户
-   * @param claimId 案件
+   * @param claimId 案件（分桶键；同一案件重复调用结论必须一致）
    * @return true 表示本档允许该案件进入自动出金
    */
   public boolean admitsCase(long tenantId, long claimId) {
+    return admitsCase(tenantId, claimId, null);
+  }
+
+  /**
+   * 本策略是否允许该案件自动出金（阶段闸 + 第二作用域维度闸 + 分桶闸）。
+   *
+   * <p><b>渠道维度的 fail-closed</b>：当 {@link #scopeDimension} 为 {@link AiRolloutScopeDimension#CHANNEL}
+   * 时，<b>只有 {@code sourceChannel ∈ scopeValues} 的案件才进入分桶</b>，其余渠道一律不放量、转人工。渠道信息缺失（{@code
+   * null}/空白）同样不放量——因为「不知道走哪个渠道」 与「渠道不在白名单」是同一类「无法确认命中」风险，按资金安全方向（不放量）处理。这与 {@code feature_toggle}
+   * 的全局 fail-closed 同口径：不确定时永远偏保守。
+   *
+   * <p><b>为什么 AUTOMATED 仍略过渠道闸</b>：AUTOMATED 是「整租户全量自动出金」档，渠道分层灰度是 CANARY 时代的细化手段； 进入 AUTOMATED
+   * 即意味着已通过完整观察期、有意全量放开，再按渠道切回会与其语义矛盾。若仍需渠道级控制，应留在 CANARY。
+   *
+   * @param tenantId 租户
+   * @param claimId 案件（分桶键；同一案件重复调用结论必须一致）
+   * @param channel 案件来源渠道（{@code ClaimCase#getSourceChannel()}；{@code null} 视为缺失）
+   * @return true 表示本档允许该案件进入自动出金
+   */
+  public boolean admitsCase(long tenantId, long claimId, String channel) {
     if (!stage.permitsAutoSettlement()) {
       return false;
     }
     if (stage == AiRolloutStage.AUTOMATED) {
       return true;
     }
+    // 渠道闸必须排在 rolloutPct>=100 的全放捷径之前：白名单外的渠道连分桶资格都没有，
+    // 比例拉满也不能替它放行（否则「只在 CH1 灰度」在 100% 时静默变成全渠道放量）。
+    if (scopeDimension == AiRolloutScopeDimension.CHANNEL && !scopeContains(channel)) {
+      return false;
+    }
+    // 渠道闸必须排在 rolloutPct>=100 的全放捷径之前：白名单外的渠道连分桶资格都没有，
+    // 比例拉满也不能替它放行（否则「只在 CH1 灰度」在 100% 时静默变成全渠道放量）。
     if (rolloutPct >= 100) {
       return true;
     }
@@ -125,6 +208,38 @@ public record AiRolloutPolicy(
       return false;
     }
     return Math.floorMod(bucketKey(tenantId, claimId), 100) < rolloutPct;
+  }
+
+  /** 渠道是否在白名单内（缺失/空白一律 false，fail-closed）。 */
+  private boolean scopeContains(String channel) {
+    if (channel == null || channel.isBlank()) {
+      return false;
+    }
+    return scopeValues.contains(channel.trim());
+  }
+
+  /**
+   * 定时生效窗是否对 {@code now} 生效。
+   *
+   * <p><b>未配置时间窗（两列均 null）= 立即生效且永不过期</b>，返回 true。任一端点缺失只判另一端：例如只配 {@code
+   * effectiveFrom}，则「未到起点」期间视为未生效（排期发布），过期端缺失则永不过期。这是与「开关关闭」区分开的可观测状态 （见 {@link
+   * com.bone.claim.application.AiRolloutApplicationService#admit} 的 {@code AI_SCHEDULED_INACTIVE}
+   * 原因码）。
+   *
+   * @param now 判定时刻（{@code null} 时退化为「视为生效」，避免时钟缺失把放量彻底卡死）
+   * @return true 表示当前处于生效窗内
+   */
+  public boolean isEffective(Instant now) {
+    if (now == null) {
+      return true;
+    }
+    if (effectiveFrom != null && now.isBefore(effectiveFrom)) {
+      return false;
+    }
+    if (effectiveTo != null && now.isAfter(effectiveTo)) {
+      return false;
+    }
+    return true;
   }
 
   /**
@@ -208,6 +323,61 @@ public record AiRolloutPolicy(
     try {
       return Integer.valueOf(String.valueOf(value).trim());
     } catch (NumberFormatException e) {
+      return null;
+    }
+  }
+
+  private static AiRolloutScopeDimension parseDimension(
+      Object value, Map<String, String> rejected) {
+    if (value == null) {
+      return AiRolloutScopeDimension.NONE;
+    }
+    String raw = String.valueOf(value).trim();
+    AiRolloutScopeDimension parsed = AiRolloutScopeDimension.parse(raw);
+    if (parsed == AiRolloutScopeDimension.NONE && !raw.isEmpty() && !"none".equalsIgnoreCase(raw)) {
+      rejected.put(KEY_SCOPE_DIMENSION, "取值 " + value + " 不是受控维度（NONE/CHANNEL）；已回落 NONE（整租户统一放量）");
+    }
+    return parsed;
+  }
+
+  private static Set<String> parseScopeValues(Object value, Map<String, String> rejected) {
+    if (value == null) {
+      return Set.of();
+    }
+    List<String> result = new ArrayList<>();
+    if (value instanceof Collection<?> items) {
+      for (Object item : items) {
+        if (item != null) {
+          String s = item.toString().trim();
+          if (!s.isEmpty()) {
+            result.add(s);
+          }
+        }
+      }
+    } else {
+      String raw = String.valueOf(value).trim();
+      if (!raw.isEmpty()) {
+        for (String part : raw.split(",")) {
+          String s = part.trim();
+          if (!s.isEmpty()) {
+            result.add(s);
+          }
+        }
+      }
+    }
+    // 配了维度却没给任何白名单值：等于「一个渠道都不放量」——比「回落成全放行」安全。
+    // 不在此登记（避免与维度回落噪声叠加），由 admitsCase 的 scopeContains 自然 fail-closed。
+    return Set.copyOf(result);
+  }
+
+  private static Instant parseInstant(Object value, String key, Map<String, String> rejected) {
+    if (value == null) {
+      return null;
+    }
+    try {
+      return Instant.parse(String.valueOf(value).trim());
+    } catch (DateTimeParseException e) {
+      rejected.put(key, "取值 " + value + " 不是 ISO-8601 时间（如 2026-11-10T00:00:00Z）；已忽略（视为无时间窗）");
       return null;
     }
   }

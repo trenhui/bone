@@ -5,14 +5,17 @@ import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.config.AiRolloutBudget;
 import com.bone.claim.domain.model.config.AiRolloutPolicy;
+import com.bone.claim.domain.model.config.AiRolloutScopeDimension;
 import com.bone.claim.domain.model.config.AiRolloutStage;
 import com.bone.claim.domain.model.config.FeatureToggle;
+import com.bone.claim.domain.model.config.FeatureToggleChange;
+import com.bone.claim.domain.model.config.event.FeatureToggleChangedEvent;
 import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.claim.domain.model.inspection.InspectionRecord;
 import com.bone.claim.domain.repository.DecisionExecutionRepository;
 import com.bone.claim.domain.repository.FeatureToggleRepository;
 import com.bone.claim.domain.repository.InspectionRepository;
-import com.bone.core.annotation.NoDomainEvent;
+import com.bone.core.domain.event.DomainEventPublisher;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -43,14 +46,12 @@ import org.springframework.transaction.annotation.Transactional;
  * <p><b>为什么在调用时判断而不是起定时任务</b>：熔断的价值在于「下一次出金之前拦住」。定时任务有轮询间隔， 而这里每次自动放款前用一次有界查询（≤500
  * 行）换「即时生效」，代价可接受——更何况该分支只在「已通过全局开关 + 租户开关 + 结论为 AUTO_APPROVE + 未结案 + 未超上限」之后才到达，频率极低。
  *
- * <p><b>E-5.4 豁免</b>（{@link NoDomainEvent}）：本类唯一的写入是「把 {@code t_feature_toggle} 的参数行改小一档」，
- * 不推进任何业务聚合（案件 / 额度 / 结算）的状态，故不发布领域事件。这次降档的留痕走三条独立通道：① 同行的 {@code remark} 写明「从哪档降到哪档、依据什么指标」；②
- * {@code config_json.lastRollback} 保留击穿时的计数与比率快照； ③ ERROR
- * 级日志（告警管道可直采）。若日后配置变更需要进领域事件总线（例如统一推送到风控告警），应新增 {@code FeatureToggleChangedEvent}
- * 并移除本豁免，而不是在此处补一个语义含糊的事件。
+ * <p><b>配置变更进事件总线</b>（架构评审后续，已移除 {@code @NoDomainEvent} 豁免）：自动降档是「与自动出金直接相关的配置变更」， 必须可被风控告警 /
+ * 审计统一订阅。故 {@code autoRollback} 在落库后通过 {@code DomainEventPublisher.publishFrom(...)} 发射 {@link
+ * FeatureToggleChangedEvent}（满足 E-5.4：save 必配 publishFrom）。持久化审计仍由 {@code remark} + {@code
+ * config_json.lastRollback} + ERROR 日志承担（零新增 DDL）；实时广播由事件总线负责。任何新增的开关写入口都应复用该事件，而非各自补语义含糊的日志。
  */
 @Slf4j
-@NoDomainEvent
 @Service
 @RequiredArgsConstructor
 public class AiRolloutApplicationService {
@@ -63,6 +64,7 @@ public class AiRolloutApplicationService {
 
   private static final String REASON_STAGE_NOT_AUTOMATED_PREFIX = "AI_STAGE_";
   private static final String REASON_CANARY_MISS = "AI_CANARY_MISS";
+  private static final String REASON_SCHEDULED_INACTIVE = "AI_SCHEDULED_INACTIVE";
   private static final String REASON_BUDGET_EXCEEDED = "AI_BUDGET_EXCEEDED_AUTO_ROLLBACK";
 
   private final FeatureToggleRepository featureToggleRepository;
@@ -70,6 +72,7 @@ public class AiRolloutApplicationService {
   private final DecisionExecutionRepository decisionExecutionRepository;
   private final TenantPort tenantPort;
   private final ObjectMapper objectMapper;
+  private final DomainEventPublisher domainEventPublisher;
 
   /**
    * 放量准入结论。
@@ -100,6 +103,11 @@ public class AiRolloutApplicationService {
       BigDecimal errorRateTarget,
       int minInspectedSamples,
       int observationDays,
+      AiRolloutScopeDimension scopeDimension,
+      Set<String> scopeValues,
+      Instant effectiveFrom,
+      Instant effectiveTo,
+      boolean active,
       int inspectedCount,
       int diffCount,
       BigDecimal errorRate,
@@ -113,16 +121,18 @@ public class AiRolloutApplicationService {
       Map<String, String> rejectedConfig) {}
 
   /**
-   * 判定该案件是否允许自动出金（阶段 → 分桶 → 错误预算，三层递增严格）。
+   * 判定该案件是否允许自动出金（阶段 → 生效窗 → 分桶/渠道 → 错误预算，四层递增严格）。
    *
    * <p>任一层拒绝都<b>不触碰任何聚合</b>，只返回受控原因码。
    *
    * @param tenantId 租户
    * @param claimId 案件（分桶键；同一案件重复调用结论必须一致）
+   * @param channel 案件来源渠道（{@code ClaimCase#getSourceChannel()}；{@code null} 视为缺失，渠道维度下会
+   *     fail-closed）
    * @return 准入结论，永不返回 null
    */
   @Transactional
-  public Admission admit(long tenantId, long claimId) {
+  public Admission admit(long tenantId, long claimId, String channel) {
     Loaded loaded = load(tenantId);
     AiRolloutPolicy policy = loaded.policy;
 
@@ -136,8 +146,21 @@ public class AiRolloutApplicationService {
           AiRolloutBudget.Verdict.NO_EVIDENCE.name(),
           false);
     }
-    // 第 2 层：分桶闸。CANARY 下未命中的案件照旧走人工（幂等：同一 claimId 永远落在同一个桶）。
-    if (!policy.admitsCase(tenantId, claimId)) {
+    // 第 1.5 层：定时生效窗。未到起点或已过期一律视作未放量（fail-closed），但与「开关关闭」区分，
+    // 保留可观测原因码 AI_SCHEDULED_INACTIVE，让运维能在面板看到「不是关了、是还没到/已过期」。
+    // 第 1.5 层：定时生效窗。未到起点或已过期一律视作未放量（fail-closed），但与「开关关闭」区分，
+    // 保留可观测原因码 AI_SCHEDULED_INACTIVE，让运维能在面板看到「不是关了、是还没到/已过期」。
+    if (!policy.isEffective(Instant.now())) {
+      return new Admission(
+          false,
+          REASON_SCHEDULED_INACTIVE,
+          policy.stage(),
+          null,
+          AiRolloutBudget.Verdict.NO_EVIDENCE.name(),
+          false);
+    }
+    // 第 2 层：第二作用域维度闸 + 分桶闸。CHANNEL 模式下不在白名单的渠道照旧走人工（幂等：同一 claimId 永不落桶漂移）。
+    if (!policy.admitsCase(tenantId, claimId, channel)) {
       return new Admission(false, REASON_CANARY_MISS, policy.stage(), null, null, false);
     }
     // 第 3 层：错误预算。只有「证据充分且已超目标」才熔断；证据不足不熔断（冷启动必须能走通），
@@ -206,6 +229,11 @@ public class AiRolloutApplicationService {
         policy.errorRateTarget(),
         policy.minInspectedSamples(),
         policy.observationDays(),
+        policy.scopeDimension(),
+        policy.scopeValues(),
+        policy.effectiveFrom(),
+        policy.effectiveTo(),
+        policy.isEffective(Instant.now()),
         budget.inspectedCount(),
         budget.diffCount(),
         budget.errorRate(),
@@ -315,7 +343,8 @@ public class AiRolloutApplicationService {
       return false;
     }
     Instant now = Instant.now();
-    Map<String, Object> config = readConfig(toggle.getConfigJson());
+    String beforeConfigJson = toggle.getConfigJson();
+    Map<String, Object> config = readConfig(beforeConfigJson);
     Map<String, Object> rollback = new LinkedHashMap<>();
     rollback.put("at", now.toString());
     rollback.put("from", from.name());
@@ -347,6 +376,22 @@ public class AiRolloutApplicationService {
           now);
       featureToggleRepository.save(toggle);
       log.error("[AI 放量] 自动降档已落库（这是需要人来看的告警级事件）：{} → {}，依据={}", from, to, rollback);
+      // 配置变更进事件总线（E-5.4：save 已配 publishFrom）：与自动出金直接相关的档位收紧，必须可被风控告警 / 审计订阅。
+      long toggleId = toggle.getId() == null ? 0L : toggle.getId();
+      FeatureToggleChangedEvent event =
+          new FeatureToggleChangedEvent(
+              toggle.getTenantId(),
+              toggleId,
+              FeatureToggle.FEATURE_AUTO_APPROVE,
+              FeatureToggleChangedEvent.TYPE_AUTO_ROLLBACK,
+              from.name(),
+              to.name(),
+              beforeConfigJson,
+              toggle.getConfigJson(),
+              "ERROR_BUDGET_EXCEEDED",
+              "SYSTEM",
+              now);
+      domainEventPublisher.publishFrom(FeatureToggleChange.of(toggleId, event));
       return true;
     } catch (Exception e) {
       // 降档失败不能把业务调用拖挂：本次已经拒绝出金（安全方向已成立），下一案还会再试一次。

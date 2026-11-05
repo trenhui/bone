@@ -3,8 +3,10 @@ package com.bone.claim.domain.model.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -136,5 +138,117 @@ class AiRolloutPolicyTest {
     // 即灰度样本不会挤在某个时间段里（挤在一起等于变相按时间放量）。
     assertThat(firstHalf).isBetween(175, 325);
     assertThat(secondHalf).isBetween(175, 325);
+  }
+
+  @Test
+  @DisplayName("第二作用域维度解析：CHANNEL + 白名单生效；未知维度严格回落 NONE 并登记")
+  void scopeDimensionParsing() {
+    Map<String, Object> raw = new HashMap<>();
+    raw.put(AiRolloutPolicy.KEY_SCOPE_DIMENSION, "CHANNEL");
+    raw.put(AiRolloutPolicy.KEY_SCOPE_VALUES, java.util.List.of("CH1", "CH2"));
+    AiRolloutPolicy.Resolution ok = AiRolloutPolicy.apply(raw);
+
+    assertThat(ok.policy().scopeDimension()).isEqualTo(AiRolloutScopeDimension.CHANNEL);
+    assertThat(ok.policy().scopeValues()).containsExactlyInAnyOrder("CH1", "CH2");
+    assertThat(ok.rejected()).doesNotContainKey(AiRolloutPolicy.KEY_SCOPE_DIMENSION);
+
+    Map<String, Object> bad = new HashMap<>();
+    bad.put(AiRolloutPolicy.KEY_SCOPE_DIMENSION, "GARBAGE");
+    AiRolloutPolicy.Resolution rejected = AiRolloutPolicy.apply(bad);
+    assertThat(rejected.policy().scopeDimension()).isEqualTo(AiRolloutScopeDimension.NONE);
+    assertThat(rejected.rejected()).containsKey(AiRolloutPolicy.KEY_SCOPE_DIMENSION);
+  }
+
+  @Test
+  @DisplayName("渠道维度 fail-closed：白名单内放行、白名单外/缺失转人工；NONE 维度不切分；AUTOMATED 忽略维度")
+  void channelScopeFailClosed() {
+    AiRolloutPolicy channelPolicy =
+        new AiRolloutPolicy(
+            AiRolloutStage.CANARY,
+            100,
+            new BigDecimal("0.02"),
+            30,
+            7,
+            AiRolloutScopeDimension.CHANNEL,
+            Set.of("CH1"),
+            null,
+            null);
+    assertThat(channelPolicy.admitsCase(1L, 1L, "CH1")).isTrue();
+    assertThat(channelPolicy.admitsCase(1L, 1L, "CH2")).isFalse();
+    assertThat(channelPolicy.admitsCase(1L, 1L, null)).isFalse();
+
+    AiRolloutPolicy nonePolicy =
+        new AiRolloutPolicy(
+            AiRolloutStage.CANARY,
+            100,
+            new BigDecimal("0.02"),
+            30,
+            7,
+            AiRolloutScopeDimension.NONE,
+            Set.of(),
+            null,
+            null);
+    assertThat(nonePolicy.admitsCase(1L, 1L, "whatever")).isTrue();
+
+    AiRolloutPolicy automatedPolicy =
+        new AiRolloutPolicy(
+            AiRolloutStage.AUTOMATED,
+            0,
+            new BigDecimal("0.02"),
+            30,
+            7,
+            AiRolloutScopeDimension.CHANNEL,
+            Set.of("CH1"),
+            null,
+            null);
+    // AUTOMATED 是全量档，渠道维度不应把它切回。
+    assertThat(automatedPolicy.admitsCase(1L, 1L, "CH9")).isTrue();
+  }
+
+  @Test
+  @DisplayName("定时生效窗：未配置即立即生效；只配起点/终点时单侧判定，过期/未到均 fail-closed")
+  void effectiveWindow() {
+    AiRolloutPolicy noWindow =
+        new AiRolloutPolicy(
+            AiRolloutStage.AUTOMATED,
+            0,
+            new BigDecimal("0.02"),
+            30,
+            7,
+            AiRolloutScopeDimension.NONE,
+            Set.of(),
+            null,
+            null);
+    assertThat(noWindow.isEffective(Instant.now())).isTrue();
+
+    Instant future = Instant.parse("2099-01-01T00:00:00Z");
+    AiRolloutPolicy fromOnly =
+        new AiRolloutPolicy(
+            AiRolloutStage.AUTOMATED,
+            0,
+            new BigDecimal("0.02"),
+            30,
+            7,
+            AiRolloutScopeDimension.NONE,
+            Set.of(),
+            future,
+            null);
+    assertThat(fromOnly.isEffective(Instant.parse("2020-01-01T00:00:00Z"))).isFalse();
+    assertThat(fromOnly.isEffective(Instant.parse("2100-01-01T00:00:00Z"))).isTrue();
+
+    Instant past = Instant.parse("2020-01-01T00:00:00Z");
+    AiRolloutPolicy toOnly =
+        new AiRolloutPolicy(
+            AiRolloutStage.AUTOMATED,
+            0,
+            new BigDecimal("0.02"),
+            30,
+            7,
+            AiRolloutScopeDimension.NONE,
+            Set.of(),
+            null,
+            past);
+    assertThat(toOnly.isEffective(Instant.parse("2021-01-01T00:00:00Z"))).isFalse();
+    assertThat(toOnly.isEffective(Instant.parse("2019-01-01T00:00:00Z"))).isTrue();
   }
 }
