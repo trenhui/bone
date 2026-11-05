@@ -1,5 +1,5 @@
 {
-  "version": "claim-ruleset-v2",
+  "version": "claim-ruleset-v3",
   "rules": [
     {
       "code": "R-FRAUD-06",
@@ -31,6 +31,222 @@
       "priority": 40,
       "expression": "claimAmount >= 10000",
       "conclusion": "AMOUNT_OVER_LIMIT",
+      "risk": false
+    },
+    {
+      "code": "R-FRAUD-02",
+      "category": "FRAUD",
+      "priority": 11,
+      "expression": "hasEvidence == false",
+      "conclusion": "NO_EVIDENCE",
+      "risk": true
+    },
+    {
+      "code": "R-FRAUD-03",
+      "category": "FRAUD",
+      "priority": 12,
+      "expression": "policyNoBlank == true",
+      "conclusion": "POLICY_MISSING",
+      "risk": true
+    },
+    {
+      "code": "R-FRAUD-04",
+      "category": "FRAUD",
+      "priority": 13,
+      "expression": "insuredIdHashBlank == true",
+      "conclusion": "INSURED_MISSING",
+      "risk": true
+    },
+    {
+      "code": "R-FRAUD-05",
+      "category": "COMPLIANCE",
+      "priority": 14,
+      "expression": "consentWithdrawn == true",
+      "conclusion": "CONSENT_WITHDRAWN",
+      "risk": true
+    },
+    {
+      "code": "R-SCOPE-01",
+      "category": "SCOPE",
+      "priority": 25,
+      "expression": "claimTypeOutpatient == false",
+      "conclusion": "OUT_OF_PHASE1_SCOPE",
+      "risk": true
+    },
+    {
+      "code": "R-FRAUD-10",
+      "category": "TIMELINESS",
+      "priority": 18,
+      "expression": "outInsureTimeMissing == true",
+      "conclusion": "COVERAGE_PERIOD_MISSING",
+      "risk": true
+    },
+    {
+      "code": "R-FRAUD-11",
+      "category": "EVIDENCE",
+      "priority": 19,
+      "expression": "anyEvidenceOcrFailed == true",
+      "conclusion": "OCR_FAILED",
+      "risk": true
+    },
+    {
+      "code": "R-AMOUNT-03",
+      "category": "AMOUNT",
+      "priority": 42,
+      "expression": "claimAmount <= 0",
+      "conclusion": "AMOUNT_INVALID",
+      "risk": true
+    },
+    {
+      "code": "R-AMOUNT-05",
+      "category": "AMOUNT",
+      "priority": 43,
+      "expression": "claimAmount > 0 && claimAmount < 1",
+      "conclusion": "AMOUNT_TINY",
+      "risk": true
+    },
+    {
+      "code": "R-FRAUD-07",
+      "category": "CLINICAL",
+      "priority": 15,
+      "expression": "diagnosisCodeBlank == true",
+      "conclusion": "DIAGNOSIS_MISSING",
+      "risk": false
+    },
+    {
+      "code": "R-FRAUD-08",
+      "category": "CLINICAL",
+      "priority": 16,
+      "expression": "hospitalCodeBlank == true",
+      "conclusion": "HOSPITAL_MISSING",
+      "risk": false
+    },
+    {
+      "code": "R-FRAUD-09",
+      "category": "COMPLIANCE",
+      "priority": 17,
+      "expression": "manualReviewRequired == true",
+      "conclusion": "MANUAL_REVIEW_REQUIRED",
+      "risk": false
+    },
+    {
+      "code": "R-FRAUD-13",
+      "category": "CATALOG",
+      "priority": 21,
+      "expression": "mappingVersionBlank == true",
+      "conclusion": "MAPPING_MISSING",
+      "risk": false
+    },
+    {
+      "code": "R-FRAUD-14",
+      "category": "CATALOG",
+      "priority": 23,
+      "expression": "hospitalCodeBlank == false && stdHospitalCodeBlank == true",
+      "conclusion": "HOSPITAL_UNMAPPED",
+      "risk": false
+    },
+    {
+      "code": "R-DIR-01",
+      "category": "CATALOG",
+      "priority": 24,
+      "expression": "diagnosisCodeBlank == false && stdDiagnosisCodeBlank == true",
+      "conclusion": "DIAGNOSIS_UNMAPPED",
+      "risk": false
+    },
+    {
+      "code": "R-COMP-01",
+      "category": "COMPLIANCE",
+      "priority": 26,
+      "expression": "createdAtMissing == true",
+      "conclusion": "CREATED_AT_MISSING",
+      "risk": false
+    },
+    {
+      "code": "R-AMOUNT-02",
+      "category": "AMOUNT",
+      "priority": 44,
+      "expression": "claimAmount >= 50000",
+      "conclusion": "AMOUNT_HIGH_REVIEW",
+      "risk": false
+    },
+    {
+      "code": "R-AMOUNT-04",
+      "category": "AMOUNT",
+      "priority": 45,
+      "expression": "secondReviewRequired == true",
+      "conclusion": "SECOND_REVIEW_FLAG",
+      "risk": false
+    },
+    {
+      "code": "R-AMOUNT-06",
+      "category": "AMOUNT",
+      "priority": 46,
+      "expression": "claimAmount >= 20000 && claimAmount < 50000",
+      "conclusion": "AMOUNT_MID_REVIEW",
+      "risk": false
+    },
+    {
+      "code": "R-MAT-02",
+      "category": "MATERIAL",
+      "priority": 22,
+      "expression": "claimTypeOutpatient == true && invoiceEvidenceCount == 0",
+      "conclusion": "OUTPATIENT_NO_INVOICE",
+      "risk": false
+    },
+    {
+      "code": "R-MAT-04",
+      "category": "MATERIAL",
+      "priority": 47,
+      "expression": "evidenceCount >= 10",
+      "conclusion": "BULK_EVIDENCE",
+      "risk": false
+    },
+    {
+      "code": "R-MAT-05",
+      "category": "MATERIAL",
+      "priority": 48,
+      "expression": "evidenceCount >= 5",
+      "conclusion": "MULTI_DOC_REVIEW",
+      "risk": false
+    },
+    {
+      "code": "R-MAT-06",
+      "category": "MATERIAL",
+      "priority": 49,
+      "expression": "evidenceCount == 1 && invoiceEvidenceCount == 0",
+      "conclusion": "SINGLE_NON_INVOICE",
+      "risk": false
+    },
+    {
+      "code": "R-MAT-07",
+      "category": "MATERIAL",
+      "priority": 53,
+      "expression": "evidenceCount >= 3 && invoiceEvidenceCount == 0",
+      "conclusion": "MULTI_NON_INVOICE",
+      "risk": false
+    },
+    {
+      "code": "R-ANOM-01",
+      "category": "ANOMALY",
+      "priority": 50,
+      "expression": "sourceChannel == \"BATCH\" && claimAmount >= 50000",
+      "conclusion": "BATCH_LARGE_ANOMALY",
+      "risk": false
+    },
+    {
+      "code": "R-ANOM-02",
+      "category": "ANOMALY",
+      "priority": 51,
+      "expression": "sourceChannel == \"BATCH\" && invoiceEvidenceCount == 0",
+      "conclusion": "BATCH_NO_INVOICE",
+      "risk": false
+    },
+    {
+      "code": "R-FRAUD-21",
+      "category": "ANOMALY",
+      "priority": 52,
+      "expression": "sourceChannel == \"\" || sourceChannel == \"UNKNOWN\"",
+      "conclusion": "CHANNEL_UNKNOWN",
       "risk": false
     }
   ]

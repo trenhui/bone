@@ -4,6 +4,12 @@ import com.bone.airules.domain.gateway.RuleEngine;
 import com.bone.airules.infrastructure.engine.QlExpressRuleEngine;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.application.port.out.RuleEnginePort;
+import com.bone.claim.domain.model.ClaimThresholds;
+import com.bone.claim.domain.model.claim.ClaimCase;
+import com.bone.claim.domain.model.evidence.Evidence;
+import com.bone.claim.domain.model.evidence.valueobject.OcrStatus;
+import com.bone.claim.domain.repository.ClaimCaseRepository;
+import com.bone.claim.domain.repository.EvidenceRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -11,6 +17,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.Resource;
@@ -62,6 +69,17 @@ public class QlExpressRuleEnginePortAdapter implements RuleEnginePort {
 
   private final RuleEngine engine = new QlExpressRuleEngine();
   private final ObjectMapper mapper = new ObjectMapper();
+
+  /**
+   * 可选仓储富化：Spring 上下文装配后可用，按 {@code claimId} 拉取案卷/证据以构造「30+ 风控-合规-临床」维度变量。 用 {@code required=false}
+   * 保证单元夹具以 {@code new} 创建（无 Spring 注入）时本适配器仍可独立运行， 此时 {@link #factsOf} 自动降级为基础 6
+   * 维，规则按「变量缺失→静默未命中」处理，既有测试零改动。
+   */
+  @Autowired(required = false)
+  private ClaimCaseRepository claimCaseRepository;
+
+  @Autowired(required = false)
+  private EvidenceRepository evidenceRepository;
 
   @Value("${bone.claim.ruleset.location:classpath:claim-ruleset.json}")
   private Resource rulesetResource;
@@ -152,8 +170,14 @@ public class QlExpressRuleEnginePortAdapter implements RuleEnginePort {
     }
   }
 
-  /** 只读上下文 → 规则求值变量；数值统一转 double，避免 BigDecimal 与 DSL 字面量比较的类型歧义。 */
-  private static Map<String, Object> factsOf(ClaimContextPort.ClaimContextView ctx) {
+  /**
+   * 只读上下文 → 规则求值变量；数值统一转 double，避免 BigDecimal 与 DSL 字面量比较的类型歧义。
+   *
+   * <p>基础 6 维来自 {@link ClaimContextPort.ClaimContextView}（单元测试直接构造时即为全部可用变量）； 当 Spring 装配了领域仓储时，额外按
+   * {@code claimId} 富化案卷/证据维度的「30+ 风控-合规-临床」变量， 使规则集能覆盖图 1/图 2 描述的智能核责维度。单元测试以 {@code new}
+   * 创建适配器（仓储为 null）时自动降级为基础 6 维，测试零改动。
+   */
+  private Map<String, Object> factsOf(ClaimContextPort.ClaimContextView ctx) {
     Map<String, Object> facts = new LinkedHashMap<>();
     facts.put("claimType", String.valueOf(ctx.claimType()));
     facts.put("claimAmount", ctx.claimAmount() == null ? 0.0 : ctx.claimAmount().doubleValue());
@@ -164,7 +188,64 @@ public class QlExpressRuleEnginePortAdapter implements RuleEnginePort {
         "minOcrConfidence",
         ctx.minOcrConfidence() == null ? 1.0 : ctx.minOcrConfidence().doubleValue());
     facts.put("verifyPassed", ctx.evidenceAllVerifyPassed());
+    enrichFromRepositories(ctx, facts);
     return facts;
+  }
+
+  /**
+   * 仓储就绪时富化案卷/证据维度变量；任何异常均降级为基础 facts（best-effort，不阻断主链路）。 仅取实体列字段（{@code items} 为
+   * {@code @Transient} 且 {@code findById} 不回填，故不在此消费）， 避免误判「无明细」而误伤正常案件。
+   */
+  private void enrichFromRepositories(
+      ClaimContextPort.ClaimContextView ctx, Map<String, Object> facts) {
+    if (claimCaseRepository == null || evidenceRepository == null) {
+      return;
+    }
+    try {
+      ClaimCase claim = claimCaseRepository.findById(ctx.claimId());
+      List<Evidence> evidences = evidenceRepository.findByClaimId(ctx.claimId());
+      boolean hasClaim = claim != null;
+      facts.put("policyNoBlank", isBlank(hasClaim ? claim.getPolicyNo() : null));
+      facts.put("insuredIdHashBlank", isBlank(hasClaim ? claim.getInsuredIdHash() : null));
+      facts.put("hospitalCodeBlank", isBlank(hasClaim ? claim.getHospitalCode() : null));
+      facts.put("stdHospitalCodeBlank", isBlank(hasClaim ? claim.getStdHospitalCode() : null));
+      facts.put("diagnosisCodeBlank", isBlank(hasClaim ? claim.getDiagnosisCode() : null));
+      facts.put("stdDiagnosisCodeBlank", isBlank(hasClaim ? claim.getStdDiagnosisCode() : null));
+      facts.put("mappingVersionBlank", isBlank(hasClaim ? claim.getMappingVersion() : null));
+      facts.put("consentWithdrawn", hasClaim && claim.consentWithdrawn());
+      facts.put("manualReviewRequired", hasClaim && claim.isManualReviewRequired());
+      facts.put(
+          "secondReviewRequired",
+          hasClaim && claim.requiresSecondReview(ClaimThresholds.DUAL_REVIEW_AMOUNT));
+      facts.put("claimTypeOutpatient", "OUTPATIENT".equals(hasClaim ? claim.getClaimType() : null));
+      facts.put("outInsureTimeMissing", hasClaim && claim.getOutInsureTime() == null);
+      facts.put("createdAtMissing", hasClaim && claim.getCreatedAt() == null);
+      facts.put(
+          "sourceChannel",
+          hasClaim && claim.getSourceChannel() != null ? claim.getSourceChannel() : "");
+      int evidenceCount = evidences == null ? 0 : evidences.size();
+      int invoiceCount = 0;
+      boolean anyOcrFailed = false;
+      if (evidences != null) {
+        for (Evidence e : evidences) {
+          if ("INVOICE".equals(e.getDocType())) {
+            invoiceCount++;
+          }
+          if (e.ocrStatusEnum() == OcrStatus.FAILED) {
+            anyOcrFailed = true;
+          }
+        }
+      }
+      facts.put("evidenceCount", evidenceCount);
+      facts.put("invoiceEvidenceCount", invoiceCount);
+      facts.put("anyEvidenceOcrFailed", anyOcrFailed);
+    } catch (Exception ignored) {
+      // 富化失败保持基础 facts，规则按「变量缺失→静默未命中」处理
+    }
+  }
+
+  private static boolean isBlank(String s) {
+    return s == null || s.isBlank();
   }
 
   private String snapshotOf(Map<String, Object> facts) {
