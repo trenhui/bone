@@ -602,6 +602,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_POLICY_AMBIGUOUS` | 422 | 保司保单号命中多张可用保单，无法唯一确定赔案归属（须改传平台保单号） |
 | `SC_CLAIM_POLICY_NUMBER_CONFLICT` | 422 | 同一请求的平台保单号与保司保单号指向不同保单 |
 | `SC_CLAIM_OUT_OF_POLICY_PERIOD` | 400 | 出险时间不在保单有效期内 |
+| `SC_CLAIM_SHARED_POOL_LIMIT_CONFLICT` | 409 | 共享保额（共保）池初始额度不一致：同一被保人同一共保代码下多个责任限额冲突，fail-closed 拦住配置矛盾 |
 | `SC_CLAIM_INSURED_MISMATCH` | 400 | 被保人不匹配（假名化 ID 比对失败） |
 | `SC_CLAIM_REJECT_REASON_REQUIRED` | 400 | 拒赔五要素缺失（REJECTED 必填） |
 | `SC_CLAIM_REVIEWER_CONFLICT` | 409 | 双人复核人必须为非第一审核人（职责分离） |

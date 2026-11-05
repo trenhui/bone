@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.bone.ai.gateway.infrastructure.ResilientLlmTransport.Config;
+import com.bone.ai.gateway.infrastructure.ResilientLlmTransport.ProviderTimeoutException;
 import com.bone.ai.gateway.infrastructure.ResilientLlmTransport.RetriableHttpException;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
@@ -23,7 +24,10 @@ class ResilientLlmTransportTest {
   @BeforeEach
   void setUp() {
     registry = CircuitBreakerRegistry.ofDefaults();
-    fastConfig = new Config(50.0f, 10, 3, Duration.ofMillis(50), 3, 3, Duration.ofMillis(1));
+    // waitDurationInOpenState 用 10s（与生产 defaultConfig 一致）：断言「OPEN 后拒绝」是同一测试内的连续两行，
+    // 若 open 等待只有 50ms，一旦机器繁忙两行之间超时，熔断器会转 HALF_OPEN 放行一次、又抛 500，导致偶发红。
+    // 放宽到 10s 使「OPEN→拒绝」在测试期间保持确定（不测 HALF_OPEN 自动恢复，那是另一条语义）。
+    fastConfig = new Config(50.0f, 10, 3, Duration.ofSeconds(10), 3, 3, Duration.ofMillis(1));
   }
 
   @Test
@@ -57,6 +61,21 @@ class ResilientLlmTransportTest {
     assertThatThrownBy(() -> transport.post("u", Map.of(), ""))
         .isInstanceOf(IllegalStateException.class);
     assertThat(calls.get()).isEqualTo(1); // 4xx 不重试
+  }
+
+  @Test
+  void does_not_retry_provider_timeout() {
+    AtomicInteger calls = new AtomicInteger();
+    LlmHttpTransport timingOut =
+        (url, headers, body) -> {
+          calls.incrementAndGet();
+          throw new ProviderTimeoutException("read timeout", new RuntimeException("timeout"));
+        };
+    ResilientLlmTransport transport = new ResilientLlmTransport(timingOut, registry, fastConfig);
+
+    assertThatThrownBy(() -> transport.post("u", Map.of(), ""))
+        .isInstanceOf(ProviderTimeoutException.class);
+    assertThat(calls.get()).isEqualTo(1); // 超时不重试：重试会把总时长放大到 N×timeout，突破 SLA
   }
 
   @Test

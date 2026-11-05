@@ -94,6 +94,10 @@ public class ResilientLlmTransport implements LlmHttpTransport {
     if (t instanceof CallNotPermittedException) {
       return false; // 被熔断拒绝不重试，交给上层降级
     }
+    if (t instanceof ProviderTimeoutException) {
+      // 超时不重试：单次 attempt 已吃满配置超时，重试会把总时长放大到 N×timeout、突破调用方 SLA。
+      return false;
+    }
     if (t instanceof RetriableHttpException) {
       return true; // 5xx / 网络瞬时，重试合理
     }
@@ -103,6 +107,19 @@ public class ResilientLlmTransport implements LlmHttpTransport {
   /** 可由重试吸收的传输失败（5xx / 网络瞬时）。被 {@code ResilientLlmTransport} 之外的直连路径判定、包装后抛出。 */
   public static class RetriableHttpException extends RuntimeException {
     public RetriableHttpException(String message, Throwable cause) {
+      super(message, cause);
+    }
+  }
+
+  /**
+   * provider 侧超时（连接 / 读取超时），<b>刻意不重试</b>。
+   *
+   * <p>原因：单次 attempt 已吃满配置超时（默认 30s），重试 N 次会把单次 AI 调用放大到 ~N×30s，直接突破「30s 建议结论 / 60s 自动通过全链路」的
+   * SLA；且超时通常意味着 provider 不可用（扩容 / 切档才有用），重试同一档位基本无效。 由上层 {@code AiGatewayPortAdapter} 经 cause 链归为
+   * {@code PROVIDER_TIMEOUT} 后 fail-closed 降级纯规则路径。
+   */
+  public static class ProviderTimeoutException extends RuntimeException {
+    public ProviderTimeoutException(String message, Throwable cause) {
       super(message, cause);
     }
   }

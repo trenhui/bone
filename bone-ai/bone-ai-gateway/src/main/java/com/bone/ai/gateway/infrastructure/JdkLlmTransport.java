@@ -1,6 +1,7 @@
 package com.bone.ai.gateway.infrastructure;
 
 import com.bone.ai.gateway.config.LlmGatewayProperties;
+import com.bone.ai.gateway.infrastructure.ResilientLlmTransport.ProviderTimeoutException;
 import com.bone.ai.gateway.infrastructure.ResilientLlmTransport.RetriableHttpException;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,6 +11,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Iterator;
@@ -41,6 +43,11 @@ public class JdkLlmTransport implements LlmHttpTransport {
     HttpResponse<String> resp;
     try {
       resp = http.send(buildRequest(url, headers, jsonBody), HttpResponse.BodyHandlers.ofString());
+    } catch (HttpTimeoutException e) {
+      // 超时不可重试：单次 attempt 已吃满配置超时（默认 30s），再重试只会把总时长放大到 N×timeout、
+      // 突破调用方 SLA（30s 建议结论 / 60s 全链路），且超时通常意味着 provider 不可用而非瞬时抖动。
+      // 抛出后由 AiGatewayPortAdapter.classify 经 cause 链归为 PROVIDER_TIMEOUT，上层 fail-closed 降级。
+      throw new ProviderTimeoutException("LLM 调用超时: " + e.getMessage(), e);
     } catch (IOException e) {
       throw new RetriableHttpException("LLM 调用异常: " + e.getMessage(), e);
     } catch (InterruptedException e) {
@@ -63,6 +70,8 @@ public class JdkLlmTransport implements LlmHttpTransport {
       resp =
           http.send(
               buildRequest(url, headers, jsonBody), HttpResponse.BodyHandlers.ofInputStream());
+    } catch (HttpTimeoutException e) {
+      throw new ProviderTimeoutException("LLM 流式调用超时: " + e.getMessage(), e);
     } catch (IOException e) {
       throw new RetriableHttpException("LLM 流式调用异常: " + e.getMessage(), e);
     } catch (InterruptedException e) {
