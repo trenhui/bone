@@ -86,6 +86,9 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
       out.put("rejectSuggested", rejectSuggested);
       // 可解释性：显式标注 AI 能力不可用（降级纯规则），供核赔员/审计区分"AI 未评估"与"AI 评估为无风险"
       out.put("aiAvailable", false);
+      // 降级原因码：只有"不可用"一个事实无法指导处置（配 provider / 改提示词 / 扩容 是三种不同动作），
+      // 故把受控原因随轨迹落库。actionResult 仍保持 "LLM_UNAVAILABLE"（既有读侧契约不变）。
+      out.put("aiUnavailableReason", ex.reason().name());
       // v1.2：降级路径也输出同一套认知层键（空值），保证决策轨迹 schema 稳定，读侧不必判空分支
       putCognitiveEmpty(out);
       putCapability(out, knowledgeAvailable);

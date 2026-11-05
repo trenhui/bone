@@ -2,6 +2,7 @@ package com.bone.claim.infrastructure.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmClient;
@@ -18,6 +19,7 @@ import com.bone.ai.gateway.infrastructure.security.RegexPiiRedactor;
 import com.bone.claim.application.port.out.AiGatewayPort;
 import com.bone.claim.application.port.out.AiGatewayUnavailableException;
 import com.bone.claim.application.port.out.ClaimContextPort;
+import com.bone.claim.domain.model.decision.AiDegradationReason;
 import com.bone.core.domain.event.DomainEventPublisher;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
@@ -110,7 +112,53 @@ class AiGatewayPortAdapterTest {
     LlmGatewayApplicationService gateway = gatewayWith(failing, policiesWith(null));
 
     AiGatewayPort port = new AiGatewayPortAdapter(gateway);
-    assertThatThrownBy(() -> port.assess(SAMPLE)).isInstanceOf(AiGatewayUnavailableException.class);
+    Throwable thrown = catchThrowable(() -> port.assess(SAMPLE));
+    assertThat(thrown).isInstanceOf(AiGatewayUnavailableException.class);
+    // 未识别的故障兜底 GATEWAY_ERROR：有码总比只有「不可用」强，但不能冒充「超时」误导扩容
+    assertThat(((AiGatewayUnavailableException) thrown).reason())
+        .isEqualTo(AiDegradationReason.GATEWAY_ERROR);
+  }
+
+  @Test
+  @DisplayName("降级原因分类：超时 → PROVIDER_TIMEOUT（处置是扩容/重试，不是查配置）")
+  void timeoutFailureIsClassifiedAsProviderTimeout() {
+    LlmClient timeout =
+        req -> {
+          throw new IllegalStateException(
+              "gateway call failed", new java.util.concurrent.TimeoutException("read timed out"));
+        };
+    AiGatewayPort port = new AiGatewayPortAdapter(gatewayWith(timeout, policiesWith(null)));
+
+    Throwable thrown = catchThrowable(() -> port.assess(SAMPLE));
+
+    assertThat(thrown).isInstanceOf(AiGatewayUnavailableException.class);
+    assertThat(((AiGatewayUnavailableException) thrown).reason())
+        .isEqualTo(AiDegradationReason.PROVIDER_TIMEOUT);
+  }
+
+  @Test
+  @DisplayName("结构化输出不合规 → OUTPUT_CONTRACT_VIOLATION（改提示词/校验器，重试无用）")
+  void malformedOutputIsContractViolation() {
+    AiGatewayPort port =
+        new AiGatewayPortAdapter(
+            gatewayWith(new RecordingLlmClient("not-a-json"), policiesWith(null)));
+
+    Throwable thrown = catchThrowable(() -> port.assess(SAMPLE));
+
+    assertThat(thrown).isInstanceOf(AiGatewayUnavailableException.class);
+    assertThat(((AiGatewayUnavailableException) thrown).reason())
+        .isEqualTo(AiDegradationReason.OUTPUT_CONTRACT_VIOLATION);
+  }
+
+  @Test
+  @DisplayName("异常 cause 成环不把分类逻辑拖死（A→B→A，适配器层层包装时会出现）")
+  void causeCycleDoesNotHang() {
+    // JDK 禁止 initCause(this)，故造互指环：a→b→a
+    RuntimeException a = new RuntimeException("a");
+    RuntimeException b = new RuntimeException("b", a);
+    a.initCause(b);
+
+    assertThat(AiGatewayPortAdapter.classify(a)).isEqualTo(AiDegradationReason.GATEWAY_ERROR);
   }
 
   @Test
@@ -124,6 +172,9 @@ class AiGatewayPortAdapterTest {
         .isInstanceOf(AiGatewayUnavailableException.class)
         .hasMessageContaining("Mock")
         .hasMessageContaining("bone.ai.gateway.base-url");
+    Throwable thrown = catchThrowable(() -> port.assess(SAMPLE));
+    assertThat(((AiGatewayUnavailableException) thrown).reason())
+        .isEqualTo(AiDegradationReason.MOCK_NOT_ALLOWED);
   }
 
   @Test

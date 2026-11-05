@@ -669,6 +669,14 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 
 标签来自案件**最终状态**（`FINISHED` 已结案 / `CLOSED_REJECTED` 拒赔生效），它混合了人工判断、时效、客户撤诉等因素，**不等于核赔员的独立判定**。因此导出**只用于一致性统计与样本筛选**，不得当作金标准；金标准需要 §11.3 的独立盲标（屏蔽 AI 建议后重判）。
 
+判定分两道闸门，**顺序不可颠倒**：先问「AI 真的参与了吗」，再问「AI 的结论与终态是否一致」。AI 没参与时，「AI 建议是什么」根本不成立。
+
+| AI 参与度 | 条件 | 判定 | 依据 |
+|---|---|---|---|
+| `DEGRADED` | 执行 `status=FALLBACK` | `UNKNOWN_AI_NOT_INVOLVED` | 结论来自**规则路径**，把它归因给 AI 就是造假 |
+| `UNDETERMINED` | `SUCCESS` 但 `model_version` 为空 | `UNKNOWN_AI_PARTICIPATION_UNDETERMINED` | 拿不到「模型跑过」的证据，保守不计入 |
+| `PARTICIPATED` | `SUCCESS` 且 `model_version` 非空 | 进入下表 | — |
+
 | AI 结论 | 案件终态 | 判定 | 依据 |
 |---|---|---|---|
 | `AUTO_APPROVE` | `FINISHED` | `AGREE` | 建议通过且已支付 |
@@ -679,21 +687,27 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 | 任意 | 非终态（如 `PRE_EXAMINED`） | `UNKNOWN_NOT_CONVERGED` | 标签未定 |
 
 > **为什么 `MANUAL_REQUIRED` 不算一致**：把「AI 建议转人工、人工也处理了」记成「AI 判断对了」，会让准确率被「AI 没给结论」的样本持续抬高，且从报表上看不出异常——这是指标造假的经典形态，不是口径选择问题。
+>
+> **为什么降级样本不能算「AI 一致率」**：`FALLBACK` 行的 `decision_result` 是规则引擎结论。它与终态越吻合，只会说明**规则**写得好；把它算成 AI 准确率，等于用规则引擎的成绩给模型打分。更隐蔽的是 `ai_confidence`：降级时执行器把 `ruleConfidence` 回填进该列（既有语义，见 §11.5），于是「有置信度」也不能证明 AI 跑过——所以导出对非参与样本**不输出** `aiConfidence`。
 
 **聚合口径：返回体自带「这批数据能不能算一致率」**
 
-导出体含 `agreementSummary`，按判定态计数并给出可计算率：
+导出体含 `agreementSummary`，按判定态计数并给出两个独立指标：
 
 | 字段 | 含义 |
 |---|---|
-| `agree` / `disagree` / `unknownNoBinaryVerdict` / `unknownNotConverged` | 四种判定态的条数；四者之和恒等于 `returned`（不足即抛错，不输出自己都对不上账的聚合） |
+| `agree` / `disagree` / `unknownNoBinaryVerdict` / `unknownNotConverged` / `unknownAiNotInvolved` / `unknownAiParticipationUndetermined` | 六种判定态的条数；六者之和恒等于 `returned`（不足即抛错，不输出自己都对不上账的聚合） |
 | `evaluableCount` | `agree + disagree`，真正能进入一致率计算的样本数 |
 | `agreementRate` | `agree / evaluableCount`（4 位小数）；**`evaluableCount=0` 时为 `null`** |
-| `rateMeaning` | 固定说明串：弱标签一致率，不得直接当模型准确率对外报 |
+| `aiParticipatedCount` | AI 真实参与的样本数（判定态之外的正交维度） |
+| `aiCoverage` | `aiParticipatedCount / returned`（4 位小数）；**`returned=0` 时为 `null`** |
+| `rateMeaning` / `coverageMeaning` | 固定说明串：先看覆盖率再看一致率，两者都不得直接对外报成「模型准确率」与「自动化率」 |
 
 > **为什么 `evaluableCount=0` 要显式给出、且 `agreementRate` 用 `null` 而非 `0`**：这是两件不同的事实——`0%` 是「模型全错」，`null` 是「这批判据根本不成立」。多数报表把 null/NaN 静默变成 0，于是「当期一条可比结论都没有」被写成「一致率 0%，严重退化」，触发一轮并不存在的排障；**反向更危险**：调度器把空结果当「达标」，从此没人发现评测已经空转。
 >
-> 不是假设。当期 dev 库实测（2026-11-04，31 天窗口）：`claim_decision_execution` 84 条收敛记录 **100% 为 `FALLBACK`，`decision_result` 全为 `MANUAL_REQUIRED`** ⇒ `evaluableCount=0`、`agreementRate=null`。不看这个字段，导出物看起来「有 84 条样本」，实际一条也不能用于准确率；若把它们当正例计入，一致率会显示成 100%。
+> **为什么必须单列 `aiCoverage`**：覆盖率为 0 时，一致率再高也只是规则引擎的自评。这是 AI 原生应用的第一性指标——「AI 到底管了多少案子」必须先于「AI 判得准不准」被回答；两者混在一个百分比里，任何一方退化都看不出来。
+>
+> 不是假设。当期 dev 库实测（2026-11-04，31 天窗口）：`claim_decision_execution` 84 条收敛记录 **100% 为 `FALLBACK`，`decision_result` 全为 `MANUAL_REQUIRED`** ⇒ `evaluableCount=0`、`agreementRate=null`、**`aiCoverage=0`**。不看这些字段，导出物看起来「有 84 条样本」，实际一条也不能用于准确率；若把它们当正例计入，一致率会显示成 100%。
 
 **脱敏与泄漏防护**
 
@@ -713,6 +727,42 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 > 只看负例会高估错误率、只看回归集会漏掉真实分布漂移——三者互补，不应合并成一套。
 
 **仍未做（不得据此宣称 L3）**：冻结集存储与哈希校验器落 CI、独立盲标队列、切片指标看板与校准曲线。样本出口只解决「取得到」，不解决「标得准」。
+
+### 11.5 AI 降级归因与「AI 原生指标」的边界（v1.6 落地）
+
+**起因是一次实测**：dev 库 84 条决策执行 **全部 `FALLBACK`**，轨迹显示 `AiAssess` 节点 `action_result=LLM_UNAVAILABLE`、`aiAvailable=false`。也就是说，这个环境里「AI 原生」一次都没真正跑过——而系统对此只有**一个字符串**的说明。
+
+**问题不在「会降级」**（降级是 fail-safe，是对的），而在降级之后的三件事：
+
+| 现状 | 后果 |
+|---|---|
+| `LLM_UNAVAILABLE` 一个码背所有故障 | 运维分不清该「配 provider」「改提示词」还是「扩容」，只能翻网关日志 |
+| 降级把 `ruleConfidence` 回填进 `ai_confidence` | 报表显示「AI 置信度 0.9」，实际是规则引擎的置信度 |
+| 评测侧把 FALLBACK 行当 AI 样本 | 一致率测的是规则引擎，却挂着 AI 的名字（§11.4 已用参与度闸门挡住） |
+
+**故障分类：只写能被证据支撑的码**
+
+| 码 | 触发条件 | 处置动作 |
+|---|---|---|
+| `MOCK_NOT_ALLOWED` | 网关回落 Mock 替身（未配 `bone.ai.gateway.base-url`） | 配真实 provider；**这不是故障，是环境未就绪** |
+| `OUTPUT_CONTRACT_VIOLATION` | 结构化结论解析失败 / 字段越界 | 改提示词或校验器；重试无用 |
+| `PROVIDER_TIMEOUT` | 异常链中出现超时类型（`SocketTimeoutException` 等） | 扩容或调超时；重试可能有效 |
+| `GATEWAY_ERROR` | 其余网关异常 | 兜底，需看网关侧日志 |
+
+> **刻意不造 `AUTH_FAILED` / `RATE_LIMITED`**：网关尚未暴露类型化异常，只能从 message 猜。猜错的代价是把「密钥过期」显示成「限流」，让人去扩容。分类必须按**异常类型**而不是文案（文案随上游版本变化），做不到就先不给码——留白比错码好。待网关把这些故障类型化后在此追加枚举。
+
+**三条判据（可机检）**
+
+| 判据 | 断言 | 挡住什么 |
+|---|---|---|
+| 原因码受控且随轨迹落库 | 降级节点输出必含 `aiUnavailableReason`，取值 ∈ 上表四个码 | 「不可用」三个字无法指导处置，也无法统计哪类故障最多 |
+| `action_result` 契约不变 | 仍为 `LLM_UNAVAILABLE`（原因另置字段） | 改动既有读侧契约（告知服务、审计导出）去换一点信息量，不划算 |
+| 不把规则置信度当 AI 置信度 | 导出对非参与样本 `aiConfidence=null`；判定先过参与度闸门 | 给规则结论披 AI 外衣，指标失真且从报表上看不出来 |
+
+**为什么 `ai_confidence` 不在写入侧直接改**：`complete(..., confidence, fallback)` 在降级时写入 `ruleConfidence` 是当前**已声明的语义**（handler javadoc 明写「置信度回退到 RuleCheck 的 ruleConfidence」），读侧无消费方但属于跨模块语义。直接改成 `null` 会影响既有审计口径，需新增 `confidence_source` 列——**DDL 属 L3，本轮不代签**。因此本轮只在**读侧**（评测导出）不信任该列，并把事实写进本文。
+
+**仍未做**：`ai_confidence` 语义修正（需 `confidence_source` 列，L3）；按原因码的降级率看板与告警阈值（需先有稳定流量）；网关故障类型化异常（依赖 bone-ai 网关改造）。
+
 
 ---
 

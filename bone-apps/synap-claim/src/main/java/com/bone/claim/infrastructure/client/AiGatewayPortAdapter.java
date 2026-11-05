@@ -8,14 +8,18 @@ import com.bone.claim.application.port.out.AiGatewayPort;
 import com.bone.claim.application.port.out.AiGatewayPort.Fact;
 import com.bone.claim.application.port.out.AiGatewayUnavailableException;
 import com.bone.claim.application.port.out.ClaimContextPort;
+import com.bone.claim.domain.model.decision.AiDegradationReason;
 import com.bone.claim.domain.model.decision.AiDiscrepancyCodes;
 import com.bone.claim.domain.security.RejectReasonCodes;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
+import java.net.SocketTimeoutException;
+import java.net.http.HttpTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -59,6 +63,9 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
 
   static final int MAX_COGNITIVE_TEXT = 200;
 
+  /** 异常链分类的最大遍历深度（防自引用 / 循环 cause 把分类逻辑拖死）。 */
+  static final int MAX_CAUSE_DEPTH = 8;
+
   private final LlmGatewayApplicationService gateway;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -99,8 +106,10 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
     try {
       response = gateway.invoke(request);
     } catch (RuntimeException ex) {
-      // 网关任何异常（不可用 / 红线 / 配额 / 内容安全）→ 统一 fail-closed 降级
-      throw new AiGatewayUnavailableException("AI 网关评估失败，降级纯规则路径: " + ex.getMessage(), ex);
+      // 网关任何异常（不可用 / 红线 / 配额 / 内容安全）→ 统一 fail-closed 降级。
+      // 原因码让「超时」与「其他网关故障」在决策轨迹里可区分：前者扩容/重试有用，后者没用。
+      throw new AiGatewayUnavailableException(
+          "AI 网关评估失败，降级纯规则路径: " + ex.getMessage(), ex, classify(ex));
     }
     // 模型未遵循结构化输出契约 → 视为不可信，fail-closed 降级
     return parse(response);
@@ -114,7 +123,8 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
       // 且 model_version 被伪报成替身模型。显式失败才能给出可运维的修法指引（Rules of ML #10）。
       if (node.path("mock").asBoolean(false)) {
         throw new AiGatewayUnavailableException(
-            "检测到 Mock 替身响应，禁止用于自动赔付结论：请配置 bone.ai.gateway.base-url 接入真实 provider");
+            "检测到 Mock 替身响应，禁止用于自动赔付结论：请配置 bone.ai.gateway.base-url 接入真实 provider",
+            AiDegradationReason.MOCK_NOT_ALLOWED);
       }
       boolean reject = node.path("rejectSuggested").asBoolean(false);
       // 置信度 fail-closed（B9）：缺失 / 显式 null / 越界（<0 或 >1）一律视为"无法判定" → null。
@@ -146,8 +156,30 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
       // 替身拒绝属于显式降级：保留可运维的原始消息，不要被「解析失败」二次包装掉
       throw ex;
     } catch (Exception ex) {
-      throw new AiGatewayUnavailableException("AI 结构化结论解析失败，降级纯规则路径: " + ex.getMessage(), ex);
+      throw new AiGatewayUnavailableException(
+          "AI 结构化结论解析失败，降级纯规则路径: " + ex.getMessage(),
+          ex,
+          AiDegradationReason.OUTPUT_CONTRACT_VIOLATION);
     }
+  }
+
+  /**
+   * 只按异常链类型分类，<b>不匹配消息文本</b>：文案会随上游版本变化，按字符串分类等于把判断建在措辞上， 上游改一句话就会把「超时」静默归成「其他网关故障」。
+   *
+   * <p>异常链最多遍历 {@value #MAX_CAUSE_DEPTH} 层：自引用或循环 cause 的异常在真实世界里出现过， 这里不能让分类逻辑自己死循环。
+   */
+  static AiDegradationReason classify(Throwable ex) {
+    Throwable current = ex;
+    for (int depth = 0; current != null && depth < MAX_CAUSE_DEPTH; depth++) {
+      if (current instanceof SocketTimeoutException
+          || current instanceof TimeoutException
+          || current instanceof HttpTimeoutException) {
+        return AiDegradationReason.PROVIDER_TIMEOUT;
+      }
+      Throwable next = current.getCause();
+      current = next == current ? null : next;
+    }
+    return AiDegradationReason.GATEWAY_ERROR;
   }
 
   /**

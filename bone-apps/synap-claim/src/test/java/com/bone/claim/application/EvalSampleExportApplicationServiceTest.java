@@ -8,6 +8,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.bone.claim.application.EvalSampleExportApplicationService.AgreementSummary;
+import com.bone.claim.application.EvalSampleExportApplicationService.AiParticipation;
 import com.bone.claim.application.EvalSampleExportApplicationService.EvalSampleExport;
 import com.bone.claim.application.EvalSampleExportApplicationService.EvalSampleExport.Sample;
 import com.bone.claim.common.ClaimErrorCodes;
@@ -54,50 +55,70 @@ class EvalSampleExportApplicationServiceTest {
 
   @Test
   void autoApproveWithFinishedIsAgree() {
-    assertThat(EvalSampleExportApplicationService.judge("AUTO_APPROVE", "FINISHED"))
+    assertThat(
+            EvalSampleExportApplicationService.judge(
+                "AUTO_APPROVE", "FINISHED", AiParticipation.PARTICIPATED))
         .isEqualTo(EvalSampleExportApplicationService.Agreement.AGREE);
   }
 
   @Test
   void autoApproveWithRejectedIsDisagree() {
-    assertThat(EvalSampleExportApplicationService.judge("AUTO_APPROVE", "CLOSED_REJECTED"))
+    assertThat(
+            EvalSampleExportApplicationService.judge(
+                "AUTO_APPROVE", "CLOSED_REJECTED", AiParticipation.PARTICIPATED))
         .isEqualTo(EvalSampleExportApplicationService.Agreement.DISAGREE);
   }
 
   @Test
   void suggestRejectWithRejectedIsAgree() {
-    assertThat(EvalSampleExportApplicationService.judge("SUGGEST_REJECT", "CLOSED_REJECTED"))
+    assertThat(
+            EvalSampleExportApplicationService.judge(
+                "SUGGEST_REJECT", "CLOSED_REJECTED", AiParticipation.PARTICIPATED))
         .isEqualTo(EvalSampleExportApplicationService.Agreement.AGREE);
   }
 
   @Test
   void suggestRejectButPaidIsDisagree() {
-    assertThat(EvalSampleExportApplicationService.judge("SUGGEST_REJECT", "FINISHED"))
+    assertThat(
+            EvalSampleExportApplicationService.judge(
+                "SUGGEST_REJECT", "FINISHED", AiParticipation.PARTICIPATED))
         .isEqualTo(EvalSampleExportApplicationService.Agreement.DISAGREE);
   }
 
   /** 关键负向：AI 转人工不是「判断对了」，必须落 UNKNOWN 且给出不计入准确率的依据。 */
   @Test
   void manualRequiredIsUnknownNotAgree() {
-    assertThat(EvalSampleExportApplicationService.judge("MANUAL_REQUIRED", "FINISHED"))
+    assertThat(
+            EvalSampleExportApplicationService.judge(
+                "MANUAL_REQUIRED", "FINISHED", AiParticipation.PARTICIPATED))
         .isEqualTo(EvalSampleExportApplicationService.Agreement.UNKNOWN_NO_BINARY_VERDICT);
-    assertThat(EvalSampleExportApplicationService.judge("NEED_MORE_EVIDENCE", "CLOSED_REJECTED"))
+    assertThat(
+            EvalSampleExportApplicationService.judge(
+                "NEED_MORE_EVIDENCE", "CLOSED_REJECTED", AiParticipation.PARTICIPATED))
         .isEqualTo(EvalSampleExportApplicationService.Agreement.UNKNOWN_NO_BINARY_VERDICT);
   }
 
   @Test
   void nonTerminalCaseIsUnknown() {
-    assertThat(EvalSampleExportApplicationService.judge("AUTO_APPROVE", "PRE_EXAMINED"))
+    assertThat(
+            EvalSampleExportApplicationService.judge(
+                "AUTO_APPROVE", "PRE_EXAMINED", AiParticipation.PARTICIPATED))
         .isEqualTo(EvalSampleExportApplicationService.Agreement.UNKNOWN_NOT_CONVERGED);
-    assertThat(EvalSampleExportApplicationService.judge("AUTO_APPROVE", "PENDING_ADJUST"))
+    assertThat(
+            EvalSampleExportApplicationService.judge(
+                "AUTO_APPROVE", "PENDING_ADJUST", AiParticipation.PARTICIPATED))
         .isEqualTo(EvalSampleExportApplicationService.Agreement.UNKNOWN_NOT_CONVERGED);
   }
 
   @Test
   void nullInputsAreUnknown() {
-    assertThat(EvalSampleExportApplicationService.judge(null, "FINISHED"))
+    assertThat(
+            EvalSampleExportApplicationService.judge(
+                null, "FINISHED", AiParticipation.PARTICIPATED))
         .isEqualTo(EvalSampleExportApplicationService.Agreement.UNKNOWN_NOT_CONVERGED);
-    assertThat(EvalSampleExportApplicationService.judge("AUTO_APPROVE", null))
+    assertThat(
+            EvalSampleExportApplicationService.judge(
+                "AUTO_APPROVE", null, AiParticipation.PARTICIPATED))
         .isEqualTo(EvalSampleExportApplicationService.Agreement.UNKNOWN_NOT_CONVERGED);
   }
 
@@ -184,7 +205,14 @@ class EvalSampleExportApplicationServiceTest {
             sample("b", "SUGGEST_REJECT", "CLOSED_REJECTED", "AGREE"),
             sample("c", "AUTO_APPROVE", "CLOSED_REJECTED", "DISAGREE"),
             sample("d", "MANUAL_REQUIRED", "FINISHED", "UNKNOWN_NO_BINARY_VERDICT"),
-            sample("e", "AUTO_APPROVE", "PRE_EXAMINED", "UNKNOWN_NOT_CONVERGED"));
+            sample("e", "AUTO_APPROVE", "PRE_EXAMINED", "UNKNOWN_NOT_CONVERGED"),
+            sample("f", "AUTO_APPROVE", "FINISHED", "UNKNOWN_AI_NOT_INVOLVED", "DEGRADED"),
+            sample(
+                "g",
+                "AUTO_APPROVE",
+                "FINISHED",
+                "UNKNOWN_AI_PARTICIPATION_UNDETERMINED",
+                "UNDETERMINED"));
 
     AgreementSummary summary = EvalSampleExportApplicationService.summarize(samples);
 
@@ -192,15 +220,82 @@ class EvalSampleExportApplicationServiceTest {
     assertThat(summary.disagree()).isEqualTo(1);
     assertThat(summary.unknownNoBinaryVerdict()).isEqualTo(1);
     assertThat(summary.unknownNotConverged()).isEqualTo(1);
+    assertThat(summary.unknownAiNotInvolved()).isEqualTo(1);
+    assertThat(summary.unknownAiParticipationUndetermined()).isEqualTo(1);
     assertThat(summary.evaluableCount()).isEqualTo(3);
     assertThat(summary.agreementRate()).isEqualByComparingTo("0.6667");
-    // 四态之和必须等于样本数：漏统计某个状态会让一致率虚高，而总量看上去仍然正常。
+    // 六态之和必须等于样本数：漏统计某个状态会让一致率虚高，而总量看上去仍然正常。
     assertThat(
             summary.agree()
                 + summary.disagree()
                 + summary.unknownNoBinaryVerdict()
-                + summary.unknownNotConverged())
+                + summary.unknownNotConverged()
+                + summary.unknownAiNotInvolved()
+                + summary.unknownAiParticipationUndetermined())
         .isEqualTo(samples.size());
+    // 参与率是判定态之外的正交维度：7 条里只有 5 条 AI 真的参与。
+    assertThat(summary.aiParticipatedCount()).isEqualTo(5);
+    assertThat(summary.aiCoverage()).isEqualByComparingTo("0.7143");
+  }
+
+  /** 关键负向：降级样本不得计入 AI 一致率——它比的是规则引擎，不是 AI。 */
+  @Test
+  void degradedExecutionIsNeverCountedAsAiAgreement() {
+    assertThat(
+            EvalSampleExportApplicationService.judge(
+                "AUTO_APPROVE", "FINISHED", AiParticipation.DEGRADED))
+        .isEqualTo(EvalSampleExportApplicationService.Agreement.UNKNOWN_AI_NOT_INVOLVED);
+    // 即使「看起来一致」也不能进分母
+    AgreementSummary summary =
+        EvalSampleExportApplicationService.summarize(
+            List.of(
+                sample("a", "AUTO_APPROVE", "FINISHED", "UNKNOWN_AI_NOT_INVOLVED", "DEGRADED")));
+    assertThat(summary.evaluableCount()).isZero();
+    assertThat(summary.agreementRate()).isNull();
+    assertThat(summary.aiParticipatedCount()).isZero();
+    assertThat(summary.aiCoverage()).isEqualByComparingTo("0.0000");
+  }
+
+  /** 参与闸门先于判定：AI 没参与时，「与终态一致/相反」都无从谈起。 */
+  @Test
+  void participationGatePrecedesVerdict() {
+    assertThat(EvalSampleExportApplicationService.judge(null, null, AiParticipation.DEGRADED))
+        .isEqualTo(EvalSampleExportApplicationService.Agreement.UNKNOWN_AI_NOT_INVOLVED);
+    assertThat(EvalSampleExportApplicationService.judge(null, null, AiParticipation.UNDETERMINED))
+        .isEqualTo(
+            EvalSampleExportApplicationService.Agreement.UNKNOWN_AI_PARTICIPATION_UNDETERMINED);
+  }
+
+  @Test
+  void participationRequiresExecutionEvidence() {
+    assertThat(EvalSampleExportApplicationService.participation("SUCCESS", "m1"))
+        .isEqualTo(AiParticipation.PARTICIPATED);
+    assertThat(EvalSampleExportApplicationService.participation("FALLBACK", "m1"))
+        .isEqualTo(AiParticipation.DEGRADED);
+    // 执行成功但无模型版本：不能证明 AI 跑过（降级行也会带置信度，故置信度不能当证据）
+    assertThat(EvalSampleExportApplicationService.participation("SUCCESS", ""))
+        .isEqualTo(AiParticipation.UNDETERMINED);
+    assertThat(EvalSampleExportApplicationService.participation("SUCCESS", null))
+        .isEqualTo(AiParticipation.UNDETERMINED);
+    assertThat(EvalSampleExportApplicationService.participation(null, "m1"))
+        .isEqualTo(AiParticipation.UNDETERMINED);
+  }
+
+  /** 降级行的 ai_confidence 是规则置信度：导出成「AI 置信度」等于给规则结论披 AI 外衣。 */
+  @Test
+  void degradedSampleDoesNotExportRuleConfidenceAsAiConfidence() {
+    DecisionExecution degraded = execution(1L, "AUTO_APPROVE", "FALLBACK", "");
+    when(decisionExecutionRepository.findConvergedInWindow(FROM, TO)).thenReturn(List.of(degraded));
+    ClaimCase singleCase = claim(1L, "FINISHED", "42", "u1");
+    when(claimCaseRepository.findByIds(anyList())).thenReturn(List.of(singleCase));
+
+    EvalSampleExport export = service.export(FROM, TO, 100);
+
+    Sample only = export.samples().get(0);
+    assertThat(only.aiParticipation()).isEqualTo("DEGRADED");
+    assertThat(only.aiConfidence()).isNull();
+    assertThat(only.agreement()).isEqualTo("UNKNOWN_AI_NOT_INVOLVED");
+    assertThat(export.agreementSummary().aiCoverage()).isEqualByComparingTo("0.0000");
   }
 
   /** 关键负向：全部「AI 转人工」时必须给 null，不能给 0——0 会被下游当作「模型全错」写进基线。 */
@@ -324,6 +419,11 @@ class EvalSampleExportApplicationServiceTest {
   // ===== 夹具 =====
 
   private static Sample sample(String key, String aiResult, String finalStatus, String agreement) {
+    return sample(key, aiResult, finalStatus, agreement, "PARTICIPATED");
+  }
+
+  private static Sample sample(
+      String key, String aiResult, String finalStatus, String agreement, String participation) {
     return new Sample(
         key,
         "OUTPATIENT",
@@ -332,6 +432,7 @@ class EvalSampleExportApplicationServiceTest {
         new BigDecimal("0.9000"),
         "m1",
         "p1",
+        participation,
         "RISK_HIT",
         finalStatus,
         new BigDecimal("120.00"),
@@ -342,12 +443,18 @@ class EvalSampleExportApplicationServiceTest {
   }
 
   private static DecisionExecution execution(long claimId, String decisionResult) {
+    return execution(claimId, decisionResult, "SUCCESS", "m1");
+  }
+
+  private static DecisionExecution execution(
+      long claimId, String decisionResult, String status, String modelVersion) {
     DecisionExecution execution = org.mockito.Mockito.mock(DecisionExecution.class);
     lenient().when(execution.getClaimId()).thenReturn(claimId);
     lenient().when(execution.getDecisionResult()).thenReturn(decisionResult);
+    lenient().when(execution.getStatus()).thenReturn(status);
+    lenient().when(execution.getModelVersion()).thenReturn(modelVersion);
     lenient().when(execution.getDecisionTier()).thenReturn("AUTO");
     lenient().when(execution.getAiConfidence()).thenReturn(new BigDecimal("0.9000"));
-    lenient().when(execution.getModelVersion()).thenReturn("m1");
     lenient().when(execution.getPromptVersion()).thenReturn("p1");
     lenient().when(execution.getTriageReason()).thenReturn("RISK_HIT");
     return execution;

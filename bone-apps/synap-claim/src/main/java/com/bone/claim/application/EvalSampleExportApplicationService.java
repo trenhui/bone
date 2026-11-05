@@ -129,12 +129,15 @@ public class EvalSampleExportApplicationService {
    */
   static AgreementSummary summarize(List<EvalSampleExport.Sample> samples) {
     if (samples == null || samples.isEmpty()) {
-      return new AgreementSummary(0, 0, 0, 0, 0, null);
+      return AgreementSummary.empty();
     }
     int agree = 0;
     int disagree = 0;
     int noBinary = 0;
     int notConverged = 0;
+    int aiNotInvolved = 0;
+    int aiUndetermined = 0;
+    int aiParticipated = 0;
     for (EvalSampleExport.Sample sample : samples) {
       // valueOf 遇未知取值直接抛（快速失败）；下面的求和校验兜住「新增判定态却忘了归类」。
       switch (Agreement.valueOf(sample.agreement())) {
@@ -142,11 +145,16 @@ public class EvalSampleExportApplicationService {
         case DISAGREE -> disagree++;
         case UNKNOWN_NO_BINARY_VERDICT -> noBinary++;
         case UNKNOWN_NOT_CONVERGED -> notConverged++;
+        case UNKNOWN_AI_NOT_INVOLVED -> aiNotInvolved++;
+        case UNKNOWN_AI_PARTICIPATION_UNDETERMINED -> aiUndetermined++;
+      }
+      if (AiParticipation.PARTICIPATED.name().equals(sample.aiParticipation())) {
+        aiParticipated++;
       }
     }
-    int counted = agree + disagree + noBinary + notConverged;
+    int counted = agree + disagree + noBinary + notConverged + aiNotInvolved + aiUndetermined;
     if (counted != samples.size()) {
-      // 新增判定态而这里没跟上时，四态之和会小于样本数。静默漏统会让一致率虚高、总量看着正常，
+      // 新增判定态而这里没跟上时，六态之和会小于样本数。静默漏统会让一致率虚高、总量看着正常，
       // 所以宁可让整次导出失败，也不输出一个自己都对不上账的聚合。
       throw new IllegalStateException(
           "判定态聚合与样本数不一致：" + counted + " != " + samples.size() + "，存在未归类的判定态");
@@ -157,11 +165,56 @@ public class EvalSampleExportApplicationService {
             ? null
             : BigDecimal.valueOf(agree)
                 .divide(BigDecimal.valueOf(evaluable), 4, RoundingMode.HALF_UP);
-    return new AgreementSummary(agree, disagree, noBinary, notConverged, evaluable, rate);
+    // AI 参与率：分析「AI 到底覆盖了多少案件」的唯一指标。为 0 时一致率无论多少都没有意义。
+    BigDecimal coverage =
+        BigDecimal.valueOf(aiParticipated)
+            .divide(BigDecimal.valueOf(samples.size()), 4, RoundingMode.HALF_UP);
+    return new AgreementSummary(
+        agree,
+        disagree,
+        noBinary,
+        notConverged,
+        aiNotInvolved,
+        aiUndetermined,
+        evaluable,
+        rate,
+        aiParticipated,
+        coverage);
   }
 
-  /** AI 建议与最终结果的一致性判定（纯函数，供单测与变异验证）。 */
-  static Agreement judge(String aiDecisionResult, String finalStatus) {
+  /**
+   * AI 参与度判定（纯函数）。
+   *
+   * <p><b>为什么不能只看执行状态</b>：{@code SUCCESS} 只说明整条图的确定性节点都跑通了，不说明 LLM 节点真的产出了结论； 而 {@code FALLBACK} 说明
+   * LLM 节点降级了——此时的 {@code decision_result} 是<b>规则引擎</b>的结论。 把降级行的结论与案件终态比对，算出来的是规则引擎的一致率，却会被当成「AI
+   * 准确率」报出去。
+   *
+   * <p><b>为什么还要看模型版本</b>：降级时执行器会把规则置信度回填进 {@code ai_confidence}（既有语义）， 因此「有置信度」不能证明 AI 跑过；模型版本由 LLM
+   * 节点成功时自报并回填，缺失即视为无法证明参与。 判不清就落 {@link AiParticipation#UNDETERMINED}，不计入分母——方向必须是保守的。
+   */
+  static AiParticipation participation(String executionStatus, String modelVersion) {
+    if ("FALLBACK".equals(executionStatus)) {
+      return AiParticipation.DEGRADED;
+    }
+    if ("SUCCESS".equals(executionStatus) && notBlank(modelVersion)) {
+      return AiParticipation.PARTICIPATED;
+    }
+    return AiParticipation.UNDETERMINED;
+  }
+
+  /**
+   * AI 建议与最终结果的一致性判定（纯函数，供单测与变异验证）。
+   *
+   * <p>参与度闸门在判定态之前：AI 没参与时，连「AI 建议是什么」都不成立，不能进任何一致/不一致的分支。
+   */
+  static Agreement judge(
+      String aiDecisionResult, String finalStatus, AiParticipation participation) {
+    if (participation == AiParticipation.DEGRADED) {
+      return Agreement.UNKNOWN_AI_NOT_INVOLVED;
+    }
+    if (participation == AiParticipation.UNDETERMINED) {
+      return Agreement.UNKNOWN_AI_PARTICIPATION_UNDETERMINED;
+    }
     if (aiDecisionResult == null || finalStatus == null) {
       return Agreement.UNKNOWN_NOT_CONVERGED;
     }
@@ -183,15 +236,19 @@ public class EvalSampleExportApplicationService {
 
   private static EvalSampleExport.Sample toSample(DecisionExecution execution, ClaimCase claim) {
     String finalStatus = claim.getStatus();
-    Agreement agreement = judge(execution.getDecisionResult(), finalStatus);
+    AiParticipation participation =
+        participation(execution.getStatus(), execution.getModelVersion());
+    Agreement agreement = judge(execution.getDecisionResult(), finalStatus, participation);
     return new EvalSampleExport.Sample(
         sampleKey(execution.getClaimId()),
         claim.getClaimType(),
         execution.getDecisionResult(),
         execution.getDecisionTier(),
-        execution.getAiConfidence(),
+        // 降级时 ai_confidence 存的是规则置信度（执行器语义），导出成「AI 置信度」等于给规则结论披 AI 外衣。
+        participation == AiParticipation.PARTICIPATED ? execution.getAiConfidence() : null,
         execution.getModelVersion(),
         execution.getPromptVersion(),
+        participation.name(),
         execution.getTriageReason(),
         finalStatus,
         claim.getApprovedAmount(),
@@ -243,6 +300,10 @@ public class EvalSampleExportApplicationService {
                     .append(nullToEmpty(sample.aiModelVersion()))
                     .append('|')
                     .append(nullToEmpty(sample.aiPromptVersion()))
+                    .append('|')
+                    // 参与度必须进哈希：同一批案件在「AI 参与」与「降级」两种状态下判据完全不同，
+                    // 不进哈希会让两份语义不同的导出算出同一个指纹。
+                    .append(nullToEmpty(sample.aiParticipation()))
                     .append('|')
                     .append(nullToEmpty(sample.triageReason()))
                     .append('|')
@@ -304,7 +365,9 @@ public class EvalSampleExportApplicationService {
     AGREE("AI 建议与案件最终状态一致"),
     DISAGREE("AI 建议与案件最终状态相反"),
     UNKNOWN_NOT_CONVERGED("案件未收敛到终态，标签未定"),
-    UNKNOWN_NO_BINARY_VERDICT("AI 未给出可比二元结论（转人工/补件），不计入准确率");
+    UNKNOWN_NO_BINARY_VERDICT("AI 未给出可比二元结论（转人工/补件），不计入准确率"),
+    UNKNOWN_AI_NOT_INVOLVED("AI 未真实参与：本次执行为规则路径降级，其结论是规则引擎结论，不是 AI 建议，不计入 AI 一致率"),
+    UNKNOWN_AI_PARTICIPATION_UNDETERMINED("无法证明 AI 真实参与（执行状态非降级但缺模型版本留痕），不计入 AI 一致率");
 
     private final String basis;
 
@@ -317,25 +380,51 @@ public class EvalSampleExportApplicationService {
     }
   }
 
+  /** AI 参与度：决定这条样本能不能进「AI 一致率」，与判定态（一致/不一致）是正交的两件事。 */
+  enum AiParticipation {
+    /** 执行未降级且有模型版本留痕：结论可归因于 AI。 */
+    PARTICIPATED,
+    /** 执行自报降级（FALLBACK）：结论来自规则路径，归因于 AI 就是造假。 */
+    DEGRADED,
+    /** 执行成功但拿不到模型版本：不能证明 AI 跑过，保守落此态。 */
+    UNDETERMINED
+  }
+
   /**
-   * 一次导出的判定态分布。
+   * 一次导出的判定态分布与 AI 覆盖率。
    *
    * @param evaluableCount {@code agree + disagree}，即真正能进入一致率计算的样本数
    * @param agreementRate 弱标签一致率（{@code agree / evaluableCount}，4 位小数）；{@code evaluableCount == 0}
    *     时为 {@code null}
+   * @param aiParticipatedCount AI 真实参与的样本数（判定态之外的正交维度）
+   * @param aiCoverage {@code aiParticipatedCount / 返回样本数}；0 表示这批数据里 AI 一次都没参与
    */
   public record AgreementSummary(
       int agree,
       int disagree,
       int unknownNoBinaryVerdict,
       int unknownNotConverged,
+      int unknownAiNotInvolved,
+      int unknownAiParticipationUndetermined,
       int evaluableCount,
-      BigDecimal agreementRate) {
+      BigDecimal agreementRate,
+      int aiParticipatedCount,
+      BigDecimal aiCoverage) {
+
+    static AgreementSummary empty() {
+      return new AgreementSummary(0, 0, 0, 0, 0, 0, 0, null, 0, null);
+    }
 
     /** 派生字段：显式声明名称，避免下游把 {@code agreementRate} 直接当模型准确率对外报。 */
     @JsonProperty("rateMeaning")
     public String rateMeaning() {
       return "弱标签一致率（AI 建议 vs 案件终态）；evaluableCount=0 时 agreementRate 为 null，表示无可比结论，不是 0%";
+    }
+
+    /** 派生字段：先看覆盖率再看一致率——0 覆盖下的「一致率」只是规则引擎的自评。 */
+    @JsonProperty("coverageMeaning")
+    public String coverageMeaning() {
+      return "AI 参与率 = aiParticipatedCount / 返回样本数；降级样本不计入，覆盖率为 0 时任何准确率结论都不成立";
     }
   }
 
@@ -394,6 +483,7 @@ public class EvalSampleExportApplicationService {
         BigDecimal aiConfidence,
         String aiModelVersion,
         String aiPromptVersion,
+        String aiParticipation,
         String triageReason,
         String finalStatus,
         BigDecimal approvedAmount,

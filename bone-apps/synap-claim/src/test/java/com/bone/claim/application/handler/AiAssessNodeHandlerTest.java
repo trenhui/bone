@@ -67,6 +67,15 @@ class AiAssessNodeHandlerTest {
     };
   }
 
+  /** AI 网关：因未配真实 provider（替身被拒）降级——与「超时」是完全不同的处置动作。 */
+  private static AiGatewayPort aiDownBecauseMock() {
+    return ctx -> {
+      throw new com.bone.claim.application.port.out.AiGatewayUnavailableException(
+          "mock rejected",
+          com.bone.claim.domain.model.decision.AiDegradationReason.MOCK_NOT_ALLOWED);
+    };
+  }
+
   private static KnowledgeRetrievalPort knowledge(boolean available, boolean reasonable) {
     return ctx ->
         new KnowledgeRetrievalPort.KnowledgeResult(reasonable, BigDecimal.ZERO, "b", available);
@@ -140,6 +149,17 @@ class AiAssessNodeHandlerTest {
     assertThat(outcome.output().get("rejectSuggested")).isEqualTo(false);
     assertThat(outcome.output().get("aiAvailable")).isEqualTo(false);
     assertThat(outcome.output().get("capabilityMissing")).isEqualTo(true);
+    // 未分类的旧异常也必须给出原因码（兜底 GATEWAY_ERROR），不能让轨迹里只有「不可用」
+    assertThat(outcome.output().get("aiUnavailableReason")).isEqualTo("GATEWAY_ERROR");
+  }
+
+  @Test
+  @DisplayName("降级原因码随节点输出落轨迹：区分「没配 provider」与「超时」")
+  void degradationReasonIsCarriedIntoNodeOutput() {
+    DecisionNodeOutcome outcome = run(aiDownBecauseMock(), knowledge(true, true));
+
+    assertThat(outcome.status()).isEqualTo(DecisionNodeStatus.FALLBACK);
+    assertThat(outcome.output().get("aiUnavailableReason")).isEqualTo("MOCK_NOT_ALLOWED");
   }
 
   @Test
