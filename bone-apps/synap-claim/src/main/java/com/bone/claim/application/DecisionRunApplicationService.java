@@ -109,7 +109,10 @@ public class DecisionRunApplicationService {
                 : escalate(claimId, "ESCALATED_AFTER_SKIP");
       }
     } else if (status != ClaimStatus.PRE_EXAMINED) {
-      // 已在核赔段/终态（重复执行）或未进入初审段（10）：不做任何跃迁
+      // 不跃迁，只如实回传落点。这道闸门不是"重复执行的礼貌处理"，而是并发窗口的必需品：
+      // 执行器（判定可执行状态）与这里（再读一次聚合）之间有人工操作的机会窗口，人工若抢先
+      // complete/escalate，此处读到的就是 40/12/50——再跃迁一次会撞状态机（轻则 409，重则重复转派）。
+      // 状态以先到者为准，后来者只报告、不补偿。
       boolean notStarted = status == ClaimStatus.PENDING_PRE_EXAM;
       routing = new Routing(status, notStarted ? "CLAIM_NOT_IN_PRE_EXAM" : "ALREADY_ROUTED");
     } else if (DecisionResult.NEED_MORE_EVIDENCE.name().equals(execution.decisionResult())) {
