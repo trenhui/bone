@@ -8,25 +8,15 @@
  *
  * <p>原因码须与后端白名单保持一致：拒赔原因码对齐 `RejectReasonCodes`，反欺诈闸原因码对齐
  * `RuleCheckNodeHandler#fraudGateReason`。不一致时降级显示原始码（绝不臆造理由）。
+ * 中文标签统一由后端 `GET /api/v1/claim-config/dicts` 经 codegen 生成（dicts.generated.ts），本文件不再手抄。
  */
+import { AI_REJECT_REASON_DICT, FRAUD_GATE_REASON_DICT } from '../constants/dicts.generated';
 
-/** AI 结构化拒赔原因码 → 中文（对齐后端 RejectReasonCodes 白名单）。 */
-export const REJECT_REASON_LABELS: Record<string, string> = {
-  EVIDENCE_INSUFFICIENT: '证据不足',
-  CLINICAL_UNREASONABLE: '临床不合理',
-  POLICY_EXCLUSION: '保单责任免除',
-  AMOUNT_MISMATCH: '金额不符',
-  FRAUD_SUSPECTED: '疑似欺诈',
-  OTHER: '其他（需人工补充）',
-};
+/** AI 结构化拒赔原因码 → 中文（对齐后端 RejectReasonCodes 白名单，单一真源 dicts.generated.ts）。 */
+export const REJECT_REASON_LABELS = AI_REJECT_REASON_DICT;
 
-/** 反欺诈硬闸未过原因码 → 中文（对齐后端 RuleCheckNodeHandler#fraudGateReason）。 */
-export const FRAUD_GATE_LABELS: Record<string, string> = {
-  ANTI_FRAUD_CAPABILITY_MISSING: '增强反欺诈能力未集成（转人工）',
-  RISK_HIT: '命中风险',
-  VERIFY_NOT_PASSED: '验真未通过',
-  PASSED: '通过',
-};
+/** 反欺诈硬闸未过原因码 → 中文（对齐后端 RuleCheckNodeHandler#fraudGateReason，单一真源 dicts.generated.ts）。 */
+export const FRAUD_GATE_LABELS = FRAUD_GATE_REASON_DICT;
 
 /** fact 语气：good 通过 / bad 风险或否决 / muted 不可用或未参与 / info 中性。 */
 export type FactTone = 'good' | 'bad' | 'muted' | 'info';

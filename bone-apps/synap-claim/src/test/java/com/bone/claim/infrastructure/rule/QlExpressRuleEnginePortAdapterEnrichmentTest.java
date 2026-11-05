@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.application.port.out.RuleEnginePort;
+import com.bone.claim.domain.model.ClaimThresholds;
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.EvidenceRepository;
@@ -40,7 +41,7 @@ class QlExpressRuleEnginePortAdapterEnrichmentTest {
     when(claim.getMappingVersion()).thenReturn("");
     when(claim.consentWithdrawn()).thenReturn(false);
     when(claim.isManualReviewRequired()).thenReturn(false);
-    when(claim.requiresSecondReview()).thenReturn(false);
+    when(claim.requiresSecondReview(ClaimThresholds.DUAL_REVIEW_AMOUNT)).thenReturn(false);
     when(claim.getOutInsureTime()).thenReturn(Instant.now());
     when(claim.getCreatedAt()).thenReturn(Instant.now());
     when(claim.getSourceChannel()).thenReturn("self");
@@ -88,7 +89,7 @@ class QlExpressRuleEnginePortAdapterEnrichmentTest {
     when(claim.getMappingVersion()).thenReturn("v1");
     when(claim.consentWithdrawn()).thenReturn(false);
     when(claim.isManualReviewRequired()).thenReturn(false);
-    when(claim.requiresSecondReview()).thenReturn(false);
+    when(claim.requiresSecondReview(ClaimThresholds.DUAL_REVIEW_AMOUNT)).thenReturn(false);
     when(claim.getOutInsureTime()).thenReturn(Instant.now());
     when(claim.getCreatedAt()).thenReturn(Instant.now());
     when(claim.getSourceChannel()).thenReturn("self");

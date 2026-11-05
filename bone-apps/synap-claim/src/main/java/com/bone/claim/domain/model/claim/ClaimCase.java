@@ -739,9 +739,9 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
         || status() == ClaimStatus.REVIEWING;
   }
 
-  /** 是否需双人复核（≥1 万，§11.7 不变量 5 的写入路径前置）。 */
-  public boolean requiresSecondReview() {
-    return approvedAmount != null && approvedAmount.compareTo(SECOND_REVIEW_THRESHOLD) >= 0;
+  /** 是否需双人复核（金额 ≥ 给定门，§11.7 不变量 5 的写入路径前置；门来自 {@code TriageLimits#dualReviewAmount()}）。 */
+  public boolean requiresSecondReview(BigDecimal threshold) {
+    return approvedAmount != null && approvedAmount.compareTo(threshold) >= 0;
   }
 
   /** 是否已终态。 */
@@ -778,9 +778,6 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   public String externalStatus() {
     return status().toExternal();
   }
-
-  private static final java.math.BigDecimal SECOND_REVIEW_THRESHOLD =
-      new java.math.BigDecimal("10000");
 
   // ===================== 内部 =====================
 

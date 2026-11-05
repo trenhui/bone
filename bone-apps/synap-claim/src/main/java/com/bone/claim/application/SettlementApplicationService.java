@@ -1,6 +1,7 @@
 package com.bone.claim.application;
 
 import com.bone.claim.application.port.out.TenantPort;
+import com.bone.claim.application.port.out.TriageLimitsPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.adjustment.Adjustment;
@@ -40,6 +41,7 @@ public class SettlementApplicationService {
   private final TenantPort tenantPort;
   private final DomainEventPublisher domainEventPublisher;
   private final AdjustmentRepository adjustmentRepository;
+  private final TriageLimitsPort triageLimitsPort;
 
   public record SettlementResult(
       String settlementNo, Long claimId, BigDecimal amount, String fundingStage, Integer attempt) {}
@@ -152,7 +154,10 @@ public class SettlementApplicationService {
     SettlementOrder order = requireMutable(claimId);
     String firstReviewerId =
         claimCaseApplicationService.getClaimWithItems(claimId).get(0).getFirstReviewerId();
-    order.auditPass(operatorId, firstReviewerId);
+    // 双人复核门经 TriageLimits 外置（feature_toggle，§11.4）：未配置回落代码基线 1 万，配置只能收紧不放开。
+    BigDecimal dualReviewThreshold =
+        triageLimitsPort.triageLimits(tenantPort.currentTenantId()).limits().dualReviewAmount();
+    order.auditPass(operatorId, firstReviewerId, dualReviewThreshold);
     settlementRepository.save(order);
     domainEventPublisher.publishFrom(order);
     return toResult(order);

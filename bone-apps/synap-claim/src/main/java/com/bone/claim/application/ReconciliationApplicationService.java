@@ -1,6 +1,7 @@
 package com.bone.claim.application;
 
 import com.bone.claim.application.port.out.TenantPort;
+import com.bone.claim.application.port.out.TriageLimitsPort;
 import com.bone.claim.domain.model.adjustment.Adjustment;
 import com.bone.claim.domain.model.claim.projection.ClaimSettlementRef;
 import com.bone.claim.domain.model.quota.QuotaAccount;
@@ -87,6 +88,7 @@ public class ReconciliationApplicationService {
   private static final ZoneId BIZ_ZONE = ZoneId.of("Asia/Shanghai");
 
   private final TenantPort tenantPort;
+  private final TriageLimitsPort triageLimitsPort;
   private final QuotaAccountRepository quotaAccountRepository;
   private final SettlementRepository settlementRepository;
   private final ClaimCaseRepository claimCaseRepository;
@@ -214,6 +216,10 @@ public class ReconciliationApplicationService {
         != null) {
       return;
     }
+    // 双人复核门经 TriageLimits 外置（feature_toggle，§11.4）：未配置回落代码基线 1 万，配置只能收紧不放开。
+    // 按租户解析一次（reconcilePayment 本就按租户驱动），避免逐结算单重复读配置，也不依赖结算单 tenantId 字段。
+    BigDecimal dualReviewThreshold =
+        triageLimitsPort.triageLimits(tenantId).limits().dualReviewAmount();
     List<SettlementOrder> settlements = settlementRepository.findByBizDate(bizDate);
     int total = settlements.size();
     BigDecimal totalAmount = ZERO;
@@ -287,7 +293,7 @@ public class ReconciliationApplicationService {
       for (ReviewEvidence.Gap gap :
           ReviewEvidence.check(
               settlement.getAmount(),
-              SettlementOrder.reviewThreshold(),
+              dualReviewThreshold,
               settlement.getReviewFirstApprover(),
               events)) {
         violations.add(

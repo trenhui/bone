@@ -8,6 +8,8 @@
  * {@code @PreAuthorize} 一一对应；前端用 {@link AuthButton} 做「无权限即隐藏」的 UX 降级，
  * 真正的门禁仍由后端强制（前端可见性不可替代接口鉴权）。
  */
+import { PERMISSION_DICT } from './dicts.generated';
+
 export const PERMISSIONS = {
   // ---- 配置面 ----
   POLICY_READ: 'claim:policy:read',
@@ -27,3 +29,6 @@ export const PERMISSIONS = {
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+
+/** 权限码 → 中文标签（单一真源 dicts.generated.ts，与后端 @PreAuthorize 对齐）。 */
+export const PERMISSION_LABELS = PERMISSION_DICT;

@@ -92,6 +92,10 @@ public class FeatureTenantToggleService implements TriageLimitsPort {
    */
   @Override
   public TriageLimits.Resolution triageLimits(long tenantId) {
+    if (featureToggleRepository == null) {
+      // 防御：仓储未注入（如纯单测基座）时回落基线，绝不抛出——与「任何异常不得改变资金口径」一致。
+      return new TriageLimits.Resolution(TriageLimits.defaults(), Map.of());
+    }
     FeatureToggle toggle =
         featureToggleRepository.findByFeatureKey(tenantId, FeatureToggle.FEATURE_TRIAGE_LIMITS);
     if (toggle == null) {

@@ -52,11 +52,24 @@ export function createApiClient(baseURL: string, config?: AxiosRequestConfig): A
     ...config,
   });
 
-  // 请求拦截器：自动注入 Token
+  // 请求拦截器：自动注入 Token + 租户头
   instance.interceptors.request.use((req) => {
     const token = getToken();
     if (token) {
       req.headers.Authorization = `Bearer ${token}`;
+    }
+    // 租户头（X-Tenant-Id）：bone-metadata-sdk 的 SQL 执行器强校验租户上下文，缺该头时所有读接口直接失败。
+    // 统一在此注入，与 bone-generator-app 对齐——避免各微应用重复实现、或漏带导致直连后端越租户。
+    // 仅在请求头尚未携带、且全局上下文提供了 tenantId 时补注入；无租户上下文时不发头（由网关/JWT 兜底）。
+    if (!req.headers['X-Tenant-Id']) {
+      const ctx = getGlobalContext() as { tenantId?: string | number } | undefined;
+      const tenantId =
+        ctx?.tenantId ??
+        localStorage.getItem('tenantId') ??
+        new URLSearchParams(window.location.search).get('tenantId');
+      if (tenantId) {
+        req.headers['X-Tenant-Id'] = String(tenantId);
+      }
     }
     return req;
   });

@@ -26,8 +26,9 @@ public final class DecisionTriage {
   /** OCR 置信度独立熔断线（&lt;0.7 强制人工，与 AI 阈值互不影响）。 */
   public static final BigDecimal OCR_MANUAL_THRESHOLD = new BigDecimal("0.7");
 
-  /** 自动通过金额上限（≥1 万不自动通过）。 */
-  public static final BigDecimal AUTO_AMOUNT_LIMIT = new BigDecimal("10000");
+  /** 自动通过金额上限（≥1 万不自动通过）。基线回指 {@link ClaimThresholds#DUAL_REVIEW_AMOUNT}，与双审门同源。 */
+  public static final BigDecimal AUTO_AMOUNT_LIMIT =
+      com.bone.claim.domain.model.ClaimThresholds.DUAL_REVIEW_AMOUNT;
 
   private DecisionTriage() {}
 

@@ -18,6 +18,8 @@
  * 因此「前端只给受控选项」是当前唯一的口径收口点——不要在此处再放自由文本入口。
  */
 
+import { REJECT_REASON_DICT, ZERO_REASON_DICT } from '../constants/dicts.generated';
+
 export interface RejectReasonOption {
   /** 受控码（提交给后端的 rejectType） */
   value: string;
@@ -27,16 +29,25 @@ export interface RejectReasonOption {
   group: '金额与责任' | '材料与合规' | '风险';
 }
 
-export const REJECT_REASON_OPTIONS: RejectReasonOption[] = [
-  { value: '03', label: '03 就诊医院不符合责任医院规则', group: '金额与责任' },
-  { value: '04', label: '04 诊断不符合责任免赔规则', group: '金额与责任' },
-  { value: '05', label: '05 合理费用 / 赔付比例为 0（不合理费用、非保障范围）', group: '金额与责任' },
-  { value: '06', label: '06 未达免赔额（免赔未消抵完）', group: '金额与责任' },
-  { value: '09', label: '09 无剩余保额（责任额度已用尽/封顶）', group: '金额与责任' },
-  { value: '20', label: '20 目录外费用不赔付', group: '金额与责任' },
-  { value: '30', label: '30 责任范围除外', group: '材料与合规' },
-  { value: '40', label: '40 风险标记（转人工核实）', group: '风险' },
-];
+const REJECT_REASON_GROUP: Record<string, RejectReasonOption['group']> = {
+  '03': '金额与责任',
+  '04': '金额与责任',
+  '05': '金额与责任',
+  '06': '金额与责任',
+  '09': '金额与责任',
+  '20': '金额与责任',
+  '30': '材料与合规',
+  '40': '风险',
+};
+
+/** label 来自后端单一真源（dicts.generated.ts），分组为前端展示属性。 */
+export const REJECT_REASON_OPTIONS: RejectReasonOption[] = Object.keys(REJECT_REASON_DICT).map(
+  (code) => ({
+    value: code,
+    label: REJECT_REASON_DICT[code] ?? code,
+    group: REJECT_REASON_GROUP[code] ?? '金额与责任',
+  }),
+);
 
 const REJECT_REASON_MAP = new Map(REJECT_REASON_OPTIONS.map((o) => [o.value, o.label]));
 
@@ -68,14 +79,8 @@ export function rejectReasonGroups(): {
  * <p>取值与 {@code com.bone.claim.domain.model.adjustment.engine.AdjustmentEngine} 中的
  * `ZERO_*` 常量逐字对应；新增归因须同时改后端常量与本表，否则页面会显示原始码（可见降级）。
  */
-export const ZERO_REASON_LABELS: Record<string, string> = {
-  ZERO_REASONABLE: '合理费用为 0（费用全部被判定为不合理/不可赔）',
-  ZERO_DEDUCT: '免赔未达（扣减免赔额后为 0）',
-  ZERO_PERCENT: '赔付比例为 0',
-  ZERO_LIMIT: '责任额度不足（本行额度已用尽）',
-  ZERO_LIMIT_EXHAUSTED: '责任额度已耗尽（历史占额已封顶）',
-  ZERO_NOT_COVERED: '不在保障范围',
-};
+/** 零赔付归因码 → 展示名；未知码回退原始码（单一真源 dicts.generated.ts）。 */
+export const ZERO_REASON_LABELS = ZERO_REASON_DICT;
 
 /** 零赔付归因码 → 展示名；未知码回退原始码。 */
 export function zeroReasonLabel(code?: string): string {

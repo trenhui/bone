@@ -132,13 +132,17 @@ public class AutoApprovalApplicationService {
   @Transactional
   public AutoApprovalOutcome approveAndSettle(long claimId, String operatorId) {
     BigDecimal amount = adjustmentAmount(claimId);
-    // 大额（≥双人复核门）禁止单人快捷赔付：必须走双人复核流程，否则绕过对账不变量 5
-    if (amount.compareTo(SettlementOrder.reviewThreshold()) >= 0) {
+    // 大额（≥双人复核门）禁止单人快捷赔付：必须走双人复核流程，否则绕过对账不变量 5。
+    // 双人复核门经 TriageLimits 外置（feature_toggle，§11.4）：未配置回落代码基线 1 万，配置只能收紧不放开。
+    long tenantId = claimCaseApplicationService.getClaimAggregate(claimId).getTenantId();
+    BigDecimal dualReviewThreshold =
+        featureToggleService.triageLimits(tenantId).limits().dualReviewAmount();
+    if (amount.compareTo(dualReviewThreshold) >= 0) {
       log.info(
           "[快捷赔付] 超双人复核门转双人流程: claimId={}, amount={}, threshold={}",
           claimId,
           amount,
-          SettlementOrder.reviewThreshold());
+          dualReviewThreshold);
       return AutoApprovalOutcome.skipped("DUAL_REVIEW_REQUIRED");
     }
     // 风险闸：决策链显式判否的不得一键放款。triageReason 由决策执行落库（claim_decision_execution.triage_reason），

@@ -1,5 +1,6 @@
 package com.bone.claim.domain.model.settlement;
 
+import com.bone.claim.domain.model.ClaimThresholds;
 import com.bone.core.annotation.Transient;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
@@ -30,13 +31,14 @@ import lombok.NoArgsConstructor;
 @Table("settle_order")
 public class SettlementOrder extends TenantAggregateRoot<Long> {
 
-  private static final BigDecimal REVIEW_THRESHOLD = new BigDecimal("10000.00");
+  private static final BigDecimal REVIEW_THRESHOLD = ClaimThresholds.DUAL_REVIEW_AMOUNT;
 
   /**
    * 触发双人复核的金额门（≥ 该值即须两人认证）。
    *
-   * <p><b>公开是为了让巡检用同一个数</b>：对账要不变量 5（双人复核留痕）必须知道哪些单"本应"复核， 若在对账侧再写一个 {@code 10000}，两处各自演进时
-   * 巡检会静默失效——阈值调高了，巡检还在按旧门判，报的是一片"本该复核却没有"的假红。
+   * <p><b>单一真源</b>：阈值基线来自 {@link ClaimThresholds#DUAL_REVIEW_AMOUNT}，不要再在此写死 {@code 10000}—— 否则与案件侧
+   * {@code ClaimCase#requiresSecondReview(BigDecimal)}、决策侧 {@code TriageLimits} 各自演进时会静默漂移。
+   * <b>公开是为了让巡检用同一个数</b>：对账要不变量 5（双人复核留痕）必须知道哪些单"本应"复核， 若在对账侧再写一个 {@code 10000}，两处各自演进时巡检会静默失效。
    */
   public static BigDecimal reviewThreshold() {
     return REVIEW_THRESHOLD;
@@ -149,12 +151,13 @@ public class SettlementOrder extends TenantAggregateRoot<Long> {
    * <p>复核人不再由请求体提名——名单一旦可自填，「双人复核」就只是把同一个人的两个马甲写进数组。 大额时这里只落 {@code reviewFirstApprover}（本次 token
    * 身份），第二人由 {@link #confirmReview} 以另一个真实身份完成；两条 {@code FundingEvent} 合起来才是「两次认证通过」的台账。
    */
-  public void auditPass(String operatorId, String claimFirstReviewerId) {
+  public void auditPass(
+      String operatorId, String claimFirstReviewerId, BigDecimal dualReviewThreshold) {
     requireNotTerminal("审核");
     if (fundingStageEnum() != FundingStage.SOFT_RESERVED) {
       throw new DomainException("仅 SOFT_RESERVED 可推进至硬预占");
     }
-    if (amount.compareTo(REVIEW_THRESHOLD) >= 0) {
+    if (amount.compareTo(dualReviewThreshold) >= 0) {
       requireDistinctFromClaimReviewer(operatorId, claimFirstReviewerId, "审核人");
       this.reviewFirstApprover = operatorId;
       transition(FundingStage.REVIEW_FREEZE, operatorId);

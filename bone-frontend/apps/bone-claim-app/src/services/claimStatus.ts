@@ -1,4 +1,5 @@
 import type { ClaimStatusName } from './claimApi';
+import { CLAIM_STATUS_DICT } from '../constants/dicts.generated';
 
 /**
  * 案件状态字典 —— **唯一真源**。
@@ -21,22 +22,30 @@ export interface ClaimStatusMeta {
   terminal?: boolean;
 }
 
-export const CLAIM_STATUS_META: Record<ClaimStatusName, ClaimStatusMeta> = {
-  DRAFT: { color: 'default', label: '草稿' },
-  ACCEPTED: { color: 'blue', label: '已签收' },
-  PENDING_PRE_EXAM: { color: 'processing', label: '待初审分配' },
-  PRE_EXAMINING: { color: 'processing', label: '初审中' },
-  AUTO_PRE_EXAMINING: { color: 'cyan', label: '自动化初审中' },
-  PRE_EXAMINED: { color: 'geekblue', label: '已初审' },
-  EVIDENCE_SUBMITTING: { color: 'orange', label: '补录中' },
-  PENDING_ADJUST: { color: 'gold', label: '待核赔' },
-  ADJUSTING: { color: 'processing', label: '核赔中' },
-  ADJUSTED: { color: 'green', label: '已审核' },
-  REVIEWING: { color: 'purple', label: '复核中' },
-  CLOSED_REJECTED: { color: 'red', label: '已撤销/拒赔生效', terminal: true },
-  FINISHED: { color: 'green', label: '已结案', terminal: true },
-  APPEALING: { color: 'volcano', label: '申诉中' },
+const CLAIM_STATUS_BASE: Record<ClaimStatusName, { color: string; terminal?: boolean }> = {
+  DRAFT: { color: 'default' },
+  ACCEPTED: { color: 'blue' },
+  PENDING_PRE_EXAM: { color: 'processing' },
+  PRE_EXAMINING: { color: 'processing' },
+  AUTO_PRE_EXAMINING: { color: 'cyan' },
+  PRE_EXAMINED: { color: 'geekblue' },
+  EVIDENCE_SUBMITTING: { color: 'orange' },
+  PENDING_ADJUST: { color: 'gold' },
+  ADJUSTING: { color: 'processing' },
+  ADJUSTED: { color: 'green' },
+  REVIEWING: { color: 'purple' },
+  CLOSED_REJECTED: { color: 'red', terminal: true },
+  FINISHED: { color: 'green', terminal: true },
+  APPEALING: { color: 'volcano' },
 };
+
+/** label 来自后端单一真源（dicts.generated.ts），颜色/终态为前端展示属性。 */
+export const CLAIM_STATUS_META: Record<ClaimStatusName, ClaimStatusMeta> = (
+  Object.keys(CLAIM_STATUS_BASE) as ClaimStatusName[]
+).reduce<Record<ClaimStatusName, ClaimStatusMeta>>((acc, k) => {
+  acc[k] = { ...CLAIM_STATUS_BASE[k], label: CLAIM_STATUS_DICT[k] ?? k };
+  return acc;
+}, {} as Record<ClaimStatusName, ClaimStatusMeta>);
 
 /**
  * 状态 → 展示元信息（未知状态回退为「原始枚举名 + 灰色」，绝不编造中文名）。

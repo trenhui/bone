@@ -10,6 +10,8 @@
  * <p>为什么只在前端做文案、不做判断：要不要放款只由后端开关与上限决定，前端不重算
  * （重算会得到「现在重跑会怎样」，而不是「当时为什么没放款」）。这里只负责翻译与配色。
  */
+import { CONSUMPTION_REASON_DICT } from '../constants/dicts.generated';
+
 export type ConsumptionTone = 'success' | 'warning' | 'neutral';
 
 export interface ConsumptionReasonMeta {
@@ -22,38 +24,48 @@ export interface ConsumptionReasonMeta {
 }
 
 /** 已知受控码。新增码必须在后端 `AutoApprovalApplicationService` 同时登记，否则属契约缺口。 */
-export const CONSUMPTION_REASON_META: Record<string, ConsumptionReasonMeta> = {
+const CONSUMPTION_REASON_BASE: Record<string, { hint: string; tone: ConsumptionTone }> = {
   APPLIED: {
-    label: '已自动放款',
     hint: '结论为自动通过，案件已结案并生成结算单（资金链有单）。',
     tone: 'success',
   },
   AUTO_APPROVE_DISABLED: {
-    label: '自动放款开关关闭',
     hint: '结论为自动通过，但自动放款总开关未开启（策略待签核），案件保持已初审，需人工核赔。',
     tone: 'warning',
   },
   CAP_EXCEEDED: {
-    label: '超单笔上限',
     hint: '结论为自动通过，但理算金额超过自动放款单笔上限，按策略转人工核赔。',
     tone: 'warning',
   },
   ALREADY_SETTLED: {
-    label: '案件已结案',
     hint: '结论为自动通过，但案件在此刻已结案（可能是另一个人工路径先完成），本次未重复出金。',
     tone: 'neutral',
   },
   NO_DECISION: {
-    label: '无决策记录',
     hint: '消费时找不到该案的决策执行记录——属数据缺陷，请连同 traceId 反馈。',
     tone: 'warning',
   },
   CLAIM_NOT_FOUND: {
-    label: '案件不存在',
     hint: '消费时找不到案件聚合（可能已被删除或租户上下文漂移）——属数据缺陷。',
     tone: 'warning',
   },
+  DUAL_REVIEW_REQUIRED: {
+    hint: '结论为自动通过，但金额超过双人复核门，按策略转双人复核流程。',
+    tone: 'warning',
+  },
+  RISK_GATE_BLOCKED: {
+    hint: '结论为自动通过，但决策链显式判否（风控命中 / 风险闸），按策略转人工。',
+    tone: 'warning',
+  },
 };
+
+/** label 来自后端单一真源（dicts.generated.ts），提示/语气为前端展示属性。 */
+export const CONSUMPTION_REASON_META: Record<string, ConsumptionReasonMeta> = Object.entries(
+  CONSUMPTION_REASON_BASE,
+).reduce<Record<string, ConsumptionReasonMeta>>((acc, [code, base]) => {
+  acc[code] = { ...base, label: CONSUMPTION_REASON_DICT[code] ?? code };
+  return acc;
+}, {});
 
 const NOT_AUTO_APPROVE_PREFIX = 'NOT_AUTO_APPROVE:';
 

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.domain.model.adjustment.Adjustment;
 import com.bone.claim.domain.model.claim.projection.ClaimSettlementRef;
+import com.bone.claim.domain.model.decision.TriageLimits;
 import com.bone.claim.domain.model.quota.QuotaAccount;
 import com.bone.claim.domain.model.quota.QuotaTransaction;
 import com.bone.claim.domain.model.reconciliation.ReconciliationDiff;
@@ -60,6 +61,7 @@ class ReconciliationApplicationServiceTest {
     service =
         new ReconciliationApplicationService(
             tenantPort,
+            tenantId -> TriageLimits.defaultResolution(),
             quotaAccountRepository,
             settlementRepository,
             claimCaseRepository,

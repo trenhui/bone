@@ -3,6 +3,7 @@ package com.bone.claim.domain.model.settlement;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.bone.claim.domain.model.ClaimThresholds;
 import com.bone.core.exception.DomainException;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +41,7 @@ class SettlementOrderTest {
   /** 大额单：已由 op1 完成第一道认证，停在 REVIEW_FREEZE。 */
   private static SettlementOrder largeOrderInReviewFreeze() {
     SettlementOrder order = largeOrder();
-    order.auditPass("op1", CLAIM_REVIEWER);
+    order.auditPass("op1", CLAIM_REVIEWER, ClaimThresholds.DUAL_REVIEW_AMOUNT);
     return order;
   }
 
@@ -58,7 +59,7 @@ class SettlementOrderTest {
   @DisplayName("小额审核通过：直接 HARD_RESERVED（免第二道认证）")
   void auditPassSmall() {
     SettlementOrder order = smallOrder();
-    order.auditPass("op1", CLAIM_REVIEWER);
+    order.auditPass("op1", CLAIM_REVIEWER, ClaimThresholds.DUAL_REVIEW_AMOUNT);
     assertThat(order.fundingStageEnum()).isEqualTo(FundingStage.HARD_RESERVED);
     assertThat(order.getReviewFirstApprover()).isNull();
   }
@@ -67,7 +68,7 @@ class SettlementOrderTest {
   @DisplayName("大额审核通过：REVIEW_FREEZE + 落库审核发起人（第二道认证待办）")
   void auditPassLargeEntersReviewFreeze() {
     SettlementOrder order = largeOrder();
-    order.auditPass("op1", CLAIM_REVIEWER);
+    order.auditPass("op1", CLAIM_REVIEWER, ClaimThresholds.DUAL_REVIEW_AMOUNT);
     assertThat(order.fundingStageEnum()).isEqualTo(FundingStage.REVIEW_FREEZE);
     assertThat(order.getReviewFirstApprover()).isEqualTo("op1");
     assertThat(order.fundingEvents()).hasSize(2);
@@ -77,7 +78,9 @@ class SettlementOrderTest {
   @DisplayName("大额审核人=赔案第一审核人 → 拒（既定价又发起放款）")
   void auditPassByClaimReviewerRejected() {
     SettlementOrder order = largeOrder();
-    assertThatThrownBy(() -> order.auditPass(CLAIM_REVIEWER, CLAIM_REVIEWER))
+    assertThatThrownBy(
+            () ->
+                order.auditPass(CLAIM_REVIEWER, CLAIM_REVIEWER, ClaimThresholds.DUAL_REVIEW_AMOUNT))
         .isInstanceOf(DomainException.class)
         .hasMessageContaining("不得为该赔案的第一审核人");
   }
@@ -86,7 +89,7 @@ class SettlementOrderTest {
   @DisplayName("赔案无第一审核人 → 拒（SoD 无从判定，fail-closed）")
   void auditPassWithoutClaimReviewerRejected() {
     SettlementOrder order = largeOrder();
-    assertThatThrownBy(() -> order.auditPass("op1", ""))
+    assertThatThrownBy(() -> order.auditPass("op1", "", ClaimThresholds.DUAL_REVIEW_AMOUNT))
         .isInstanceOf(DomainException.class)
         .hasMessageContaining("未登记第一审核人");
   }
@@ -137,7 +140,7 @@ class SettlementOrderTest {
   @DisplayName("非复核冻结态不可复核放行")
   void confirmReviewRequiresReviewFreeze() {
     SettlementOrder order = smallOrder();
-    order.auditPass("op1", CLAIM_REVIEWER);
+    order.auditPass("op1", CLAIM_REVIEWER, ClaimThresholds.DUAL_REVIEW_AMOUNT);
     assertThatThrownBy(() -> order.confirmReview("op2", CLAIM_REVIEWER))
         .isInstanceOf(DomainException.class)
         .hasMessageContaining("仅复核冻结");
@@ -156,7 +159,7 @@ class SettlementOrderTest {
   @DisplayName("支付：HARD_RESERVED → PAID，paidAt 落库、状态 CLOSED")
   void pay() {
     SettlementOrder order = smallOrder();
-    order.auditPass("op1", CLAIM_REVIEWER);
+    order.auditPass("op1", CLAIM_REVIEWER, ClaimThresholds.DUAL_REVIEW_AMOUNT);
     order.pay("op2");
     assertThat(order.fundingStageEnum()).isEqualTo(FundingStage.PAID);
     assertThat(order.getPaidAt()).isNotNull();
@@ -176,7 +179,7 @@ class SettlementOrderTest {
   @DisplayName("撤销：→ RELEASED（释放预占）")
   void cancel() {
     SettlementOrder order = smallOrder();
-    order.auditPass("op1", CLAIM_REVIEWER);
+    order.auditPass("op1", CLAIM_REVIEWER, ClaimThresholds.DUAL_REVIEW_AMOUNT);
     order.cancel("op2", false);
     assertThat(order.fundingStageEnum()).isEqualTo(FundingStage.RELEASED);
     assertThat(order.fundingEvents()).anyMatch(e -> e.stageEnum() == FundingStage.RELEASED);
@@ -186,7 +189,7 @@ class SettlementOrderTest {
   @DisplayName("退款前置：仅 PAID 可退款")
   void refundOnlyFromPaid() {
     SettlementOrder order = smallOrder();
-    order.auditPass("op1", CLAIM_REVIEWER);
+    order.auditPass("op1", CLAIM_REVIEWER, ClaimThresholds.DUAL_REVIEW_AMOUNT);
     assertThatThrownBy(() -> order.refund("op2"))
         .isInstanceOf(DomainException.class)
         .hasMessageContaining("仅 PAID 可退款");
@@ -200,9 +203,10 @@ class SettlementOrderTest {
   @DisplayName("终态不可逆向：PAID 后再审核 → 拒")
   void terminalGuard() {
     SettlementOrder order = smallOrder();
-    order.auditPass("op1", CLAIM_REVIEWER);
+    order.auditPass("op1", CLAIM_REVIEWER, ClaimThresholds.DUAL_REVIEW_AMOUNT);
     order.pay("op2");
-    assertThatThrownBy(() -> order.auditPass("op3", CLAIM_REVIEWER))
+    assertThatThrownBy(
+            () -> order.auditPass("op3", CLAIM_REVIEWER, ClaimThresholds.DUAL_REVIEW_AMOUNT))
         .isInstanceOf(DomainException.class)
         .hasMessageContaining("已终态");
   }

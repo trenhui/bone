@@ -15,6 +15,7 @@ import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.claim.domain.model.decision.DecisionResult;
 import com.bone.claim.domain.model.decision.DecisionTier;
+import com.bone.claim.domain.model.decision.TriageLimits;
 import com.bone.claim.domain.model.settlement.AccountType;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,6 +72,12 @@ class AutoApprovalApplicationServiceTest {
         .thenReturn(
             new IndemnityApplicationService.AdjustmentResult(
                 null, AMOUNT, "h", "s", null, "", null, BigDecimal.ZERO, true));
+    // 双人复核门经 TriageLimits 外置：单测基座默认回落代码基线 1 万（与改动前 SettlementOrder.reviewThreshold() 一致）。
+    when(featureTenantToggleService.triageLimits(anyLong()))
+        .thenReturn(TriageLimits.defaultResolution());
+    ClaimCase claimAggregate = mock(ClaimCase.class);
+    when(claimAggregate.getTenantId()).thenReturn(TENANT);
+    when(claimCaseApplicationService.getClaimAggregate(CLAIM)).thenReturn(claimAggregate);
   }
 
   @Test

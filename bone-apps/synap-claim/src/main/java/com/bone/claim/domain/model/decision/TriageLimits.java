@@ -1,5 +1,6 @@
 package com.bone.claim.domain.model.decision;
 
+import com.bone.claim.domain.model.ClaimThresholds;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -16,7 +17,7 @@ import java.util.Map;
  * <p><b>单向棘轮（ratchet）——本类最重要的规则</b>：配置只允许让自动通过<b>更难</b>，不允许更容易。
  *
  * <ul>
- *   <li>金额上限只能调低（{@code autoAmountLimit ≤ 基线}）；
+ *   <li>金额上限只能调低（{@code autoAmountLimit ≤ 基线}）；双人复核门同样只能收紧（{@code dualReviewAmount ≤ 基线}）；
  *   <li>置信度门槛只能调高（{@code aiManualThreshold / aiReviewThreshold / ocrManualThreshold ≥ 基线}）。
  * </ul>
  *
@@ -33,12 +34,15 @@ import java.util.Map;
  * @param aiManualThreshold AI 置信度强制人工线（低于即转人工）
  * @param aiReviewThreshold AI 置信度复核档上界（低于即进复核档）
  * @param ocrManualThreshold OCR 置信度独立熔断线（低于即转人工）
+ * @param dualReviewAmount 双人复核金额门（元，≥ 即须双人认证；与 autoAmountLimit 同基线，但语义独立——前者管「是否自动通过」，
+ *     后者管「是否必须双人认证」，二者共用 1 万基线但各自可配）
  */
 public record TriageLimits(
     BigDecimal autoAmountLimit,
     BigDecimal aiManualThreshold,
     BigDecimal aiReviewThreshold,
-    BigDecimal ocrManualThreshold) {
+    BigDecimal ocrManualThreshold,
+    BigDecimal dualReviewAmount) {
 
   /** config_json 键：自动通过金额上限（元）。 */
   public static final String CONFIG_AUTO_AMOUNT_LIMIT = "autoAmountLimit";
@@ -52,19 +56,24 @@ public record TriageLimits(
   /** config_json 键：OCR 置信度熔断线。 */
   public static final String CONFIG_OCR_MANUAL_THRESHOLD = "ocrManualThreshold";
 
+  /** config_json 键：双人复核金额门（元，≥ 即须双人认证）。 */
+  public static final String CONFIG_DUAL_REVIEW_AMOUNT = "dualReviewAmount";
+
   /** 全部受支持的键（用于区分「未知键」与「缺键」）。 */
   private static final List<String> SUPPORTED_KEYS =
       List.of(
           CONFIG_AUTO_AMOUNT_LIMIT,
           CONFIG_AI_MANUAL_THRESHOLD,
           CONFIG_AI_REVIEW_THRESHOLD,
-          CONFIG_OCR_MANUAL_THRESHOLD);
+          CONFIG_OCR_MANUAL_THRESHOLD,
+          CONFIG_DUAL_REVIEW_AMOUNT);
 
   public TriageLimits {
     requireNonNull(autoAmountLimit, "autoAmountLimit");
     requireNonNull(aiManualThreshold, "aiManualThreshold");
     requireNonNull(aiReviewThreshold, "aiReviewThreshold");
     requireNonNull(ocrManualThreshold, "ocrManualThreshold");
+    requireNonNull(dualReviewAmount, "dualReviewAmount");
   }
 
   private static void requireNonNull(BigDecimal value, String name) {
@@ -83,7 +92,8 @@ public record TriageLimits(
         DecisionTriage.AUTO_AMOUNT_LIMIT,
         DecisionTriage.AI_MANUAL_THRESHOLD,
         DecisionTriage.AI_REVIEW_THRESHOLD,
-        DecisionTriage.OCR_MANUAL_THRESHOLD);
+        DecisionTriage.OCR_MANUAL_THRESHOLD,
+        ClaimThresholds.DUAL_REVIEW_AMOUNT);
   }
 
   /**
@@ -140,6 +150,12 @@ public record TriageLimits(
             numeric(overrides, CONFIG_OCR_MANUAL_THRESHOLD, rejected),
             CONFIG_OCR_MANUAL_THRESHOLD,
             rejected);
+    BigDecimal dualReview =
+        tightestAmount(
+            base.dualReviewAmount(),
+            numeric(overrides, CONFIG_DUAL_REVIEW_AMOUNT, rejected),
+            CONFIG_DUAL_REVIEW_AMOUNT,
+            rejected);
 
     // 序关系：人工线 > 复核线上界会让「复核档」永远不可达（0.9 / 0.8 ⇒ 所有 <0.9 都直转人工）。
     // 单独调一个越界项时不整组回滚，而是把越界的那一项退回基线并登记——另一项的有效配置不该被牵连。
@@ -165,7 +181,8 @@ public record TriageLimits(
       }
     }
 
-    return new Resolution(new TriageLimits(amount, aiManual, aiReview, ocrManual), rejected);
+    return new Resolution(
+        new TriageLimits(amount, aiManual, aiReview, ocrManual, dualReview), rejected);
   }
 
   /** 金额上限：只允许收紧（≤ 基线）。放宽必须走代码发布，见类注释。 */
@@ -253,6 +270,7 @@ public record TriageLimits(
       case CONFIG_AI_MANUAL_THRESHOLD -> base.aiManualThreshold().toPlainString();
       case CONFIG_AI_REVIEW_THRESHOLD -> base.aiReviewThreshold().toPlainString();
       case CONFIG_OCR_MANUAL_THRESHOLD -> base.ocrManualThreshold().toPlainString();
+      case CONFIG_DUAL_REVIEW_AMOUNT -> base.dualReviewAmount().toPlainString();
       default -> "";
     };
   }

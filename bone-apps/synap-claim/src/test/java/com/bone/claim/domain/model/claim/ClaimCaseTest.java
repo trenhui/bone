@@ -3,6 +3,7 @@ package com.bone.claim.domain.model.claim;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.bone.claim.domain.model.ClaimThresholds;
 import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
 import com.bone.claim.domain.model.claim.valueobject.Decision;
 import com.bone.claim.domain.model.claim.valueobject.HangUpType;
@@ -205,7 +206,7 @@ class ClaimCaseTest {
       claim.escalateToAdjust("op-1");
       claim.claimAdjustTask("reviewer-1");
       claim.decide(Decision.APPROVED, "reviewer-1", null, null, new BigDecimal("12000.00"));
-      assertThat(claim.requiresSecondReview()).isTrue();
+      assertThat(claim.requiresSecondReview(ClaimThresholds.DUAL_REVIEW_AMOUNT)).isTrue();
       assertThatThrownBy(() -> claim.submitForSecondReview("reviewer-1"))
           .isInstanceOf(DomainException.class)
           .hasMessageContaining("非第一审核人");

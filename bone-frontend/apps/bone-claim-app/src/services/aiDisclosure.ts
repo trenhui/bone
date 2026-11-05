@@ -11,6 +11,7 @@
 
 import { createApiClient } from '@bone/shared-services';
 import type { ApiResponse } from '@bone/shared-types';
+import { AI_INVOLVEMENT_DICT, AI_RIGHTS_DICT } from '../constants/dicts.generated';
 
 export type AiInvolvement = 'AI_ASSISTED' | 'AI_UNAVAILABLE' | 'UNDETERMINED';
 
@@ -56,23 +57,28 @@ export interface InvolvementMeta {
 }
 
 /** 已知受控码。未知码必须降级显示原始码，不得乐观映射。 */
-export const INVOLVEMENT_META: Record<AiInvolvement, InvolvementMeta> = {
+const INVOLVEMENT_BASE: Record<AiInvolvement, { tone: DisclosureTone; hint: string }> = {
   AI_ASSISTED: {
-    label: '含 AI 辅助生成内容',
     tone: 'info',
     hint: '本次决策的 LLM 节点真实执行，AI 产出建议、置信度与解释材料；最终决定仍由人工作出。',
   },
   AI_UNAVAILABLE: {
-    label: 'AI 能力未可用（规则降级）',
     tone: 'warning',
     hint: 'AI 节点降级为规则路径。这不代表风险已排除，也不等于「AI 未参与」。',
   },
   UNDETERMINED: {
-    label: '无法确认 AI 是否参与',
     tone: 'warning',
     hint: '缺少可判定的运行期证据（无执行记录 / 无 LLM 节点 / 输出不可解析 / 状态键缺失）。不得据此认定 AI 未参与。',
   },
 };
+
+/** label 来自后端单一真源（dicts.generated.ts），语气/提示为前端展示属性。 */
+export const INVOLVEMENT_META: Record<AiInvolvement, InvolvementMeta> = (
+  Object.keys(INVOLVEMENT_BASE) as AiInvolvement[]
+).reduce<Record<AiInvolvement, InvolvementMeta>>((acc, k) => {
+  acc[k] = { ...INVOLVEMENT_BASE[k], label: AI_INVOLVEMENT_DICT[k] ?? k };
+  return acc;
+}, {} as Record<AiInvolvement, InvolvementMeta>);
 
 export function involvementMeta(code: string): InvolvementMeta {
   const known = INVOLVEMENT_META[code as AiInvolvement];
@@ -83,12 +89,8 @@ export function involvementMeta(code: string): InvolvementMeta {
   };
 }
 
-/** 权利受控码 → 中文（对齐后端 AiDecisionDisclosure.RIGHTS）。 */
-export const RIGHTS_LABELS: Record<string, string> = {
-  REQUEST_HUMAN_REVIEW: '要求人工复核',
-  APPEAL_WITHIN_48H: '48 小时内申诉',
-  EXPLANATION_OF_DECISION: '要求说明决定依据',
-};
+/** 权利受控码 → 中文（对齐后端 AiDecisionDisclosure.RIGHTS，单一真源 dicts.generated.ts）。 */
+export const RIGHTS_LABELS = AI_RIGHTS_DICT;
 
 export function rightLabel(code: string): string {
   return RIGHTS_LABELS[code] ?? `未登记权利：${code}`;

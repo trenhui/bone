@@ -37,9 +37,10 @@ export function newIdempotencyKey(): string {
 }
 
 /**
- * 大额双人复核门（后端 SettlementOrder.reviewThreshold() 单一真源，1 万元）。
+ * 大额双人复核门（后端 {@code ClaimThresholds.DUAL_REVIEW_AMOUNT} 单一真源，1 万元）。
  *
  * 前端仅用于列表徽标与计数展示，不参与任何资金判定；阈值调整必须与后端同批同步。
+ * 注意：这是前端镜像常量，真实判定以后端为准——接入配置中心 /dict 后应替换为运行时取值，消除此处第二份真源。
  */
 export const REVIEW_THRESHOLD = 10000;
 

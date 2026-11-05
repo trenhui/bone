@@ -12,6 +12,7 @@ import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.domain.model.adjustment.Adjustment;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
+import com.bone.claim.domain.model.decision.TriageLimits;
 import com.bone.claim.domain.model.settlement.AccountType;
 import com.bone.claim.domain.model.settlement.SettlementOrder;
 import com.bone.claim.domain.repository.AdjustmentRepository;
@@ -67,7 +68,8 @@ class SettlementSettleableGuardTest {
             claimCaseApplicationService,
             tenantPort,
             domainEventPublisher,
-            adjustmentRepository);
+            adjustmentRepository,
+            tenantId -> TriageLimits.defaultResolution());
   }
 
   @Test
