@@ -801,7 +801,7 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 | `aiUndetermined` | 输出里**没有** `aiAvailable` 键（老 schema）或 JSON 不可解析 ⇒ 既不算参与也不算降级 |
 | `participationRate` | `participated / (participated + degraded)`，4 位小数；**分母为 0 时 `null`** |
 | `degradedByReason` | 原因码 → 条数；缺原因码记 `UNATTRIBUTED`，无法识别的码记 `UNRECOGNIZED`（不让自由文本进入审计面） |
-| `attributionCoverage` | 有原因码的降级占比，**降级为 0 时 `null`**。与参与率分开，因为「跑了但说不清为什么降级」和「根本没跑」是两种不同的运维状态 |
+| `attributionCoverage` | **有非空原因码**的降级占比，**降级为 0 时 `null`**。与参与率分开，因为「跑了但说不清为什么降级」和「根本没跑」是两种不同的运维状态。注意 `UNRECOGNIZED` **计入**覆盖率——它证明生产侧确实写了码，只是与本构建的受控枚举版本错配；覆盖率量的是「有没有码」，「码认不认识」看该桶条数 |
 | `capabilityMissing` / `capabilityByReason` | 能力缺失（知识/规则/视觉/图计算）的节点数与码分布——**第二类缺失，与 LLM 降级分开计** |
 | `note` | 口径说明随响应下发，禁止把参与率当准确率 |
 
@@ -813,7 +813,7 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 
 | 判据 | 断言 | 挡住什么 |
 |---|---|---|
-| 分桶对账 | `participated + degraded + undetermined == nodesScanned`，否则抛错不输出 | 新增状态却忘了归类时，静默漏统会让参与率虚高且总量看着正常 |
+| 分桶对账 | `participated + degraded + undetermined == nodesScanned`（**由单测 `bucketsMustSumToScannedNodes` 钉住，实现是三条互斥分支、无运行时断言**） | 新增状态却忘了归类时，静默漏统会让参与率虚高且总量看着正常 |
 | 空集给 `null` 不给 0 | 分母为 0 时比率为 `null` | 报表把 `null` 当 0 ⇒「AI 全错」/「AI 全没参与」的假告警（同 §11.4） |
 | 扫描有界 | 时间窗 ≤31 天，单次 ≤2000 节点，越界 400 | 运维端点变成全库扫描器 |
 

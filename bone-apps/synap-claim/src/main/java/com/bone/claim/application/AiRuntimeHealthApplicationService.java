@@ -201,8 +201,11 @@ public class AiRuntimeHealthApplicationService {
    * @param unparsableOutputs {@code aiUndetermined} 中因 JSON 不可解析造成的那部分（诊断用子集）
    * @param participationRate {@code participated / (participated + degraded)}，4 位小数；分母为 0 时 {@code
    *     null}
-   * @param degradedByReason 降级原因码 → 条数（含 {@link #UNATTRIBUTED} / {@link #UNRECOGNIZED} 两个空洞桶）
-   * @param attributionCoverage 降级样本里带受控原因码的占比；降级为 0 时 {@code null}
+   * @param degradedByReason 降级原因码 → 条数。{@link #UNATTRIBUTED} 是真空洞（节点没给码）； {@link #UNRECOGNIZED}
+   *     不是空洞而是「码不认识」——它证明生产侧确实写了码，只是与本构建的受控枚举 版本错配，故仍计入 {@code
+   *     attributionCoverage}。覆盖率量的是「有没有码」，不是「码认不认识」； 「不认识的那部分有多大」看本 map 里 {@link #UNRECOGNIZED}
+   *     这一项的条数。
+   * @param attributionCoverage 降级样本里带了非空原因码的占比；降级为 0 时 {@code null}
    * @param capabilityMissing 自报「能力缺失」的节点数（知识/规则/视觉/图计算），与模型降级分开计
    * @param capabilityByReason 能力缺失原因码 → 条数
    */

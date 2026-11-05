@@ -84,6 +84,30 @@ class AiRuntimeHealthApplicationServiceTest {
   }
 
   @Test
+  @DisplayName("三桶对账：参与 + 降级 + 无法判定 == 扫描数")
+  void bucketsMustSumToScannedNodes() {
+    List<DecisionTraceNode> nodes =
+        List.of(
+            node("{\"aiAvailable\":true}"),
+            node("{\"aiAvailable\":true}"),
+            node("{\"aiAvailable\":false,\"aiUnavailableReason\":\"MOCK_NOT_ALLOWED\"}"),
+            node("{\"capabilityMissing\":false}"),
+            node("not-json"),
+            node(""));
+
+    AiRuntimeHealth health = AiRuntimeHealthApplicationService.aggregate(nodes, FROM, TO);
+
+    assertThat(health.aiParticipated()).isEqualTo(2);
+    assertThat(health.aiDegraded()).isEqualTo(1);
+    assertThat(health.aiUndetermined()).isEqualTo(3);
+    assertThat(health.nodesScanned()).isEqualTo(6);
+    // 不变式：三桶互斥且完备。后续给节点加第四种状态却漏归类时，这里立刻失配，
+    // 而不是让总数悄悄小于扫描数——那会让参与率的分母偏小、比率虚高且总量看着正常。
+    assertThat(health.aiParticipated() + health.aiDegraded() + health.aiUndetermined())
+        .isEqualTo(health.nodesScanned());
+  }
+
+  @Test
   @DisplayName("降级但没带原因码：仍计入降级，原因桶记 UNATTRIBUTED")
   void degradedWithoutReasonLandsInUnattributed() {
     List<DecisionTraceNode> nodes = List.of(node("{\"aiAvailable\":false}"));
@@ -98,6 +122,22 @@ class AiRuntimeHealthApplicationServiceTest {
   }
 
   // ===== 原因码归一 =====
+
+  @Test
+  @DisplayName("原因码是空白串时与完全没有原因码同样记 UNATTRIBUTED")
+  void blankReasonIsUnattributed() {
+    List<DecisionTraceNode> nodes =
+        List.of(node("{\"aiAvailable\":false,\"aiUnavailableReason\":\"   \"}"));
+
+    AiRuntimeHealth health = AiRuntimeHealthApplicationService.aggregate(nodes, FROM, TO);
+
+    // 判据用的是 isBlank() 而非 isEmpty()：只有把「空白也算缺失」写进用例，
+    // 后续把它简化成 isEmpty() 才会红，否则空白串会静默落进 UNRECOGNIZED 桶。
+    assertThat(health.degradedByReason())
+        .containsEntry(AiRuntimeHealthApplicationService.UNATTRIBUTED, 1)
+        .doesNotContainKey(AiRuntimeHealthApplicationService.UNRECOGNIZED);
+    assertThat(health.attributionCoverage()).isEqualByComparingTo("0.0000");
+  }
 
   @Test
   @DisplayName("受控码保留原值，未知码归到 UNRECOGNIZED（不让自由文本进审计面）")
@@ -182,6 +222,21 @@ class AiRuntimeHealthApplicationServiceTest {
     assertThat(health.capabilityByReason()).containsEntry("KNOWLEDGE_UNAVAILABLE", 2);
     // 能力缺失不能被算成降级：参与率仍是 2/(2+1)
     assertThat(health.participationRate()).isEqualByComparingTo("0.6667");
+  }
+
+  @Test
+  @DisplayName("能力缺失但没带原因码：仍计能力缺失，原因桶记 UNATTRIBUTED")
+  void capabilityMissingWithoutReasonLandsInUnattributed() {
+    List<DecisionTraceNode> nodes =
+        List.of(node("{\"aiAvailable\":true,\"capabilityMissing\":true}"));
+
+    AiRuntimeHealth health = AiRuntimeHealthApplicationService.aggregate(nodes, FROM, TO);
+
+    assertThat(health.capabilityMissing()).isEqualTo(1);
+    assertThat(health.capabilityByReason())
+        .containsEntry(AiRuntimeHealthApplicationService.UNATTRIBUTED, 1);
+    // 能力缺失不是降级：不能污染参与率，也不能凭空造一次模型故障
+    assertThat(health.participationRate()).isEqualByComparingTo("1.0000");
   }
 
   // ===== 扫描上界 =====
