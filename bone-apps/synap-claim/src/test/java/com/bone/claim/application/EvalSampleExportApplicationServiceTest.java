@@ -212,7 +212,9 @@ class EvalSampleExportApplicationServiceTest {
                 "AUTO_APPROVE",
                 "FINISHED",
                 "UNKNOWN_AI_PARTICIPATION_UNDETERMINED",
-                "UNDETERMINED"));
+                "UNDETERMINED"),
+            // 本地桩判定：有结论，但没有模型参与
+            sample("h", "AUTO_APPROVE", "FINISHED", "UNKNOWN_AI_STUB_SAMPLE", "STUB_ONLY"));
 
     AgreementSummary summary = EvalSampleExportApplicationService.summarize(samples);
 
@@ -222,20 +224,22 @@ class EvalSampleExportApplicationServiceTest {
     assertThat(summary.unknownNotConverged()).isEqualTo(1);
     assertThat(summary.unknownAiNotInvolved()).isEqualTo(1);
     assertThat(summary.unknownAiParticipationUndetermined()).isEqualTo(1);
+    assertThat(summary.unknownAiStubSample()).isEqualTo(1);
     assertThat(summary.evaluableCount()).isEqualTo(3);
     assertThat(summary.agreementRate()).isEqualByComparingTo("0.6667");
-    // 六态之和必须等于样本数：漏统计某个状态会让一致率虚高，而总量看上去仍然正常。
+    // 七态之和必须等于样本数：漏统计某个状态会让一致率虚高，而总量看上去仍然正常。
     assertThat(
             summary.agree()
                 + summary.disagree()
                 + summary.unknownNoBinaryVerdict()
                 + summary.unknownNotConverged()
                 + summary.unknownAiNotInvolved()
-                + summary.unknownAiParticipationUndetermined())
+                + summary.unknownAiParticipationUndetermined()
+                + summary.unknownAiStubSample())
         .isEqualTo(samples.size());
-    // 参与率是判定态之外的正交维度：7 条里只有 5 条 AI 真的参与。
+    // 参与率是判定态之外的正交维度：8 条里只有 5 条 AI 真的参与（桩与降级都不算）。
     assertThat(summary.aiParticipatedCount()).isEqualTo(5);
-    assertThat(summary.aiCoverage()).isEqualByComparingTo("0.7143");
+    assertThat(summary.aiCoverage()).isEqualByComparingTo("0.6250");
   }
 
   /** 关键负向：降级样本不得计入 AI 一致率——它比的是规则引擎，不是 AI。 */
@@ -279,6 +283,42 @@ class EvalSampleExportApplicationServiceTest {
         .isEqualTo(AiParticipation.UNDETERMINED);
     assertThat(EvalSampleExportApplicationService.participation(null, "m1"))
         .isEqualTo(AiParticipation.UNDETERMINED);
+  }
+
+  /** 本地桩也是「有模型版本」：只按非空判断会把它算成 AI 参与，桩撑起的「AI 一致率」就是这么来的。 */
+  @Test
+  void stubModelVersionIsNotAiParticipation() {
+    assertThat(EvalSampleExportApplicationService.participation("SUCCESS", "local-stub"))
+        .isEqualTo(AiParticipation.STUB_ONLY);
+    assertThat(EvalSampleExportApplicationService.participation("SUCCESS", "MOCK-LLM"))
+        .isEqualTo(AiParticipation.STUB_ONLY);
+    // 桩样本即便「看起来与终态一致」，也不得进入一致率分母
+    assertThat(
+            EvalSampleExportApplicationService.judge(
+                "AUTO_APPROVE", "FINISHED", AiParticipation.STUB_ONLY))
+        .isEqualTo(EvalSampleExportApplicationService.Agreement.UNKNOWN_AI_STUB_SAMPLE);
+  }
+
+  /** 端到端：桩环境导出的样本，覆盖率必须是 0，且不得把桩的置信度当 AI 置信度导出。 */
+  @Test
+  void stubEnvironmentExportHasZeroCoverageAndNoAiConfidence() {
+    // 先造夹具再 stub：把 claim(...) 写进 thenReturn(...) 会在 stubbing 未完成时又去 stub 另一个 mock
+    // （UnfinishedStubbingException），本仓已踩过两次。
+    DecisionExecution stub = execution(1L, "AUTO_APPROVE", "SUCCESS", "local-stub");
+    ClaimCase singleCase = claim(1L, "FINISHED", "42", "u1");
+    when(decisionExecutionRepository.findConvergedInWindow(FROM, TO)).thenReturn(List.of(stub));
+    when(claimCaseRepository.findByIds(anyList())).thenReturn(List.of(singleCase));
+
+    EvalSampleExport export = service.export(FROM, TO, 100);
+
+    Sample only = export.samples().get(0);
+    assertThat(only.aiParticipation()).isEqualTo("STUB_ONLY");
+    assertThat(only.agreement()).isEqualTo("UNKNOWN_AI_STUB_SAMPLE");
+    assertThat(only.aiConfidence()).isNull();
+    assertThat(export.agreementSummary().aiParticipatedCount()).isZero();
+    assertThat(export.agreementSummary().aiCoverage()).isEqualByComparingTo("0.0000");
+    assertThat(export.agreementSummary().evaluableCount()).isZero();
+    assertThat(export.agreementSummary().agreementRate()).isNull();
   }
 
   /** 降级行的 ai_confidence 是规则置信度：导出成「AI 置信度」等于给规则结论披 AI 外衣。 */

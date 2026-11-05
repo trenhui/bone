@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.bone.claim.application.port.out.AiGatewayPort.AiAssessment;
 import com.bone.claim.application.port.out.AiGatewayUnavailableException;
 import com.bone.claim.application.port.out.ClaimContextPort.ClaimContextView;
+import com.bone.claim.domain.model.decision.AiModelProvenance;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
@@ -49,6 +50,19 @@ class LocalAiGatewayPortAdapterTest {
 
     assertThat(a.facts())
         .anyMatch(f -> "EVIDENCE_VERIFY".equals(f.code()) && "NOT_ALL_PASSED".equals(f.value()));
+  }
+
+  /**
+   * 桩自报标识必须被领域层判为 {@link AiModelProvenance#STUB}。
+   *
+   * <p>这是一条<b>跨层一致性钉子</b>：运行期参与率与评测一致率都靠「模型标识 → 来源」这一步来把桩排除在 AI 参与之外。 若改了桩的模型名而忘了在 {@code
+   * AiModelProvenance} 的受控集合里登记，桩会静默变成「生产模型」，两个指标同时变好看。 让改名的代价是一条红用例，而不是一次无声的指标虚高。
+   */
+  @Test
+  void stub_model_id_must_be_recognized_as_non_production() {
+    AiAssessment a = adapter.assess(ctx(true, true, new BigDecimal("0.95"), true));
+
+    assertThat(AiModelProvenance.of(a.modelVersion())).isEqualTo(AiModelProvenance.STUB);
   }
 
   @Test

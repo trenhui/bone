@@ -3,6 +3,7 @@ package com.bone.claim.application;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.ClaimCase;
+import com.bone.claim.domain.model.decision.AiModelProvenance;
 import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.DecisionExecutionRepository;
@@ -137,6 +138,7 @@ public class EvalSampleExportApplicationService {
     int notConverged = 0;
     int aiNotInvolved = 0;
     int aiUndetermined = 0;
+    int aiStubSample = 0;
     int aiParticipated = 0;
     for (EvalSampleExport.Sample sample : samples) {
       // valueOf 遇未知取值直接抛（快速失败）；下面的求和校验兜住「新增判定态却忘了归类」。
@@ -147,14 +149,16 @@ public class EvalSampleExportApplicationService {
         case UNKNOWN_NOT_CONVERGED -> notConverged++;
         case UNKNOWN_AI_NOT_INVOLVED -> aiNotInvolved++;
         case UNKNOWN_AI_PARTICIPATION_UNDETERMINED -> aiUndetermined++;
+        case UNKNOWN_AI_STUB_SAMPLE -> aiStubSample++;
       }
       if (AiParticipation.PARTICIPATED.name().equals(sample.aiParticipation())) {
         aiParticipated++;
       }
     }
-    int counted = agree + disagree + noBinary + notConverged + aiNotInvolved + aiUndetermined;
+    int counted =
+        agree + disagree + noBinary + notConverged + aiNotInvolved + aiUndetermined + aiStubSample;
     if (counted != samples.size()) {
-      // 新增判定态而这里没跟上时，六态之和会小于样本数。静默漏统会让一致率虚高、总量看着正常，
+      // 新增判定态而这里没跟上时，七态之和会小于样本数。静默漏统会让一致率虚高、总量看着正常，
       // 所以宁可让整次导出失败，也不输出一个自己都对不上账的聚合。
       throw new IllegalStateException(
           "判定态聚合与样本数不一致：" + counted + " != " + samples.size() + "，存在未归类的判定态");
@@ -176,6 +180,7 @@ public class EvalSampleExportApplicationService {
         notConverged,
         aiNotInvolved,
         aiUndetermined,
+        aiStubSample,
         evaluable,
         rate,
         aiParticipated,
@@ -191,13 +196,23 @@ public class EvalSampleExportApplicationService {
    *
    * <p><b>为什么还要看模型版本</b>：降级时执行器会把规则置信度回填进 {@code ai_confidence}（既有语义）， 因此「有置信度」不能证明 AI 跑过；模型版本由 LLM
    * 节点成功时自报并回填，缺失即视为无法证明参与。 判不清就落 {@link AiParticipation#UNDETERMINED}，不计入分母——方向必须是保守的。
+   *
+   * <p><b>为什么「有模型版本」还不够</b>：本地确定性桩也会在成功路径回填 {@code local-stub}。桩的判定来自既有结构化上下文
+   * 的确定性派生，<b>没有任何模型参与</b>；把它算成 {@code PARTICIPATED}，会让一批桩样本撑起一个看着不错的「AI 一致率」。 故再按 {@link
+   * AiModelProvenance} 区分：桩落 {@link AiParticipation#STUB_ONLY}，同样不计入一致率与覆盖率。
    */
   static AiParticipation participation(String executionStatus, String modelVersion) {
     if ("FALLBACK".equals(executionStatus)) {
       return AiParticipation.DEGRADED;
     }
-    if ("SUCCESS".equals(executionStatus) && notBlank(modelVersion)) {
-      return AiParticipation.PARTICIPATED;
+    if ("SUCCESS".equals(executionStatus)) {
+      AiModelProvenance provenance = AiModelProvenance.of(modelVersion);
+      if (provenance == AiModelProvenance.STUB) {
+        return AiParticipation.STUB_ONLY;
+      }
+      if (provenance == AiModelProvenance.PROVIDER) {
+        return AiParticipation.PARTICIPATED;
+      }
     }
     return AiParticipation.UNDETERMINED;
   }
@@ -211,6 +226,9 @@ public class EvalSampleExportApplicationService {
       String aiDecisionResult, String finalStatus, AiParticipation participation) {
     if (participation == AiParticipation.DEGRADED) {
       return Agreement.UNKNOWN_AI_NOT_INVOLVED;
+    }
+    if (participation == AiParticipation.STUB_ONLY) {
+      return Agreement.UNKNOWN_AI_STUB_SAMPLE;
     }
     if (participation == AiParticipation.UNDETERMINED) {
       return Agreement.UNKNOWN_AI_PARTICIPATION_UNDETERMINED;
@@ -367,6 +385,8 @@ public class EvalSampleExportApplicationService {
     UNKNOWN_NOT_CONVERGED("案件未收敛到终态，标签未定"),
     UNKNOWN_NO_BINARY_VERDICT("AI 未给出可比二元结论（转人工/补件），不计入准确率"),
     UNKNOWN_AI_NOT_INVOLVED("AI 未真实参与：本次执行为规则路径降级，其结论是规则引擎结论，不是 AI 建议，不计入 AI 一致率"),
+    UNKNOWN_AI_STUB_SAMPLE(
+        "本次执行由本地确定性桩（非模型）判定：桩结论来自既有结构化上下文的确定性派生，" + "不是模型给出的 AI 建议，不计入 AI 一致率与覆盖率"),
     UNKNOWN_AI_PARTICIPATION_UNDETERMINED("无法证明 AI 真实参与（执行状态非降级但缺模型版本留痕），不计入 AI 一致率");
 
     private final String basis;
@@ -382,10 +402,12 @@ public class EvalSampleExportApplicationService {
 
   /** AI 参与度：决定这条样本能不能进「AI 一致率」，与判定态（一致/不一致）是正交的两件事。 */
   enum AiParticipation {
-    /** 执行未降级且有模型版本留痕：结论可归因于 AI。 */
+    /** 执行未降级且模型标识可归因到生产模型：结论可归因于 AI。 */
     PARTICIPATED,
     /** 执行自报降级（FALLBACK）：结论来自规则路径，归因于 AI 就是造假。 */
     DEGRADED,
+    /** 执行成功但模型标识是确定性桩（{@code local-stub}）：有结论，但没有模型参与。 */
+    STUB_ONLY,
     /** 执行成功但拿不到模型版本：不能证明 AI 跑过，保守落此态。 */
     UNDETERMINED
   }
@@ -396,8 +418,9 @@ public class EvalSampleExportApplicationService {
    * @param evaluableCount {@code agree + disagree}，即真正能进入一致率计算的样本数
    * @param agreementRate 弱标签一致率（{@code agree / evaluableCount}，4 位小数）；{@code evaluableCount == 0}
    *     时为 {@code null}
-   * @param aiParticipatedCount AI 真实参与的样本数（判定态之外的正交维度）
+   * @param aiParticipatedCount AI 真实参与的样本数（判定态之外的正交维度；桩样本不计入）
    * @param aiCoverage {@code aiParticipatedCount / 返回样本数}；0 表示这批数据里 AI 一次都没参与
+   * @param unknownAiStubSample 由本地确定性桩判定的样本数——与降级样本分开计，因为处置动作不同（换环境 vs 查网关）
    */
   public record AgreementSummary(
       int agree,
@@ -406,13 +429,14 @@ public class EvalSampleExportApplicationService {
       int unknownNotConverged,
       int unknownAiNotInvolved,
       int unknownAiParticipationUndetermined,
+      int unknownAiStubSample,
       int evaluableCount,
       BigDecimal agreementRate,
       int aiParticipatedCount,
       BigDecimal aiCoverage) {
 
     static AgreementSummary empty() {
-      return new AgreementSummary(0, 0, 0, 0, 0, 0, 0, null, 0, null);
+      return new AgreementSummary(0, 0, 0, 0, 0, 0, 0, 0, null, 0, null);
     }
 
     /** 派生字段：显式声明名称，避免下游把 {@code agreementRate} 直接当模型准确率对外报。 */
@@ -421,10 +445,10 @@ public class EvalSampleExportApplicationService {
       return "弱标签一致率（AI 建议 vs 案件终态）；evaluableCount=0 时 agreementRate 为 null，表示无可比结论，不是 0%";
     }
 
-    /** 派生字段：先看覆盖率再看一致率——0 覆盖下的「一致率」只是规则引擎的自评。 */
+    /** 派生字段：先看覆盖率再看一致率——0 覆盖下的「一致率」只是规则引擎或桩的自评。 */
     @JsonProperty("coverageMeaning")
     public String coverageMeaning() {
-      return "AI 参与率 = aiParticipatedCount / 返回样本数；降级样本不计入，覆盖率为 0 时任何准确率结论都不成立";
+      return "AI 参与率 = aiParticipatedCount / 返回样本数；降级样本与本地桩样本都不计入，" + "覆盖率为 0 时任何准确率结论都不成立";
     }
   }
 

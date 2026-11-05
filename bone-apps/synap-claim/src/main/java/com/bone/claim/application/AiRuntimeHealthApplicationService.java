@@ -3,6 +3,7 @@ package com.bone.claim.application;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.decision.AiDegradationReason;
+import com.bone.claim.domain.model.decision.AiModelProvenance;
 import com.bone.claim.domain.model.decision.DecisionGraph;
 import com.bone.claim.domain.model.decision.DecisionTraceNode;
 import com.bone.claim.domain.repository.DecisionExecutionRepository;
@@ -31,6 +32,11 @@ import org.springframework.stereotype.Service;
  * claim_decision_trace}，执行表只有 FALLBACK 这一个粗粒度状态。也就是说「哪类故障最多」这个问题的答案只存在于节点层。
  *
  * <p><b>只读，不参与任何金额或状态判定</b>：本服务不写库、不改开关、不触发降级/恢复动作。它把空洞如实标出来， 是否视为故障由运维判断——阈值与告警需先有稳定流量，属后续工作。
+ *
+ * <p><b>「桩跑过」不算参与</b>：{@code aiAvailable=true} 只证明适配器返回了结论。本地确定性桩同样返回 {@code true} 并自报 {@code
+ * aiModel=local-stub}，若照单计入参与，一个根本没接模型的环境会显示「AI 100% 在线」—— 这正是本端点存在的意义所在，被绕过就毫无价值。故按 {@link
+ * AiModelProvenance} 把「自报可用」再切成三份：能证明是 生产模型的（{@link
+ * AiRuntimeHealth#aiParticipated()}）、只能证明是桩的、以及证明了可用却说不清出自哪个模型的。
  */
 @Service
 @RequiredArgsConstructor
@@ -68,12 +74,14 @@ public class AiRuntimeHealthApplicationService {
   /**
    * 纯函数聚合（供单测与变异验证）。
    *
-   * <p><b>三桶互斥且完备</b>：参与 / 降级 / 无法判定。第三桶是刻意留的——老 schema 的输出里没有 {@code aiAvailable}
-   * 键，把这种行当成「参与成功」会让参与率凭空变好，当成「降级」又会捏造一次不存在的故障。
+   * <p><b>四个互斥且完备的桶</b>：生产模型参与 / 桩参与 / 来源不明 / 降级，外加「无法判定」。后两个「说不清」的桶 是刻意留的——老 schema 的输出里没有 {@code
+   * aiAvailable} 键，把这种行当成「参与成功」会让参与率凭空变好，当成 「降级」又会捏造一次不存在的故障。
    */
   static AiRuntimeHealth aggregate(List<DecisionTraceNode> nodes, Instant from, Instant to) {
     int scanned = nodes.size();
     int participated = 0;
+    int stubbed = 0;
+    int modelUnproven = 0;
     int degraded = 0;
     int undetermined = 0;
     int unparsable = 0;
@@ -95,7 +103,12 @@ public class AiRuntimeHealthApplicationService {
         continue;
       }
       if (aiAvailable.booleanValue()) {
-        participated++;
+        // 「返回了结论」≠「模型跑过」：本地桩也自报 available=true，只在模型标识可归因到生产模型时才计参与。
+        switch (AiModelProvenance.of(text(output, "aiModel"))) {
+          case PROVIDER -> participated++;
+          case STUB -> stubbed++;
+          case UNKNOWN -> modelUnproven++;
+        }
       } else {
         degraded++;
         degradedByReason.merge(reasonBucket(text(output, "aiUnavailableReason")), 1, Integer::sum);
@@ -110,17 +123,20 @@ public class AiRuntimeHealthApplicationService {
       }
     }
 
-    int determined = participated + degraded;
+    // 分母口径不变：所有已明确表态的节点（含桩与来源不明）。收紧的只有分子——证明不了是生产模型就不算参与，
+    // 否则「桩环境」与「模型全挂」在报表上无法区分。
+    int determined = participated + stubbed + modelUnproven + degraded;
     return new AiRuntimeHealth(
         from,
         to,
         scanned,
         scanned >= MAX_NODES,
         participated,
+        stubbed,
+        modelUnproven,
         degraded,
         undetermined,
         unparsable,
-        // 分母只取「已明确表态」的节点：把 undetermined 算进分母，会让「一批说不清的数据」稀释参与率。
         rate(participated, determined),
         Map.copyOf(degradedByReason),
         // 归因覆盖率与参与率必须分开：跑了但说不清为什么降级，和根本没跑，是两种运维状态。
@@ -195,12 +211,15 @@ public class AiRuntimeHealthApplicationService {
    *
    * @param nodesScanned 扫描的 AI 节点数
    * @param truncated 结果打满 SQL 上界时为 {@code true}（此时数字是下界，不是全量）
-   * @param aiParticipated {@code aiAvailable=true} 的节点数
+   * @param aiParticipated {@code aiAvailable=true} <b>且</b>模型标识可归因到生产模型的节点数（唯一计入参与率的分子）
+   * @param aiStubbed {@code aiAvailable=true} 但模型标识是确定性桩 / 网关替身的节点数——方法被调用过，没有模型参与
+   * @param aiModelUnproven {@code aiAvailable=true} 但没留模型标识的节点数（老 schema / 异构写入）：证明不了出自哪个模型
    * @param aiDegraded {@code aiAvailable=false} 的节点数
    * @param aiUndetermined 输出缺 {@code aiAvailable} 键或 JSON 不可解析的节点数（既不计参与也不计降级）
    * @param unparsableOutputs {@code aiUndetermined} 中因 JSON 不可解析造成的那部分（诊断用子集）
-   * @param participationRate {@code participated / (participated + degraded)}，4 位小数；分母为 0 时 {@code
-   *     null}
+   * @param participationRate {@code aiParticipated / (aiParticipated + aiStubbed + aiModelUnproven
+   *     + aiDegraded)}，4 位小数；分母为 0 时 {@code null}。分母是「所有已明确表态的节点」，分子只取能证明是生产模型的 ——桩环境因此显示 0 而不是
+   *     100%
    * @param degradedByReason 降级原因码 → 条数。{@link #UNATTRIBUTED} 是真空洞（节点没给码）； {@link #UNRECOGNIZED}
    *     不是空洞而是「码不认识」——它证明生产侧确实写了码，只是与本构建的受控枚举 版本错配，故仍计入 {@code
    *     attributionCoverage}。覆盖率量的是「有没有码」，不是「码认不认识」； 「不认识的那部分有多大」看本 map 里 {@link #UNRECOGNIZED}
@@ -215,6 +234,8 @@ public class AiRuntimeHealthApplicationService {
       int nodesScanned,
       boolean truncated,
       int aiParticipated,
+      int aiStubbed,
+      int aiModelUnproven,
       int aiDegraded,
       int aiUndetermined,
       int unparsableOutputs,
@@ -227,9 +248,10 @@ public class AiRuntimeHealthApplicationService {
     /** 派生字段：显式声明，避免下游把参与率当准确率对外报。 */
     @JsonProperty("note")
     public String note() {
-      return "运行期口径：AiAssess 节点自报 aiAvailable。participationRate 只在已明确表态的节点上计算"
-          + "（分母为 0 时为 null，不是 0%）；attributionCoverage 是降级中带受控原因码的占比。"
-          + "两者都不是准确率——准确率见 /claims/eval/samples 的 agreementRate。";
+      return "运行期口径：AiAssess 节点自报 aiAvailable + aiModel。participationRate 的分子只含可归因到生产模型的参与"
+          + "（本地桩 local-stub 与未报模型的节点分别计入 aiStubbed / aiModelUnproven，都不算参与），"
+          + "分母为所有已明确表态的节点；分母为 0 时为 null，不是 0%。"
+          + "attributionCoverage 是降级中带受控原因码的占比。两者都不是准确率——准确率见 /claims/eval/samples 的 agreementRate。";
     }
   }
 }

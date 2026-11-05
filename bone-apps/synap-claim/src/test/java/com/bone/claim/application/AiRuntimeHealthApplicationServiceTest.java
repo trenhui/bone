@@ -33,6 +33,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * <ul>
  *   <li><b>「说不清」不能算参与</b>。老 schema 的输出里没有 {@code aiAvailable} 键，把它当成参与成功，参与率会凭空变好；
  *       当成降级，又会捏造一次不存在的故障。只能进第三桶。
+ *   <li><b>「桩跑过」也不能算参与</b>。{@code aiAvailable=true} 只证明适配器返回了结论；本地确定性桩同样返回 true 并 自报 {@code
+ *       local-stub}。不切开这一层，一个根本没接模型的环境会显示「AI 100% 在线」——本端点因此失去意义。
  *   <li><b>分母只含已表态节点</b>。把 undetermined 算进分母，「一批说不清的数据」会把参与率稀释成一个看着正常的中间值。
  *   <li><b>空集给 {@code null} 不给 0</b>。{@code 0%} 是「AI 全降级」，{@code null} 是「这段时间没有 AI 调用」——
  *       报表把两者混为一谈，就会在空窗期触发一轮并不存在的排障。
@@ -55,7 +57,7 @@ class AiRuntimeHealthApplicationServiceTest {
   void participationRateUsesOnlyDeterminedNodes() {
     List<DecisionTraceNode> nodes =
         List.of(
-            node("{\"aiAvailable\":true}"),
+            node("{\"aiAvailable\":true,\"aiModel\":\"qwen-max\"}"),
             node("{\"aiAvailable\":false,\"aiUnavailableReason\":\"PROVIDER_TIMEOUT\"}"),
             // 没有 aiAvailable 键：既不是参与，也不是降级
             node("{\"capabilityMissing\":false}"));
@@ -74,7 +76,8 @@ class AiRuntimeHealthApplicationServiceTest {
   @DisplayName("输出不可解析时计入无法判定，并单独暴露 unparsableOutputs")
   void unparsableOutputIsUndetermined() {
     List<DecisionTraceNode> nodes =
-        List.of(node("not-json"), node("{\"aiAvailable\":true}"), node(""));
+        List.of(
+            node("not-json"), node("{\"aiAvailable\":true,\"aiModel\":\"qwen-max\"}"), node(""));
 
     AiRuntimeHealth health = AiRuntimeHealthApplicationService.aggregate(nodes, FROM, TO);
 
@@ -84,11 +87,13 @@ class AiRuntimeHealthApplicationServiceTest {
   }
 
   @Test
-  @DisplayName("三桶对账：参与 + 降级 + 无法判定 == 扫描数")
+  @DisplayName("分桶对账：生产参与 + 桩 + 来源不明 + 降级 + 无法判定 == 扫描数")
   void bucketsMustSumToScannedNodes() {
     List<DecisionTraceNode> nodes =
         List.of(
-            node("{\"aiAvailable\":true}"),
+            node("{\"aiAvailable\":true,\"aiModel\":\"qwen-max\"}"),
+            node("{\"aiAvailable\":true,\"aiModel\":\"qwen-max\"}"),
+            node("{\"aiAvailable\":true,\"aiModel\":\"local-stub\"}"),
             node("{\"aiAvailable\":true}"),
             node("{\"aiAvailable\":false,\"aiUnavailableReason\":\"MOCK_NOT_ALLOWED\"}"),
             node("{\"capabilityMissing\":false}"),
@@ -98,13 +103,83 @@ class AiRuntimeHealthApplicationServiceTest {
     AiRuntimeHealth health = AiRuntimeHealthApplicationService.aggregate(nodes, FROM, TO);
 
     assertThat(health.aiParticipated()).isEqualTo(2);
+    assertThat(health.aiStubbed()).isEqualTo(1);
+    assertThat(health.aiModelUnproven()).isEqualTo(1);
     assertThat(health.aiDegraded()).isEqualTo(1);
     assertThat(health.aiUndetermined()).isEqualTo(3);
-    assertThat(health.nodesScanned()).isEqualTo(6);
-    // 不变式：三桶互斥且完备。后续给节点加第四种状态却漏归类时，这里立刻失配，
+    assertThat(health.nodesScanned()).isEqualTo(8);
+    // 不变式：五个桶互斥且完备。后续给节点加第六种状态却漏归类时，这里立刻失配，
     // 而不是让总数悄悄小于扫描数——那会让参与率的分母偏小、比率虚高且总量看着正常。
-    assertThat(health.aiParticipated() + health.aiDegraded() + health.aiUndetermined())
+    assertThat(
+            health.aiParticipated()
+                + health.aiStubbed()
+                + health.aiModelUnproven()
+                + health.aiDegraded()
+                + health.aiUndetermined())
         .isEqualTo(health.nodesScanned());
+  }
+
+  // ===== 桩参与不算 AI 参与 =====
+
+  @Test
+  @DisplayName("桩环境：全部节点自报可用但模型是 local-stub ⇒ 参与率 0，而不是 100%")
+  void stubOnlyEnvironmentReportsZeroParticipation() {
+    List<DecisionTraceNode> nodes =
+        List.of(
+            node("{\"aiAvailable\":true,\"aiModel\":\"local-stub\"}"),
+            node("{\"aiAvailable\":true,\"aiModel\":\"local-stub\"}"));
+
+    AiRuntimeHealth health = AiRuntimeHealthApplicationService.aggregate(nodes, FROM, TO);
+
+    // 这正是本端点存在的理由：不区分桩，「没接模型的环境」会显示「AI 100% 在线」。
+    assertThat(health.aiParticipated()).isZero();
+    assertThat(health.aiStubbed()).isEqualTo(2);
+    // 分母不缩小：桩是「已表态」的节点，把它从分母挪走会把 0% 稀释成 null。
+    assertThat(health.participationRate()).isEqualByComparingTo("0.0000");
+  }
+
+  @Test
+  @DisplayName("桩按大小写与首尾空白归一：LOCAL-STUB / ' Local-Stub ' 同样不算参与")
+  void stubModelIdIsNormalized() {
+    List<DecisionTraceNode> nodes =
+        List.of(
+            node("{\"aiAvailable\":true,\"aiModel\":\"LOCAL-STUB\"}"),
+            node("{\"aiAvailable\":true,\"aiModel\":\"  Local-Stub  \"}"),
+            // 网关内置替身按前缀识别
+            node("{\"aiAvailable\":true,\"aiModel\":\"mock-llm-client\"}"));
+
+    AiRuntimeHealth health = AiRuntimeHealthApplicationService.aggregate(nodes, FROM, TO);
+
+    assertThat(health.aiStubbed()).isEqualTo(3);
+    assertThat(health.aiParticipated()).isZero();
+  }
+
+  @Test
+  @DisplayName("自报可用但没留模型标识：计入来源不明，不算参与（证明不了出自哪个模型）")
+  void availableWithoutModelIsNotCountedAsParticipation() {
+    List<DecisionTraceNode> nodes = List.of(node("{\"aiAvailable\":true}"));
+
+    AiRuntimeHealth health = AiRuntimeHealthApplicationService.aggregate(nodes, FROM, TO);
+
+    assertThat(health.aiParticipated()).isZero();
+    assertThat(health.aiModelUnproven()).isEqualTo(1);
+    assertThat(health.participationRate()).isEqualByComparingTo("0.0000");
+  }
+
+  @Test
+  @DisplayName("生产模型与桩混跑：分子只取生产模型，分母含桩")
+  void mixOfProviderAndStub() {
+    List<DecisionTraceNode> nodes =
+        List.of(
+            node("{\"aiAvailable\":true,\"aiModel\":\"qwen-max\"}"),
+            node("{\"aiAvailable\":true,\"aiModel\":\"local-stub\"}"),
+            node("{\"aiAvailable\":false,\"aiUnavailableReason\":\"PROVIDER_TIMEOUT\"}"));
+
+    AiRuntimeHealth health = AiRuntimeHealthApplicationService.aggregate(nodes, FROM, TO);
+
+    // 1 / (1 + 1 + 1) = 0.3333：桩既不算参与，也不能从分母里消失
+    assertThat(health.participationRate()).isEqualByComparingTo("0.3333");
+    assertThat(health.aiStubbed()).isEqualTo(1);
   }
 
   @Test
@@ -166,7 +241,7 @@ class AiRuntimeHealthApplicationServiceTest {
   void attributionCoverageIsNullWithoutDegradation() {
     AiRuntimeHealth health =
         AiRuntimeHealthApplicationService.aggregate(
-            List.of(node("{\"aiAvailable\":true}")), FROM, TO);
+            List.of(node("{\"aiAvailable\":true,\"aiModel\":\"qwen-max\"}")), FROM, TO);
 
     assertThat(health.attributionCoverage()).isNull();
     assertThat(health.participationRate()).isEqualByComparingTo("1.0000");
@@ -205,14 +280,14 @@ class AiRuntimeHealthApplicationServiceTest {
         List.of(
             // 模型通了，但知识库没接：参与成功 + 能力缺失
             node(
-                "{\"aiAvailable\":true,\"capabilityMissing\":true,"
+                "{\"aiAvailable\":true,\"aiModel\":\"qwen-max\",\"capabilityMissing\":true,"
                     + "\"capabilityReason\":\"KNOWLEDGE_UNAVAILABLE\"}"),
             // 两者同时缺
             node(
                 "{\"aiAvailable\":false,\"aiUnavailableReason\":\"MOCK_NOT_ALLOWED\","
                     + "\"capabilityMissing\":true,\"capabilityReason\":\"KNOWLEDGE_UNAVAILABLE\"}"),
             // 能力齐全
-            node("{\"aiAvailable\":true,\"capabilityMissing\":false}"));
+            node("{\"aiAvailable\":true,\"aiModel\":\"qwen-max\",\"capabilityMissing\":false}"));
 
     AiRuntimeHealth health = AiRuntimeHealthApplicationService.aggregate(nodes, FROM, TO);
 
@@ -228,7 +303,7 @@ class AiRuntimeHealthApplicationServiceTest {
   @DisplayName("能力缺失但没带原因码：仍计能力缺失，原因桶记 UNATTRIBUTED")
   void capabilityMissingWithoutReasonLandsInUnattributed() {
     List<DecisionTraceNode> nodes =
-        List.of(node("{\"aiAvailable\":true,\"capabilityMissing\":true}"));
+        List.of(node("{\"aiAvailable\":true,\"aiModel\":\"qwen-max\",\"capabilityMissing\":true}"));
 
     AiRuntimeHealth health = AiRuntimeHealthApplicationService.aggregate(nodes, FROM, TO);
 
@@ -244,7 +319,7 @@ class AiRuntimeHealthApplicationServiceTest {
   @Test
   @DisplayName("打满节点上界时标记 truncated：数字是下界，不能当全量")
   void truncationIsFlaggedWhenNodeCapReached() {
-    DecisionTraceNode sample = node("{\"aiAvailable\":true}");
+    DecisionTraceNode sample = node("{\"aiAvailable\":true,\"aiModel\":\"qwen-max\"}");
     List<DecisionTraceNode> nodes =
         Collections.nCopies(AiRuntimeHealthApplicationService.MAX_NODES, sample);
 
@@ -288,7 +363,7 @@ class AiRuntimeHealthApplicationServiceTest {
   void queriesAiAssessNodeWithRequestedWindow() {
     // 先造夹具再 stub：把 node(...) 写进 thenReturn(...) 会在 stubbing 未完成时又去 stub 另一个 mock
     // （UnfinishedStubbingException），这是本仓踩过两次的坑。
-    DecisionTraceNode participated = node("{\"aiAvailable\":true}");
+    DecisionTraceNode participated = node("{\"aiAvailable\":true,\"aiModel\":\"qwen-max\"}");
     when(decisionExecutionRepository.findAiAssessNodesInWindow(anyString(), any(), any()))
         .thenReturn(List.of(participated));
 

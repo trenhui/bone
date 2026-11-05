@@ -682,8 +682,9 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 | AI 参与度 | 条件 | 判定 | 依据 |
 |---|---|---|---|
 | `DEGRADED` | 执行 `status=FALLBACK` | `UNKNOWN_AI_NOT_INVOLVED` | 结论来自**规则路径**，把它归因给 AI 就是造假 |
+| `STUB_ONLY` | `SUCCESS` 且 `model_version` 是确定性桩（`local-stub` / `mock*`） | `UNKNOWN_AI_STUB_SAMPLE` | 桩有结论、**没有模型参与**；桩的判定来自既有上下文的确定性派生 |
 | `UNDETERMINED` | `SUCCESS` 但 `model_version` 为空 | `UNKNOWN_AI_PARTICIPATION_UNDETERMINED` | 拿不到「模型跑过」的证据，保守不计入 |
-| `PARTICIPATED` | `SUCCESS` 且 `model_version` 非空 | 进入下表 | — |
+| `PARTICIPATED` | `SUCCESS` 且 `model_version` 可归因到生产模型 | 进入下表 | — |
 
 | AI 结论 | 案件终态 | 判定 | 依据 |
 |---|---|---|---|
@@ -697,6 +698,8 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 > **为什么 `MANUAL_REQUIRED` 不算一致**：把「AI 建议转人工、人工也处理了」记成「AI 判断对了」，会让准确率被「AI 没给结论」的样本持续抬高，且从报表上看不出异常——这是指标造假的经典形态，不是口径选择问题。
 >
 > **为什么降级样本不能算「AI 一致率」**：`FALLBACK` 行的 `decision_result` 是规则引擎结论。它与终态越吻合，只会说明**规则**写得好；把它算成 AI 准确率，等于用规则引擎的成绩给模型打分。更隐蔽的是 `ai_confidence`：降级时执行器把 `ruleConfidence` 回填进该列（既有语义，见 §11.5），于是「有置信度」也不能证明 AI 跑过——所以导出对非参与样本**不输出** `aiConfidence`。
+>
+> **为什么桩样本同样不能算**：本地确定性桩（`synap.claim.ai.gateway.mode=local`）走的是**成功**路径，`status=SUCCESS` 且 `model_version=local-stub`，按「非空即参与」会直接计成 `PARTICIPATED`——于是桩撑起一个看着不错的「AI 一致率」，而事实上没有任何模型参与。这与上面降级那条是同一个错误的两个入口：判据不能只问「有没有值」，还要问「这个值代表谁」。归属判定收敛到领域单一真源 `AiModelProvenance`（`PROVIDER` / `STUB` / `UNKNOWN`），三处消费方（评测导出、运行期健康度、桩适配器一致性用例）都用它，避免各写一套字符串判断。
 
 **聚合口径：返回体自带「这批数据能不能算一致率」**
 
@@ -704,10 +707,10 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 
 | 字段 | 含义 |
 |---|---|
-| `agree` / `disagree` / `unknownNoBinaryVerdict` / `unknownNotConverged` / `unknownAiNotInvolved` / `unknownAiParticipationUndetermined` | 六种判定态的条数；六者之和恒等于 `returned`（不足即抛错，不输出自己都对不上账的聚合） |
+| `agree` / `disagree` / `unknownNoBinaryVerdict` / `unknownNotConverged` / `unknownAiNotInvolved` / `unknownAiParticipationUndetermined` / `unknownAiStubSample` | 七种判定态的条数；七者之和恒等于 `returned`（不足即抛错，不输出自己都对不上账的聚合） |
 | `evaluableCount` | `agree + disagree`，真正能进入一致率计算的样本数 |
 | `agreementRate` | `agree / evaluableCount`（4 位小数）；**`evaluableCount=0` 时为 `null`** |
-| `aiParticipatedCount` | AI 真实参与的样本数（判定态之外的正交维度） |
+| `aiParticipatedCount` | AI 真实参与的样本数（判定态之外的正交维度；降级与桩样本都不计入） |
 | `aiCoverage` | `aiParticipatedCount / returned`（4 位小数）；**`returned=0` 时为 `null`** |
 | `rateMeaning` / `coverageMeaning` | 固定说明串：先看覆盖率再看一致率，两者都不得直接对外报成「模型准确率」与「自动化率」 |
 
@@ -806,9 +809,12 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 | 字段 | 语义 |
 |---|---|
 | `nodesScanned` / `truncated` | 扫描节点数；超过 2000 上界时 `truncated=true`（**不静默裁剪**） |
-| `aiParticipated` / `aiDegraded` | `aiAvailable=true` / `=false` 的节点数 |
+| `aiParticipated` | `aiAvailable=true` **且** `aiModel` 可归因到生产模型的节点数——参与率的唯一分子 |
+| `aiStubbed` | `aiAvailable=true` 但 `aiModel` 是确定性桩（`local-stub` / `mock*`）——方法被调过，**没有模型参与** |
+| `aiModelUnproven` | `aiAvailable=true` 但没留 `aiModel`（老 schema / 异构写入）——证明不了出自哪个模型 |
+| `aiDegraded` | `aiAvailable=false` 的节点数 |
 | `aiUndetermined` | 输出里**没有** `aiAvailable` 键（老 schema）或 JSON 不可解析 ⇒ 既不算参与也不算降级 |
-| `participationRate` | `participated / (participated + degraded)`，4 位小数；**分母为 0 时 `null`** |
+| `participationRate` | `aiParticipated / (aiParticipated + aiStubbed + aiModelUnproven + aiDegraded)`，4 位小数；**分母为 0 时 `null`**。分母仍是「所有已明确表态的节点」，收紧的只有分子 |
 | `degradedByReason` | 原因码 → 条数；缺原因码记 `UNATTRIBUTED`，无法识别的码记 `UNRECOGNIZED`（不让自由文本进入审计面） |
 | `attributionCoverage` | **有非空原因码**的降级占比，**降级为 0 时 `null`**。与参与率分开，因为「跑了但说不清为什么降级」和「根本没跑」是两种不同的运维状态。注意 `UNRECOGNIZED` **计入**覆盖率——它证明生产侧确实写了码，只是与本构建的受控枚举版本错配；覆盖率量的是「有没有码」，「码认不认识」看该桶条数 |
 | `capabilityMissing` / `capabilityByReason` | 能力缺失（知识/规则/视觉/图计算）的节点数与码分布——**第二类缺失，与 LLM 降级分开计** |
@@ -818,11 +824,18 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 
 把「没给原因码」并入 `GATEWAY_ERROR`、把「没报 `aiAvailable`」并入参与成功，都会让报表变成**永远好看**：前者把「归因还没生效」显示成「网关故障」，后者把「老数据说不清」显示成「AI 正常参与」。这两个桶就是留给「不知道」的位置——指标可以有空洞，但不能把空洞填成好消息。
 
-**三条可机检判据**
+**为什么「桩跑过」也不能算参与（本次修正）**
+
+`aiAvailable=true` 只证明适配器返回了结论。本地确定性桩（`synap.claim.ai.gateway.mode=local`）在同一路径上自报 `aiModel=local-stub`；若照单计入参与，**一个根本没接模型的环境会显示「AI 100% 在线」**——本端点的全部意义就此作废，且从任何下游报表都看不出来。故按领域单一真源 `AiModelProvenance` 把「自报可用」再切成三份：生产模型（计入分子）、桩、来源不明。分母口径**不变**（仍为所有已明确表态的节点）：把桩从分母挪走，会让「纯桩环境」算出 `null` 而不是 `0.0000`，那是把「一次模型都没跑」写成「这批判据不成立」。
+
+这条修的是同一个错误在另一处的入口——上游把 Mock 替身显式拒绝了（`MOCK_NOT_ALLOWED`），但**本地桩是被允许参与执行的**，两者的区别必须在指标口径上体现，而不能只在代码注释里。
+
+**四条可机检判据**
 
 | 判据 | 断言 | 挡住什么 |
 |---|---|---|
-| 分桶对账 | `participated + degraded + undetermined == nodesScanned`（**由单测 `bucketsMustSumToScannedNodes` 钉住，实现是三条互斥分支、无运行时断言**） | 新增状态却忘了归类时，静默漏统会让参与率虚高且总量看着正常 |
+| 分桶对账 | `aiParticipated + aiStubbed + aiModelUnproven + aiDegraded + aiUndetermined == nodesScanned`（**由单测 `bucketsMustSumToScannedNodes` 钉住，实现是互斥分支、无运行时断言**） | 新增状态却忘了归类时，静默漏统会让参与率虚高且总量看着正常 |
+| 桩不算参与 | 全部节点 `aiModel=local-stub` 时 `participationRate=0.0000` 而非 `1.0000` | 演示/本地模式把「没接模型」显示成「AI 在线」 |
 | 空集给 `null` 不给 0 | 分母为 0 时比率为 `null` | 报表把 `null` 当 0 ⇒「AI 全错」/「AI 全没参与」的假告警（同 §11.4） |
 | 扫描有界 | 时间窗 ≤31 天，单次 ≤2000 节点，越界 400 | 运维端点变成全库扫描器 |
 
@@ -841,6 +854,8 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 同一轮还实测了护栏：32 天窗口 / `from>to` / 缺参 / `limit=501` 分别返回 `400` 且带受控错误码，无 token 返回 `401`——即「越界显式拒绝，不静默裁剪」在真实请求上成立，不只是单测。
 
 **仍未做**：告警阈值与看板（需要稳定流量才能定阈值，现在定就是拍脑袋）；`ai_confidence` 语义修正（需 `confidence_source` 列，L3）；把 `UNATTRIBUTED` 的历史数据回填（历史输出里确实没有该字段，**不可从 message 反推**——那正是 §11.5 拒绝的做法）。
+
+> **同一缺陷的第三个入口未修，如实记在此处**：`GET /claims/{id}/decision/disclosure`（AI 参与告知）仍把「桩执行成功」判为 `AI_ASSISTED` 并下发「本结论含人工智能辅助生成内容」——对一则没有 AI 参与的结论做了 AI 告知。证据面里 `reportedModelVersion=local-stub` 是如实带出的，所以不是隐藏，但状态码本身说错了。修它需要新增第四个参与态 + 重新生成前端字典（`dicts.generated.ts` 从**运行中的**后端 `/claim-config/dicts` codegen），必须与「桩到底该对客户怎么表述」的合规措辞一起定，不宜在代码侧单方面拍板，故本轮不动、明确登记为已知缺口。
 
 
 
