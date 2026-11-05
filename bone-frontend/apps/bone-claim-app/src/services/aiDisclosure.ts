@@ -34,7 +34,7 @@ export interface AiDisclosureEvidence {
 }
 
 export interface AiDisclosure {
-  claimId: number;
+  claimId: string;
   traceId: string;
   involvement: AiInvolvement;
   involvementReason: string;

@@ -318,6 +318,21 @@ jobs:
       - name: Frozen Set Verdict Self-Test (blocking)
         run: /usr/bin/env python3 bone-ai/bone-ai-rag/eval/frozen_set.py --self-test
 
+      # 2026-11-05：以下三步的门禁脚本早已存在（判据 + 单测齐备），但 ci.yml / check.sh /
+      # ci-local.sh 全仓零调用 —— 「脚本存在」被当成「维度已覆盖」，实际从未执行。
+      # 三者均为纯静态扫描、零 DB、零外部产物，可在干净检出上无条件跑；已同步接入 check.sh。
+      - name: Claim AI Decision Eval Set Gate (blocking)
+        run: /usr/bin/env python3 scripts/check-claim-ai-evalset.py --check
+
+      # D3 安全守卫：iam_account 不得成为运行时实体。变红 = 有人裸接了
+      # approver_id 的 REFERENCE，SELECT * 会把 password_hash 返回浏览器。
+      - name: IAM Account Not Runtime Entity Guard (blocking)
+        run: /usr/bin/env python3 scripts/check-approver-reference-not-exposed.py
+
+      # 写侧列由实体元数据生成、读侧 SQL 模板手写 ⇒ 缺列会「建得进、读不出、再写回抹掉」。
+      - name: Repository SQL Entity Column Coverage (blocking)
+        run: /usr/bin/env python3 scripts/check-sql-entity-column-coverage.py
+
   backend-security:
     name: Backend Security Scan
     runs-on: ubuntu-latest
