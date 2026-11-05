@@ -262,4 +262,20 @@ public final class ClaimErrorCodes {
    * <p>沿用「护栏显式拒绝、不静默裁剪」的口径。单独给码是因为排查方向不同——看到健康度的码会去查轨迹聚合， 而错在放量窗口，会被引到另一个端点上。
    */
   public static final String CLAIM_AI_ROLLOUT_QUERY_INVALID = "SC_CLAIM_AI_ROLLOUT_QUERY_INVALID";
+
+  // ===== 独立盲标（G4-1 数据飞轮） =====
+
+  /** 盲标任务不存在（或已逻辑删除 / 跨租户按不存在处理，不泄露存在性）。 */
+  public static final String SC_CLAIM_BLIND_LABEL_NOT_FOUND = "SC_CLAIM_BLIND_LABEL_NOT_FOUND";
+
+  /** 盲标任务状态冲突（重复提交 / 未提交先解盲 / 同案已有未解盲任务 / 快照序列化失败）。 */
+  public static final String SC_CLAIM_BLIND_LABEL_CONFLICT = "SC_CLAIM_BLIND_LABEL_CONFLICT";
+
+  /** 盲标载荷含 AI 痕迹键（禁区扫描命中）。单独给码：这是<b>防反馈环闸门被主动绕过</b>的信号， 与普通参数错误不同——监控里应单列，出现即说明有人在往载荷里塞 AI 建议。 */
+  public static final String SC_CLAIM_BLIND_LABEL_PAYLOAD_FORBIDDEN =
+      "SC_CLAIM_BLIND_LABEL_PAYLOAD_FORBIDDEN";
+
+  /** 标注人与本案后督抽检质检人相同（盲标已被既有印象污染，不可作为独立判定）。 */
+  public static final String SC_CLAIM_BLIND_LABEL_ANNOTATOR_CONFLICT =
+      "SC_CLAIM_BLIND_LABEL_ANNOTATOR_CONFLICT";
 }

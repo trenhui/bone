@@ -27,6 +27,8 @@ currency: current
 |v1.5|2026-11-04|BONE 平台架构|**复核建议落地**：① 发票验真 / 验重前移到材料阶段（票面要素 + 跨案去重，查实问题落 `FAIL`，本地核验通过仍落 `UNVERIFIABLE` 转人工，不放宽 R-FRAUD-06）；② 核责规则资产化（资源文件可替换 + 版本随命中留痕，配置不可信时回退）；③ 链路联动（案件级锁定事件 → 自动触发决策图，默认关闭、G3 前置）；④ §1.6 补验收判据、未落地边界与「建议采纳 / 未采纳理由」对照表。**红线与成熟度定级不变，仍不得对外宣称 L3**|
 |v2.0|2026-11-05|BONE 平台架构|**AI 参与告知补第四态**：`/claims/{id}/decision/disclosure` 此前把「桩执行成功」判为 `AI_ASSISTED`，对一则没有模型参与的结论下发「含 AI 辅助生成内容」；现新增 `AI_STUB`（`SIMULATED_ONLY`）+ 专属标识文案，`ClaimDictLabels` 与前端 codegen 同步；多 LLM 节点改按「漏标风险」选代表节点（旧实现只取最后一个，前面真模型的参与会被靠后的桩抹掉）；§11.9 写明两个失效方向代价不对称的判据。**P1 红线、三档分诊、G0–G4 门禁不变**|
 |v2.1|2026-11-05|BONE 平台架构|**结论消费补齐（链条末端）**：① 取证发现决策结论产出后**无人消费**——全仓 `completePreExam` 主代码调用点只有人工接口，实测 16 次决策执行、0 个案件离开 `AUTO_PRE_EXAMINING`，案件因此进不了核赔队列（40）、永不结案、评测拿不到弱标签；② `DecisionRunApplicationService` 统一消费：初审段收口（11/13 → 12）+ 按结论路由（`AUTO_APPROVE`→50 或转 40、`NEED_MORE_EVIDENCE`→21、其余/失败→40），受控原因码随响应回传；③ 金额只给自动通过路径，理算越界不抛异常而是转人工留痕；④ 推翻 §11.8 结论 2 的「属流程侧动作、非代码缺陷」归因，并在 §11.10 登记 `agreementRate` 恒 `null` 的第二个根因（能力缺失把二元建议兜成 `MANUAL_REQUIRED`，分母恒 0）。**P1 红线、三档分诊、G0–G4 门禁不变**|
+|v2.2|2026-11-05|BONE 平台架构|**放量治理增强 + 置信度溯源（§11.11）**：① 渠道分层灰度（`scopeDimension`/`scopeValues`，白名单外与缺失渠道一律不放量，渠道闸排在 100% 全放捷径之前——顺序反了灰度会静默变全量）；② 部分作用域未配置 fail-closed 不回退全局（回退会把「收紧」变成「放宽」）；③ 定时生效窗（`effectiveFrom/To` + `AI_SCHEDULED_INACTIVE` 与「关闭」可区分）；批量下发明确不做（无真实消费方且会引入第二套写路径）；④ 新迁移 0121 给 `claim_decision_execution` 加 `confidence_source`（MODEL/STUB/FALLBACK/UNKNOWN，判据复用 `AiModelProvenance` 单一真源；历史行不回填——编造比留 NULL 危险），执行器三处覆写分支同步推导，`confidence=null` 强制 UNKNOWN。变异验证 6 次全部被捕获且红点落在预期用例。**P1 红线、三档分诊、G0–G4 门禁不变**|
+|v2.3|2026-11-05|BONE 平台架构|**阶段机熔断 + 独立盲标（§11.12 / §11.13）**：① **G3-1/G3-2 回写**——AI 介入四档阶段机（`AiRolloutStage.permitsAutoSettlement()` 为资金侧唯一判据；全局开关打开≠可自动出金，未配置按 SHADOW fail-closed）+ 案件级确定性分桶（替代单租户下恒 0 的 `tenantId%100`）+ 错误预算熔断（抽检口径错误率超限自动降一档回写现场；样本不足不熔断只阻晋升；空集给 null 不是 0%）；零 DDL，复用 `feature_toggle.config_json`；5 组变异全命中（含互补变异证明分布判据判别力）。② **配置变更进事件总线**——新增 `FeatureToggleChangedEvent` 并移除 `AiRolloutApplicationService` 的 `@NoDomainEvent` 豁免（E-5.4 兑现），自动降档以领域事件供风控/审计订阅，不再解析 remark 字符串。③ **G4-1 独立盲标**——新迁移 0122 建 `t_claim_blind_label_task`（`bone-init.sql` 同批）：PENDING→LABELED→UNBLINDED，四道防反馈环闸（载荷禁区 422 / AI 快照解盲才落库的物理分离 / 一次提交 / 标注人与抽检质检人互斥 409）；AI 参与只认 `confidence_source==MODEL`；`PAIRED` 仅表成对产出，一致率评测侧离线判定；4 组变异全命中。回归 1124 run / 0 fail。**P1 红线、三档分诊、G0–G4 门禁不变；盲标工作台前端与 ECE 校准仍未落地，不得据此宣称 L3**|
 
 ---
 
@@ -207,7 +209,7 @@ currency: current
 | 图像 / 翻拍件 OCR、多模态影像分类与旋转纠偏 | 一期只做数电票文本层，图像件转人工补录 | G1 感知层 Shadow + 平台 C1 文档 IR |
 | 受控 RAG / GraphRAG / 适应症图谱 / 向量检索 | 一期为目录准入确定性核验 | G2 规则与知识接线、平台 C6 |
 | 视觉反诈 E1 / 图计算反欺诈 E2 | 仍为 `available=false` 桩 | 平台侧能力交付 |
-| 评测集消费方、独立盲标、ECE 校准、champion-challenger、MRM | 一期只完成回流触发器与样本分类 | G4 飞轮与治理 |
+| 评测集消费方、独立盲标、ECE 校准、champion-challenger、MRM | 独立盲标**队列与闸门已落地**（§11.13，迁移 0122）；评测集消费方、ECE 校准、champion-challenger、MRM 仍缺 | G4 飞轮与治理 |
 | 税局 / 电子票据平台验真通道 | 一期只做票面要素核验 + 跨案去重；本地通过仍落 `UNVERIFIABLE` 转人工 | G2 + 外部通道接入 |
 | 规则 DB 热更 / 灰度 / 回归门禁 | 一期为资源文件级替换 + 版本留痕 | bone-ai C2 RuleAsset（Phase B） |
 | 自动放款全链路 | 案件级触发已落地但开关默认关闭；`AUTO_APPROVE` 仍受 E1/E2 硬闸约束 | G3 渐进放量 |
@@ -1149,6 +1151,63 @@ export BONE_AI_GATEWAY_MODEL=deepseek-chat                 # 必须是该 provid
 
 **明确不做**：不替调用方自动开始初审（案件在 10 时只回 `CLAIM_NOT_IN_PRE_EXAM`，交回人工——仍是待分配队列里的正常案件，不是死路）；不在路由里改金额；不把 `routingReason` 塞进 `consumption_reason`（该列 `varchar(32)` 且语义只描述资金动作，塞两件事会让「为什么没自动放款」这个查询失真）。
 
+### 11.11 放量治理增强：渠道分层、排期生效与置信度溯源（v2.2 落地）
+
+对 §8.3（放量阶段机）四个悬置决策的落地。原则与前几节一致：**资金安全方向 fail-closed、配置可观测、判据可变异验证**。
+
+**① 第二作用域维度（渠道分层）+ fail-closed**。`feature_toggle.config_json` 新增 `scopeDimension`（`NONE`/`CHANNEL`）与 `scopeValues`（渠道白名单，数组或逗号分隔），`DecisionGraphExecutor` 的准入调用链传入 `ClaimCase.sourceChannel`。判据设计有三条硬约束：
+
+| 约束 | 理由 |
+|---|---|
+| **渠道闸必须排在「比例 100% 全放」捷径之前** | 顺序反了，「只在 CH1 灰度」在 100% 时静默变成全渠道放量——白名单外渠道连分桶资格都没有，比例拉满也不能替它放行（变异验证恰好红在这一条） |
+| **渠道缺失（null/空白）与白名单外同判：不放量** | 「不知道走哪个渠道」与「渠道不在白名单」是同一类「无法确认命中」风险，按资金安全方向处理——与全局开关 fail-closed 同口径 |
+| **AUTOMATED 仍忽略渠道维度** | AUTOMATED 是「整租户全量」档，渠道分层是 CANARY 时代的细化手段；进入 AUTOMATED 即已通过完整观察期、有意全量放开。仍需渠道级控制就留在 CANARY |
+
+未配置维度（`NONE`）与旧行为逐位一致——存量部署零行为变更。
+
+**② 部分作用域未配置 → fail-closed，不回退全局**。配了 `CHANNEL` 却没配任何白名单值 = 「一个渠道都不放量」（比「回落成全放行」安全；由准入判据自然 fail-closed，不额外登记噪声）。**为什么不回退到全局**：回退会让「收紧配置」变成「放宽配置」——配置者写错 key 时，系统从「更保守」跳到「最激进」，方向与配置意图相反。这与 §11.4「证明不了就不计入参与」同一纪律，只是作用在资金敞口上。
+
+**③ 定时生效窗（排期发布 / 自动过期）**。`config_json` 新增 `effectiveFrom`/`effectiveTo`（ISO-8601），未到起点或已过期一律视作未放量，但**与「开关关闭」区分**：准入返回独立原因码 `AI_SCHEDULED_INACTIVE`（运维面板能看到「不是关了、是还没到/已过期」），快照暴露 `active` 布尔。未配置时间窗 = 立即生效且永不过期（存量零变更）；时间非法时逐键回落并登记（与阶段/阈值同一解析纪律）。
+
+**③b 批量下发 → 明确不做**。当前 MVP 一保司一租户，批量写端点没有真实消费方；且本方案刻意**只读运维端点 + 显式写入口**（`promote/rollback` 不设写端点），批量下发会引入第二套写路径，破坏「谁改了档位、依据什么」与开关行同生共死的审计形态。等出现多租户批量运营的真实场景再设计，届时应走事件总线而非批量 REST。
+
+**④ `ai_confidence` 溯源（L3，新迁移 0121）**。取证确认：同一列 `ai_confidence` 在不同链路装的是不同性质的数——模型自报置信度（概率判断）、LLM 降级取的规则路径分（确定性计算）、桩常数。消费方只看数值无法区分，阈值语义失真（桩永远同一常数 ⇒「阈值以上放行」在灰度环境看起来永远通过）。落地：
+
+| 项 | 内容 |
+|---|---|
+| 迁移 | `0121_synap_claim_decision_confidence_source.sql`：`claim_decision_execution` 加 `confidence_source VARCHAR(16)`（受控码，与 `triage_reason` 同款）；临时库实测 ALTER+终态断言（反向：无列时 `SIGNAL 45000` 判红），不回填历史行（来源不可考证，编造一个 MODEL 比留 NULL 危险得多） |
+| 枚举 | `AiConfidenceSource`：`MODEL`（真实模型自报）/ `STUB`（桩常数，判据复用 `AiModelProvenance` 单一真源）/ `FALLBACK`（规则路径）/ `UNKNOWN`（未产生置信度）；`derive(fallback, modelId)` 与执行器三处覆写分支一一对应 |
+| 写侧 | `DecisionExecution.complete` 增源参数：`confidence=null` 强制 `UNKNOWN`——**没有数值就没有「模型给的把握」可言**，误传 MODEL 也拦下；`DecisionGraphExecutor` 降级两分支与节点覆写点同步推导 |
+| 读侧 | 4 个手写 SQL 模板与 `bone-init.sql` 同批补列（防「建得进读不出」） |
+
+**NULL 与 UNKNOWN 的区别**：NULL = 本列加入前的历史行（当时不存在该维度）；UNKNOWN = 落结论时点根本没产生置信度（如证据缺失短路）。两者都不是「模型参与过」的证据，消费方不得当 MODEL 处理。
+
+**变异验证（6 次，均还原后复跑全绿）**：① 删渠道白名单闸 ⇒ 恰好两层 `channelScopeFailClosed` 红；② 缺失渠道放行（null 改放行）⇒ 同一用例红；③ 删生效窗闸 ⇒ 恰好只红 `scheduledWindowInactive`（策略层 `isEffective` 用例不受牵连——闸在服务层，判据分层正确）；④ 桩判成 MODEL ⇒ 溯源 2 例红；⑤ 忽略降级 ⇒ 溯源 2 例红；⑥ null 置信度不强制 UNKNOWN ⇒ 1 例红。
+
+
+### 11.12 渐进放量阶段机与错误预算（v2.3 落地）
+
+> 此前「放量」的唯一抓手是一行 SQL（把 `feature_toggle` 的自动通过开关从关改开），从零直接跳全量。本节把放量变成**阶段机 + 熔断器**，零 DDL，全部参数复用 `feature_toggle.config_json`（逐键回落，非法值不猜、登记原因后用默认）。
+
+**① 阶段机（`AiRolloutStage`，四档）**：`SHADOW`（AI 只旁观，不进准入）→ `ASSISTED`（建议进流程，结论人工出）→ `CANARY`（按**案件级确定性分桶**放量）→ `AUTOMATED`（全量）。**资金侧唯一判据**是 `permitsAutoSettlement()`（仅 CANARY/AUTOMATED 为真）——自动放款应用服务在理算通过后、出金前调用准入；「全局开关打开」从此**不再等于可以自动出金**，未配置阶段按 `SHADOW` 处理（fail-closed 的有意选择）。分桶用 `(claimId·φ)⊕(tenantId·k)` 黄金比例混合替代 `tenantId % 100`（单租户下恒为 0，灰度比例实际永远 0%——实测暴露的「配了不生效」缺陷）。灰度比例**只认列值**，`config_json` 同名键不采信并登记（防双口径）。
+
+**② 错误预算熔断（`AiRolloutBudget`，五态）**：数据源为后督抽检结论（`findConcludedInWindow`，按**结论时间**取窗——「上周发起本周判完」的恰恰最该被看到；`LIMIT 500` 打满即标记 `truncated`）。五态语义：`OVER_TARGET` 熔断（自动降一档并回写现场：`remark` + `config_json.lastRollback` 快照 + `FeatureToggleChangedEvent` 进事件总线，风控/审计统一订阅，不再解析 remark 字符串）；`INSUFFICIENT_SAMPLES` **不熔断但阻晋升**（样本不足就熔断等于把抽检进度当质量信号）；`NO_EVIDENCE` 空集给 `null` 不是 0%（「没抽过」≠「抽了没错」）；`EVIDENCE_TRUNCATED` 不熔断但快照必须带截断标记。运维只读端点 `GET /claim-ops/ai-rollout`；**不提供 promote/rollback 写端点**——调档收在开关配置一条路径上，避免「页面点上去、准入逻辑不认」的双写分叉。
+
+**③ 验证与边界**：模块 1093 run 全绿 + 5 组变异全部命中预期用例（去熔断 / 去样本闸 / 阶段闸恒真 / 分桶模运算式退化 / 分桶阈值式退化——第 5 组是互补变异，证明分布判据对「仍均匀但不再按桶」的退化形态有判别力）。**尚未被真实流量验证**（dev 库 `AUTO_APPROVE` 样本为 0），告警阈值待真实流量分布确定后才能定。
+
+### 11.13 独立盲标：人工结论与 AI 建议分离存储（v2.3 落地，G4-1）
+
+> 后督抽检员在流程内看得到 AI 建议（这正是抽检的工作方式），因此其结论**不能当金标准**——人工复核受 AI 建议影响（Sculley feedback loops），偏差会被当成 ground truth 放大。弱标签导出（§11.4）的 javadoc 里「真正的金标准需要独立盲标」从预告变成结构。
+
+**① 新表 `t_claim_blind_label_task`（迁移 0122，`bone-init.sql` 同批）**：状态机 `PENDING → LABELED → UNBLINDED`（终态不可变）。**为什么必须新表而不是复用抽检单**：独立盲标需要与「看没看过 AI 建议」这个关键语义物理分离的存储——提交前表里没有任何 AI 数据（`ai_suggestion_json` 在解盲时才从决策轨迹读入），绕过应用层直查库也看不到。不是「不让看」，是「无物可看」。
+
+**② 四道防反馈环闸（每道有测试与变异验证）**：**载荷禁区**——派发载荷键名过 `FORBIDDEN_PAYLOAD_KEYS` 扫描（含 `aiSuggestion`/`aiConfidence`/`ruleHits`/`decisionResult` 等即 422；往载荷里塞 AI 建议会派发失败，而不是靠标注人自律别看）；**物理分离**——AI 快照解盲时才写库；**一次提交**——结论不可改写，修正另开新任务；**标注人去污染**——与该案后督抽检质检人同人即 409（先对着 AI 建议检过再「盲标」，产出的是自我确认不是独立判定）。
+
+**③ AI 参与口径复用单一真源**：解盲配对时按最新决策执行的 `confidence_source == MODEL`（§11.11 ④ 0121 引入）判定 `PAIRED` / `AI_ABSENT`——证明不了是模型参与（STUB/FALLBACK/UNKNOWN）就不算，「桩环境盲标出来的 AI 一致率」是假证据。`PAIRED` 只表示成对样本产出，**一致率由评测流水线离线判定**（判定规则可升级重算，不冻结在解盲事务里）；解盲发布 `BlindLabelUnblindedEvent` 供评测流水线消费。
+
+**④ 变异验证（4 组，均命中预期用例并字节级还原）**：① 摘载荷禁区扫描 ⇒ `dispatchRejectsForbiddenPayloadKey` 红；② 去一次提交闸 ⇒ `submitImmutable` 红；③ 解盲不再要求已提交 ⇒ `unblindRequiresLabeled` 红；④ AI 参与口径放宽为「有执行即参与」⇒ `unblindAiAbsentWhenStubOrFallback` 红。回归 1124 run / 0 fail（含 ArchUnit 27 条全绿）。
+
+**边界**：盲标队列的**标注工作台前端**与校准曲线（ECE/Brier）重算未落地——本节交付的是队列结构与闸门，标注人在独立界面看原始票据影像的流程属交付排期；同案隔期重标允许（规则版本升级后复测），但同一时刻至多一个未解盲任务。
 
 ## 12. 落地里程碑与 Go/No-Go
 

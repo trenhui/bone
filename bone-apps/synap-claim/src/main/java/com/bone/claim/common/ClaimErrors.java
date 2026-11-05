@@ -72,7 +72,12 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.CLAIM_EVAL_SAMPLE_QUERY_INVALID, 400),
           Map.entry(ClaimErrorCodes.CLAIM_AI_RUNTIME_HEALTH_QUERY_INVALID, 400),
           // 400：时间窗缺失/倒置/超 31 天属调用方参数错，不是服务器故障（5xx 会污染 SLI 指标）
-          Map.entry(ClaimErrorCodes.CLAIM_AI_ROLLOUT_QUERY_INVALID, 400));
+          Map.entry(ClaimErrorCodes.CLAIM_AI_ROLLOUT_QUERY_INVALID, 400),
+          // 独立盲标：404 不存在/跨租户；409 状态冲突与标注人污染；422 载荷禁区命中（防反馈环闸门被绕过）
+          Map.entry(ClaimErrorCodes.SC_CLAIM_BLIND_LABEL_NOT_FOUND, 404),
+          Map.entry(ClaimErrorCodes.SC_CLAIM_BLIND_LABEL_CONFLICT, 409),
+          Map.entry(ClaimErrorCodes.SC_CLAIM_BLIND_LABEL_PAYLOAD_FORBIDDEN, 422),
+          Map.entry(ClaimErrorCodes.SC_CLAIM_BLIND_LABEL_ANNOTATOR_CONFLICT, 409));
 
   static {
     checkEveryCodeRegistered();

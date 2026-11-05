@@ -76,6 +76,16 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
   @Column(name = "ai_confidence")
   private BigDecimal aiConfidence;
 
+  /**
+   * 落库置信度的来源受控码（{@link AiConfidenceSource}；{@code null} = 本列加入前的历史行或未落结论）。
+   *
+   * <p><b>为什么必须落库</b>：{@link #aiConfidence} 在不同链路下装的是不同性质的数（模型自报 / 规则路径 /
+   * 桩常数），消费方只看数值无法区分——阈值语义会失真（桩永远同一常数 ⇒ 看起来「永远压线」）。推导在 {@link #complete} 时点完成：降级 ⇒ FALLBACK、模型标识归因见
+   * {@link AiConfidenceSource#derive}。
+   */
+  @Column(name = "confidence_source")
+  private String confidenceSource;
+
   @Column(name = "started_at", nullable = false)
   private Instant startedAt;
 
@@ -231,20 +241,36 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
     return v == null || v.isBlank();
   }
 
-  /** 结束执行并落结论（只允许一次）。 */
+  /** 结束执行并落结论（只允许一次）。未声明置信度来源时按 {@link AiConfidenceSource#UNKNOWN} 落—— 「有数值但证明不了出处」不得冒充模型输出。 */
   public void complete(
       DecisionResult result, DecisionTier tier, BigDecimal confidence, boolean fallback) {
+    complete(result, tier, confidence, fallback, AiConfidenceSource.UNKNOWN);
+  }
+
+  /** 结束执行并落结论（带置信度溯源，只允许一次）。 */
+  public void complete(
+      DecisionResult result,
+      DecisionTier tier,
+      BigDecimal confidence,
+      boolean fallback,
+      AiConfidenceSource confidenceSource) {
     if (statusEnum() != Status.RUNNING) {
       throw new DomainException("执行已终结，不可重复落结论");
     }
     this.decisionResult = result.name();
     this.decisionTier = tier.name();
     this.aiConfidence = confidence;
+    this.confidenceSource =
+        confidence == null ? AiConfidenceSource.UNKNOWN.name() : confidenceSource.name();
     this.status = (fallback ? Status.FALLBACK : Status.SUCCESS).name();
     this.finishedAt = Instant.now();
     this.durationMs = (int) (this.finishedAt.toEpochMilli() - this.startedAt.toEpochMilli());
     this.activeFlag = null;
     this.updatedAt = this.finishedAt;
+  }
+
+  public AiConfidenceSource confidenceSourceEnum() {
+    return confidenceSource == null ? null : AiConfidenceSource.valueOf(confidenceSource);
   }
 
   /**

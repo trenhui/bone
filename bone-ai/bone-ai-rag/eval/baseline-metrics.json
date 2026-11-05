@@ -2,6 +2,21 @@
   "schemaVersion": 1,
   "status": "skeleton",
   "note": "G0-1 非 ML 基线指标字典。只登记口径与接线状态，不登记任何实测值/达成值：报告 §7.4 第 3 条禁止在无基线时宣称效率提升，AI技术方案 §12.2 要求任一缺失不得宣称 AI 原生。targetRef 仅指向契约出处，不是已达标承诺。",
+  "statsProfile": {
+    "status": "proposed",
+    "note": "决策包预填的默认统计口径（复核报告 §7.15 ② 第 1 项）。status=proposed 表示尚未经业务确认——门禁与指标计算可按本口径运行，但对外宣称基线数字前必须先把 status 改为 confirmed 并登记 confirmedBy/confirmedAt。改动任一取值即构成口径变更，须重算全部历史基线并在 changelog 登记。",
+    "window": "rolling-30d",
+    "windowNote": "滚动 30 天窗口，按事实发生时间（结论时间/完成时间）取窗，不按发起时间——与 AiRolloutBudget 的抽检窗口同一纪律",
+    "minSamplesPerSlice": 30,
+    "minSamplesNote": "比例类指标 Wilson 95% 置信半宽 ≤±17% 的实用下界；不足时指标必须报 null（不是 0%）并标 INSUFFICIENT_SAMPLES",
+    "slices": ["ticketType", "hospitalTier", "amountBand", "tenant", "rephotographed"],
+    "percentile": "p50",
+    "percentileNote": "工时类取中位数不取均值——长尾案件（疑难/纠纷）会拉偏均值，中位数对核赔员日常负载更有代表性",
+    "costCurrency": "CNY",
+    "costBreakdown": ["ocr", "llm_prompt_tokens", "llm_completion_tokens", "embedding"],
+    "confirmedBy": null,
+    "confirmedAt": null
+  },
   "contractRef": [
     "doc/ai-product/synapClaim/02-requirements/产品需求文档.md §15 成功指标（KPI）",
     "doc/ai-product/synapClaim/03-contract/AI技术方案.md §11.1 / §11.3 / §12.2",

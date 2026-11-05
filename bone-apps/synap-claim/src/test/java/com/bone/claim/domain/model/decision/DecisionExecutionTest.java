@@ -63,6 +63,64 @@ class DecisionExecutionTest {
     assertThat(execution.statusEnum()).isEqualTo(DecisionExecution.Status.SUCCESS);
     assertThat(execution.getActiveFlag()).isNull();
     assertThat(execution.getFinishedAt()).isNotNull();
+    // 4 参便捷重载不带来源 ⇒ 落 UNKNOWN（有数值但证明不了出处，不得冒充模型输出）。
+    assertThat(execution.confidenceSourceEnum()).isEqualTo(AiConfidenceSource.UNKNOWN);
+  }
+
+  @Test
+  @DisplayName("置信度溯源：MODEL/STUB/FALLBACK 按推导落库；null 置信度强制 UNKNOWN")
+  void confidenceSourceRecording() {
+    DecisionExecution model = newExecution();
+    model.complete(
+        DecisionResult.AUTO_APPROVE,
+        DecisionTier.AUTO,
+        new BigDecimal("0.93"),
+        false,
+        AiConfidenceSource.derive(false, "qwen-max"));
+    assertThat(model.confidenceSourceEnum()).isEqualTo(AiConfidenceSource.MODEL);
+
+    DecisionExecution stub = newExecution();
+    stub.complete(
+        DecisionResult.AUTO_APPROVE,
+        DecisionTier.AUTO,
+        new BigDecimal("0.93"),
+        false,
+        AiConfidenceSource.derive(false, "local-stub"));
+    // 桩常数不得冒充模型输出——与健康度/评测/告知同一真源（AiModelProvenance）。
+    assertThat(stub.confidenceSourceEnum()).isEqualTo(AiConfidenceSource.STUB);
+
+    DecisionExecution fallback = newExecution();
+    fallback.complete(
+        DecisionResult.AUTO_APPROVE,
+        DecisionTier.AUTO,
+        new BigDecimal("0.80"),
+        true,
+        AiConfidenceSource.derive(true, "qwen-max"));
+    // 降级路径的数已被 ruleConfidence 覆写 ⇒ 无论传什么都必须落 FALLBACK。
+    assertThat(fallback.confidenceSourceEnum()).isEqualTo(AiConfidenceSource.FALLBACK);
+
+    DecisionExecution noConfidence = newExecution();
+    noConfidence.complete(
+        DecisionResult.NEED_MORE_EVIDENCE,
+        DecisionTier.MANUAL,
+        null,
+        false,
+        AiConfidenceSource.MODEL);
+    // 没产生置信度时即使误传 MODEL 也强制 UNKNOWN（没有数值就没有「模型给的把握」可言）。
+    assertThat(noConfidence.confidenceSourceEnum()).isEqualTo(AiConfidenceSource.UNKNOWN);
+    assertThat(noConfidence.getAiConfidence()).isNull();
+  }
+
+  @Test
+  @DisplayName("derive 判据：缺模型标识保守给 UNKNOWN，不冒充 MODEL（证明不了就不计入参与的反向纪律）")
+  void deriveConservatism() {
+    assertThat(AiConfidenceSource.derive(false, null)).isEqualTo(AiConfidenceSource.UNKNOWN);
+    assertThat(AiConfidenceSource.derive(false, "  ")).isEqualTo(AiConfidenceSource.UNKNOWN);
+    assertThat(AiConfidenceSource.derive(false, "MockLlmClient"))
+        .isEqualTo(AiConfidenceSource.STUB);
+    assertThat(AiConfidenceSource.derive(false, "deepseek-v4")).isEqualTo(AiConfidenceSource.MODEL);
+    assertThat(AiConfidenceSource.derive(true, "deepseek-v4"))
+        .isEqualTo(AiConfidenceSource.FALLBACK);
   }
 
   @Test

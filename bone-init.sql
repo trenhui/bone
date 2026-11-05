@@ -3276,6 +3276,7 @@ CREATE TABLE claim_decision_execution (
   decision_result   VARCHAR(32)   DEFAULT NULL COMMENT 'AUTO_APPROVE/SUGGEST_REJECT/MANUAL_REQUIRED/NEED_MORE_EVIDENCE',
   decision_tier     VARCHAR(16)   DEFAULT NULL COMMENT '内部分档 AUTO/REVIEW/MANUAL(不外露)',
   ai_confidence     DECIMAL(6,4)  DEFAULT NULL COMMENT '有效置信度(AI成功取AI置信度; LLM降级取规则路径置信度)',
+  confidence_source VARCHAR(16)   DEFAULT NULL COMMENT '置信度来源受控码(MODEL模型自报/STUB桩常数/FALLBACK规则路径/UNKNOWN未产生); NULL=本列加入前的历史行或未落结论',
   started_at        DATETIME(3)   NOT NULL COMMENT '开始时间',
   finished_at       DATETIME(3)   DEFAULT NULL COMMENT '结束时间',
   duration_ms       INT           DEFAULT NULL COMMENT '耗时',
@@ -3765,6 +3766,34 @@ CREATE TABLE `t_adj_fee_type` (
   UNIQUE KEY `uk_fee_type_code` (`tenant_id`,`fee_type_code`),
   KEY `idx_parent` (`tenant_id`,`parent_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='费用类型字典(录入项/计算项)';
+
+-- ── t_claim_blind_label_task（建自 0122_synap_claim_blind_label_task.sql） ──
+DROP TABLE IF EXISTS `t_claim_blind_label_task`;
+CREATE TABLE `t_claim_blind_label_task` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `task_no` varchar(64) NOT NULL COMMENT '盲标任务号(租户内唯一)',
+  `claim_id` bigint NOT NULL COMMENT '案件ID',
+  `assignee_id` varchar(64) NOT NULL COMMENT '标注人ID(与本案抽检质检人互斥,防既有印象污染)',
+  `status` varchar(16) NOT NULL COMMENT 'PENDING/LABELED/UNBLINDED(终态不可变)',
+  `label_payload_json` text NOT NULL COMMENT '标注载荷JSON(材料引用;键名过AI痕迹禁区扫描)',
+  `payload_hash` char(64) NOT NULL COMMENT '载荷指纹(sha256;派发即冻结)',
+  `label_result_json` varchar(2000) DEFAULT NULL COMMENT '人工盲标结论JSON(提交时一次写入,不可改)',
+  `submitted_at` datetime(3) DEFAULT NULL COMMENT '盲标结论提交时间',
+  `ai_suggestion_json` varchar(2000) DEFAULT NULL COMMENT 'AI建议快照(解盲时才从决策轨迹读入;提交前库内无AI数据=物理分离)',
+  `agreement` varchar(16) DEFAULT NULL COMMENT '配对结果(PAIRED成对产出/AI_ABSENT AI未真实参与;一致率由评测侧离线判定)',
+  `unblinded_at` datetime(3) DEFAULT NULL COMMENT '解盲时间',
+  `version` bigint NOT NULL DEFAULT '0' COMMENT '乐观锁版本(SDK @Version 维护)',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `deleted` tinyint NOT NULL DEFAULT '0' COMMENT '软删标记',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_task_no` (`tenant_id`,`task_no`),
+  KEY `idx_tenant_claim` (`tenant_id`,`claim_id`,`status`),
+  KEY `idx_tenant_assignee` (`tenant_id`,`assignee_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='独立盲标任务(G4-1防反馈环:派发脱敏+一次提交+解盲才配对)';
 
 -- ── t_claim_case_sla（建自 0072_synap_claim_missing_tables.sql） ──
 DROP TABLE IF EXISTS `t_claim_case_sla`;

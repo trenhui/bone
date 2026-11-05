@@ -11,6 +11,7 @@ import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
+import com.bone.claim.domain.model.decision.AiConfidenceSource;
 import com.bone.claim.domain.model.decision.AiDiscrepancyRouting;
 import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.claim.domain.model.decision.DecisionGraph;
@@ -143,6 +144,8 @@ public class DecisionGraphExecutor {
 
     Map<String, Object> outputs = new HashMap<>();
     BigDecimal confidence = null;
+    // 置信度溯源：与 confidence 的每一次覆写同步推导（见下各分支），落结论时随 ai_confidence 一起入库。
+    AiConfidenceSource confidenceSource = AiConfidenceSource.UNKNOWN;
     boolean fallback = false;
     // 结构性缺能力：确定性节点根本没有处理器（装配不全），此时任何下游结论都不可信 → 一刀切转人工。
     boolean structuralMissing = false;
@@ -171,6 +174,7 @@ public class DecisionGraphExecutor {
               "LLM_UNAVAILABLE",
               0);
           confidence = asDecimal(outputs.get("ruleConfidence"));
+          confidenceSource = AiConfidenceSource.FALLBACK;
           decisionMetricsPort.recordNode(node.name(), DecisionNodeStatus.FALLBACK.name(), 0);
           continue;
         }
@@ -209,6 +213,12 @@ public class DecisionGraphExecutor {
         }
         if (outcome.confidence() != null) {
           confidence = outcome.confidence();
+          // 置信度来源随覆写同步推导：LLM 节点的数按模型标识归因（桩/真实模型/缺标识），
+          // 确定性节点给的数本质是规则路径计算（与 LLM 降级分支同性质）。
+          confidenceSource =
+              node.type() == DecisionNodeType.LLM
+                  ? AiConfidenceSource.derive(false, aiVersion(outputs, "aiModel"))
+                  : AiConfidenceSource.FALLBACK;
         }
         if (node.type() == DecisionNodeType.LLM
             && outcome.status() == DecisionNodeStatus.FALLBACK) {
@@ -234,6 +244,7 @@ public class DecisionGraphExecutor {
               "LLM_UNAVAILABLE",
               cost);
           confidence = asDecimal(outputs.get("ruleConfidence"));
+          confidenceSource = AiConfidenceSource.FALLBACK;
           decisionMetricsPort.recordNode(node.name(), DecisionNodeStatus.FALLBACK.name(), cost);
         } else {
           // 确定性节点失败 → 中止并转人工
@@ -307,7 +318,7 @@ public class DecisionGraphExecutor {
     // （显式传入优先，见 DecisionExecution#backfillAiVersions）——避免"回放与复算必需"的字段静默为空。
     execution.backfillAiVersions(
         aiVersion(outputs, "aiModel"), aiVersion(outputs, "aiPromptVersion"));
-    execution.complete(outcome.result(), outcome.tier(), confidence, fallback);
+    execution.complete(outcome.result(), outcome.tier(), confidence, fallback, confidenceSource);
     // 分诊原因码随结论落库（RISK_HIT / AMOUNT_OVER_LIMIT / AI_CONFIDENCE_LOW 等）：
     // 读侧（快捷赔付风险闸、核赔工作台、处置归因）要能从库内证明"为什么转人工"，而非翻决策响应日志。
     execution.markTriageReason(outcome.reason());

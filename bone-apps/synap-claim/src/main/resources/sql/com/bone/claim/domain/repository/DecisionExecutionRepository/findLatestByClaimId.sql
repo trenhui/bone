@@ -12,6 +12,7 @@ SELECT
        decision_result,
        decision_tier,
        ai_confidence,
+       confidence_source,
        started_at,
        finished_at,
        duration_ms,

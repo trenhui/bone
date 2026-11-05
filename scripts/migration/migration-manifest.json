@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 120,
+  "executableCount": 122,
   "retired": [],
   "entries": [
     {
@@ -771,6 +771,18 @@
       "file": "0120_synap_claim_mapping_tables.sql",
       "kind": "ddl",
       "summary": "多保司主数据映射域「生效通道缺表」收口：7 张表（t_claim_insurer / t_claim_insurer_code_item / t_claim_code_mapping / t_claim_field_binding / t_claim_std_code_alias / t_claim_std_code_split / t_claim_mapping_miss）此前只有全量 bone-init.sql 与参考态 V20 有 DDL，scripts/migration/ 无对应增量 ⇒ 增量升级的存量环境永远建不出这些表，承保主体/映射/未命中处置页面首访即 500 且不告警。第 8 张 t_claim_coverage_override 已由 0112 覆盖，本脚本刻意不重复声明其列（同通道重复 (表,列) 会被 G44 判红，且责任归属含糊）。7 段 CREATE TABLE IF NOT EXISTS 由 bone-init.sql 逐字提取（脚本生成非手抄，与 V20/活库逐字节一致），幂等且不碰存量数据。终态断言 fail-closed：8 张表齐全（含 0112 那张，缺则提示检查 0112）、uk_active 必含 active_flag（否则同键可多条生效映射）、uk_miss 必不含 status（含了未命中队列撞键静默停摆）、mapping_miss 必含 resolved_by（V21 处置留痕口径）。同批修正 bone-init.sql 中 t_claim_coverage_override 手写块与已发 0112/参考态 V22/活库的 4 处列类型漂移（审计列 BIGINT→VARCHAR(64)、时间列 DATETIME(3)→TIMESTAMP(6)）：已发迁移按 sha256 记 journal 不可回改，故由全量基线向已部署形态收敛，消除「新装 vs 升级」结构分叉。"
+    },
+    {
+      "order": 121,
+      "file": "0121_synap_claim_decision_confidence_source.sql",
+      "kind": "ddl",
+      "summary": "claim_decision_execution 增加 confidence_source 列（置信度溯源）：ai_confidence 一列在不同链路装的是不同性质的数（模型自报/LLM降级取规则路径/桩常数），消费方只看数值无法区分 ⇒ 阈值语义失真（桩永远同一常数时「阈值以上放行」在灰度环境看起来永远通过）。应用侧同批落码：AiConfidenceSource 受控枚举（MODEL/STUB/FALLBACK/UNKNOWN）+ DecisionExecution.complete 增源参数（confidence=null 强制 UNKNOWN，有数值但证明不了出处不得冒充模型输出）+ DecisionGraphExecutor 三处置信度覆写分支逐一同步推导；判据复用 AiModelProvenance 单一真源（local-stub/mock 前缀判桩）。列 DEFAULT NULL：NULL=历史行（不做回填——历史来源不可考证，编造一个 MODEL 比留 NULL 危险得多）或未落结论。读侧 4 个 SQL 模板与 bone-init.sql 同批补列（防「建得进读不出」）。终态断言 fail-closed：information_schema 强断言列存在（0118 同款临时过程，不残留过程体）。"
+    },
+    {
+      "order": 122,
+      "file": "0122_synap_claim_blind_label_task.sql",
+      "kind": "ddl",
+      "summary": "新建 t_claim_blind_label_task（独立盲标任务，G4-1 数据飞轮的防反馈环闸门）：后督抽检员看得到 AI 建议，其结论不能当金标准（Sculley feedback loops，偏差被当 ground truth 放大）；独立盲标要求标注人在不看任何 AI 痕迹前提下重判同一案件，需与抽检单分离的存储。四道闸应用侧同批落码：①载荷禁区（label_payload_json 键名过 AI 痕迹黑名单扫描，命中 422）②物理分离（ai_suggestion_json 解盲时才从决策轨迹读入，提交前库内无 AI 数据）③一次提交（结论不可改写）④标注人去污染（与该案抽检质检人同人 409）。agreement 仅 PAIRED/AI_ABSENT：PAIRED 只表示成对样本产出，一致率由评测流水线离线判定；AI 参与口径复用 0121 的 confidence_source==MODEL 单一真源（桩/降级环境的建议是假证据）。状态机 PENDING→LABELED→UNBLINDED 终态不可变。bone-init.sql 同批补同款建表块（G39 覆盖纪律）；幂等 CREATE TABLE IF NOT EXISTS；终态断言 fail-closed（information_schema 强断言表+11 关键列，0118/0121 同款临时过程不残留）。"
     }
   ],
   "ordinalConflicts": [
