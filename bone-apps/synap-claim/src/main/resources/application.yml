@@ -69,6 +69,17 @@ bone:
       #   ① PolicyQueryPort 接真实保单系统（一期为进程内存桩，只有 dev seeder 种进去的保单）；
       #   ② 把既有 t_quota_account.quota_year 按保单年度重映射（数据迁移，不是开关）。
       basis: ${BONE_CLAIM_QUOTA_YEAR_BASIS:CALENDAR}
+  # 模型 provider（OpenAI 兼容协议）。三项都由环境变量注入，配置库零明文。
+  # 留空 base-url = 网关回落 MockLlmClient：服务照常启动，但 AiGatewayPortAdapter 显式拒绝替身响应
+  # （fail-closed），所有 AI 节点降级——「没配」与「配错」在运行期报表上表现相同，
+  # 用 GET /api/v1/claim-ops/ai-provider-probe 区分（它会真发一次最小请求）。
+  # 密钥若留着未解析的 ${...} 占位符，LlmGatewayProperties 会启动即失败，不会带着字面量去鉴权。
+  ai:
+    gateway:
+      base-url: ${BONE_AI_GATEWAY_BASE_URL:}
+      api-key: ${BONE_AI_GATEWAY_API_KEY:}
+      model: ${BONE_AI_GATEWAY_MODEL:gpt-4o-mini}
+      timeout: ${BONE_AI_GATEWAY_TIMEOUT:30s}
 
 # 生产可观测性出口（与 bone-system / bone-iam 同口径）：
 # 缺此块时指标只留在进程内存里，Prometheus 抓不到 —— 有埋点等于没有。

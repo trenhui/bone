@@ -3,6 +3,7 @@ package com.bone.claim.infrastructure.knowledge;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.application.port.out.KnowledgeRetrievalPort;
 import com.bone.claim.application.port.out.TenantPort;
+import com.bone.claim.domain.model.decision.KnowledgeBasis;
 import com.bone.claim.domain.model.evidence.Evidence;
 import com.bone.claim.domain.repository.EvidenceRepository;
 import com.bone.claim.domain.repository.RefDiseaseRepository;
@@ -33,10 +34,11 @@ import org.springframework.stereotype.Component;
     matchIfMissing = true)
 public class CatalogKnowledgeRetrievalPortAdapter implements KnowledgeRetrievalPort {
 
-  static final String BASIS_VERIFIED = "CATALOG_ADMISSION_VERIFIED";
-  static final String BASIS_NO_FACTS = "NO_PARSED_FACTS";
-  static final String BASIS_INSUFFICIENT = "INSUFFICIENT_CLINICAL_FACTS";
-  static final String BASIS_CATALOG_UNKNOWN = "CATALOG_UNKNOWN";
+  // 基据码唯一真源在领域枚举（含处置动作）；此处只做别名，避免「适配器写一套、聚合认一套」的漂移。
+  static final String BASIS_VERIFIED = KnowledgeBasis.CATALOG_ADMISSION_VERIFIED.code();
+  static final String BASIS_NO_FACTS = KnowledgeBasis.NO_PARSED_FACTS.code();
+  static final String BASIS_INSUFFICIENT = KnowledgeBasis.INSUFFICIENT_CLINICAL_FACTS.code();
+  static final String BASIS_CATALOG_UNKNOWN = KnowledgeBasis.CATALOG_UNKNOWN.code();
 
   private static final BigDecimal CONFIDENCE_DELTA = new BigDecimal("0.05");
 

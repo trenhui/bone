@@ -6,6 +6,7 @@ import com.bone.claim.domain.model.decision.AiDegradationReason;
 import com.bone.claim.domain.model.decision.AiModelProvenance;
 import com.bone.claim.domain.model.decision.DecisionGraph;
 import com.bone.claim.domain.model.decision.DecisionTraceNode;
+import com.bone.claim.domain.model.decision.KnowledgeBasis;
 import com.bone.claim.domain.repository.DecisionExecutionRepository;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -88,6 +89,8 @@ public class AiRuntimeHealthApplicationService {
     Map<String, Integer> degradedByReason = new TreeMap<>();
     int capabilityMissing = 0;
     Map<String, Integer> capabilityByReason = new TreeMap<>();
+    Map<String, Integer> knowledgeBasisByReason = new TreeMap<>();
+    int knowledgeBasisUnattributed = 0;
 
     for (DecisionTraceNode node : nodes) {
       JsonNode output = parse(node.getOutput());
@@ -120,6 +123,15 @@ public class AiRuntimeHealthApplicationService {
         String capabilityReason = text(output, "capabilityReason");
         capabilityByReason.merge(
             capabilityReason == null ? UNATTRIBUTED : capabilityReason, 1, Integer::sum);
+        // 基据是「知识层为什么判不了」的二级归因：只有 KNOWLEDGE_UNAVAILABLE 一个码时，
+        // 运维无法区分「解析没出事实」与「目录没收录」——两者处置动作互斥（改解析 vs 补目录）。
+        // 缺失（尚未落基据的历史行）单独计数：并入任何具名基据都会把「老数据没这个字段」读成一种真实成因。
+        String basis = text(output, "knowledgeBasis");
+        if (basis == null) {
+          knowledgeBasisUnattributed++;
+        } else {
+          knowledgeBasisByReason.merge(KnowledgeBasis.of(basis).code(), 1, Integer::sum);
+        }
       }
     }
 
@@ -144,7 +156,9 @@ public class AiRuntimeHealthApplicationService {
             ? null
             : rate(degraded - degradedByReason.getOrDefault(UNATTRIBUTED, 0), degraded),
         capabilityMissing,
-        Map.copyOf(capabilityByReason));
+        Map.copyOf(capabilityByReason),
+        Map.copyOf(knowledgeBasisByReason),
+        knowledgeBasisUnattributed);
   }
 
   /**
@@ -227,6 +241,10 @@ public class AiRuntimeHealthApplicationService {
    * @param attributionCoverage 降级样本里带了非空原因码的占比；降级为 0 时 {@code null}
    * @param capabilityMissing 自报「能力缺失」的节点数（知识/规则/视觉/图计算），与模型降级分开计
    * @param capabilityByReason 能力缺失原因码 → 条数
+   * @param knowledgeBasisByReason 知识层基据码 → 条数（{@link KnowledgeBasis}）：区分「解析没出事实」「只有票面事实」
+   *     「目录未收录」「能力仍是桩」——四者处置动作互斥，合并成一个 {@code KNOWLEDGE_UNAVAILABLE} 等于不可归因
+   * @param knowledgeBasisUnattributed 能力缺失但没落基据码的节点数（尚未落基据的历史行）。单列而不并入具名基据：并入会把
+   *     「老数据没这个字段」读成一种真实成因，从而把运维引向错误的处置方向
    */
   public record AiRuntimeHealth(
       Instant windowFrom,
@@ -243,7 +261,9 @@ public class AiRuntimeHealthApplicationService {
       Map<String, Integer> degradedByReason,
       BigDecimal attributionCoverage,
       int capabilityMissing,
-      Map<String, Integer> capabilityByReason) {
+      Map<String, Integer> capabilityByReason,
+      Map<String, Integer> knowledgeBasisByReason,
+      int knowledgeBasisUnattributed) {
 
     /** 派生字段：显式声明，避免下游把参与率当准确率对外报。 */
     @JsonProperty("note")
@@ -251,7 +271,9 @@ public class AiRuntimeHealthApplicationService {
       return "运行期口径：AiAssess 节点自报 aiAvailable + aiModel。participationRate 的分子只含可归因到生产模型的参与"
           + "（本地桩 local-stub 与未报模型的节点分别计入 aiStubbed / aiModelUnproven，都不算参与），"
           + "分母为所有已明确表态的节点；分母为 0 时为 null，不是 0%。"
-          + "attributionCoverage 是降级中带受控原因码的占比。两者都不是准确率——准确率见 /claims/eval/samples 的 agreementRate。";
+          + "attributionCoverage 是降级中带受控原因码的占比。两者都不是准确率——准确率见 /claims/eval/samples 的 agreementRate。"
+          + "knowledgeBasisByReason 是能力缺失的二级归因（知识层为什么判不了），"
+          + "knowledgeBasisUnattributed 是没落基据的老数据；两者皆空表示这段时间没有能力缺失。";
     }
   }
 }

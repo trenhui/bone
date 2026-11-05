@@ -8,6 +8,7 @@ import com.bone.claim.application.port.out.KnowledgeRetrievalPort;
 import com.bone.claim.application.port.out.NotificationPort;
 import com.bone.claim.domain.model.decision.DecisionGraph;
 import com.bone.claim.domain.model.decision.DecisionNodeStatus;
+import com.bone.claim.domain.model.decision.KnowledgeBasis;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -91,7 +92,7 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
       out.put("aiUnavailableReason", ex.reason().name());
       // v1.2：降级路径也输出同一套认知层键（空值），保证决策轨迹 schema 稳定，读侧不必判空分支
       putCognitiveEmpty(out);
-      putCapability(out, knowledgeAvailable);
+      putCapability(out, knowledgeAvailable, k.basis());
       if (rejectSuggested) {
         notificationPort.alert("WARN", "AI_RISK", v, out);
       }
@@ -114,7 +115,7 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
     out.put("aiEvidenceRefs", a == null ? List.of() : a.evidenceRefs());
     out.put("aiClauseRefs", a == null ? List.of() : a.clauseRefs());
     out.put("aiDiscrepancies", a == null ? List.of() : a.discrepancies());
-    putCapability(out, knowledgeAvailable);
+    putCapability(out, knowledgeAvailable, k.basis());
     if (rejectSuggested) {
       notificationPort.alert("WARN", "AI_RISK", v, out);
     }
@@ -134,12 +135,20 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
    *
    * <p>与 {@code rejectSuggested} 严格分离：前者进人工队列，后者才是不利决定。历史上二者被合并（{@code rejectSuggested = ... ||
    * !knowledgeConfirmed}），导致"知识库未接入"被落成"系统建议拒赔"。
+   *
+   * <p><b>为什么要一并落 {@code knowledgeBasis}</b>：{@code capabilityReason} 只有 {@code
+   * KNOWLEDGE_UNAVAILABLE} 一个码，成因却有四种且处置动作互斥；适配器算出的基据若在上一步丢弃， 运维视角就只剩「知识不可用」，等于把可归因事实降级成不可归因。
    */
-  private static void putCapability(Map<String, Object> out, boolean knowledgeAvailable) {
+  private static void putCapability(
+      Map<String, Object> out, boolean knowledgeAvailable, String knowledgeBasis) {
     out.put("knowledgeAvailable", knowledgeAvailable);
     out.put("capabilityMissing", !knowledgeAvailable);
     if (!knowledgeAvailable) {
       out.put("capabilityReason", REASON_KNOWLEDGE_UNAVAILABLE);
+      // 二级归因：KNOWLEDGE_UNAVAILABLE 一个码盖住四种互斥成因（改解析 / 换材料 / 补目录 / 接能力），
+      // 故把适配器算出的基据单独成字段落库。不拼进 capabilityReason：那是既有读侧契约与历史指标维度，
+      // 改其取值会让新旧数据不可比。未知 / 缺失一律归一为受控码，不把自由文本带进审计面。
+      out.put("knowledgeBasis", KnowledgeBasis.of(knowledgeBasis).code());
     }
   }
 }
