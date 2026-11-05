@@ -23,17 +23,36 @@ synap-claim 已有三处「事实上的回归用例」，但都只存在于 Java
   A7 groundTruthPolicy 五要素齐全（来源/禁 PII/冻结集纪律/变更必跑）
   A8 PII 正则扫描：身份证/手机号/银行卡号命中即失败（§24）
   A9 独立哨兵 + 扫描失效闸：判据退化成恒绿、或源码路径失效，一律判失败
+  A10 期望值冻结：每条用例的 (id, kind, expected) 哈希与脚本内基线逐一比对
+
+为什么需要 A10（A1–A9 的真实缺口）
+----------------------------------
+A1–A9 管的是「有没有、够不够、来源可不可达」，都**不进 expected 的值**。于是
+一条负向探针可以原地保留：id 没删、symbol 还在源码里、kind 仍写 negative、
+piiFree 仍为 true，唯独把 `expected` 从 `{"result":"SUGGEST_REJECT"}` 改成
+`{"result":"AUTO_APPROVE"}` —— 39 条用例一条不少、负向占比一分不降、全部门禁
+绿着放行。这类改动比删用例更隐蔽：删用例会被 A2/A6 抓，改期望值此前无人看。
+
+A10 是**篡改可见性（tamper-evidence），不是篡改阻止**：同时改评测集与脚本基线
+仍能通过。它的价值在于把「一次静默的判据放宽」变成「两处 diff」——评测集那行
+改了，基线那行也必须改，review 时看得见。改基线的动作本身即申报：谁改了哪条
+用例的期望值、改成了什么，都留在 diff 里。真正的防放宽还需人工盲标与独立的
+评测集审批人（组织措施，机器无法替代，不在此声称）。
+基线刻意硬编码在脚本里而非放在评测集旁边的锁文件：与本文件 MIN_CASES 同理，
+读 JSON 等于「把阈值和被测物放在同一份可编辑文件里」。
 
 刻意不做：不校验模型准确率/自动化率、不要求 provider 已接线、不打开自动放款开关。
 这些依赖真实样本与灰度证据，硬编码阈值只会逼出假数据。
 
 用法:
-  python3 scripts/check-claim-ai-evalset.py --check     # CI blocking
-  python3 scripts/check-claim-ai-evalset.py             # 人类可读报告
+  python3 scripts/check-claim-ai-evalset.py --check          # CI blocking
+  python3 scripts/check-claim-ai-evalset.py                  # 人类可读报告
+  python3 scripts/check-claim-ai-evalset.py --print-hashes   # 改判据后重出 A10 基线
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -83,6 +102,51 @@ PII_PATTERNS: Tuple[Tuple[str, Any], ...] = (
     ("手机号", re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)")),
     ("银行卡号", re.compile(r"(?<!\d)\d{16,19}(?!\d)")),
 )
+
+# A10 期望值冻结基线：caseId -> sha256(canonical{id, kind, expected})。
+# 改任何一条用例的期望值或正负向属性都必须同步改这里，测评集评审才有 diff 可看。
+# 重新生成：python3 scripts/check-claim-ai-evalset.py --print-hashes
+EXPECTED_HASHES: Dict[str, str] = {
+    "TRIAGE-01": "8aa5e2a1657d135a07259b1e7620f4036b00acdeacfd9b5005ffadd9ed51db32",
+    "TRIAGE-02": "c35aa3fbecca6503575e1e9e3417bb115e5543c62a8c9bdeadf9084a9fa2eb8f",
+    "TRIAGE-03": "73a8aed019dbb2da12a3260377569738d3c234b891ec83d1d6943c8181fa6ddb",
+    "TRIAGE-04": "30e5d960ab9ef453d332430d663f281bd359c17899abd39333329cea70ae84c7",
+    "TRIAGE-05": "e00b7764ca9248c6286431fe83f11502f40205fcf00a8141102a9885fbbaee53",
+    "TRIAGE-06": "a17f04f09b1af68553f5f579e1ad601dfe1c2e46559ae2aae15bff7e56a5d21b",
+    "TRIAGE-07": "754916100b10a9e77e4759b266bd8906c2ad4afce2fe855d03f1a0c237f56b91",
+    "TRIAGE-08": "37f94238b5c8278c21bc46001919c002ad0a1c366fde4d5276b248f6d6ae74ea",
+    "TRIAGE-09": "fe3f0d18093aea417d240b8e1ac33900116954875738fff5600bfb03db9ae8b8",
+    "TRIAGE-10": "daf7a75820539a801402b805fa8754271054899f41bc5d1b24e6493001477395",
+    "TRIAGE-11": "23cdb8baed39c38498ec263009412a4bb446a9968351a6b511ebb61e6b91c4d5",
+    "TRIAGE-12": "350bcd14559913d92bf8c5713d86fbb3c409414f1a7bfb7c843bb470b4cb0f17",
+    "TRIAGE-13": "b2d459ceb77dd58e07ffab7bdc9ae7c19364e7a492292ad64df0c15e61984e44",
+    "AIASSESS-01": "98453762879907cd86ee820baeb507c0e26d5e26f7b8a4f93a317180dc2d934c",
+    "AIASSESS-02": "1c472515b86b9f7ed9e3075fa2bc96171b69f0f6a4457890cda2f58fbe6266f8",
+    "AIASSESS-03": "9aff5a54363fc497a50ed670351cc9d19c2e2a462810e8a496f28fc33747c6e6",
+    "AIASSESS-04": "6b87aeb0038e079d3544f19a25cc0f16113c744bf875e3562a7b286c6eefa4f5",
+    "AIASSESS-05": "6b69882521f9765353a246bfc1e9a5d5ccb6210d5d1dbfc07abf91215f710f3f",
+    "AIASSESS-06": "b981774864d0e55deba12a983f4434ee87dc31f3901fb7b0bd0c5f2d181bd64d",
+    "AIASSESS-07": "ba2119a3a33208d630fbd90225b10e8a7e4c8d6c319357891b6b7b2ff4122fc2",
+    "READY-01": "075d9b29ffd52c422d3aa0395be95df9b191550400c850dc49107ac91072d693",
+    "READY-02": "61103c799f3d8cf2d6ff43b089b22c1faa43e941cd3238f8ebce76de05594505",
+    "READY-03": "760f159cf34b947bcb551e81f8cace2246310783e1624cb8d72d3598cc48f43f",
+    "READY-04": "11f64e932e724ba765a5ffaa2cdf7d35174656088c63d6e36082a8c7cde0c33f",
+    "READY-05": "b8047c2da6f93b6f0954b763bee48134c6c4001ce13ecc398c2dae46eac0bdd1",
+    "READY-06": "48ee551fa5834905cd80ecebb4befce64fcd7cc7491b3aec2ec1e07d36cda0cc",
+    "READY-07": "36baa1f82414620a8105369bd34cdff8e1fac6bc2768230d158c1cdbb4d49afd",
+    "READY-08": "da7303349b39e11a7a68bef8e09273aade0c5ddc897fc745ece5c1343cc3b2f9",
+    "CTRL-01": "657ac8ef5935bece25a7ec2176e749ed77fddc4cb6a831815280385e9c9fc6b8",
+    "CTRL-02": "6d2697371501d16e588ecc93021d4282f99a42b6aafeafb4a33b4fda0a4b974e",
+    "DISC-01": "8283ca79f3bb8ecbc7bb5869343689f2b98e36095032a7217b4cfefb6c656738",
+    "DISC-02": "2603d2124f5dc2a2f121ef220fdfba65039516a1634947085d24c82e1465fa48",
+    "DISC-03": "f04d515a05cb02f47b793cef039ea3af9d9b3aa5284546ceb5d8043b0e5bc827",
+    "DISC-04": "600522d55d41a52b6512340ccf1793fac632aa5625ec0b67b2d97935707330e7",
+    "DISC-05": "a460cd3c8b6ee317ed2a095cf5d31c5c91be6afab9f4518714eac6455af80e48",
+    "DISC-06": "c9713b6d4f1aa9b647c989eb3720c08b13a19da93ddbe8c2033608b54d25cddf",
+    "DISC-07": "502514417fe22967e5af6bd61960f65c632605707140ac75c552c8c4b89e5343",
+    "DISC-08": "aefc13fcce46f1fafc6e753c98a5ee7c9dc395574388e32b86f549119e8c3fbf",
+    "DISC-09": "3d2b3f3afe5966a5b8588f3110d2ed8c9b7bbd26b179dfa1c91faae3a591d521",
+}
 
 
 def read_source(path: Path) -> Tuple[Any, str, List[str]]:
@@ -248,6 +312,58 @@ def pii_errors(text: str) -> List[str]:
     return errs
 
 
+def _canonical(payload: Any) -> str:
+    """稳定序列化：键排序 + 紧凑分隔，字段顺序无关、任何值改动必变哈希。"""
+    return json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+
+
+def case_verdict_hash(case: Any) -> str:
+    """单条用例的判定语义哈希：只覆盖 id / kind / expected。
+
+    刻意不含 name / suite / groundTruthRef / 来源标注 —— 改文案不该被判红，
+    否则门禁会因为改错别字天天红，最后被关掉。id 参与哈希是为了让哈希不可
+    在用例间移植（否则把 A 的哈希贴给 B 就能让 B 用 A 的期望值蒙混）。
+    """
+    body = {
+        "id": case.get("id"),
+        "kind": case.get("kind"),
+        "expected": case.get("expected"),
+    }
+    return hashlib.sha256(_canonical(body).encode("utf-8")).hexdigest()
+
+
+def expected_freeze_errors(cases: Any, baseline: Dict[str, str] | None = None) -> List[str]:
+    """A10：期望值冻结。基线为空时判失败——空基线等于 A10 恒绿。"""
+    base = EXPECTED_HASHES if baseline is None else baseline
+    if not base:
+        return ["A10: 期望值冻结基线为空，A10 恒绿（基线必须硬编码在脚本里）"]
+    if not isinstance(cases, list) or not cases:
+        return []  # 归 A2 管，避免重复报错
+    errs: List[str] = []
+    seen: set[str] = set()
+    for idx, case in enumerate(cases):
+        if not isinstance(case, dict):
+            continue  # 归 A3 管
+        cid = case.get("id")
+        if not isinstance(cid, str) or not cid.strip():
+            continue  # 归 A3 管
+        seen.add(cid)
+        frozen = base.get(cid)
+        if frozen is None:
+            errs.append(
+                f"A10: cases[{idx}] 新用例 {cid} 未登记期望值基线；"
+                "新增用例须跑 --print-hashes 同步基线并走评测集评审"
+            )
+        elif case_verdict_hash(case) != frozen:
+            errs.append(
+                f"A10: {cid} 的 kind/expected 与冻结基线不一致"
+                "（期望值被改动？改判据必须同步改基线并说明理由）"
+            )
+    for cid in sorted(set(base) - seen):
+        errs.append(f"A10: 基线登记的用例 {cid} 已从评测集消失（静默下线判据）")
+    return errs
+
+
 def sentinel(root: Path) -> List[str]:
     """A9 独立哨兵：门禁不能只问「你自证通过吗」——直接给判据函数喂已知违规。
 
@@ -265,19 +381,48 @@ def sentinel(root: Path) -> List[str]:
         "testSymbol": "baselineGreenScenario_AutoApprove",
         "piiFree": True,
     }
-    probes: Tuple[Tuple[str, Any], ...] = (
-        ("A2", lambda: inventory_errors([base], [{"id": REQUIRED_SUITES[0]}])),
-        ("A3", lambda: case_field_errors({**base, "piiFree": False}, "probe")),
-        ("A4", lambda: symbol_errors({**base, "testSymbol": "NO_SUCH_SYMBOL_XYZ"}, root, "probe")),
-        ("A5", lambda: ref_errors({**base, "groundTruthRef": "no/such/file.md#x"}, root, "probe")),
-        ("A6", lambda: negative_errors([{**base, "kind": "positive"}])),
-        ("A8", lambda: pii_errors('{"fake": "13800138000"}')),
+    probes: Tuple[Tuple[str, str, Any], ...] = (
+        ("A2", "库存下界", lambda: inventory_errors([base], [{"id": REQUIRED_SUITES[0]}])),
+        ("A3", "piiFree=非真", lambda: case_field_errors({**base, "piiFree": False}, "probe")),
+        (
+            "A4",
+            "symbol 漂移",
+            lambda: symbol_errors({**base, "testSymbol": "NO_SUCH_SYMBOL_XYZ"}, root, "probe"),
+        ),
+        (
+            "A5",
+            "来源不可达",
+            lambda: ref_errors({**base, "groundTruthRef": "no/such/file.md#x"}, root, "probe"),
+        ),
+        ("A6", "负向探针被降级", lambda: negative_errors([{**base, "kind": "positive"}])),
+        ("A8", "PII 命中", lambda: pii_errors('{"fake": "13800138000"}')),
+        # A10 三条独立探针：期望值被改（mismatch 分支）、正负向被翻（kind 是否
+        # 真的进哈希）、基线为空（恒绿分支）。基线显式传入，不依赖全局
+        # EXPECTED_HASHES —— 否则基线一空，"为空"判据会冒领"已命中"，真正退化的
+        # mismatch 分支永远测不到。
+        (
+            "A10",
+            "期望值被改",
+            lambda: expected_freeze_errors(
+                [base],
+                {"PROBE": case_verdict_hash({**base, "expected": {"ok": False}})},
+            ),
+        ),
+        (
+            "A10",
+            "kind 被翻",
+            lambda: expected_freeze_errors(
+                [{**base, "kind": "positive"}],
+                {"PROBE": case_verdict_hash(base)},
+            ),
+        ),
+        ("A10", "基线为空", lambda: expected_freeze_errors([base], {})),
     )
     errs: List[str] = []
-    for rule, fn in probes:
+    for rule, label, fn in probes:
         got = fn()
         if not any(e.startswith(rule + ":") for e in got):
-            errs.append(f"A9: 独立哨兵未命中 {rule}；判据可能已退化成恒绿")
+            errs.append(f"A9: 独立哨兵未命中 {rule}（{label}）；判据可能已退化成恒绿")
     return errs
 
 
@@ -309,6 +454,7 @@ def check(root: Path) -> List[str]:
     suites = doc.get("suites")
     errors.extend(inventory_errors(cases, suites))
     errors.extend(negative_errors(cases))
+    errors.extend(expected_freeze_errors(cases))
     errors.extend(pii_errors(raw))
     if isinstance(cases, list):
         for idx, case in enumerate(cases):
@@ -320,11 +466,38 @@ def check(root: Path) -> List[str]:
     return errors
 
 
+def baseline_block(cases: Any) -> str:
+    """按用例序生成可直接粘贴的 EXPECTED_HASHES 字面量（避免手抄哈希出错）。"""
+    if not isinstance(cases, list):
+        return ""
+    lines = []
+    for case in cases:
+        if not isinstance(case, dict) or not isinstance(case.get("id"), str):
+            continue
+        lines.append(f'    "{case["id"]}": "{case_verdict_hash(case)}",')
+    return "EXPECTED_HASHES: Dict[str, str] = {\n" + "\n".join(lines) + "\n}"
+
+
 def main(argv: List[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="理赔 AI 决策回归评测集门禁")
     ap.add_argument("--check", action="store_true", help="CI 模式：有违规即非零退出")
     ap.add_argument("--root", default=str(REPO), help="仓库根（单测注入用）")
+    ap.add_argument(
+        "--print-hashes",
+        action="store_true",
+        help="输出期望值冻结基线（改判据/加用例后同步 EXPECTED_HASHES 用）",
+    )
     args = ap.parse_args(argv)
+
+    if args.print_hashes:
+        doc, _, errors = read_source(Path(args.root) / EVALSET_REL)
+        if errors:
+            for e in errors:
+                print("  · " + e)
+            return 1
+        assert isinstance(doc, dict)  # read_source 成功时必为 dict
+        print(baseline_block(doc.get("cases")))
+        return 0
 
     errors = check(Path(args.root))
     if errors:
@@ -334,7 +507,7 @@ def main(argv: List[str] | None = None) -> int:
         return 1
     print(
         f"OK: 理赔 AI 决策回归评测集通过（用例库存 ≥ {MIN_CASES} 条硬编码下界 / "
-        "ground truth 可达 / 负向探针齐全 / PII 零命中 / 判据自证有效）"
+        "ground truth 可达 / 负向探针齐全 / 期望值未漂移 / PII 零命中 / 判据自证有效）"
     )
     return 0
 

@@ -212,6 +212,69 @@ class ClaimAiEvalsetGateTest(unittest.TestCase):
         finally:
             gate.case_field_errors = original
 
+    def test_a10_loosened_expected_is_red(self):
+        """A1–A9 的真实缺口：把期望值改宽松而其余字段一字不动。
+
+        TRIAGE-13 原本期望 SUGGEST_REJECT（负向探针），改成 AUTO_APPROVE 后
+        id/kind/symbol/来源标注全都没变，负向占比也没降 —— 只有 A10 能看到。
+        """
+        bad = json.loads(json.dumps(self.doc))
+        target = next(c for c in bad["cases"] if c["id"] == "TRIAGE-13")
+        target["expected"] = {"result": "AUTO_APPROVE", "tier": "AUTO"}
+        _write(self.tmp, bad)
+        errs = gate.check(self.tmp)
+        self.assertTrue(_errors(errs, "A10"), errs)
+        self.assertTrue(any("TRIAGE-13" in e for e in _errors(errs, "A10")))
+
+    def test_a10_kind_flip_of_non_required_case_is_red(self):
+        """A6 只钉十条关键负向探针；其余用例翻正负向由 A10 兜。"""
+        bad = json.loads(json.dumps(self.doc))
+        target = next(c for c in bad["cases"] if c["id"] == "DISC-05")
+        target["kind"] = "positive"
+        _write(self.tmp, bad)
+        self.assertTrue(_errors(gate.check(self.tmp), "A10"))
+
+    def test_a10_new_case_without_baseline_is_red(self):
+        """新增用例必须显式登记基线，否则可以靠「加一条恒绿用例」稀释负向占比。"""
+        bad = json.loads(json.dumps(self.doc))
+        extra = json.loads(json.dumps(bad["cases"][0]))
+        extra["id"] = "TRIAGE-99"
+        bad["cases"].append(extra)
+        _write(self.tmp, bad)
+        self.assertTrue(_errors(gate.check(self.tmp), "A10"))
+
+    def test_a10_removed_case_leaves_dangling_baseline_is_red(self):
+        """基线登记了、评测集里没了 = 静默下线判据（与「新增未登记」对称）。"""
+        bad = json.loads(json.dumps(self.doc))
+        bad["cases"] = [c for c in bad["cases"] if c["id"] != "DISC-05"]
+        _write(self.tmp, bad)
+        errs = gate.check(self.tmp)
+        self.assertTrue(any("DISC-05" in e for e in _errors(errs, "A10")), errs)
+
+    def test_a10_empty_baseline_is_red(self):
+        """删除基线本身不得让 A10 变绿：空基线必须判失败。
+
+        断言的是「一条明确指控」而非「39 条用例未登记的噪音」——后者虽然也红，
+        但会把「基线被整个清空」伪装成「有人加了一批新用例」，定位成本高一个量级。
+        """
+        original = gate.EXPECTED_HASHES
+        gate.EXPECTED_HASHES = {}
+        try:
+            errs = _errors(gate.check(self.tmp), "A10")
+            self.assertTrue(errs)
+            self.assertTrue(any("基线为空" in e for e in errs), errs)
+        finally:
+            gate.EXPECTED_HASHES = original
+
+    def test_a10_sentinel_catches_degenerated_freeze(self):
+        """A10 被改成恒绿时，独立哨兵必须报 A9，而不是跟着一起放过。"""
+        original = gate.expected_freeze_errors
+        gate.expected_freeze_errors = lambda cases, baseline=None: []
+        try:
+            self.assertTrue(_errors(gate.check(self.tmp), "A9"))
+        finally:
+            gate.expected_freeze_errors = original
+
     def test_restore_after_injection_is_green(self):
         """还原必绿：注入→必红→写回原文档→必绿，排除「门禁只会拒绝」。"""
         bad = json.loads(json.dumps(self.doc))
