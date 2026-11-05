@@ -58,6 +58,7 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.CLAIM_POLICY_DUPLICATED, 409),
           // 422 而非 400：请求本身合法，是"保单类型与被保人清单对不上"这一业务前提不成立
           Map.entry(ClaimErrorCodes.CLAIM_POLICY_TYPE_CONFLICT, 422),
+          Map.entry(ClaimErrorCodes.CLAIM_SHARED_POOL_LIMIT_CONFLICT, 422),
           Map.entry(ClaimErrorCodes.CLAIM_MAPPING_IMPORT_REJECTED, 400),
           Map.entry(ClaimErrorCodes.CLAIM_BIZ_IDENTITY_INVALID, 422),
           Map.entry(ClaimErrorCodes.CLAIM_PLAN_NOT_FOUND, 404),

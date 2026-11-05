@@ -187,6 +187,15 @@ public final class ClaimErrorCodes {
    */
   public static final String CLAIM_POLICY_TYPE_CONFLICT = "SC_CLAIM_POLICY_TYPE_CONFLICT";
 
+  /**
+   * 共享保额（共保）池初始额度不一致：同一被保人同一共保代码下，多个责任的上限不同，导致池账户初始额度歧义。
+   *
+   * <p>共保池以 (被保人, 共保代码) 为账户键，开户接口对同键账户「首开幂等、后续忽略 limit」——若两个共保责任各自带不同
+   * 责任限额，后者会被静默吞掉，池账户额度由"先发布者"决定，理赔占额对账错乱。共保池应有唯一额度真源， 本码用于 fail-closed 拦住配置矛盾。
+   */
+  public static final String CLAIM_SHARED_POOL_LIMIT_CONFLICT =
+      "SC_CLAIM_SHARED_POOL_LIMIT_CONFLICT";
+
   /** 映射批量导入被整批拒绝：文件不可解析或超过 2000 行上限（行级错误走结果对象，不抛异常）。 */
   public static final String CLAIM_MAPPING_IMPORT_REJECTED = "SC_CLAIM_MAPPING_IMPORT_REJECTED";
 

@@ -131,6 +131,49 @@ class QuotaPolicyTypeGuardTest {
         .doesNotThrowAnyException();
   }
 
+  @Test
+  void sharedPoolLimitMismatch_isRejected() {
+    when(claimPlanRepository.findPlanById(PLAN_ID)).thenReturn(plan());
+    when(quotaAccountRepository.findAccountsByPolicyNo(POLICY_NO))
+        .thenReturn(List.of(personal("hash-1")));
+    // 既存共保池（被保人 hash-1, 共保代码 SHP-001）额度 20000，与本次责任的 50000 不一致
+    when(quotaAccountRepository.findAccount(
+            "hash-1", POLICY_NO, PLAN_ID, 2026, QuotaAccount.QUOTA_TYPE_SHARED_POOL, "SHP-001"))
+        .thenReturn(sharedPool(new BigDecimal("20000")));
+
+    assertThatThrownBy(
+            () ->
+                service.initPublicAccountsForLiability(
+                    PLAN_ID, "liability-2", "SHP-001", new BigDecimal("50000")))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getErrorCode())
+                    .isEqualTo(ClaimErrorCodes.CLAIM_SHARED_POOL_LIMIT_CONFLICT))
+        .hasMessageContaining("唯一额度真源");
+
+    // 闸门在开户之前：一个账户都不许落库（与保单类型闸同一防御姿态）
+    verify(quotaAccountRepository, never()).save(any());
+  }
+
+  @Test
+  void sharedPoolLimitConsistent_isIdempotent() {
+    when(claimPlanRepository.findPlanById(PLAN_ID)).thenReturn(plan());
+    when(quotaAccountRepository.findAccountsByPolicyNo(POLICY_NO))
+        .thenReturn(List.of(personal("hash-1")));
+    // 既存共保池额度与本次责任一致 ⇒ 视作幂等，不报错、不落库
+    when(quotaAccountRepository.findAccount(
+            "hash-1", POLICY_NO, PLAN_ID, 2026, QuotaAccount.QUOTA_TYPE_SHARED_POOL, "SHP-001"))
+        .thenReturn(sharedPool(new BigDecimal("20000")));
+
+    assertThatCode(
+            () ->
+                service.initPublicAccountsForLiability(
+                    PLAN_ID, "liability-2", "SHP-001", new BigDecimal("20000")))
+        .doesNotThrowAnyException();
+    verify(quotaAccountRepository, never()).save(any());
+  }
+
   // ===================== 夹具 =====================
 
   private static ClaimPlan plan() {
@@ -175,5 +218,18 @@ class QuotaPolicyTypeGuardTest {
         "LIABILITY_CAP",
         "liability-uuid",
         new BigDecimal("5000"));
+  }
+
+  private static QuotaAccount sharedPool(BigDecimal limit) {
+    return QuotaAccount.open(
+        9L,
+        1L,
+        "hash-1",
+        POLICY_NO,
+        PLAN_ID,
+        2026,
+        QuotaAccount.QUOTA_TYPE_SHARED_POOL,
+        "SHP-001",
+        limit);
   }
 }

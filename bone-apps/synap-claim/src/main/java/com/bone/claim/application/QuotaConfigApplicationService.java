@@ -187,6 +187,11 @@ public class QuotaConfigApplicationService {
     for (QuotaAccount personal : personalAccounts) {
       if (QuotaAccount.isShared(sharedCode)) {
         // 共享责任：责任限额账走 SHARED_POOL 维度，按共保代码分行（liability_uuid 列存共保代码，与运行期路由键同源）
+        BigDecimal sharedLimit = initialLimit == null ? BigDecimal.ZERO : initialLimit;
+        // 共保池的额度必须唯一真源：同 (被保人, 共保代码) 下多个责任若限额不同，开户接口"首开幂等、后续忽略 limit"
+        // 会让后发布责任的额度被静默吞掉，造成池账户额度歧义。先在边界拦下，让人统一额度再发布。
+        assertSharedPoolLimitConsistent(
+            personal.getInsuredIdHash(), policyNo, planId, quotaYear, sharedCode, sharedLimit);
         openAccount(
             new OpenQuota(
                 personal.getInsuredIdHash(),
@@ -195,7 +200,7 @@ public class QuotaConfigApplicationService {
                 quotaYear,
                 QuotaAccount.QUOTA_TYPE_SHARED_POOL,
                 sharedCode,
-                initialLimit == null ? BigDecimal.ZERO : initialLimit,
+                sharedLimit,
                 "system",
                 "共享池发布联动",
                 "共享池发布自动初始化"));
@@ -243,6 +248,45 @@ public class QuotaConfigApplicationService {
             + " 个未减人的个人额度账户，"
             + "与「单人单账户」矛盾：请核实保单类型（是否为团体保单）或被保人名单是否串单；"
             + "修好后重新发布责任即可自动开立责任额度池");
+  }
+
+  /**
+   * 共保池初始额度一致性闸（单一真源 / 边界校验 / fail-closed）。
+   *
+   * <p>共保池以 (被保人, 共保代码) 为账户键，同一被保人多个共保责任若共用同一共保代码、却各自带不同责任限额， 就会争抢同一个池账户的初始额度：开户接口对同键账户「首开幂等、后续忽略
+   * limit」，结果由"先发布的责任"决定， 后发布责任的额度被静默吞掉 ⇒ 池账户额度歧义（数据完整性 bug，理赔占额对账错乱）。
+   *
+   * <p>共保池应有唯一额度真源：首次开户确定额度，后续责任须与其一致；确需改额度请走 {@code adjustInitial} （显式保全留痕），而非再次发布。不一致即
+   * fail-closed，让人先统一共保池额度再发布。
+   */
+  private void assertSharedPoolLimitConsistent(
+      String insuredIdHash,
+      String policyNo,
+      long planId,
+      int quotaYear,
+      String sharedCode,
+      BigDecimal limit) {
+    QuotaAccount existing =
+        quotaAccountRepository.findAccount(
+            insuredIdHash,
+            policyNo,
+            planId,
+            quotaYear,
+            QuotaAccount.QUOTA_TYPE_SHARED_POOL,
+            sharedCode);
+    if (existing != null && existing.getQuotaInitial().compareTo(limit) != 0) {
+      throw ClaimErrors.of(
+          ClaimErrorCodes.CLAIM_SHARED_POOL_LIMIT_CONFLICT,
+          "被保人 "
+              + insuredIdHash
+              + " 的共保池("
+              + sharedCode
+              + ")已按初始额度 "
+              + existing.getQuotaInitial()
+              + " 开户，本次责任要求 "
+              + limit
+              + "：共保池须有唯一额度真源，请统一后再发布（确需改额度请走保全调额）");
+    }
   }
 
   /**
