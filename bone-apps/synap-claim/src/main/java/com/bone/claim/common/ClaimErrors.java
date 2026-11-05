@@ -68,7 +68,8 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.CLAIM_RECON_DIFF_NOT_FOUND, 404),
           Map.entry(ClaimErrorCodes.CLAIM_RECON_DIFF_CONFLICT, 409),
           // 400：调用方参数越界（时间窗/条数），不是业务前提不成立，也不是服务端故障
-          Map.entry(ClaimErrorCodes.CLAIM_EVAL_SAMPLE_QUERY_INVALID, 400));
+          Map.entry(ClaimErrorCodes.CLAIM_EVAL_SAMPLE_QUERY_INVALID, 400),
+          Map.entry(ClaimErrorCodes.CLAIM_AI_RUNTIME_HEALTH_QUERY_INVALID, 400));
 
   static {
     checkEveryCodeRegistered();

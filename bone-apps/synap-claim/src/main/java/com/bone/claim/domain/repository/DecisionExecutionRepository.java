@@ -49,4 +49,19 @@ public interface DecisionExecutionRepository extends Repository<DecisionExecutio
    */
   List<DecisionExecution> findConvergedInWindow(
       @Param("from") Instant from, @Param("to") Instant to);
+
+  /**
+   * 按落库时间窗取指定节点的轨迹（AI 运行期健康度的数据源）。
+   *
+   * <p><b>为什么不复用 {@link #findTracesByTraceId}</b>：那个方法按单次执行取全链节点，回答「这次决策怎么走的」； 本方法跨执行取同一类节点，
+   * 回答「近期这类节点总共跑了多少次、坏在哪」——前者是回放，后者是统计，取数粒度不同。
+   *
+   * <p><b>{@code nodeName} 由调用方传入而不是写死在 SQL</b>：节点名唯一真源是 {@code DecisionGraph.AI_ASSESS}。
+   * 写死会让改名后查询静默返回空，而「空」 在健康度报表里显示成「近期没有决策」——把常量改名事故伪装成流量不足。
+   *
+   * <p><b>为什么上界写死在 SQL（{@code LIMIT 2000}）</b>：同 {@link #findConvergedInWindow}，运维端点不得变成全库扫描器；
+   * 服务层再按结果是否打满上界标记 {@code truncated}，不静默裁剪。
+   */
+  List<DecisionTraceNode> findAiAssessNodesInWindow(
+      @Param("nodeName") String nodeName, @Param("from") Instant from, @Param("to") Instant to);
 }

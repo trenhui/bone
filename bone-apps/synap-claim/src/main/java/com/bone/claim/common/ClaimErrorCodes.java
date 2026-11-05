@@ -233,4 +233,15 @@ public final class ClaimErrorCodes {
    * 天）与条数上界（500）是<b>防全库扫描</b>的护栏，必须显式拒绝而不是静默裁剪： 静默裁剪会让调用方以为「导出了全量」。
    */
   public static final String CLAIM_EVAL_SAMPLE_QUERY_INVALID = "SC_CLAIM_EVAL_SAMPLE_QUERY_INVALID";
+
+  // ===== AI 运行期健康度 =====
+
+  /**
+   * 运行期健康度查询参数非法：时间窗缺失 / 倒置 / 跨度超过 31 天。
+   *
+   * <p>与 {@link #CLAIM_EVAL_SAMPLE_QUERY_INVALID} 同一个理由——护栏必须<b>显式拒绝</b>而不是静默裁剪， 且必须有自己的码：运维看到
+   * {@code SC_CLAIM_EVAL_SAMPLE_QUERY_INVALID} 会去查评测导出，而错在健康度查询， 排查方向被引错比没有码更费时间。
+   */
+  public static final String CLAIM_AI_RUNTIME_HEALTH_QUERY_INVALID =
+      "SC_CLAIM_AI_RUNTIME_HEALTH_QUERY_INVALID";
 }

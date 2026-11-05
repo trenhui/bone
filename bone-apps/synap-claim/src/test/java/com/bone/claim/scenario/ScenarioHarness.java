@@ -825,6 +825,26 @@ public class ScenarioHarness {
           .sorted(Comparator.comparing(DecisionExecution::getFinishedAt).reversed())
           .toList();
     }
+
+    /**
+     * 运行期健康度的数据源替身：与真实 SQL 同口径——按节点名 + 落库时间窗过滤。
+     *
+     * <p>同样复制真实 SQL 的<b>过滤语义</b>而不是「返回全部」：节点名写错或时间窗写错时，替身若照样返回数据， 用例会绿、生产会静默空窗——
+     * 而「空窗」在健康度报表里看起来正是「近期没有决策」。
+     */
+    @Override
+    public List<DecisionTraceNode> findAiAssessNodesInWindow(
+        String nodeName, Instant from, Instant to) {
+      return store.values().stream()
+          .flatMap(e -> e.traces().stream())
+          .filter(n -> Objects.equals(n.getNodeName(), nodeName))
+          .filter(
+              n ->
+                  n.getCreatedAt() != null
+                      && !n.getCreatedAt().toInstant().isBefore(from)
+                      && n.getCreatedAt().toInstant().isBefore(to))
+          .toList();
+    }
   }
 
   static class InMemorySettlementRepository extends InMemoryRepository<SettlementOrder>

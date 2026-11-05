@@ -12,6 +12,7 @@
     "SC_CLAIM_RECON_DIFF_NOT_FOUND": "Reconciliation difference not found or not visible (uniform 404 semantics under tenant isolation, prevents enumeration)",
     "SC_CLAIM_RECON_DIFF_CONFLICT": "Reconciliation difference state conflict (already disposed cannot be disposed again / illegal resolution; never silently idempotent)",
     "SC_CLAIM_EVAL_SAMPLE_QUERY_INVALID": "Invalid eval sample export parameters (time window required and must not exceed 31 days; limit must be 1..500)",
+    "SC_CLAIM_AI_RUNTIME_HEALTH_QUERY_INVALID": "Invalid AI runtime health query parameters (time window required, from must be earlier than to, span must not exceed 31 days)",
     "SC_CLAIM_CONSENT_WITHDRAWN": "Insured has withdrawn consent; processing must stop (closing, suspension and appeals are unaffected)",
     "SC_CLAIM_CONCURRENT_CONFLICT": "Concurrent modification conflict (optimistic lock retry exhausted)",
     "SC_CLAIM_POLICY_NOT_ACTIVE": "Policy is missing or not active (precondition for claim filing)",

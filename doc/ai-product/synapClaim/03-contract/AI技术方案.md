@@ -765,6 +765,60 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 
 **仍未做**：`ai_confidence` 语义修正（需 `confidence_source` 列，L3）；按原因码的降级率看板与告警阈值（需先有稳定流量）；网关故障类型化异常（依赖 bone-ai 网关改造）。
 
+### 11.6 AI 运行期健康度：先回答「AI 在不在线」（v1.7 落地）
+
+§11.5 让降级**可归因**，但归因只落在轨迹 JSON 里——要回答「现在 AI 到底在不在线、降了多少、为什么降」，仍然得手工写 SQL 挖 JSON。而「AI 有没有真的在跑」恰恰是 AI 原生产品最该有、也最容易缺失的一个数。
+
+**三套口径分工（互不可替代）**
+
+| 口径 | 数据源 | 回答的问题 | 现有出口 |
+|---|---|---|---|
+| 部署态 | 适配器自报 `declaration()` + 配置开关 | **配没配**（有真实实现吗 / 开关开了吗） | `GET /claim-ops/ai-readiness` |
+| 运行期 | `claim_decision_trace` 的 `AiAssess` 节点 | **跑没跑**（本次/近期真的调用到模型了吗，坏了在哪） | **本节新增 `GET /claim-ops/ai-runtime-health`** |
+| 评测态 | `claim_decision_execution` × 案件终态 | **判得准不准**（弱标签一致率） | `GET /claims/eval/samples`（§11.4） |
+
+> 三者不可互相顶替：一个 `declaration()` 自报「已接真实 provider」的环境，运行期仍可能 100% 降级（密钥过期、上游超时、配额耗尽）。只看部署态会得出「AI 已就绪」的错误结论，而且从任何报表上都看不出来。
+
+**实测：这里有两个独立缺失，不是一个**
+
+按 `AiAssess` 节点输出交叉统计（dev 库 2026-11-05，全部 88 个节点）：
+
+| `action_result` | `aiAvailable` | `capabilityMissing` | 节点数 | 说明 |
+|---|---|---|---|---|
+| `LLM_UNAVAILABLE` | `false` | `true` / `KNOWLEDGE_UNAVAILABLE` | 75 | 模型不可达 **且** 知识检索未接入 |
+| `LLM_UNAVAILABLE` | `false` | 字段缺失（v1.2 之前的老 schema） | 13 | 只有模型不可达这一个事实 |
+
+**这一行数据修正了 §11.5 的结论**：此前只归因为「未配 `bone.ai.gateway.base-url`」，实际还有第二个独立缺失——知识检索（E3）也没接。二者处置动作完全不同（配模型 provider vs 接知识库），且**只补其中一个不会让案件走出人工**：知识缺失会把「本会自动放款」的结论兜成 `MANUAL_REQUIRED`（`DecisionGraphExecutor` 第 295 行只在 `AUTO_APPROVE` 时兜底，其余结论保留更精确的原因码）。因此「配好模型 → `aiCoverage` 自然上升」是错的预期。
+
+**端点契约**
+
+`GET /api/v1/claim-ops/ai-runtime-health?from=&to=`（权限复用 `claim:claims:read`，同 §11.4 的理由：新造权限码不落表会让端点对所有人 403；路径与部署态清单 `/claim-ops/ai-readiness` 同族，两者是同一个问题的两面）
+
+| 字段 | 语义 |
+|---|---|
+| `nodesScanned` / `truncated` | 扫描节点数；超过 2000 上界时 `truncated=true`（**不静默裁剪**） |
+| `aiParticipated` / `aiDegraded` | `aiAvailable=true` / `=false` 的节点数 |
+| `aiUndetermined` | 输出里**没有** `aiAvailable` 键（老 schema）或 JSON 不可解析 ⇒ 既不算参与也不算降级 |
+| `participationRate` | `participated / (participated + degraded)`，4 位小数；**分母为 0 时 `null`** |
+| `degradedByReason` | 原因码 → 条数；缺原因码记 `UNATTRIBUTED`，无法识别的码记 `UNRECOGNIZED`（不让自由文本进入审计面） |
+| `attributionCoverage` | 有原因码的降级占比，**降级为 0 时 `null`**。与参与率分开，因为「跑了但说不清为什么降级」和「根本没跑」是两种不同的运维状态 |
+| `capabilityMissing` / `capabilityByReason` | 能力缺失（知识/规则/视觉/图计算）的节点数与码分布——**第二类缺失，与 LLM 降级分开计** |
+| `note` | 口径说明随响应下发，禁止把参与率当准确率 |
+
+**为什么 `UNATTRIBUTED` / `aiUndetermined` 必须独立成桶**
+
+把「没给原因码」并入 `GATEWAY_ERROR`、把「没报 `aiAvailable`」并入参与成功，都会让报表变成**永远好看**：前者把「归因还没生效」显示成「网关故障」，后者把「老数据说不清」显示成「AI 正常参与」。这两个桶就是留给「不知道」的位置——指标可以有空洞，但不能把空洞填成好消息。
+
+**三条可机检判据**
+
+| 判据 | 断言 | 挡住什么 |
+|---|---|---|
+| 分桶对账 | `participated + degraded + undetermined == nodesScanned`，否则抛错不输出 | 新增状态却忘了归类时，静默漏统会让参与率虚高且总量看着正常 |
+| 空集给 `null` 不给 0 | 分母为 0 时比率为 `null` | 报表把 `null` 当 0 ⇒「AI 全错」/「AI 全没参与」的假告警（同 §11.4） |
+| 扫描有界 | 时间窗 ≤31 天，单次 ≤2000 节点，越界 400 | 运维端点变成全库扫描器 |
+
+**仍未做**：告警阈值与看板（需要稳定流量才能定阈值，现在定就是拍脑袋）；`ai_confidence` 语义修正（需 `confidence_source` 列，L3）；把 `UNATTRIBUTED` 的历史数据回填（历史输出里确实没有该字段，**不可从 message 反推**——那正是 §11.5 拒绝的做法）。
+
 
 ---
 

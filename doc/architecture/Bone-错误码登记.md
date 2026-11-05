@@ -635,6 +635,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_RECON_DIFF_NOT_FOUND` | 404 | 对账差异不存在或不可见（租户隔离下的统一 404 语义，防枚举） |
 | `SC_CLAIM_RECON_DIFF_CONFLICT` | 409 | 对账差异状态冲突（已处置不可再次处置 / 处置结论非法；不静默幂等） |
 | `SC_CLAIM_EVAL_SAMPLE_QUERY_INVALID` | 400 | 评测样本导出参数非法：时间窗缺失/倒置/跨度 >31 天，或条数超出 1..500。护栏目的是防全库扫描，**显式拒绝而非静默裁剪**（裁剪会让调用方以为拿到了全量）；单独给码而不让 `IllegalArgumentException` 冒泡，是因为全局兜底会把它翻成 500，把调用方参数错误报成服务故障并污染 SLI |
+| `SC_CLAIM_AI_RUNTIME_HEALTH_QUERY_INVALID` | 400 | AI 运行期健康度查询参数非法：时间窗缺失/倒置/跨度 >31 天。与评测导出同一条护栏纪律（显式拒绝、不静默裁剪）；**单独给码而不复用评测码**，是因为运维看到 `SC_CLAIM_EVAL_SAMPLE_QUERY_INVALID` 会去查评测导出，而错误其实在健康度查询——把排查方向引错比没有码更费时间 |
 | `SC_CLAIM_CONSENT_WITHDRAWN` | 422 | 被保险人已撤回同意（PIPL 第 15 条）：处理类用例（分配/初审/理算回填/核赔/复核/自动通过/补件）一律拒绝，请求本身合法而处理前提已失效；关单/挂起/申诉不受限——撤回语义是「停止新处理」而非「冻结案件」，否则案件永久悬空 |
 | `SC_CLAIM_MAPPING_IMPORT_REJECTED` | 400 | 映射批量导入被整批拒绝（文件不可解析或超过单批 2000 行上限）：行级错误走结果对象不抛异常，只有「整批不可用」才用此码；覆盖项维度非法/覆盖项不存在同用此码（请求内容不合法，故 400） |
 | `SC_CLAIM_BIZ_IDENTITY_INVALID` | 422 | 引用的业务主体（bizIdentityCode）不合法：主体不存在，或已停用/终止。请求本身合法，是引用的主数据前提不成立，故 422；主体码是映射层的键，挂着不存在的主体码会在该键下建出无人维护的映射队列，挂着已停用主体等于绕过「停用保司冻结映射面」的运营动作 |
