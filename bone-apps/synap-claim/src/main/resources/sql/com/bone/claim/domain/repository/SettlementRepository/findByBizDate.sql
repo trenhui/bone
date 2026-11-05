@@ -15,6 +15,6 @@ SELECT id,
        version
 FROM settle_order
 WHERE deleted = 0
-  AND DATE(created_at) = :bizDate
+  AND DATE(created_at) = :bizDate AND
   /*bone:tenant*/
 ORDER BY id

@@ -64,7 +64,7 @@ class OrphanGateTest(unittest.TestCase):
         violations, stats = mod.orphan_violations(self.root)
 
         self.assertEqual(violations, [])
-        self.assertEqual(stats, {"gates": 1, "wired": 1, "exempt": 0})
+        self.assertEqual(stats, {"gates": 1, "wired": 1, "exempt": 0, "not_in_precommit": []})
 
     def test_workflow_counts_as_entry(self):
         self._gate()
@@ -210,6 +210,52 @@ class OrphanGateTest(unittest.TestCase):
         violations, _ = mod.orphan_violations(self.root)
 
         self.assertTrue(any(v.startswith("R4d:") for v in violations), violations)
+
+    # ---- R4e：派生入口必须被根入口调用 ---------------------------------
+    def test_derived_entry_without_caller_is_reported(self):
+        # 一个没人调的 runner 不能给门禁发免死金牌：门禁「接线」到它，但它是死的
+        self._gate()
+        _write(self.root, "scripts/ci-check.sh", "python3 scripts/check-orphan.py\n")
+
+        violations, _ = mod.orphan_violations(self.root)
+
+        self.assertTrue(any(v.startswith("R4e:") for v in violations), violations)
+
+    def test_derived_entry_called_by_manual_runner_passes(self):
+        self._gate()
+        _write(self.root, "scripts/ci-check.sh", "python3 scripts/check-orphan.py\n")
+        _write(self.root, "scripts/ci-local.sh", "bash scripts/ci-check.sh\n")
+
+        violations, _ = mod.orphan_violations(self.root)
+
+        self.assertFalse(any(v.startswith("R4e:") for v in violations), violations)
+
+    def test_derived_entry_called_by_workflow_passes(self):
+        self._gate()
+        _write(self.root, "scripts/ci-check.sh", "python3 scripts/check-orphan.py\n")
+        self._ci("      - run: bash scripts/ci-check.sh\n")
+
+        violations, _ = mod.orphan_violations(self.root)
+
+        self.assertFalse(any(v.startswith("R4e:") for v in violations), violations)
+
+    def test_gate_wired_only_outside_precommit_is_listed_not_failed(self):
+        # 接在人工入口也是真接线（不判红），但必须单列：日常提交不会执行它。
+        self._gate()
+        _write(self.root, "scripts/ci-local.sh", "python3 scripts/check-orphan.py\n")
+
+        violations, stats = mod.orphan_violations(self.root)
+
+        self.assertEqual(violations, [])
+        self.assertEqual(stats["not_in_precommit"], ["scripts/check-orphan.py"])
+
+    def test_gate_wired_in_precommit_is_not_listed(self):
+        self._gate()
+        self._check_sh("python3 scripts/check-orphan.py\n")
+
+        _, stats = mod.orphan_violations(self.root)
+
+        self.assertEqual(stats["not_in_precommit"], [])
 
 
 class TriggerCoverageTest(unittest.TestCase):

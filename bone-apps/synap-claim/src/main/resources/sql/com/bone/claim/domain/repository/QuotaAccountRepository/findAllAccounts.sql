@@ -19,6 +19,6 @@ SELECT id,
        updated_by,
        deleted
 FROM t_quota_account
-WHERE deleted = 0
+WHERE deleted = 0 AND
   /*bone:tenant*/
 ORDER BY id

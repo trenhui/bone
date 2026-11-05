@@ -40,6 +40,16 @@
      反例证伪：理由填「待评估」⇒ 红。
   R4d 入口文件一个都读不到 ⇒ 判红。
      反例证伪：改掉入口文件名 ⇒ 全部脚本都"无引用"，若判据写成"没有入口则跳过"就会恒绿。
+  R4e 派生入口必须被根入口调用（2026-11-05 新增）。
+     背景：R4 把「被任何入口文件调用」当接线，于是**一个零调用者的 runner 能给一批孤儿
+     门禁发免死金牌**——2026-11-05 实测 `check-sql-template.py` 只挂在 `ci-check.sh` 上，
+     而 `ci-check.sh` 当时全仓零调用者；后来 `ci-local.sh` 复用了它，但 `ci-local.sh` 是
+     **人工入口**，日常提交（pre-commit → check.sh）仍然不执行该判据 ⇒ 3 个存量违规长期
+     不暴露。R4e 保证「派生入口自己必须有人调」，把假绿再下推一层。
+     反例证伪：新建 `scripts/my-runner.sh` 挂上门禁但不被任何根入口调用 ⇒ 红。
+     不可机械验证的部分（如实写明）：根入口本身是否被触发——check.sh 靠 pre-commit 钩子、
+     workflows 靠平台事件、ci-local.sh 靠**人记得跑**。故输出单列「未进 pre-commit」的门禁，
+     不判红也不让「已接线」被读成「每次提交都拦」。
 
 与「门禁跑通了就有效」的区别
 ----------------------------
@@ -72,6 +82,20 @@ ENTRY_SCRIPTS: tuple[Path, ...] = (
     SCRIPTS_REL / "ci-local.sh",
     SCRIPTS_REL / "ci-check.sh",
 )
+# R4e（2026-11-05 新增）：派生入口自身必须被根入口调用。
+# 背景：本门禁把「被任何入口文件调用」当成接线，于是一个**零调用者的 runner** 能给一批孤儿
+# 门禁发免死金牌——保护只是上移了一层。根入口 = pre-commit 调用的 check.sh、平台事件触发的
+# workflows/*.yml、开发者显式执行的 ci-local.sh；派生入口（ci-check.sh）必须被其中任一以
+# bash/sh 调用，否则它里面的门禁实际依赖「某个人记得手动跑它」。
+# 再往下一层（ci-local.sh 本身是否被人执行）无法机械验证，只能在文档里写明它是人工入口。
+ROOT_ENTRIES: tuple[Path, ...] = (
+    SCRIPTS_REL / "check.sh",
+    SCRIPTS_REL / "ci-local.sh",
+)
+DERIVED_ENTRIES: tuple[Path, ...] = (SCRIPTS_REL / "ci-check.sh",)
+# 「每次都跑」的那一个。接在它上面的门禁才算日常路径有保护；只接在人工/CI 入口的会在
+# 输出里单列，避免把「已接线」读成「每次提交都拦」。
+PRE_COMMIT_ENTRY = SCRIPTS_REL / "check.sh"
 ALLOWLIST_REL = SCRIPTS_REL / "gate-liveness-allowlist.json"
 # 理由太短必然是敷衍（「待评估」「稍后接」）。20 字符约等于一句能复核的话。
 MIN_REASON_CHARS = 20
@@ -257,6 +281,22 @@ def entry_corpus(root: Path) -> dict[str, str]:
 INVOCATION_RE = re.compile(r"\b(python3?|bash|sh)\b")
 
 
+def referenced_by(name: str, corpus: dict[str, str]) -> list[str]:
+    """返回**调用**了该门禁的入口文件（相对路径），按出现顺序去重。
+
+    口径与 :func:`is_referenced` 相同：同一行且带 `python3`/`bash`/`sh`。
+    返回值用于两件事：判定是否接线，以及区分「接在 pre-commit 上」还是「只接在人工/CI 入口」。
+    """
+    pattern = re.compile(re.escape(name) + r"(?![A-Za-z0-9_.-])")
+    hits: list[str] = []
+    for rel, text in corpus.items():
+        for line in text.splitlines():
+            if pattern.search(line) and INVOCATION_RE.search(line):
+                hits.append(rel)
+                break
+    return hits
+
+
 def is_referenced(name: str, corpus: dict[str, str]) -> bool:
     """入口里是否有**调用行**引用了该门禁。
 
@@ -266,12 +306,33 @@ def is_referenced(name: str, corpus: dict[str, str]) -> bool:
       2. 名字后必须是非文件名字符——否则 check-openapi-contract.py 会因为
          check-openapi-contract-extra.py 的存在被误判成已接线（前缀相同 ≠ 同一个门禁）。
     """
-    pattern = re.compile(re.escape(name) + r"(?![A-Za-z0-9_.-])")
-    for text in corpus.values():
-        for line in text.splitlines():
-            if pattern.search(line) and INVOCATION_RE.search(line):
-                return True
-    return False
+    return bool(referenced_by(name, corpus))
+
+
+def entry_reachability(root: Path, corpus: dict[str, str]) -> list[str]:
+    """R4e：派生入口必须被某个根入口调用。
+
+    判据刻意只管**派生入口**，不判断根入口本身是否被触发：
+      · check.sh 由 .git/hooks/pre-commit 调用（钩子内容不在本仓库版本控制内，机械不可验）；
+      · workflows/*.yml 由平台事件触发（R1 已校验分支覆盖）；
+      · ci-local.sh 是**人工入口**（开发者显式执行），它「有没有人跑」不是代码问题。
+    能机械保证的是：**没有任何入口调用的 runner 不能给门禁发免死金牌**。
+    """
+    violations: list[str] = []
+    for rel in DERIVED_ENTRIES:
+        key = rel.as_posix()
+        if key not in corpus:
+            continue
+        others = {k: v for k, v in corpus.items() if k != key}
+        roots = [p.as_posix() for p in ROOT_ENTRIES] + sorted(
+            k for k in others if k.startswith(WORKFLOWS_REL.as_posix() + "/")
+        )
+        if not any(r in others and is_referenced(rel.name, {r: others[r]}) for r in roots):
+            violations.append(
+                f"R4e: 派生入口 {key} 未被任何根入口调用（{' / '.join(roots)}）"
+                "——它里面的门禁实际依赖「有人记得手动跑它」，等于没接线"
+            )
+    return violations
 
 
 def load_allowlist(root: Path) -> tuple[dict[str, dict], list[str]]:
@@ -303,10 +364,15 @@ def load_allowlist(root: Path) -> tuple[dict[str, dict], list[str]]:
     return out, violations
 
 
-def orphan_violations(root: Path) -> tuple[list[str], dict[str, int]]:
-    """R4 族：每个门禁脚本都必须被活入口调用。纯函数，单测可直接注入夹具。"""
+def orphan_violations(root: Path) -> tuple[list[str], dict]:
+    """R4 族：每个门禁脚本都必须被活入口调用。纯函数，单测可直接注入夹具。
+
+    返回的 stats 里 ``not_in_precommit`` 是**信息性**列表（不判红）：这些门禁确实接线了，
+    但只挂在人工/CI 入口上，日常提交（pre-commit）不会执行它们。单列出来是为了避免
+    「61/61 已接线」被读成「每次提交都拦」——那是假绿的另一种说法。
+    """
     gates = gate_scripts(root)
-    stats = {"gates": len(gates), "wired": 0, "exempt": 0}
+    stats: dict = {"gates": len(gates), "wired": 0, "exempt": 0, "not_in_precommit": []}
     if not gates:
         return [], stats
     corpus = entry_corpus(root)
@@ -320,10 +386,14 @@ def orphan_violations(root: Path) -> tuple[list[str], dict[str, int]]:
             stats,
         )
     allowlist, violations = load_allowlist(root)
+    violations.extend(entry_reachability(root, corpus))
     for gate in gates:
         rel = gate.relative_to(root).as_posix()
-        if is_referenced(gate.name, corpus):
+        wired_by = referenced_by(gate.name, corpus)
+        if wired_by:
             stats["wired"] += 1
+            if PRE_COMMIT_ENTRY.as_posix() not in wired_by:
+                stats["not_in_precommit"].append(rel)
             if rel in allowlist:
                 violations.append(
                     f"R4b: {rel} 已接线，但豁免清单仍有条目（豁免只可收缩，请删除该条目）"
@@ -419,6 +489,14 @@ def main() -> int:
         f"门禁脚本 {gate_stats['wired']}/{gate_stats['gates']} 已接线"
         f"（豁免 {gate_stats['exempt']}）{RESET}"
     )
+    missing = gate_stats["not_in_precommit"]
+    if missing:
+        preview = "、".join(Path(p).name for p in missing[:5])
+        suffix = f" 等 {len(missing)} 个" if len(missing) > 5 else ""
+        print(
+            f"   ℹ️  {len(missing)} 个门禁未进 pre-commit（仅人工/CI 入口，"
+            f"日常提交不会执行）：{preview}{suffix}"
+        )
     for n in notes:
         print(f"   ℹ️  {n}")
     return 0

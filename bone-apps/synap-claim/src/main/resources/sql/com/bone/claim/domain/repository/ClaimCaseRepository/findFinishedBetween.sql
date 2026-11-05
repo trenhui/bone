@@ -6,6 +6,6 @@ FROM t_claim_case c
 WHERE c.status = 'FINISHED'
   AND c.deleted = 0
   AND c.closed_at >= :from
-  AND c.closed_at < :to
+  AND c.closed_at < :to AND
   /*bone:tenant*/
 ORDER BY c.id

@@ -31,6 +31,9 @@ C. `/*bone:tenant*/` 锚点前必须是 `AND`（或紧跟 `WHERE`），保证替
 用法:
   python3 scripts/check-sql-template.py          # 违规则退出码 1
   python3 scripts/check-sql-template.py --json   # 机器可读
+  python3 scripts/check-sql-template.py --allow-empty
+                                                 # 裁剪检出（无后端模块）时显式放行
+                                                 # 「扫描 0 个」；默认 0 个判红（防路径漂移假绿）
 """
 
 from __future__ import annotations
@@ -117,6 +120,11 @@ def check(path: Path) -> list[str]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
+    ap.add_argument(
+        "--allow-empty",
+        action="store_true",
+        help="允许扫描对象为 0（裁剪检出/纯前端仓）；默认把 0 视为路径漂移并判红",
+    )
     args = ap.parse_args()
 
     scanned = 0
@@ -126,6 +134,18 @@ def main() -> int:
         problems = check(path)
         if problems:
             violations.append({"file": path.relative_to(REPO).as_posix(), "problems": problems})
+
+    if scanned == 0 and not args.allow_empty:
+        # 路径漂移（目录改名、仓库裁剪）会让 templates() 返回空集，于是"违规 0 个"恒成立。
+        # 恒绿比漏报更糟：它让人相信该维度已被覆盖，而实际上一个模板都没看。
+        if args.json:
+            print(json.dumps({"scanned": 0, "violations": []}, ensure_ascii=False))
+        else:
+            print(
+                "SQL 模板检查：扫描 0 个——疑似目录漂移（运行时路径不在 "
+                "*/src/main/resources/sql/**）；确属裁剪检出请显式加 --allow-empty"
+            )
+        return 1
 
     if args.json:
         payload = {"scanned": scanned, "violations": violations}

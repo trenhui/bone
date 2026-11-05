@@ -54,6 +54,7 @@ TenantContext.setBizIdentityCode(...);
 |------|------|
 | **实体声明** | 租户表对应的聚合必须继承 `TenantAggregateRoot`（实体继承 `TenantAbstractEntity`），**在实体上声明 `tenantId`**。SDK 按**实体字段**判定租户表（`TableMetadataResolver` → `TableMetadata.isTenantScoped()`），DDL 有 `tenant_id` 列但实体不声明 ⇒ `TenantFilterInjector` 直接返回、查询**不注入任何租户条件**——这是静默跨租户读的成因（2026-09-20 实测：bone-integration 5 个聚合全 `AggregateRoot`，`int_*` 表却有 `tenant_id NOT NULL`，用户可达的 `/executions`、`/statistics` 均无租户过滤，见该模块 README 的登记缺口） |
 | 查询 | 所有业务查询带 `tenant_id`；`biz_identity_code` **仅当表已落库该列**时附加过滤，否则在应用层按上下文判断 |
+| **SQL 模板锚点** | 手写模板用 `/*bone:tenant*/` 声明租户条件位置。SDK 只把锚点替换成裸谓词 `tenant_id = ?`、**不补 `AND`** ⇒ 锚点必须紧跟 `WHERE` 或以 `AND` 结尾的行（同行/上一行行尾均可）。写成 `WHERE deleted = 0` 换行锚点，替换后即 `WHERE deleted = 0 tenant_id = ?`（1064 语法错，编译期与启动期都不报）。门禁 `scripts/check-sql-template.py`（G49，已接 pre-commit [check.sh](../../scripts/check.sh) 第 51 步）；2026-11-05 据此修掉 3 处存量违规并做过实机对照（旧形态 `ERROR 1064` / 新形态通过） |
 | 写入 | 插入时从上下文填充 `tenant_id`，禁止客户端指定他人租户；`biz_identity_code` 写入需先确认 DDL 已包含该列 |
 | 跨租户 | 仅平台超管角色；须审计 + Scope `platform:*` |
 | 缓存 Key | `bone:{tenantId}:{domain}:{resource}:{id}[:{facet}]`（以 [Bone-缓存规范 §2](./Bone-缓存规范.md) 为准）；`biz_identity_code` 默认不落库，**不**纳入 Key，避免基数膨胀 |
@@ -81,6 +82,7 @@ TenantContext.setBizIdentityCode(...);
 
 - [ ] 新表含 `tenant_id`（+ 审计列）  
 - [ ] 租户表的聚合**在实体上声明 `tenantId`**（继承 `TenantAggregateRoot` / `TenantAbstractEntity`）——DDL 有列 ≠ SDK 认租户表，漏了这条等于查询无租户过滤（见 §4 实体声明）  
+- [ ] 手写 SQL 模板的 `/*bone:tenant*/` 锚点前有 `AND`（或紧跟 `WHERE`）；`python3 scripts/check-sql-template.py` 通过  
 - [ ] API 不信任 body 租户字段  
 - [ ] MDC 有 `tenantId`  
 - [ ] 缓存/MQ 带租户维度  
@@ -115,6 +117,7 @@ TenantContext.setBizIdentityCode(...);
 
 | 日期 | 说明 |
 |------|------|
+| 2026-11-05 | §4 新增「SQL 模板锚点」规则 + §7 对应检查项：SDK 只替换锚点、不补 `AND`，缺 AND 的模板执行期 1064；判据 `check-sql-template.py` 接入 pre-commit（G49），并修掉 3 处存量违规（`findFinishedBetween` / `findAllAccounts` / `findByBizDate`——三条全在 `ReconciliationApplicationService` 的三通道对账里，由 `ReconciliationJob` 每日 01:00 驱动；宿主 `ClaimApplication` 当前未开 `@EnableScheduling`，装配调度后即三通道全 1064） |
 | 2026-09-26 | 新增 §8 主数据租户模型（平台模板层 + 租户实例层，G1 收敛后的正式结论）；§8 补记「平台模板目录非租户作用域」实测裁决；同日修复 FluentQuery 通道缺口（新增 §8 约束 6，ADR-0029 补口）；同日裁决参考数据混存表为 overlay 拆分（§8 约束 7，ADR-0029 不变量保持不变，`TenantReferenceValue` + 迁移 0003）；同日新增 §8 约束 8 平台管理员租户切换（`X-Acting-Tenant-Id`，平台全局视图正式入口） |
 | 2026-09-20 | §4 新增「实体声明」规则 + §7 对应检查项：SDK 按实体字段判定租户表，DDL 有 `tenant_id` 不等于查询会带租户条件 |
 | 2026-05-17 | 初版；对齐总体架构 §8.5 |
