@@ -87,8 +87,10 @@ public class AiProviderProbeAdapter implements AiProviderProbePort {
   }
 
   private LlmRequest request() {
+    // 与业务侧共用同一个解析方法：探活若用自己的模型名，就会出现「探活绿灯、业务全降级」——
+    // 这不是理论风险，本端点的第一版就漏在这（探活用配置模型、业务用逻辑别名）。
     return new LlmRequest(
-        properties.getModel(),
+        AiGatewayPortAdapter.requestModel(properties),
         List.of(LlmMessage.user(PROBE_PROMPT)),
         null,
         null,

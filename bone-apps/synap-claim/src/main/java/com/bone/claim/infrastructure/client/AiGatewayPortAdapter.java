@@ -1,6 +1,7 @@
 package com.bone.claim.infrastructure.client;
 
 import com.bone.ai.gateway.application.LlmGatewayApplicationService;
+import com.bone.ai.gateway.config.LlmGatewayProperties;
 import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -43,6 +45,14 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
   /** 业务场景标签：供网关 {@code ModelRouter} 做模型档位路由（简单场景走廉价模型）。 */
   static final String SCENARIO = "claim-ai-assess";
 
+  /**
+   * 逻辑别名：仅在未配置 {@code bone.ai.gateway.model} 时作为请求模型使用。
+   *
+   * <p><b>它不是可发给上游的模型 ID</b>。曾经它就是 {@code LlmRequest#model} 的字面值，后果是：配好真实 provider 后， 上游以 {@code
+   * invalid_request_error: The supported API model names are ...} 拒掉每一次调用，而网关把 4xx 收敛成 一句 {@code
+   * GATEWAY_ERROR}——探活用配置模型（通）、业务用别名（不通），两边结论相反。真实 provider 上这属于必然失败， 不是边界情况：接任何 provider
+   * 都必须让业务请求携带该 provider 认识的模型名。
+   */
   static final String MODEL = "synap-claim-ai";
 
   /**
@@ -67,10 +77,29 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
   static final int MAX_CAUSE_DEPTH = 8;
 
   private final LlmGatewayApplicationService gateway;
+  private final LlmGatewayProperties properties;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  public AiGatewayPortAdapter(LlmGatewayApplicationService gateway) {
+  @Autowired
+  public AiGatewayPortAdapter(
+      LlmGatewayApplicationService gateway, LlmGatewayProperties properties) {
     this.gateway = gateway;
+    this.properties = properties;
+  }
+
+  /** 测试便捷构造：无配置上下文，请求模型回落逻辑别名（Mock 路径不看该字段）。 */
+  AiGatewayPortAdapter(LlmGatewayApplicationService gateway) {
+    this(gateway, new LlmGatewayProperties());
+  }
+
+  /**
+   * 请求模型解析（唯一真源）：优先取部署配置的模型名，缺失才回落逻辑别名。
+   *
+   * <p>探针与业务必须共用本方法——两处各写一套，就会出现「探活说通、业务全降级」的最坏组合（本方法正是为此而生）。
+   */
+  static String requestModel(LlmGatewayProperties properties) {
+    String configured = properties.getModel();
+    return configured == null || configured.isBlank() ? MODEL : configured;
   }
 
   @Override
@@ -78,7 +107,7 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
     String prompt = buildPrompt(ctx);
     LlmRequest request =
         new LlmRequest(
-            MODEL,
+            requestModel(properties),
             List.of(
                 LlmMessage.system(
                     "你是保险理赔医学评估助手。仅依据给定案件事实判断是否需要拒赔建议，"

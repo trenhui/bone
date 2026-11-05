@@ -112,6 +112,15 @@ class DecisionGraphWiringTest {
      * 指标注册表：生产由 spring-boot-starter-actuator 自动装配，此处显式提供一个最小注册表， 使装配测试无需拉起完整 Boot
      * 上下文即可验证指标适配器真的进了装配图。
      */
+    /**
+     * 网关配置：生产由 {@code LlmGatewayAutoConfiguration} 提供。{@code AiGatewayPortAdapter} 依赖它解析「请求模型名」
+     * （配置模型优先、缺失回落逻辑别名），切片测试必须显式提供，否则上下文起不来——这不是测试噪声： 少了它，真实 provider 下业务会拿逻辑别名去请求，上游直接 400。
+     */
+    @Bean
+    com.bone.ai.gateway.config.LlmGatewayProperties llmGatewayProperties() {
+      return new com.bone.ai.gateway.config.LlmGatewayProperties();
+    }
+
     @Bean
     MeterRegistry meterRegistry() {
       return new SimpleMeterRegistry();

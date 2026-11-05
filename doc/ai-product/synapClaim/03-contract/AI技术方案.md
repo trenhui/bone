@@ -20,6 +20,9 @@ currency: current
 |v1.2|2026-11-04|BONE 平台架构|**AI 原生目标态回写**：§1.1 定位由「AI 只产边缘建议」升级为「AI 承担感知与认知、确定性代码承担资金、人承担终审」的分阶段目标；§1.2 增补 P7–P9；新增 §1.4 成熟度分级与三层智能分工、§11.3 数据飞轮与 MRM；§12.2 补 AI 原生判据。P1「AI 不碰钱」与 §6.5 三重校验门禁**不变**，红线不放宽|
 |v1.3|2026-11-04|BONE 平台架构|**AI 原生落地态回写**：① §1.4 把"目标态"与"代码实测态"分线——生产 `synap-claim` 已接线结构化认知契约（`AiGatewayPort.AiAssessment` + `AiAssessNodeHandler` 三态安全 + `DecisionTriage` 确定性三档），POC 主机 `ClaimService` 此前滞后，本轮现代化为同契约输出；② 新增 §1.5「AI 原生契约（代码引用）」作为 AI 输出的 SSOT；③ 知识层（受控 RAG）与学习层（飞轮/MRM）诚实定级 L0/L3 并给出路线，不再把目标态写成现状；④ `LocalAiGatewayPortAdapter` 补最小确定性认知，使演示轨迹非空。红线与三档分诊**不变**|
 |v1.4|2026-11-04|BONE 平台架构|**AI 原生主链接线**：① 感知层接 `DocumentParsePort`（数电票文本层结构化解析，字段级置信度 + 原文坐标 + 完整性，主动解析端点）；② 知识层以租户医学目录准入核验替换恒 `available=false` 桩，无法判定仍 fail-closed；③ 决策层新增 `AiDiscrepancyRouting`，白名单差异码首次驱动**非资金**流程状态（自动通过 → 补件/复核），原因码可回放；④ 学习层把后督 DIFF 转成结构化评测样本事件；⑤ 新增 §1.6 落地规格、验收判据与未落地边界。§1.4 状态列、§1.5 不变量同步回写。**P1 红线、三档分诊、G0–G4 门禁不变；真实 provider、图像多模态、受控 RAG、MRM 仍未落地，不得据此宣称 L3**|
+|v1.6|2026-11-04|BONE 平台架构|**降级可归因**：新增 `AiDegradationReason` 四码（`MOCK_NOT_ALLOWED` / `OUTPUT_CONTRACT_VIOLATION` / `PROVIDER_TIMEOUT` / `GATEWAY_ERROR`），按异常类型走 cause 链分类，不匹配消息文本；见 §11.5|
+|v1.7|2026-11-05|BONE 平台架构|**运行期口径**：新增 `GET /claim-ops/ai-runtime-health`（参与/桩/来源不明/降级/无法判定五桶 + 归因覆盖率），并按 `AiModelProvenance` 把「桩跑过」从参与分子中剔除；见 §11.6|
+|v1.8|2026-11-05|BONE 平台架构|**连通态补齐 + 真实 provider 实测**：① 新增 `GET /claim-ops/ai-provider-probe`（一次最小真实调用，判词含未配置/通/四个受控原因码 + 处置动作），补上「配了 ≠ 通了 ≠ 契约对」这一层；② 修真实 provider 下必然失败的缺陷——业务请求曾把逻辑别名 `synap-claim-ai` 当模型名发给上游，探活却用配置模型，造成「探活绿灯、业务全量降级」，现探活与业务共用 `requestModel()` 唯一真源；③ 知识基据 `KnowledgeBasis` 随轨迹落库并进健康度二级归因，四类成因不再被压成一个 `KNOWLEDGE_UNAVAILABLE`；④ §11.7 记录实测前后对照（`0.0000 / 0.0112` → `0.5556 / 1.0000`）。**P1 红线、三档分诊、G0–G4 门禁不变**|
 |v1.5|2026-11-04|BONE 平台架构|**复核建议落地**：① 发票验真 / 验重前移到材料阶段（票面要素 + 跨案去重，查实问题落 `FAIL`，本地核验通过仍落 `UNVERIFIABLE` 转人工，不放宽 R-FRAUD-06）；② 核责规则资产化（资源文件可替换 + 版本随命中留痕，配置不可信时回退）；③ 链路联动（案件级锁定事件 → 自动触发决策图，默认关闭、G3 前置）；④ §1.6 补验收判据、未落地边界与「建议采纳 / 未采纳理由」对照表。**红线与成熟度定级不变，仍不得对外宣称 L3**|
 
 ---
@@ -858,6 +861,98 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 > **同一缺陷的第三个入口未修，如实记在此处**：`GET /claims/{id}/decision/disclosure`（AI 参与告知）仍把「桩执行成功」判为 `AI_ASSISTED` 并下发「本结论含人工智能辅助生成内容」——对一则没有 AI 参与的结论做了 AI 告知。证据面里 `reportedModelVersion=local-stub` 是如实带出的，所以不是隐藏，但状态码本身说错了。修它需要新增第四个参与态 + 重新生成前端字典（`dicts.generated.ts` 从**运行中的**后端 `/claim-config/dicts` codegen），必须与「桩到底该对客户怎么表述」的合规措辞一起定，不宜在代码侧单方面拍板，故本轮不动、明确登记为已知缺口。
 
 
+### 11.7 从「配了」到「通了」：provider 探针与知识基据（v1.8 落地）
+
+§11.6 的读数（`participationRate=0.0000` / `attributionCoverage=0.0112`）证明了「AI 没在跑」，但没回答**为什么没跑**。本轮把真实 provider 配上、把案件真跑了一遍，结论是：从「配了」到「通了」之间隔着四层，故障形态各不相同，而在报表上长得完全一样——都是「一次降级」。
+
+**四层故障，一个表现**
+
+| 层 | 典型故障 | 配置面看得出来吗 | 轨迹里的码 | 唯一能区分的手段 |
+|---|---|---|---|---|
+| L1 配置缺失 | `base-url` 为空 | 能（空值） | `MOCK_NOT_ALLOWED` | 读配置（`/ai-readiness`） |
+| L2 通不了 | 域名拼错 / 密钥过期 / 限流 | **看不出来**（字符串完全合法） | `GATEWAY_ERROR` | 只能真发一次请求 |
+| L3 契约不符 | 模型不按 JSON 回 | 看不出来 | `OUTPUT_CONTRACT_VIOLATION` | 真发一次 **并校验响应形状** |
+| L4 模型名不对 | 把逻辑别名当模型 ID 发给上游 | 看不出来 | `GATEWAY_ERROR` | 真发一次，**且必须用业务路径同一个模型名** |
+
+前三层 §11.5 已能归因，第四层是本轮实测撞出来的真实事故（见下）。四层的共同点是：**只有真的调用一次才能证伪**，读配置、看日志、看健康度都不行——健康度是历史，日志默认没有。
+
+**实测：L4 不是假想，是必然**
+
+按 §11.7 的启用步骤把 DeepSeek 配好后的第一小时：
+
+| 顺序 | 动作 | 结果 |
+|---|---|---|
+| 1 | `GET /claim-ops/ai-provider-probe` | `REACHABLE`，`model=deepseek-flash`，`latencyMs=857`，`provenance=PROVIDER` |
+| 2 | `POST /claims/{id}/decision/execute` × 3 | 全部 `status=FALLBACK`，轨迹 `aiUnavailableReason=GATEWAY_ERROR` |
+| 3 | 直接向上游复现同一请求 | `invalid_request_error: The supported API model names are deepseek-flash, deepseek-v4-pro, but you passed synap-claim-ai` |
+
+根因：`AiGatewayPortAdapter` 把**逻辑别名** `synap-claim-ai` 当作 `LlmRequest.model` 发了出去（探针用的却是配置里的模型名）。于是同一实例上「探活绿灯、业务全红」——这正是「探针与被探路径不是同一条」的经典失效。
+
+修法：`AiGatewayPortAdapter#requestModel(LlmGatewayProperties)` 作为唯一真源（配置模型优先、缺失才回落别名），探针与业务**共用**它；新增用例 `AiModelResolutionTest` 断言两者解析出同一个模型名。修完后同样 3 个案件全部 `status=SUCCESS`。
+
+> 记一条判据：**探针的绿灯只有在「它走的是业务那条路」时才代表业务**。任何一侧自行决定模型名、超时、重试策略，绿灯就退化成「某个别的配置是通的」。
+
+**端点契约 `GET /api/v1/claim-ops/ai-provider-probe`**
+
+权限复用 `claim:claims:read`（同 §11.4 的理由：新造权限码不落 IAM 表会让端点对所有人 403）。每次调用真实消耗一次 provider 用量，场景标签 `claim-ai-provider-probe`，与核赔调用 `claim-ai-assess` 分开——成本报表可以据此把探活开销剔出去；做不到可归属，运维迟早会因为污染成本看板而关掉它。**刻意不缓存**：缓存会让「现在通不通」退化成「上次通不通」。
+
+| 字段 | 语义 |
+|---|---|
+| `verdict` | `NOT_CONFIGURED` / `REACHABLE` / 四个受控原因码之一。唯一允许的取值集合，未知原因码一律归 `GATEWAY_ERROR`，不透传自由文本 |
+| `configured` | 配置态：`bone.ai.gateway.base-url` 是否有值。**未配置时不发请求**——否则既花一次调用，又把「没配」报成「通了」 |
+| `reachable` | 运行态：是否拿到一次符合结构化契约的真实响应 |
+| `model` | 上游回传的模型标识（证明真的路由到了某个模型） |
+| `provenance` | 按 `AiModelProvenance` 切 `PROVIDER` / `STUB`，与 §11.6 参与率同一判据 |
+| `latencyMs` | 端到端耗时（含网关治理链） |
+| `reason` | 失败时的受控原因码 |
+| `action` | 该判词对应的**下一步动作**。四个码的动作互斥：改环境变量 / 查装配 / 换模型或改提示词 / 调超时或扩容 / 查网关侧。写「请检查配置」等于没写 |
+| `note` | 口径声明：通 ≠ 准，准确率见 `/claims/eval/samples` 的 `agreementRate` |
+
+**知识侧：一个码盖住四种成因（`KnowledgeBasis`）**
+
+适配器一直算得出「为什么判不了」（基据），但写侧只落一个 `KNOWLEDGE_UNAVAILABLE`，基据被丢弃。于是运维视角只有「知识不可用」——而四种成因的处置动作互斥：
+
+| 基据码 | 含义 | 处置动作 |
+|---|---|---|
+| `CATALOG_ADMISSION_VERIFIED` | 事实齐备且全部命中租户目录 | 无需处置。含义严格是「目录准入范围内未发现差异」，**不是**「确认临床合理」 |
+| `NO_PARSED_FACTS` | 一条可用结构化事实都没有 | 查文档解析：材料是否已材料化、解析是否报错、`extracted_json` 是否为空 |
+| `INSUFFICIENT_CLINICAL_FACTS` | 只有票面事实，无临床编码 | **不是故障**：纯票据案件本就不归临床目录核验。要提自动化率须补病历/处方材料，或另建条款口径核验 |
+| `CATALOG_UNKNOWN` | 有临床编码但租户目录查不到 | 补目录（`t_ref_disease` / `t_ref_drug`）。**不得**放宽为「查不到也放行」 |
+| `STUB_NOT_INTEGRATED` | 知识能力仍是降级桩（`mode=stub`） | 切回 `catalog` 后重启 |
+| `UNRECOGNIZED` | 码不在本构建枚举内（版本错配 / 异构写入） | 升级版本或对齐码表；不把自由文本带进审计面 |
+
+落库与聚合：轨迹新增 `knowledgeBasis` 字段（**不并入 `capabilityReason`**——后者是既有读侧契约与历史指标维度，改其取值会让新旧数据不可比）；健康度新增 `knowledgeBasisByReason` 与 `knowledgeBasisUnattributed`（没落基据的历史行单列，并入任何具名成因都会把「老数据缺字段」读成一种真实故障）。
+
+**实测对照（同一套端点，前后两个构建）**
+
+| 窗口 | `nodesScanned` | `aiParticipated` | `participationRate` | `attributionCoverage` | `knowledgeBasis` |
+|---|---|---|---|---|---|
+| 修复前（全库） | 89 | 0 | **0.0000** | **0.0112** | 字段不存在 |
+| 今日（配置 + 修复后） | 9 | 5 | **0.5556** | **1.0000** | `INSUFFICIENT_CLINICAL_FACTS:8`、`unattributed:1` |
+| 近 31 天（含历史） | 97 | 5 | 0.0515 | 0.0435 | 同上、`unattributed:76` |
+
+三个必须一起读的结论：
+
+1. **今日窗口的 4 条降级不是噪声，是本次配置过程的物证**：1 条 `MOCK_NOT_ALLOWED`（配之前）+ 3 条 `GATEWAY_ERROR`（L4 缺陷在修前跑的那三个案件）。归因覆盖率因此是 `1.0000`——四层故障全部带了码。
+2. **31 天窗口仍难看，是历史存量而不是新故障**：88 条 `UNATTRIBUTED` 来自 v1.6 之前的输出，输出里确实没有该字段，**回填不可能**（§11.5 已论证不可从 message 反推）。覆盖率只能靠新流量抬升。
+3. **模型跑通 ≠ 能自动放款**：5 个案件 `decisionResult` 仍是 `MANUAL_REQUIRED`。原因是知识层对纯票据案件恒 `INSUFFICIENT_CLINICAL_FACTS`（发票只产票面事实，无 `diagnosis_code` / `drug_code`）。这是 fail-closed 的正确表现，不是待修的 bug；把它改成「放行」才是事故。
+
+**启用步骤（可照做，不改代码、不改配置库）**
+
+```bash
+export BONE_AI_GATEWAY_BASE_URL=https://api.deepseek.com   # OpenAI 兼容地址
+export BONE_AI_GATEWAY_API_KEY=<从密钥托管注入，禁止明文入库>
+export BONE_AI_GATEWAY_MODEL=deepseek-chat                 # 必须是该 provider 真实模型名
+# 可选：BONE_AI_GATEWAY_TIMEOUT=60s
+```
+
+1. 起服务（不配也能起，但网关回落 Mock 替身、适配器 fail-closed 拒绝，所有 AI 节点降级）；
+2. `GET /api/v1/claim-ops/ai-provider-probe` 必须 `REACHABLE`；非 `REACHABLE` 就按响应里的 `action` 处置，别看别处；
+3. 跑 1–2 个案件，再看 `GET /api/v1/claim-ops/ai-runtime-health` 的 `aiParticipated` 是否 > 0；
+4. `aiParticipated>0` 但案件仍 `MANUAL_REQUIRED` 属正常，去看 `knowledgeBasisByReason` 是哪一类；
+5. 密钥安全：配置里留未解析的 `${...}` 占位符会让 `LlmGatewayProperties` **启动即失败**（不允许带着字面量去鉴权），远端 https 空 key 会 WARN。
+
+**仍未做**：告警阈值与看板（需稳定流量才定得出阈值）；知识层接受控 RAG / 条款口径核验（L3，需材料侧与合规措辞一起定）；`confidence_source` 列（L3）；历史 `UNATTRIBUTED` 回填（不可行，见上）。
 
 
 ---

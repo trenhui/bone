@@ -29,6 +29,9 @@ class AiGatewayPortWiringTest {
       new ApplicationContextRunner()
           .withBean(
               LlmGatewayApplicationService.class, () -> mock(LlmGatewayApplicationService.class))
+          .withBean(
+              com.bone.ai.gateway.config.LlmGatewayProperties.class,
+              com.bone.ai.gateway.config.LlmGatewayProperties::new)
           .withUserConfiguration(AiGatewayPortAdapter.class, LocalAiGatewayPortAdapter.class);
 
   @Test
