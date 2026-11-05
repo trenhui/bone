@@ -9,15 +9,25 @@ import {
 
 /**
  * AI 参与决策告知字典的负向护栏。
- * 核心：三态不可压平——「无法确认」永不被翻译成「AI 未参与」，未知码必须降级显示原始码。
+ * 核心：四态不可压平——「无法确认」永不被翻译成「AI 未参与」，「确定性替身」永不被
+ * 翻译成「含 AI 辅助生成内容」，未知码必须降级显示原始码。
  */
-describe('involvementMeta 三态', () => {
-  it('三态编号齐全且与后端受控码一致', () => {
+describe('involvementMeta 四态', () => {
+  it('四态编号齐全且与后端受控码一致', () => {
     expect(Object.keys(INVOLVEMENT_META).sort()).toEqual([
       'AI_ASSISTED',
+      'AI_STUB',
       'AI_UNAVAILABLE',
       'UNDETERMINED',
     ]);
+  });
+
+  it('AI_STUB 有结论但没有模型，不得展示为「含 AI 辅助生成内容」', () => {
+    const meta = involvementMeta('AI_STUB');
+    expect(meta.label).toContain('未使用真实模型');
+    expect(meta.label).not.toContain('辅助生成内容');
+    expect(meta.tone).toBe('warning');
+    expect(meta.hint).toContain('没有模型参与');
   });
 
   it('UNDETERMINED 文案明确「无法确认」，不写成 AI 未参与', () => {

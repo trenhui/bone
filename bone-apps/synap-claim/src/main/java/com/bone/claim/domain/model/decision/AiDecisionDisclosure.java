@@ -13,10 +13,27 @@ import java.util.List;
  * <p><b>三层证据分离（与 P0-1 治理清单同一纪律）</b>：本披露只基于<b>已落库的运行期事实</b> （{@code claim_decision_execution} +
  * {@code claim_decision_trace} 的 LLM 节点输出）， 不读部署态能力声明、不读自动放款开关、不重新调用任何 AI 能力、不写库、不碰金额与资金状态。
  *
- * <p><b>为什么必须是三态</b>：把「LLM 节点缺失 / 输出解析失败 / {@code aiAvailable} 键缺失」压成 「AI
+ * <p><b>为什么四态而不是两态</b>：把「LLM 节点缺失 / 输出解析失败 / {@code aiAvailable} 键缺失」压成 「AI
  * 未参与」，等于把「不知道」写成一个对客户有利的确定性结论——与 {@code AiAssessNodeHandler} 的「无法判定 ≠ 拒赔」同理，只是方向相反。 因此 {@link
  * Involvement#UNDETERMINED} 与 {@link Involvement#AI_UNAVAILABLE} 是独立受控码， 二者都<b>不等价于「无 AI
  * 风险」</b>，且不得被消费方翻译成「AI 未参与决策」。
+ *
+ * <p><b>为什么「桩执行成功」是第四态而不是 AI_ASSISTED</b>：{@code aiAvailable=true} 只证明适配器返回了结论， 本地确定性桩（{@code
+ * local-stub}）走同一路径、同样自报可用、同样写回生成字段。若照单标成「含 AI 辅助生成内容」，
+ * 就是拿一句可被审计核对的话去描述一件没有模型参与的事——与运行期健康度把桩计入参与率是同一个错误， 但这次错在<b>对外告知</b>上。故按领域单一真源 {@link
+ * AiModelProvenance} 再切一档：{@link Involvement#AI_STUB}。
+ *
+ * <p><b>两个方向的失效不对称，所以判据也不对称</b>：告警「误标」与「漏标」的代价不同。
+ *
+ * <ul>
+ *   <li><b>已知没有模型参与（桩）</b>却标「含 AI 辅助生成内容」——是<b>确定的不实告知</b>，必须避免；
+ *   <li><b>证明不了模型参与（没留模型标识 / 输出不可解析 / 键缺失）</b>则保持 AI 参与标识并如实记录证据缺口—— 漏标真实 AI 参与的代价（客户在不知情下接受 AI
+ *       影响，违反生成内容显著标识义务）高于多标一句。
+ * </ul>
+ *
+ * <p>因此 {@link AiModelProvenance#UNKNOWN} <b>不</b>降级成桩，也不降级成「无 AI」：它落在 {@link
+ * Involvement#AI_ASSISTED} 并带 {@code NODE_MODEL_VERSION_MISSING} 缺口。这与 §11.6 健康度「证明不了就不计入参与」
+ * 并不矛盾——那里量的是一个要求可归因的比率，这里尽的是对客户的告知义务，守的方向正好相反。
  *
  * <p><b>为什么不用 {@code execution.modelVersion} 判参与</b>：该列是执行入口传入的版本快照 （{@code POST /decision/execute}
  * 的 {@code modelVersion} 可由调用方填写），不是「模型真的跑过」的证据。 用快照判参与会把一次纯规则降级标成 AI 辅助决定，也让填个值就能伪造参与留痕。参与事实只认 LLM
@@ -26,6 +43,9 @@ public final class AiDecisionDisclosure {
 
   /** 显著标识文案（§21）：措辞固定，禁止把 AI 表述为决定者。 */
   public static final String LABEL_ASSISTED = "本结论含人工智能辅助生成内容：AI 仅提供建议、置信度与解释材料，不构成最终理赔决定";
+
+  /** 桩参与标识：既不能说「含 AI 辅助生成内容」，也不能说成「AI 未参与」那样替客户下结论。 */
+  public static final String LABEL_STUB = "本次决策的 AI 环节由系统内置的确定性替身（非真实模型）执行，不构成人工智能辅助生成内容";
 
   /** 降级态标识：不得让「没接线」被读成「已排除风险」。 */
   public static final String LABEL_UNAVAILABLE = "本次决策的 AI 能力未可用，已降级为规则路径；不得据此认定 AI 未参与或风险已排除";
@@ -50,10 +70,15 @@ public final class AiDecisionDisclosure {
 
   private AiDecisionDisclosure() {}
 
-  /** AI 参与三态。 */
+  /** AI 参与四态。 */
   public enum Involvement {
+    /** 可归因到真实模型的成功调用。 */
     AI_ASSISTED,
+    /** 有结论，但产出方是确定性替身：方法被调过，没有模型参与。 */
+    AI_STUB,
+    /** 节点自报降级。 */
     AI_UNAVAILABLE,
+    /** 证据不足，查不清。 */
     UNDETERMINED
   }
 
@@ -190,6 +215,11 @@ public final class AiDecisionDisclosure {
     } else if (f.aiAvailable() == null) {
       involvement = Involvement.UNDETERMINED;
       reason = "AI_AVAILABLE_FLAG_MISSING";
+    } else if (f.aiAvailable()
+        && AiModelProvenance.of(f.reportedModelVersion()) == AiModelProvenance.STUB) {
+      // 有结论但没有模型：既不能标成 AI 辅助生成，也不能替客户断言「AI 未参与」。
+      involvement = Involvement.AI_STUB;
+      reason = "LLM_NODE_STUB_ONLY";
     } else if (f.aiAvailable()) {
       involvement = Involvement.AI_ASSISTED;
       reason = "LLM_NODE_SUCCEEDED";
@@ -201,12 +231,14 @@ public final class AiDecisionDisclosure {
     String label =
         switch (involvement) {
           case AI_ASSISTED -> LABEL_ASSISTED;
+          case AI_STUB -> LABEL_STUB;
           case AI_UNAVAILABLE -> LABEL_UNAVAILABLE;
           case UNDETERMINED -> LABEL_UNDETERMINED;
         };
     String aiRole =
         switch (involvement) {
           case AI_ASSISTED -> "ASSISTIVE_ONLY";
+          case AI_STUB -> "SIMULATED_ONLY";
           case AI_UNAVAILABLE -> "NOT_APPLICABLE";
           case UNDETERMINED -> "UNKNOWN";
         };

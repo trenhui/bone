@@ -2,8 +2,9 @@
  * AI 参与决策告知（金发〔2026〕8号 §21 显著标识 / §22 人工最终决策 / PIPL 第 24 条）。
  *
  * <p>后端唯一真源：`GET /api/v1/claims/{claimId}/decision/disclosure`，只读，基于已落库的
- * 决策执行与轨迹事实生成。**三态不可压平**：`UNDETERMINED`（无法确认）绝不能被前端翻译成
- * 「AI 未参与」或「无风险」——查不清就必须显示查不清。
+ * 决策执行与轨迹事实生成。**四态不可压平**：`UNDETERMINED`（无法确认）绝不能被前端翻译成
+ * 「AI 未参与」或「无风险」——查不清就必须显示查不清；`AI_STUB`（确定性替身）也绝不能
+ * 被展示成「含 AI 辅助生成内容」——有结论但没有模型参与。
  *
  * <p>受控码字典与后端 `AiDecisionDisclosure.Involvement` / `RIGHTS` 对齐；
  * 后端新增码而本表未跟随时展示**原始码**并给出警示，绝不编造一句中文把未知状态伪装成正常态。
@@ -13,7 +14,7 @@ import { createApiClient } from '@bone/shared-services';
 import type { ApiResponse } from '@bone/shared-types';
 import { AI_INVOLVEMENT_DICT, AI_RIGHTS_DICT } from '../constants/dicts.generated';
 
-export type AiInvolvement = 'AI_ASSISTED' | 'AI_UNAVAILABLE' | 'UNDETERMINED';
+export type AiInvolvement = 'AI_ASSISTED' | 'AI_STUB' | 'AI_UNAVAILABLE' | 'UNDETERMINED';
 
 export interface AiDisclosureEvidence {
   graphVersion: string;
@@ -61,6 +62,10 @@ const INVOLVEMENT_BASE: Record<AiInvolvement, { tone: DisclosureTone; hint: stri
   AI_ASSISTED: {
     tone: 'info',
     hint: '本次决策的 LLM 节点真实执行，AI 产出建议、置信度与解释材料；最终决定仍由人工作出。',
+  },
+  AI_STUB: {
+    tone: 'warning',
+    hint: 'AI 环节跑的是本地确定性替身（非真实模型）：有结论，但没有模型参与。不得按「含 AI 辅助生成内容」展示，也不得作为 AI 准确率样本；请核查该环境的接入配置。',
   },
   AI_UNAVAILABLE: {
     tone: 'warning',

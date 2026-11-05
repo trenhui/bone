@@ -56,6 +56,40 @@ class AiDecisionDisclosureTest {
   }
 
   @Test
+  @DisplayName("桩节点自报可用 → AI_STUB：有结论但没有模型，不得标成「含 AI 辅助生成内容」")
+  void stubNodeIsNotAssisted() {
+    Disclosure d =
+        AiDecisionDisclosure.of(execution(""), List.of(), assisted("local-stub", "local-stub-v1"));
+
+    assertThat(d.involvement()).isEqualTo(Involvement.AI_STUB);
+    assertThat(d.involvementReason()).isEqualTo("LLM_NODE_STUB_ONLY");
+    assertThat(d.label()).isEqualTo(AiDecisionDisclosure.LABEL_STUB);
+    assertThat(d.label()).contains("不构成人工智能辅助生成内容");
+    assertThat(d.aiRole()).isEqualTo("SIMULATED_ONLY");
+    // 证据仍如实带出桩标识：不是隐藏，而是状态码不再说错
+    assertThat(d.evidence().reportedModelVersion()).isEqualTo("local-stub");
+  }
+
+  @Test
+  @DisplayName("替身命名前缀同样判桩（大小写/空白归一），不靠逐字比对 local-stub")
+  void mockPrefixedModelIsStub() {
+    Disclosure d =
+        AiDecisionDisclosure.of(execution(""), List.of(), assisted("  Mock-Llm-Client ", "p-1"));
+
+    assertThat(d.involvement()).isEqualTo(Involvement.AI_STUB);
+  }
+
+  @Test
+  @DisplayName("反向钉子：有结论但没留模型标识 → 仍是 AI_ASSISTED，不得降级成桩")
+  void unprovenModelIsNotStub() {
+    Disclosure d = AiDecisionDisclosure.of(execution(""), List.of(), assisted("", "p-1"));
+
+    assertThat(d.involvement()).isEqualTo(Involvement.AI_ASSISTED);
+    assertThat(d.involvement()).isNotEqualTo(Involvement.AI_STUB);
+    assertThat(d.evidence().traceGaps()).contains("NODE_MODEL_VERSION_MISSING");
+  }
+
+  @Test
   @DisplayName("节点自报降级 → AI_UNAVAILABLE，且不得写成无风险结论")
   void fallbackNodeIsNotNoRisk() {
     AiNodeFacts f =
@@ -126,11 +160,12 @@ class AiDecisionDisclosureTest {
   }
 
   @Test
-  @DisplayName("负向探针：三种标识与人工最终决策都不得把 AI 表述为决定者")
+  @DisplayName("负向探针：四种标识与人工最终决策都不得把 AI 表述为决定者")
   void labelNeverClaimsAiDecides() {
     List<String> texts =
         List.of(
             AiDecisionDisclosure.LABEL_ASSISTED,
+            AiDecisionDisclosure.LABEL_STUB,
             AiDecisionDisclosure.LABEL_UNAVAILABLE,
             AiDecisionDisclosure.LABEL_UNDETERMINED,
             AiDecisionDisclosure.HUMAN_FINAL_DECISION,

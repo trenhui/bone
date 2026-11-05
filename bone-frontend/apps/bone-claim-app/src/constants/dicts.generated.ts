@@ -22,6 +22,7 @@ export const CLAIM_STATUS_DICT: Record<string, string> = {
 
 export const AI_INVOLVEMENT_DICT: Record<string, string> = {
   'AI_ASSISTED': '含 AI 辅助生成内容',
+  'AI_STUB': '未使用真实模型（确定性替身）',
   'AI_UNAVAILABLE': 'AI 能力未可用（规则降级）',
   'UNDETERMINED': '无法确认 AI 是否参与'
 };

@@ -150,6 +150,54 @@ class AiDecisionDisclosureServiceTest {
   }
 
   @Test
+  @DisplayName("负向探针：桩执行成功 → AI_STUB，不是 AI_ASSISTED（对客户不能声称含 AI 生成）")
+  void stubExecutionIsNotAssisted() {
+    DecisionExecution e = execution(1001L, "trace-1");
+    DecisionTraceNode llm =
+        node("LLM", 3, "{\"aiAvailable\":true,\"aiModel\":\"local-stub\"}", "OK");
+    when(executions.findLatest(1001L)).thenReturn(e);
+    when(executions.replay("trace-1")).thenReturn(List.of(llm));
+
+    Disclosure d = service.disclose(1001L, null);
+
+    assertThat(d.involvement()).isEqualTo(Involvement.AI_STUB);
+    assertThat(d.involvementReason()).isEqualTo("LLM_NODE_STUB_ONLY");
+  }
+
+  @Test
+  @DisplayName("多 LLM 节点：靠后的桩不得抹掉靠前真模型的参与事实（漏标）")
+  void laterStubDoesNotMaskEarlierProvider() {
+    DecisionExecution e = execution(1001L, "trace-1");
+    DecisionTraceNode provider =
+        node("LLM", 2, "{\"aiAvailable\":true,\"aiModel\":\"qwen-max\"}", "OK");
+    DecisionTraceNode stub =
+        node("LLM", 5, "{\"aiAvailable\":true,\"aiModel\":\"local-stub\"}", "OK");
+    when(executions.findLatest(1001L)).thenReturn(e);
+    when(executions.replay("trace-1")).thenReturn(List.of(provider, stub));
+
+    Disclosure d = service.disclose(1001L, null);
+
+    assertThat(d.involvement()).isEqualTo(Involvement.AI_ASSISTED);
+    assertThat(d.evidence().reportedModelVersion()).isEqualTo("qwen-max");
+  }
+
+  @Test
+  @DisplayName("多 LLM 节点：桩 + 损坏输出 ⇒ UNDETERMINED（查不清排在已确认无模型之前）")
+  void brokenNodeOutranksStub() {
+    DecisionExecution e = execution(1001L, "trace-1");
+    DecisionTraceNode stub =
+        node("LLM", 2, "{\"aiAvailable\":true,\"aiModel\":\"local-stub\"}", "OK");
+    DecisionTraceNode broken = node("LLM", 5, "not-a-json", "OK");
+    when(executions.findLatest(1001L)).thenReturn(e);
+    when(executions.replay("trace-1")).thenReturn(List.of(stub, broken));
+
+    Disclosure d = service.disclose(1001L, null);
+
+    assertThat(d.involvement()).isEqualTo(Involvement.UNDETERMINED);
+    assertThat(d.involvementReason()).isEqualTo("LLM_OUTPUT_UNPARSABLE");
+  }
+
+  @Test
   @DisplayName("负向探针：节点自报超长版本串被截断，防自由文本外溢披露面")
   void longVersionTextIsClipped() {
     DecisionExecution e = execution(1001L, "trace-1");

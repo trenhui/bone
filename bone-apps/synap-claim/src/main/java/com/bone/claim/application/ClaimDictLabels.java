@@ -14,10 +14,11 @@ public final class ClaimDictLabels {
 
   private ClaimDictLabels() {}
 
-  /** AI 参与三态标签（短展示名，对齐 AiDecisionDisclosure.LABEL_* 语义）。 */
+  /** AI 参与四态标签（短展示名，对齐 AiDecisionDisclosure.LABEL_* 语义）。 */
   public static final Map<String, String> AI_INVOLVEMENT =
       Map.ofEntries(
           Map.entry("AI_ASSISTED", "含 AI 辅助生成内容"),
+          Map.entry("AI_STUB", "未使用真实模型（确定性替身）"),
           Map.entry("AI_UNAVAILABLE", "AI 能力未可用（规则降级）"),
           Map.entry("UNDETERMINED", "无法确认 AI 是否参与"));
 

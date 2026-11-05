@@ -25,6 +25,8 @@ currency: current
 |v1.8|2026-11-05|BONE 平台架构|**连通态补齐 + 真实 provider 实测**：① 新增 `GET /claim-ops/ai-provider-probe`（一次最小真实调用，判词含未配置/通/四个受控原因码 + 处置动作），补上「配了 ≠ 通了 ≠ 契约对」这一层；② 修真实 provider 下必然失败的缺陷——业务请求曾把逻辑别名 `synap-claim-ai` 当模型名发给上游，探活却用配置模型，造成「探活绿灯、业务全量降级」，现探活与业务共用 `requestModel()` 唯一真源；③ 知识基据 `KnowledgeBasis` 随轨迹落库并进健康度二级归因，四类成因不再被压成一个 `KNOWLEDGE_UNAVAILABLE`；④ §11.7 记录实测前后对照（`0.0000 / 0.0112` → `0.5556 / 1.0000`）。**P1 红线、三档分诊、G0–G4 门禁不变**|
 |v1.9|2026-11-05|BONE 平台架构|**认知层输入侧补齐 + 事实落地校验**：① 感知层早已抽出带 `text@67:8` 定位的票面/临床字段，但 AI 只收到 6 个聚合标量，只能把标量复述成 `aiFacts`、把 `claimContext` 编成证据定位（实测取证）；现 `ClaimContextView.evidenceFacts` 把材料事实送进提示词（v5）；② 新增 `EvidenceFactPolicy` 出域策略（姓名/证件/病历号不出域，与网关 PII 脱敏构成两层）；③ 事实必须有材料出处——按 `code|value` 在材料索引里比对，定位一律取材料侧，不可核条目丢弃并计数 `aiUnverifiableLocators`（进轨迹与健康度）；④ §11.8 记录实测对照（`aiFacts` 由 6 条回显变为 4 条真实票面事实，`aiDiscrepancies` 首次有依据地出现 `AMOUNT_MISMATCH`）。**P1 红线、三档分诊、G0–G4 门禁不变**|
 |v1.5|2026-11-04|BONE 平台架构|**复核建议落地**：① 发票验真 / 验重前移到材料阶段（票面要素 + 跨案去重，查实问题落 `FAIL`，本地核验通过仍落 `UNVERIFIABLE` 转人工，不放宽 R-FRAUD-06）；② 核责规则资产化（资源文件可替换 + 版本随命中留痕，配置不可信时回退）；③ 链路联动（案件级锁定事件 → 自动触发决策图，默认关闭、G3 前置）；④ §1.6 补验收判据、未落地边界与「建议采纳 / 未采纳理由」对照表。**红线与成熟度定级不变，仍不得对外宣称 L3**|
+|v2.0|2026-11-05|BONE 平台架构|**AI 参与告知补第四态**：`/claims/{id}/decision/disclosure` 此前把「桩执行成功」判为 `AI_ASSISTED`，对一则没有模型参与的结论下发「含 AI 辅助生成内容」；现新增 `AI_STUB`（`SIMULATED_ONLY`）+ 专属标识文案，`ClaimDictLabels` 与前端 codegen 同步；多 LLM 节点改按「漏标风险」选代表节点（旧实现只取最后一个，前面真模型的参与会被靠后的桩抹掉）；§11.9 写明两个失效方向代价不对称的判据。**P1 红线、三档分诊、G0–G4 门禁不变**|
+|v2.1|2026-11-05|BONE 平台架构|**结论消费补齐（链条末端）**：① 取证发现决策结论产出后**无人消费**——全仓 `completePreExam` 主代码调用点只有人工接口，实测 16 次决策执行、0 个案件离开 `AUTO_PRE_EXAMINING`，案件因此进不了核赔队列（40）、永不结案、评测拿不到弱标签；② `DecisionRunApplicationService` 统一消费：初审段收口（11/13 → 12）+ 按结论路由（`AUTO_APPROVE`→50 或转 40、`NEED_MORE_EVIDENCE`→21、其余/失败→40），受控原因码随响应回传；③ 金额只给自动通过路径，理算越界不抛异常而是转人工留痕；④ 推翻 §11.8 结论 2 的「属流程侧动作、非代码缺陷」归因，并在 §11.10 登记 `agreementRate` 恒 `null` 的第二个根因（能力缺失把二元建议兜成 `MANUAL_REQUIRED`，分母恒 0）。**P1 红线、三档分诊、G0–G4 门禁不变**|
 
 ---
 
@@ -859,7 +861,7 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 
 **仍未做**：告警阈值与看板（需要稳定流量才能定阈值，现在定就是拍脑袋）；`ai_confidence` 语义修正（需 `confidence_source` 列，L3）；把 `UNATTRIBUTED` 的历史数据回填（历史输出里确实没有该字段，**不可从 message 反推**——那正是 §11.5 拒绝的做法）。
 
-> **同一缺陷的第三个入口未修，如实记在此处**：`GET /claims/{id}/decision/disclosure`（AI 参与告知）仍把「桩执行成功」判为 `AI_ASSISTED` 并下发「本结论含人工智能辅助生成内容」——对一则没有 AI 参与的结论做了 AI 告知。证据面里 `reportedModelVersion=local-stub` 是如实带出的，所以不是隐藏，但状态码本身说错了。修它需要新增第四个参与态 + 重新生成前端字典（`dicts.generated.ts` 从**运行中的**后端 `/claim-config/dicts` codegen），必须与「桩到底该对客户怎么表述」的合规措辞一起定，不宜在代码侧单方面拍板，故本轮不动、明确登记为已知缺口。
+> **同一缺陷的第三个入口已在 §11.9 修复（v2.0）**：`GET /claims/{id}/decision/disclosure` 曾把「桩执行成功」判为 `AI_ASSISTED`，对一则没有模型参与的结论下发「本结论含人工智能辅助生成内容」。现新增第四参与态 `AI_STUB`（`SIMULATED_ONLY` + 专属标识文案），并补齐前端字典 codegen 与多 LLM 节点的漏标防护。合规措辞按「误标 ⇒ 确定的不实告知」「漏标 ⇒ 客户不知情接受 AI 影响」两个方向的代价不对称确定，判据与验收见 §11.9。
 
 
 ### 11.7 从「配了」到「通了」：provider 探针与知识基据（v1.8 落地）
@@ -1032,7 +1034,7 @@ export BONE_AI_GATEWAY_MODEL=deepseek-chat                 # 必须是该 provid
 #### 11.8.4 三个必须一起读的结论
 
 1. **金额差异码第一次有了依据，但它没有改变结论**。`AMOUNT_MISMATCH` 已落轨迹，`triage_reason` 仍是规则引擎给的 `RISK_HIT`。原因是 `AiDiscrepancyRouting` 只在**本会 `AUTO_APPROVE`** 时把结论收紧，本案的结论已是 `MANUAL_REQUIRED`（知识层 fail-closed），比差异码要求的处置更严——按 P1「只向安全方向收紧、不得被 AI 输出覆盖」，此处保持原样是设计意图，不是路由失效。
-2. **一致率仍是 `null`，但原因换了**。上一轮是「84/84 全 `MANUAL_REQUIRED`」；现在是 12 个样本中 **8 条 `UNKNOWN_NOT_CONVERGED`**——`finalStatus` 停在 `AUTO_PRE_EXAMINING`，案件根本没结案。弱标签来自案件终态，**案件不结案就没有标签**，`evaluableCount=0` 是数据前提不成立，不是代码缺陷。要拿到第一个真实一致率，需要让案件走到 `FINISHED`/`CLOSED_REJECTED`，属于流程侧动作（数据准备），不是再改一版导出逻辑。
+2. **一致率仍是 `null`，但原因换了**。上一轮是「84/84 全 `MANUAL_REQUIRED`」；现在是 12 个样本中 **8 条 `UNKNOWN_NOT_CONVERGED`**——`finalStatus` 停在 `AUTO_PRE_EXAMINING`，案件根本没结案。弱标签来自案件终态，**案件不结案就没有标签**。~~`evaluableCount=0` 是数据前提不成立，不是代码缺陷……属于流程侧动作（数据准备），不是再改一版导出逻辑。~~ **这句判断在 v1.10 被推翻**：案件停在 13 不是"还没人去结案"，而是**没有任何代码把决策结论消费成状态跃迁**（全仓 `completePreExam` 的主代码调用点只有人工接口，实测 16 次决策执行 0 个案件离开 13）。导出逻辑确实不用改，但"流程侧动作"这个归因是错的——它是代码缺口，见 §11.10。
 3. **模型跑通、事实可核，仍然不等于能自动放款**。11 条能力缺失全部落在 `INSUFFICIENT_CLINICAL_FACTS`：发票只有票面事实，没有 `diagnosis_code`/`drug_code`，目录准入无从谈起。这次补齐的是"AI 看得到票面"，不是"AI 能判临床"——后者要病历/处方类材料，或条款口径核验能力（L3）。
 
 #### 11.8.5 明确不做的两件事
@@ -1056,6 +1058,97 @@ export BONE_AI_GATEWAY_MODEL=deepseek-chat                 # 必须是该 provid
 变异验证（双向）：去掉 `groundedFacts` 的材料索引校验 ⇒ 回显/编造用例转红；把 `EvidenceFactPolicy.exportable` 恒 `true` ⇒ 出域用例转红，恒 `false` ⇒ 临床字段正向用例转红。每次均字节级还原。
 
 ---
+
+### 11.9 AI 参与告知：对客户说的那句话（v2.0 落地）
+
+§11.6 修的是**内部报表**（桩不算参与），但同一个错误在**对外告知**上还留着一个入口：`GET /claims/{id}/decision/disclosure` 此前把「桩执行成功」判成 `AI_ASSISTED`，并给客户下发「本结论含人工智能辅助生成内容」——拿一句可被审计核对的话，去描述一件没有模型参与的事。本节补第四个参与态，并把「什么时候宁可信其有、什么时候必须说没有」定成判据。
+
+**四态与判据（数据源：轨迹里 LLM 节点自报的 `aiAvailable` + `aiModel`，经领域单一真源 `AiModelProvenance` 归类）**
+
+| 参与态 | 运行期事实 | 判定原因码 | 角色 | 对客户的说法 |
+|---|---|---|---|---|
+| `AI_ASSISTED` | `aiAvailable=true` 且模型可归因到真实 provider | `LLM_NODE_SUCCEEDED` | `ASSISTIVE_ONLY` | 含 AI 辅助生成内容（人工最终决定） |
+| `AI_STUB` | `aiAvailable=true` 但模型是确定性替身（`local-stub` / `mock*`） | `LLM_NODE_STUB_ONLY` | `SIMULATED_ONLY` | **由确定性替身执行，不构成 AI 辅助生成内容** |
+| `AI_UNAVAILABLE` | `aiAvailable=false` | `LLM_NODE_FALLBACK` | `NOT_APPLICABLE` | AI 未可用、已降级为规则；不得据此认定风险已排除 |
+| `UNDETERMINED` | 无 LLM 节点 / 输出不可解析 / `aiAvailable` 键缺失 | `LLM_NODE_ABSENT` / `LLM_OUTPUT_UNPARSABLE` / `AI_AVAILABLE_FLAG_MISSING` | `UNKNOWN` | 无法确认，不得据此认定 AI 未参与 |
+
+**判据不对称，是因为两个方向的失效代价不对称**
+
+| 失效方向 | 后果 | 取值策略 |
+|---|---|---|
+| 误标（没有模型参与却说有） | **确定的不实告知**：客户被告知一句可被比对推翻的话 | 一旦 `AiModelProvenance` 判为 `STUB`（已知无模型），必须落 `AI_STUB`，不得沿用 AI 标识 |
+| 漏标（有模型参与却说没有） | 客户在不知情下接受 AI 影响，违反生成内容显著标识义务 | 只要**证明不了没有模型**（无模型标识 / 输出损坏 / 键缺失），一律保留「可能参与」的表述并记录证据缺口 |
+
+因此 `AiModelProvenance.UNKNOWN`（有结论但没留 `aiModel`）**不**降级成桩、也**不**降级成「无 AI」：它落 `AI_ASSISTED` 并带 `NODE_MODEL_VERSION_MISSING` 缺口。这与 §11.6「证明不了就不计入参与」看起来相反，实则同一原则的两种投影——那里算的是一个要求可归因的**比率**（分子必须可证），这里尽的是对客户的**告知义务**（宁可多说一句）。把两处判据强行统一，必有一处做错。
+
+**多 LLM 节点：只取「最后一个」会漏标**
+
+一次执行可能有多个 LLM 节点（抽取 + 结论）。旧实现取 `nodeSeq` 最大的那个：若前一个节点真调了模型、后一个节点是桩，整案就被写成 `AI_STUB`——真实参与被抹掉。现按漏标风险挑代表节点（秩小者胜，同秩取更靠后）：
+
+| 秩 | 节点形态 | 理由 |
+|---|---|---|
+| 0 | 有结论 + 可归因 provider | 真实参与，必须标 |
+| 1 | 有结论 + 无模型标识 | 证明不了没模型 |
+| 2 | 输出损坏 / `aiAvailable` 键缺失 | 查不清，可能参与 |
+| 3 | 有结论 + 桩 | 已确认无模型 |
+| 4 | 明确降级 | 无模型 |
+
+秩 2 排在秩 3 之前是关键：一个坏掉的节点不能让整案被写成「没有 AI」。
+
+**验收与变异**
+
+| 判据 | 用例 |
+|---|---|
+| 桩执行 → `AI_STUB`，标签含「不构成人工智能辅助生成内容」，证据仍如实带 `local-stub` | `AiDecisionDisclosureTest#stubNodeIsNotAssisted` / `AiDecisionDisclosureServiceTest#stubExecutionIsNotAssisted` |
+| 替身前缀（`mock*`）与大小写/空白归一同样判桩 | `#mockPrefixedModelIsStub` |
+| 反向钉子：有结论但无模型标识仍是 `AI_ASSISTED`，不得降级成桩 | `#unprovenModelIsNotStub` |
+| 靠后的桩不得抹掉靠前真模型的参与（漏标） | `#laterStubDoesNotMaskEarlierProvider` |
+| 桩 + 损坏输出 ⇒ `UNDETERMINED`（查不清优先于已确认无模型） | `#brokenNodeOutranksStub` |
+| 新增参与态必须有中文标签，标签表不得残留已删码（双向） | `ClaimDictLabelsTest#everyInvolvementHasLabel` |
+| 前端四态字典齐全，`AI_STUB` 不得显示为「含 AI 辅助生成内容」 | `aiDisclosure.test.ts#involvementMeta 四态` |
+
+变异验证（5 次，均字节级还原）：① 桩判定改成 `UNKNOWN` ⇒ 3 例转红 + 反向 2 例转红；② 桩判定整段置假 ⇒ 恰好 3 例转红，「无模型标识」用例保持绿（证明两档互不牵连）；③ `PROVIDER` 秩降为 9 ⇒ 只有 `#laterStubDoesNotMaskEarlierProvider` 转红；④ 交换秩 2/3 ⇒ 只有 `#brokenNodeOutranksStub` 转红；⑤ 删 `AI_STUB` 标签 / 多加一个已删码 ⇒ 字典用例分别按「缺标签」「残留码」转红。
+
+**未做**：`AI_STUB` 的对客措辞目前只落在披露视图与前端字典，**未进拒赔通知书模板**——通知书属对外文书，措辞需法务确认（与「AI 参与告知是否随通知书自动出具」是同一个待定项）。另：`ai_confidence` 语义（模型自评 vs 系统聚合）仍需 `confidence_source` 列，属 L3 DDL，未动。
+
+---
+
+### 11.10 结论谁消费：从「查得到」到「推动了什么」（v2.1 落地）
+
+前三轮依次补上的是**认知链的上游**：能查（§11.6 健康度）、能归因（§11.7 四层故障模型）、材料对得上（§11.8 事实落地）。这轮把链子跑到**末端**，发现缺的不是数据也不是指标，而是**执行**：决策结论产出之后，没有任何代码消费它。
+
+**取证（不是推断）**
+
+| 证据 | 观测 |
+|---|---|
+| 全仓 `completePreExam` 的主代码调用点 | 只有 `POST /claims/{id}/pre-exam/complete`（人工接口）；决策执行链路 0 处 |
+| `claim_decision_execution` × `t_claim_case` 关联 | 5 个案件、**16 次决策执行**，这些案件状态全部停在 `AUTO_PRE_EXAMINING`（13） |
+| `AutoApprovalApplicationService` 的前提 | 类注释写「案件停在已初审（12）」，但没有任何代码把案件从 13 推到 12 ⇒ `autoApprove` 的 `requireStatus(PRE_EXAMINED)` **必然**拒绝，自动放款路径是死的（开关默认关闭，故一直未暴露） |
+| 核赔队列 | `ReviewTaskStatusMapper.WAITING` 只认 `PENDING_ADJUST`（40）⇒ 这些案件从未进入人工视野 |
+| 评测导出 | 8/12 样本 `UNKNOWN_NOT_CONVERGED`（`finalStatus=13`）——弱标签来自终态，无终态即无标签 |
+
+**修复：把 §6.2 的转换表变成有人执行的契约**
+
+`DecisionRunApplicationService.execute` 现在做两件事，缺一不可：① 初审段收口（11/13 → 12，`completePreExam`）；② 按结论路由（`AUTO_APPROVE` → 50 或转 40；`NEED_MORE_EVIDENCE` → 21；其余/执行失败 → 40）。完整落点表与受控原因码见工程落地版 §6.2.1，此处只记三条取舍：
+
+1. **金额只给自动通过**。`completePreExam` 的金额参数只在 `AUTO_APPROVE` 路径上取理算结果（资金权威口径）；其余结论传 `null`——理算值是建议，替人工预填等于「AI 替审核员定价」，与 P1「AI 不碰钱」同一方向。
+2. **越界不抛异常，转人工留痕**。理算金额 > 申请金额违反「赔付 ≤ 索赔」不变量。若照旧抛出，案件又被打回 13（正是要修的形态）；现在改为不猜金额、转人工 + `INDEMNITY_EXCEEDS_CLAIM` 原因码，把「金额对不上」交给最该看它的人。
+3. **不在执行器内消费**。执行器（含 LLM 调用）不在事务内，消费放在用例层、各跃迁独立短事务 ⇒「已收口、未路由」是**合法且可见**的中间态（案件在 12、初审工作台可见），不是静默断点。
+
+**前后对照（同一路径、同一结论 `MANUAL_REQUIRED`，E2E 实跑）**
+
+| 观测 | 修复前 | 修复后 |
+|---|---|---|
+| `decision/execute` 返回的 `claimStatus` | 无此字段（案件仍 13） | `PENDING_ADJUST` / `routingReason=ROUTED_TO_ADJUST` |
+| 详情接口读到的状态 | `AUTO_PRE_EXAMINING` | `PENDING_ADJUST`（与响应一致，确已落库） |
+| 待核赔队列 | 不出现 | 出现 |
+
+**变异验证（3 次，均字节级还原后重跑全绿）**：① 删 `completePreExam` 调用 ⇒ 5 例转红；② `ROUTED_TO_ADJUST` 分支只改返回码不真 `escalate` ⇒ 4 例转红；③ 反向——去掉「已推进则跳过」闸门 ⇒ 恰 2 例（`alreadyInAdjustQueueIsUntouched` / `pendingPreExamIsNotSilentlyStarted`）转红，说明闸门不是装饰。
+
+**与 §11.4 一致率的关系：第二个根因，别混为一谈**。状态收口只解决「案件走不到终态」。一致率的分母还要求**AI 给出二元建议**（`AUTO_APPROVE`/`SUGGEST_REJECT`），而当前核责/反欺诈/图计算能力未接入，决策图 fail-closed 把 `AUTO_APPROVE` 全部兜成 `MANUAL_REQUIRED`（`capabilityMissing`）——分母恒 0。要拿到第一个真实一致率，须先补 C2/E1/E2，让二元建议真的出现；在那之前，`agreementRate=null` 是**正确输出**，不该用「先结几单」去凑。
+
+**明确不做**：不替调用方自动开始初审（案件在 10 时只回 `CLAIM_NOT_IN_PRE_EXAM`，交回人工——仍是待分配队列里的正常案件，不是死路）；不在路由里改金额；不把 `routingReason` 塞进 `consumption_reason`（该列 `varchar(32)` 且语义只描述资金动作，塞两件事会让「为什么没自动放款」这个查询失真）。
+
 
 ## 12. 落地里程碑与 Go/No-Go
 

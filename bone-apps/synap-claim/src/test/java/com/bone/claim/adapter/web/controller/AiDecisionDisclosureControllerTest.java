@@ -8,8 +8,11 @@ import static org.mockito.Mockito.when;
 import com.bone.claim.application.AiDecisionDisclosureService;
 import com.bone.claim.domain.model.decision.AiDecisionDisclosure;
 import com.bone.claim.domain.model.decision.AiDecisionDisclosure.Disclosure;
+import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.core.model.ApiResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.reflect.Method;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -69,5 +72,34 @@ class AiDecisionDisclosureControllerTest {
     assertThat(response.getData().involvementReason()).isEqualTo("TRACE_CLAIM_MISMATCH");
     assertThat(response.getData().traceId()).isEmpty();
     verify(service).disclose(1001L, "trace-of-other");
+  }
+
+  @Test
+  @DisplayName("线上契约：桩参与态按 AI_STUB / SIMULATED_ONLY 序列化，标签不得声称含 AI 生成内容")
+  void stubStateIsSerializedAsItself() throws Exception {
+    DecisionExecution execution = mock(DecisionExecution.class);
+    when(execution.getClaimId()).thenReturn(1001L);
+    when(execution.getTraceId()).thenReturn("trace-1");
+    when(execution.getStatus()).thenReturn("SUCCESS");
+    Disclosure stub =
+        AiDecisionDisclosure.of(
+            execution,
+            List.of(),
+            new AiDecisionDisclosure.AiNodeFacts(
+                true,
+                true,
+                false,
+                "OK",
+                "local-stub",
+                "local-stub-v1",
+                List.of("aiFacts"),
+                List.of()));
+
+    String json = new ObjectMapper().findAndRegisterModules().writeValueAsString(stub);
+
+    assertThat(json).contains("\"involvement\":\"AI_STUB\"");
+    assertThat(json).contains("\"aiRole\":\"SIMULATED_ONLY\"");
+    assertThat(json).contains("确定性替身");
+    assertThat(json).doesNotContain("含人工智能辅助生成内容");
   }
 }

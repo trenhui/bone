@@ -33,7 +33,9 @@ public class AiDecisionDisclosureController {
   @Operation(
       summary = "查询 AI 参与决策告知",
       description =
-          "基于已落库执行与轨迹生成只读披露；三态判定（AI_ASSISTED/AI_UNAVAILABLE/UNDETERMINED）。"
+          "基于已落库执行与轨迹生成只读披露；四态判定"
+              + "（AI_ASSISTED / AI_STUB / AI_UNAVAILABLE / UNDETERMINED）。"
+              + "AI_STUB 表示结论由确定性替身产出而非真实模型，不得告知为「含 AI 辅助生成内容」；"
               + "无执行记录或 traceId 跨案时返回 UNDETERMINED，不代表 AI 未参与。")
   @PreAuthorize("hasAuthority('claim:claims:read')")
   @GetMapping("/disclosure")
