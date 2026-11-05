@@ -85,7 +85,7 @@ currency: current
 |---|---|---|---|
 | 感知层 | 多模态模型 / OCR / 版面分析 | 影像 → 结构化单证事实（字段、坐标、置信度、完整性） | **一期已接线（文本层子集）**：`DocumentParsePort` + `TextLayerDocumentParsePortAdapter` 从数电票文本层抽字段，落 `extracted_json`（置信度 + 原文坐标 + 完整性），`POST /evidences/{id}/parse` 主动触发；无文本层即 `FAILED` 转人工。图像 / 翻拍 / 多模态模型未接入（Phase B） |
 | 知识层 | 受控 RAG / 医学目录 / 临床合理性 | 事实 + 条款 → 证据定位、条款引用、合规差异提示 | **一期已接线（目录准入）**：`CatalogKnowledgeRetrievalPortAdapter` 消费感知层事实，在 `t_ref_disease` / `t_ref_drug` 做准入核验；`available=true` 仅在事实齐备且目录命中时，核验范围写进 `basis` 受控码。无事实 / 目录未命中 / 装配不全一律 `available=false`。语义检索、适应症图谱与受控 RAG 未集成（Phase B） |
-| 决策层 | 确定性规则 + 分诊策略 | 事实 + 规则命中 → 通过 / 复核 / 人工 / 补件 | **AI 认知已能驱动非资金流程状态**：`AiGatewayPort.AiAssessment` 携带结构化认知 + 模型/提示词自溯源；`AiDiscrepancyRouting` 把白名单差异码映射为补件 / 复核档，原因码 `AI_DISCREPANCY:<码>` 落 `triage_reason`；`AiAssessNodeHandler` 三态安全与 `DecisionTriage` 确定性三档不变 |
+| 决策层 | 确定性规则 + 分诊策略 | 事实 + 规则命中 → 通过 / 复核 / 人工 / 补件 | **AI 认知已能驱动非资金流程状态**：`AiGatewayPort.AiAssessment` 携带结构化认知 + 模型/提示词自溯源；`AiDiscrepancyRouting` 把白名单差异码映射为补件 / 复核档，原因码 `AI_DISC:<码>` 落 `triage_reason`（多码时按声明优先级取主码，与模型输出顺序无关）；`AiAssessNodeHandler` 三态安全与 `DecisionTriage` 确定性三档不变 |
 | 资金层 | 领域聚合 + 事务 | 理算额 → 结算 / 支付 / 对账 | 已实现且为护城河，**AI 不得进入** |
 | 学习层 | 评测集 + 标注回流 + MRM | 人工干预 → 下一版模型 / 提示词 / 阈值 | **回流触发器已接线**：`InspectionFeedbackRecorder` 订阅 `InspectionConcludedEvent`，DIFF 结论转 `AiEvalSampleCollectedEvent`（评测集 / 规则修正 / 控制修正三类 + 幂等指纹），经 `AiEvalSamplePort` 出站。样本消费方、独立盲标、校准曲线、champion-challenger 与 MRM 仍属 Phase B / V2 |
 
@@ -158,12 +158,20 @@ currency: current
 
 | 输入 | 前置条件 | 结论 | 档位 | 原因码 |
 |---|---|---|---|---|
-| `EVIDENCE_MISSING` | 当前为 `AUTO_APPROVE` | `NEED_MORE_EVIDENCE` | `MANUAL` | `AI_DISCREPANCY:EVIDENCE_MISSING` |
-| 其余白名单码 | 当前为 `AUTO_APPROVE` | `MANUAL_REQUIRED` | `REVIEW` | `AI_DISCREPANCY:<码>` |
+| `EVIDENCE_MISSING`（与其它码并存时也优先） | 当前为 `AUTO_APPROVE` | `NEED_MORE_EVIDENCE` | `MANUAL` | `AI_DISC:EVIDENCE_MISSING` |
+| 其余白名单码 | 当前为 `AUTO_APPROVE` | `MANUAL_REQUIRED` | `REVIEW` | `AI_DISC:<码>` |
 | 白名单外 / 自由文本 | 任意 | 忽略 | 不变 | 不变 |
 | 任意码 | 当前非 `AUTO_APPROVE` | 保持原结论 | 不变 | 保持更精确的原因码 |
 
-白名单唯一真源 `AiDiscrepancyCodes.ALL`（`AMOUNT_MISMATCH` / `DIAGNOSIS_FEE_MISMATCH` / `DRUG_INDICATION_MISMATCH` / `EVIDENCE_MISSING` / `DUPLICATE_ITEM` / `OTHER`），同时用于网关输出白名单、提示词枚举与流程路由；差异码语义变化须同步 bump `PROMPT_VERSION`（v1.4 为 `claim-assess-v4`）。
+白名单唯一真源 `AiDiscrepancyCodes.ALL`（顺序即处置优先级：`EVIDENCE_MISSING` / `AMOUNT_MISMATCH` / `DIAGNOSIS_FEE_MISMATCH` / `DRUG_INDICATION_MISMATCH` / `DUPLICATE_ITEM` / `OTHER`），同时用于网关输出白名单、提示词枚举与流程路由；差异码语义变化须同步 bump `PROMPT_VERSION`（v1.4 为 `claim-assess-v4`）。
+
+> **两条确定性要求（v1.7 修正，此前是实现缺陷）**
+>
+> **其一，同一组差异必须恒得同一处置。** 旧实现「取数组里先出现的白名单码」，而模型给的数组顺序没有语义——同一案件、同一组差异，只因模型把 `DRUG_INDICATION_MISMATCH` 排在 `EVIDENCE_MISSING` 前面，就会从「补件」跳到「复核」，`triage_reason` 也跟着变，事后按原因码聚合时同一类案件被拆成两堆。现按 `ALL` 的声明顺序取主码，输入顺序完全不参与判定；`EVIDENCE_MISSING` 置首位是因为**没有材料无法复核**，先补件可避免「复核 → 发现缺件 → 再补件」的往返。单测用 24 种全排列断言结论唯一。
+>
+> **其二，原因码必须装得进落库列。** `claim_decision_execution.triage_reason` 是 `VARCHAR(32)`，MySQL 在 `STRICT_TRANS_TABLES` 下对超长值是**整条语句报 `ERROR 1406` 并回滚**，不是静默截断。旧前缀 `AI_DISCREPANCY`（14 字符）组出的 `AI_DISCREPANCY:DRUG_INDICATION_MISMATCH` 长 **39** 字符、`...:DIAGNOSIS_FEE_MISMATCH` 长 **37** 字符——即 AI 一旦真的提示这两类差异，决策执行会整条写不进去，在自动通过路径上抛 500。这不是假设：临时库同结构实测旧串报 `ERROR 1406 (22001)… at row 1`，换成 `AI_DISC` 后两条分别 32 / 30 字符落库成功。前缀因此缩短为 `AI_DISC`，长度上界写死为 `AiDiscrepancyCodes.TRIAGE_REASON_MAX_LENGTH`，并由单测对全部码逐条断言，新增更长的码会在构建期失败而不是在库里 500。
+>
+> **为什么只缩短前缀、不改 DDL**：加宽列宽（`VARCHAR(64)`）才是语义上更干净的修法，可换回可读的全称前缀；但 DDL 属 L3，需架构师审批，本轮不代签。缩短前缀是当前唯一不改 DDL 的收敛办法，代价是审计串略短——完整差异码仍在决策轨迹的节点输出里，可经 `execution_id` join 回查。
 
 **③ 红线矩阵**
 
@@ -781,12 +789,13 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 
 **实测：这里有两个独立缺失，不是一个**
 
-按 `AiAssess` 节点输出交叉统计（dev 库 2026-11-05，全部 88 个节点）：
+按 `AiAssess` 节点输出交叉统计（dev 库 2026-11-05，全部 89 个节点）：
 
-| `action_result` | `aiAvailable` | `capabilityMissing` | 节点数 | 说明 |
-|---|---|---|---|---|
-| `LLM_UNAVAILABLE` | `false` | `true` / `KNOWLEDGE_UNAVAILABLE` | 75 | 模型不可达 **且** 知识检索未接入 |
-| `LLM_UNAVAILABLE` | `false` | 字段缺失（v1.2 之前的老 schema） | 13 | 只有模型不可达这一个事实 |
+| `action_result` | `aiAvailable` | `aiUnavailableReason` | `capabilityMissing` | 节点数 | 说明 |
+|---|---|---|---|---|---|
+| `LLM_UNAVAILABLE` | `false` | **`MOCK_NOT_ALLOWED`** | `KNOWLEDGE_UNAVAILABLE` | 1 | 走 v1.6 之后的代码：归因字段已在真实链路生效 |
+| `LLM_UNAVAILABLE` | `false` | 缺失 | `true` / `KNOWLEDGE_UNAVAILABLE` | 75 | 模型不可达 **且** 知识检索未接入 |
+| `LLM_UNAVAILABLE` | `false` | 缺失 | 字段缺失（v1.2 之前的老 schema） | 13 | 只有模型不可达这一个事实 |
 
 **这一行数据修正了 §11.5 的结论**：此前只归因为「未配 `bone.ai.gateway.base-url`」，实际还有第二个独立缺失——知识检索（E3）也没接。二者处置动作完全不同（配模型 provider vs 接知识库），且**只补其中一个不会让案件走出人工**：知识缺失会把「本会自动放款」的结论兜成 `MANUAL_REQUIRED`（`DecisionGraphExecutor` 第 295 行只在 `AUTO_APPROVE` 时兜底，其余结论保留更精确的原因码）。因此「配好模型 → `aiCoverage` 自然上升」是错的预期。
 
@@ -817,7 +826,23 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 | 空集给 `null` 不给 0 | 分母为 0 时比率为 `null` | 报表把 `null` 当 0 ⇒「AI 全错」/「AI 全没参与」的假告警（同 §11.4） |
 | 扫描有界 | 时间窗 ≤31 天，单次 ≤2000 节点，越界 400 | 运维端点变成全库扫描器 |
 
+**端点级全链路实测（2026-11-05，直连 + 经网关）**
+
+上一版只做到「按同一 SQL 在活库上核算」，没有真正 curl 过端点；本轮补齐，并且**在这一步发现端点其实经网关不可达**：
+
+| 观测 | 结果 |
+|---|---|
+| 直连 `:8087` `/claim-ops/ai-runtime-health` | `200`，读数 `nodesScanned=89 / aiParticipated=0 / aiDegraded=89 / aiUndetermined=0 / participationRate=0.0000 / degradedByReason={MOCK_NOT_ALLOWED:1, UNATTRIBUTED:88} / attributionCoverage=0.0112 / capabilityMissing=76 / capabilityByReason={KNOWLEDGE_UNAVAILABLE:76}` |
+| 经网关 `:8888` 同一路径（补登记前） | **`404`**，响应体是网关自身的 `{timestamp,path,status,error,requestId}`；同期 `/claims/eval/samples` 同一 token 返回 `200` |
+| 经网关同一路径（补登记 `synap-claim-ops` 路由后） | `200`，读数与直连一致 |
+
+**结论：端点写完 ≠ 查得到。** 网关按前缀白名单转发，`/api/v1/claims/**` 与 `/api/v1/claim-config/**` 都不匹配 `claim-ops`，于是「AI 到底在不在线」这个读数在网关这一跳就断了，而且后端不会产生任何访问日志（未开 access log），排查时极易误判成「服务没实现」。已在 `bone-gateway` 的 `application.yml` 补 `synap-claim-ops` 路由。判据：**判「路由缺」看 404 响应体形状**（网关自身错误体 vs 后端统一响应 `{success,code,message,...}`），不要用「日志里没有这条路径」当证据。
+
+同一轮还实测了护栏：32 天窗口 / `from>to` / 缺参 / `limit=501` 分别返回 `400` 且带受控错误码，无 token 返回 `401`——即「越界显式拒绝，不静默裁剪」在真实请求上成立，不只是单测。
+
 **仍未做**：告警阈值与看板（需要稳定流量才能定阈值，现在定就是拍脑袋）；`ai_confidence` 语义修正（需 `confidence_source` 列，L3）；把 `UNATTRIBUTED` 的历史数据回填（历史输出里确实没有该字段，**不可从 message 反推**——那正是 §11.5 拒绝的做法）。
+
+
 
 
 ---

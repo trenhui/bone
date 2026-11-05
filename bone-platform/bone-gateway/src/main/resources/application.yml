@@ -171,6 +171,20 @@ spring:
           uri: ${BONE_CLAIM_URI:http://localhost:8087}
           predicates:
             - Path=/api/v1/claim-config/**
+        # 智能理赔 · AI 治理面命名空间：`/api/v1/claim-ops/**`（同属 synap-claim）。
+        # 归属两个只读端点：AI 能力就绪清单（AiCapabilityReadinessController）与
+        # AI 运行期健康度（AiRuntimeHealthController）。
+        # 【为什么必须单独登记】同 review / claim-config：网关按前缀白名单转发，前缀不匹配 ⇒ 整体 404。
+        # 2026-11-05 实测（同一 token、同一上游实例、前后对照）：
+        #   · 补登记前：`/api/v1/claims/eval/samples` 200，`/api/v1/claim-ops/ai-runtime-health` 404，
+        #     且 404 响应体是网关自身的 `{timestamp,path,status,error,requestId}`——不是后端统一响应
+        #     `{success,code,message,...}`，据此可判定「路由缺」而非「服务缺」（直连 :8087 是 200）；
+        #   · 补登记后：同一请求 200，响应体为后端统一响应。
+        # 注意：本服务未开 access log，URL 不出现在后端日志里，**不能用「日志没有这条路径」当证据**。
+        - id: synap-claim-ops
+          uri: ${BONE_CLAIM_URI:http://localhost:8087}
+          predicates:
+            - Path=/api/v1/claim-ops/**
 
 # 网关统一鉴权（JWT 密钥与 bone-iam 等签发模块共享）
 bone:
