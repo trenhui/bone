@@ -1,6 +1,6 @@
 {
   "_comment": "bootstrap 种子的行数下限清单。由 scripts/seed-bootstrap.py 生成；--verify 用它判断「灌完 init+seed 的库是否还是空壳」。",
-  "generatedAt": "2026-11-05 15:12:51",
+  "generatedAt": "2026-11-05 16:46:42",
   "tables": {
     "iam_permission": {
       "rows": 103,

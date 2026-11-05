@@ -462,12 +462,30 @@ export function ReviewWorkbenchPage(): ReactElement {
       <Modal
         title={`审核决策 · ${decisionTarget?.claimNo ?? ''}`}
         open={decisionTarget !== null}
-        onOk={onDecision}
-        confirmLoading={submitting}
         onCancel={() => {
           setDecisionTarget(null);
           decisionForm.resetFields();
         }}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => {
+              setDecisionTarget(null);
+              decisionForm.resetFields();
+            }}
+          >
+            取消
+          </Button>,
+          <AuthButton
+            key="ok"
+            code={PERMISSIONS.REVIEW_WRITE}
+            type="primary"
+            loading={submitting}
+            onClick={onDecision}
+          >
+            确认决策
+          </AuthButton>,
+        ]}
       >
         <Form form={decisionForm} layout="vertical">
           <Form.Item name="decision" label="决策" rules={[{ required: true }]}>

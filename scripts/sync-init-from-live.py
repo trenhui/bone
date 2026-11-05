@@ -103,6 +103,10 @@ MERGED_SOURCES: dict[str, str] = {
     "t_claim_rule_hit": "0101_synap_claim_phase1_record_tables.sql",
     "t_claim_review_record": "0101_synap_claim_phase1_record_tables.sql",
     "t_adj_fee_type": "0101_synap_claim_phase1_record_tables.sql",
+    # 0122：独立盲标任务（G4-1 数据飞轮的防反馈环闸门）。补登记（0089/0101 同款）：
+    # 建表迁移已提交、DDL 已并入 bone-init.sql 托管区块，但漏登记本清单 ⇒ sync 重建区块
+    # 会抹掉它，--check 判「多表（init 有、活库无）」。归档只增不改，此处补齐。
+    "t_claim_blind_label_task": "0122_synap_claim_blind_label_task.sql",
 }
 
 
