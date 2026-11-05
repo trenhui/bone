@@ -1234,6 +1234,40 @@ class AdjustmentEngineTest {
     }
 
     @Test
+    @DisplayName("零赔付归因：共享保额（共保）池耗尽 ⇒ ZERO_LIMIT_EXHAUSTED（不是单次超限）")
+    void zeroReasonDistinguishesSharedPoolExhausted() {
+      LiabilityRule.LimitSet limits =
+          new LiabilityRule.LimitSet(
+              LiabilityRule.InsuredForm.FIXED,
+              BigDecimal.ZERO, // personal
+              NO_CAP, // liability 不封顶：确保截断只来自共享池，排除责任额度干扰
+              BigDecimal.ZERO, // product
+              BigDecimal.ZERO, // plan
+              new BigDecimal("10000"), // sharedLimit 已配置
+              BigDecimal.ZERO, // occurrence
+              BigDecimal.ZERO); // daily
+      LiabilityRule rule =
+          ruleWithLimits(
+              limits,
+              LiabilityRule.QuotaPolicy.defaults(),
+              ratios(entry(FeePools.Bucket.REASONABLE, "100", null)),
+              DeductibleRule.none());
+      AdjustmentEngine.Outcome outcome =
+          AdjustmentEngine.calculate(
+              AdjustmentEngine.Request.of(1L, rows("3000.00", "0", "0"), rule, Accumulation.FIRST)
+                  .withExtraLayers(
+                      List.of(
+                          new QuotaStack.LayerQuota(
+                              QuotaStack.Layer.SHARED, "SHARED", BigDecimal.ZERO))));
+
+      assertThat(outcome.totalAmount()).isEqualByComparingTo("0.00");
+      assertThat(outcome.zeroReason())
+          .as("共享池耗尽须归为额度已用尽，而非本案单次超限（否则客户解释与后督归因错）")
+          .isEqualTo("ZERO_LIMIT_EXHAUSTED");
+      assertThat(outcome.rejectType()).isEqualTo("09");
+    }
+
+    @Test
     @DisplayName("入参校验：全是赔案头行（无费用明细）必须拒绝，不得按 0 算出一个「合法」结果")
     void headOnlyRowsRejected() {
       assertThatThrownBy(

@@ -1554,7 +1554,13 @@ public final class AdjustmentEngine {
                 + "（申请 "
                 + step.before()
                 + "）");
-        if (step.layer() == QuotaStack.Layer.LIABILITY && step.available().signum() == 0) {
+        // 额度层耗尽（责任额度或共享保额/共保池）⇒ 标记"本年度已用尽"，供零赔付归因区分
+        // 「额度已耗尽（ZERO_LIMIT_EXHAUSTED）」与「本案单次超限（ZERO_LIMIT）」。此前只判 LIABILITY，
+        // 共享池耗尽会被误归成单次超限——客户解释与后督归因都会指错（共享保额是本责任限额账的另一种分行形态）。
+        boolean quotaLayerExhausted =
+            (step.layer() == QuotaStack.Layer.LIABILITY || step.layer() == QuotaStack.Layer.SHARED)
+                && step.available().signum() == 0;
+        if (quotaLayerExhausted) {
           for (Cell cell : cells) {
             cell.quotaExhausted = true;
           }
@@ -2286,7 +2292,7 @@ public final class AdjustmentEngine {
     /** 理算级免赔（GAP⑥）本池已扣减额（比例之后、控额之前）。 */
     private BigDecimal adjustDeducted = Money.ZERO;
 
-    /** 责任额度是否"本年度已用尽"（区别于"本案单次超限"，决定零赔付归因）。 */
+    /** 额度是否"本年度已用尽"（责任额度或共享保额池；区别于"本案单次超限"，决定零赔付归因）。 */
     private boolean quotaExhausted;
 
     /**
