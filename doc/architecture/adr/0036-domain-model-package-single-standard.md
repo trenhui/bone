@@ -83,12 +83,14 @@ domain/
 
 - ArchUnit 无需改动：共享规则库与各模块 `ArchitectureTest` 的谓词粒度都在 `..domain..` 这一层，没有按聚合包名或包深度判定的规则；`AggregatePureUnitTestGuard` 亦与包深度无关。
 - `FreezingArchRule` 无需重冻：`bone-iam/archunit_store/` 的违规文件均为空，键位由规则文本派生，与类名无关。
-- 形态校验已实现（2026-09-23）：`scripts/check-domain-model-layout.py`，接入 `scripts/ci-check.sh` `[10/10]`，四条判定为：
+- 形态校验已实现（2026-09-23）：`scripts/check-domain-model-layout.py`，接入 `scripts/ci-check.sh` `[10/10]`，六条判定为：
 
   - C1 两套分组并存；
   - C2 `model/` 下平铺；
   - C3 空聚合包；
-  - C4 `domain/` 根下未登记子包。
+  - C4 `domain/` 根下未登记子包；
+  - C5 基线条目失效（2026-10-30 补：豁免只可收缩的另一半）；
+  - C6 package 声明与目录一致（2026-11-05 补：git mv 后漏改 package 只有编译能暴露，本判据把暴露点前移到提交期——ClaimThresholds 移入 `model/config/` 实例）。
 
   模块自有的领域端口子包（iam 与 integration 的 `client`、blueprint 的 `extension`）登记在 [domain-model-layout-baseline.json](../domain-model-layout-baseline.json)，只可收缩。状态为 **Manual（本地脚本，未接入 workflow）**，G-1.1 第 18 行由 gate-state.json 渲染。
 - 适用边界由脚本自行判定：只在同时具备 `application` 与 `adapter` 包的四层应用模块内生效；按层拆成多个 Maven 模块的引擎（`bone-metadata-engine` 的 `-domain` / `-ports` / `-runtime` / `-starter`）不套用本形态。

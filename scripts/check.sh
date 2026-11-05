@@ -803,7 +803,7 @@ if ! python3 scripts/check-ddl-required-columns.py --check; then
   exit_code=1
 fi
 
-echo -e "${YELLOW}[57/59] domain 分组布局（ADR-0036 D5：聚合各自成包，禁止 model/ 下平铺）...${RESET}"
+echo -e "${YELLOW}[57/59] domain 分组布局（ADR-0036 D5：聚合各自成包，禁止 model/ 下平铺；C6 package↔目录一致）...${RESET}"
 if ! python3 scripts/check-domain-model-layout.py; then
   echo -e "${RED}❌ domain 布局违规（model/ 下直接放类、并存 domain/{x} 与 model/{x}、空聚合包等）${RESET}"
   exit_code=1

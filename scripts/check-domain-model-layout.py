@@ -4,12 +4,15 @@
 规范真源：`doc/architecture/Bone-DDD-最终实践方案.md` E-10（唯一形态 `domain/model/{聚合}/`）
 与 `doc/architecture/adr/0036-domain-model-package-single-standard.md`。
 
-四条判定（纯目录/文件判定，不编译）：
+六条判定（纯目录/文件判定，不编译）：
   C1 并存      domain/{x} 与 domain/model/{x} 同时存在（违反 R4）
   C2 model 平铺 domain/model/ 下直接放 .java（聚合必须各自成包，D1）
   C3 空聚合包  domain/model/{x}/ 递归内没有任何 .java
   C4 根下可疑包 domain/{x} 不在白名单且未登记基线（疑似 R5 扁平存量）
   C5 失效豁免 基线条目指向的 domain 子包已不存在（已删/改名/移入 model）
+  C6 package 一致 domain 树内 .java 的 package 声明必须与目录一致（2026-11-05 新增：
+     git mv 后漏改 package 只有编译能暴露，本判据把暴露点前移到提交期——
+     ClaimThresholds 移入 model/config/ 实例）
 
 白名单：model / repository / service / gateway。模块自有的领域端口子包（如 iam、integration
 的 client、blueprint 的 extension）登记在 doc/architecture/domain-model-layout-baseline.json，
@@ -34,11 +37,14 @@ HC-008 基线过宽判据上已各修一次，这是第四处。
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 BASELINE = REPO / "doc/architecture/domain-model-layout-baseline.json"
+
+PACKAGE_RE = re.compile(r"^\s*package\s+([\w.]+)\s*;", re.M)
 
 ALLOWED_DOMAIN_SUBPACKAGES = {"model", "repository", "service", "gateway"}
 SKIP_PATH_PARTS = {"target", "node_modules", "bone-framework", "bone-metadata-sdk", "go-engine"}
@@ -83,6 +89,48 @@ def find_domain_dirs(root: Path):
 
 def java_files(directory: Path):
     return [p for p in directory.rglob("*.java") if "target" not in p.parts]
+
+
+def _java_source_root(domain_dir: Path):
+    """domain_dir 形如 .../src/main/java/<pkg>/domain；向上定位 src/main/java 根。"""
+    for p in domain_dir.parents:
+        if p.name == "java" and p.parent.name == "main":
+            return p
+    return None
+
+
+def check_package_consistency(rel_module: str, domain_dir: Path) -> list:
+    """C6：package 声明必须与文件所在目录一致（2026-11-05 新增）。
+
+    背景：git mv 移动 .java 后漏改 package，只有 mvn compile 能暴露——pre-commit 的
+    本门禁当时只看目录布局，形同虚设（ClaimThresholds 移入 domain/model/config/ 实例）。
+    本判据把暴露点前移到门禁，提交期即红。范围限于 domain 树（本门禁的管辖面）；
+    domain 之外的同型缺陷由编译期兜底。
+    """
+    problems = []
+    java_root = _java_source_root(domain_dir)
+    if java_root is None:
+        return problems  # 非标准 src/main/java 布局，目录问题已由 C1–C4 覆盖
+    for f in java_files(domain_dir):
+        expected = ".".join(f.parent.relative_to(java_root).parts)
+        m = PACKAGE_RE.search(f.read_text(encoding="utf-8", errors="ignore"))
+        if m is None:
+            problems.append(
+                "C6 {}: {} 未声明 package（默认包）—— .java 必须声明与目录一致的 package".format(
+                    rel_module, f.relative_to(java_root).as_posix()
+                )
+            )
+        elif m.group(1) != expected:
+            problems.append(
+                "C6 {}: {} 的 package 声明（{}）与目录不一致（应为 {}）"
+                "—— 疑似移动文件后漏改 package，编译必失败".format(
+                    rel_module,
+                    f.relative_to(java_root).as_posix(),
+                    m.group(1),
+                    expected,
+                )
+            )
+    return problems
 
 
 def check_domain(rel_module: str, domain_dir: Path, baseline) -> list:
@@ -138,6 +186,9 @@ def check_domain(rel_module: str, domain_dir: Path, baseline) -> list:
                 BASELINE.relative_to(REPO),
             )
         )
+
+    # C6：package 声明 ↔ 目录一致（git mv 后漏改 package，编译前即红）
+    problems.extend(check_package_consistency(rel_module, domain_dir))
     return problems
 
 
@@ -186,7 +237,7 @@ def main() -> int:
 
     print(
         "OK: domain 分组布局校验通过（{} 个 domain 包；C1 并存 / C2 model 平铺 / C3 空聚合包 / "
-        "C4 根下可疑包 / C5 失效豁免；基线例外 {} 条；跳过非四层模块 {} 个）".format(
+        "C4 根下可疑包 / C5 失效豁免 / C6 package 一致；基线例外 {} 条；跳过非四层模块 {} 个）".format(
             checked, len(baseline), len(skipped)
         )
     )
