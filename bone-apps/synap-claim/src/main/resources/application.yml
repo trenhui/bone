@@ -55,6 +55,12 @@ bone:
       # 感知层实现：text = 数电票文本层确定性解析（默认）；llm = 模型驱动结构化抽取（需真实 provider）。
       # llm 模式未配 provider 时网关回落 MockLlmClient，适配器显式拒绝并转人工，绝不伪造解析产物。
       mode: ${BONE_CLAIM_DOCUMENT_PARSE_MODE:text}
+      image:
+        # D2 图像感知通道：默认 false——图像件维持转人工补录，开与不开现网行为不变。
+        # true 时 ImageDocumentParsePortAdapter 装配，图像件经网关多模态解析；
+        # 网关异常/超时/契约违反/mock 一律落 FAILED + 归因码（IMAGE_GATEWAY_UNAVAILABLE /
+        # IMAGE_OUTPUT_INVALID / IMAGE_MOCK_REJECTED）转人工，禁止文本层兜底冒充。
+        enabled: ${BONE_CLAIM_DOCUMENT_PARSE_IMAGE_ENABLED:false}
     auto-decision:
       # 材料锁定 → 自动触发决策图。默认关闭：须 G3 放量演练通过后才按租户打开，
       # 打开后仍受「AI 不碰钱」、反欺诈硬闸与自动放款开关三重约束。

@@ -16,6 +16,22 @@ public interface DocumentParsePort {
 
   ParsedDocument parse(DocType docType, String rawText);
 
+  /**
+   * 图像件解析（D2 最小多模态扩展）：默认不支持。
+   *
+   * <p>既有文本层适配器零改动即继承本缺省，返回 available=false + 受控码 IMAGE_NOT_SUPPORTED
+   * （fail-closed，消费方转人工补录，绝不冒充解析成功）。图像通道由图像适配器在门控开启时覆盖。
+   */
+  default ParsedDocument parseImage(DocType docType, String imageRef) {
+    return new ParsedDocument(
+        false,
+        false,
+        BigDecimal.ZERO,
+        List.of(),
+        "{\"available\":false,\"reason\":\"IMAGE_NOT_SUPPORTED\"}",
+        "IMAGE_NOT_SUPPORTED");
+  }
+
   /** 单条结构化事实；{@code evidenceRef} 为原文坐标（如 {@code text@12:8}），供核赔员回看与评测集标注。 */
   record Field(String code, String value, BigDecimal confidence, String evidenceRef) {}
 
