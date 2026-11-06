@@ -24,4 +24,12 @@ public interface BlindLabelTaskRepository extends Repository<BlindLabelTask, Lon
 
   /** 按标注人查最近任务（工作台列表；上界写死在 SQL LIMIT，不是全量导出）。 */
   List<BlindLabelTask> findRecentByAssignee(@Param("assigneeId") String assigneeId);
+
+  /**
+   * 查「已解盲且成对样本已产出」的任务（G4-1 数据飞轮下游校准样本源）。
+   *
+   * <p>校准只认独立盲标金标准（解盲后 aiSuggestionJson + labelResultJson 成对快照）； 上界经 {@code :limit} 显式传入（服务层钳制到
+   * [1,500]），不是全量导出。
+   */
+  List<BlindLabelTask> findUnblindedPaired(@Param("limit") int limit);
 }

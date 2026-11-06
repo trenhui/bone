@@ -231,6 +231,122 @@ currency: current
 
 **放量纪律**：E1/E2 未交付时 `fraudGatePassed` 恒为 `false`、`AUTO_APPROVE` 逻辑不可达，是 G3 门禁与「AI 不碰钱」共同约束下的**有意行为**，不是待修补的缺陷。放行路径是交付 E1/E2 并通过放量演练，不得靠放宽硬闸或删除 `capabilityMissing` 兜底实现。
 
+### 1.7 AI 原生 L3 就绪度：v2 校准后的实现态与不可代执行边界（v2.4 落地）
+
+> 本节登记**已落地的代码事实**与**尚未闭环的前置条件**，不改写 §1.4 的成熟度判定，也不改写 §12.2 的 Go/No-Go。业界实践出处与逐条裁定见 `outputs/synapClaim-AI原生复核-第二轮增量与改造清单-2026-11-05.md`（v2，附录 B）。
+>
+> **当前成熟度仍为「L1 已越过、L2 部分达到，未配真实 provider 时运行态接近 L0」，不得对外宣称 L3。**
+
+#### ① 本轮已落地（代码 + 测试 + 变异证据）
+
+| 改动 | 落点 | 语义 |
+|---|---|---|
+| 分桶必需判据 | `AiRolloutStage.requiresModelParticipation()` | CANARY / AUTOMATED 档要求模型真实参与；与 `permitsAutoSettlement()` 当前同义但语义独立（一个管钱、一个管模型缺席时敢不敢出自动通过） |
+| 只读阶段查询 | `AiRolloutApplicationService.effectiveStage(long)` | 与放量准入共用 `load(long)` 同一配置源，不设第二套口径；未配置 / 开关关闭 / 配置损坏一律 SHADOW |
+| 决策图收紧 | `DecisionGraphExecutor` | LLM 节点 `FALLBACK` + 自动档 + 结论为 `AUTO_APPROVE` ⇒ 收紧为 `MANUAL_REQUIRED`，原因码 `MODEL_ABSENT_AUTO_STAGE`（22 字符，装得进 `triage_reason VARCHAR(32)`） |
+| 装配 | 7 参 `@Autowired` 构造 + 6 参测试基座构造 | 生产注入阶段机；测试基座与既有调用方零行为变更 |
+| 异常姿态 | `modelParticipationRequired()` catch | 阶段查询异常返回 `true`（转人工），拿不到配置不得放宽 |
+
+**对照实验**（`DecisionGraphExecutorModelParticipationTest`，与 `DecisionGraphFunctionalTest` 场景 C 同源装配，唯一变量是放量档与模型是否可用）：
+
+| 放量档 | 模型 | 结论 | 说明 |
+|---|---|---|---|
+| SHADOW / ASSISTED | 缺席 | `AUTO_APPROVE` / `FALLBACK` | 与改动前逐位一致（默认档零行为变更） |
+| 未注入阶段机 | 缺席 | `AUTO_APPROVE` / `FALLBACK` | 6 参测试基座保持旧行为 |
+| CANARY / AUTOMATED | 正常 | `AUTO_APPROVE` / `SUCCESS` | 收紧只针对模型缺席 |
+| CANARY / AUTOMATED | 缺席 | `MANUAL_REQUIRED` / `FALLBACK` | **摘除模型即断流** |
+| 阶段查询异常 | 缺席 | `MANUAL_REQUIRED` | fail-closed |
+| 大额复核档 | 缺席 | `MANUAL_REQUIRED`（保留原原因码） | 不覆盖更精确的原因码 |
+
+**变异证据**：把 `requiresModelParticipation()` 改成恒 `false` ⇒ 8 例中 2 例（CANARY / AUTOMATED）转红，报 `expected: MANUAL_REQUIRED but was: AUTO_APPROVE`，其余 6 例仍绿；还原后 `DecisionGraphFunctionalTest` 9 + 本类 8 + `DecisionGraphExecutorTest` 8 = **25 run / 0 fail / 0 error**。证明判据有判别力而非恒真，且未破坏既有降级语义。
+
+#### ② 这不等于 L3（诚实定位）
+
+本节只落地了 v2 序列 **A3-1 的一个可证伪判据**：它让「摘除模型即断流」在自动档内成立，但**没有让模型处理过任何一张真实票据**。`aiCoverage` 实测仍为 0，dev 库 84 条决策执行 100% `FALLBACK`（§11.4 / §11.5）。按 §1.4 的 L3 定义（概率输出驱动全流程 + 数据飞轮驱动能力演进），下表前置条件全部未闭环。
+
+#### ③ L3 前置条件与 owner（AI 不可代执行）
+
+| # | 条件 | 为什么不是写代码能替代 | owner | 可验证判据 |
+|---|---|---|---|---|
+| 1 | 真实 provider + 密钥托管 + GPU | 采购、密钥托管、部署拓扑与预算 | 平台 / 交付 | provider-probe 真发请求；`model_version` 非桩；`aiCoverage > 0` |
+| 2 | ≥300 条授权脱敏票据与冻结集 | PIPL 单独同意、DPIA、客户授权 | 业务 / 合规 | 冻结集哈希可校验；每切片样本量有下界；数据说明书 |
+| 3 | 非 ML 基线 6 项数字 | 业务侧统计口径与历史数据 | 业务 | `baseline-metrics.json` 由 `declared` 转 `wired` 且可复现 |
+| 4 | 文档智能选型 + 数据直连通道 | 外部引擎选型、接口授权 | 架构 / 交付 | 同一批票据两路径 ROI 对照报告 |
+| 5 | 医保目录 / ICD-10 / 医疗机构 / 适应症库 | 采购或授权，非代码产物 | 业务 / 法务 | 数据说明书 + 目录版本生效、引用可回溯 |
+| 6 | 税局 / 电子票据验真通道 | 外部系统对接 | 交付 | 真实验真回执，不再恒 `UNVERIFIABLE` |
+| 7 | 评测 harness + judge 人工校准 | 需人工盲标金标准；专业领域 judge 一致率仅 64–68% | 评测 / 业务 | 20–30 例校准集；judge 与人工相关性 ≥0.7；分层 CI |
+| 8 | 飞轮下游 + 校准曲线 + champion-challenger | 需标注工作台与离线评测流水线 | 评测 | 一次真实误判自动产出新版本且回归不退化 |
+| 9 | 模型卡 / 模型清单 / 独立验证报告 | 二线独立验证是组织措施 | MRM / 内审 | 三道防线产物齐备 |
+| 10 | Go-Live G1–G16 | 监管与合规前置 | 安全合规 | 算法备案回执、等保测评、PIA/DPIA、条款费率报批归档 |
+
+> 任一未闭环 ⇒ `AI 原生准入（G0–G4）` 不得置为达成，对外表述维持 L1/L2 分阶段。**禁止以「代码里已有判据」「文档已写目标态」替代上表实证**——这正是 §11.4 / §11.5 反复防的假绿：判据存在只说明可证伪，不说明能力已发生。
+
+#### ④ 业界实践依据（对本轮改动的硬约束）
+
+| 来源 | 约束 |
+|---|---|
+| Google《Rules of ML》#1/#2/#4/#5 | 确定性基线是资产不是债务；首个模型单任务可回滚；指标与单位经济先于模型；覆盖率是护栏不是目标 |
+| Anthropic《Building Effective Agents》 | 固定 5 节点 DAG 是正确的 workflow，不扩拓扑、不引入自治 Agent；改造落在节点内与路由上 |
+| 生产 RAG 2025 | golden set 与引用契约先行，按召回缺口才升级向量检索；RAG 是跳板不是终态 |
+| 保险 STP Crawl-Walk-Run | 单任务增量 → 分层路由 → 渐进放量；Shadow 双跑后再分桶；行业 STP 分布不支持无依据的 80% 承诺 |
+| Sculley《Hidden Technical Debt》 | 不重写脚手架；改金融核心输入契约须双轨 replay；登记 AI 输出消费者 |
+| Eval-driven / LLM-as-judge 校准 | 评测 harness 必须先于模型上线；judge 不得作高风险领域唯一门禁 |
+
+#### ⑤ 纪律
+
+- 本节**不修改** §1.4 成熟度表、§1.6 未落地边界表、§12.2 AI 侧里程碑判据；三者仍是成熟度与准入真源。
+- 新增代码不触碰金额、拒赔、理算、资金状态；不改 `DecisionGraph` 拓扑；不放宽 `capabilityMissing` 兜底与 E1/E2 硬闸。
+- 后续每落地一项 ③ 中的条件，须同批回写本节并附实机证据与变异验证，不得先改文档宣告完成。
+
+#### ⑥ 循环复核第 2 轮（v2.5）：发现并修正一处实现偏差
+
+| 项 | 内容 |
+|---|---|
+| 发现 | v2.4 的「分桶必需」实际是**档位级**判定（`stage.permitsAutoSettlement()`）：CANARY 档下未命中灰度桶、或落在渠道白名单外的案件本就走人工，却被无谓收紧。与 v2 校准要求的「仅在会被自动出金的案件上要求模型参与」不一致，违反渐进交付的爆炸半径控制 |
+| 修正 | `AiRolloutApplicationService.modelParticipationRequired(tenantId, claimId, channel)`：与资金侧准入共用 `load(long)` 的同一份 `AiRolloutPolicy`，并复用 `AiRolloutPolicy#admitsCase` 的**同一分桶键**（阶段闸 + 渠道闸 + 比例闸）；`DecisionGraphExecutor` 传入 `claimId` 与 `sourceChannel` |
+| 保留 | `AiRolloutStage.requiresModelParticipation()` 仍作为「档位是否需要模型」的显式领域判据参与组合，两个方法都有真实消费方，不产生「配了不生效」的方法 |
+| 证据 | 新增 5 例案件级分桶用例（未配置 / 命中白名单 / 白名单外 / AUTOMATED / 显式关闭）；变异：摘除 `admitsCase` 组合 ⇒ 1 例转红（`Expecting value to be false but was true`）、17 例仍绿；还原后全模块 **1137 run / 0 fail / 0 error / 6 skipped**，`scripts/check.sh` 59/59 全绿 |
+
+#### ⑦ 循环终止判据：L3 就绪度复核器
+
+复核结论不再靠人读文档推断。`tools/_ai_native_readiness.py` 只读取仓库**可静态核验的事实**，逐项判定 §1.7 ③ 的前置条件并输出 `l3Claimable`：
+
+```bash
+python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py
+python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py --self-test
+```
+
+**2026-11-05 实测输出**：9 项判据，`SATISFIED 1 / BLOCKED 7 / RUNTIME_ONLY 1`；当前可判定成熟度 **L0（运行态纯规则路径）**；**`l3Claimable = false`**。唯一 SATISFIED 是「评测门禁已带 `--check` 接线」——即目前只有护栏是真实生效的。`--self-test` 的 3 个负向探针（删 `--check` 接线 / 目录默认值改 `MANDATORY` / 注入 provider 环境变量）全部发生状态翻转，证明判据有判别力而非恒真。
+
+判据刻意把 `aiCoverage` 等运行期数据标为 `RUNTIME_ONLY` 并阻断：静态文件里没有真实流量证据，绝不因「没数据」判成「达标」。
+
+**循环收敛结论**：代码侧循环到此收敛。7 项 BLOCKED 中，provider/密钥/GPU、非 ML 基线数字、冻结集真实样本、目录语料与策略、合规分册转正共 5 类属外部条件或组织审批；`FLYWHEEL_DOWNSTREAM`（校准消费方）虽可编码，但缺真实样本与人工盲标金标准时仍无法验收；`RUNTIME_MODEL_COVERAGE` 只能由真实流量给出。**继续编码可以改变「可编码的评测骨架」，但不会让 `l3Claimable` 变为 true**。因此后续循环的形态应转为：按 ③ 的 owner 逐项闭环外部条件 → 每闭环一项重跑本复核器 → 由输出决定是否进入下一 Gate；不得用改文档或加护栏替代实证。
+
+#### ⑧ 循环复核第 3 轮（v2.6）：前后端真实端到端测试
+
+**起栈（非 mock）**：MySQL 8.0.31（`bone` 库 209 表 / `t_claim*` 24 表）+ IAM 8081 + 网关 8888 + synap-claim 8087 + shell 3000 + claim-app 3013；五个端点 health 全 200，后端日志均出现 `Started ... in ... seconds`（判据，非推断）。
+
+**E2E 资产（已入版本控制，可重复运行）**：`bone-frontend/e2e/start-services.sh`（每次先重建 claim 与 gateway jar 再起后端）、`start-frontend.sh`（shell + 子应用）、`synap-claim-e2e.cjs`（Playwright 1.64.1 + Chromium）。运行：先后台起两个脚本，再 `node bone-frontend/e2e/synap-claim-e2e.cjs`；产物 `outputs/claims-e2e-result.json` 与两张截图。启动脚本刻意不含 `kill`：共享树下不得由 E2E 脚本终止可能属于其他会话的进程。后台任务被会话回收（如网关任务收到 SIGTERM / exit 143）只表示**托管 shell 结束**，不等于服务栈不可用；判据一律用**业务路径**探测，不看后台任务状态：网关的 `/actuator/health` 是聚合健康度，本 E2E 只起 IAM + claim 时未启动的 masterdata / blueprint 上游会把它拉成 **503**，但 `/api/v1/iam/login` 与理赔路由完全正常（2026-11-05 实测 health=503 而 E2E 12/12 PASS）。用 health 判断网关可用会把正常链路误判成故障。
+
+| 组 | 判据 | 实测 |
+|---|---|---|
+| A 正向（经网关、真实 JWT 与 DB） | 登录 200 且签发 JWT（4475 字符）；赔案列表 200（3 条）；`ai-readiness` 200 且 `deploymentGatesPassed=false`（6 blockers）；运行期健康度 31 天窗口 200 | 5/5 |
+| A 负向探针 | 无 token ⇒ 401；35 天窗口 ⇒ 400 `SC_CLAIM_AI_RUNTIME_HEALTH_QUERY_INVALID` | 2/2 |
+| B 浏览器 | shell 登录落地 token → qiankun `#subapp-viewport` 渲染核赔工作台（4 个主体标记全命中）→ 截图；旧宽松正则会被菜单骗过、新严格判据不会；链路 0 个 5xx | 5/5 |
+| **合计** | | **12/12 PASS** |
+
+**E2E 抓到并修复的三类真实问题**：
+
+1. **网关部署态陈旧**：`claim-ops` 三端点经 8888 全 404，直连 8087 为 200/400 ⇒ 判定「路由缺」而非「服务缺」。根因是**旧构建的 gateway jar 不含源码中已登记的 `synap-claim-ops` 路由**；重建 jar 并重启网关后 404→200。E2E 前置必须重建网关 jar，否则会把部署态误判成代码缺陷。
+2. **首版 UI 断言自造假绿**：用 `body` 文本正则匹配到 shell 菜单「智能理赔」即判通过。改为断言 `#subapp-viewport` 内 4 个主体标记（核赔工作台 / 报案号 / 待领取 / 决策图）命中 ≥3，并加负向自检证明旧宽松正则会被菜单文本骗过、新判据不会。
+3. **5xx 监听漏报**：首版监听器注册在导航之后且只过滤 claims 前缀，漏掉 4 个 503。改为全程捕获并区分链路内外：4 个 503 全部来自 shell 仪表盘/通知接口（`/api/v1/notification/*`、`/api/v1/console/*`，对应服务本次未启动），**理赔链路 0 个 5xx**，已如实记入结果 JSON 的 `ui.external5xx`。
+
+**运行期证据接入循环判据**：E2E 产物的 `runtime` 段被 `tools/_ai_native_readiness.py` 消费，`RUNTIME_MODEL_COVERAGE` 从「`RUNTIME_ONLY`（缺证据）」升级为「`BLOCKED`（有证据且为 0）」：`nodesScanned=88 / aiParticipated=0 / aiDegraded=88 / participationRate=0.0000 / capabilityMissing=75(KNOWLEDGE_UNAVAILABLE)`。复核器现输出 **SATISFIED 1 / BLOCKED 8 / RUNTIME_ONLY 0，`l3Claimable=false`**，4 个负向探针全部翻转。
+
+**判据自身的循环复核（同轮）**：并行会话新增了 `AiConfidenceCalibration` 类及单测，复核器初版「实现类名命中即 SATISFIED」随之转绿；但排查发现生产代码只有 `AiModelCard` 的 javadoc `{@link}` 提及、无任何真实调用，属于「有类没接线」。故把 `FLYWHEEL_DOWNSTREAM` 收紧为「必须存在非注释行的真实调用」，自测探针改为双向翻转（5/5 PASS），最终仍为 `SATISFIED 1 / BLOCKED 8 / RUNTIME_ONLY 0`。**就绪度复核器自身也要接受防假绿审查**：判据变松比能力没进展更危险。
+
+> 这是 L3 未达成的最硬证据：**不是没有数据，而是真实流量证明模型一次都没有参与决策**。它与 §11.4/§11.5 的 dev 库取证、§1.7 ③ 的前置清单三方一致，且由可重复运行的 E2E 与复核器自动产出，不再依赖人工叙述。
+
 ---
 
 ## 2. 总体架构与模块映射

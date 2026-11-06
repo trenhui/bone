@@ -57,6 +57,19 @@ public enum AiRolloutStage {
     return this == CANARY || this == AUTOMATED;
   }
 
+  /**
+   * 本档是否要求模型真实参与（AI 原生 L2/L3「摘除即断流」的分桶判据）。
+   *
+   * <p>与 {@link #permitsAutoSettlement()} 当前同义，但语义独立：前者管「钱能不能自动出」，本方法管
+   * 「模型缺席时还敢不敢让纯规则路径给出自动通过结论」。拆开是为了将来收紧其中一条时不误伤另一条。
+   *
+   * <p>消费方是 {@code DecisionGraphExecutor}：CANARY / AUTOMATED 下若 LLM 节点 FALLBACK， 不得由规则路径产出
+   * AUTO_APPROVE，必须转人工。SHADOW / ASSISTED 保持原有降级行为不变。
+   */
+  public boolean requiresModelParticipation() {
+    return this == CANARY || this == AUTOMATED;
+  }
+
   /** 是否允许计算与留痕（四档都允许；保留方法是为了让「不生效」与「不计算」在代码里不被混淆）。 */
   public boolean permitsEvaluation() {
     return true;

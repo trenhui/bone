@@ -173,6 +173,21 @@ class DecisionGraphWiringTest {
       return tenantId -> TriageLimits.defaultResolution();
     }
 
+    /**
+     * A3-1 分桶必需：执行器按放量档判定「模型是否必须参与」，装配图必须提供阶段机。
+     *
+     * <p>切片夹具显式返回 SHADOW（默认档），保证本装配测试的语义与生产「未放量」基线一致； 若有人把执行器改成不依赖阶段机，本 bean 失去消费方，正好暴露接线被摘除。
+     */
+    @Bean
+    AiRolloutApplicationService aiRolloutApplicationService() {
+      AiRolloutApplicationService service = Mockito.mock(AiRolloutApplicationService.class);
+      Mockito.when(
+              service.modelParticipationRequired(
+                  Mockito.anyLong(), Mockito.anyLong(), Mockito.anyString()))
+          .thenReturn(false);
+      return service;
+    }
+
     // Phase B：提供真实网关门面（默认回落内置 MockLlmClient），使 AiGatewayPortAdapter 可被装配
     @Bean
     LlmGatewayApplicationService llmGatewayApplicationService() {

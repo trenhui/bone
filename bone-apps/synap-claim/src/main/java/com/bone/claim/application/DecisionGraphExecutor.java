@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -57,9 +58,18 @@ public class DecisionGraphExecutor {
   private final ClaimCaseApplicationService claimCaseApplicationService;
   private final TenantPort tenantPort;
   private final DecisionMetricsPort decisionMetricsPort;
+
+  /**
+   * 模型缺席的分诊原因码。必须装得进 {@code claim_decision_execution.triage_reason VARCHAR(32)}： MySQL 严格模式下超长是整条语句
+   * ERROR 1406 回滚，不是静默截断（见 AiDiscrepancyCodes 的实证）。
+   */
+  private static final String REASON_MODEL_ABSENT_AUTO_STAGE = "MODEL_ABSENT_AUTO_STAGE";
+
   private final TriageLimitsPort triageLimitsPort;
   private final Map<String, DecisionNodeHandler> handlers;
+  private final AiRolloutApplicationService rolloutService;
 
+  /** 测试基座 / 无阶段机装配：保持既有降级行为逐位不变。 */
   public DecisionGraphExecutor(
       DecisionExecutionApplicationService decisionExecutionApplicationService,
       ClaimCaseApplicationService claimCaseApplicationService,
@@ -67,11 +77,32 @@ public class DecisionGraphExecutor {
       DecisionMetricsPort decisionMetricsPort,
       TriageLimitsPort triageLimitsPort,
       List<DecisionNodeHandler> handlers) {
+    this(
+        decisionExecutionApplicationService,
+        claimCaseApplicationService,
+        tenantPort,
+        decisionMetricsPort,
+        triageLimitsPort,
+        handlers,
+        null);
+  }
+
+  /** Spring 装配入口：注入放量阶段机，使自动档下「模型参与」成为必需条件（v2 校准 A3-1）。 */
+  @Autowired
+  public DecisionGraphExecutor(
+      DecisionExecutionApplicationService decisionExecutionApplicationService,
+      ClaimCaseApplicationService claimCaseApplicationService,
+      TenantPort tenantPort,
+      DecisionMetricsPort decisionMetricsPort,
+      TriageLimitsPort triageLimitsPort,
+      List<DecisionNodeHandler> handlers,
+      AiRolloutApplicationService rolloutService) {
     this.decisionExecutionApplicationService = decisionExecutionApplicationService;
     this.claimCaseApplicationService = claimCaseApplicationService;
     this.tenantPort = tenantPort;
     this.decisionMetricsPort = decisionMetricsPort;
     this.triageLimitsPort = triageLimitsPort;
+    this.rolloutService = rolloutService;
     this.handlers =
         handlers.stream()
             .collect(
@@ -310,6 +341,18 @@ public class DecisionGraphExecutor {
       }
     }
 
+    // v2 校准 A3-1「分桶必需」：只在 CANARY / AUTOMATED（允许自动出金）档要求模型真实参与。
+    // LLM 节点 FALLBACK 意味着模型没跑过；此时不得由纯规则路径产出 AUTO_APPROVE——摘除模型即断流。
+    // SHADOW / ASSISTED 与未注入阶段机的测试基座保持原有降级行为，零行为变更；本收紧只改结论档位，
+    // 不碰金额、不产拒赔、不改资金状态。原因码落 triage_reason 供回放与聚合。
+    if (fallback
+        && outcome.result() == DecisionResult.AUTO_APPROVE
+        && modelParticipationRequired(claim)) {
+      outcome =
+          new DecisionTriage.Outcome(
+              DecisionResult.MANUAL_REQUIRED, DecisionTier.MANUAL, REASON_MODEL_ABSENT_AUTO_STAGE);
+    }
+
     // v1.4：AI 结构化认知驱动非资金流程状态。放在能力缺失兜底之后，保证「无法判定」优先于 AI 建议；
     // 且路由只做安全方向的单向收紧（AUTO_APPROVE → 补件/复核），绝不产生拒赔或改动金额。
     outcome = AiDiscrepancyRouting.apply(outputs.get("aiDiscrepancies"), outcome);
@@ -354,6 +397,23 @@ public class DecisionGraphExecutor {
   }
 
   // ===================== 内部 =====================
+
+  /**
+   * 本案是否处于「模型必须参与」的放量桶。
+   *
+   * <p>未注入阶段机（纯单测基座）返回 false：保证既有测试与旧行为逐位一致。阶段查询异常时返回 true —— 拿不到配置不得放宽，按更严的转人工处理（fail-closed）。
+   */
+  private boolean modelParticipationRequired(ClaimCase claim) {
+    if (rolloutService == null) {
+      return false;
+    }
+    try {
+      return rolloutService.modelParticipationRequired(
+          claim.getTenantId(), claim.getId(), claim.getSourceChannel());
+    } catch (RuntimeException ex) {
+      return true;
+    }
+  }
 
   private void requireDecisionSegment(ClaimCase claim) {
     ClaimStatus status = claim.status();

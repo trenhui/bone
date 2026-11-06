@@ -247,6 +247,21 @@ public class AiRolloutApplicationService {
         loaded.policyResolution.rejected());
   }
 
+  /**
+   * 本案是否要求模型真实参与（A3-1 分桶必需，案件级 blast radius）。
+   *
+   * <p>与资金侧准入共用 {@link #load(long)} 的同一份 {@link AiRolloutPolicy}，并复用 {@link
+   * AiRolloutPolicy#admitsCase(long, long, String)} 的同一分桶键：<b>只有本来就会被自动出金的案件</b> 才要求模型参与。CANARY
+   * 档下未命中灰度桶、或落在渠道白名单外的案件本就走人工，不该被额外收紧 ——这是渐进交付的爆炸半径控制，也是与「档位级一刀切」的实质差别。
+   *
+   * <p>未配置 / 开关关闭 / 配置损坏一律 SHADOW ⇒ false；异常由调用方按 fail-closed 处理。
+   */
+  public boolean modelParticipationRequired(long tenantId, long claimId, String channel) {
+    AiRolloutPolicy policy = load(tenantId).policy();
+    return policy.stage().requiresModelParticipation()
+        && policy.admitsCase(tenantId, claimId, channel);
+  }
+
   // ===================== 内部 =====================
 
   /** 开关行 + 生效策略（一次读取，避免「读策略」与「写回滚」之间被别的线程改掉版本号）。 */

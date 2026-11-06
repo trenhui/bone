@@ -330,6 +330,58 @@ class AiRolloutApplicationServiceTest {
     assertThat(snapshot.active()).isFalse();
   }
 
+  @Test
+  @DisplayName("分桶必需：未配置开关 → 不要求模型参与（SHADOW 默认档）")
+  void modelParticipationUnconfiguredIsFalse() {
+    when(featureToggleRepository.findByFeatureKey(anyLong(), any())).thenReturn(null);
+
+    assertThat(service.modelParticipationRequired(TENANT, CLAIM, "CH1")).isFalse();
+  }
+
+  @Test
+  @DisplayName("分桶必需：CANARY + 命中渠道白名单 + 全量比例 → 要求模型参与")
+  void modelParticipationCanaryHitIsTrue() {
+    when(featureToggleRepository.findByFeatureKey(anyLong(), any()))
+        .thenReturn(
+            toggle(
+                "ENABLED",
+                100,
+                "{\"stage\":\"CANARY\",\"scopeDimension\":\"CHANNEL\",\"scopeValues\":[\"CH1\"]}"));
+
+    assertThat(service.modelParticipationRequired(TENANT, CLAIM, "CH1")).isTrue();
+  }
+
+  @Test
+  @DisplayName("分桶必需：CANARY 但渠道不在白名单 → 本案本就走人工，不额外收紧（blast radius）")
+  void modelParticipationCanaryOutsideWhitelistIsFalse() {
+    when(featureToggleRepository.findByFeatureKey(anyLong(), any()))
+        .thenReturn(
+            toggle(
+                "ENABLED",
+                50,
+                "{\"stage\":\"CANARY\",\"scopeDimension\":\"CHANNEL\",\"scopeValues\":[\"CH1\"]}"));
+
+    assertThat(service.modelParticipationRequired(TENANT, CLAIM, "CH2")).isFalse();
+  }
+
+  @Test
+  @DisplayName("分桶必需：AUTOMATED 全量档 → 要求模型参与")
+  void modelParticipationAutomatedIsTrue() {
+    when(featureToggleRepository.findByFeatureKey(anyLong(), any()))
+        .thenReturn(toggle("ENABLED", 100, "{\"stage\":\"AUTOMATED\"}"));
+
+    assertThat(service.modelParticipationRequired(TENANT, CLAIM, "CH1")).isTrue();
+  }
+
+  @Test
+  @DisplayName("分桶必需：开关显式关闭 → 不要求模型参与")
+  void modelParticipationDisabledSwitchIsFalse() {
+    when(featureToggleRepository.findByFeatureKey(anyLong(), any()))
+        .thenReturn(toggle("DISABLED", 100, "{\"stage\":\"AUTOMATED\"}"));
+
+    assertThat(service.modelParticipationRequired(TENANT, CLAIM, "CH1")).isFalse();
+  }
+
   private static FeatureToggle toggle(String state, int pct, String configJson) {
     return FeatureToggle.create(
         TENANT, FeatureToggle.FEATURE_AUTO_APPROVE, state, pct, "", configJson, Instant.now());
