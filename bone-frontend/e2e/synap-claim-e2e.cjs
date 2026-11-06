@@ -108,8 +108,10 @@ function check(name, condition, detail) {
   const calibration = await ctx.get('/api/v1/claim-ops/ai-calibration/report', { headers: auth });
   const calibBody = await calibration.json();
   const cal = calibBody?.data?.calibration || {};
-  check('校准报表端点经网关可达（部署态与源码一致）',
-    calibration.status() === 200 && !!calibBody?.data,
+  check('校准报表端点经网关可达且 verdict 为受控枚举（部署态与源码一致）',
+    calibration.status() === 200 && !!calibBody?.data
+      && ['NO_EVIDENCE', 'UNTRUSTED_EVIDENCE', 'INSUFFICIENT_SAMPLES', 'SLICE_INCOMPLETE',
+          'NO_SAFE_THRESHOLD', 'THRESHOLD_PROPOSED'].includes(cal.verdict),
     `status=${calibration.status()} verdict=${cal.verdict}`);
   check('无盲标样本时 NO_EVIDENCE 且 ECE/Brier/建议阈值全为 null（不编造数值）',
     cal.verdict === 'NO_EVIDENCE' && nullish(cal.expectedCalibrationError)
