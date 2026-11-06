@@ -59,6 +59,11 @@ def read_text(key: str) -> str:
     return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
+def gate_default_false(app_yml: str, env_var: str) -> bool:
+    """三要素之「门控默认 false」：yml 里 ${ENV:false} 占位缺省即成立（缺键/默认 true = 未接线或行为变更）。"""
+    return bool(re.search(r"\$\{" + re.escape(env_var) + r":false\}", app_yml))
+
+
 def load_facts() -> dict:
     baseline_raw = read_text("baseline")
     evalset_raw = read_text("evalset")
@@ -97,6 +102,11 @@ def load_facts() -> dict:
         re.search(r"\bBlindLabelCalibrationSamples\s*\.\s*from\s*\(", ln)
         for _, lines in main_sources for ln in lines
     )
+    # D2 / D3 三要素之「实现类存在」：适配器文件本体（供降级码静态核验）。
+    image_adapter = next(
+        (p for p in java_files if p.stem == "ImageDocumentParsePortAdapter"), None)
+    rag_adapter = next(
+        (p for p in java_files if p.stem == "RagKnowledgeRetrievalPortAdapter"), None)
     e2e_raw = read_text("e2e_result")
     try:
         runtime = (json.loads(e2e_raw) or {}).get("runtime") if e2e_raw else None
@@ -115,6 +125,12 @@ def load_facts() -> dict:
         "calibration_class_present": calibration_class_present,
         "calibration_compute_wired": calibration_compute_wired,
         "calibration_sample_source_wired": calibration_sample_source_wired,
+        "image_adapter_present": image_adapter is not None,
+        "rag_adapter_present": rag_adapter is not None,
+        "image_adapter_src":
+            image_adapter.read_text(encoding="utf-8", errors="ignore") if image_adapter else "",
+        "rag_adapter_src":
+            rag_adapter.read_text(encoding="utf-8", errors="ignore") if rag_adapter else "",
         "e2e_runtime": runtime,
     }
 
@@ -245,6 +261,50 @@ def evaluate(f: dict) -> list[dict]:
         )
     )
 
+    # D2 图像感知：接线 + 门控默认关 + 降级诚实 三要素静态核验（任一缺失即 BLOCKED）。
+    image_gate = gate_default_false(f["app_yml"], "BONE_CLAIM_DOCUMENT_PARSE_IMAGE_ENABLED")
+    image_degrade = all(
+        code in f.get("image_adapter_src", "")
+        for code in ("IMAGE_MOCK_REJECTED", "IMAGE_GATEWAY_UNAVAILABLE", "IMAGE_OUTPUT_INVALID"))
+    if not f.get("image_adapter_present"):
+        image_reason = "IMAGE_ADAPTER_MISSING"
+    elif not image_gate:
+        image_reason = "IMAGE_GATE_NOT_DEFAULT_OFF"
+    elif not image_degrade:
+        image_reason = "IMAGE_DEGRADE_CODES_MISSING"
+    else:
+        image_reason = "ADMITTED"
+    gates.append(
+        gate(
+            "IMAGE_PARSE_WIRED",
+            SATISFIED if image_reason == "ADMITTED" else BLOCKED,
+            image_reason,
+            "ImageDocumentParsePortAdapter + bone.claim.document-parse.image.enabled(默认 false) + 归因码",
+        )
+    )
+
+    # D3 受控 RAG：接线 + 门控默认关 + 降级诚实 三要素静态核验。
+    rag_gate = gate_default_false(f["app_yml"], "BONE_CLAIM_KNOWLEDGE_RAG_ENABLED")
+    rag_degrade = all(
+        code in f.get("rag_adapter_src", "")
+        for code in ("RAG_CORPUS_MISSING", "RAG_RETRIEVAL_UNAVAILABLE", "clauseRef"))
+    if not f.get("rag_adapter_present"):
+        rag_reason = "RAG_ADAPTER_MISSING"
+    elif not rag_gate:
+        rag_reason = "RAG_GATE_NOT_DEFAULT_OFF"
+    elif not rag_degrade:
+        rag_reason = "RAG_DEGRADE_CODES_MISSING"
+    else:
+        rag_reason = "ADMITTED"
+    gates.append(
+        gate(
+            "RAG_WIRED",
+            SATISFIED if rag_reason == "ADMITTED" else BLOCKED,
+            rag_reason,
+            "RagKnowledgeRetrievalPortAdapter + bone.claim.knowledge.rag.enabled(默认 false) + 成因码",
+        )
+    )
+
     # 运行期证据：消费前后端 E2E 实跑产物，不再只靠静态推断。
     rt = f["e2e_runtime"]
     if not rt or not isinstance(rt, dict) or rt.get("nodesScanned") is None:
@@ -305,6 +365,22 @@ def self_test(f: dict) -> bool:
         probes.append((label, base["FLYWHEEL_DOWNSTREAM"],
                        evaluate(dict(f, **{key: not f.get(key, False)}))))
 
+    probes.append(("图像适配器接线翻转（双向探针）", base["IMAGE_PARSE_WIRED"],
+                   evaluate(dict(f, image_adapter_present=not f.get("image_adapter_present", False)))))
+    probes.append(("图像门控默认值改 true（负向探针）", base["IMAGE_PARSE_WIRED"],
+                   evaluate(dict(f, app_yml=f["app_yml"].replace(
+                       "${BONE_CLAIM_DOCUMENT_PARSE_IMAGE_ENABLED:false}",
+                       "${BONE_CLAIM_DOCUMENT_PARSE_IMAGE_ENABLED:true}")))))
+    probes.append(("图像 mock 拒绝码被移除（降级诚实探针）", base["IMAGE_PARSE_WIRED"],
+                   evaluate(dict(f, image_adapter_src=f["image_adapter_src"].replace(
+                       "IMAGE_MOCK_REJECTED", "REDACTED")))))
+    probes.append(("RAG 适配器接线翻转（双向探针）", base["RAG_WIRED"],
+                   evaluate(dict(f, rag_adapter_present=not f.get("rag_adapter_present", False)))))
+    probes.append(("RAG 门控默认值改 true（负向探针）", base["RAG_WIRED"],
+                   evaluate(dict(f, app_yml=f["app_yml"].replace(
+                       "${BONE_CLAIM_KNOWLEDGE_RAG_ENABLED:false}",
+                       "${BONE_CLAIM_KNOWLEDGE_RAG_ENABLED:true}")))))
+
     ok = True
     for label, before, after in probes:
         gid = {
@@ -315,6 +391,11 @@ def self_test(f: dict) -> bool:
             "摘除校准实现类": "FLYWHEEL_DOWNSTREAM",
             "摘除盲标样本源生产调用": "FLYWHEEL_DOWNSTREAM",
             "摘除校准计算生产调用（import 假绿回归钉子）": "FLYWHEEL_DOWNSTREAM",
+            "图像适配器接线翻转（双向探针）": "IMAGE_PARSE_WIRED",
+            "图像门控默认值改 true（负向探针）": "IMAGE_PARSE_WIRED",
+            "图像 mock 拒绝码被移除（降级诚实探针）": "IMAGE_PARSE_WIRED",
+            "RAG 适配器接线翻转（双向探针）": "RAG_WIRED",
+            "RAG 门控默认值改 true（负向探针）": "RAG_WIRED",
         }[label]
         now = {g["id"]: g["status"] for g in after}[gid]
         flipped = before != now
