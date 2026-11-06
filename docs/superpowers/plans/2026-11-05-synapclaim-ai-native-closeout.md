@@ -2,6 +2,7 @@
 change: synapclaim-ai-native-closeout
 design-doc: docs/superpowers/specs/2026-11-05-synapclaim-ai-native-closeout-design.md
 base-ref: 6987054002fdd337bfcc322daa7cb2f5bf8a2629
+archived-with: 2026-11-06-synapclaim-ai-native-closeout
 ---
 
 # synapClaim AI 原生收口 实施计划

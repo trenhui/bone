@@ -1,3 +1,7 @@
+---
+archived-with: 2026-11-06-synapclaim-ai-native-closeout
+status: final
+---
 # Design Doc — synapclaim-ai-native-closeout
 
 ---
