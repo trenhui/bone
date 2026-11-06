@@ -37,6 +37,19 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
   }
 
   /**
+   * 跨案历史取数：同租户下同一被保人假名化 ID 对应的全部赔案（任意状态）。
+   *
+   * <p>供 R-FRAUD-22 / R-ANOM-03（历史重复 / 近 90 天高频）判定；调用方须排除本案自身（{@code ctx.claimId()}）。
+   * 否则新报案把自身算进历史、必然命中 R-FRAUD-22，造成 100% 误报。
+   */
+  default List<ClaimCase> findByInsuredIdHash(Long tenantId, String insuredIdHash) {
+    return findByCriteria(
+        Criteria.<ClaimCase>create()
+            .eq(ClaimCase::getTenantId, tenantId)
+            .eq(ClaimCase::getInsuredIdHash, insuredIdHash));
+  }
+
+  /**
    * 赔案头 + 明细扁平投影（每明细一行，头字段逐行重复）。
    *
    * <p>AUTO 租户：SQL 模板放 {@code /*bone:tenant*}{@code /} 锚点，SDK 自动注入 {@code c.tenant_id =

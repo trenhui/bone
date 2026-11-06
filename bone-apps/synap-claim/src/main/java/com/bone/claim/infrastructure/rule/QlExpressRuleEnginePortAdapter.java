@@ -13,6 +13,8 @@ import com.bone.claim.domain.repository.EvidenceRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -223,6 +225,7 @@ public class QlExpressRuleEnginePortAdapter implements RuleEnginePort {
       facts.put(
           "sourceChannel",
           hasClaim && claim.getSourceChannel() != null ? claim.getSourceChannel() : "");
+      enrichPriorClaimFacts(claim, ctx, facts);
       int evidenceCount = evidences == null ? 0 : evidences.size();
       int invoiceCount = 0;
       boolean anyOcrFailed = false;
@@ -246,6 +249,45 @@ public class QlExpressRuleEnginePortAdapter implements RuleEnginePort {
 
   private static boolean isBlank(String s) {
     return s == null || s.isBlank();
+  }
+
+  /**
+   * 跨案历史维度富化（R-FRAUD-22 跨案重复索赔 / R-ANOM-03 近 90 天高频报案）。
+   *
+   * <p>按被保人假名化 ID 取同租户全部赔案，剔除本案自身（{@code ctx.claimId()}）后计数：
+   *
+   * <ul>
+   *   <li>{@code priorClaimCount}：历史案件总数（排除本案），≥1 即触发 R-FRAUD-22；
+   *   <li>{@code recentClaims90d}：近 90 天内新增案件数（排除本案），≥3 即触发 R-ANOM-03。
+   * </ul>
+   *
+   * <p>剔除本案自身是关键：否则新报案会把自身算进历史、必然命中 R-FRAUD-22，造成 100% 误报。任一异常（仓储未装配 / 查询返回 null / 字段缺失）均
+   * best-effort 降级为空集合；规则按「变量缺失→静默未命中」处理，绝不阻断主链路。
+   */
+  private void enrichPriorClaimFacts(
+      ClaimCase claim, ClaimContextPort.ClaimContextView ctx, Map<String, Object> facts) {
+    if (claim == null || claim.getInsuredIdHash() == null) {
+      facts.put("priorClaimCount", 0.0);
+      facts.put("recentClaims90d", 0.0);
+      return;
+    }
+    List<ClaimCase> priorClaims =
+        claimCaseRepository.findByInsuredIdHash(claim.getTenantId(), claim.getInsuredIdHash());
+    if (priorClaims == null) {
+      priorClaims = List.of();
+    }
+    long priorClaimCount =
+        priorClaims.stream()
+            .filter(p -> p.getId() != null && !p.getId().equals(ctx.claimId()))
+            .count();
+    Instant ninetyDaysAgo = Instant.now().minus(90, ChronoUnit.DAYS);
+    long recentClaims90d =
+        priorClaims.stream()
+            .filter(p -> p.getId() != null && !p.getId().equals(ctx.claimId()))
+            .filter(p -> p.getCreatedAt() != null && p.getCreatedAt().isAfter(ninetyDaysAgo))
+            .count();
+    facts.put("priorClaimCount", (double) priorClaimCount);
+    facts.put("recentClaims90d", (double) recentClaims90d);
   }
 
   private String snapshotOf(Map<String, Object> facts) {

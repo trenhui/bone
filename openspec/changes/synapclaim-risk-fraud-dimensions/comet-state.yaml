@@ -1,0 +1,116 @@
+# comet-execution: managed-run
+change_id: aa6c7913-79a9-4bca-8b11-2340875c3e1d
+workflow: full
+language: zh-CN
+phase: open
+context_compression: off
+build_mode: null
+build_pause: null
+subagent_dispatch: null
+tdd_mode: null
+review_mode: off
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: 754d85a2486a9818878aa7f245e1b4b908d5d35b
+design_doc: null
+plan: null
+verify_result: pending
+verify_failures: 0
+verification_report: null
+branch_status: pending
+created_at: 2026-11-06
+verified_at: null
+archive_confirmation: null
+archived: false
+bound_branch: dev
+direct_override: null
+handoff_context: null
+handoff_hash: null
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v1
+  hash: fd9fe5310c4f5f732dc0eaa88bbb54b6409e06134df558f7cedf2f7cf487bb63
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: synapclaim-risk-fraud-dimensions
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: 5032ec58d6f4d4ac4fe188c51f53f95b9e524d7d6bf1096bde025173016d9410
+    input:
+      change: synapclaim-risk-fraud-dimensions
+      changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+      workspaceBaseline:
+        ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+    state:
+      archiveConfirmation: null
+      archived: false
+      autoTransition: true
+      baseRef: 754d85a2486a9818878aa7f245e1b4b908d5d35b
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: null
+      buildPause: null
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-06
+      designDoc: null
+      directOverride: null
+      handoffContext: null
+      handoffHash: null
+      isolation: current
+      language: zh-CN
+      phase: open
+      plan: null
+      reviewMode: off
+      subagentDispatch: null
+      tddMode: null
+      verificationReport: null
+      verifiedAt: null
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pending
+      workflow: full
+    status: running
+    sequence: 1
+    actions:
+      - attempt: 1
+        id: synapclaim-risk-fraud-dimensions:1
+        input:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs: {}
+        inputHash: 100139244877360e0aac3d9b4698dc4d66cb5d4ba4f2024cb0b0fa354b169a91
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-risk-fraud-dimensions
+        status: pending
+        stepId: full.open
+        type: invoke_skill
+    actionContexts:
+      synapclaim-risk-fraud-dimensions:1:
+        results: {}
+        sequence: 1
+    waits: []
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 1
+  sourceHash: f8bd33ce03a09f731c3ac85703dbad8067e9c675ca06afd696a592a81e1b020f

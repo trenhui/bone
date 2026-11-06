@@ -1,5 +1,5 @@
 {
-  "version": "claim-ruleset-v3",
+  "version": "claim-ruleset-v4",
   "rules": [
     {
       "code": "R-FRAUD-06",
@@ -247,6 +247,22 @@
       "priority": 52,
       "expression": "sourceChannel == \"\" || sourceChannel == \"UNKNOWN\"",
       "conclusion": "CHANNEL_UNKNOWN",
+      "risk": false
+    },
+    {
+      "code": "R-FRAUD-22",
+      "category": "FRAUD",
+      "priority": 27,
+      "expression": "priorClaimCount >= 1",
+      "conclusion": "PRIOR_CLAIM_DUPLICATE",
+      "risk": true
+    },
+    {
+      "code": "R-ANOM-03",
+      "category": "ANOMALY",
+      "priority": 54,
+      "expression": "recentClaims90d >= 3",
+      "conclusion": "FREQUENCY_ANOMALY",
       "risk": false
     }
   ]
