@@ -262,6 +262,15 @@ public class AiRolloutApplicationService {
         && policy.admitsCase(tenantId, claimId, channel);
   }
 
+  /**
+   * 当前生效档位（只读，供回滚演练与治理端点）。
+   *
+   * <p>与资金侧准入、模型参与判据共用 {@link #load(long)} 的同一份策略，不设第二套口径； 未配置 / 开关关闭 / 配置损坏一律 SHADOW（fail-closed）。
+   */
+  public AiRolloutStage currentStage(long tenantId) {
+    return load(tenantId).policy().stage();
+  }
+
   // ===================== 内部 =====================
 
   /** 开关行 + 生效策略（一次读取，避免「读策略」与「写回滚」之间被别的线程改掉版本号）。 */

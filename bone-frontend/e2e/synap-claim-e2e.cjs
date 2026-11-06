@@ -108,10 +108,11 @@ function check(name, condition, detail) {
   const calibration = await ctx.get('/api/v1/claim-ops/ai-calibration/report', { headers: auth });
   const calibBody = await calibration.json();
   const cal = calibBody?.data?.calibration || {};
+  // verdict 必须落在受控枚举内（复核器口径一致）：无论有无样本都不允许编造数值或自由文本。
+  const CALIB_VERDICTS = ['NO_EVIDENCE', 'UNTRUSTED_EVIDENCE', 'INSUFFICIENT_SAMPLES',
+    'SLICE_INCOMPLETE', 'NO_SAFE_THRESHOLD', 'THRESHOLD_PROPOSED'];
   check('校准报表端点经网关可达且 verdict 为受控枚举（部署态与源码一致）',
-    calibration.status() === 200 && !!calibBody?.data
-      && ['NO_EVIDENCE', 'UNTRUSTED_EVIDENCE', 'INSUFFICIENT_SAMPLES', 'SLICE_INCOMPLETE',
-          'NO_SAFE_THRESHOLD', 'THRESHOLD_PROPOSED'].includes(cal.verdict),
+    calibration.status() === 200 && !!calibBody?.data && CALIB_VERDICTS.includes(cal.verdict),
     `status=${calibration.status()} verdict=${cal.verdict}`);
   check('无盲标样本时 NO_EVIDENCE 且 ECE/Brier/建议阈值全为 null（不编造数值）',
     cal.verdict === 'NO_EVIDENCE' && nullish(cal.expectedCalibrationError)
@@ -145,6 +146,41 @@ function check(name, condition, detail) {
         bypassBody?.data?.effectiveMinSamplesPerSlice ?? null],
       guardHeld: bypassBody?.data?.effectiveMinSamples === 300
         && bcal.verdict !== 'THRESHOLD_PROPOSED' && nullish(bcal.recommendedThreshold),
+    };
+  }
+
+  const rolloutWindow = '?from=2026-10-07T00:00:00Z&to=2026-11-06T00:00:00Z';
+  const beforeRollout = await ctx.get('/api/v1/claim-ops/ai-rollout' + rolloutWindow,
+    { headers: auth });
+  const beforeStage = (await beforeRollout.json())?.data?.stage ?? null;
+  const drill = await ctx.get('/api/v1/claim-ops/ai-rollout/drill', { headers: auth });
+  const drillBody = await drill.json();
+  const dr = drillBody?.data || {};
+  check('回滚演练只读端点可达且报告结构完整（dry-run）',
+    drill.status() === 200 && !!dr.currentStage && !!dr.rollbackTargetStage
+      && dr.integrityIntact === true && dr.mutations === 0
+      && Array.isArray(dr.forbiddenMutations) && dr.forbiddenMutations.length >= 5,
+    `current=${dr.currentStage} target=${dr.rollbackTargetStage} mutations=${dr.mutations}`);
+
+  const afterRollout = await ctx.get('/api/v1/claim-ops/ai-rollout' + rolloutWindow,
+    { headers: auth });
+  const afterStage = (await afterRollout.json())?.data?.stage ?? null;
+  check('演练零副作用：演练前后生效档位逐位不变（state integrity）',
+    beforeRollout.status() === 200 && afterRollout.status() === 200
+      && beforeStage !== null && beforeStage === afterStage,
+    `before=${beforeStage} after=${afterStage}`);
+
+  check('报告口径自洽：atFloor 与当前档一致，且档位与放量快照同源',
+    (dr.currentStage === 'SHADOW' ? dr.atFloor === true : dr.atFloor === false)
+      && dr.currentStage === beforeStage,
+    `current=${dr.currentStage} before=${beforeStage} atFloor=${dr.atFloor}`);
+  if (result.runtime) {
+    result.runtime.rollbackDrill = {
+      currentStage: dr.currentStage ?? null,
+      rollbackTargetStage: dr.rollbackTargetStage ?? null,
+      integrityIntact: dr.integrityIntact ?? null,
+      mutations: dr.mutations ?? null,
+      stageUnchanged: beforeStage !== null && beforeStage === afterStage,
     };
   }
 

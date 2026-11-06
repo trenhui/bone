@@ -428,6 +428,35 @@ python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py --self-test
 
 ---
 
+#### ⑫ 循环复核第 8 轮（v2.10）：回滚演练 dry-run 落地（业界实践缺口闭环）
+
+**来源**：第 5 轮 §1.7 ⑩ 把 9 项 L3 判据逐项对到 Google《Rules of ML》/《ML Test Score》、Sculley《Hidden Technical Debt》、NIST AI RMF 后，登记的唯一「可编码、可测、可 E2E」缺口是**治理下限不可由调用方放宽**（已落地）；次缺口 **「回滚演练」**（ML Test Score「dry-run rollbacks and verify state integrity」+ NIST AI RMF 应急处置）当时**如实登记为「暂无代码落地」**。本轮补齐它。
+
+**落点选择（不破坏既有纪律）**：`AiRolloutController` javadoc 明写「只读，不提供 promote/rollback 写端点」——人工降档走既有开关配置入口，避免「页面点上去、准入逻辑不认」的双写分叉。故本轮只做**只读 dry-run 演练**：推演从当前档位回退一档后的资金权限、模型参与要求与状态完整性，**不执行降档、不写任何配置**。
+
+| 文件 | 职责 | 关键约束 |
+|---|---|---|
+| `domain/model/config/AiRolloutDrill.java` | 纯领域、零 IO 的演练推演 | 复用 `AiRolloutStage.previous()`（只降一档；SHADOW 回自身 `atFloor=true`）；`integrityIntact` = 回退后档位不升 + 自动出金权限不扩宽；`mutations` 恒为 0（无写端口，是结构性事实非测量值）；`FORBIDDEN_MUTATIONS` 不可变（含「资金与支付」「放量开关与生效档位」） |
+| `application/AiRolloutDrillApplicationService.java` | 只读服务 | 复用 `AiRolloutApplicationService.load()` 单一配置源；租户经 `TenantPort` 取认证主体，禁止请求参数指定（防越权看别租户） |
+| `application/AiRolloutApplicationService.java`（+5 行） | 新增 `currentStage(tenantId)` 只读查询 | 与资金侧准入、模型参与判据共用 `load()`，不设第二套口径；未配置/开关关/损坏一律 SHADOW（fail-closed） |
+| `adapter/web/controller/AiRolloutDrillController.java` | 只读端点 `GET /api/v1/claim-ops/ai-rollout/drill` | `@PreAuthorize('claim:claims:read')`；与 `AiRolloutController` 同治理形态，无写端点 |
+| `tools/_ai_native_readiness.py`（复核器） | 新增 `ROLLOUT_ROLLBACK_DRILL` 门禁 | 三要素：演练控制器存在 + 仅 `@GetMapping` + `AiRolloutController` 无写端点（锁只读纪律）；不参与 `l3Claimable` 阻断（属运行期安全准备），但缺位即登记 |
+
+**实证（判据有判别力）**：
+
+| 层 | 证据 | 结果 |
+|---|---|---|
+| 单元 | `AiRolloutDrillTest` 7 例：四档回退目标、仅 SHADOW 为 atFloor、任一档不扩宽自动出金、模型参与按目标档重算、零写+禁改清单不可变、null 拒识 | 7/7 |
+| 变异 | 把回退目标改为 `current`（不回退）⇒ 4 例转红（回退目标/atFloor/模型参与重算/依据文本）；还原后 25/25 全绿（含既有 18 例） | 守卫有效 |
+| 运行期 E2E | 3 条断言：① 端点可达且报告结构完整（`mutations=0`、`forbiddenMutations≥5`）；② 演练前后生效档位逐位不变（state integrity）；③ `atFloor` 与当前档一致、档位与放量快照同源 | 22/22（本轮 +3） |
+| 静态门禁 | 自测探针「摘除演练控制器 ⇒ BLOCKED」翻转成功 | 12 探针全翻 |
+
+**实测态**：判据 **12 项 `SATISFIED 5 / BLOCKED 7 / RUNTIME_ONLY 0`**（新增 `ROLLOUT_ROLLBACK_DRILL` 为第 5 项 SATISFIED），L0，`l3Claimable = false`；运行期 `nodes=88 / aiParticipated=0 / participationRate=0 / capabilityMissing=75`；经网关演练端点直连 `current=SHADOW / target=SHADOW / integrity=True / mutations=0`（dev 无放量配置→fail-closed 落 SHADOW，符合预期）。
+
+**诚实结论**：回滚演练是**运行期安全准备**（ML Test Score 要求的可回退性），不是模型能力本身。它补齐了「治理与可验证性」这一 L3 必要条件，但 7 项 BLOCKED（provider/算力、感知模型驱动、基线、冻结集、目录准入、Go-Live 13 个分册 draft、`RUNTIME_MODEL_COVERAGE`）仍全部存在、全部属外部条件或组织审批。**本轮结束，循环仍未抵达 L3；把任何 BLOCKED 改成 SATISFIED 的唯一合法路径是闭环其对应的外部条件，而非编码或文档篡改。**
+
+---
+
 ## 2. 总体架构与模块映射
 
 ### 2.1 全景架构

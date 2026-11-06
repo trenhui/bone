@@ -107,6 +107,18 @@ def load_facts() -> dict:
         (p for p in java_files if p.stem == "ImageDocumentParsePortAdapter"), None)
     rag_adapter = next(
         (p for p in java_files if p.stem == "RagKnowledgeRetrievalPortAdapter"), None)
+    # 回滚演练（只读 dry-run）：控制器存在 + 仅 GET + 放量控制器无写端点（锁定只读纪律）。
+    drill_controller = next(
+        (p for p in java_files if p.stem == "AiRolloutDrillController"), None)
+    rollout_controller = next(
+        (p for p in java_files if p.stem == "AiRolloutController"), None)
+    drill_src = drill_controller.read_text(encoding="utf-8", errors="ignore") if drill_controller else ""
+    rollout_src = rollout_controller.read_text(encoding="utf-8", errors="ignore") if rollout_controller else ""
+    drill_controller_present = drill_controller is not None
+    drill_readonly = drill_controller_present and not re.search(
+        r"@(Post|Put|Delete|Patch)Mapping", drill_src)
+    rollout_no_write = rollout_controller is not None and not re.search(
+        r"@(Post|Put|Delete|Patch)Mapping", rollout_src)
     e2e_raw = read_text("e2e_result")
     try:
         runtime = (json.loads(e2e_raw) or {}).get("runtime") if e2e_raw else None
@@ -131,6 +143,9 @@ def load_facts() -> dict:
             image_adapter.read_text(encoding="utf-8", errors="ignore") if image_adapter else "",
         "rag_adapter_src":
             rag_adapter.read_text(encoding="utf-8", errors="ignore") if rag_adapter else "",
+        "drill_controller_present": drill_controller_present,
+        "drill_readonly": drill_readonly,
+        "rollout_no_write": rollout_no_write,
         "e2e_runtime": runtime,
     }
 
@@ -305,6 +320,27 @@ def evaluate(f: dict) -> list[dict]:
         )
     )
 
+    # G5 回滚演练（只读 dry-run）：Google《ML Test Score》「dry-run rollbacks and verify
+    # state integrity」+ NIST AI RMF 应急处置。能力落地即入判据：控制器存在 + 仅 GET +
+    # 放量控制器无写端点（防「页面点上去、准入逻辑不认」的双写分叉）。不参与 l3Claimable
+    # 阻断（属运行期安全准备），但缺位即登记，避免静默回退。
+    if not f.get("drill_controller_present"):
+        drill_reason = "ROLLOUT_DRILL_CONTROLLER_MISSING"
+    elif not f.get("drill_readonly"):
+        drill_reason = "ROLLOUT_DRILL_NOT_READONLY"
+    elif not f.get("rollout_no_write"):
+        drill_reason = "ROLLOUT_CONTROLLER_HAS_WRITE_ENDPOINT"
+    else:
+        drill_reason = "ADMITTED"
+    gates.append(
+        gate(
+            "ROLLOUT_ROLLBACK_DRILL",
+            SATISFIED if drill_reason == "ADMITTED" else BLOCKED,
+            drill_reason,
+            "AiRolloutDrillController(仅 GET) + AiRolloutController 无写端点",
+        )
+    )
+
     # 运行期证据：消费前后端 E2E 实跑产物，不再只靠静态推断。
     rt = f["e2e_runtime"]
     if not rt or not isinstance(rt, dict) or rt.get("nodesScanned") is None:
@@ -381,6 +417,9 @@ def self_test(f: dict) -> bool:
                        "${BONE_CLAIM_KNOWLEDGE_RAG_ENABLED:false}",
                        "${BONE_CLAIM_KNOWLEDGE_RAG_ENABLED:true}")))))
 
+    probes.append(("摘除回滚演练控制器（负向探针）", base["ROLLOUT_ROLLBACK_DRILL"],
+                   evaluate(dict(f, drill_controller_present=False))))
+
     ok = True
     for label, before, after in probes:
         gid = {
@@ -396,6 +435,7 @@ def self_test(f: dict) -> bool:
             "图像 mock 拒绝码被移除（降级诚实探针）": "IMAGE_PARSE_WIRED",
             "RAG 适配器接线翻转（双向探针）": "RAG_WIRED",
             "RAG 门控默认值改 true（负向探针）": "RAG_WIRED",
+            "摘除回滚演练控制器（负向探针）": "ROLLOUT_ROLLBACK_DRILL",
         }[label]
         now = {g["id"]: g["status"] for g in after}[gid]
         flipped = before != now
