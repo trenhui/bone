@@ -33,6 +33,16 @@ public enum KnowledgeBasis {
   STUB_NOT_INTEGRATED(
       "知识能力为降级桩", "把 bone.claim.knowledge.mode 从 stub 切回 catalog（或缺省）后重启；桩存在的意义就是让这种缺失可见。"),
 
+  /** D3 受控 RAG：语义检索命中且结果全部带条款引用（引用强制，无出处切片已丢弃）。 */
+  RAG_CLAUSE_CITED("RAG 检索命中并带条款引用", "引用锚点随检索事件留痕；生成侧使用时仍须接地校验，无出处不得生成。"),
+
+  /** D3 受控 RAG：检索执行了但无命中/租户语料为空（fail-closed）。 */
+  RAG_CORPUS_MISSING("RAG 无命中或租户语料缺失", "补租户语料 ingest（bone-ai-rag 写入路径）；不要把无命中解释为核验通过。"),
+
+  /** D3 受控 RAG：检索支路异常（容量护栏/嵌入/ACL 等），维持目录准入的 fail-closed 结论。 */
+  RAG_RETRIEVAL_UNAVAILABLE(
+      "RAG 检索不可用", "查 bone-ai-rag 检索链日志（嵌入/容量护栏/ACL）；恢复前知识层保持 fail-closed，不要临时放宽。"),
+
   /** 码不在本枚举内：版本错配或异构写入。不把自由文本带进审计面。 */
   UNRECOGNIZED("未登记的基据码", "该码不在本构建的受控枚举内：查是否为更新版本写入、或异构侧自由文本；按版本升级或对齐码表。");
 

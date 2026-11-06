@@ -119,6 +119,9 @@ public class ArchitectureTest {
   // ② G2-1：bone-ai-rules 的规则求值 SPI（RuleEngine / RuleEvaluation）同属共享契约，
   //    仅放行 com.bone.airules.domain.gateway 这一个契约包；其 domain.model（RuleAsset 等数据模型）
   //    与其余包仍受本规则约束，ACL 边界不放开。
+  // ③ D3 受控 RAG：bone-ai-rag 的【应用层门面】（RagApplicationService.retrieve）+【检索请求/结果
+  //    契约值对象】（RagQuery/RagResult）与 ① 同性质——检索结果是「带出处的契约切片」而非另一
+  //    上下文的领域所有权；引用强制与 fail-closed 由消费侧适配器承担。
   // 这是 noCrossContextModelDependency 的 sharedKernelPackages 扩展参数的本意用法：
   // 共享内核 = 契约与值对象，绝不共享另一上下文的领域数据所有权。
   @ArchTest
@@ -127,7 +130,9 @@ public class ArchitectureTest {
           "com.bone.claim",
           "com.bone.ai.gateway.application",
           "com.bone.ai.gateway.domain",
-          "com.bone.airules.domain.gateway");
+          "com.bone.airules.domain.gateway",
+          "com.bone.airag.application",
+          "com.bone.airag.domain.model");
 
   // E-6.4 / CORE-03：application 只许用例级编排，不得 new 领域对象/调 setter 改状态
   @ArchTest

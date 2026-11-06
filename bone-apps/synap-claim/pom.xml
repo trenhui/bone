@@ -92,6 +92,13 @@
             <artifactId>bone-ai-rules</artifactId>
         </dependency>
 
+        <!-- D3 受控 RAG（bone-ai C6）：RagKnowledgeRetrievalPortAdapter 语义检索支路；
+             bone-ai-rag 未纳入 bone-parent dependencyManagement（已实测），版本显式声明（与 bone-ai-app 同口径）。 -->
+        <dependency><groupId>com.bone</groupId>
+            <artifactId>bone-ai-rag</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+
         <!-- MySQL Driver -->
         <dependency><groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
