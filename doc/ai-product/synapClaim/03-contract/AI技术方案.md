@@ -231,6 +231,12 @@ currency: current
 
 **放量纪律**：E1/E2 未交付时 `fraudGatePassed` 恒为 `false`、`AUTO_APPROVE` 逻辑不可达，是 G3 门禁与「AI 不碰钱」共同约束下的**有意行为**，不是待修补的缺陷。放行路径是交付 E1/E2 并通过放量演练，不得靠放宽硬闸或删除 `capabilityMissing` 兜底实现。
 
+**⑦ AI 原生收口实测态（2026-11-05，复核器 `outputs/ai-native-readiness-2026-11-05.txt`）**
+
+- 实测态（可编码缺口已补齐，SATISFIED）：`FLYWHEEL_DOWNSTREAM`（校准生产消费方 `AiCalibrationReportApplicationService` + `GET /api/v1/claim-ops/ai-calibration/report`）、`IMAGE_PARSE_WIRED`（`ImageDocumentParsePortAdapter` + 门控默认关 + 归因码）、`RAG_WIRED`（`RagKnowledgeRetrievalPortAdapter` + 门控默认关 + 成因码）。
+- 实测态（外部前置，如实 BLOCKED/RUNTIME_ONLY）：真实 provider/GPU 未配置（`PROVIDER_CONFIGURED`）、≥300 张独立盲标票据未达标（校准 verdict=`INSUFFICIENT_SAMPLES`）、医学条款语料未 ingest（RAG verdict 走 `CORPUS_MISSING`）、票据验真通道（发票验真外部依赖）。
+- 目标态（不得写成现状）：`l3Claimable=true` 须全部判据 SATISFIED——当前 `l3Claimable=false` 为诚实结论；阈值建议仅在盲标样本 ≥300 且签核后才允许进入配置（AI 不碰钱）。
+
 ### 1.7 AI 原生 L3 就绪度：v2 校准后的实现态与不可代执行边界（v2.4 落地）
 
 > 本节登记**已落地的代码事实**与**尚未闭环的前置条件**，不改写 §1.4 的成熟度判定，也不改写 §12.2 的 Go/No-Go。业界实践出处与逐条裁定见 `outputs/synapClaim-AI原生复核-第二轮增量与改造清单-2026-11-05.md`（v2，附录 B）。
@@ -403,6 +409,22 @@ python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py --self-test
 **本轮实测**：Java 相关 **12/12**（8 新 + 4 既有）；相关测试变异 4 红→还原全绿；前后端 E2E **19/19 PASS**（A 11 / C 3 / B 5），新增校准报表 4 条运行期断言；运行期 `effective=300/30`（旁路尝试）/ `500/50`（显式上调）/ `verdict=NO_EVIDENCE`；机器判据仍 **SATISFIED 2 / BLOCKED 7 / RUNTIME_ONLY 0，L0，`l3Claimable = false`**。
 
 > 本轮补齐的是**治理与可验证性**（L3 的必要条件），不是模型能力本身。7 项 BLOCKED 仍全部存在；把文档改成 current、把 draft 转正、或硬编码覆盖率，只会制造假绿。
+
+#### ⑪ 循环复核第 6 轮（v2.9）：可编码缺口收口——三判据翻转与判据面同步扩展
+
+**本轮落地（全部 TDD 先红后绿、逐提交、门禁 59/59）**：
+
+| 判据 | 落地内容 | 三要素证据 |
+|---|---|---|
+| `FLYWHEEL_DOWNSTREAM` | 校准生产消费方：`BlindLabelTaskRepository.findUnblindedPaired`（UNBLINDED+PAIRED 样本源，SQL 资源文件非 DDL）→ `BlindLabelCalibrationSamples`（解析失败逐条计数不编造，channel 切片缺省 GLOBAL）→ `AiCalibrationReportApplicationService`（只读，`AiConfidenceCalibration.evaluate` 静态调用）+ `GET /api/v1/claim-ops/ai-calibration/report`（`@PreAuthorize` + `ApiResponse`）；治理下限 300/30 只许上调（承接 ⑩ 缺陷 1 的守卫） | 实现类 + 样本源生产调用 + 校准计算生产调用，import/注释/单测不算接线 |
+| `IMAGE_PARSE_WIRED` | 感知层图像通道：`LlmMessage.imageUrl` + `OpenAiCompatibleClient` content-parts 序列化（网关多模态最小扩展）；`DocumentParsePort.parseImage` default 方法扩展（既有适配器零改动）；`ImageDocumentParsePortAdapter`（`@ConditionalOnProperty` 默认 false，复用 PiiMasker/SafePromptBuilder/LlmOutputGuard，文本层委托基线适配器）；`EvidenceApplicationService.parseImage`（!available→FAILED / !complete→MANUAL / 否则 DONE，归因码逐字透传） | 适配器类 + `BONE_CLAIM_DOCUMENT_PARSE_IMAGE_ENABLED:false` 占位 + `IMAGE_MOCK_REJECTED`/`IMAGE_GATEWAY_UNAVAILABLE`/`IMAGE_OUTPUT_INVALID` 归因码 |
+| `RAG_WIRED` | 知识层受控 RAG：pom 增 `bone-ai-rag`（L3 依赖，已获批准）；`RagKnowledgeRetrievalPortAdapter`（目录准入 fail-closed 主路不变，仅「目录未收录且有检索词」走语义支路；引用强制——无 `clauseRef` 结果丢弃并计数；`ClaimRagScanConfiguration` 门控开才装配 `com.bone.airag`）；`KnowledgeBasis` 增 `RAG_CLAUSE_CITED`/`RAG_CORPUS_MISSING`/`RAG_RETRIEVAL_UNAVAILABLE` 二级归因（与 `AiDegradationReason` 分工：一个答「模型为什么没跑成」、一个答「知识层为什么判不了」） | 适配器类 + `BONE_CLAIM_KNOWLEDGE_RAG_ENABLED:false` 占位 + `RAG_CORPUS_MISSING`/`RAG_RETRIEVAL_UNAVAILABLE`/`clauseRef` 成因码 |
+
+**判据面同步扩展（复核器自身也接受防假绿审查）**：`tools/_ai_native_readiness.py` 新增 `IMAGE_PARSE_WIRED` / `RAG_WIRED` 两判据，与 `FLYWHEEL_DOWNSTREAM` 同为三要素结构（实现类 + 门控默认关 `${ENV:false}` 占位 + 降级码齐全），新增 `gate_default_false` 辅助函数（缺键/默认 true 视为未接线或行为变更）；`--self-test` 负向探针扩至 **12 个**（新增图像/RAG 接线双向翻转、门控默认值改 true、mock 拒绝码移除），全部发生状态翻转。
+
+**本轮实测存档** `outputs/ai-native-readiness-2026-11-05.txt`：判据 **11 项 `SATISFIED 4 / BLOCKED 7 / RUNTIME_ONLY 0`**（较上轮 `2/7/0` 翻转 2 项，加上轮已翻转的 `FLYWHEEL_DOWNSTREAM`），当前可判定成熟度 **L0**，**`l3Claimable = false`**；运行期 E2E 证据 `nodes=88 / aiParticipated=0 / participationRate=0`。
+
+**诚实结论**：4 项 SATISFIED 全部是「护栏与评测骨架」类判据（评测门禁接线、飞轮下游消费方、图像/RAG 受控接线）——它们让「能力缺失时可归因、可证伪、默认配置不变现网行为」，但**没有让模型处理过任何一张真实票据**。7 项 BLOCKED（provider/GPU、非 ML 基线、冻结集、感知模型驱动、目录准入策略、Go-Live 分册、运行期参与率）仍全部属外部条件或组织审批，与 §1.7 ③ 前置清单三方一致。**继续编码不会让 `l3Claimable` 变 true**；阈值建议只在盲标样本 ≥300 且签核后进入配置（AI 不碰钱）。
 
 ---
 
