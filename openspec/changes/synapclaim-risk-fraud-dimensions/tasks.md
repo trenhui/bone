@@ -24,11 +24,11 @@
 
 ## 5. 质量门禁
 
-- [ ] 5.1 `mvn -pl bone-apps/synap-claim test` 全绿（含新增 4 测试 + 变异推理）。
-- [ ] 5.2 `mvn spotless:apply`（或 `mvn -o spotless:check` 通过，不触发全模块重排）。
-- [ ] 5.3 `./scripts/check.sh` 全绿（59/59 随提交 pre-commit 通过）。
+- [x] 5.1 `mvn -o -pl bone-apps/synap-claim test` 全绿。**实测：1207 tests / 0 failures / 0 errors / 6 skipped**（6 skipped 为预存），本 change 的 6 个富化测试全部通过。
+- [x] 5.2 `mvn -o -pl bone-apps/synap-claim spotless:apply` **BUILD SUCCESS**；`git diff --stat` 复核仅本 change 4 个源码/资源文件变动，未触碰并行 `bone-ai-document` 的在途改动（CJK 列宽与 import 顺序已按 google-java-format 逐行修正）。
+- [x] 5.3 提交触发 pre-commit，`./scripts/check.sh` **59/59 全绿**，末行「✅ 本地自检通过！」；判据看 exit 0 + 末行，中间 ❌ 为负向探针。
 
 ## 6. 文档回写（诚实登记）
 
-- [ ] 6.1 `doc/ai-product/synapClaim/03-contract/AI技术方案.md` 风控维度台账：将 `R-FRAUD-22` / `R-ANOM-03` 登记为「已落地（库内数据驱动）」，并将黑名单比对、诊疗-费用合理性登记为「gap-待外部数据源」。
-- [ ] 6.2 提交信息按 `feat(synap-claim)` 规范，仅 `git commit --only` 本 change 路径，不污染并行会话改动。
+- [x] 6.1 `AI技术方案.md` changelog 新增 **v2.5** 行：登记 `R-FRAUD-22` / `R-ANOM-03` 已落地（库内数据驱动）、规则集 v3→v4、富化变量、6 项单测；并显式登记黑名单比对 / 诊疗-费用合理性为「需外部数据源，本轮不实装、不伪造」的 gap，声明不翻转 AI 原生成熟度外部前置判据、仍不得宣称 L3。
+- [x] 6.2 提交 **320573ffa**（`feat(synap-claim): #24 ...`），`git commit --only` 圈定 10 个路径，`git show --stat` 复核 10 files / +503 −4 全为本 change 文件；并行会话暂存的 14 个 `bone-ai-document` OCR 文件与 2 个非本轮 doc 改动均未被卷入。共享树 `index.lock` 陈旧锁按纪律（3 次 RC=128 后确认无 git 进程）清除。
