@@ -145,11 +145,20 @@ public class OpenAiCompatibleClient implements LlmClient {
     try {
       Map<String, Object> body = new LinkedHashMap<>();
       body.put("model", request.model() != null ? request.model() : defaultModel);
-      List<Map<String, String>> messages = new ArrayList<>();
+      List<Map<String, Object>> messages = new ArrayList<>();
       for (LlmMessage m : request.messages()) {
-        Map<String, String> mm = new LinkedHashMap<>();
+        Map<String, Object> mm = new LinkedHashMap<>();
         mm.put("role", m.role());
-        mm.put("content", m.content());
+        if (m.imageUrl() != null) {
+          // OpenAI content-parts：text + image_url（最小多模态扩展；纯文本消息维持字符串 content）
+          mm.put(
+              "content",
+              List.of(
+                  Map.of("type", "text", "text", m.content()),
+                  Map.of("type", "image_url", "image_url", Map.of("url", m.imageUrl()))));
+        } else {
+          mm.put("content", m.content());
+        }
         messages.add(mm);
       }
       body.put("messages", messages);
