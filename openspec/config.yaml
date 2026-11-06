@@ -1,4 +1,4 @@
-schema: openspec/config@1
+schema: spec-driven
 specs_dir: specs
 changes_dir: changes
 archive_dir: changes/archive
