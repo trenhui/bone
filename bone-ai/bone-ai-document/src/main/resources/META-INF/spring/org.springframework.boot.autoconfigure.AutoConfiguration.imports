@@ -1,1 +1,2 @@
 com.bone.aidoc.config.DocumentAutoConfiguration
+com.bone.aidoc.config.TrustedOcrAutoConfiguration
