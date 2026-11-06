@@ -347,6 +347,63 @@ python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py --self-test
 
 > 这是 L3 未达成的最硬证据：**不是没有数据，而是真实流量证明模型一次都没有参与决策**。它与 §11.4/§11.5 的 dev 库取证、§1.7 ③ 的前置清单三方一致，且由可重复运行的 E2E 与复核器自动产出，不再依赖人工叙述。
 
+#### ⑨ 循环复核第 4 轮（v2.7）：判据自身假绿的修复与三方对账
+
+**背景**：并行会话在同一共享树推进《AI 原生收口实施计划》，落地了 `AiConfidenceCalibration`（ECE/Brier/阈值扫描/challenger 内核）、`BlindLabelCalibrationSamples`（盲标→样本映射）、`AiCalibrationReportApplicationService`（只读报表，真实调用 `from(...)` 与 `evaluate(...)`）。这是**真实进展**，复核器 `FLYWHEEL_DOWNSTREAM` 随之由 BLOCKED 转 SATISFIED。
+
+**但循环复核发现判据的论证路径是错的**：初版只要生产代码里出现 `AiConfidenceCalibration.` 就判「已接线」，于是一行 `import ...AiConfidenceCalibration.CalibrationSample;`（仅引入数据类）同样能翻绿。也就是说**即使把真实计算调用全部删掉，判据仍然绿**——符合本项目「脚本存在 ≠ 门禁生效 / 配了不生效」的同型假绿。并行会话自带的 `_check_ai_native_calibration.py` docstring 亦明确「本脚本不判定飞轮已接线到生产链路」，两者结论一度矛盾。
+
+| 修正 | 内容 |
+|---|---|
+| 三要素判据 | `FLYWHEEL_DOWNSTREAM` 改为**实现类 + 盲标样本源 `BlindLabelCalibrationSamples.from(` + 校准计算 `AiConfidenceCalibration.evaluate(` / `expectedCalibrationError(` / `brierScore(` / `challengerAdmissible(`** 三者同时成立才 SATISFIED |
+| 排除伪引用 | import 行、javadoc `{@link}`、`//`/`/*` 注释、单测引用一律不算生产接线；扫描根缺失 fail-closed |
+| 精确归因 | 计算调用是飞轮定义性动作，优先归因 `CALIBRATION_COMPUTE_NOT_WIRED`；其次 `SAMPLE_SOURCE_NOT_WIRED`、`CALIBRATION_CONSUMER_MISSING` |
+| 回归钉子 | 新增 `scripts/tests/test_ai_native_readiness_flywheel.py`（7 例，临时源码夹具、不改真仓库）：import-only / javadoc-only 不得翻绿，真实调用与三要素齐备必须翻绿，扫描根漂移必须判红 |
+| 变异验证 | M1 恢复旧判据（import 即算）⇒ 1 例转红；M2 去掉注释行过滤 ⇒ 1 例转红；还原后 7/7 OK。`--self-test` 现 7 个探针全翻转（新增「摘除实现类 / 样本源 / 计算调用」三探针） |
+
+**前后端 E2E 增加循环收敛对账（C 组，3 条断言）**：`bone-frontend/e2e/synap-claim-e2e.cjs` 调用复核器解析 `l3Claimable` 与 9 项状态，与运行期 `ai-readiness` 端点的 `deploymentGatesPassed` 对账；任一端单独翻绿即判红，并用「把输出伪造成 `l3Claimable=true`」做负向自检证明对账判据有判别力。产物 `outputs/claims-e2e-result.json` 新增 `runtime.readinessSnapshot`（含 7 个 BLOCKED 判据 ID）。**实测 15/15 PASS**，网关经业务路径 `POST /api/v1/iam/login` 200 就绪（不用聚合健康度）。
+
+**本轮实测存档** `outputs/ai-native-readiness-2026-11-06.txt`：判据 9 项 `SATISFIED 2 / BLOCKED 7 / RUNTIME_ONLY 0`，当前可判定成熟度 **L0**，`l3Claimable = false`；运行期 E2E 证据 `nodes=88 / aiParticipated=0 / participationRate=0 / capabilityMissing=75`。
+
+**本机真实推理条件实测全无**：`ollama` 未安装、11434/8000/1234 等本地推理端口无监听、Python 推理栈（torch/transformers/onnxruntime/llama_cpp/openai/vllm）全缺、无 >100MB 模型文件、`BONE_AI_GATEWAY_BASE_URL` 等 provider 环境变量为空。故 `PROVIDER_CONFIGURED`、`PERCEPTION_MODEL_DRIVEN`、`RUNTIME_MODEL_COVERAGE` 本轮**物理不可能达标**，只能由采购/密钥/算力与真实流量闭环，绝不以 mock 或改配置伪造。
+
+**门禁权属登记**：`scripts/check.sh` 属 AGENTS.md **L3（CI 脚本需架构师审批）**，本轮未接线；`_ai_native_readiness.py` 与 `_check_ai_native_calibration.py` 定位为**主动循环复核工具**（由复核流程显式运行），不是每次提交的阻断门禁，故不把它们计入 L3 阻塞项，避免制造误报。若后续要门禁化，须走架构师审批并按 `scripts/gate-liveness-allowlist.json` 登记。
+
+> 循环结论不变：7 项 BLOCKED 中 5 类属外部条件或组织审批，2 项须真实盲标样本与真实流量。**继续编码可增强评测骨架与护栏，但不会让 `l3Claimable` 变 true**；判据本身也必须接受防假绿审查——判据变松比能力没进展更危险。
+
+#### ⑩ 循环复核第 5 轮（v2.8）：业界实践对账与「治理下限不可绕过」缺陷
+
+**本轮方法**：用户两次强调「基于业界最佳实践」，故先把复核器 9 项判据与权威实践逐项对账，再按缺口选一个**可编码、可测、可 E2E 验证**的落点，而不是继续加护栏。
+
+| 业界实践 | 核心主张 | 本系统既有覆盖 | 本轮处置 |
+|---|---|---|---|
+| Google《Rules of ML》#1/#2 | 先定指标与非 ML 基线，再谈模型 | G0 基线判据、不套用竞品数字、审批门禁 | 无缺口 |
+| Google《ML Test Score》(Breck 2017) | 每条测试是可执行 assertion；四类取**最低分**封顶；按重要切片测模型质量 | `EVAL_GATES_WIRED`、冻结集、`CalibrationReport` 切片统计 | **补**：治理下限写成 8 例 assertion + 3 条运行期 E2E |
+| Sculley《Hidden Technical Debt》 | fragile configs / undeclared consumers / 配置债 | 单一配置源、能力声明 `available=false` | **补**：阈值下限不得由 HTTP 参数改写；生效值回传可审计 |
+| NIST AI RMF 1.0 | validity & reliability、可解释、问责 | 决策轨迹可回放、模型卡、拒赔人工确认 | 仍缺**回滚演练**的静态判据（登记，不伪造） |
+| Anthropic《Building Effective Agents》 | workflow 优先，先简单后复杂 | 固定 5 节点 DAG、复杂度路由、不造自治 Agent | 无缺口 |
+| 生产 RAG / 保险 STP | 评测先行、HITL、渐进放量 | 独立盲标、放量阶段机、错误预算 | 语料 / provider 属外部前置 |
+| ADR-0046（并行会话，本轮新增） | 字段级可信度、置信度非唯一闸门、七层管线、Jev 非最终判定器 | 文档状态「已接受」，明写**暂无代码落地** | PoC 与 OCR 评测报告属外部前置 |
+
+**缺陷 1（真实、可复现）**：`AiCalibrationReportController` 把 `minSamples` / `minSamplesPerSlice` 两个 query 参数**原样透传**给服务，而缺省治理下限是 300/30。传 `?minSamples=1&minSamplesPerSlice=1` 即可让 1 条盲标样本产出 `THRESHOLD_PROPOSED` 阈值建议，绕过「样本不足禁止重定阈值」的防假绿闸。既有单测甚至把 `service.report(1, 2)` 固化为「请求参数缺省」特性。
+
+| 修正 | 内容 |
+|---|---|
+| 边界守卫 | `guardedMinSamples(requested, floor)`：null / 0 / 负数 / 低于下限一律钳制到治理下限；**只允许上调**。守卫加在对外只读端点，领域内核仍允许任意 minSamples 供离线实验（分层不越界） |
+| 可观测性 | `AiCalibrationReport` 回传 `effectiveMinSamples` / `effectiveMinSamplesPerSlice`，让「生效的治理参数」可被审计与端到端验证，而非埋在代码里（Sculley：配置债） |
+| 测试 | 新建 `AiCalibrationReportGuardTest` 8 例：下界钳制、上调保留、切片下限独立、端点真实调用下限、1 条样本不得产出阈值建议、回传字段非硬编码 |
+| 变异验证 | 守卫改为「允许下调」⇒ **4 例转红**（含 `Expecting value to be false but was true` 的 1 条样本产出建议）；还原后 12/12 全绿 |
+
+**缺陷 2（我自己造的假绿）**：E2E 首版负向断言只检查「`minSamples=1` 不产出 `THRESHOLD_PROPOSED`」，但 dev 库无盲标样本时 `NO_EVIDENCE` 会短路——**守卫在不在都会通过**。改为断言生效下限回传值（默认 300/30、`minSamples=1` 仍 300/30、`500/50` 如实回传），判据才有判别力。
+
+**缺陷 3（过期证据）**：C 组收敛对账调用复核器时，读到的是**磁盘上上一轮** E2E 产物；一次失败产物使输出从 `2/7/0` 漂到 `2/6/1`。改为 C 组前先落盘本轮 `runtime` 中途快照（末尾写完整结果、无 `provisional` 标记），对账恒用本轮证据。
+
+**部署态踩坑（可复用）**：源码已有校准报表端点，但 8087 跑的是旧 jar ⇒ 经网关 404（与 §1.7 ⑧ 的网关 jar 同族）。重启时三次踩坑：① `lsof -ti tcp:8087` 不带 `-sTCP:LISTEN` 会把客户端 fd 算进去，误判「端口未释放」；② 旧进程对 SIGTERM 不退出，须 `kill -9`；③ `PIDS` 变量带尾随空格导致 zsh `kill: illegal pid`。**判据一律用 `lsof -ti tcp:8087 -sTCP:LISTEN` + 业务路径 HTTP 200**。重启期间网关熔断短暂触发，服务恢复后自动 half-open 复原，无需重启网关。
+
+**本轮实测**：Java 相关 **12/12**（8 新 + 4 既有）；相关测试变异 4 红→还原全绿；前后端 E2E **19/19 PASS**（A 11 / C 3 / B 5），新增校准报表 4 条运行期断言；运行期 `effective=300/30`（旁路尝试）/ `500/50`（显式上调）/ `verdict=NO_EVIDENCE`；机器判据仍 **SATISFIED 2 / BLOCKED 7 / RUNTIME_ONLY 0，L0，`l3Claimable = false`**。
+
+> 本轮补齐的是**治理与可验证性**（L3 的必要条件），不是模型能力本身。7 项 BLOCKED 仍全部存在；把文档改成 current、把 draft 转正、或硬编码覆盖率，只会制造假绿。
+
 ---
 
 ## 2. 总体架构与模块映射

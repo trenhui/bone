@@ -11,9 +11,11 @@
  *
  * 断言分两组：
  *   A. API 链路（全部经网关 8888，真实 JWT、真实 DB）：登录 / 赔案列表 / AI 就绪清单 /
- *      运行期健康度，外加两个负向探针（无 token 401、超 31 天窗口 400）。
+ *      运行期健康度 / 校准报表，外加负向探针（无 token 401、超 31 天窗口 400、
+ *      minSamples=1 不得绕过治理下限产出阈值建议）。
  *   B. 浏览器 UI（Playwright Chromium）：shell 登录 → qiankun 挂载理赔子应用 → 核赔工作台
  *      真实渲染 → 截图。
+ *   C. 循环收敛对账：静态 L3 就绪度复核器 vs 运行期 AI 就绪清单，任一端单独翻绿即判红。
  *
  * 产物 outputs/claims-e2e-result.json 的 runtime 段是 L3 就绪度复核器的运行期证据源：
  * 复核器不再只靠静态文件判断，而是消费这里的 participationRate / aiParticipated。
@@ -22,6 +24,7 @@
 const { chromium, request } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
 const OUT = path.join(ROOT, 'outputs');
@@ -100,6 +103,91 @@ function check(name, condition, detail) {
   check('负向探针：超过 31 天窗口被业务校验拒绝 400',
     tooWide.status() === 400 && /AI_RUNTIME_HEALTH_QUERY_INVALID/.test(wideBody?.message || ''),
     `status=${tooWide.status()} msg=${wideBody?.message}`);
+
+  const nullish = (v) => v === null || v === undefined;
+  const calibration = await ctx.get('/api/v1/claim-ops/ai-calibration/report', { headers: auth });
+  const calibBody = await calibration.json();
+  const cal = calibBody?.data?.calibration || {};
+  check('校准报表端点经网关可达（部署态与源码一致）',
+    calibration.status() === 200 && !!calibBody?.data,
+    `status=${calibration.status()} verdict=${cal.verdict}`);
+  check('无盲标样本时 NO_EVIDENCE 且 ECE/Brier/建议阈值全为 null（不编造数值）',
+    cal.verdict === 'NO_EVIDENCE' && nullish(cal.expectedCalibrationError)
+      && nullish(cal.brierScore) && nullish(cal.recommendedThreshold),
+    `verdict=${cal.verdict} ece=${cal.expectedCalibrationError} brier=${cal.brierScore} proposed=${cal.recommendedThreshold}`);
+
+  const bypass = await ctx.get(
+    '/api/v1/claim-ops/ai-calibration/report?minSamples=1&minSamplesPerSlice=1',
+    { headers: auth });
+  const bypassBody = await bypass.json();
+  const bcal = bypassBody?.data?.calibration || {};
+  check('负向探针：minSamples=1 时生效下限仍为 300/30（守卫可观测、不可绕过）',
+    bypass.status() === 200 && bypassBody?.data?.effectiveMinSamples === 300
+      && bypassBody?.data?.effectiveMinSamplesPerSlice === 30
+      && bcal.verdict !== 'THRESHOLD_PROPOSED' && nullish(bcal.recommendedThreshold),
+    `effective=${bypassBody?.data?.effectiveMinSamples}/${bypassBody?.data?.effectiveMinSamplesPerSlice} verdict=${bcal.verdict}`);
+
+  const raised = await ctx.get(
+    '/api/v1/claim-ops/ai-calibration/report?minSamples=500&minSamplesPerSlice=50',
+    { headers: auth });
+  const raisedBody = await raised.json();
+  check('正向对照：显式上调到 500/50 时生效值如实回传（只允许上调、不放宽）',
+    raised.status() === 200 && raisedBody?.data?.effectiveMinSamples === 500
+      && raisedBody?.data?.effectiveMinSamplesPerSlice === 50,
+    `effective=${raisedBody?.data?.effectiveMinSamples}/${raisedBody?.data?.effectiveMinSamplesPerSlice}`);
+  if (result.runtime) {
+    result.runtime.calibrationVerdict = {
+      baseline: cal.verdict ?? null,
+      withMinSamplesOne: bcal.verdict ?? null,
+      effectiveFloorsAtBypass: [bypassBody?.data?.effectiveMinSamples ?? null,
+        bypassBody?.data?.effectiveMinSamplesPerSlice ?? null],
+      guardHeld: bypassBody?.data?.effectiveMinSamples === 300
+        && bcal.verdict !== 'THRESHOLD_PROPOSED' && nullish(bcal.recommendedThreshold),
+    };
+  }
+
+  console.log('== C. 循环收敛对账（静态判据 vs 运行期就绪清单）==');
+  // 复核器读取磁盘产物：先落盘本轮 runtime，避免对账用到上一轮 E2E 的过期证据。
+  // 末尾会再写一次完整结果（无 provisional 标记），本处只是中途快照。
+  fs.writeFileSync(
+    path.join(OUT, 'claims-e2e-result.json'),
+    JSON.stringify({ ...result, provisional: true }, null, 2));
+  const checker = path.join(ROOT, 'doc/ai-product/synapClaim/tools/_ai_native_readiness.py');
+  let checkerOut = '';
+  try {
+    checkerOut = execFileSync('python3', [checker], { encoding: 'utf8', timeout: 30000 });
+  } catch (e) {
+    checkerOut = String(e.stdout || '');
+  }
+  const claimMatch = /l3Claimable\s*=\s*(true|false)/.exec(checkerOut);
+  const countMatch = /判据\s*(\d+)\s*项：SATISFIED\s*(\d+)\s*\/\s*BLOCKED\s*(\d+)\s*\/\s*RUNTIME_ONLY\s*(\d+)/.exec(checkerOut);
+  check('L3 就绪度复核器可运行且输出可解析', !!claimMatch && !!countMatch,
+    `l3Claimable=${claimMatch ? claimMatch[1] : 'n/a'} counts=${countMatch ? countMatch[0] : 'n/a'}`);
+
+  const staticNotReady = !!claimMatch && claimMatch[1] === 'false';
+  const runtimeNotReady = readyBody?.data?.deploymentGatesPassed === false;
+  check('静态判据与运行期就绪清单结论一致（防单端假绿）',
+    staticNotReady && staticNotReady === runtimeNotReady,
+    `static=${claimMatch ? claimMatch[1] : 'n/a'} runtime=${readyBody?.data?.deploymentGatesPassed}`);
+
+  const forged = checkerOut.replace('l3Claimable = false', 'l3Claimable = true');
+  const forgedClaim = /l3Claimable\s*=\s*(true|false)/.exec(forged)?.[1];
+  check('负向自检：静态判据被伪造成可宣称 L3 时会对账失败（判据有判别力）',
+    forgedClaim === 'true' && forgedClaim !== (runtimeNotReady ? 'false' : 'true'),
+    `forged=${forgedClaim}`);
+
+  if (result.runtime) {
+    result.runtime.readinessSnapshot = {
+      l3Claimable: claimMatch ? claimMatch[1] : null,
+      gates: countMatch ? {
+        total: Number(countMatch[1]), satisfied: Number(countMatch[2]),
+        blocked: Number(countMatch[3]), runtimeOnly: Number(countMatch[4]),
+      } : null,
+      alignedWithRuntime: staticNotReady === runtimeNotReady,
+      blockedGates: (checkerOut.match(/^  BLOCKED\s+(\S+)/gm) || [])
+        .map((ln) => ln.trim().split(/\s+/)[1]).filter(Boolean),
+    };
+  }
 
   console.log('== B. 浏览器 UI（Playwright Chromium）==');
   const browser = await chromium.launch({ headless: true });

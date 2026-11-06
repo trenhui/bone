@@ -29,36 +29,47 @@ public class AiCalibrationReportApplicationService {
 
   static final BigDecimal DEFAULT_CURRENT_THRESHOLD = new BigDecimal("0.70");
   static final BigDecimal DEFAULT_TARGET_ERROR_RATE = new BigDecimal("0.05");
-  static final int DEFAULT_MIN_SAMPLES = 300;
-  static final int DEFAULT_MIN_SAMPLES_PER_SLICE = 30;
+  public static final int DEFAULT_MIN_SAMPLES = 300;
+  public static final int DEFAULT_MIN_SAMPLES_PER_SLICE = 30;
 
   private final BlindLabelTaskRepository blindLabelTaskRepository;
   private final ObjectMapper mapper = new ObjectMapper();
 
-  /** 校准报表（{@code calibration} 为域内核报告原样透传，字段语义见域内核 javadoc）。 */
+  /**
+   * 校准报表（{@code calibration} 为域内核报告原样透传，字段语义见域内核 javadoc）。
+   *
+   * <p>回传实际生效的最小样本量，供审计与端到端验证「治理下限未被调用方下调」。
+   */
   public record AiCalibrationReport(
       int requestedLimit,
       int fetchedTasks,
       int sampleCount,
       int unparseableSamples,
-      AiConfidenceCalibration.CalibrationReport calibration) {}
+      AiConfidenceCalibration.CalibrationReport calibration,
+      int effectiveMinSamples,
+      int effectiveMinSamplesPerSlice) {}
 
   @Transactional(readOnly = true)
   public AiCalibrationReport report(Integer minSamples, Integer minSamplesPerSlice) {
     List<BlindLabelTask> tasks = blindLabelTaskRepository.findUnblindedPaired(MAX_LIMIT);
     BlindLabelCalibrationSamples.Mapping mapping = BlindLabelCalibrationSamples.from(tasks, mapper);
+    int effectiveMin = minSamples == null ? DEFAULT_MIN_SAMPLES : minSamples;
+    int effectiveSliceMin =
+        minSamplesPerSlice == null ? DEFAULT_MIN_SAMPLES_PER_SLICE : minSamplesPerSlice;
     AiConfidenceCalibration.CalibrationReport calibration =
         AiConfidenceCalibration.evaluate(
             mapping.samples(),
             DEFAULT_CURRENT_THRESHOLD,
             DEFAULT_TARGET_ERROR_RATE,
-            minSamples == null ? DEFAULT_MIN_SAMPLES : minSamples,
-            minSamplesPerSlice == null ? DEFAULT_MIN_SAMPLES_PER_SLICE : minSamplesPerSlice);
+            effectiveMin,
+            effectiveSliceMin);
     return new AiCalibrationReport(
         MAX_LIMIT,
         tasks.size(),
         calibration.sampleCount(),
         mapping.unparseableSamples(),
-        calibration);
+        calibration,
+        effectiveMin,
+        effectiveSliceMin);
   }
 }

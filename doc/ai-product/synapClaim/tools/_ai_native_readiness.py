@@ -21,7 +21,8 @@
   python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py
   python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py --self-test
 
---self-test 用内存变造的事实做负向探针：删门禁接线 / 改目录默认值 / 把草案改成现行，
+--self-test 用内存变造的事实做负向探针：删门禁接线 / 改目录默认值 / 注入 provider /
+改运行期参与率 / 分别摘除飞轮三要素，
 断言对应判据发生翻转。探针不翻转 ⇒ 判据恒真 ⇒ 本脚本自身判红（exit 1）。
 """
 
@@ -44,7 +45,8 @@ PATHS = {
     "v15": CLAIM / "src" / "main" / "resources" / "db" / "migration"
     / "V15__synap_claim_catalog_admission.sql",
     "golive": ROOT / "doc" / "ai-product" / "synapClaim" / "08-go-live",
-    "java_main": CLAIM / "src" / "main" / "java" / "com" / "bone" / "claim",    "e2e_result": ROOT / "outputs" / "claims-e2e-result.json",
+    "java_main": CLAIM / "src" / "main" / "java" / "com" / "bone" / "claim",
+    "e2e_result": ROOT / "outputs" / "claims-e2e-result.json",
 }
 
 SATISFIED = "SATISFIED"
@@ -70,22 +72,31 @@ def load_facts() -> dict:
         evalset = {}
     golive_md = sorted(PATHS["golive"].glob("*.md")) if PATHS["golive"].exists() else []
     java_files = list(PATHS["java_main"].rglob("*.java")) if PATHS["java_main"].exists() else []
-    # 校准实现必须被**生产代码**消费：只有单测引用等于「有类没接线」（配了不生效）。
-    calibration_wired = False
-    if any(x.stem == "AiConfidenceCalibration" for x in java_files):
-        for src in java_files:
-            if src.stem == "AiConfidenceCalibration":
-                continue
-            # 只认真实调用，不认 javadoc 的 {@link} / 注释（AiModelCard 曾因此被误判为消费方）。
-            for line in src.read_text(encoding="utf-8", errors="ignore").splitlines():
-                stripped = line.strip()
-                if stripped.startswith(("//", "/*", "*", "*/")):
-                    continue
-                if re.search(r"\bAiConfidenceCalibration\s*\.", line):
-                    calibration_wired = True
-                    break
-            if calibration_wired:
-                break
+    # 飞轮下游三要素：实现类 / 样本源生产调用 / 校准计算生产调用。
+    # 只认非注释、非 import 的**真实调用**：import 一个数据类不算接线（2026-11-06 循环复核发现）。
+    main_sources = []
+    for src in java_files:
+        if src.stem in ("AiConfidenceCalibration", "AiModelCard"):
+            continue
+        lines = [
+            ln for ln in src.read_text(encoding="utf-8", errors="ignore").splitlines()
+            if not ln.strip().startswith(("//", "/*", "*", "*/"))
+            and not ln.strip().startswith("import ")
+        ]
+        main_sources.append((src.stem, lines))
+
+    calibration_class_present = any(x.stem == "AiConfidenceCalibration" for x in java_files)
+    compute_re = re.compile(
+        r"\bAiConfidenceCalibration\s*\.\s*"
+        r"(evaluate|expectedCalibrationError|brierScore|challengerAdmissible)\s*\("
+    )
+    calibration_compute_wired = any(
+        compute_re.search(ln) for _, lines in main_sources for ln in lines
+    )
+    calibration_sample_source_wired = any(
+        re.search(r"\bBlindLabelCalibrationSamples\s*\.\s*from\s*\(", ln)
+        for _, lines in main_sources for ln in lines
+    )
     e2e_raw = read_text("e2e_result")
     try:
         runtime = (json.loads(e2e_raw) or {}).get("runtime") if e2e_raw else None
@@ -101,7 +112,9 @@ def load_facts() -> dict:
         "evalset": evalset,
         "golive": [(p.name, p.read_text(encoding="utf-8")[:400]) for p in golive_md],
         "java_names": [p.stem for p in java_files],
-        "calibration_wired": calibration_wired,
+        "calibration_class_present": calibration_class_present,
+        "calibration_compute_wired": calibration_compute_wired,
+        "calibration_sample_source_wired": calibration_sample_source_wired,
         "e2e_runtime": runtime,
     }
 
@@ -209,19 +222,26 @@ def evaluate(f: dict) -> list[dict]:
         )
     )
 
-    # G4 飞轮下游：不只看「有实现类」，还必须被生产代码真实消费。
-    has_class = any(
-        re.search(r"(Calibration|Brier|Champion|EceCalibrat)", n, re.I)
-        for n in f["java_names"]
-    )
-    wired = bool(f.get("calibration_wired"))
+    # G4 飞轮下游：三要素同时成立才算接线（缺一即 BLOCKED，防 import 行假绿）。
+    c_class = bool(f.get("calibration_class_present"))
+    c_sample = bool(f.get("calibration_sample_source_wired"))
+    c_compute = bool(f.get("calibration_compute_wired"))
+    if not c_class:
+        reason = "CALIBRATION_CONSUMER_MISSING"
+    elif not c_compute:
+        # 计算调用是飞轮的定义性动作，优先归因：import-only 假绿必须精确指向此处。
+        reason = "CALIBRATION_COMPUTE_NOT_WIRED"
+    elif not c_sample:
+        reason = "SAMPLE_SOURCE_NOT_WIRED"
+    else:
+        reason = "ADMITTED"
     gates.append(
         gate(
             "FLYWHEEL_DOWNSTREAM",
-            SATISFIED if (has_class and wired) else BLOCKED,
-            "CALIBRATION_NOT_WIRED_TO_PRODUCTION" if (has_class and not wired)
-            else ("CALIBRATION_CONSUMER_MISSING" if not has_class else "ADMITTED"),
-            f"实现类名命中={has_class} 生产代码消费方={wired}（单测引用不算接线）",
+            SATISFIED if (c_class and c_sample and c_compute) else BLOCKED,
+            reason,
+            f"实现类={c_class} 盲标样本源生产调用={c_sample} "
+            f"校准计算生产调用={c_compute}（import / 注释 / 单测均不算接线）",
         )
     )
 
@@ -277,8 +297,13 @@ def self_test(f: dict) -> bool:
     rt = dict(f.get("e2e_runtime") or {})
     rt.update({"nodesScanned": 88, "participationRate": 0.5, "aiParticipated": 44})
     probes.append(("运行期参与率改为 0.5", base["RUNTIME_MODEL_COVERAGE"], evaluate(dict(f, e2e_runtime=rt))))
-    probes.append(("校准生产消费方翻转（双向探针）", base["FLYWHEEL_DOWNSTREAM"],
-                   evaluate(dict(f, calibration_wired=not f.get("calibration_wired", False)))))
+    for key, label in [
+        ("calibration_class_present", "摘除校准实现类"),
+        ("calibration_sample_source_wired", "摘除盲标样本源生产调用"),
+        ("calibration_compute_wired", "摘除校准计算生产调用（import 假绿回归钉子）"),
+    ]:
+        probes.append((label, base["FLYWHEEL_DOWNSTREAM"],
+                       evaluate(dict(f, **{key: not f.get(key, False)}))))
 
     ok = True
     for label, before, after in probes:
@@ -287,7 +312,9 @@ def self_test(f: dict) -> bool:
             "目录默认值改为 MANDATORY": "CATALOG_ADMISSION_ACTIVE",
             "注入 provider 环境变量": "PROVIDER_CONFIGURED",
             "运行期参与率改为 0.5": "RUNTIME_MODEL_COVERAGE",
-            "校准生产消费方翻转（双向探针）": "FLYWHEEL_DOWNSTREAM",
+            "摘除校准实现类": "FLYWHEEL_DOWNSTREAM",
+            "摘除盲标样本源生产调用": "FLYWHEEL_DOWNSTREAM",
+            "摘除校准计算生产调用（import 假绿回归钉子）": "FLYWHEEL_DOWNSTREAM",
         }[label]
         now = {g["id"]: g["status"] for g in after}[gid]
         flipped = before != now

@@ -118,6 +118,44 @@ public class EvidenceApplicationService {
         document.reason());
   }
 
+  /**
+   * 图像件解析（D2）：按 {@code fileRef} 路由到图像感知通道。
+   *
+   * <p>与 {@link #parse} 同一状态映射：available=false（门控关缺省码 IMAGE_NOT_SUPPORTED / 网关不可用 / 契约违反 / mock）一律落
+   * {@code FAILED} 转人工补录；绝不把图像件交给文本层 兜底冒充解析成功。图像解析不是决策图节点——五节点 DAG 拓扑不变；模型参与与降级口径经 {@code
+   * ParseOutcome.reason}（受控归因码）原样落证据层审计，供健康度归因消费。
+   */
+  @Transactional
+  public ParseOutcome parseImage(long evidenceId) {
+    Evidence evidence = load(evidenceId);
+    DocumentParsePort.ParsedDocument document =
+        documentParsePort.parseImage(evidence.docTypeEnum(), evidence.getFileRef());
+
+    OcrStatus status;
+    BigDecimal confidence;
+    if (!document.available()) {
+      status = OcrStatus.FAILED;
+      confidence = null;
+    } else if (!document.complete()) {
+      status = OcrStatus.MANUAL;
+      confidence = document.minConfidence();
+    } else {
+      status = OcrStatus.DONE;
+      confidence = document.minConfidence();
+    }
+
+    evidence.markParsed(status, confidence, document.extractedJson(), null);
+    evidenceRepository.save(evidence);
+    domainEventPublisher.publishFrom(evidence);
+    return new ParseOutcome(
+        evidence.ocrStatusEnum().name(),
+        document.available(),
+        document.complete(),
+        document.minConfidence(),
+        document.fields().size(),
+        document.reason());
+  }
+
   /** 解析结果回填（OCR/LLM 回调入口）。 */
   @Transactional
   public void markParsed(
