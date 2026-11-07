@@ -135,3 +135,14 @@
 **本轮验证**：表征测试 31/31 OK；`--self-test` PASS；六道机检 + `_gen_ai_index.py --check` 全绿；`node --check` E2E 通过；复核器仍 `SATISFIED 5 / BLOCKED 7 / RUNTIME_ONLY 0`、L0、`l3Claimable=false`，无 BLOCKED 被翻绿。
 
 **边界说明**：本轮只收紧「如何判定模型上场」，不解锁任何外部前置。7 个 BLOCKED 之外新增的 `PROBE_EVIDENCE_*` 归因是**同一判据内**的 fail-closed 分支，不新增 BLOCKED 数量；真实 provider 接入前该判据恒 BLOCKED 属预期，合规正例探针证明判据可达 SATISFIED（非恒假）。
+
+## 15. 第 15 轮实跑验证（2026-11-07）
+
+把第 14 轮只做过 `node --check` 的 E2E 改动升级为真实服务栈实跑（MySQL / IAM / 网关 / synap-claim / shell / claim-app 端口全在，Playwright 可用）：
+
+- [x] 15.1 `node bone-frontend/e2e/synap-claim-e2e.cjs` **PASS 39/39**（第 13 轮 37/37 + 本轮 2 条新断言），`real-services-no-mock`
+- [x] 15.2 产物 `runtime.probeEvidence` 字段存在且为 `null`（`verdict=NOT_CONFIGURED`，未编造 token / requestId）；`finalReadinessSnapshot.probeEvidence=null`
+- [x] 15.3 终态对账回显 `probeEvidence=PROBE_EVIDENCE_REQUIRED`，证明复核器消费证据束而非只读裸判词
+- [x] 15.4 复核器消费新产物后仍 `SATISFIED 5 / BLOCKED 7 / RUNTIME_ONLY 0`、L0、`l3Claimable=false`；六道机检 + `_gen_ai_index.py --check`、31 例表征测试、`--self-test` 全绿
+
+**结论**：第 14 轮的判据加固已获得真实运行期证据，不是只在单测里自洽。未解锁任何外部前置；采集侧 token / requestId 契约扩展与真实 provider 接入照 GAP §七由业务侧推进。本 change 编码侧维持收口。
