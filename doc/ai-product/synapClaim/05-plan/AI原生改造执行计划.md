@@ -50,6 +50,15 @@ currency: current
 | **P2** | MRM 闭环 | champion-challenger、漂移监控、盲标 ≥300、ECE 校准 | 盲标达标 + 漂移告警 | 数据飞轮 + 监管可解释 |
 | **P3** | 治理加固 | 三态开关 + 错误预算默认开（`AiRolloutApplicationService` 已具备） | 放量门禁默认生效 | 强项别丢，做成默认能力 |
 
+### 3.1 已交付（2026-11-07）
+
+| 阶段 | 能力 | 交付内容 | 验证 |
+|---|---|---|---|
+| P1 | 自然语言入口 | `ClaimAssistantApplicationService` + `ClaimAssistantController`：`POST /api/v1/claim-ops/claim-assistant`；`AiGatewayPort` 新增 `AssistantQuery`/`Completion` + `default answer()` 兜底，真实适配器覆盖 `answer()`（base-url 闸门 + 异常 fail-closed）；复用 `claim:claims:read`，网关未就绪如实标未就绪 | 单测 `ClaimAssistantApplicationServiceTest` / `ClaimAssistantControllerTest` 全绿；commit `a982f3d76` |
+| P1 | 受控工具面（Tool Use） | `listTools()`/`runTool()`：`policy-lookup` / `policy-lookup-by-insurer` 两个确定性工具经 `PolicyQueryPort` 取数，不依赖 LLM、网关不可用时仍可用；未知工具抛异常、多条命中给「须按被保人收敛」诚实说明 | 同上单测；commit `6389151fb` |
+
+> 二者 L0 可用（无 provider 亦可执行工具、NL 端点诚实降级）；配置 `bone.ai.gateway.base-url` 后 NL 端点真实应答。多模态激活与 P2/P3 仍依赖 provider / 决策，未提前标绿。
+
 ## 4. 阶段编排（gsd-core 循环）
 
 ```
