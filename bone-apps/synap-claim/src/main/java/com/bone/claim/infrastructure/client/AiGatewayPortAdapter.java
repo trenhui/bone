@@ -6,6 +6,8 @@ import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
 import com.bone.claim.application.port.out.AiGatewayPort;
+import com.bone.claim.application.port.out.AiGatewayPort.AssistantQuery;
+import com.bone.claim.application.port.out.AiGatewayPort.Completion;
 import com.bone.claim.application.port.out.AiGatewayPort.Fact;
 import com.bone.claim.application.port.out.AiGatewayUnavailableException;
 import com.bone.claim.application.port.out.ClaimContextPort;
@@ -161,6 +163,41 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
     }
     // 模型未遵循结构化输出契约 → 视为不可信，fail-closed 降级
     return parse(response, materials, allowedRefs);
+  }
+
+  /**
+   * 自然语言问答（NL 入口，WS-B P1）：自由文本通道，非结构化评估。
+   *
+   * <p>与 {@link #assess} 共用 C5 网关治理门面。base-url 未配（Mock 形态）时直接返回 unavailable—— 绝不拿 Mock 替身输出当答案（与
+   * assess 拒绝替身同源的 fail-closed 纪律）。
+   */
+  @Override
+  public Completion answer(AssistantQuery query) {
+    if (properties.getBaseUrl() == null || properties.getBaseUrl().isBlank()) {
+      return Completion.unavailable();
+    }
+    LlmRequest request =
+        new LlmRequest(
+            requestModel(properties),
+            List.of(
+                LlmMessage.system(
+                    "你是保险智能理赔助手，用简体中文回答理赔政策、材料要求与办理流程问题。"
+                        + "只能依据用户提供的知识片段作答；无知识片段时如实说明无法回答，禁止编造条款或金额。"
+                        + "回答末尾用「[来源: xxx]」标注引用，引用必须来自用户提供的知识片段。"),
+                LlmMessage.user(query.question())),
+            null,
+            null,
+            false,
+            false,
+            "claim-assistant-" + UUID.randomUUID(),
+            "claim-ai-assistant");
+    try {
+      LlmResponse response = gateway.invoke(request);
+      return Completion.available(response.content(), resolvedModel(response), List.of());
+    } catch (RuntimeException ex) {
+      // 网关任何异常（不可用 / 红线 / 配额 / 内容安全）→ 统一 fail-closed 降级为不可用
+      return Completion.unavailable();
+    }
   }
 
   private AiAssessment parse(

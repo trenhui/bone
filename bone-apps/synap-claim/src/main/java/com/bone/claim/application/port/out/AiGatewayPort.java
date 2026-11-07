@@ -141,4 +141,54 @@ public interface AiGatewayPort {
           || !discrepancies.isEmpty();
     }
   }
+
+  /**
+   * 自然语言问答查询（NL 入口，WS-B P1）。
+   *
+   * <p>与 {@link #assess} 的区别：assess 是「评估专用、结构化拒赔」；answer 是「开放问答」，用于理赔助手以自然语言回答政策 / 材料 / 流程问题。
+   * 二者共用同一 C5 网关治理门面（脱敏 / 注入检测 / 成本红线），但 answer 走自由文本（非 JSON）通道。
+   *
+   * <p><b>诚实边界</b>：网关未配置真实 provider 时，实现须返回 {@link Completion#unavailable}， 不得编造答复（与 assess 的
+   * fail-closed 同源）。
+   */
+  record AssistantQuery(String question, String claimId) {
+    public AssistantQuery {
+      question = question == null ? "" : question.trim();
+      claimId = claimId == null ? "" : claimId.trim();
+    }
+  }
+
+  /**
+   * 自然语言问答答复（网关可降级，不抛异常）。
+   *
+   * <p>{@code available=false} 时 {@code text} 为空，消费方须如实展示「AI 未就绪」而非假装已回答。 {@code sources}
+   * 为引用定位（须落在提供的知识片段内，防幻觉）。
+   */
+  record Completion(
+      boolean available,
+      String text,
+      String modelVersion,
+      List<String> sources,
+      int unverifiableLocators) {
+    public Completion {
+      text = text == null ? "" : text;
+      modelVersion = modelVersion == null ? "" : modelVersion;
+      sources = sources == null ? List.of() : List.copyOf(sources);
+    }
+
+    /** 网关未配置 / 调用失败：不可用，消费方如实透传未就绪。 */
+    public static Completion unavailable() {
+      return new Completion(false, "", "", List.of(), 0);
+    }
+
+    /** 网关成功返回：携带正文与模型溯源，来源留痕（如需引用定位由上游附）。 */
+    public static Completion available(String text, String modelVersion, List<String> sources) {
+      return new Completion(true, text, modelVersion, sources, 0);
+    }
+  }
+
+  /** 默认兜底：未覆盖声明的实现一律返回 unavailable（fail-closed），不得推断为可答。 */
+  default Completion answer(AssistantQuery query) {
+    return Completion.unavailable();
+  }
 }
