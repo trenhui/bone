@@ -10,24 +10,27 @@
   · 当前可判定的成熟度档位
   · l3Claimable（全部判据 SATISFIED 才为 true）
 
-刻意不做的三件事（防假绿）：
+刻意不做的四件事（防假绿）：
   · 不编造准确率 / 自动化率 / aiCoverage —— 那是运行期数据，静态文件里没有；
     相关判据一律标 RUNTIME_ONLY 并阻断，不因「没数据」判定为「达标」；
   · 不读取活库、不起服务、不改任何文件；
   · 不因为「代码里已有判据」就把对应能力算作已发生（check.sh 里的门禁接线
-    只证明可证伪，不证明模型跑过真实案件）。
+    只证明可证伪，不证明模型跑过真实案件）；
+  · 不把「治理资产里的 status / currency 字面串」当成能力已发生的证据——
+    2026-11-07 循环复核发现 4 条判据可被改字符串/删文件刷绿，已改为证据驱动。
 
 运行：
   python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py
   python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py --self-test
 
---self-test 用内存变造的事实做负向探针：删门禁接线 / 改目录默认值 / 注入 provider /
-改运行期参与率 / 分别摘除飞轮三要素，
-断言对应判据发生翻转。探针不翻转 ⇒ 判据恒真 ⇒ 本脚本自身判红（exit 1）。
+--self-test 用内存变造的事实做三类探针：摘除能力（须翻转）/ 注入合规事实
+（须达 SATISFIED）/ 注入刷绿动作（须保持 BLOCKED，防假绿）。
+任一探针不符预期 ⇒ 判据判别力或防假绿能力失效 ⇒ 本脚本自身判红（exit 1）。
 """
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import re
@@ -47,6 +50,13 @@ PATHS = {
     "golive": ROOT / "doc" / "ai-product" / "synapClaim" / "08-go-live",
     "java_main": CLAIM / "src" / "main" / "java" / "com" / "bone" / "claim",
     "e2e_result": ROOT / "outputs" / "claims-e2e-result.json",
+    # 生效通道真源：模块内 V1..V15 从未被 runner 执行（0090 头部原文），
+    # 判据必须读这里，而不是孤儿 Flyway 脚本里的 DEFAULT 字面串。
+    "init_sql": ROOT / "bone-init.sql",
+    "migration_manifest": ROOT / "scripts" / "migration" / "migration-manifest.json",
+    "migration_dir": ROOT / "scripts" / "migration",
+    "frozen_engine": ROOT / "bone-ai" / "bone-ai-rag" / "eval" / "frozen_set.py",
+    "frozen_manifest": ROOT / "bone-ai" / "bone-ai-rag" / "eval" / "frozen_set.skeleton.json",
 }
 
 SATISFIED = "SATISFIED"
@@ -59,6 +69,15 @@ def read_text(key: str) -> str:
     return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
+def f_baseline_doc(raw: str) -> dict:
+    """基线 JSON 单一解析入口（解析失败返回空 dict，判据此后必 BLOCKED）。"""
+    try:
+        doc = json.loads(raw) if raw else {}
+    except json.JSONDecodeError:
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
 def gate_default_false(app_yml: str, env_var: str) -> bool:
     """三要素之「门控默认 false」：yml 里 ${ENV:false} 占位缺省即成立（缺键/默认 true = 未接线或行为变更）。"""
     return bool(re.search(r"\$\{" + re.escape(env_var) + r":false\}", app_yml))
@@ -68,14 +87,11 @@ def load_facts() -> dict:
     baseline_raw = read_text("baseline")
     evalset_raw = read_text("evalset")
     try:
-        baseline = json.loads(baseline_raw) if baseline_raw else {}
-    except json.JSONDecodeError:
-        baseline = {}
-    try:
         evalset = json.loads(evalset_raw) if evalset_raw else {}
     except json.JSONDecodeError:
         evalset = {}
     golive_md = sorted(PATHS["golive"].glob("*.md")) if PATHS["golive"].exists() else []
+    baseline = f_baseline_doc(baseline_raw)
     java_files = list(PATHS["java_main"].rglob("*.java")) if PATHS["java_main"].exists() else []
     # 飞轮下游三要素：实现类 / 样本源生产调用 / 校准计算生产调用。
     # 只认非注释、非 import 的**真实调用**：import 一个数据类不算接线（2026-11-06 循环复核发现）。
@@ -119,6 +135,115 @@ def load_facts() -> dict:
         r"@(Post|Put|Delete|Patch)Mapping", drill_src)
     rollout_no_write = rollout_controller is not None and not re.search(
         r"@(Post|Put|Delete|Patch)Mapping", rollout_src)
+    # ---- 目录准入：跟随生效通道真源 + 生产端口接线（防「删 V15 反判绿」） ----
+    manifest_raw = read_text("migration_manifest")
+    try:
+        manifest = json.loads(manifest_raw) if manifest_raw else {}
+    except json.JSONDecodeError:
+        manifest = {}
+    sql_entries = sorted(
+        (e for e in manifest.get("entries", [])
+         if isinstance(e, dict) and str(e.get("file", "")).endswith(".sql")),
+        key=lambda e: e.get("order") or 0,
+    )
+    migration_catalog_src = ""
+    for entry in sql_entries:
+        fp = PATHS["migration_dir"] / str(entry["file"])
+        if not fp.exists():
+            continue
+        try:
+            body = fp.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        if "catalog_policy" in body and "DEFAULT" in body:
+            migration_catalog_src += body + "\n"
+    catalog_src = read_text("init_sql") + "\n" + migration_catalog_src
+    # 动态 DDL 里引号被转义成 DEFAULT ''NONE''，故匹配一或多个单引号。
+    catalog_defaults = re.findall(
+        r"catalog_policy[^\n]{0,300}?DEFAULT\s+'+(NONE|MANDATORY)'+",
+        catalog_src, re.I)
+    catalog_effective_default = catalog_defaults[-1].upper() if catalog_defaults else "UNKNOWN"
+    catalog_source_available = (
+        PATHS["init_sql"].exists()
+        and PATHS["migration_manifest"].exists()
+        and bool(sql_entries)
+        and bool(catalog_defaults)
+    )
+    catalog_port_wired = any(
+        re.search(r"\bimplements\s+ItemCatalogPort\b", ln)
+        for _, lines in main_sources for ln in lines
+    )
+
+    # ---- 非 ML 基线：status 之外必须带可复现采集证据 ----
+    baseline_doc = f_baseline_doc(baseline_raw)
+    baseline_items = baseline_doc.get("metrics", baseline_doc.get("baselines", []))
+    if isinstance(baseline_items, dict):
+        baseline_items = list(baseline_items.values())
+    if not isinstance(baseline_items, list):
+        baseline_items = []
+    java_stems = {x.stem for x in java_files}
+    def provenance_ok(m: dict) -> bool:
+        pr = m.get("provenance")
+        if not isinstance(pr, dict):
+            return False
+        if not all(str(pr.get(k, "")).strip()
+                   for k in ("collector", "inputSnapshotHash", "collectedAt")):
+            return False
+        return bool(re.fullmatch(r"[0-9a-f]{64}", str(pr.get("inputSnapshotHash", ""))))
+    baseline_all_wired = bool(baseline_items) and all(
+        str(m.get("status", "")) == "wired" for m in baseline_items if isinstance(m, dict))
+    baseline_evidence_ok = bool(baseline_items) and all(
+        isinstance(m, dict)
+        and str(m.get("sourceSymbol", "") or "").strip()
+        and str(m.get("sourceSymbol", "")) in java_stems
+        and not str(m.get("blockingReason", "") or "").strip()
+        and provenance_ok(m)
+        for m in baseline_items)
+    baseline_top_status = str(baseline_doc.get("status", "")).strip()
+
+    # ---- 冻结集：调用真实引擎 verify_manifest，不接受任意非空 hash ----
+    frozen_raw = read_text("frozen_manifest")
+    try:
+        frozen_doc = json.loads(frozen_raw) if frozen_raw else {}
+    except json.JSONDecodeError:
+        frozen_doc = {}
+    frozen_verified = False
+    if PATHS["frozen_engine"].exists() and frozen_doc:
+        try:
+            spec = importlib.util.spec_from_file_location(
+                "_bone_frozen_engine", PATHS["frozen_engine"])
+            engine = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(engine)
+            frozen_verified = (
+                not engine.verify_manifest(frozen_doc)
+                and str(frozen_doc.get("status", "")).lower() == "active"
+                and int(frozen_doc.get("collected") or 0) > 0
+                and bool(frozen_doc.get("cases"))
+                and bool(engine.HEX64_RE.match(str(frozen_doc.get("frozenHash", ""))))
+                and str(frozen_doc.get("frozenHash", "")) == engine.freeze_hash(
+                    frozen_doc.get("cases"))
+            )
+        except Exception:
+            frozen_verified = False
+    frozen_status = str(frozen_doc.get("status", "")).lower()
+
+    # ---- Go-Live 分册：状态 + 正文完成度，缺册即 fail-closed ----
+    unfinished_re = re.compile(
+        "须建设|0 命中|未定|待复现|不得留空|@Disabled|待签署|待评审|待压测|"
+        "待 PoC|须签署|仍待架构评审|待建|留待")
+    golive_facts = []
+    for fp in golive_md:
+        text = fp.read_text(encoding="utf-8")
+        head = text[:400]
+        cur = re.search(r"^currency:\s*(\S+)", head, re.M)
+        role = re.search(r"^role:\s*(\S+)", head, re.M)
+        golive_facts.append({
+            "name": fp.name,
+            "currency": cur.group(1) if cur else "",
+            "role": role.group(1) if role else "",
+            "unfinished": bool(unfinished_re.search(text)),
+        })
+
     e2e_raw = read_text("e2e_result")
     try:
         runtime = (json.loads(e2e_raw) or {}).get("runtime") if e2e_raw else None
@@ -132,7 +257,15 @@ def load_facts() -> dict:
         "v15": read_text("v15"),
         "baseline": baseline,
         "evalset": evalset,
-        "golive": [(p.name, p.read_text(encoding="utf-8")[:400]) for p in golive_md],
+        "golive": golive_facts,
+        "catalog_source_available": catalog_source_available,
+        "catalog_effective_default": catalog_effective_default,
+        "catalog_port_wired": catalog_port_wired,
+        "baseline_all_wired": baseline_all_wired,
+        "baseline_evidence_ok": baseline_evidence_ok,
+        "baseline_top_status": baseline_top_status,
+        "frozen_verified": frozen_verified,
+        "frozen_status": frozen_status,
         "java_names": [p.stem for p in java_files],
         "calibration_class_present": calibration_class_present,
         "calibration_compute_wired": calibration_compute_wired,
@@ -167,35 +300,53 @@ def evaluate(f: dict) -> list[dict]:
         )
     )
 
-    # G0-2 非 ML 基线：declared 只是声明口径，wired 才是真实埋点。
+    # G0-2 非 ML 基线：status=wired 只是声明，还须采集证据（provenance + 源码可达）。
+    # 2026-11-07：原判据只读 6 个 status 字符串，改字符串即可刷绿；且与
+    # check-eval-baseline.py E5「skeleton 态不允许 wired」口径冲突（刷绿必让门禁判红）。
     metrics = f["baseline"].get("metrics", f["baseline"].get("baselines", []))
-    if isinstance(metrics, dict):
-        items = list(metrics.values())
-    elif isinstance(metrics, list):
-        items = metrics
+    statuses = [str(m.get("status", "")) for m in metrics if isinstance(m, dict)] \
+        if isinstance(metrics, (list, dict)) else []
+    if not statuses:
+        reason = "BASELINE_METRICS_MISSING"
+    elif not f["baseline_all_wired"]:
+        reason = "BASELINE_DECLARED_NOT_WIRED"
+    elif f["baseline_top_status"] in ("skeleton", "", "proposed"):
+        reason = "BASELINE_SKELETON_CANNOT_CLAIM_WIRED"
+    elif not f["baseline_evidence_ok"]:
+        reason = "BASELINE_PROVENANCE_MISSING"
     else:
-        items = []
-    statuses = [str(m.get("status", "")) for m in items if isinstance(m, dict)]
-    wired = bool(statuses) and all(s == "wired" for s in statuses)
+        reason = "ADMITTED"
     gates.append(
         gate(
             "BASELINE_WIRED",
-            SATISFIED if wired else BLOCKED,
-            "BASELINE_DECLARED_NOT_WIRED" if statuses else "BASELINE_METRICS_MISSING",
-            f"baseline-metrics.json: {len(statuses)} 项，wired={sum(s == 'wired' for s in statuses)}",
+            SATISFIED if reason == "ADMITTED" else BLOCKED,
+            reason,
+            f"baseline-metrics.json: {len(statuses)} 项 wired={f['baseline_all_wired']} "
+            f"证据齐备={f['baseline_evidence_ok']} 顶层={f['baseline_top_status']}",
         )
     )
 
     # G0-3 冻结集：active + payloadHash 才可用于回归门禁。
+    # G0-3 冻结集：原判据套在 evalset 的 status + 任意非空 payloadHash 上，
+    # 既与 check-claim-ai-evalset.py A1（只允许 declared|wired）冲突，
+    # 也给个 "aaa" 就算通过。改为调用 frozen_set.verify_manifest 的真源判定。
     ev = f["evalset"]
-    active = str(ev.get("status", "")).lower() == "active"
-    payload = str(ev.get("payloadHash", ev.get("frozenSetHash", ""))).strip()
+    ev_payload = str(ev.get("payloadHash", ev.get("frozenSetHash", ""))).strip()
+    ev_payload_valid = (not ev_payload) or bool(re.fullmatch(r"[0-9a-f]{64}", ev_payload))
+    if not f["frozen_verified"]:
+        reason = "FROZEN_SET_NOT_ACTIVE" if f["frozen_status"] != "active" \
+            else "FROZEN_HASH_OR_CASES_INVALID"
+    elif not ev_payload_valid:
+        reason = "EVALSET_PAYLOAD_HASH_NOT_HEX64"
+    else:
+        reason = "ADMITTED"
     gates.append(
         gate(
             "FROZEN_EVALSET_ACTIVE",
-            SATISFIED if (active and payload) else BLOCKED,
-            "FROZEN_SET_NOT_ACTIVE" if not active else "FROZEN_HASH_MISSING",
-            f"ai-decision-evalset.json: status={ev.get('status', 'N/A')}",
+            SATISFIED if reason == "ADMITTED" else BLOCKED,
+            reason,
+            f"frozen_set.skeleton.json: status={f['frozen_status']} "
+            f"verify_manifest通过={f['frozen_verified']}；evalset status={ev.get('status', 'N/A')}",
         )
     )
 
@@ -227,29 +378,53 @@ def evaluate(f: dict) -> list[dict]:
         )
     )
 
-    # G2 知识层：目录准入默认 NONE = 配了不生效。
-    default_none = "DEFAULT 'NONE'" in f["v15"]
+    # G2 知识层：原判据读 V15（从未被 runner 执行的孤儿 Flyway 脚本）里的
+    # DEFAULT 字面串，删掉该文件反而判绿。改为读生效通道（bone-init + 清单 order）
+    # 的最终 DEFAULT，并要求 ItemCatalogPort 有生产实现——否则 MANDATORY 会
+    # 让全部责任 CATALOG_UNRESOLVED 退补件（把静默超赔换成全量停摆）。
+    if not f["catalog_source_available"]:
+        reason = "CATALOG_SOURCE_UNREADABLE"
+    elif f["catalog_effective_default"] == "NONE":
+        reason = "CATALOG_POLICY_DEFAULT_NONE"
+    elif not f["catalog_port_wired"]:
+        reason = "CATALOG_PORT_NOT_WIRED"
+    else:
+        reason = "ADMITTED"
     gates.append(
         gate(
             "CATALOG_ADMISSION_ACTIVE",
-            BLOCKED if default_none else SATISFIED,
-            "CATALOG_POLICY_DEFAULT_NONE" if default_none else "ADMITTED",
-            "V15__synap_claim_catalog_admission.sql",
+            SATISFIED if reason == "ADMITTED" else BLOCKED,
+            reason,
+            f"生效通道默认={f['catalog_effective_default']} "
+            f"ItemCatalogPort生产实现={f['catalog_port_wired']}",
         )
     )
 
-    # G4 合规就绪：08-go-live/01–13 分册不得停留在 draft。
-    drafts = [
-        name
-        for name, head in f["golive"]
-        if name[:2].isdigit() and name[:2] != "00" and re.search(r"^currency:\s*draft", head, re.M)
+    # G4 合规就绪：原判据只查 frontmatter currency 前缀，是 12 项里唯一
+    # 「改一个单词就能翻绿」的词法判据。改为 currency/role/正文完成度三查 +
+    # 分册数量 fail-closed；正文仍写「须建设 / 0 命中 / 待复现」时不得标 current。
+    booklets = [
+        g for g in f["golive"]
+        if re.match(r"^\d{2}", g["name"]) and not g["name"].startswith("00")
     ]
+    bad = [
+        g for g in booklets
+        if g["currency"].startswith("draft")
+        or g["role"].startswith("draft")
+        or g["unfinished"]
+    ]
+    if len(booklets) < 13:
+        reason = f"GOLIVE_BOOKLETS_MISSING_{13 - len(booklets)}"
+    elif bad:
+        reason = f"GOLIVE_DRAFT_{len(bad)}"
+    else:
+        reason = "ADMITTED"
     gates.append(
         gate(
             "GOLIVE_NOT_DRAFT",
-            SATISFIED if not drafts else BLOCKED,
-            f"GOLIVE_DRAFT_{len(drafts)}" if drafts else "ADMITTED",
-            "08-go-live/ frontmatter currency",
+            SATISFIED if reason == "ADMITTED" else BLOCKED,
+            reason,
+            "08-go-live/ frontmatter currency+role 与正文完成度标记",
         )
     )
 
@@ -378,76 +553,116 @@ def current_level(gates: list[dict]) -> str:
 
 
 def self_test(f: dict) -> bool:
+    """负向探针必须翻转、合规正例必须可达、防刷绿探针必须保持 BLOCKED。
+
+    2026-11-07：4 条判据改为证据驱动后，探针同步分三类：
+      · flip                —— 摘除/破坏既有能力，判据必须翻转（判别力）；
+      · flip_to_satisfied   —— 注入合规事实，判据必须达 SATISFIED（防恒假）；
+      · stay                 —— 注入「只改字符串/改孤儿文件/删分册」等刷绿动作，
+                               判据必须保持 BLOCKED（防假绿，本轮核心回归钉子）。
+    """
     base = {g["id"]: g["status"] for g in evaluate(f)}
-    probes = []
+    probes: list[tuple[str, str, dict, str]] = []
 
-    f1 = dict(f, check_sh=f["check_sh"].replace("--check", ""))
-    probes.append(("删门禁 --check 接线", base["EVAL_GATES_WIRED"], evaluate(f1)))
+    def add(label: str, gid: str, mutated: dict, expect: str = "flip") -> None:
+        probes.append((label, gid, mutated, expect))
 
-    f2 = dict(f, v15=f["v15"].replace("DEFAULT 'NONE'", "DEFAULT 'MANDATORY'"))
-    probes.append(("目录默认值改为 MANDATORY", base["CATALOG_ADMISSION_ACTIVE"], evaluate(f2)))
+    add("删门禁 --check 接线", "EVAL_GATES_WIRED",
+        dict(f, check_sh=f["check_sh"].replace("--check", "")))
 
-    f3 = dict(f, provider_env="http://localhost:8000/v1")
-    probes.append(("注入 provider 环境变量", base["PROVIDER_CONFIGURED"], evaluate(f3)))
+    # 目录准入：判据已改读生效通道 + 端口接线，改孤儿 V15 不得再翻绿。
+    add("生效通道 MANDATORY 且端口已接线（合规正例）", "CATALOG_ADMISSION_ACTIVE",
+        dict(f, catalog_source_available=True, catalog_effective_default="MANDATORY",
+             catalog_port_wired=True), "flip_to_satisfied")
+    add("只改孤儿 V15 的 DEFAULT（生效通道仍 NONE）", "CATALOG_ADMISSION_ACTIVE",
+        dict(f, v15=f["v15"].replace("DEFAULT 'NONE'", "DEFAULT 'MANDATORY'")), "stay")
+    add("删掉孤儿 V15 文件（原判据会假绿）", "CATALOG_ADMISSION_ACTIVE",
+        dict(f, v15=""), "stay")
+    add("生效默认 MANDATORY 但端口未接线（配了不生效）", "CATALOG_ADMISSION_ACTIVE",
+        dict(f, catalog_effective_default="MANDATORY", catalog_port_wired=False), "stay")
+    add("生效真源不可读（fail-closed）", "CATALOG_ADMISSION_ACTIVE",
+        dict(f, catalog_source_available=False), "stay")
+
+    add("注入 provider 环境变量", "PROVIDER_CONFIGURED",
+        dict(f, provider_env="http://localhost:8000/v1"))
 
     rt = dict(f.get("e2e_runtime") or {})
     rt.update({"nodesScanned": 88, "participationRate": 0.5, "aiParticipated": 44})
-    probes.append(("运行期参与率改为 0.5", base["RUNTIME_MODEL_COVERAGE"], evaluate(dict(f, e2e_runtime=rt))))
+    add("运行期参与率改为 0.5", "RUNTIME_MODEL_COVERAGE", dict(f, e2e_runtime=rt))
+
+    # 基线：只刷 status 不得翻绿，须真实采集证据 + 顶层非 skeleton。
+    add("基线合规正例（wired+provenance+confirmed）", "BASELINE_WIRED",
+        dict(f, baseline_all_wired=True, baseline_evidence_ok=True,
+             baseline_top_status="confirmed"), "flip_to_satisfied")
+    add("只把 6 项 status 改 wired（顶层仍 skeleton）", "BASELINE_WIRED",
+        dict(f, baseline_all_wired=True), "stay")
+    add("改 status+顶层但无 provenance", "BASELINE_WIRED",
+        dict(f, baseline_all_wired=True, baseline_top_status="confirmed"), "stay")
+
+    # 冻结集：塞任意 hash 不得翻绿，须真实引擎 verify_manifest 通过。
+    add("冻结集合规正例（引擎验证通过）", "FROZEN_EVALSET_ACTIVE",
+        dict(f, frozen_verified=True, frozen_status="active"), "flip_to_satisfied")
+    add("只给 evalset 塞任意 payloadHash + active", "FROZEN_EVALSET_ACTIVE",
+        dict(f, evalset=dict(f["evalset"], status="active", payloadHash="aaa")), "stay")
+    add("只给 evalset 塞 64hex 但冻结集仍 skeleton", "FROZEN_EVALSET_ACTIVE",
+        dict(f, evalset=dict(f["evalset"], payloadHash="0" * 64)), "stay")
+
+    # Go-Live：批量改 currency 不得翻绿；缺册须 fail-closed。
+    add("Go-Live 合规正例（13 册状态+正文全合规）", "GOLIVE_NOT_DRAFT",
+        dict(f, golive=[dict(g, currency="current", role="current", unfinished=False)
+                        for g in f["golive"]]), "flip_to_satisfied")
+    add("只把 13 册 currency 改 current（正文仍须建设）", "GOLIVE_NOT_DRAFT",
+        dict(f, golive=[dict(g, currency="current") for g in f["golive"]]), "stay")
+    add("删掉一册分册（缺册 fail-closed）", "GOLIVE_NOT_DRAFT",
+        dict(f, golive=f["golive"][:-2]), "stay")
+
     for key, label in [
         ("calibration_class_present", "摘除校准实现类"),
         ("calibration_sample_source_wired", "摘除盲标样本源生产调用"),
         ("calibration_compute_wired", "摘除校准计算生产调用（import 假绿回归钉子）"),
     ]:
-        probes.append((label, base["FLYWHEEL_DOWNSTREAM"],
-                       evaluate(dict(f, **{key: not f.get(key, False)}))))
+        add(label, "FLYWHEEL_DOWNSTREAM", dict(f, **{key: not f.get(key, False)}))
 
-    probes.append(("图像适配器接线翻转（双向探针）", base["IMAGE_PARSE_WIRED"],
-                   evaluate(dict(f, image_adapter_present=not f.get("image_adapter_present", False)))))
-    probes.append(("图像门控默认值改 true（负向探针）", base["IMAGE_PARSE_WIRED"],
-                   evaluate(dict(f, app_yml=f["app_yml"].replace(
-                       "${BONE_CLAIM_DOCUMENT_PARSE_IMAGE_ENABLED:false}",
-                       "${BONE_CLAIM_DOCUMENT_PARSE_IMAGE_ENABLED:true}")))))
-    probes.append(("图像 mock 拒绝码被移除（降级诚实探针）", base["IMAGE_PARSE_WIRED"],
-                   evaluate(dict(f, image_adapter_src=f["image_adapter_src"].replace(
-                       "IMAGE_MOCK_REJECTED", "REDACTED")))))
-    probes.append(("RAG 适配器接线翻转（双向探针）", base["RAG_WIRED"],
-                   evaluate(dict(f, rag_adapter_present=not f.get("rag_adapter_present", False)))))
-    probes.append(("RAG 门控默认值改 true（负向探针）", base["RAG_WIRED"],
-                   evaluate(dict(f, app_yml=f["app_yml"].replace(
-                       "${BONE_CLAIM_KNOWLEDGE_RAG_ENABLED:false}",
-                       "${BONE_CLAIM_KNOWLEDGE_RAG_ENABLED:true}")))))
-
-    probes.append(("摘除回滚演练控制器（负向探针）", base["ROLLOUT_ROLLBACK_DRILL"],
-                   evaluate(dict(f, drill_controller_present=False))))
+    add("图像适配器接线翻转（双向探针）", "IMAGE_PARSE_WIRED",
+        dict(f, image_adapter_present=not f.get("image_adapter_present", False)))
+    add("图像门控默认值改 true（负向探针）", "IMAGE_PARSE_WIRED",
+        dict(f, app_yml=f["app_yml"].replace(
+            "${BONE_CLAIM_DOCUMENT_PARSE_IMAGE_ENABLED:false}",
+            "${BONE_CLAIM_DOCUMENT_PARSE_IMAGE_ENABLED:true}")))
+    add("图像 mock 拒绝码被移除（降级诚实探针）", "IMAGE_PARSE_WIRED",
+        dict(f, image_adapter_src=f["image_adapter_src"].replace(
+            "IMAGE_MOCK_REJECTED", "REDACTED")))
+    add("RAG 适配器接线翻转（双向探针）", "RAG_WIRED",
+        dict(f, rag_adapter_present=not f.get("rag_adapter_present", False)))
+    add("RAG 门控默认值改 true（负向探针）", "RAG_WIRED",
+        dict(f, app_yml=f["app_yml"].replace(
+            "${BONE_CLAIM_KNOWLEDGE_RAG_ENABLED:false}",
+            "${BONE_CLAIM_KNOWLEDGE_RAG_ENABLED:true}")))
+    add("摘除回滚演练控制器（负向探针）", "ROLLOUT_ROLLBACK_DRILL",
+        dict(f, drill_controller_present=False))
 
     ok = True
-    for label, before, after in probes:
-        gid = {
-            "删门禁 --check 接线": "EVAL_GATES_WIRED",
-            "目录默认值改为 MANDATORY": "CATALOG_ADMISSION_ACTIVE",
-            "注入 provider 环境变量": "PROVIDER_CONFIGURED",
-            "运行期参与率改为 0.5": "RUNTIME_MODEL_COVERAGE",
-            "摘除校准实现类": "FLYWHEEL_DOWNSTREAM",
-            "摘除盲标样本源生产调用": "FLYWHEEL_DOWNSTREAM",
-            "摘除校准计算生产调用（import 假绿回归钉子）": "FLYWHEEL_DOWNSTREAM",
-            "图像适配器接线翻转（双向探针）": "IMAGE_PARSE_WIRED",
-            "图像门控默认值改 true（负向探针）": "IMAGE_PARSE_WIRED",
-            "图像 mock 拒绝码被移除（降级诚实探针）": "IMAGE_PARSE_WIRED",
-            "RAG 适配器接线翻转（双向探针）": "RAG_WIRED",
-            "RAG 门控默认值改 true（负向探针）": "RAG_WIRED",
-            "摘除回滚演练控制器（负向探针）": "ROLLOUT_ROLLBACK_DRILL",
-        }[label]
-        now = {g["id"]: g["status"] for g in after}[gid]
-        flipped = before != now
-        print(f"  [{'OK' if flipped else 'FAIL'}] {label}: {before} → {now}")
-        ok = ok and flipped
+    for label, gid, mutated, expect in probes:
+        now = {g["id"]: g["status"] for g in evaluate(mutated)}[gid]
+        before = base[gid]
+        if expect == "stay":
+            passed = now == before
+            detail = f"须保持 {before}"
+        elif expect == "flip_to_satisfied":
+            passed = now != before and now == SATISFIED
+            detail = "须翻转为 SATISFIED"
+        else:
+            passed = now != before
+            detail = "须翻转"
+        print(f"  [{'OK' if passed else 'FAIL'}] {label}: {before} → {now}（{detail}）")
+        ok = ok and passed
     return ok
 
 
 def main() -> int:
     facts = load_facts()
     if "--self-test" in sys.argv:
-        print("负向探针（判据必须翻转，否则判据恒真=假绿）：")
+        print("三类探针（翻转 / 合规可达 / 刷绿须保持 BLOCKED）：")
         passed = self_test(facts)
         print("自测结果：", "PASS" if passed else "FAIL")
         return 0 if passed else 1

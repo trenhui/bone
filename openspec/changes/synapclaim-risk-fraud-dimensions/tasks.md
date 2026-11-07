@@ -20,7 +20,7 @@
 - [x] 4.3 新增 `frequencyAnomalyTriggersAuditRule`：返回 3 条近 90 天 prior claims，断言 `R-ANOM-03` 与 `R-FRAUD-22` 均命中、`R-ANOM-03` 仅审计留痕（`risk=false`）。
 - [x] 4.4 新增 `noPriorClaimsNoFalsePositive`：返回空列表，断言 `R-FRAUD-22` / `R-ANOM-03` 均不命中（零误报）。
 - [x] 4.5 新增 `excludesCurrentClaimFromHistory`：历史集合仅含本案自身(id=ctx.claimId)，断言两条历史维度均不命中（排除自身、杜绝 100% 误报）。
-- [x] 4.6 变异验证（推理）：将 `priorClaimCount >= 1` 的 `>=` 改为 `<` → 4.2 中 priorClaimCount=1 的场景翻转（R-FRAUD-22 不再命中），证明断言可执行、规则非死代码（遵循 ML Test Score「每条规则写成可执行 assertion」）。
+- [x] 4.6 变异验证（**2026-11-07 已实跑，替换原推理级记录**）：两次独立变异均在 `claim-ruleset.json` 上改阈值后用 `mvn -o -q -pl bone-apps/synap-claim test -Dtest=QlExpressRuleEnginePortAdapterEnrichmentTest` 实跑。① `R-FRAUD-22` 由 `priorClaimCount >= 1` 改为 `>= 99` → **恰 2 例转红**（`crossCaseDuplicateTriggersFraudRule:167`、`frequencyAnomalyTriggersAuditRule:223`，均报「命中列表不含 R-FRAUD-22」），其余 4 例不受影响；② `R-ANOM-03` 由 `recentClaims90d >= 3` 改为 `>= 99` → **恰 1 例转红**（`frequencyAnomalyTriggersAuditRule:222`，报「不含 R-ANOM-03」）。两次用 `trap` 保证恢复，恢复后 `git diff --exit-code` 与 HEAD 逐字一致、复跑 **6/6 全绿（RC=0）**。结论：两条规则均非死代码、断言可证伪且红点落在预期用例（遵循 Google《ML Test Score》「每条规则写成可执行 assertion」+ 变异测试判别力要求）。
 
 ## 5. 质量门禁
 
