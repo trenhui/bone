@@ -1,5 +1,6 @@
 package com.bone.claim.adapter.web.controller;
 
+import com.bone.claim.application.DiffSampleExportApplicationService;
 import com.bone.claim.application.EvalSampleExportApplicationService;
 import com.bone.claim.application.EvalSampleExportApplicationService.EvalSampleExport;
 import com.bone.core.model.ApiResponse;
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class EvalSampleController {
 
   private final EvalSampleExportApplicationService evalSampleExportApplicationService;
+  private final DiffSampleExportApplicationService diffSampleExportApplicationService;
 
   @Operation(
       summary = "导出评测样本",
@@ -55,5 +57,27 @@ public class EvalSampleController {
       @Parameter(description = "期望条数 1..500；实际可能少于请求值") @RequestParam(defaultValue = "100")
           int limit) {
     return ApiResponse.success(evalSampleExportApplicationService.export(from, to, limit));
+  }
+
+  @Operation(
+      summary = "导出后督 DIFF 回流样本",
+      description =
+          "按结论时间窗导出已落库的 DIFF 抽检结论索引（inspectionNo / claimId / diffType / "
+              + "sampleType / 幂等指纹 / 结论时间）。事实源是 t_claim_inspection，进程重启不丢。"
+              + "这是后督差异索引，不是独立盲标金标准，不含任何准确率或一致率数值；"
+              + "无样本时返回空列表，不编造占位行。"
+              + "时间窗最多 31 天、单次最多 500 条——越界直接 400，不静默裁剪。"
+              + "权限复用 claim:claims:read（新造权限码不落 IAM 表会让端点对所有人 403）。")
+  @PreAuthorize("hasAuthority('claim:claims:read')")
+  @GetMapping("/diff-samples")
+  public ApiResponse<DiffSampleExportApplicationService.Export> diffSamples(
+      @Parameter(description = "窗口起点（含），ISO-8601")
+          @RequestParam
+          @DateTimeFormat(iso = ISO.DATE_TIME)
+          Instant from,
+      @Parameter(description = "窗口终点（不含）") @RequestParam @DateTimeFormat(iso = ISO.DATE_TIME)
+          Instant to,
+      @Parameter(description = "期望条数 1..500") @RequestParam(defaultValue = "100") int limit) {
+    return ApiResponse.success(diffSampleExportApplicationService.export(from, to, limit));
   }
 }

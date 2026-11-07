@@ -47,13 +47,18 @@ public class LocalClaimContextPortAdapter implements ClaimContextPort {
     // 只有 DONE（解析完成）与 MANUAL（人工补录完成）算「证据已解析」。
     // 原判据只排除 PENDING，会把 FAILED/PARSING 也当成已解析——感知层一旦落地 FAILED 状态，
     // 决策图就会拿「没有事实输入」的材料继续核责，属于静默放行。
+    // 字段级完整性：仅当感知层显式声明了 complete 标记时采信（opt-in），
+    // 无标记（人工补录 / 外部 OCR 回调 / 历史数据）回退既有语义 true。
+    // 这样既把 ParsedDocument.complete 汇入初审判据，又不会把存量案件全量推成退补件。
     boolean allParsed =
         hasEvidence
             && evidences.stream()
                 .allMatch(
                     e ->
-                        e.ocrStatusEnum() == OcrStatus.DONE
-                            || e.ocrStatusEnum() == OcrStatus.MANUAL);
+                        (e.ocrStatusEnum() == OcrStatus.DONE
+                                || e.ocrStatusEnum() == OcrStatus.MANUAL)
+                            && EvidenceFieldReader.declaredComplete(e.getExtractedJson())
+                                .orElse(true));
     BigDecimal minOcr =
         evidences.stream()
             .map(Evidence::getOcrConfidence)

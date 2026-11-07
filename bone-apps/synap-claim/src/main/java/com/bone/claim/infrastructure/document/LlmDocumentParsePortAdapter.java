@@ -180,6 +180,9 @@ public class LlmDocumentParsePortAdapter implements DocumentParsePort {
     payload.put("fields", fields);
     payload.put("basis", "LLM_WITH_DETERMINISTIC_BASELINE");
     payload.put("mode", "llm");
+    // 与 TextLayer / Image 两条通道同口径写出字段级齐备标记，否则初审完整性判据
+    // 在 llm 模式下会永远 opt-in 不到（配了不生效）。
+    payload.put("complete", complete);
     payload.put("conflicts", conflictFields.stream().sorted().toList());
     payload.put("reason", reason);
     return new ParsedDocument(true, complete, minConfidence, fields, toJson(payload), reason);

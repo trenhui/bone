@@ -40,4 +40,18 @@ public interface InspectionRepository extends Repository<InspectionRecord, Long>
    */
   List<InspectionRecord> findConcludedInWindow(
       @Param("from") Instant from, @Param("to") Instant to);
+
+  /**
+   * 按结论时间窗取「已结论且为 DIFF」的抽检单（后督差异回流导出的唯一事实源）。
+   *
+   * <p><b>为什么 SQL 里直接过滤 {@code result='DIFF'} 而不在应用层过滤</b>：与 {@link #findConcludedInWindow}
+   * 同窗但用途不同——错误预算需要 PASS+DIFF 全量做分母， 回流导出只需要差异样本做分子。若复用全量再内存过滤，500 条上界会被 PASS 挤满， 真正的 DIFF
+   * 被静默裁掉（这正是「截断后仍当全量」的假象）。
+   *
+   * <p><b>为什么不需要新表</b>：{@code InspectionApplicationService.conclude()} 已把 DIFF
+   * 结论与明细同业务事务原子落库；本方法读既有事实，进程重启不丢、可按时间窗重放。 事件只作索引与触发器，不承载明细（与 {@code AiEvalSampleCollectedEvent}
+   * 契约一致）。
+   */
+  List<InspectionRecord> findDiffConcludedInWindow(
+      @Param("from") Instant from, @Param("to") Instant to);
 }

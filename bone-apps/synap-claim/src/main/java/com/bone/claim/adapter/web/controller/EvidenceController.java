@@ -93,6 +93,21 @@ public class EvidenceController {
     return ApiResponse.success(evidenceApplicationService.parse(evidenceId, request.rawText()));
   }
 
+  @Operation(
+      summary = "图像件解析",
+      description =
+          "按 fileRef 路由到图像感知通道，返回字段级置信度与受控归因码。"
+              + "门控关闭 / 网关不可用 / 输出契约违反 / mock 拒绝一律 available=false，"
+              + "落 FAILED 转人工补录；绝不把图像件交给文本层兜底冒充解析成功。"
+              + "本端点只打通此前零调用方的 parseImage 能力，不宣称 OCR+NLP 自动录入已达成。")
+  @PreAuthorize("hasAuthority('claim:claims:write')")
+  @PostMapping("/{evidenceId}/parse-image")
+  public ApiResponse<EvidenceApplicationService.ParseOutcome> parseImage(
+      @Parameter(description = "案件ID") @PathVariable long claimId,
+      @Parameter(description = "材料ID") @PathVariable long evidenceId) {
+    return ApiResponse.success(evidenceApplicationService.parseImage(evidenceId));
+  }
+
   @Operation(summary = "回填解析结果", description = "OCR/LLM 解析回调；置信度 <0.7 自动置 MANUAL 转人工补录")
   @PreAuthorize("hasAuthority('claim:claims:write')")
   @PostMapping("/{evidenceId}/parse-result")
