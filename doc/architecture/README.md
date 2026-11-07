@@ -18,7 +18,7 @@
 
 **HTTP 与契约**：[Bone-API-规范.md](./Bone-API-规范.md) · [Bone-错误码登记.md](./Bone-错误码登记.md) · [openapi/](./openapi/)（域契约）· [Docs-as-Code-模块合规模板.md](./Docs-as-Code-模块合规模板.md) · [_generated/](../_generated/)
 
-**可观测性与运维**：[Bone-日志规范.md](./Bone-日志规范.md) · [Bone-可观测性规范.md](./Bone-可观测性规范.md) · [Bone-配置与环境规范.md](./Bone-配置与环境规范.md) · [config/env/README.md](../../config/env/README.md)
+**可观测性与运维**：[Bone-日志规范.md](./Bone-日志规范.md) · [Bone-可观测性规范.md](./Bone-可观测性规范.md) · [Bone-配置与环境规范.md](./Bone-配置与环境规范.md) · [config/env/README.md](../../config/env/README.md) · [Bone-Comet工具链基线与升级运维.md](./Bone-Comet工具链基线与升级运维.md)（升级/回滚 SOP、完整性校验、已知上游缺陷登记）
 
 **安全、数据与集成**：[Bone-安全开发规范.md](./Bone-安全开发规范.md) · [Bone-多租户规范.md](./Bone-多租户规范.md) · [Bone-缓存规范.md](./Bone-缓存规范.md) · [Bone-消息与事件规范.md](./Bone-消息与事件规范.md) · [module-boundary-iam-system.md](./module-boundary-iam-system.md) · [0037 集成引擎单模块收敛](./adr/0037-integration-engine-single-module.md)
 

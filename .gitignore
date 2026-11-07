@@ -315,3 +315,38 @@ dump.rdb
 # 含 16MB 的 .pptx 二进制、slides/ 与 assets/ 生成物、以及 .slidep/ 工具状态目录，
 # 整体约 47MB。它不属于 Bone 平台源码，入库会永久撑大仓库且 clean checkout 无意义。
 llm-tech-talk/
+# ---------------------------------------------------------------------------
+# Comet 0.5.1 多平台生成资产（本机可再生，不入库）
+# 由 `comet update --current-project --scope project --skip-self-update --yes --language zh` 生成；
+# 每台机器/每个 IDE 各自安装，入库会造成 5 平台 x 65 文件的无意义 diff 与合并冲突。
+# 注意：.comet/config.yaml（项目级共享配置）由下方官方托管块显式放行，属于**必须入库**的例外。
+# ---------------------------------------------------------------------------
+.trae-cn/
+.claude/skills/comet/
+.claude/skills/comet-*/
+.github/skills/comet/
+.github/skills/comet-*/
+# >>> Comet managed project state >>>
+!/.comet/
+/.comet/*
+!/.comet/config.yaml
+.comet-archive-staging/
+.*.comet-archive-cas-*
+.*.comet-runtime-migration.json*
+.*.comet-runtime-source-*
+.*.comet-runtime-stage-*
+**/comet/changes/*/runtime
+**/comet/archive/*/runtime
+**/.comet/run-state.json
+**/.comet/pending-action.json
+**/.comet/trajectory.jsonl
+**/.comet/context.md
+**/.comet/artifacts.json
+**/.comet/checkpoint.json
+**/.comet/skill-snapshots
+**/.comet/checks
+**/.comet/coordination.json
+**/.comet/subagent-progress.md
+.comet-state.lock
+.comet-state-transaction.json
+# <<< Comet managed project state <<<
