@@ -184,8 +184,27 @@ Adjust (RULE, C2 + C11)            → 理算 + 信任额度两阶段预留(C11)
 | 知识层 | `bone-ai-rag` 检索骨架 / `CatalogAdmission` | 未接线；RAG 默认过渡哈希 embedding（不含语义）、ACL 默认拒绝一切；目录准入默认 NONE | 接线 + 补语料与真实 embedding |
 | 决策层 | `bone-ai-rules` QLExpress4 / `bone-ai-gateway` | **已接线**：核责规则真实执行并落 `t_claim_rule_hit`；LLM 网关治理链经防腐层复用 | 已具备，待渐进放量 |
 | 资金层 | 领域聚合 `Adjustment` / `Settlement` | 已实现，AI 不进入 | 保持不变 |
-| 学习层 | `bone-ai-app` eval / LLM-as-Judge / `bone-ai-trace` | 未接线；无真实评测集、无标注回流、无模型清单 | 接线 + 从零（数据飞轮与 MRM 组织流程） |
+| 学习层 | `bone-ai-app` eval / LLM-as-Judge / `bone-ai-trace` | **部分接线**：独立盲标队列（§11.13）与校准/模型治理内核（本轮）已落码；真实评测集、标注回流、运行期曲线产出仍缺 | 从零（真实盲标样本与飞轮闭环）+ 组织流程（独立验证 / 内审） |
 
 **G0 已落地的两道闸**：① 模型客户端结构化输出契约测试 + 测试替身自报身份与消费方显式拒绝（防静默降级）；② 规则引擎接线与命中留痕。二者都不改变资金路径，E1/E2 视觉与图计算能力仍为规划项，不进首版排期。
 
-**下一步接线优先级**：按 L3 AI 技术方案的 G0–G4 门禁推进；G1 感知 Shadow 与 G2 知识接线可并行，G3 放量以前两者切片指标达标为前置，G4 治理不阻塞首版上线但模型清单与独立验证不得省略。
+### 9.1 飞轮下游计算内核（2026-11-05 落地，只登记代码事实）
+
+`domain/model/evaluation/` 下新增两个纯领域内核，对应 §11.3「阈值校准」与 E4 MRM 的最小可编码部分：
+
+| 类 | 能力 | 防假绿判据 |
+|---|---|---|
+| `AiConfidenceCalibration` | ECE、Brier Score、按目标错误率反解阈值、champion/challenger 晋升、切片明细 | 只认 `BLIND_LABEL`；冻结集未隔离整批拒；空集给 null 不给 0；样本不足/切片不足不重定阈值；无安全阈值时保持现行不放宽 |
+| `AiModelCard` | 模型卡最小字段、模型清单查重、复验到期、PSI 漂移四态 | 三道防线不可跳级（仅一线自测不得进生产）；`evalSetHash` 须 64 位 sha256；局限/退役条件不可空；漂移 null 给 `NO_DATA` 而非「稳定」 |
+
+配套：`AiConfidenceCalibrationTest` / `AiModelCardTest` 共 25 例；4 组源码变异（去掉盲标闸 / ECE 退化常量 / 去掉小样本闸 / 去掉 Brier 退化判据）全部精确命中目标用例并字节级还原；模块全量回归 1207 run / 0 fail（2026-11-06 实机复跑）。`tools/_check_ai_native_calibration.py` 作为第 6 道机检，校验实现类符号、单测下界、防假绿锚点、纯领域零框架依赖，`--self-test` 的 4 个负向探针证明判据不恒真。
+
+**边界（不得混读为 L3 达标）**：
+
+1. 两个内核是**离线计算能力**，不是运行期接线。当前无独立盲标金标准样本喂入，`evaluate` 在空集上返回 `NO_EVIDENCE`；§11.3 把「校准曲线产出」列为 L3 判据，须有真实评测集与离线管线，本节不据此宣称曲线已产出。
+2. `tools/_ai_native_readiness.py` 的 `FLYWHEEL_DOWNSTREAM` 已是三要素强判据（实现类 + 盲标样本源生产调用 + 校准计算生产调用；`import` / 注释 / 单测均不算接线，脚本自带「摘除计算调用」负向探针）。它只证明调用链已就位，不证明飞轮已闭环；第 6 道机检本体按本目录惯例不进 `check.sh` 主流程（`R4` 只扫 `scripts/check-*.py`），但它的判据由 `scripts/tests/test_check_ai_native_calibration.py` 11 例经 `[42/59]` 守护，不得写成「CI 每次提交都扫校准内核」（R4 孤儿门禁教训）。
+3. 阈值只产出 `recommendedThreshold` **建议**，不写配置、不改状态机、不触发自动放款（P1「AI 不碰钱」不变）；落地须产品/架构签核。模型卡不落库、不接 DDL，迁移与权限面不变。
+4. 仍缺的外部条件见 §11.3 与 L3 前置条件清单：真实脱敏票据样本与授权、独立标注金标准、二线独立验证与三线内审、真实 provider 的语义 embedding、上线分册转正。这些不是编码可替代的。
+5. **运行期参与率口径（已收敛为单一真源）**：证据窗口统一为 UTC 日界 30 天——`to = ceil(now / 86400000) * 86400000`（下一个 UTC 日界，覆盖当日全天），`from = to - 30 * 86400000`。前端 `governanceWindow()`、E2E `EVIDENCE_WINDOW` 与 `ai-runtime-health` 请求三者同算法，同一 UTC 日内逐字恒定、长度恰 30 天且小于端点 31 天上限；输出统一为秒级 ISO（无毫秒），与后端 `Instant` 回显逐字一致，不靠比较时归一化。E2E A 组断言后端回显窗口逐字一致，B 组断言治理面板声明窗口逐字一致。此前「E2E 固定窗口 `nodes=88 / aiParticipated=0` vs 面板滚动 30 天 `8 / 8.79%`」的口径分裂已消除，两组数字不再可作为同一结论的两种读数。`aiParticipated` 仍由 `AiModelProvenance` 按黑名单判定（标识非空且非 `local-stub` / `mock*` 即 `PROVIDER`），故 `tools/_ai_native_readiness.py` 的 `RUNTIME_MODEL_COVERAGE` 收紧为三条件：`provider_env` 已配 **且** 同一次手动探活的 `runtime.probeVerdict == REACHABLE` **且** `nodes>0 / rate>0 / participated>0` 才判 SATISFIED。第二条件对应 §11.7「配了 ≠ 通了 ≠ 契约对」事故，判词缺失或非 `REACHABLE` 一律 fail-closed；reason 四态 `PROVIDER_NOT_CONFIGURED` > `PROBE_NOT_REACHABLE` > `MODEL_PARTICIPATION_ZERO` > `ADMITTED`，detail 附 `providerConfigured=` 与 `probeVerdict=`。`--self-test` 的防假绿 / 档位探针与 `scripts/tests/` 下表征测试守护三条件不可摘除（四类探针、条数以脚本为准）。在 `PROVIDER_CONFIGURED=AI_GATEWAY_BASE_URL_MISSING` 未解除前本判据继续 BLOCKED，`l3Claimable` 仍为 false。另：`current_level()` 也受该判据约束——`PROVIDER_CONFIGURED` + `PERCEPTION_MODEL_DRIVEN` 都只是配置态，只要 `RUNTIME_MODEL_COVERAGE` 非 SATISFIED，档位回落 L0 并带原因码，不判 L1/L2（第 11 轮）。
+
+**下一步接线优先级**：按 L3 AI 技术方案的 G0–G4 门禁推进；G1 感知 Shadow 与 G2 知识接线可并行，G3 放量以前两者切片指标达标为前置，G4 治理不阻塞首版上线但模型清单与独立验证不得省略。飞轮下游的下一项是把独立盲标解盲结果经只读管线喂入 `AiConfidenceCalibration`，产出可回放的校准曲线；没有真实标注数据时这一步不做。

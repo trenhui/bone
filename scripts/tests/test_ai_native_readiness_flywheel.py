@@ -137,5 +137,191 @@ class FlywheelCriterionTest(unittest.TestCase):
             self.assertTrue(M.self_test(M.load_facts()))
 
 
+class RuntimeModelCoverageTest(unittest.TestCase):
+    """RUNTIME_MODEL_COVERAGE 三条件：provider 配置 + 探活 REACHABLE + 运行期参与率非零。
+
+    防两类局部假绿：① 只刷参与率（provider 未配）；② AI技术方案 §11.7 的
+    「配了 ≠ 通了」——provider 已配、参与率非零，但探活失败或压根没测过。
+    """
+
+    @staticmethod
+    def _coverage(facts):
+        return next(g for g in M.evaluate(facts) if g["id"] == "RUNTIME_MODEL_COVERAGE")
+
+    @staticmethod
+    def _mutate(**kw):
+        f = M.load_facts()
+        return dict(f, **kw)
+
+    @staticmethod
+    def _runtime(**overrides):
+        return {"nodesScanned": 88, "aiParticipated": 44,
+                "participationRate": 0.5, "capabilityMissing": 0,
+                "probeVerdict": "REACHABLE", **overrides}
+
+    def test_forged_participation_without_provider_stays_blocked(self):
+        """连探活判词与参与率一起伪造、provider 未配：必须仍 BLOCKED 且归因精确。"""
+        f = self._mutate(e2e_runtime=self._runtime())
+        f["provider_env"] = ""
+        g = self._coverage(f)
+        self.assertEqual(g["status"], M.BLOCKED)
+        self.assertEqual(g["reason"], "PROVIDER_NOT_CONFIGURED")
+        self.assertIn("providerConfigured=False", g["evidence"])
+
+    def test_three_conditions_all_present_is_satisfied(self):
+        """合规正例：三条件齐备，判据须可达 SATISFIED（防永远拒绝）。"""
+        f = self._mutate(provider_env="http://localhost:8000/v1",
+                         e2e_runtime=self._runtime())
+        g = self._coverage(f)
+        self.assertEqual(g["status"], M.SATISFIED)
+        self.assertEqual(g["reason"], "ADMITTED")
+        self.assertIn("providerConfigured=True", g["evidence"])
+        self.assertIn("probeVerdict=REACHABLE", g["evidence"])
+
+    def test_probe_not_reachable_with_provider_stays_blocked(self):
+        """§11.7「配了 ≠ 通了」：探活非 REACHABLE 时，参与率非零也不得翻绿。"""
+        for verdict in ("NOT_CONFIGURED", "MOCK_NOT_ALLOWED", "OUTPUT_CONTRACT_VIOLATION",
+                        "PROVIDER_TIMEOUT", "GATEWAY_ERROR"):
+            with self.subTest(verdict=verdict):
+                f = self._mutate(provider_env="http://localhost:8000/v1",
+                                 e2e_runtime=self._runtime(probeVerdict=verdict))
+                g = self._coverage(f)
+                self.assertEqual(g["status"], M.BLOCKED)
+                self.assertEqual(g["reason"], "PROBE_NOT_REACHABLE")
+                self.assertIn(f"probeVerdict={verdict}", g["evidence"])
+
+    def test_missing_probe_verdict_fails_closed(self):
+        """产物无探活判词（未测过）不得当成 REACHABLE。"""
+        rt = self._runtime()
+        rt.pop("probeVerdict")
+        f = self._mutate(provider_env="http://localhost:8000/v1", e2e_runtime=rt)
+        g = self._coverage(f)
+        self.assertEqual(g["status"], M.BLOCKED)
+        self.assertEqual(g["reason"], "PROBE_NOT_REACHABLE")
+        self.assertIn("probeVerdict=MISSING", g["evidence"])
+
+    def test_provider_configured_but_zero_participation_is_blocked(self):
+        """provider 已配、探活可达，但参与率为零，仍按 MODEL_PARTICIPATION_ZERO 阻断。"""
+        f = self._mutate(provider_env="http://localhost:8000/v1",
+                         e2e_runtime=self._runtime(aiParticipated=0, participationRate=0))
+        g = self._coverage(f)
+        self.assertEqual(g["status"], M.BLOCKED)
+        self.assertEqual(g["reason"], "MODEL_PARTICIPATION_ZERO")
+
+    def test_missing_e2e_evidence_is_runtime_only(self):
+        """无 E2E 产物时优先级最高，不得因 provider 条件降级为 BLOCKED。"""
+        f = self._mutate(e2e_runtime=None)
+        g = self._coverage(f)
+        self.assertEqual(g["status"], M.RUNTIME_ONLY)
+        self.assertEqual(g["reason"], "RUNTIME_EVIDENCE_REQUIRED")
+
+    def _degraded_self_test(self, old: str, new: str) -> bool:
+        """变造源码在独立命名空间执行，返回其 self_test 是否仍通过。"""
+        src = GATE.read_text(encoding="utf-8")
+        degraded = src.replace(old, new)
+        self.assertNotEqual(degraded, src)
+        ns: dict = {"__name__": "readiness_degraded", "__file__": str(GATE)}
+        exec(compile(degraded, str(GATE), "exec"), ns)  # noqa: S102
+        with contextlib.redirect_stdout(io.StringIO()):
+            return ns["self_test"](ns["load_facts"]())
+
+    def test_dropping_provider_condition_is_detectable(self):
+        """摘除 provider 条件时，--self-test 的负向探针必须判红（可证伪）。"""
+        bad = self._degraded_self_test(
+            "SATISFIED if (provider_configured and coverage and probe_reachable) else BLOCKED",
+            "SATISFIED if (coverage and probe_reachable) else BLOCKED",
+        )
+        self.assertFalse(bad, "摘除 provider 条件后，防假绿负向探针必须判红")
+
+    def test_dropping_probe_condition_is_detectable(self):
+        """摘除探活条件退化成双条件时，--self-test 的负向探针必须判红（可证伪）。"""
+        bad = self._degraded_self_test(
+            "SATISFIED if (provider_configured and coverage and probe_reachable) else BLOCKED",
+            "SATISFIED if (provider_configured and coverage) else BLOCKED",
+        )
+        self.assertFalse(bad, "摘除探活条件后，防假绿负向探针必须判红")
+
+
+class MaturityLevelTest(unittest.TestCase):
+    """成熟度档位描述运行态：配置态全齐但模型从未上场，不得判 L1/L2。
+
+    第 11 轮修复的假绿面：原 `current_level()` 只看 provider 与 parse_mode 两个
+    配置态判据，「配好环境变量 + 打开 llm」即可判 L2，哪怕 E2E 证明模型没上场。
+    """
+
+    @staticmethod
+    def _rt(**overrides):
+        return {"nodesScanned": 88, "aiParticipated": 44,
+                "participationRate": 0.5, "capabilityMissing": 0,
+                "probeVerdict": "REACHABLE", **overrides}
+
+    @classmethod
+    def _facts(cls, **overrides):
+        f = M.load_facts()
+        f.update({"provider_env": "http://localhost:8000/v1",
+                  "parse_mode_env": "llm", "e2e_runtime": cls._rt()})
+        f.update(overrides)
+        return f
+
+    def _level(self, **overrides):
+        return M.current_level(M.evaluate(self._facts(**overrides)))
+
+    def test_config_only_with_failed_probe_cannot_reach_l2(self):
+        """provider + llm 已配，但探活非 REACHABLE：回落 L0 且带原因码。"""
+        level = self._level(e2e_runtime=self._rt(probeVerdict="GATEWAY_ERROR"))
+        self.assertTrue(level.startswith("L0"), level)
+        self.assertIn("PROBE_NOT_REACHABLE", level)
+
+    def test_no_runtime_evidence_cannot_reach_l2(self):
+        """provider + llm 已配，但根本没有 E2E 产物：回落 L0。"""
+        level = self._level(e2e_runtime=None)
+        self.assertTrue(level.startswith("L0"), level)
+        self.assertIn("RUNTIME_EVIDENCE_REQUIRED", level)
+
+    def test_zero_participation_cannot_reach_l2(self):
+        """探活可达但模型从未在案件链路上场：回落 L0。"""
+        level = self._level(e2e_runtime=self._rt(aiParticipated=0, participationRate=0))
+        self.assertTrue(level.startswith("L0"), level)
+        self.assertIn("MODEL_PARTICIPATION_ZERO", level)
+
+    def test_runtime_evidence_but_perception_not_driven_is_l1(self):
+        """三条件齐全但感知仍走确定性文本层：AI 辅助、可摘除，判 L1。"""
+        level = self._level(parse_mode_env="text")
+        self.assertTrue(level.startswith("L1"), level)
+
+    def test_full_evidence_reaches_l2(self):
+        """合规正例：三条件 + 感知模型驱动，档位须可达 L2（防永远拒绝）。"""
+        level = self._level()
+        self.assertTrue(level.startswith("L2"), level)
+
+    def test_provider_missing_is_l0_without_runtime_reason(self):
+        """未配 provider 时优先报全链路降级，不把运行期原因码混进档位。"""
+        level = self._level(provider_env="")
+        self.assertIn("AI 全链路降级", level)
+        self.assertNotIn("配置态就绪", level)
+
+    def test_degraded_level_is_detectable(self):
+        """把档位退化成只看配置态时，本类断言必须能抓到假绿（可证伪）。"""
+        src = GATE.read_text(encoding="utf-8")
+        degraded = src.replace('if coverage.get("status") != SATISFIED:', "if False:")
+        self.assertNotEqual(degraded, src)
+        ns: dict = {"__name__": "readiness_degraded", "__file__": str(GATE)}
+        exec(compile(degraded, str(GATE), "exec"), ns)  # noqa: S102
+        facts = self._facts(e2e_runtime=self._rt(probeVerdict="GATEWAY_ERROR"))
+        self.assertTrue(ns["current_level"](ns["evaluate"](facts)).startswith("L2"),
+                        "退化实现应判 L2，否则本类用例没有判别力")
+
+    def test_degraded_level_makes_self_test_fail(self):
+        """把档位退化成只看配置态时，--self-test 的新增档位探针必须判红。"""
+        src = GATE.read_text(encoding="utf-8")
+        degraded = src.replace('if coverage.get("status") != SATISFIED:', "if False:")
+        self.assertNotEqual(degraded, src)
+        ns: dict = {"__name__": "readiness_degraded", "__file__": str(GATE)}
+        exec(compile(degraded, str(GATE), "exec"), ns)  # noqa: S102
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertFalse(ns["self_test"](ns["load_facts"]()),
+                             "退化实现下 --self-test 必须判红，否则档位探针恒真")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

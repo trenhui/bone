@@ -10,9 +10,10 @@
   · 当前可判定的成熟度档位
   · l3Claimable（全部判据 SATISFIED 才为 true）
 
-刻意不做的四件事（防假绿）：
+刻意不做的五件事（防假绿）：
   · 不编造准确率 / 自动化率 / aiCoverage —— 那是运行期数据，静态文件里没有；
     相关判据一律标 RUNTIME_ONLY 并阻断，不因「没数据」判定为「达标」；
+  · 不把「配置态全齐」当成成熟度档位——L1/L2 描述运行态，必须有模型上场证据（第 11 轮）；
   · 不读取活库、不起服务、不改任何文件；
   · 不因为「代码里已有判据」就把对应能力算作已发生（check.sh 里的门禁接线
     只证明可证伪，不证明模型跑过真实案件）；
@@ -516,8 +517,15 @@ def evaluate(f: dict) -> list[dict]:
         )
     )
 
-    # 运行期证据：消费前后端 E2E 实跑产物，不再只靠静态推断。
+    # 运行期证据：消费前后端 E2E 实跑产物，不再只靠静态推断。三项条件缺一不可：
+    #   ① provider 配置态：节点自报模型标识 ≠ provider 真的配了（AiModelProvenance 用黑名单判定，
+    #      未配 provider 的环境也可能留下非空标识），须叠加 PROVIDER_CONFIGURED；
+    #   ② 探活 REACHABLE：AI技术方案 §11.7 记录过「探活绿灯、业务全量降级」事故——
+    #      配了环境变量 ≠ 上游通了 ≠ 输出契约对。判词由同一次手动探活响应写入 runtime.probeVerdict，
+    #      缺省 / 非 REACHABLE 一律 fail-closed，绝不把「没测过」当成「通了」；
+    #   ③ 运行期参与率：nodes / rate / participated 三者均 > 0，证明模型真正在案件链路上过场。
     rt = f["e2e_runtime"]
+    provider_configured = bool(f["provider_env"])
     if not rt or not isinstance(rt, dict) or rt.get("nodesScanned") is None:
         gates.append(
             gate(
@@ -531,23 +539,48 @@ def evaluate(f: dict) -> list[dict]:
         nodes = int(rt.get("nodesScanned") or 0)
         rate = float(rt.get("participationRate") or 0)
         participated = int(rt.get("aiParticipated") or 0)
+        coverage = nodes > 0 and rate > 0 and participated > 0
+        probe_verdict = str(rt.get("probeVerdict") or "").strip().upper()
+        probe_reachable = probe_verdict == "REACHABLE"
+        if not provider_configured:
+            reason = "PROVIDER_NOT_CONFIGURED"
+        elif not probe_reachable:
+            reason = "PROBE_NOT_REACHABLE"
+        elif not coverage:
+            reason = "MODEL_PARTICIPATION_ZERO"
+        else:
+            reason = "ADMITTED"
         gates.append(
             gate(
                 "RUNTIME_MODEL_COVERAGE",
-                SATISFIED if (nodes > 0 and rate > 0 and participated > 0) else BLOCKED,
-                "MODEL_PARTICIPATION_ZERO" if rate <= 0 else "ADMITTED",
+                SATISFIED if (provider_configured and coverage and probe_reachable) else BLOCKED,
+                reason,
                 f"E2E 实跑：nodes={nodes} aiParticipated={participated} "
-                f"participationRate={rate:.4f} capabilityMissing={rt.get('capabilityMissing')}",
+                f"participationRate={rate:.4f} capabilityMissing={rt.get('capabilityMissing')} "
+                f"providerConfigured={provider_configured} "
+                f"probeVerdict={probe_verdict or 'MISSING'}",
             )
         )
     return gates
 
 
 def current_level(gates: list[dict]) -> str:
-    by_id = {g["id"]: g["status"] for g in gates}
-    if by_id.get("PROVIDER_CONFIGURED") != SATISFIED:
+    """成熟度档位描述运行态，配置态不能替代运行期证据。
+
+    第 11 轮循环复核发现原实现只看 PROVIDER_CONFIGURED 与
+    PERCEPTION_MODEL_DRIVEN 两个配置态判据：只要「配好环境变量 + 打开 llm 模式」
+    就会判 L2（AI 承担部分主负载），哪怕 E2E 证明模型从未在案件链路上场。
+    故 RUNTIME_MODEL_COVERAGE 未达 SATISFIED 时一律回落 L0，并把三条件里
+    真正缺失的原因码带进档位说明，杜绝「配了就算 AI 原生」。
+    """
+    by_id = {g["id"]: g for g in gates}
+    if by_id.get("PROVIDER_CONFIGURED", {}).get("status") != SATISFIED:
         return "L0（运行态：AI 全链路降级，纯规则路径）"
-    if by_id.get("PERCEPTION_MODEL_DRIVEN") != SATISFIED:
+    coverage = by_id.get("RUNTIME_MODEL_COVERAGE", {})
+    if coverage.get("status") != SATISFIED:
+        reason = coverage.get("reason", "UNKNOWN")
+        return f"L0（配置态就绪但运行期未达标：{reason}，不得计入 L1/L2）"
+    if by_id.get("PERCEPTION_MODEL_DRIVEN", {}).get("status") != SATISFIED:
         return "L1（AI 辅助，可摘除）"
     return "L2（AI 承担部分主负载，仍待飞轮与 MRM）"
 
@@ -560,6 +593,10 @@ def self_test(f: dict) -> bool:
       · flip_to_satisfied   —— 注入合规事实，判据必须达 SATISFIED（防恒假）；
       · stay                 —— 注入「只改字符串/改孤儿文件/删分册」等刷绿动作，
                                判据必须保持 BLOCKED（防假绿，本轮核心回归钉子）。
+
+    第 12 轮补第四类：成熟度档位探针。`l3Claimable` 只回答「能不能宣称 L3」，
+    档位 `current_level()` 是另一处可假绿的出口——配好 provider + 打开 llm 就可能
+    被写成 L2。故命令行自检也须覆盖档位，不能只靠 pre-commit 单测。
     """
     base = {g["id"]: g["status"] for g in evaluate(f)}
     probes: list[tuple[str, str, dict, str]] = []
@@ -587,8 +624,24 @@ def self_test(f: dict) -> bool:
         dict(f, provider_env="http://localhost:8000/v1"))
 
     rt = dict(f.get("e2e_runtime") or {})
-    rt.update({"nodesScanned": 88, "participationRate": 0.5, "aiParticipated": 44})
-    add("运行期参与率改为 0.5", "RUNTIME_MODEL_COVERAGE", dict(f, e2e_runtime=rt))
+    rt.update({"nodesScanned": 88, "participationRate": 0.5, "aiParticipated": 44,
+               "probeVerdict": "NOT_CONFIGURED"})
+    rt_ok = dict(rt, probeVerdict="REACHABLE")
+    # 只刷参与率而 provider 未配，不得让判据局部假绿（stay）。
+    add("仅伪造运行期参与率而 provider 未配（防假绿）", "RUNTIME_MODEL_COVERAGE",
+        dict(f, e2e_runtime=rt), "stay")
+    # 三项条件齐备，判据须翻转为 SATISFIED（防恒假）。
+    add("provider 已配 + 探活 REACHABLE + 参与率 0.5（合规可达）", "RUNTIME_MODEL_COVERAGE",
+        dict(f, provider_env="http://localhost:8000/v1", e2e_runtime=rt_ok), "flip_to_satisfied")
+    # §11.7「配了 ≠ 通了」：provider 已配、参与率非零，但探活非 REACHABLE，仍须 BLOCKED。
+    add("provider 已配 + 参与率 0.5 但探活非 REACHABLE（防假绿）", "RUNTIME_MODEL_COVERAGE",
+        dict(f, provider_env="http://localhost:8000/v1", e2e_runtime=rt), "stay")
+    add("探活判词缺失（未测过）不得当成 REACHABLE（fail-closed）", "RUNTIME_MODEL_COVERAGE",
+        dict(f, provider_env="http://localhost:8000/v1",
+             e2e_runtime={k: v for k, v in rt.items() if k != "probeVerdict"}), "stay")
+    # 判词与参与率一起伪造、但 provider 未配，同样不得翻绿（钉住 provider 条件不可摘除）。
+    add("provider 未配但把探活判词与参与率一起伪造（防假绿）", "RUNTIME_MODEL_COVERAGE",
+        dict(f, e2e_runtime=rt_ok), "stay")
 
     # 基线：只刷 status 不得翻绿，须真实采集证据 + 顶层非 skeleton。
     add("基线合规正例（wired+provenance+confirmed）", "BASELINE_WIRED",
@@ -656,13 +709,32 @@ def self_test(f: dict) -> bool:
             detail = "须翻转"
         print(f"  [{'OK' if passed else 'FAIL'}] {label}: {before} → {now}（{detail}）")
         ok = ok and passed
+
+    # 第四类：成熟度档位。配置态全齐但运行期无模型上场证据，不得写成 L1/L2；
+    # 同时必须有合规正例可达 L2，防止把档位改成「永远 L0」来蒙混过关。
+    level_probes = [
+        ("配置态全齐但探活失败 ⇒ 档位须为 L0",
+         dict(f, provider_env="http://localhost:8000/v1",
+              parse_mode_env="llm", e2e_runtime=rt), "L0"),
+        ("配置态全齐但无 E2E 产物 ⇒ 档位须为 L0",
+         dict(f, provider_env="http://localhost:8000/v1",
+              parse_mode_env="llm", e2e_runtime=None), "L0"),
+        ("三条件齐备 + llm ⇒ 档位须可达 L2（防恒假）",
+         dict(f, provider_env="http://localhost:8000/v1",
+              parse_mode_env="llm", e2e_runtime=rt_ok), "L2"),
+    ]
+    for label, mutated, required in level_probes:
+        lv = current_level(evaluate(mutated))
+        passed = lv.startswith(required)
+        print(f"  [{'OK' if passed else 'FAIL'}] {label}: {lv}（须以 {required} 开头）")
+        ok = ok and passed
     return ok
 
 
 def main() -> int:
     facts = load_facts()
     if "--self-test" in sys.argv:
-        print("三类探针（翻转 / 合规可达 / 刷绿须保持 BLOCKED）：")
+        print("四类探针（翻转 / 合规可达 / 刷绿须保持 BLOCKED / 成熟度档位）：")
         passed = self_test(facts)
         print("自测结果：", "PASS" if passed else "FAIL")
         return 0 if passed else 1
@@ -683,8 +755,10 @@ def main() -> int:
     if rt:
         print(f"运行期证据（前后端 E2E 实跑）：nodes={rt.get('nodesScanned')} "
               f"aiParticipated={rt.get('aiParticipated')} "
-              f"participationRate={rt.get('participationRate')}")
-    print("说明：无 E2E 产物时该判据为 RUNTIME_ONLY 并阻断；有产物但参与率为 0 时直接判 BLOCKED。")
+              f"participationRate={rt.get('participationRate')} "
+              f"probeVerdict={rt.get('probeVerdict') or 'MISSING'}")
+    print("说明：无 E2E 产物时该判据为 RUNTIME_ONLY 并阻断；provider 未配、探活非 REACHABLE "
+          "或参与率为 0 均判 BLOCKED。")
     return 0
 
 

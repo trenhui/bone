@@ -6,11 +6,15 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.bone.aidoc.application.TrustedOcrApplicationService;
 import com.bone.aidoc.domain.gateway.DocumentClassifier;
+import com.bone.aidoc.domain.gateway.FeedbackCollector;
 import com.bone.aidoc.domain.gateway.OcrEngine;
+import com.bone.aidoc.domain.gateway.OcrMetrics;
 import com.bone.aidoc.domain.gateway.OcrQualityEvaluator;
 import com.bone.aidoc.domain.gateway.ReviewPolicy;
 import com.bone.aidoc.domain.model.OcrDocType;
 import com.bone.aidoc.domain.service.ClaimDocumentTemplateRegistry;
+import com.bone.aidoc.domain.service.NoOpFeedbackCollector;
+import com.bone.aidoc.domain.service.NoOpOcrMetrics;
 import com.bone.aidoc.infrastructure.ocr.HttpDocumentClassifier;
 import java.io.ByteArrayInputStream;
 import org.junit.jupiter.api.Test;
@@ -144,6 +148,42 @@ class TrustedOcrAutoConfigurationContextTest {
               if (bounded != null) {
                 assertThat(bounded).hasMessageNotContaining("超过大小上限");
               }
+            });
+  }
+
+  @Test
+  void metrics_and_feedback_ports_are_wired_as_safe_defaults() {
+    runner
+        .withPropertyValues("bone.ai.document.trusted-ocr.enabled=true")
+        .run(
+            ctx -> {
+              assertThat(ctx).hasNotFailed();
+              // 两个可信闭环端口默认以 no-op 接入；缺失时绝不阻断识别
+              assertThat(ctx).hasSingleBean(OcrMetrics.class);
+              assertThat(ctx).hasSingleBean(FeedbackCollector.class);
+              assertThat(ctx.getBean(OcrMetrics.class)).isInstanceOf(NoOpOcrMetrics.class);
+              assertThat(ctx.getBean(FeedbackCollector.class))
+                  .isInstanceOf(NoOpFeedbackCollector.class);
+              // 应用服务确实注入了这两个端口（否则装配会缺参失败）
+              assertThat(ctx).hasSingleBean(TrustedOcrApplicationService.class);
+            });
+  }
+
+  @Test
+  void retry_config_is_bound_and_propagates_to_transport() {
+    runner
+        .withPropertyValues(
+            "bone.ai.document.trusted-ocr.enabled=true",
+            "bone.ai.document.trusted-ocr.max-retries=5",
+            "bone.ai.document.trusted-ocr.retry-base-delay-ms=30")
+        .run(
+            ctx -> {
+              assertThat(ctx).hasNotFailed();
+              DocumentProperties.TrustedOcr t =
+                  ctx.getBean(DocumentProperties.class).getTrustedOcr();
+              // 配置确实绑定且被读取；传输层构造时透传（重试机制本身由 HttpClientTransportRetryTest 钉死）
+              assertThat(t.getMaxRetries()).isEqualTo(5);
+              assertThat(t.getRetryBaseDelayMs()).isEqualTo(30);
             });
   }
 }

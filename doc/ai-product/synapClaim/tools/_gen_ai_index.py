@@ -30,6 +30,8 @@ ROLE_MODEL = [
     ("draft", "待合入草案（如 go-live 01–13）", "仅作计划/提案，不当现行契约"),
     ("evidence", "冻结的过程证据（L9/L10）", "仅回答「为什么/历史」，不当现状"),
     ("tooling", "工具/参考实现（oracle）", "非产品代码，不当设计引用"),
+    ("guide", "操作指南（可执行步骤 / 逐项裁定台账，不含现行契约）",
+     "按步骤执行；状态与数值以对应 ssot 为准，不据此宣称能力已具备"),
 ]
 CURRENCY_MODEL = [
     ("current", "现行——默认可引用"),
@@ -96,9 +98,11 @@ def render(m):
         A(f"| {r['intent']} | {ids} |")
     A("")
 
-    active = [d for d in docs if d.get("currency") == "current" and d.get("role") != "tooling"]
+    active = [d for d in docs
+              if d.get("currency") == "current" and d.get("role") not in ("tooling", "guide")]
     draft = [d for d in docs if d.get("role") == "draft"]
     frozen = [d for d in docs if d.get("role") in ("evidence", "tooling")]
+    guide = [d for d in docs if d.get("role") == "guide"]
 
     A(f"## 三、ACTIVE 现行真源（currency=current，可引用为事实，共 {len(active)} 份）")
     A("")
@@ -114,7 +118,13 @@ def render(m):
         A(f"- `{d['id']}` → `{d['path']}`：{d.get('summary', '')}")
     A("")
 
-    A(f"## 五、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 {len(frozen)} 份）")
+    A(f"## 五、GUIDE 操作指南（role=guide，可执行步骤；结论以对应 ssot 为准，共 {len(guide)} 份）")
+    A("")
+    for d in sorted(guide, key=lambda x: x["path"]):
+        A(f"- `{d['id']}` → `{d['path']}`：{d.get('summary', '')}")
+    A("")
+
+    A(f"## 六、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 {len(frozen)} 份）")
     A("")
     for d in sorted(frozen, key=lambda x: x["path"]):
         sup = d.get("superseded_by")
@@ -123,9 +133,9 @@ def render(m):
         A(f"- `{d['id']}` → `{d['path']}`：{d.get('summary', '')}{extra}")
     A("")
 
-    A("## 六、manifest 字段图例")
+    A("## 七、manifest 字段图例")
     A("")
-    A("- `role`：文档角色（ssot/navigation/draft/evidence/tooling）")
+    A("- `role`：文档角色（ssot/navigation/draft/evidence/tooling/guide）")
     A("- `currency`：时效（current/draft/frozen）")
     A("- `authority`：本文件独占真源的主题")
     A("- `superseded_by`：被哪份文档撤销/修正（仅证据类有）")

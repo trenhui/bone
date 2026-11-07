@@ -16,6 +16,8 @@ import java.util.Set;
  * OcrFieldEvidence#isKeyField(Set)}）。后者用于按票种模板的关键字段 清单做验收，避免口径漂移。
  *
  * @param criticalEvidenceCoverage 关键字段的原图证据定位覆盖率（ADR 验收目标 100%）
+ * @param l4MismatchCount L4 业务一致性失配字段数（明细汇总 ≠ 总额，总额被降级 FAILED）
+ * @param safetyGateCount 被 fail-open 安全闸门拦截的字段数（本会被错误自动放行，被决策层拦下）
  */
 public record OcrAcceptanceMetrics(
     int totalFields,
@@ -26,12 +28,21 @@ public record OcrAcceptanceMetrics(
     int criticalFields,
     int criticalFieldsWithEvidence,
     int criticalAutoPassed,
+    int l4MismatchCount,
+    int safetyGateCount,
     double autoPassRate,
     double manualInterventionRate,
     double criticalEvidenceCoverage) {
 
   /** 缺字段占位证据的审计标记（与 {@code OcrFieldEvidence.missing} 约定一致）。 */
   private static final String MISSING_MARKER = "[MISSING_REQUIRED_FIELD]";
+
+  /**
+   * fail-open 安全闸门的原因前缀：命中的字段本会被自动放行，被决策层显式拦下。 不含 {@code [阈值]}（属标定门槛，非安全闸门）与 {@code [L4]}（L4
+   * 失配单列计数）。
+   */
+  private static final java.util.Set<String> SAFETY_GATE_PREFIXES =
+      java.util.Set.of("[L1]", "[L2]", "[L3']", "[L3]", "[值]", "[来源]", "[配置]");
 
   /** 按领域风险分级推导关键字段（CRITICAL）。 */
   public static OcrAcceptanceMetrics from(TrustedOcrDocument doc, ClaimFieldRisk fieldRisk) {
@@ -53,6 +64,8 @@ public record OcrAcceptanceMetrics(
     int critical = 0;
     int criticalLocated = 0;
     int criticalAuto = 0;
+    int l4Mismatch = 0;
+    int safetyGates = 0;
     for (OcrFieldEvidence f : doc.fields()) {
       switch (f.reviewStatus()) {
         case AUTO_PASSED -> auto++;
@@ -74,6 +87,13 @@ public record OcrAcceptanceMetrics(
           criticalAuto++;
         }
       }
+      String reason = doc.decisionReasons().getOrDefault(f.fieldName(), "");
+      if (reason.contains("[L4]")) {
+        l4Mismatch++;
+      }
+      if (f.reviewStatus() != ReviewStatus.AUTO_PASSED && isSafetyGate(reason)) {
+        safetyGates++;
+      }
     }
     int total = doc.fields().size();
     return new OcrAcceptanceMetrics(
@@ -85,6 +105,8 @@ public record OcrAcceptanceMetrics(
         critical,
         criticalLocated,
         criticalAuto,
+        l4Mismatch,
+        safetyGates,
         total == 0 ? 0.0 : (double) auto / total,
         total == 0 ? 0.0 : (double) (manual + secondary) / total,
         critical == 0 ? 0.0 : (double) criticalLocated / critical);
@@ -93,5 +115,15 @@ public record OcrAcceptanceMetrics(
   /** 是否满足「关键字段 100% 证据定位覆盖」（无关键字段时判不达标，避免空集假绿）。 */
   public boolean meetsKeyFieldEvidenceCoverageTarget() {
     return criticalFields > 0 && criticalFieldsWithEvidence == criticalFields;
+  }
+
+  /** 该字段的判据说明是否由 fail-open 安全闸门产生（本会被自动放行，被决策层显式拦下）。 */
+  private static boolean isSafetyGate(String reason) {
+    for (String prefix : SAFETY_GATE_PREFIXES) {
+      if (reason.contains(prefix)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

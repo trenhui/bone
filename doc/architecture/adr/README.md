@@ -53,6 +53,7 @@
 | [0043](./0043-enum-option-source-layered-truth.md) | 枚举选项源选型 — 四层真源分层 + 字段单向引用（`meta_field.enum_source`）+ 发布物化 + 版本协商 SWR（**已接受 / 已实现**，2026-10-21 终验归档；否决「三方合并 / UI 层自建 / live 直连 / 物理外键」四路备选） |
 | [0044](./0044-approver-id-field-semantics-contract.md) | 审批人字段 `approver_id` 语义契约 — FIELD 专用指定审批人 + 类型 REFERENCE→iam_account + 组织策略改读 `manager_id`/`leader_id`（LINE_MANAGER/DEPT_HEAD/LEVEL_UP）+ expand/contract 兼容 v1/v2 + 自审批上溯（**已接受 / 已实现**，2026-10-31 收口归档；否决「删列 / 共用列 / 当组织真源 / 跳过节点 / 保持 STRING」五路） |
 | [0045](./0045-org-modeling-frontend-backend-integration-defect-closure.md) | 组织建模前后端联调缺陷闭环 — IAM 账号列表「所属部门」恒显未归属 / 部分更新抹掉真实姓名手机号 / 邮箱被静默丢弃 三处**已修**（单测 + 变异验证锁定）；审批人待办摘要恒空（行级 ACL 语义混用）与审批端点授权口径漂移（注解层仍写死旧粗码）**待决**，只出方案不擅动（**部分已实现 / 部分待决**，2026-11-01；附 API 层 32 项 + UI 层 23 项双证据源 E2E 资产与幽灵审批人种子债） |
+| [0046](./0046-claim-ocr-selection-and-trusted-parsing.md) | 智能理赔 OCR 技术选型与可信文档解析架构 — 分层选型（PaddleOCR 3.7.x 基础底座 + GLM-OCR VLM 主力候选 + MiniCPM-OCR/Jev 质量评估）、Jev 非终判、专用识别+通用解析+字段级可信度+规则校验+人工审核、五层可信度、DDD 独立边界、三阶段落地（**已接受**，2026-11-06；取代初版「PaddleOCR 唯一主引擎」结论） |
 
 **非编号附录**
 

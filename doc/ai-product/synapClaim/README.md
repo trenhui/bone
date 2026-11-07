@@ -41,7 +41,7 @@ synapClaim/
 ├── 04-design/                L4  设计：理算引擎 / 风控与支付 / BONE-AI 依赖
 ├── 05-plan/                  L5  实施：MVP 执行方案 / 部署集成 FDE
 ├── 06-verification/          L6  验证：理算引擎验证套件
-├── 07-delivery/              L7  交付：交付包 00–10 + demo/
+├── 07-delivery/              L7  交付：交付包 00–11 + demo/
 ├── 08-go-live/               L8  上线：门禁总纲 00 + 规范分册 01–13
 ├── 09-records/               L9  记录：reviews/（评审与台账）+ impl-log/（实施记录 14–20）
 ├── 10-archive/               L10 归档：正文作废，只留洞察

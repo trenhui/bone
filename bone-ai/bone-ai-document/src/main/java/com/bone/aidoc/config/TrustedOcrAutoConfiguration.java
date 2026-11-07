@@ -2,8 +2,10 @@ package com.bone.aidoc.config;
 
 import com.bone.aidoc.application.TrustedOcrApplicationService;
 import com.bone.aidoc.domain.gateway.DocumentClassifier;
+import com.bone.aidoc.domain.gateway.FeedbackCollector;
 import com.bone.aidoc.domain.gateway.FieldValidationRule;
 import com.bone.aidoc.domain.gateway.OcrEngine;
+import com.bone.aidoc.domain.gateway.OcrMetrics;
 import com.bone.aidoc.domain.gateway.OcrProvider;
 import com.bone.aidoc.domain.gateway.OcrQualityEvaluator;
 import com.bone.aidoc.domain.gateway.ReviewPolicy;
@@ -18,7 +20,9 @@ import com.bone.aidoc.domain.service.DelegatingOcrProvider;
 import com.bone.aidoc.domain.service.HeuristicOcrQualityEvaluator;
 import com.bone.aidoc.domain.service.IdCardCheckDigitRule;
 import com.bone.aidoc.domain.service.NoOpDocumentClassifier;
+import com.bone.aidoc.domain.service.NoOpFeedbackCollector;
 import com.bone.aidoc.domain.service.NoOpOcrClient;
+import com.bone.aidoc.domain.service.NoOpOcrMetrics;
 import com.bone.aidoc.domain.service.NumericAmountRule;
 import com.bone.aidoc.domain.service.TrustedOcrEngine;
 import com.bone.aidoc.infrastructure.ocr.HttpDocumentClassifier;
@@ -60,7 +64,9 @@ public class TrustedOcrAutoConfiguration {
       // 配置 Jev 服务即接入真实标定质量分；服务异常时该适配器 fail-closed（质量分 NaN →
       // CRITICAL 强制二次识别），绝不用启发式分数伪装成模型判断。
       return new JevHttpQualityEvaluator(
-          t.getJevUrl(), new HttpOcrClient.HttpClientTransport(t.getTimeoutMs()));
+          t.getJevUrl(),
+          new HttpOcrClient.HttpClientTransport(
+              t.getTimeoutMs(), t.getMaxRetries(), t.getRetryBaseDelayMs()));
     }
     // 默认装配模型无关的启发式质量评估器（ADR-0046 Phase-3），让 L3 质量感知路由生效；
     // 该实现是代理信号而非 Jev 类标定模型，真实质量评估器以同类型 Bean 覆盖本实现即可。
@@ -77,7 +83,8 @@ public class TrustedOcrAutoConfiguration {
       // 绝不猜测票种——错分会连带错选引擎、错用规则与模板。
       return new HttpDocumentClassifier(
           t.getClassifierUrl(),
-          new HttpOcrClient.HttpClientTransport(t.getTimeoutMs()),
+          new HttpOcrClient.HttpClientTransport(
+              t.getTimeoutMs(), t.getMaxRetries(), t.getRetryBaseDelayMs()),
           t.getMaxBytes());
     }
     // ② 票种分类端口的默认安全态：不猜测票种，保持调用方显式指定的类型。
@@ -90,6 +97,14 @@ public class TrustedOcrAutoConfiguration {
   public ClaimDocumentTemplateRegistry trustedDocumentTemplates() {
     // 版式契约（必填字段 + 引擎偏好）唯一事实源；生产可用经 PoC 校准的自定义 Bean 整体替换。
     return ClaimDocumentTemplateRegistry.builtIn();
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public ClaimFieldRisk trustedClaimFieldRisk(ClaimDocumentTemplateRegistry templates) {
+    // 字段风险口径（必填字段 + 风险等级映射）唯一事实源；供引擎与应用服务共享同一实例，
+    // 避免两处 new 出语义一致但实例分裂的口径。
+    return new ClaimFieldRisk(templates);
   }
 
   @Bean
@@ -125,6 +140,7 @@ public class TrustedOcrAutoConfiguration {
       OcrQualityEvaluator qualityEvaluator,
       ReviewPolicy reviewPolicy,
       DocumentClassifier classifier,
+      ClaimFieldRisk claimFieldRisk,
       ClaimDocumentTemplateRegistry templates) {
     DocumentProperties.TrustedOcr t = props.getTrustedOcr();
     List<OcrProvider> providers = new ArrayList<>();
@@ -156,7 +172,7 @@ public class TrustedOcrAutoConfiguration {
         providers,
         qualityEvaluator,
         reviewPolicy,
-        new ClaimFieldRisk(templates),
+        claimFieldRisk,
         rules,
         cross,
         templates,
@@ -166,8 +182,23 @@ public class TrustedOcrAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public TrustedOcrApplicationService trustedOcrApplicationService(OcrEngine engine) {
-    return new TrustedOcrApplicationService(engine);
+  public OcrMetrics trustedOcrMetrics() {
+    // 生产可观测性端口的安全默认：未装配真实度量后端时丢弃计数，绝不因度量缺失而阻断识别。
+    return new NoOpOcrMetrics();
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public FeedbackCollector trustedFeedbackCollector() {
+    // 人工复核反馈采集端口的安全默认：未装配真实反馈存储时丢弃，反馈闭环缺失只削弱可信验证能力。
+    return new NoOpFeedbackCollector();
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public TrustedOcrApplicationService trustedOcrApplicationService(
+      OcrEngine engine, OcrMetrics metrics, FeedbackCollector feedback, ClaimFieldRisk fieldRisk) {
+    return new TrustedOcrApplicationService(engine, metrics, feedback, fieldRisk);
   }
 
   /** 阈值合法性：落在 [0,1] 且人工复核门槛不得高于自动通过门槛（否则策略语义反转）。 */
@@ -190,7 +221,8 @@ public class TrustedOcrAutoConfiguration {
             url,
             engineId,
             t.getMaxBytes(),
-            new HttpOcrClient.HttpClientTransport(t.getTimeoutMs()));
+            new HttpOcrClient.HttpClientTransport(
+                t.getTimeoutMs(), t.getMaxRetries(), t.getRetryBaseDelayMs()));
     return new DelegatingOcrProvider(client, engineId, Set.of());
   }
 

@@ -39,7 +39,7 @@ runtime）都是本机状态，一律忽略。曾出现「配置只在本机、�
 ```bash
 python3 scripts/ops/verify_comet_install.py                 # 严格模式(默认)：8 项判据，缺 tarball 即 UNVERIFIED
 python3 scripts/ops/verify_comet_install.py --fetch-tarball # 无本地包时自动 npm pack 复现官方包并校验
-python3 scripts/ops/verify_comet_install.py --self-test     # 14 条探针（含自适应白名单/严格模式），证明判据非恒绿
+python3 scripts/ops/verify_comet_install.py --self-test     # 16 条探针（含自适应白名单/严格模式/重复 Guard 变异），证明判据非恒绿
 python3 scripts/ops/verify_comet_install.py --json          # 供 CI/脚本消费（含 verified/skipped/verdict）
 python3 scripts/ops/verify_comet_install.py --no-strict    # 降级：C3 缺失不阻拦（本地体检用，CI/交接勿用）
 ```
@@ -51,7 +51,7 @@ python3 scripts/ops/verify_comet_install.py --no-strict    # 降级：C3 缺失�
 | C3 | **官方 tarball 全包逐字节比对**（fail-closed） | 详见 §三：version + doctor + 一次 update 都不够；**tarball 缺失时严格模式判 UNVERIFIED（exit 2），不再假绿**，用 `--fetch-tarball` 复现 |
 | C4 | `assets/` 与 `eval/` 功能资产齐备 | `comet update` 只报它当时要用的 assets，不报 eval/ 与 .d.ts 缺失（轻量兜底，强校验见 C3） |
 | C5 | doctor 健康 + **自适应**白名单 | 上游缺陷（Trae/Trae CN 互斥）仍在时容忍告警，上游修复后白名单**自动失效**，残留告警立即判红 |
-| C6 | Hook Router 唯一（**自适应** platform 集合） | 「一次写入事件最多进入一个 Guard」；缺陷修复后 `.trae` 仅允 `trae`、`.trae-cn` 必须存在且仅 `trae-cn` |
+| C6 | Hook Router 唯一（**自适应** platform 集合 + **同事件重复接线检测**） | 「一次写入事件最多进入一个 Guard」：① 每个平台配置至少接线 1 个 router（否则平台无保护）；② **同一 hook 事件下不得出现 2+ 个 distinct router 叶子**（= 重复 Guard，会让一次写入被双次拦截/加锁，必须判红）；③ platform 集合 ⊆ 该平台允许集（缺陷修复后 `.trae` 仅允 `trae`、`.trae-cn` 必须存在且仅 `trae-cn`）。router 路径常 `base64(node -e …)` 内嵌，判据须解码后再判定，避免误报 |
 | C7 | 项目配置已入库 | 防止团队 clone 后退回 legacy fallback |
 | C8 | 生成资产不污染工作树 | 多平台 5×65 文件入库会造成无意义 diff 与合并冲突 |
 
@@ -62,8 +62,8 @@ python3 scripts/ops/verify_comet_install.py --no-strict    # 降级：C3 缺失�
 ### 变异验证纪律
 
 `--self-test` 通过注入伪造采集结果**真实调用判据函数**，每条「必须判红」都配一条
-「必须判绿」正例，避免把判据改成一律 FAIL 也能通过。当前 **14 条探针**（含 C5/C6 自适应白名单、
-verdict 严格模式 SKIP→exit 2）。新增/修改判据时必须同批补探针。
+「必须判绿」正例，避免把判据改成一律 FAIL 也能通过。当前 **16 条探针**（含 C5/C6 自适应白名单、
+verdict 严格模式 SKIP→exit 2、C6 同事件重复 Guard 变异）。新增/修改判据时必须同批补探针。
 
 ---
 
@@ -248,7 +248,7 @@ assertion）、CD4ML（可复现证据链：内容哈希、provenance）、NIST 
 ### 门禁证据
 
 - `verify_comet_install.py`：8/8 PASS（C3 全包 3570/3570 逐字节一致，differ=0 / missing=0）。
-- `verify_comet_install.py --self-test`：10/10 PASS，判据可证伪。
+- `verify_comet_install.py --self-test`：16/16 PASS，判据可证伪（含 C6 重复 Guard 变异）。
 - `comet doctor --json`：`healthy=true`，51 pass / 0 fail / 15 warn（1 个已知上游缺陷
   + 14 个用户级/可选能力告警，均已登记）。
 - `comet update --scope project`：`status=complete`、325 skills、5 rules、5 hooks、0 failed。
@@ -272,3 +272,22 @@ assertion）、CD4ML（可复现证据链：内容哈希、provenance）、NIST 
 - `verify_comet_install.py --self-test`：**14/14 PASS**（新增 C5/C6 自适应白名单、verdict 严格模式共 4 条探针）。
 - 真实端到端：临时移走 tarball + 清缓存 → 默认实跑 exit 2 / "⚠ 未完整验证"；
   `--fetch-tarball` → npm pack 复现（sha256 一致）→ 8/8 PASS / exit 0。
+
+### 本轮（2026-11-07 第三轮）C6「唯一」判据硬化
+
+上一版 C6 只判 `router 条目数 >= 1`（且把 blob 数当条目数），存在两个真实缺陷：
+
+1. **漏报**：同一 hook 事件下出现 2 个 distinct router 叶子（= 重复 Guard，一次写入被
+   双次拦截/加锁）时 `n >= 1` 恒真，判据无判别力 —— 属「漏报比误报更致命」。
+2. **误报风险**：router 路径以 `base64(node -e …)` 内嵌时，字面量 `comet-hook-router`
+   不在序列化文本中；若按 blob 计数会把 `bash`+`powershell` 双写同一调用误计为 2 条，
+   进而误红合法配置（本仓库 `.github/hooks/comet-guard.json` 即此形状）。
+
+修正：
+- 按**事件**聚合 distinct router 叶子数，要求「至少 1 条」且「任一事件 ≤ 1 条」（重复接线判红）；
+- 判定前先解码 base64 再识别 router，避免把可移植双写误计为重复；
+- 兜底全文本扫描用集合去重解码结果，杜绝同调用双计。
+
+证据：`--self-test` **16/16 PASS**（新增 2 条 C6 探针：同事件 2 条 router 必须判红、
+单事件单 router 必须判绿）；真实环境 `verify` 8/8 PASS、exit 0，C6 对
+`.github/hooks/comet-guard.json` 正确报 `router=1 单事件最多1`（修复前误报 `router=2`）。

@@ -147,4 +147,87 @@ class OcrAcceptanceMetricsTest {
     assertThat(m.criticalEvidenceCoverage()).isZero();
     assertThat(m.meetsKeyFieldEvidenceCoverageTarget()).isFalse();
   }
+
+  private static TrustedOcrDocument docWithReasons(
+      List<OcrFieldEvidence> fields,
+      Map<ReviewStatus, Integer> counts,
+      Map<String, String> reasons) {
+    return new TrustedOcrDocument(
+        "d1",
+        "t1",
+        "ref",
+        OcrDocType.INVOICE,
+        "eng",
+        List.of("eng"),
+        fields,
+        com.bone.aidoc.domain.model.QualityReport.none("none"),
+        "raw",
+        1,
+        counts,
+        reasons);
+  }
+
+  @Test
+  void l4_mismatch_count_derived_from_decision_reasons() {
+    OcrFieldEvidence total =
+        new OcrFieldEvidence(
+            "total_amount",
+            "200.00",
+            null,
+            1,
+            new BoundingBox(0, 0, 10, 10),
+            "eng",
+            0.99,
+            com.bone.aidoc.domain.model.ConfidenceSource.OCR_ENGINE,
+            com.bone.aidoc.domain.model.ValidationStatus.FAILED,
+            ReviewStatus.MANUAL_REVIEW);
+    Map<ReviewStatus, Integer> counts = new java.util.EnumMap<>(ReviewStatus.class);
+    counts.put(ReviewStatus.MANUAL_REVIEW, 1);
+    Map<String, String> reasons = new java.util.LinkedHashMap<>();
+    reasons.put("total_amount", "[L4] 明细汇总 100.00 与总额 200.00 不一致");
+    OcrAcceptanceMetrics m =
+        OcrAcceptanceMetrics.from(docWithReasons(List.of(total), counts, reasons), Set.of());
+    assertThat(m.l4MismatchCount()).isEqualTo(1);
+  }
+
+  @Test
+  void safety_gate_count_only_counts_blocked_non_auto_passed_fields() {
+    // invoice_no 被 [L2] 闸门拦下（MANUAL_REVIEW）→ 计入安全闸门
+    OcrFieldEvidence blocked =
+        new OcrFieldEvidence(
+            "invoice_no",
+            "FP1",
+            null,
+            1,
+            new BoundingBox(0, 0, 10, 10),
+            "eng",
+            0.99,
+            com.bone.aidoc.domain.model.ConfidenceSource.OCR_ENGINE,
+            com.bone.aidoc.domain.model.ValidationStatus.FAILED,
+            ReviewStatus.MANUAL_REVIEW);
+    // hospital_name 虽含 [L2] 字样但已被自动放行 → 不计入（不是被拦截）
+    OcrFieldEvidence passed =
+        new OcrFieldEvidence(
+            "hospital_name",
+            "某医院",
+            null,
+            1,
+            new BoundingBox(0, 0, 10, 10),
+            "eng",
+            0.999,
+            com.bone.aidoc.domain.model.ConfidenceSource.OCR_ENGINE,
+            com.bone.aidoc.domain.model.ValidationStatus.PASSED,
+            ReviewStatus.AUTO_PASSED);
+    Map<ReviewStatus, Integer> counts = new java.util.EnumMap<>(ReviewStatus.class);
+    counts.put(ReviewStatus.MANUAL_REVIEW, 1);
+    counts.put(ReviewStatus.AUTO_PASSED, 1);
+    Map<String, String> reasons = new java.util.LinkedHashMap<>();
+    reasons.put("invoice_no", "[L2] 确定性规则校验失败");
+    reasons.put("hospital_name", "[放行] 含 [L2] 字样但已自动放行");
+    OcrAcceptanceMetrics m =
+        OcrAcceptanceMetrics.from(
+            docWithReasons(List.of(blocked, passed), counts, reasons), Set.of());
+    assertThat(m.safetyGateCount()).isEqualTo(1);
+    assertThat(m.l4MismatchCount()).isZero();
+  }
 }

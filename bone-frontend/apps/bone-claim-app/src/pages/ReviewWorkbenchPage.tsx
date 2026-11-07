@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Alert,
   Badge,
@@ -279,13 +280,22 @@ export function ReviewWorkbenchPage(): ReactElement {
     }
   };
 
+  const navigate = useNavigate();
   const pendingCount = rows.filter((r) => r.status === 'PENDING_ADJUST').length;
   const processingCount = rows.filter((r) => r.status === 'ADJUSTING').length;
   const riskCount = rows.filter((r) => r.claimAmount >= REVIEW_THRESHOLD).length;
 
   return (
     <div style={{ padding: 24 }}>
-      <PageHeader title="核赔工作台" />
+      <PageHeader
+        title="核赔工作台"
+        extra={(
+          <Space>
+            <Button onClick={() => navigate('/blind-labels')}>盲标</Button>
+            <Button onClick={() => navigate('/ai-governance')}>AI 治理</Button>
+          </Space>
+        )}
+      />
       <Space size="large" wrap style={{ marginBottom: 16 }}>
         <Card size="small">
           <Statistic title="待领取" value={pendingCount} />

@@ -25,6 +25,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 共享 OCR / 视觉识别客户端（TPA 票据 / 病历识别，TEI / 通用 vision 服务兼容）。
@@ -162,14 +163,41 @@ public class HttpOcrClient implements OcrPort {
     String post(String url, String jsonBody) throws IOException, InterruptedException;
   }
 
-  /** 默认传输：JDK HttpClient POST JSON。 */
-  public static final class HttpClientTransport implements OcrTransport {
-    private final HttpClient client;
-    private final long timeoutMs;
+  /** 单次 HTTP 交换抽象（便于测试注入计数桩，避免依赖真实网络）。 */
+  public interface OcrExchange {
+    HttpResponse<String> exchange(HttpRequest request) throws IOException, InterruptedException;
+  }
 
+  /** 默认传输：JDK HttpClient POST JSON，内建有限重试 + 指数退避抖动。 */
+  public static final class HttpClientTransport implements OcrTransport {
+    private final OcrExchange exchange;
+    private final long timeoutMs;
+    private final int maxRetries;
+    private final long retryBaseDelayMs;
+    private static final long MAX_BACKOFF_MS = 1000;
+
+    /** 默认重试配置（2 次 / 20ms 基准）。 */
     public HttpClientTransport(long timeoutMs) {
+      this(defaultExchange(timeoutMs), timeoutMs, 2, 20);
+    }
+
+    /** 显式重试配置（来自 {@code trusted-ocr.max-retries} / {@code retry-base-delay-ms}）。 */
+    public HttpClientTransport(long timeoutMs, int maxRetries, long retryBaseDelayMs) {
+      this(defaultExchange(timeoutMs), timeoutMs, maxRetries, retryBaseDelayMs);
+    }
+
+    /** 测试用：注入自定义交换（如失败 N 次后成功 / 计数桩）。 */
+    public HttpClientTransport(
+        OcrExchange exchange, long timeoutMs, int maxRetries, long retryBaseDelayMs) {
+      this.exchange = exchange;
       this.timeoutMs = timeoutMs;
-      this.client = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(timeoutMs)).build();
+      this.maxRetries = maxRetries;
+      this.retryBaseDelayMs = retryBaseDelayMs;
+    }
+
+    /** 配置透传断言用。 */
+    public int maxRetries() {
+      return maxRetries;
     }
 
     @Override
@@ -180,11 +208,52 @@ public class HttpOcrClient implements OcrPort {
               .header("Content-Type", "application/json")
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody, StandardCharsets.UTF_8))
               .build();
-      HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-      if (response.statusCode() / 100 != 2) {
-        throw new IOException("OCR service http " + response.statusCode());
+      IOException lastFailure = null;
+      boolean deterministic = false;
+      for (int attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          HttpResponse<String> response = exchange.exchange(request);
+          if (response.statusCode() / 100 != 2) {
+            // 确定性服务错误：不重试（避免重试风暴），立即失败
+            deterministic = true;
+            throw new IOException("OCR service http " + response.statusCode());
+          }
+          return response.body();
+        } catch (IOException e) {
+          if (deterministic) {
+            throw e; // 非 2xx / 解析前置错误：绝不重试
+          }
+          lastFailure = e;
+          if (attempt >= maxRetries) {
+            break;
+          }
+          sleepBackoff(attempt);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new InterruptedException("OCR 调用被中断: " + url);
+        }
       }
-      return response.body();
+      throw lastFailure;
+    }
+
+    /** 指数退避 + 随机抖动，封顶 1s，避免惊群。 */
+    private void sleepBackoff(int attempt) throws InterruptedException {
+      long exp = retryBaseDelayMs * (1L << Math.min(attempt, 30));
+      long delay =
+          Math.min(MAX_BACKOFF_MS, exp)
+              + (long) (retryBaseDelayMs * ThreadLocalRandom.current().nextDouble());
+      try {
+        Thread.sleep(delay);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw e;
+      }
+    }
+
+    private static OcrExchange defaultExchange(long timeoutMs) {
+      HttpClient client =
+          HttpClient.newBuilder().connectTimeout(Duration.ofMillis(timeoutMs)).build();
+      return req -> client.send(req, HttpResponse.BodyHandlers.ofString());
     }
   }
 

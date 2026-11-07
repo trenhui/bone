@@ -360,11 +360,27 @@ ADR-0046 决策已在 `bone-ai/bone-ai-document` 模块落地为可运行骨架�
 
 **已知口径差异（显式登记，不静默混用）**：`HeuristicOcrQualityEvaluator` 的覆盖信号用 `hasEvidenceLocation()`（只校验坐标），因为 `evaluate(...)` 签名没有 `pageCount`；`OcrAcceptanceMetrics` 用带页数上界的 `hasValidEvidenceLocation(pageCount)`。前者是内部代理信号，后者是外部验收度量，`pageCount<=0` 时退化为仅校验下限，不得据此宣称 100% 覆盖。
 
+### Phase-7：可信闭环（NIST AI RMF Measure & Monitor + Human-in-the-loop · 2026-11-07）
+
+> 骨架已「能判」，但还回答不了三个生产问题：模型是否在漂移？自动放行到底准不准？阈值能不能上生产？
+> Phase-7 补齐度量、反馈、标定闸门与 HTTP 韧性四条闭环，把「自称可信」变成「可验证的可信」。
+
+| # | 缺口（修复前） | 修复后 | 会红钉子 |
+|---|---|---|---|
+| 1 | **生产零可观测**：决策、fail-open 闸门、L4 失配、票种分类都只存在于单次响应，无跨请求计数，漂移不可检测 | 新增 `OcrMetrics` 端口（决策分布 / 关键字段自动通过 / L4 失配 / 安全闸门拦截 / 票种分类计数），`TrustedOcrApplicationService.parse` 解析后上报；默认 `NoOpOcrMetrics` 安全态（缺失不阻断识别） | `OcrMetricsTest`、`TrustedOcrApplicationServiceMetricsTest.parse_reports_metrics_and_classification` |
+| 2 | **自动通过准确率无法验证**：引擎自动放行后无人回填人工结论，生产正确率是黑箱 | 新增 `FeedbackCollector` 端口与 `ReviewFeedback` 模型，`recordFeedback` 采集字段级人工裁定；`isConfirmedError()` 精确捕获「自动放行却被判错」这一最危险失察 | `ReviewFeedbackTest`、`TrustedOcrApplicationServiceMetricsTest.record_feedback_is_forwarded_to_collector` |
+| 3 | **未达标阈值也能宣称就绪**：四等级「统计通过」但某等级只喂 30 个样本，结论脆弱 | `CalibrationReport.productionReady()`：在 `allLevelsProven()` 之上再要求每等级样本量 ≥ Wilson 最小样本要求；`ThresholdCalibrator.warnings()` 消费它 | `CalibrationReportProductionReadyTest`（5） |
+| 4 | **HTTP 适配器无韧性**：瞬时抖动直接失败，一次网络毛刺即降级为 CRITICAL 二次识别 | `HttpClientTransport` 内建有限重试 + 指数退避抖动（封顶 1s）；仅瞬时 IO / 超时重试，非 2xx 确定性错误**绝不重试**（避免重试风暴），耗尽后仍抛异常、fail-closed 不变；`max-retries` / `retry-base-delay-ms` 配置透传 | `HttpClientTransportRetryTest`（4，真实 HttpServer 端到端） |
+
+**装配修复**（Phase-7 接入时暴露的三个接线缺陷，均属「配了不生效 / 装配缺参」）：`TrustedOcrApplicationService` 注入 `ClaimFieldRisk` 但自动配置未注册该 Bean ⇒ 上下文启动失败，已补 `trustedClaimFieldRisk` Bean 并让引擎共享同一实例；`HttpDocumentClassifier` 重试参数被误传为构造参数（重试实际在 `HttpClientTransport` 内）⇒ 编译失败，已改为 `transport + maxBytes`；`OcrAcceptanceMetrics` / `NoOpOcrMetrics` 的导入包名错误（`domain.model` / `domain.gateway` vs 实际 `domain.service`）⇒ 编译失败，已修正。另有两个并行写文件遗留的重复类 stray 文件（`domain/service/OcrMetrics.java`、`domain/service/FeedbackCollector.java`，内容与 `NoOp*` 逐字节相同）已删除，解除重复类编译阻塞。
+
 ### 验证结果
 
-`mvn -o -pl bone-ai/bone-ai-document test`（绕沙箱）：**159 用例，0 失败 0 错误**（原 124 + Phase-6 新增 34 + 注入链路反向钉子 1）。`ArchitectureTest`（11 项）确认新增代码未违反 DDD 门禁；`TrustedOcrAutoConfigurationContextTest`（6 项）以真实 Spring 上下文验证默认关闭、开启后全部端口装配、自定义分类器可覆盖、配置 URL 后真实适配器覆盖安全默认、旧扁平阈值拒绝启动、`maxBytes` 注入确实生效；`TrustedOcrHttpPipelinePoCTest` 以本地 HttpServer + 真实 JDK HttpClient 跑通七层管线，并给出服务不可达时的 fail-closed 对照（Jev 挂 → CRITICAL 转二次识别、分类器挂 → 回落 GENERAL 且不制造假红）。
+`mvn -o -pl bone-ai/bone-ai-document test`（绕沙箱）：**180 用例，0 失败 0 错误**（Phase-6 为 159，Phase-7 新增 21）。`ArchitectureTest`（11 项）确认新增代码未违反 DDD 门禁；`TrustedOcrAutoConfigurationContextTest`（8 项）以真实 Spring 上下文验证默认关闭、开启后全部端口装配（含新增度量/反馈端口与重试配置绑定）、自定义分类器可覆盖、配置 URL 后真实适配器覆盖安全默认、旧扁平阈值拒绝启动、`maxBytes` 注入确实生效；`TrustedOcrHttpPipelinePoCTest` 以本地 HttpServer + 真实 JDK HttpClient 跑通七层管线，并给出服务不可达时的 fail-closed 对照（Jev 挂 → CRITICAL 转二次识别、分类器挂 → 回落 GENERAL 且不制造假红）。
 
 **变异验证（判别力证明）**：对 Phase-6 的每条新判据实跑「改坏实现 → 全量测试 → 必须变红 → 按 sha256 恢复」，**16/16 条变异全部被测试捕获**（15 条判据 + 1 条 `maxBytes` 注入），无一条因编译错误或格式门禁造成的假红。其中含 1 条**互补变异**：把空白值闸门改成「一律拦截」后 18 个用例变红（含端到端 PoC），证明收紧不是「一律转人工」的假安全。另先发现 1 个盲区：注入改坏时 158 个用例全绿，补测试后重跑同一变异变红。
+
+**Phase-7 变异验证**：对四条闭环各取代表判据实跑「改坏 → 变红 → 精确还原」——① `productionReady()` 样本量比较符 `>=` 反转 `<=`，`CalibrationReportProductionReadyTest.sufficiently_sampled_all_levels_becomes_production_ready` 变红；② 摘除 `parse()` 的 `reportMetrics(doc)` 上报接线，`TrustedOcrApplicationServiceMetricsTest.parse_reports_metrics_and_classification` 变红；③ 重试循环 `attempt <= maxRetries` 改 `attempt < maxRetries`（少一次尝试），`HttpClientTransportRetryTest` 两个用例同时变红。**3/3 全部被捕获**，每次还原后 grep 复核关键行回到正确语义。另修复重试测试自身的模拟缺陷：`com.sun.net.httpserver.HttpServer` 默认单线程分发，handler 内 `Thread.sleep` 会阻塞后续重试请求，导致即使重试也永远超时；给测试 server 配缓存线程池后，才真实模拟「前几次慢、后续成功」的瞬时故障（生产服务器多线程，重试有效）。
 
 **统计纪律对照**：`ThresholdCalibratorTest` 证明 100 个「零错误」自动通过样本的 Wilson 95% 上界仍远高于 0.01% 目标，`statisticallyProven=false` 且给出证明目标所需的最小样本量（>3 万）；放宽目标到 1% 且样本 500 时才通过。避免「小样本零错误就宣称达标」这一最常见验收失真。
 
@@ -388,7 +404,7 @@ ADR-0046 决策已在 `bone-ai/bone-ai-document` 模块落地为可运行骨架�
 ### 待续（需真实数据 / 外部模型服务，无法靠代码自包含完成）
 
 > Phase-5 已落地 Jev 与票种分类的真实 HTTP 适配器（含 fail-closed）、离线阈值标定工具与统计纪律、验收指标可计算化、编排契约级端到端 HTTP PoC。
-> Phase-6 已收敛所有可用代码自包含修复的 fail-open、L4 缺失、死配置、口径混用与监控盲区（见上表）。下方 5 项**仍须**脱敏标注数据与真实模型服务。
+> Phase-6/7 已收敛所有可用代码自包含修复的 fail-open、L4 缺失、死配置、口径混用、监控盲区与可信闭环（度量上报 / 反馈采集 / 标定生产就绪闸门 / HTTP 重试韧性，见上表）。下方 5 项**仍须**脱敏标注数据与真实模型服务。
 
 1. 部署并标定真实 Jev 模型服务：按票种 / 字段 / 风险用标注样本标定质量分，AUROC 仅作筛选、不得当作字段正确率；填 `jev-url` 即由 `JevHttpQualityEvaluator` 接入（也可 `@ConditionalOnMissingBean` 覆盖）。
 2. 部署真实票种分类服务（CNN/VLM）：填 `classifier-url` 即由 `HttpDocumentClassifier` 接入，且仅在调用方传 `GENERAL` 时参与判定。

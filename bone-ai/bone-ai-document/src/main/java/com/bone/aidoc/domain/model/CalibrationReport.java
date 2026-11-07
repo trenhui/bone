@@ -29,6 +29,29 @@ public record CalibrationReport(
   }
 
   /**
+   * 生产就绪闸门（ADR-0046 统计纪律的最终防线）：在 {@link #allLevelsProven()} 之外， 进一步要求<b>每个等级的样本量不低于其 Wilson
+   * 最小样本要求</b>。
+   *
+   * <p>否则会出现「四等级都「通过」证明，但其中某等级只喂了 30 个样本」的假象—— 小样本下 Wilson 上界本就很高，{@code statisticallyProven}
+   * 已要求它不超过目标， 但样本量过小仍意味着结论脆弱。生产部署前必须由 CI / 发布流水线调用本方法，
+   * 未就绪的阈值<b>不得</b>作为生产配置（骨架不在代码里放假实现，只提供可验证的判定）。
+   */
+  public boolean productionReady() {
+    if (!allLevelsProven()) {
+      return false;
+    }
+    return byLevel.values().stream().allMatch(c -> c.totalSamples() >= c.minSamplesRequired());
+  }
+
+  /** 带显式样本量下限的就绪判定（CI 可传入比 Wilson 最小样本更保守的硬下限）。 */
+  public boolean productionReady(int minSamplesPerLevel) {
+    if (!allLevelsProven()) {
+      return false;
+    }
+    return byLevel.values().stream().allMatch(c -> c.totalSamples() >= minSamplesPerLevel);
+  }
+
+  /**
    * 生成 Spring Boot YAML 配置片段。
    *
    * <p>Map 的键是枚举名，<b>必须大写</b>（Spring 用 {@code Enum.valueOf} 转换，小写会绑定失败）； 换成 .properties 时写作 {@code

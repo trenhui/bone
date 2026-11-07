@@ -7,8 +7,8 @@
       },
       {
         "matcher": "create|edit|str_replace_editor|apply_patch",
-        "bash": "node \"/Users/renhui.trh/wps/bone/.github/skills/comet/scripts/comet-hook-router.mjs\" --platform \"github-copilot\" --project-root \"/Users/renhui.trh/wps/bone\"",
-        "powershell": "node \"/Users/renhui.trh/wps/bone/.github/skills/comet/scripts/comet-hook-router.mjs\" --platform \"github-copilot\" --project-root \"/Users/renhui.trh/wps/bone\""
+        "bash": "node -e \"const r=require('node:child_process').spawnSync(process.execPath,JSON.parse(Buffer.from('WyIvVXNlcnMvcmVuaHVpLnRyaC93cHMvYm9uZS8uZ2l0aHViL3NraWxscy9jb21ldC9zY3JpcHRzL2NvbWV0LWhvb2stcm91dGVyLm1qcyIsIi0tcGxhdGZvcm0iLCJnaXRodWItY29waWxvdCIsIi0tcHJvamVjdC1yb290IiwiL1VzZXJzL3Jlbmh1aS50cmgvd3BzL2JvbmUiXQ==','base64').toString()),{stdio:'inherit'});process.exit(r.status??1)\"",
+        "powershell": "node -e \"const r=require('node:child_process').spawnSync(process.execPath,JSON.parse(Buffer.from('WyIvVXNlcnMvcmVuaHVpLnRyaC93cHMvYm9uZS8uZ2l0aHViL3NraWxscy9jb21ldC9zY3JpcHRzL2NvbWV0LWhvb2stcm91dGVyLm1qcyIsIi0tcGxhdGZvcm0iLCJnaXRodWItY29waWxvdCIsIi0tcHJvamVjdC1yb290IiwiL1VzZXJzL3Jlbmh1aS50cmgvd3BzL2JvbmUiXQ==','base64').toString()),{stdio:'inherit'});process.exit(r.status??1)\""
       }
     ]
   }

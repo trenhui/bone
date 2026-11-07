@@ -306,6 +306,7 @@ const MODULES = [
       { type: 'selectFirst', label: '来源渠道' },
       { type: 'inputByPlaceholder', placeholder: '商品ID', value: () => REAL_PRODUCT_ID || '1' },
       { type: 'inputByPlaceholder', placeholder: '商品名称', value: () => `E2E商品${STAMP}` },
+      { type: 'inputByPlaceholder', placeholder: '单价', value: () => '199.0' },
       { type: 'fillNumbers', value: () => '1' },
     ],
   },

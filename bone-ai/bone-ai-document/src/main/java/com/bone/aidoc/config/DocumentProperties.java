@@ -215,6 +215,28 @@ public class DocumentProperties {
       this.maxBytes = v;
     }
 
+    /** 识别服务瞬时故障重试次数（默认 2；0 表示不重试）。 */
+    private int maxRetries = 2;
+
+    /** 重试退避基准毫秒（默认 20，实际延迟按 2^n 指数 + 随机抖动，封顶 1s）。 */
+    private long retryBaseDelayMs = 20;
+
+    public int getMaxRetries() {
+      return maxRetries;
+    }
+
+    public void setMaxRetries(int v) {
+      this.maxRetries = v;
+    }
+
+    public long getRetryBaseDelayMs() {
+      return retryBaseDelayMs;
+    }
+
+    public void setRetryBaseDelayMs(long v) {
+      this.retryBaseDelayMs = v;
+    }
+
     public double getAutoPassThreshold() {
       return autoPassThreshold;
     }

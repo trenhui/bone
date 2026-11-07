@@ -98,8 +98,9 @@ public class ThresholdCalibrator {
     }
     Map<RiskLevel, LevelCalibration> byLevel = new EnumMap<>(RiskLevel.class);
     grouped.forEach((level, list) -> byLevel.put(level, calibrateLevel(level, list)));
+    int minSamplesPerLevel = minimumSampleSizeForZeroErrors(targetRate);
     return new CalibrationReport(
-        targetRate, samples.size(), byLevel, warnings(samples.size(), byLevel));
+        targetRate, samples.size(), byLevel, warnings(samples.size(), byLevel, minSamplesPerLevel));
   }
 
   private LevelCalibration calibrateLevel(RiskLevel level, List<CalibrationSample> samples) {
@@ -196,7 +197,8 @@ public class ThresholdCalibrator {
     return policy.decide(ctx) == ReviewDecision.AUTO_PASS;
   }
 
-  private List<String> warnings(int totalSamples, Map<RiskLevel, LevelCalibration> byLevel) {
+  private List<String> warnings(
+      int totalSamples, Map<RiskLevel, LevelCalibration> byLevel, int minSamplesPerLevel) {
     List<String> w = new ArrayList<>();
     if (totalSamples < 1000) {
       w.add("样本量 " + totalSamples + " < 1000，代表性不足；结论仅供开发自测");
@@ -218,7 +220,23 @@ public class ThresholdCalibrator {
             w.add(level + " 所有候选阈值均存在错误放行样本，应强制人工复核或补充 L2 确定性规则");
           }
         });
+    if (!isProductionReady(byLevel, minSamplesPerLevel)) {
+      w.add(
+          "标定报告未达生产就绪：四风险等级须全部通过统计证明且样本量≥Wilson最小样本("
+              + minSamplesPerLevel
+              + ")；未就绪的阈值不得作为生产配置（须重新标定或补充样本）");
+    }
     return List.copyOf(w);
+  }
+
+  /** 与 {@code CalibrationReport.productionReady} 同口径：四等级全证明且样本量达标。 */
+  private static boolean isProductionReady(
+      Map<RiskLevel, LevelCalibration> byLevel, int minSamplesPerLevel) {
+    if (byLevel.size() != RiskLevel.values().length) {
+      return false;
+    }
+    return byLevel.values().stream()
+        .allMatch(c -> c.statisticallyProven() && c.totalSamples() >= minSamplesPerLevel);
   }
 
   private record Candidate(RiskThreshold threshold, int auto, int bad, double upper) {}

@@ -1000,6 +1000,31 @@ public class ScenarioHarness {
           .sorted(Comparator.comparingLong(InspectionRecord::getId).reversed())
           .toList();
     }
+
+    /**
+     * 与 {@code findDiffConcludedInWindow.sql} 同窗同过滤：只取 CONCLUDED 且 result=DIFF， 按结论时间 / id 倒序，500
+     * 条上界。错误预算用 {@link #findConcludedInWindow} 的 PASS+DIFF 全量做分母，本方法只做差异样本分子，两者不得在替身里复用同一实现 （复用会被
+     * PASS 挤满上界，静默裁掉真正的 DIFF）。
+     */
+    @Override
+    public java.util.List<InspectionRecord> findDiffConcludedInWindow(
+        java.time.Instant from, java.time.Instant to) {
+      return store.values().stream()
+          .filter(r -> "CONCLUDED".equals(r.getStatus()))
+          .filter(r -> "DIFF".equals(r.getResult()))
+          .filter(
+              r ->
+                  r.getInspectedAt() != null
+                      && !r.getInspectedAt().isBefore(from)
+                      && r.getInspectedAt().isBefore(to))
+          .sorted(
+              (a, b) -> {
+                int byTime = b.getInspectedAt().compareTo(a.getInspectedAt());
+                return byTime != 0 ? byTime : Long.compare(b.getId(), a.getId());
+              })
+          .limit(500)
+          .toList();
+    }
   }
 
   // ===================== 端口替身 =====================

@@ -34,6 +34,8 @@ import { LiabilityConfigPage } from './pages/LiabilityConfigPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { InsurerManagementPage } from './pages/InsurerManagementPage';
 import { MappingPage } from './pages/MappingPage';
+import { AiGovernancePage } from './pages/AiGovernancePage';
+import { BlindLabelWorkbenchPage } from './pages/BlindLabelWorkbenchPage';
 
 /**
  * 智能理赔 · 路由与页面名的**唯一真源**（单导航架构的前端侧锚点）。
@@ -121,6 +123,9 @@ export const CLAIM_ROUTES: ClaimRoute[] = [
   // 菜单名 / 顺序 / 图标必须与本文件逐字一致，否则 scripts/e2e/ui/claim-single-nav-probe.mjs 判红。
   { path: '/insurers', name: '承保主体', icon: <SafetyCertificateOutlined />, element: <InsurerManagementPage /> },
   { path: '/mappings', name: '主数据映射', icon: <LinkOutlined />, element: <MappingPage /> },
+  { path: '/ai-governance', name: 'AI 治理', icon: <SafetyCertificateOutlined />, element: <AiGovernancePage />, hidden: true },
+  // 盲标工作台：防反馈环金标准闸门的标注面，hidden 路由，从核赔工作台「盲标」深链进入（同 /ai-governance 形态）。
+  { path: '/blind-labels', name: '盲标工作台', icon: <FormOutlined />, element: <BlindLabelWorkbenchPage />, hidden: true },
 ];
 
 /** shell（qiankun activeRule）侧的路由前缀；菜单 path 形如 `/claim#/<hash>`。 */

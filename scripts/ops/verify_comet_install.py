@@ -224,55 +224,110 @@ def c5_doctor(rep: Report, split: bool | None = None) -> None:
             f"命中={classified or '无'}; 未登记 project 级告警={[x['check'] for x in unexpected] or '无'}")
 
 
-def _hook_entries(node, out: list[dict]) -> None:
-    """递归收集 hook 配置里的命令条目（兼容 settings.json / hooks.json 两种形状）。"""
-    if isinstance(node, dict):
-        if any(k in node for k in ("command", "bash", "powershell", "args")):
-            out.append(node)
-        for v in node.values():
-            _hook_entries(v, out)
-    elif isinstance(node, list):
-        for v in node:
-            _hook_entries(v, out)
+# 识别 hook 配置里承载命令的「事件」键（不同平台命名大小写不一）。
+_EVENT_KEYS = {"PreToolUse", "PostToolUse", "preToolUse", "postToolUse",
+               "UserPromptSubmit", "Notification", "Stop", "SubagentStop"}
 
 
-def _router_platforms(path: Path) -> tuple[int, set[str]]:
-    """返回 (router 命令条数, platform 集合)。同时解析 base64 包装与明文 args 数组。"""
-    text = path.read_text(encoding="utf-8", errors="replace")
-    blobs: list[str] = [text]
-    for b in B64_RE.findall(text):
+def _walk_hook_leaves(obj, event=None):
+    """递归遍历 hook 配置，产出 (事件名, 叶子命令条目) 序列。
+
+    叶子 = 直接携带 command/bash/powershell/args 的 dict；事件名沿父链继承，
+    用于把 router 条目归到具体事件（如 PreToolUse），以便检测同事件重复接线。
+    """
+    out: list[tuple[str | None, dict]] = []
+    if isinstance(obj, dict):
+        if any(k in obj for k in ("command", "bash", "powershell", "args")):
+            out.append((event, obj))
+        for k, v in obj.items():
+            out.extend(_walk_hook_leaves(v, k if k in _EVENT_KEYS else event))
+    elif isinstance(obj, list):
+        for v in obj:
+            out.extend(_walk_hook_leaves(v, event))
+    return out
+
+
+def _extract_platforms(leaf: dict, raw: str, platforms: set[str]) -> None:
+    """从单个叶子条目抽取 --platform（明文 args / command / 内嵌 base64 node -e）。"""
+    args = leaf.get("args") or []
+    for i, a in enumerate(args):
+        if a == "--platform" and i + 1 < len(args):
+            platforms.add(str(args[i + 1]))
+    cmd = str(leaf.get("command", ""))
+    m = re.search(r"--platform[ =]+[\"']?([\w-]+)", cmd)
+    if m:
+        platforms.add(m.group(1))
+    for b in B64_RE.findall(raw):
         try:
-            blobs.append(base64.b64decode(b).decode("utf-8", "replace"))
+            dec = base64.b64decode(b).decode("utf-8", "replace")
         except Exception:
-            pass
-    platforms: set[str] = set()
-    n = 0
-    for blob in blobs:
-        if "comet-hook-router" not in blob:
             continue
-        n += 1
-        m = re.search(r'"--platform"\s*,\s*"([^"]+)"', blob)
+        m = re.search(r'"--platform"\s*,\s*"([^"]+)"', dec)
         if m:
             platforms.add(m.group(1))
-        try:
-            obj = json.loads(blob)
-            entries: list[dict] = []
-            _hook_entries(obj, entries)
-            for e in entries:
-                raw = json.dumps(e, ensure_ascii=False)
-                if "comet-hook-router" not in raw:
-                    continue
-                args = e.get("args") or []
-                for i, a in enumerate(args):
-                    if a == "--platform" and i + 1 < len(args):
-                        platforms.add(str(args[i + 1]))
-                cmd = str(e.get("command", ""))
-                m2 = re.search(r"--platform[ =]+[\"']?([\w-]+)", cmd)
-                if m2:
-                    platforms.add(m2.group(1))
-        except (ValueError, TypeError):
-            pass
-    return n, platforms
+        m2 = re.search(r"--platform[ =]+[\"']?([\w-]+)", dec)
+        if m2:
+            platforms.add(m2.group(1))
+
+
+def _platforms_in_text(blob: str, platforms: set[str]) -> None:
+    m = re.search(r'"--platform"\s*,\s*"([^"]+)"', blob)
+    if m:
+        platforms.add(m.group(1))
+    m2 = re.search(r"--platform[ =]+[\"']?([\w-]+)", blob)
+    if m2:
+        platforms.add(m2.group(1))
+
+
+def _router_entries_by_event(path: Path) -> tuple[dict[str, int], set[str]]:
+    """返回 (每个事件下的 router 条目计数, platform 集合)。
+
+    「唯一」判据的精确度量：router 是 comet-hook-router 的调用。bash+powershell
+    双写同一调用属可移植写法，算 1 个叶子；但若**同一事件**下出现 2+ 个 distinct
+    router 叶子 = 该写入事件被重复接线（重复 Guard），会让一次写入被双次拦截/加锁。
+    """
+    text = path.read_text(encoding="utf-8", errors="replace")
+    per_event: dict[str, int] = {}
+    platforms: set[str] = set()
+    parsed = False
+    try:
+        obj = json.loads(text)
+        parsed = isinstance(obj, dict)
+    except (ValueError, TypeError):
+        obj = None
+    if parsed:
+        for ev, leaf in _walk_hook_leaves(obj):
+            raw = json.dumps(leaf, ensure_ascii=False)
+            # router 常以 base64(node -e ...) 形式内嵌，需解码后判定是否真的调用 router
+            is_router = "comet-hook-router" in raw
+            if not is_router:
+                for b in B64_RE.findall(raw):
+                    try:
+                        if "comet-hook-router" in base64.b64decode(b).decode("utf-8", "replace"):
+                            is_router = True
+                            break
+                    except Exception:
+                        pass
+            if not is_router:
+                continue
+            key = ev or "(unsplit)"
+            per_event[key] = per_event.get(key, 0) + 1
+            _extract_platforms(leaf, raw, platforms)
+    if not per_event:
+        # 兜底：结构化解析未命中（解析失败/非标准形状）时退化为全文本扫描（无事件粒度）。
+        # 用集合去重解码后的 base64，避免 bash+powershell 双写同一调用被计成 2 个条目。
+        blobs = {text}
+        for b in B64_RE.findall(text):
+            try:
+                blobs.add(base64.b64decode(b).decode("utf-8", "replace"))
+            except Exception:
+                pass
+        for blob in blobs:
+            if "comet-hook-router" not in blob:
+                continue
+            per_event["(unsplit)"] = per_event.get("(unsplit)", 0) + 1
+            _platforms_in_text(blob, platforms)
+    return per_event, platforms
 
 
 def trae_hook_split() -> bool:
@@ -281,13 +336,19 @@ def trae_hook_split() -> bool:
     trae_cn_p = REPO / ".trae-cn/hooks.json"
     if not trae_p.is_file() or not trae_cn_p.is_file():
         return False
-    _, t = _router_platforms(trae_p)
-    _, tc = _router_platforms(trae_cn_p)
+    _, t = _router_entries_by_event(trae_p)
+    _, tc = _router_entries_by_event(trae_cn_p)
     return t == {"trae"} and tc == {"trae-cn"}
 
 
 def c6_hook_uniqueness(rep: Report, split: bool | None = None) -> None:
-    """一次写入事件最多进入一个 Guard：每个平台配置里 router 的 platform 必须唯一且匹配。
+    """每个平台配置里，一次写入事件最多进入一个 Guard（router 调用唯一且 platform 匹配）。
+
+    判定（精确，杜绝假绿/漏报）：
+      * 该平台配置至少接线一个 router（否则平台无 Guard，缺失保护）；
+      * 任一事件下的 router 叶子条数 ≤ 1（>1 = 同事件重复接线 = 重复 Guard，必须判红）；
+      * platform 集合 ⊆ 该平台的允许集合（剔除上游已知缺陷时收紧）。
+
     自媒体化：上游缺陷仍在时 .trae/hooks.json 允许 {trae,trae-cn} 且 .trae-cn 可选；
     修复后 .trae 仅 {trae}、.trae-cn 必须存在且仅 {trae-cn}。"""
     if split is None:
@@ -297,28 +358,25 @@ def c6_hook_uniqueness(rep: Report, split: bool | None = None) -> None:
     for rel, (allowed_cfg, required_cfg) in HOOK_TARGETS.items():
         p = REPO / rel
         if not p.is_file():
-            if rel == ".trae-cn/hooks.json":
-                req = split            # 缺陷仍在时该文件本就不存在；修复后必存在
-                required = req
-            else:
-                required = True if required_cfg is True else True  # 其它平台文件缺失即红
-                req = False
+            required = split if rel == ".trae-cn/hooks.json" else True
             if required:
                 bad.append(f"{rel} 缺失")
             details.append(f"{rel}={'缺失(必填)' if required else 'MISSING(允许)'}")
             continue
-        n, platforms = _router_platforms(p)
+        per_event, platforms = _router_entries_by_event(p)
+        total = sum(per_event.values())
+        max_per_event = max(per_event.values()) if per_event else 0
         if allowed_cfg is None:
-            if rel == ".trae/hooks.json":
-                allowed = {"trae", "trae-cn"} if not split else {"trae"}
-            else:  # .trae-cn/hooks.json
-                allowed = {"trae-cn"}
+            allowed = {"trae", "trae-cn"} if (rel == ".trae/hooks.json" and not split) else (
+                {"trae"} if rel == ".trae/hooks.json" else {"trae-cn"})
         else:
             allowed = allowed_cfg
-        ok = n >= 1 and platforms and platforms.issubset(allowed)
+        # 唯一判据：至少 1 个 router，且任一事件下不得重复接线；platform 必须匹配。
+        ok = total >= 1 and max_per_event <= 1 and bool(platforms) and platforms.issubset(allowed)
         if not ok:
-            bad.append(f"{rel}: router={n}, platform={sorted(platforms)} 允许={sorted(allowed)}")
-        details.append(f"{rel}: router={n} platform={sorted(platforms) or '?'}")
+            bad.append(f"{rel}: router={total}(单事件最多{max_per_event}), "
+                       f"platform={sorted(platforms)} 允许={sorted(allowed)}")
+        details.append(f"{rel}: router={total} 单事件最多{max_per_event} platform={sorted(platforms) or '?'}")
     rep.add("C6 Hook Router 唯一", not bad, "; ".join(details)
             + (f" | 异常={bad}" if bad else "")
             + f" | 上游缺陷白名单={'已失效(上游已修复)' if split else '生效中'}")
@@ -472,16 +530,38 @@ def self_test() -> int:
     cases.append(("verdict 正例：--no-strict 下 SKIP 不阻拦", verdict(r, strict=False) == 0,
                   f"期望 0，实际 {verdict(r, strict=False)}"))
 
-    # C6 自适应：上游修复后 .trae/hooks.json 仍写 trae-cn 必须判红
-    def fake_platforms_only_traecn(path, *a):
-        return 1, {"trae-cn"}
+    # C6 三个自测共用：按路径返回正确的 platform，使「重复接线 / 平台错配」各自独立成变量。
+    def _router_fake(path, *, dup: bool = False, trae_platform: str = "trae-cn"):
+        s = str(path)
+        plat = "github-copilot"
+        if s.endswith(".trae/hooks.json"):
+            plat = trae_platform
+        elif s.endswith(".codebuddy/settings.json"):
+            plat = "codebuddy"
+        elif s.endswith(".claude/settings.local.json"):
+            plat = "claude"
+        return ({"preToolUse": 2 if dup else 1}, {plat})
 
+    # C6 自适应：上游修复后 .trae/hooks.json 仍写 trae-cn 必须判红（白名单自动失效）
     with patch.object(mod, "trae_hook_split", return_value=True), \
-         patch.object(mod, "_router_platforms", side_effect=fake_platforms_only_traecn):
-        r = Report()
-        c6_hook_uniqueness(r)
+         patch.object(mod, "_router_entries_by_event", side_effect=lambda p, *a: _router_fake(p)):
+        r = Report(); c6_hook_uniqueness(r)
         cases.append(("C6 自适应：修复后 .trae 仍 trae-cn 必须判红", len(r.failed) == 1,
                       f"期望 1 个 FAIL，实际 {len(r.failed)} 个"))
+
+    # C6 变异：同一事件下 2 个 distinct router 条目 = 重复 Guard 接线，必须判红
+    with patch.object(mod, "trae_hook_split", return_value=False), \
+         patch.object(mod, "_router_entries_by_event", side_effect=lambda p, *a: _router_fake(p, dup=True)):
+        r = Report(); c6_hook_uniqueness(r)
+        cases.append(("C6 变异：同事件 2 个 router 条目(重复 Guard)必须判红",
+                      len(r.failed) == 1, f"期望 1 个 FAIL，实际 {len(r.failed)} 个"))
+
+    # C6 正例：单事件单 router 且 platform 匹配必须判绿
+    with patch.object(mod, "trae_hook_split", return_value=False), \
+         patch.object(mod, "_router_entries_by_event", side_effect=lambda p, *a: _router_fake(p)):
+        r = Report(); c6_hook_uniqueness(r)
+        cases.append(("C6 正例：单事件单 router 且 platform 匹配判绿",
+                      len(r.failed) == 0, f"期望全 PASS，实际 {len(r.failed)} 个 FAIL"))
 
     print("Comet 完整性判据 · 变异自测（真实调用判据函数）", "")
     ok = True

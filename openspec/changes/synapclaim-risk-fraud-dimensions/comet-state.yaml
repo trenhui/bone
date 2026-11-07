@@ -31,7 +31,7 @@ classic_profile: null
 classic_migration: null
 run_checkpoint:
   schema: comet.workflow-run-checkpoint.v1
-  hash: fd9fe5310c4f5f732dc0eaa88bbb54b6409e06134df558f7cedf2f7cf487bb63
+  hash: 7d1511cbeb7c79f40b1f4f5ff7410c1b90d2c6e65fb2f24629b1537a1e01e2b3
   run:
     protocolVersion: 1
     schemaVersion: 1
@@ -80,9 +80,17 @@ run_checkpoint:
       verifyResult: pending
       workflow: full
     status: running
-    sequence: 1
+    sequence: 4
     actions:
       - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-b7ac8ed1784440cee70ffcc1c30a03f85bcc71048f517f0b1fe7375bdb1a5fd3
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
         id: synapclaim-risk-fraud-dimensions:1
         input:
           input:
@@ -92,25 +100,186 @@ run_checkpoint:
               ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
           outputs: {}
         inputHash: 100139244877360e0aac3d9b4698dc4d66cb5d4ba4f2024cb0b0fa354b169a91
+        outcome:
+          actionId: synapclaim-risk-fraud-dimensions:1
+          attempt: 1
+          claimToken: portable-b7ac8ed1784440cee70ffcc1c30a03f85bcc71048f517f0b1fe7375bdb1a5fd3
+          inputHash: 100139244877360e0aac3d9b4698dc4d66cb5d4ba4f2024cb0b0fa354b169a91
+          outcomeId: ce69c01e-56bf-437c-8d23-fb4f64e07257
+          output:
+            event: open-complete
+          status: succeeded
         protocolVersion: 1
-        receipts: []
+        receipts:
+          - hash: 06d517ad4bba9564ccbd0aeed8b45ee689be726dfd26ad3ec11c537262b0288c
+            outcomeId: ce69c01e-56bf-437c-8d23-fb4f64e07257
         reconciliations: []
         ref: comet-open
         requiredCapabilities: []
         retry: manual
         runId: synapclaim-risk-fraud-dimensions
-        status: pending
+        status: succeeded
         stepId: full.open
         type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-1ff202003b3ae79b56d08226c23ba1fa8653136450371083de88dff83db62839
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-risk-fraud-dimensions:4
+        input:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-risk-fraud-dimensions
+                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+                  workspaceBaseline:
+                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
+                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
+            full.open.evidence:
+              contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
+              ref: openspec/changes/synapclaim-risk-fraud-dimensions
+        inputHash: 72e747da46483e9106f060b9af458ced3c0849a8c7bbdf7e50d2803cc2ee3639
+        protocolVersion: 1
+        reason: Portable recovery requires reconciliation of external execution
+        receipts: []
+        reconciliations: []
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-risk-fraud-dimensions
+        status: unknown
+        stepId: full.open.revalidate
+        type: call_tool
     actionContexts:
       synapclaim-risk-fraud-dimensions:1:
         results: {}
         sequence: 1
-    waits: []
+      synapclaim-risk-fraud-dimensions:4:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-risk-fraud-dimensions
+                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+                  workspaceBaseline:
+                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
+                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
+              ref: openspec/changes/synapclaim-risk-fraud-dimensions
+        sequence: 4
+    waits:
+      - id: synapclaim-risk-fraud-dimensions:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
+              ref: openspec/changes/synapclaim-risk-fraud-dimensions
+        proposalHash: 0715e76a50301b9e5a686b15a2bd5435f1c076d6faf5c97f2d6a549eeac11792
+        choices:
+          - approved
+          - rejected
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
+              ref: openspec/changes/synapclaim-risk-fraud-dimensions
+        decision:
+          id: classic-open-d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
+          choice: approved
+          proposalHash: 0715e76a50301b9e5a686b15a2bd5435f1c076d6faf5c97f2d6a549eeac11792
+    evidenceWaits:
+      - id: synapclaim-risk-fraud-dimensions:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+        receipt:
+          ref: openspec/changes/synapclaim-risk-fraud-dimensions
+          contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
+          submissionId: 3adf83b6-1bde-466e-a0c1-8eefb825b91a
     ready: []
     joins: {}
-    outputs: {}
+    outputs:
+      full.open:
+        sequence: 1
+        value:
+          event: open-complete
+      full.open.confirm:
+        sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-risk-fraud-dimensions
+              changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+              workspaceBaseline:
+                ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
+                ref: openspec/changes/synapclaim-risk-fraud-dimensions
+      full.open.evidence:
+        sequence: 2
+        value:
+          contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
+          ref: openspec/changes/synapclaim-risk-fraud-dimensions
     children: []
     lineage: []
-  sourceRevision: 1
-  sourceHash: f8bd33ce03a09f731c3ac85703dbad8067e9c675ca06afd696a592a81e1b020f
+  sourceRevision: 6
+  sourceHash: 42ecf1215defcdf6f61cd28d1f19fff52997ab948ed5fe0d4520b80de9452156

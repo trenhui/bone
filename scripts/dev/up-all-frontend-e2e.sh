@@ -12,7 +12,12 @@
 
 set -u
 CURL=/usr/bin/curl
-NODE_BIN="/Users/renhui.trh/.workbuddy/binaries/node/versions/22.22.2-3/bin"
+# 解析已安装的最新 node 版本目录（避免写死版本号后升级失效）
+_VERS_DIR="/Users/renhui.trh/.workbuddy/binaries/node/versions"
+NODE_BIN="$(ls -d "$_VERS_DIR"/*/bin 2>/dev/null | sort -V | tail -1)"
+if [ -z "$NODE_BIN" ] || [ ! -x "$NODE_BIN/node" ]; then
+  NODE_BIN="$_VERS_DIR/current/bin"
+fi
 export PATH="$NODE_BIN:$PATH"
 LOG_DIR=/tmp/fe-logs
 FE=/Users/renhui.trh/wps/bone/bone-frontend

@@ -14,7 +14,8 @@
  *      运行期健康度 / 校准报表，外加负向探针（无 token 401、超 31 天窗口 400、
  *      minSamples=1 不得绕过治理下限产出阈值建议）。
  *   B. 浏览器 UI（Playwright Chromium）：shell 登录 → qiankun 挂载理赔子应用 → 核赔工作台
- *      真实渲染 → 截图。
+ *      真实渲染 → hidden 路由 /ai-governance 五个治理区块渲染 → 防假绿文本断言
+ *      （未达标 / 模型未参与 / 影子模式）→ 参与率与同窗口 API 独立对账 → 截图。
  *   C. 循环收敛对账：静态 L3 就绪度复核器 vs 运行期 AI 就绪清单，任一端单独翻绿即判红。
  *
  * 产物 outputs/claims-e2e-result.json 的 runtime 段是 L3 就绪度复核器的运行期证据源：
@@ -30,6 +31,17 @@ const ROOT = path.resolve(__dirname, '../..');
 const OUT = path.join(ROOT, 'outputs');
 const GATEWAY = 'http://127.0.0.1:8888';
 const SHELL = 'http://localhost:3000';
+
+/** 证据窗口单一真源：与 aiGovernance.ts 的 governanceWindow() 完全同算法（UTC 日界 30 天、秒级 ISO）。 */
+const DAY_MS = 24 * 60 * 60 * 1000;
+const isoSecond = (ms) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
+const EVIDENCE_WINDOW = (() => {
+  const toMs = Math.ceil(Date.now() / DAY_MS) * DAY_MS;
+  return {
+    from: isoSecond(toMs - 30 * DAY_MS),
+    to: isoSecond(toMs),
+  };
+})();
 
 const result = {
   startedAt: new Date().toISOString(),
@@ -73,16 +85,24 @@ function check(name, condition, detail) {
   check('就绪清单如实报未通过（防假绿）', readyBody?.data?.deploymentGatesPassed === false,
     `blockers=${readyBody?.data?.blockers?.length ?? 'n/a'}`);
 
-  const from = '2026-10-06T00:00:00Z';
-  const to = '2026-11-05T00:00:00Z';
-  const health = await ctx.get(`/api/v1/claim-ops/ai-runtime-health?from=${from}&to=${to}`, { headers: auth });
+  const from = EVIDENCE_WINDOW.from;
+  const to = EVIDENCE_WINDOW.to;
+  const health = await ctx.get('/api/v1/claim-ops/ai-runtime-health', {
+    headers: auth, params: { from, to },
+  });
   const healthBody = await health.json();
   const d = healthBody?.data || {};
-  check('运行期健康度 31 天窗口 200', health.status() === 200 && typeof d.participationRate === 'number',
-    `status=${health.status()} nodes=${d.nodesScanned}`);
+  check('运行期健康度 UTC 日界 30 天窗口 200',
+    health.status() === 200 && typeof d.participationRate === 'number',
+    `status=${health.status()} nodes=${d.nodesScanned} window=${from} ~ ${to}`);
+  check('证据窗口同源：后端回显与 EVIDENCE_WINDOW 逐字一致',
+    d.windowFrom === from && d.windowTo === to,
+    `backend=${d.windowFrom} ~ ${d.windowTo} expected=${from} ~ ${to}`);
   result.runtime = {
     windowFrom: d.windowFrom,
     windowTo: d.windowTo,
+    evidenceWindowFrom: from,
+    evidenceWindowTo: to,
     nodesScanned: d.nodesScanned ?? null,
     aiParticipated: d.aiParticipated ?? null,
     aiDegraded: d.aiDegraded ?? null,
@@ -233,8 +253,12 @@ function check(name, condition, detail) {
   page.on('console', (m) => { if (m.type() === 'error') result.consoleErrors.push(m.text().slice(0, 220)); });
   page.on('pageerror', (e) => result.consoleErrors.push(`pageerror: ${String(e).slice(0, 220)}`));
   const badResponses = [];
+  let providerProbeRequests = 0;
   page.on('response', (r) => {
     if (r.status() >= 500) badResponses.push({ status: r.status(), url: r.url().slice(0, 180) });
+  });
+  page.on('request', (r) => {
+    if (r.url().includes('/ai-provider-probe')) providerProbeRequests += 1;
   });
 
   try {
@@ -260,6 +284,129 @@ function check(name, condition, detail) {
       hits.length >= 3, `url=${result.ui.url} hits=${hits.join('/')} excerpt=${result.ui.viewportExcerpt.slice(0, 90)}`);
     await page.screenshot({ path: path.join(OUT, 'claims-e2e-claim.png'), fullPage: false });
 
+    // hidden 路由 /ai-governance 的可达性必须由业务页面深链按钮保证：
+    // 真实点击核赔工作台的「AI 治理」，而不是绕过 UI 直接改 location.hash。
+    const govNavButton = page.locator('#subapp-viewport button', { hasText: 'AI 治理' }).first();
+    const govNavExists = await govNavButton.count() > 0;
+    if (govNavExists) await govNavButton.click();
+    await page.waitForTimeout(4000);
+    result.ui.aiGovernanceDeepLink = {
+      buttonFound: govNavExists,
+      urlAfterClick: page.url(),
+    };
+    check('业务页面深链按钮可点击进入 hidden 路由 /ai-governance',
+      govNavExists && page.url().includes('#/ai-governance'),
+      `buttonFound=${govNavExists} url=${page.url()}`);
+    // 负向自检：仅靠改 hash 也能到达（回退路径），但不得把「未点击」误判为深链可用。
+    if (!govNavExists) {
+      await page.evaluate(() => { window.location.hash = '#/ai-governance'; });
+      await page.waitForTimeout(2000);
+    }
+    const govText = await page.locator('#subapp-viewport').innerText();
+    const govMarkers = ['AI 治理', '能力就绪', '运行期模型参与', '独立盲标校准', '放量档位', '回滚演练'];
+    const govHits = govMarkers.filter((k) => govText.includes(k));
+    result.ui.aiGovernance = {
+      url: page.url(),
+      excerpt: govText.replace(/\s+/g, ' ').slice(0, 2500),
+      markersHit: govHits,
+    };
+    await page.screenshot({ path: path.join(OUT, 'claims-e2e-ai-governance.png'), fullPage: false });
+    check('hidden 路由 /ai-governance 真实渲染 5 个治理区块（6 标记命中 >=5）',
+      govHits.length >= 5,
+      `url=${result.ui.aiGovernance.url} hits=${govHits.join('/')} excerpt=${result.ui.aiGovernance.excerpt.slice(0, 100)}`);
+
+    // 探活端点每次真实消耗 provider 用量：页面加载与刷新都不得自动请求。
+    result.ui.aiGovernance.probeRequestsOnLoad = providerProbeRequests;
+    check('provider 探活默认零请求（禁自动轮询）',
+      providerProbeRequests === 0 && govText.includes('未测过'),
+      `requests=${providerProbeRequests} hasNotTested=${govText.includes('未测过')}`);
+
+    // 校准报表当前为 NO_EVIDENCE：不得编造分桶/切片曲线。
+    const calibVerdict = cal?.verdict;
+    const calibrationForbidden = ['NO_EVIDENCE', 'UNTRUSTED_EVIDENCE', 'INSUFFICIENT_SAMPLES',
+      'SLICE_INCOMPLETE', 'NO_SAFE_THRESHOLD'].includes(calibVerdict);
+    const bucketTableRendered = govText.includes('校准分桶明细');
+    check('无盲标证据时不渲染校准分桶/切片表格（不编造曲线）',
+      !calibrationForbidden || !bucketTableRendered,
+      `verdict=${calibVerdict} bucketTableRendered=${bucketTableRendered}`);
+
+    const probeButton = page.locator('#subapp-viewport button', { hasText: 'provider 连通性探活' }).first();
+    if (await probeButton.count() > 0) {
+      // 复用同一次手动点击的响应，不额外发请求（探活每次真实消耗 provider 用量）。
+      const probeResponse = page.waitForResponse(
+        (r) => r.url().includes('/ai-provider-probe'), { timeout: 10000 });
+      await probeButton.click();
+      try {
+        const probeBody = await (await probeResponse).json();
+        result.runtime.probeVerdict = probeBody?.data?.verdict ?? null;
+        result.runtime.probeVerdictCapturedAt = new Date().toISOString();
+      } catch {
+        result.runtime.probeVerdict = null;
+      }
+      await page.waitForTimeout(2500);
+    }
+    check('探活响应判词写入运行期证据（不可读即判红，不编造 REACHABLE）',
+      typeof result.runtime?.probeVerdict === 'string' && result.runtime.probeVerdict.length > 0,
+      `verdict=${result.runtime?.probeVerdict ?? 'MISSING'}`);
+    result.ui.aiGovernance.probeRequestsAfterClick = providerProbeRequests;
+    check('点击探活按钮后恰好发起 1 次真实探活请求',
+      providerProbeRequests === 1,
+      `requests=${providerProbeRequests}`);
+    const probeText = await page.locator('#subapp-viewport').innerText();
+    check('探活结果展示受控判词，不把 NOT_CONFIGURED 写成连通',
+      /未配置真实 provider|链路可达|未登记判词|未测过/.test(probeText),
+      `excerpt=${probeText.replace(/\s+/g, ' ').slice(0, 140)}`);
+
+    // 参与率期望值由 E2E 侧独立重算，且必须使用页面声明的统计窗口；
+    // 同时断言该窗口与 EVIDENCE_WINDOW（同算法 UTC 日界）逐字一致，防止两端口径分裂。
+    const winMatch = /统计窗口：([^\s]+)\s*~\s*([^\s]+)/.exec(govText);
+    result.ui.aiGovernance.windowSameSource = !!winMatch
+      && winMatch[1] === EVIDENCE_WINDOW.from && winMatch[2] === EVIDENCE_WINDOW.to;
+    check('证据窗口单一真源：治理面板声明窗口与 EVIDENCE_WINDOW 逐字一致',
+      result.ui.aiGovernance.windowSameSource,
+      `panel=${winMatch ? `${winMatch[1]} ~ ${winMatch[2]}` : 'none'} `
+        + `expected=${EVIDENCE_WINDOW.from} ~ ${EVIDENCE_WINDOW.to}`);
+    const uiHealth = winMatch
+      ? await ctx.get('/api/v1/claim-ops/ai-runtime-health', {
+          headers: auth,
+          params: { from: winMatch[1], to: winMatch[2] },
+        })
+      : null;
+    const uiRate = uiHealth ? (await uiHealth.json())?.data?.participationRate : undefined;
+    const expectedParticipation = uiRate === null || uiRate === undefined
+      ? '无可计算样本' : uiRate === 0 ? '模型未参与' : `${(uiRate * 100).toFixed(2)}%`;
+    result.ui.aiGovernance.expectedParticipation = {
+      uiRate, label: expectedParticipation,
+      windowDeclared: winMatch ? `${winMatch[1]} ~ ${winMatch[2]}` : null,
+    };
+    const participationProbe = {
+      windowDeclared: !!winMatch,
+      status: uiHealth ? uiHealth.status() : 0,
+      hasExpected: govText.includes(expectedParticipation),
+      forbiddenOnStage: govText.includes('AI 已上场'),
+      forbiddenFullRate: govText.includes('100.00%'),
+      rendered: /\d+\.\d{2}%|无可计算样本|模型未参与/.exec(govText)?.[0] ?? null,
+    };
+    result.ui.aiGovernance.participationProbe = participationProbe;
+    check('防假绿：参与率展示与同窗口 API 独立重算一致（null/0/百分比三态）',
+      participationProbe.windowDeclared && participationProbe.status === 200
+        && participationProbe.hasExpected
+        && !participationProbe.forbiddenOnStage && !participationProbe.forbiddenFullRate,
+      `rate=${uiRate} expected=${expectedParticipation} probe=${JSON.stringify(participationProbe)}`);
+
+    check('防假绿：门禁未通过显示未达标，SHADOW 不写成已自动放款',
+      govText.includes('未达标') && !govText.includes('已达标')
+        && govText.includes('影子模式') && !govText.includes('已自动放款'),
+      `excerpt=${result.ui.aiGovernance.excerpt.slice(0, 120)}`);
+
+    check('默认加载的 5 个治理端点全部返回可用数据（第 6 个探活仅手动触发）',
+      !govText.includes('数据不可用'),
+      `endpointErrors=${(govText.match(/数据不可用/g) || []).length}`);
+
+    check('负向自检：治理页标记不会被核赔工作台文本命中（判据有判别力）',
+      govMarkers.filter((k) => viewportText.includes(k)).length < 5,
+      `reviewHits=${govMarkers.filter((k) => viewportText.includes(k)).join('/') || 'none'}`);
+
     const SHELL_MENU_ONLY = 'BONE 一次构建，处处原生 首页仪表盘 组织与成员 权限与角色 安全与审计 '
       + '业务建模 主数据管理 交易管理 集成管理 扩展管理 代码生成 系统管理 智能理赔 报销系统 BONE 平台控制台';
     const looseWouldPass = /核赔|理赔|工作台|待办|案件/.test(SHELL_MENU_ONLY);
@@ -283,12 +430,45 @@ function check(name, condition, detail) {
     await browser.close();
   }
 
+  // 终态对账：C 组对账用的是中途快照（当时还没有探活判词）。最终产物多出
+  // runtime.probeVerdict / UI 证据，若产物被污染却无人复核就是盲点。此处先落盘
+  // 终态证据再跑一次复核器，末尾会再写一次完整结果（无 provisional 标记）。
+  fs.writeFileSync(
+    path.join(OUT, 'claims-e2e-result.json'),
+    JSON.stringify({ ...result, provisional: 'final-readiness-check' }, null, 2));
+  let finalCheckerOut = '';
+  try {
+    finalCheckerOut = execFileSync('python3', [checker], { encoding: 'utf8', timeout: 30000 });
+  } catch (e) {
+    finalCheckerOut = String(e.stdout || '');
+  }
+  const finalClaim = /l3Claimable\s*=\s*(true|false)/.exec(finalCheckerOut)?.[1];
+  const finalCoverage = /^\s*(BLOCKED|SATISFIED|RUNTIME_ONLY)\s+RUNTIME_MODEL_COVERAGE\s+(\S+)/m
+    .exec(finalCheckerOut);
+  const verdict = result.runtime?.probeVerdict ?? null;
+  check('终态对账：最终产物被复核器消费（输出回显本轮探活判词）',
+    !!verdict && finalCheckerOut.includes(`probeVerdict=${verdict}`),
+    `verdict=${verdict ?? 'MISSING'}`);
+  check('终态对账：判词非 REACHABLE 时 RUNTIME_MODEL_COVERAGE 必须 BLOCKED 且 L3 不可宣称',
+    finalClaim === 'false' && !!finalCoverage
+      && (verdict === 'REACHABLE' || finalCoverage[1] === 'BLOCKED'),
+    `claimable=${finalClaim} coverage=${finalCoverage ? `${finalCoverage[1]}/${finalCoverage[2]}` : 'n/a'}`);
+  if (result.runtime) {
+    result.runtime.finalReadinessSnapshot = {
+      l3Claimable: finalClaim,
+      coverageStatus: finalCoverage ? finalCoverage[1] : null,
+      coverageReason: finalCoverage ? finalCoverage[2] : null,
+      probeVerdict: verdict,
+      probeVerdictCapturedAt: result.runtime.probeVerdictCapturedAt ?? null,
+    };
+  }
+
   result.passed = result.api.every((r) => r.pass);
   result.finishedAt = new Date().toISOString();
   fs.writeFileSync(path.join(OUT, 'claims-e2e-result.json'), JSON.stringify(result, null, 2));
   console.log(`\n== 结果：${result.passed ? 'PASS' : 'FAIL'} `
     + `(${result.api.filter((r) => r.pass).length}/${result.api.length}) ==`);
-  console.log(`产物：outputs/claims-e2e-result.json, claims-e2e-shell.png, claims-e2e-claim.png`);
+  console.log(`产物：outputs/claims-e2e-result.json, claims-e2e-shell.png, claims-e2e-claim.png, claims-e2e-ai-governance.png`);
   process.exit(result.passed ? 0 : 1);
 })().catch((e) => {
   console.error('E2E runner crashed:', e);

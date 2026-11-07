@@ -1,0 +1,26 @@
+---
+doc_id: records.evidence.readiness-20261107
+role: evidence
+currency: frozen
+---
+
+synapClaim · AI 原生 L3 就绪度复核（静态事实 + 前后端 E2E 运行期证据）
+判据 12 项：SATISFIED 5 / BLOCKED 7 / RUNTIME_ONLY 0
+当前可判定成熟度：L0（运行态：AI 全链路降级，纯规则路径）
+l3Claimable = false
+------------------------------------------------------------------------
+  BLOCKED       PROVIDER_CONFIGURED          AI_GATEWAY_BASE_URL_MISSING
+  BLOCKED       BASELINE_WIRED               BASELINE_DECLARED_NOT_WIRED
+  BLOCKED       FROZEN_EVALSET_ACTIVE        FROZEN_SET_NOT_ACTIVE
+  SATISFIED     EVAL_GATES_WIRED             ADMITTED
+  BLOCKED       PERCEPTION_MODEL_DRIVEN      TEXT_LAYER_ONLY
+  BLOCKED       CATALOG_ADMISSION_ACTIVE     CATALOG_POLICY_DEFAULT_NONE
+  BLOCKED       GOLIVE_NOT_DRAFT             GOLIVE_DRAFT_13
+  SATISFIED     FLYWHEEL_DOWNSTREAM          ADMITTED
+  SATISFIED     IMAGE_PARSE_WIRED            ADMITTED
+  SATISFIED     RAG_WIRED                    ADMITTED
+  SATISFIED     ROLLOUT_ROLLBACK_DRILL       ADMITTED
+  BLOCKED       RUNTIME_MODEL_COVERAGE       PROVIDER_NOT_CONFIGURED
+------------------------------------------------------------------------
+运行期证据（前后端 E2E 实跑）：nodes=104 aiParticipated=8 participationRate=0.0769 probeVerdict=NOT_CONFIGURED
+说明：无 E2E 产物时该判据为 RUNTIME_ONLY 并阻断；provider 未配、探活非 REACHABLE 或参与率为 0 均判 BLOCKED。
