@@ -37,19 +37,21 @@ runtime）都是本机状态，一律忽略。曾出现「配置只在本机、�
 ## 二、可复现完整性校验（唯一推荐入口）
 
 ```bash
-python3 scripts/ops/verify_comet_install.py                 # 8 项基线判据
-python3 scripts/ops/verify_comet_install.py --self-test     # 10 条探针（4 正例 + 6 变异），证明判据非恒绿
-python3 scripts/ops/verify_comet_install.py --json          # 供 CI/脚本消费
+python3 scripts/ops/verify_comet_install.py                 # 严格模式(默认)：8 项判据，缺 tarball 即 UNVERIFIED
+python3 scripts/ops/verify_comet_install.py --fetch-tarball # 无本地包时自动 npm pack 复现官方包并校验
+python3 scripts/ops/verify_comet_install.py --self-test     # 14 条探针（含自适应白名单/严格模式），证明判据非恒绿
+python3 scripts/ops/verify_comet_install.py --json          # 供 CI/脚本消费（含 verified/skipped/verdict）
+python3 scripts/ops/verify_comet_install.py --no-strict    # 降级：C3 缺失不阻拦（本地体检用，CI/交接勿用）
 ```
 
 | 判据 | 检查内容 | 为什么必须有 |
 |---|---|---|
 | C1 | 版本一致 | 版本号错配会让项目侧 skill 与 CLI 状态格式不兼容 |
 | C2 | `bin/comet.js` 可执行位 | npm 重装常见 0644，表现为 `comet: permission denied` |
-| C3 | **官方 tarball 全包逐字节比对** | 详见 §三：version + doctor + 一次 update 都不够 |
-| C4 | `assets/` 与 `eval/` 功能资产齐备 | `comet update` 只报它当时要用的 assets，不报 eval/ 与 .d.ts 缺失 |
-| C5 | doctor 健康 + project 级告警白名单 | 防止用「已知缺陷」掩盖新出现的问题 |
-| C6 | Hook Router 唯一（每平台恰好一个 platform） | 「一次写入事件最多进入一个 Guard」 |
+| C3 | **官方 tarball 全包逐字节比对**（fail-closed） | 详见 §三：version + doctor + 一次 update 都不够；**tarball 缺失时严格模式判 UNVERIFIED（exit 2），不再假绿**，用 `--fetch-tarball` 复现 |
+| C4 | `assets/` 与 `eval/` 功能资产齐备 | `comet update` 只报它当时要用的 assets，不报 eval/ 与 .d.ts 缺失（轻量兜底，强校验见 C3） |
+| C5 | doctor 健康 + **自适应**白名单 | 上游缺陷（Trae/Trae CN 互斥）仍在时容忍告警，上游修复后白名单**自动失效**，残留告警立即判红 |
+| C6 | Hook Router 唯一（**自适应** platform 集合） | 「一次写入事件最多进入一个 Guard」；缺陷修复后 `.trae` 仅允 `trae`、`.trae-cn` 必须存在且仅 `trae-cn` |
 | C7 | 项目配置已入库 | 防止团队 clone 后退回 legacy fallback |
 | C8 | 生成资产不污染工作树 | 多平台 5×65 文件入库会造成无意义 diff 与合并冲突 |
 
@@ -60,7 +62,8 @@ python3 scripts/ops/verify_comet_install.py --json          # 供 CI/脚本消�
 ### 变异验证纪律
 
 `--self-test` 通过注入伪造采集结果**真实调用判据函数**，每条「必须判红」都配一条
-「必须判绿」正例，避免把判据改成一律 FAIL 也能通过。新增/修改判据时必须同批补探针。
+「必须判绿」正例，避免把判据改成一律 FAIL 也能通过。当前 **14 条探针**（含 C5/C6 自适应白名单、
+verdict 严格模式 SKIP→exit 2）。新增/修改判据时必须同批补探针。
 
 ---
 
@@ -151,8 +154,9 @@ chmod +x "$PKG/bin/comet.js"
 
 **裁定**：不手工伪造 `.trae-cn/hooks.json`、不改 base64 来「消掉」告警。
 手工改会制造双 Guard 或平台串台，且与官方 update 幂等结果冲突（下次 update 即被覆盖）。
-正确做法是白名单登记（校验脚本 C5 / C6 已显式解释该告警），等上游修复。
-**功能不受影响**：项目实际使用的 CodeBuddy Hook 为 1 组 1 hook，路由唯一。
+正确做法是**白名单自适应**登记（校验脚本 C5 / C6 已显式解释该告警，并探测 `.trae-cn/hooks.json`
+是否存在、各 platform 是否正确）：缺陷仍在时容忍告警；**上游修复后白名单自动失效，残留告警立即判红**，
+无需人工记得删白名单。详见 §七「已收口」第 1 项。**功能不受影响**：项目实际使用的 CodeBuddy Hook 为 1 组 1 hook，路由唯一。
 
 ### D2：`--scope global` 未执行（14 个 global warn）
 
@@ -179,16 +183,26 @@ pending，属动态状态而非缺陷；CodeGraph 是可选能力，不纳入项
 
 ---
 
-## 七、未动 / 待拍板清单
+## 七、待拍板清单（下一轮输入）
 
-以下条目**刻意未执行**，作为下一轮输入：
+以下条目**刻意未执行或仅完成形态设计**，作为下一轮输入：
 
-1. **D1 上游缺陷**：等 `@rpamis/comet` 修复 Trae/Trae CN 的 hooks 路径映射后，
-   去掉校验脚本 C5/C6 里的白名单与特例说明，重跑全 8 项。
+### 已收口（本轮）
+1. **D1 上游缺陷白名单自适应**：原待拍板「等上游修复后手工去掉白名单」已自动化——
+   校验脚本 C5/C6 改为探测 `.trae-cn/hooks.json` 与 platform 是否真正分离，缺陷修复后
+   白名单自动失效，残留告警立即判红；无需人工记得删白名单。对应本轮交付的严格模式 + 自适应白名单。
+
+### 仍待拍板
 2. **`--scope global`**：是否在本机执行 `comet update --scope global` 清掉 14 个用户级 warn，
-   需用户明确授权（影响所有项目）。
-3. **`comet eval` 正式评测**：若要量化评估项目内 Skill 质量，需先准备
-   Docker + Agent CLI + 模型凭证 + `comet/eval.yaml` manifest；本轮只做了离线收集验证。
+   需用户明确授权（影响所有项目）。影响面量化：`doctor --json` 显示 14 个 warn 均为
+   `*(global)` 或 `CodeGraph*`/`skills: *（global）`，分两类——
+   - 7 个平台 `skills partial (9/65)`：用户级 IDE 技能不全，与本仓库安装无关；
+   - `CodeGraph *` 系列：可选依赖索引，未装各 IDE CLI / MCP 时本就 pending。
+   均不影响本项目安装正确性；执行命令见 §五 D2。
+3. **`comet eval` 正式评测**：仅做形态设计，未落地 manifest（避免「配了不生效」死配置）。
+   消费方为 `comet eval` CLI，前置条件：Python ≥ 3.11、Docker 可用、`comet eval --help` 正常、
+   Agent CLI 与模型凭证就绪、项目内 `comet/eval.yaml` manifest 存在。本轮仅离线
+   `comet eval <skill> --collect --suite local` 验证链路可用（不跑 Docker/Claude、不联网、不落盘）。
 4. **`multi-insurer-biz-identity-catalog-mapping` 归档**：该 change 已降级为
    普通 OpenSpec plain change（`.comet.yaml` 已删除），`tasks.md` 中 **0 项勾选**
    （P0 内核由并行会话执行）。**禁止**手写 `comet-state.yaml` 或伪造 run-step 来强行归档；
@@ -239,3 +253,22 @@ assertion）、CD4ML（可复现证据链：内容哈希、provenance）、NIST 
   + 14 个用户级/可选能力告警，均已登记）。
 - `comet update --scope project`：`status=complete`、325 skills、5 rules、5 hooks、0 failed。
 - `./scripts/check.sh`：**59/59 全绿、EXIT=0、末行「✅ 本地自检通过！」**（2026-11-07 实跑，耗时 9m29s）。
+
+### 本轮（2026-11-07 续）修正与新增裁定
+
+承接 §八 既有 14 项裁定，本轮聚焦「上一版交付物自身的两个真实缺陷」：
+
+| # | 候选动作 | 裁定 | 依据 |
+|---|---|---|---|
+| A | 沿用上一版脚本（C3 缺 tarball 仍打印✅ + EXIT 0） | **拒绝，已修** | 团队 clone 后 `/tmp` 无 tarball，脚本仍 EXIT=0 + "基线一致"，属 report-only 假绿；改为 fail-closed：SKIP→exit 2 |
+| B | C5/C6 白名单写成静态硬编码 | **拒绝，已改自适应** | 静态白名单会永久放水；改为探测上游缺陷是否真存在，修复后自动失效 |
+| C | `--fetch-tarball` 自动复现官方包 | **执行** | npm pack sha256 已实测稳定（4942b8b8…），使完整性校验可移交、不依赖会话残留 |
+| D | `--json` 只给 failed 字段 | **执行（增强）** | 补充 verified/skipped/strict/verdict，使 CI 能区分「验证通过」与「未验证」 |
+| E | 真实变异实验（移走 tarball 测 SKIP） | **执行** | 退出码确为 2；fetch 复现后确为 0，验证 fail-closed 真生效（非纸面） |
+
+证据更新：
+- `verify_comet_install.py`：8/8 PASS，C3 全包 3570/3570 逐字节一致；
+  **严格模式无 tarball 时退出码 2（UNVERIFIED），`--fetch-tarball` 复现后退出码 0**。
+- `verify_comet_install.py --self-test`：**14/14 PASS**（新增 C5/C6 自适应白名单、verdict 严格模式共 4 条探针）。
+- 真实端到端：临时移走 tarball + 清缓存 → 默认实跑 exit 2 / "⚠ 未完整验证"；
+  `--fetch-tarball` → npm pack 复现（sha256 一致）→ 8/8 PASS / exit 0。
