@@ -2,11 +2,16 @@ package com.bone.claim.adapter.web.controller;
 
 import com.bone.claim.application.ClaimAssistantApplicationService;
 import com.bone.claim.application.ClaimAssistantApplicationService.AssistantReply;
+import com.bone.claim.application.ClaimAssistantApplicationService.ToolDescriptor;
+import com.bone.claim.application.ClaimAssistantApplicationService.ToolExecutionResult;
 import com.bone.core.model.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,6 +40,23 @@ public class ClaimAssistantController {
     return ApiResponse.success(assistantService.assist(request.question(), request.claimId()));
   }
 
+  @Operation(summary = "助手可用工具清单", description = "列出智能理赔助手可调用的受控工具（确定性数据访问，无需 LLM，L0 即可用）。")
+  @PreAuthorize("hasAuthority('claim:claims:read')")
+  @GetMapping("/claim-assistant/tools")
+  public ApiResponse<List<ToolDescriptor>> tools() {
+    return ApiResponse.success(assistantService.listTools());
+  }
+
+  @Operation(summary = "执行助手工具", description = "确定性调用受控工具（如保单查询），返回结构化结果；不依赖 LLM，网关未就绪时工具仍可用。")
+  @PreAuthorize("hasAuthority('claim:claims:read')")
+  @PostMapping("/claim-assistant/tool")
+  public ApiResponse<ToolExecutionResult> runTool(@RequestBody ToolRunRequest request) {
+    return ApiResponse.success(assistantService.runTool(request.toolId(), request.args()));
+  }
+
   /** 助手请求体：question=自然语言问题；claimId=可选，关联具体赔案上下文。 */
   public record AssistantRequest(String question, String claimId) {}
+
+  /** 工具执行请求体：toolId=工具标识；args=入参键值对。 */
+  public record ToolRunRequest(String toolId, Map<String, String> args) {}
 }
