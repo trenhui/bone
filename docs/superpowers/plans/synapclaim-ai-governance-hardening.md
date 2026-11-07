@@ -74,3 +74,12 @@ canonical_spec: openspec
 ## 验收判据
 
 每项改动都有可证伪的负向用例；改任一映射为恒绿、摘除 provider 条件、伪造参与率、窗口漂移，都必须有测试判红。`l3Claimable` 保持 `false`。
+
+## Step 10（第 14 轮增量，2026-11-07）
+
+- `_ai_native_readiness.py`：新增 `probe_evidence_valid()`，`RUNTIME_MODEL_COVERAGE` 收紧为四条件，reason 增 `PROBE_EVIDENCE_*`；detail 与 stdout 回显 `probeEvidence=`。
+- `--self-test`：补 4 条伪造鲁棒性探针、1 条档位负向探针，以及「证据束齐备但判词非 REACHABLE」探针（修复变异测试暴露的判别力遮蔽）。
+- `test_ai_native_readiness_flywheel.py`：合规事实补 `GOOD_PROBE_EVIDENCE`；新增 5 条证据束表征用例、4 条源码变异验证、1 条档位负向用例。
+- `synap-claim-e2e.cjs`：从同一次探活响应透传 `probeEvidence`，字段缺失写 `null`；加防编造断言与终态对账断言。
+- 文档族：manifest 登记 GAP 文档 + front-matter + `aiRouting`；治理规约 / 依赖图谱 / 运行手册 / 运维手册同步四条件；GAP 文档标注判据侧已收敛、采集侧外部前置。
+- 验证：`python3 -m unittest -v scripts.tests.test_ai_native_readiness_flywheel`、`--self-test`、六道机检 + `_gen_ai_index.py --check`、`node --check` E2E。

@@ -94,3 +94,12 @@ Risks / Non-Goals 不变：7 个 BLOCKED 外部条件一个都没动，`l3Claima
 ## Non-Goals
 
 不改 7 个 BLOCKED 外部条件、不改 `l3Claimable`、不改 baseline 状态 / V15 默认值 / `application.yml` / go-live 分册 draft、不改决策 DAG、不改 DDL/CI。
+
+## 第 14 轮增量（2026-11-07）：探活证据束防伪造
+
+触发：`03-contract/第11轮-GAP登记-provider双条件不同源.md` 登记的「三要素同源可伪造」风险，其原阻塞理由（判据脚本是并发会话在途文件）已随入库消失。按 GAP 推荐方案 A 在**判据侧**收敛。
+
+- `RUNTIME_MODEL_COVERAGE` 由三条件扩为四条件：`provider_env` / `probeVerdict=REACHABLE` / `probeEvidence` 自洽 / 参与率非零。新增 `probe_evidence_valid()` 校验 `httpStatus=200`、`model` 非空、`provenance=PROVIDER`、token 均 > 0、`requestId` 合法；缺项或自相矛盾按 `PROBE_EVIDENCE_*` 阻断，优先级插在探活与参与率之间。
+- `--self-test` 补 4 条伪造鲁棒性探针、1 条档位负向探针，以及「证据束齐备但判词非 REACHABLE」探针——后者修复变异测试判出的「证据束遮蔽探活条件被摘除」判别力缺口。
+- 表征测试补 5 条证据束用例与 4 条源码变异验证；E2E 从同一次探活响应透传 `probeEvidence`，未产出字段写 `null`、不编造，并加防编造与终态对账断言。
+- 采集侧（`/ai-provider-probe` 返回 token / requestId）属 L2 业务契约 + 真实 provider 前置，本轮不改 Java 契约，已在 GAP §七登记；不宣称判据「不可伪造」。

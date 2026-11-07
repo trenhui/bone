@@ -46,6 +46,13 @@ def _load():
 
 M = _load()
 
+# 合规正例用的证据束：字段与 /ai-provider-probe 的真实响应同源，测试里一律
+# 用 dict(...) 拷贝后再变造，避免跨用例共享可变对象。
+GOOD_PROBE_EVIDENCE = {
+    "httpStatus": 200, "model": "deepseek-chat", "provenance": "PROVIDER",
+    "promptTokens": 12, "completionTokens": 8, "requestId": "chatcmpl-9f2a7c1d",
+}
+
 
 class FlywheelCriterionTest(unittest.TestCase):
     def setUp(self):
@@ -138,10 +145,13 @@ class FlywheelCriterionTest(unittest.TestCase):
 
 
 class RuntimeModelCoverageTest(unittest.TestCase):
-    """RUNTIME_MODEL_COVERAGE 三条件：provider 配置 + 探活 REACHABLE + 运行期参与率非零。
+    """RUNTIME_MODEL_COVERAGE 四条件：provider 配置 + 探活 REACHABLE +
+    证据束自洽 + 运行期参与率非零。
 
-    防两类局部假绿：① 只刷参与率（provider 未配）；② AI技术方案 §11.7 的
-    「配了 ≠ 通了」——provider 已配、参与率非零，但探活失败或压根没测过。
+    防三类局部假绿：① 只刷参与率（provider 未配）；② AI技术方案 §11.7 的
+    「配了 ≠ 通了」——provider 已配、参与率非零，但探活失败或压根没测过；
+    ③ 第 11 轮 GAP 的「三要素同源可伪造」——环境变量 / 裸判词 / 参与率都能
+    手写，故还须同一次真实调用返回的证据束自洽。
     """
 
     @staticmethod
@@ -157,7 +167,12 @@ class RuntimeModelCoverageTest(unittest.TestCase):
     def _runtime(**overrides):
         return {"nodesScanned": 88, "aiParticipated": 44,
                 "participationRate": 0.5, "capabilityMissing": 0,
-                "probeVerdict": "REACHABLE", **overrides}
+                "probeVerdict": "REACHABLE",
+                "probeEvidence": dict(GOOD_PROBE_EVIDENCE), **overrides}
+
+    def _configured(self, **overrides):
+        return self._mutate(provider_env="http://localhost:8000/v1",
+                            e2e_runtime=self._runtime(**overrides))
 
     def test_forged_participation_without_provider_stays_blocked(self):
         """连探活判词与参与率一起伪造、provider 未配：必须仍 BLOCKED 且归因精确。"""
@@ -168,15 +183,14 @@ class RuntimeModelCoverageTest(unittest.TestCase):
         self.assertEqual(g["reason"], "PROVIDER_NOT_CONFIGURED")
         self.assertIn("providerConfigured=False", g["evidence"])
 
-    def test_three_conditions_all_present_is_satisfied(self):
-        """合规正例：三条件齐备，判据须可达 SATISFIED（防永远拒绝）。"""
-        f = self._mutate(provider_env="http://localhost:8000/v1",
-                         e2e_runtime=self._runtime())
-        g = self._coverage(f)
+    def test_four_conditions_all_present_is_satisfied(self):
+        """合规正例：四条件齐备，判据须可达 SATISFIED（防永远拒绝）。"""
+        g = self._coverage(self._configured())
         self.assertEqual(g["status"], M.SATISFIED)
         self.assertEqual(g["reason"], "ADMITTED")
         self.assertIn("providerConfigured=True", g["evidence"])
         self.assertIn("probeVerdict=REACHABLE", g["evidence"])
+        self.assertIn("probeEvidence=ADMITTED", g["evidence"])
 
     def test_probe_not_reachable_with_provider_stays_blocked(self):
         """§11.7「配了 ≠ 通了」：探活非 REACHABLE 时，参与率非零也不得翻绿。"""
@@ -215,6 +229,40 @@ class RuntimeModelCoverageTest(unittest.TestCase):
         self.assertEqual(g["status"], M.RUNTIME_ONLY)
         self.assertEqual(g["reason"], "RUNTIME_EVIDENCE_REQUIRED")
 
+    def test_missing_probe_evidence_stays_blocked(self):
+        """三要素全伪造但无证据束：GAP 的核心假绿通道必须堵住。"""
+        g = self._coverage(self._configured(probeEvidence=None))
+        self.assertEqual(g["status"], M.BLOCKED)
+        self.assertEqual(g["reason"], "PROBE_EVIDENCE_REQUIRED")
+
+    def test_zero_completion_tokens_stays_blocked(self):
+        """空返回不算跑过模型：completionTokens=0 的「自洽伪造」须判红。"""
+        g = self._coverage(self._configured(
+            probeEvidence=dict(GOOD_PROBE_EVIDENCE, completionTokens=0)))
+        self.assertEqual(g["status"], M.BLOCKED)
+        self.assertEqual(g["reason"], "PROBE_EVIDENCE_EMPTY_COMPLETION")
+
+    def test_stub_provenance_stays_blocked(self):
+        """替身响应不得计入：provenance != PROVIDER 须判红。"""
+        g = self._coverage(self._configured(
+            probeEvidence=dict(GOOD_PROBE_EVIDENCE, provenance="STUB")))
+        self.assertEqual(g["status"], M.BLOCKED)
+        self.assertEqual(g["reason"], "PROBE_EVIDENCE_STUB_NOT_ALLOWED")
+
+    def test_placeholder_request_id_stays_blocked(self):
+        """占位 requestId 不得充当供应商侧调用凭证。"""
+        g = self._coverage(self._configured(
+            probeEvidence=dict(GOOD_PROBE_EVIDENCE, requestId="unknown")))
+        self.assertEqual(g["status"], M.BLOCKED)
+        self.assertEqual(g["reason"], "PROBE_EVIDENCE_REQUEST_ID_INVALID")
+
+    def test_http_not_ok_stays_blocked(self):
+        """非 200 的探活响应不得与 REACHABLE 判词并存。"""
+        g = self._coverage(self._configured(
+            probeEvidence=dict(GOOD_PROBE_EVIDENCE, httpStatus=502)))
+        self.assertEqual(g["status"], M.BLOCKED)
+        self.assertEqual(g["reason"], "PROBE_EVIDENCE_HTTP_NOT_OK")
+
     def _degraded_self_test(self, old: str, new: str) -> bool:
         """变造源码在独立命名空间执行，返回其 self_test 是否仍通过。"""
         src = GATE.read_text(encoding="utf-8")
@@ -225,21 +273,32 @@ class RuntimeModelCoverageTest(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             return ns["self_test"](ns["load_facts"]())
 
+    _ALL = "all_conditions = provider_configured and coverage and probe_reachable and evidence_ok"
+
     def test_dropping_provider_condition_is_detectable(self):
         """摘除 provider 条件时，--self-test 的负向探针必须判红（可证伪）。"""
         bad = self._degraded_self_test(
-            "SATISFIED if (provider_configured and coverage and probe_reachable) else BLOCKED",
-            "SATISFIED if (coverage and probe_reachable) else BLOCKED",
-        )
+            self._ALL, "all_conditions = coverage and probe_reachable and evidence_ok")
         self.assertFalse(bad, "摘除 provider 条件后，防假绿负向探针必须判红")
 
     def test_dropping_probe_condition_is_detectable(self):
-        """摘除探活条件退化成双条件时，--self-test 的负向探针必须判红（可证伪）。"""
+        """摘除探活条件时，--self-test 的负向探针必须判红（可证伪）。"""
         bad = self._degraded_self_test(
-            "SATISFIED if (provider_configured and coverage and probe_reachable) else BLOCKED",
-            "SATISFIED if (provider_configured and coverage) else BLOCKED",
-        )
+            self._ALL, "all_conditions = provider_configured and coverage and evidence_ok")
         self.assertFalse(bad, "摘除探活条件后，防假绿负向探针必须判红")
+
+    def test_dropping_evidence_condition_is_detectable(self):
+        """摘除证据束条件时，--self-test 的伪造鲁棒性探针必须判红（GAP 验收 4）。"""
+        bad = self._degraded_self_test(
+            self._ALL, "all_conditions = provider_configured and coverage and probe_reachable")
+        self.assertFalse(bad, "摘除证据束条件后，伪造鲁棒性探针必须判红")
+
+    def test_evidence_validator_fail_closed_is_detectable(self):
+        """把「无证据束」分支退化成恒真时，伪造鲁棒性探针必须判红。"""
+        bad = self._degraded_self_test(
+            '    return False, "PROBE_EVIDENCE_REQUIRED"',
+            '    return True, "ADMITTED"')
+        self.assertFalse(bad, "证据束缺失分支退化后，--self-test 必须判红")
 
 
 class MaturityLevelTest(unittest.TestCase):
@@ -253,7 +312,8 @@ class MaturityLevelTest(unittest.TestCase):
     def _rt(**overrides):
         return {"nodesScanned": 88, "aiParticipated": 44,
                 "participationRate": 0.5, "capabilityMissing": 0,
-                "probeVerdict": "REACHABLE", **overrides}
+                "probeVerdict": "REACHABLE",
+                "probeEvidence": dict(GOOD_PROBE_EVIDENCE), **overrides}
 
     @classmethod
     def _facts(cls, **overrides):
@@ -284,13 +344,19 @@ class MaturityLevelTest(unittest.TestCase):
         self.assertTrue(level.startswith("L0"), level)
         self.assertIn("MODEL_PARTICIPATION_ZERO", level)
 
+    def test_forged_three_elements_without_evidence_is_l0(self):
+        """裸判词 + 参与率 + provider 三样齐全但缺证据束：档位仍须 L0。"""
+        level = self._level(e2e_runtime=self._rt(probeEvidence=None))
+        self.assertTrue(level.startswith("L0"), level)
+        self.assertIn("PROBE_EVIDENCE_REQUIRED", level)
+
     def test_runtime_evidence_but_perception_not_driven_is_l1(self):
-        """三条件齐全但感知仍走确定性文本层：AI 辅助、可摘除，判 L1。"""
+        """四条件齐全但感知仍走确定性文本层：AI 辅助、可摘除，判 L1。"""
         level = self._level(parse_mode_env="text")
         self.assertTrue(level.startswith("L1"), level)
 
     def test_full_evidence_reaches_l2(self):
-        """合规正例：三条件 + 感知模型驱动，档位须可达 L2（防永远拒绝）。"""
+        """合规正例：四条件 + 感知模型驱动，档位须可达 L2（防永远拒绝）。"""
         level = self._level()
         self.assertTrue(level.startswith("L2"), level)
 

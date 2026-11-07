@@ -119,3 +119,19 @@
 **编码侧收敛边界**：判据（12 项 / 三条件 / 档位 / 四类探针）、文档（六道机检 + M7）、前端（6 端点 + 防假绿 + hidden 路由）、后端（1234 例）、E2E（37/37 终态对账）、证据归档（3 份时点快照已入库）均已闭环。继续堆判据或断言边际收益递减并增加维护面；剩余 7 个 BLOCKED 全部是外部前置，不可编码替代：真实 provider/密钥、独立盲标金标准、冻结集评测、模型击败确定性基线、飞轮真实跑通、独立验证/内审、go-live 分册转正。建议本 change 在此收口，后续按 `07-delivery/11-L3外部前置运行手册.md` 由业务侧逐项解锁。
 
 **终态结论**：`SATISFIED 5 / BLOCKED 7 / RUNTIME_ONLY 0`、**L0**、`l3Claimable=false`，本轮无任何 BLOCKED 被翻绿。
+
+## 14. 第 14 轮增量（2026-11-07）：探活证据束防伪造
+
+收口后复核发现两处真实漂移，按 GAP 推荐方案 A 在判据侧收敛：
+
+- [x] 14.1 `_check_manifest.py` M3 判红：并发会话新增 `第11轮-GAP登记-provider双条件不同源.md` 未登记。补 front-matter + `review.round11.gap-provider` 条目 + `aiRouting`，重跑生成器（66/66 一致）
+- [x] 14.2 GAP 原阻塞理由（判据脚本是并发会话在途文件）已随 `1ae2809c6` 入库消失；按方案 A 新增 `probe_evidence_valid()`，判据扩为四条件
+- [x] 14.3 `--self-test` 补 4 条伪造鲁棒性探针 + 1 条档位负向探针 + 1 条「证据束齐备但判词非 REACHABLE」探针
+- [x] 14.4 表征测试补 5 条证据束用例 + 4 条源码变异验证 + 1 条档位负向用例；**变异测试曾判出「证据束遮蔽探活条件被摘除」，已补探针修复判别力缺口**
+- [x] 14.5 E2E 从同一次探活响应透传 `probeEvidence`，缺失字段写 `null` 不编造；加防编造断言与「复核器回显证据束结论」终态对账断言
+- [x] 14.6 文档族四条件口径收敛（治理规约 / 依赖图谱 / 运行手册 / 运维手册 / GAP / 设计 / 计划 / spec）
+- [x] 14.7 采集侧（`/ai-provider-probe` 返回 token / requestId）如实登记为 L2 业务契约 + 真实 provider 外部前置，本轮不改 Java 契约、不宣称「不可伪造」
+
+**本轮验证**：表征测试 31/31 OK；`--self-test` PASS；六道机检 + `_gen_ai_index.py --check` 全绿；`node --check` E2E 通过；复核器仍 `SATISFIED 5 / BLOCKED 7 / RUNTIME_ONLY 0`、L0、`l3Claimable=false`，无 BLOCKED 被翻绿。
+
+**边界说明**：本轮只收紧「如何判定模型上场」，不解锁任何外部前置。7 个 BLOCKED 之外新增的 `PROBE_EVIDENCE_*` 归因是**同一判据内**的 fail-closed 分支，不新增 BLOCKED 数量；真实 provider 接入前该判据恒 BLOCKED 属预期，合规正例探针证明判据可达 SATISFIED（非恒假）。

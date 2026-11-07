@@ -331,23 +331,44 @@ function check(name, condition, detail) {
       `verdict=${calibVerdict} bucketTableRendered=${bucketTableRendered}`);
 
     const probeButton = page.locator('#subapp-viewport button', { hasText: 'provider 连通性探活' }).first();
+    result.runtime = result.runtime ?? {};
+    result.runtime.probeEvidence = null;
     if (await probeButton.count() > 0) {
       // 复用同一次手动点击的响应，不额外发请求（探活每次真实消耗 provider 用量）。
       const probeResponse = page.waitForResponse(
         (r) => r.url().includes('/ai-provider-probe'), { timeout: 10000 });
       await probeButton.click();
       try {
-        const probeBody = await (await probeResponse).json();
-        result.runtime.probeVerdict = probeBody?.data?.verdict ?? null;
+        const probeResp = await probeResponse;
+        const probeData = (await probeResp.json())?.data ?? {};
+        result.runtime.probeVerdict = probeData.verdict ?? null;
         result.runtime.probeVerdictCapturedAt = new Date().toISOString();
+        // 证据束只从同一次真实探活响应透传。采集侧尚未产出的字段一律 null，
+        // 由复核器按 PROBE_EVIDENCE_* 阻断；不编造 token / requestId，也不回落到裸判词。
+        result.runtime.probeEvidence = probeData.verdict === 'REACHABLE'
+          ? {
+            httpStatus: probeResp.status(),
+            model: probeData.model ?? null,
+            provenance: probeData.provenance ?? null,
+            promptTokens: probeData.promptTokens ?? null,
+            completionTokens: probeData.completionTokens ?? null,
+            requestId: probeData.requestId ?? null,
+          }
+          : null;
       } catch {
         result.runtime.probeVerdict = null;
+        result.runtime.probeEvidence = null;
       }
       await page.waitForTimeout(2500);
     }
     check('探活响应判词写入运行期证据（不可读即判红，不编造 REACHABLE）',
       typeof result.runtime?.probeVerdict === 'string' && result.runtime.probeVerdict.length > 0,
       `verdict=${result.runtime?.probeVerdict ?? 'MISSING'}`);
+    check('探活证据束随产物落盘且未连通时不得编造（防裸判词假绿）',
+      Object.prototype.hasOwnProperty.call(result.runtime ?? {}, 'probeEvidence')
+        && (result.runtime.probeVerdict === 'REACHABLE' || result.runtime.probeEvidence === null),
+      `verdict=${result.runtime?.probeVerdict ?? 'MISSING'} `
+        + `evidence=${JSON.stringify(result.runtime?.probeEvidence ?? null)}`);
     result.ui.aiGovernance.probeRequestsAfterClick = providerProbeRequests;
     check('点击探活按钮后恰好发起 1 次真实探活请求',
       providerProbeRequests === 1,
@@ -453,8 +474,12 @@ function check(name, condition, detail) {
     finalClaim === 'false' && !!finalCoverage
       && (verdict === 'REACHABLE' || finalCoverage[1] === 'BLOCKED'),
     `claimable=${finalClaim} coverage=${finalCoverage ? `${finalCoverage[1]}/${finalCoverage[2]}` : 'n/a'}`);
+  check('终态对账：复核器回显证据束校验结论（不得只读裸判词）',
+    /probeEvidence=(OK|PROBE_EVIDENCE_[A-Z_]+)/.test(finalCheckerOut),
+    `probeEvidenceLine=${(finalCheckerOut.match(/probeEvidence=\S+/) ?? ['MISSING'])[0]}`);
   if (result.runtime) {
     result.runtime.finalReadinessSnapshot = {
+      probeEvidence: result.runtime.probeEvidence ?? null,
       l3Claimable: finalClaim,
       coverageStatus: finalCoverage ? finalCoverage[1] : null,
       coverageReason: finalCoverage ? finalCoverage[2] : null,

@@ -10,7 +10,7 @@
   · 当前可判定的成熟度档位
   · l3Claimable（全部判据 SATISFIED 才为 true）
 
-刻意不做的五件事（防假绿）：
+刻意不做的六件事（防假绿）：
   · 不编造准确率 / 自动化率 / aiCoverage —— 那是运行期数据，静态文件里没有；
     相关判据一律标 RUNTIME_ONLY 并阻断，不因「没数据」判定为「达标」；
   · 不把「配置态全齐」当成成熟度档位——L1/L2 描述运行态，必须有模型上场证据（第 11 轮）；
@@ -18,14 +18,17 @@
   · 不因为「代码里已有判据」就把对应能力算作已发生（check.sh 里的门禁接线
     只证明可证伪，不证明模型跑过真实案件）；
   · 不把「治理资产里的 status / currency 字面串」当成能力已发生的证据——
-    2026-11-07 循环复核发现 4 条判据可被改字符串/删文件刷绿，已改为证据驱动。
+    2026-11-07 循环复核发现 4 条判据可被改字符串/删文件刷绿，已改为证据驱动；
+  · 不把裸 `probeVerdict=REACHABLE` 当成模型真实上场（第 11 轮 GAP）——
+    还须同一次调用返回的 httpStatus / model / provenance / token / requestId 自洽。
 
 运行：
   python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py
   python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py --self-test
 
---self-test 用内存变造的事实做三类探针：摘除能力（须翻转）/ 注入合规事实
-（须达 SATISFIED）/ 注入刷绿动作（须保持 BLOCKED，防假绿）。
+--self-test 用内存变造的事实做四类探针：摘除能力（须翻转）/ 注入合规事实
+（须达 SATISFIED）/ 注入刷绿动作（须保持 BLOCKED，防假绿）/ 成熟度档位
+（配置态不得冒充运行态，且必须有合规正例可达 L2）。
 任一探针不符预期 ⇒ 判据判别力或防假绿能力失效 ⇒ 本脚本自身判红（exit 1）。
 """
 
@@ -288,6 +291,42 @@ def gate(gid: str, status: str, reason: str, evidence: str) -> dict:
     return {"id": gid, "status": status, "reason": reason, "evidence": evidence}
 
 
+_REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{7,127}$")
+_PLACEHOLDER_REQUEST_IDS = {
+    "unknown", "null", "none", "placeholder", "00000000", "test-request",
+}
+
+
+def probe_evidence_valid(ev: object) -> tuple[bool, str]:
+    """同一次真实模型调用的证据束自检；缺项或自相矛盾一律 fail-closed。
+
+    第 11 轮 GAP：裸 `probeVerdict` 是可手写的字符串，不能单独证明模型上场。
+    这里要求 httpStatus=200 + 生产来源模型 + prompt/completion token 均 > 0 +
+    供应商 requestId 合法，把「写一行字符串」抬成「必须伪造一份自洽的计费证据」。
+    字段由 E2E 从 /ai-provider-probe 的同一次响应透传；采集侧尚未产出这些字段时
+    产物为 null，判据按 PROBE_EVIDENCE_* 阻断，绝不回落到裸判词。
+    """
+    if not isinstance(ev, dict):
+        return False, "PROBE_EVIDENCE_REQUIRED"
+    if ev.get("httpStatus") != 200:
+        return False, "PROBE_EVIDENCE_HTTP_NOT_OK"
+    if not str(ev.get("model") or "").strip():
+        return False, "PROBE_EVIDENCE_MODEL_MISSING"
+    if str(ev.get("provenance") or "").strip().upper() != "PROVIDER":
+        return False, "PROBE_EVIDENCE_STUB_NOT_ALLOWED"
+    try:
+        prompt_tokens = int(ev.get("promptTokens") or 0)
+        completion_tokens = int(ev.get("completionTokens") or 0)
+    except (TypeError, ValueError):
+        return False, "PROBE_EVIDENCE_TOKEN_INVALID"
+    if prompt_tokens <= 0 or completion_tokens <= 0:
+        return False, "PROBE_EVIDENCE_EMPTY_COMPLETION"
+    rid = str(ev.get("requestId") or "").strip()
+    if not _REQUEST_ID_RE.fullmatch(rid) or rid.lower() in _PLACEHOLDER_REQUEST_IDS:
+        return False, "PROBE_EVIDENCE_REQUEST_ID_INVALID"
+    return True, "ADMITTED"
+
+
 def evaluate(f: dict) -> list[dict]:
     gates = []
 
@@ -517,13 +556,15 @@ def evaluate(f: dict) -> list[dict]:
         )
     )
 
-    # 运行期证据：消费前后端 E2E 实跑产物，不再只靠静态推断。三项条件缺一不可：
+    # 运行期证据：消费前后端 E2E 实跑产物，不再只靠静态推断。四项条件缺一不可：
     #   ① provider 配置态：节点自报模型标识 ≠ provider 真的配了（AiModelProvenance 用黑名单判定，
     #      未配 provider 的环境也可能留下非空标识），须叠加 PROVIDER_CONFIGURED；
     #   ② 探活 REACHABLE：AI技术方案 §11.7 记录过「探活绿灯、业务全量降级」事故——
     #      配了环境变量 ≠ 上游通了 ≠ 输出契约对。判词由同一次手动探活响应写入 runtime.probeVerdict，
     #      缺省 / 非 REACHABLE 一律 fail-closed，绝不把「没测过」当成「通了」；
-    #   ③ 运行期参与率：nodes / rate / participated 三者均 > 0，证明模型真正在案件链路上过场。
+    #   ③ 探活证据束自洽（第 11 轮 GAP）：② 的裸字符串可手写，须再要求同一次真实调用
+    #      返回的 httpStatus / model / provenance / token / requestId 同时自洽；
+    #   ④ 运行期参与率：nodes / rate / participated 三者均 > 0，证明模型真正在案件链路上过场。
     rt = f["e2e_runtime"]
     provider_configured = bool(f["provider_env"])
     if not rt or not isinstance(rt, dict) or rt.get("nodesScanned") is None:
@@ -542,10 +583,14 @@ def evaluate(f: dict) -> list[dict]:
         coverage = nodes > 0 and rate > 0 and participated > 0
         probe_verdict = str(rt.get("probeVerdict") or "").strip().upper()
         probe_reachable = probe_verdict == "REACHABLE"
+        evidence_ok, evidence_reason = probe_evidence_valid(rt.get("probeEvidence"))
+        all_conditions = provider_configured and coverage and probe_reachable and evidence_ok
         if not provider_configured:
             reason = "PROVIDER_NOT_CONFIGURED"
         elif not probe_reachable:
             reason = "PROBE_NOT_REACHABLE"
+        elif not evidence_ok:
+            reason = evidence_reason
         elif not coverage:
             reason = "MODEL_PARTICIPATION_ZERO"
         else:
@@ -553,12 +598,13 @@ def evaluate(f: dict) -> list[dict]:
         gates.append(
             gate(
                 "RUNTIME_MODEL_COVERAGE",
-                SATISFIED if (provider_configured and coverage and probe_reachable) else BLOCKED,
+                SATISFIED if all_conditions else BLOCKED,
                 reason,
                 f"E2E 实跑：nodes={nodes} aiParticipated={participated} "
                 f"participationRate={rate:.4f} capabilityMissing={rt.get('capabilityMissing')} "
                 f"providerConfigured={provider_configured} "
-                f"probeVerdict={probe_verdict or 'MISSING'}",
+                f"probeVerdict={probe_verdict or 'MISSING'} "
+                f"probeEvidence={evidence_reason}",
             )
         )
     return gates
@@ -625,23 +671,52 @@ def self_test(f: dict) -> bool:
 
     rt = dict(f.get("e2e_runtime") or {})
     rt.update({"nodesScanned": 88, "participationRate": 0.5, "aiParticipated": 44,
-               "probeVerdict": "NOT_CONFIGURED"})
-    rt_ok = dict(rt, probeVerdict="REACHABLE")
+               "probeVerdict": "NOT_CONFIGURED", "probeEvidence": None})
+    # 三要素（provider / 裸判词 / 参与率）齐全但缺证据束：GAP 的核心伪造场景。
+    rt_forged = dict(rt, probeVerdict="REACHABLE")
+    good_evidence = {
+        "httpStatus": 200, "model": "deepseek-chat", "provenance": "PROVIDER",
+        "promptTokens": 12, "completionTokens": 8, "requestId": "chatcmpl-9f2a7c1d",
+    }
+    rt_ok = dict(rt_forged, probeEvidence=good_evidence)
     # 只刷参与率而 provider 未配，不得让判据局部假绿（stay）。
     add("仅伪造运行期参与率而 provider 未配（防假绿）", "RUNTIME_MODEL_COVERAGE",
         dict(f, e2e_runtime=rt), "stay")
-    # 三项条件齐备，判据须翻转为 SATISFIED（防恒假）。
-    add("provider 已配 + 探活 REACHABLE + 参与率 0.5（合规可达）", "RUNTIME_MODEL_COVERAGE",
+    # 四条件齐备，判据须翻转为 SATISFIED（防恒假）。
+    add("provider 已配 + 探活 REACHABLE + 自洽证据束 + 参与率 0.5（合规可达）",
+        "RUNTIME_MODEL_COVERAGE",
         dict(f, provider_env="http://localhost:8000/v1", e2e_runtime=rt_ok), "flip_to_satisfied")
     # §11.7「配了 ≠ 通了」：provider 已配、参与率非零，但探活非 REACHABLE，仍须 BLOCKED。
     add("provider 已配 + 参与率 0.5 但探活非 REACHABLE（防假绿）", "RUNTIME_MODEL_COVERAGE",
         dict(f, provider_env="http://localhost:8000/v1", e2e_runtime=rt), "stay")
+    # 单独钉住探活条件：其余三条件齐备但判词非 REACHABLE 仍须 BLOCKED。
+    # 否则证据束条件会遮蔽「probe_reachable 被从判据里摘除」这一退化，变异测试抓不到。
+    add("证据束齐备但探活判词非 REACHABLE（钉住探活条件不可摘除）", "RUNTIME_MODEL_COVERAGE",
+        dict(f, provider_env="http://localhost:8000/v1",
+             e2e_runtime=dict(rt_ok, probeVerdict="NOT_CONFIGURED")), "stay")
     add("探活判词缺失（未测过）不得当成 REACHABLE（fail-closed）", "RUNTIME_MODEL_COVERAGE",
         dict(f, provider_env="http://localhost:8000/v1",
              e2e_runtime={k: v for k, v in rt.items() if k != "probeVerdict"}), "stay")
     # 判词与参与率一起伪造、但 provider 未配，同样不得翻绿（钉住 provider 条件不可摘除）。
     add("provider 未配但把探活判词与参与率一起伪造（防假绿）", "RUNTIME_MODEL_COVERAGE",
         dict(f, e2e_runtime=rt_ok), "stay")
+
+    # 第 11 轮 GAP：伪造鲁棒性探针。provider / 裸判词 / 参与率三样都能手写，
+    # 缺 probeEvidence 或证据束自相矛盾时必须仍 BLOCKED。
+    add("三要素全伪造但无 probeEvidence（防假绿）", "RUNTIME_MODEL_COVERAGE",
+        dict(f, provider_env="http://localhost:8000/v1", e2e_runtime=rt_forged), "stay")
+    add("probeEvidence 里 completionTokens=0（空返回不算跑过模型）", "RUNTIME_MODEL_COVERAGE",
+        dict(f, provider_env="http://localhost:8000/v1",
+             e2e_runtime=dict(rt_ok, probeEvidence=dict(good_evidence, completionTokens=0))),
+        "stay")
+    add("probeEvidence 里 provenance=STUB（替身响应不得计入）", "RUNTIME_MODEL_COVERAGE",
+        dict(f, provider_env="http://localhost:8000/v1",
+             e2e_runtime=dict(rt_ok, probeEvidence=dict(good_evidence, provenance="STUB"))),
+        "stay")
+    add("probeEvidence 里 requestId 为占位值（防假绿）", "RUNTIME_MODEL_COVERAGE",
+        dict(f, provider_env="http://localhost:8000/v1",
+             e2e_runtime=dict(rt_ok, probeEvidence=dict(good_evidence, requestId="unknown"))),
+        "stay")
 
     # 基线：只刷 status 不得翻绿，须真实采集证据 + 顶层非 skeleton。
     add("基线合规正例（wired+provenance+confirmed）", "BASELINE_WIRED",
@@ -719,7 +794,10 @@ def self_test(f: dict) -> bool:
         ("配置态全齐但无 E2E 产物 ⇒ 档位须为 L0",
          dict(f, provider_env="http://localhost:8000/v1",
               parse_mode_env="llm", e2e_runtime=None), "L0"),
-        ("三条件齐备 + llm ⇒ 档位须可达 L2（防恒假）",
+        ("三要素全伪造但无证据束 ⇒ 档位须为 L0（防假绿）",
+         dict(f, provider_env="http://localhost:8000/v1",
+              parse_mode_env="llm", e2e_runtime=rt_forged), "L0"),
+        ("四条件齐备 + llm ⇒ 档位须可达 L2（防恒假）",
          dict(f, provider_env="http://localhost:8000/v1",
               parse_mode_env="llm", e2e_runtime=rt_ok), "L2"),
     ]
@@ -753,12 +831,14 @@ def main() -> int:
     print("-" * 72)
     rt = facts.get("e2e_runtime")
     if rt:
+        ev_ok, ev_reason = probe_evidence_valid(rt.get("probeEvidence"))
         print(f"运行期证据（前后端 E2E 实跑）：nodes={rt.get('nodesScanned')} "
               f"aiParticipated={rt.get('aiParticipated')} "
               f"participationRate={rt.get('participationRate')} "
-              f"probeVerdict={rt.get('probeVerdict') or 'MISSING'}")
-    print("说明：无 E2E 产物时该判据为 RUNTIME_ONLY 并阻断；provider 未配、探活非 REACHABLE "
-          "或参与率为 0 均判 BLOCKED。")
+              f"probeVerdict={rt.get('probeVerdict') or 'MISSING'} "
+              f"probeEvidence={'OK' if ev_ok else ev_reason}")
+    print("说明：无 E2E 产物时该判据为 RUNTIME_ONLY 并阻断；provider 未配、探活非 REACHABLE、"
+          "证据束缺失/自相矛盾或参与率为 0 均判 BLOCKED。")
     return 0
 
 

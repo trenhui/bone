@@ -47,7 +47,7 @@ currency: current
 | 排期 / 里程碑 / 迭代 | `plan.mvp` |
 | 为什么这么设计 / 对标 / 差距 | `records.review.业界对标` / `records.review.TPA-` |
 | 某次代码改动的前因后果 / 历史取证 | `records.impl.14` / `records.impl.15` / `records.impl.16` / `records.impl.17` / `records.impl.18` / `records.impl.19` / `records.impl.20` / `records.review.理算引擎` |
-| 配 provider / 跑 L3 外部前置 / 看就绪度归因 | `delivery.11` |
+| 配 provider / 跑 L3 外部前置 / 看就绪度归因 / 判据防伪造 | `delivery.11` / `review.round11.gap-provider` |
 | 判断某项优化是否该做 / 合理性裁定台账 | `review.round9` / `review.round11` |
 | 零 DDL / 零公共签名改动的审批与闭环 | `review.round10` |
 | AI 原生改造 / 就绪度判据 / 改造执行计划 | `plan.ainative` |
@@ -104,9 +104,10 @@ currency: current
 - `golive.12` → `08-go-live/12-资金累计DB级并发正确性.md`：累计扣减的 DB 级并发正确性（单测契约不足）
 - `golive.13` → `08-go-live/13-理算引擎三重路径收敛与护栏移植（F1）.md`：唯一权威资金路径决策、整改步骤、双路径歧义根除
 
-## 五、GUIDE 操作指南（role=guide，可执行步骤；结论以对应 ssot 为准，共 5 份）
+## 五、GUIDE 操作指南（role=guide，可执行步骤；结论以对应 ssot 为准，共 6 份）
 
 - `review.round10` → `03-contract/第10轮循环复核-零DDL闭环落地.md`：第 10 轮循环复核：零 DDL / 零公共签名改动的审批与闭环落地台账
+- `review.round11.gap-provider` → `03-contract/第11轮-GAP登记-provider双条件不同源.md`：GAP：RUNTIME_MODEL_COVERAGE 三要素同源可伪造风险、方案 A 精确修复与可证伪验收口径
 - `review.round11` → `03-contract/第11轮循环复核-事件消费方接线与分层收口.md`：第 11 轮循环复核：事件消费方生产接线 + 分层门禁收口（AiEvalSampleIndex 端口/控制器/适配器）
 - `review.round9` → `03-contract/第9轮循环复核-合理性判定矩阵.md`：第 9 轮循环复核：7 项待办的合理性裁定、13 分册逐册核对台账与最小落地方案
 - `plan.ainative` → `05-plan/AI原生改造执行计划.md`：AI 原生改造执行计划：将 _ai_native_readiness.py 的 12 判据映射为阶段/负责/动作/验收，并叠加 Phase B/V2 能力纵深路线，作为 gsd-core Plan 阶段交付物与循环可复用终止判据

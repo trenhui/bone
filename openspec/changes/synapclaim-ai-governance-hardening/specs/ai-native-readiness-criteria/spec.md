@@ -4,28 +4,40 @@
 
 ## ADDED Requirements
 
-### Requirement: 运行期模型覆盖须满足 provider 双条件
+### Requirement: 运行期模型覆盖须满足四条件
 
-`RUNTIME_MODEL_COVERAGE` 判为 `SATISFIED` **MUST** 同时满足：`provider_env` 非空（等价于 `PROVIDER_CONFIGURED` 通过）、E2E 产物 `nodesScanned > 0`、`aiParticipated > 0`、`participationRate > 0`。任一不满足即 **MUST** 为 `BLOCKED`。
+`RUNTIME_MODEL_COVERAGE` 判为 `SATISFIED` **MUST** 同时满足：`provider_env` 非空（等价于 `PROVIDER_CONFIGURED` 通过）、E2E 产物 `runtime.probeVerdict == REACHABLE`、`runtime.probeEvidence` 证据束自洽（`httpStatus=200` / `model` 非空 / `provenance=PROVIDER` / `promptTokens>0` / `completionTokens>0` / `requestId` 合法）、`nodesScanned > 0`、`aiParticipated > 0`、`participationRate > 0`。任一不满足即 **MUST** 为 `BLOCKED`。
 
-- provider 未配置的优先级 **MUST** 高于参与率归因，此时 `reason` **MUST** 为 `PROVIDER_NOT_CONFIGURED`。
+- provider 未配置的优先级 **MUST** 最高，此时 `reason` **MUST** 为 `PROVIDER_NOT_CONFIGURED`。
+- 判词缺失或非 `REACHABLE` **MUST** 为 `PROBE_NOT_REACHABLE`（fail-closed），不得把「没测过」当成「通了」。
+- 证据束缺失或自相矛盾 **MUST** 按 `PROBE_EVIDENCE_*` 阻断，不得回落到裸判词；采集侧未产出的字段 **MUST** 在 E2E 产物里写 `null`，不得编造。
 - provider 已配置但参与证据为零时，`reason` **MUST** 为 `MODEL_PARTICIPATION_ZERO`。
-- `detail` **MUST** 包含 `providerConfigured=<true|false>`，使判定依据可审计。
+- `detail` **MUST** 包含 `providerConfigured=` / `probeVerdict=` / `probeEvidence=`，使判定依据可审计。
 - 无 E2E 产物时 **MUST** 仍为 `RUNTIME_ONLY` / `RUNTIME_EVIDENCE_REQUIRED`，不得因 provider 条件而降级为 `BLOCKED`。
 
 #### Scenario: provider 未配置但参与率非零
 
-- **WHEN** `provider_env` 为空，E2E 产物为 `nodes=88, aiParticipated=44, participationRate=0.5`
+- **WHEN** `provider_env` 为空，E2E 产物为 `nodes=88, aiParticipated=44, participationRate=0.5, probeVerdict=REACHABLE` 且证据束自洽
 - **THEN** 判据为 `BLOCKED`，`reason=PROVIDER_NOT_CONFIGURED`，且 `detail` 含 `providerConfigured=false`
 
-#### Scenario: provider 已配置且参与证据齐全
+#### Scenario: 四条件齐备
 
-- **WHEN** `provider_env` 非空，E2E 产物为 `nodes=88, aiParticipated=44, participationRate=0.5`
+- **WHEN** `provider_env` 非空，E2E 产物为 `nodes=88, aiParticipated=44, participationRate=0.5, probeVerdict=REACHABLE` 且证据束自洽
 - **THEN** 判据为 `SATISFIED`，`reason=ADMITTED`
+
+#### Scenario: 三要素全伪造但无证据束
+
+- **WHEN** provider 已配、判词 `REACHABLE`、参与率非零，但 `probeEvidence` 缺失
+- **THEN** 判据为 `BLOCKED`，`reason=PROBE_EVIDENCE_REQUIRED`
+
+#### Scenario: 证据束自相矛盾
+
+- **WHEN** 证据束里 `completionTokens=0` 或 `provenance=STUB` 或 `requestId` 为占位值
+- **THEN** 判据为 `BLOCKED`，`reason` 为对应的 `PROBE_EVIDENCE_*`
 
 #### Scenario: provider 已配置但参与率为零
 
-- **WHEN** `provider_env` 非空，E2E 产物为 `nodes=88, aiParticipated=0, participationRate=0`
+- **WHEN** `provider_env` 非空，E2E 产物为 `nodes=88, aiParticipated=0, participationRate=0`，判词与证据束齐备
 - **THEN** 判据为 `BLOCKED`，`reason=MODEL_PARTICIPATION_ZERO`
 
 ### Requirement: 判据必须可证伪

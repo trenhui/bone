@@ -124,6 +124,17 @@
       "currency": "current"
     },
     {
+      "id": "review.round11.gap-provider",
+      "path": "03-contract/第11轮-GAP登记-provider双条件不同源.md",
+      "layer": "L3",
+      "diataxis": "reference",
+      "status": "active",
+      "summary": "GAP：RUNTIME_MODEL_COVERAGE 三要素同源可伪造风险、方案 A 精确修复与可证伪验收口径",
+      "authority": "provider 证据伪造风险 / 判据加固验收口径",
+      "role": "guide",
+      "currency": "current"
+    },
+    {
       "id": "contract.landing",
       "path": "03-contract/工程详细设计-落地版.md",
       "layer": "L3",
@@ -874,9 +885,10 @@
       ]
     },
     {
-      "intent": "配 provider / 跑 L3 外部前置 / 看就绪度归因",
+      "intent": "配 provider / 跑 L3 外部前置 / 看就绪度归因 / 判据防伪造",
       "docs": [
-        "delivery.11"
+        "delivery.11",
+        "review.round11.gap-provider"
       ]
     },
     {
