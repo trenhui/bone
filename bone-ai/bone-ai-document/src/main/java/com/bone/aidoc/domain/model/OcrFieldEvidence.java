@@ -34,20 +34,59 @@ public record OcrFieldEvidence(
   /**
    * 由既有 {@link RecognizedField} 桥接为初始证据：OCR 引擎置信度、待校验、待复核。
    *
-   * <p>原图坐标/原文在既有 OCR 结果中未必具备，留空由下游（质检/证据补全）填充。
+   * <p>从字段自身携带的页码（{@code null} 或未提供时回退 1）与定位框透传，实现多页逐字段定位； 原图坐标/原文在既有 OCR 结果中未必具备，留空由下游（质检/证据补全）填充。
    */
+  public static OcrFieldEvidence from(RecognizedField rf, String engineId) {
+    int page = (rf.page() == null || rf.page() < 1) ? 1 : rf.page();
+    return from(rf, engineId, page, rf.bbox());
+  }
+
+  /**
+   * 兼容构造：显式页码（覆盖字段自带页码），坐标仍取字段自带值。
+   *
+   * @deprecated 优先使用 {@link #from(RecognizedField, String)}，由字段自带页码驱动多页定位。
+   */
+  @Deprecated
   public static OcrFieldEvidence from(RecognizedField rf, String engineId, int page) {
+    return from(rf, engineId, page, rf.bbox());
+  }
+
+  private static OcrFieldEvidence from(
+      RecognizedField rf, String engineId, int page, BoundingBox bbox) {
     return new OcrFieldEvidence(
         rf.name(),
         rf.value(),
         null,
         page,
-        null,
+        bbox,
         engineId,
         rf.confidence(),
         ConfidenceSource.OCR_ENGINE,
         ValidationStatus.PENDING,
         ReviewStatus.PENDING);
+  }
+
+  /**
+   * 必填字段<b>漏识别</b>时生成的占位证据（ADR-0046：字段级可信度不得因「字段消失」而虚高）。
+   *
+   * <p>OCR 未返回的字段不能悄悄从证据链里消失，否则 {@code autoPassRate} 的分母只含成功识别的字段，
+   * 漏掉关键金额/证件号反而显得「全部自动通过」。此类证据为空值、零置信、校验失败、强制人工复核， 并以 {@code rawText} 的 {@code
+   * [MISSING_REQUIRED_FIELD]} 标记供审计检索。
+   *
+   * <p>注意：这些证据不参与 L2 规则与 L3 质量评估（它们没有可评估的识别内容），由编排层在质量评估之后追加。
+   */
+  public static OcrFieldEvidence missing(String fieldName, String engineId, OcrDocType docType) {
+    return new OcrFieldEvidence(
+        fieldName,
+        "",
+        "[MISSING_REQUIRED_FIELD] " + fieldName + " required by " + docType + " template",
+        1,
+        null,
+        engineId,
+        0.0,
+        ConfidenceSource.OCR_ENGINE,
+        ValidationStatus.FAILED,
+        ReviewStatus.MANUAL_REVIEW);
   }
 
   /** 带校验状态的新副本（record 不可变，流水线逐步补全）。 */

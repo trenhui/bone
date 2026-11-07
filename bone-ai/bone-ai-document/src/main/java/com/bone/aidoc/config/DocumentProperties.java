@@ -94,6 +94,7 @@ public class DocumentProperties {
    * com.bone.aidoc.domain.service.DefaultReviewPolicy#defaultThresholds()} 骨架值。
    *
    * <p>引擎接入：配置对应 URL（如 {@code paddle-url}）即装配该引擎的真实 HTTP 适配器（复用 {@code HttpOcrClient}）， 不配置则不含该引擎。
+   * {@code jev-url} / {@code classifier-url} 非空时分别接入真实质量评估与票种分类服务，覆盖安全默认实现。
    */
   public static class TrustedOcr {
     private boolean enabled = false;
@@ -107,22 +108,48 @@ public class DocumentProperties {
     /** MiniCPM-OCR 服务地址；非空即接入。 */
     private String minicpmUrl = "";
 
+    /** Jev 类质量评估服务地址；非空即接入，覆盖默认启发式质量评估器。 */
+    private String jevUrl = "";
+
+    /** 票种分类服务地址；非空即接入，覆盖默认 NoOp 分类器。 */
+    private String classifierUrl = "";
+
     /** 识别服务调用超时（毫秒，默认 30000）。 */
     private long timeoutMs = 30000;
 
     /** 单份识别文件大小上限（字节，默认 50MB）——防内存耗尽型 DoS。 */
     private long maxBytes = 50L * 1024 * 1024;
 
-    /** 兼容旧扁平阈值（HIGH/MEDIUM/LOW 直接取用，CRITICAL 在此基础上施加更高下限）。 */
-    private double autoPassThreshold = 0.98;
+    /** 旧扁平阈值的默认骨架值（仅用于判定是否被显式改动）。 */
+    private static final double LEGACY_AUTO_PASS = 0.98;
 
-    private double qualityAutoPassThreshold = 0.90;
-    private double manualThreshold = 0.80;
-    private double manualQualityThreshold = 0.70;
+    private static final double LEGACY_QUALITY_AUTO_PASS = 0.90;
+    private static final double LEGACY_MANUAL = 0.80;
+    private static final double LEGACY_MANUAL_QUALITY = 0.70;
 
-    /** 按风险等级标定阈值覆盖（键为 CRITICAL/HIGH/MEDIUM/LOW）。 */
+    /**
+     * @deprecated ADR-0046 Phase-2 起<b>唯一口径</b>为 {@code riskThresholds}（按风险等级分别标定）。 以下 4
+     *     个扁平值<b>不再被采信</b>，仅为兼容旧配置文件绑定而保留。 显式配置成非默认值时，装配期会 fail-fast
+     *     拒绝启动——绝不允许出现「配了以为生效、实际被静默忽略」的可信度假象。请改用 {@code
+     *     bone.ai.document.trusted-ocr.risk-thresholds.<LEVEL>.*}。
+     */
+    @Deprecated private double autoPassThreshold = LEGACY_AUTO_PASS;
+
+    @Deprecated private double qualityAutoPassThreshold = LEGACY_QUALITY_AUTO_PASS;
+    @Deprecated private double manualThreshold = LEGACY_MANUAL;
+    @Deprecated private double manualQualityThreshold = LEGACY_MANUAL_QUALITY;
+
+    /** 按风险等级标定阈值覆盖（键为 CRITICAL/HIGH/MEDIUM/LOW）——唯一生效口径。 */
     private java.util.Map<RiskLevel, RiskThresholdConfig> riskThresholds =
         new java.util.EnumMap<>(RiskLevel.class);
+
+    /** 旧扁平阈值是否被显式改动（用于装配期 fail-fast，避免静默失效）。 */
+    public boolean hasLegacyFlatThresholds() {
+      return Double.compare(autoPassThreshold, LEGACY_AUTO_PASS) != 0
+          || Double.compare(qualityAutoPassThreshold, LEGACY_QUALITY_AUTO_PASS) != 0
+          || Double.compare(manualThreshold, LEGACY_MANUAL) != 0
+          || Double.compare(manualQualityThreshold, LEGACY_MANUAL_QUALITY) != 0;
+    }
 
     public boolean isEnabled() {
       return enabled;
@@ -154,6 +181,22 @@ public class DocumentProperties {
 
     public void setMinicpmUrl(String v) {
       this.minicpmUrl = v;
+    }
+
+    public String getJevUrl() {
+      return jevUrl;
+    }
+
+    public void setJevUrl(String v) {
+      this.jevUrl = v;
+    }
+
+    public String getClassifierUrl() {
+      return classifierUrl;
+    }
+
+    public void setClassifierUrl(String v) {
+      this.classifierUrl = v;
     }
 
     public long getTimeoutMs() {

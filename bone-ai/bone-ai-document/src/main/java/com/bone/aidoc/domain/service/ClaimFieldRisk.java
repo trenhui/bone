@@ -5,10 +5,12 @@ import com.bone.aidoc.domain.model.RiskLevel;
 import java.util.Set;
 
 /**
- * 理赔字段风险分级（ADR-0046 §四：不同字段应分别标定阈值）。
+ * 理赔字段风险分级（ADR-0046 §四：不同字段/票种应分别标定阈值）。
  *
- * <p>直接涉钱字段（金额/赔付额）为 CRITICAL；证件号、发票代码、日期为 HIGH； 机构名/诊断/地址为 MEDIUM；其余为 LOW。分级结果喂给 {@code
- * ReviewPolicy} 做差异化放行。 此为默认启发式，真实分级须结合票种与保单责任，按真实标注数据标定。
+ * <p><b>模板声明优先、全局启发式回退</b>：先查 {@link ClaimDocumentTemplateRegistry} 中该票种为该字段 声明的风险等级；未声明（或票种为
+ * GENERAL / 自由文本类）时回退到按字段名的默认启发式。 分级结果喂给 {@code ReviewPolicy} 做差异化放行。
+ *
+ * <p>此为骨架启发式，真实分级须结合票种与保单责任，按真实标注数据标定。
  */
 public class ClaimFieldRisk {
 
@@ -40,8 +42,24 @@ public class ClaimFieldRisk {
   private static final Set<String> MEDIUM_FIELDS =
       Set.of("hospital_name", "patient_name", "diagnosis", "address", "bank_name");
 
-  /** 字段风险等级（按字段名小写包含匹配，宽松适配不同 schema 命名）。 */
+  private final ClaimDocumentTemplateRegistry templates;
+
+  /** 默认：采用内置票种模板。 */
+  public ClaimFieldRisk() {
+    this(ClaimDocumentTemplateRegistry.builtIn());
+  }
+
+  /** 注入自定义（或空）模板注册表，便于标定与单测隔离。 */
+  public ClaimFieldRisk(ClaimDocumentTemplateRegistry templates) {
+    this.templates = templates == null ? ClaimDocumentTemplateRegistry.noTemplates() : templates;
+  }
+
+  /** 字段风险等级：模板声明优先，否则按字段名小写包含匹配（宽松适配不同 schema 命名）。 */
   public RiskLevel levelOf(OcrDocType docType, String fieldName) {
+    return templates.riskOf(docType, fieldName).orElseGet(() -> globalLevel(fieldName));
+  }
+
+  private static RiskLevel globalLevel(String fieldName) {
     String f = fieldName == null ? "" : fieldName.toLowerCase();
     if (CRITICAL_FIELDS.stream().anyMatch(f::contains)) {
       return RiskLevel.CRITICAL;

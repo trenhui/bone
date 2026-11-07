@@ -303,9 +303,9 @@ PaddleOCR 3.7.x 作基础底座、GLM-OCR 作 VLM 对比、MiniCPM-OCR 1.0 作�
 
 ---
 
-## 九、实施进度（骨架已实现 · 2026-11-06）
+## 九、实施进度（骨架 + 端到端链路已实现 · 2026-11-07）
 
-ADR-0046 决策已在 `bone-ai/bone-ai-document` 模块落地为可运行骨架，并通过 65 项单测（含 ArchUnit DDD 门禁）。
+ADR-0046 决策已在 `bone-ai/bone-ai-document` 模块落地为可运行骨架，并通过 124 项单测（含 ArchUnit DDD 门禁、Spring 上下文装配守护与真实 HTTP 端到端链路 PoC）。
 
 ### 已实现的代码资产
 
@@ -319,10 +319,32 @@ ADR-0046 决策已在 `bone-ai/bone-ai-document` 模块落地为可运行骨架�
 | domain/service | `DefaultReviewPolicy`（重写） | 由 `Map<RiskLevel,RiskThreshold>` 驱动；MISMATCH 强制人工复核；CRITICAL 缺质量分转二次识别 |
 | config | `DocumentProperties.TrustedOcr` | 新增 `paddleUrl`/`glmUrl`/`minicpmUrl`/`maxBytes`/`timeoutMs` + `riskThresholds` 标定覆盖 |
 | config | `TrustedOcrAutoConfiguration`（重写） | 按 URL 装配真实 `HttpOcrClient` 适配器（复用既有传输契约）、注入 4 个 L2 规则、GLM-OCR 作交叉次引擎、按标定阈值构建策略。**默认关闭** |
+| domain/service | `HeuristicOcrQualityEvaluator` | 默认质量评估器（模型无关启发式：相对置信度离散度 + 证据覆盖 + 校验状态 + 空值惩罚），使 L3 质量感知路由生效（CRITICAL 不再因缺质量分永远转二次识别）；真实 Jev 标定模型以 `@ConditionalOnMissingBean` 覆盖 |
+| domain/model | `RecognizedField`（扩展） | 支持可选 `page` / `BoundingBox`，多页逐字段定位 |
+| domain/model | `OcrFieldEvidence.from`（扩展） | 透传页码与坐标（缺页码回退 1）；保留三参兼容构造 |
+| infrastructure | `HttpOcrClient` | 解析响应 `page` / `bbox` 节点 |
+| config | `TrustedOcrAutoConfiguration` | 默认装配 `HeuristicOcrQualityEvaluator` 替换 `NoOp`（**默认关闭**） |
+| domain/model | `ClaimDocumentTemplate` / `RequiredField` | 按票种版式契约：必填关键字段（别名精确匹配 + 字段风险）与引擎优先顺序；字段名归一化消除 schema 差异 |
+| domain/service | `ClaimDocumentTemplateRegistry` | 版式契约唯一事实源；结构化票种声明必填字段，自由文本票种（病历/出院/处方）刻意不声明以控制误报；内置值仅为骨架默认，须 PoC 校准 |
+| domain/model | `OcrFieldEvidence.missing` | 漏识别字段的占位证据：空值 + 零置信 + FAILED + 强制人工复核，`[MISSING_REQUIRED_FIELD]` 审计标记 |
+| domain/service | `TrustedOcrEngine`（Phase-4 扩展） | ② 票种分类（仅 GENERAL 时）与按票种引擎偏好稳定排序；⑦ 必填字段缺失拦截（在质量评估之后追加，避免污染质量分基准） |
+| domain/service | `ClaimFieldRisk`（扩展） | 模板声明的字段风险优先，未声明回退全局启发式 |
+| config | `TrustedOcrAutoConfiguration`（Phase-4 扩展） | 装配 `DocumentClassifier`（NoOp 安全默认）与模板注册表 Bean；旧扁平阈值显式登记不采信 + 配置非默认值 fail-fast；分级阈值合法性与序关系校验 |
+| domain/model | `CalibrationSample` / `LevelCalibration` / `CalibrationReport` | 离线阈值标定的样本、单等级结论与报告载体；含 Wilson 95% 上界、最小样本量、统计证明标记与配置片段 |
+| domain/service | `ThresholdCalibrator` | 网格搜索候选阈值，判定**直接复用运行时 `DefaultReviewPolicy.decide`**；零错误小样本不得宣称达标；输出证明目标所需的最小样本量 |
+| domain/service | `OcrAcceptanceMetrics` | 从字段级证据链重算验收指标（自动通过率 / 人工介入率 / 关键字段 100% 证据定位覆盖率 / CRITICAL 自动通过数 / 漏字段数），聚合计数不一致时可反查 |
+| infrastructure | `JevHttpQualityEvaluator` | 真实 Jev 质量分 HTTP 适配器；服务故障 / 非法 JSON / 越界分值一律质量分不可用（fail-closed），绝不用启发式分数伪装模型判断 |
+| infrastructure | `HttpDocumentClassifier` | 真实票种分类 HTTP 适配器；未知票种 / 服务故障 / 文件超限一律回落 GENERAL，绝不猜测票种 |
+| config | `DocumentProperties.TrustedOcr`（Phase-5 扩展） | 新增 `jevUrl` / `classifierUrl`；非空即装配上述真实适配器覆盖安全默认 |
+| integration（测试） | `TrustedOcrHttpPipelinePoCTest` | 本地 HttpServer + 真实 Spring 上下文 + 真实 JDK HttpClient 跑通七层管线；含 Jev / 分类服务不可达时的 fail-closed 对照 |
 
 ### 验证结果
 
-`mvn -o -pl bone-ai/bone-ai-document test`（绕沙箱）：65 用例 / 17 类，0 失败 0 错误。`ArchitectureTest` 确认新增代码未违反 DDD 门禁（domain 不依赖外层、application 不依赖 infrastructure）。
+`mvn -o -pl bone-ai/bone-ai-document test`（绕沙箱）：**124 用例，0 失败 0 错误**。`ArchitectureTest`（11 项）确认新增代码未违反 DDD 门禁；`TrustedOcrAutoConfigurationContextTest` 以真实 Spring 上下文验证默认关闭、开启后全部端口装配、自定义分类器可覆盖、配置 URL 后真实适配器覆盖安全默认、旧扁平阈值拒绝启动；`TrustedOcrHttpPipelinePoCTest` 以本地 HttpServer + 真实 JDK HttpClient 跑通七层管线，并给出服务不可达时的 fail-closed 对照（Jev 挂 → CRITICAL 转二次识别、分类器挂 → 回落 GENERAL 且不制造假红）。
+
+**统计纪律对照**：`ThresholdCalibratorTest` 证明 100 个「零错误」自动通过样本的 Wilson 95% 上界仍远高于 0.01% 目标，`statisticallyProven=false` 且给出证明目标所需的最小样本量（>3 万）；放宽目标到 1% 且样本 500 时才通过。避免「小样本零错误就宣称达标」这一最常见验收失真。
+
+**修复前后对照实验**：同一份只识别出 `total_amount` / `hospital_name` 的发票，关闭模板时漏掉的 `invoice_no` / `invoice_date` 完全不可见，`autoPassRate`=0.50；启用模板后补 2 条 FAILED + 人工复核证据，`autoPassRate`=0.25。另有防误报对照：中文别名（`合计金额` / `发票号码` / `开票日期`）与 `start_date` 不被误判。
 
 ### 关键铁律落地点（对照 §四）
 
@@ -330,11 +352,17 @@ ADR-0046 决策已在 `bone-ai/bone-ai-document` 模块落地为可运行骨架�
 - **多模型一致 ≠ 正确**：交叉 MATCH 不自动通过 CRITICAL；MISMATCH 直接升级人工复核。
 - **可信度字段级 + 风险分级标定**：`RiskThreshold` 按 CRITICAL/HIGH/MEDIUM/LOW 分别持有，禁全局 0.95；默认骨架值须由真实样本标定覆盖。
 - **置信度来源显式区分**：`ConfidenceSource` 标注 OCR/质量模型/标定，禁止跨来源比较。
+- **漏识别 ≠ 可放行**：票种声明的必填字段未返回时补 FAILED 证据并强制人工复核，分母计入缺失字段，自动通过率不再因「字段消失」而虚高。
+- **按票种分别选型**：引擎优先顺序由票种模板单点定义（发票/证件/清单 → PaddleOCR 优先，病历/出院/保单 → GLM-OCR 优先），而非一律取装配顺序第一个。
+- **误报控制**：别名经归一化后**精确**比对（不做子串匹配，`start_date` 不会被当作 `invoice_date`）；自由文本票种刻意不声明必填字段，避免 schema 差异批量制造假红、诱使使用者关掉闸门。
+- **同一语义唯一口径**：阈值只认 `risk-thresholds.<LEVEL>.*`；旧扁平阈值显式登记不采信且配置非默认值即 fail-fast，杜绝「配了以为生效、实际静默忽略」。分级阈值还校验值域与「人工门槛 ≤ 自动通过门槛」的序关系。
 
-### 待续（Phase-2/3，未做）
+### 待续（仅剩需真实数据 / 外部模型服务的前置项）
 
-1. 真实 Jev 质量评估器（`OcrQualityEvaluator` 当前为 `NoOp`，质量分不可用 → CRITICAL 自动转二次识别）；
-2. 具体票据版式解析模板（医疗发票/费用清单/病历）；
-3. `riskThresholds` 用真实脱敏样本标定（500–1000 份 PoC 数据集）；
-4. 多页 PDF 逐页字段定位（当前单页假设，`page` 固定为 1）；
-5. 部署 PaddleOCR/GLM-OCR 服务并填 URL 开启 `trusted-ocr.enabled=true` 做端到端 PoC。
+> 已于 Phase-5 落地：Jev 与票种分类的**真实 HTTP 适配器**（含 fail-closed）、离线阈值标定工具与统计纪律、验收指标可计算化、**编排契约级**端到端 HTTP PoC。下方待续项均无法靠代码自包含完成，须有脱敏标注数据与真实模型服务。
+
+1. 部署并标定真实 Jev 模型服务：按票种 / 字段 / 风险用标注样本标定质量分，AUROC 仅作筛选、不得当作字段正确率；填 `jev-url` 即由 `JevHttpQualityEvaluator` 接入（也可 `@ConditionalOnMissingBean` 覆盖）。
+2. 部署真实票种分类服务（CNN/VLM）：填 `classifier-url` 即由 `HttpDocumentClassifier` 接入，且仅在调用方传 `GENERAL` 时参与判定。
+3. 用 500–1000 份脱敏标注样本跑 `ThresholdCalibrator` 校准 `riskThresholds`；只有 Wilson 95% 上界不超过目标的等级才可上生产。
+4. 用同一批样本校准模板别名、必填字段清单与引擎偏好顺序（内置值仅为骨架默认；通用榜单分 ≠ 理赔字段级准确率，不得预置结论）。
+5. 部署 PaddleOCR / GLM-OCR 服务并填 URL 开启 `trusted-ocr.enabled=true`，做**真实模型**端到端准确率验收；当前 PoC 用固定桩响应，只证明链路可跑通与故障不放行，不构成任何准确率结论。

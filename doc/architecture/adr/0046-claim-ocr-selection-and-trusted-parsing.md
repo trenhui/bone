@@ -73,9 +73,12 @@
 
 ## 实施状态（2026-11-06）
 
-**已接受并已落地骨架**，代码位于 `bone-ai/bone-ai-document` 模块，65 项单测全绿（含 `ArchitectureTest` DDD 门禁）。
+**已接受并已落地骨架**，代码位于 `bone-ai/bone-ai-document` 模块，124 项单测全绿（含 `ArchitectureTest` DDD 门禁、Spring 上下文装配守护与真实 HTTP 端到端链路 PoC）。
 
-- 已实现：L2 确定性字段校验规则（金额格式/日期/身份证校验位/金额大小写一致性）、L3 多模型交叉校验、按风险分级标定的复核阈值（`RiskThreshold` + `DefaultReviewPolicy` 重写）、`TrustedOcrEngine` 可选次引擎接入、真实 `HttpOcrClient` 适配器装配（默认关闭）。
-- 待续：真实 Jev 质量评估器、票据版式模板、`riskThresholds` 样本标定、多页定位、端到端 PoC（部署服务 + 开 `enabled`）。
+- 已实现（Phase-1/2）：L2 确定性字段校验规则（金额格式/日期/身份证校验位/金额大小写一致性）、L3 多模型交叉校验、按风险分级标定的复核阈值（`RiskThreshold` + `DefaultReviewPolicy` 重写）、`TrustedOcrEngine` 可选次引擎接入、真实 `HttpOcrClient` 适配器装配（默认关闭）。
+- 已实现（Phase-3）：**模型无关启发式质量评估器 `HeuristicOcrQualityEvaluator`**（默认装配，使 L3 质量感知路由生效，CRITICAL 不再因缺质量分永远转二次识别）；**多页 PDF 逐页字段定位**（`RecognizedField` 携带 `page`/`bbox`，`OcrFieldEvidence.from` 透传、`HttpOcrClient` 解析 `page`/`bbox`，引擎不再硬编码 `page=1`）。
+- 已实现（Phase-4）：**按票种版式契约**（`ClaimDocumentTemplate` / `RequiredField` / `ClaimDocumentTemplateRegistry`），声明各票种必填关键字段（别名精确匹配，中文列名可用）与引擎优先顺序；**漏识别字段拦截**（补 FAILED + 人工复核证据，杜绝 `autoPassRate` 因字段消失而虚高）；**按票种引擎路由**；**文档分类器端口真正接入**（仅 GENERAL 时重判，`NoOp` 为安全默认）；**阈值唯一口径收敛**（旧扁平阈值显式登记不采信，配置非默认值 fail-fast；分级阈值合法性校验）；自由文本票种刻意不声明必填字段以控制误报。
+- 已实现（Phase-5）：**离线阈值标定工具**（`ThresholdCalibrator` / `CalibrationSample` / `LevelCalibration` / `CalibrationReport`；判定口径直接复用运行时 `DefaultReviewPolicy.decide`，避免「标定一套、放行另一套」；Wilson 95% 置信上界 + 最小样本量纪律，小样本零错误不得宣称达标；输出可直接使用的 `risk-thresholds` 配置片段）；**验收指标可计算化**（`OcrAcceptanceMetrics` 从字段级证据链重算自动通过率、人工介入率、关键字段 100% 证据定位覆盖率、CRITICAL 自动通过数、漏字段数，聚合计数不一致时可反查）；**Jev 质量评估器与票种分类器的真实 HTTP 适配器**（`JevHttpQualityEvaluator` / `HttpDocumentClassifier`，配置 `jev-url` / `classifier-url` 即覆盖安全默认；超时 / 非 2xx / 非法 JSON / 越界分值 / 未知票种 / 文件超限一律 fail-closed）；**端到端 HTTP 链路 PoC**（本地 HttpServer + 真实 Spring 上下文 + 真实 JDK HttpClient，跑通分类器重判、按票种路由、多页 bbox、Jev 质量分、L3 交叉分歧升级、漏字段拦截与故障不放行；明确只验证编排契约，**不构成准确率结论**）。
+- 待续（仅剩需真实数据 / 外部模型服务的前置项）：部署并标定真实 Jev 模型服务（AUROC 仅作筛选，须按票种/字段/风险用标注样本标定）；部署真实票种分类服务；用 500–1000 份脱敏标注样本校准模板别名、必填字段清单、引擎偏好与 `riskThresholds`；部署 PaddleOCR/GLM-OCR 服务并填 URL 开启 `enabled` 做**真实模型**端到端准确率验收（当前 PoC 用桩响应，只证明链路可跑通与故障不放行）。
 
 > 细节见设计规格第九节《实施进度》。

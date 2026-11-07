@@ -2,6 +2,7 @@ package com.bone.aidoc.infrastructure.ocr;
 
 import com.bone.aidoc.common.AiDocErrorCodes;
 import com.bone.aidoc.domain.gateway.OcrPort;
+import com.bone.aidoc.domain.model.BoundingBox;
 import com.bone.aidoc.domain.model.OcrDocType;
 import com.bone.aidoc.domain.model.OcrLineItem;
 import com.bone.aidoc.domain.model.OcrResult;
@@ -102,11 +103,15 @@ public class HttpOcrClient implements OcrPort {
       JsonNode root = MAPPER.readTree(json);
       List<RecognizedField> fields = new ArrayList<>();
       for (JsonNode f : root.path("fields")) {
+        int page = f.path("page").asInt(1);
+        BoundingBox bbox = parseBbox(f.path("bbox"));
         fields.add(
             new RecognizedField(
                 f.path("name").asText(""),
                 f.path("value").asText(""),
-                f.path("confidence").asDouble(0.0)));
+                f.path("confidence").asDouble(0.0),
+                page,
+                bbox));
       }
       List<OcrLineItem> items = new ArrayList<>();
       for (JsonNode it : root.path("line_items")) {
@@ -181,6 +186,14 @@ public class HttpOcrClient implements OcrPort {
       }
       return response.body();
     }
+  }
+
+  /** 解析字段定位框节点 [x1,y1,x2,y2]；非四元数组或缺失返回 {@code null}（缺坐标字段由下游降级）。 */
+  private static BoundingBox parseBbox(JsonNode b) {
+    if (b == null || !b.isArray() || b.size() != 4) {
+      return null;
+    }
+    return new BoundingBox(b.get(0).asInt(), b.get(1).asInt(), b.get(2).asInt(), b.get(3).asInt());
   }
 
   private static String trimTrailingSlash(String url) {

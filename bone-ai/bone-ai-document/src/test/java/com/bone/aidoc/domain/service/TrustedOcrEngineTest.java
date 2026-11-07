@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.bone.aidoc.domain.gateway.OcrProvider;
+import com.bone.aidoc.domain.model.BoundingBox;
 import com.bone.aidoc.domain.model.OcrDocType;
 import com.bone.aidoc.domain.model.OcrFieldEvidence;
 import com.bone.aidoc.domain.model.OcrResult;
@@ -44,12 +45,41 @@ class TrustedOcrEngineTest {
     }
   }
 
+  private static final class MultiPageProvider implements OcrProvider {
+    @Override
+    public String engineId() {
+      return "stub";
+    }
+
+    @Override
+    public boolean supports(OcrDocType docType) {
+      return docType == OcrDocType.FEE_LIST;
+    }
+
+    @Override
+    public OcrResult recognize(InputStream input, String sourceRef, OcrDocType docType) {
+      List<RecognizedField> fields =
+          List.of(
+              // 第 3 页、带原图定位框的字段
+              new RecognizedField(
+                  "total_amount", "880.00", 0.999, 3, new BoundingBox(10, 20, 120, 40)),
+              // 第 1 页、无坐标字段
+              new RecognizedField("hospital_name", "某医院", 0.99, 1, null));
+      return new OcrResult("stub", docType, fields, List.of(), "raw", 3, 0.99);
+    }
+  }
+
+  /** 本类聚焦字段路由本身，显式关闭票种模板以隔离 Phase-4 的漏字段拦截与引擎重排。 */
   private TrustedOcrEngine engineWith(OcrProvider provider) {
+    ClaimDocumentTemplateRegistry none = ClaimDocumentTemplateRegistry.noTemplates();
     return new TrustedOcrEngine(
         List.of(provider),
         new NoOpOcrQualityEvaluator(),
         new DefaultReviewPolicy(),
-        new ClaimFieldRisk());
+        new ClaimFieldRisk(none),
+        List.of(),
+        null,
+        none);
   }
 
   @Test
@@ -98,5 +128,30 @@ class TrustedOcrEngineTest {
         engineWith(new StubProvider(OcrDocType.INVOICE))
             .parse(InputStream.nullInputStream(), "t1", "inv.jpg", "  ", OcrDocType.INVOICE);
     assertThat(doc.docId()).isNotBlank();
+  }
+
+  @Test
+  void propagates_per_field_page_and_bbox_from_recognized_field() {
+    TrustedOcrDocument doc =
+        engineWith(new MultiPageProvider())
+            .parse(InputStream.nullInputStream(), "t1", "fee.pdf", "doc-mp", OcrDocType.FEE_LIST);
+
+    assertThat(doc.pageCount()).isEqualTo(3);
+    OcrFieldEvidence amount =
+        doc.fields().stream()
+            .filter(f -> f.fieldName().equals("total_amount"))
+            .findFirst()
+            .orElseThrow();
+    // 字段自带页码与坐标被透传，而非统一回退为 1
+    assertThat(amount.page()).isEqualTo(3);
+    assertThat(amount.hasEvidenceLocation()).isTrue();
+
+    OcrFieldEvidence hospital =
+        doc.fields().stream()
+            .filter(f -> f.fieldName().equals("hospital_name"))
+            .findFirst()
+            .orElseThrow();
+    assertThat(hospital.page()).isEqualTo(1);
+    assertThat(hospital.hasEvidenceLocation()).isFalse();
   }
 }

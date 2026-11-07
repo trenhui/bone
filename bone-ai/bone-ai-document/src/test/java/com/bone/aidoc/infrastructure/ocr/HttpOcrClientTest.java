@@ -27,14 +27,36 @@ class HttpOcrClientTest {
     assertThat(r.provider()).isEqualTo("http-ocr");
     assertThat(r.fields())
         .containsExactly(
-            new RecognizedField("invoice_no", "FP123", 0.98),
-            new RecognizedField("hospital", "市一院", 0.9));
+            new RecognizedField("invoice_no", "FP123", 0.98, 1, null),
+            new RecognizedField("hospital", "市一院", 0.9, 1, null));
     assertThat(r.lineItems()).hasSize(2);
     assertThat(r.lineItems().get(0).itemName()).isEqualTo("检查费");
     assertThat(r.lineItems().get(0).amount()).isEqualTo(120.5);
     assertThat(r.rawText()).isEqualTo("发票全文");
     assertThat(r.pageCount()).isEqualTo(1);
     assertThat(r.confidence()).isEqualTo(0.95);
+  }
+
+  @Test
+  void parses_optional_page_and_bbox_per_field() {
+    String json =
+        "{\"fields\":[{\"name\":\"total_amount\",\"value\":\"880.00\",\"confidence\":0.999,"
+            + "\"page\":3,\"bbox\":[10,20,120,40]},"
+            + "{\"name\":\"hospital\",\"value\":\"市一院\",\"confidence\":0.9}],"
+            + "\"text\":\"全文\",\"page_count\":3,\"confidence\":0.95}";
+
+    OcrResult r = HttpOcrClient.parseResult(json, OcrDocType.FEE_LIST);
+
+    assertThat(r.pageCount()).isEqualTo(3);
+    assertThat(r.fields()).hasSize(2);
+    RecognizedField amount = r.fields().get(0);
+    assertThat(amount.page()).isEqualTo(3);
+    assertThat(amount.bbox()).isNotNull();
+    assertThat(amount.bbox().valid()).isTrue();
+    // 未提供 page/bbox 的字段回退为 1 / null
+    RecognizedField hospital = r.fields().get(1);
+    assertThat(hospital.page()).isEqualTo(1);
+    assertThat(hospital.bbox()).isNull();
   }
 
   @Test

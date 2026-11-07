@@ -71,14 +71,17 @@ class TrustedOcrEngineCrossTest {
 
   @Test
   void mismatch_escalates_amount_to_manual_even_without_quality() {
+    // 本类聚焦交叉校验本身，显式关闭票种模板以隔离 Phase-4 的漏字段拦截
+    ClaimDocumentTemplateRegistry none = ClaimDocumentTemplateRegistry.noTemplates();
     TrustedOcrEngine engine =
         new TrustedOcrEngine(
             List.of(new Primary()),
             new NoOpOcrQualityEvaluator(),
             new DefaultReviewPolicy(),
-            new ClaimFieldRisk(),
+            new ClaimFieldRisk(none),
             List.of(),
-            new Secondary());
+            new Secondary(),
+            none);
 
     TrustedOcrDocument doc =
         engine.parse(InputStream.nullInputStream(), "t1", "inv.jpg", "doc-x", OcrDocType.INVOICE);
