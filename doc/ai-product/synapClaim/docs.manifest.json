@@ -91,6 +91,39 @@
       "currency": "current"
     },
     {
+      "id": "review.round9",
+      "path": "03-contract/第9轮循环复核-合理性判定矩阵.md",
+      "layer": "L3",
+      "diataxis": "reference",
+      "status": "active",
+      "summary": "第 9 轮循环复核：7 项待办的合理性裁定、13 分册逐册核对台账与最小落地方案",
+      "authority": "循环复核合理性判定 / go-live 台账",
+      "role": "guide",
+      "currency": "current"
+    },
+    {
+      "id": "review.round10",
+      "path": "03-contract/第10轮循环复核-零DDL闭环落地.md",
+      "layer": "L3",
+      "diataxis": "reference",
+      "status": "active",
+      "summary": "第 10 轮循环复核：零 DDL / 零公共签名改动的审批与闭环落地台账",
+      "authority": "零 DDL 闭环合理性判定 / 审批台账",
+      "role": "guide",
+      "currency": "current"
+    },
+    {
+      "id": "review.round11",
+      "path": "03-contract/第11轮循环复核-事件消费方接线与分层收口.md",
+      "layer": "L3",
+      "diataxis": "reference",
+      "status": "active",
+      "summary": "第 11 轮循环复核：事件消费方生产接线 + 分层门禁收口（AiEvalSampleIndex 端口/控制器/适配器）",
+      "authority": "事件消费方接线 / 分层门禁收口 / 循环复核",
+      "role": "guide",
+      "currency": "current"
+    },
+    {
       "id": "contract.landing",
       "path": "03-contract/工程详细设计-落地版.md",
       "layer": "L3",
@@ -224,6 +257,17 @@
         "fde"
       ],
       "role": "ssot",
+      "currency": "current"
+    },
+    {
+      "id": "plan.ainative",
+      "path": "05-plan/AI原生改造执行计划.md",
+      "layer": "L5",
+      "diataxis": "how-to",
+      "status": "active",
+      "summary": "AI 原生改造执行计划：将 _ai_native_readiness.py 的 12 判据映射为阶段/负责/动作/验收，并叠加 Phase B/V2 能力纵深路线，作为 gsd-core Plan 阶段交付物与循环可复用终止判据",
+      "authority": "AI 原生改造执行计划 / 就绪度判据映射",
+      "role": "guide",
       "currency": "current"
     },
     {
@@ -368,12 +412,23 @@
       "currency": "current"
     },
     {
+      "id": "delivery.11",
+      "path": "07-delivery/11-L3外部前置运行手册.md",
+      "layer": "L7",
+      "diataxis": "reference",
+      "status": "active",
+      "summary": "L3 外部前置运行手册：provider 配置 → 探活 → 实跑 E2E → 复核器归因的可执行闭环",
+      "authority": "L3 外部前置运行手册",
+      "role": "guide",
+      "currency": "current"
+    },
+    {
       "id": "delivery.index",
       "path": "07-delivery/README.md",
       "layer": "L7",
       "diataxis": "navigation",
       "status": "active",
-      "summary": "交付包索引：01–10 编号与内容对照（新增交付包必须在此登记）",
+      "summary": "交付包索引：01–11 编号与内容对照（新增交付包必须在此登记）",
       "authority": "",
       "role": "navigation",
       "currency": "current"
@@ -669,6 +724,39 @@
       "currency": "frozen"
     },
     {
+      "id": "records.evidence.index",
+      "path": "09-records/evidence/README.md",
+      "layer": "L9",
+      "diataxis": "reference",
+      "status": "active",
+      "summary": "运行期证据索引：E2E 与复核器时点快照的登记清单、采集 HEAD 与诚实判读、复现纪律",
+      "authority": "运行期证据登记",
+      "role": "navigation",
+      "currency": "current"
+    },
+    {
+      "id": "records.evidence.e2e-20261107",
+      "path": "09-records/evidence/2026-11-07-claims-e2e-result.md",
+      "layer": "L9",
+      "diataxis": "reference",
+      "status": "active",
+      "summary": "2026-11-07 前后端 E2E 时点快照（real-services-no-mock，passed，probeVerdict=NOT_CONFIGURED 诚实降级，HEAD d953da0fc）",
+      "authority": "",
+      "role": "evidence",
+      "currency": "frozen"
+    },
+    {
+      "id": "records.evidence.readiness-20261107",
+      "path": "09-records/evidence/2026-11-07-ai-native-readiness.txt",
+      "layer": "L9",
+      "diataxis": "reference",
+      "status": "active",
+      "summary": "2026-11-07 AI 原生就绪度复核器时点快照（SATISFIED 5 / BLOCKED 7，l3Claimable=false，HEAD d953da0fc）",
+      "authority": "",
+      "role": "evidence",
+      "currency": "frozen"
+    },
+    {
       "id": "archive.system-design",
       "path": "10-archive/系统设计方案.md",
       "layer": "L10",
@@ -783,6 +871,31 @@
         "records.impl.19",
         "records.impl.20",
         "records.review.理算引擎"
+      ]
+    },
+    {
+      "intent": "配 provider / 跑 L3 外部前置 / 看就绪度归因",
+      "docs": [
+        "delivery.11"
+      ]
+    },
+    {
+      "intent": "判断某项优化是否该做 / 合理性裁定台账",
+      "docs": [
+        "review.round9",
+        "review.round11"
+      ]
+    },
+    {
+      "intent": "零 DDL / 零公共签名改动的审批与闭环",
+      "docs": [
+        "review.round10"
+      ]
+    },
+    {
+      "intent": "AI 原生改造 / 就绪度判据 / 改造执行计划",
+      "docs": [
+        "plan.ainative"
       ]
     }
   ],

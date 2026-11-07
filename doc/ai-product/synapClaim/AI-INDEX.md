@@ -25,6 +25,7 @@ currency: current
 | `draft` | 待合入草案（如 go-live 01–13） | 仅作计划/提案，不当现行契约 |
 | `evidence` | 冻结的过程证据（L9/L10） | 仅回答「为什么/历史」，不当现状 |
 | `tooling` | 工具/参考实现（oracle） | 非产品代码，不当设计引用 |
+| `guide` | 操作指南（可执行步骤 / 逐项裁定台账，不含现行契约） | 按步骤执行；状态与数值以对应 ssot 为准，不据此宣称能力已具备 |
 
 | `currency` | 含义 |
 |---|---|
@@ -46,8 +47,12 @@ currency: current
 | 排期 / 里程碑 / 迭代 | `plan.mvp` |
 | 为什么这么设计 / 对标 / 差距 | `records.review.业界对标` / `records.review.TPA-` |
 | 某次代码改动的前因后果 / 历史取证 | `records.impl.14` / `records.impl.15` / `records.impl.16` / `records.impl.17` / `records.impl.18` / `records.impl.19` / `records.impl.20` / `records.review.理算引擎` |
+| 配 provider / 跑 L3 外部前置 / 看就绪度归因 | `delivery.11` |
+| 判断某项优化是否该做 / 合理性裁定台账 | `review.round9` / `review.round11` |
+| 零 DDL / 零公共签名改动的审批与闭环 | `review.round10` |
+| AI 原生改造 / 就绪度判据 / 改造执行计划 | `plan.ainative` |
 
-## 三、ACTIVE 现行真源（currency=current，可引用为事实，共 29 份）
+## 三、ACTIVE 现行真源（currency=current，可引用为事实，共 30 份）
 
 | id | 路径 | role | 一句话 |
 |---|---|---|---|
@@ -76,8 +81,9 @@ currency: current
 | `delivery.08` | `07-delivery/08-部署运维手册.md` | ssot | 部署、日常运维、应急手册 |
 | `delivery.09` | `07-delivery/09-培训与用户手册.md` | ssot | 培训计划、核赔工作台操作手册、AI 人责归属说明 |
 | `delivery.10` | `07-delivery/10-商务合同模板与规模化准备.md` | ssot | 商务模式、竞品矩阵、白皮书大纲、等保清单、规模化检查表 |
-| `delivery.index` | `07-delivery/README.md` | navigation | 交付包索引：01–10 编号与内容对照（新增交付包必须在此登记） |
+| `delivery.index` | `07-delivery/README.md` | navigation | 交付包索引：01–11 编号与内容对照（新增交付包必须在此登记） |
 | `golive.00` | `08-go-live/00-总纲与Go-Live门禁.md` | ssot | 总纲：缺口→分册映射表、G1–G16 上线门禁、与既有治理的衔接 |
+| `records.evidence.index` | `09-records/evidence/README.md` | navigation | 运行期证据索引：E2E 与复核器时点快照的登记清单、采集 HEAD 与诚实判读、复现纪律 |
 | `ai-index` | `AI-INDEX.md` | navigation | 机器优先入口：语料模型+按来意路由+ACTIVE/DRAFT/FROZEN 三段清单，供 AI 确定性检索 |
 | `index` | `README.md` | navigation | 3 分钟入口：按「你这次来做什么」路由到唯一该读的文档；不再按目录树猜 |
 
@@ -98,8 +104,18 @@ currency: current
 - `golive.12` → `08-go-live/12-资金累计DB级并发正确性.md`：累计扣减的 DB 级并发正确性（单测契约不足）
 - `golive.13` → `08-go-live/13-理算引擎三重路径收敛与护栏移植（F1）.md`：唯一权威资金路径决策、整改步骤、双路径歧义根除
 
-## 五、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 14 份）
+## 五、GUIDE 操作指南（role=guide，可执行步骤；结论以对应 ssot 为准，共 5 份）
 
+- `review.round10` → `03-contract/第10轮循环复核-零DDL闭环落地.md`：第 10 轮循环复核：零 DDL / 零公共签名改动的审批与闭环落地台账
+- `review.round11` → `03-contract/第11轮循环复核-事件消费方接线与分层收口.md`：第 11 轮循环复核：事件消费方生产接线 + 分层门禁收口（AiEvalSampleIndex 端口/控制器/适配器）
+- `review.round9` → `03-contract/第9轮循环复核-合理性判定矩阵.md`：第 9 轮循环复核：7 项待办的合理性裁定、13 分册逐册核对台账与最小落地方案
+- `plan.ainative` → `05-plan/AI原生改造执行计划.md`：AI 原生改造执行计划：将 _ai_native_readiness.py 的 12 判据映射为阶段/负责/动作/验收，并叠加 Phase B/V2 能力纵深路线，作为 gsd-core Plan 阶段交付物与循环可复用终止判据
+- `delivery.11` → `07-delivery/11-L3外部前置运行手册.md`：L3 外部前置运行手册：provider 配置 → 探活 → 实跑 E2E → 复核器归因的可执行闭环
+
+## 六、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 16 份）
+
+- `records.evidence.readiness-20261107` → `09-records/evidence/2026-11-07-ai-native-readiness.txt`：2026-11-07 AI 原生就绪度复核器时点快照（SATISFIED 5 / BLOCKED 7，l3Claimable=false，HEAD d953da0fc）
+- `records.evidence.e2e-20261107` → `09-records/evidence/2026-11-07-claims-e2e-result.md`：2026-11-07 前后端 E2E 时点快照（real-services-no-mock，passed，probeVerdict=NOT_CONFIGURED 诚实降级，HEAD d953da0fc）
 - `records.impl.14` → `09-records/impl-log/14-主链路闭环体检与P0修复记录.md`：四本账未对齐的体检与 3 项 P0 修复（含变异证据）  ⚠️ 已被 `09-records/impl-log/15-跨案累计读侧与责任账接线（P0-4）.md` 撤销/修正：impl-log/15 已撤销本册"额度服务 0 调用方"判断
 - `records.impl.15` → `09-records/impl-log/15-跨案累计读侧与责任账接线（P0-4）.md`：跨案累计读侧与 A7 责任账接线
 - `records.impl.16` → `09-records/impl-log/16-理算引擎V1重建（分层管线·七层控额·免赔六维）.md`：按 V1 规则重建分层管线与控额  ⚠️ 已被 `09-records/impl-log/17-控额层接线修正与多次闭环.md` 撤销/修正：impl-log/17 修正本册"七层控额四层仅声明未读取"（死配置）
@@ -115,9 +131,9 @@ currency: current
 - `archive.system-design` → `10-archive/系统设计方案.md`：上游设计演进记录；2026-10-21 起正文作废，仅留行业洞察与选型理由  ⚠️ 已被 `03-contract/工程详细设计-落地版.md` 撤销/修正：正文已作废，独特价值已并入《工程落地版》§3.6/§3.7/§4.3
 - `impl.readme` → `synap-claim-oracle-POINTER.md`：可执行参考实现（双轨 oracle）指针：真实位置 doc/ai-product/synap-claim-oracle/synap-claim-settlement/；非产品代码
 
-## 六、manifest 字段图例
+## 七、manifest 字段图例
 
-- `role`：文档角色（ssot/navigation/draft/evidence/tooling）
+- `role`：文档角色（ssot/navigation/draft/evidence/tooling/guide）
 - `currency`：时效（current/draft/frozen）
 - `authority`：本文件独占真源的主题
 - `superseded_by`：被哪份文档撤销/修正（仅证据类有）
