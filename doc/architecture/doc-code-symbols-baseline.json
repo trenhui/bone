@@ -793,10 +793,11 @@
     {
       "symbol": "PortAdapter",
       "docs": [
-        "doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md"
+        "doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md",
+        "doc/ai-product/synapClaim/03-contract/第11轮循环复核-事件消费方接线与分层收口.md"
       ],
       "reason": "workflow-sample",
-      "note": "通配命名模式 *PortAdapter（端口适配器统一后缀），非具体类名；见 §3.2 模块组织图与 §3.2.1 命名空间说明"
+      "note": "通配命名模式 *PortAdapter（端口适配器统一后缀），非具体类名；见 §3.2 模块组织图与 §3.2.1 命名空间说明；第11轮报告引用同一通配约定"
     },
     {
       "symbol": "XxxPortAdapter",

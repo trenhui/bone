@@ -2,6 +2,7 @@ package com.bone.claim.infrastructure.evaluation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.bone.claim.application.port.out.AiEvalSampleIndexPort;
 import com.bone.claim.domain.model.evaluation.AiEvalSampleCollectedEvent;
 import com.bone.claim.domain.model.evaluation.AiEvalSampleCollectedEvent.SampleType;
 import java.time.Instant;
@@ -30,7 +31,7 @@ class AiEvalSampleProjectionTest {
     projection.onSampleCollected(
         sample("fp-1", 9001L, "INSP-1", "AI_MISJUDGE", SampleType.EVAL_SET));
     assertThat(projection.size()).isEqualTo(1);
-    AiEvalSampleProjection.Entry entry = projection.snapshot().get(0);
+    AiEvalSampleIndexPort.Entry entry = projection.snapshot().get(0);
     assertThat(entry.sampleType()).isEqualTo("EVAL_SET");
     assertThat(entry.claimId()).isEqualTo(9001L);
     assertThat(entry.inspectionNo()).isEqualTo("INSP-1");
@@ -45,7 +46,7 @@ class AiEvalSampleProjectionTest {
         sample("fp-2", 9002L, "INSP-2", "QUOTA_ABNORMAL", SampleType.CONTROL_FIX));
     assertThat(projection.size()).isEqualTo(2);
     assertThat(projection.snapshot())
-        .extracting(AiEvalSampleProjection.Entry::sampleType)
+        .extracting(AiEvalSampleIndexPort.Entry::sampleType)
         .containsExactlyInAnyOrder("RULE_FIX", "CONTROL_FIX");
   }
 
@@ -67,7 +68,7 @@ class AiEvalSampleProjectionTest {
     assertThat(projection.size()).isLessThanOrEqualTo(500);
     // 最新的必须还在（淘汰的是最旧）
     assertThat(projection.snapshot())
-        .extracting(AiEvalSampleProjection.Entry::fingerprint)
+        .extracting(AiEvalSampleIndexPort.Entry::fingerprint)
         .contains("fp-519");
   }
 
