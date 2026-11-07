@@ -136,7 +136,7 @@ currency: current
 
 | 项 | 原因 | owner |
 |---|---|---|
-| `PROVIDER_CONFIGURED` / `PERCEPTION_MODEL_DRIVEN` / `RUNTIME_MODEL_COVERAGE` | 需真实 provider + 密钥托管 + 采购；本机物理不可能，不得以 mock 或改配置伪造 | 平台 / 交付 |
+| `PROVIDER_CONFIGURED` / `PERCEPTION_MODEL_DRIVEN` / `RUNTIME_MODEL_COVERAGE` | 需真实 provider + 密钥托管 + 采购；本机物理不可能，不得以 mock 或改配置伪造。**其中 `RUNTIME_MODEL_COVERAGE` 是三条件合一判定**（provider 已配 + 探活判词 `REACHABLE` + 运行期参与率 > 0），四态归因为 `PROVIDER_NOT_CONFIGURED` / `PROBE_NOT_REACHABLE` / `MODEL_PARTICIPATION_ZERO` / `RUNTIME_EVIDENCE_REQUIRED`（无 E2E 产物时的 fail-closed 态）；缺任一条件即 BLOCKED，不得以「配了变量」或「写过一次 REACHABLE」充当就绪 | 平台 / 交付 |
 | `BASELINE_WIRED` / `FROZEN_EVALSET_ACTIVE` | 需 ≥300 条授权脱敏票据、业务确认统计口径、真实采集器与 provenance | 业务 / 合规 |
 | `CATALOG_ADMISSION_ACTIVE` | 生效通道默认 NONE 且 `ItemCatalogPort` 零实现；强推 MANDATORY 会全量退补件 | 业务 / 法务 |
 | `GOLIVE_NOT_DRAFT` | 13 分册仍 draft 且正文含「须建设」，需外部备案/报批/演练证据 | 安全合规 |
