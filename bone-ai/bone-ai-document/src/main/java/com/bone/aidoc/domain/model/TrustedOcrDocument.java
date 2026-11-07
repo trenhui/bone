@@ -20,6 +20,7 @@ import java.util.Map;
  * @param rawText 全文文本兜底
  * @param pageCount 页数
  * @param decisionCounts 复核状态分布（AUTO_PASSED / SECONDARY_RECOGNITION / MANUAL_REVIEW）
+ * @param decisionReasons 逐字段判据说明（命中闸门 / 规则 ID / 阈值快照 / L4 结论），供审计回溯
  */
 public record TrustedOcrDocument(
     String docId,
@@ -32,7 +33,8 @@ public record TrustedOcrDocument(
     QualityReport qualityReport,
     String rawText,
     int pageCount,
-    Map<ReviewStatus, Integer> decisionCounts) {
+    Map<ReviewStatus, Integer> decisionCounts,
+    Map<String, String> decisionReasons) {
 
   /** 自动通过字段占比（0~1），用于「自动通过率」指标。 */
   public double autoPassRate() {

@@ -84,7 +84,12 @@ class TrustedOcrEngineCrossTest {
             none);
 
     TrustedOcrDocument doc =
-        engine.parse(InputStream.nullInputStream(), "t1", "inv.jpg", "doc-x", OcrDocType.INVOICE);
+        engine.parse(
+            new java.io.ByteArrayInputStream(new byte[] {1, 2, 3}),
+            "t1",
+            "inv.jpg",
+            "doc-x",
+            OcrDocType.INVOICE);
 
     OcrFieldEvidence amount =
         doc.fields().stream()

@@ -67,7 +67,7 @@ public record OcrAcceptanceMetrics(
       }
       if (f.isKeyField(keyFieldNames)) {
         critical++;
-        if (f.hasEvidenceLocation()) {
+        if (f.hasValidEvidenceLocation(doc.pageCount())) {
           criticalLocated++;
         }
         if (f.reviewStatus() == ReviewStatus.AUTO_PASSED) {

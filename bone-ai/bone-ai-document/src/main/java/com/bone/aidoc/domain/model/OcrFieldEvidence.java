@@ -134,9 +134,22 @@ public record OcrFieldEvidence(
         reviewStatus);
   }
 
-  /** 是否已具备原图证据定位（坐标）。 */
+  /** 是否已具备原图证据定位（坐标合法）。 */
   public boolean hasEvidenceLocation() {
     return bbox != null && bbox.valid();
+  }
+
+  /**
+   * 是否已具备<b>有效</b>原图证据定位：坐标合法且页码落在文档页数内。
+   *
+   * <p>{@code pageCount <= 0} 表示引擎未给出页数，无法校验上界，此处退化为仅校验下限； 这是已知边界而非已证明有效，须由引擎补齐 {@code page_count}
+   * 才能宣称 100% 覆盖率。
+   */
+  public boolean hasValidEvidenceLocation(int pageCount) {
+    if (!hasEvidenceLocation()) {
+      return false;
+    }
+    return page >= 1 && (pageCount <= 0 || page <= pageCount);
   }
 
   /** 是否关键字段（验收指标口径，由调用方传入关键字段名集合）。 */

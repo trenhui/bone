@@ -2,6 +2,7 @@ package com.bone.aidoc.domain.gateway;
 
 import com.bone.aidoc.domain.model.FieldReviewContext;
 import com.bone.aidoc.domain.model.ReviewDecision;
+import com.bone.aidoc.domain.model.ReviewOutcome;
 
 /**
  * 复核路由策略端口（ADR-0046 五层可信度的最终裁决层 + §四：按票种/字段/风险分级标定，禁全局阈值）。
@@ -15,4 +16,13 @@ public interface ReviewPolicy {
 
   /** 对单字段做出复核路由决策。 */
   ReviewDecision decide(FieldReviewContext ctx);
+
+  /**
+   * 带判据说明的决策（ADR-0046 §四：可审计、可追溯）。
+   *
+   * <p>默认实现委托 {@link #decide}，自定义策略无需改动即可兼容；骨架策略应覆写， 给出真实命中的闸门、信号值与阈值快照，避免「只有枚举结果、无法回溯判据」。
+   */
+  default ReviewOutcome decideWithReason(FieldReviewContext ctx) {
+    return new ReviewOutcome(decide(ctx), "自定义 ReviewPolicy 未提供判据说明");
+  }
 }

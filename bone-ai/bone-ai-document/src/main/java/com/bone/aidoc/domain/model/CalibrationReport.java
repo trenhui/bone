@@ -16,10 +16,16 @@ public record CalibrationReport(
     return new CalibrationReport(target, 0, Map.of(), List.of("标定样本为空，无法产出任何阈值结论"));
   }
 
-  /** 所有出现的风险等级都通过统计证明（无等级时恒为 false）。 */
+  /**
+   * <b>全部四个</b>风险等级都有结论且都通过统计证明才为 true。
+   *
+   * <p>此前只要求「出现过的等级」全部证明，导致只喂单等级样本即可宣称全级别达标—— 属空集假绿。生产阈值是分级生效的，缺任一等级的证明就不能放行整套配置。
+   */
   public boolean allLevelsProven() {
-    return !byLevel.isEmpty()
-        && byLevel.values().stream().allMatch(LevelCalibration::statisticallyProven);
+    if (byLevel.size() != RiskLevel.values().length) {
+      return false;
+    }
+    return byLevel.values().stream().allMatch(LevelCalibration::statisticallyProven);
   }
 
   /**

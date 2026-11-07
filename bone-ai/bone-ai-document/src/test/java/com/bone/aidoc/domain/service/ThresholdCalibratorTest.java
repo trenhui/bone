@@ -2,6 +2,7 @@ package com.bone.aidoc.domain.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 import com.bone.aidoc.domain.model.CalibrationReport;
 import com.bone.aidoc.domain.model.CalibrationSample;
@@ -50,6 +51,21 @@ class ThresholdCalibratorTest {
     assertThat(c.statisticallyProven()).isTrue();
     assertThat(c.autoPassed()).isEqualTo(500);
     assertThat(c.suggestedThreshold().autoPassConfidence()).isLessThanOrEqualTo(0.999);
+    // 只喂了 HIGH 一个等级：不得宣称「全级别达标」（修复前此处为 isTrue，属空集假绿）
+    assertThat(report.allLevelsProven()).isFalse();
+  }
+
+  @Test
+  void all_levels_proven_requires_every_risk_level_to_be_proven() {
+    List<CalibrationSample> samples = new ArrayList<>();
+    for (RiskLevel level : RiskLevel.values()) {
+      samples.addAll(clean(500, level, 0.999, 0.99));
+    }
+    CalibrationReport report = new ThresholdCalibrator(0.01).calibrate(samples);
+    assertThat(report.byLevel()).hasSize(RiskLevel.values().length);
+    for (LevelCalibration c : report.byLevel().values()) {
+      assertThat(c.statisticallyProven()).isTrue();
+    }
     assertThat(report.allLevelsProven()).isTrue();
   }
 
@@ -84,6 +100,12 @@ class ThresholdCalibratorTest {
   @Test
   void wilson_upper_decreases_with_sample_size_and_zero_sample_is_max() {
     assertThat(ThresholdCalibrator.wilsonUpperBound(0, 0)).isEqualTo(1.0);
+    // 独立计算的解析真值（z = 1.959963984540054），不调用被测实现生成期望值，去除同源断言
+    assertThat(ThresholdCalibrator.wilsonUpperBound(5, 100))
+        .isCloseTo(0.11175046923191914, within(1e-12));
+    assertThat(ThresholdCalibrator.wilsonUpperBound(0, 10))
+        .isCloseTo(0.2775327998628892, within(1e-12));
+    assertThat(ThresholdCalibrator.minimumSampleSizeForZeroErrors(0.0001)).isEqualTo(38411);
     assertThat(ThresholdCalibrator.wilsonUpperBound(0, 10))
         .isGreaterThan(ThresholdCalibrator.wilsonUpperBound(0, 1000));
     assertThat(ThresholdCalibrator.wilsonUpperBound(5, 100))

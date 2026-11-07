@@ -160,7 +160,8 @@ public class TrustedOcrAutoConfiguration {
         rules,
         cross,
         templates,
-        classifier);
+        classifier,
+        t.getMaxBytes());
   }
 
   @Bean

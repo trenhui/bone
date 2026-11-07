@@ -86,7 +86,12 @@ class TrustedOcrEngineTest {
   void routes_critical_to_secondary_and_low_to_auto_without_quality() {
     TrustedOcrDocument doc =
         engineWith(new StubProvider(OcrDocType.INVOICE))
-            .parse(InputStream.nullInputStream(), "t1", "inv.jpg", "doc-1", OcrDocType.INVOICE);
+            .parse(
+                new java.io.ByteArrayInputStream(new byte[] {1, 2, 3}),
+                "t1",
+                "inv.jpg",
+                "doc-1",
+                OcrDocType.INVOICE);
 
     assertThat(doc.fields()).hasSize(2);
     assertThat(doc.primaryEngineId()).isEqualTo("stub");
@@ -118,7 +123,11 @@ class TrustedOcrEngineTest {
     assertThatThrownBy(
             () ->
                 engine.parse(
-                    InputStream.nullInputStream(), "t1", "x.jpg", "d1", OcrDocType.ID_CARD))
+                    new java.io.ByteArrayInputStream(new byte[] {1, 2, 3}),
+                    "t1",
+                    "x.jpg",
+                    "d1",
+                    OcrDocType.ID_CARD))
         .isInstanceOf(IllegalStateException.class);
   }
 
@@ -126,7 +135,12 @@ class TrustedOcrEngineTest {
   void auto_generates_doc_id_when_blank() {
     TrustedOcrDocument doc =
         engineWith(new StubProvider(OcrDocType.INVOICE))
-            .parse(InputStream.nullInputStream(), "t1", "inv.jpg", "  ", OcrDocType.INVOICE);
+            .parse(
+                new java.io.ByteArrayInputStream(new byte[] {1, 2, 3}),
+                "t1",
+                "inv.jpg",
+                "  ",
+                OcrDocType.INVOICE);
     assertThat(doc.docId()).isNotBlank();
   }
 
@@ -134,7 +148,12 @@ class TrustedOcrEngineTest {
   void propagates_per_field_page_and_bbox_from_recognized_field() {
     TrustedOcrDocument doc =
         engineWith(new MultiPageProvider())
-            .parse(InputStream.nullInputStream(), "t1", "fee.pdf", "doc-mp", OcrDocType.FEE_LIST);
+            .parse(
+                new java.io.ByteArrayInputStream(new byte[] {1, 2, 3}),
+                "t1",
+                "fee.pdf",
+                "doc-mp",
+                OcrDocType.FEE_LIST);
 
     assertThat(doc.pageCount()).isEqualTo(3);
     OcrFieldEvidence amount =

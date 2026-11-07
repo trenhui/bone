@@ -7,8 +7,12 @@ package com.bone.aidoc.domain.model;
  */
 public record BoundingBox(int x1, int y1, int x2, int y2) {
 
-  /** 是否为有效（非退化）框。 */
+  /**
+   * 是否为有效（非退化且位于第一象限）框。
+   *
+   * <p>负坐标属于引擎返回的非法证据，不能计入「关键字段证据定位覆盖率」， 更不能据此给启发式质量分的覆盖信号打满分。
+   */
   public boolean valid() {
-    return x2 > x1 && y2 > y1;
+    return x1 >= 0 && y1 >= 0 && x2 > x1 && y2 > y1;
   }
 }

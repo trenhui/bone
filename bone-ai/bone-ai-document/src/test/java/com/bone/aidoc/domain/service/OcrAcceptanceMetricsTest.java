@@ -32,6 +32,11 @@ class OcrAcceptanceMetricsTest {
 
   private static TrustedOcrDocument doc(
       List<OcrFieldEvidence> fields, Map<ReviewStatus, Integer> counts) {
+    return doc(fields, counts, 1);
+  }
+
+  private static TrustedOcrDocument doc(
+      List<OcrFieldEvidence> fields, Map<ReviewStatus, Integer> counts, int pageCount) {
     return new TrustedOcrDocument(
         "d1",
         "t1",
@@ -42,8 +47,9 @@ class OcrAcceptanceMetricsTest {
         fields,
         QualityReport.none("none"),
         "raw",
-        1,
-        counts);
+        pageCount,
+        counts,
+        Map.of());
   }
 
   @Test
@@ -94,6 +100,42 @@ class OcrAcceptanceMetricsTest {
     assertThat(m.criticalAutoPassed()).isEqualTo(1);
     assertThat(m.secondaryRecognition()).isEqualTo(1);
     assertThat(m.criticalEvidenceCoverage()).isZero();
+  }
+
+  @Test
+  void invalid_evidence_location_never_counts_toward_coverage() {
+    OcrFieldEvidence outOfRangePage =
+        new OcrFieldEvidence(
+            "total_amount",
+            "100.00",
+            null,
+            5,
+            new BoundingBox(0, 0, 10, 10),
+            "eng",
+            0.99,
+            com.bone.aidoc.domain.model.ConfidenceSource.OCR_ENGINE,
+            com.bone.aidoc.domain.model.ValidationStatus.PASSED,
+            ReviewStatus.AUTO_PASSED);
+    OcrFieldEvidence negativeBox =
+        new OcrFieldEvidence(
+            "invoice_no",
+            "FP1",
+            null,
+            1,
+            new BoundingBox(-10, -10, -5, -5),
+            "eng",
+            0.99,
+            com.bone.aidoc.domain.model.ConfidenceSource.OCR_ENGINE,
+            com.bone.aidoc.domain.model.ValidationStatus.PASSED,
+            ReviewStatus.AUTO_PASSED);
+    // 文档只有 2 页，却声称字段来自第 5 页；另一字段坐标全负
+    TrustedOcrDocument d = doc(List.of(outOfRangePage, negativeBox), Map.of(), 2);
+
+    OcrAcceptanceMetrics m = OcrAcceptanceMetrics.from(d, Set.of("total_amount", "invoice_no"));
+    assertThat(m.criticalFields()).isEqualTo(2);
+    assertThat(m.criticalFieldsWithEvidence()).isZero();
+    assertThat(m.criticalEvidenceCoverage()).isZero();
+    assertThat(m.meetsKeyFieldEvidenceCoverageTarget()).isFalse();
   }
 
   @Test

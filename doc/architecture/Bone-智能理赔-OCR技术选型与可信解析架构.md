@@ -303,9 +303,9 @@ PaddleOCR 3.7.x 作基础底座、GLM-OCR 作 VLM 对比、MiniCPM-OCR 1.0 作�
 
 ---
 
-## 九、实施进度（骨架 + 端到端链路已实现 · 2026-11-07）
+## 十、实施进度（骨架 + 端到端链路已实现 · 2026-11-07）
 
-ADR-0046 决策已在 `bone-ai/bone-ai-document` 模块落地为可运行骨架，并通过 124 项单测（含 ArchUnit DDD 门禁、Spring 上下文装配守护与真实 HTTP 端到端链路 PoC）。
+ADR-0046 决策已在 `bone-ai/bone-ai-document` 模块落地为可运行骨架，并通过 159 项单测（含 ArchUnit DDD 门禁、Spring 上下文装配守护、真实 HTTP 端到端链路 PoC 与 16 条变异验证）。
 
 ### 已实现的代码资产
 
@@ -338,9 +338,33 @@ ADR-0046 决策已在 `bone-ai/bone-ai-document` 模块落地为可运行骨架�
 | config | `DocumentProperties.TrustedOcr`（Phase-5 扩展） | 新增 `jevUrl` / `classifierUrl`；非空即装配上述真实适配器覆盖安全默认 |
 | integration（测试） | `TrustedOcrHttpPipelinePoCTest` | 本地 HttpServer + 真实 Spring 上下文 + 真实 JDK HttpClient 跑通七层管线；含 Jev / 分类服务不可达时的 fail-closed 对照 |
 
+### Phase-6：文档承诺与实现缺口收敛（2026-11-07）
+
+> 对骨架做「文档承诺 vs 代码实现」实地审计后，发现并修复了 12 项**可用代码自包含解决**的缺口。
+> 其中 6 项是资金场景最危险的 fail-open（会把错误金额静默自动放行），优先级高于任何新增功能。
+
+| # | 缺口（修复前） | 修复后 | 会红钉子 |
+|---|---|---|---|
+| 1 | **L4 业务一致性完全缺失**：`OcrResult.lineItems` / `OcrLineItem` 已定义但零消费方，五层可信度唯独 L4 没实现 | 新增 `L4BusinessConsistencyValidator`：明细汇总 vs 总额，容差 0.01；不一致把总额字段降级 FAILED，由 L2 前置闸门强制人工复核。总额别名**复用模板唯一事实源**；无明细/无总额/多命中/不可解析/非法金额一律 no-op 防误报 | `L4BusinessConsistencyValidatorTest`（10）、`TrustedOcrEngineBoundaryTest.l4_mismatch_reaches_the_final_document_as_failed_and_manual` |
+| 2 | **空白关键字段 fail-open**：空白值 + `NOT_APPLICABLE` 在置信度/质量分/风险等级之前直接短路 `AUTO_PASS` | 删除该短路；CRITICAL/HIGH 空白转人工，MEDIUM/LOW 转二次识别，所有等级禁止自动放行 | `ReviewPolicySafetyTest.blank_*`（含全等级遍历） |
+| 3 | **非法分数静默放行**：`conf=5.0` 满足 `5.0 >= 0.99`；质量分越界、NaN 置信度无校验 | 置信度/质量分须为 `[0,1]` 有限值（NaN 仅作为「质量分不可用」的约定信号），非法一律转人工 | `ReviewPolicySafetyTest.out_of_range_*`、`nan_quality_remains_the_documented_unavailable_signal` |
+| 4 | **置信度来源混用**：`ConfidenceSource` 只有枚举定义与测试引用，生产零消费方 | 阈值只按 `OCR_ENGINE` 标定；`QUALITY_MODEL` / `CALIBRATED` 来源禁止跨来源比较，须单独标定，否则转人工 | `ReviewPolicySafetyTest.non_ocr_confidence_source_is_never_auto_passed` |
+| 5 | 缺某风险等级阈值时直接 NPE（或借用其它等级阈值） | fail-closed 转人工，并在判据里写明缺哪个等级 | `ReviewPolicySafetyTest.missing_threshold_level_fails_closed_instead_of_throwing` |
+| 6 | **空证据链假绿**：主引擎返回空字段时仍产出「字段为空、需人工数 0」的可信文档；空字节流也可进入管线 | 空/超限/null 流、主引擎 null 或空字段一律编码化抛出，交上层转 HITL；`maxBytes` 在入口做**真有界读取**（读到缓冲块即停，不先全量分配内存） | `TrustedOcrEngineBoundaryTest`（8） |
+| 7 | **`maxBytes` 配了不生效**：配置项存在但编排层不消费；把自动配置注入值改成 `Long.MAX_VALUE`，158 个用例仍全绿 | 注入链路打通，并补真实 Spring 上下文反向钉子：配置 `max-bytes=16` 后超限输入必须在入口被拒且消息带上生效值；改坏注入即变红 | `TrustedOcrAutoConfigurationContextTest.configured_max_bytes_is_enforced_by_the_wired_engine` |
+| 8 | **同一信号量纲重复计量**：启发式质量分含 `0.4 * conf`，L1 信号同时以 `conf` 与 `q` 两种身份进入策略，违反 §四原则 3 | 移除绝对置信度项，只保留**相对**离散度（权重 0.6）；整体置信度成比例平移不改变质量分 | `HeuristicQualitySourceSeparationTest`（含相对离群点仍应更低的正向对照） |
+| 9 | **证据定位覆盖率虚高**：负坐标 bbox 算有效；`page=5` 但文档只有 2 页仍计入 100% 覆盖 | `BoundingBox.valid()` 要求第一象限且非退化；新增 `hasValidEvidenceLocation(pageCount)` 校验页码上界，验收指标改用它 | `BoundingBoxTest`、`OcrAcceptanceMetricsTest.invalid_evidence_location_never_counts_toward_coverage` |
+| 10 | **统计空集假绿**：只喂单一风险等级样本即可 `allLevelsProven=true` | 必须**四个等级全部有结论且全部通过**统计证明 | `ThresholdCalibratorTest.all_levels_proven_requires_every_risk_level_to_be_proven` |
+| 11 | **决策不可解释**：`ReviewDecision` 只有三值枚举，无法回答「为什么这个金额被放行」 | 新增 `ReviewOutcome(decision, reason)` 与 `TrustedOcrDocument.decisionReasons`：逐字段记录命中的闸门、信号值、阈值快照、L2 规则 ID、L4 结论；`ReviewPolicy` 以 default 方法兼容自定义策略（不伪造判据） | `TrustedOcrEngineBoundaryTest.every_field_gets_a_decision_reason`、`l2_failure_reason_and_rule_id_are_preserved` |
+| 12 | **同源断言**：Wilson 上界的期望值由被测实现自己算出，实现改坏测试仍绿 | 改为独立解析真值硬编码（`wilson(5,100)=0.11175046923191914`、`minSampleSize(0.0001)=38411`），去同源 | `ThresholdCalibratorTest.wilson_*` |
+
+**已知口径差异（显式登记，不静默混用）**：`HeuristicOcrQualityEvaluator` 的覆盖信号用 `hasEvidenceLocation()`（只校验坐标），因为 `evaluate(...)` 签名没有 `pageCount`；`OcrAcceptanceMetrics` 用带页数上界的 `hasValidEvidenceLocation(pageCount)`。前者是内部代理信号，后者是外部验收度量，`pageCount<=0` 时退化为仅校验下限，不得据此宣称 100% 覆盖。
+
 ### 验证结果
 
-`mvn -o -pl bone-ai/bone-ai-document test`（绕沙箱）：**124 用例，0 失败 0 错误**。`ArchitectureTest`（11 项）确认新增代码未违反 DDD 门禁；`TrustedOcrAutoConfigurationContextTest` 以真实 Spring 上下文验证默认关闭、开启后全部端口装配、自定义分类器可覆盖、配置 URL 后真实适配器覆盖安全默认、旧扁平阈值拒绝启动；`TrustedOcrHttpPipelinePoCTest` 以本地 HttpServer + 真实 JDK HttpClient 跑通七层管线，并给出服务不可达时的 fail-closed 对照（Jev 挂 → CRITICAL 转二次识别、分类器挂 → 回落 GENERAL 且不制造假红）。
+`mvn -o -pl bone-ai/bone-ai-document test`（绕沙箱）：**159 用例，0 失败 0 错误**（原 124 + Phase-6 新增 34 + 注入链路反向钉子 1）。`ArchitectureTest`（11 项）确认新增代码未违反 DDD 门禁；`TrustedOcrAutoConfigurationContextTest`（6 项）以真实 Spring 上下文验证默认关闭、开启后全部端口装配、自定义分类器可覆盖、配置 URL 后真实适配器覆盖安全默认、旧扁平阈值拒绝启动、`maxBytes` 注入确实生效；`TrustedOcrHttpPipelinePoCTest` 以本地 HttpServer + 真实 JDK HttpClient 跑通七层管线，并给出服务不可达时的 fail-closed 对照（Jev 挂 → CRITICAL 转二次识别、分类器挂 → 回落 GENERAL 且不制造假红）。
+
+**变异验证（判别力证明）**：对 Phase-6 的每条新判据实跑「改坏实现 → 全量测试 → 必须变红 → 按 sha256 恢复」，**16/16 条变异全部被测试捕获**（15 条判据 + 1 条 `maxBytes` 注入），无一条因编译错误或格式门禁造成的假红。其中含 1 条**互补变异**：把空白值闸门改成「一律拦截」后 18 个用例变红（含端到端 PoC），证明收紧不是「一律转人工」的假安全。另先发现 1 个盲区：注入改坏时 158 个用例全绿，补测试后重跑同一变异变红。
 
 **统计纪律对照**：`ThresholdCalibratorTest` 证明 100 个「零错误」自动通过样本的 Wilson 95% 上界仍远高于 0.01% 目标，`statisticallyProven=false` 且给出证明目标所需的最小样本量（>3 万）；放宽目标到 1% 且样本 500 时才通过。避免「小样本零错误就宣称达标」这一最常见验收失真。
 
@@ -356,13 +380,25 @@ ADR-0046 决策已在 `bone-ai/bone-ai-document` 模块落地为可运行骨架�
 - **按票种分别选型**：引擎优先顺序由票种模板单点定义（发票/证件/清单 → PaddleOCR 优先，病历/出院/保单 → GLM-OCR 优先），而非一律取装配顺序第一个。
 - **误报控制**：别名经归一化后**精确**比对（不做子串匹配，`start_date` 不会被当作 `invoice_date`）；自由文本票种刻意不声明必填字段，避免 schema 差异批量制造假红、诱使使用者关掉闸门。
 - **同一语义唯一口径**：阈值只认 `risk-thresholds.<LEVEL>.*`；旧扁平阈值显式登记不采信且配置非默认值即 fail-fast，杜绝「配了以为生效、实际静默忽略」。分级阈值还校验值域与「人工门槛 ≤ 自动通过门槛」的序关系。
+- **fail-closed 优先于可用性**：空白值、非法分数、非 OCR 来源、缺等级阈值、空识别结果、超限输入一律不得自动放行；宁可转人工，也不静默放过错误金额。
+- **量纲隔离**：OCR 原始置信度（L1）、启发式质量分（L3）、经校准的字段正确概率三者不可混为一谈；质量分只含相对离散度，不含绝对 conf。
+- **可解释与可审计**：每个字段的最终决策都带命中闸门、信号值、阈值快照与规则/L4 结论，写入 `decisionReasons`；自定义策略未覆写时只给「未提供判据说明」，不伪造理由。
+- **全绿 ≠ 有判别力**：新增判据一律配会红用例 + 实跑变异验证；「配置存在」不等于「门禁生效」，必须验证注入链路（本次即抓到 `maxBytes` 盲区）。
 
-### 待续（仅剩需真实数据 / 外部模型服务的前置项）
+### 待续（需真实数据 / 外部模型服务，无法靠代码自包含完成）
 
-> 已于 Phase-5 落地：Jev 与票种分类的**真实 HTTP 适配器**（含 fail-closed）、离线阈值标定工具与统计纪律、验收指标可计算化、**编排契约级**端到端 HTTP PoC。下方待续项均无法靠代码自包含完成，须有脱敏标注数据与真实模型服务。
+> Phase-5 已落地 Jev 与票种分类的真实 HTTP 适配器（含 fail-closed）、离线阈值标定工具与统计纪律、验收指标可计算化、编排契约级端到端 HTTP PoC。
+> Phase-6 已收敛所有可用代码自包含修复的 fail-open、L4 缺失、死配置、口径混用与监控盲区（见上表）。下方 5 项**仍须**脱敏标注数据与真实模型服务。
 
 1. 部署并标定真实 Jev 模型服务：按票种 / 字段 / 风险用标注样本标定质量分，AUROC 仅作筛选、不得当作字段正确率；填 `jev-url` 即由 `JevHttpQualityEvaluator` 接入（也可 `@ConditionalOnMissingBean` 覆盖）。
 2. 部署真实票种分类服务（CNN/VLM）：填 `classifier-url` 即由 `HttpDocumentClassifier` 接入，且仅在调用方传 `GENERAL` 时参与判定。
-3. 用 500–1000 份脱敏标注样本跑 `ThresholdCalibrator` 校准 `riskThresholds`；只有 Wilson 95% 上界不超过目标的等级才可上生产。
+3. 用 500–1000 份脱敏标注样本跑 `ThresholdCalibrator` 校准 `riskThresholds`；只有 Wilson 95% 上界不超过目标**且四个风险等级全部有证明**才可上生产。
 4. 用同一批样本校准模板别名、必填字段清单与引擎偏好顺序（内置值仅为骨架默认；通用榜单分 ≠ 理赔字段级准确率，不得预置结论）。
 5. 部署 PaddleOCR / GLM-OCR 服务并填 URL 开启 `trusted-ocr.enabled=true`，做**真实模型**端到端准确率验收；当前 PoC 用固定桩响应，只证明链路可跑通与故障不放行，不构成任何准确率结论。
+
+### 明确不做（避免造出「配了不生效」的假绿）
+
+1. **运行时阈值与标定报告指纹绑定**：需由 CI / 发布流水线持有标定报告并在部署前比对。骨架里若只加一个 `matchesThresholds()` 域方法而无生产消费方，就是新的孤儿方法；待第 3 项真实标定落地后由流水线承接，不在代码里放假实现。
+2. **证据链的模型版本 / traceId / 时间戳**：当前引擎 HTTP 响应契约未返回这些字段，骨架不能凭空编造（伪造可追溯性比没有更危险）；待真实模型服务接入时随 `HttpOcrClient.parseResult` 契约一并扩展。
+3. **② 预处理层（去噪 / 纠偏 / 旋转 / 裁剪 / 重复件检测）**：属独立图像处理服务，须有真实图像与效果评测才能判定是否带来增益；不在纯域骨架里用空实现占位计数。
+4. **重复件检测的判重口径**：依赖业务侧「同一理赔单 / 同一票据」的唯一键定义，须先有产品裁定，不做启发式猜测。

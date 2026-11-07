@@ -1,6 +1,8 @@
 package com.bone.aidoc.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.bone.aidoc.application.TrustedOcrApplicationService;
 import com.bone.aidoc.domain.gateway.DocumentClassifier;
@@ -10,6 +12,7 @@ import com.bone.aidoc.domain.gateway.ReviewPolicy;
 import com.bone.aidoc.domain.model.OcrDocType;
 import com.bone.aidoc.domain.service.ClaimDocumentTemplateRegistry;
 import com.bone.aidoc.infrastructure.ocr.HttpDocumentClassifier;
+import java.io.ByteArrayInputStream;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -95,6 +98,52 @@ class TrustedOcrAutoConfigurationContextTest {
               assertThat(ctx).hasFailed();
               assertThat(ctx.getStartupFailure())
                   .hasRootCauseInstanceOf(IllegalStateException.class);
+            });
+  }
+
+  /**
+   * maxBytes 必须真的从配置流入编排层（而非「配置了但引擎仍无限制」）。
+   *
+   * <p>此前把自动配置里的 {@code t.getMaxBytes()} 改坏成 {@code Long.MAX_VALUE}，158 个用例仍全绿——
+   * 属典型的「配了不生效」盲区。本例通过真实 Bean 的超限行为反向钉死注入链路。
+   */
+  @Test
+  void configured_max_bytes_is_enforced_by_the_wired_engine() {
+    runner
+        .withPropertyValues(
+            "bone.ai.document.trusted-ocr.enabled=true",
+            "bone.ai.document.trusted-ocr.max-bytes=16")
+        .run(
+            ctx -> {
+              assertThat(ctx).hasNotFailed();
+              OcrEngine engine = ctx.getBean(OcrEngine.class);
+
+              // 反向：超限必须在入口读取阶段被拒，且消息带上「当前生效的」上限值
+              assertThatThrownBy(
+                      () ->
+                          engine.parse(
+                              new ByteArrayInputStream(new byte[64]),
+                              "t1",
+                              "big.jpg",
+                              "d1",
+                              OcrDocType.INVOICE))
+                  .isInstanceOf(IllegalStateException.class)
+                  .hasMessageContaining("超过大小上限", "16");
+
+              // 正向对照：恰好等于上限的输入不得被大小闸门拦截。
+              // 默认 NoOp 引擎会在后续阶段抛别的异常或直接返回，二者都属「未被大小闸门拦截」。
+              Throwable bounded =
+                  catchThrowable(
+                      () ->
+                          engine.parse(
+                              new ByteArrayInputStream(new byte[16]),
+                              "t1",
+                              "ok.jpg",
+                              "d1",
+                              OcrDocType.INVOICE));
+              if (bounded != null) {
+                assertThat(bounded).hasMessageNotContaining("超过大小上限");
+              }
             });
   }
 }

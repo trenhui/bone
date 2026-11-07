@@ -62,7 +62,8 @@ class TrustedOcrEngineTemplateTest {
 
   private static TrustedOcrDocument parse(
       TrustedOcrEngine engine, OcrDocType type, OcrProvider provider) {
-    return engine.parse(InputStream.nullInputStream(), "t1", "src.jpg", "d1", type);
+    return engine.parse(
+        new java.io.ByteArrayInputStream(new byte[] {1, 2, 3}), "t1", "src.jpg", "d1", type);
   }
 
   private static OcrProvider invoiceWithTwoFields() {

@@ -18,7 +18,8 @@ import java.util.Map;
  * <p>合成信号（权重见常量，合计为 1）：
  *
  * <ul>
- *   <li>相对置信度离散度（0.2）：OCR 置信度常整体虚高，故用「相对文档中位置信度」衡量可靠性——明显低于同文档其它字段者更可疑；
+ *   <li>相对置信度离散度（0.6）：OCR 置信度常整体虚高，故用「相对文档中位置信度」衡量可靠性—— 明显低于同文档其它字段者更可疑。<b>刻意不混入绝对 OCR 置信度</b>：L1
+ *       已单独用 conf 与 阈值比较，若质量分再含 conf，同一信号会以两种量纲重复进入策略（ADR-0046 §四 禁止混用）；
  *   <li>证据定位覆盖（0.2）：具备有效 {@code bbox} 的字段更可信，缺坐标字段降级（关键字段 100% 覆盖是独立验收指标）；
  *   <li>规则校验状态（0.2）：PASSED 加分、FAILED 记 0（确定性规则优先于模型判断）；
  *   <li>空值惩罚（乘子 0.3，下限 0.1）：识别值为空无可信内容。
@@ -29,10 +30,9 @@ import java.util.Map;
  */
 public class HeuristicOcrQualityEvaluator implements OcrQualityEvaluator {
 
-  /** 各信号权重（合计为 1）。 */
-  private static final double W_CONF = 0.4;
+  /** 各信号权重（合计为 1）；不含绝对 OCR 置信度。 */
+  private static final double W_DISPERSION = 0.6;
 
-  private static final double W_DISPERSION = 0.2;
   private static final double W_COVERAGE = 0.2;
   private static final double W_VALIDATION = 0.2;
 
@@ -69,8 +69,6 @@ public class HeuristicOcrQualityEvaluator implements OcrQualityEvaluator {
   }
 
   private double scoreField(OcrFieldEvidence f, double medianConf) {
-    double conf = clamp01(f.confidence());
-
     // 相对置信度离散度：明显低于同文档中位数者更可疑
     double dispersion;
     if (medianConf <= 0.0) {
@@ -92,11 +90,7 @@ public class HeuristicOcrQualityEvaluator implements OcrQualityEvaluator {
           case NOT_APPLICABLE, PENDING -> 0.7;
         };
 
-    double base =
-        W_CONF * conf
-            + W_DISPERSION * dispersion
-            + W_COVERAGE * coverage
-            + W_VALIDATION * validation;
+    double base = W_DISPERSION * dispersion + W_COVERAGE * coverage + W_VALIDATION * validation;
 
     if (isBlank(f.value())) {
       base = Math.max(BLANK_FLOOR, base * BLANK_PENALTY);
