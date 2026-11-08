@@ -91,57 +91,13 @@
       "currency": "current"
     },
     {
-      "id": "review.round9",
-      "path": "03-contract/第9轮循环复核-合理性判定矩阵.md",
-      "layer": "L3",
-      "diataxis": "reference",
-      "status": "active",
-      "summary": "第 9 轮循环复核：7 项待办的合理性裁定、13 分册逐册核对台账与最小落地方案",
-      "authority": "循环复核合理性判定 / go-live 台账",
-      "role": "guide",
-      "currency": "current"
-    },
-    {
-      "id": "review.round10",
-      "path": "03-contract/第10轮循环复核-零DDL闭环落地.md",
-      "layer": "L3",
-      "diataxis": "reference",
-      "status": "active",
-      "summary": "第 10 轮循环复核：零 DDL / 零公共签名改动的审批与闭环落地台账",
-      "authority": "零 DDL 闭环合理性判定 / 审批台账",
-      "role": "guide",
-      "currency": "current"
-    },
-    {
-      "id": "review.round11",
-      "path": "03-contract/第11轮循环复核-事件消费方接线与分层收口.md",
-      "layer": "L3",
-      "diataxis": "reference",
-      "status": "active",
-      "summary": "第 11 轮循环复核：事件消费方生产接线 + 分层门禁收口（AiEvalSampleIndex 端口/控制器/适配器）",
-      "authority": "事件消费方接线 / 分层门禁收口 / 循环复核",
-      "role": "guide",
-      "currency": "current"
-    },
-    {
-      "id": "review.round11.gap-provider",
-      "path": "03-contract/第11轮-GAP登记-provider双条件不同源.md",
-      "layer": "L3",
-      "diataxis": "reference",
-      "status": "active",
-      "summary": "GAP：RUNTIME_MODEL_COVERAGE 三要素同源可伪造风险、方案 A 精确修复与可证伪验收口径",
-      "authority": "provider 证据伪造风险 / 判据加固验收口径",
-      "role": "guide",
-      "currency": "current"
-    },
-    {
       "id": "contract.landing",
       "path": "03-contract/工程详细设计-落地版.md",
       "layer": "L3",
       "diataxis": "reference",
       "status": "active",
-      "summary": "工程契约 SSOT：35 表 DDL(§9.5)、OpenAPI(§10)、非功能(§11)、ADR(§14)、时序",
-      "authority": "工程契约 / DDL / OpenAPI / 非功能 / ADR",
+      "summary": "工程契约 SSOT：§9.5 设计态 DDL 集合（与 §9.1 清单 / §9.0 差异登记集合对账，不登记表数）、OpenAPI(§10)、非功能(§11)、ADR(§14)、时序；§9.0（4）（5）为活库列级体检与 14 张业务列差异的逐张整改台账",
+      "authority": "工程契约 / DDL / OpenAPI / 非功能 / ADR / 活库差异登记与整改台账",
       "shortNames": [
         "工程落地版"
       ],
@@ -152,9 +108,9 @@
       "currency": "current"
     },
     {
-      "id": "contract.ai",
-      "path": "03-contract/AI技术方案.md",
-      "layer": "L3",
+      "id": "design.ai",
+      "path": "04-design/AI技术方案.md",
+      "layer": "L4",
       "diataxis": "reference",
       "status": "active",
       "summary": "bone-ai 落地：六模块映射、DAG 执行器、五段式编排预算、资金、评测、ADR 摘记",
@@ -186,10 +142,24 @@
       "layer": "L4",
       "diataxis": "reference",
       "status": "active",
-      "summary": "理算子域唯一设计真源：架构决策、引擎编排顺序、三类策略算法、控额、快照契约、端口",
+      "summary": "理算子域唯一设计真源：架构决策、引擎编排顺序、三类策略算法、控额、快照契约、端口。双角色已显式标注：§1–§13 是 synap-claim-oracle 语义基线/目标态（非生产，§1 开头有统一时态横幅），§14 是生产九步内核的权威现状；D2「是否拆分」已按 B 案结案",
       "authority": "理算算法与引擎结构",
       "shortNames": [
         "理算引擎设计"
+      ],
+      "role": "ssot",
+      "currency": "current"
+    },
+    {
+      "id": "design.architecture",
+      "path": "04-design/总体技术方案.md",
+      "layer": "L4",
+      "diataxis": "reference",
+      "status": "active",
+      "summary": "总体技术方案：系统上下文（8 个外部系统）、7 个限界上下文划分与 §4.1 组件视图（C4 L3，实测 370 类 / 20 子域 / 35 应用服务 / 19 Port / 51 错误码）、§5 三层时态声明（活库现状 / §9.5 设计态 DDL / §5.2 目标态九要素）与 §5.2.1「业务 11 维 ↔ 目标 9 列 ↔ 活库列」唯一对照表、纯函数理算引擎与三策略、三条关键链路、迁移五步 + §9.1.1 M2 高风险步的 expand/contract 四阶段方案（脚本 0123–0126 为规划占位，未开工）、模块方案路由表、5 条风险与 3 项待决策（D2 已收口）",
+      "authority": "系统边界与上下文、限界上下文划分、组件级接口与领域不变量（§4.1）、配置模型的时态分层与业务维度→物理列映射（§5 / §5.2.1）、理算引擎形态、关键链路、迁移路线与 M2 四阶段方案（§9.1.1）、模块详细方案路由",
+      "shortNames": [
+        "总体技术方案"
       ],
       "role": "ssot",
       "currency": "current"
@@ -345,8 +315,8 @@
       "layer": "L7",
       "diataxis": "reference",
       "status": "active",
-      "summary": "规则 ID 定义真源（R-AREA/R-DIR/R-DED/R-RAT/R-CAP…）",
-      "authority": "规则 ID 定义",
+      "summary": "规则 ID 定义真源（R-AREA/R-DIR/R-DED/R-RAT/R-CAP…）；§十一 登记 Rulebook 条款与 claim-ruleset.json 执行项的 ID 命名空间对照：§11.1 共有 18 条（10 条同名不同义）、§11.2 仅资产 15 条逐条登记、§11.3 仅条款 28 条按族说明；_check_ruleset_alignment.py 守护资产 33/33 全量覆盖",
+      "authority": "规则 ID 定义（对外条款层）；执行项 ID 的命名空间对照（§十一）",
       "shortNames": [
         "04"
       ],
@@ -757,17 +727,6 @@
       "currency": "frozen"
     },
     {
-      "id": "records.evidence.readiness-20261107",
-      "path": "09-records/evidence/2026-11-07-ai-native-readiness.txt",
-      "layer": "L9",
-      "diataxis": "reference",
-      "status": "active",
-      "summary": "2026-11-07 AI 原生就绪度复核器时点快照（SATISFIED 5 / BLOCKED 7，l3Claimable=false，HEAD d953da0fc）",
-      "authority": "",
-      "role": "evidence",
-      "currency": "frozen"
-    },
-    {
       "id": "archive.system-design",
       "path": "10-archive/系统设计方案.md",
       "layer": "L10",
@@ -804,6 +763,17 @@
       "currency": "current",
       "summary": "机器优先入口：语料模型+按来意路由+ACTIVE/DRAFT/FROZEN 三段清单，供 AI 确定性检索",
       "authority": "AI 检索路由"
+    },
+    {
+      "id": "records.review.rounds9-11",
+      "path": "09-records/reviews/循环复核台账（第 9–11 轮）.md",
+      "layer": "L9",
+      "diataxis": "explanation",
+      "status": "active",
+      "summary": "第 9–11 轮循环复核的过程台账（原文附录完整保留）：合理性判定矩阵、零 DDL 闭环、事件消费方接线、provider 双条件 GAP；只作取证，不承担当前口径",
+      "authority": "循环复核过程取证（不含当前契约）",
+      "role": "evidence",
+      "currency": "frozen"
     }
   ],
   "aiRouting": [
@@ -823,9 +793,16 @@
       ]
     },
     {
+      "intent": "模块划分 / 代码放哪 / 依赖方向 / 上下文边界",
+      "docs": [
+        "design.architecture",
+        "contract.landing"
+      ]
+    },
+    {
       "intent": "AI 编排 / 决策图 / 模型接入",
       "docs": [
-        "contract.ai",
+        "design.ai",
         "design.bone-ai-deps"
       ]
     },
@@ -887,27 +864,31 @@
     {
       "intent": "配 provider / 跑 L3 外部前置 / 看就绪度归因 / 判据防伪造",
       "docs": [
-        "delivery.11",
-        "review.round11.gap-provider"
+        "delivery.11"
       ]
     },
     {
-      "intent": "判断某项优化是否该做 / 合理性裁定台账",
+      "intent": "判断某项优化是否该做 / 合理性裁定 / 零 DDL 闭环台账",
       "docs": [
-        "review.round9",
-        "review.round11"
-      ]
-    },
-    {
-      "intent": "零 DDL / 零公共签名改动的审批与闭环",
-      "docs": [
-        "review.round10"
+        "records.review.rounds9-11"
       ]
     },
     {
       "intent": "AI 原生改造 / 就绪度判据 / 改造执行计划",
       "docs": [
         "plan.ainative"
+      ]
+    },
+    {
+      "intent": "多保司接入 / 保单配置面 / 主数据映射 / 新保司接入周期",
+      "docs": [
+        "design.multi-insurer-mapping"
+      ]
+    },
+    {
+      "intent": "反欺诈 / 视觉反诈 / 图计算 / 直付通道 / 模型风险（MRM）",
+      "docs": [
+        "design.risk-payment"
       ]
     }
   ],

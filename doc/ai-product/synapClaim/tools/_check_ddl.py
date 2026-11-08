@@ -14,7 +14,10 @@ MySQL/TiDB 直接 Duplicate column name），且同批索引引用并不存在�
   D5 CREATE TABLE 块以 `) ENGINE=InnoDB` 收尾（无悬空逗号）
   D6 禁注入表的建表块不得含 updated_at/updated_by/deleted/version
      （名单**从本文 §9.2 矩阵现读**，不在脚本里手抄——见下方 append_only_tables）
-  D7 §9.5 建表数 = 36（与 §9.1 表清单口径一致；改表数须同步 §9.1/§11.13）
+  D7 §9.5 建表集合 = §9.1 清单集合 − §9.0 差异登记（未建/已改名）集合，双向对账
+     （原为硬编码 `len(tables) == 36`：删/增一张表都要手改数字，且无法识别
+       「删了 A 又补了 B、总数仍 36」这类实质漂移。现改为集合判据，
+       唯一真源是 §9.1 清单与 §9.0 差异登记表，脚本不再持有表数。）
 
 关于 D6 的名单来源（2026-10-30 修正）：
   原先本脚本硬编码一份 APPEND_ONLY 副本，注释却写着「本文 §9.2 矩阵登记的名单」——
@@ -69,6 +72,120 @@ def is_forbidden(name, exact, prefixes):
     if name in exact:
         return True
     return any(name.startswith(p) for p in prefixes)
+
+
+def section(lines, heading):
+    """截取以 heading 开头的小节，到下一个 ### 或 ## 为止（含端点索引）。"""
+    a = next(i for i, l in enumerate(lines) if l.startswith(heading))
+    b = next((i for i in range(a + 1, len(lines))
+              if lines[i].startswith('### ') or lines[i].startswith('## ')), len(lines))
+    return a, b
+
+
+def declared_tables(lines):
+    """§9.1 清单第一列里的全部反引号表名（含一行多个表的组合登记）。"""
+    a, b = section(lines, '### 9.1')
+    names = set()
+    for l in lines[a:b]:
+        if not l.startswith('|'):
+            continue
+        names |= set(re.findall(r'`([a-z_0-9]+)`', l.split('|')[1]))
+    return names
+
+
+def stale_tables(lines):
+    """§9.0 中「已改名 / 活库无表」两张差异登记表的表名。
+
+    只认（1）（2）两个小节，不按「表格行里出现反引号名」猜语义。
+    2026-11-07 踩过：§9.0 后来新增（4）列级对账表，里面列的是**有效表**
+    （claim_case / adj_liability …），旧实现把它们全收进 stale，D7 当场误判红。
+    教训与 C8 同源：正则要按**语义区间**取数，不能按「长得像」取数。
+    """
+    a, b = section(lines, '### 9.0')
+    names = set()
+    active = False
+    for l in lines[a:b]:
+        if l.startswith('#### '):
+            active = ('已改名' in l) or ('活库无表' in l)
+            continue
+        if not active or not l.startswith('|'):
+            continue
+        if set(l.replace('|', '').strip()) <= set('-: '):
+            continue
+        first = l.split('|')[1].strip()
+        hits = re.findall(r'`([a-z_0-9]+)`', first)
+        # 表头与「活库真名」列（t_ 前缀）不参与
+        if len(hits) == 1 and not first.startswith('`t_'):
+            names.add(hits[0])
+    return names
+
+
+def d7_errors(lines, ddl_names):
+    """集合对账。返回错误列表；解析不出集合时 fail-closed，不静默放行。"""
+    declared = declared_tables(lines)
+    stale = stale_tables(lines)
+    errs = []
+    if len(declared) < 20:
+        errs.append('D7 未能从 §9.1 清单解析出表集合（%d 张）——清单格式可能已改，先修解析再看结论' % len(declared))
+    if not stale:
+        errs.append('D7 未能从 §9.0 差异登记表解析出任何「未建/已改名」表——'
+                    '差异登记被删或格式已改时须 fail-closed，不得按空集合恒过')
+    if errs:
+        return errs
+    expected = declared - stale
+    if expected - ddl_names:
+        errs.append('D7 §9.1 清单登记但 §9.5 缺 DDL：%s' % sorted(expected - ddl_names))
+    if ddl_names - expected:
+        errs.append('D7 §9.5 有 DDL 但 §9.1 未登记（或已在 §9.0 标为未建/改名）：%s'
+                    % sorted(ddl_names - expected))
+    return errs
+
+
+def self_test():
+    """D7 判别力反证：「全绿」不等于有判别力，必须证明改坏了会判红。"""
+    lines = io.open(DOC, encoding='utf-8').read().split('\n')
+    expected = declared_tables(lines) - stale_tables(lines)
+    passed = 0
+    failed = 0
+
+    def expect(label, cond):
+        nonlocal passed, failed
+        if cond:
+            passed += 1
+            print('  ✅ ' + label)
+        else:
+            failed += 1
+            print('  ❌ ' + label)
+
+    print('=== _check_ddl.py --self-test（D7 集合对账判别力）===')
+    expect('正例：当前 §9.1 − §9.0 与 §9.5 对账无错', d7_errors(lines, expected) == [])
+    expect('变异① 把已摘除的 adj_policy DDL 放回来 → 判红',
+           any('§9.5 有 DDL' in e for e in d7_errors(lines, expected | {'adj_policy'})))
+    expect('变异② 删掉一张有效表的 DDL → 判红',
+           any('缺 DDL' in e for e in d7_errors(lines, expected - {'claim_case'})))
+
+    a, b = section(lines, '### 9.0')
+    no_registry = lines[:a + 1] + lines[b:]
+    expect('变异③ §9.0 差异登记整段被删 → fail-closed，不得按空集合恒过',
+           any('fail-closed' in e for e in d7_errors(no_registry, expected)))
+
+    a, b = section(lines, '### 9.1')
+    no_inventory = lines[:a + 1] + lines[b:]
+    expect('变异④ §9.1 清单整段被删 → fail-closed',
+           any('未能从 §9.1' in e for e in d7_errors(no_inventory, expected)))
+
+    # 变异⑤：§9.0 里新增一张与差异登记无关的表格，列的是有效表。
+    # 旧实现会把它们全收进 stale，导致 D7 对真实存在的表误判红。
+    extra = ['', '#### （9）随便一张审计表', '',
+             '| 表 | 结论 |', '|---|---|',
+             '| `claim_case` | 一致 |', '| `adj_liability` | 有差异 |', '']
+    a, _ = section(lines, '### 9.1')
+    with_extra = lines[:a] + extra + lines[a:]
+    expect('变异⑤ §9.0 追加无关表格（含有效表名）→ 不得污染 stale 集合',
+           stale_tables(with_extra) == stale_tables(lines))
+
+    print('  %d 通过 / %d 失败' % (passed, failed))
+    return 0 if failed == 0 else 1
 
 
 def main():
@@ -128,8 +245,7 @@ def main():
                 errors.append('D6 %s（L%d）：§9.2 矩阵判其禁注入变更列，却声明了 %s'
                               % (n, t['line'], sorted(bad)))
 
-    if len(tables) != 36:
-        errors.append('D7 §9.5 建表数 %d ≠ 36（与 §9.1 表清单/§11.13 口径不一致）' % len(tables))
+    errors.extend(d7_errors(lines, {t['name'] for t in tables}))
 
     if errors:
         print('=== DDL 可执行性机检 ===')
@@ -138,9 +254,10 @@ def main():
         print('共 %d 项失败' % len(errors))
         return 1
     print('=== DDL 可执行性机检 ===')
-    print('【OK】36 表全部通过：单 id 主键 / 列名唯一 / PK 存在 / 索引列已声明 / 围栏收尾 / append-only 无变更列')
+    print('【OK】%d 表全部通过：单 id 主键 / 列名唯一 / PK 存在 / 索引列已声明 / 围栏收尾 / '
+          'append-only 无变更列 / §9.1 清单与 §9.0 差异登记的集合对账' % len(tables))
     return 0
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(self_test() if '--self-test' in sys.argv else main())

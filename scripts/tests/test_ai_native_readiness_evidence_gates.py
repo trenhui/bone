@@ -175,9 +175,13 @@ class EvidenceDrivenGateTest(unittest.TestCase):
         self.assertEqual(_gate(forged, "GOLIVE_NOT_DRAFT")["status"], M.BLOCKED)
 
     def test_missing_booklet_fails_closed(self):
+        # 判据已从「硬编码册数下限」改为「总纲登记集合 ↔ 磁盘集合」双向比对，
+        # 归因码随之由 GOLIVE_BOOKLETS_MISSING_n（复数、数量式）改为
+        # GOLIVE_BOOKLET_MISSING_n（单数、集合差式）。本用例守住 fail-closed 形态，
+        # 只断言前缀而不写死 n：册数是文档侧事实，写死会让合法合并又把测试判红。
         g = _gate(dict(self.f, golive=self.f["golive"][:-2]), "GOLIVE_NOT_DRAFT")
         self.assertEqual(g["status"], M.BLOCKED)
-        self.assertTrue(g["reason"].startswith("GOLIVE_BOOKLETS_MISSING"))
+        self.assertRegex(g["reason"], r"^GOLIVE_BOOKLET_MISSING_\d+$")
 
     def test_golive_compliant_is_reachable(self):
         forged = dict(self.f, golive=[dict(g, currency="current", role="current",

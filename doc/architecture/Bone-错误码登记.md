@@ -130,11 +130,16 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 ```
 1. 在模块 {Module}ErrorCodes 定义码常量（码字符串 + 语义 javadoc）
 2. 在模块 {Module}Errors 的 DEFAULT_HTTP_STATUS 登记「码 → HTTP 状态」（漏登记则启动失败）
-3. 在本文 §6 对应域表格追加一行
-4. OpenAPI @Operation 或 x-errorCodes 补充该码
-5. PR 描述写明「新增 EXT_XXX，HTTP 409」
-6. 单测：断言响应含 errorCode、traceId，并钉住抛出点的 code + 业务码
+3. 在前端 zh-CN / en-US 的 errors 段同步该码译文（两语言必须同时加；只加一侧用户会在另一语言下看到裸露的 errorCode 字符串）
+4. 在本文 §6 对应域表格追加一行
+5. OpenAPI @Operation 或 x-errorCodes 补充该码
+6. PR 描述写明「新增 EXT_XXX，HTTP 409」
+7. 单测：断言响应含 errorCode、traceId，并钉住抛出点的 code + 业务码
 ```
+
+> **第 3 步为什么补进来（2026-11-08 核实）**：流程原先只写到后端两处，但前端 `bone-frontend/packages/shared-utils/src/i18n/locales/{zh-CN,en-US}.json` 的 `errors` 段实际已为理赔域登记 **51 个 `SC_CLAIM_*` 译文**、中英零差集——**做是做了，流程没写**，属于规范落后于实践。后端 `checkEveryCodeRegistered()` 只守常量↔HTTP 状态，**漏译文在编译期和运行期都不会暴露**，只有用户触发该错误时才看到原始码，因此必须显式列为 PR 必做。
+>
+> **机检（目前仅理赔域）**：`doc/ai-product/synapClaim/tools/_check_error_code_i18n.py` 把 `ClaimErrorCodes` 常量 ↔ `ClaimErrors.DEFAULT_HTTP_STATUS` ↔ 前端双语 `errors.*` 三者锁成双向对账，含中英键集合零差集；新增 `SC_CLAIM_*` 漏任一环即判红。**其他模块暂未覆盖**，仍需按第 3 步人工补齐，勿据此处宣称全平台已有门禁。
 
 | 禁止 | 原因 |
 |------|------|

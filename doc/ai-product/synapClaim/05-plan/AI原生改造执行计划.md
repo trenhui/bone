@@ -78,5 +78,5 @@ P0 激活(A1→A2→A3)  ──►  P1 证据(A4→A5)  ──►  P2 治理(A6 
 ## 6. 交付物与下一步
 
 - 本计划为 **Plan 产物**；进入 **Execute** 需提供：① provider 凭证（走 A1–A3）、② 真实评测产物（走 A4–A5）、③ 组织 / 合规对 A6 / A7 的签署。
-- 关联文档（按 id 检索，不在此复述口径）：`contract.ai`（AI 编排 / 评测）、`design.bone-ai-deps`（中台依赖）、`delivery.11`（L3 外部前置运行手册）、`golive.00`（上线门禁总纲）、`records.evidence.readiness-20261107`（就绪度时点快照）。
+- 关联文档（按 id 检索，不在此复述口径）：`design.ai`（AI 编排 / 评测）、`design.bone-ai-deps`（中台依赖）、`delivery.11`（L3 外部前置运行手册）、`golive.00`（上线门禁总纲）、`records.evidence.readiness-20261107`（就绪度时点快照）。
 - 路线分歧：** regulated 金融域的「AI 原生」必须是「受治理的 AI 原生」**——扩展 AI 的能动性边界（规划 / 工具 / 语义知识 / 多模态），而非拆除确定性护栏与人工终审。

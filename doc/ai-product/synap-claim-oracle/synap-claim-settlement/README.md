@@ -17,7 +17,7 @@ currency: frozen
 >
 > 下文出现的"生产级 JDBC 端口""生产 SQL"描述的是**该端口的成熟度**（有乐观锁 CAS / 冲正 / 预授权 TTL / 方言抽象，可承受真实并发），**不代表本模块已进入生产链路**。产品侧持久化走的是 `bone-apps/synap-claim` 自己的仓储与 `OutboxRelayJob`。
 
-本目录是《synapClaim 理算引擎设计》（`design/理算引擎设计.md`，**当前实现见该文 §14**）+《synapClaim 理算引擎验证套件》（`verification/理算引擎验证套件.md`）+《理算引擎诊断记录》（`reviews/理算引擎诊断记录.md`）的**可执行参考实现**：
+本目录是《synapClaim 理算引擎设计》（`../../synapClaim/04-design/理算引擎设计.md`，**当前实现见该文 §14**）+《synapClaim 理算引擎验证套件》（`../../synapClaim/06-verification/理算引擎验证套件.md`）+《理算引擎诊断记录》（`../../synapClaim/09-records/reviews/理算引擎诊断记录.md`）的**可执行参考实现**：
 把"架构决策 + 内部设计 + 真实场景用例 + 诊断优化"落成可编译、可运行、带变异/负向探针的 Java 模块，**证明算法与护栏确实生效，而非仅文档描述**。
 
 ## 与 tpa-saas 的关系（复用 proven 引擎为基线 + 新架构补强）

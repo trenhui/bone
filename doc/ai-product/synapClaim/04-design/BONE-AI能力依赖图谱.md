@@ -23,6 +23,22 @@ currency: current
 
 ---
 
+## 0.1 不做清单（范围外的六件事）
+
+> 边界比承诺重要：下面六条是**明确不做**的，每条都有原因。写清楚是为了防止后续"顺手加一个"把架构拖回自研时代。
+
+| 不做 | 为什么不做 | 该怎么做 |
+|---|---|---|
+| **不自研解析 / OCR 管线** | 平台 C1 已有最小 IR + Docling/PaddleOCR sidecar 契约（均合规 license），自研是重复投入且难达 ≥95% 数电票准确率 | 经 `DocumentParsePort` 依赖 C1；缺的能力提平台需求（§3 E1） |
+| **不自研 PII 脱敏 / 注入检测 / 内容安全** | 与网关 C8 的 `PiiRedactor`/`PromptInjectionGuard`/`ContentSafetyGuard` 双份实现 ⇒ 策略漂移，且漏接 ADR-1「内容安全默认开」 | 复用 C8；只在产品侧做业务语义层的二次校验 |
+| **不把域中立机制留在产品域** | 解析/编排/HITL/证据/网关/检索/预警/集成/台账都是跨域同构能力，放产品域会导致每个域各写一套 | 进平台；产品域只经 `port` 调用（ArchUnit 强制，工程落地版 §3.2.1） |
+| **不把理赔确定性内核上平台** | 资金状态机、理算引擎、医学图谱、决策图模板是**领域资产**，语义只对理赔成立；上平台等于让平台承担它不该懂的领域规则 | 留产品域；平台只提供机制 |
+| **不自建医保局 / 银行直连网关** | 资质与合规门槛不在我们这一侧 | 走保司 / TPA 通道（C10 三态灰度），ReadOnly 旁路优先 |
+| **不让 E1–E4 挤占 MVP 排期** | 图库与视觉推理是长期运维税；先以 R-FRAUD-01~07 单证规则兜底 | E1/E2/E3/E4 与直付通道一律 **V1.0 Phase B 增量**（§6 排期纪律） |
+
+---
+
+
 ## 1. synapClaim 可依赖的 BONE-AI 能力及理由
 
 > 原则（整体方案 §2.1）：**跨域同构的机制进平台，领域资产留产品**。理赔的确定性内核（资金状态机、理算引擎、医学图谱、决策图模板）留产品；解析/编排/HITL/证据/网关/检索/预警/集成/台账机制复用平台。
@@ -208,3 +224,17 @@ Adjust (RULE, C2 + C11)            → 理算 + 信任额度两阶段预留(C11)
 5. **运行期参与率口径（已收敛为单一真源）**：证据窗口统一为 UTC 日界 30 天——`to = ceil(now / 86400000) * 86400000`（下一个 UTC 日界，覆盖当日全天），`from = to - 30 * 86400000`。前端 `governanceWindow()`、E2E `EVIDENCE_WINDOW` 与 `ai-runtime-health` 请求三者同算法，同一 UTC 日内逐字恒定、长度恰 30 天且小于端点 31 天上限；输出统一为秒级 ISO（无毫秒），与后端 `Instant` 回显逐字一致，不靠比较时归一化。E2E A 组断言后端回显窗口逐字一致，B 组断言治理面板声明窗口逐字一致。此前「E2E 固定窗口 `nodes=88 / aiParticipated=0` vs 面板滚动 30 天 `8 / 8.79%`」的口径分裂已消除，两组数字不再可作为同一结论的两种读数。`aiParticipated` 仍由 `AiModelProvenance` 按黑名单判定（标识非空且非 `local-stub` / `mock*` 即 `PROVIDER`），故 `tools/_ai_native_readiness.py` 的 `RUNTIME_MODEL_COVERAGE` 收紧为四条件：`provider_env` 已配 **且** 同一次手动探活的 `runtime.probeVerdict == REACHABLE` **且** `runtime.probeEvidence` 证据束自洽 **且** `nodes>0 / rate>0 / participated>0` 才判 SATISFIED。第二条件对应 §11.7「配了 ≠ 通了 ≠ 契约对」事故，判词缺失或非 `REACHABLE` 一律 fail-closed；第三条件堵住第 11 轮 GAP 的「三要素同源可伪造」，证据束须 `httpStatus=200` / `model` 非空 / `provenance=PROVIDER` / token 均 > 0 / `requestId` 合法，由 E2E 从同一次响应透传，缺则按 `PROBE_EVIDENCE_*` 阻断。reason 按 `PROVIDER_NOT_CONFIGURED` > `PROBE_NOT_REACHABLE` > `PROBE_EVIDENCE_*` > `MODEL_PARTICIPATION_ZERO` > `ADMITTED` 归因，detail 附 `providerConfigured=` / `probeVerdict=` / `probeEvidence=`。`--self-test` 的防假绿 / 伪造鲁棒性 / 档位探针与 `scripts/tests/` 下表征测试守护四条件不可摘除（四类探针、条数以脚本为准）。在 `PROVIDER_CONFIGURED=AI_GATEWAY_BASE_URL_MISSING` 未解除前本判据继续 BLOCKED，`l3Claimable` 仍为 false。另：`current_level()` 也受该判据约束——`PROVIDER_CONFIGURED` + `PERCEPTION_MODEL_DRIVEN` 都只是配置态，只要 `RUNTIME_MODEL_COVERAGE` 非 SATISFIED，档位回落 L0 并带原因码，不判 L1/L2（第 11 轮）。
 
 **下一步接线优先级**：按 L3 AI 技术方案的 G0–G4 门禁推进；G1 感知 Shadow 与 G2 知识接线可并行，G3 放量以前两者切片指标达标为前置，G4 治理不阻塞首版上线但模型清单与独立验证不得省略。飞轮下游的下一项是把独立盲标解盲结果经只读管线喂入 `AiConfidenceCalibration`，产出可回放的校准曲线；没有真实标注数据时这一步不做。
+
+---
+
+## 10. 待决策
+
+> 四项都**不是**编码能定的，需要平台架构 / 产品 / 安全任一方拍板。未定之前按表右列的默认口径执行，不留悬空。
+
+| # | 待定事项 | 选项与影响 | 未定时的默认口径 |
+|---|---|---|---|
+| D1 | **E1 视觉反诈的归属** | ① 增强 C1 的影像能力；② 新建 `C12-visual`。①改动小但把反诈特征塞进通用解析能力，后续其他域复用会被污染；②职责清晰但要新开平台能力编号与接口评审 | 按 ② 设计端口，实现上先复用 C1 的 sidecar 形态（不新建 Deployment），归属待评审后定 |
+| D2 | **E2 图库选型** | 国产三选一：Nebula Graph / TuGraph / 华为 GraphBase（§3 E2 已定"选国产、禁 ES 第三套栈"）。选型决定运维形态、Cypher 兼容度、信创清单对口 | 不选型、不建集群；反诈先由 R-FRAUD-01~07 单证规则兜底（§7 第一条风险） |
+| D3 | **C6 的 pgvector 索引化排期** | 平台 §14 设计已闭环，实现未排期。不排期则 `max-scan` 3000 是业务硬顶，医学目录规模一过就退化为超大扫描 | 语义检索与 GraphRAG 一律不给承诺；目录准入走当前已接线的 `CatalogKnowledgeRetrievalPortAdapter` |
+| D4 | **后督 100% AI 质检的成本与容量** | §6 已把口径从"≥5% 抽检"改为"自动通过/拒赔结论 100% AI 质检"。100% 意味着每案一次模型调用，成本与 §3.3 容量矩阵的关系未核算 | 按原 ≥5% 抽检执行；100% 待容量核算与成本签字后启用 |
+

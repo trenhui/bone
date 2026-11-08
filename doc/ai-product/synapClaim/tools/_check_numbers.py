@@ -6,9 +6,15 @@ _check_contract_drift.py 管契约面（规则 ID/枚举/错误码），本脚�
 数值与口径断言**：FORBIDDEN = 已定性为错误、不应再出现的表述；REQUIRED = 已定型
 的关键口径，缺失即回退。任一失败非零退出。
 """
-import io, re, sys, glob
+import io, os, re, sys, glob
 
 import _manifest as M
+
+# 活跃文档禁止再写「35 / 36 张表」这类硬编码 DDL 表数。
+# 2026-11-07 一次性在 4 类载体发现 6 个不同数字：架构图、设计正文、治理规约、
+# manifest 摘要 + 由它派生的 AI-INDEX。根因是「表数」被当成可复制口径散落；
+# D7 已改为集合对账，治理文件一律只写「§9.5 DDL 集合」。本判据防止回潮。
+DDL_COUNT_PAT = re.compile(r'(?:35|36)\s*(?:张|个)?(?:理赔)?表|建表数\s*=\s*36|DDL\s+36')
 
 # 以脚本所在目录为基准，而不是 CWD：此前 BASE='.' 时从仓库根运行会 glob 到 0 个文件，
 # 于是 FORBIDDEN 恒过（假绿）、REQUIRED 恒红——运行位置不同结论不同，最不可信的一种。
@@ -21,7 +27,10 @@ MAIN = M.check_keys()
 # 原本扫描「根目录 *.md」；P10 分层后根目录只剩 README，若仍按根目录扫描，
 # 这三条 FORBIDDEN 会退化为只检查 README —— 覆盖率静默归零。
 # 因此改为扫描「原先位于根目录的那些层」：L0 导航 + L1 战略 + L2 需求 + L3 契约 + L5 实施。
-_ROOT_EQUIV_LAYERS = ["L0", "L1", "L2", "L3", "L5"]
+# L4 于 2026-11-07 加入：`AI技术方案` 由 L3 移入 L4（内容 67% 是设计原则与评测，不是契约），
+# 它是 checkKeys 里的 'ai' 键所指向的文档，若不加 L4，按层扫描的那一组断言会静默丢覆盖——
+# 门禁照跑、校验的却少了一份，与「机检覆盖归零」同源。
+_ROOT_EQUIV_LAYERS = ["L0", "L1", "L2", "L3", "L4", "L5"]
 
 # (说明, 文件键或 glob, 正则) —— 命中即失败
 FORBIDDEN = [
@@ -220,9 +229,125 @@ def check_adr_traceability():
     return []
 
 
+def check_no_hardcoded_ddl_count():
+    """扫活跃口径载体，命中硬编码表数即判红。
+
+    排除两类**刻意保留**的历史取证：
+      * `00-governance/02-整合历史.md` —— 叙述某时点的事实（P4 当时确实是 35 表），
+        历史不该被当下的口径规约改写；
+      * `10-archive/` 与 `*.txt` 冻结交付说明 —— 不在扫描后缀 / 目录内。
+    排除规则必须是**白名单枚举**而不是「看起来像历史就跳过」，否则会静默漏扫。
+    """
+    files = []
+    for layer in ('L0', 'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'L9'):
+        for p in M.in_layers([layer]):
+            if '10-archive' in p or p.endswith('02-整合历史.md'):
+                continue
+            files.append(p)
+    files += ['docs.manifest.json', 'AI-INDEX.md']  # 摘要真源 + 它的生成物
+    hits = []
+    for rel in sorted(set(files)):
+        full = os.path.join(BASE, rel)
+        if not os.path.isfile(full):
+            continue
+        for i, line in enumerate(io.open(full, encoding='utf-8').read().splitlines(), 1):
+            if DDL_COUNT_PAT.search(line):
+                hits.append('%s:%d: %s' % (rel, i, line.strip()[:80]))
+    if hits:
+        return (['【FAIL·硬编码表数】活跃文档仍在写死 DDL 表数（应写「§9.5 DDL 集合」）：']
+                + ['    ' + h for h in hits])
+    return []
+
+
+ORACLE_PATH_RE = r'`(doc/ai-product/synap-claim-oracle/synap-claim-settlement)/?`'
+
+
+def oracle_ci_verdict(wf_text, ptr_text, has_pom):
+    """纯函数：CI working-directory ↔ 真实目录 ↔ 指针文档三者一致性判定。
+
+    `has_pom(wd)` 由调用方注入，便于 --self-test 用假数据反证而**不碰任何文件**
+    （共享树里临时改写仓库根 CI 文件会被并行会话覆盖，代价不可接受）。
+    """
+    m = re.search(r'working-directory:\s*(\S+)', wf_text)
+    if not m:
+        return ['workflow 里没有 working-directory，mvn test 会在仓库根跑']
+    wd = m.group(1).rstrip('/')
+    if not has_pom(wd):
+        return ['working-directory=%s 指向的目录不存在或无 pom.xml（目录被移动？）' % wd]
+    m2 = re.search(ORACLE_PATH_RE, ptr_text)
+    if not m2:
+        return ['指针文档里找不到 oracle 真实路径登记']
+    if m2.group(1).rstrip('/') != wd:
+        return ['指针文档=%s 与 CI working-directory=%s 不一致' % (m2.group(1), wd)]
+    return []
+
+
+def check_oracle_ci_wiring():
+    """CI 入口 ↔ oracle 真实目录 ↔ 指针文档，三者必须指向同一个地方。
+
+    「脚本存在 ≠ 门禁生效」的同族风险：若将来有人移动 oracle 目录而没改
+    `.github/workflows/synap-claim-oracle.yml`，CI 会直接失败，但本目录的
+    文档门禁全绿、看不出任何异常。把三者绑定成可判定判据，移动即报红。
+    """
+    repo = os.path.abspath(os.path.join(BASE, '..', '..', '..'))  # synapClaim → ai-product → doc → bone
+    wf = os.path.join(repo, '.github', 'workflows', 'synap-claim-oracle.yml')
+    ptr = os.path.join(BASE, 'synap-claim-oracle-POINTER.md')
+    if not os.path.isfile(wf):
+        return ['【FAIL·oracle CI】找不到 %s，独立 CI job 可能已被删除' % wf]
+    if not os.path.isfile(ptr):
+        return ['【FAIL·oracle CI】找不到指针文档 synap-claim-oracle-POINTER.md']
+    wf_text = io.open(wf, encoding='utf-8').read()
+    ptr_text = io.open(ptr, encoding='utf-8').read()
+    verdict = oracle_ci_verdict(
+        wf_text, ptr_text,
+        lambda wd: os.path.isfile(os.path.join(repo, wd, 'pom.xml')))
+    return ['【FAIL·oracle CI】' + v for v in verdict]
+
+
+def self_test():
+    """判据自证：全绿也可能是「正则根本不命中」，必须正反都验。"""
+    positives = ['工程契约 SSOT：35 表 DDL', '（36 张理赔表）', '建表数 = 36', 'DDL 36 表']
+    negatives = ['§9.5 设计态 DDL 集合', '26 表全部通过（机检输出，非文档口径）',
+                 '§9.1 清单 − §9.0 差异登记 = §9.5 DDL 集合']
+    bad = [p for p in positives if not DDL_COUNT_PAT.search(p)]
+    bad += [n for n in negatives if DDL_COUNT_PAT.search(n)]
+
+    # oracle CI 接线判据：纯函数反证，不读写任何文件
+    real = 'doc/ai-product/synap-claim-oracle/synap-claim-settlement'
+    good_wf = 'working-directory: ' + real
+    good_ptr = '真实位置： `' + real + '/`'
+    yes = lambda wd: True
+    no = lambda wd: False
+    probes = [
+        ('合规正例', oracle_ci_verdict(good_wf, good_ptr, yes) == []),
+        ('目录被移走（无 pom）', bool(oracle_ci_verdict(good_wf, good_ptr, no))),
+        ('CI 指向新目录但指针没改', bool(oracle_ci_verdict(
+            'working-directory: doc/ai-product/MOVED', good_ptr, yes))),
+        ('workflow 删了 working-directory', bool(oracle_ci_verdict('run: mvn test', good_ptr, yes))),
+        ('指针文档丢了路径登记', bool(oracle_ci_verdict(good_wf, '只是一个指针', yes))),
+    ]
+    for label, ok in probes:
+        if not ok:
+            bad.append('oracle CI 判据：' + label)
+
+    print('=== _check_numbers.py --self-test ===')
+    if bad:
+        for b in bad:
+            print('  ❌ 判据误判：%r' % b)
+        return 1
+    print('  ✅ 4 个正例命中（35 表 / 36 张 / 建表数 / DDL 36）')
+    print('  ✅ 3 个反例不误报（集合引用 / 机检输出 / 对账式表述）')
+    print('  ✅ oracle CI 判据 5 个纯函数探针（不碰文件）：合规正例 + 4 种改坏均判红')
+    return 0
+
+
 def main():
+    if '--self-test' in sys.argv:
+        return self_test()
     fails = []
     fails += check_adr_traceability()
+    fails += check_no_hardcoded_ddl_count()
+    fails += check_oracle_ci_wiring()
     for desc, key, pat in FORBIDDEN:
         m = re.search(pat, read(key))
         if m:

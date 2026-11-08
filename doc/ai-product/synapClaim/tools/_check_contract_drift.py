@@ -63,7 +63,57 @@ def read(path):
         return fh.read()
 
 
+def _norm_tbl(name: str) -> str:
+    """本仓 DDL 用裸名（CREATE TABLE claim_case），叙述里常带 t_ 前缀。
+
+    两者是同一张表，不归一化会把「写对了但加了前缀」判成自造表名。
+    """
+    return name[2:] if name.startswith("t_") else name
+
+
+# C8 只在这三种可判定的情形下放过，且计数提示，不静默丢弃：
+#   ① JSON 载荷名（本仓表名不以 _json 结尾，如 ai_suggestion_json）；
+#   ② 否定语境里被点名的**不存在的**表（如「理赔业务表里没有 claim_application」）；
+#   ③ 文档已标注「未建 / 未落库」的规划表（设计目标态，不是活库缺陷）。
+# 不区分语境的正则会把这三类算成「自造表名」，而误报比漏报更致命——作者会关掉门禁。
+C8_NEG_RE = re.compile(r"没有|不存在|已撤销|不是表|无此表|不建|不新增|未建|未落库|尚未落库")
+
+
+def _c8_why_not_table(token: str, text: str) -> str:
+    if token.endswith("_json"):
+        return "JSON 载荷名"
+    for line in text.splitlines():
+        if token in line and C8_NEG_RE.search(line):
+            return "否定语境"
+    return ""
+
+
+def _self_test() -> int:
+    """证明 C8 的排除规则不是恒真：真表名仍须判红，三类误报须被放过。"""
+    probe = "claim_new_table_not_registered"
+    cases = [
+        ("真表名（未在落地版登记）仍须报", probe, "只写 `{}` 一处引用。".format(probe), False),
+        ("JSON 载荷名不报", "ai_suggestion_json", "写入 `ai_suggestion_json` 字段。", True),
+        ("否定语境不报", probe, "理赔业务表里没有 `{}`。".format(probe), True),
+        ("规划表（未建）不报", probe, "`t_{}` 未建，属目标态。".format(probe), True),
+    ]
+    bad = 0
+    for label, token, text, should_skip in cases:
+        skipped = bool(_c8_why_not_table(token, text))
+        ok = skipped == should_skip
+        print(f"  [{'OK' if ok else 'FAIL'}] {label}")
+        bad += 0 if ok else 1
+    # 归一化必须双向：t_claim_case 与 claim_case 视为同一张表。
+    norm_ok = _norm_tbl("t_claim_case") == _norm_tbl("claim_case") == "claim_case"
+    print(f"  [{'OK' if norm_ok else 'FAIL'}] t_ 前缀归一化（t_claim_case == claim_case）")
+    bad += 0 if norm_ok else 1
+    print("自检结果：" + ("PASS" if not bad else f"FAIL（{bad} 条不达标）"))
+    return 0 if not bad else 1
+
+
 def main() -> int:
+    if "--self-test" in sys.argv:
+        return _self_test()
     report_only = "--report" in sys.argv
     book = read(RULEBOOK)
     contract = read(CONTRACT)
@@ -173,19 +223,36 @@ def main() -> int:
     #  契约三份之外，合并后的设计/验证真源同样承载规则 ID 与表名契约，
     #  不纳管就会出现「真源写错、门禁全绿」。
     layer_files = sorted(os.path.join(ROOT, p) for p in M.in_layers(["L4", "L6"]))
-    landing_tables = set(re.findall(r"\b(?:claim|tenant|ai)_[a-z_]+\b", landing))
+    ddl_tables = {
+        _norm_tbl(n) for n in re.findall(
+            r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?([A-Za-z_0-9]+)", landing)
+    }
+    landing_tables = {
+        _norm_tbl(t)
+        for t in re.findall(r"\b(?:t_)?(?:claim|tenant|ai)_[a-z_]+\b", landing)
+    } | ddl_tables
+
+    c8_skipped = 0
     for path in layer_files:
         rel = os.path.relpath(path, ROOT)
         text = read(path)
         for rid in sorted(set(ANY_RULE_ID.findall(text)) - set(defined)):
             hard.append(f"[C7] {rel} 引用了 Rulebook 未定义的规则 ID：{rid}")
-        for t in sorted(set(re.findall(r"\b(?:claim|tenant|ai)_[a-z_]+\b", text)) - landing_tables):
+        tokens = {_norm_tbl(t) for t in re.findall(
+            r"\b(?:t_)?(?:claim|tenant|ai)_[a-z_]+\b", text)}
+        for t in sorted(tokens - landing_tables):
+            why = _c8_why_not_table(t, text)
+            if why:
+                c8_skipped += 1
+                continue
             soft.append(f"[C8] {rel} 出现工程落地版未登记的表名：{t}")
 
     for line in hard:
         print(f"❌ {line}")
     for line in soft:
         print(f"⚠️  {line}")
+    if c8_skipped:
+        print(f"ℹ️  C8 已排除 {c8_skipped} 处非表名（JSON 载荷名 / 否定语境点名的未建表），未计入告警。")
     if hard:
         print(f"\n发现 {len(hard)} 处契约漂移（硬性）。")
         return 0 if report_only else 1

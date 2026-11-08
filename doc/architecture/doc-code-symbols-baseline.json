@@ -498,10 +498,10 @@
     {
       "symbol": "FundingEventRepository",
       "docs": [
-        "doc/ai-product/synapClaim/03-contract/AI技术方案.md"
+        "doc/ai-product/synapClaim/04-design/AI技术方案.md"
       ],
       "reason": "tobe-named",
-      "note": "synapClaim 资金事件仓储的目标态名（§299 资金流设计），实现尚未落地；2026-10-21 更新引用：原登记指向《智能理赔详细技术方案（bone-ai落地）》，该文档已改名，当前载体为《AI 技术方案》"
+      "note": "synapClaim 资金事件仓储的目标态名（§299 资金流设计），实现尚未落地；2026-10-21 更新引用：原登记指向《智能理赔详细技术方案（bone-ai落地）》，该文档已改名，当前载体为《AI 技术方案》；2026-11-08 文档族按层整编，载体由 03-contract 迁至 04-design"
     },
     {
       "symbol": "GenTypeMappingRepository",
@@ -679,7 +679,7 @@
       "symbol": "SettlementOrderRepository",
       "docs": [
         "doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md",
-        "doc/ai-product/synapClaim/03-contract/AI技术方案.md"
+        "doc/ai-product/synapClaim/04-design/AI技术方案.md"
       ],
       "reason": "tobe-named",
       "note": "结算单仓储的目标态名（§156 仓储清单），实现尚未落地"
@@ -794,11 +794,11 @@
       "symbol": "PortAdapter",
       "docs": [
         "doc/ai-product/synapClaim/03-contract/工程详细设计-落地版.md",
-        "doc/ai-product/synapClaim/03-contract/第11轮循环复核-事件消费方接线与分层收口.md",
+        "doc/ai-product/synapClaim/09-records/reviews/循环复核台账（第 9–11 轮）.md",
         "doc/ai-product/synapClaim/08-go-live/04-租户隔离CI自动化护栏.md"
       ],
       "reason": "workflow-sample",
-      "note": "通配命名模式 *PortAdapter（端口适配器统一后缀），非具体类名；见 §3.2 模块组织图与 §3.2.1 命名空间说明；第11轮报告引用同一通配约定"
+      "note": "通配命名模式 *PortAdapter（端口适配器统一后缀），非具体类名；见 §3.2 模块组织图与 §3.2.1 命名空间说明。2026-11-08 第 11 轮复核文归集为 09-records/reviews/循环复核台账（第 9–11 轮）.md，登记路径随之更新"
     },
     {
       "symbol": "XxxPortAdapter",

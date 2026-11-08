@@ -1,0 +1,46 @@
+name: synapClaim Docs Gates
+
+# 2026-11-08：本目录 9 道文档门禁此前「判据齐备、CI 零调用」。
+# 治理规约 §六 的「本目录自带脚本一贯不进 check.sh」是 **pre-commit** 的制度决策
+# （check.sh 只认已 staged 的 .java，删码 / 未 stage / 纯文档改动是盲区），
+# 不等于 CI 不接。故独立建 workflow，统一走 tools/check_all.py 单一入口。
+#
+# 刻意**不设 on.paths 过滤**：门禁输入不止文档，还读 claim-ruleset.json、
+# ClaimErrorCodes/ClaimErrors.java、前端 zh-CN/en-US.json、oracle CI workflow、
+# scripts/migration/*.sql。paths 白名单一旦漏列某个输入资产，就会出现
+# 「改了资产、CI 不触发、漂移静默放过」——与「脚本存在 ≠ 门禁生效」同源。
+# 本 job 纯 Python stdlib、零 DB / 零 JDK / 零 Maven，全套 < 10s；
+# 多跑几次的代价远小于漏触发。
+#
+# 分支口径与 ci.yml 对齐（R1 门禁存活判据）：push 过滤源分支、
+# pull_request 过滤目标分支，两者都含当前活跃分支 dev。
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev, main, master]
+  pull_request:
+    branches: [dev, main, master]
+
+# 最小权限：只读检出，不写仓库、不申请 id-token / packages 等。
+permissions:
+  contents: read
+
+# 同一分支连续推送只保留最新一次，避免纯文档门禁排队堆积。
+concurrency:
+  group: synapclaim-docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs-gates:
+    name: synapClaim docs gates (blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Gate wiring self-test (blocking)
+        run: python3 doc/ai-product/synapClaim/tools/check_all.py --self-test
+      - name: Full synapClaim doc gate suite (blocking)
+        run: python3 doc/ai-product/synapClaim/tools/check_all.py

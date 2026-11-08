@@ -231,7 +231,15 @@ def load_facts() -> dict:
             frozen_verified = False
     frozen_status = str(frozen_doc.get("status", "")).lower()
 
-    # ---- Go-Live 分册：状态 + 正文完成度，缺册即 fail-closed ----
+    # ---- Go-Live 分册：登记集合（总纲映射表）+ 状态 + 正文完成度 ----
+    # 原判据是 len(booklets) < 13 的硬编码计数：任何合法合并都会让门禁永久
+    # GOLIVE_BOOKLETS_MISSING_n。它本该防「漏册 / 新增分册无人登记」，实际
+    # 却反向禁止了文档收敛。改为登记集合与磁盘集合双向比对，数量由缺口决定。
+    golive_index = PATHS["golive"] / "00-总纲与Go-Live门禁.md"
+    golive_declared = set()
+    if golive_index.exists():
+        golive_declared = set(re.findall(
+            r"`(\d{2}-[^`\n]+?\.md)`", golive_index.read_text(encoding="utf-8")))
     unfinished_re = re.compile(
         "须建设|0 命中|未定|待复现|不得留空|@Disabled|待签署|待评审|待压测|"
         "待 PoC|须签署|仍待架构评审|待建|留待")
@@ -262,6 +270,7 @@ def load_facts() -> dict:
         "baseline": baseline,
         "evalset": evalset,
         "golive": golive_facts,
+        "golive_declared": golive_declared,
         "catalog_source_available": catalog_source_available,
         "catalog_effective_default": catalog_effective_default,
         "catalog_port_wired": catalog_port_wired,
@@ -453,8 +462,18 @@ def evaluate(f: dict) -> list[dict]:
         or g["role"].startswith("draft")
         or g["unfinished"]
     ]
-    if len(booklets) < 13:
-        reason = f"GOLIVE_BOOKLETS_MISSING_{13 - len(booklets)}"
+    declared = set(f.get("golive_declared") or ())
+    on_disk = {g["name"] for g in booklets}
+    missing = sorted(declared - on_disk)      # 总纲登记但磁盘无文件：漏册
+    unregistered = sorted(on_disk - declared)  # 磁盘有但总纲未登记：无人登记的新增
+    if not declared:
+        reason = "GOLIVE_INDEX_UNREADABLE"
+    elif missing:
+        reason = f"GOLIVE_BOOKLET_MISSING_{len(missing)}"
+    elif unregistered:
+        reason = f"GOLIVE_BOOKLET_UNREGISTERED_{len(unregistered)}"
+    elif not booklets:
+        reason = "GOLIVE_BOOKLETS_EMPTY"
     elif bad:
         reason = f"GOLIVE_DRAFT_{len(bad)}"
     else:
@@ -464,7 +483,8 @@ def evaluate(f: dict) -> list[dict]:
             "GOLIVE_NOT_DRAFT",
             SATISFIED if reason == "ADMITTED" else BLOCKED,
             reason,
-            "08-go-live/ frontmatter currency+role 与正文完成度标记",
+            f"08-go-live/ 登记 {len(declared)} 册 / 磁盘 {len(on_disk)} 册，"
+            "frontmatter currency+role 与正文完成度标记",
         )
     )
 
@@ -735,14 +755,38 @@ def self_test(f: dict) -> bool:
     add("只给 evalset 塞 64hex 但冻结集仍 skeleton", "FROZEN_EVALSET_ACTIVE",
         dict(f, evalset=dict(f["evalset"], payloadHash="0" * 64)), "stay")
 
-    # Go-Live：批量改 currency 不得翻绿；缺册须 fail-closed。
-    add("Go-Live 合规正例（13 册状态+正文全合规）", "GOLIVE_NOT_DRAFT",
-        dict(f, golive=[dict(g, currency="current", role="current", unfinished=False)
-                        for g in f["golive"]]), "flip_to_satisfied")
-    add("只把 13 册 currency 改 current（正文仍须建设）", "GOLIVE_NOT_DRAFT",
+    # Go-Live：批量改 currency 不得翻绿；登记集合与磁盘必须双向一致。
+    # 判据已从 len(booklets) < 13 的硬编码计数改为双向比对，故必须同时钉住
+    # 两个方向：漏册仍判红、合法合并仍可放行。
+    _bn = [g["name"] for g in f["golive"]
+           if re.match(r"^\d{2}", g["name"]) and not g["name"].startswith("00")]
+    _drop = _bn[-1] if _bn else ""
+    _green = [dict(g, currency="current", role="current", unfinished=False)
+              for g in f["golive"]]
+    add("Go-Live 合规正例（登记集合与磁盘一致、状态+正文全合规）", "GOLIVE_NOT_DRAFT",
+        dict(f, golive=_green), "flip_to_satisfied")
+    add("只把分册 currency 改 current（正文仍须建设）", "GOLIVE_NOT_DRAFT",
         dict(f, golive=[dict(g, currency="current") for g in f["golive"]]), "stay")
-    add("删掉一册分册（缺册 fail-closed）", "GOLIVE_NOT_DRAFT",
+    add("删掉分册但总纲仍登记（漏册 fail-closed）", "GOLIVE_NOT_DRAFT",
         dict(f, golive=f["golive"][:-2]), "stay")
+    # 核心回归钉子：合法合并必须仍可 ADMITTED。原判据会让任何合并永久
+    # BLOCKED（GOLIVE_BOOKLETS_MISSING_n），等于门禁反向禁止文档收敛。
+    add("合并两册且总纲登记同步（原硬编码判据会误判缺册）", "GOLIVE_NOT_DRAFT",
+        dict(f, golive=[g for g in _green if g["name"] != _drop],
+             golive_declared=set(f["golive_declared"]) - {_drop}), "flip_to_satisfied")
+    add("新增分册但总纲未登记（防无人登记的新增）", "GOLIVE_NOT_DRAFT",
+        dict(f, golive=_green + [{"name": "14-新增未登记.md", "currency": "current",
+                                 "role": "current", "unfinished": False}]), "stay")
+    add("总纲不可读（登记集合为空即 fail-closed）", "GOLIVE_NOT_DRAFT",
+        dict(f, golive=_green, golive_declared=set()), "stay")
+    # 绿基座破坏：证明「登记-磁盘双向比对」确实能判红，而非恒 BLOCKED 也能过。
+    add("绿基座 + 新增未登记分册 ⇒ 须判红", "GOLIVE_NOT_DRAFT",
+        dict(f, golive=_green + [{"name": "14-新增未登记.md", "currency": "current",
+                                 "role": "current", "unfinished": False}]), "flip_to_blocked")
+    add("绿基座 + 删除分册而总纲仍登记 ⇒ 须判红", "GOLIVE_NOT_DRAFT",
+        dict(f, golive=[g for g in _green if g["name"] != _drop]), "flip_to_blocked")
+    add("绿基座 + 总纲不可读 ⇒ 须判红", "GOLIVE_NOT_DRAFT",
+        dict(f, golive=_green, golive_declared=set()), "flip_to_blocked")
 
     for key, label in [
         ("calibration_class_present", "摘除校准实现类"),
@@ -779,6 +823,12 @@ def self_test(f: dict) -> bool:
         elif expect == "flip_to_satisfied":
             passed = now != before and now == SATISFIED
             detail = "须翻转为 SATISFIED"
+        elif expect == "flip_to_blocked":
+            # 用于「绿基座 + 注入破坏」型探针：stay 型探针在基线本就 BLOCKED 时
+            # 判别力弱（恒 BLOCKED 的实现也能过）。此处只认结果必须为 BLOCKED，
+            # 绿基座可达性由配对的 flip_to_satisfied 探针单独钉住。
+            passed = now == BLOCKED
+            detail = "从绿基座注入破坏后须判为 BLOCKED"
         else:
             passed = now != before
             detail = "须翻转"

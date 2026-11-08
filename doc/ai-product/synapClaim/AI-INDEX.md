@@ -39,7 +39,8 @@ currency: current
 |---|---|
 | 产品定位 / 卖给谁 / 能做什么 | `prd` / `strategy` |
 | 改代码 / 加接口 / 动数据模型 / 契约口径 | `contract.landing` / `design.adjustment` / `delivery.05` |
-| AI 编排 / 决策图 / 模型接入 | `contract.ai` / `design.bone-ai-deps` |
+| 模块划分 / 代码放哪 / 依赖方向 / 上下文边界 | `design.architecture` / `contract.landing` |
+| AI 编排 / 决策图 / 模型接入 | `design.ai` / `design.bone-ai-deps` |
 | 理算算法 / 金额怎么算 / 业务口径 | `design.adjustment` / `contract.rules-v1` / `verify.adjustment` |
 | 跑测试 / 验证是否真的修好 | `verify.adjustment` / `impl.readme` |
 | 客户交付 / 试点落地 / POC | `delivery.index` / `plan.fde` |
@@ -47,12 +48,13 @@ currency: current
 | 排期 / 里程碑 / 迭代 | `plan.mvp` |
 | 为什么这么设计 / 对标 / 差距 | `records.review.业界对标` / `records.review.TPA-` |
 | 某次代码改动的前因后果 / 历史取证 | `records.impl.14` / `records.impl.15` / `records.impl.16` / `records.impl.17` / `records.impl.18` / `records.impl.19` / `records.impl.20` / `records.review.理算引擎` |
-| 配 provider / 跑 L3 外部前置 / 看就绪度归因 / 判据防伪造 | `delivery.11` / `review.round11.gap-provider` |
-| 判断某项优化是否该做 / 合理性裁定台账 | `review.round9` / `review.round11` |
-| 零 DDL / 零公共签名改动的审批与闭环 | `review.round10` |
+| 配 provider / 跑 L3 外部前置 / 看就绪度归因 / 判据防伪造 | `delivery.11` |
+| 判断某项优化是否该做 / 合理性裁定 / 零 DDL 闭环台账 | `records.review.rounds9-11` |
 | AI 原生改造 / 就绪度判据 / 改造执行计划 | `plan.ainative` |
+| 多保司接入 / 保单配置面 / 主数据映射 / 新保司接入周期 | `design.multi-insurer-mapping` |
+| 反欺诈 / 视觉反诈 / 图计算 / 直付通道 / 模型风险（MRM） | `design.risk-payment` |
 
-## 三、ACTIVE 现行真源（currency=current，可引用为事实，共 30 份）
+## 三、ACTIVE 现行真源（currency=current，可引用为事实，共 31 份）
 
 | id | 路径 | role | 一句话 |
 |---|---|---|---|
@@ -61,11 +63,12 @@ currency: current
 | `history` | `00-governance/02-整合历史.md` | navigation | P1–P10 各轮整合的动因、动作与口径修正记录（历史，非当前口径） |
 | `strategy` | `01-strategy/Synap（思纳普）创业方案.md` | ssot | 公司定位、1 底座 + 2 触角战略、竞争与团队；只讲商业，不含工程口径 |
 | `prd` | `02-requirements/产品需求文档.md` | ssot | 需求真源：功能范围、用户故事（BDD）、KPI、约束 |
-| `contract.ai` | `03-contract/AI技术方案.md` | ssot | bone-ai 落地：六模块映射、DAG 执行器、五段式编排预算、资金、评测、ADR 摘记 |
-| `contract.landing` | `03-contract/工程详细设计-落地版.md` | ssot | 工程契约 SSOT：35 表 DDL(§9.5)、OpenAPI(§10)、非功能(§11)、ADR(§14)、时序 |
+| `contract.landing` | `03-contract/工程详细设计-落地版.md` | ssot | 工程契约 SSOT：§9.5 设计态 DDL 集合（与 §9.1 清单 / §9.0 差异登记集合对账，不登记表数）、OpenAPI(§10)、非功能(§11)、ADR(§14)、时序；§9.0（4）（5）为活库列级体检与 14 张业务列差异的逐张整改台账 |
 | `contract.rules-v1` | `03-contract/智能理算引擎业务规则V1.md` | ssot | 理算业务口径真源(V1)：责任 11 要素、发票 6 公式、九步主流程、免赔 6 维、控额 7 层；含 Q-01–Q-15 待澄清 |
+| `design.ai` | `04-design/AI技术方案.md` | ssot | bone-ai 落地：六模块映射、DAG 执行器、五段式编排预算、资金、评测、ADR 摘记 |
 | `design.bone-ai-deps` | `04-design/BONE-AI能力依赖图谱.md` | ssot | 中台依赖真源：C1–C11 复用映射、平台缺口 E1–E5、6 节点串联 |
-| `design.adjustment` | `04-design/理算引擎设计.md` | ssot | 理算子域唯一设计真源：架构决策、引擎编排顺序、三类策略算法、控额、快照契约、端口 |
+| `design.architecture` | `04-design/总体技术方案.md` | ssot | 总体技术方案：系统上下文（8 个外部系统）、7 个限界上下文划分与 §4.1 组件视图（C4 L3，实测 370 类 / 20 子域 / 35 应用服务 / 19 Port / 51 错误码）、§5 三层时态声明（活库现状 / §9.5 设计态 DDL / §5.2 目标态九要素）与 §5.2.1「业务 11 维 ↔ 目标 9 列 ↔ 活库列」唯一对照表、纯函数理算引擎与三策略、三条关键链路、迁移五步 + §9.1.1 M2 高风险步的 expand/contract 四阶段方案（脚本 0123–0126 为规划占位，未开工）、模块方案路由表、5 条风险与 3 项待决策（D2 已收口） |
+| `design.adjustment` | `04-design/理算引擎设计.md` | ssot | 理算子域唯一设计真源：架构决策、引擎编排顺序、三类策略算法、控额、快照契约、端口。双角色已显式标注：§1–§13 是 synap-claim-oracle 语义基线/目标态（非生产，§1 开头有统一时态横幅），§14 是生产九步内核的权威现状；D2「是否拆分」已按 B 案结案 |
 | `design.risk-payment` | `04-design/风控与支付通道设计.md` | ssot | 风控与直付真源：视觉反诈 E1、图计算 E2、MRM E4、C10 直付三态 |
 | `plan.mvp` | `05-plan/MVP可落地执行方案.md` | ssot | 实施计划真源：范围 In/Out、迭代 I0–I4、任务拆解、里程碑与 Go/No-Go |
 | `plan.fde` | `05-plan/部署集成方案-FDE.md` | ssot | 交付与售前：与存量理赔系统集成矩阵、FDE 工程产物、三阶段落地 |
@@ -74,7 +77,7 @@ currency: current
 | `delivery.01` | `07-delivery/01-试点合作框架协议模板（MOU-NDA-DPA）.md` | ssot | 试点合作 MOU/NDA/DPA 三件套条款骨架与签署顺序 |
 | `delivery.02` | `07-delivery/02-数据脱敏与个人信息处理方案.md` | ssot | 数据分级、逐字段脱敏算法、验证方法与 PIPL 合规检查 |
 | `delivery.03` | `07-delivery/03-POC演示脚本.md` | ssot | 25 分钟 POC 演示剧本与异议应答 |
-| `delivery.04` | `07-delivery/04-业务规则书（Rulebook）-门诊小额快赔MVP全集.md` | ssot | 规则 ID 定义真源（R-AREA/R-DIR/R-DED/R-RAT/R-CAP…） |
+| `delivery.04` | `07-delivery/04-业务规则书（Rulebook）-门诊小额快赔MVP全集.md` | ssot | 规则 ID 定义真源（R-AREA/R-DIR/R-DED/R-RAT/R-CAP…）；§十一 登记 Rulebook 条款与 claim-ruleset.json 执行项的 ID 命名空间对照：§11.1 共有 18 条（10 条同名不同义）、§11.2 仅资产 15 条逐条登记、§11.3 仅条款 28 条按族说明；_check_ruleset_alignment.py 守护资产 33/33 全量覆盖 |
 | `delivery.05` | `07-delivery/05-接口契约与数据字典（MVP）.md` | ssot | 对外接口契约真源：MVP 端点子集、对外枚举、错误码、数据字典 |
 | `delivery.06` | `07-delivery/06-医学目录库建设方案.md` | ssot | 医学目录库四类组成、数据来源合规、入库字段与更新机制 |
 | `delivery.07` | `07-delivery/07-测试方案与性能基准.md` | ssot | 测试分层、评测集标注规范、性能基准与发布门禁 |
@@ -104,18 +107,13 @@ currency: current
 - `golive.12` → `08-go-live/12-资金累计DB级并发正确性.md`：累计扣减的 DB 级并发正确性（单测契约不足）
 - `golive.13` → `08-go-live/13-理算引擎三重路径收敛与护栏移植（F1）.md`：唯一权威资金路径决策、整改步骤、双路径歧义根除
 
-## 五、GUIDE 操作指南（role=guide，可执行步骤；结论以对应 ssot 为准，共 6 份）
+## 五、GUIDE 操作指南（role=guide，可执行步骤；结论以对应 ssot 为准，共 2 份）
 
-- `review.round10` → `03-contract/第10轮循环复核-零DDL闭环落地.md`：第 10 轮循环复核：零 DDL / 零公共签名改动的审批与闭环落地台账
-- `review.round11.gap-provider` → `03-contract/第11轮-GAP登记-provider双条件不同源.md`：GAP：RUNTIME_MODEL_COVERAGE 三要素同源可伪造风险、方案 A 精确修复与可证伪验收口径
-- `review.round11` → `03-contract/第11轮循环复核-事件消费方接线与分层收口.md`：第 11 轮循环复核：事件消费方生产接线 + 分层门禁收口（AiEvalSampleIndex 端口/控制器/适配器）
-- `review.round9` → `03-contract/第9轮循环复核-合理性判定矩阵.md`：第 9 轮循环复核：7 项待办的合理性裁定、13 分册逐册核对台账与最小落地方案
 - `plan.ainative` → `05-plan/AI原生改造执行计划.md`：AI 原生改造执行计划：将 _ai_native_readiness.py 的 12 判据映射为阶段/负责/动作/验收，并叠加 Phase B/V2 能力纵深路线，作为 gsd-core Plan 阶段交付物与循环可复用终止判据
 - `delivery.11` → `07-delivery/11-L3外部前置运行手册.md`：L3 外部前置运行手册：provider 配置 → 探活 → 实跑 E2E → 复核器归因的可执行闭环
 
 ## 六、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 16 份）
 
-- `records.evidence.readiness-20261107` → `09-records/evidence/2026-11-07-ai-native-readiness.txt`：2026-11-07 AI 原生就绪度复核器时点快照（SATISFIED 5 / BLOCKED 7，l3Claimable=false，HEAD d953da0fc）
 - `records.evidence.e2e-20261107` → `09-records/evidence/2026-11-07-claims-e2e-result.md`：2026-11-07 前后端 E2E 时点快照（real-services-no-mock，passed，probeVerdict=NOT_CONFIGURED 诚实降级，HEAD d953da0fc）
 - `records.impl.14` → `09-records/impl-log/14-主链路闭环体检与P0修复记录.md`：四本账未对齐的体检与 3 项 P0 修复（含变异证据）  ⚠️ 已被 `09-records/impl-log/15-跨案累计读侧与责任账接线（P0-4）.md` 撤销/修正：impl-log/15 已撤销本册"额度服务 0 调用方"判断
 - `records.impl.15` → `09-records/impl-log/15-跨案累计读侧与责任账接线（P0-4）.md`：跨案累计读侧与 A7 责任账接线
@@ -128,6 +126,7 @@ currency: current
 - `records.review.TPA-` → `09-records/reviews/TPA-SAAS基线差距分析.md`：上游飞书 TPA-SAAS 源系统盘点与差距（护城河与欠账）
 - `records.review.业界对标` → `09-records/reviews/业界对标整改台账.md`：业界对标量化基线、已落地整改项、V1.0 执行清单
 - `records.review.代码整改` → `09-records/reviews/代码整改清单.md`：待架构评审的代码整改项（含已闭环项的备查记录）
+- `records.review.rounds9-11` → `09-records/reviews/循环复核台账（第 9–11 轮）.md`：第 9–11 轮循环复核的过程台账（原文附录完整保留）：合理性判定矩阵、零 DDL 闭环、事件消费方接线、provider 双条件 GAP；只作取证，不承担当前口径
 - `records.review.理算引擎` → `09-records/reviews/理算引擎诊断记录.md`：两轮取证：修复前后的实证与新发现的缺陷
 - `archive.system-design` → `10-archive/系统设计方案.md`：上游设计演进记录；2026-10-21 起正文作废，仅留行业洞察与选型理由  ⚠️ 已被 `03-contract/工程详细设计-落地版.md` 撤销/修正：正文已作废，独特价值已并入《工程落地版》§3.6/§3.7/§4.3
 - `impl.readme` → `synap-claim-oracle-POINTER.md`：可执行参考实现（双轨 oracle）指针：真实位置 doc/ai-product/synap-claim-oracle/synap-claim-settlement/；非产品代码

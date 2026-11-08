@@ -9,8 +9,14 @@ currency: current
 > 用途：把"示例口径"升级为**可开发、可配置、可评测的规则全集**。本规则书是理算引擎、评测集、保司配置三者的共同输入；客户现场可逐条核对。**规则版本号 R1.0（MVP 一期）**
 >
 > **契约地位**：本规则书为 MVP **规则真源**（规则 ID 如 `R-MAN-01` / `R-FRAUD-*`），被《synapClaim 智能理赔平台-工程详细设计（落地版）》§8.2 / §10.6 引用对齐；规则变更须经业务评审 + 评测集回归方可发布。
+> >
+> **ID 命名空间警告（2026-11-07 实测，必读）**：本规则书的 `R-XXX-nn` 是**对外业务条款**，`claim-ruleset.json` 里同名的 `R-XXX-nn` 是**引擎执行期判定项**，两者共享前缀但**有 10 个 ID 语义完全不同**（例：本书 `R-FRAUD-02` = 金额异常检测，资产 `R-FRAUD-02` = 无证据）。引用规则 ID 必须写明是哪一层，**不得互相解释**。完整对照与处置见 §十一；由 `tools/_check_ruleset_alignment.py` 守护。
 >
 > **版本修订（2026-10-26 业界对标优化）**：在 R1.0 基础上，将反欺诈由 7 条规则升级为 11 条（新增 R-FRAUD-08~11：影像相似度、关系图谱+设备指纹、知识图谱一致性、跨案件关联），R-FRAUD-05 由 V2 单维标记升格为 V1.0 图计算团伙识别；目录规则新增 R-DIR-06 诊断-用药-诊疗合理性（原 V2 临床知识图谱前置）。依据：平安财险 13 模型+208 规则、太保/泰康关系图谱团伙识别、国寿"识图"影像相似度、众安图像+关系图谱联合反诈。
+>
+> **版本修订（2026-11-07 契约补齐）**：补齐 7 条**已在代码生效、但本规则书未登记**的规则——`R-FRAUD-13/14`（目录映射缺失，实现侧 `category=CATALOG`）、`R-FRAUD-21`（渠道来源未知）、`R-FRAUD-22`（跨案重复索赔，`risk=true`）、`R-ANOM-01~03`（异常行为，`risk=false` 仅留痕，新增 §九之二）。定义来源：`bone-apps/synap-claim/src/main/resources/claim-ruleset.json` v4（33 条），非据文档推测。
+>
+> **为什么现在补**：`AI技术方案` 由 L3 移入 L4 后，`tools/_check_contract_drift.py` 的 C7（分层真源规则 ID 覆盖）才把它纳入扫描，当场抓到 `R-FRAUD-22` / `R-ANOM-03` 悬空——本规则书没有这两条的定义行。这是**已有的契约缺口，不是移层造成的**：代码与规则资产里它们已生效，客户却按一本没写它们的规则书理解赔付逻辑。同一轮逐条核对另发现 `R-FRAUD-13/14/21` 与 `R-ANOM-01/02` 同样缺登记，本次一并补齐 7 条。
 
 ---
 
@@ -108,6 +114,21 @@ currency: current
 |R-FRAUD-10|知识图谱一致性推理（**V1.0 新增**）|基于医学目录底座 + 理赔知识图谱，推理"诊断-用药-诊疗-时间轴"内部矛盾（如诊断与用药无适应症关联、诊疗项目与诊断不匹配、时间轴倒置）；与 R-DIR-06 临床合理性互补（R-DIR-06 做确定性规则标记，本规则做图谱推理增强）|医学目录底座 + 理赔知识图谱（V1.0 最小集）|
 |R-FRAUD-11|跨案件关联网络（**V1.0 新增**）|同被保险人/同证件/同手机号/同收款账户/同邮寄地址的多案件关联分析，识别"化整为零"（单案均 ≤阈值但聚合超保额）、"一人多投多赔"、收款账户聚集；输出关联案件簇与风险标签|案件关联索引 + 关系图谱（复用 R-FRAUD-09 底座）|
 
+|R-FRAUD-13|目录映射版本缺失（实现侧 `category=CATALOG`）|规则执行时 `mappingVersionBlank == true`（该案件未绑定任何目录映射版本）→ 结论 `MAPPING_MISSING`；**risk=false**，只进审计与补件提示，不拉高风险闸。编号沿用实现侧标识（`claim-ruleset.json`）以保持回放可追溯，不与风控族同源|目录映射版本索引（`std_*` 映射未被引用即命中）|
+|R-FRAUD-14|医院编码未映射到标准码（实现侧 `category=CATALOG`）|`hospitalCodeBlank == false && stdHospitalCodeBlank == true`（原始医院编码存在但未解析出标准码）→ 结论 `HOSPITAL_UNMAPPED`；**risk=false**，进未命中队列等映射补录，不阻断自动通过|保司码表 + 权威桥（见《多保司保单配置面与主数据映射设计》§6）|
+|R-FRAUD-21|渠道来源未知|`sourceChannel` 为空或 `UNKNOWN` → 结论 `CHANNEL_UNKNOWN`；**risk=false**，仅审计留痕——渠道是灰度放量的分桶键，缺失渠道一律不放量（放量闸排在 100% 全放捷径之前，顺序反了会静默变全量）|渠道标识由接入方透传；缺失即命中|
+|R-FRAUD-22|跨案重复索赔|排除本案自身后，同一被保险人历史案件数 `priorClaimCount >= 1` → 结论 `PRIOR_CLAIM_DUPLICATE`；**risk=true**，命中即拉高 `riskHit`、收紧硬闸（R-FAST-01 的"无风险标记"条件不成立）。**必须剔除本案自身**：否则新报案把自身算进历史、必然命中，造成 100% 误报|`ClaimCaseRepository.findByInsuredIdHash` 取同被保人全部赔案 |
+
+## 九之二、异常行为标记（R-ANOM，仅审计留痕）
+
+> **本族 `risk` 全为 false**：命中只落审计与人工提示，**不改变硬闸、不阻断自动通过**。与 §九 的区别就在这一点——§九 命中是"收紧"，本族命中是"留痕"。设计意图：避免对正常高频小额报案（如慢病复诊、企业批量报销）过度拒付。
+
+|**规则ID**|**规则内容**|**触发条件**|
+|---|---|---|
+|R-ANOM-01|批量渠道大额异常|`sourceChannel == "BATCH" && claimAmount >= 50000` → `BATCH_LARGE_ANOMALY`；`risk=false`，提示人工抽检|批量导入通道 + 单案金额 ≥5 万|
+|R-ANOM-02|批量渠道无票据|`sourceChannel == "BATCH" && invoiceEvidenceCount == 0` → `BATCH_NO_INVOICE`；`risk=false`，进补件提示|批量导入通道 + 无发票证据|
+|R-ANOM-03|近 90 天高频报案|排除本案自身后 `recentClaims90d >= 3` → `FREQUENCY_ANOMALY`；`risk=false`，仅审计留痕。窗口与取证口径见《工程详细设计（落地版）》§8.2|同被保人近 90 天（UTC 日界）新增案件数 ≥3|
+
 ## 十、评测集联动清单（每条规则至少 3 条评测样本）
 
 |**规则类别**|**覆盖样本要求**|
@@ -116,7 +137,93 @@ currency: current
 |目录自费|目录外药品/保健品/超处方限额/诊断-用药不合理（R-DIR-06） 各 ≥3 条|
 |免赔比例|免赔累计中/跨案件共享/社区上浮 各 ≥3 条|
 |封顶|未达/已达/重置 各 ≥3 条|
-|风险标记|R-FRAUD-01~11 每类 ≥3 条（正/反例成对，与 §十 每规则 ≥3 统一）；其中 R-FRAUD-08/09/10/11 须含：① 跨案件影像重复/PS 正例、② 团伙子图正例、③ 诊断-用药矛盾正例、④ 化整为零聚合超保额正例，每类配反例|
+|风险标记|`R-FRAUD-01~11`、`R-FRAUD-13/14/21/22` 与 `R-ANOM-01~03` 每类 ≥3 条（正/反例成对，与 §十 每规则 ≥3 统一）；其中 R-FRAUD-08/09/10/11 须含：① 跨案件影像重复/PS 正例、② 团伙子图正例、③ 诊断-用药矛盾正例、④ 化整为零聚合超保额正例，每类配反例；**R-FRAUD-22 须含"仅本案、无历史 ⇒ 零命中"反例**（缺此反例则新报案把自己算进历史，100% 误报）|
 |边界|金额恰为 500/10000 临界、AI 置信度恰为 0.7 与 0.85 临界、OCR 置信度恰为 0.7 临界|
 
 > **说明**：本规则书为 MVP 一期口径（R1.0），随客户保单条款差异可配置调整；正式开发前须与客户业务专家逐条评审确认（评审输出为 R1.0 定稿 + 变更清单）。
+
+---
+
+## 十一、执行资产 ID 命名空间对照（2026-11-07 实测登记）
+
+> **本节是缺陷登记，不是新设计。** 2026-11-07 把 `bone-apps/synap-claim/src/main/resources/claim-ruleset.json`（v4，33 条 QLExpress 执行规则）与本规则书逐 ID 对账，发现两类 ID 空间**共享前缀但语义独立**：本规则书的 `R-XXX-nn` 是**对外业务条款**（客户逐条核对），资产的 `R-XXX-nn` 是**引擎执行期判定项**（有 `expression` / `conclusion` / `risk`）。C7 门禁只查「ID 是否在本书定义」，两边都定义就放行，**查不出同名不同义**。
+
+**命名空间规则（即日起生效）**：
+
+1. 引用规则 ID 必须写明是哪一层：本规则书写「条款 `R-FRAUD-02`」，代码侧写「执行项 `R-FRAUD-02`（资产）」，**禁止互相引用当作同一条规则**。
+2. **不重命名任何已生效 ID**——代码侧日志/评测集/客户交付都在用，重命名会造成不可逆的口径断裂。用对照表登记差异，而不是改名字。
+3. 新增 ID 时若复用已有前缀编号，必须在本节登记；`tools/_check_ruleset_alignment.py` 会把「共有 ID 集合 / conclusion / risk / 关系」锁成可判定判据。
+
+### 11.1 两层都存在的 18 个 ID（8 条同义 / **10 条同名不同义**）
+
+| ID | 本规则书条款 | 资产 conclusion | risk | 关系 |
+|---|---|---|---|---|
+| `R-ANOM-01` | 批量渠道大额异常 | `BATCH_LARGE_ANOMALY` | `False` | 一致 |
+| `R-ANOM-02` | 批量渠道无票据 | `BATCH_NO_INVOICE` | `False` | 一致 |
+| `R-ANOM-03` | 近 90 天高频报案 | `FREQUENCY_ANOMALY` | `False` | 一致 |
+| `R-DIR-01` | 药品目录范围 | `DIAGNOSIS_UNMAPPED` | `False` | **同名不同义** |
+| `R-FRAUD-02` | 金额异常检测 | `NO_EVIDENCE` | `True` | **同名不同义** |
+| `R-FRAUD-03` | 时间轴矛盾 | `POLICY_MISSING` | `True` | **同名不同义** |
+| `R-FRAUD-04` | 材料一致性 | `INSURED_MISSING` | `True` | **同名不同义** |
+| `R-FRAUD-05` | 团伙关联（图计算） | `CONSENT_WITHDRAWN` | `True` | **同名不同义** |
+| `R-FRAUD-06` | 票据验真（票面查验） | `VERIFY_NOT_PASSED` | `True` | 一致 |
+| `R-FRAUD-07` | 发票唯一性硬约束 | `DIAGNOSIS_MISSING` | `False` | **同名不同义** |
+| `R-FRAUD-08` | 影像相似度检索 | `HOSPITAL_MISSING` | `False` | **同名不同义** |
+| `R-FRAUD-09` | 关系图谱团伙识别 | `MANUAL_REVIEW_REQUIRED` | `False` | **同名不同义** |
+| `R-FRAUD-10` | 知识图谱一致性推理 | `COVERAGE_PERIOD_MISSING` | `True` | **同名不同义** |
+| `R-FRAUD-11` | 跨案件关联网络 | `OCR_FAILED` | `True` | **同名不同义** |
+| `R-FRAUD-13` | 目录映射版本缺失 | `MAPPING_MISSING` | `False` | 一致 |
+| `R-FRAUD-14` | 医院编码未映射标准码 | `HOSPITAL_UNMAPPED` | `False` | 一致 |
+| `R-FRAUD-21` | 渠道来源未知 | `CHANNEL_UNKNOWN` | `False` | 一致 |
+| `R-FRAUD-22` | 跨案重复索赔 | `PRIOR_CLAIM_DUPLICATE` | `True` | 一致 |
+
+> **读法**：例如客户按本书 `R-FRAUD-02` 理解的是「金额超同类 3σ 或超保额 80% 要标记」，引擎里同一个 ID 实际跑的是 `hasEvidence == false`（无证据）。两者都不是错的，但**不能互相解释**。这 10 条的业务条款是否已由别处实现、以及执行项是否要补进本书，属业务/产品裁定，见 §11.4。
+
+### 11.2 仅资产有、本规则书无（15 条，逐条登记）
+
+> **2026-11-07 补**：初版只按族汇总了 4 行，导致 `_check_ruleset_alignment.py` 只守住 33 条资产里的 18 条交集——**门禁照跑、覆盖率 55%**，与「按层扫描静默丢覆盖」同源。改为逐条登记后，资产任何增删或 `conclusion` 变更都会判红。
+
+| ID | category | conclusion | risk | expression |
+|---|---|---|---|---|
+| `R-AMOUNT-01` | `AMOUNT` | `AMOUNT_OVER_LIMIT` | `False` | `claimAmount >= 10000` |
+| `R-AMOUNT-02` | `AMOUNT` | `AMOUNT_HIGH_REVIEW` | `False` | `claimAmount >= 50000` |
+| `R-AMOUNT-03` | `AMOUNT` | `AMOUNT_INVALID` | `True` | `claimAmount <= 0` |
+| `R-AMOUNT-04` | `AMOUNT` | `SECOND_REVIEW_FLAG` | `False` | `secondReviewRequired == true` |
+| `R-AMOUNT-05` | `AMOUNT` | `AMOUNT_TINY` | `True` | `claimAmount > 0 && claimAmount < 1` |
+| `R-AMOUNT-06` | `AMOUNT` | `AMOUNT_MID_REVIEW` | `False` | `claimAmount >= 20000 && claimAmount < 50000` |
+| `R-COMP-01` | `COMPLIANCE` | `CREATED_AT_MISSING` | `False` | `createdAtMissing == true` |
+| `R-EVID-01` | `EVIDENCE` | `EVIDENCE_PARSE_FAILED` | `True` | `evidenceParsed == false` |
+| `R-MAT-02` | `MATERIAL` | `OUTPATIENT_NO_INVOICE` | `False` | `claimTypeOutpatient == true && invoiceEvidenceCount == 0` |
+| `R-MAT-04` | `MATERIAL` | `BULK_EVIDENCE` | `False` | `evidenceCount >= 10` |
+| `R-MAT-05` | `MATERIAL` | `MULTI_DOC_REVIEW` | `False` | `evidenceCount >= 5` |
+| `R-MAT-06` | `MATERIAL` | `SINGLE_NON_INVOICE` | `False` | `evidenceCount == 1 && invoiceEvidenceCount == 0` |
+| `R-MAT-07` | `MATERIAL` | `MULTI_NON_INVOICE` | `False` | `evidenceCount >= 3 && invoiceEvidenceCount == 0` |
+| `R-OCR-01` | `EVIDENCE` | `OCR_CONFIDENCE_LOW` | `True` | `minOcrConfidence < 0.7` |
+| `R-SCOPE-01` | `SCOPE` | `OUT_OF_PHASE1_SCOPE` | `True` | `claimTypeOutpatient == false` |
+
+这些是**执行期前置校验**，不是客户逐条核对的业务条款，故不进本书正文；但它们的 `conclusion` 会出现在拒赔/转人工结果里，客户端看得见，因此必须逐条登记、纳入门禁。注意 `R-AMOUNT-03`（`claimAmount <= 0`）与 `R-AMOUNT-05`（`0 < amount < 1`）是**写入期拒绝非法值 + 读取期兜底保留**那组判据的执行落点，收紧时不得把 `<=0` 改成 `==0`。
+
+### 11.3 仅本规则书有、资产无（28 条，按族）
+
+| 族 | 条数 | 为什么不要求出现在 QLExpress 资产 |
+|---|---:|---|
+| `R-AREA` | 5 | 责任范围，由配置面责任模型判定 |
+| `R-CAP` | 3 | 封顶线，由理算引擎 `QuotaStack` 实现 |
+| `R-DED` | 4 | 免赔，由 `DeductibleEngine` 实现 |
+| `R-DIR-02~06` | 5 | 目录与自费剔除，由目录准入与知识库实现 |
+| `R-FAST` | 2 | 快赔路径，由状态机与应用服务实现 |
+| `R-FRAUD-01` | 1 | 重复报销检测，待接线（见 §九） |
+| `R-MAN` | 4 | 人工兜底，由流程与权限实现 |
+| `R-RAT` | 4 | 赔付比例，由 `PayRatioTable` 实现 |
+
+**「资产无」不等于「未实现」**：本资产只承接 QLExpress 可判定的风控/前置校验，金额算术与流程类规则由理算引擎、状态机、配置面各自承载。判定某条是否落地，要按**读取点**取证（§4.1 的判据），不能按「资产里有没有」取证。
+
+### 11.4 处置与待决策
+
+| # | 事项 | 未定时的默认口径 |
+|---|---|---|
+| Q1 | 10 条同名不同义是否要改名收敛 | **不改名**（规则 2）；靠本节对照表 + 机检隔离 |
+| Q2 | 15 条执行项是否补进本规则书对外条款 | 不补；保持族级登记，避免把内部校验说成客户承诺 |
+| Q3 | 28 条业务条款是否要在资产里各建一条对应执行项 | 不建；金额/流程类不走 QLExpress |
+
+> **机检**：`tools/_check_ruleset_alignment.py` 校验**资产 33 条全量登记**（§11.1 共有 18 + §11.2 仅资产 15），逐行比对 `conclusion` / `risk` / 关系，并把「10 条同名不同义」作为 ratchet 基线。新增/删除 ID、改了 `conclusion` 却没改本节、静默把「同名不同义」改成「一致」、或 §11.2 漏登记一条，都会判红（A5 覆盖率判据）。初版只守 18 条交集、**覆盖率 55%**，已补齐到 33/33。

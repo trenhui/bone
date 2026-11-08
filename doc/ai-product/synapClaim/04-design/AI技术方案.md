@@ -1,5 +1,5 @@
 ---
-doc_id: contract.ai
+doc_id: design.ai
 role: ssot
 currency: current
 ---
@@ -30,7 +30,7 @@ currency: current
 |v2.2|2026-11-05|BONE 平台架构|**放量治理增强 + 置信度溯源（§11.11）**：① 渠道分层灰度（`scopeDimension`/`scopeValues`，白名单外与缺失渠道一律不放量，渠道闸排在 100% 全放捷径之前——顺序反了灰度会静默变全量）；② 部分作用域未配置 fail-closed 不回退全局（回退会把「收紧」变成「放宽」）；③ 定时生效窗（`effectiveFrom/To` + `AI_SCHEDULED_INACTIVE` 与「关闭」可区分）；批量下发明确不做（无真实消费方且会引入第二套写路径）；④ 新迁移 0121 给 `claim_decision_execution` 加 `confidence_source`（MODEL/STUB/FALLBACK/UNKNOWN，判据复用 `AiModelProvenance` 单一真源；历史行不回填——编造比留 NULL 危险），执行器三处覆写分支同步推导，`confidence=null` 强制 UNKNOWN。变异验证 6 次全部被捕获且红点落在预期用例。**P1 红线、三档分诊、G0–G4 门禁不变**|
 |v2.3|2026-11-05|BONE 平台架构|**阶段机熔断 + 独立盲标（§11.12 / §11.13）**：① **G3-1/G3-2 回写**——AI 介入四档阶段机（`AiRolloutStage.permitsAutoSettlement()` 为资金侧唯一判据；全局开关打开≠可自动出金，未配置按 SHADOW fail-closed）+ 案件级确定性分桶（替代单租户下恒 0 的 `tenantId%100`）+ 错误预算熔断（抽检口径错误率超限自动降一档回写现场；样本不足不熔断只阻晋升；空集给 null 不是 0%）；零 DDL，复用 `feature_toggle.config_json`；5 组变异全命中（含互补变异证明分布判据判别力）。② **配置变更进事件总线**——新增 `FeatureToggleChangedEvent` 并移除 `AiRolloutApplicationService` 的 `@NoDomainEvent` 豁免（E-5.4 兑现），自动降档以领域事件供风控/审计订阅，不再解析 remark 字符串。③ **G4-1 独立盲标**——新迁移 0122 建 `t_claim_blind_label_task`（`bone-init.sql` 同批）：PENDING→LABELED→UNBLINDED，四道防反馈环闸（载荷禁区 422 / AI 快照解盲才落库的物理分离 / 一次提交 / 标注人与抽检质检人互斥 409）；AI 参与只认 `confidence_source==MODEL`；`PAIRED` 仅表成对产出，一致率评测侧离线判定；4 组变异全命中。回归 1124 run / 0 fail。**P1 红线、三档分诊、G0–G4 门禁不变；盲标工作台前端与 ECE 校准仍未落地，不得据此宣称 L3**|
 |v2.5|2026-11-06|BONE 平台架构|**智能风控真实维度补全（#24）**：① 核责规则引擎新增两条库内数据驱动维度——`R-FRAUD-22` 跨案重复索赔（`priorClaimCount>=1`，risk=true）与 `R-ANOM-03` 近 90 天高频报案（`recentClaims90d>=3`，risk=false，仅审计留痕），均经 `ClaimCaseRepository.findByInsuredIdHash` 取同被保人全部赔案、排除本案自身后求值；② 规则集 `claim-ruleset-v3→v4`（回放可区分）；③ 富化路径 `enrichFromRepositories` 新增 `priorClaimCount`/`recentClaims90d` 变量；④ 单测 6 项（含排除自身零误报、变异可翻转）。**黑名单比对 / 诊疗-费用合理性等需外部数据源的维度本轮不实装、不伪造，登记为 gap；本 change 不翻转 AI 原生成熟度外部前置判据，仍不得据此宣称 L3**|
-|v2.6|2026-11-07|BONE 平台架构|**第 9 轮循环复核：判据防假绿硬化 + 证据链补齐**：① 取证发现 4 条就绪度判据可被低成本刷绿——`CATALOG_ADMISSION_ACTIVE` 读的是从未被 runner 执行的孤儿 V15（删文件反判绿）且无视 `ItemCatalogPort` 零实现；`BASELINE_WIRED` 只读 6 个 status 字符串（与 E5「skeleton 禁 wired」冲突）；`FROZEN_EVALSET_ACTIVE` 接受任意非空 `payloadHash` 且与 A1 白名单打架；`GOLIVE_NOT_DRAFT` 是 12 项里唯一「改一个词就翻绿」的纯词法判据。全部改为**证据驱动**：读生效迁移通道 + 端口接线、要求 provenance/源码可达/顶层非 skeleton、调用 `frozen_set.verify_manifest` 校验内容哈希、currency+role+正文完成度三查 + 缺册 fail-closed。② `--self-test` 扩为三类探针（翻转 / 合规可达 / **刷绿须保持 BLOCKED**）26 条全 PASS；新增 `test_ai_native_readiness_evidence_gates.py` 21 条独立表征钉子。③ #24 的 4.6 变异验证由推理级补成**实跑**：`>=1→>=99` 恰 2 例转红、`>=3→>=99` 恰 1 例转红，恢复后与 HEAD 逐字一致、6/6 全绿。④ 新增 `07-delivery/11-L3外部前置运行手册.md`（provider 四变量 + 文档 0 命中的 `BONE_CLAIM_DOCUMENT_PARSE_MODE=llm` + probe 四码 + E2E 启动链 + **窗口硬编码口径差异** + 12 判据→10 项外部前置→owner 归因 + 5 条红线）与 `03-contract/第9轮循环复核-合理性判定矩阵.md`（7 项逐项裁定 + 13 分册逐册核对台账 + #26/#27 待审批最小落地方案）。依据 Google《Rules of ML》《ML Test Score》、CD4ML、NIST AI RMF。**本轮未改任何治理资产 status / frontmatter / 默认值 / 迁移 / 公共签名，未翻转任何外部前置：仍为 SATISFIED 5 / BLOCKED 7、l3Claimable=false、L0，不得宣称 L3**|
+|v2.6|2026-11-07|BONE 平台架构|**第 9 轮循环复核：判据防假绿硬化 + 证据链补齐**：① 取证发现 4 条就绪度判据可被低成本刷绿——`CATALOG_ADMISSION_ACTIVE` 读的是从未被 runner 执行的孤儿 V15（删文件反判绿）且无视 `ItemCatalogPort` 零实现；`BASELINE_WIRED` 只读 6 个 status 字符串（与 E5「skeleton 禁 wired」冲突）；`FROZEN_EVALSET_ACTIVE` 接受任意非空 `payloadHash` 且与 A1 白名单打架；`GOLIVE_NOT_DRAFT` 是 12 项里唯一「改一个词就翻绿」的纯词法判据。全部改为**证据驱动**：读生效迁移通道 + 端口接线、要求 provenance/源码可达/顶层非 skeleton、调用 `frozen_set.verify_manifest` 校验内容哈希、currency+role+正文完成度三查 + 缺册 fail-closed。② `--self-test` 扩为三类探针（翻转 / 合规可达 / **刷绿须保持 BLOCKED**）26 条全 PASS；新增 `test_ai_native_readiness_evidence_gates.py` 21 条独立表征钉子。③ #24 的 4.6 变异验证由推理级补成**实跑**：`>=1→>=99` 恰 2 例转红、`>=3→>=99` 恰 1 例转红，恢复后与 HEAD 逐字一致、6/6 全绿。④ 新增 `07-delivery/11-L3外部前置运行手册.md`（provider 四变量 + 文档 0 命中的 `BONE_CLAIM_DOCUMENT_PARSE_MODE=llm` + probe 四码 + E2E 启动链 + **窗口硬编码口径差异** + 12 判据→10 项外部前置→owner 归因 + 5 条红线）与 `09-records/reviews/循环复核台账（第 9–11 轮）.md`（附录 A）（7 项逐项裁定 + 13 分册逐册核对台账 + #26/#27 待审批最小落地方案）。依据 Google《Rules of ML》《ML Test Score》、CD4ML、NIST AI RMF。**本轮未改任何治理资产 status / frontmatter / 默认值 / 迁移 / 公共签名，未翻转任何外部前置：仍为 SATISFIED 5 / BLOCKED 7、l3Claimable=false、L0，不得宣称 L3**|
 |v2.7|2026-11-07|BONE 平台架构|**第 10 轮循环复核：零 DDL / 零公共签名闭环落地（#26/#27）**：把上轮「需 L3 DDL 审批」的两项改写为不需要审批的更优解。① **#26 后督 DIFF 回流**：取证发现 DIFF 结论已原子落库 `t_claim_inspection` 而 `AiEvalSampleCollectedEvent` 零消费方、导出端点读的是另一套数据；新增 `findDiffConcludedInWindow` + SQL 模板（19 列/租户锚点）+ `DiffSampleExportApplicationService` + `GET /claims/eval/diff-samples`（三类归因/16 位幂等指纹/31 天 500 条护栏/truncated 不静默裁剪），并补 `AiEvalSampleProjection` 用 `@EventListener` 真正消费事件（进程内易失索引，权威事实源仍是落库抽检单）。真实 E2E 从活库读出 10 条 DIFF 样本，负向 401/400 生效。② **#27 初审字段级完整性**：`EvidenceFieldReader.declaredComplete()` opt-in 采信显式布尔 `complete` 标记（无标记/坏 JSON/手工回填一律回退既有语义，避免把收紧做成全量退补件）、`LocalClaimContextPortAdapter` 收紧 `allParsed`、LLM 通道补写 `complete`（防配了不生效）、`EvidenceController` 补 `POST /{id}/parse-image` 消除零调用方死代码；**不改任何 record 组件**。③ 双向变异验证（过度收紧 / 摘除收紧）各精确红 2 例，归因摘除红 1 例。**门禁：全模块 1224 tests/0 fail、ArchUnit 27、SQL 双门禁、check.sh 59/59、真实服务栈 E2E 正向+负向通过**。依据 Google《Rules of ML》、CD4ML、NIST AI RMF、fail-closed 与 blast-radius 最小化。**诚实边界：落地的是「可回溯索引 + 事件真实消费」与「数电票文本层完整性」，不是智能稽核 / 独立复核 AI 理算（AI 不产理算结果）/ OCR+NLP 自动录入；独立盲标金标准仍属 Phase B/V2。复核器仍 SATISFIED 5 / BLOCKED 7、l3Claimable=false、L0，未翻转任何外部前置，不得宣称 L3**|
 
 ---
@@ -51,6 +51,21 @@ currency: current
 - [12. 落地里程碑与 Go/No-Go](#12-落地里程碑与-gono-go)
 - [13. 风险与对策](#13-风险与对策)
 - [14. 与现有资产的对位表](#14-与现有资产的对位表)
+
+---
+
+## 0. 决策摘要（一页）
+
+| 维度 | 结论 |
+|---|---|
+| **一句话定位** | 面向**门诊小额快赔**单点打透：**AI 承担感知与认知、确定性代码承担资金、人承担终审、系统从每一次人工干预中学习** |
+| **九条原则怎么分组** | P1–P6 守"钱与合规不出错"（AI 不碰钱 / 确定性分层 / 治理靠结构 / 人工终审 / 可解释可回放 / 三态灰度）；P7–P9 决定"系统能不能自己变好"（度量先行 + 飞轮 / MRM / 渐进放量与错误预算）。**不得以 P7–P9 为由绕过 P1** |
+| **资金红线（不变）** | AI 只产出建议 + 置信度 + 证据引用；金额计算与资金状态机全部是确定性代码；AI 推理失败绝不阻断资金流程 |
+| **AI 原生到底改了什么** | 不是放宽资金红线，而是**把 AI 的职责范围前移**：从"决策图末端一个布尔值"扩展到收单/初审/采集/审核各段的主执行体（影像解析、结构化事实抽取、条款与临床合理性检索、差异提示与证据定位），并对自身不确定性负责 |
+| **当前接线事实** | 决策层已接（`bone-ai-rules` QLExpress + `bone-ai-gateway`）；感知层、知识层未接（默认 `NoOpOcrClient` / 过渡 embedding）；学习层部分接（校准与盲标内核已落码，真实评测集与飞轮闭环仍缺）；资金层 AI 不进入 |
+| **对外表述边界** | 判据未达时**不得宣称"AI 原生"**，只能按 L1/L2 分阶段表述（§12.2 AI 原生准入 G0–G4）。ADR-002 六端口只接了 AI 网关，对外只能说"AI 网关已复用中台" |
+
+**为什么要写这份文档**：v1.0 把"AI 只建议"在实现层压缩成末端一个布尔值，导致感知、知识、飞轮三层缺位——系统看起来有 AI，实际只有"规则 + 一次 LLM 调用"。本文补的是"AI 成为主执行体"这一层，同时用 P1 守住钱。
 
 ---
 
@@ -82,11 +97,11 @@ currency: current
 
 ### 1.3 场景边界（MVP 一期）
 
-- **险种**：企业补充医疗险 · 门诊 · 小额
-- **渠道**：员工自助理赔（上传发票 + 清单 + 医保结算单）
-- **决策**：自动通过（≤500 元且无风险）/ 系统建议拒赔（人工确认）/ 转人工 / 补件
-- **资金**：报销模式快赔（打款到员工账户，两段式状态机）
-- **非目标**（二期+）：住院/意外/重疾、多智能体风控（C2 orchestration 状态机已覆盖编排，自主 Agent 循环仅限四条件试点）、低代码可视化编辑器。**医院端直付由二期提前至 V1.0 试点**（经保司/TPA 通道，复用 `bone-ai-integration` C10 三态灰度 Shadow→Assisted→Automated，非自建医保局/银行网关），单证 OCR 报销兜底保留。
+**唯一真源：《工程详细设计（落地版）》§1.1（场景范围）与 §1.2（非目标）**——险种 / 渠道 / 决策输出 / 资金 / 规模假设 / 非目标一律以那两节为准，本节不复制清单。
+
+> **为什么改成指向**：此前两处各写一份，已经漂移——渠道口径不一致（落地版含 OA/企微报案入口与存量 TPA 旁路接入，本节只写员工自助理赔）；资金口径也不一致（落地版写明 ≤500 元与一期支付网关 mock，本节未提）。同一事实两份描述，比对时答不出哪个对。
+
+本文只保留 AI 侧特有的一条：**单证 OCR 报销兜底保留**；医院端直付经保司/TPA 通道提前至 V1.0 试点（复用 `bone-ai-integration` C10 三态灰度 Shadow→Assisted→Automated，非自建医保局/银行网关）。
 
 ### 1.4 AI 原生目标态与成熟度分级（v1.2 新增）
 
@@ -202,7 +217,7 @@ currency: current
 6. 验真 / 验重：缺关键字段 → `available=false`；格式错误 / 金额差额 >1 元 / 跨案重复 → `FAIL`；本地核验通过 → `UNVERIFIABLE`（**绝不落 `PASS`**）；验真回填不重置 `ocr_status` 与置信度，锁定后拒写；
 7. 规则资产化：外部规则集替换生效且版本随命中明细落 `rule_version`；配置缺失 / 损坏 / 为空回退内置集；
 8. 链路联动：开关默认关闭；开启后一次锁定只触发一次决策；触发异常不抛回锁定事务；
-9. 本族 6 道机检（`_check_manifest` / `_check_xref` / `_check_contract_drift` / `_check_ddl` / `_check_numbers` / `_gen_ai_index --check`）与 `scripts/check.sh` 全绿。
+9. 文档门禁全套（唯一入口 `tools/check_all.py`，清单见 `--list`，CI 跑同一命令）与 `scripts/check.sh` 全绿。
 
 **⑤ 未落地边界（不得写成现状）**
 
@@ -460,6 +475,22 @@ python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py --self-test
 
 ---
 
+## 1.8 不做清单
+
+> 这七条是**明确不做**的。写下来是因为 AI 项目的失败方式往往不是"没做够"，而是"做了不该做的"——尤其是让 AI 的职责悄悄越过分层边界。
+
+| 不做 | 为什么 | 边界在哪 |
+|---|---|---|
+| **不做自主 Agent 循环** | 多轮自主规划的不可解释性无法满足金发 8 号"可解释 + 可人工复核"；一次跑偏就是错赔 | 仅限四条件同时成立的试点（§6）；主链路是固定 DAG |
+| **不让 AI 计算金额** | 金额是有唯一正确答案的确定性计算；交给概率模型等于引入不可复现的差错源 | 金额一律由 `AdjustmentEngine` 纯函数算（§4）；AI 可给"分诊估算额"，但**严禁作结算赔付额** |
+| **不让 AI 做拒赔终审** | 拒赔是对客户的否定性决定，误判不可逆，且必须有人承担解释责任 | `SUGGEST_REJECT` 为待确认态，须核赔员提交后生效（R-MAN-03） |
+| **不自建 LLM 网关 / OCR / RAG / 编排 / 追溯** | 跨域同构能力重复实现 ⇒ 策略漂移、成本失控、护栏无法统一（ADR-002） | 只经 `*Port` 消费平台能力；ArchUnit 强制禁 import 实现 |
+| **不把冻结集用于调优** | 冻结集一旦参与调优，其"独立裁判"地位消失，评测数字不再有意义 | 冻结集只做回归判定；调优用训练/验证集（P7） |
+| **不凭假设定置信度阈值** | 阈值定高了漏放、定低了错赔，且两者代价不对称；拍定的阈值无法解释、无法复议举证 | 阈值由校准曲线决定（`_check_ai_native_calibration` 守护内核）；只产出 `recommendedThreshold` **建议**，落地须产品/架构签核 |
+| **不在判据未达时宣称能力** | 「配了 ≠ 通了 ≠ 契约对」；把目标态说成现状是历史争议主因 | 按 G0–G4 与 L1/L2 分级表述；ADR 只按 §14「生效状态」表对外 |
+
+---
+
 ## 2. 总体架构与模块映射
 
 ### 2.1 全景架构
@@ -574,6 +605,8 @@ Liability {
 ```
 
 ### 4.2 限额聚合引擎（核心：任一维度耗尽即截断）
+
+> **口径归属**：控额维度清单的真源是《智能理算引擎业务规则（V1）》§7（控额规则族）与《工程落地版》§5（责任与理算模型）；**本表是摘要**，只用于说明实现要点，不承担口径。维度数量或语义变更须改 V1 并同步本表——否则会出现"规则书加了维度、实现没读"或"表里多一个维度、规则书没有"的双向漂移（impl-log/17 记录过前者：四层额度字段被声明却从无读者，即死配置⇒超赔）。
 
 一次聚合所有维度可用额度，最终取**最小值**作为该责任的 `liabilityLimit`（pk-tpa-saas `LimitControlEngine`）：
 
@@ -772,7 +805,7 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 
 ### 8.1 核心表族速览（字段级以工程落地版 §9 为准）
 
-> **DDL 真源**：物理表结构（35 张表、字段、索引、约束）以**工程落地版 §9**为**唯一权威**；本文不重复 `CREATE TABLE`，以免两套 DDL 漂移。下表仅列本方案涉及的核心表族与职责，字段级以工程落地版 §9 为准。
+> **DDL 真源**：物理表结构（字段、索引、约束）以 `V*.sql` / `bone-init.sql` 为准，**设计态清单与差异登记见工程落地版 §9.1 / §9.0**；本文不重复 `CREATE TABLE`，也不登记表数（数量型口径会随迁移漂移，治理规约已改为集合对账）。下表仅列本方案涉及的核心表族与职责。
 
 | 表族 | 代表表（工程落地版 §9 为准） | 职责 |
 |---|---|---|
@@ -782,7 +815,7 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 | 资金与结案 | `settle_funding_event` / `settle_order` / `quota_account` / `quota_transaction` | 资金事件溯源、支付指令、个人额度账务 |
 | 集成与一致性 | `domain_event_outbox` / `idempotency_record` / `integration_sync_log` | 发件箱、幂等、存量同步 |
 
-> 决策图 / 规则资产 / 人工终审（HITL）三张表由 **bone-ai 中台**承载（`graph_definition` / `rule_asset` / `hitl_item`），**不在工程落地版 §9 的 35 张理赔表内（清单见工程落地版 §9.1）**；其物理结构以 bone-ai 对应模块为准。
+> 决策图 / 规则资产 / 人工终审（HITL）三张表由 **bone-ai 中台**承载（`graph_definition` / `rule_asset` / `hitl_item`），**不在工程落地版 §9.1 的理赔表清单内**；其物理结构以 bone-ai 对应模块为准。
 
 > **数据与隐私红线**：`insured_id_hash` 用 HMAC-SHA256+盐，明文身份证号不上送、不落地（见 07-delivery/02 数据脱敏）；`consent_record_id`/`consent_withdrawn_flag` 留痕（PIPL 29 条）。
 
@@ -1493,6 +1526,20 @@ MVP 方案给业务口径，本节补技术口径——两者缺一即「验收�
 | 证据/审计 | decision_trace 决策追溯 | ClaimProcessedEvent | trace 证据快照可回放 | trace 扩展 decision_trace 节点序列 |
 | 人工终审 | 复核工作台 + 拒赔五要素 | 理算挂起/双人复核 | HITL 五态 + ReasonType | 大额双人复核 + 拒赔通知书 |
 | AI 接入 | 统一 LLM 客户端端口 | — | gateway 熔断/重试/计量 | 复用 gateway 统一出口（计量/熔断经平台收口）；RAG 二期 |
+
+---
+
+## 15. 待决策
+
+> 五项都属于「**不做决定就会以默认值悄悄生效**」的类型。右侧是当前默认口径，不是推荐值。
+
+| # | 待定事项 | 现状与影响 | 未定时的当前口径 |
+|---|---|---|---|
+| D1 | **`ai_confidence` 的语义**（模型自评 vs 系统聚合） | 取证已确认：同一列在不同链路装的是不同性质的数——模型自报置信度、LLM 降级取的规则路径分、桩常数。消费方只看数值无法区分，阈值语义失真（桩永远同一常数 ⇒ 阈值看起来"总是达线"） | 需新增 `confidence_source` 列（L3 DDL，未动）；未加列前，任何按 `ai_confidence` 做的阈值判定都不可信 |
+| D2 | **AI 参与告知是否随拒赔通知书自动出具** | `AI_STUB` 的对客措辞目前只落在披露视图与前端字典，未进通知书模板。通知书属对外文书，措辞须法务确认 | 不自动出具；披露视图独立展示 |
+| D3 | **API 网关选型** | §2 全景架构图标注"选型待定"。影响限流/鉴权/租户头透传的落点，进而影响 §11 的 SLO 度量方式 | 沿用现有网关；不引入新组件 |
+| D4 | **一期是否按 §12.1 收窄** | 建议收窄为「决策图 + 资金域 + 规则评测」主链路，OCR 适配器延后（先用 PDFBox 覆盖数电票文本层）、RAG 全链放二期。影响里程碑能否按期 | 暂按**不收窄**排期（≈150 人日 / 10 周），风险已登记在 §12.1 的工作量提醒里 |
+| D5 | **`RUNTIME_MODEL_COVERAGE` 的 provider 与算力** | 当前 `PROVIDER_CONFIGURED=AI_GATEWAY_BASE_URL_MISSING`，导致 L0、`l3Claimable=false`。这是外部条件，不是编码问题 | 保持 BLOCKED，按 L0 表述能力；解除须真实 provider 与算力到位 |
 
 ---
 
