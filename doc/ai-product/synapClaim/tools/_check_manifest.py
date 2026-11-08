@@ -164,6 +164,14 @@ def check_short_names(docs):
 _PATH_TOKEN = re.compile(r'`([^`\n]{2,200}?\.(?:md|html|js|json))`')
 _MD_LINK = re.compile(r'\]\(([^)\n]{2,200}?\.(?:md|html|js|json))(?:#[^)]*)?\)')
 
+# M6 追加扫描集（相对 HERE 的目录）。语义与 manifest 内文档完全一致，只是这些目录
+# 不登记 manifest —— 它们是独立工程，有自己的 CI：
+#   ../synap-claim-oracle = 本族文档的「可执行参考实现」。2026-11-08 文档族按层整编
+#   （03-contract 复核归集进 09-records、AI技术方案 迁入 04-design）后实测其 README
+#   仍指向迁移前的 design/ 与 verification/，而 M6 只扫 manifest 文档 ⇒ 断链无人报红。
+# 刻意不另写一份判据：同一语义两处实现必然漂移（P26）。
+EXTRA_SCAN_DIRS = ("../synap-claim-oracle",)
+
 
 def check_path_tokens(docs, layer_dirs):
     """正文里出现的路径必须真实存在。
@@ -173,13 +181,22 @@ def check_path_tokens(docs, layer_dirs):
     否则会把 `07-delivery/04-05` 这类简写误判为坏路径。
     """
     known_prefixes = tuple(layer_dirs.values())
-    for d in docs:
-        full = os.path.join(HERE, d["path"])
+    # (相对 HERE 的路径, 该文档所在目录) —— manifest 文档与 EXTRA_SCAN_DIRS 走同一条
+    # 判定路径，`./` `../` 一律按文件真实位置解析，避免两套解析规则。
+    targets = [(d["path"], os.path.dirname(d["path"])) for d in docs]
+    for extra in EXTRA_SCAN_DIRS:
+        base = os.path.normpath(os.path.join(HERE, extra))
+        for dp, _, fns in os.walk(base):
+            for fn in sorted(fns):
+                if fn.endswith(".md"):
+                    targets.append((os.path.relpath(os.path.join(dp, fn), HERE),
+                                    os.path.relpath(dp, HERE)))
+    for rel_path, doc_dir in targets:
+        full = os.path.join(HERE, rel_path)
         if not os.path.exists(full):
             continue
         with open(full, encoding="utf-8") as f:
             text = f.read()
-        doc_dir = os.path.dirname(d["path"])
         for tok in _PATH_TOKEN.findall(text) + _MD_LINK.findall(text):
             tok = tok.strip()
             if tok.startswith(("http://", "https://", "mailto:")):
@@ -193,7 +210,7 @@ def check_path_tokens(docs, layer_dirs):
             target = os.path.normpath(tok) if tok.startswith(known_prefixes) \
                 else os.path.normpath(os.path.join(doc_dir, tok))
             if not os.path.exists(os.path.join(HERE, target)):
-                add("M6", f"{d['path']} 引用了不存在的路径：{tok}")
+                add("M6", f"{rel_path} 引用了不存在的路径：{tok}")
 
 
 def check_ai_index_drift(m):
