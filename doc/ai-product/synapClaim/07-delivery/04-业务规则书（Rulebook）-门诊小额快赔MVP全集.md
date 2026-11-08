@@ -156,28 +156,44 @@ currency: current
 
 ### 11.1 两层都存在的 18 个 ID（8 条同义 / **10 条同名不同义**）
 
-| ID | 本规则书条款 | 资产 conclusion | risk | 关系 |
-|---|---|---|---|---|
-| `R-ANOM-01` | 批量渠道大额异常 | `BATCH_LARGE_ANOMALY` | `False` | 一致 |
-| `R-ANOM-02` | 批量渠道无票据 | `BATCH_NO_INVOICE` | `False` | 一致 |
-| `R-ANOM-03` | 近 90 天高频报案 | `FREQUENCY_ANOMALY` | `False` | 一致 |
-| `R-DIR-01` | 药品目录范围 | `DIAGNOSIS_UNMAPPED` | `False` | **同名不同义** |
-| `R-FRAUD-02` | 金额异常检测 | `NO_EVIDENCE` | `True` | **同名不同义** |
-| `R-FRAUD-03` | 时间轴矛盾 | `POLICY_MISSING` | `True` | **同名不同义** |
-| `R-FRAUD-04` | 材料一致性 | `INSURED_MISSING` | `True` | **同名不同义** |
-| `R-FRAUD-05` | 团伙关联（图计算） | `CONSENT_WITHDRAWN` | `True` | **同名不同义** |
-| `R-FRAUD-06` | 票据验真（票面查验） | `VERIFY_NOT_PASSED` | `True` | 一致 |
-| `R-FRAUD-07` | 发票唯一性硬约束 | `DIAGNOSIS_MISSING` | `False` | **同名不同义** |
-| `R-FRAUD-08` | 影像相似度检索 | `HOSPITAL_MISSING` | `False` | **同名不同义** |
-| `R-FRAUD-09` | 关系图谱团伙识别 | `MANUAL_REVIEW_REQUIRED` | `False` | **同名不同义** |
-| `R-FRAUD-10` | 知识图谱一致性推理 | `COVERAGE_PERIOD_MISSING` | `True` | **同名不同义** |
-| `R-FRAUD-11` | 跨案件关联网络 | `OCR_FAILED` | `True` | **同名不同义** |
-| `R-FRAUD-13` | 目录映射版本缺失 | `MAPPING_MISSING` | `False` | 一致 |
-| `R-FRAUD-14` | 医院编码未映射标准码 | `HOSPITAL_UNMAPPED` | `False` | 一致 |
-| `R-FRAUD-21` | 渠道来源未知 | `CHANNEL_UNKNOWN` | `False` | 一致 |
-| `R-FRAUD-22` | 跨案重复索赔 | `PRIOR_CLAIM_DUPLICATE` | `True` | 一致 |
+| ID | 本规则书条款 | 资产 conclusion | risk | 关系 | 条款落点 |
+|---|---|---|---|---|---|
+| `R-ANOM-01` | 批量渠道大额异常 | `BATCH_LARGE_ANOMALY` | `False` | 一致 | `执行项` |
+| `R-ANOM-02` | 批量渠道无票据 | `BATCH_NO_INVOICE` | `False` | 一致 | `执行项` |
+| `R-ANOM-03` | 近 90 天高频报案 | `FREQUENCY_ANOMALY` | `False` | 一致 | `执行项` |
+| `R-DIR-01` | 药品目录范围 | `DIAGNOSIS_UNMAPPED` | `False` | **同名不同义** | `端口:ItemCatalogPort` |
+| `R-FRAUD-02` | 金额异常检测 | `NO_EVIDENCE` | `True` | **同名不同义** | `无落点` |
+| `R-FRAUD-03` | 时间轴矛盾 | `POLICY_MISSING` | `True` | **同名不同义** | `无落点` |
+| `R-FRAUD-04` | 材料一致性 | `INSURED_MISSING` | `True` | **同名不同义** | `端口:InvoiceVerificationPort` |
+| `R-FRAUD-05` | 团伙关联（图计算） | `CONSENT_WITHDRAWN` | `True` | **同名不同义** | `端口:GraphFraudPort` |
+| `R-FRAUD-06` | 票据验真（票面查验） | `VERIFY_NOT_PASSED` | `True` | 一致 | `执行项` |
+| `R-FRAUD-07` | 发票唯一性硬约束 | `DIAGNOSIS_MISSING` | `False` | **同名不同义** | `端口:InvoiceVerificationPort` |
+| `R-FRAUD-08` | 影像相似度检索 | `HOSPITAL_MISSING` | `False` | **同名不同义** | `端口:VisualForensicsPort` |
+| `R-FRAUD-09` | 关系图谱团伙识别 | `MANUAL_REVIEW_REQUIRED` | `False` | **同名不同义** | `端口:GraphFraudPort` |
+| `R-FRAUD-10` | 知识图谱一致性推理 | `COVERAGE_PERIOD_MISSING` | `True` | **同名不同义** | `端口:GraphFraudPort` |
+| `R-FRAUD-11` | 跨案件关联网络 | `OCR_FAILED` | `True` | **同名不同义** | `端口:GraphFraudPort` |
+| `R-FRAUD-13` | 目录映射版本缺失 | `MAPPING_MISSING` | `False` | 一致 | `执行项` |
+| `R-FRAUD-14` | 医院编码未映射标准码 | `HOSPITAL_UNMAPPED` | `False` | 一致 | `执行项` |
+| `R-FRAUD-21` | 渠道来源未知 | `CHANNEL_UNKNOWN` | `False` | 一致 | `执行项` |
+| `R-FRAUD-22` | 跨案重复索赔 | `PRIOR_CLAIM_DUPLICATE` | `True` | 一致 | `执行项` |
 
-> **读法**：例如客户按本书 `R-FRAUD-02` 理解的是「金额超同类 3σ 或超保额 80% 要标记」，引擎里同一个 ID 实际跑的是 `hasEvidence == false`（无证据）。两者都不是错的，但**不能互相解释**。这 10 条的业务条款是否已由别处实现、以及执行项是否要补进本书，属业务/产品裁定，见 §11.4。
+> **读法**：例如客户按本书 `R-FRAUD-02` 理解的是「金额超同类 3σ 或超保额 80% 要标记」，引擎里同一个 ID 实际跑的是 `hasEvidence == false`（无证据）。两者都不是错的，但**不能互相解释**。
+>
+> **落点列怎么读**：`执行项` = 资产里同名执行项本身就承载该条款；`端口:X` = 由该出站端口的适配器承载（**含一期本地桩**，桩必须返回 `available=false` 走 fail-closed 转人工，不得假装"已核验无风险"）；`无落点` = 全仓找不到承载该条款语义的代码。**「同名不同义」不等于「没实现」——10 条里 8 条的真实落点在端口，这是逐条取证后才看清的**（2026-11-08，证据见下）。
+
+**落点取证（2026-11-08 逐条，可复核）**
+
+| 条款 | 承载点与证据 |
+|---|---|
+| `R-DIR-01` 药品目录范围 | `ItemCatalogGateway` → `ItemCatalogPort` → 引擎 `CatalogAdmission`；三态 `在目录/不在目录/UNKNOWN`，`UNKNOWN` 落 `CATALOG_UNRESOLVED` 退补件，不替客户下拒赔结论 |
+| `R-FRAUD-04` 材料一致性 | `ControlledInvoiceVerificationPortAdapter`：`INVOICE_ITEM_AMOUNT_MISMATCH`（发票额 vs 明细合计差额 `> ONE_YUAN`），与条款「差额 >1 元」逐字一致 |
+| `R-FRAUD-07` 发票唯一性 | 同上适配器 `duplicateAcrossClaims` → `DUPLICATE_INVOICE`；库侧 `UNIQUE KEY uk_tenant_invoice (tenant_id, invoice_code, invoice_no, deleted)`（`deleted NOT NULL DEFAULT 0`，约束真实生效；**含 `deleted` 是刻意放宽**——软删案件释放发票键，与条款写的三列不完全一致） |
+| `R-FRAUD-05/09/10/11` 图谱四类 | `GraphFraudPort` 由 `RuleCheckNodeHandler` 消费；一期 `LocalGraphFraudPortAdapter` 返 `hit=false, available=false`，决策图 fail-closed 升级人工（"不可用 ≠ 无团伙"）；端口 javadoc 明示承载 R-FRAUD-09/10/11 |
+| `R-FRAUD-08` 影像相似度 | `VisualForensicsPort` 由 `RuleCheckNodeHandler` 消费；一期桩 `tampered=false, similarityRisk=0, available=false`，同样 fail-closed |
+| `R-FRAUD-02` 金额异常（3σ / 保额 80%） | **零命中**：`src/main/java` 与 `src/main/resources` 对 `3σ`、`sigma`、`percentile`、`同类案件` 全仓无匹配；资产 `R-AMOUNT-01/02` 是绝对阈值（`>=10000` / `>=50000`），**不是 3σ 也不是保额 80%** |
+| `R-FRAUD-03` 时间轴矛盾 | **零命中**：`时间轴` 全仓无匹配；无 `invoiceDate`/`visitDate` 的 `isBefore`/`isAfter` 比较；知识层 `CatalogKnowledgeRetrievalPortAdapter` javadoc 明示一期**不含**临床推理与时间轴判定，`R-DIR-06` 的「③ 时间轴交叉」同样未落 |
+
+> **两条「无落点」的实际后果**：客户按规则书核对时，`R-FRAUD-02`（金额异常）、`R-FRAUD-03`（时间轴矛盾）看起来在风控链路上，实际系统没有这段代码——既不会标记也不会转人工。金额维度有一部分被 `R-AMOUNT-01/02` 的**绝对阈值**兜住（超 1 万/5 万转复核），但「同类案件 3σ」与「超保额 80%」两种口径**完全没有**；时间轴则完全空白。这两条要么补实现、要么在规则书里明确降级为「二期」，**不能继续以"内置规则"措辞交付客户**。处置建议见 §11.4。
 
 ### 11.2 仅资产有、本规则书无（15 条，逐条登记）
 
@@ -218,12 +234,27 @@ currency: current
 
 **「资产无」不等于「未实现」**：本资产只承接 QLExpress 可判定的风控/前置校验，金额算术与流程类规则由理算引擎、状态机、配置面各自承载。判定某条是否落地，要按**读取点**取证（§4.1 的判据），不能按「资产里有没有」取证。
 
+> **上表载体声明的复核（2026-11-08，与 §11.1 落点取证同一批）**：`QuotaStack` / `DeductibleEngine` / `PayRatioTable` 三个具名载体均**真实存在且被引擎引用**（排除自身后引用点 38 / 12 / 15 处），不是「声明了但没人用」——这一条必须查**读取点**，类存在不等于接线；`R-DIR-02~06` 由 `ItemCatalogPort` + `KnowledgeRetrievalPort`（`CatalogKnowledgeRetrievalPortAdapter`）承载，与 §11.1 `R-DIR-01` 同一机制；`R-AREA` / `R-FAST` / `R-MAN` 由配置面、状态机、权限承载，属流程类不入 QLExpress。
+>
+> **`R-FRAUD-01`（重复报销检测）仍未直接实现**（`重复报销` / `R-FRAUD-01` 在 `src/main/java` 零命中），但它的两个子面已被别的条款覆盖：同票重复 = `R-FRAUD-07`（`duplicateAcrossClaims` + `uk_tenant_invoice`），跨案重复索赔 = `R-FRAUD-22`（`PRIOR_CLAIM_DUPLICATE`）。**是否把 `R-FRAUD-01` 记为「已由 07/22 覆盖」还是保留为独立待接项，属 §11.4 待裁定**——保留现状（标「待接线」）是保守口径，不会夸大已完成范围。
+
 ### 11.4 处置与待决策
 
-| # | 事项 | 未定时的默认口径 |
-|---|---|---|
-| Q1 | 10 条同名不同义是否要改名收敛 | **不改名**（规则 2）；靠本节对照表 + 机检隔离 |
-| Q2 | 15 条执行项是否补进本规则书对外条款 | 不补；保持族级登记，避免把内部校验说成客户承诺 |
-| Q3 | 28 条业务条款是否要在资产里各建一条对应执行项 | 不建；金额/流程类不走 QLExpress |
+| # | 事项 | 未定时的默认口径 | 2026-11-08 取证后的状态 |
+|---|---|---|---|
+| Q1 | 10 条同名不同义是否要改名收敛 | **不改名**（规则 2）；靠本节对照表 + 机检隔离 | 已可结案：改名收益为零、成本是日志/评测集/客户交付全面断裂。8 条落点已查明并锁进机检（A7） |
+| Q2 | 15 条执行项是否补进本规则书对外条款 | 不补；保持族级登记，避免把内部校验说成客户承诺 | 维持。但其中 `R-AMOUNT-03/05`（非法金额）与 `R-OCR-01` 的结果会出现在客户可见的拒赔/转人工原因里，交付话术须说明「内部校验」而非「保单条款」 |
+| Q3 | 28 条业务条款是否要在资产里各建一条对应执行项 | 不建；金额/流程类不走 QLExpress | 维持。**但新增 Q4（见下）** |
+| **Q4** | **`R-FRAUD-02`（金额异常 3σ/保额 80%）、`R-FRAUD-03`（时间轴矛盾）无任何执行落点** | 无默认口径——必须裁定 | **待裁定（阻塞交付）**：① 补实现（3σ 需历史同类样本，MVP 是否具备？时间轴需跨票面日期比较，成本低）；② 规则书降级为「二期」，本期内不承诺；③ 用 `R-AMOUNT-01/02` 绝对阈值**显式替代**并在客户版写明口径差异 |
+| Q5 | `R-FRAUD-01`（重复报销检测）是否记为「已由 `R-FRAUD-07`+`R-FRAUD-22` 覆盖」 | 保留「待接线」标注（保守，不夸大已完成范围） | 待裁定，不阻塞交付 |
 
-> **机检**：`tools/_check_ruleset_alignment.py` 校验**资产 33 条全量登记**（§11.1 共有 18 + §11.2 仅资产 15），逐行比对 `conclusion` / `risk` / 关系，并把「10 条同名不同义」作为 ratchet 基线。新增/删除 ID、改了 `conclusion` 却没改本节、静默把「同名不同义」改成「一致」、或 §11.2 漏登记一条，都会判红（A5 覆盖率判据）。初版只守 18 条交集、**覆盖率 55%**，已补齐到 33/33。
+> **机检**：`tools/_check_ruleset_alignment.py` 共七类判据——
+> **A1/A2** 共有 18 条双向对账 + `conclusion`/`risk` 逐行一致；**A3** 「10 条同名不同义」ratchet 基线；
+> **A4** 任一侧解析为空即 fail-closed；**A5** 资产 33 条全量覆盖（§11.1 18 + §11.2 15，初版只守交集、覆盖率 55%，已补到 33/33）；
+> **A6** §11.3「仅本书有」的 28 条按 8 个族逐族对账（族级条数必须等于实际条款数，总数必须等于 46 − 18）；
+> **A7** §11.1 每行**必须声明落点**，`端口:X`/`引擎:X` 声明的类必须真实存在于源码树，`无落点` 集合锁基线（新增或静默消除都判红）。
+>
+> **A7 是 2026-11-08 新增的**，起因是 A1–A3 都只守 ID 与 conclusion，**没有任何判据在问「这条条款到底由哪段代码承载」**。加它的当天就抓出 2 条空挂条款（Q4）。判据落地前先对全量取了一次证（手工 10 条），避免又造出「判据只覆盖样例、真实仓库全红/恒绿」的假象。
+>
+> **已知判据边界（诚实说明）**：§11.3 的「为什么不要求出现在 QLExpress 资产」列是**自由文本**，A6 只校验条数、**不校验该列声明的载体是否真实存在/被引用**——本次是人工复核（3 个具名类 + 引用点数）。之所以不把它改成受控枚举 + 机检：这一列的语义混着「由某类实现」「由流程承载」「待接线」三种，强行结构化会把产品口径塞进代码常量，收益低于维护成本。**若日后再度出现「族级载体声明腐化」，再上判据**。
+
