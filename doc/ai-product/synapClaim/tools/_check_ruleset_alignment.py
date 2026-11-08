@@ -19,7 +19,8 @@
   A4 解析不出集合即 fail-closed，不按空集合恒过
   A5 资产 33 条全量落在 §11.1 ∪ §11.2（覆盖率缺口判红）
   A6 §11.3「仅本书有」的族级条数 == 实际条款数对账（含总条数）
-  A7 §11.1 每行必须声明「条款落点」，且载体真实存在；`无落点` 集合锁基线
+  A7 §11.1 每行必须声明「条款落点」且**指名承载者**（`执行项:<ID>` / `端口:X` / `引擎:X`），
+     指名的执行项必须在资产里存在、指名的类必须在源码树里存在；`无落点` 集合锁基线
 
 A7 的由来（2026-11-08 实测）：
   A3 只锁住「哪 10 个 ID 同名不同义」，但没回答更要命的一问——**条款语义到底由谁承载**。
@@ -28,6 +29,13 @@ A7 的由来（2026-11-08 实测）：
   只有 `R-FRAUD-02`（3σ / 保额 80%）、`R-FRAUD-03`（时间轴矛盾）全仓找不到承载——
   客户按规则书以为在风控，系统里根本没有这段代码。这类「条款空挂」比撞名更严重，
   且**无法从 ID 集合看出来**，只能靠逐条声明落点 + 机器校验载体存在。
+
+A7 的二次收敛（2026-11-08 晚，同一天内）：`R-FRAUD-02/03` 补实现后仍写着「无落点」——
+  因为承载它们的是**别的 ID** 的执行项（`R-AMOUNT-07/08`、`R-TIMELINE-01~03`），
+  而当时唯一的写法是裸「执行项」，语义只覆盖"同名同义"。这说明**「有落点」不指名承载者
+  就等于没判据**：同一个词在文档作者眼里是"已有实现"，在读者眼里是"查无此判"。
+  故裸写 `执行项` 作废，改 `执行项:<ID>[+<ID>]`，并校验：ID 必须在资产里、
+  `一致` 必须指回自身、`同名不同义` 不得指回自身。
 """
 import io
 import json
@@ -68,7 +76,12 @@ _SINGLE_ID_RE = re.compile(r"^R-[A-Z]+-\d+$")
 _RANGE_RE = re.compile(r"^(R-[A-Z]+)-(\d+)~(\d+)$")
 
 # §11.1 第 6 列「条款落点」：受控取值，禁自由文本（自由文本等于没判据）。
-LANDING_EXEC = "执行项"          # 资产里同名执行项本身就是承载点（语义一致的 8 条）
+# 2026-11-08 收敛：裸写 `执行项` 作废，必须写成 `执行项:<ID>[+<ID>]`——指名承载者。
+# 起因是 R-FRAUD-02/03 补实现时暴露的：条款被**别的 ID** 的执行项承载（`R-AMOUNT-07/08`、
+# `R-TIMELINE-01~03`），裸写只能表达「同名的那个执行项」，于是这两条一直写着「无落点」，
+# 而代码里其实已经有了判定。**「有落点」不指名承载者，就等于没判据**。
+LANDING_EXEC = "执行项"          # 已作废：仅保留常量用于识别并给出改法
+LANDING_EXEC_ID = "执行项:"      # 指名承载执行项（可多个，`+` 连接）
 LANDING_NONE = "无落点"          # 全仓找不到承载点（缺陷，必须锁基线）
 LANDING_PORT = "端口:"           # 由该出站端口的适配器承载（含一期桩）
 LANDING_ENGINE = "引擎:"         # 由引擎/领域类承载
@@ -79,7 +92,10 @@ LANDING_PORT_PENDING = "端口待接:"
 
 # 2026-11-08 逐条取证后的「无落点」基线（ratchet）：新增或静默消除都判红。
 # 消除（改成有落点）必须先改基线，改基线就得写清取证依据——挡的是「嘴上说有」。
-NO_LANDING_BASELINE = {"R-FRAUD-02", "R-FRAUD-03"}
+# 2026-11-08 晚：`R-FRAUD-02` / `R-FRAUD-03` 已补实现（落点是**别的 ID** 的执行项，
+# 见 §11.1 实际取值），基线清空。清空不等于判据失效——任何一条再变成「无落点」都会判红，
+# 且必须显式登记才能过；这条基线现在是一条"必须为空"的硬约束。
+NO_LANDING_BASELINE = set()
 
 # 「端口待接」基线（ratchet）：现实是 1 个（ItemCatalogPort）。消除=有人接了线，
 # 必须改基线（并改文档）；新增=又有一条落点退化成 fail-closed，同样必须显式登记。
@@ -347,9 +363,25 @@ def verdict(asset, rows, only, clauses, families=None, carriers=None,
         elif landing == LANDING_NONE:
             no_landing.add(rid)
         elif landing == LANDING_EXEC:
-            if rel != "一致":
-                errs.append("A7 %s 关系为「%s」却声称落点=执行项（不同义不得指认同一条执行项）"
-                            % (rid, rel))
+            errs.append("A7 %s 落点写「%s」而未指名承载执行项（裸写在「同名不同义」时只能表达"
+                        "「查无此判」，2026-11-08 起作废）；请改为「%s%s」"
+                        % (rid, LANDING_EXEC, LANDING_EXEC_ID, rid))
+        elif landing.startswith(LANDING_EXEC_ID):
+            names = [n.strip() for n in landing[len(LANDING_EXEC_ID):].split("+") if n.strip()]
+            if not names:
+                errs.append("A7 %s 落点「%s」没有指名任何执行项 ID" % (rid, landing))
+            else:
+                if rel == "一致":
+                    if names != [rid]:
+                        errs.append("A7 %s 关系为「一致」却把落点指到 %s"
+                                    "（一致=同名同义，必须指回自身）" % (rid, names))
+                elif rid in names:
+                    errs.append("A7 %s 关系为「同名不同义」却把落点指回同名执行项"
+                                "（两者语义不同，不得互相解释）" % rid)
+                for name in names:
+                    if name not in asset:
+                        errs.append("A7 %s 落点指名的执行项 %s 不在规则资产里"
+                                    "（点名了不存在的承载者）" % (rid, name))
         elif (landing.startswith(LANDING_PORT)
               or landing.startswith(LANDING_PORT_PENDING)
               or landing.startswith(LANDING_ENGINE)):
@@ -359,8 +391,8 @@ def verdict(asset, rows, only, clauses, families=None, carriers=None,
             if rel == "一致":
                 errs.append("A7 %s 关系为「一致」却把落点放在 %s（应为执行项）" % (rid, carrier))
         else:
-            errs.append("A7 %s 落点取值非法：%s（只允许 %s / %s / %sX / %sX / %sX）"
-                        % (rid, landing, LANDING_EXEC, LANDING_NONE,
+            errs.append("A7 %s 落点取值非法：%s（只允许 %sID[+ID] / %s / %sX / %sX / %sX）"
+                        % (rid, landing, LANDING_EXEC_ID, LANDING_NONE,
                            LANDING_PORT, LANDING_PORT_PENDING, LANDING_ENGINE))
     if no_landing - NO_LANDING_BASELINE:
         errs.append("A7 新增「无落点」条款未登记基线：%s"
@@ -450,6 +482,17 @@ def main():
     landings = {}
     for _, _, _, lg in rows.values():
         landings[lg] = landings.get(lg, 0) + 1
+    # 按类别归并打印：逐条展开会把 18 行打成 14 个桶，读的人看不出"有几条在执行项"。
+    buckets = {}
+    for lg, n in landings.items():
+        for prefix, label in ((LANDING_EXEC_ID, "执行项"), (LANDING_PORT_PENDING, "端口待接"),
+                              (LANDING_PORT, "端口"), (LANDING_ENGINE, "引擎"),
+                              (LANDING_NONE, "无落点"), (LANDING_EXEC, "裸写执行项(非法)")):
+            if lg.startswith(prefix):
+                buckets[label] = buckets.get(label, 0) + n
+                break
+        else:
+            buckets["未声明/非法"] = buckets.get("未声明/非法", 0) + n
     variables = set()
     for e in exprs.values():
         variables |= expr_variables(e)
@@ -459,8 +502,8 @@ def main():
     print("全量覆盖：%d/%d 条资产已逐条登记" % (len((set(rows) | set(only)) & set(asset)), len(asset)))
     print("仅本书有：%d 条，按 %d 个族登记，合计 %d 条"
           % (len(clauses - set(asset)), len(families), sum(families.values())))
-    print("条款落点：" + " / ".join("%s×%d" % (k or "未声明", v)
-                                for k, v in sorted(landings.items())))
+    print("条款落点：" + " / ".join("%s×%d" % (k, v) for k, v in sorted(buckets.items()))
+          + "（逐条：" + "；".join("%s=%d" % (k, v) for k, v in sorted(landings.items())) + "）")
     print("表达式变量：引用 %d 个 / 事实提供方 %d 个 / 无提供方 %d 个"
           % (len(variables), len(facts), len(variables - facts)))
     for port in sorted(ports):
@@ -484,21 +527,26 @@ def self_test():
         "R-FRAUD-02": ("NO_EVIDENCE", "True"),
         "R-FRAUD-06": ("VERIFY_NOT_PASSED", "True"),
         "R-AMOUNT-01": ("AMOUNT_OVER_LIMIT", "False"),
+        # 样本里刻意放一条「别的 ID 承载同名不同义条款」，复刻真实仓库的
+        # R-FRAUD-02 → R-AMOUNT-07/08 形态（裸写「执行项」表达不了这种关系）。
+        "R-AMOUNT-02": ("AMOUNT_SIGMA_OUTLIER", "True"),
     }
     clauses = {"R-FRAUD-02", "R-FRAUD-06", "R-AREA-01"}
     rows = {
-        "R-FRAUD-02": ("NO_EVIDENCE", "True", "同名不同义", "无落点"),
-        "R-FRAUD-06": ("VERIFY_NOT_PASSED", "True", "一致", "执行项"),
+        "R-FRAUD-02": ("NO_EVIDENCE", "True", "同名不同义", "执行项:R-AMOUNT-02"),
+        "R-FRAUD-06": ("VERIFY_NOT_PASSED", "True", "一致", "执行项:R-FRAUD-06"),
     }
-    only = {"R-AMOUNT-01": ("AMOUNT_OVER_LIMIT", "False")}
+    only = {"R-AMOUNT-01": ("AMOUNT_OVER_LIMIT", "False"),
+            "R-AMOUNT-02": ("AMOUNT_SIGMA_OUTLIER", "True")}
     fam = {"R-AREA": 1}
     carriers = {"GraphFraudPort", "InvoiceVerificationPort"}
     exprs = {
         "R-FRAUD-02": "hasEvidence == false",
         "R-FRAUD-06": "verifyPassed == false",
         "R-AMOUNT-01": "claimAmount >= 10000",
+        "R-AMOUNT-02": "amountSigmaOutlier == true",
     }
-    facts = {"hasEvidence", "verifyPassed", "claimAmount"}
+    facts = {"hasEvidence", "verifyPassed", "claimAmount", "amountSigmaOutlier"}
     # 端口取证样本（纯内存）：一个有实现者、一个无实现者（一期待接入方实现）。
     ports = {
         "InvoiceVerificationPort": {"impl": {"ControlledInvoiceVerificationPortAdapter"},
@@ -509,7 +557,7 @@ def self_test():
     global CONFLICT_BASELINE, NO_LANDING_BASELINE, PORT_PENDING_BASELINE
     saved = (CONFLICT_BASELINE, NO_LANDING_BASELINE, PORT_PENDING_BASELINE)
     CONFLICT_BASELINE = {"R-FRAUD-02"}
-    NO_LANDING_BASELINE = {"R-FRAUD-02"}
+    NO_LANDING_BASELINE = set()
     PORT_PENDING_BASELINE = set()
     passed, failed = 0, 0
 
@@ -532,6 +580,16 @@ def self_test():
             return V()
         finally:
             PORT_PENDING_BASELINE = keep
+
+    def V_with_no_landing_baseline(base):
+        """临时替换「无落点」基线跑一次：反证「基线过期」也会判红（只锁新增是不够的）。"""
+        global NO_LANDING_BASELINE
+        keep = NO_LANDING_BASELINE
+        NO_LANDING_BASELINE = base
+        try:
+            return V()
+        finally:
+            NO_LANDING_BASELINE = keep
 
     def expect(label, cond):
         nonlocal passed, failed
@@ -591,9 +649,10 @@ def self_test():
         expect("变异⑮ 落点列缺失 → A7 判红（不静默放过）",
                any("A7" in e for e in V(r=dict(
                    rows, **{"R-FRAUD-02": ("NO_EVIDENCE", "True", "同名不同义", "")}))))
-        expect("变异⑯ 同名不同义却声称落点=执行项 → A7 判红",
+        expect("变异⑯ 同名不同义却把落点指回同名执行项 → A7 判红（不同义不得互相解释）",
                any("A7" in e for e in V(r=dict(
-                   rows, **{"R-FRAUD-02": ("NO_EVIDENCE", "True", "同名不同义", "执行项")}))))
+                   rows, **{"R-FRAUD-02": ("NO_EVIDENCE", "True", "同名不同义",
+                                           "执行项:R-FRAUD-02")}))))
         expect("字符串字面量不被当成变量（sourceChannel == \"BATCH\"）",
                expr_variables('sourceChannel == "BATCH" || x == "UNKNOWN"')
                == {"sourceChannel", "x"})
@@ -624,6 +683,24 @@ def self_test():
                any("A9" in e for e in V_with_pending_baseline({"ItemCatalogPort"})))
         expect("变异㉕ 新增「端口待接」未登记基线 → A9 判红",
                any("A9" in e for e in V(r=row_pending)))
+        # A7 收敛：裸写「执行项」作废，落点必须指名承载者（2026-11-08 晚）。
+        expect("变异㉖ 落点裸写「执行项」未指名 → A7 判红并给出改法",
+               any("A7" in e and "作废" in e for e in V(r=dict(
+                   rows, **{"R-FRAUD-06": ("VERIFY_NOT_PASSED", "True", "一致", "执行项")}))))
+        expect("变异㉗ 落点指名了资产里不存在的执行项 → A7 判红",
+               any("A7" in e for e in V(r=dict(
+                   rows, **{"R-FRAUD-06": ("VERIFY_NOT_PASSED", "True", "一致",
+                                           "执行项:R-NOT-EXIST")}))))
+        expect("变异㉘ 关系「一致」却把落点指到别的执行项 → A7 判红",
+               any("A7" in e for e in V(r=dict(
+                   rows, **{"R-FRAUD-06": ("VERIFY_NOT_PASSED", "True", "一致",
+                                           "执行项:R-AMOUNT-02")}))))
+        expect("多承载执行项用 + 连接合法（正例，不误报）",
+               not any("A7" in e for e in V(r=dict(
+                   rows, **{"R-FRAUD-02": ("NO_EVIDENCE", "True", "同名不同义",
+                                           "执行项:R-AMOUNT-01+R-AMOUNT-02")}))))
+        expect("变异㉙ 「无落点」基线过期（条目已改成有落点）→ A7 判红",
+               any("A7" in e for e in V_with_no_landing_baseline({"R-FRAUD-06"})))
     finally:
         CONFLICT_BASELINE, NO_LANDING_BASELINE, PORT_PENDING_BASELINE = saved
     print("  %d 通过 / %d 失败" % (passed, failed))
