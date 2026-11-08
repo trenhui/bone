@@ -37,24 +37,6 @@ metadata:
     deploymentMode: EMBEDDED
 
 bone:
-  ai:
-    gateway:
-      # AI 网关（bone-ai-gateway，OpenAI 兼容端点）。留空 = Mock 形态：不产生真实模型调用，
-      # 依赖模型的能力（感知层 llm 模式 / 图像解析 / 认知层结论）一律 fail-closed 转人工，
-      # 绝不返回伪造结论。
-      #
-      # 文本理解（DeepSeek，OpenAI 兼容，实测可用）：
-      #   BONE_AI_GATEWAY_BASE_URL=https://api.deepseek.com/v1
-      #   BONE_AI_GATEWAY_API_KEY=sk-xxxx
-      #   BONE_AI_GATEWAY_MODEL=deepseek-chat
-      # 影像识别需要**多模态**端点：DeepSeek 官方接口只收文本，把它的地址配到这里的后果是
-      # 图像解析稳定失败（IMAGE_GATEWAY_UNAVAILABLE）并转人工——不会静默错解析。
-      # 要真正跑通影像件，请把 base-url 指向具备视觉输入能力的 OpenAI 兼容服务
-      # （如 qwen-vl / gpt-4o 兼容网关），或使用 tools/mock-ai-gateway.py 做链路联调（Mock 会被显式拒绝）。
-      base-url: ${BONE_AI_GATEWAY_BASE_URL:}
-      api-key: ${BONE_AI_GATEWAY_API_KEY:}
-      model: ${BONE_AI_GATEWAY_MODEL:deepseek-chat}
-      timeout: ${BONE_AI_GATEWAY_TIMEOUT:30s}
   iam:
     jwt:
       # 与其余模块同款声明：必须与 bone-iam 的 bone.iam.jwt.secret-key 一致，
@@ -109,6 +91,19 @@ bone:
   # （fail-closed），所有 AI 节点降级——「没配」与「配错」在运行期报表上表现相同，
   # 用 GET /api/v1/claim-ops/ai-provider-probe 区分（它会真发一次最小请求）。
   # 密钥若留着未解析的 ${...} 占位符，LlmGatewayProperties 会启动即失败，不会带着字面量去鉴权。
+  #
+  # 文本理解（DeepSeek，OpenAI 兼容，实测可用）：
+  #   BONE_AI_GATEWAY_BASE_URL=https://api.deepseek.com/v1
+  #   BONE_AI_GATEWAY_API_KEY=sk-xxxx
+  #   BONE_AI_GATEWAY_MODEL=deepseek-chat
+  # 影像识别需要**多模态**端点：DeepSeek 官方接口只收文本，把它的地址配到这里的后果是
+  # 图像解析稳定失败（IMAGE_GATEWAY_UNAVAILABLE）并转人工——不会静默错解析。
+  # 要真正跑通影像件，请把 base-url 指向具备视觉输入能力的 OpenAI 兼容服务
+  # （如 qwen-vl / gpt-4o 兼容网关），或使用 tools/mock-ai-gateway.py 做链路联调（Mock 会被显式拒绝）。
+  #
+  # ⚠ 本块在 `bone:` 下只能出现**一次**：2026-11-08 曾因并行新增同名块导致 snakeyaml
+  # 「found duplicate key ai」，服务启动即失败（配置错到起不来，而 CI 只跑不加载上下文的单测，
+  # 全绿）。现由 ApplicationYamlIntegrityTest 用生产同款加载器钉住。
   ai:
     gateway:
       base-url: ${BONE_AI_GATEWAY_BASE_URL:}

@@ -45,25 +45,29 @@ class ClaimLifecycleE2ETest {
 
   private static final String TENANT = "0";
   private static final long USER_ID = 1000L;
+  private static final List<String> PERMISSIONS =
+      List.of(
+          "claim:claims:read", "claim:claims:write", "claim:review:write", "claim:decision:write");
 
   @Autowired private TestRestTemplate rest;
   @Autowired private JwtTokenService jwtTokenService;
   @Autowired private ObjectMapper objectMapper;
 
   private HttpHeaders authHeaders() {
-    String token =
-        jwtTokenService.generateToken(
-            USER_ID,
-            "e2e-operator",
-            Long.parseLong(TENANT),
-            List.of(
-                "claim:claims:read",
-                "claim:claims:write",
-                "claim:review:write",
-                "claim:decision:write"));
+    return headersFor(Long.parseLong(TENANT));
+  }
+
+  /**
+   * 指定租户的请求头：JWT 内签名 claim 与 {@code X-Tenant-Id} 同时切换。
+   *
+   * <p>两者必须一致——框架基类会用 token 内 claim 归一化 {@code X-Tenant-Id}，只改头不改 token 测的是"归一化有没有生效"，
+   * 不是"租户边界有没有生效"，两类失败会长得一样。
+   */
+  private HttpHeaders headersFor(long tenantId) {
+    String token = jwtTokenService.generateToken(USER_ID, "e2e-operator", tenantId, PERMISSIONS);
     HttpHeaders h = new HttpHeaders();
     h.setBearerAuth(token);
-    h.set("X-Tenant-Id", TENANT);
+    h.set("X-Tenant-Id", String.valueOf(tenantId));
     h.setContentType(MediaType.APPLICATION_JSON);
     return h;
   }
@@ -193,6 +197,65 @@ class ClaimLifecycleE2ETest {
     JsonNode trace = body(exchange(HttpMethod.GET, traceUrl, null));
     assertThat(trace.size()).isGreaterThan(0);
     System.out.println("[E2E] 轨迹节点数=" + trace.size());
+  }
+
+  /**
+   * 端点级跨租户反例——04 分册原写「留待接入测试基建后补」的那一条。
+   *
+   * <p><b>判据是「不可区分」而不是「被拒绝」</b>：跨租户读必须与"案件不存在"返回同一个 404；用 403 会泄露该 ID
+   * 在别的租户真实存在，攻击者可据此枚举他人案件。同租户正例必须先跑通——否则 404 可能来自端点坏了或数据没落，反例就成了假绿。
+   */
+  @Test
+  @DisplayName("跨租户读详情必须 404 且不泄露存在性（同租户正例作对照）")
+  void crossTenantDetailIsIndistinguishableFromNotFound() throws Exception {
+    String submit =
+        objectMapper.writeValueAsString(
+            java.util.Map.of(
+                "policyNo",
+                "E2E-POLICY-0001",
+                "planId",
+                9001,
+                "insuredIdHash",
+                "e2e-insured-hash-0001",
+                "outInsureTime",
+                "2026-11-01T00:00:00Z",
+                "claimType",
+                "OUTPATIENT",
+                "items",
+                List.of(java.util.Map.of("itemName", "诊查费", "amount", 100.00))));
+    JsonNode claim =
+        body(
+            rest.exchange(
+                "/api/v1/claims",
+                HttpMethod.POST,
+                new HttpEntity<>(submit, authHeaders()),
+                String.class));
+    long claimId = claim.get("claimId").asLong();
+    assertThat(claimId).isPositive();
+
+    ResponseEntity<String> sameTenant =
+        rest.exchange(
+            "/api/v1/claims/" + claimId,
+            HttpMethod.GET,
+            new HttpEntity<>(null, authHeaders()),
+            String.class);
+    assertThat(sameTenant.getStatusCode().value())
+        .as("同租户读不到 → 后面的 404 不是租户边界造成的，反例无效：%s", sameTenant.getBody())
+        .isEqualTo(200);
+
+    ResponseEntity<String> crossTenant =
+        rest.exchange(
+            "/api/v1/claims/" + claimId,
+            HttpMethod.GET,
+            new HttpEntity<>(null, headersFor(1L)),
+            String.class);
+    assertThat(crossTenant.getStatusCode().value())
+        .as("跨租户必须 404（防枚举），实际 %s，body=%s", crossTenant.getStatusCode(), crossTenant.getBody())
+        .isEqualTo(404);
+    assertThat(crossTenant.getBody())
+        .as("错误码须为「查不到」；403 与 404 的差异会泄露该 ID 在别的租户存在")
+        .contains("SC_CLAIM_NOT_FOUND");
+    System.out.println("[E2E] 跨租户读 claimId=" + claimId + " → 404 SC_CLAIM_NOT_FOUND");
   }
 
   private JsonNode allocate(long claimId) {
