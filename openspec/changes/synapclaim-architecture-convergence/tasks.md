@@ -47,5 +47,5 @@
 
 ## 8. 交付
 
-- [ ] 8.1 确认 `git branch --show-current` 为 `dev`，按用户授权 `git add -A` 全量提交，验证：`git status --short` 干净，且 `git branch --contains <sha>` 包含 `dev` <!-- comet-task:93e2fadc-818b-4c6d-9e36-b2062abc9965 -->
-- [ ] 8.2 执行 `git push origin dev`，验证：`git status -sb` 显示与 `origin/dev` 同步且远端包含该提交 <!-- comet-task:78b0302c-26a2-4fea-9fac-95d6e6e4c65f -->
+- [x] 8.1 确认 `git branch --show-current` 为 `dev`，按用户授权 `git add -A` 全量提交，验证：`git status --short` 干净，且 `git branch --contains <sha>` 包含 `dev` <!-- comet-task:93e2fadc-818b-4c6d-9e36-b2062abc9965 -->
+- [x] 8.2 执行 `git push origin dev`，验证：`git status -sb` 显示与 `origin/dev` 同步且远端包含该提交 <!-- comet-task:78b0302c-26a2-4fea-9fac-95d6e6e4c65f -->
