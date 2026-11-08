@@ -7,29 +7,29 @@
 ## 2. 决策图与流程层
 
 - [x] 2.1 把 `DecisionGraph.canonical()` 固定为节点名、顺序与 `node_type` 映射的唯一真源并补机检断言，验证：新增单测断言 canonical 与文档口径一致，改坏任一处即失败 <!-- comet-task:942cd9b4-a6b9-4065-9cb6-b02a847b90a0 -->
-- [ ] 2.2 落地 Stage → FlowFireService → Trigger → Condition 流程层骨架，Condition 默认走声明式白名单操作符，验证：单测覆盖正常流转与求值异常 fail-closed 两条路径 <!-- comet-task:548e125a-892b-43cc-9538-fac7f3c20bdf -->
+- [x] 2.2 落地 Stage → FlowFireService → Trigger → Condition 流程层骨架，Condition 默认走声明式白名单操作符，验证：单测覆盖正常流转与求值异常 fail-closed 两条路径 <!-- comet-task:548e125a-892b-43cc-9538-fac7f3c20bdf -->
 - [x] 2.3 决策轨迹改为显式响应 DTO + Assembler，消除 `ApiResponse<List<DecisionTraceNode>>` 领域对象直出，验证：响应契约机检零违规且字段映射单测通过 <!-- comet-task:c4465b6f-6c64-4213-9b00-bd054fab074b -->
 - [x] 2.4 把落地版 §7.3 改写为「现状 5 节点 + Phase B 待评审扩展阶段及前置清单」，同步总体技术方案 §0 事实基线，验证：`_check_numbers.py` 与 `check_all.py` 全绿，全文无「7 步为现状」表述 <!-- comet-task:1b12be98-fcea-4882-b1eb-eb1e7a72e1d3 -->
 
 ## 3. M5b 脚本沙箱
 
-- [ ] 3.1 定义受限求值器端口与白名单操作符集合，验证：合法声明式条件求值单测通过 <!-- comet-task:40c29810-5462-42d4-b852-a309f5f57a82 -->
-- [ ] 3.2 实现超时、执行步数与可访问标识符白名单，阻断文件 / 网络 / 反射 / 类加载，验证：四类越界负向探针全部被阻断且返回可诊断错误 <!-- comet-task:304e5a3e-10f3-496b-9606-b89c046a9175 -->
-- [ ] 3.3 沙箱不可用或求值异常时 fail-closed 且不写业务状态，验证：异常注入单测断言无状态变更、无领域事件 <!-- comet-task:c9c9e44c-d781-40f8-8e37-2ec0366fabad -->
-- [ ] 3.4 在诊断报告与总体技术方案登记 M5b 实际状态，验证：文档机检通过且措辞区分现状 / 目标态 <!-- comet-task:7a51ad8f-41bd-4f26-967a-bdb7566479a2 -->
+- [x] 3.1 定义受限求值器端口与白名单操作符集合，验证：合法声明式条件求值单测通过 <!-- comet-task:40c29810-5462-42d4-b852-a309f5f57a82 -->
+- [x] 3.2 实现超时、执行步数与可访问标识符白名单，阻断文件 / 网络 / 反射 / 类加载，验证：四类越界负向探针全部被阻断且返回可诊断错误 <!-- comet-task:304e5a3e-10f3-496b-9606-b89c046a9175 -->
+- [x] 3.3 沙箱不可用或求值异常时 fail-closed 且不写业务状态，验证：异常注入单测断言无状态变更、无领域事件 <!-- comet-task:c9c9e44c-d781-40f8-8e37-2ec0366fabad -->
+- [x] 3.4 在诊断报告与总体技术方案登记 M5b 实际状态，验证：文档机检通过且措辞区分现状 / 目标态 <!-- comet-task:7a51ad8f-41bd-4f26-967a-bdb7566479a2 -->
 
 ## 4. 理算引擎三策略与三模块边界
 
-- [ ] 4.1 抽出策略接口与报销 / 定额 / 津贴三策略实现及枚举分派，验证：三类分派单测通过，未知类型被明确拒绝 <!-- comet-task:79c5155d-cd3a-4a12-9a40-b4ae7e9c215a -->
-- [ ] 4.2 用既有双轨对拍 / 缺口哨兵 / 变异鉴别三轨锁住金额等价，验证：`Adjustment*Test` 全绿，人为改动一处金额时对拍用例失败 <!-- comet-task:528a034b-592d-457e-89c6-bb9d1ce97eee -->
-- [ ] 4.3 旧 `AdjustmentEngine` 标 `@Deprecated` 并提供回退开关，验证：开关两路均能执行同一批用例 <!-- comet-task:7278f9e3-0e9a-4157-a978-b7585c0800df -->
-- [ ] 4.4 `synap-claim-sdk` 填纯 Java 契约，`adjustment-engine` 落纯函数内核，验证：两模块单独 `mvn -o -pl ... -am test` 编译与测试通过 <!-- comet-task:336715a1-e7dc-44d3-abd8-0c6cec96bb28 -->
-- [ ] 4.5 新增依赖边界机检（SDK 零框架依赖、引擎不依赖 Spring / 元数据 SDK、app 单向依赖），验证：故意加入反向依赖时机检转红 <!-- comet-task:a2bc813b-c089-48ee-9d3d-50cb1d02579a -->
+- [x] 4.1 抽出策略接口与报销 / 定额 / 津贴三策略实现及枚举分派，验证：三类分派单测通过，未知类型被明确拒绝 <!-- comet-task:79c5155d-cd3a-4a12-9a40-b4ae7e9c215a -->
+- [x] 4.2 用既有双轨对拍 / 缺口哨兵 / 变异鉴别三轨锁住金额等价，验证：`Adjustment*Test` 全绿，人为改动一处金额时对拍用例失败 <!-- comet-task:528a034b-592d-457e-89c6-bb9d1ce97eee -->
+- [x] 4.3 旧 `AdjustmentEngine` 标 `@Deprecated` 并提供回退开关，验证：开关两路均能执行同一批用例 <!-- comet-task:7278f9e3-0e9a-4157-a978-b7585c0800df -->
+- [x] 4.4 `synap-claim-sdk` 填纯 Java 契约，`adjustment-engine` 落纯函数内核，验证：两模块单独 `mvn -o -pl ... -am test` 编译与测试通过 <!-- comet-task:336715a1-e7dc-44d3-abd8-0c6cec96bb28 -->
+- [x] 4.5 新增依赖边界机检（SDK 零框架依赖、引擎不依赖 Spring / 元数据 SDK、app 单向依赖），验证：故意加入反向依赖时机检转红 <!-- comet-task:a2bc813b-c089-48ee-9d3d-50cb1d02579a -->
 
 ## 5. 响应契约与文档治理
 
 - [x] 5.1 全量扫描 Controller 响应泛型并补齐剩余 `*Resp` / Assembler，验证：响应契约机检零领域对象直出、装配点唯一 <!-- comet-task:0483454a-eeb8-40d8-8138-38b6b7673033 -->
-- [ ] 5.2 `AI技术方案.md` 瘦身，把版本历史与实施日志外置为独立记录文件，验证：`docs.manifest.json` / `AI-INDEX.md` 登记且 `check_all.py` 19-19 <!-- comet-task:0bc24bf3-e8d3-440f-8169-543306656130 -->
+- [x] 5.2 `AI技术方案.md` 瘦身，把版本历史与实施日志外置为独立记录文件，验证：`docs.manifest.json` / `AI-INDEX.md` 登记且 `check_all.py` 19-19 <!-- comet-task:0bc24bf3-e8d3-440f-8169-543306656130 -->
 - [x] 5.3 回写诊断报告 §7/§8、整合历史 P38、文档地图与全部数字口径，验证：`_check_xref.py` / `_check_contract_drift.py` / `_check_ddl.py` / `_check_numbers.py` 全部通过 <!-- comet-task:0b509222-6ae2-4b55-9600-968a84653315 -->
 - [x] 5.4 同步错误码登记与 zh-CN / en-US 文案（如有新增错误码），验证：错误码机检常量数 ↔ HTTP 映射数 ↔ 双语覆盖率 100% <!-- comet-task:67b7dd6d-974c-47c4-ba68-4b7e6dde7273 -->
 

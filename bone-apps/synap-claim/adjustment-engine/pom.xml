@@ -13,5 +13,18 @@
 
     <artifactId>adjustment-engine</artifactId>
     <name>adjustment-engine</name>
-    <description>纯算术理算引擎，仅 JDK（M4 待搬）</description>
+    <description>纯函数理算内核，仅 JDK + synap-claim-sdk（M4 已填）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.bone.claim</groupId>
+            <artifactId>synap-claim-sdk</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 </project>

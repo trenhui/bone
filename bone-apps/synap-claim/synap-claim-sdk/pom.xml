@@ -13,5 +13,14 @@
 
     <artifactId>synap-claim-sdk</artifactId>
     <name>synap-claim-sdk</name>
-    <description>契约模块：四级配置模型 + Request/Outcome/Port 接口，零框架依赖（M1 待填）</description>
+    <description>契约模块：责任形式、入参/出参、策略端口，纯 Java 零框架依赖（M1 已填）</description>
+
+    <dependencies>
+        <!-- 仅测试期引入；主源码零框架依赖由 check-synapclaim-module-boundaries.py 机检 -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 </project>

@@ -16,6 +16,19 @@
     <description>synapClaim 智能理赔平台（DDD 四层，实现见 doc/ai-product/synapClaim/03-contract/ 工程详细设计（落地版））</description>
 
     <dependencies>
+        <!-- M1/M4 模块边界：app 单向依赖 SDK 契约与纯函数内核，两者不得反向依赖 app。
+             判据见 scripts/check-synapclaim-module-boundaries.py。 -->
+        <dependency>
+            <groupId>com.bone.claim</groupId>
+            <artifactId>synap-claim-sdk</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.bone.claim</groupId>
+            <artifactId>adjustment-engine</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Spring Boot -->
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
@@ -90,6 +103,13 @@
              回退开关 bone.claim.rule-engine.mode=stub 可切回一期本地桩。 -->
         <dependency><groupId>com.bone</groupId>
             <artifactId>bone-ai-rules</artifactId>
+        </dependency>
+
+        <!-- M5b 受控脚本条件：复用项目唯一 DSL 引擎 QLExpress4（版本由 bone-parent 托管）。
+             安全隔离（禁 import/new/反射/静态调用）由 QLSecurityStrategy.isolation() 提供，
+             资源上限由 QLOptions.timeoutMillis 提供，不自造表达式解释器。 -->
+        <dependency><groupId>com.alibaba</groupId>
+            <artifactId>qlexpress4</artifactId>
         </dependency>
 
         <!-- D3 受控 RAG（bone-ai C6）：RagKnowledgeRetrievalPortAdapter 语义检索支路；

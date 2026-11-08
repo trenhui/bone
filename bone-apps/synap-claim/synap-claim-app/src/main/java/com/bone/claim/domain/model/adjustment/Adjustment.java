@@ -4,6 +4,7 @@ import com.bone.claim.domain.model.adjustment.engine.AdjustmentEngine;
 import com.bone.claim.domain.model.adjustment.engine.CatalogAdmission;
 import com.bone.claim.domain.model.adjustment.engine.LiabilityRule;
 import com.bone.claim.domain.model.adjustment.engine.RuleGap;
+import com.bone.claim.domain.model.adjustment.strategy.AdjustmentCalculationRouter;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
 import com.bone.claim.domain.model.liability.AdjLiability;
 import com.bone.claim.domain.model.liability.LiabilityFeeRule;
@@ -457,7 +458,7 @@ public class Adjustment extends TenantAggregateRoot<Long> {
           CatalogAdmission.of(
               liability.catalogPolicy(), liability.catalogCode(), catalogAsOf, catalogVerdicts);
       outcome =
-          AdjustmentEngine.calculate(
+          AdjustmentCalculationRouter.calculate(
               AdjustmentEngine.Request.of(getClaimId(), rows, rule, accumulation)
                   .withRuleVersion(this.ruleVersion)
                   .withClaimDate(claimDate)

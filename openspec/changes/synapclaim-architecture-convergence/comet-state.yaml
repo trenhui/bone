@@ -31,7 +31,7 @@ classic_profile: null
 classic_migration: null
 run_checkpoint:
   schema: comet.workflow-run-checkpoint.v1
-  hash: 95c12343ec91fe163be19636e3656cdb53d8722f4dd5ad6ca6b204ff695f769c
+  hash: 7620725fcef48092593dfaf2e87d70c360efcee61dc55ba72fd45ba85ced584e
   run:
     protocolVersion: 1
     schemaVersion: 1
@@ -81,7 +81,7 @@ run_checkpoint:
       verifyResult: pending
       workflow: full
     status: running
-    sequence: 13
+    sequence: 14
     actions:
       - attempt: 6
         claim:
@@ -693,7 +693,16 @@ run_checkpoint:
         status: succeeded
         stepId: full.build.plan
         type: invoke_skill
-      - attempt: 1
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-architecture-convergence:13/2
+          token: portable-d2f2762e0fd573c60dff052c719d9329f792e840d2e6a4e74252d5e8408ed9c7
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
         id: synapclaim-architecture-convergence:13
         input:
           input:
@@ -821,16 +830,177 @@ run_checkpoint:
             full.open.revalidate:
               contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
         inputHash: bfd2196238b4bb2449fceb356f8c1c67facecf7f436562953b8246a2e8bee954
+        outcome:
+          actionId: synapclaim-architecture-convergence:13
+          attempt: 2
+          claimToken: portable-d2f2762e0fd573c60dff052c719d9329f792e840d2e6a4e74252d5e8408ed9c7
+          inputHash: bfd2196238b4bb2449fceb356f8c1c67facecf7f436562953b8246a2e8bee954
+          outcomeId: 01682b55-8aff-4802-8cb3-1a22dd293dfa
+          output:
+            event: build-complete
+          status: succeeded
         protocolVersion: 1
-        receipts: []
-        reconciliations: []
+        receipts:
+          - hash: d6cdab613442b006f1e9e9d95c4bae81a39cd619bd60c246dcc446508674d429
+            outcomeId: 01682b55-8aff-4802-8cb3-1a22dd293dfa
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: comet state complete-build 首次返回 exitCode 70（Timed out waiting for file
+                lock）；.write.lock 持有 pid 60510 经 ps -p 60510 与 pgrep -fl comet
+                双重确认均已退出。comet state check --recover --details 显示
+                action.status=unknown、record.status=missing、evidence 目录
+                .comet/runtime/classic-sdk-checks/b9b6d785... 不存在（ls 报 Not a
+                directory）、receiptRef=null、manifestRef=null、checks.blocked=true。本次尝试未执行任何
+                build check、未生成收据或清单，故判定原尝试完全未执行。
+            resolution: not-executed
         ref: comet-build
         requiredCapabilities: []
         retry: manual
         runId: synapclaim-architecture-convergence
-        status: pending
+        status: succeeded
         stepId: full.build.execute
         type: invoke_skill
+      - attempt: 1
+        id: synapclaim-architecture-convergence:14
+        input:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: direct
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-architecture-convergence
+                  changeDir: openspec/changes/synapclaim-architecture-convergence
+                  workspaceBaseline:
+                    ref: f204d601-2546-4dd2-8893-1701c823f9d3
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: direct
+            full.build.execute:
+              event: build-complete
+            full.build.plan:
+              designEvidence:
+                contentHash: 19a50da4301ccb73b5771e8ae5e42efff40ba097799d9b993ab799bdd653c571
+                ref: openspec/changes/synapclaim-architecture-convergence/design.md
+              plan: docs/superpowers/plans/synapclaim-architecture-convergence.md
+              planEvidence:
+                contentHash: 6078348af0826eb54199c8a9368678eeb8928ea1973d39c37e727821bac895d7
+                ref: docs/superpowers/plans/synapclaim-architecture-convergence.md
+              taskRevision: 98418c087c6799cd11c14e6210e5acc120d6e25b48445f84108069cdbe92a491
+            full.build.plan.evidence:
+              contentHash: 6078348af0826eb54199c8a9368678eeb8928ea1973d39c37e727821bac895d7
+              ref: docs/superpowers/plans/synapclaim-architecture-convergence.md
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-architecture-convergence
+                  changeDir: openspec/changes/synapclaim-architecture-convergence
+                  workspaceBaseline:
+                    ref: f204d601-2546-4dd2-8893-1701c823f9d3
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-architecture-convergence/.comet/handoff/design-context.json
+                    handoffHash: 4833fe7dc3fae8bd282ae7ec8f6bde464b381cbdb2343486ca71c5d7bf84b11b
+                    proposal: 方案：以代码事实为单一真源，按 design.md 的 D-1~D-10 分四阶段收口九项剩余项。阶段 A 文档口径、20 子域到 7
+                      上下文的机器可读映射与门禁、响应契约机检；阶段 B 显式流程层与声明式
+                      Condition、脚本沙箱（能力白名单加超时步数、fail-closed）、理算三策略（旧实现保留标
+                      Deprecated 并加回退开关）；阶段 C 纯函数内核迁
+                      adjustment-engine、synap-claim-sdk 落纯 Java 契约、依赖边界机检；阶段 D
+                      人工窗口（M2 责任要素 DDL、D4 物理包重构、05 契约 node_type 枚举扩展、FraudScreen
+                      真实接入）。关键取舍：一是不伪造 7 步节点，canonical 五节点保持唯一真源，落地版 7.3
+                      改写为现状加待评审扩展阶段；用户 Q3 要求强制全做，但 L4 项 AI
+                      不得执行，本轮另产出可直接进入评审的人工窗口执行包。二是脚本沙箱不用 JVM 全局
+                      SecurityManager，不引
+                      Aviator。三是复用双轨对拍、缺口哨兵、变异鉴别三轨锁金额等价，oracle 不并入生产。四是 D4
+                      用逻辑映射加门禁而非物理移动 500 余个 Java 文件。风险：L4 架构师审批与 R1-R8
+                      未拍板、文档目标态定义不自洽、并发提交者混入、全仓门禁基线、全量提交含他人增量。验证：1290 例单测零失败、12
+                      道提交门禁、文档机检 19 步、错误码 52 对 52 与双语覆盖、clean test 核对提交树。Spec
+                      Patch：无，三份 delta spec 与 proposal 一致，不改动需求。
+                    requirementsEvidence:
+                      contentHash: 4e4dd0cb1bde50aaef7708f30e0caffbed5b1f626e32f13022914296f7462c38
+                      ref: openspec/changes/synapclaim-architecture-convergence
+                    sourceEvidence:
+                      contentHash: e94c9005e2b7e0ce47ae55621b452c4197cdb5950913c90c02a8cf18ce7e9c17
+                      ref: openspec/changes/synapclaim-architecture-convergence
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-architecture-convergence/design.md
+            full.design.evidence:
+              contentHash: 19a50da4301ccb73b5771e8ae5e42efff40ba097799d9b993ab799bdd653c571
+              ref: openspec/changes/synapclaim-architecture-convergence/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-architecture-convergence/.comet/handoff/design-context.json
+              handoffHash: 4833fe7dc3fae8bd282ae7ec8f6bde464b381cbdb2343486ca71c5d7bf84b11b
+              proposal: 方案：以代码事实为单一真源，按 design.md 的 D-1~D-10 分四阶段收口九项剩余项。阶段 A 文档口径、20 子域到 7
+                上下文的机器可读映射与门禁、响应契约机检；阶段 B 显式流程层与声明式
+                Condition、脚本沙箱（能力白名单加超时步数、fail-closed）、理算三策略（旧实现保留标 Deprecated
+                并加回退开关）；阶段 C 纯函数内核迁 adjustment-engine、synap-claim-sdk 落纯 Java
+                契约、依赖边界机检；阶段 D 人工窗口（M2 责任要素 DDL、D4 物理包重构、05 契约 node_type
+                枚举扩展、FraudScreen 真实接入）。关键取舍：一是不伪造 7 步节点，canonical 五节点保持唯一真源，落地版
+                7.3 改写为现状加待评审扩展阶段；用户 Q3 要求强制全做，但 L4 项 AI
+                不得执行，本轮另产出可直接进入评审的人工窗口执行包。二是脚本沙箱不用 JVM 全局 SecurityManager，不引
+                Aviator。三是复用双轨对拍、缺口哨兵、变异鉴别三轨锁金额等价，oracle 不并入生产。四是 D4
+                用逻辑映射加门禁而非物理移动 500 余个 Java 文件。风险：L4 架构师审批与 R1-R8
+                未拍板、文档目标态定义不自洽、并发提交者混入、全仓门禁基线、全量提交含他人增量。验证：1290 例单测零失败、12
+                道提交门禁、文档机检 19 步、错误码 52 对 52 与双语覆盖、clean test 核对提交树。Spec
+                Patch：无，三份 delta spec 与 proposal 一致，不改动需求。
+              requirementsEvidence:
+                contentHash: 4e4dd0cb1bde50aaef7708f30e0caffbed5b1f626e32f13022914296f7462c38
+                ref: openspec/changes/synapclaim-architecture-convergence
+              sourceEvidence:
+                contentHash: e94c9005e2b7e0ce47ae55621b452c4197cdb5950913c90c02a8cf18ce7e9c17
+                ref: openspec/changes/synapclaim-architecture-convergence
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-architecture-convergence
+                  changeDir: openspec/changes/synapclaim-architecture-convergence
+                  workspaceBaseline:
+                    ref: f204d601-2546-4dd2-8893-1701c823f9d3
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+                    ref: openspec/changes/synapclaim-architecture-convergence
+            full.open.evidence:
+              contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+              ref: openspec/changes/synapclaim-architecture-convergence
+            full.open.revalidate:
+              contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+        inputHash: 24f2a54c05b2fb0a122b7bb3794324646b630c4f037e869b924a19ff46b6a6d9
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-architecture-convergence
+        status: pending
+        stepId: full.build.check
+        type: call_tool
     actionContexts:
       synapclaim-architecture-convergence:1:
         results: {}
@@ -1109,6 +1279,155 @@ run_checkpoint:
             value:
               contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
         sequence: 13
+      synapclaim-architecture-convergence:14:
+        results:
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: direct
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-architecture-convergence
+                  changeDir: openspec/changes/synapclaim-architecture-convergence
+                  workspaceBaseline:
+                    ref: f204d601-2546-4dd2-8893-1701c823f9d3
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: direct
+          full.build.execute:
+            sequence: 13
+            value:
+              event: build-complete
+          full.build.plan:
+            sequence: 11
+            value:
+              designEvidence:
+                contentHash: 19a50da4301ccb73b5771e8ae5e42efff40ba097799d9b993ab799bdd653c571
+                ref: openspec/changes/synapclaim-architecture-convergence/design.md
+              plan: docs/superpowers/plans/synapclaim-architecture-convergence.md
+              planEvidence:
+                contentHash: 6078348af0826eb54199c8a9368678eeb8928ea1973d39c37e727821bac895d7
+                ref: docs/superpowers/plans/synapclaim-architecture-convergence.md
+              taskRevision: 98418c087c6799cd11c14e6210e5acc120d6e25b48445f84108069cdbe92a491
+          full.build.plan.evidence:
+            sequence: 12
+            value:
+              contentHash: 6078348af0826eb54199c8a9368678eeb8928ea1973d39c37e727821bac895d7
+              ref: docs/superpowers/plans/synapclaim-architecture-convergence.md
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-architecture-convergence
+                  changeDir: openspec/changes/synapclaim-architecture-convergence
+                  workspaceBaseline:
+                    ref: f204d601-2546-4dd2-8893-1701c823f9d3
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-architecture-convergence/.comet/handoff/design-context.json
+                    handoffHash: 4833fe7dc3fae8bd282ae7ec8f6bde464b381cbdb2343486ca71c5d7bf84b11b
+                    proposal: 方案：以代码事实为单一真源，按 design.md 的 D-1~D-10 分四阶段收口九项剩余项。阶段 A 文档口径、20 子域到 7
+                      上下文的机器可读映射与门禁、响应契约机检；阶段 B 显式流程层与声明式
+                      Condition、脚本沙箱（能力白名单加超时步数、fail-closed）、理算三策略（旧实现保留标
+                      Deprecated 并加回退开关）；阶段 C 纯函数内核迁
+                      adjustment-engine、synap-claim-sdk 落纯 Java 契约、依赖边界机检；阶段 D
+                      人工窗口（M2 责任要素 DDL、D4 物理包重构、05 契约 node_type 枚举扩展、FraudScreen
+                      真实接入）。关键取舍：一是不伪造 7 步节点，canonical 五节点保持唯一真源，落地版 7.3
+                      改写为现状加待评审扩展阶段；用户 Q3 要求强制全做，但 L4 项 AI
+                      不得执行，本轮另产出可直接进入评审的人工窗口执行包。二是脚本沙箱不用 JVM 全局
+                      SecurityManager，不引
+                      Aviator。三是复用双轨对拍、缺口哨兵、变异鉴别三轨锁金额等价，oracle 不并入生产。四是 D4
+                      用逻辑映射加门禁而非物理移动 500 余个 Java 文件。风险：L4 架构师审批与 R1-R8
+                      未拍板、文档目标态定义不自洽、并发提交者混入、全仓门禁基线、全量提交含他人增量。验证：1290 例单测零失败、12
+                      道提交门禁、文档机检 19 步、错误码 52 对 52 与双语覆盖、clean test 核对提交树。Spec
+                      Patch：无，三份 delta spec 与 proposal 一致，不改动需求。
+                    requirementsEvidence:
+                      contentHash: 4e4dd0cb1bde50aaef7708f30e0caffbed5b1f626e32f13022914296f7462c38
+                      ref: openspec/changes/synapclaim-architecture-convergence
+                    sourceEvidence:
+                      contentHash: e94c9005e2b7e0ce47ae55621b452c4197cdb5950913c90c02a8cf18ce7e9c17
+                      ref: openspec/changes/synapclaim-architecture-convergence
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-architecture-convergence/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 19a50da4301ccb73b5771e8ae5e42efff40ba097799d9b993ab799bdd653c571
+              ref: openspec/changes/synapclaim-architecture-convergence/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-architecture-convergence/.comet/handoff/design-context.json
+              handoffHash: 4833fe7dc3fae8bd282ae7ec8f6bde464b381cbdb2343486ca71c5d7bf84b11b
+              proposal: 方案：以代码事实为单一真源，按 design.md 的 D-1~D-10 分四阶段收口九项剩余项。阶段 A 文档口径、20 子域到 7
+                上下文的机器可读映射与门禁、响应契约机检；阶段 B 显式流程层与声明式
+                Condition、脚本沙箱（能力白名单加超时步数、fail-closed）、理算三策略（旧实现保留标 Deprecated
+                并加回退开关）；阶段 C 纯函数内核迁 adjustment-engine、synap-claim-sdk 落纯 Java
+                契约、依赖边界机检；阶段 D 人工窗口（M2 责任要素 DDL、D4 物理包重构、05 契约 node_type
+                枚举扩展、FraudScreen 真实接入）。关键取舍：一是不伪造 7 步节点，canonical 五节点保持唯一真源，落地版
+                7.3 改写为现状加待评审扩展阶段；用户 Q3 要求强制全做，但 L4 项 AI
+                不得执行，本轮另产出可直接进入评审的人工窗口执行包。二是脚本沙箱不用 JVM 全局 SecurityManager，不引
+                Aviator。三是复用双轨对拍、缺口哨兵、变异鉴别三轨锁金额等价，oracle 不并入生产。四是 D4
+                用逻辑映射加门禁而非物理移动 500 余个 Java 文件。风险：L4 架构师审批与 R1-R8
+                未拍板、文档目标态定义不自洽、并发提交者混入、全仓门禁基线、全量提交含他人增量。验证：1290 例单测零失败、12
+                道提交门禁、文档机检 19 步、错误码 52 对 52 与双语覆盖、clean test 核对提交树。Spec
+                Patch：无，三份 delta spec 与 proposal 一致，不改动需求。
+              requirementsEvidence:
+                contentHash: 4e4dd0cb1bde50aaef7708f30e0caffbed5b1f626e32f13022914296f7462c38
+                ref: openspec/changes/synapclaim-architecture-convergence
+              sourceEvidence:
+                contentHash: e94c9005e2b7e0ce47ae55621b452c4197cdb5950913c90c02a8cf18ce7e9c17
+                ref: openspec/changes/synapclaim-architecture-convergence
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-architecture-convergence
+                  changeDir: openspec/changes/synapclaim-architecture-convergence
+                  workspaceBaseline:
+                    ref: f204d601-2546-4dd2-8893-1701c823f9d3
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+                    ref: openspec/changes/synapclaim-architecture-convergence
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+              ref: openspec/changes/synapclaim-architecture-convergence
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+        sequence: 14
       synapclaim-architecture-convergence:4:
         results:
           full.open:
@@ -1921,6 +2240,10 @@ run_checkpoint:
                 reviewMode: off
                 subagentDispatch: null
                 tddMode: direct
+      full.build.execute:
+        sequence: 13
+        value:
+          event: build-complete
       full.build.plan:
         sequence: 11
         value:
@@ -2034,6 +2357,6 @@ run_checkpoint:
           contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
     children: []
     lineage: []
-  sourceRevision: 37
-  sourceHash: 60dbd268f658c3b72fee780a3b1d04817efe9e87ff70bd74db5221250a9bb145
+  sourceRevision: 42
+  sourceHash: b2b07b8bccf3f97991dd6ccf8bae05381dc8f8f8c64dd73dfa13ea848a0fcc16
 check_epoch: 2

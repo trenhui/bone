@@ -27,7 +27,12 @@ import java.util.Map;
  * </pre>
  *
  * <p>把 ③ 和 ④ 调换会系统性<b>多赔</b>：先控额再扣免赔，等于用未扣免赔的金额去占用额度， 后续发票的可赔额被提前吃掉；反之先免赔再控额才符合 §4.2 步 5→7 的顺序。
+ *
+ * @deprecated 九步主链仍是当前生产的唯一金额实现，但调用入口已迁移到 {@code
+ *     com.bone.claim.domain.model.adjustment.strategy.AdjustmentCalculationRouter}：
+ *     新入口提供责任形式分派与回退开关。本类保留为<b>回退路径</b>（开关默认关闭时逐字调用本类）， 待形式分派开关全量开启且双轨回归稳定后另行下线。新代码请走路由器，不要直接调用本类。
  */
+@Deprecated
 public final class AdjustmentEngine {
 
   /** 零赔付归因（受控枚举，禁自由文本；与 {@code t_adj_calculation_line.zero_reason} 对齐）。 */

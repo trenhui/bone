@@ -148,6 +148,26 @@
       "currency": "current"
     },
     {
+      "id": "record.ai.changelog",
+      "path": "09-records/AI技术方案-版本历史.md",
+      "layer": "L9",
+      "diataxis": "reference",
+      "status": "active",
+      "summary": "AI技术方案完整版本表（v1.0–v2.10）：唯一 changelog 真源，主文档只保留当前版本入口",
+      "role": "record",
+      "currency": "historical"
+    },
+    {
+      "id": "record.ai.impl-log",
+      "path": "09-records/AI技术方案-实施记录.md",
+      "layer": "L9",
+      "diataxis": "explanation",
+      "status": "active",
+      "summary": "AI技术方案 §1.7 循环复核逐轮记录（v2.5–v2.10）与 §11 变异验证 / 边界记录：实施过程证据，不承担当前口径",
+      "role": "record",
+      "currency": "historical"
+    },
+    {
       "id": "contract.rules-v1",
       "path": "03-contract/智能理算引擎业务规则V1.md",
       "layer": "L3",

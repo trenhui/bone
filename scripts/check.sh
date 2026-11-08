@@ -730,6 +730,15 @@ if ! python3 scripts/check-synapclaim-architecture.py; then
   exit_code=1
 fi
 
+# 2026-11-08 新增（P38 第二轮 / M1·M4）。三模块依赖边界：SDK 零框架依赖、
+# engine 仅 JDK + SDK、app 单向依赖。判据与 7 个负向探针见
+# scripts/check-synapclaim-module-boundaries.py --self-test（G47 活入口即本行调用）。
+echo -e "${YELLOW}  · 模块边界（B1–B8）：SDK 零框架 / engine 纯 JDK / app 单向依赖${RESET}"
+if ! python3 scripts/check-synapclaim-module-boundaries.py; then
+  echo -e "${RED}❌ synapClaim 模块边界机检失败（依赖方向或框架污染）${RESET}"
+  exit_code=1
+fi
+
 # 2026-11-05 新增（G47）。孤儿门禁检测（R4）：本步守的是**门禁机制本身**，不是某条业务判据。
 # 起因是上面三步的实测：判据写好了、单测也写了，但没有任何入口调用它们，于是该维度
 # 从未被保护。R1–R3 只检查「已列出的步骤是否执行」，结构上不可能发现「从未被列出的脚本」。

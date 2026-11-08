@@ -13,29 +13,8 @@ currency: current
 
 ## 文档版本历史
 
-|**版本**|**日期**|**作者**|**变更说明**|
-|---|---|---|---|
-|v1.0|2026-10-14|BONE 平台架构|初版技术方案（可评审）|
-|v1.1|2026-10-21|BONE 平台架构|结构治理：§8 数据模型删除内联 DDL、改指工程落地版 §9；文首明确「本文不定义契约」；§9.1/§10.2 对齐 07-delivery/04-05 真源；品牌统一 synapClaim|
-|v1.2|2026-11-04|BONE 平台架构|**AI 原生目标态回写**：§1.1 定位由「AI 只产边缘建议」升级为「AI 承担感知与认知、确定性代码承担资金、人承担终审」的分阶段目标；§1.2 增补 P7–P9；新增 §1.4 成熟度分级与三层智能分工、§11.3 数据飞轮与 MRM；§12.2 补 AI 原生判据。P1「AI 不碰钱」与 §6.5 三重校验门禁**不变**，红线不放宽|
-|v1.3|2026-11-04|BONE 平台架构|**AI 原生落地态回写**：① §1.4 把"目标态"与"代码实测态"分线——生产 `synap-claim` 已接线结构化认知契约（`AiGatewayPort.AiAssessment` + `AiAssessNodeHandler` 三态安全 + `DecisionTriage` 确定性三档），POC 主机 `ClaimService` 此前滞后，本轮现代化为同契约输出；② 新增 §1.5「AI 原生契约（代码引用）」作为 AI 输出的 SSOT；③ 知识层（受控 RAG）与学习层（飞轮/MRM）诚实定级 L0/L3 并给出路线，不再把目标态写成现状；④ `LocalAiGatewayPortAdapter` 补最小确定性认知，使演示轨迹非空。红线与三档分诊**不变**|
-|v1.4|2026-11-04|BONE 平台架构|**AI 原生主链接线**：① 感知层接 `DocumentParsePort`（数电票文本层结构化解析，字段级置信度 + 原文坐标 + 完整性，主动解析端点）；② 知识层以租户医学目录准入核验替换恒 `available=false` 桩，无法判定仍 fail-closed；③ 决策层新增 `AiDiscrepancyRouting`，白名单差异码首次驱动**非资金**流程状态（自动通过 → 补件/复核），原因码可回放；④ 学习层把后督 DIFF 转成结构化评测样本事件；⑤ 新增 §1.6 落地规格、验收判据与未落地边界。§1.4 状态列、§1.5 不变量同步回写。**P1 红线、三档分诊、G0–G4 门禁不变；真实 provider、图像多模态、受控 RAG、MRM 仍未落地，不得据此宣称 L3**|
-|v1.5|2026-11-04|BONE 平台架构|**复核建议落地**：① 发票验真 / 验重前移到材料阶段（票面要素 + 跨案去重，查实问题落 `FAIL`，本地核验通过仍落 `UNVERIFIABLE` 转人工，不放宽 R-FRAUD-06）；② 核责规则资产化（资源文件可替换 + 版本随命中留痕，配置不可信时回退）；③ 链路联动（案件级锁定事件 → 自动触发决策图，默认关闭、G3 前置）；④ §1.6 补验收判据、未落地边界与「建议采纳 / 未采纳理由」对照表。**红线与成熟度定级不变，仍不得对外宣称 L3**|
-|v1.6|2026-11-04|BONE 平台架构|**降级可归因**：新增 `AiDegradationReason` 四码（`MOCK_NOT_ALLOWED` / `OUTPUT_CONTRACT_VIOLATION` / `PROVIDER_TIMEOUT` / `GATEWAY_ERROR`），按异常类型走 cause 链分类，不匹配消息文本；见 §11.5|
-|v1.7|2026-11-05|BONE 平台架构|**运行期口径**：新增 `GET /claim-ops/ai-runtime-health`（参与/桩/来源不明/降级/无法判定五桶 + 归因覆盖率），并按 `AiModelProvenance` 把「桩跑过」从参与分子中剔除；见 §11.6|
-|v1.8|2026-11-05|BONE 平台架构|**连通态补齐 + 真实 provider 实测**：① 新增 `GET /claim-ops/ai-provider-probe`（一次最小真实调用，判词含未配置/通/四个受控原因码 + 处置动作），补上「配了 ≠ 通了 ≠ 契约对」这一层；② 修真实 provider 下必然失败的缺陷——业务请求曾把逻辑别名 `synap-claim-ai` 当模型名发给上游，探活却用配置模型，造成「探活绿灯、业务全量降级」，现探活与业务共用 `requestModel()` 唯一真源；③ 知识基据 `KnowledgeBasis` 随轨迹落库并进健康度二级归因，四类成因不再被压成一个 `KNOWLEDGE_UNAVAILABLE`；④ §11.7 记录实测前后对照（`0.0000 / 0.0112` → `0.5556 / 1.0000`）。**P1 红线、三档分诊、G0–G4 门禁不变**|
-|v1.9|2026-11-05|BONE 平台架构|**认知层输入侧补齐 + 事实落地校验**：① 感知层早已抽出带 `text@67:8` 定位的票面/临床字段，但 AI 只收到 6 个聚合标量，只能把标量复述成 `aiFacts`、把 `claimContext` 编成证据定位（实测取证）；现 `ClaimContextView.evidenceFacts` 把材料事实送进提示词（v5）；② 新增 `EvidenceFactPolicy` 出域策略（姓名/证件/病历号不出域，与网关 PII 脱敏构成两层）；③ 事实必须有材料出处——按 `code|value` 在材料索引里比对，定位一律取材料侧，不可核条目丢弃并计数 `aiUnverifiableLocators`（进轨迹与健康度）；④ §11.8 记录实测对照（`aiFacts` 由 6 条回显变为 4 条真实票面事实，`aiDiscrepancies` 首次有依据地出现 `AMOUNT_MISMATCH`）。**P1 红线、三档分诊、G0–G4 门禁不变**|
-|v2.0|2026-11-05|BONE 平台架构|**AI 参与告知补第四态**：`/claims/{id}/decision/disclosure` 此前把「桩执行成功」判为 `AI_ASSISTED`，对一则没有模型参与的结论下发「含 AI 辅助生成内容」；现新增 `AI_STUB`（`SIMULATED_ONLY`）+ 专属标识文案，`ClaimDictLabels` 与前端 codegen 同步；多 LLM 节点改按「漏标风险」选代表节点（旧实现只取最后一个，前面真模型的参与会被靠后的桩抹掉）；§11.9 写明两个失效方向代价不对称的判据。**P1 红线、三档分诊、G0–G4 门禁不变**|
-|v2.1|2026-11-05|BONE 平台架构|**结论消费补齐（链条末端）**：① 取证发现决策结论产出后**无人消费**——全仓 `completePreExam` 主代码调用点只有人工接口，实测 16 次决策执行、0 个案件离开 `AUTO_PRE_EXAMINING`，案件因此进不了核赔队列（40）、永不结案、评测拿不到弱标签；② `DecisionRunApplicationService` 统一消费：初审段收口（11/13 → 12）+ 按结论路由（`AUTO_APPROVE`→50 或转 40、`NEED_MORE_EVIDENCE`→21、其余/失败→40），受控原因码随响应回传；③ 金额只给自动通过路径，理算越界不抛异常而是转人工留痕；④ 推翻 §11.8 结论 2 的「属流程侧动作、非代码缺陷」归因，并在 §11.10 登记 `agreementRate` 恒 `null` 的第二个根因（能力缺失把二元建议兜成 `MANUAL_REQUIRED`，分母恒 0）。**P1 红线、三档分诊、G0–G4 门禁不变**|
-|v2.2|2026-11-05|BONE 平台架构|**放量治理增强 + 置信度溯源（§11.11）**：① 渠道分层灰度（`scopeDimension`/`scopeValues`，白名单外与缺失渠道一律不放量，渠道闸排在 100% 全放捷径之前——顺序反了灰度会静默变全量）；② 部分作用域未配置 fail-closed 不回退全局（回退会把「收紧」变成「放宽」）；③ 定时生效窗（`effectiveFrom/To` + `AI_SCHEDULED_INACTIVE` 与「关闭」可区分）；批量下发明确不做（无真实消费方且会引入第二套写路径）；④ 新迁移 0121 给 `claim_decision_execution` 加 `confidence_source`（MODEL/STUB/FALLBACK/UNKNOWN，判据复用 `AiModelProvenance` 单一真源；历史行不回填——编造比留 NULL 危险），执行器三处覆写分支同步推导，`confidence=null` 强制 UNKNOWN。变异验证 6 次全部被捕获且红点落在预期用例。**P1 红线、三档分诊、G0–G4 门禁不变**|
-|v2.3|2026-11-05|BONE 平台架构|**阶段机熔断 + 独立盲标（§11.12 / §11.13）**：① **G3-1/G3-2 回写**——AI 介入四档阶段机（`AiRolloutStage.permitsAutoSettlement()` 为资金侧唯一判据；全局开关打开≠可自动出金，未配置按 SHADOW fail-closed）+ 案件级确定性分桶（替代单租户下恒 0 的 `tenantId%100`）+ 错误预算熔断（抽检口径错误率超限自动降一档回写现场；样本不足不熔断只阻晋升；空集给 null 不是 0%）；零 DDL，复用 `feature_toggle.config_json`；5 组变异全命中（含互补变异证明分布判据判别力）。② **配置变更进事件总线**——新增 `FeatureToggleChangedEvent` 并移除 `AiRolloutApplicationService` 的 `@NoDomainEvent` 豁免（E-5.4 兑现），自动降档以领域事件供风控/审计订阅，不再解析 remark 字符串。③ **G4-1 独立盲标**——新迁移 0122 建 `t_claim_blind_label_task`（`bone-init.sql` 同批）：PENDING→LABELED→UNBLINDED，四道防反馈环闸（载荷禁区 422 / AI 快照解盲才落库的物理分离 / 一次提交 / 标注人与抽检质检人互斥 409）；AI 参与只认 `confidence_source==MODEL`；`PAIRED` 仅表成对产出，一致率评测侧离线判定；4 组变异全命中。回归 1124 run / 0 fail。**P1 红线、三档分诊、G0–G4 门禁不变；盲标工作台前端与 ECE 校准仍未落地，不得据此宣称 L3**|
-|v2.4|2026-11-05|BONE 平台架构|**L3 就绪度实现态与不可代执行边界（§1.7）**：阶段机分桶必需判据 `requiresModelParticipation` + L3 就绪度静态复核器（`l3Claimable`）；诚实定位 L1/L2 分阶段，不得宣称 L3|
-|v2.5|2026-11-06|BONE 平台架构|**智能风控真实维度补全（#24）+ 第 2 轮循环复核**：① 核责规则引擎新增两条库内数据驱动维度——`R-FRAUD-22` 跨案重复索赔（`priorClaimCount>=1`，risk=true）与 `R-ANOM-03` 近 90 天高频报案（`recentClaims90d>=3`，risk=false，仅审计留痕），均经 `ClaimCaseRepository.findByInsuredIdHash` 取同被保人全部赔案、排除本案自身后求值；② 规则集 `claim-ruleset-v3→v4`（回放可区分）；③ 富化路径 `enrichFromRepositories` 新增 `priorClaimCount`/`recentClaims90d` 变量；④ 单测 6 项（含排除自身零误报、变异可翻转）。**黑名单比对 / 诊疗-费用合理性等需外部数据源的维度本轮不实装、不伪造，登记为 gap；本 change 不翻转 AI 原生成熟度外部前置判据，仍不得据此宣称 L3**|
-|v2.6|2026-11-07|BONE 平台架构|**第 3 轮循环复核：判据防假绿硬化 + 证据链补齐**：① 取证发现 4 条就绪度判据可被低成本刷绿——`CATALOG_ADMISSION_ACTIVE` 读的是从未被 runner 执行的孤儿 V15（删文件反判绿）且无视 `ItemCatalogPort` 零实现；`BASELINE_WIRED` 只读 6 个 status 字符串（与 E5「skeleton 禁 wired」冲突）；`FROZEN_EVALSET_ACTIVE` 接受任意非空 `payloadHash` 且与 A1 白名单打架；`GOLIVE_NOT_DRAFT` 是 12 项里唯一「改一个词就翻绿」的纯词法判据。全部改为**证据驱动**：读生效迁移通道 + 端口接线、要求 provenance/源码可达/顶层非 skeleton、调用 `frozen_set.verify_manifest` 校验内容哈希、currency+role+正文完成度三查 + 缺册 fail-closed。② `--self-test` 扩为三类探针（翻转 / 合规可达 / **刷绿须保持 BLOCKED**）26 条全 PASS；新增 `test_ai_native_readiness_evidence_gates.py` 21 条独立表征钉子。③ #24 的 4.6 变异验证由推理级补成**实跑**：`>=1→>=99` 恰 2 例转红、`>=3→>=99` 恰 1 例转红，恢复后与 HEAD 逐字一致、6/6 全绿。④ 新增 `07-delivery/11-L3外部前置运行手册.md`（provider 四变量 + 文档 0 命中的 `BONE_CLAIM_DOCUMENT_PARSE_MODE=llm` + probe 四码 + E2E 启动链 + **窗口硬编码口径差异** + 12 判据→10 项外部前置→owner 归因 + 5 条红线）与 `09-records/reviews/循环复核台账（第 9–11 轮）.md`（附录 A）（7 项逐项裁定 + 13 分册逐册核对台账 + #26/#27 待审批最小落地方案）。依据 Google《Rules of ML》《ML Test Score》、CD4ML、NIST AI RMF。**本轮未改任何治理资产 status / frontmatter / 默认值 / 迁移 / 公共签名，未翻转任何外部前置：仍为 SATISFIED 5 / BLOCKED 7、l3Claimable=false、L0，不得宣称 L3**|
-|v2.7|2026-11-07|BONE 平台架构|**第 4 轮循环复核：零 DDL / 零公共签名闭环落地（#26/#27）**：把上轮「需 L3 DDL 审批」的两项改写为不需要审批的更优解。① **#26 后督 DIFF 回流**：取证发现 DIFF 结论已原子落库 `t_claim_inspection` 而 `AiEvalSampleCollectedEvent` 零消费方、导出端点读的是另一套数据；新增 `findDiffConcludedInWindow` + SQL 模板（19 列/租户锚点）+ `DiffSampleExportApplicationService` + `GET /claims/eval/diff-samples`（三类归因/16 位幂等指纹/31 天 500 条护栏/truncated 不静默裁剪），并补 `AiEvalSampleProjection` 用 `@EventListener` 真正消费事件（进程内易失索引，权威事实源仍是落库抽检单）。真实 E2E 从活库读出 10 条 DIFF 样本，负向 401/400 生效。② **#27 初审字段级完整性**：`EvidenceFieldReader.declaredComplete()` opt-in 采信显式布尔 `complete` 标记（无标记/坏 JSON/手工回填一律回退既有语义，避免把收紧做成全量退补件）、`LocalClaimContextPortAdapter` 收紧 `allParsed`、LLM 通道补写 `complete`（防配了不生效）、`EvidenceController` 补 `POST /{id}/parse-image` 消除零调用方死代码；**不改任何 record 组件**。③ 双向变异验证（过度收紧 / 摘除收紧）各精确红 2 例，归因摘除红 1 例。**门禁：全模块 1224 tests/0 fail、ArchUnit 27、SQL 双门禁、check.sh 59/59、真实服务栈 E2E 正向+负向通过**。依据 Google《Rules of ML》、CD4ML、NIST AI RMF、fail-closed 与 blast-radius 最小化。**诚实边界：落地的是「可回溯索引 + 事件真实消费」与「数电票文本层完整性」，不是智能稽核 / 独立复核 AI 理算（AI 不产理算结果）/ OCR+NLP 自动录入；独立盲标金标准仍属 Phase B/V2。复核器仍 SATISFIED 5 / BLOCKED 7、l3Claimable=false、L0，未翻转任何外部前置，不得宣称 L3**|
-|v2.8|2026-11-07|BONE 平台架构|**第 5 轮循环复核：业界实践对账与治理下限不可绕过**：校准报表下限守卫（minSamples 钳制，只许上调）+ 回滚演练缺口登记（NIST AI RMF 应急处置）；将 9 项 L3 判据逐项对到 Google《Rules of ML》/《ML Test Score》、Sculley、NIST AI RMF|
-|v2.9|2026-11-07|BONE 平台架构|**第 6 轮循环复核：三判据翻转与判据面扩展**：`FLYWHEEL_DOWNSTREAM` / `IMAGE_PARSE_WIRED` / `RAG_WIRED` 受控接线（门控默认关）+ 复核器判据面扩至 11 项（`--self-test` 负向探针扩至 12 个）|
-|v2.10|2026-11-08|BONE 平台架构|**第 8 轮循环复核：回滚演练 dry-run 落地**：只读推演从当前档位降档一档后的资金权限、模型参与要求与状态完整性（`FORBIDDEN_MUTATIONS` 不可变、mutations 恒 0），不执行降档、不写任何配置；闭环 NIST AI RMF 应急处置缺口|
+> 当前版本：**v2.10**（2026-11-08）。完整版本表以 `09-records/AI技术方案-版本历史.md` 为唯一 changelog 真源，本文不复制。
+> 正文只保留「现在该怎么建」的目标态 / 当前态与红线；逐版变更明细进记录层。
 
 ---
 
@@ -107,7 +86,7 @@ currency: current
 
 本文只保留 AI 侧特有的一条：**单证 OCR 报销兜底保留**；医院端直付经保司/TPA 通道提前至 V1.0 试点（复用 `bone-ai-integration` C10 三态灰度 Shadow→Assisted→Automated，非自建医保局/银行网关）。
 
-### 1.4 AI 原生目标态与成熟度分级（v1.2 新增）
+### 1.4 AI 原生目标态与成熟度分级
 
 **三层智能 + 资金 + 学习的分工**
 
@@ -169,7 +148,7 @@ currency: current
 
 > **与 P1 红线关系**：契约向决策轨迹供"可解释材料 + 评测样本源"，并向流程路由供受控差异码；资金 / 拒赔 / 理算 / 分诊阈值仍由确定性代码 + 人工独占，AI 输出只做安全方向的单向收紧（自动通过 → 补件 / 复核）。
 
-### 1.6 AI 原生落地规格（v1.4 代码契约）
+### 1.6 AI 原生落地规格
 
 > 本节写**已接线的规格**，不写愿景。代码位置、端口与输出契约是判据，文档不重述实现细节。未落地项集中在末表，避免把目标态混进现状。
 
@@ -259,7 +238,7 @@ currency: current
 - 实测态（外部前置，如实 BLOCKED/RUNTIME_ONLY）：真实 provider/GPU 未配置（`PROVIDER_CONFIGURED`）、≥300 张独立盲标票据未达标（校准 verdict=`INSUFFICIENT_SAMPLES`）、医学条款语料未 ingest（RAG verdict 走 `CORPUS_MISSING`）、票据验真通道（发票验真外部依赖）。
 - 目标态（不得写成现状）：`l3Claimable=true` 须全部判据 SATISFIED——当前 `l3Claimable=false` 为诚实结论；阈值建议仅在盲标样本 ≥300 且签核后才允许进入配置（AI 不碰钱）。
 
-### 1.7 AI 原生 L3 就绪度：v2 校准后的实现态与不可代执行边界（v2.4 落地）
+### 1.7 AI 原生 L3 就绪度：v2 校准后的实现态与不可代执行边界
 
 > 本节登记**已落地的代码事实**与**尚未闭环的前置条件**，不改写 §1.4 的成熟度判定，也不改写 §12.2 的 Go/No-Go。业界实践出处与逐条裁定见 `outputs/synapClaim-AI原生复核-第二轮增量与改造清单-2026-11-05.md`（v2，附录 B）。
 >
@@ -326,156 +305,10 @@ currency: current
 - 新增代码不触碰金额、拒赔、理算、资金状态；不改 `DecisionGraph` 拓扑；不放宽 `capabilityMissing` 兜底与 E1/E2 硬闸。
 - 后续每落地一项 ③ 中的条件，须同批回写本节并附实机证据与变异验证，不得先改文档宣告完成。
 
-#### ⑥ 循环复核第 2 轮（v2.5）：发现并修正一处实现偏差
+#### ⑥ 循环复核逐轮记录（外置）
 
-| 项 | 内容 |
-|---|---|
-| 发现 | v2.4 的「分桶必需」实际是**档位级**判定（`stage.permitsAutoSettlement()`）：CANARY 档下未命中灰度桶、或落在渠道白名单外的案件本就走人工，却被无谓收紧。与 v2 校准要求的「仅在会被自动出金的案件上要求模型参与」不一致，违反渐进交付的爆炸半径控制 |
-| 修正 | `AiRolloutApplicationService.modelParticipationRequired(tenantId, claimId, channel)`：与资金侧准入共用 `load(long)` 的同一份 `AiRolloutPolicy`，并复用 `AiRolloutPolicy#admitsCase` 的**同一分桶键**（阶段闸 + 渠道闸 + 比例闸）；`DecisionGraphExecutor` 传入 `claimId` 与 `sourceChannel` |
-| 保留 | `AiRolloutStage.requiresModelParticipation()` 仍作为「档位是否需要模型」的显式领域判据参与组合，两个方法都有真实消费方，不产生「配了不生效」的方法 |
-| 证据 | 新增 5 例案件级分桶用例（未配置 / 命中白名单 / 白名单外 / AUTOMATED / 显式关闭）；变异：摘除 `admitsCase` 组合 ⇒ 1 例转红（`Expecting value to be false but was true`）、17 例仍绿；还原后全模块 **1137 run / 0 fail / 0 error / 6 skipped**，`scripts/check.sh` 59/59 全绿 |
-
-#### ⑦ 循环终止判据：L3 就绪度复核器
-
-复核结论不再靠人读文档推断。`tools/_ai_native_readiness.py` 只读取仓库**可静态核验的事实**，逐项判定 §1.7 ③ 的前置条件并输出 `l3Claimable`：
-
-```bash
-python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py
-python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py --self-test
-```
-
-**2026-11-05 实测输出**：9 项判据，`SATISFIED 1 / BLOCKED 7 / RUNTIME_ONLY 1`；当前可判定成熟度 **L0（运行态纯规则路径）**；**`l3Claimable = false`**。唯一 SATISFIED 是「评测门禁已带 `--check` 接线」——即目前只有护栏是真实生效的。`--self-test` 的 3 个负向探针（删 `--check` 接线 / 目录默认值改 `MANDATORY` / 注入 provider 环境变量）全部发生状态翻转，证明判据有判别力而非恒真。
-
-判据刻意把 `aiCoverage` 等运行期数据标为 `RUNTIME_ONLY` 并阻断：静态文件里没有真实流量证据，绝不因「没数据」判成「达标」。
-
-**循环收敛结论**：代码侧循环到此收敛。7 项 BLOCKED 中，provider/密钥/GPU、非 ML 基线数字、冻结集真实样本、目录语料与策略、合规分册转正共 5 类属外部条件或组织审批；`FLYWHEEL_DOWNSTREAM`（校准消费方）虽可编码，但缺真实样本与人工盲标金标准时仍无法验收；`RUNTIME_MODEL_COVERAGE` 只能由真实流量给出。**继续编码可以改变「可编码的评测骨架」，但不会让 `l3Claimable` 变为 true**。因此后续循环的形态应转为：按 ③ 的 owner 逐项闭环外部条件 → 每闭环一项重跑本复核器 → 由输出决定是否进入下一 Gate；不得用改文档或加护栏替代实证。
-
-#### ⑧ 循环复核第 3 轮（v2.6）：前后端真实端到端测试
-
-**起栈（非 mock）**：MySQL 8.0.31（`bone` 库 209 表 / `t_claim*` 24 表）+ IAM 8081 + 网关 8888 + synap-claim 8087 + shell 3000 + claim-app 3013；五个端点 health 全 200，后端日志均出现 `Started ... in ... seconds`（判据，非推断）。
-
-**E2E 资产（已入版本控制，可重复运行）**：`bone-frontend/e2e/start-services.sh`（每次先重建 claim 与 gateway jar 再起后端）、`start-frontend.sh`（shell + 子应用）、`synap-claim-e2e.cjs`（Playwright 1.64.1 + Chromium）。运行：先后台起两个脚本，再 `node bone-frontend/e2e/synap-claim-e2e.cjs`；产物 `outputs/claims-e2e-result.json` 与两张截图。启动脚本刻意不含 `kill`：共享树下不得由 E2E 脚本终止可能属于其他会话的进程。后台任务被会话回收（如网关任务收到 SIGTERM / exit 143）只表示**托管 shell 结束**，不等于服务栈不可用；判据一律用**业务路径**探测，不看后台任务状态：网关的 `/actuator/health` 是聚合健康度，本 E2E 只起 IAM + claim 时未启动的 masterdata / blueprint 上游会把它拉成 **503**，但 `/api/v1/iam/login` 与理赔路由完全正常（2026-11-05 实测 health=503 而 E2E 12/12 PASS）。用 health 判断网关可用会把正常链路误判成故障。
-
-| 组 | 判据 | 实测 |
-|---|---|---|
-| A 正向（经网关、真实 JWT 与 DB） | 登录 200 且签发 JWT（4475 字符）；赔案列表 200（3 条）；`ai-readiness` 200 且 `deploymentGatesPassed=false`（6 blockers）；运行期健康度 31 天窗口 200 | 5/5 |
-| A 负向探针 | 无 token ⇒ 401；35 天窗口 ⇒ 400 `SC_CLAIM_AI_RUNTIME_HEALTH_QUERY_INVALID` | 2/2 |
-| B 浏览器 | shell 登录落地 token → qiankun `#subapp-viewport` 渲染核赔工作台（4 个主体标记全命中）→ 截图；旧宽松正则会被菜单骗过、新严格判据不会；链路 0 个 5xx | 5/5 |
-| **合计** | | **12/12 PASS** |
-
-**E2E 抓到并修复的三类真实问题**：
-
-1. **网关部署态陈旧**：`claim-ops` 三端点经 8888 全 404，直连 8087 为 200/400 ⇒ 判定「路由缺」而非「服务缺」。根因是**旧构建的 gateway jar 不含源码中已登记的 `synap-claim-ops` 路由**；重建 jar 并重启网关后 404→200。E2E 前置必须重建网关 jar，否则会把部署态误判成代码缺陷。
-2. **首版 UI 断言自造假绿**：用 `body` 文本正则匹配到 shell 菜单「智能理赔」即判通过。改为断言 `#subapp-viewport` 内 4 个主体标记（核赔工作台 / 报案号 / 待领取 / 决策图）命中 ≥3，并加负向自检证明旧宽松正则会被菜单文本骗过、新判据不会。
-3. **5xx 监听漏报**：首版监听器注册在导航之后且只过滤 claims 前缀，漏掉 4 个 503。改为全程捕获并区分链路内外：4 个 503 全部来自 shell 仪表盘/通知接口（`/api/v1/notification/*`、`/api/v1/console/*`，对应服务本次未启动），**理赔链路 0 个 5xx**，已如实记入结果 JSON 的 `ui.external5xx`。
-
-**运行期证据接入循环判据**：E2E 产物的 `runtime` 段被 `tools/_ai_native_readiness.py` 消费，`RUNTIME_MODEL_COVERAGE` 从「`RUNTIME_ONLY`（缺证据）」升级为「`BLOCKED`（有证据且为 0）」：`nodesScanned=88 / aiParticipated=0 / aiDegraded=88 / participationRate=0.0000 / capabilityMissing=75(KNOWLEDGE_UNAVAILABLE)`。复核器现输出 **SATISFIED 1 / BLOCKED 8 / RUNTIME_ONLY 0，`l3Claimable=false`**，4 个负向探针全部翻转。
-
-**判据自身的循环复核（同轮）**：并行会话新增了 `AiConfidenceCalibration` 类及单测，复核器初版「实现类名命中即 SATISFIED」随之转绿；但排查发现生产代码只有 `AiModelCard` 的 javadoc `{@link}` 提及、无任何真实调用，属于「有类没接线」。故把 `FLYWHEEL_DOWNSTREAM` 收紧为「必须存在非注释行的真实调用」，自测探针改为双向翻转（5/5 PASS），最终仍为 `SATISFIED 1 / BLOCKED 8 / RUNTIME_ONLY 0`。**就绪度复核器自身也要接受防假绿审查**：判据变松比能力没进展更危险。
-
-> 这是 L3 未达成的最硬证据：**不是没有数据，而是真实流量证明模型一次都没有参与决策**。它与 §11.4/§11.5 的 dev 库取证、§1.7 ③ 的前置清单三方一致，且由可重复运行的 E2E 与复核器自动产出，不再依赖人工叙述。
-
-#### ⑨ 循环复核第 4 轮（v2.7）：判据自身假绿的修复与三方对账
-
-**背景**：并行会话在同一共享树推进《AI 原生收口实施计划》，落地了 `AiConfidenceCalibration`（ECE/Brier/阈值扫描/challenger 内核）、`BlindLabelCalibrationSamples`（盲标→样本映射）、`AiCalibrationReportApplicationService`（只读报表，真实调用 `from(...)` 与 `evaluate(...)`）。这是**真实进展**，复核器 `FLYWHEEL_DOWNSTREAM` 随之由 BLOCKED 转 SATISFIED。
-
-**但循环复核发现判据的论证路径是错的**：初版只要生产代码里出现 `AiConfidenceCalibration.` 就判「已接线」，于是一行 `import ...AiConfidenceCalibration.CalibrationSample;`（仅引入数据类）同样能翻绿。也就是说**即使把真实计算调用全部删掉，判据仍然绿**——符合本项目「脚本存在 ≠ 门禁生效 / 配了不生效」的同型假绿。并行会话自带的 `_check_ai_native_calibration.py` docstring 亦明确「本脚本不判定飞轮已接线到生产链路」，两者结论一度矛盾。
-
-| 修正 | 内容 |
-|---|---|
-| 三要素判据 | `FLYWHEEL_DOWNSTREAM` 改为**实现类 + 盲标样本源 `BlindLabelCalibrationSamples.from(` + 校准计算 `AiConfidenceCalibration.evaluate(` / `expectedCalibrationError(` / `brierScore(` / `challengerAdmissible(`** 三者同时成立才 SATISFIED |
-| 排除伪引用 | import 行、javadoc `{@link}`、`//`/`/*` 注释、单测引用一律不算生产接线；扫描根缺失 fail-closed |
-| 精确归因 | 计算调用是飞轮定义性动作，优先归因 `CALIBRATION_COMPUTE_NOT_WIRED`；其次 `SAMPLE_SOURCE_NOT_WIRED`、`CALIBRATION_CONSUMER_MISSING` |
-| 回归钉子 | 新增 `scripts/tests/test_ai_native_readiness_flywheel.py`（7 例，临时源码夹具、不改真仓库）：import-only / javadoc-only 不得翻绿，真实调用与三要素齐备必须翻绿，扫描根漂移必须判红 |
-| 变异验证 | M1 恢复旧判据（import 即算）⇒ 1 例转红；M2 去掉注释行过滤 ⇒ 1 例转红；还原后 7/7 OK。`--self-test` 现 7 个探针全翻转（新增「摘除实现类 / 样本源 / 计算调用」三探针） |
-
-**前后端 E2E 增加循环收敛对账（C 组，3 条断言）**：`bone-frontend/e2e/synap-claim-e2e.cjs` 调用复核器解析 `l3Claimable` 与 9 项状态，与运行期 `ai-readiness` 端点的 `deploymentGatesPassed` 对账；任一端单独翻绿即判红，并用「把输出伪造成 `l3Claimable=true`」做负向自检证明对账判据有判别力。产物 `outputs/claims-e2e-result.json` 新增 `runtime.readinessSnapshot`（含 7 个 BLOCKED 判据 ID）。**实测 15/15 PASS**，网关经业务路径 `POST /api/v1/iam/login` 200 就绪（不用聚合健康度）。
-
-**本轮实测存档** `outputs/ai-native-readiness-2026-11-06.txt`：判据 9 项 `SATISFIED 2 / BLOCKED 7 / RUNTIME_ONLY 0`，当前可判定成熟度 **L0**，`l3Claimable = false`；运行期 E2E 证据 `nodes=88 / aiParticipated=0 / participationRate=0 / capabilityMissing=75`。
-
-**本机真实推理条件实测全无**：`ollama` 未安装、11434/8000/1234 等本地推理端口无监听、Python 推理栈（torch/transformers/onnxruntime/llama_cpp/openai/vllm）全缺、无 >100MB 模型文件、`BONE_AI_GATEWAY_BASE_URL` 等 provider 环境变量为空。故 `PROVIDER_CONFIGURED`、`PERCEPTION_MODEL_DRIVEN`、`RUNTIME_MODEL_COVERAGE` 本轮**物理不可能达标**，只能由采购/密钥/算力与真实流量闭环，绝不以 mock 或改配置伪造。
-
-**门禁权属登记**：`scripts/check.sh` 属 AGENTS.md **L3（CI 脚本需架构师审批）**，本轮未接线；`_ai_native_readiness.py` 与 `_check_ai_native_calibration.py` 定位为**主动循环复核工具**（由复核流程显式运行），不是每次提交的阻断门禁，故不把它们计入 L3 阻塞项，避免制造误报。若后续要门禁化，须走架构师审批并按 `scripts/gate-liveness-allowlist.json` 登记。
-
-> 循环结论不变：7 项 BLOCKED 中 5 类属外部条件或组织审批，2 项须真实盲标样本与真实流量。**继续编码可增强评测骨架与护栏，但不会让 `l3Claimable` 变 true**；判据本身也必须接受防假绿审查——判据变松比能力没进展更危险。
-
-#### ⑩ 循环复核第 5 轮（v2.8）：业界实践对账与「治理下限不可绕过」缺陷
-
-**本轮方法**：用户两次强调「基于业界最佳实践」，故先把复核器 9 项判据与权威实践逐项对账，再按缺口选一个**可编码、可测、可 E2E 验证**的落点，而不是继续加护栏。
-
-| 业界实践 | 核心主张 | 本系统既有覆盖 | 本轮处置 |
-|---|---|---|---|
-| Google《Rules of ML》#1/#2 | 先定指标与非 ML 基线，再谈模型 | G0 基线判据、不套用竞品数字、审批门禁 | 无缺口 |
-| Google《ML Test Score》(Breck 2017) | 每条测试是可执行 assertion；四类取**最低分**封顶；按重要切片测模型质量 | `EVAL_GATES_WIRED`、冻结集、`CalibrationReport` 切片统计 | **补**：治理下限写成 8 例 assertion + 3 条运行期 E2E |
-| Sculley《Hidden Technical Debt》 | fragile configs / undeclared consumers / 配置债 | 单一配置源、能力声明 `available=false` | **补**：阈值下限不得由 HTTP 参数改写；生效值回传可审计 |
-| NIST AI RMF 1.0 | validity & reliability、可解释、问责 | 决策轨迹可回放、模型卡、拒赔人工确认 | 仍缺**回滚演练**的静态判据（登记，不伪造） |
-| Anthropic《Building Effective Agents》 | workflow 优先，先简单后复杂 | 固定 5 节点 DAG、复杂度路由、不造自治 Agent | 无缺口 |
-| 生产 RAG / 保险 STP | 评测先行、HITL、渐进放量 | 独立盲标、放量阶段机、错误预算 | 语料 / provider 属外部前置 |
-| ADR-0046（并行会话，本轮新增） | 字段级可信度、置信度非唯一闸门、七层管线、Jev 非最终判定器 | 文档状态「已接受」，明写**暂无代码落地** | PoC 与 OCR 评测报告属外部前置 |
-
-**缺陷 1（真实、可复现）**：`AiCalibrationReportController` 把 `minSamples` / `minSamplesPerSlice` 两个 query 参数**原样透传**给服务，而缺省治理下限是 300/30。传 `?minSamples=1&minSamplesPerSlice=1` 即可让 1 条盲标样本产出 `THRESHOLD_PROPOSED` 阈值建议，绕过「样本不足禁止重定阈值」的防假绿闸。既有单测甚至把 `service.report(1, 2)` 固化为「请求参数缺省」特性。
-
-| 修正 | 内容 |
-|---|---|
-| 边界守卫 | `guardedMinSamples(requested, floor)`：null / 0 / 负数 / 低于下限一律钳制到治理下限；**只允许上调**。守卫加在对外只读端点，领域内核仍允许任意 minSamples 供离线实验（分层不越界） |
-| 可观测性 | `AiCalibrationReport` 回传 `effectiveMinSamples` / `effectiveMinSamplesPerSlice`，让「生效的治理参数」可被审计与端到端验证，而非埋在代码里（Sculley：配置债） |
-| 测试 | 新建 `AiCalibrationReportGuardTest` 8 例：下界钳制、上调保留、切片下限独立、端点真实调用下限、1 条样本不得产出阈值建议、回传字段非硬编码 |
-| 变异验证 | 守卫改为「允许下调」⇒ **4 例转红**（含 `Expecting value to be false but was true` 的 1 条样本产出建议）；还原后 12/12 全绿 |
-
-**缺陷 2（我自己造的假绿）**：E2E 首版负向断言只检查「`minSamples=1` 不产出 `THRESHOLD_PROPOSED`」，但 dev 库无盲标样本时 `NO_EVIDENCE` 会短路——**守卫在不在都会通过**。改为断言生效下限回传值（默认 300/30、`minSamples=1` 仍 300/30、`500/50` 如实回传），判据才有判别力。
-
-**缺陷 3（过期证据）**：C 组收敛对账调用复核器时，读到的是**磁盘上上一轮** E2E 产物；一次失败产物使输出从 `2/7/0` 漂到 `2/6/1`。改为 C 组前先落盘本轮 `runtime` 中途快照（末尾写完整结果、无 `provisional` 标记），对账恒用本轮证据。
-
-**部署态踩坑（可复用）**：源码已有校准报表端点，但 8087 跑的是旧 jar ⇒ 经网关 404（与 §1.7 ⑧ 的网关 jar 同族）。重启时三次踩坑：① `lsof -ti tcp:8087` 不带 `-sTCP:LISTEN` 会把客户端 fd 算进去，误判「端口未释放」；② 旧进程对 SIGTERM 不退出，须 `kill -9`；③ `PIDS` 变量带尾随空格导致 zsh `kill: illegal pid`。**判据一律用 `lsof -ti tcp:8087 -sTCP:LISTEN` + 业务路径 HTTP 200**。重启期间网关熔断短暂触发，服务恢复后自动 half-open 复原，无需重启网关。
-
-**本轮实测**：Java 相关 **12/12**（8 新 + 4 既有）；相关测试变异 4 红→还原全绿；前后端 E2E **19/19 PASS**（A 11 / C 3 / B 5），新增校准报表 4 条运行期断言；运行期 `effective=300/30`（旁路尝试）/ `500/50`（显式上调）/ `verdict=NO_EVIDENCE`；机器判据仍 **SATISFIED 2 / BLOCKED 7 / RUNTIME_ONLY 0，L0，`l3Claimable = false`**。
-
-> 本轮补齐的是**治理与可验证性**（L3 的必要条件），不是模型能力本身。7 项 BLOCKED 仍全部存在；把文档改成 current、把 draft 转正、或硬编码覆盖率，只会制造假绿。
-
-#### ⑪ 循环复核第 6 轮（v2.9）：可编码缺口收口——三判据翻转与判据面同步扩展
-
-**本轮落地（全部 TDD 先红后绿、逐提交、门禁 59/59）**：
-
-| 判据 | 落地内容 | 三要素证据 |
-|---|---|---|
-| `FLYWHEEL_DOWNSTREAM` | 校准生产消费方：`BlindLabelTaskRepository.findUnblindedPaired`（UNBLINDED+PAIRED 样本源，SQL 资源文件非 DDL）→ `BlindLabelCalibrationSamples`（解析失败逐条计数不编造，channel 切片缺省 GLOBAL）→ `AiCalibrationReportApplicationService`（只读，`AiConfidenceCalibration.evaluate` 静态调用）+ `GET /api/v1/claim-ops/ai-calibration/report`（`@PreAuthorize` + `ApiResponse`）；治理下限 300/30 只许上调（承接 ⑩ 缺陷 1 的守卫） | 实现类 + 样本源生产调用 + 校准计算生产调用，import/注释/单测不算接线 |
-| `IMAGE_PARSE_WIRED` | 感知层图像通道：`LlmMessage.imageUrl` + `OpenAiCompatibleClient` content-parts 序列化（网关多模态最小扩展）；`DocumentParsePort.parseImage` default 方法扩展（既有适配器零改动）；`ImageDocumentParsePortAdapter`（`@ConditionalOnProperty` 默认 false，复用 PiiMasker/SafePromptBuilder/LlmOutputGuard，文本层委托基线适配器）；`EvidenceApplicationService.parseImage`（!available→FAILED / !complete→MANUAL / 否则 DONE，归因码逐字透传） | 适配器类 + `BONE_CLAIM_DOCUMENT_PARSE_IMAGE_ENABLED:false` 占位 + `IMAGE_MOCK_REJECTED`/`IMAGE_GATEWAY_UNAVAILABLE`/`IMAGE_OUTPUT_INVALID` 归因码 |
-| `RAG_WIRED` | 知识层受控 RAG：pom 增 `bone-ai-rag`（L3 依赖，已获批准）；`RagKnowledgeRetrievalPortAdapter`（目录准入 fail-closed 主路不变，仅「目录未收录且有检索词」走语义支路；引用强制——无 `clauseRef` 结果丢弃并计数；`ClaimRagScanConfiguration` 门控开才装配 `com.bone.airag`）；`KnowledgeBasis` 增 `RAG_CLAUSE_CITED`/`RAG_CORPUS_MISSING`/`RAG_RETRIEVAL_UNAVAILABLE` 二级归因（与 `AiDegradationReason` 分工：一个答「模型为什么没跑成」、一个答「知识层为什么判不了」） | 适配器类 + `BONE_CLAIM_KNOWLEDGE_RAG_ENABLED:false` 占位 + `RAG_CORPUS_MISSING`/`RAG_RETRIEVAL_UNAVAILABLE`/`clauseRef` 成因码 |
-
-**判据面同步扩展（复核器自身也接受防假绿审查）**：`tools/_ai_native_readiness.py` 新增 `IMAGE_PARSE_WIRED` / `RAG_WIRED` 两判据，与 `FLYWHEEL_DOWNSTREAM` 同为三要素结构（实现类 + 门控默认关 `${ENV:false}` 占位 + 降级码齐全），新增 `gate_default_false` 辅助函数（缺键/默认 true 视为未接线或行为变更）；`--self-test` 负向探针扩至 **12 个**（新增图像/RAG 接线双向翻转、门控默认值改 true、mock 拒绝码移除），全部发生状态翻转。
-
-**本轮实测存档** `outputs/ai-native-readiness-2026-11-05.txt`：判据 **11 项 `SATISFIED 4 / BLOCKED 7 / RUNTIME_ONLY 0`**（较上轮 `2/7/0` 翻转 2 项，加上轮已翻转的 `FLYWHEEL_DOWNSTREAM`），当前可判定成熟度 **L0**，**`l3Claimable = false`**；运行期 E2E 证据 `nodes=88 / aiParticipated=0 / participationRate=0`。
-
-**诚实结论**：4 项 SATISFIED 全部是「护栏与评测骨架」类判据（评测门禁接线、飞轮下游消费方、图像/RAG 受控接线）——它们让「能力缺失时可归因、可证伪、默认配置不变现网行为」，但**没有让模型处理过任何一张真实票据**。7 项 BLOCKED（provider/GPU、非 ML 基线、冻结集、感知模型驱动、目录准入策略、Go-Live 分册、运行期参与率）仍全部属外部条件或组织审批，与 §1.7 ③ 前置清单三方一致。**继续编码不会让 `l3Claimable` 变 true**；阈值建议只在盲标样本 ≥300 且签核后进入配置（AI 不碰钱）。
-
----
-
-#### ⑫ 循环复核第 8 轮（v2.10）：回滚演练 dry-run 落地（业界实践缺口闭环）
-
-**来源**：第 5 轮 §1.7 ⑩ 把 9 项 L3 判据逐项对到 Google《Rules of ML》/《ML Test Score》、Sculley《Hidden Technical Debt》、NIST AI RMF 后，登记的唯一「可编码、可测、可 E2E」缺口是**治理下限不可由调用方放宽**（已落地）；次缺口 **「回滚演练」**（ML Test Score「dry-run rollbacks and verify state integrity」+ NIST AI RMF 应急处置）当时**如实登记为「暂无代码落地」**。本轮补齐它。
-
-**落点选择（不破坏既有纪律）**：`AiRolloutController` javadoc 明写「只读，不提供 promote/rollback 写端点」——人工降档走既有开关配置入口，避免「页面点上去、准入逻辑不认」的双写分叉。故本轮只做**只读 dry-run 演练**：推演从当前档位回退一档后的资金权限、模型参与要求与状态完整性，**不执行降档、不写任何配置**。
-
-| 文件 | 职责 | 关键约束 |
-|---|---|---|
-| `domain/model/config/AiRolloutDrill.java` | 纯领域、零 IO 的演练推演 | 复用 `AiRolloutStage.previous()`（只降一档；SHADOW 回自身 `atFloor=true`）；`integrityIntact` = 回退后档位不升 + 自动出金权限不扩宽；`mutations` 恒为 0（无写端口，是结构性事实非测量值）；`FORBIDDEN_MUTATIONS` 不可变（含「资金与支付」「放量开关与生效档位」） |
-| `application/AiRolloutDrillApplicationService.java` | 只读服务 | 复用 `AiRolloutApplicationService.load()` 单一配置源；租户经 `TenantPort` 取认证主体，禁止请求参数指定（防越权看别租户） |
-| `application/AiRolloutApplicationService.java`（+5 行） | 新增 `currentStage(tenantId)` 只读查询 | 与资金侧准入、模型参与判据共用 `load()`，不设第二套口径；未配置/开关关/损坏一律 SHADOW（fail-closed） |
-| `adapter/web/controller/AiRolloutDrillController.java` | 只读端点 `GET /api/v1/claim-ops/ai-rollout/drill` | `@PreAuthorize('claim:claims:read')`；与 `AiRolloutController` 同治理形态，无写端点 |
-| `tools/_ai_native_readiness.py`（复核器） | 新增 `ROLLOUT_ROLLBACK_DRILL` 门禁 | 三要素：演练控制器存在 + 仅 `@GetMapping` + `AiRolloutController` 无写端点（锁只读纪律）；不参与 `l3Claimable` 阻断（属运行期安全准备），但缺位即登记 |
-
-**实证（判据有判别力）**：
-
-| 层 | 证据 | 结果 |
-|---|---|---|
-| 单元 | `AiRolloutDrillTest` 7 例：四档回退目标、仅 SHADOW 为 atFloor、任一档不扩宽自动出金、模型参与按目标档重算、零写+禁改清单不可变、null 拒识 | 7/7 |
-| 变异 | 把回退目标改为 `current`（不回退）⇒ 4 例转红（回退目标/atFloor/模型参与重算/依据文本）；还原后 25/25 全绿（含既有 18 例） | 守卫有效 |
-| 运行期 E2E | 3 条断言：① 端点可达且报告结构完整（`mutations=0`、`forbiddenMutations≥5`）；② 演练前后生效档位逐位不变（state integrity）；③ `atFloor` 与当前档一致、档位与放量快照同源 | 22/22（本轮 +3） |
-| 静态门禁 | 自测探针「摘除演练控制器 ⇒ BLOCKED」翻转成功 | 12 探针全翻 |
-
-**实测态**：判据 **12 项 `SATISFIED 5 / BLOCKED 7 / RUNTIME_ONLY 0`**（新增 `ROLLOUT_ROLLBACK_DRILL` 为第 5 项 SATISFIED），L0，`l3Claimable = false`；运行期 `nodes=88 / aiParticipated=0 / participationRate=0 / capabilityMissing=75`；经网关演练端点直连 `current=SHADOW / target=SHADOW / integrity=True / mutations=0`（dev 无放量配置→fail-closed 落 SHADOW，符合预期）。
-
-**诚实结论**：回滚演练是**运行期安全准备**（ML Test Score 要求的可回退性），不是模型能力本身。它补齐了「治理与可验证性」这一 L3 必要条件，但 7 项 BLOCKED（provider/算力、感知模型驱动、基线、冻结集、目录准入、Go-Live 13 个分册 draft、`RUNTIME_MODEL_COVERAGE`）仍全部存在、全部属外部条件或组织审批。**本轮结束，循环仍未抵达 L3；把任何 BLOCKED 改成 SATISFIED 的唯一合法路径是闭环其对应的外部条件，而非编码或文档篡改。**
+> v2.5–v2.10 共 7 轮循环复核的发现、修正、变异证据与门禁权属登记，以 `09-records/AI技术方案-实施记录.md` 为唯一记录真源；本节不复制过程。
+> **结论不变**：12 项判据 `SATISFIED 5 / BLOCKED 7 / RUNTIME_ONLY 0`，L0，`l3Claimable = false`；把任一 BLOCKED 改成 SATISFIED 的唯一合法路径是闭环其对应外部条件，而非编码或文档篡改。
 
 ---
 
@@ -886,7 +719,7 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 - **审计三件套**：请求摘要（≤200 字）+ 响应结果 + 耗时，错误可回放。
 - **计量**：bone-ai-gateway `LlmUsageRecorded` 按租户/模型聚合 token 与成本，供预算/配额/成本红线消费。AI 预算配额（真源：工程落地版 §11.12）：**不设全局默认值**，按「月预算上限 = 月案件量 × AI 触发占比 × 0.5 元/案 × 1.5」逐租户推导后写入 `feature_toggle` 的 `aiBudget.soft`（=70%）/ `aiBudget.hard`（=100%），**未配置不得进入 Automated 态**；按案件成本红线 0.5 元/案不变。（原 500/2000 元默认值会在满负荷用量的 2.7% 处误触发「LLM→纯规则降级」，已废止，推导式见工程落地版 §11.12。）
 
-### 11.3 数据飞轮与模型风险治理（v1.2 新增）
+### 11.3 数据飞轮与模型风险治理
 
 **数据飞轮（防反馈环）**
 
@@ -928,7 +761,7 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 >
 > **本轮已交付的最小契约基座**（非 L3，已落地）：AI 输出 SSOT（`AiGatewayPort.AiAssessment`）+ 确定性分诊（`DecisionTriage`）+ 三态安全节点（`AiAssessNodeHandler`）+ POC 主机与本地桩对齐同契约——使"可复算四元组"的**溯源字段**已就位，待 L3 补全样本回流与治理台账后即满足 G0–G4 准入。
 
-### 11.4 评测样本出口与弱标签口径（v1.5 落地）
+### 11.4 评测样本出口与弱标签口径
 
 > §11.3 的实测表把「缺『样本→评测集』回流管道」列为 L3 缺口。本节交付的是这条管道的**上游出口**：让已经落库的决策事实能被评测侧取走。**下游（冻结集存储、盲标队列、切片看板）仍未建**，本文不据此宣称闭环完成。
 
@@ -1013,7 +846,7 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 
 **仍未做（不得据此宣称 L3）**：冻结集存储与哈希校验器落 CI、独立盲标队列、切片指标看板与校准曲线。样本出口只解决「取得到」，不解决「标得准」。
 
-### 11.5 AI 降级归因与「AI 原生指标」的边界（v1.6 落地）
+### 11.5 AI 降级归因与「AI 原生指标」的边界
 
 **起因是一次实测**：dev 库 84 条决策执行 **全部 `FALLBACK`**，轨迹显示 `AiAssess` 节点 `action_result=LLM_UNAVAILABLE`、`aiAvailable=false`。也就是说，这个环境里「AI 原生」一次都没真正跑过——而系统对此只有**一个字符串**的说明。
 
@@ -1048,7 +881,7 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 
 **仍未做**：`ai_confidence` 语义修正（需 `confidence_source` 列，L3）；按原因码的降级率看板与告警阈值（需先有稳定流量）；网关故障类型化异常（依赖 bone-ai 网关改造）。
 
-### 11.6 AI 运行期健康度：先回答「AI 在不在线」（v1.7 落地）
+### 11.6 AI 运行期健康度：先回答「AI 在不在线」
 
 §11.5 让降级**可归因**，但归因只落在轨迹 JSON 里——要回答「现在 AI 到底在不在线、降了多少、为什么降」，仍然得手工写 SQL 挖 JSON。而「AI 有没有真的在跑」恰恰是 AI 原生产品最该有、也最容易缺失的一个数。
 
@@ -1130,7 +963,7 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 > **同一缺陷的第三个入口已在 §11.9 修复（v2.0）**：`GET /claims/{id}/decision/disclosure` 曾把「桩执行成功」判为 `AI_ASSISTED`，对一则没有模型参与的结论下发「本结论含人工智能辅助生成内容」。现新增第四参与态 `AI_STUB`（`SIMULATED_ONLY` + 专属标识文案），并补齐前端字典 codegen 与多 LLM 节点的漏标防护。合规措辞按「误标 ⇒ 确定的不实告知」「漏标 ⇒ 客户不知情接受 AI 影响」两个方向的代价不对称确定，判据与验收见 §11.9。
 
 
-### 11.7 从「配了」到「通了」：provider 探针与知识基据（v1.8 落地）
+### 11.7 从「配了」到「通了」：provider 探针与知识基据
 
 §11.6 的读数（`participationRate=0.0000` / `attributionCoverage=0.0112`）证明了「AI 没在跑」，但没回答**为什么没跑**。本轮把真实 provider 配上、把案件真跑了一遍，结论是：从「配了」到「通了」之间隔着四层，故障形态各不相同，而在报表上长得完全一样——都是「一次降级」。
 
@@ -1224,7 +1057,7 @@ export BONE_AI_GATEWAY_MODEL=deepseek-chat                 # 必须是该 provid
 **仍未做**：告警阈值与看板（需稳定流量才定得出阈值）；知识层接受控 RAG / 条款口径核验（L3，需材料侧与合规措辞一起定）；`confidence_source` 列（L3）；历史 `UNATTRIBUTED` 回填（不可行，见上）。
 
 
-### 11.8 AI 到底看到了什么：认知层的输入侧（v1.9 落地）
+### 11.8 AI 到底看到了什么：认知层的输入侧
 
 §11.5–§11.7 一路把「AI 在不在线、为什么降级、知识层为什么判不了」都变成了可查的事实。这一节补的是更前面的一段——**AI 到底看到了什么材料**。前几节修好的是「AI 跑起来了吗」，本节修的是「跑起来的 AI 手里有没有东西可看」。
 
@@ -1325,7 +1158,7 @@ export BONE_AI_GATEWAY_MODEL=deepseek-chat                 # 必须是该 provid
 
 ---
 
-### 11.9 AI 参与告知：对客户说的那句话（v2.0 落地）
+### 11.9 AI 参与告知：对客户说的那句话
 
 §11.6 修的是**内部报表**（桩不算参与），但同一个错误在**对外告知**上还留着一个入口：`GET /claims/{id}/decision/disclosure` 此前把「桩执行成功」判成 `AI_ASSISTED`，并给客户下发「本结论含人工智能辅助生成内容」——拿一句可被审计核对的话，去描述一件没有模型参与的事。本节补第四个参与态，并把「什么时候宁可信其有、什么时候必须说没有」定成判据。
 
@@ -1379,7 +1212,7 @@ export BONE_AI_GATEWAY_MODEL=deepseek-chat                 # 必须是该 provid
 
 ---
 
-### 11.10 结论谁消费：从「查得到」到「推动了什么」（v2.1 落地）
+### 11.10 结论谁消费：从「查得到」到「推动了什么」
 
 前三轮依次补上的是**认知链的上游**：能查（§11.6 健康度）、能归因（§11.7 四层故障模型）、材料对得上（§11.8 事实落地）。这轮把链子跑到**末端**，发现缺的不是数据也不是指标，而是**执行**：决策结论产出之后，没有任何代码消费它。
 
@@ -1409,13 +1242,14 @@ export BONE_AI_GATEWAY_MODEL=deepseek-chat                 # 必须是该 provid
 | 详情接口读到的状态 | `AUTO_PRE_EXAMINING` | `PENDING_ADJUST`（与响应一致，确已落库） |
 | 待核赔队列 | 不出现 | 出现 |
 
-**变异验证（3 次，均字节级还原后重跑全绿）**：① 删 `completePreExam` 调用 ⇒ 5 例转红；② `ROUTED_TO_ADJUST` 分支只改返回码不真 `escalate` ⇒ 4 例转红；③ 反向——去掉「已推进则跳过」闸门 ⇒ 恰 2 例（`alreadyInAdjustQueueIsUntouched` / `pendingPreExamIsNotSilentlyStarted`）转红，说明闸门不是装饰。
+> 该节的变异验证 / 边界记录见 `09-records/AI技术方案-实施记录.md`（实施日志，不承担当前口径）。
+
 
 **与 §11.4 一致率的关系：第二个根因，别混为一谈**。状态收口只解决「案件走不到终态」。一致率的分母还要求**AI 给出二元建议**（`AUTO_APPROVE`/`SUGGEST_REJECT`），而当前核责/反欺诈/图计算能力未接入，决策图 fail-closed 把 `AUTO_APPROVE` 全部兜成 `MANUAL_REQUIRED`（`capabilityMissing`）——分母恒 0。要拿到第一个真实一致率，须先补 C2/E1/E2，让二元建议真的出现；在那之前，`agreementRate=null` 是**正确输出**，不该用「先结几单」去凑。
 
 **明确不做**：不替调用方自动开始初审（案件在 10 时只回 `CLAIM_NOT_IN_PRE_EXAM`，交回人工——仍是待分配队列里的正常案件，不是死路）；不在路由里改金额；不把 `routingReason` 塞进 `consumption_reason`（该列 `varchar(32)` 且语义只描述资金动作，塞两件事会让「为什么没自动放款」这个查询失真）。
 
-### 11.11 放量治理增强：渠道分层、排期生效与置信度溯源（v2.2 落地）
+### 11.11 放量治理增强：渠道分层、排期生效与置信度溯源
 
 对 §8.3（放量阶段机）四个悬置决策的落地。原则与前几节一致：**资金安全方向 fail-closed、配置可观测、判据可变异验证**。
 
@@ -1446,10 +1280,11 @@ export BONE_AI_GATEWAY_MODEL=deepseek-chat                 # 必须是该 provid
 
 **NULL 与 UNKNOWN 的区别**：NULL = 本列加入前的历史行（当时不存在该维度）；UNKNOWN = 落结论时点根本没产生置信度（如证据缺失短路）。两者都不是「模型参与过」的证据，消费方不得当 MODEL 处理。
 
-**变异验证（6 次，均还原后复跑全绿）**：① 删渠道白名单闸 ⇒ 恰好两层 `channelScopeFailClosed` 红；② 缺失渠道放行（null 改放行）⇒ 同一用例红；③ 删生效窗闸 ⇒ 恰好只红 `scheduledWindowInactive`（策略层 `isEffective` 用例不受牵连——闸在服务层，判据分层正确）；④ 桩判成 MODEL ⇒ 溯源 2 例红；⑤ 忽略降级 ⇒ 溯源 2 例红；⑥ null 置信度不强制 UNKNOWN ⇒ 1 例红。
+> 该节的变异验证 / 边界记录见 `09-records/AI技术方案-实施记录.md`（实施日志，不承担当前口径）。
 
 
-### 11.12 渐进放量阶段机与错误预算（v2.3 落地）
+
+### 11.12 渐进放量阶段机与错误预算
 
 > 此前「放量」的唯一抓手是一行 SQL（把 `feature_toggle` 的自动通过开关从关改开），从零直接跳全量。本节把放量变成**阶段机 + 熔断器**，零 DDL，全部参数复用 `feature_toggle.config_json`（逐键回落，非法值不猜、登记原因后用默认）。
 
@@ -1459,7 +1294,7 @@ export BONE_AI_GATEWAY_MODEL=deepseek-chat                 # 必须是该 provid
 
 **③ 验证与边界**：模块 1093 run 全绿 + 5 组变异全部命中预期用例（去熔断 / 去样本闸 / 阶段闸恒真 / 分桶模运算式退化 / 分桶阈值式退化——第 5 组是互补变异，证明分布判据对「仍均匀但不再按桶」的退化形态有判别力）。**尚未被真实流量验证**（dev 库 `AUTO_APPROVE` 样本为 0），告警阈值待真实流量分布确定后才能定。
 
-### 11.13 独立盲标：人工结论与 AI 建议分离存储（v2.3 落地，G4-1）
+### 11.13 独立盲标：人工结论与 AI 建议分离存储（G4-1）
 
 > 后督抽检员在流程内看得到 AI 建议（这正是抽检的工作方式），因此其结论**不能当金标准**——人工复核受 AI 建议影响（Sculley feedback loops），偏差会被当成 ground truth 放大。弱标签导出（§11.4）的 javadoc 里「真正的金标准需要独立盲标」从预告变成结构。
 
@@ -1471,7 +1306,8 @@ export BONE_AI_GATEWAY_MODEL=deepseek-chat                 # 必须是该 provid
 
 **④ 变异验证（4 组，均命中预期用例并字节级还原）**：① 摘载荷禁区扫描 ⇒ `dispatchRejectsForbiddenPayloadKey` 红；② 去一次提交闸 ⇒ `submitImmutable` 红；③ 解盲不再要求已提交 ⇒ `unblindRequiresLabeled` 红；④ AI 参与口径放宽为「有执行即参与」⇒ `unblindAiAbsentWhenStubOrFallback` 红。回归 1124 run / 0 fail（含 ArchUnit 27 条全绿）。
 
-**边界**：盲标队列的**标注工作台前端**与校准曲线（ECE/Brier）重算未落地——本节交付的是队列结构与闸门，标注人在独立界面看原始票据影像的流程属交付排期；同案隔期重标允许（规则版本升级后复测），但同一时刻至多一个未解盲任务。
+> 该节的变异验证 / 边界记录见 `09-records/AI技术方案-实施记录.md`（实施日志，不承担当前口径）。
+
 
 ## 12. 落地里程碑与 Go/No-Go
 
