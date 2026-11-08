@@ -47,7 +47,7 @@ import _manifest as M
 
 RULEBOOK = M.path("delivery.04")
 ASSET = os.path.abspath(os.path.join(
-    M.ROOT, "..", "..", "..", "bone-apps", "synap-claim",
+    M.ROOT, "..", "..", "..", "bone-apps", "synap-claim", "synap-claim-app",
     "src", "main", "resources", "claim-ruleset.json"))
 
 SEC11 = "## 十一、执行资产 ID 命名空间对照"
@@ -103,7 +103,7 @@ PORT_PENDING_BASELINE = {"ItemCatalogPort"}
 
 # 落点声明的载体必须在源码树里真实存在（声明了不存在的类 = 与「配了不生效」同族）。
 JAVA_ROOT = os.path.abspath(os.path.join(
-    M.ROOT, "..", "..", "..", "bone-apps", "synap-claim", "src", "main", "java"))
+    M.ROOT, "..", "..", "..", "bone-apps", "synap-claim", "synap-claim-app", "src", "main", "java"))
 
 # 规则引擎适配器：事实变量的唯一提供方（表达式里引用了没人给的变量 ⇒ 该执行项静默不命中）。
 RULE_ADAPTER = os.path.join(

@@ -54,7 +54,7 @@ currency: current
 | 多保司接入 / 保单配置面 / 主数据映射 / 新保司接入周期 | `design.multi-insurer-mapping` |
 | 反欺诈 / 视觉反诈 / 图计算 / 直付通道 / 模型风险（MRM） | `design.risk-payment` |
 
-## 三、ACTIVE 现行真源（currency=current，可引用为事实，共 32 份）
+## 三、ACTIVE 现行真源（currency=current，可引用为事实，共 34 份）
 
 | id | 路径 | role | 一句话 |
 |---|---|---|---|
@@ -67,7 +67,9 @@ currency: current
 | `contract.rules-v1` | `03-contract/智能理算引擎业务规则V1.md` | ssot | 理算业务口径真源(V1)：责任 11 要素、发票 6 公式、九步主流程、免赔 6 维、控额 7 层；含 Q-01–Q-15 待澄清 |
 | `design.ai` | `04-design/AI技术方案.md` | ssot | bone-ai 落地：六模块映射、DAG 执行器、五段式编排预算、资金、评测、ADR 摘记 |
 | `design.bone-ai-deps` | `04-design/BONE-AI能力依赖图谱.md` | ssot | 中台依赖真源：C1–C11 复用映射、平台缺口 E1–E5、6 节点串联 |
-| `design.architecture` | `04-design/总体技术方案.md` | ssot | 总体技术方案：系统上下文（8 个外部系统）、7 个限界上下文划分与 §4.1 组件视图（C4 L3，实测 370 类 / 20 子域 / 35 应用服务 / 19 Port / 51 错误码）、§5 三层时态声明（活库现状 / §9.5 设计态 DDL / §5.2 目标态九要素）与 §5.2.1「业务 11 维 ↔ 目标 9 列 ↔ 活库列」唯一对照表、纯函数理算引擎与三策略、三条关键链路、迁移五步 + §9.1.1 M2 高风险步的 expand/contract 四阶段方案（脚本 0123–0126 为规划占位，未开工）、模块方案路由表、5 条风险与 3 项待决策（D2 已收口） |
+| `design.architecture` | `04-design/总体技术方案.md` | ssot | 总体技术方案：系统上下文（8 个外部系统）、7 个限界上下文划分与 §4.1 组件视图（C4 L3，实测 378 类 / 20 子域 / 36 应用服务 / 35 Controller / 20 Port / 52 错误码）、§5 三层时态声明（活库现状 / §9.5 设计态 DDL / §5.2 目标态九要素）与 §5.2.1「业务 11 维 ↔ 目标 9 列 ↔ 活库列」唯一对照表、纯函数理算引擎与三策略、三条关键链路、迁移五步 + §9.1.1 M2 高风险步的 expand/contract 四阶段方案（脚本 0123–0126 为规划占位，未开工）、模块方案路由表、5 条风险与 §12 四项决策全部结案（D1 三模块父聚合 + 独立 groupId com.bone.claim / D3 配置与引擎并行 / D4 quota 归 Funds 并收敛 7 上下文，均 2026-11-08 拍板；D2 早前收口） |
+| `review.design-quality` | `04-design/方案质量诊断报告.md` | review | 04-design 六份设计文档的质量诊断：S1–S8 强项、P1–P8 问题、6 条优化建议与两轮执行记录 |
+| `method.capability-evidence` | `04-design/方法论-能力取证.md` | method | 「按读取点取证，不按声明处」方法论的唯一权威：核心规则、工具陷阱、与 fail-closed 的关系、各文档领域落点 |
 | `design.adjustment` | `04-design/理算引擎设计.md` | ssot | 理算子域唯一设计真源：架构决策、引擎编排顺序、三类策略算法、控额、快照契约、端口。双角色已显式标注：§1–§13 是 synap-claim-oracle 语义基线/目标态（非生产，§1 开头有统一时态横幅），§14 是生产九步内核的权威现状；D2「是否拆分」已按 B 案结案 |
 | `design.risk-payment` | `04-design/风控与支付通道设计.md` | ssot | 风控与直付真源：视觉反诈 E1、图计算 E2、MRM E4、C10 直付三态 |
 | `plan.mvp` | `05-plan/MVP可落地执行方案.md` | ssot | 实施计划真源：范围 In/Out、迭代 I0–I4、任务拆解、里程碑与 Go/No-Go |
@@ -87,7 +89,7 @@ currency: current
 | `delivery.index` | `07-delivery/README.md` | navigation | 交付包索引：01–11 编号与内容对照（新增交付包必须在此登记） |
 | `golive.00` | `08-go-live/00-总纲与Go-Live门禁.md` | ssot | 总纲：缺口→分册映射表、G1–G16 上线门禁、与既有治理的衔接 |
 | `records.evidence.index` | `09-records/evidence/README.md` | navigation | 运行期证据索引：E2E 与复核器时点快照的登记清单、采集 HEAD 与诚实判读、复现纪律 |
-| `records.review.M2-` | `09-records/reviews/M2-责任额度列迁移评审.md` | evidence | M2（责任额度 3 个金额列 → JSON）评审材料：实测范围、四阶段验收、8 个待拍板决策点、开工前置证据 |
+| `records.review.M2-` | `09-records/reviews/M2-责任额度列迁移评审.md` | evidence | M2（责任额度 3 个金额列 → JSON）评审材料：实测范围、四阶段验收、8 个待拍板决策点、开工前置证据；§五 零调用点前置问题已于 2026-11-08 按代码核销，路 A / 路 B 撤销 |
 | `ai-index` | `AI-INDEX.md` | navigation | 机器优先入口：语料模型+按来意路由+ACTIVE/DRAFT/FROZEN 三段清单，供 AI 确定性检索 |
 | `index` | `README.md` | navigation | 3 分钟入口：按「你这次来做什么」路由到唯一该读的文档；不再按目录树猜 |
 
@@ -124,7 +126,7 @@ currency: current
 - `records.impl.19` → `09-records/impl-log/19-额度释放原子性与占用归属（P0-5）.md`：额度释放的占用归属校验与跨账原子性（含 CORE-06 例外登记与 4 项变异证据）
 - `records.impl.20` → `09-records/impl-log/20-额度投影自愈与释放阻塞（P0-6）.md`：额度投影自愈：共享池被越权释放抽干时，本单自有 hold 足额仍须能正常取消（含口径自洽性验算与 7 项变异证据）
 - `records.review.L3-draft` → `09-records/reviews/L3-待架构评审-草稿.md`：§16 裁定项 #2/#3/#10 的技术草稿（#2/#3 已授权落地，#10 仍待 SDK owner 双签）
-- `records.review.M2-` → `09-records/reviews/M2-责任额度列迁移评审.md`：M2（责任额度 3 个金额列 → JSON）评审材料：实测范围、四阶段验收、8 个待拍板决策点、开工前置证据
+- `records.review.M2-` → `09-records/reviews/M2-责任额度列迁移评审.md`：M2（责任额度 3 个金额列 → JSON）评审材料：实测范围、四阶段验收、8 个待拍板决策点、开工前置证据；§五 零调用点前置问题已于 2026-11-08 按代码核销，路 A / 路 B 撤销
 - `records.review.TPA-` → `09-records/reviews/TPA-SAAS基线差距分析.md`：上游飞书 TPA-SAAS 源系统盘点与差距（护城河与欠账）
 - `records.review.业界对标` → `09-records/reviews/业界对标整改台账.md`：业界对标量化基线、已落地整改项、V1.0 执行清单
 - `records.review.代码整改` → `09-records/reviews/代码整改清单.md`：待架构评审的代码整改项（含已闭环项的备查记录）

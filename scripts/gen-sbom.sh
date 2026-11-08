@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "[SBOM] 生成 synap-claim 软件物料清单（CycloneDX JSON）..."
-mvn -f bone-apps/synap-claim/pom.xml -P sbom -DskipTests verify
+mvn -f bone-apps/synap-claim/synap-claim-app/pom.xml -P sbom -DskipTests verify
 
-echo "[SBOM] 产物：bone-apps/synap-claim/target/bom.json"
+echo "[SBOM] 产物：bone-apps/synap-claim/synap-claim-app/target/bom.json"
 echo "[SBOM] 可接入 dependency-check / 漏洞扫描 / 等保测评附件。"

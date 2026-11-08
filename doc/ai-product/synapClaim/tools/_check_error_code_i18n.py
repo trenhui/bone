@@ -31,10 +31,10 @@ import _manifest as M
 
 REPO = os.path.abspath(os.path.join(M.ROOT, "..", "..", ".."))
 CODES_JAVA = os.path.join(
-    REPO, "bone-apps", "synap-claim", "src", "main", "java",
+    REPO, "bone-apps", "synap-claim", "synap-claim-app", "src", "main", "java",
     "com", "bone", "claim", "common", "ClaimErrorCodes.java")
 ERRORS_JAVA = os.path.join(
-    REPO, "bone-apps", "synap-claim", "src", "main", "java",
+    REPO, "bone-apps", "synap-claim", "synap-claim-app", "src", "main", "java",
     "com", "bone", "claim", "common", "ClaimErrors.java")
 LOCALES = os.path.join(
     REPO, "bone-frontend", "packages", "shared-utils", "src", "i18n", "locales")

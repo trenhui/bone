@@ -60,8 +60,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 REPO = Path(__file__).resolve().parent.parent
-EVALSET_REL = Path("bone-apps/synap-claim/eval/ai-decision-evalset.json")
-TEST_ROOT_REL = Path("bone-apps/synap-claim/src/test/java")
+EVALSET_REL = Path("bone-apps/synap-claim/synap-claim-app/eval/ai-decision-evalset.json")
+TEST_ROOT_REL = Path("bone-apps/synap-claim/synap-claim-app/src/test/java")
 
 # 下界硬编码在脚本里，不读 JSON —— 否则「把 minCases 一起改小」就能让门禁变轻。
 # 39 = 30（P0-2 基线）+ 9（P0-3 AI 参与决策披露回归）；只许上调，不许随清单一起下调。

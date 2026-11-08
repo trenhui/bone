@@ -22,6 +22,28 @@
   ],
   "docs": [
     {
+      "id": "review.design-quality",
+      "path": "04-design/方案质量诊断报告.md",
+      "layer": "L4",
+      "diataxis": "explanation",
+      "status": "active",
+      "summary": "04-design 六份设计文档的质量诊断：S1–S8 强项、P1–P8 问题、6 条优化建议与两轮执行记录",
+      "authority": "设计文档质量诊断",
+      "role": "review",
+      "currency": "current"
+    },
+    {
+      "id": "method.capability-evidence",
+      "path": "04-design/方法论-能力取证.md",
+      "layer": "L4",
+      "diataxis": "explanation",
+      "status": "active",
+      "summary": "「按读取点取证，不按声明处」方法论的唯一权威：核心规则、工具陷阱、与 fail-closed 的关系、各文档领域落点",
+      "authority": "能力取证方法论",
+      "role": "method",
+      "currency": "current"
+    },
+    {
       "id": "index",
       "path": "README.md",
       "layer": "L0",
@@ -156,7 +178,7 @@
       "layer": "L4",
       "diataxis": "reference",
       "status": "active",
-      "summary": "总体技术方案：系统上下文（8 个外部系统）、7 个限界上下文划分与 §4.1 组件视图（C4 L3，实测 370 类 / 20 子域 / 35 应用服务 / 19 Port / 51 错误码）、§5 三层时态声明（活库现状 / §9.5 设计态 DDL / §5.2 目标态九要素）与 §5.2.1「业务 11 维 ↔ 目标 9 列 ↔ 活库列」唯一对照表、纯函数理算引擎与三策略、三条关键链路、迁移五步 + §9.1.1 M2 高风险步的 expand/contract 四阶段方案（脚本 0123–0126 为规划占位，未开工）、模块方案路由表、5 条风险与 3 项待决策（D2 已收口）",
+      "summary": "总体技术方案：系统上下文（8 个外部系统）、7 个限界上下文划分与 §4.1 组件视图（C4 L3，实测 378 类 / 20 子域 / 36 应用服务 / 35 Controller / 20 Port / 52 错误码）、§5 三层时态声明（活库现状 / §9.5 设计态 DDL / §5.2 目标态九要素）与 §5.2.1「业务 11 维 ↔ 目标 9 列 ↔ 活库列」唯一对照表、纯函数理算引擎与三策略、三条关键链路、迁移五步 + §9.1.1 M2 高风险步的 expand/contract 四阶段方案（脚本 0123–0126 为规划占位，未开工）、模块方案路由表、5 条风险与 §12 四项决策全部结案（D1 三模块父聚合 + 独立 groupId com.bone.claim / D3 配置与引擎并行 / D4 quota 归 Funds 并收敛 7 上下文，均 2026-11-08 拍板；D2 早前收口）",
       "authority": "系统边界与上下文、限界上下文划分、组件级接口与领域不变量（§4.1）、配置模型的时态分层与业务维度→物理列映射（§5 / §5.2.1）、理算引擎形态、关键链路、迁移路线与 M2 四阶段方案（§9.1.1）、模块详细方案路由",
       "shortNames": [
         "总体技术方案"
@@ -781,7 +803,7 @@
       "layer": "L9",
       "diataxis": "explanation",
       "status": "active",
-      "summary": "M2（责任额度 3 个金额列 → JSON）评审材料：实测范围、四阶段验收、8 个待拍板决策点、开工前置证据",
+      "summary": "M2（责任额度 3 个金额列 → JSON）评审材料：实测范围、四阶段验收、8 个待拍板决策点、开工前置证据；§五 零调用点前置问题已于 2026-11-08 按代码核销，路 A / 路 B 撤销",
       "authority": "M2 迁移评审输入",
       "role": "evidence",
       "currency": "current"

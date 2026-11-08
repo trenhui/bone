@@ -15,7 +15,7 @@ bone-ai-gateway 退回进程内 Mock；那个 Mock 不监听端口，无法验�
     BONE_AI_GATEWAY_BASE_URL=http://127.0.0.1:18080/v1 \
     BONE_AI_GATEWAY_API_KEY=mock-key \
     BONE_CLAIM_DOCUMENT_PARSE_IMAGE_ENABLED=true \
-    java -jar bone-apps/synap-claim/target/synap-claim.jar
+    java -jar bone-apps/synap-claim/synap-claim-app/target/synap-claim.jar
 
     然后提交一张图像件，预期看到：
       · 适配器被装配（不再是 IMAGE_ADAPTER_MISSING）

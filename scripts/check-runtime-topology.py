@@ -47,7 +47,7 @@ REQUIRED_MODULES = {
     "bone-platform/bone-integration": "bone-integration",
     "bone-platform/bone-file": "bone-file",
     "bone-blueprint": "bone-blueprint",
-    "bone-apps/synap-claim": "synap-claim",
+    "bone-apps/synap-claim/synap-claim-app": "synap-claim",
     "bone-engine/bone-metadata-server": "bone-metadata-server",
     "bone-engine/bone-extension-engine/bone-extension-studio": "bone-extension-studio",
     "bone-engine/studio-generator": "studio-generator",

@@ -3,7 +3,7 @@
 
 背景（2026-11-03 实测）
 ----------------------
-`bone-apps/synap-claim/src/main/resources/db/migration/V21__...sql` 曾无条件
+`bone-apps/synap-claim/synap-claim-app/src/main/resources/db/migration/V21__...sql` 曾无条件
 `ALTER TABLE t_claim_mapping_miss ADD COLUMN resolved_by ...`，而 V20 的建表语句
 **已经包含**该列。两处叠加 ⇒ `ERROR 1060 Duplicate column name 'resolved_by'`：
 任何按 V20→V21 顺序执行的环境都会在 V21 中止。
@@ -190,16 +190,20 @@ def collect(root):
             for n in sorted(os.listdir(mig))
             if n.endswith(".sql") and os.path.isfile(os.path.join(mig, n))
         ]
+    # D1：synap-claim 已升为父聚合、业务代码下沉到 synap-claim-app/，
+    # 一级 os.listdir(bone-apps) 已到不了 src/；改按 glob 递归收集，避免该通道恒绿。
+    import glob
+
     base = os.path.join(root, "bone-apps")
     if os.path.isdir(base):
-        for app in sorted(os.listdir(base)):
-            d = os.path.join(base, app, "src", "main", "resources", "db", "migration")
-            if os.path.isdir(d):
-                channels["参考态 db/migration"] += [
-                    os.path.join(d, n)
-                    for n in sorted(os.listdir(d))
-                    if n.endswith(".sql") and os.path.isfile(os.path.join(d, n))
-                ]
+        channels["参考态 db/migration"] += sorted(
+            p
+            for p in glob.glob(
+                os.path.join(base, "**", "src", "main", "resources", "db", "migration", "*.sql"),
+                recursive=True,
+            )
+            if os.sep + "target" + os.sep not in p
+        )
     decls = {}
     guards = {}
     tables = {}

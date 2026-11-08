@@ -30,10 +30,10 @@
 3.2 计数登记修正（消除同一格内 745 / 718+27 / 650+27 三套数字并存）
 定位：`03-contract/工程详细设计-落地版.md` 行 3170「决策图执行 / 轨迹回放」行。
 原片段：
-模块合计单测 **745 例（718 例 JUnit + 27 条 ArchUnit）**全绿（**2026-11-02 实机复验**：`mvn -o -pl bone-apps/synap-claim clean test` → `Tests run: 745, Failures: 0, Errors: 0, Skipped: 5`，BUILD SUCCESS = **650 例 JUnit + 27 条 ArchUnit**；
+模块合计单测 **745 例（718 例 JUnit + 27 条 ArchUnit）**全绿（**2026-11-02 实机复验**：`mvn -o -pl bone-apps/synap-claim/synap-claim-app clean test` → `Tests run: 745, Failures: 0, Errors: 0, Skipped: 5`，BUILD SUCCESS = **650 例 JUnit + 27 条 ArchUnit**；
 建议替换为：
-模块合计单测 **839 例（含 27 条 ArchUnit）**全绿（**2026-11-04 实机复验**：`mvn -o -pl bone-apps/synap-claim clean test`（跨模块复验加 `-am`） → `Tests run: 839, Failures: 0, Errors: 0, Skipped: 5`；
-说明：保留 `mvn -o -pl bone-apps/synap-claim clean test` 字面量与同行 `Tests run:` 汇总，满足 `tools/_check_numbers.py` 的结构在位断言；该断言已改为不锁死绝对计数，数值由本登记承载。
+模块合计单测 **839 例（含 27 条 ArchUnit）**全绿（**2026-11-04 实机复验**：`mvn -o -pl bone-apps/synap-claim/synap-claim-app clean test`（跨模块复验加 `-am`） → `Tests run: 839, Failures: 0, Errors: 0, Skipped: 5`；
+说明：保留 `mvn -o -pl bone-apps/synap-claim/synap-claim-app clean test` 字面量与同行 `Tests run:` 汇总，满足 `tools/_check_numbers.py` 的结构在位断言；该断言已改为不锁死绝对计数，数值由本登记承载。
 
 四、机检与测试
 - `tools/_check_manifest.py`：【OK】57 条登记 ↔ 磁盘一致。
@@ -42,8 +42,8 @@
 - `tools/_check_contract_drift.py`：【OK】规则 ID / 枚举双向 / 错误码 / 表清单 / 分层真源一致。
 - `tools/_check_numbers.py`：【OK】51 项禁用表述零命中、54 项关键口径在位；旧断言「644 例 JUnit + 26 条 ArchUnit」已改为结构在位断言。
 - `docs.manifest.json`：登记 `09-records/reviews/L3-待架构评审-草稿.md`；`AI-INDEX.md` 已由 `_gen_ai_index.py` 重生成（125 行）。
-- 测试：`mvn -o -pl bone-apps/synap-claim -am clean test -Dspotless.check.skip=true` → BUILD SUCCESS，`Tests run: 839, Failures: 0, Errors: 0, Skipped: 5`；`SharedPoolCrossCaseScenarioTest` / `SharedPoolRoutingScenarioTest` 各 2 例均执行。
-- 单模块 `mvn -o -pl bone-apps/synap-claim clean test` 出现 1 例假红（`AiGatewayPortAdapterTest#mockSubstituteResponseIsExplicitlyRejected`）：`.m2` 中 `bone-ai-gateway-1.0.0-SNAPSHOT.jar` 为 10-26 版本，`MockLlmClient` 的 G0-2 JSON + `mock:true` 契约随 11-04 提交入库但未进本地 jar，旧实现返回 `MOCK[...]` 字面量，Jackson 解析失败而非走生产侧的显式拒绝分支。`-am` 用 reactor 内新编译类后该例转绿。
+- 测试：`mvn -o -pl bone-apps/synap-claim/synap-claim-app -am clean test -Dspotless.check.skip=true` → BUILD SUCCESS，`Tests run: 839, Failures: 0, Errors: 0, Skipped: 5`；`SharedPoolCrossCaseScenarioTest` / `SharedPoolRoutingScenarioTest` 各 2 例均执行。
+- 单模块 `mvn -o -pl bone-apps/synap-claim/synap-claim-app clean test` 出现 1 例假红（`AiGatewayPortAdapterTest#mockSubstituteResponseIsExplicitlyRejected`）：`.m2` 中 `bone-ai-gateway-1.0.0-SNAPSHOT.jar` 为 10-26 版本，`MockLlmClient` 的 G0-2 JSON + `mock:true` 契约随 11-04 提交入库但未进本地 jar，旧实现返回 `MOCK[...]` 字面量，Jackson 解析失败而非走生产侧的显式拒绝分支。`-am` 用 reactor 内新编译类后该例转绿。
 - `-am` 不加 `-Dspotless.check.skip=true` 时被 `spotless:check` 拦截，违规文件 `application/port/out/AiGatewayPort.java`（并发会话正在编辑的 AI 原生 v1.2 注释，未格式化）。本 slice 未触碰该文件。
 
 五、待人工决策

@@ -25,9 +25,9 @@ currency: current
 |工作台|决策追溯|GET /api/v1/review/tasks/{id}/trace|核赔工作台|
 |对接|案件同步（旁路）|POST /api/v1/integration/claims/sync|存量理赔系统/CDC|
 |对接|结果回写|POST /api/v1/integration/claims/{id}/result|保司/TPA 系统|
-|管理后台|对账报告查询|GET /api/v1/review/reconciliation|OIDC/SSO（契约规定；外部与内部端点代码**均未落地**——2026-10-25 核码：`reconciliation` 全仓 0 实现，见落地版 §12.2.1）|
+|管理后台|对账报告查询|GET /api/v1/review/reconciliation|OIDC/SSO（契约规定端点；**报告聚合查询未落地**。2026-11-08 订正：2026-10-25 的「`reconciliation` 全仓 0 实现」已过时——差异处置侧 `ReconciliationDiffController` 与三张表已落地，见落地版 §10.1 / §11.7）|
 
-> **端点子集边界（2026-10-23 补）**：① 动态表单 Schema 由平台 `BoneUiSchema` 承载（工程落地版 §10.1 非本域端点登记 / §11.10），不在本 MVP 端点子集；② 对账报告查询已列入上表（管理后台），其外部与内部端点代码**均未落地**（2026-10-25 核码：`reconciliation` 全仓 0 实现，见落地版 §12.2.1）；③ 决策结果为异步产出，员工端经轮询获取（间隔 2s、上限 15 次，工程落地版 §10.3 读己之写），本文件不设同步决策端点；④ 发起申诉（`POST /api/v1/claims/{id}/appeals`）为契约规定端点，代码已落地（复数 /appeals 路径已补，与 /appeal 并存，见落地版 §12.2.1）。
+> **端点子集边界（2026-10-23 补）**：① 动态表单 Schema 由平台 `BoneUiSchema` 承载（工程落地版 §10.1 非本域端点登记 / §11.10），不在本 MVP 端点子集；② 对账报告查询已列入上表（管理后台），**报告聚合查询端点未落地**；差异处置侧已落地（2026-11-08 订正，详见落地版 §10.1 / §11.7），原「全仓 0 实现」断言已作废；③ 决策结果为异步产出，员工端经轮询获取（间隔 2s、上限 15 次，工程落地版 §10.3 读己之写），本文件不设同步决策端点；④ 发起申诉（`POST /api/v1/claims/{id}/appeals`）为契约规定端点，代码已落地（复数 /appeals 路径已补，与 /appeal 并存，见落地版 §12.2.1）。
 
 ## 二、核心接口契约（示例详规）
 
@@ -148,7 +148,7 @@ currency: current
 |node_type|VARCHAR(32)|节点类型（OCR/RULE/LLM/DECISION）|
 |input_summary|VARCHAR(200)|输入摘要（≤200字）|
 |output|JSON|模型/规则输出（完整保留）|
-|action_result|VARCHAR(32)|HTTP 状态/规则结果|
+|action_result|VARCHAR(32)|节点状态 `SUCCEEDED/FAILED/FALLBACK/SKIPPED` 或受控原因码（含 M5a `FLOW_CONFIG_SKIP`）；非 HTTP 状态|
 |duration_ms|INT|节点耗时|
 
 ## 五、错误码全集（统一）

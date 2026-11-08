@@ -1,0 +1,640 @@
+{
+  "schemaVersion": 1,
+  "evalsetId": "claim-ai-decision-regression",
+  "status": "declared",
+  "owner": "synap-claim",
+  "scope": "AI 结论与决策分诊档位的确定性回归；不含金额计算、不触碰资金状态",
+  "groundTruthPolicy": {
+    "provenance": "每条用例标注 groundTruthRef（仓库内真源 path#anchor）与 regulatoryBasis；期望值来自真源或源码契约，不由模型生成",
+    "piiFree": true,
+    "piiPolicy": "监管 §24：PII 禁入评测集。样本均为合成常量与受控枚举，无真实姓名/证件号/手机号/银行卡/病历",
+    "frozenSetDiscipline": "冻结集只用于回归判定，不参与训练、不参与提示词调优（防 Hidden Feedback Loop / 评测集污染）",
+    "changePolicy": "模型版本、提示词契约版本、规则集、分诊阈值任一变更，必跑本集；失败阻断发布并留痕"
+  },
+  "suites": [
+    {
+      "id": "decisionTriage",
+      "testClass": "DecisionTriageGoldenSetTest",
+      "description": "决策分诊阈值与档位路由（13 例：1 全绿基准 + 12 异常/转人工负向）"
+    },
+    {
+      "id": "aiAssessNode",
+      "testClass": "AiAssessNodeHandlerTest",
+      "description": "AI 评估节点三态能力语义：无法判定 ≠ 拒赔、降级不改口径、认知层只留痕"
+    },
+    {
+      "id": "capabilityReadiness",
+      "testClass": "AiCapabilityReadinessServiceTest",
+      "description": "部署态能力声明 fail-closed 与清单边界：UNKNOWN 缺省、清单不等于放款许可"
+    },
+    {
+      "id": "readinessController",
+      "testClass": "AiCapabilityReadinessControllerTest",
+      "description": "只读治理端点契约：复用既有权限点、无额外副作用"
+    },
+    {
+      "id": "aiDisclosureDomain",
+      "testClass": "AiDecisionDisclosureTest",
+      "description": "AI 参与决策披露三态判定：无法确认≠AI 未参与、版本快照不得冒充参与证据、标识不得把 AI 说成决定者"
+    },
+    {
+      "id": "aiDisclosureService",
+      "testClass": "AiDecisionDisclosureServiceTest",
+      "description": "只读披露服务：跨案 traceId fail-closed、JSON 解析失败不压成无风险、版本串截断防自由文本外溢"
+    },
+    {
+      "id": "aiDisclosureController",
+      "testClass": "AiDecisionDisclosureControllerTest",
+      "description": "告知端点契约：复用既有 claim:claims:read、纯 GET 无写副作用、参数如实透传"
+    }
+  ],
+  "cases": [
+    {
+      "id": "TRIAGE-01",
+      "name": "全绿基准 → AUTO_APPROVE",
+      "suite": "decisionTriage",
+      "kind": "positive",
+      "expected": {
+        "result": "AUTO_APPROVE",
+        "tier": "AUTO",
+        "reason": "ALL_GATES_PASSED"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/DecisionTriage.java#evaluate",
+      "regulatoryBasis": "监管 §4 测评用例集；§22 阈值触发记录可解释",
+      "testClass": "DecisionTriageGoldenSetTest",
+      "testSymbol": "baselineGreenScenario_AutoApprove",
+      "piiFree": true
+    },
+    {
+      "id": "TRIAGE-02",
+      "name": "证据缺失→补件(MANUAL)",
+      "suite": "decisionTriage",
+      "kind": "negative",
+      "expected": {
+        "result": "NEED_MORE_EVIDENCE",
+        "tier": "MANUAL"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/DecisionTriage.java#evaluate",
+      "regulatoryBasis": "监管 §22 人工最终决策；材料不全不得直出",
+      "testClass": "DecisionTriageGoldenSetTest",
+      "testSymbol": "证据缺失→补件(MANUAL)",
+      "piiFree": true
+    },
+    {
+      "id": "TRIAGE-03",
+      "name": "证据解析失败→人工",
+      "suite": "decisionTriage",
+      "kind": "negative",
+      "expected": {
+        "result": "MANUAL_REQUIRED",
+        "tier": "MANUAL"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/DecisionTriage.java#evaluate",
+      "regulatoryBasis": "监管 §22；感知失败不得推断为无风险",
+      "testClass": "DecisionTriageGoldenSetTest",
+      "testSymbol": "证据解析失败→人工",
+      "piiFree": true
+    },
+    {
+      "id": "TRIAGE-04",
+      "name": "规则冲突无法裁决→人工",
+      "suite": "decisionTriage",
+      "kind": "negative",
+      "expected": {
+        "result": "MANUAL_REQUIRED",
+        "tier": "MANUAL"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/DecisionTriage.java#evaluate",
+      "regulatoryBasis": "监管 §22 可解释性不足时 AI 仅作辅助",
+      "testClass": "DecisionTriageGoldenSetTest",
+      "testSymbol": "规则冲突无法裁决→人工",
+      "piiFree": true
+    },
+    {
+      "id": "TRIAGE-05",
+      "name": "金额未知→人工",
+      "suite": "decisionTriage",
+      "kind": "negative",
+      "expected": {
+        "result": "MANUAL_REQUIRED",
+        "tier": "MANUAL"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/DecisionTriage.java#evaluate",
+      "regulatoryBasis": "监管 §22；关键字段缺失 fail-closed",
+      "testClass": "DecisionTriageGoldenSetTest",
+      "testSymbol": "金额未知→人工",
+      "piiFree": true
+    },
+    {
+      "id": "TRIAGE-06",
+      "name": "金额≥1万→双人复核(REVIEW, 非自动通过)",
+      "suite": "decisionTriage",
+      "kind": "negative",
+      "expected": {
+        "result": "MANUAL_REQUIRED",
+        "tier": "REVIEW"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/DecisionTriage.java#evaluate",
+      "regulatoryBasis": "大额双人复核；§16 高风险场景人工最终决策",
+      "testClass": "DecisionTriageGoldenSetTest",
+      "testSymbol": "金额≥1万→双人复核(REVIEW, 非自动通过)",
+      "piiFree": true
+    },
+    {
+      "id": "TRIAGE-07",
+      "name": "命中风险→人工",
+      "suite": "decisionTriage",
+      "kind": "negative",
+      "expected": {
+        "result": "MANUAL_REQUIRED",
+        "tier": "MANUAL"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/DecisionTriage.java#evaluate",
+      "regulatoryBasis": "监管 §22；风险命中不得自动出金",
+      "testClass": "DecisionTriageGoldenSetTest",
+      "testSymbol": "命中风险→人工",
+      "piiFree": true
+    },
+    {
+      "id": "TRIAGE-08",
+      "name": "反欺诈硬闸未过→人工",
+      "suite": "decisionTriage",
+      "kind": "negative",
+      "expected": {
+        "result": "MANUAL_REQUIRED",
+        "tier": "MANUAL"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/DecisionTriage.java#evaluate",
+      "regulatoryBasis": "监管 §22；能力未集成必须转人工而非无风险",
+      "testClass": "DecisionTriageGoldenSetTest",
+      "testSymbol": "反欺诈硬闸未过→人工",
+      "piiFree": true
+    },
+    {
+      "id": "TRIAGE-09",
+      "name": "OCR置信<0.7→人工(独立熔断)",
+      "suite": "decisionTriage",
+      "kind": "negative",
+      "expected": {
+        "result": "MANUAL_REQUIRED",
+        "tier": "MANUAL"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/DecisionTriage.java#evaluate",
+      "regulatoryBasis": "监管 §22；低置信度强制人工",
+      "testClass": "DecisionTriageGoldenSetTest",
+      "testSymbol": "OCR置信<0.7→人工(独立熔断)",
+      "piiFree": true
+    },
+    {
+      "id": "TRIAGE-10",
+      "name": "AI置信未知→人工",
+      "suite": "decisionTriage",
+      "kind": "negative",
+      "expected": {
+        "result": "MANUAL_REQUIRED",
+        "tier": "MANUAL"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/DecisionTriage.java#evaluate",
+      "regulatoryBasis": "监管 §22；置信度缺失不得当作高置信",
+      "testClass": "DecisionTriageGoldenSetTest",
+      "testSymbol": "AI置信未知→人工",
+      "piiFree": true
+    },
+    {
+      "id": "TRIAGE-11",
+      "name": "AI置信<0.7→人工",
+      "suite": "decisionTriage",
+      "kind": "negative",
+      "expected": {
+        "result": "MANUAL_REQUIRED",
+        "tier": "MANUAL"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/DecisionTriage.java#evaluate",
+      "regulatoryBasis": "监管 §22 分档阈值",
+      "testClass": "DecisionTriageGoldenSetTest",
+      "testSymbol": "AI置信<0.7→人工",
+      "piiFree": true
+    },
+    {
+      "id": "TRIAGE-12",
+      "name": "AI置信0.7–0.85→复核档(REVIEW)",
+      "suite": "decisionTriage",
+      "kind": "negative",
+      "expected": {
+        "result": "MANUAL_REQUIRED",
+        "tier": "REVIEW"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/DecisionTriage.java#evaluate",
+      "regulatoryBasis": "监管 §22 分层阈值",
+      "testClass": "DecisionTriageGoldenSetTest",
+      "testSymbol": "AI置信0.7–0.85→复核档(REVIEW)",
+      "piiFree": true
+    },
+    {
+      "id": "TRIAGE-13",
+      "name": "AI建议拒赔→转人工(SUGGEST_REJECT)",
+      "suite": "decisionTriage",
+      "kind": "negative",
+      "expected": {
+        "result": "SUGGEST_REJECT",
+        "tier": "MANUAL"
+      },
+      "groundTruthRef": "doc/ai-product/synapClaim/04-design/风控与支付通道设计.md#AI 不碰钱",
+      "regulatoryBasis": "监管 §22；AI 只出建议，不利决定由人工作出",
+      "testClass": "DecisionTriageGoldenSetTest",
+      "testSymbol": "AI建议拒赔→转人工(SUGGEST_REJECT)",
+      "piiFree": true
+    },
+    {
+      "id": "AIASSESS-01",
+      "name": "知识能力未接入 → 无法判定不等于拒赔",
+      "suite": "aiAssessNode",
+      "kind": "negative",
+      "expected": {
+        "status": "SUCCEEDED",
+        "rejectSuggested": false,
+        "capabilityMissing": true,
+        "capabilityReason": "KNOWLEDGE_UNAVAILABLE"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/handler/AiAssessNodeHandler.java#三态能力语义",
+      "regulatoryBasis": "监管 §22 可解释性不足仅作辅助；《保险法》24 条不利决定须有依据",
+      "testClass": "AiAssessNodeHandlerTest",
+      "testSymbol": "knowledgeMissingIsNotReject",
+      "piiFree": true
+    },
+    {
+      "id": "AIASSESS-02",
+      "name": "知识能力可用且临床不合理 → 有依据的不利结论",
+      "suite": "aiAssessNode",
+      "kind": "positive",
+      "expected": {
+        "rejectSuggested": true,
+        "capabilityMissing": false
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/handler/AiAssessNodeHandler.java#三态能力语义",
+      "regulatoryBasis": "监管 §22 不利决定须可解释",
+      "testClass": "AiAssessNodeHandlerTest",
+      "testSymbol": "clinicallyUnreasonableIsReject",
+      "piiFree": true
+    },
+    {
+      "id": "AIASSESS-03",
+      "name": "知识能力可用且临床合理 → 不放行拒赔",
+      "suite": "aiAssessNode",
+      "kind": "positive",
+      "expected": {
+        "rejectSuggested": false,
+        "capabilityMissing": false
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/handler/AiAssessNodeHandler.java#三态能力语义",
+      "regulatoryBasis": "监管 §4 正向基准样本",
+      "testClass": "AiAssessNodeHandlerTest",
+      "testSymbol": "reasonableIsClean",
+      "piiFree": true
+    },
+    {
+      "id": "AIASSESS-04",
+      "name": "AI 建议拒赔且给出结构化原因码 → 采信有依据结论",
+      "suite": "aiAssessNode",
+      "kind": "positive",
+      "expected": {
+        "rejectSuggested": true,
+        "rejectReasons": [
+          "R-DIR-02"
+        ]
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/port/out/AiGatewayPort.java#AiAssessment",
+      "regulatoryBasis": "监管 §22 结构化原因码留痕",
+      "testClass": "AiAssessNodeHandlerTest",
+      "testSymbol": "aiRejectIsHonouredEvenWhenKnowledgeClean",
+      "piiFree": true
+    },
+    {
+      "id": "AIASSESS-05",
+      "name": "AI 网关不可用 + 知识未接入 → FALLBACK 且不得落成拒赔",
+      "suite": "aiAssessNode",
+      "kind": "negative",
+      "expected": {
+        "status": "FALLBACK",
+        "rejectSuggested": false,
+        "aiAvailable": false,
+        "capabilityMissing": true
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/handler/AiAssessNodeHandler.java#降级路径",
+      "regulatoryBasis": "监管 §17 人工替代与紧急停用；§22 降级不得改变口径",
+      "testClass": "AiAssessNodeHandlerTest",
+      "testSymbol": "aiDownDoesNotTurnIntoReject",
+      "piiFree": true
+    },
+    {
+      "id": "AIASSESS-06",
+      "name": "AI 结构化认知进入决策轨迹且不改变拒赔结论",
+      "suite": "aiAssessNode",
+      "kind": "positive",
+      "expected": {
+        "rejectSuggested": false,
+        "aiFacts": "非空且只留痕"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/port/out/AiGatewayPort.java#结构化认知",
+      "regulatoryBasis": "监管 §21 生成内容标识；AI 不碰钱",
+      "testClass": "AiAssessNodeHandlerTest",
+      "testSymbol": "cognitiveOutputIsWrittenToNodeOutputs",
+      "piiFree": true
+    },
+    {
+      "id": "AIASSESS-07",
+      "name": "降级路径保持同一套认知层空键（读侧无 null 分支）",
+      "suite": "aiAssessNode",
+      "kind": "negative",
+      "expected": {
+        "status": "FALLBACK",
+        "aiFacts": [],
+        "aiDiscrepancies": []
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/handler/AiAssessNodeHandler.java#putCognitiveEmpty",
+      "regulatoryBasis": "监管 §22 推理路径完整留存",
+      "testClass": "AiAssessNodeHandlerTest",
+      "testSymbol": "fallbackKeepsCognitiveSchema",
+      "piiFree": true
+    },
+    {
+      "id": "READY-01",
+      "name": "默认部署态：开关关闭 + 能力未接线 → 闸门不通过且阻断项均为受控码",
+      "suite": "capabilityReadiness",
+      "kind": "negative",
+      "expected": {
+        "deploymentGatesPassed": false,
+        "blockers": "非空且为受控码"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/AiCapabilityReadinessService.java#snapshot",
+      "regulatoryBasis": "监管 §15 AI 应用清单与风险分级",
+      "testClass": "AiCapabilityReadinessServiceTest",
+      "testSymbol": "defaultDeploymentIsBlocked",
+      "piiFree": true
+    },
+    {
+      "id": "READY-02",
+      "name": "负向探针：声明为 null → 一律 UNKNOWN，绝不假设已就绪",
+      "suite": "capabilityReadiness",
+      "kind": "negative",
+      "expected": {
+        "state": "UNKNOWN"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/port/out/AiCapabilityDeclaration.java#unknown",
+      "regulatoryBasis": "监管 §15/§22；缺省 fail-closed",
+      "testClass": "AiCapabilityReadinessServiceTest",
+      "testSymbol": "missingDeclarationFallsBackToUnknown",
+      "piiFree": true
+    },
+    {
+      "id": "READY-03",
+      "name": "负向探针：声明求值抛异常 → 回落 UNKNOWN 不中断清单",
+      "suite": "capabilityReadiness",
+      "kind": "negative",
+      "expected": {
+        "state": "UNKNOWN"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/port/out/AiCapabilityDeclaration.java#unknown",
+      "regulatoryBasis": "监管 §17 人工替代与紧急停用",
+      "testClass": "AiCapabilityReadinessServiceTest",
+      "testSymbol": "throwingDeclarationFallsBackToUnknown",
+      "piiFree": true
+    },
+    {
+      "id": "READY-04",
+      "name": "负向探针：未覆盖 declaration() 的新实现 → 端口 default 回落 UNKNOWN",
+      "suite": "capabilityReadiness",
+      "kind": "negative",
+      "expected": {
+        "state": "UNKNOWN"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/port/out/AiGatewayPort.java#declaration",
+      "regulatoryBasis": "监管 §15；新接入能力不得静默宣称 READY",
+      "testClass": "AiCapabilityReadinessServiceTest",
+      "testSymbol": "uncoveredPortImplementationFallsBackToUnknown",
+      "piiFree": true
+    },
+    {
+      "id": "READY-05",
+      "name": "部署态闸门全通过也不等于放款许可：响应自带口径声明",
+      "suite": "capabilityReadiness",
+      "kind": "negative",
+      "expected": {
+        "deploymentGatesPassed": true,
+        "scopeNote": "不构成放款许可"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/AiCapabilityReadinessService.java#scopeNote",
+      "regulatoryBasis": "监管 §16/§22；清单不得推断单案可放款",
+      "testClass": "AiCapabilityReadinessServiceTest",
+      "testSymbol": "gatesPassedIsNotPaymentPermission",
+      "piiFree": true
+    },
+    {
+      "id": "READY-06",
+      "name": "声明与实现一致性：一期本地桩不得自报 READY 且运行期 available=false",
+      "suite": "capabilityReadiness",
+      "kind": "negative",
+      "expected": {
+        "state": "STUB",
+        "available": false
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/port/out/AiCapabilityDeclaration.java#stub",
+      "regulatoryBasis": "监管 §15 状态诚实性；防文档抢跑",
+      "testClass": "AiCapabilityReadinessServiceTest",
+      "testSymbol": "stubDeclarationsMatchRuntimeAvailability",
+      "piiFree": true
+    },
+    {
+      "id": "READY-07",
+      "name": "归一化：null 字段不落 null，缺失 state 回落 UNKNOWN",
+      "suite": "capabilityReadiness",
+      "kind": "positive",
+      "expected": {
+        "state": "UNKNOWN"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/port/out/AiCapabilityDeclaration.java#归一化",
+      "regulatoryBasis": "监管 §4 可复现测试",
+      "testClass": "AiCapabilityReadinessServiceTest",
+      "testSymbol": "nullFieldsAreNormalized",
+      "piiFree": true
+    },
+    {
+      "id": "READY-08",
+      "name": "清单不可变：blockers 与 capabilities 均为不可变快照",
+      "suite": "capabilityReadiness",
+      "kind": "positive",
+      "expected": {
+        "immutable": true
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/AiCapabilityReadinessService.java#ReadinessSnapshot",
+      "regulatoryBasis": "监管 §15 清单不可被下游改写",
+      "testClass": "AiCapabilityReadinessServiceTest",
+      "testSymbol": "snapshotIsImmutable",
+      "piiFree": true
+    },
+    {
+      "id": "CTRL-01",
+      "name": "权限点复用既有 claim:claims:read，不得新增/误挂写权限",
+      "suite": "readinessController",
+      "kind": "negative",
+      "expected": {
+        "authority": "claim:claims:read"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiCapabilityReadinessController.java#readiness",
+      "regulatoryBasis": "监管 §15 最小权限；NAIC 访问控制",
+      "testClass": "AiCapabilityReadinessControllerTest",
+      "testSymbol": "usesExistingReadAuthority",
+      "piiFree": true
+    },
+    {
+      "id": "CTRL-02",
+      "name": "只读端点只调用 snapshot 一次，不产生任何额外交互",
+      "suite": "readinessController",
+      "kind": "negative",
+      "expected": {
+        "sideEffect": false,
+        "snapshotCalls": 1
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiCapabilityReadinessController.java#readiness",
+      "regulatoryBasis": "监管 §22；治理端点不得改变业务状态",
+      "testClass": "AiCapabilityReadinessControllerTest",
+      "testSymbol": "readOnlyDelegateHasNoSideEffect",
+      "piiFree": true
+    },
+    {
+      "id": "DISC-01",
+      "name": "LLM 节点自报可用 → AI_ASSISTED 并下发显著标识与辅助角色",
+      "suite": "aiDisclosureDomain",
+      "kind": "positive",
+      "expected": {
+        "involvement": "AI_ASSISTED",
+        "aiRole": "ASSISTIVE_ONLY"
+      },
+      "groundTruthRef": "doc/ai-product/synapClaim/08-go-live/01-生产准入合规包.md#告知与权利保障",
+      "regulatoryBasis": "金发〔2026〕8号 §21 生成内容显著标识 / §22 人工最终决策；PIPL 第 24 条透明度与拒绝权；监管 §4 测评用例集",
+      "testClass": "AiDecisionDisclosureTest",
+      "testSymbol": "assistedNodeYardsAiAssisted",
+      "piiFree": true
+    },
+    {
+      "id": "DISC-02",
+      "name": "无 LLM 节点 → UNDETERMINED，绝不等于 AI 未参与",
+      "suite": "aiDisclosureDomain",
+      "kind": "negative",
+      "expected": {
+        "involvement": "UNDETERMINED",
+        "reason": "LLM_NODE_ABSENT"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/AiDecisionDisclosure.java#of",
+      "regulatoryBasis": "金发〔2026〕8号 §21 生成内容显著标识 / §22 人工最终决策；PIPL 第 24 条透明度与拒绝权；监管 §4 测评用例集",
+      "testClass": "AiDecisionDisclosureTest",
+      "testSymbol": "absentNodeIsUndetermined",
+      "piiFree": true
+    },
+    {
+      "id": "DISC-03",
+      "name": "执行行版本快照非空也不能证明模型跑过",
+      "suite": "aiDisclosureDomain",
+      "kind": "negative",
+      "expected": {
+        "involvement": "UNDETERMINED",
+        "reportedModelVersion": ""
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/AiDecisionDisclosure.java#of",
+      "regulatoryBasis": "金发〔2026〕8号 §21 生成内容显著标识 / §22 人工最终决策；PIPL 第 24 条透明度与拒绝权；监管 §4 测评用例集",
+      "testClass": "AiDecisionDisclosureTest",
+      "testSymbol": "modelSnapshotDoesNotProveParticipation",
+      "piiFree": true
+    },
+    {
+      "id": "DISC-04",
+      "name": "aiAvailable 键缺失 → UNDETERMINED（false 是确认降级，null 是不知道）",
+      "suite": "aiDisclosureDomain",
+      "kind": "negative",
+      "expected": {
+        "involvement": "UNDETERMINED",
+        "reason": "AI_AVAILABLE_FLAG_MISSING"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/AiDecisionDisclosure.java#of",
+      "regulatoryBasis": "金发〔2026〕8号 §21 生成内容显著标识 / §22 人工最终决策；PIPL 第 24 条透明度与拒绝权；监管 §4 测评用例集",
+      "testClass": "AiDecisionDisclosureTest",
+      "testSymbol": "missingFlagIsUndetermined",
+      "piiFree": true
+    },
+    {
+      "id": "DISC-05",
+      "name": "轨迹输出不可解析 → UNDETERMINED，不是 AI 未参与",
+      "suite": "aiDisclosureDomain",
+      "kind": "negative",
+      "expected": {
+        "involvement": "UNDETERMINED",
+        "reason": "LLM_OUTPUT_UNPARSABLE"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/decision/AiDecisionDisclosure.java#of",
+      "regulatoryBasis": "金发〔2026〕8号 §21 生成内容显著标识 / §22 人工最终决策；PIPL 第 24 条透明度与拒绝权；监管 §4 测评用例集",
+      "testClass": "AiDecisionDisclosureTest",
+      "testSymbol": "unparsableOutputIsUndetermined",
+      "piiFree": true
+    },
+    {
+      "id": "DISC-06",
+      "name": "显式 traceId 属于他人案件 → fail-closed 且不回放该轨迹",
+      "suite": "aiDisclosureService",
+      "kind": "negative",
+      "expected": {
+        "involvement": "UNDETERMINED",
+        "reason": "TRACE_CLAIM_MISMATCH",
+        "traceId": ""
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/AiDecisionDisclosureService.java#disclose",
+      "regulatoryBasis": "金发〔2026〕8号 §21 生成内容显著标识 / §22 人工最终决策；PIPL 第 24 条透明度与拒绝权；监管 §4 测评用例集",
+      "testClass": "AiDecisionDisclosureServiceTest",
+      "testSymbol": "crossClaimTraceIdIsRejected",
+      "piiFree": true
+    },
+    {
+      "id": "DISC-07",
+      "name": "轨迹 JSON 损坏 → UNDETERMINED，不抛异常也不判 AI 未参与",
+      "suite": "aiDisclosureService",
+      "kind": "negative",
+      "expected": {
+        "involvement": "UNDETERMINED",
+        "reason": "LLM_OUTPUT_UNPARSABLE"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/AiDecisionDisclosureService.java#disclose",
+      "regulatoryBasis": "金发〔2026〕8号 §21 生成内容显著标识 / §22 人工最终决策；PIPL 第 24 条透明度与拒绝权；监管 §4 测评用例集",
+      "testClass": "AiDecisionDisclosureServiceTest",
+      "testSymbol": "brokenJsonIsUndetermined",
+      "piiFree": true
+    },
+    {
+      "id": "DISC-08",
+      "name": "告知端点只暴露 GET，不得有写方法注解",
+      "suite": "aiDisclosureController",
+      "kind": "negative",
+      "expected": {
+        "writeMappings": 0,
+        "readMapping": "GET"
+      },
+      "groundTruthRef": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiDecisionDisclosureController.java#disclose",
+      "regulatoryBasis": "金发〔2026〕8号 §21 生成内容显著标识 / §22 人工最终决策；PIPL 第 24 条透明度与拒绝权；监管 §4 测评用例集",
+      "testClass": "AiDecisionDisclosureControllerTest",
+      "testSymbol": "onlyGetMapping",
+      "piiFree": true
+    },
+    {
+      "id": "DISC-09",
+      "name": "告知端点复用既有 claim:claims:read，不新增权限点",
+      "suite": "aiDisclosureController",
+      "kind": "positive",
+      "expected": {
+        "authority": "claim:claims:read"
+      },
+      "groundTruthRef": "doc/ai-product/synapClaim/08-go-live/01-生产准入合规包.md#告知与权利保障",
+      "regulatoryBasis": "金发〔2026〕8号 §21 生成内容显著标识 / §22 人工最终决策；PIPL 第 24 条透明度与拒绝权；监管 §4 测评用例集",
+      "testClass": "AiDecisionDisclosureControllerTest",
+      "testSymbol": "reusesExistingReadAuthority",
+      "piiFree": true
+    }
+  ]
+}

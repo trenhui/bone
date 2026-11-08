@@ -137,11 +137,11 @@ REQUIRED = [
     # 每加一批用例就要同步改文档 + 改断言，否则机检假红（本次 _check_numbers.py 失败即由此而来，
     # 落地版已演进到 745 例但该断言仍要求 644+26 字面量存在）。改为校验「实机复验 + 计数登记」
     # 的结构在位，数值由落地版当期登记承载、不锁死。
-    # 当前实数（2026-11-04 实机）：mvn -o -pl bone-apps/synap-claim clean test → 813/0/0/5。
+    # 当前实数（2026-11-04 实机）：mvn -o -pl bone-apps/synap-claim/synap-claim-app clean test → 813/0/0/5。
     ('单测计数核码登记（实机复验 + 计数在位；数值不锁死，防脆弱断言）', 'landing',
      r'模块合计单测 \*\*\d+ 例'),
     ('单测计数核码登记须附实机命令与结果摘要', 'landing',
-     r'mvn -o -pl bone-apps/synap-claim clean test[^\n]*Tests run: \d+, Failures: 0, Errors: 0'),
+     r'mvn -o -pl bone-apps/synap-claim/synap-claim-app clean test[^\n]*Tests run: \d+, Failures: 0, Errors: 0'),
     ('I1 文本层子集口径（PRD 验收）', 'prd', r'数电票文本层子集'),
     ('质检三件未落地登记', 'landing', r'质检三件'),
     ('adapter/schedule 入口未建登记', 'landing', r'adapter/schedule` 触发入口'),

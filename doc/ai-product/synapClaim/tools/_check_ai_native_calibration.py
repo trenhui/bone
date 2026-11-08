@@ -30,8 +30,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
-MAIN = ROOT / "bone-apps/synap-claim/src/main/java/com/bone/claim/domain/model/evaluation"
-TEST = ROOT / "bone-apps/synap-claim/src/test/java/com/bone/claim/domain/model/evaluation"
+MAIN = ROOT / "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/evaluation"
+TEST = ROOT / "bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/evaluation"
 
 CONTRACTS = [
     ("C1", "AiConfidenceCalibration.java",
@@ -67,8 +67,8 @@ def read(path: Path) -> str:
 
 def violations(root: Path) -> list[str]:
     """root 参数用于 --self-test 注入变造后的目录，防止判据恒真。"""
-    main = root / "bone-apps/synap-claim/src/main/java/com/bone/claim/domain/model/evaluation"
-    test = root / "bone-apps/synap-claim/src/test/java/com/bone/claim/domain/model/evaluation"
+    main = root / "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/evaluation"
+    test = root / "bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/evaluation"
     out: list[str] = []
 
     for cid, name, symbols in CONTRACTS:
@@ -123,12 +123,12 @@ def self_test() -> bool:
     for label, rel_target, replacement, expected in probes:
         with tempfile.TemporaryDirectory() as td:
             tmp = Path(td)
-            (tmp / "bone-apps/synap-claim/src/main/java/com/bone/claim/domain/model/evaluation").mkdir(parents=True)
-            (tmp / "bone-apps/synap-claim/src/test/java/com/bone/claim/domain/model/evaluation").mkdir(parents=True)
+            (tmp / "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/evaluation").mkdir(parents=True)
+            (tmp / "bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/evaluation").mkdir(parents=True)
             for p in MAIN.glob("*.java"):
-                shutil.copy(p, tmp / "bone-apps/synap-claim/src/main/java/com/bone/claim/domain/model/evaluation" / p.name)
+                shutil.copy(p, tmp / "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/evaluation" / p.name)
             for p in TEST.glob("*.java"):
-                shutil.copy(p, tmp / "bone-apps/synap-claim/src/test/java/com/bone/claim/domain/model/evaluation" / p.name)
+                shutil.copy(p, tmp / "bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/evaluation" / p.name)
             target = tmp / rel_target.relative_to(ROOT)
             if replacement:
                 target.write_text(replacement, encoding="utf-8")

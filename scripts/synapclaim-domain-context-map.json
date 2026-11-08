@@ -1,0 +1,35 @@
+{
+  "source": "doc/ai-product/synapClaim/04-design/总体技术方案.md §4（D4=A 归属判据，2026-11-08）",
+  "status": "logical-only",
+  "note": "逻辑归属真源；物理包路径仍为 domain/model/<subdomain>/ 平铺，物理收敛须独立窗口（见 design.md 附录 A.3）",
+  "contexts": {
+    "Claim": {
+      "subdomains": ["claim", "inspection", "evidence", "sla", "appeal", "review"],
+      "responsibility": "报案、查勘、证据、时效、申诉、复核"
+    },
+    "Config": {
+      "subdomains": ["config", "policy", "liability", "mapping", "reference"],
+      "responsibility": "保单→计划→险种→责任四级配置、码表映射、字典"
+    },
+    "Adjustment": {
+      "subdomains": ["adjustment"],
+      "responsibility": "九步管线、免赔、控额、快照"
+    },
+    "Decision": {
+      "subdomains": ["decision", "evaluation", "rule", "event"],
+      "responsibility": "决策图执行、AI 编排、自动审批、发票查验"
+    },
+    "Funds": {
+      "subdomains": ["settlement", "reconciliation", "quota"],
+      "responsibility": "结算单、对账、额度占用与释放、额度账户开户与调额"
+    },
+    "Analytics": {
+      "subdomains": ["stakeholder"],
+      "responsibility": "指标、事件投递"
+    },
+    "AiGovernance": {
+      "subdomains": [],
+      "responsibility": "跨 application 治理层，非独立 BC：模型探活、灰度、校准、评测样本、盲标"
+    }
+  }
+}

@@ -69,7 +69,12 @@ REPO = Path(__file__).resolve().parents[1]
 BASELINE_PATH = REPO / "doc/architecture/paging-param-ssot-baseline.json"
 
 # 2026-10-17：纳入 bone-ai（模块已随 6d4169e3 入库；此前所有门禁漏扫该模块）。
-SCAN_ROOTS = ["bone-ai", "bone-platform", "bone-engine", "bone-blueprint", "bone-framework"]
+SCAN_ROOTS = [
+    "bone-ai", "bone-platform", "bone-engine", "bone-blueprint", "bone-framework",
+    # 2026-11-08：synap-claim 此前漏扫（门禁盲区，不是规范豁免）。实测扩扫后
+    # offset 0 / cursor 0 / bounded 31（bounded 是单次查询规模上限，按判据只报告不阻断）。
+    "bone-apps",
+]
 SKIP_DIRS = {"target", "node_modules", "dist", "build", ".git", "generated-code"}
 # SDK 内部命名（FluentQuery.page(int pageNum,int pageSize)、Criteria.page()）是公共 API，不在射程内
 SDK_MARKERS = ("bone-metadata-sdk", "/sdk/")

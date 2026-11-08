@@ -22,10 +22,10 @@ import sys
 REPO = "/Users/renhui.trh/wps/bone"
 TARGETS = {
     "account": os.path.join(
-        REPO, "bone-apps/synap-claim/src/main/java/com/bone/claim/domain/model/quota/QuotaAccount.java"
+        REPO, "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/quota/QuotaAccount.java"
     ),
     "app": os.path.join(
-        REPO, "bone-apps/synap-claim/src/main/java/com/bone/claim/application/QuotaApplicationService.java"
+        REPO, "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/QuotaApplicationService.java"
     ),
 }
 TESTS = "QuotaReleaseOwnershipScenarioTest,QuotaAccountTest"
@@ -136,12 +136,12 @@ def run(cmd, cwd=REPO):
 def test_once():
     """跑一次目标用例，返回 (tests_run, failures, failed_test_names, raw_tail)"""
     subprocess.run(
-        ["find", "bone-apps/synap-claim/src", "-name", "*.java", "-exec", "touch", "{}", "+"],
+        ["find", "bone-apps/synap-claim/synap-claim-app/src", "-name", "*.java", "-exec", "touch", "{}", "+"],
         cwd=REPO,
     )
     r = run(
         [
-            "mvn", "-f", "pom.xml", "-pl", "bone-apps/synap-claim", "-am", "test",
+            "mvn", "-f", "pom.xml", "-pl", "bone-apps/synap-claim/synap-claim-app", "-am", "test",
             "-Dtest=" + TESTS, "-Dsurefire.failIfNoSpecifiedTests=false", "--batch-mode",
         ]
     )
@@ -184,7 +184,7 @@ def main():
                 continue
             open(path, "w", encoding="utf-8").write(src.replace(old, new))
             # 变异后必须重新格式化，否则 spotless:check 先失败 ⇒ 测试根本没跑 ⇒ 假"变异被杀"
-            run(["mvn", "-f", "bone-apps/synap-claim/pom.xml", "spotless:apply", "--batch-mode", "-q"])
+            run(["mvn", "-f", "bone-apps/synap-claim/synap-claim-app/pom.xml", "spotless:apply", "--batch-mode", "-q"])
             total, fails, names, out = test_once()
             expect_list = (
                 [expect_killed] if isinstance(expect_killed, str) else list(expect_killed)
@@ -205,11 +205,11 @@ def main():
                         print("      " + line.strip()[:180])
             # 恢复该目标，避免下一个变异建立在已变异的基础上
             shutil.copyfile(backups[target_key], path)
-            run(["mvn", "-f", "bone-apps/synap-claim/pom.xml", "spotless:apply", "--batch-mode", "-q"])
+            run(["mvn", "-f", "bone-apps/synap-claim/synap-claim-app/pom.xml", "spotless:apply", "--batch-mode", "-q"])
     finally:
         for key, bak in backups.items():
             shutil.copyfile(bak, TARGETS[key])
-        run(["mvn", "-f", "bone-apps/synap-claim/pom.xml", "spotless:apply", "--batch-mode", "-q"])
+        run(["mvn", "-f", "bone-apps/synap-claim/synap-claim-app/pom.xml", "spotless:apply", "--batch-mode", "-q"])
 
     print("\n恢复原文件并复跑基线 …", flush=True)
     total, fails, _, _ = test_once()

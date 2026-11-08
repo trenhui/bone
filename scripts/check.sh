@@ -721,6 +721,15 @@ if ! python3 scripts/check-sql-entity-column-coverage.py; then
   exit_code=1
 fi
 
+# 2026-11-08 新增（P38）。synapClaim 架构逻辑边界：20 子域→7 上下文归属（quota 只归 Funds）
+# 与 Controller 响应信封不得直出领域实体（HC-003）。判据见
+# scripts/check-synapclaim-architecture.py，映射真源见 scripts/synapclaim-domain-context-map.json。
+# 两个负向探针（quota 错挂 Config / 假 Controller 直出 Evidence）实测转红，防止机检静默失效。
+if ! python3 scripts/check-synapclaim-architecture.py; then
+  echo -e "${RED}❌ synapClaim 架构逻辑边界机检失败（D4 归属或 HC-003 响应契约）${RESET}"
+  exit_code=1
+fi
+
 # 2026-11-05 新增（G47）。孤儿门禁检测（R4）：本步守的是**门禁机制本身**，不是某条业务判据。
 # 起因是上面三步的实测：判据写好了、单测也写了，但没有任何入口调用它们，于是该维度
 # 从未被保护。R1–R3 只检查「已列出的步骤是否执行」，结构上不可能发现「从未被列出的脚本」。

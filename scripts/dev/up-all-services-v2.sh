@@ -123,7 +123,7 @@ up_jar bone-engine/studio-generator/target/bone-studio-generator-1.0.0.jar gener
 # 另注：数据面上报共享密钥未注入时会打一条 ERROR 并按「失败关闭」拒绝上报（设计行为，非故障）。
 up_jar bone-engine/bone-extension-engine/bone-extension-studio/target/bone-extension-studio-1.0.0.jar extension 8088 512 \
   --spring.profiles.active=dev,metadata-mysql
-up_jar bone-apps/synap-claim/target/synap-claim-1.0.0.jar claim 8087 512
+up_jar bone-apps/synap-claim/synap-claim-app/target/synap-claim-1.0.0.jar claim 8087 512
 # ai-server：application.yaml 读的是 DB_URL/DB_USERNAME/DB_PASSWORD（不是 .env 的 BONE_DB_*），
 # 直接 java -jar 会因密码为空、驱动类判定失败而 APPLICATION FAILED TO START，故显式下发数据源三件套。
 up_jar bone-ai/bone-ai-server/target/bone-ai-server-1.0.0-SNAPSHOT.jar ai-server 8091 512 \

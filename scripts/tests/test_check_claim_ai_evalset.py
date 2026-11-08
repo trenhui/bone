@@ -19,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 GATE_PATH = ROOT / "scripts" / "check-claim-ai-evalset.py"
-EVALSET_REL = Path("bone-apps/synap-claim/eval/ai-decision-evalset.json")
+EVALSET_REL = Path("bone-apps/synap-claim/synap-claim-app/eval/ai-decision-evalset.json")
 
 
 def _load(path, name):

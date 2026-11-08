@@ -25,8 +25,8 @@ ROOT = Path(__file__).resolve().parents[2]
 GATE_PATH = (
     ROOT / "doc/ai-product/synapClaim/tools/_check_ai_native_calibration.py"
 )
-MAIN_REL = Path("bone-apps/synap-claim/src/main/java/com/bone/claim/domain/model/evaluation")
-TEST_REL = Path("bone-apps/synap-claim/src/test/java/com/bone/claim/domain/model/evaluation")
+MAIN_REL = Path("bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/evaluation")
+TEST_REL = Path("bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/evaluation")
 
 
 def _load():

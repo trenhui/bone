@@ -15,7 +15,7 @@ set -u
 cd "$(dirname "$0")/../.." || exit 1
 
 MVN="${MVN:-mvn}"
-"$MVN" -o -f bone-apps/synap-claim/pom.xml package -Dmaven.test.skip=true --batch-mode -q || exit 1
+"$MVN" -o -f bone-apps/synap-claim/synap-claim-app/pom.xml package -Dmaven.test.skip=true --batch-mode -q || exit 1
 "$MVN" -o -f bone-platform/bone-gateway/pom.xml package -Dmaven.test.skip=true --batch-mode -q || exit 1
 
 export BONE_DB_PASSWORD=mysql123
@@ -39,7 +39,7 @@ java -Xms256m -Xmx640m -jar bone-platform/bone-iam/target/bone-iam-1.0.0.jar \
   --server.port=8081 "${COMMON[@]}" > "${LOGDIR}/bone-claim-e2e-iam.log" 2>&1 &
 java -Xms256m -Xmx640m -jar bone-platform/bone-gateway/target/bone-gateway-1.0.0.jar \
   --server.port=8888 "${COMMON[@]}" > "${LOGDIR}/bone-claim-e2e-gateway.log" 2>&1 &
-java -Xms256m -Xmx768m -jar bone-apps/synap-claim/target/synap-claim-1.0.0.jar \
+java -Xms256m -Xmx768m -jar bone-apps/synap-claim/synap-claim-app/target/synap-claim-1.0.0.jar \
   --server.port=8087 "${COMMON[@]}" > "${LOGDIR}/bone-claim-e2e-claim.log" 2>&1 &
 
 echo "backend stack starting: iam=8081 gateway=8888 claim=8087 (logs in ${LOGDIR}/bone-claim-e2e-*.log)"

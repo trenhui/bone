@@ -42,7 +42,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
-CLAIM = ROOT / "bone-apps" / "synap-claim"
+CLAIM = ROOT / "bone-apps" / "synap-claim" / "synap-claim-app"
 
 PATHS = {
     "app_yml": CLAIM / "src" / "main" / "resources" / "application.yml",
