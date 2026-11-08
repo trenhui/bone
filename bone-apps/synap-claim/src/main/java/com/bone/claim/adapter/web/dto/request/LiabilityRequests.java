@@ -39,11 +39,73 @@ public final class LiabilityRequests {
       @Schema(description = "限定病种编码名单(分隔串)") String limitDiagnosisCodes,
       @Schema(description = "目录准入策略 NONE/MANDATORY") String catalogPolicy,
       @Schema(description = "目录编码(如 NATIONAL_2024)") String catalogCode,
+      @Schema(
+              description =
+                  "目录准入二次确认（仅 catalogPolicy=MANDATORY 时必须为 true）。"
+                      + "MANDATORY 要求每条费用明细都拿到目录结论，目录未接入时整批案件会因"
+                      + " UNKNOWN 转人工补件——是一个开关即可影响全量的配置，故要求显式确认。",
+              defaultValue = "false")
+          Boolean confirmCatalogMandatory,
       @Schema(description = "是否仅赔社保内(1是0否)") @Min(0) @Max(1) Integer socialOnly,
       @Schema(description = "等待期(天)") @Min(value = 0, message = "等待期不能为负") Integer waitingPeriod,
       @Schema(description = "共享保额共保代码(空=独立责任，不共享)") String sharedCode,
       @Schema(description = "先赔后赔前序责任UUID(空=无)") String priorLiabilityUuid,
-      @Schema(description = "初始状态 DRAFT/ACTIVE/RETIRED") String status) {}
+      @Schema(description = "初始状态 DRAFT/ACTIVE/RETIRED") String status) {
+
+    /**
+     * 兼容构造：不带目录准入确认位（既有调用点与测试夹具）。
+     *
+     * <p>与 {@code ClaimContextView} 的兼容构造同一取舍：新增一个「只有确认场景才需要」的字段时，
+     * 不该迫使全部既有调用方改写构造实参——那会让一次功能扩展变成一次全仓扰动。缺省值 {@code null} 表示「未确认」，与 Jackson
+     * 反序列化漏字段时的语义一致（fail-closed：MANDATORY 仍会被拦）。
+     */
+    public CreateLiabilityReq(
+        Long planId,
+        Long coverageId,
+        String liabilityCode,
+        String liabilityType,
+        String payPercent,
+        String liabilityDeduct,
+        String liabilityLimit,
+        String invoiceDeduct,
+        String adjustDeduct,
+        String dailyLimit,
+        String dailyLimitBasis,
+        String limitMode,
+        String limitHospitalCodes,
+        String limitDiagnosisCodes,
+        String catalogPolicy,
+        String catalogCode,
+        Integer socialOnly,
+        Integer waitingPeriod,
+        String sharedCode,
+        String priorLiabilityUuid,
+        String status) {
+      this(
+          planId,
+          coverageId,
+          liabilityCode,
+          liabilityType,
+          payPercent,
+          liabilityDeduct,
+          liabilityLimit,
+          invoiceDeduct,
+          adjustDeduct,
+          dailyLimit,
+          dailyLimitBasis,
+          limitMode,
+          limitHospitalCodes,
+          limitDiagnosisCodes,
+          catalogPolicy,
+          catalogCode,
+          null,
+          socialOnly,
+          waitingPeriod,
+          sharedCode,
+          priorLiabilityUuid,
+          status);
+    }
+  }
 
   /** 编辑责任（空字段沿用原值；ACTIVE 责任将生成新版本）。 */
   @Schema(description = "编辑责任请求")
@@ -63,6 +125,10 @@ public final class LiabilityRequests {
       String limitDiagnosisCodes,
       String catalogPolicy,
       String catalogCode,
+      @Schema(
+              description = "目录准入二次确认（catalogPolicy=MANDATORY 时必须为 true，含「沿用原值且原值为 MANDATORY」的情形）",
+              defaultValue = "false")
+          Boolean confirmCatalogMandatory,
       @Min(0) @Max(1) Integer socialOnly,
       Integer waitingPeriod,
       @Schema(description = "共享保额共保代码(空=独立责任，不共享)") String sharedCode,
@@ -72,7 +138,54 @@ public final class LiabilityRequests {
                   "解除保障归属（把责任退回方案级）。JSON 里 coverageId 传 null 与\"不传\"无法区分，"
                       + "故用显式标志位；为 true 时忽略 coverageId 并清空归属。",
               defaultValue = "false")
-          Boolean detachCoverage) {}
+          Boolean detachCoverage) {
+
+    /** 兼容构造：不带目录准入确认位（既有调用点与测试夹具）。语义同 {@code CreateLiabilityReq}。 */
+    public UpdateLiabilityReq(
+        String liabilityCode,
+        Long coverageId,
+        String liabilityType,
+        String payPercent,
+        String liabilityDeduct,
+        String liabilityLimit,
+        String invoiceDeduct,
+        String adjustDeduct,
+        String dailyLimit,
+        String dailyLimitBasis,
+        String limitMode,
+        String limitHospitalCodes,
+        String limitDiagnosisCodes,
+        String catalogPolicy,
+        String catalogCode,
+        Integer socialOnly,
+        Integer waitingPeriod,
+        String sharedCode,
+        String priorLiabilityUuid,
+        Boolean detachCoverage) {
+      this(
+          liabilityCode,
+          coverageId,
+          liabilityType,
+          payPercent,
+          liabilityDeduct,
+          liabilityLimit,
+          invoiceDeduct,
+          adjustDeduct,
+          dailyLimit,
+          dailyLimitBasis,
+          limitMode,
+          limitHospitalCodes,
+          limitDiagnosisCodes,
+          catalogPolicy,
+          catalogCode,
+          null,
+          socialOnly,
+          waitingPeriod,
+          sharedCode,
+          priorLiabilityUuid,
+          detachCoverage);
+    }
+  }
 
   /** 费用类别规则行（责任费用规则抽屉整表提交，金额 String 承载）。 */
   @Schema(description = "责任费用类别规则行")

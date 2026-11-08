@@ -54,7 +54,7 @@ currency: current
 | 多保司接入 / 保单配置面 / 主数据映射 / 新保司接入周期 | `design.multi-insurer-mapping` |
 | 反欺诈 / 视觉反诈 / 图计算 / 直付通道 / 模型风险（MRM） | `design.risk-payment` |
 
-## 三、ACTIVE 现行真源（currency=current，可引用为事实，共 31 份）
+## 三、ACTIVE 现行真源（currency=current，可引用为事实，共 32 份）
 
 | id | 路径 | role | 一句话 |
 |---|---|---|---|
@@ -87,6 +87,7 @@ currency: current
 | `delivery.index` | `07-delivery/README.md` | navigation | 交付包索引：01–11 编号与内容对照（新增交付包必须在此登记） |
 | `golive.00` | `08-go-live/00-总纲与Go-Live门禁.md` | ssot | 总纲：缺口→分册映射表、G1–G16 上线门禁、与既有治理的衔接 |
 | `records.evidence.index` | `09-records/evidence/README.md` | navigation | 运行期证据索引：E2E 与复核器时点快照的登记清单、采集 HEAD 与诚实判读、复现纪律 |
+| `records.review.M2-` | `09-records/reviews/M2-责任额度列迁移评审.md` | evidence | M2（责任额度 3 个金额列 → JSON）评审材料：实测范围、四阶段验收、8 个待拍板决策点、开工前置证据 |
 | `ai-index` | `AI-INDEX.md` | navigation | 机器优先入口：语料模型+按来意路由+ACTIVE/DRAFT/FROZEN 三段清单，供 AI 确定性检索 |
 | `index` | `README.md` | navigation | 3 分钟入口：按「你这次来做什么」路由到唯一该读的文档；不再按目录树猜 |
 
@@ -112,7 +113,7 @@ currency: current
 - `plan.ainative` → `05-plan/AI原生改造执行计划.md`：AI 原生改造执行计划：将 _ai_native_readiness.py 的 12 判据映射为阶段/负责/动作/验收，并叠加 Phase B/V2 能力纵深路线，作为 gsd-core Plan 阶段交付物与循环可复用终止判据
 - `delivery.11` → `07-delivery/11-L3外部前置运行手册.md`：L3 外部前置运行手册：provider 配置 → 探活 → 实跑 E2E → 复核器归因的可执行闭环
 
-## 六、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 16 份）
+## 六、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 17 份）
 
 - `records.evidence.e2e-20261107` → `09-records/evidence/2026-11-07-claims-e2e-result.md`：2026-11-07 前后端 E2E 时点快照（real-services-no-mock，passed，probeVerdict=NOT_CONFIGURED 诚实降级，HEAD d953da0fc）
 - `records.impl.14` → `09-records/impl-log/14-主链路闭环体检与P0修复记录.md`：四本账未对齐的体检与 3 项 P0 修复（含变异证据）  ⚠️ 已被 `09-records/impl-log/15-跨案累计读侧与责任账接线（P0-4）.md` 撤销/修正：impl-log/15 已撤销本册"额度服务 0 调用方"判断
@@ -123,6 +124,7 @@ currency: current
 - `records.impl.19` → `09-records/impl-log/19-额度释放原子性与占用归属（P0-5）.md`：额度释放的占用归属校验与跨账原子性（含 CORE-06 例外登记与 4 项变异证据）
 - `records.impl.20` → `09-records/impl-log/20-额度投影自愈与释放阻塞（P0-6）.md`：额度投影自愈：共享池被越权释放抽干时，本单自有 hold 足额仍须能正常取消（含口径自洽性验算与 7 项变异证据）
 - `records.review.L3-draft` → `09-records/reviews/L3-待架构评审-草稿.md`：§16 裁定项 #2/#3/#10 的技术草稿（#2/#3 已授权落地，#10 仍待 SDK owner 双签）
+- `records.review.M2-` → `09-records/reviews/M2-责任额度列迁移评审.md`：M2（责任额度 3 个金额列 → JSON）评审材料：实测范围、四阶段验收、8 个待拍板决策点、开工前置证据
 - `records.review.TPA-` → `09-records/reviews/TPA-SAAS基线差距分析.md`：上游飞书 TPA-SAAS 源系统盘点与差距（护城河与欠账）
 - `records.review.业界对标` → `09-records/reviews/业界对标整改台账.md`：业界对标量化基线、已落地整改项、V1.0 执行清单
 - `records.review.代码整改` → `09-records/reviews/代码整改清单.md`：待架构评审的代码整改项（含已闭环项的备查记录）

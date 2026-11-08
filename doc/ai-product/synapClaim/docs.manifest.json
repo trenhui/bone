@@ -774,6 +774,17 @@
       "authority": "循环复核过程取证（不含当前契约）",
       "role": "evidence",
       "currency": "frozen"
+    },
+    {
+      "id": "records.review.M2-",
+      "path": "09-records/reviews/M2-责任额度列迁移评审.md",
+      "layer": "L9",
+      "diataxis": "explanation",
+      "status": "active",
+      "summary": "M2（责任额度 3 个金额列 → JSON）评审材料：实测范围、四阶段验收、8 个待拍板决策点、开工前置证据",
+      "authority": "M2 迁移评审输入",
+      "role": "evidence",
+      "currency": "current"
     }
   ],
   "aiRouting": [

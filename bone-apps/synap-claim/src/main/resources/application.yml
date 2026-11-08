@@ -37,6 +37,24 @@ metadata:
     deploymentMode: EMBEDDED
 
 bone:
+  ai:
+    gateway:
+      # AI 网关（bone-ai-gateway，OpenAI 兼容端点）。留空 = Mock 形态：不产生真实模型调用，
+      # 依赖模型的能力（感知层 llm 模式 / 图像解析 / 认知层结论）一律 fail-closed 转人工，
+      # 绝不返回伪造结论。
+      #
+      # 文本理解（DeepSeek，OpenAI 兼容，实测可用）：
+      #   BONE_AI_GATEWAY_BASE_URL=https://api.deepseek.com/v1
+      #   BONE_AI_GATEWAY_API_KEY=sk-xxxx
+      #   BONE_AI_GATEWAY_MODEL=deepseek-chat
+      # 影像识别需要**多模态**端点：DeepSeek 官方接口只收文本，把它的地址配到这里的后果是
+      # 图像解析稳定失败（IMAGE_GATEWAY_UNAVAILABLE）并转人工——不会静默错解析。
+      # 要真正跑通影像件，请把 base-url 指向具备视觉输入能力的 OpenAI 兼容服务
+      # （如 qwen-vl / gpt-4o 兼容网关），或使用 tools/mock-ai-gateway.py 做链路联调（Mock 会被显式拒绝）。
+      base-url: ${BONE_AI_GATEWAY_BASE_URL:}
+      api-key: ${BONE_AI_GATEWAY_API_KEY:}
+      model: ${BONE_AI_GATEWAY_MODEL:deepseek-chat}
+      timeout: ${BONE_AI_GATEWAY_TIMEOUT:30s}
   iam:
     jwt:
       # 与其余模块同款声明：必须与 bone-iam 的 bone.iam.jwt.secret-key 一致，
@@ -56,8 +74,12 @@ bone:
       # llm 模式未配 provider 时网关回落 MockLlmClient，适配器显式拒绝并转人工，绝不伪造解析产物。
       mode: ${BONE_CLAIM_DOCUMENT_PARSE_MODE:text}
       image:
-        # D2 图像感知通道：默认 false——图像件维持转人工补录，开与不开现网行为不变。
-        # true 时 ImageDocumentParsePortAdapter 装配，图像件经网关多模态解析；
+        # D2 图像感知通道：**代码已完整实现**（ImageDocumentParsePortAdapter 全链路 + PII 出站遮蔽 +
+        # 输出白名单 + 三重归因码），但按项目纪律「AI 能力默认关闭」保持默认 false——
+        # 门禁 IMAGE_PARSE_WIRED 会校验「默认必须是 false」，改成 true 会直接判红。
+        # 开启方式（部署时注入，不需要改代码）：
+        #   BONE_CLAIM_DOCUMENT_PARSE_IMAGE_ENABLED=true
+        # 前置条件：bone.ai.gateway.base-url 必须指向**支持视觉输入**的 OpenAI 兼容端点。
         # 网关异常/超时/契约违反/mock 一律落 FAILED + 归因码（IMAGE_GATEWAY_UNAVAILABLE /
         # IMAGE_OUTPUT_INVALID / IMAGE_MOCK_REJECTED）转人工，禁止文本层兜底冒充。
         enabled: ${BONE_CLAIM_DOCUMENT_PARSE_IMAGE_ENABLED:false}

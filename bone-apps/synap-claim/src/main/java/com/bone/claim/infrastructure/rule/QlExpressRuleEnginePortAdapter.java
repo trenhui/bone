@@ -7,13 +7,19 @@ import com.bone.claim.application.port.out.RuleEnginePort;
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.config.ClaimThresholds;
 import com.bone.claim.domain.model.evidence.Evidence;
+import com.bone.claim.domain.model.evidence.EvidenceDateParser;
 import com.bone.claim.domain.model.evidence.valueobject.OcrStatus;
+import com.bone.claim.domain.model.liability.AdjLiability;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.EvidenceRepository;
+import com.bone.claim.domain.repository.LiabilityRepository;
+import com.bone.claim.infrastructure.evidence.EvidenceFieldReader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -53,6 +59,21 @@ public class QlExpressRuleEnginePortAdapter implements RuleEnginePort {
   /** 规则路径置信度：确定性规则的语义是「已执行且结论唯一」，不是统计置信度；沿用一期基线值， 不引入虚假校准。 */
   private static final BigDecimal RULE_CONFIDENCE = new BigDecimal("0.90");
 
+  /** 业务时区（与 {@code ReconciliationApplicationService.BIZ_ZONE} 同口径）：日期比较必须按业务日，不按 UTC。 */
+  private static final ZoneId BIZ_ZONE = ZoneId.of("Asia/Shanghai");
+
+  /** 开票晚于就诊的最大容忍天数（R-FRAUD-03）：超过即「事后补票」形态，0 会把跨周末的正常补录全部打成风险。 */
+  private static final int TIMELINE_MAX_LAG_DAYS = 30;
+
+  /** 超保额告警比例（R-FRAUD-02 子面一，业务规则书口径 80%）。 */
+  private static final BigDecimal COVERAGE_ALERT_RATIO = new BigDecimal("0.80");
+
+  /** 3σ 判定的最小样本量（R-FRAUD-02 子面二，业务裁定要求写进规则书；n<30 时 σ 不可靠）。 */
+  private static final int SIGMA_MIN_SAMPLES = 30;
+
+  /** 3σ 倍数（单侧上界：只抓「明显偏高」，不抓偏低——偏低是少赔，不是反欺诈关注点）。 */
+  private static final double SIGMA_MULTIPLIER = 3.0;
+
   private static final List<RuleSpec> DEFAULT_RULES =
       List.of(
           new RuleSpec(
@@ -82,6 +103,15 @@ public class QlExpressRuleEnginePortAdapter implements RuleEnginePort {
 
   @Autowired(required = false)
   private EvidenceRepository evidenceRepository;
+
+  /**
+   * 可选责任配置仓储：{@code R-AMOUNT-07}（超保额 80%）取责任限额用。
+   *
+   * <p>{@code required=false} 的原因与上面两个仓储相同——单元夹具以 {@code new} 创建适配器时无 Spring 注入，
+   * 此时「保额」维度的变量缺失，规则按未命中处理，既有测试零改动。生产上下文里该仓储一定存在（本模块自有仓储）。
+   */
+  @Autowired(required = false)
+  private LiabilityRepository liabilityRepository;
 
   @Value("${bone.claim.ruleset.location:classpath:claim-ruleset.json}")
   private Resource rulesetResource;
@@ -225,7 +255,10 @@ public class QlExpressRuleEnginePortAdapter implements RuleEnginePort {
       facts.put(
           "sourceChannel",
           hasClaim && claim.getSourceChannel() != null ? claim.getSourceChannel() : "");
-      enrichPriorClaimFacts(claim, ctx, facts);
+      List<ClaimCase> priorClaims = enrichPriorClaimFacts(claim, ctx, facts);
+      enrichTimelineFacts(claim, evidences, facts);
+      enrichAmountAnomalyFacts(claim, priorClaims, facts);
+      enrichDuplicateFacts(claim, priorClaims, facts);
       int evidenceCount = evidences == null ? 0 : evidences.size();
       int invoiceCount = 0;
       boolean anyOcrFailed = false;
@@ -264,30 +297,233 @@ public class QlExpressRuleEnginePortAdapter implements RuleEnginePort {
    * <p>剔除本案自身是关键：否则新报案会把自身算进历史、必然命中 R-FRAUD-22，造成 100% 误报。任一异常（仓储未装配 / 查询返回 null / 字段缺失）均
    * best-effort 降级为空集合；规则按「变量缺失→静默未命中」处理，绝不阻断主链路。
    */
-  private void enrichPriorClaimFacts(
+  private List<ClaimCase> enrichPriorClaimFacts(
       ClaimCase claim, ClaimContextPort.ClaimContextView ctx, Map<String, Object> facts) {
     if (claim == null || claim.getInsuredIdHash() == null) {
       facts.put("priorClaimCount", 0.0);
       facts.put("recentClaims90d", 0.0);
-      return;
+      return List.of();
     }
     List<ClaimCase> priorClaims =
         claimCaseRepository.findByInsuredIdHash(claim.getTenantId(), claim.getInsuredIdHash());
     if (priorClaims == null) {
       priorClaims = List.of();
     }
-    long priorClaimCount =
+    // 排除本案自身：不排除会让新报案把自己算进历史，R-FRAUD-22 / 重复报销判定 100% 误报。
+    List<ClaimCase> others =
         priorClaims.stream()
             .filter(p -> p.getId() != null && !p.getId().equals(ctx.claimId()))
-            .count();
+            .toList();
     Instant ninetyDaysAgo = Instant.now().minus(90, ChronoUnit.DAYS);
     long recentClaims90d =
-        priorClaims.stream()
-            .filter(p -> p.getId() != null && !p.getId().equals(ctx.claimId()))
+        others.stream()
             .filter(p -> p.getCreatedAt() != null && p.getCreatedAt().isAfter(ninetyDaysAgo))
             .count();
-    facts.put("priorClaimCount", (double) priorClaimCount);
+    facts.put("priorClaimCount", (double) others.size());
     facts.put("recentClaims90d", (double) recentClaims90d);
+    return others;
+  }
+
+  /**
+   * 时间轴矛盾维度富化（R-FRAUD-03 的实际承载，2026-11-08 按业务裁定 A 补实现）。
+   *
+   * <p><b>为什么需要两个日期来源</b>：{@code t_claim_case.invoice_date} 是建单时录入的实体列，
+   * 最可靠；但材料阶段刚解析完、案件还没回填时它可能为空。此时回落到票据 {@code extracted_json} 的 {@code invoice_date} 字段，再经 {@link
+   * EvidenceDateParser} 的白名单解析——<b>认不出就 {@code timelineUnresolved=true}
+   * 转人工，绝不猜</b>（猜错会把正常案件判成「药先开票」）。
+   *
+   * <p>未接线时（无仓储 / 无案件）三个布尔都置 false 而非 true：把「拿不到数据」当成矛盾会让整批案件转人工， 那是把数据问题当业务结论。
+   */
+  private void enrichTimelineFacts(
+      ClaimCase claim, List<Evidence> evidences, Map<String, Object> facts) {
+    if (claim == null) {
+      facts.put("timelineUnresolved", false);
+      facts.put("invoiceBeforeVisit", false);
+      facts.put("invoiceTooLate", false);
+      facts.put("invoiceVisitLagDays", 0.0);
+      return;
+    }
+    LocalDate invoiceDate = resolveInvoiceDate(claim, evidences);
+    LocalDate visitDate = resolveVisitDate(claim);
+    EvidenceDateParser.TimelineVerdict verdict =
+        EvidenceDateParser.evaluate(invoiceDate, visitDate, TIMELINE_MAX_LAG_DAYS);
+    facts.put("timelineUnresolved", verdict == EvidenceDateParser.TimelineVerdict.UNRESOLVED);
+    facts.put(
+        "invoiceBeforeVisit", verdict == EvidenceDateParser.TimelineVerdict.INVOICE_BEFORE_VISIT);
+    facts.put("invoiceTooLate", verdict == EvidenceDateParser.TimelineVerdict.INVOICE_TOO_LATE);
+    facts.put(
+        "invoiceVisitLagDays",
+        invoiceDate != null && visitDate != null
+            ? (double) ChronoUnit.DAYS.between(visitDate, invoiceDate)
+            : 0.0);
+  }
+
+  /**
+   * 发票日期：实体列优先，缺失时回落票据解析产物。
+   *
+   * <p>回落只认 {@code INVOICE} 类型证据里的 {@code invoice_date} 字段；多张票据时取<b>第一条能解析出的</b>——
+   * 一份赔案多张发票的情形下「哪张是主票」本身没有可靠依据，取首条解析成功值并保留「可能多票」的既有语义差异， 好过为此引入一个猜测性的排序规则。
+   */
+  private LocalDate resolveInvoiceDate(ClaimCase claim, List<Evidence> evidences) {
+    if (claim.getInvoiceDate() != null) {
+      return claim.getInvoiceDate();
+    }
+    if (evidences == null) {
+      return null;
+    }
+    for (Evidence evidence : evidences) {
+      if (!"INVOICE".equals(evidence.getDocType())) {
+        continue;
+      }
+      for (EvidenceFieldReader.ParsedField field :
+          EvidenceFieldReader.read(evidence.getExtractedJson())) {
+        if ("invoice_date".equals(field.code())) {
+          var parsed = EvidenceDateParser.parse(field.value());
+          if (parsed.isPresent()) {
+            return parsed.get();
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 就诊日期：取 {@code out_insure_time}（出险时刻）在业务时区下的日历日。
+   *
+   * <p>必须按 {@link #BIZ_ZONE} 转日再比较：直接 {@code toLocalDate()} 用的是 UTC，跨零点开票的票会整体错一天， 把「同日」判成「次日」。
+   */
+  private LocalDate resolveVisitDate(ClaimCase claim) {
+    if (claim.getOutInsureTime() == null) {
+      return null;
+    }
+    return claim.getOutInsureTime().atZone(BIZ_ZONE).toLocalDate();
+  }
+
+  /**
+   * 金额异常维度富化（R-FRAUD-02 的两个子面，2026-11-08 按业务裁定 B 全部补实现）。
+   *
+   * <p><b>子面一：超保额 80%</b>——取计划下生效责任的 {@code liability_limit} 最大值作为计划级上限。
+   * 这是<b>计划级</b>而不是<b>案件级</b>限额：案件表没有 coverageId / 责任 UUID，无法定位「这笔费用属于哪条责任」。
+   * 因此本判定只会漏报（超过小责任限额但没超过计划上限时不触发），不会误报——方向是安全的， 精确到责任级需要案件携带责任标识，属接线项而非本判据缺陷。
+   *
+   * <p><b>子面二：同类 3σ</b>——样本取「同被保人 + 同诊断码 + 金额非空」的历史案件。 三条闸门缺一不可：① 样本量 {@code >=
+   * SIGMA_MIN_SAMPLES}（默认 30，业务裁定要求写进规则书）； ② 标准差 {@code > 0}（全同值样本没有分布，硬算会除零，也会把「所有历史都一样」误判成异常）； ③
+   * 诊断码非空（空码无法定义「同类」）。 任一不满足即 {@code amountSigmaReady=false}，规则不判——<b>宁可不判，不拿不可靠统计误杀大额正常赔付</b>。
+   */
+  private void enrichAmountAnomalyFacts(
+      ClaimCase claim, List<ClaimCase> priorClaims, Map<String, Object> facts) {
+    BigDecimal amount = claim == null ? null : claim.getClaimAmount();
+    BigDecimal planLimit = resolvePlanLiabilityLimit(claim);
+    boolean coverageKnown = planLimit != null && planLimit.signum() > 0 && amount != null;
+    facts.put("coverageLimitKnown", coverageKnown);
+    facts.put(
+        "amountOverCoverage80",
+        coverageKnown && amount.compareTo(planLimit.multiply(COVERAGE_ALERT_RATIO)) >= 0);
+
+    String diagnosisCode = claim == null ? "" : trimToEmpty(claim.getDiagnosisCode());
+    List<BigDecimal> samples =
+        priorClaims.stream()
+            .filter(p -> diagnosisCode.equals(trimToEmpty(p.getDiagnosisCode())))
+            .map(ClaimCase::getClaimAmount)
+            .filter(java.util.Objects::nonNull)
+            .toList();
+    boolean enough =
+        amount != null && !diagnosisCode.isEmpty() && samples.size() >= SIGMA_MIN_SAMPLES;
+    double sigma = enough ? standardDeviation(samples) : 0.0;
+    boolean ready = enough && sigma > 0.0;
+    facts.put("amountSigmaReady", ready);
+    facts.put("amountSigmaSampleSize", (double) samples.size());
+    facts.put(
+        "amountSigmaOutlier",
+        ready && amount.doubleValue() > mean(samples) + SIGMA_MULTIPLIER * sigma);
+  }
+
+  /**
+   * 计划级责任限额：生效责任里 {@code liability_limit} 的最大值。
+   *
+   * <p>返回 {@code null} 表示「不可得」（无仓储 / 无 planId / 全部责任限额为 0），调用方据此不判—— 把「没配限额」当成「限额为
+   * 0」会让每一笔都命中超保额，是典型的静默灾难。
+   */
+  private BigDecimal resolvePlanLiabilityLimit(ClaimCase claim) {
+    if (claim == null || claim.getPlanId() == null || liabilityRepository == null) {
+      return null;
+    }
+    try {
+      List<AdjLiability> liabilities = liabilityRepository.findActiveByPlanId(claim.getPlanId());
+      if (liabilities == null || liabilities.isEmpty()) {
+        return null;
+      }
+      return liabilities.stream()
+          .map(AdjLiability::getLiabilityLimit)
+          .filter(java.util.Objects::nonNull)
+          .filter(v -> v.signum() > 0)
+          .max(BigDecimal::compareTo)
+          .orElse(null);
+    } catch (Exception ignored) {
+      // 责任配置读取失败 → 保额不可得 → 不判（不阻断主链路，也不假装限额为 0）
+      return null;
+    }
+  }
+
+  /** 样本标准差（n-1 分母；样本量 < 2 返回 0，由调用方按「不可判」处理）。 */
+  private static double standardDeviation(List<BigDecimal> values) {
+    if (values.size() < 2) {
+      return 0.0;
+    }
+    double avg = mean(values);
+    double sum = 0.0;
+    for (BigDecimal value : values) {
+      double diff = value.doubleValue() - avg;
+      sum += diff * diff;
+    }
+    return Math.sqrt(sum / (values.size() - 1));
+  }
+
+  private static double mean(List<BigDecimal> values) {
+    return values.stream().mapToDouble(BigDecimal::doubleValue).average().orElse(0.0);
+  }
+
+  /**
+   * 重复报销维度富化（R-FRAUD-01 的独立判定，2026-11-08 按业务裁定补实现）。
+   *
+   * <p>四要素：<b>同人</b>（{@code findByInsuredIdHash} 已保证）+ <b>同日</b>（发票日期相同）+ <b>同院</b>（医院编码相同）+
+   * <b>同额</b>（理赔金额相同）。四者齐备才算命中，缺一项即不命中。
+   *
+   * <p><b>为什么「缺要素」不直接转人工</b>：医院编码缺失由 {@code R-FRAUD-08 HOSPITAL_MISSING} 单独转人工，
+   * 这里再转一次等于同一问题报两次；而发票日期缺失、且库里确实存在「同院同额」的候选时—— 差的就是这一天——才置 {@code duplicateUnresolved=true}
+   * 交人工确认。这样既守住 fail-closed， 又不会因为材料还没回填就把整批案件打成待人工。
+   *
+   * <p>金额比较用 {@link BigDecimal#compareTo}：{@code 100} 与 {@code 100.00} 数值相等， 用 {@code equals}
+   * 会把精度差异当成不同金额，直接漏掉重复。
+   */
+  private void enrichDuplicateFacts(
+      ClaimCase claim, List<ClaimCase> priorClaims, Map<String, Object> facts) {
+    BigDecimal amount = claim == null ? null : claim.getClaimAmount();
+    String hospital = claim == null ? "" : trimToEmpty(claim.getHospitalCode());
+    LocalDate invoiceDate = claim == null ? null : claim.getInvoiceDate();
+    if (claim == null || priorClaims.isEmpty() || amount == null || hospital.isEmpty()) {
+      facts.put("duplicateReimbursement", false);
+      facts.put("duplicateUnresolved", false);
+      facts.put("duplicateCandidateCount", 0.0);
+      return;
+    }
+    List<ClaimCase> nearCandidates =
+        priorClaims.stream()
+            .filter(p -> hospital.equals(trimToEmpty(p.getHospitalCode())))
+            .filter(p -> p.getClaimAmount() != null && p.getClaimAmount().compareTo(amount) == 0)
+            .toList();
+    boolean sameDay =
+        invoiceDate == null
+            ? false
+            : nearCandidates.stream().anyMatch(p -> invoiceDate.equals(p.getInvoiceDate()));
+    facts.put("duplicateReimbursement", sameDay);
+    facts.put("duplicateUnresolved", invoiceDate == null && !nearCandidates.isEmpty());
+    facts.put("duplicateCandidateCount", (double) nearCandidates.size());
+  }
+
+  private static String trimToEmpty(String value) {
+    return value == null ? "" : value.trim();
   }
 
   private String snapshotOf(Map<String, Object> facts) {

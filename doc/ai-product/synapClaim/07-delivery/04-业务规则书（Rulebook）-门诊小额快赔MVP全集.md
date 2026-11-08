@@ -197,7 +197,7 @@ currency: current
 
 > **两条「无落点」的实际后果**：客户按规则书核对时，`R-FRAUD-02`（金额异常）、`R-FRAUD-03`（时间轴矛盾）看起来在风控链路上，实际系统没有这段代码——既不会标记也不会转人工。金额维度有一部分被 `R-AMOUNT-01/02` 的**绝对阈值**兜住（超 1 万/5 万转复核），但「同类案件 3σ」与「超保额 80%」两种口径**完全没有**；时间轴则完全空白。这两条要么补实现、要么在规则书里明确降级为「二期」，**不能继续以"内置规则"措辞交付客户**。处置建议见 §11.4。
 
-### 11.2 仅资产有、本规则书无（15 条，逐条登记）
+### 11.2 仅资产有、本规则书无（22 条，逐条登记）
 
 > **2026-11-07 补**：初版只按族汇总了 4 行，导致 `_check_ruleset_alignment.py` 只守住 33 条资产里的 18 条交集——**门禁照跑、覆盖率 55%**，与「按层扫描静默丢覆盖」同源。改为逐条登记后，资产任何增删或 `conclusion` 变更都会判红。
 
@@ -209,8 +209,12 @@ currency: current
 | `R-AMOUNT-04` | `AMOUNT` | `SECOND_REVIEW_FLAG` | `False` | `secondReviewRequired == true` |
 | `R-AMOUNT-05` | `AMOUNT` | `AMOUNT_TINY` | `True` | `claimAmount > 0 && claimAmount < 1` |
 | `R-AMOUNT-06` | `AMOUNT` | `AMOUNT_MID_REVIEW` | `False` | `claimAmount >= 20000 && claimAmount < 50000` |
+| `R-AMOUNT-07` | `AMOUNT` | `AMOUNT_OVER_COVERAGE` | `True` | `amountOverCoverage80 == true` |
+| `R-AMOUNT-08` | `AMOUNT` | `AMOUNT_SIGMA_OUTLIER` | `True` | `amountSigmaOutlier == true` |
 | `R-COMP-01` | `COMPLIANCE` | `CREATED_AT_MISSING` | `False` | `createdAtMissing == true` |
 | `R-EVID-01` | `EVIDENCE` | `EVIDENCE_PARSE_FAILED` | `True` | `evidenceParsed == false` |
+| `R-FRAUD-23` | `FRAUD` | `DUPLICATE_REIMBURSEMENT` | `True` | `duplicateReimbursement == true` |
+| `R-FRAUD-24` | `FRAUD` | `DUPLICATE_CHECK_UNRESOLVED` | `False` | `duplicateUnresolved == true` |
 | `R-MAT-02` | `MATERIAL` | `OUTPATIENT_NO_INVOICE` | `False` | `claimTypeOutpatient == true && invoiceEvidenceCount == 0` |
 | `R-MAT-04` | `MATERIAL` | `BULK_EVIDENCE` | `False` | `evidenceCount >= 10` |
 | `R-MAT-05` | `MATERIAL` | `MULTI_DOC_REVIEW` | `False` | `evidenceCount >= 5` |
@@ -218,6 +222,9 @@ currency: current
 | `R-MAT-07` | `MATERIAL` | `MULTI_NON_INVOICE` | `False` | `evidenceCount >= 3 && invoiceEvidenceCount == 0` |
 | `R-OCR-01` | `EVIDENCE` | `OCR_CONFIDENCE_LOW` | `True` | `minOcrConfidence < 0.7` |
 | `R-SCOPE-01` | `SCOPE` | `OUT_OF_PHASE1_SCOPE` | `True` | `claimTypeOutpatient == false` |
+| `R-TIMELINE-01` | `TIMELINESS` | `TIMELINE_DATE_UNRESOLVED` | `False` | `timelineUnresolved == true` |
+| `R-TIMELINE-02` | `TIMELINESS` | `TIMELINE_INVOICE_BEFORE_VISIT` | `True` | `invoiceBeforeVisit == true` |
+| `R-TIMELINE-03` | `TIMELINESS` | `TIMELINE_INVOICE_TOO_LATE` | `False` | `invoiceTooLate == true` |
 
 这些是**执行期前置校验**，不是客户逐条核对的业务条款，故不进本书正文；但它们的 `conclusion` 会出现在拒赔/转人工结果里，客户端看得见，因此必须逐条登记、纳入门禁。注意 `R-AMOUNT-03`（`claimAmount <= 0`）与 `R-AMOUNT-05`（`0 < amount < 1`）是**写入期拒绝非法值 + 读取期兜底保留**那组判据的执行落点，收紧时不得把 `<=0` 改成 `==0`。
 
@@ -230,7 +237,7 @@ currency: current
 | `R-DED` | 4 | 免赔，由 `DeductibleEngine` 实现 |
 | `R-DIR-02~06` | 5 | 目录与自费剔除，由目录准入与知识库实现 |
 | `R-FAST` | 2 | 快赔路径，由状态机与应用服务实现 |
-| `R-FRAUD-01` | 1 | 重复报销检测，待接线（见 §九） |
+| `R-FRAUD-01` | 1 | 重复报销检测：**已实现**，由资产 `R-FRAUD-23`（`DUPLICATE_REIMBURSEMENT`）承载四要素判定 |
 | `R-MAN` | 4 | 人工兜底，由流程与权限实现 |
 | `R-RAT` | 4 | 赔付比例，由 `PayRatioTable` 实现 |
 
@@ -238,7 +245,7 @@ currency: current
 
 > **上表载体声明的复核（2026-11-08，与 §11.1 落点取证同一批）**：`QuotaStack` / `DeductibleEngine` / `PayRatioTable` 三个具名载体均**真实存在且被引擎引用**（排除自身后引用点 38 / 12 / 15 处），不是「声明了但没人用」——这一条必须查**读取点**，类存在不等于接线；`R-DIR-02~06` 由 `ItemCatalogPort` + `KnowledgeRetrievalPort`（`CatalogKnowledgeRetrievalPortAdapter`）承载，与 §11.1 `R-DIR-01` 同一机制；`R-AREA` / `R-FAST` / `R-MAN` 由配置面、状态机、权限承载，属流程类不入 QLExpress。
 >
-> **`R-FRAUD-01`（重复报销检测）仍未直接实现**（`重复报销` / `R-FRAUD-01` 在 `src/main/java` 零命中），但它的两个子面已被别的条款覆盖：同票重复 = `R-FRAUD-07`（`duplicateAcrossClaims` + `uk_tenant_invoice`），跨案重复索赔 = `R-FRAUD-22`（`PRIOR_CLAIM_DUPLICATE`）。**是否把 `R-FRAUD-01` 记为「已由 07/22 覆盖」还是保留为独立待接项，属 §11.4 待裁定**——保留现状（标「待接线」）是保守口径，不会夸大已完成范围。
+> **`R-FRAUD-01`（重复报销检测）已于 2026-11-08 实现**（业务裁定：补独立判定，不接受「由相邻条款覆盖」的口径）。落点是资产执行项 `R-FRAUD-23`（四要素：同人 + 同日 + 同院 + 同额，全中才算命中）与 `R-FRAUD-24`（差发票日期即可定性时转人工）。之所以不复用 `R-FRAUD-01` 这个 ID 做执行项：规则书条款与资产执行项是两个命名空间，一旦让同名 ID 承载不同语义，就会回到 §11.1 那 10 条「同名不同义」的老问题。同票重复（`R-FRAUD-07` 的 `uk_tenant_invoice`）与跨案重复索赔（`R-FRAUD-22`）仍然各自独立生效，三者是互补而非替代关系。
 
 ### 11.4 处置与待决策
 
@@ -247,12 +254,12 @@ currency: current
 | Q1 | 10 条同名不同义是否要改名收敛 | **不改名**（规则 2）；靠本节对照表 + 机检隔离 | 已可结案：改名收益为零、成本是日志/评测集/客户交付全面断裂。8 条落点已查明并锁进机检（A7） |
 | Q2 | 15 条执行项是否补进本规则书对外条款 | 不补；保持族级登记，避免把内部校验说成客户承诺 | 维持。但其中 `R-AMOUNT-03/05`（非法金额）与 `R-OCR-01` 的结果会出现在客户可见的拒赔/转人工原因里，交付话术须说明「内部校验」而非「保单条款」 |
 | Q3 | 28 条业务条款是否要在资产里各建一条对应执行项 | 不建；金额/流程类不走 QLExpress | 维持。**但新增 Q4（见下）** |
-| **Q4** | **`R-FRAUD-02`（金额异常 3σ/保额 80%）、`R-FRAUD-03`（时间轴矛盾）无任何执行落点** | 无默认口径——必须裁定 | **待裁定（阻塞交付）**，三条路的成本已取证，见下方 Q4 可行性 |
-| Q5 | `R-FRAUD-01`（重复报销检测）是否记为「已由 `R-FRAUD-07`+`R-FRAUD-22` 覆盖」 | 保留「待接线」标注（保守，不夸大已完成范围） | 待裁定，不阻塞交付 |
+| **Q4** | **`R-FRAUD-02`（金额异常 3σ/保额 80%）、`R-FRAUD-03`（时间轴矛盾）无任何执行落点** | 无默认口径——必须裁定 | **已裁定并实现（2026-11-08）**：`R-FRAUD-03` 走「补实现」（时间轴三态判定，认不出日期格式转人工不猜）；`R-FRAUD-02` 走「两个子面都补 + 样本量闸门」（超保额 80% 确定性判定，3σ 仅在样本 `n≥30` 且 `σ>0` 时生效）。落点见 §11.2 的 `R-TIMELINE-01~03` / `R-AMOUNT-07/08` |
+| Q5 | `R-FRAUD-01`（重复报销检测）是否记为「已由 `R-FRAUD-07`+`R-FRAUD-22` 覆盖」 | 保留「待接线」标注（保守，不夸大已完成范围） | **已裁定（2026-11-08）：不接受「覆盖」口径，改为独立实现**。落点 `R-FRAUD-23`（四要素全中）+ `R-FRAUD-24`（差日期即可定性时转人工），与原 07/22 互补 |
 
 > **机检**：`tools/_check_ruleset_alignment.py` 共九类判据——
 > **A1/A2** 共有 18 条双向对账 + `conclusion`/`risk` 逐行一致；**A3** 「10 条同名不同义」ratchet 基线；
-> **A4** 任一侧解析为空即 fail-closed；**A5** 资产 33 条全量覆盖（§11.1 18 + §11.2 15，初版只守交集、覆盖率 55%，已补到 33/33）；
+> **A4** 任一侧解析为空即 fail-closed；**A5** 资产 40 条全量覆盖（§11.1 18 + §11.2 22，初版只守交集、覆盖率 55%，已补到 40/40）；
 > **A6** §11.3「仅本书有」的 28 条按 8 个族逐族对账（族级条数必须等于实际条款数，总数必须等于 46 − 18）；
 > **A7** §11.1 每行**必须声明落点**，`端口:X`/`端口待接:X`/`引擎:X` 声明的类必须真实存在于源码树，`无落点` 集合锁基线（新增或静默消除都判红）；
 > **A8** 表达式引用的变量必须**全部有事实提供方**（`QlExpressRuleEnginePortAdapter` 的 `facts.put` 集合），先剥字符串字面量再取标识符——缺一个变量，该执行项就是**静默不命中**：不报错、不告警，客户以为查了、其实没查。
@@ -260,13 +267,15 @@ currency: current
 >
 > **A7 是 2026-11-08 新增的**，起因是 A1–A3 都只守 ID 与 conclusion，**没有任何判据在问「这条条款到底由哪段代码承载」**。加它的当天就抓出 2 条空挂条款（Q4）。判据落地前先对全量取了一次证（手工 10 条），避免又造出「判据只覆盖样例、真实仓库全红/恒绿」的假象。
 >
-> **A8 是同一轮顺着「A7 只校类存在、不校接线」再往下钻的一层**：变量级比类级更细——类可能被接线了，但规则引用的变量没人给，执行项照样静默失效。实测结论是**这一层没有缺陷**：33 条执行项共引用 24 个变量，25 个提供方全覆盖，唯一未被引用的 `claimType` 属预留。之所以仍然固化成判据：这类缺陷**不报错**，只靠人工 grep 不可能长期守住。
+> **A8 是同一轮顺着「A7 只校类存在、不校接线」再往下钻的一层**：变量级比类级更细——类可能被接线了，但规则引用的变量没人给，执行项照样静默失效。实测结论是**这一层没有缺陷**：2026-11-08 补齐 7 条执行项后，40 条执行项共引用 **31 个变量**、事实提供方 **37 个**，无提供方 0。之所以固化成判据：这类缺陷**不报错**，只靠人工 grep 不可能长期守住。
 >
 > **A9 是再下一层，抓的是「端口在、但没人实现它」**：A7 只问「类名存不存在」，而 `端口:X` 这个措辞会被读成"这条在判"。2026-11-08 实测：4 个端口里 `ItemCatalogPort` 全仓 `implements` 零命中（`ItemCatalogGateway` 用 `ObjectProvider` 调用时解析，无实现即全 `UNKNOWN`），于是 `R-DIR-01` 写成 `端口:X` 属**过度声明**——一期它不判定，只退补件。修正为 `端口待接:X` 并锁基线。**同一轮还固化了「端口必须有调用方」**：`GraphFraudPort`/`VisualForensicsPort`/`ItemCatalogPort` 各有 3 个调用方，一旦哪天只剩实现者、没有调用方（本项目出现过"类在、零调用方"），A9 立刻判红。
 >
 > **已知判据边界（诚实说明）**：§11.3 的「为什么不要求出现在 QLExpress 资产」列是**自由文本**，A6 只校验条数、**不校验该列声明的载体是否真实存在/被引用**——本次是人工复核（3 个具名类 + 引用点数）。之所以不把它改成受控枚举 + 机检：这一列的语义混着「由某类实现」「由流程承载」「待接线」三种，强行结构化会把产品口径塞进代码常量，收益低于维护成本。**若日后再度出现「族级载体声明腐化」，再上判据**。
 
-**Q4 可行性（2026-11-08 取证，供裁定用）**
+**Q4 裁定与实现（2026-11-08 已结案）**
+
+下表是裁定前取证的成本证据，保留以便追溯「为什么这么定」。
 
 | 选项 | 需要什么 | 现成程度 | 主要风险 |
 |---|---|---|---|
@@ -275,5 +284,13 @@ currency: current
 | ② 降级二期 | 无 | 文档改动即完成 | 客户按现行规则书核对时预期落空——必须在客户版显式写「二期」，不能只改内部文档 |
 | ③ 阈值显式替代 | 无（`R-AMOUNT-01/02` 已在跑） | 现成 | 口径差异必须写进客户版：绝对阈值 ≠ 3σ ≠ 保额 80%，替而不说等于换口径交付 |
 
-> **工程侧建议（供参考，不代替业务裁定）**：`R-FRAUD-03` 走 ①′——成本主要是日期抽取，可先支持 `yyyy-MM-dd` / `yyyy/MM/dd` 两种格式，解析失败转人工（fail-closed），不做猜测；`R-FRAUD-02` 走 ③——MVP 期单个被保险人的历史案件量普遍不足 30 条，3σ 在统计上不可靠，而「保额 80%」需要跨聚合取责任额度，两条路都会引入**比漏判更糟的误判**。若客户坚持要 3σ，应先约定最小样本量（建议 n≥30，不足则不判定）并写入规则书。
+> **裁定结果（2026-11-08，业务方）**：`R-FRAUD-03` 取 **①′ 补实现**；`R-FRAUD-02` 取 **① 两个子面都补**（而不是工程侧建议的 ③ 显式替代）。**裁定优先于工程建议**，实现时把工程侧担心的两条风险用闸门挡住，而不是用「不做」挡住：
+>
+> | 子项 | 实现落点 | 挡住风险的方式 |
+> |---|---|---|
+> | 时间轴（`R-FRAUD-03`） | 资产 `R-TIMELINE-01/02/03` + `EvidenceDateParser` | 只认 `uuuu-MM-dd` / `uuuu/MM/dd` 两种白名单格式；认不出 → `TIMELINE_DATE_UNRESOLVED` 转人工，**不猜**。发票日期早于就诊日即矛盾（药先开票）；晚于就诊日 >30 天才算「事后补票」，避免把跨周末补录全部打成风险 |
+> | 超保额 80%（`R-FRAUD-02` 子面一） | 资产 `R-AMOUNT-07` | 保额取**计划下生效责任 `liability_limit` 的最大值**（计划级上限）。方向只会漏报不会误报；责任级精确判定需案件携带责任标识，属接线项。全部责任限额为 0 / 读不到 → `coverageLimitKnown=false` 不判，**绝不把「没配」当「限额为 0」** |
+> | 同类 3σ（`R-FRAUD-02` 子面二） | 资产 `R-AMOUNT-08` | 三条闸门缺一不可：样本量 `n≥30`、标准差 `σ>0`、诊断码非空。任一不满足 → `amountSigmaReady=false` 不判。**小样本不可靠时宁可不判，也不拿不可靠统计误杀正常大额赔付** |
+>
+> 「同类」口径在这里取**同被保人 + 同诊断码**（可复现、不依赖外部主数据）；换成同医院/同渠道需要另立条款，不属本次范围。
 

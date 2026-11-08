@@ -24,7 +24,7 @@ import org.springframework.test.util.ReflectionTestUtils;
  * 上下文富化验证：当 Spring 装配仓储后，{@link QlExpressRuleEnginePortAdapter#factsOf} 应按 claimId 拉取案卷/ 证据并暴露「30+
  * 风控-合规-临床」维度变量，使规则集新增维度可真实求值。
  *
- * <p>用 Mockito 注入仓储、加载真实 {@code claim-ruleset.json}（当前版本 claim-ruleset-v4），断言富化后的新维度规则 （R-SCOPE-01
+ * <p>用 Mockito 注入仓储、加载真实 {@code claim-ruleset.json}（当前版本 claim-ruleset-v5），断言富化后的新维度规则 （R-SCOPE-01
  * / R-FRAUD-22 / R-ANOM-03 等）确实命中，证明富化路径非「编译通过却不执行」。
  */
 class QlExpressRuleEnginePortAdapterEnrichmentTest {
@@ -73,7 +73,7 @@ class QlExpressRuleEnginePortAdapterEnrichmentTest {
         .anySatisfy(
             h -> {
               assertThat(h.code()).isEqualTo("R-SCOPE-01");
-              assertThat(h.version()).isEqualTo("claim-ruleset-v4");
+              assertThat(h.version()).isEqualTo("claim-ruleset-v5");
             });
     // 临床/目录缺失维度（risk=false）同时作为审计命中登记
     assertThat(result.hits()).extracting(RuleEnginePort.RuleHit::code).contains("R-FRAUD-07");
@@ -170,7 +170,7 @@ class QlExpressRuleEnginePortAdapterEnrichmentTest {
     assertThat(result.hits())
         .filteredOn(h -> h.code().equals("R-FRAUD-22"))
         .extracting(RuleEnginePort.RuleHit::version)
-        .containsExactly("claim-ruleset-v4");
+        .containsExactly("claim-ruleset-v5");
   }
 
   @Test
@@ -226,7 +226,7 @@ class QlExpressRuleEnginePortAdapterEnrichmentTest {
     assertThat(result.hits())
         .filteredOn(h -> h.code().equals("R-ANOM-03"))
         .extracting(RuleEnginePort.RuleHit::version)
-        .containsExactly("claim-ruleset-v4");
+        .containsExactly("claim-ruleset-v5");
   }
 
   @Test

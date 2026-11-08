@@ -1,5 +1,5 @@
 {
-  "version": "claim-ruleset-v4",
+  "version": "claim-ruleset-v5",
   "rules": [
     {
       "code": "R-FRAUD-06",
@@ -263,6 +263,62 @@
       "priority": 54,
       "expression": "recentClaims90d >= 3",
       "conclusion": "FREQUENCY_ANOMALY",
+      "risk": false
+    },
+    {
+      "code": "R-TIMELINE-01",
+      "category": "TIMELINESS",
+      "priority": 55,
+      "expression": "timelineUnresolved == true",
+      "conclusion": "TIMELINE_DATE_UNRESOLVED",
+      "risk": false
+    },
+    {
+      "code": "R-TIMELINE-02",
+      "category": "TIMELINESS",
+      "priority": 56,
+      "expression": "invoiceBeforeVisit == true",
+      "conclusion": "TIMELINE_INVOICE_BEFORE_VISIT",
+      "risk": true
+    },
+    {
+      "code": "R-TIMELINE-03",
+      "category": "TIMELINESS",
+      "priority": 57,
+      "expression": "invoiceTooLate == true",
+      "conclusion": "TIMELINE_INVOICE_TOO_LATE",
+      "risk": false
+    },
+    {
+      "code": "R-AMOUNT-07",
+      "category": "AMOUNT",
+      "priority": 58,
+      "expression": "amountOverCoverage80 == true",
+      "conclusion": "AMOUNT_OVER_COVERAGE",
+      "risk": true
+    },
+    {
+      "code": "R-AMOUNT-08",
+      "category": "AMOUNT",
+      "priority": 59,
+      "expression": "amountSigmaOutlier == true",
+      "conclusion": "AMOUNT_SIGMA_OUTLIER",
+      "risk": true
+    },
+    {
+      "code": "R-FRAUD-23",
+      "category": "FRAUD",
+      "priority": 60,
+      "expression": "duplicateReimbursement == true",
+      "conclusion": "DUPLICATE_REIMBURSEMENT",
+      "risk": true
+    },
+    {
+      "code": "R-FRAUD-24",
+      "category": "FRAUD",
+      "priority": 61,
+      "expression": "duplicateUnresolved == true",
+      "conclusion": "DUPLICATE_CHECK_UNRESOLVED",
       "risk": false
     }
   ]

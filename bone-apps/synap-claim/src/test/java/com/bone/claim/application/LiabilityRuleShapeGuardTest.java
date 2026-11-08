@@ -23,6 +23,7 @@ import com.bone.claim.domain.repository.ClaimPolicyRepository;
 import com.bone.claim.domain.repository.LiabilityRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -239,10 +240,45 @@ class LiabilityRuleShapeGuardTest {
 
     LiabilityView view =
         service.createLiability(
-            req().catalogPolicy("MANDATORY").catalogCode("NATIONAL_2024").create());
+            req()
+                .catalogPolicy("MANDATORY")
+                .catalogCode("NATIONAL_2024")
+                .confirmCatalogMandatory(true)
+                .create());
 
     assertThat(view.catalogPolicy()).isEqualTo("MANDATORY");
     assertThat(view.catalogCode()).isEqualTo("NATIONAL_2024");
+  }
+
+  /**
+   * 目录准入 MANDATORY 的二次确认（2026-11-08 业务裁定 2 = B）。
+   *
+   * <p><b>为什么这条必须是硬拦</b>：MANDATORY 一旦打开而目录未接入，每条明细都落 {@code UNKNOWN} → {@code CATALOG_UNRESOLVED} →
+   * 整批案件转人工补件。它不是「某笔判错」，是「一个开关影响全量」， 所以要求调用方显式承认后果。本用例是那个确认位的绊线：删掉校验它就会红。
+   */
+  @Test
+  void create_catalogPolicyMandatory_withoutConfirm_isRejected() {
+    when(tenantPort.currentTenantId()).thenReturn(1L);
+
+    assertThatThrownBy(
+            () ->
+                service.createLiability(
+                    req().catalogPolicy("MANDATORY").catalogCode("NATIONAL_2024").create()))
+        .isInstanceOf(DomainException.class)
+        .hasMessageContaining("confirmCatalogMandatory")
+        .hasMessageContaining("CATALOG_UNRESOLVED");
+
+    verify(liabilityRepository, never()).save(any());
+  }
+
+  /** 非 MANDATORY 策略不受确认位约束：NONE / 空值照常保存，避免把确认做成「所有保存都要多传一个字段」。 */
+  @Test
+  void create_catalogPolicyNone_doesNotRequireConfirm() {
+    when(tenantPort.currentTenantId()).thenReturn(1L);
+
+    LiabilityView view = service.createLiability(req().catalogPolicy("NONE").create());
+
+    assertThat(view.catalogPolicy()).isEqualTo("NONE");
   }
 
   // ===================== 金额：负数会被引擎静默夹成 0（= 少扣钱） =====================
@@ -379,6 +415,9 @@ class LiabilityRuleShapeGuardTest {
     private String catalogPolicy;
     private String catalogCode;
 
+    /** 目录准入 MANDATORY 的二次确认位；默认 null（= 未确认），与「漏传字段」的语义一致。 */
+    private Boolean confirmCatalogMandatory;
+
     Req coverageId(Long v) {
       this.coverageId = v;
       return this;
@@ -444,6 +483,11 @@ class LiabilityRuleShapeGuardTest {
       return this;
     }
 
+    Req confirmCatalogMandatory(Boolean v) {
+      this.confirmCatalogMandatory = v;
+      return this;
+    }
+
     CreateLiabilityReq create() {
       return new CreateLiabilityReq(
           PLAN_ID,
@@ -462,6 +506,7 @@ class LiabilityRuleShapeGuardTest {
           limitDiagnosisCodes,
           catalogPolicy,
           catalogCode,
+          confirmCatalogMandatory,
           1,
           0,
           null,

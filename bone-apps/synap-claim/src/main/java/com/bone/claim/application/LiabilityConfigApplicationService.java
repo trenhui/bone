@@ -53,6 +53,7 @@ public class LiabilityConfigApplicationService {
     assertPercent(command.payPercent());
     RuleValues values = RuleValues.ofCreate(command);
     assertRuleUsable(values);
+    assertCatalogMandatoryConfirmed(values.catalogPolicy(), command.confirmCatalogMandatory());
     AdjLiability liability =
         AdjLiability.ofWithShared(
             DistributedIdGeneratorHolder.next(),
@@ -105,6 +106,7 @@ public class LiabilityConfigApplicationService {
     // 生效值只算一次：校验与落库读同一份，否则会出现「校验看的是合并值、落库存的是命令值」的两套口径。
     RuleValues values = RuleValues.merge(existing, command);
     assertRuleUsable(values);
+    assertCatalogMandatoryConfirmed(values.catalogPolicy(), command.confirmCatalogMandatory());
     if (existing.isActive()) {
       // 已生效版本不可改：生成同 UUID 的新版本草稿（新行，无需乐观锁）
       // 共享关系（共保代码 / 前序责任）：命令显式传了就用命令值，否则沿用原值（与 RuleValues.merge 的空字段沿用原值一致）
@@ -492,6 +494,28 @@ public class LiabilityConfigApplicationService {
    *
    * <p>空值放行：编辑接口的"不传 = 沿用原值"语义靠它。
    */
+  /**
+   * 目录准入 MANDATORY 二次确认（业务裁定 2026-11-08，决策 2 = B：允许配，但必须显式确认）。
+   *
+   * <p><b>为什么是确认位而不是直接禁止</b>：MANDATORY 本身是正确配置（目录接入后应当打开），直接禁止会把
+   * 「还没接入」和「不该用」混为一谈。真正的风险不是值配错，而是<b>不清楚它的爆炸半径</b>——目录取不到时 每条明细都落 {@code UNKNOWN} → {@code
+   * CATALOG_UNRESOLVED} → 整批案件转人工补件。要求调用方显式承认这个后果再落库。
+   *
+   * <p><b>校验的是合并后的生效值</b>：{@code RuleValues.merge} 已处理「空字段沿用原值」，因此编辑一条原本就是 MANDATORY 的责任时，即使本次没传
+   * {@code catalogPolicy} 也必须带确认位——否则「改个赔付比例」就能绕过确认， 等于没做这个校验。
+   */
+  private static void assertCatalogMandatoryConfirmed(String catalogPolicy, Boolean confirmed) {
+    boolean mandatory = catalogPolicy != null && "MANDATORY".equalsIgnoreCase(catalogPolicy.trim());
+    if (!mandatory || Boolean.TRUE.equals(confirmed)) {
+      return;
+    }
+    throw new DomainException(
+        "目录准入策略设为 MANDATORY 需显式确认（confirmCatalogMandatory=true）："
+            + "该策略要求每条费用明细都取得目录结论，目录数据未接入时全部明细判为 UNKNOWN、"
+            + "落 CATALOG_UNRESOLVED 转人工补件——即整批案件退件。"
+            + "请先确认目录已接入，再带确认位重试。");
+  }
+
   private static void assertPercent(String payPercent) {
     if (payPercent == null || payPercent.isBlank()) {
       return;
