@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -74,7 +75,32 @@ public record LiabilityRule(
     /** 定额给付型（V1 无规则）。 */
     FIXED_AMOUNT,
     /** 津贴给付型（V1 无规则）。 */
-    ALLOWANCE
+    ALLOWANCE;
+
+    /**
+     * 解析配置列 {@code liability_type} 的原始值。
+     *
+     * <p><b>null / 空串按 {@link #REIMBURSEMENT} 处理</b>：{@code AdjLiability} 建库时就把空值归一成该值，存量行没有这个语义
+     * 之外的可能，故这是"还原默认值"而不是"猜"。
+     *
+     * <p><b>非法值直接拒绝，不回落</b>：回落正是本次修复要消灭的行为——一个拼错的形式被当成报销型，会静默按比例赔付。 这里抛 {@link RuleGap} 而非 {@link
+     * IllegalArgumentException}，是为了让它与其它装载期拒绝走同一条受控出口（转人工 / 配置面报错）， 而不是变成 500。
+     */
+    public static LiabilityForm of(String raw) {
+      if (raw == null || raw.isBlank()) {
+        return REIMBURSEMENT;
+      }
+      String normalized = raw.trim().toUpperCase(Locale.ROOT);
+      for (LiabilityForm form : values()) {
+        if (form.name().equals(normalized)) {
+          return form;
+        }
+      }
+      throw RuleGap.of(
+          RuleGap.Code.INVALID_INPUT,
+          "责任形式「%s」无法识别（合法值 REIMBURSEMENT / FIXED_AMOUNT / ALLOWANCE）：" + "无法确定用哪种算法算钱，须先修配置",
+          raw);
+    }
   }
 
   /** 保额形式（V1 §2 要素 2）。 */
@@ -693,99 +719,25 @@ public record LiabilityRule(
         deductibleAmount,
         liabilityLimit,
         socialOnly,
-        DeductibleRule.Target.CALCULATED_AMOUNT);
+        DeductibleRule.Target.CALCULATED_AMOUNT,
+        LiabilityForm.REIMBURSEMENT);
   }
 
   /**
-   * 由<b>旧责任配置</b>（{@code t_adj_liability} 的 {@code pay_percent}/{@code liability_deduct}/ {@code
-   * liability_limit}/{@code social_only}）映射。
+   * 由<b>旧责任配置</b>（{@code t_adj_liability}）映射，带齐三层免赔（年度 / 发票级 / 理算级）、日限额（Q-05）与适用限定（V1 §2 要素 6）。
    *
-   * <p><b>为什么免赔对象是「发票费用」而不是 V1 默认的「理算金额」</b>：这四列是历史配置模型，它在原系统 （reference-impl
+   * <p><b>为什么免赔对象是「发票费用」而不是 V1 默认的「理算金额」</b>：这些列是历史配置模型，它在原系统 （reference-impl
    * P16「免赔先于比例作用于费用基数」）里的语义就是"先减免赔再乘比例"。把旧数据按 V1 默认解释会 <b>改变所有存续保单的赔付金额</b>（发票 1000、比例 80%、免赔 200：旧
-   * 640、V1 600）——这是资金口径变更，必须走条款报批， 不能由代码升级顺手完成。
+   * 640、V1 600）——这是资金口径变更，必须走条款报批， 不能由代码升级顺手完成。因此本方法<b>忠实还原旧语义</b>。
    *
-   * <p>因此本方法<b>忠实还原旧语义</b>；新配置请直接用 {@link #simple} 或显式构造 {@link DeductibleRule}。
-   * 同一条责任只允许有一个映射入口，避免"新旧两套算法"。
-   */
-  public static LiabilityRule fromLegacy(
-      String liabilityUuid,
-      String liabilityVersion,
-      BigDecimal payPercent,
-      BigDecimal deductibleAmount,
-      BigDecimal liabilityLimit,
-      boolean socialOnly) {
-    return fromLegacy(
-        liabilityUuid,
-        liabilityVersion,
-        payPercent,
-        deductibleAmount,
-        liabilityLimit,
-        socialOnly,
-        Money.ZERO,
-        Money.ZERO);
-  }
-
-  /**
-   * 由<b>旧责任配置</b>映射，并显式带上发票级 / 理算级两个新增免赔层（GAP② / GAP⑥）。
+   * <p><b>责任形式必须由调用方显式传入</b>（2026-11-08 修正）：此前 {@code form} 在这里被硬编码成 {@link
+   * LiabilityForm#REIMBURSEMENT}，于是 {@link #validate()} 里 {@code LIABILITY_FORM_UNSUPPORTED}
+   * 分支在生产路径 <b>永不可达</b>——责任配成定额/津贴给付型时，引擎会拿 {@code pay_percent} 当报销比例算钱，既不报错也无从归因（"配了不生效"的
+   * 最坏形态：配错还算钱）。现在 {@code liabilityType} 来自配置列 {@code liability_type}，非报销型在这里装配成真实形式， 由 {@link
+   * #validate()} 显式拒绝并转人工；配置面仍允许建档（见 {@link #validate()} 注释）。
    *
-   * <p>两个新增免赔层默认不配置（{@code 0} ⇒ {@link DeductibleRule#none()}），与未启用时行为完全一致； 配置后由引擎在「比例前 /
-   * 比例后」两个独立时点施加。
-   */
-  public static LiabilityRule fromLegacy(
-      String liabilityUuid,
-      String liabilityVersion,
-      BigDecimal payPercent,
-      BigDecimal deductibleAmount,
-      BigDecimal liabilityLimit,
-      boolean socialOnly,
-      BigDecimal invoiceDeduct,
-      BigDecimal adjustDeduct) {
-    return fromLegacy(
-        liabilityUuid,
-        liabilityVersion,
-        payPercent,
-        deductibleAmount,
-        liabilityLimit,
-        socialOnly,
-        invoiceDeduct,
-        adjustDeduct,
-        Money.ZERO,
-        DailyBasis.NONE);
-  }
-
-  /**
-   * 由<b>旧责任配置</b>映射，带齐三层免赔（年度 / 发票级 / 理算级）与日限额（Q-05）。
-   *
-   * <p>日限额在这里只做"金额 + 口径"的装配：{@code dailyLimit <= 0} 时口径归 {@link DailyBasis#NONE}， 与未配置完全一致；配了金额没配口径
-   * （或反之）会被 {@link #validate()} 拒绝，不会静默退化成"不限额"。
-   */
-  public static LiabilityRule fromLegacy(
-      String liabilityUuid,
-      String liabilityVersion,
-      BigDecimal payPercent,
-      BigDecimal deductibleAmount,
-      BigDecimal liabilityLimit,
-      boolean socialOnly,
-      BigDecimal invoiceDeduct,
-      BigDecimal adjustDeduct,
-      BigDecimal dailyLimit,
-      DailyBasis dailyBasis) {
-    return fromLegacy(
-        liabilityUuid,
-        liabilityVersion,
-        payPercent,
-        deductibleAmount,
-        liabilityLimit,
-        socialOnly,
-        invoiceDeduct,
-        adjustDeduct,
-        dailyLimit,
-        dailyBasis,
-        LimitedConditions.disabled());
-  }
-
-  /**
-   * 由<b>旧责任配置</b>映射，带齐三层免赔（年度 / 发票级 / 理算级）、日限额（Q-05）与适用限定（V1 §2 要素 6）。
+   * <p><b>单一装配入口</b>：曾有三个只带部分参数的便捷重载，它们必然把形式回落成报销型——每多一个入口就多一条"忘记传责任形式"的 路径，故一并删除（全仓无调用）。新代码请用
+   * {@link #simple}（V1 报销型默认）或本方法。
    *
    * <p>适用限定在这里只做装配，<b>不做判定</b>：判定发生在 {@code checkPreconditions}，因为它需要案情事实（医院/病种编码），
    * 而事实不在责任配置里。装配与判定分离也保证了"装载期能发现的配置问题"与"必须看到案子才能发现的数据问题"不会混成一个错误。
@@ -793,6 +745,7 @@ public record LiabilityRule(
   public static LiabilityRule fromLegacy(
       String liabilityUuid,
       String liabilityVersion,
+      String liabilityType,
       BigDecimal payPercent,
       BigDecimal deductibleAmount,
       BigDecimal liabilityLimit,
@@ -810,7 +763,8 @@ public record LiabilityRule(
             deductibleAmount,
             liabilityLimit,
             socialOnly,
-            DeductibleRule.Target.INVOICE_AMOUNT);
+            DeductibleRule.Target.INVOICE_AMOUNT,
+            LiabilityForm.of(liabilityType));
     LimitSet limits =
         dailyLimit == null || dailyLimit.signum() <= 0
             ? base.limits
@@ -828,7 +782,8 @@ public record LiabilityRule(
       BigDecimal deductibleAmount,
       BigDecimal liabilityLimit,
       boolean socialOnly,
-      DeductibleRule.Target target) {
+      DeductibleRule.Target target,
+      LiabilityForm form) {
     DeductibleRule deductible =
         deductibleAmount == null || deductibleAmount.signum() <= 0
             ? DeductibleRule.none()
@@ -847,7 +802,7 @@ public record LiabilityRule(
     return new LiabilityRule(
         liabilityUuid,
         liabilityVersion,
-        LiabilityForm.REIMBURSEMENT,
+        form,
         socialOnly,
         EnumSet.allOf(FeePools.Bucket.class),
         0,

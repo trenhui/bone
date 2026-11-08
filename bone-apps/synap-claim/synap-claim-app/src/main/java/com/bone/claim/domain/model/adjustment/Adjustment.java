@@ -430,6 +430,7 @@ public class Adjustment extends TenantAggregateRoot<Long> {
         LiabilityRule.fromLegacy(
                 liability.getLiabilityUuid(),
                 liability.getLiabilityVersion(),
+                liability.getLiabilityType(),
                 liability.getPayPercent(),
                 liability.deduct(),
                 liability.limit(),

@@ -388,6 +388,7 @@ public class LiabilityConfigApplicationService {
           LiabilityRule.fromLegacy(
               v.liabilityCode() == null ? "" : v.liabilityCode(),
               "validate-only",
+              v.liabilityType(),
               v.payPercent(),
               v.liabilityDeduct(),
               v.liabilityLimit(),
