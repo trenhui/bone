@@ -72,10 +72,18 @@ LANDING_EXEC = "执行项"          # 资产里同名执行项本身就是承载
 LANDING_NONE = "无落点"          # 全仓找不到承载点（缺陷，必须锁基线）
 LANDING_PORT = "端口:"           # 由该出站端口的适配器承载（含一期桩）
 LANDING_ENGINE = "引擎:"         # 由引擎/领域类承载
+# 端口存在、调用点也在，但**本仓没有实现者**（一期由接入方实现后再闭环）：
+# 调用即 fail-closed，条款在一期不产生判定结论。与「端口:X」不能混为一值——
+# 前者是"真的在判"，后者是"一律转人工/退补件"，对客户是两件事。
+LANDING_PORT_PENDING = "端口待接:"
 
 # 2026-11-08 逐条取证后的「无落点」基线（ratchet）：新增或静默消除都判红。
 # 消除（改成有落点）必须先改基线，改基线就得写清取证依据——挡的是「嘴上说有」。
 NO_LANDING_BASELINE = {"R-FRAUD-02", "R-FRAUD-03"}
+
+# 「端口待接」基线（ratchet）：现实是 1 个（ItemCatalogPort）。消除=有人接了线，
+# 必须改基线（并改文档）；新增=又有一条落点退化成 fail-closed，同样必须显式登记。
+PORT_PENDING_BASELINE = {"ItemCatalogPort"}
 
 # 落点声明的载体必须在源码树里真实存在（声明了不存在的类 = 与「配了不生效」同族）。
 JAVA_ROOT = os.path.abspath(os.path.join(
@@ -142,6 +150,57 @@ def java_types():
     return names
 
 
+def java_sources():
+    """{类名: 源码文本}——供端口「有没有实现者 / 有没有调用方」取证用。"""
+    out = {}
+    for dp, _dns, fns in os.walk(JAVA_ROOT):
+        for fn in fns:
+            if not fn.endswith(".java"):
+                continue
+            try:
+                with io.open(os.path.join(dp, fn), encoding="utf-8") as f:
+                    out[fn[:-5]] = f.read()
+            except OSError:
+                continue
+    return out
+
+
+def declared_ports(rows):
+    """§11.1 里所有以端口形式声明的落点名集合。"""
+    ports = set()
+    for _con, _risk, _rel, landing in rows.values():
+        for prefix in (LANDING_PORT, LANDING_PORT_PENDING):
+            if landing.startswith(prefix):
+                ports.add(landing.split(":", 1)[1].strip())
+    return ports
+
+
+def port_facts(ports, sources=None):
+    """{端口: {"impl": {...}, "consumers": {...}}}——A9 的读取点取证。
+
+    两个事实各自对应一类「配了不生效」：
+      · **impl 为空**：端口没有任何实现者 ⇒ 调用即 fail-closed。文档写「由该端口承载」
+        就成了过度声明，必须改标「端口待接:X」。
+      · **consumers 为空**：端口有实现（或没有）但除实现者外没人引用它 ⇒ 死端口。
+        本项目已有先例（类在、零调用方），故按**读取点**取证，不按**声明处**取证。
+    """
+    sources = java_sources() if sources is None else sources
+    out = {}
+    for port in sorted(ports):
+        impl, consumers = set(), set()
+        impl_re = re.compile(r"\b(?:implements|extends)\b[^{;]*\b%s\b" % re.escape(port))
+        use_re = re.compile(r"\b%s\b" % re.escape(port))
+        for name, text in sources.items():
+            if name == port:
+                continue
+            if impl_re.search(text):
+                impl.add(name)
+            elif use_re.search(text):
+                consumers.add(name)
+        out[port] = {"impl": impl, "consumers": consumers}
+    return out
+
+
 def parse(text):
     """返回 (§11.1 rows, §11.2 仅资产登记行, 条款 ID 集合, §11.3 族级条数)。
 
@@ -197,13 +256,14 @@ def _family_members(key, only_book):
 
 
 def verdict(asset, rows, only, clauses, families=None, carriers=None,
-            exprs=None, facts=None):
+            exprs=None, facts=None, ports=None):
     """纯函数判定，便于 --self-test 反证。返回错误列表。
 
     A1–A3 守共有 18 条；A5 是 2026-11-07 补的**全量覆盖率**判据：
     资产 33 条必须全部落在 §11.1 ∪ §11.2 里，否则门禁只守交集、静默丢覆盖。
     A6 守「仅本书有」的 28 条（族级条数不许写错/漏族）；A7 守「条款落点」声明；
-    A8 守**表达式变量 ⊆ 事实提供方**（缺一个变量，该执行项就是静默不命中）。
+    A8 守**表达式变量 ⊆ 事实提供方**（缺一个变量，该执行项就是静默不命中）；
+    A9 守**端口落点的实现者与调用方**（无实现者 ⇒ 必须是「端口待接」，不得写成「端口」）。
     """
     errs = []
     if not asset:
@@ -290,16 +350,18 @@ def verdict(asset, rows, only, clauses, families=None, carriers=None,
             if rel != "一致":
                 errs.append("A7 %s 关系为「%s」却声称落点=执行项（不同义不得指认同一条执行项）"
                             % (rid, rel))
-        elif landing.startswith(LANDING_PORT) or landing.startswith(LANDING_ENGINE):
+        elif (landing.startswith(LANDING_PORT)
+              or landing.startswith(LANDING_PORT_PENDING)
+              or landing.startswith(LANDING_ENGINE)):
             carrier = landing.split(":", 1)[1].strip()
             if carrier not in carriers:
                 errs.append("A7 %s 落点声明的载体 %s 在源码树里不存在" % (rid, carrier))
             if rel == "一致":
                 errs.append("A7 %s 关系为「一致」却把落点放在 %s（应为执行项）" % (rid, carrier))
         else:
-            errs.append("A7 %s 落点取值非法：%s（只允许 %s / %s / %sX / %sX）"
+            errs.append("A7 %s 落点取值非法：%s（只允许 %s / %s / %sX / %sX / %sX）"
                         % (rid, landing, LANDING_EXEC, LANDING_NONE,
-                           LANDING_PORT, LANDING_ENGINE))
+                           LANDING_PORT, LANDING_PORT_PENDING, LANDING_ENGINE))
     if no_landing - NO_LANDING_BASELINE:
         errs.append("A7 新增「无落点」条款未登记基线：%s"
                     % sorted(no_landing - NO_LANDING_BASELINE))
@@ -325,6 +387,49 @@ def verdict(asset, rows, only, clauses, families=None, carriers=None,
         for var in sorted(missing):
             errs.append("A8 变量 %s 没有任何事实提供方，涉及 %s（这些执行项会静默不命中）"
                         % (var, missing[var]))
+
+    # --- A9 端口落点：有实现者才算「端口承载」；无实现者必须显式标「端口待接」---
+    # 为什么单列一类：`端口:X` 读起来是"这条在判"，而端口无实现者时实际是"调用即
+    # fail-closed ⇒ 一律转人工/退补件"。两者对客户是完全不同的承诺，混在一个值里就是
+    # 过度声明。这里按**读取点**取证（谁 implements / 谁引用），不按声明处取证。
+    wanted = declared_ports(rows)
+    if ports is None:
+        ports = port_facts(wanted)
+    elif not ports and wanted:
+        errs.append("A9 端口取证结果为空（源码树未扫到或路径已变），fail-closed")
+    pending, no_consumer = set(), set()
+    for rid in sorted(rows):
+        _con, _risk, _rel, landing = rows[rid]
+        for prefix in (LANDING_PORT, LANDING_PORT_PENDING):
+            if not landing.startswith(prefix):
+                continue
+            port = landing.split(":", 1)[1].strip()
+            fact = ports.get(port)
+            if fact is None:
+                errs.append("A9 %s 的落点端口 %s 未做取证，fail-closed" % (rid, port))
+                break
+            if prefix == LANDING_PORT and not fact["impl"]:
+                errs.append("A9 %s 声明「%s%s」承载，但源码树无任何实现者"
+                            "（一期调用即 fail-closed，应改标「%s%s」）"
+                            % (rid, LANDING_PORT, port, LANDING_PORT_PENDING, port))
+            if prefix == LANDING_PORT_PENDING:
+                pending.add(port)
+                if fact["impl"]:
+                    errs.append("A9 %s 标注「%s%s」，但已有实现者 %s"
+                                "（未接线状态已变，须更新声明）"
+                                % (rid, LANDING_PORT_PENDING, port,
+                                   sorted(fact["impl"])))
+            if not fact["consumers"]:
+                no_consumer.add(port)
+            break
+    for port in sorted(no_consumer):
+        errs.append("A9 端口 %s 除实现者外没有任何调用方（类存在≠接线）" % port)
+    if pending - PORT_PENDING_BASELINE:
+        errs.append("A9 新增「端口待接」未登记基线：%s"
+                    % sorted(pending - PORT_PENDING_BASELINE))
+    if PORT_PENDING_BASELINE - pending:
+        errs.append("A9 基线中的「端口待接」已不可见（有人接了线或改了声明，须同步基线）：%s"
+                    % sorted(PORT_PENDING_BASELINE - pending))
     return errs
 
 
@@ -340,7 +445,8 @@ def main():
         return 2
     rows, only, clauses, families = parse(text)
     exprs, facts = load_expressions(), load_fact_keys()
-    errs = verdict(asset, rows, only, clauses, families, None, exprs, facts)
+    ports = port_facts(declared_ports(rows))
+    errs = verdict(asset, rows, only, clauses, families, None, exprs, facts, ports)
     landings = {}
     for _, _, _, lg in rows.values():
         landings[lg] = landings.get(lg, 0) + 1
@@ -357,13 +463,18 @@ def main():
                                 for k, v in sorted(landings.items())))
     print("表达式变量：引用 %d 个 / 事实提供方 %d 个 / 无提供方 %d 个"
           % (len(variables), len(facts), len(variables - facts)))
+    for port in sorted(ports):
+        fact = ports[port]
+        print("端口取证：%s → 实现者 %s / 调用方 %s"
+              % (port, sorted(fact["impl"]) or "无", sorted(fact["consumers"]) or "无"))
     if errs:
         for e in errs:
             print("【FAIL】" + e)
         print("共 %d 项失败" % len(errs))
         return 1
     print("【OK】资产全量覆盖 + 共有 ID 双向对账 + conclusion/risk 逐行一致 + "
-          "10 条同名不同义基线未漂移 + 族级条数对账 + 落点载体真实存在 + 表达式变量全部有提供方")
+          "10 条同名不同义基线未漂移 + 族级条数对账 + 落点载体真实存在 + "
+          "表达式变量全部有提供方 + 端口实现者/调用方取证一致")
     return 0
 
 
@@ -388,21 +499,39 @@ def self_test():
         "R-AMOUNT-01": "claimAmount >= 10000",
     }
     facts = {"hasEvidence", "verifyPassed", "claimAmount"}
-    # 构造样本远小于真实规模，两条 ratchet 基线都要临时换成「与样本一致」，测完还原。
-    global CONFLICT_BASELINE, NO_LANDING_BASELINE
-    saved = (CONFLICT_BASELINE, NO_LANDING_BASELINE)
+    # 端口取证样本（纯内存）：一个有实现者、一个无实现者（一期待接入方实现）。
+    ports = {
+        "InvoiceVerificationPort": {"impl": {"ControlledInvoiceVerificationPortAdapter"},
+                                    "consumers": {"RuleCheckNodeHandler"}},
+        "ItemCatalogPort": {"impl": set(), "consumers": {"ItemCatalogGateway"}},
+    }
+    # 构造样本远小于真实规模，三条 ratchet 基线都要临时换成「与样本一致」，测完还原。
+    global CONFLICT_BASELINE, NO_LANDING_BASELINE, PORT_PENDING_BASELINE
+    saved = (CONFLICT_BASELINE, NO_LANDING_BASELINE, PORT_PENDING_BASELINE)
     CONFLICT_BASELINE = {"R-FRAUD-02"}
     NO_LANDING_BASELINE = {"R-FRAUD-02"}
+    PORT_PENDING_BASELINE = set()
     passed, failed = 0, 0
 
-    def V(a=None, r=None, o=None, c=None, f=None, ex=None, fa=None):
+    def V(a=None, r=None, o=None, c=None, f=None, ex=None, fa=None, p=None):
         return verdict(asset if a is None else a,
                        rows if r is None else r,
                        only if o is None else o,
                        clauses if c is None else c,
                        fam if f is None else f, carriers,
                        exprs if ex is None else ex,
-                       facts if fa is None else fa)
+                       facts if fa is None else fa,
+                       ports if p is None else p)
+
+    def V_with_pending_baseline(base):
+        """临时替换「端口待接」基线跑一次，用于反证 ratchet 两个方向。"""
+        global PORT_PENDING_BASELINE
+        keep = PORT_PENDING_BASELINE
+        PORT_PENDING_BASELINE = base
+        try:
+            return V()
+        finally:
+            PORT_PENDING_BASELINE = keep
 
     def expect(label, cond):
         nonlocal passed, failed
@@ -475,8 +604,28 @@ def self_test():
                any("A8" in e for e in V(fa=set())))
         expect("变异⑲ 表达式为空 → A8 判红（永远不会命中）",
                any("A8" in e for e in V(ex=dict(exprs, **{"R-AMOUNT-01": "  "}))))
+        # A9 端口落点：三条反证各锁一个方向（无实现者 / 有实现者却标待接 / 无调用方）
+        row_pending = dict(rows, **{"R-FRAUD-06": ("VERIFY_NOT_PASSED", "True",
+                                                   "同名不同义", "端口待接:ItemCatalogPort")})
+        expect("变异⑳ 声明「端口:X」但源码树无实现者 → A9 判红（应改标端口待接）",
+               any("A9" in e for e in V(r=dict(
+                   rows, **{"R-FRAUD-06": ("VERIFY_NOT_PASSED", "True",
+                                           "同名不同义", "端口:ItemCatalogPort")}))))
+        expect("变异㉑ 标「端口待接:X」但已有实现者 → A9 判红（未接线状态已变）",
+               any("A9" in e for e in V(r=dict(
+                   rows, **{"R-FRAUD-06": ("VERIFY_NOT_PASSED", "True",
+                                           "同名不同义", "端口待接:InvoiceVerificationPort")}))))
+        expect("变异㉒ 端口除实现者外无调用方 → A9 判红（类存在≠接线）",
+               any("A9" in e for e in V(r=row_pending, p=dict(
+                   ports, **{"ItemCatalogPort": {"impl": set(), "consumers": set()}}))))
+        expect("变异㉓ 端口取证结果为空 → A9 fail-closed",
+               any("A9" in e for e in V(r=row_pending, p={})))
+        expect("变异㉔ 基线中的「端口待接」不可见 → A9 判红（接线后必须同步基线）",
+               any("A9" in e for e in V_with_pending_baseline({"ItemCatalogPort"})))
+        expect("变异㉕ 新增「端口待接」未登记基线 → A9 判红",
+               any("A9" in e for e in V(r=row_pending)))
     finally:
-        CONFLICT_BASELINE, NO_LANDING_BASELINE = saved
+        CONFLICT_BASELINE, NO_LANDING_BASELINE, PORT_PENDING_BASELINE = saved
     print("  %d 通过 / %d 失败" % (passed, failed))
     return 0 if failed == 0 else 1
 

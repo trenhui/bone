@@ -161,7 +161,7 @@ currency: current
 | `R-ANOM-01` | 批量渠道大额异常 | `BATCH_LARGE_ANOMALY` | `False` | 一致 | `执行项` |
 | `R-ANOM-02` | 批量渠道无票据 | `BATCH_NO_INVOICE` | `False` | 一致 | `执行项` |
 | `R-ANOM-03` | 近 90 天高频报案 | `FREQUENCY_ANOMALY` | `False` | 一致 | `执行项` |
-| `R-DIR-01` | 药品目录范围 | `DIAGNOSIS_UNMAPPED` | `False` | **同名不同义** | `端口:ItemCatalogPort` |
+| `R-DIR-01` | 药品目录范围 | `DIAGNOSIS_UNMAPPED` | `False` | **同名不同义** | `端口待接:ItemCatalogPort` |
 | `R-FRAUD-02` | 金额异常检测 | `NO_EVIDENCE` | `True` | **同名不同义** | `无落点` |
 | `R-FRAUD-03` | 时间轴矛盾 | `POLICY_MISSING` | `True` | **同名不同义** | `无落点` |
 | `R-FRAUD-04` | 材料一致性 | `INSURED_MISSING` | `True` | **同名不同义** | `端口:InvoiceVerificationPort` |
@@ -179,13 +179,15 @@ currency: current
 
 > **读法**：例如客户按本书 `R-FRAUD-02` 理解的是「金额超同类 3σ 或超保额 80% 要标记」，引擎里同一个 ID 实际跑的是 `hasEvidence == false`（无证据）。两者都不是错的，但**不能互相解释**。
 >
-> **落点列怎么读**：`执行项` = 资产里同名执行项本身就承载该条款；`端口:X` = 由该出站端口的适配器承载（**含一期本地桩**，桩必须返回 `available=false` 走 fail-closed 转人工，不得假装"已核验无风险"）；`无落点` = 全仓找不到承载该条款语义的代码。**「同名不同义」不等于「没实现」——10 条里 8 条的真实落点在端口，这是逐条取证后才看清的**（2026-11-08，证据见下）。
+> **落点列怎么读**：`执行项` = 资产里同名执行项本身就承载该条款；`端口:X` = 由该出站端口的适配器承载，**本仓有实现者**（含一期本地桩——桩必须返回 `available=false` 走 fail-closed 转人工，不得假装"已核验无风险"）；`端口待接:X` = 端口与调用点都在，但**本仓没有实现者**，一期调用即 fail-closed（由接入方实现后闭环）；`无落点` = 全仓找不到承载该条款语义的代码。**「同名不同义」不等于「没实现」——10 条里 8 条的真实落点在端口，这是逐条取证后才看清的**（2026-11-08，证据见下）。
+>
+> **一期真实产出（必须对客户说清）**：18 条里 8 条有落点，但其中 **6 条一期不产生判定结论**——5 条是一期桩（`GraphFraudPort`×4 → `available=false` 一律转人工；`VisualForensicsPort`×1 同理）、1 条端口无实现者（`R-DIR-01` 目录准入，`ItemCatalogGateway` 兜底 `UNKNOWN` ⇒ `CATALOG_UNRESOLVED` 退补件）。**只有 `R-FRAUD-04`（明细合计与发票额差额 >1 元）与 `R-FRAUD-07`（跨案发票去重 + 唯一键）是真的在判定**。另外 8 条 `执行项` 由资产自身承载，`R-FRAUD-02/03` 无落点。
 
 **落点取证（2026-11-08 逐条，可复核）**
 
 | 条款 | 承载点与证据 |
 |---|---|
-| `R-DIR-01` 药品目录范围 | `ItemCatalogGateway` → `ItemCatalogPort` → 引擎 `CatalogAdmission`；三态 `在目录/不在目录/UNKNOWN`，`UNKNOWN` 落 `CATALOG_UNRESOLVED` 退补件，不替客户下拒赔结论 |
+| `R-DIR-01` 药品目录范围 | 链路 `ItemCatalogGateway` → `ItemCatalogPort` → 引擎 `CatalogAdmission` 三态（`在目录/不在目录/UNKNOWN`），`UNKNOWN` 落 `CATALOG_UNRESOLVED` 退补件，不替客户下拒赔结论。**但本仓无实现者**（2026-11-08 实测 `implements ItemCatalogPort` 零命中）：`ItemCatalogGateway` 用 `ObjectProvider` 在调用时解析，无实现 ⇒ **一期全部明细 `UNKNOWN`**，配了 `MANDATORY` 的责任算不出金额、一律退补件。属**已知缺口**而非缺陷（`AdjustmentSemanticGapInventoryTest` 缺口① 明示「本仓库不持有目录副本，避免第二真源」，接入方实现后该维度闭环）——故落点标 `端口待接` |
 | `R-FRAUD-04` 材料一致性 | `ControlledInvoiceVerificationPortAdapter`：`INVOICE_ITEM_AMOUNT_MISMATCH`（发票额 vs 明细合计差额 `> ONE_YUAN`），与条款「差额 >1 元」逐字一致 |
 | `R-FRAUD-07` 发票唯一性 | 同上适配器 `duplicateAcrossClaims` → `DUPLICATE_INVOICE`；库侧 `UNIQUE KEY uk_tenant_invoice (tenant_id, invoice_code, invoice_no, deleted)`（`deleted NOT NULL DEFAULT 0`，约束真实生效；**含 `deleted` 是刻意放宽**——软删案件释放发票键，与条款写的三列不完全一致） |
 | `R-FRAUD-05/09/10/11` 图谱四类 | `GraphFraudPort` 由 `RuleCheckNodeHandler` 消费；一期 `LocalGraphFraudPortAdapter` 返 `hit=false, available=false`，决策图 fail-closed 升级人工（"不可用 ≠ 无团伙"）；端口 javadoc 明示承载 R-FRAUD-09/10/11 |
@@ -248,16 +250,19 @@ currency: current
 | **Q4** | **`R-FRAUD-02`（金额异常 3σ/保额 80%）、`R-FRAUD-03`（时间轴矛盾）无任何执行落点** | 无默认口径——必须裁定 | **待裁定（阻塞交付）**，三条路的成本已取证，见下方 Q4 可行性 |
 | Q5 | `R-FRAUD-01`（重复报销检测）是否记为「已由 `R-FRAUD-07`+`R-FRAUD-22` 覆盖」 | 保留「待接线」标注（保守，不夸大已完成范围） | 待裁定，不阻塞交付 |
 
-> **机检**：`tools/_check_ruleset_alignment.py` 共八类判据——
+> **机检**：`tools/_check_ruleset_alignment.py` 共九类判据——
 > **A1/A2** 共有 18 条双向对账 + `conclusion`/`risk` 逐行一致；**A3** 「10 条同名不同义」ratchet 基线；
 > **A4** 任一侧解析为空即 fail-closed；**A5** 资产 33 条全量覆盖（§11.1 18 + §11.2 15，初版只守交集、覆盖率 55%，已补到 33/33）；
 > **A6** §11.3「仅本书有」的 28 条按 8 个族逐族对账（族级条数必须等于实际条款数，总数必须等于 46 − 18）；
-> **A7** §11.1 每行**必须声明落点**，`端口:X`/`引擎:X` 声明的类必须真实存在于源码树，`无落点` 集合锁基线（新增或静默消除都判红）；
+> **A7** §11.1 每行**必须声明落点**，`端口:X`/`端口待接:X`/`引擎:X` 声明的类必须真实存在于源码树，`无落点` 集合锁基线（新增或静默消除都判红）；
 > **A8** 表达式引用的变量必须**全部有事实提供方**（`QlExpressRuleEnginePortAdapter` 的 `facts.put` 集合），先剥字符串字面量再取标识符——缺一个变量，该执行项就是**静默不命中**：不报错、不告警，客户以为查了、其实没查。
+> **A9** 端口落点必须**有实现者**（`implements` 零命中就不许写 `端口:X`，只能写 `端口待接:X`），且端口除实现者外**必须有调用方**（类存在≠接线）；`端口待接` 集合锁基线，接线后基线未同步也判红。
 >
 > **A7 是 2026-11-08 新增的**，起因是 A1–A3 都只守 ID 与 conclusion，**没有任何判据在问「这条条款到底由哪段代码承载」**。加它的当天就抓出 2 条空挂条款（Q4）。判据落地前先对全量取了一次证（手工 10 条），避免又造出「判据只覆盖样例、真实仓库全红/恒绿」的假象。
 >
 > **A8 是同一轮顺着「A7 只校类存在、不校接线」再往下钻的一层**：变量级比类级更细——类可能被接线了，但规则引用的变量没人给，执行项照样静默失效。实测结论是**这一层没有缺陷**：33 条执行项共引用 24 个变量，25 个提供方全覆盖，唯一未被引用的 `claimType` 属预留。之所以仍然固化成判据：这类缺陷**不报错**，只靠人工 grep 不可能长期守住。
+>
+> **A9 是再下一层，抓的是「端口在、但没人实现它」**：A7 只问「类名存不存在」，而 `端口:X` 这个措辞会被读成"这条在判"。2026-11-08 实测：4 个端口里 `ItemCatalogPort` 全仓 `implements` 零命中（`ItemCatalogGateway` 用 `ObjectProvider` 调用时解析，无实现即全 `UNKNOWN`），于是 `R-DIR-01` 写成 `端口:X` 属**过度声明**——一期它不判定，只退补件。修正为 `端口待接:X` 并锁基线。**同一轮还固化了「端口必须有调用方」**：`GraphFraudPort`/`VisualForensicsPort`/`ItemCatalogPort` 各有 3 个调用方，一旦哪天只剩实现者、没有调用方（本项目出现过"类在、零调用方"），A9 立刻判红。
 >
 > **已知判据边界（诚实说明）**：§11.3 的「为什么不要求出现在 QLExpress 资产」列是**自由文本**，A6 只校验条数、**不校验该列声明的载体是否真实存在/被引用**——本次是人工复核（3 个具名类 + 引用点数）。之所以不把它改成受控枚举 + 机检：这一列的语义混着「由某类实现」「由流程承载」「待接线」三种，强行结构化会把产品口径塞进代码常量，收益低于维护成本。**若日后再度出现「族级载体声明腐化」，再上判据**。
 
