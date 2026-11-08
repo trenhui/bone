@@ -31,7 +31,7 @@ classic_profile: null
 classic_migration: null
 run_checkpoint:
   schema: comet.workflow-run-checkpoint.v1
-  hash: 7620725fcef48092593dfaf2e87d70c360efcee61dc55ba72fd45ba85ced584e
+  hash: 4b63361f18c18a4f0af3ebb710179e915f7ce31f955277b20784d36da7d21c4a
   run:
     protocolVersion: 1
     schemaVersion: 1
@@ -861,7 +861,7 @@ run_checkpoint:
         status: succeeded
         stepId: full.build.execute
         type: invoke_skill
-      - attempt: 1
+      - attempt: 4
         id: synapclaim-architecture-convergence:14
         input:
           input:
@@ -993,7 +993,26 @@ run_checkpoint:
         inputHash: 24f2a54c05b2fb0a122b7bb3794324646b630c4f037e869b924a19ff46b6a6d9
         protocolVersion: 1
         receipts: []
-        reconciliations: []
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: comet check run build 因全局 .write.lock 僵死（pid 67158 已退出）返回 exitCode 70
+                CLASSIC_COMMAND_FAILED，卡在输入核对阶段，未执行任何子命令、未生成 logRef
+                或收据；随后一次重试返回『no pending check Action』，证实该 Action 被认领后结果未知。comet
+                state check --recover --details 显示 reconcile 且无检查记录。原检查完全未执行。
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: comet check run build 在输入核对阶段因全局 .write.lock 僵死（pid 71949 已由 kill -0
+                确认退出、pgrep -fl comet 无输出）返回 exitCode 70
+                CLASSIC_COMMAND_FAILED，未执行子命令、未生成 logRef 或收据。原检查完全未执行。
+            resolution: not-executed
+          - attempt: 3
+            evidence:
+              summary: comet check run build 连续因 SDK 全局 .write.lock 超时（exitCode 70
+                CLASSIC_COMMAND_FAILED）在输入核对阶段失败，未执行子命令、未生成 logRef 或收据；pgrep -fl
+                comet 无存活进程。原检查完全未执行，已复位为可重新派发。
+            resolution: not-executed
         ref: classic-check
         requiredCapabilities: []
         retry: manual
@@ -2357,6 +2376,6 @@ run_checkpoint:
           contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
     children: []
     lineage: []
-  sourceRevision: 42
-  sourceHash: b2b07b8bccf3f97991dd6ccf8bae05381dc8f8f8c64dd73dfa13ea848a0fcc16
+  sourceRevision: 51
+  sourceHash: a6fdc12a41edbb2de2f1c894d92c0fdf3ec7b636fe1682e0d9637a210ec98efd
 check_epoch: 2
