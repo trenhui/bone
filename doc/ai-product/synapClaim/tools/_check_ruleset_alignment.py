@@ -81,6 +81,16 @@ NO_LANDING_BASELINE = {"R-FRAUD-02", "R-FRAUD-03"}
 JAVA_ROOT = os.path.abspath(os.path.join(
     M.ROOT, "..", "..", "..", "bone-apps", "synap-claim", "src", "main", "java"))
 
+# 规则引擎适配器：事实变量的唯一提供方（表达式里引用了没人给的变量 ⇒ 该执行项静默不命中）。
+RULE_ADAPTER = os.path.join(
+    JAVA_ROOT, "com", "bone", "claim", "infrastructure", "rule",
+    "QlExpressRuleEnginePortAdapter.java")
+FACT_PUT_RE = re.compile(r'facts\.put\(\s*"([A-Za-z0-9_]+)"')
+_EXPR_STRING_RE = re.compile(r'"[^"]*"')
+_EXPR_IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+# QLExpress 字面量/关键字；不剥离字符串字面量的话，"BATCH" / "UNKNOWN" 会被当成变量（实测假红 2 个）。
+EXPR_KEYWORDS = {"true", "false", "null"}
+
 
 def load_asset():
     with io.open(ASSET, encoding="utf-8") as f:
@@ -92,6 +102,31 @@ def load_asset():
         if rid:
             out[rid] = (str(r.get("conclusion", "")), str(r.get("risk", "")))
     return out
+
+
+def load_expressions():
+    """资产里每条规则的 QLExpress 表达式：{ID: expression}。"""
+    with io.open(ASSET, encoding="utf-8") as f:
+        data = json.load(f)
+    items = data.get("rules") or data.get("items") or []
+    return {(r.get("code") or r.get("id")): (r.get("expression") or "")
+            for r in items if (r.get("code") or r.get("id"))}
+
+
+def load_fact_keys():
+    """规则引擎适配器实际下发的事实变量集合。
+
+    这是**读取点取证**：表达式能不能命中，取决于 `facts.put(...)` 真的提供了哪个 key。
+    类/端口存在但与事实接不上，规则就是静默不命中——比报错更难发现。
+    """
+    with io.open(RULE_ADAPTER, encoding="utf-8") as f:
+        return set(FACT_PUT_RE.findall(f.read()))
+
+
+def expr_variables(expression):
+    """表达式引用的变量（先剥字符串字面量，再取标识符）。"""
+    text = _EXPR_STRING_RE.sub('""', expression or "")
+    return {v for v in _EXPR_IDENT_RE.findall(text) if v.lower() not in EXPR_KEYWORDS}
 
 
 def _clean(cell):
@@ -161,12 +196,14 @@ def _family_members(key, only_book):
     return {c for c in only_book if c.startswith(key + "-")}
 
 
-def verdict(asset, rows, only, clauses, families=None, carriers=None):
+def verdict(asset, rows, only, clauses, families=None, carriers=None,
+            exprs=None, facts=None):
     """纯函数判定，便于 --self-test 反证。返回错误列表。
 
     A1–A3 守共有 18 条；A5 是 2026-11-07 补的**全量覆盖率**判据：
     资产 33 条必须全部落在 §11.1 ∪ §11.2 里，否则门禁只守交集、静默丢覆盖。
-    A6 守「仅本书有」的 28 条（族级条数不许写错/漏族）；A7 守「条款落点」声明。
+    A6 守「仅本书有」的 28 条（族级条数不许写错/漏族）；A7 守「条款落点」声明；
+    A8 守**表达式变量 ⊆ 事实提供方**（缺一个变量，该执行项就是静默不命中）。
     """
     errs = []
     if not asset:
@@ -269,6 +306,25 @@ def verdict(asset, rows, only, clauses, families=None, carriers=None):
     if NO_LANDING_BASELINE - no_landing:
         errs.append("A7 基线中的「无落点」条款被静默改成有落点或删除：%s"
                     % sorted(NO_LANDING_BASELINE - no_landing))
+
+    # --- A8 表达式变量 ⊆ 事实提供方：缺变量 = 该执行项静默不命中（比报错更危险）---
+    exprs = load_expressions() if exprs is None else exprs
+    facts = load_fact_keys() if facts is None else facts
+    if not facts:
+        errs.append("A8 规则引擎适配器解析不到任何事实变量（路径或写法已变），fail-closed")
+    elif not exprs:
+        errs.append("A8 资产解析不到任何表达式，fail-closed")
+    else:
+        missing = {}
+        for rid in sorted(exprs):
+            if not (exprs[rid] or "").strip():
+                errs.append("A8 %s 表达式为空（该执行项永远不会命中）" % rid)
+                continue
+            for var in sorted(expr_variables(exprs[rid]) - facts):
+                missing.setdefault(var, []).append(rid)
+        for var in sorted(missing):
+            errs.append("A8 变量 %s 没有任何事实提供方，涉及 %s（这些执行项会静默不命中）"
+                        % (var, missing[var]))
     return errs
 
 
@@ -283,10 +339,14 @@ def main():
         print("【FAIL】读取失败：%s" % e)
         return 2
     rows, only, clauses, families = parse(text)
-    errs = verdict(asset, rows, only, clauses, families)
+    exprs, facts = load_expressions(), load_fact_keys()
+    errs = verdict(asset, rows, only, clauses, families, None, exprs, facts)
     landings = {}
     for _, _, _, lg in rows.values():
         landings[lg] = landings.get(lg, 0) + 1
+    variables = set()
+    for e in exprs.values():
+        variables |= expr_variables(e)
     print("=== 规则 ID 命名空间对账 ===")
     print("资产 %d 条 / Rulebook 条款 %d 条 / 共有 %d 条 / §11.1 登记 %d 行 / §11.2 登记 %d 行"
           % (len(asset), len(clauses), len(set(asset) & clauses), len(rows), len(only)))
@@ -295,13 +355,15 @@ def main():
           % (len(clauses - set(asset)), len(families), sum(families.values())))
     print("条款落点：" + " / ".join("%s×%d" % (k or "未声明", v)
                                 for k, v in sorted(landings.items())))
+    print("表达式变量：引用 %d 个 / 事实提供方 %d 个 / 无提供方 %d 个"
+          % (len(variables), len(facts), len(variables - facts)))
     if errs:
         for e in errs:
             print("【FAIL】" + e)
         print("共 %d 项失败" % len(errs))
         return 1
     print("【OK】资产全量覆盖 + 共有 ID 双向对账 + conclusion/risk 逐行一致 + "
-          "10 条同名不同义基线未漂移 + 族级条数对账 + 落点载体真实存在")
+          "10 条同名不同义基线未漂移 + 族级条数对账 + 落点载体真实存在 + 表达式变量全部有提供方")
     return 0
 
 
@@ -320,6 +382,12 @@ def self_test():
     only = {"R-AMOUNT-01": ("AMOUNT_OVER_LIMIT", "False")}
     fam = {"R-AREA": 1}
     carriers = {"GraphFraudPort", "InvoiceVerificationPort"}
+    exprs = {
+        "R-FRAUD-02": "hasEvidence == false",
+        "R-FRAUD-06": "verifyPassed == false",
+        "R-AMOUNT-01": "claimAmount >= 10000",
+    }
+    facts = {"hasEvidence", "verifyPassed", "claimAmount"}
     # 构造样本远小于真实规模，两条 ratchet 基线都要临时换成「与样本一致」，测完还原。
     global CONFLICT_BASELINE, NO_LANDING_BASELINE
     saved = (CONFLICT_BASELINE, NO_LANDING_BASELINE)
@@ -327,12 +395,14 @@ def self_test():
     NO_LANDING_BASELINE = {"R-FRAUD-02"}
     passed, failed = 0, 0
 
-    def V(a=None, r=None, o=None, c=None, f=None):
+    def V(a=None, r=None, o=None, c=None, f=None, ex=None, fa=None):
         return verdict(asset if a is None else a,
                        rows if r is None else r,
                        only if o is None else o,
                        clauses if c is None else c,
-                       fam if f is None else f, carriers)
+                       fam if f is None else f, carriers,
+                       exprs if ex is None else ex,
+                       facts if fa is None else fa)
 
     def expect(label, cond):
         nonlocal passed, failed
@@ -395,6 +465,16 @@ def self_test():
         expect("变异⑯ 同名不同义却声称落点=执行项 → A7 判红",
                any("A7" in e for e in V(r=dict(
                    rows, **{"R-FRAUD-02": ("NO_EVIDENCE", "True", "同名不同义", "执行项")}))))
+        expect("字符串字面量不被当成变量（sourceChannel == \"BATCH\"）",
+               expr_variables('sourceChannel == "BATCH" || x == "UNKNOWN"')
+               == {"sourceChannel", "x"})
+        expect("变异⑰ 表达式引用无提供方变量 → A8 判红",
+               any("A8" in e for e in V(ex=dict(
+                   exprs, **{"R-FRAUD-06": "hospitalLevel > 1"}))))
+        expect("变异⑱ 事实提供方解析为空 → A8 fail-closed",
+               any("A8" in e for e in V(fa=set())))
+        expect("变异⑲ 表达式为空 → A8 判红（永远不会命中）",
+               any("A8" in e for e in V(ex=dict(exprs, **{"R-AMOUNT-01": "  "}))))
     finally:
         CONFLICT_BASELINE, NO_LANDING_BASELINE = saved
     print("  %d 通过 / %d 失败" % (passed, failed))

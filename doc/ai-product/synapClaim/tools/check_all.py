@@ -60,7 +60,7 @@ GATES: tuple[Gate, ...] = (
     ("_check_numbers.py", ("--self-test",), "数字口径 / oracle 接线判据自证"),
     ("_check_numbers.py", (), "FORBIDDEN / REQUIRED / ADR 可追溯 / oracle CI 接线"),
     ("_check_ruleset_alignment.py", ("--self-test",), "规则命名空间判据自证"),
-    ("_check_ruleset_alignment.py", (), "A1–A7 规则 ID 全量覆盖 / 语义 / 族级条数 / 条款落点"),
+    ("_check_ruleset_alignment.py", (), "A1–A8 规则 ID / 覆盖 / 族级条数 / 落点 / 表达式变量对账"),
     ("_check_error_code_i18n.py", ("--self-test",), "错误码双语判据自证"),
     ("_check_error_code_i18n.py", (), "E1–E5 错误码 ↔ HTTP ↔ 双语"),
     ("_check_ai_native_calibration.py", ("--check",), "校准内核 C1–C5 强判据"),
