@@ -492,5 +492,87 @@ class TriggerCoverageTest(unittest.TestCase):
         self.assertTrue(notes)
 
 
+class SelfTestWiringTest(unittest.TestCase):
+    """R7：声明 --self-test 的门禁必须在活入口被带该参数调用。
+
+    夹具与 OrphanGateTest 同形态（临时目录 + 手写入口），额外覆盖两类不该红的形态：
+    未声明自测的脚本、注释里的提及——误报会让门禁被整体关闭。
+    """
+
+    DECL = (
+        "#!/usr/bin/env python3\n"
+        "import argparse\n"
+        "parser = argparse.ArgumentParser()\n"
+        'parser.add_argument("--self-test", action="store_true")\n'
+    )
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp(prefix="gate-selftest-")
+        _write(self.root, "scripts/check.sh", "echo no-gate\n")
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _gate(self, body, name="check-probe.py"):
+        _write(self.root, "scripts/" + name, body)
+
+    def _notes(self):
+        root = Path(self.root)
+        return mod.selftest_wiring_notes(root, mod.entry_corpus(root))
+
+    def test_declared_selftest_with_live_call_passes(self):
+        self._gate(self.DECL)
+        _write(self.root, "scripts/check.sh", "python3 scripts/check-probe.py --self-test\n")
+
+        self.assertEqual(self._notes(), [])
+
+    def test_declared_selftest_without_live_call_is_reported(self):
+        self._gate(self.DECL)
+        _write(self.root, "scripts/check.sh", "python3 scripts/check-probe.py\n")
+
+        notes = self._notes()
+        self.assertTrue(any(n.startswith("R7:") for n in notes), notes)
+
+    def test_main_call_plus_comment_only_selftest_is_reported(self):
+        # 历史真实形态：主判据有活调用（R4 判绿），--self-test 只写在注释里。
+        self._gate(self.DECL)
+        _write(
+            self.root,
+            "scripts/check.sh",
+            "python3 scripts/check-probe.py\n"
+            "# python3 scripts/check-probe.py --self-test\n",
+        )
+
+        notes = self._notes()
+        self.assertTrue(any(n.startswith("R7:") for n in notes), notes)
+
+    def test_undeclared_script_is_not_required(self):
+        self._gate("#!/usr/bin/env python3\n# mentions --self-test in prose only\n")
+
+        self.assertEqual(self._notes(), [])
+
+    def test_other_script_selftest_call_is_not_wiring(self):
+        self._gate(self.DECL)
+        _write(
+            self.root,
+            "scripts/check.sh",
+            "python3 scripts/check-probe-extra.py --self-test\n",
+        )
+
+        notes = self._notes()
+        self.assertTrue(any(n.startswith("R7:") for n in notes), notes)
+
+    def test_workflow_entry_counts(self):
+        self._gate(self.DECL)
+        _write(
+            self.root,
+            ".github/workflows/ci.yml",
+            "jobs:\n  x:\n    steps:\n"
+            "      - run: python3 scripts/check-probe.py --self-test\n",
+        )
+
+        self.assertEqual(self._notes(), [])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

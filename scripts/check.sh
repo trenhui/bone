@@ -724,7 +724,13 @@ fi
 # 2026-11-08 新增（P38）。synapClaim 架构逻辑边界：20 子域→7 上下文归属（quota 只归 Funds）
 # 与 Controller 响应信封不得直出领域实体（HC-003）。判据见
 # scripts/check-synapclaim-architecture.py，映射真源见 scripts/synapclaim-domain-context-map.json。
-# 两个负向探针（quota 错挂 Config / 假 Controller 直出 Evidence）实测转红，防止机检静默失效。
+# 2026-11-09 收口：此前「两个负向探针实测转红」只在开发时手工跑过一次、不可重复；
+# 现补 --self-test（4 个负向探针 + go 塞），同一步骤内先自证再跑主判据，
+# 由活入口每次提交强制运行，防止机检静默失效。
+if ! python3 scripts/check-synapclaim-architecture.py --self-test; then
+  echo -e "${RED}❌ synapClaim 架构逻辑边界机检负向探针失效（判据可能恒绿，绿灯不可信）${RESET}"
+  exit_code=1
+fi
 if ! python3 scripts/check-synapclaim-architecture.py; then
   echo -e "${RED}❌ synapClaim 架构逻辑边界机检失败（D4 归属或 HC-003 响应契约）${RESET}"
   exit_code=1

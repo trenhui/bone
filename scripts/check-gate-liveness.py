@@ -496,6 +496,51 @@ def r6_notes(stats: dict) -> list[str]:
     return out
 
 
+# R7（2026-11-09 新增）：门禁脚本声明了 --self-test，活入口就必须真的带该参数调用。
+# 起因：check-synapclaim-module-boundaries.py 的 --self-test 曾只写在 check.sh 的注释里，
+# 7 个负向探针从未被执行——「没人跑过的自测」等于没有保护，绿灯证明不了判据能变红。
+# 只认 argparse 参数声明 / sys.argv 判定，避免注释提及被误算成「声明了自测」。
+SELFTEST_DECL_RE = re.compile(
+    r"add_argument\(\s*['\"]--self-test['\"]|['\"]--self-test['\"]\s+in\s+sys\.argv"
+)
+
+
+def selftest_wiring_notes(root: Path, corpus: dict[str, str]) -> list[str]:
+    """R7：声明 --self-test 的门禁必须在活入口被带该参数调用。纯函数，单测可注入夹具。
+
+    返回提示行；--strict 下由 main 转成违规（与 R6 同形态），避免新判据在非严格的
+    手工运行里直接把人拦死。判据只认「同一行 + 活调用命令 + 带参数 + 非注释」，
+    与 R4 的 referenced_by 口径一致。
+    """
+    notes: list[str] = []
+    for gate in gate_scripts(root):
+        text = gate.read_text(encoding="utf-8", errors="ignore")
+        if not SELFTEST_DECL_RE.search(text):
+            continue
+        pattern = re.compile(re.escape(gate.name) + r"(?![A-Za-z0-9_.-])")
+        wired = False
+        for _rel, body in corpus.items():
+            for line in body.splitlines():
+                if line.lstrip().startswith("#"):
+                    continue
+                if (
+                    pattern.search(line)
+                    and INVOCATION_RE.search(line)
+                    and "--self-test" in line
+                ):
+                    wired = True
+                    break
+            if wired:
+                break
+        if not wired:
+            rel = gate.relative_to(root).as_posix()
+            notes.append(
+                f"R7: {rel} 声明了 --self-test 但活入口没有带该参数的调用行"
+                "（没人跑过的自测等于没有保护；请接入 check.sh 或对应 CI 入口）"
+            )
+    return notes
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="门禁自身存活判据")
     parser.add_argument("--strict", action="store_true", help="任何违规即 exit 1")
@@ -547,6 +592,13 @@ def main() -> int:
     notes.extend(r6)
     if args.strict:
         violations.extend(r6)
+
+    # R7（2026-11-09 新增）：声明了 --self-test 的门禁，活入口必须真的带该参数调用。
+    # R4 只管「脚本有没有被调用」，看不见「有主判据调用但自测从未跑」这一层。
+    r7 = selftest_wiring_notes(REPO, entry_corpus(REPO))
+    notes.extend(r7)
+    if args.strict:
+        violations.extend(r7)
 
     if violations:
         for v in violations:
