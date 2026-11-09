@@ -31,7 +31,7 @@ classic_profile: null
 classic_migration: null
 run_checkpoint:
   schema: comet.workflow-run-checkpoint.v1
-  hash: 758272b6871cf418d6e76154f02aa922218355db5163a0b2cfd9ec177f2f1080
+  hash: 8ce53121572b5b35c948e6448e0ac169e7a91824ef6e3d17825db937b8acdbcf
   run:
     protocolVersion: 1
     schemaVersion: 1
@@ -861,7 +861,7 @@ run_checkpoint:
         status: succeeded
         stepId: full.build.execute
         type: invoke_skill
-      - attempt: 7
+      - attempt: 9
         id: synapclaim-architecture-convergence:14
         input:
           input:
@@ -1030,6 +1030,17 @@ run_checkpoint:
               summary: comet check run build 在『核对检查输入』阶段因 SDK spawn 的子进程崩溃（僵尸/持锁不释放）导致全局
                 .write.lock 30 秒超时（exitCode 70），未执行子命令、未生成 logRef 或收据；重试返回『no
                 pending check Action』。原检查完全未执行，已复位为可重新派发。
+            resolution: not-executed
+          - attempt: 7
+            evidence:
+              summary: 0.5.2 升级并清锁后 comet check run build 仍因 SDK 锁超时（exitCode 70）未执行子命令、未生成
+                logRef 或收据；随后一次重试返回『no pending check Action』。原检查完全未执行，已复位为可重新派发。
+            resolution: not-executed
+          - attempt: 8
+            evidence:
+              summary: 0.5.2 升级并清锁后 comet check run build 在『核对检查输入』阶段仍因 SDK 全局 .write.lock 30
+                秒超时（exitCode 70）未执行子命令、未生成 logRef 或收据；随后重试返回『no pending check
+                Action』。原检查完全未执行，已复位为可重新派发。
             resolution: not-executed
         ref: classic-check
         requiredCapabilities: []
@@ -2394,6 +2405,6 @@ run_checkpoint:
           contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
     children: []
     lineage: []
-  sourceRevision: 60
-  sourceHash: adf349eea18c7beafde69bb63ef0763deb27d7e8feb29136f5bc7f4e1fcd6158
+  sourceRevision: 66
+  sourceHash: 5645d68a0f7afbaad8db58d9b492752837ccf27e9d6f69d45a3b747db13224d8
 check_epoch: 2
