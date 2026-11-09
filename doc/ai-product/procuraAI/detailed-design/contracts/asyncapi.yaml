@@ -1,0 +1,1460 @@
+asyncapi: 3.0.0
+info:
+  title: Procura 采购域集成事件契约（LLD 契约工件）
+  version: 0.3.0
+  description: |
+    Proposal 设计态（未冻结）。本文件由 contracts/generate_asyncapi.py 从总纲附录 B
+    事件契约注册表自动生成，禁止手改；事件规范 §4「先登记注册表 → 再写 Producer」。
+    payload 字段清单来自各卷 §7 速查视图；核心/INBOUND 事件字段级类型由 D3-v2 §2/§2.1 生成；
+    其余事件字段级类型在契约冻结时补齐（L35）。
+    producer owns schema（总纲 §16.2）；消费侧 tolerant reader（§16.5）+ Inbox 幂等（§6）。
+    envelope 为事件规范 §3 的 8 字段；partition_key 不在信封内，落 t_proc_outbox.partition_key。
+  x-status: Proposal
+  x-frozen: false
+  x-generated-from: detailed-design/00-总纲与统一约定.md 附录 B
+  x-gate: tools/check_procura_alignment.py A8（注册表 ↔ 工件零漂移）
+defaultContentType: application/json
+
+x-envelope:
+  description: 事件规范 §3 的 8 字段信封；eventId 为消费幂等键
+  fields: [eventId, eventType, topic, occurredAt, tenantId, traceId, schemaVersion, payload]
+  time-format: ISO-8601 UTC
+
+x-compatibility:
+  within-version: 仅加性可选字段 + 默认值
+  breaking: 删除/改名/改类型/改单位或含义/枚举扩容/新增必填字段
+  breaking-migration: 新 .v2 topic + 双发布 + 消费组指标确认 + 下线 v1（总纲 §16.6）
+  consumer: 忽略未知字段；未知枚举隔离告警，不得崩溃或静默压成已知值（§16.5）
+  delivery: at-least-once（Outbox 不提供 exactly-once）
+  ordering: 仅同一 partition_key 内成立；payload 带 aggregate_version 供乱序丢弃
+  retention: 待 L35 冻结；PII 只传 ID 与 hash（§20.7）
+  replay: mode=REBUILD（默认，抑制不可逆副作用） | REDELIVER（§16.7）
+  producer-guarantee: transactional outbox（业务表 + t_proc_outbox 同本地事务）
+  inbox: t_proc_processed_event（consumer_group + event_id 唯一；去重与副作用同事务）
+
+x-frozen-exceptions:
+  description: 总体 §7.1 已冻结 topic 的缩写 resource 段，登记为冻结例外，不得改名（§16.8）
+  abbreviations: [po, gr, rfx, asn, ir, capa, rtv, pr, recon]
+  verb-less-topics: [domain.procurement.risk_alert.v1]
+  verb-less-note: 领域 §6.2 冻结值缺 verb 段；登记为冻结例外，禁止按命名规范改名（§16.8；L37 已关闭）
+
+channels:
+  domain.procurement.supplier_changed.v1:
+    address: domain.procurement.supplier_changed.v1
+    title: SupplierChanged
+    messages:
+      SupplierChanged:
+        $ref: '#/components/messages/SupplierChanged'
+    x-owner: "01 MDM / OUT"
+    x-consumers: "02/03/04"
+    x-partition-key: "`tenant_id + supplier_id`"
+    x-status: Frozen
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "Frozen"
+
+  domain.procurement.vendor_activated.v1:
+    address: domain.procurement.vendor_activated.v1
+    title: VendorActivated
+    messages:
+      VendorActivated:
+        $ref: '#/components/messages/VendorActivated'
+    x-owner: "01 MDM / OUT"
+    x-consumers: "02/04/Finance"
+    x-partition-key: "`tenant_id + supplier_id`"
+    x-status: Frozen
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "Frozen"
+
+  domain.procurement.po_created.v1:
+    address: domain.procurement.po_created.v1
+    title: PurchaseOrderCreated
+    messages:
+      PurchaseOrderCreated:
+        $ref: '#/components/messages/PurchaseOrderCreated'
+    x-owner: "04 / OUT"
+    x-consumers: "05/Finance/Inventory"
+    x-partition-key: "`tenant_id + po_no`"
+    x-status: Frozen
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "Frozen；缩写例外"
+
+  domain.procurement.po_acknowledged.v1:
+    address: domain.procurement.po_acknowledged.v1
+    title: PurchaseOrderAcknowledged
+    messages:
+      PurchaseOrderAcknowledged:
+        $ref: '#/components/messages/PurchaseOrderAcknowledged'
+    x-owner: "05 门户 / OUT"
+    x-consumers: "04"
+    x-partition-key: "`tenant_id + po_no`"
+    x-status: Frozen
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "Frozen；缩写例外"
+
+  domain.procurement.asn_submitted.v1:
+    address: domain.procurement.asn_submitted.v1
+    title: AsnSubmitted
+    messages:
+      AsnSubmitted:
+        $ref: '#/components/messages/AsnSubmitted'
+    x-owner: "05 门户 / OUT"
+    x-consumers: "Inventory/04"
+    x-partition-key: "`tenant_id + po_no`"
+    x-status: Frozen
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "Frozen"
+
+  domain.procurement.gr_recorded.v1:
+    address: domain.procurement.gr_recorded.v1
+    title: GoodsReceived
+    messages:
+      GoodsReceived:
+        $ref: '#/components/messages/GoodsReceived'
+    x-owner: "**Inventory(ACL) / INBOUND**"
+    x-consumers: "04/05/Finance"
+    x-partition-key: "`tenant_id + po_no`"
+    x-status: Frozen
+    x-inbound: true
+    x-domain-segment-deviation: true
+    x-note: "Frozen；`INBOUND` + domain 段偏差（L31）"
+
+  domain.procurement.invoice_submitted.v1:
+    address: domain.procurement.invoice_submitted.v1
+    title: InvoiceSubmitted
+    messages:
+      InvoiceSubmitted:
+        $ref: '#/components/messages/InvoiceSubmitted'
+    x-owner: "05 门户 / OUT"
+    x-consumers: "Finance(ACL)"
+    x-partition-key: "`tenant_id + invoice_no`"
+    x-status: Frozen
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "Frozen"
+
+  domain.procurement.invoice_matched.v1:
+    address: domain.procurement.invoice_matched.v1
+    title: InvoiceMatched
+    messages:
+      InvoiceMatched:
+        $ref: '#/components/messages/InvoiceMatched'
+    x-owner: "**Finance(ACL) / INBOUND**"
+    x-consumers: "01/03/04/05"
+    x-partition-key: "`tenant_id + invoice_no`"
+    x-status: Frozen
+    x-inbound: true
+    x-domain-segment-deviation: true
+    x-note: "Frozen；`INBOUND` + L31；**采购域只读**"
+
+  domain.procurement.payment_requested.v1:
+    address: domain.procurement.payment_requested.v1
+    title: PaymentRequested
+    messages:
+      PaymentRequested:
+        $ref: '#/components/messages/PaymentRequested'
+    x-owner: "04 / OUT"
+    x-consumers: "ERP/Finance"
+    x-partition-key: "`tenant_id + po_no`"
+    x-status: Frozen
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "Frozen；`Idempotency-Key`"
+
+  domain.procurement.payment_recorded.v1:
+    address: domain.procurement.payment_recorded.v1
+    title: PaymentRecorded
+    messages:
+      PaymentRecorded:
+        $ref: '#/components/messages/PaymentRecorded'
+    x-owner: "**Finance(ACL) / INBOUND**"
+    x-consumers: "04/05"
+    x-partition-key: "`tenant_id + invoice_no`"
+    x-status: Frozen
+    x-inbound: true
+    x-domain-segment-deviation: true
+    x-note: "Frozen；`INBOUND` + L31"
+
+  domain.procurement.contract_reviewed.v1:
+    address: domain.procurement.contract_reviewed.v1
+    title: ContractReviewed
+    messages:
+      ContractReviewed:
+        $ref: '#/components/messages/ContractReviewed'
+    x-owner: "**procuraAI / INBOUND**"
+    x-consumers: "02/03"
+    x-partition-key: "`tenant_id + review_id`"
+    x-status: Frozen
+    x-inbound: true
+    x-domain-segment-deviation: true
+    x-note: "Frozen；`INBOUND` + L31；不消费 `output` 原文"
+
+  domain.procurement.risk_alert.v1:
+    address: domain.procurement.risk_alert.v1
+    title: RiskAlertRaised
+    messages:
+      RiskAlertRaised:
+        $ref: '#/components/messages/RiskAlertRaised'
+    x-owner: "03 / OUT"
+    x-consumers: "01"
+    x-partition-key: "`tenant_id + supplier_id`"
+    x-status: Frozen
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "Frozen；总体 §7.1 / 领域 §6.2 均已登记（v0.3 收口，L37 已关闭）；缺 verb 段，登记 §16.8 例外"
+
+  domain.procurement.supplier_deduplicated.v1:
+    address: domain.procurement.supplier_deduplicated.v1
+    title: SupplierDeduplicated
+    messages:
+      SupplierDeduplicated:
+        $ref: '#/components/messages/SupplierDeduplicated'
+    x-owner: "01"
+    x-consumers: "审计"
+    x-partition-key: "`tenant_id + supplier_id`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "人工决策后才发"
+
+  domain.procurement.prospect_created.v1:
+    address: domain.procurement.prospect_created.v1
+    title: ProspectCreated
+    messages:
+      ProspectCreated:
+        $ref: '#/components/messages/ProspectCreated'
+    x-owner: "02"
+    x-consumers: "01"
+    x-partition-key: "`tenant_id + supplier_id`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "—"
+
+  domain.procurement.rfx_published.v1:
+    address: domain.procurement.rfx_published.v1
+    title: RfxPublished
+    messages:
+      RfxPublished:
+        $ref: '#/components/messages/RfxPublished'
+    x-owner: "02"
+    x-consumers: "门户"
+    x-partition-key: "`tenant_id + rfx_no`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "通知幂等"
+
+  domain.procurement.bid_submitted.v1:
+    address: domain.procurement.bid_submitted.v1
+    title: BidSubmitted
+    messages:
+      BidSubmitted:
+        $ref: '#/components/messages/BidSubmitted'
+    x-owner: "02"
+    x-consumers: "审计"
+    x-partition-key: "`tenant_id + rfx_no`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "payload **不含报价明文**"
+
+  domain.procurement.award_decided.v1:
+    address: domain.procurement.award_decided.v1
+    title: AwardDecided
+    messages:
+      AwardDecided:
+        $ref: '#/components/messages/AwardDecided'
+    x-owner: "02"
+    x-consumers: "04"
+    x-partition-key: "`tenant_id + rfx_no`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "人工确认后"
+
+  domain.procurement.qualification_verified.v1:
+    address: domain.procurement.qualification_verified.v1
+    title: QualificationVerified
+    messages:
+      QualificationVerified:
+        $ref: '#/components/messages/QualificationVerified'
+    x-owner: "02"
+    x-consumers: "01"
+    x-partition-key: "`tenant_id + supplier_id`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "OCR 人工复核后"
+
+  domain.procurement.qualification_expired.v1:
+    address: domain.procurement.qualification_expired.v1
+    title: QualificationExpired
+    messages:
+      QualificationExpired:
+        $ref: '#/components/messages/QualificationExpired'
+    x-owner: "02"
+    x-consumers: "01"
+    x-partition-key: "`tenant_id + supplier_id`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "到期巡检补偿"
+
+  domain.procurement.onboarding_approved.v1:
+    address: domain.procurement.onboarding_approved.v1
+    title: OnboardingApproved
+    messages:
+      OnboardingApproved:
+        $ref: '#/components/messages/OnboardingApproved'
+    x-owner: "02"
+    x-consumers: "01"
+    x-partition-key: "`tenant_id + onboarding_id`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "触发开通闸门"
+
+  domain.procurement.contract_signed.v1:
+    address: domain.procurement.contract_signed.v1
+    title: ContractSigned
+    messages:
+      ContractSigned:
+        $ref: '#/components/messages/ContractSigned'
+    x-owner: "03"
+    x-consumers: "04"
+    x-partition-key: "`tenant_id + contract_no`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "—"
+
+  domain.procurement.corrective_opened.v1:
+    address: domain.procurement.corrective_opened.v1
+    title: CorrectiveOpened
+    messages:
+      CorrectiveOpened:
+        $ref: '#/components/messages/CorrectiveOpened'
+    x-owner: "03"
+    x-consumers: "01"
+    x-partition-key: "`tenant_id + capa_no`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "—"
+
+  domain.procurement.corrective_submitted.v1:
+    address: domain.procurement.corrective_submitted.v1
+    title: CorrectiveSubmitted
+    messages:
+      CorrectiveSubmitted:
+        $ref: '#/components/messages/CorrectiveSubmitted'
+    x-owner: "03"
+    x-consumers: "01"
+    x-partition-key: "`tenant_id + capa_no`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "—"
+
+  domain.procurement.performance_scored.v1:
+    address: domain.procurement.performance_scored.v1
+    title: PerformanceScored
+    messages:
+      PerformanceScored:
+        $ref: '#/components/messages/PerformanceScored'
+    x-owner: "03"
+    x-consumers: "01/门户"
+    x-partition-key: "`tenant_id + supplier_id`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "只追加"
+
+  domain.procurement.po_line_received.v1:
+    address: domain.procurement.po_line_received.v1
+    title: PoLineReceived
+    messages:
+      PoLineReceived:
+        $ref: '#/components/messages/PoLineReceived'
+    x-owner: "04"
+    x-consumers: "05/对账"
+    x-partition-key: "`tenant_id + po_no`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "重放须新 `eventId`"
+
+  domain.procurement.rtv_settled.v1:
+    address: domain.procurement.rtv_settled.v1
+    title: RtvSettled
+    messages:
+      RtvSettled:
+        $ref: '#/components/messages/RtvSettled'
+    x-owner: "04"
+    x-consumers: "05/Finance"
+    x-partition-key: "`tenant_id + rtv_no`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "复用了原 `fx_rate`（D-04）"
+
+  domain.procurement.transfer_shipped.v1:
+    address: domain.procurement.transfer_shipped.v1
+    title: TransferShipped
+    messages:
+      TransferShipped:
+        $ref: '#/components/messages/TransferShipped'
+    x-owner: "04"
+    x-consumers: "Inventory"
+    x-partition-key: "`tenant_id + transfer_no`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "—"
+
+  domain.procurement.ir_exception_raised.v1:
+    address: domain.procurement.ir_exception_raised.v1
+    title: IrExceptionRaised
+    messages:
+      IrExceptionRaised:
+        $ref: '#/components/messages/IrExceptionRaised'
+    x-owner: "05"
+    x-consumers: "Finance/门户"
+    x-partition-key: "`tenant_id + invoice_no`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "同发票保序"
+
+  domain.procurement.recon_diff_found.v1:
+    address: domain.procurement.recon_diff_found.v1
+    title: ReconDiffFound
+    messages:
+      ReconDiffFound:
+        $ref: '#/components/messages/ReconDiffFound'
+    x-owner: "06"
+    x-consumers: "财务域/SRE"
+    x-partition-key: "`tenant_id + channel`"
+    x-status: Proposal
+    x-inbound: false
+    x-domain-segment-deviation: false
+    x-note: "`(channel,ref_no,run_id)`"
+
+operations:
+  sendSupplierChanged:
+    action: send
+    title: SupplierChanged (domain.procurement.supplier_changed.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.supplier_changed.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.supplier_changed.v1/messages/SupplierChanged'
+
+  sendVendorActivated:
+    action: send
+    title: VendorActivated (domain.procurement.vendor_activated.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.vendor_activated.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.vendor_activated.v1/messages/VendorActivated'
+
+  sendPurchaseOrderCreated:
+    action: send
+    title: PurchaseOrderCreated (domain.procurement.po_created.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.po_created.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.po_created.v1/messages/PurchaseOrderCreated'
+
+  sendPurchaseOrderAcknowledged:
+    action: send
+    title: PurchaseOrderAcknowledged (domain.procurement.po_acknowledged.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.po_acknowledged.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.po_acknowledged.v1/messages/PurchaseOrderAcknowledged'
+
+  sendAsnSubmitted:
+    action: send
+    title: AsnSubmitted (domain.procurement.asn_submitted.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.asn_submitted.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.asn_submitted.v1/messages/AsnSubmitted'
+
+  receiveGoodsReceived:
+    action: receive
+    title: GoodsReceived (domain.procurement.gr_recorded.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.gr_recorded.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.gr_recorded.v1/messages/GoodsReceived'
+
+  sendInvoiceSubmitted:
+    action: send
+    title: InvoiceSubmitted (domain.procurement.invoice_submitted.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.invoice_submitted.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.invoice_submitted.v1/messages/InvoiceSubmitted'
+
+  receiveInvoiceMatched:
+    action: receive
+    title: InvoiceMatched (domain.procurement.invoice_matched.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.invoice_matched.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.invoice_matched.v1/messages/InvoiceMatched'
+
+  sendPaymentRequested:
+    action: send
+    title: PaymentRequested (domain.procurement.payment_requested.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.payment_requested.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.payment_requested.v1/messages/PaymentRequested'
+
+  receivePaymentRecorded:
+    action: receive
+    title: PaymentRecorded (domain.procurement.payment_recorded.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.payment_recorded.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.payment_recorded.v1/messages/PaymentRecorded'
+
+  receiveContractReviewed:
+    action: receive
+    title: ContractReviewed (domain.procurement.contract_reviewed.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.contract_reviewed.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.contract_reviewed.v1/messages/ContractReviewed'
+
+  sendRiskAlertRaised:
+    action: send
+    title: RiskAlertRaised (domain.procurement.risk_alert.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.risk_alert.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.risk_alert.v1/messages/RiskAlertRaised'
+
+  sendSupplierDeduplicated:
+    action: send
+    title: SupplierDeduplicated (domain.procurement.supplier_deduplicated.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.supplier_deduplicated.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.supplier_deduplicated.v1/messages/SupplierDeduplicated'
+
+  sendProspectCreated:
+    action: send
+    title: ProspectCreated (domain.procurement.prospect_created.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.prospect_created.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.prospect_created.v1/messages/ProspectCreated'
+
+  sendRfxPublished:
+    action: send
+    title: RfxPublished (domain.procurement.rfx_published.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.rfx_published.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.rfx_published.v1/messages/RfxPublished'
+
+  sendBidSubmitted:
+    action: send
+    title: BidSubmitted (domain.procurement.bid_submitted.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.bid_submitted.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.bid_submitted.v1/messages/BidSubmitted'
+
+  sendAwardDecided:
+    action: send
+    title: AwardDecided (domain.procurement.award_decided.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.award_decided.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.award_decided.v1/messages/AwardDecided'
+
+  sendQualificationVerified:
+    action: send
+    title: QualificationVerified (domain.procurement.qualification_verified.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.qualification_verified.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.qualification_verified.v1/messages/QualificationVerified'
+
+  sendQualificationExpired:
+    action: send
+    title: QualificationExpired (domain.procurement.qualification_expired.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.qualification_expired.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.qualification_expired.v1/messages/QualificationExpired'
+
+  sendOnboardingApproved:
+    action: send
+    title: OnboardingApproved (domain.procurement.onboarding_approved.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.onboarding_approved.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.onboarding_approved.v1/messages/OnboardingApproved'
+
+  sendContractSigned:
+    action: send
+    title: ContractSigned (domain.procurement.contract_signed.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.contract_signed.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.contract_signed.v1/messages/ContractSigned'
+
+  sendCorrectiveOpened:
+    action: send
+    title: CorrectiveOpened (domain.procurement.corrective_opened.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.corrective_opened.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.corrective_opened.v1/messages/CorrectiveOpened'
+
+  sendCorrectiveSubmitted:
+    action: send
+    title: CorrectiveSubmitted (domain.procurement.corrective_submitted.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.corrective_submitted.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.corrective_submitted.v1/messages/CorrectiveSubmitted'
+
+  sendPerformanceScored:
+    action: send
+    title: PerformanceScored (domain.procurement.performance_scored.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.performance_scored.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.performance_scored.v1/messages/PerformanceScored'
+
+  sendPoLineReceived:
+    action: send
+    title: PoLineReceived (domain.procurement.po_line_received.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.po_line_received.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.po_line_received.v1/messages/PoLineReceived'
+
+  sendRtvSettled:
+    action: send
+    title: RtvSettled (domain.procurement.rtv_settled.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.rtv_settled.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.rtv_settled.v1/messages/RtvSettled'
+
+  sendTransferShipped:
+    action: send
+    title: TransferShipped (domain.procurement.transfer_shipped.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.transfer_shipped.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.transfer_shipped.v1/messages/TransferShipped'
+
+  sendIrExceptionRaised:
+    action: send
+    title: IrExceptionRaised (domain.procurement.ir_exception_raised.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.ir_exception_raised.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.ir_exception_raised.v1/messages/IrExceptionRaised'
+
+  sendReconDiffFound:
+    action: send
+    title: ReconDiffFound (domain.procurement.recon_diff_found.v1)
+    channel:
+      $ref: '#/channels/domain.procurement.recon_diff_found.v1'
+    messages:
+      - $ref: '#/channels/domain.procurement.recon_diff_found.v1/messages/ReconDiffFound'
+
+components:
+  messages:
+    SupplierChanged:
+      name: SupplierChanged
+      title: SupplierChanged（topic 见总纲附录 B；status=Frozen）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "01 MDM / OUT"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + supplier_id`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`supplier_id, supplier_version, changed_fields[], segment, cr_no, golden_hash`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    VendorActivated:
+      name: VendorActivated
+      title: VendorActivated（topic 见总纲附录 B；status=Frozen）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "01 MDM / OUT"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + supplier_id`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`vendor_id, supplier_id, legal_entity_id, company_code, payment_terms, bank_account_ref`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+          vendor_id:
+            type: string
+            description: "Vendor 主键；消费幂等关联键"
+          supplier_id:
+            type: string
+            description: "关联 Supplier（Supplier/Vendor 分离）"
+          legal_entity_id:
+            type: string
+            description: "合作法人"
+          company_code:
+            type: string
+            description: "公司代码（ERP 映射）"
+          activated_at:
+            type: string
+            format: date-time
+            description: "激活时间"
+          purchasing_org:
+            type: string
+            description: "采购组织"
+        required: [aggregate_version, vendor_id, supplier_id, legal_entity_id, company_code, activated_at]
+
+    PurchaseOrderCreated:
+      name: PurchaseOrderCreated
+      title: PurchaseOrderCreated（topic 见总纲附录 B；status=Frozen）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "04 / OUT"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + po_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`po_no, po_version, vendor_id, legal_entity_id, lines[], contract_no, price_snapshot_ref`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+          po_no:
+            type: string
+            description: "采购单号；消费幂等关联键"
+          tenant_id:
+            type: string
+            description: "租户隔离键"
+          supplier_id:
+            type: string
+            description: "供应商"
+          total_amount:
+            $ref: '#/components/schemas/Money'
+            description: "订单总额（币种同行）"
+          currency:
+            type: string
+            description: "ISO 4217 币种"
+          po_version:
+            type: integer
+            description: "订单版本戳（下达/变更累加）"
+          created_at:
+            type: string
+            format: date-time
+            description: "创建时间"
+          requisition_no:
+            type: string
+            description: "来源请购单"
+        required: [aggregate_version, po_no, tenant_id, supplier_id, total_amount, currency, po_version, created_at]
+
+    PurchaseOrderAcknowledged:
+      name: PurchaseOrderAcknowledged
+      title: PurchaseOrderAcknowledged（topic 见总纲附录 B；status=Frozen）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "05 门户 / OUT"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + po_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`po_no, po_version, vendor_id, ack_lines[]`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    AsnSubmitted:
+      name: AsnSubmitted
+      title: AsnSubmitted（topic 见总纲附录 B；status=Frozen）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "05 门户 / OUT"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + po_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`asn_no, po_no, ship_date, lines[], sscc[]`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    GoodsReceived:
+      name: GoodsReceived
+      title: GoodsReceived（topic 见总纲附录 B；status=Frozen）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "**Inventory(ACL) / INBOUND**"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + po_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`gr_no, po_no, po_line_no, received_qty, asn_no`（字段名对齐 D3-v2 §2.1；含 `site_id/tenant_id/supplier_id/uom/received_at`）"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+          gr_no:
+            type: string
+            description: "收货单号；消费幂等关联键"
+          po_no:
+            type: string
+            description: "关联采购单"
+          po_line_no:
+            type: integer
+            description: "采购单行号"
+          received_qty:
+            type: number
+            description: "实收数量（正数）；单位见 `uom`"
+          uom:
+            type: string
+            description: "计量单位（ISO 80000 / 企业主数据）"
+          received_at:
+            type: string
+            format: date-time
+            description: "收货时间（ISO-8601 UTC）"
+          site_id:
+            type: string
+            description: "收货地点（Inventory 域 Site）"
+          tenant_id:
+            type: string
+            description: "租户隔离键"
+          supplier_id:
+            type: string
+            description: "供应商（直运场景可缺省）"
+        required: [aggregate_version, gr_no, po_no, po_line_no, received_qty, uom, received_at, site_id, tenant_id]
+
+    InvoiceSubmitted:
+      name: InvoiceSubmitted
+      title: InvoiceSubmitted（topic 见总纲附录 B；status=Frozen）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "05 门户 / OUT"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + invoice_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`invoice_no, po_no, supplier_id, amount, tax, currency`（字段名对齐 D3-v2 §2.1 `supplier_id`；Supplier↔Vendor 分离）"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+          invoice_no:
+            type: string
+            description: "发票号；消费幂等关联键"
+          po_no:
+            type: string
+            description: "关联采购单（服务类发票可能无 PO）"
+          supplier_id:
+            type: string
+            description: "开票供应商"
+          invoice_amount:
+            $ref: '#/components/schemas/Money'
+            description: "发票金额（币种同行）"
+          tax_amount:
+            $ref: '#/components/schemas/Money'
+            description: "税额"
+          invoice_date:
+            type: string
+            format: date
+            description: "开票日期"
+          due_date:
+            type: string
+            format: date
+            description: "到期日"
+          currency:
+            type: string
+            description: "ISO 4217 币种（与 `invoice_amount.currency` 一致）"
+        required: [aggregate_version, invoice_no, supplier_id, invoice_amount, invoice_date, currency]
+
+    InvoiceMatched:
+      name: InvoiceMatched
+      title: InvoiceMatched（topic 见总纲附录 B；status=Frozen）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "**Finance(ACL) / INBOUND**"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + invoice_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`match_id, invoice_no, po_no, match_status, matched_amount, exception_code?, matched_at`（字段级真源 D3-v2 §2.1；本域只消费 `invoice_no/match_status` 子集）"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+          match_id:
+            type: string
+            description: "匹配单号；消费幂等关联键"
+          invoice_no:
+            type: string
+            description: "关联发票"
+          po_no:
+            type: string
+            description: "关联采购单"
+          match_status:
+            type: string
+            enum: ['`MATCHED`', '`EXCEPTION`', '`REVIEW`']
+            description: "三单匹配结果状态"
+          matched_amount:
+            $ref: '#/components/schemas/Money'
+            description: "匹配金额"
+          exception_code:
+            type: string
+            description: "例外码（EXCEPTION 时必填）"
+          matched_at:
+            type: string
+            format: date-time
+            description: "匹配时间"
+        required: [aggregate_version, match_id, invoice_no, po_no, match_status, matched_amount, matched_at]
+
+    PaymentRequested:
+      name: PaymentRequested
+      title: PaymentRequested（topic 见总纲附录 B；status=Frozen）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "04 / OUT"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + po_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`po_no, invoice_no, vendor_id, legal_entity_id, amount`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    PaymentRecorded:
+      name: PaymentRecorded
+      title: PaymentRecorded（topic 见总纲附录 B；status=Frozen）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "**Finance(ACL) / INBOUND**"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + invoice_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`payment_id, invoice_no, paid_amount, payment_date, payment_method?, payer_legal_entity`（**字段级真源 D3-v2 §2.1**）"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+          payment_id:
+            type: string
+            description: "付款流水号；消费幂等关联键"
+          invoice_no:
+            type: string
+            description: "关联发票"
+          paid_amount:
+            $ref: '#/components/schemas/Money'
+            description: "实付金额"
+          payment_date:
+            type: string
+            format: date-time
+            description: "付款时间"
+          payment_method:
+            type: string
+            enum: ['`BANK_TRANSFER`', '`CHECK`', '`OTHER`']
+            description: "付款方式"
+          payer_legal_entity:
+            type: string
+            description: "付款法人（Finance 域 LegalEntity）"
+        required: [aggregate_version, payment_id, invoice_no, paid_amount, payment_date, payer_legal_entity]
+
+    ContractReviewed:
+      name: ContractReviewed
+      title: ContractReviewed（topic 见总纲附录 B；status=Frozen）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "**procuraAI / INBOUND**"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + review_id`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`review_id, contract_no, risk_level, risk_items_hash, review_snapshot_ref, ai_available, model_version_snapshot`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+          review_id:
+            type: string
+            description: "幂等键；`rv-<ULID>`；跨域关联唯一标识"
+          contract_no:
+            type: string
+            description: "仅入参关联键；**不得作为结论回写目标**"
+          risk_level:
+            type: string
+            enum: ['`LOW`', '`MEDIUM`', '`HIGH`', '`UNKNOWN`']
+            description: "`UNKNOWN` 不得压成「无风险」；消费方隔离告警"
+          risk_items_hash:
+            type: string
+            description: "风险明细摘要哈希；明细不进事件（PII / 体积）"
+          review_snapshot_ref:
+            type: string
+            description: "审查快照引用（AI 运行时独立对象存储），采购域只存引用不存原文"
+          ai_available:
+            type: string
+            enum: ['`AVAILABLE`', '`UNAVAILABLE`', '`UNKNOWN`']
+            description: "**唯一认可的 AI 参与证据来源**（LLM 节点自报）；三态须区分 参与/未参与/UNKNOWN（详见 §3「三态」条款），`UNKNOWN` 不得压成「未参与」；缺省 fail-closed 视为 `UNKNOWN`"
+          model_version_snapshot:
+            type: string
+            description: "入口可填快照，**不得冒充参与证据**；版本串截断 128 字符"
+        required: [aggregate_version, review_id, contract_no, risk_level, risk_items_hash, review_snapshot_ref, ai_available]
+
+    RiskAlertRaised:
+      name: RiskAlertRaised
+      title: RiskAlertRaised（topic 见总纲附录 B；status=Frozen）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "03 / OUT"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + supplier_id`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`alert_id, supplier_id, severity, evidence_ref`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    SupplierDeduplicated:
+      name: SupplierDeduplicated
+      title: SupplierDeduplicated（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "01"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + supplier_id`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`candidate_ids[], rule_code, decided_by`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    ProspectCreated:
+      name: ProspectCreated
+      title: ProspectCreated（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "02"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + supplier_id`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`supplier_id, project_id, category_id`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    RfxPublished:
+      name: RfxPublished
+      title: RfxPublished（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "02"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + rfx_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`rfx_no, due_at, invited_supplier_ids[]`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    BidSubmitted:
+      name: BidSubmitted
+      title: BidSubmitted（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "02"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + rfx_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`rfx_no, supplier_id, round, payload_hash`（**不含报价明文**）"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    AwardDecided:
+      name: AwardDecided
+      title: AwardDecided（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "02"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + rfx_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`award_no, rfx_no, supplier_id, quotation_refs[]`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    QualificationVerified:
+      name: QualificationVerified
+      title: QualificationVerified（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "02"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + supplier_id`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`qualification_id, supplier_id, expires_at`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    QualificationExpired:
+      name: QualificationExpired
+      title: QualificationExpired（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "02"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + supplier_id`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`qualification_id, supplier_id`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    OnboardingApproved:
+      name: OnboardingApproved
+      title: OnboardingApproved（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "02"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + onboarding_id`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`onboarding_id, supplier_id, score, approved_by`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    ContractSigned:
+      name: ContractSigned
+      title: ContractSigned（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "03"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + contract_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`contract_no, supplier_id, effective_from, valid_to, price_condition_ref`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    CorrectiveOpened:
+      name: CorrectiveOpened
+      title: CorrectiveOpened（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "03"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + capa_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`capa_no, supplier_id, stage, workflow_instance_id`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    CorrectiveSubmitted:
+      name: CorrectiveSubmitted
+      title: CorrectiveSubmitted（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "03"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + capa_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`capa_no, supplier_id, stage, workflow_instance_id`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    PerformanceScored:
+      name: PerformanceScored
+      title: PerformanceScored（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "03"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + supplier_id`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`supplier_id, period, total_score, evidence_ref`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    PoLineReceived:
+      name: PoLineReceived
+      title: PoLineReceived（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "04"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + po_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`po_no, line_no, received_qty, gr_no`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    RtvSettled:
+      name: RtvSettled
+      title: RtvSettled（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "04"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + rtv_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`rtv_no/transfer_no, legal_entity_from/to, amount`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    TransferShipped:
+      name: TransferShipped
+      title: TransferShipped（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "04"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + transfer_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`rtv_no/transfer_no, legal_entity_from/to, amount`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    IrExceptionRaised:
+      name: IrExceptionRaised
+      title: IrExceptionRaised（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "05"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + invoice_no`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`exception_no, invoice_no, exception_code, match_type`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+    ReconDiffFound:
+      name: ReconDiffFound
+      title: ReconDiffFound（topic 见总纲附录 B；status=Proposal）
+      contentType: application/json
+      x-schema-version: '1.0'
+      x-owner: "06"
+      x-delivery: at-least-once
+      x-partition-key: "`tenant_id + channel`"
+      x-producer-guarantee: transactional outbox (t_proc_outbox)
+      x-replay: REBUILD | REDELIVER（默认 REBUILD）
+      x-pii: ids and hashes only
+      payload:
+        type: object
+        additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
+        x-fields: "`channel, ref_no, diff_amount, run_id`"
+        properties:
+          aggregate_version:
+            type: integer
+            description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+
+  schemas:
+    Envelope:
+      type: object
+      required: [eventId, eventType, topic, occurredAt, tenantId, traceId, schemaVersion, payload]
+      properties:
+        eventId: { type: string, description: 消费幂等键 }
+        eventType: { type: string }
+        topic: { type: string }
+        occurredAt: { type: string, format: date-time }
+        tenantId: { type: string }
+        traceId: { type: string }
+        schemaVersion: { type: string, example: '1.0' }
+        payload: { type: object }
+    Money:
+      type: object
+      description: 金额与币种同行；amount 为字符串；ISO 4217 minor unit 决定小数位（总纲 §14）
+      required: [amount, currency]
+      properties:
+        amount: { type: string, pattern: '^-?[0-9]+(\.[0-9]+)?$' }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        fx_rate: { type: string, nullable: true }
+        fx_as_of: { type: string, format: date-time, nullable: true }
+        fx_source: { type: string, nullable: true }
+
+x-platform-channels:
+  description: 平台 / 基础设施事件，不属采购域注册表（附录 B.3），仅列引用
+  topics: [platform.dead_letter.v1]

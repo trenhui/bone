@@ -1,0 +1,934 @@
+openapi: 3.1.0
+info:
+  title: Procura 采购域 REST API（LLD 契约工件）
+  version: 0.3.0
+  description: |
+    Proposal 设计态（未冻结）。回答「怎么实现」的机器可读契约之一。
+    上游真源：doc/ai-product/procuraAI/detailed-design/00-总纲与统一约定.md §17（错误体 / 分页 / 幂等 / 可重试性）、
+    附录 A（错误码唯一目录）、各卷 §6（端点清单）。
+    事件契约见同目录 asyncapi.yaml；两份工件由 tools/check_procura_alignment.py A8 双向校验一致性。
+    约定：成功响应 ApiResponse<T> / PageResult<T>（HC-003）；错误响应 RFC 9457 application/problem+json，
+    与 ApiResponse 兼容共存（§17.2）；金额一律 Money 对象且 amount 为字符串（§14）。
+  x-status: Proposal
+  x-frozen: false
+  x-upstream:
+    - 采购总体架构方案.md §4.2 / §7.1 / §13
+    - detailed-design/00-总纲与统一约定.md §5 / §14 / §17 / 附录 A
+  x-compatibility:
+    additive-optional-fields-only: true
+    breaking-change: new /api/v2 + Sunset header + usage telemetry
+    unknown-fields: ignored by consumers (tolerant reader, §16.5)
+
+servers:
+  - url: https://{host}/api/v1
+    description: 采购域主应用 / 门户 BFF（一期同一网关，Separate Ways 由权限与可见性隔离）
+    variables:
+      host:
+        default: bone.example.com
+
+tags:
+  - name: supplier-mdm
+    description: 01 卷 供应商主数据 / Vendor 开通
+  - name: sourcing
+    description: 02 卷 寻源与准入
+  - name: contract
+    description: 03 卷 合同 / 风险 / 绩效 / AI 接入
+  - name: transaction
+    description: 04 卷 请购 / PO / 成本 / 调拨 / 退供
+  - name: fulfillment
+    description: 05 卷 履约协同 / 门户 / 对账
+  - name: ops
+    description: 06 卷 编排 / 事件运维 / 平台接入
+
+security:
+  - bearerAuth: []
+  - serviceCredential: []
+
+paths:
+  /procurement/suppliers:
+    post:
+      tags: [supplier-mdm]
+      operationId: createSupplier
+      summary: 建档（PROSPECT + DRAFT 分段变更请求，不覆盖 Golden Record）
+      security: [{ bearerAuth: [procurement:supplier:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    get:
+      tags: [supplier-mdm]
+      operationId: listSuppliers
+      summary: 分页列表（小表可用 page/size；导出走 cursor）
+      security: [{ bearerAuth: [procurement:supplier:read] }]
+      parameters: [{ $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Cursor' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/suppliers/{id}/change-requests:
+    parameters:
+      - name: 'id'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [supplier-mdm]
+      operationId: submitChangeRequest
+      summary: 提交分段变更（CENTRAL / COMPANY_CODE / PURCHASING_ORG，生效前写草稿表）
+      security: [{ bearerAuth: [procurement:supplier:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/vendor-activations:
+    post:
+      tags: [supplier-mdm]
+      operationId: activateVendor
+      summary: Vendor 开通闸门（幂等键 supplier_id + legal_entity_id）
+      security: [{ bearerAuth: [procurement:vendor:write] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/rfx:
+    post:
+      tags: [sourcing]
+      operationId: createRfx
+      summary: 建 RFx（含行与邀请清单）
+      security: [{ bearerAuth: [procurement:rfx:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+  /procurement/rfx/{rfxNo}/award:
+    parameters:
+      - name: 'rfxNo'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [sourcing]
+      operationId: confirmAward
+      summary: 人工确认授标（缺 confirmed_by → 20xxx；AI 直接置位 → 31203）
+      security: [{ bearerAuth: [procurement:rfx:approve] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/onboardings:
+    post:
+      tags: [sourcing]
+      operationId: startOnboarding
+      summary: 发起准入（一个 Supplier 同时仅一个 IN_REVIEW 准入单）
+      security: [{ bearerAuth: [procurement:onboarding:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+  /procurement/contracts:
+    post:
+      tags: [contract]
+      operationId: draftContract
+      summary: 起草（contract_no 仅作关联键，结论挂 review_id）
+      security: [{ bearerAuth: [procurement:contract:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+  /procurement/contracts/{no}/reviews:
+    parameters:
+      - name: 'no'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [contract]
+      operationId: requestContractReview
+      summary: 发起 AI 审查（异步返回 review_id；ai_available 三态；证据不回传 output 原文）
+      security: [{ bearerAuth: [procurement:contract:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /procurement/purchase-orders:
+    post:
+      tags: [transaction]
+      operationId: createPurchaseOrder
+      summary: 建 PO（Vendor 必须 ACTIVE_VENDOR 且 legal_entity_id 匹配；po_amount = Σ line_amount）
+      security: [{ bearerAuth: [procurement:purchase-order:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/purchase-costs:
+    post:
+      tags: [transaction]
+      operationId: createPurchaseCost
+      summary: 价格版本（有效期条件互斥；价格快照只追加不可变）
+      security: [{ bearerAuth: [procurement:purchase-cost:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /portal/purchase-orders:
+    get:
+      tags: [fulfillment]
+      operationId: portalListPurchaseOrders
+      summary: 门户 PO 视图（vendor_id 由外部账号绑定，BFF 不接受客户端传参）
+      security: [{ bearerAuth: [portal:purchase-order:read] }]
+      parameters: [{ $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Cursor' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /portal/asns:
+    post:
+      tags: [fulfillment]
+      operationId: submitAsn
+      summary: 发货通知（856 类比；SSCC / 包装层级；未 Ack 的 PO 拒绝 31503）
+      security: [{ bearerAuth: [portal:asn:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+  /portal/invoices:
+    post:
+      tags: [fulfillment]
+      operationId: submitInvoice
+      summary: 自助开票（810 类比；invoice_no + vendor_id 去重；金额 ≤ PO 未开票余额）
+      security: [{ bearerAuth: [portal:invoice-submission:write] }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/webhooks/finance:
+    post:
+      tags: [fulfillment]
+      operationId: receiveFinanceWebhook
+      summary: Finance 入站（HMAC + kid + timestamp + nonce；InvoiceMatched / PaymentRecorded 只回写不裁决）
+      security: [{ serviceCredential: [] }]
+      parameters:
+        - name: X-Bone-Signature
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /procurement/ops/events/{eventId}/replay:
+    parameters:
+      - name: 'eventId'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [ops]
+      operationId: replayEvent
+      summary: 事件重放（mode = REBUILD | REDELIVER，默认 REBUILD 抑制不可逆副作用）
+      security: [{ bearerAuth: [procurement:ops:admin] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/ops/readiness:
+    get:
+      tags: [ops]
+      operationId: getReadiness
+      summary: 部署态 / 配置态 / 运行期三层就绪（端口默认 UNKNOWN fail-closed；就绪 ≠ 放行许可）
+      security: [{ bearerAuth: [procurement:ops:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ops/reconciliation/run:
+    post:
+      tags: [ops]
+      operationId: runReconciliation
+      summary: 触发 SUPPLY / INVOICE / PAYMENT 三通道对账（不自动修数）
+      security: [{ bearerAuth: [procurement:recon:admin] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /procurement/transfers:
+    post:
+      tags: [transaction]
+      operationId: createTransfer
+      summary: '调拨单创建（库存事实真源在 Inventory 域）'
+      security: [{ bearerAuth: [procurement:transfer:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    get:
+      tags: [transaction]
+      operationId: listTransfers
+      summary: 调拨单列表（只读投影；库存事实真源在 Inventory 域，见跨域契约 §4）
+      security: [{ bearerAuth: [procurement:transfer:read] }]
+      parameters: [{ $ref: '#/components/parameters/Cursor' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/rtvs:
+    post:
+      tags: [transaction]
+      operationId: createRtv
+      summary: '退供冲销创建（库存回冲由 Inventory 域完成）'
+      security: [{ bearerAuth: [procurement:rtv:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    get:
+      tags: [transaction]
+      operationId: listRtvs
+      summary: 退供单列表（只读投影；RTV 库存回冲不由采购域直接改库存表）
+      security: [{ bearerAuth: [procurement:rtv:read] }]
+      parameters: [{ $ref: '#/components/parameters/Cursor' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ops/items:
+    get:
+      tags: [ops]
+      operationId: queryItemSnapshots
+      summary: Item 域只读快照（含 UOM 换算因子与 as_of；staleness 超限 fail-closed）
+      security: [{ bearerAuth: [procurement:ops:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ops/inventory:
+    get:
+      tags: [ops]
+      operationId: queryInventorySnapshots
+      summary: Inventory 域可用量只读投影（不锁定库存；预留由 Inventory 域 API 完成）
+      security: [{ bearerAuth: [procurement:ops:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ops/warehouse-sites:
+    get:
+      tags: [ops]
+      operationId: queryWarehouseSites
+      summary: Warehouse 域地点只读投影（法人一致性校验见跨域契约 §6 WH-1）
+      security: [{ bearerAuth: [procurement:ops:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  # --- 01 卷 供应商主数据（v0.3 端点补齐，A10.9 守护）---
+  /procurement/suppliers/{id}:
+    parameters:
+      - name: 'id'
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [supplier-mdm]
+      operationId: getSupplierGoldenRecord
+      summary: 'Golden Record 三段视图，按字段 Owner 过滤（CENTRAL / COMPANY_CODE / PURCHASING_ORG）'
+      security: [{ bearerAuth: [procurement:supplier:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/change-requests/{crNo}/approve:
+    parameters:
+      - name: 'crNo'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [supplier-mdm]
+      operationId: approveChangeRequest
+      summary: '分段变更审批；非法状态迁移返回 invalid_transition'
+      security: [{ bearerAuth: [procurement:supplier:approve] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/vendors:
+    get:
+      tags: [supplier-mdm]
+      operationId: listVendors
+      summary: 'Vendor 列表（按 legal_entity_id / company_code 过滤；Supplier 与 Vendor 分离）'
+      security: [{ bearerAuth: [procurement:vendor:read] }]
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/suppliers/{id}/dedup-check:
+    parameters:
+      - name: 'id'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [supplier-mdm]
+      operationId: checkSupplierDuplicates
+      summary: '查重候选返回；不自动合并、不改写 Golden Record'
+      security: [{ bearerAuth: [procurement:supplier:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/suppliers/merge:
+    post:
+      tags: [supplier-mdm]
+      operationId: mergeSuppliers
+      summary: '人工确认合并（survivorship 规则 + 全量留痕）'
+      security: [{ bearerAuth: [procurement:supplier:admin] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/suppliers/{id}/exit:
+    parameters:
+      - name: 'id'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [supplier-mdm]
+      operationId: exitSupplier
+      summary: '供应商退出（先校验未关闭 Vendor 与未结清单据）'
+      security: [{ bearerAuth: [procurement:supplier:approve] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  # --- 02 卷 寻源与准入（v0.3 端点补齐，A10.9 守护）---
+  /procurement/sourcing-projects:
+    post:
+      tags: [sourcing]
+      operationId: createSourcingProject
+      summary: '建寻源项目'
+      security: [{ bearerAuth: [procurement:sourcing-project:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/rfx/{rfxNo}/publish:
+    parameters:
+      - name: 'rfxNo'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [sourcing]
+      operationId: publishRfx
+      summary: '发布 RFx（冻结关键字段；截止后不可改）'
+      security: [{ bearerAuth: [procurement:rfx:approve] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/rfx/{rfxNo}/bids:
+    parameters:
+      - name: 'rfxNo'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [sourcing]
+      operationId: submitBid
+      summary: '密封投标；幂等键 rfx_id + supplier_id + round，截止后 31201'
+      security: [{ bearerAuth: [portal:bid:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/rfx/{rfxNo}/open:
+    parameters:
+      - name: 'rfxNo'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [sourcing]
+      operationId: openBids
+      summary: '双人复核开标；开标前不得读取报价明文（31205）'
+      security: [{ bearerAuth: [procurement:rfx:approve] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/qualifications:
+    post:
+      tags: [sourcing]
+      operationId: submitQualification
+      summary: '证照提交（OCR 异步；过期证照 31204）'
+      security: [{ bearerAuth: [procurement:qualification:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/onboardings/{no}/approve:
+    parameters:
+      - name: 'no'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [sourcing]
+      operationId: approveOnboarding
+      summary: '准入审批（WF 推状态，人工最终决策）'
+      security: [{ bearerAuth: [procurement:onboarding:approve] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/qualifications/expiring:
+    get:
+      tags: [sourcing]
+      operationId: listExpiringQualifications
+      summary: '证照到期巡检（cursor 分页）'
+      security: [{ bearerAuth: [procurement:qualification:read] }]
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  # --- 03 卷 合同 / 风险 / 绩效 / AI（v0.3 端点补齐，A10.9 守护）---
+  /procurement/contracts/{no}/reviews/{reviewId}:
+    parameters:
+      - name: 'no'
+        in: path
+        required: true
+        schema: { type: string }
+      - name: 'reviewId'
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [contract]
+      operationId: getContractReview
+      summary: 'AI 审查结论（三态能力码 + 快照引用；不回传 output 原文，禁 PII）'
+      security: [{ bearerAuth: [procurement:contract:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/contracts/{no}/legal-approve:
+    parameters:
+      - name: 'no'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [contract]
+      operationId: legalApproveContract
+      summary: '人工法审通过（条款未法审 31301）'
+      security: [{ bearerAuth: [procurement:contract:approve] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/contracts/{no}/seal:
+    parameters:
+      - name: 'no'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [contract]
+      operationId: sealContract
+      summary: '用印审批（SINGLE / ALL / ANY 会签策略）'
+      security: [{ bearerAuth: [procurement:contract:approve] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/clauses:
+    get:
+      tags: [contract]
+      operationId: listClauses
+      summary: '条款库分页查询'
+      security: [{ bearerAuth: [procurement:clause:read] }]
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/risk-alerts:
+    post:
+      tags: [contract]
+      operationId: raiseRiskAlert
+      summary: '预警登记（supplier_id + source + source_ref 去重；AI 仅辅助）'
+      security: [{ bearerAuth: [procurement:risk-alert:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/capas:
+    post:
+      tags: [contract]
+      operationId: createCapa
+      summary: '建整改单（CAPA）'
+      security: [{ bearerAuth: [procurement:corrective-action:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/capas/{no}/verify:
+    parameters:
+      - name: 'no'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [contract]
+      operationId: verifyCapa
+      summary: '整改复核（人工最终确认）'
+      security: [{ bearerAuth: [procurement:corrective-action:approve] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/performance-scores:
+    get:
+      tags: [contract]
+      operationId: listPerformanceScores
+      summary: '供应商绩效只读投影'
+      security: [{ bearerAuth: [procurement:performance-score:read] }]
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  # --- 04 卷 请购 / PO / 成本（v0.3 端点补齐，A10.9 守护）---
+  /procurement/requisitions:
+    post:
+      tags: [transaction]
+      operationId: createRequisition
+      summary: '请购（预算占用）'
+      security: [{ bearerAuth: [procurement:requisition:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/requisitions/{no}/convert:
+    parameters:
+      - name: 'no'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [transaction]
+      operationId: convertRequisitionToPo
+      summary: '转 PO（仅一次；重复转换 409）'
+      security: [{ bearerAuth: [procurement:requisition:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/purchase-orders/{no}/submit:
+    parameters:
+      - name: 'no'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [transaction]
+      operationId: submitPurchaseOrder
+      summary: '提交审批'
+      security: [{ bearerAuth: [procurement:purchase-order:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/purchase-orders/{no}/send:
+    parameters:
+      - name: 'no'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [transaction]
+      operationId: sendPurchaseOrder
+      summary: '下达（冻结价格快照 price_snapshot_ref）'
+      security: [{ bearerAuth: [procurement:purchase-order:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/purchase-orders/{no}:
+    parameters:
+      - name: 'no'
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [transaction]
+      operationId: getPurchaseOrder
+      summary: 'PO 详情（含行与价格快照引用）'
+      security: [{ bearerAuth: [procurement:purchase-order:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/price-snapshots/{poNo}/{version}:
+    parameters:
+      - name: 'poNo'
+        in: path
+        required: true
+        schema: { type: string }
+      - name: 'version'
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [transaction]
+      operationId: getPriceSnapshot
+      summary: '价格快照（用于可复现的成本重算）'
+      security: [{ bearerAuth: [procurement:purchase-cost:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  # --- 05 卷 履约协同 / 门户（v0.3 端点补齐，A10.9 守护）---
+  /portal/purchase-orders/{no}/ack:
+    parameters:
+      - name: 'no'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [fulfillment]
+      operationId: acknowledgePurchaseOrder
+      summary: '行级 PO 确认（X12 855 类比；po_no + po_version CAS）'
+      security: [{ bearerAuth: [portal:po-ack:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /portal/ir-exceptions/{no}/supplement:
+    parameters:
+      - name: 'no'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [fulfillment]
+      operationId: supplementIrException
+      summary: '三单匹配例外补料 / 申诉（采购域不越权放行 IR）'
+      security: [{ bearerAuth: [portal:ir-exception:write] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /portal/performance-scores:
+    get:
+      tags: [fulfillment]
+      operationId: listPortalPerformanceScores
+      summary: '供应商自助绩效只读投影'
+      security: [{ bearerAuth: [portal:performance-score:read] }]
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /portal/payments:
+    get:
+      tags: [fulfillment]
+      operationId: listPortalPayments
+      summary: '付款通知只读投影（X12 820 类比；事实真源在 Finance）'
+      security: [{ bearerAuth: [portal:payment:read] }]
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  # --- 06 卷 编排 / 运维（v0.3 端点补齐，A10.9 守护）---
+  /procurement/ops/dead-letters:
+    get:
+      tags: [ops]
+      operationId: listDeadLetters
+      summary: 'DLQ 列表（cursor 分页；禁止深 offset）'
+      security: [{ bearerAuth: [procurement:ops:admin] }]
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ops/dead-letters/{id}/redeliver:
+    parameters:
+      - name: 'id'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [ops]
+      operationId: redeliverDeadLetter
+      summary: '人工确认后转投（须记录操作人与原因）'
+      security: [{ bearerAuth: [procurement:ops:admin] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /procurement/webhooks/{system}:
+    parameters:
+      - name: 'system'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [ops]
+      operationId: receiveExternalWebhook
+      summary: 'Finance / Inventory / OA / ERP 入站通用分发（HMAC + kid + timestamp + nonce；Inbox 幂等）'
+      security: [{ serviceCredential: [] }]
+      parameters: [{ name: X-Bone-Signature, in: header, required: true, schema: { type: string } }]
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: IAM 动作级细码 @PreAuthorize("hasAuthority('procurement:<resource>:<action>')")
+    serviceCredential:
+      type: apiKey
+      in: header
+      name: X-Bone-Signature
+      description: 服务间 scoped credential + HMAC（§20.1）
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: 创建 / 状态迁移类必填；24h 保留 + sha256(canonical_body) 指纹；同键不同指纹 409（§17.5）
+      schema: { type: string, minLength: 8, maxLength: 128 }
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: 服务端强制 max_page_size；超限钳制而非报错（§17.4）
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: opaque keyset cursor；大表 / 流水 / 审计 / DLQ 必用，禁止深 offset
+      schema: { type: string }
+  schemas:
+    ApiResponse:
+      type: object
+      required: [code, data, trace_id]
+      properties:
+        code: { type: string, example: OK }
+        data: {}
+        trace_id: { type: string }
+        message: { type: string }
+    PageResult:
+      type: object
+      required: [items, has_more]
+      properties:
+        items: { type: array, items: {} }
+        has_more: { type: boolean, description: 禁止 COUNT(*) 精确总数（§17.4） }
+        next_cursor: { type: string, nullable: true }
+    Money:
+      type: object
+      description: 金额与币种同行；amount 用字符串避免 JSON 浮点截断；小数位由 ISO 4217 minor unit 决定（§14 D-01–D-03）
+      required: [amount, currency]
+      properties:
+        amount: { type: string, pattern: '^-?[0-9]+(\.[0-9]+)?$', example: '4250.00' }
+        currency: { type: string, pattern: '^[A-Z]{3}$', example: CNY }
+        fx_rate: { type: string, nullable: true, description: 锁定汇率，全精度 }
+        fx_as_of: { type: string, format: date-time, nullable: true }
+        fx_source: { type: string, nullable: true }
+        rounding_mode: { type: string, enum: [HALF_UP, HALF_EVEN], nullable: true }
+    ProblemDetails:
+      type: object
+      description: RFC 9457 application/problem+json；与 ApiResponse<T> 兼容共存（§17.2）
+      required: [type, title, status, code, trace_id]
+      properties:
+        type: { type: string, format: uri, description: 稳定 URI，客户端只按 type / code 分支 }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string, description: 31xxx，见 x-error-catalog }
+        detail: { type: string, description: 面向调用方的修正建议；禁止 stack trace / SQL / 内网主机名 }
+        instance: { type: string }
+        trace_id: { type: string }
+        current_state: { type: string, nullable: true }
+        attempted: { type: string, nullable: true }
+        allowed: { type: array, items: { type: string }, nullable: true }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+  responses:
+    Ok:
+      description: 成功
+      content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } }
+    Created:
+      description: 已创建
+      content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } }
+    Accepted:
+      description: 已受理（异步），返回 202 + 状态资源
+      content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } }
+    Unauthorized:
+      description: 认证 / 验签失败
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+    Forbidden:
+      description: 越权（返回零数据）
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+    Conflict:
+      description: 版本冲突 / 非法迁移 / 幂等键指纹冲突 / 重复业务键
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+
+x-endpoint-adjudication:
+  description: |
+    六卷 §6 端点清单是本工件路径的权威来源；A10.9 按 (method, path) 级别校验全覆盖。
+  decisions:
+    - id: R8-a
+      subject: 日终三通道对账作业
+      resolution: 05 卷 §6 原 /procurement/reconciliation/run 与 06 卷 §6 /procurement/ops/reconciliation/run 指向同一作业、同一权限码，判为跨卷重复；统一收敛到 06 卷的 ops 端点，05 卷改为显式复用（不新增第二个端点）。
+      status: Proposal
+    - id: R8-b
+      subject: 入站 webhook
+      resolution: 字面量 /procurement/webhooks/finance 与模板 /procurement/webhooks/{system} 并存；路由以字面量优先，模板承接其余系统，两者共用 HMAC + Inbox 幂等语义，不视为重复端点。
+      status: Proposal
+  coverage:
+    lld-v06-rows: 55
+    unique-method-path-pairs: 54
+    cross-domain-readonly-projections: 3
+    additional-readonly-list-projections: 2
+    a10_9_external-whitelist-size: 5
+    openapi-paths: 56
+    openapi-operations: 59
+
+x-retry-policy:
+  description: 4xx（除 429）不重试；5xx 与 429 在同 Idempotency-Key 下退避重试；429 遵 Retry-After（§17.3）
+  retryable: ['429', '5xx']
+  non-retryable: ['400', '401', '403', '404', '409', '422']
+
+x-error-catalog:
+  description: 全族唯一错误码目录，与总纲附录 A 一一对应；A8 校验双向一致
+  codes:
+    - { code: '31001', segment: '31001-31004', desc: '匹配数据不完整', volume: '领域 §6.3', frozen: true }
+    - { code: '31002', desc: '供货关系冲突', volume: '领域 §6.3', frozen: true }
+    - { code: '31003', desc: 'Vendor 未开通', volume: '领域 §6.3', frozen: true }
+    - { code: '31004', desc: '跨法人隔离拒绝', volume: '领域 §6.3', frozen: true }
+    - { code: '31101', desc: '重复统一社会信用代码', volume: '01' }
+    - { code: '31102', desc: '字段 Owner 越权', volume: '01' }
+    - { code: '31103', desc: '退出前存在未关闭 Vendor', volume: '01' }
+    - { code: '31201', desc: 'RFx 已截止', volume: '02' }
+    - { code: '31202', desc: '准入资料不全', volume: '02' }
+    - { code: '31203', desc: 'AI 结论不得直接授标', volume: '02' }
+    - { code: '31204', desc: '证照已过期', volume: '02' }
+    - { code: '31205', desc: '开标前读取报价明文', volume: '02' }
+    - { code: '31301', desc: '条款未法审', volume: '03' }
+    - { code: '31302', desc: '审查快照缺失', volume: '03' }
+    - { code: '31303', desc: '终态合同回写', volume: '03' }
+    - { code: '31304', desc: 'AI 结论回写原文（PII）', volume: '03' }
+    - { code: '31305', desc: '未知能力码被压成未参与', volume: '03' }
+    - { code: '31401', desc: '价格有效期重叠', volume: '04' }
+    - { code: '31402', desc: 'PO 金额与行不一致', volume: '04' }
+    - { code: '31403', desc: '终态回写', volume: '04' }
+    - { code: '31404', desc: 'GR 累计超承诺量', volume: '04' }
+    - { code: '31405', desc: '价格快照缺失', volume: '04' }
+    - { code: '31501', desc: 'ASN 与 GR 不符', volume: '05' }
+    - { code: '31502', desc: '发票号重复', volume: '05' }
+    - { code: '31503', desc: 'PO 未确认', volume: '05' }
+    - { code: '31504', desc: '发票超未开票余额', volume: '05' }
+    - { code: '31505', desc: '采购域越权放行 IR', volume: '05' }
+    - { code: '31506', desc: '997 回执被当作业务接受', volume: '05' }
+    - { code: '31601', desc: 'Outbox 投递超限', volume: '06' }
+    - { code: '31602', desc: 'HMAC 验签失败', volume: '06' }
+    - { code: '31603', desc: '跨上下文写 bp_* 表', volume: '06' }
+    - { code: '31604', desc: '无补偿动作的步骤启动', volume: '06' }
+    - { code: '31605', desc: '未授权重放', volume: '06' }
+    - { code: '31701', desc: '金额类型/精度违规（float、minor unit 错）', volume: '总纲 §14' }
+    - { code: '31702', desc: '混合币种运算', volume: '总纲 §14' }
+    - { code: '31703', desc: '汇率缺失或重放重算', volume: '总纲 §14' }
+    - { code: '31704', desc: '事件/topic 未在注册表登记', volume: '总纲 §16' }
+    - { code: '31705', desc: '未知枚举被静默压成已知值', volume: '总纲 §16.5' }
+    - { code: '31706', desc: '重放触发不可逆副作用', volume: '总纲 §16.7' }
+    - { code: '31707', desc: '软删同码唯一键冲突', volume: '总纲 §18.3' }
+    - { code: '31708', desc: '幂等键指纹冲突', volume: '总纲 §17.5' }
+    - { code: '31709', desc: 'Saga 步骤未标注三分类', volume: '总纲 §15.1' }
+    - { code: '31710', desc: '分页超 max_page_size', volume: '总纲 §17.4' }

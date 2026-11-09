@@ -111,7 +111,7 @@
     <text x="421" y="620" text-anchor="middle" font-weight="600">中风险 → 采购专员</text>
     <text x="421" y="636" text-anchor="middle" font-size="10.5" fill="#92400e">法务抽查</text>
     <rect x="556" y="600" width="230" height="46" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
-    <text x="671" y="620" text-anchor="middle" font-weight="600">低风险 → 自动归档</text>
+    <text x="671" y="620" text-anchor="middle" font-weight="600">低风险 → 人工确认后归档</text>
     <text x="671" y="636" text-anchor="middle" font-size="10.5" fill="#64748b">可查 · 可追溯</text>
     <rect x="806" y="600" width="230" height="46" rx="8" fill="#ffffff" stroke="#a7f3d0"/>
     <text x="921" y="620" text-anchor="middle" font-weight="600">三态流转</text>

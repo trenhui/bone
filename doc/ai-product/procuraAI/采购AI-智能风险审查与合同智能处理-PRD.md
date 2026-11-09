@@ -250,7 +250,7 @@
 ### 4.6 风险分级与置信度模型
 
 - **置信度阈值**：法律条款类（排斥限制竞争、权责对等、违约金）阈值 0.85；错敏词/一致性类 0.7；低于阈值自动转人工复核。
-- **分派规则**：高风险条目 → 法务；中风险 → 采购专员+法务抽查；低风险 → 自动归档，人工可查。
+- **分派规则（2026-11-09 更正）**：高风险条目 → 法务；中风险 → 采购专员+法务抽查；低风险 → **人工确认后归档**。（原「低风险自动归档，人工可查」已随 ADR-06 **撤销**；AI 仅辅助 + 人工最终决策，见 `采购总体架构方案.md §5.1` 与 `文档资产登记与真源裁决.md §5`。）
 - **闭环指标**：采纳率、驳回率、改判率月度统计，回流规则库与 Prompt 调优（对齐 195 号文"以用户反馈驱动模型迭代优化"）。
 
 ### 4.7 关键架构决策（ADR）
@@ -262,7 +262,7 @@
 | ADR-03 | **以合同号为主键打通** OA/ERP/台账数据 | 各系统独立维护（无法关联履约与付款，履约预警无数据源） | 数据集成原则（§4.5） |
 | ADR-04 | **规则库版本化 + 灰度发布** | 规则一次性全量更新（新规则未经验证全量上线，误报风险不可控） | 发布策略（§9.1） |
 | ADR-05 | **LLM 不可用时降级为纯规则引擎** | 整体服务不可用（高风险审查链路不可中断） | 可用性 SLA ≥99.5%（§6） |
-| ADR-06 | **低置信度/低风险自动归档、人工可查** | 全部人工复核（违背提效目标，审查人力不减反增） | HITL 业界实践（§1.3） |
+| ADR-06 | **已撤销（2026-11-09）**：原「低置信度/低风险自动归档、人工可查」不得再作为产品行为 | 原否决「全部人工复核」的理由（提效目标）**不足以对抗合规红线** | 取代条款 = `采购总体架构方案.md §5.1` AI fail-closed、`采购AI-接口契约与数据字典-v2.md §3`；见 `文档资产登记与真源裁决.md §5` |
 
 ---
 
@@ -539,9 +539,9 @@
 |----|----------|
 | review（兼审查任务表，一任务一行） | review_id, tenant_id, doc_type(TENDER/CONTRACT/BID), status(QUEUED/PARSING/RULE_CHECK/LLM_REVIEW/MERGING/PENDING_REVIEW/REVISING/RE_REVIEWING/FINALIZED/COMPLETED/FAILED/rules_only 变体) + 报告态派生 report_status(RUNNING/CONFIRMING/ARCHIVED，映射见契约 §5), source_system, contract_no, project_no(三一致串联主键，FR-204), risk_count, rules_only, created_by/at |
 | risk_item | risk_id, review_id, rule_id, risk_type, risk_level(HIGH/MED/LOW), confidence, quote_original, section_ref, basis_regulation, suggestion, decision(PENDING/ACCEPTED/REJECTED/MODIFIED), reject_reason_type(NOT_A_RISK/OUT_OF_SCOPE/BASIS_INVALID/DUPLICATE/MISREAD/OTHER，报表三桶映射见契约 §5), decided_by/at |
-| review_snapshot | snapshot_id, review_id, doc_hash, ir_snapshot(json, <2MB 内联), snapshot_uri(大文档 IR/原文，对象存储加密), llm_version, rule_version, prompt_version, created_at | **审查可复现**：输入+引擎版本全留痕，支持结果回溯（多版本一致性抽查） |
+| review_snapshot | snapshot_id, review_id, doc_hash, ir_snapshot(json, <2MB 内联), snapshot_uri(大文档 IR/原文，对象存储加密), llm_version, rule_version, prompt_version, created_at；**审查可复现**：输入+引擎版本全留痕，支持结果回溯（多版本一致性抽查） |
 | revision_task（FR-205 修订任务） | revision_id, review_id, contract_no, status(PENDING_REVISION/REVISING/RE_REVIEWING/FINALIZED/ESCALATED), adopted_risk_ids(json), round(≤3), revised_doc_hash, created_by/at |
-| feedback | feedback_id, review_id, risk_id, action(ADOPT/REJECT/REVISE), reject_reason_type(六类+MISSED，见契约 §5), comment, user_id, created_at | 质量闭环数据源，回流评测集与规则回归 |
+| feedback | feedback_id, review_id, risk_id, action(ADOPT/REJECT/REVISE), reject_reason_type(六类+MISSED，见契约 §5), comment, user_id, created_at；质量闭环数据源，回流评测集与规则回归 |
 | contract_element | contract_no, supplier, amount, amount_consistent, payment_nodes(json), warranty_rate, term_end_date |
 | alert_task | alert_id, contract_no, node_type(PAYMENT/ACCEPTANCE/WARRANTY/DEADLINE/PERFORMANCE), due_date, status(UPCOMING/DUE/OVERDUE/CLEARED), cleared_by_erp, priority |
 | vendor_profile | vendor_id, credit_source, dimensions(json), risk_flags, data_date |

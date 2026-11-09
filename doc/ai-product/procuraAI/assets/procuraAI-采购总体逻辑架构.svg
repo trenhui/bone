@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 760" font-family="'PingFang SC','Microsoft YaHei',sans-serif">
+  <rect width="680" height="760" fill="#f7f9fc"/>
+  <text x="340" y="28" font-size="17" font-weight="700" fill="#1f2d3d" text-anchor="middle">采购总体逻辑架构（C4 Container View）· Procura v0.3</text>
+  <text x="340" y="48" font-size="10" fill="#6b7785" text-anchor="middle">一期：单应用多模块 / 单库（含 bone-app-purchase 适配层）；平台能力按三轨分派；仅跨部署单元用 Outbox · 事件 · 补偿</text>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- 采购域外框 -->
+  <rect x="30" y="60" width="620" height="404" rx="12" fill="#ffffff" stroke="#2f6fed" stroke-width="2"/>
+  <text x="48" y="80" font-size="12" font-weight="700" fill="#2f6fed">采购域（Procurement Domain）</text>
+
+  <!-- 渠道层 -->
+  <g>
+    <rect x="45" y="88" width="190" height="34" rx="6" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="140" y="109" font-size="10" fill="#0d47a1" text-anchor="middle">内部前端 @bone/ui</text>
+    <rect x="245" y="88" width="190" height="34" rx="6" fill="#fff8e1" stroke="#f9a825"/>
+    <text x="340" y="109" font-size="10" fill="#f57f17" text-anchor="middle">供应商门户（B2B 协同 §4.3）</text>
+    <rect x="445" y="88" width="190" height="34" rx="6" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="540" y="109" font-size="10" fill="#0d47a1" text-anchor="middle">OA · ERP 集成端</text>
+  </g>
+
+  <!-- 网关层 -->
+  <rect x="45" y="130" width="590" height="28" rx="6" fill="#e3f2fd" stroke="#2f6fed"/>
+  <text x="340" y="148" font-size="10" fill="#0d47a1" text-anchor="middle">API 网关（鉴权 · 路由 · 限流 · tenant 注入 · 法人/组织可见性裁剪 §9.1）</text>
+
+  <!-- 应用层 -->
+  <g font-size="9" fill="#0d47a1" text-anchor="middle">
+    <rect x="45" y="168" width="112" height="32" rx="5" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="101" y="188">SupplierMdmApp</text>
+    <rect x="165" y="168" width="112" height="32" rx="5" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="221" y="188">VendorApp</text>
+    <rect x="285" y="168" width="112" height="32" rx="5" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="341" y="188">SourcingApp</text>
+    <rect x="405" y="168" width="112" height="32" rx="5" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="461" y="188">QualificationApp</text>
+    <rect x="525" y="168" width="112" height="32" rx="5" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="581" y="188">ContractApp</text>
+
+    <rect x="45" y="206" width="112" height="32" rx="5" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="101" y="226">ProcurementApp</text>
+    <rect x="165" y="206" width="112" height="32" rx="5" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="221" y="226">FulfillmentApp</text>
+    <rect x="285" y="206" width="112" height="32" rx="5" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="341" y="226">RiskApp</text>
+    <rect x="405" y="206" width="112" height="32" rx="5" fill="#fff8e1" stroke="#f9a825"/>
+    <text x="461" y="226" fill="#f57f17">PortalApp</text>
+    <rect x="525" y="206" width="112" height="32" rx="5" fill="#e8f5e9" stroke="#43a047"/>
+    <text x="581" y="226" fill="#1b5e20">Orchestrator</text>
+  </g>
+
+  <!-- 领域层 -->
+  <rect x="45" y="248" width="590" height="46" rx="6" fill="#e8f5e9" stroke="#43a047"/>
+  <text x="340" y="266" font-size="10" font-weight="600" fill="#1b5e20" text-anchor="middle">领域层：Supplier / Vendor / VendorActivation / LegalEntity / PO / PurchaseCost / RTV</text>
+  <text x="340" y="283" font-size="9" fill="#1b5e20" text-anchor="middle">聚合 · 领域服务 · 领域事件（强一致仅限单聚合，CORE-06 / E-5.4）</text>
+
+  <!-- 基础设施层 -->
+  <g font-size="9" fill="#0d47a1" text-anchor="middle">
+    <rect x="45" y="304" width="140" height="58" rx="5" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="115" y="324">metadata-sdk</text>
+    <text x="115" y="340" font-size="8" fill="#1565c0">持久化（禁 ORM）</text>
+    <rect x="193" y="304" width="140" height="58" rx="5" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="263" y="324">workflow 适配器</text>
+    <text x="263" y="340" font-size="8" fill="#1565c0">v1 + v2 共建</text>
+    <rect x="341" y="304" width="140" height="58" rx="5" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="411" y="324">Outbox 中继</text>
+    <text x="411" y="340" font-size="8" fill="#1565c0">仅跨部署单元</text>
+    <rect x="489" y="304" width="146" height="58" rx="5" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="562" y="324">外部 ACL 适配器</text>
+    <text x="562" y="340" font-size="8" fill="#1565c0">ERP/Finance/库存</text>
+  </g>
+
+  <!-- 部署单元说明 -->
+  <rect x="45" y="372" width="590" height="76" rx="6" fill="#f5f7fa" stroke="#b0bec5" stroke-dasharray="5 3"/>
+  <text x="57" y="390" font-size="10" font-weight="700" fill="#455a64">一期部署单元（§8.1 / PA-08）</text>
+  <text x="57" y="407" font-size="9" fill="#455a64">bone-procurement-app：8 个 Maven 模块 + app 壳，单 Spring Boot 进程、单库 → 单元内本地事务 + AppService 编排</text>
+  <text x="57" y="423" font-size="9" fill="#455a64">procuraai-runtime / supplier-portal(BFF) / 平台底座 / 外部系统 = 独立单元 → 跨单元才用 Outbox · 事件 · Saga</text>
+  <text x="57" y="439" font-size="9" fill="#455a64">拆分触发条件与前置门禁见 §8.2（DDL + 事件 payload + 对账三通道冻结后才可拆）</text>
+
+  <!-- AI 运行时 -->
+  <rect x="30" y="478" width="300" height="100" rx="10" fill="#f3e5f5" stroke="#8e24aa"/>
+  <text x="45" y="498" font-size="11" font-weight="700" fill="#6a1b9a">AI 运行时（procuraAI 独立，§5.1）</text>
+  <text x="45" y="516" font-size="9" fill="#6a1b9a">LLM 网关 · RAG/向量库 · 规则引擎 QLExpress</text>
+  <text x="45" y="532" font-size="9" fill="#6a1b9a">评测集回归门禁 · prompt/model/ruleset 版本</text>
+  <text x="45" y="548" font-size="9" fill="#6a1b9a">成本配额 · 内容标识与留存 · PII 禁入</text>
+  <text x="45" y="566" font-size="9" fill="#6a1b9a">三层防御 + HITL；rules_only 降级</text>
+
+  <!-- 平台底座 -->
+  <rect x="345" y="478" width="305" height="100" rx="10" fill="#ede7f6" stroke="#7e57c2"/>
+  <text x="360" y="498" font-size="11" font-weight="700" fill="#4527a0">平台底座（复用 + 共建，§8.1）</text>
+  <text x="360" y="516" font-size="9" fill="#4527a0">复用：IAM/多租户/审计/通知/事件总线/</text>
+  <text x="360" y="532" font-size="9" fill="#4527a0">workflow-engine / TaskCenter / 元数据 Runtime</text>
+  <text x="360" y="550" font-size="9" fill="#4527a0">共建：v2 子流程·退回 / 待办接入契约 /</text>
+  <text x="360" y="566" font-size="9" fill="#4527a0">跨域审计 schema（采购域出需求与验收）</text>
+
+  <!-- 外部系统 -->
+  <rect x="30" y="592" width="620" height="86" rx="10" fill="#fff3e0" stroke="#e8a33d"/>
+  <text x="45" y="612" font-size="11" font-weight="700" fill="#a35b00">外部系统（经 ACL / Webhook / 15min 轮询降级）</text>
+  <text x="45" y="630" font-size="9" fill="#a35b00">ERP(SAP/U8/金蝶/Oracle) · Inventory · Warehouse · OA · 外部信用源</text>
+  <text x="45" y="648" font-size="9" font-weight="600" fill="#a35b00">Finance / AP：执行 2-way/3-way 匹配 + 容差 + 冻结放行 + IR 例外 + 付款</text>
+  <text x="45" y="666" font-size="9" fill="#a35b00">采购域不裁决付款许可（§3.1 / PA-04）</text>
+
+  <!-- 连线 -->
+  <g stroke="#90a4ae" stroke-width="1.4" fill="none">
+    <path d="M340 238 V246" marker-end="url(#arrow)"/>
+    <path d="M340 294 V302" marker-end="url(#arrow)"/>
+    <path d="M562 362 V374" stroke="#e8a33d" marker-end="url(#arrow)"/>
+    <path d="M180 464 V476" stroke="#8e24aa" marker-end="url(#arrow)"/>
+    <path d="M497 464 V476" stroke="#7e57c2" marker-end="url(#arrow)"/>
+    <path d="M340 578 V590" stroke="#e8a33d" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- 事件方向标注 -->
+  <g font-size="9">
+    <rect x="360" y="690" width="290" height="52" rx="6" fill="#ffffff" stroke="#b0bec5"/>
+    <text x="370" y="707" font-size="9" font-weight="700" fill="#37474f">跨域事件方向（§7.1）</text>
+    <text x="370" y="722" fill="#2e7d32">Finance → 采购：InvoiceMatched（2W/3W·容差·例外）</text>
+    <text x="370" y="736" fill="#1565c0">采购 → ERP：PaymentRequested；Finance → PaymentRecorded</text>
+  </g>
+  <g font-size="9" fill="#455a64">
+    <rect x="30" y="690" width="14" height="10" fill="#e3f2fd" stroke="#2f6fed"/><text x="50" y="699">接入/应用</text>
+    <rect x="115" y="690" width="14" height="10" fill="#e8f5e9" stroke="#43a047"/><text x="135" y="699">领域</text>
+    <rect x="175" y="690" width="14" height="10" fill="#fff8e1" stroke="#f9a825"/><text x="195" y="699">门户</text>
+    <rect x="235" y="690" width="14" height="10" fill="#f3e5f5" stroke="#8e24aa"/><text x="255" y="699">AI 运行时</text>
+    <rect x="30" y="710" width="14" height="10" fill="#ede7f6" stroke="#7e57c2"/><text x="50" y="719">平台底座</text>
+    <rect x="115" y="710" width="14" height="10" fill="#fff3e0" stroke="#e8a33d"/><text x="135" y="719">外部系统</text>
+    <text x="215" y="719">强一致仅限单聚合 · 跨系统最终一致 + 对账</text>
+  </g>
+</svg>

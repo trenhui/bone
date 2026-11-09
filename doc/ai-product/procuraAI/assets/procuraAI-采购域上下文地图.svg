@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 660" font-family="'PingFang SC','Microsoft YaHei',sans-serif">
+  <rect width="1000" height="660" fill="#f7f9fc"/>
+  <text x="500" y="30" font-size="19" font-weight="700" fill="#1f2d3d" text-anchor="middle">采购域上下文地图（Context Map）· Procura v0.3</text>
+  <text x="500" y="52" font-size="11" fill="#6b7785" text-anchor="middle">战略 DDD · 共享内核 / 上下游 / ACL 防腐层 · Supplier↔Vendor 角色分离 · 平台能力三轨（复用 / 共建 / 自建）</text>
+
+  <!-- 外部系统 -->
+  <g>
+    <rect x="30" y="86" width="120" height="66" rx="8" fill="#fff3e0" stroke="#e8a33d"/>
+    <text x="90" y="108" font-size="12" font-weight="600" fill="#a35b00" text-anchor="middle">Finance / AP</text>
+    <text x="90" y="124" font-size="9" fill="#a35b00" text-anchor="middle">发票校验·匹配</text>
+    <text x="90" y="139" font-size="9" fill="#a35b00" text-anchor="middle">付款（裁决方）</text>
+
+    <rect x="30" y="230" width="120" height="60" rx="8" fill="#fff3e0" stroke="#e8a33d"/>
+    <text x="90" y="256" font-size="12" font-weight="600" fill="#a35b00" text-anchor="middle">Inventory</text>
+    <text x="90" y="274" font-size="9" fill="#a35b00" text-anchor="middle">库存/收货 GR</text>
+
+    <rect x="30" y="380" width="120" height="60" rx="8" fill="#fff3e0" stroke="#e8a33d"/>
+    <text x="90" y="406" font-size="12" font-weight="600" fill="#a35b00" text-anchor="middle">Warehouse</text>
+    <text x="90" y="424" font-size="9" fill="#a35b00" text-anchor="middle">仓储/调拨</text>
+
+    <rect x="30" y="520" width="120" height="56" rx="8" fill="#e8f5e9" stroke="#43a047"/>
+    <text x="90" y="544" font-size="12" font-weight="600" fill="#1b5e20" text-anchor="middle">OA / ERP</text>
+    <text x="90" y="562" font-size="9" fill="#1b5e20" text-anchor="middle">存量系统(ACL)</text>
+  </g>
+
+  <!-- 采购域大框 -->
+  <rect x="180" y="86" width="640" height="440" rx="12" fill="#ffffff" stroke="#2f6fed" stroke-width="2"/>
+  <text x="500" y="108" font-size="13" font-weight="700" fill="#2f6fed" text-anchor="middle">采购域（Procurement Domain）</text>
+
+  <!-- 上下文框 -->
+  <g>
+    <rect x="205" y="122" width="140" height="70" rx="8" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="275" y="146" font-size="11" font-weight="600" fill="#0d47a1" text-anchor="middle">Supplier MDM</text>
+    <text x="275" y="163" font-size="9" fill="#0d47a1" text-anchor="middle">Supplier + Vendor 角色</text>
+    <text x="275" y="179" font-size="9" fill="#0d47a1" text-anchor="middle">Golden Record / LE</text>
+
+    <rect x="365" y="122" width="120" height="70" rx="8" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="425" y="146" font-size="11" font-weight="600" fill="#0d47a1" text-anchor="middle">Sourcing</text>
+    <text x="425" y="163" font-size="9" fill="#0d47a1" text-anchor="middle">寻源 RFx / 报价</text>
+    <text x="425" y="179" font-size="9" fill="#0d47a1" text-anchor="middle">品类·预算</text>
+
+    <rect x="495" y="122" width="130" height="70" rx="8" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="560" y="146" font-size="11" font-weight="600" fill="#0d47a1" text-anchor="middle">Qualification</text>
+    <text x="560" y="163" font-size="9" fill="#0d47a1" text-anchor="middle">资质·准入</text>
+    <text x="560" y="179" font-size="9" fill="#0d47a1" text-anchor="middle">背调·OCR</text>
+
+    <rect x="635" y="122" width="165" height="70" rx="8" fill="#e3f2fd" stroke="#2f6fed"/>
+    <text x="717" y="146" font-size="11" font-weight="600" fill="#0d47a1" text-anchor="middle">Contract (CLM)</text>
+    <text x="717" y="163" font-size="9" fill="#0d47a1" text-anchor="middle">合同·用印·价格条件</text>
+    <text x="717" y="179" font-size="9" fill="#0d47a1" text-anchor="middle">review_id / 快照</text>
+
+    <rect x="205" y="212" width="140" height="70" rx="8" fill="#e8f5e9" stroke="#43a047"/>
+    <text x="275" y="236" font-size="11" font-weight="600" fill="#1b5e20" text-anchor="middle">Procurement</text>
+    <text x="275" y="253" font-size="9" fill="#1b5e20" text-anchor="middle">PR/PO/成本/RTV</text>
+    <text x="275" y="269" font-size="9" fill="#1b5e20" text-anchor="middle">PPV / 价格链</text>
+
+    <rect x="365" y="212" width="120" height="70" rx="8" fill="#e8f5e9" stroke="#43a047"/>
+    <text x="425" y="236" font-size="11" font-weight="600" fill="#1b5e20" text-anchor="middle">Fulfillment</text>
+    <text x="425" y="253" font-size="9" fill="#1b5e20" text-anchor="middle">GR/ASN/开票</text>
+    <text x="425" y="269" font-size="9" fill="#1b5e20" text-anchor="middle">IR 例外/绩效</text>
+
+    <rect x="495" y="212" width="130" height="70" rx="8" fill="#fde7e9" stroke="#e53935"/>
+    <text x="560" y="236" font-size="11" font-weight="600" fill="#b71c1c" text-anchor="middle">Risk &amp; CAPA</text>
+    <text x="560" y="253" font-size="9" fill="#b71c1c" text-anchor="middle">风险·整改</text>
+    <text x="560" y="269" font-size="9" fill="#b71c1c" text-anchor="middle">退出清算</text>
+
+    <rect x="635" y="212" width="165" height="70" rx="8" fill="#fff8e1" stroke="#f9a825"/>
+    <text x="717" y="236" font-size="11" font-weight="600" fill="#f57f17" text-anchor="middle">Supplier Portal</text>
+    <text x="717" y="253" font-size="9" fill="#f57f17" text-anchor="middle">PO 确认 / ASN / 自助开票</text>
+    <text x="717" y="269" font-size="9" fill="#f57f17" text-anchor="middle">Separate Ways</text>
+  </g>
+
+  <!-- Vendor 闸门 -->
+  <rect x="205" y="296" width="595" height="38" rx="6" fill="#e8f5e9" stroke="#43a047" stroke-dasharray="5 3"/>
+  <text x="217" y="312" font-size="10" font-weight="700" fill="#1b5e20">VendorActivation 闸门（§4.3 / PA-07）</text>
+  <text x="217" y="327" font-size="9" fill="#1b5e20">准入 + 银行账号核验 + 税务 + 付款条件 + 重复发票检查 → ACTIVE_VENDOR 才可建 PO、开票、付款；字段按 General / Company Code(财务) / Purchasing Org(采购) 分 Owner</text>
+
+  <!-- procuraAI 嵌入 -->
+  <rect x="205" y="344" width="595" height="60" rx="8" fill="#f3e5f5" stroke="#8e24aa" stroke-dasharray="6 4"/>
+  <text x="217" y="362" font-size="10" font-weight="700" fill="#6a1b9a">procuraAI（独立 AI 运行时，嵌入生命周期与交易链路）</text>
+  <text x="217" y="379" font-size="9" fill="#6a1b9a">M1 招标检测 · M2 合同风险审查(R25 三一致) · M4 评标 · M5 问答 · M7 起草 · vendor_profile 信用画像 · clause_library · alert_task</text>
+  <text x="217" y="395" font-size="9" fill="#6a1b9a">评测集回归门禁 · prompt/model 版本 · 成本配额 · PII 禁入 · 内容标识留存 · rules_only 降级（总体 §5.1）</text>
+
+  <!-- Finance 裁决边界 -->
+  <rect x="205" y="414" width="595" height="94" rx="8" fill="#fff3e0" stroke="#e8a33d"/>
+  <text x="217" y="432" font-size="10" font-weight="700" fill="#a35b00">跨域裁决边界（§3.1 / PA-04）：采购域产出数据，Finance 裁决匹配与付款</text>
+  <text x="217" y="449" font-size="9" fill="#a35b00">采购域：PO / GR / Invoice 数据 + 付款请求 PaymentRequested；不裁决三单匹配与付款许可</text>
+  <text x="217" y="465" font-size="9" fill="#a35b00">Finance：2-way / 3-way 匹配 + 容差 + 冻结放行 + IR 例外 + GR/IR 清算 + 付款（MIRO / MRBR 模式）</text>
+  <text x="217" y="481" font-size="9" fill="#a35b00">事件：InvoiceMatched（含 match_type / tolerance_applied / exception_code）· PaymentRecorded 回传</text>
+  <text x="217" y="498" font-size="9" fill="#a35b00">一致性：跨系统按 E-5.4「状态机 + Outbox + 幂等 + 补偿 + 对账」，不设跨域强一致不变量</text>
+
+  <!-- 平台能力带 -->
+  <rect x="180" y="540" width="640" height="58" rx="8" fill="#ede7f6" stroke="#7e57c2"/>
+  <text x="500" y="560" font-size="11" font-weight="700" fill="#4527a0" text-anchor="middle">平台能力（复用 + 采购域共建，领域设计 §8.1）</text>
+  <text x="500" y="578" font-size="9" fill="#4527a0" text-anchor="middle">复用：WorkflowEngine · TaskCenter（待共建） · Notification · EventBus(Outbox) · IAM/多租户</text>
+  <text x="500" y="592" font-size="9" fill="#4527a0" text-anchor="middle">共建：v2 子流程/退回 · 待办接入契约 · 跨域审计 schema（采购域出需求与验收用例）</text>
+
+  <!-- 连线 -->
+  <g stroke="#90a4ae" stroke-width="1.4" fill="none">
+    <path d="M150 118 H180" marker-end="url(#arrow)"/>
+    <path d="M150 260 H180"/>
+    <path d="M150 410 H180"/>
+    <path d="M150 548 V516 H180"/>
+    <path d="M345 192 V282" stroke="#2f6fed" stroke-dasharray="4 3"/>
+    <path d="M560 282 V294" stroke="#2f6fed" stroke-dasharray="4 3"/>
+    <path d="M275 282 V294" stroke="#2f6fed" stroke-dasharray="4 3"/>
+  </g>
+  <text x="352" y="208" font-size="8" fill="#2f6fed">共享内核</text>
+  <text x="600" y="240" font-size="8" fill="#2f6fed">引用 supplier_id / vendor_id</text>
+
+  <!-- 图例 -->
+  <g font-size="9" fill="#455a64">
+    <rect x="205" y="614" width="14" height="10" fill="#e3f2fd" stroke="#2f6fed"/><text x="225" y="623">主数据/上游</text>
+    <rect x="310" y="614" width="14" height="10" fill="#e8f5e9" stroke="#43a047"/><text x="330" y="623">交易</text>
+    <rect x="375" y="614" width="14" height="10" fill="#fde7e9" stroke="#e53935"/><text x="395" y="623">风险</text>
+    <rect x="440" y="614" width="14" height="10" fill="#fff8e1" stroke="#f9a825"/><text x="460" y="623">门户</text>
+    <rect x="505" y="614" width="14" height="10" fill="#f3e5f5" stroke="#8e24aa"/><text x="525" y="623">AI 子能力</text>
+    <rect x="600" y="614" width="14" height="10" fill="#fff3e0" stroke="#e8a33d"/><text x="620" y="623">外部/裁决</text>
+    <rect x="690" y="614" width="14" height="10" fill="#ede7f6" stroke="#7e57c2"/><text x="710" y="623">平台能力</text>
+    <text x="205" y="641">真源：领域语义=领域设计 / 技术架构=总体方案 / 平台约束=Bone-DDD·事件规范·workflow README（总体 §15.1）</text>
+  </g>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round"/>
+    </marker>
+  </defs>
+</svg>
