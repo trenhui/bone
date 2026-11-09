@@ -1,0 +1,415 @@
+# comet-execution: managed-run
+change_id: 82bac34b-f9dd-4e96-99d2-471c7014a4d5
+workflow: full
+language: zh-CN
+phase: design
+context_compression: off
+build_mode: null
+build_pause: null
+subagent_dispatch: null
+tdd_mode: null
+review_mode: off
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: e3c940b9ae0c2ab654c9c2d48e5300a351602e5f
+design_doc: null
+plan: null
+verify_result: pending
+verify_failures: 0
+verification_report: null
+branch_status: pending
+created_at: 2026-11-09
+verified_at: null
+archive_confirmation: null
+archived: false
+bound_branch: dev
+direct_override: null
+handoff_context: null
+handoff_hash: null
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v1
+  hash: 8220ed004724fc4bd2a26ef8ff0a5ed6ff8ef7eb29c5cbcb66763c632f522619
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: synapclaim-liability-rule-json-dual-read
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: e3e9983240cedf754d4b557c4e6fe4d60b5e44fa23f0c32e2be19cd2db12c841
+    input:
+      change: synapclaim-liability-rule-json-dual-read
+      changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+      workspaceBaseline:
+        ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+    state:
+      archiveConfirmation: null
+      archived: false
+      autoTransition: true
+      baseRef: e3c940b9ae0c2ab654c9c2d48e5300a351602e5f
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: null
+      buildPause: null
+      checkEpoch: 1
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-09
+      designDoc: null
+      directOverride: null
+      handoffContext: null
+      handoffHash: null
+      isolation: current
+      language: zh-CN
+      phase: design
+      plan: null
+      reviewMode: off
+      subagentDispatch: null
+      tddMode: null
+      verificationReport: null
+      verifiedAt: null
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pending
+      workflow: full
+    status: running
+    sequence: 5
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-e740b52719fe92c9ac9352aec89c6f304845ee5162200159062cad99121f175e
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:1
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: 3f96d10cd3a610a88dc57926d7cb3e8b83ec5b3b6893bc7a9a8ce8c19792da66
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:1
+          attempt: 1
+          claimToken: portable-e740b52719fe92c9ac9352aec89c6f304845ee5162200159062cad99121f175e
+          inputHash: 3f96d10cd3a610a88dc57926d7cb3e8b83ec5b3b6893bc7a9a8ce8c19792da66
+          outcomeId: f903754a-a4bf-49d4-a667-a485e1776924
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 097b5d302a9b138f6bed29dbf2799aaadcedd80a7b5ef721fb0810091d808635
+            outcomeId: f903754a-a4bf-49d4-a667-a485e1776924
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-2d28b62ff1ca7b7a66a664e654923952bc2ffaeef3ea5640c5129027fc6665db
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:4
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-liability-rule-json-dual-read
+                  changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+                  workspaceBaseline:
+                    ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+                    ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+            full.open.evidence:
+              contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+              ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+        inputHash: f355744746f120c25eeccba9ea0964a5e4a0552d6717e658a6cf735c006e2348
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:4
+          attempt: 2
+          claimToken: portable-2d28b62ff1ca7b7a66a664e654923952bc2ffaeef3ea5640c5129027fc6665db
+          inputHash: f355744746f120c25eeccba9ea0964a5e4a0552d6717e658a6cf735c006e2348
+          outcomeId: synapclaim-liability-rule-json-dual-read:4:2:executor-result
+          output:
+            contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 97a3cb618c5272db20795774f09e09e7c0ae4acdcd0354803216237318693393
+            outcomeId: synapclaim-liability-rule-json-dual-read:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核对来源：① comet guard <change> open --apply --approval-hash 9489b7a3...
+                --json 返回
+                checks={passed:0,total:1,blocked:true}、issues=CLASSIC_COMMAND_FAILED『Classic
+                SDK has a running Action』，重校验检查未实际执行；② comet state check
+                <change> open --recover --details --json 报
+                record.status=missing、command=null、evidence.receiptRef=null、manifestRef=null；③
+                项目内
+                .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/
+                无任何文件（find 无输出）；④ pgrep -fl comet 仅 3 个常驻 daemon-server（socket
+                服务），无执行 revalidate 的 executor 子进程，原同步命令已返回；⑤ comet runtime
+                dispatch inspect 显示 full.open=succeeded(event
+                open-complete)、full.open.evidence
+                contentHash=9489b7a3...、full.open.confirm choice=approved，四项
+                OpenSpec 产物与用户批准均完整。结论：被 claim 的 full.open.revalidate
+                原尝试完全未执行，业务工作与批准均已入库，仅缺一次重校验。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-e38e1108a3952f2c34bcfb87e6e97816898e706f27b9f93c7f5015bdcddec595
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:5
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-liability-rule-json-dual-read
+                  changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+                  workspaceBaseline:
+                    ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+                    ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+            full.open.evidence:
+              contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+              ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+            full.open.revalidate:
+              contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+        inputHash: c02e0ce2de7bbf08d13d84080cd91dd4a48f4f9c9f5c5687b0379533ee34f48f
+        protocolVersion: 1
+        reason: Portable recovery requires reconciliation of external execution
+        receipts: []
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核对来源：① 首次 comet state propose-design 返回
+                exitCode=70、issues=CLASSIC_COMMAND_FAILED『Timed out waiting for
+                file lock .../sdk-runs/classic/.../.write.lock』；锁文件内容
+                pid=12594，ps -p 12594 无输出（进程已死），僵死锁已备份后移出；② 紧随的 comet state next
+                --json 显示 phase=design、revision=11、waits=[]，说明未生成 Design Wait、无
+                proposalHash；③ comet state check ... design --recover --details
+                --json 报 record={ref:null,status:missing,problem:null}，无
+                receiptRef/manifestRef；④ 原执行器为该同步 CLI 命令且已返回，pgrep 仅见常驻
+                daemon-server，无执行 handoff 的 executor 子进程。结论：被 claim 的
+                full.design.handoff 原尝试完全未执行，未产生任何设计提案或批准记录，可安全重放
+                propose-design。
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: unknown
+        stepId: full.design.handoff
+        type: invoke_skill
+    actionContexts:
+      synapclaim-liability-rule-json-dual-read:1:
+        results: {}
+        sequence: 1
+      synapclaim-liability-rule-json-dual-read:4:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-liability-rule-json-dual-read
+                  changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+                  workspaceBaseline:
+                    ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+                    ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+              ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+        sequence: 4
+      synapclaim-liability-rule-json-dual-read:5:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-liability-rule-json-dual-read
+                  changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+                  workspaceBaseline:
+                    ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+                    ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+              ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+        sequence: 5
+    waits:
+      - id: synapclaim-liability-rule-json-dual-read:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+              ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+        proposalHash: 81a475bfd1f9e1f27d29f19e390e1c027d69fac31d756cf0b30b06f6eabb2b97
+        choices:
+          - approved
+          - rejected
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+              ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+        decision:
+          id: classic-open-9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+          choice: approved
+          proposalHash: 81a475bfd1f9e1f27d29f19e390e1c027d69fac31d756cf0b30b06f6eabb2b97
+    evidenceWaits:
+      - id: synapclaim-liability-rule-json-dual-read:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+        receipt:
+          ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+          contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+          submissionId: 25c2d2fe-f03e-4039-8957-da30b37b32d6
+    ready: []
+    joins: {}
+    outputs:
+      full.open:
+        sequence: 1
+        value:
+          event: open-complete
+      full.open.confirm:
+        sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-liability-rule-json-dual-read
+              changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+              workspaceBaseline:
+                ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+                ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+      full.open.evidence:
+        sequence: 2
+        value:
+          contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+          ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+      full.open.revalidate:
+        sequence: 4
+        value:
+          contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+    children: []
+    lineage: []
+  sourceRevision: 14
+  sourceHash: cf9b4e051b19a7c221de77b6165f22730c40251b446ee25d1b07907cdab147ea
+check_epoch: 1
