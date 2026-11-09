@@ -405,6 +405,42 @@ def check_arch_baseline():
 
 
 
+def ledger_verdict(text):
+    """§13 开放项台账的结构判据（只判机械可判的部分）。
+
+    台账纪律写着「每条须回答状态 / owner / 触发条件 / 升级规则」「没有触发条件的项
+    不得进里程碑」，但此前纯靠人守：加一条没有触发条件的开放项，门禁不会响。
+    owner 与升级规则目前记在「动作」列的自由文本里，无法机械判定，故只判两条：
+      ① ID 唯一且自 O-01 起连续（防复制粘贴时撞号/漏号）
+      ② 非终态行必须含「触发」；终态（已闭环 / 已拍板）豁免——它们不再需要触发条件
+    """
+    ids, probs = [], []
+    for m in re.finditer(r'^\|\s*\*\*(O-\d+)\*\*\s*\|.*$', text, re.M):
+        row = m.group(0)
+        ids.append(m.group(1))
+        if any(t in row for t in ('已闭环', '已拍板')):
+            continue
+        if '触发' not in row:
+            probs.append('%s 仍开放，但整行没有「触发」条件——台账纪律要求可机检的触发事件，'
+                         '否则它只能以"顺手做"的名义随机插入' % m.group(1))
+    if not ids:
+        return ['§13 台账未解析出任何 O-xx 行——台账被删或 ID 格式已改（不得按空集合恒过）']
+    dup = sorted({i for i in ids if ids.count(i) > 1})
+    if dup:
+        probs.append('台账 ID 重复：%s' % dup)
+    nums = sorted({int(i.split('-')[1]) for i in ids})
+    gap = [n for n in range(1, nums[-1] + 1) if n not in nums]
+    if gap:
+        probs.append('台账 ID 不连续，缺 %s（闭环项保留原行不删，故不应出现空号）'
+                     % ['O-%02d' % n for n in gap])
+    return probs
+
+
+def check_ledger():
+    """§13 开放项台账：纪律里那句「没有触发条件不得进里程碑」必须可机检。"""
+    return ['【FAIL·开放项台账】' + p for p in ledger_verdict(read('arch'))]
+
+
 def oracle_ci_verdict(wf_text, ptr_text, has_pom):
     """纯函数：CI working-directory ↔ 真实目录 ↔ 指针文档三者一致性判定。
 
@@ -504,6 +540,25 @@ def self_test():
         if not ok:
             bad.append('架构基线判据：' + label)
 
+    # 开放项台账结构判据：纯函数探针，不读写文件。
+    ledger_good = (
+        '| **O-01** | ~~x~~ **已闭环（2026-11-09）** | y | 无需触发 |\n'
+        '| **O-02** | 开放项 | y | **触发**：M4 首个发版 |\n'
+        '| **O-03** | 开放项 | y | **触发**：与 O-06 同批 |\n')
+    ledger_probes = [
+        ('台账自洽不误报（终态行免触发）', ledger_verdict(ledger_good) == []),
+        ('开放行缺触发条件', any('没有「触发」' in p for p in ledger_verdict(
+            ledger_good.replace('**触发**：与 O-06 同批', '适当时机再做')))),
+        ('ID 重复', any('ID 重复' in p for p in ledger_verdict(
+            ledger_good.replace('**O-03**', '**O-02**')))),
+        ('ID 缺号', any('不连续' in p for p in ledger_verdict(
+            ledger_good.replace('**O-03**', '**O-04**')))),
+        ('台账整段缺失不得恒过', bool(ledger_verdict('没有台账'))),
+    ]
+    for label, ok in ledger_probes:
+        if not ok:
+            bad.append('开放项台账判据：' + label)
+
     print('=== _check_numbers.py --self-test ===')
     if bad:
         for b in bad:
@@ -513,6 +568,7 @@ def self_test():
     print('  ✅ 3 个反例不误报（集合引用 / 机检输出 / 对账式表述）')
     print('  ✅ oracle CI 判据 5 个纯函数探针（不碰文件）：合规正例 + 4 种改坏均判红')
     print('  ✅ 架构基线判据 8 个纯函数探针（不碰文件）：自洽不误报 + 7 种改坏均判红')
+    print('  ✅ 开放项台账判据 5 个纯函数探针（不碰文件）：终态免触发 + 缺触发/重号/缺号/整段缺失均判红')
     return 0
 
 
@@ -524,6 +580,7 @@ def main():
     fails += check_no_hardcoded_ddl_count()
     fails += check_oracle_ci_wiring()
     fails += check_arch_baseline()
+    fails += check_ledger()
     for desc, key, pat in FORBIDDEN:
         m = re.search(pat, read(key))
         if m:
@@ -538,7 +595,8 @@ def main():
         print('共 %d 项失败' % len(fails))
         return 1
     print('=== 数值/口径回归机检 ===')
-    print('【OK】%d 项禁用表述零命中，%d 项关键口径均在位' % (len(FORBIDDEN), len(REQUIRED)))
+    print('【OK】%d 项禁用表述零命中，%d 项关键口径均在位，§13 台账结构（触发条件 / ID 连续）通过'
+          % (len(FORBIDDEN), len(REQUIRED)))
     return 0
 
 

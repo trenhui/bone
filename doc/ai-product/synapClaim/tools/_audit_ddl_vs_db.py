@@ -13,6 +13,8 @@ fail-closed：DB 不可达时明确报错退出（exit 2），绝不静默输出
 ratchet：实跑按「含业务列差异的表集合」对存量基线做只减不增判定，
         新增差异表 exit 1（提示漏登记 §9.0（5）），补齐的基线项提示删除。
         用集合而非计数，防止「A 补齐、B 新增、总数不变」的静默漂移。
+对账：  实算的 5/7/14 必须与 §9.0（4）汇总表声明的一致，不一致 exit 1。
+        此前只打印不回读，文档被手改成 6/7/13 也没人发现（2026-11-09 补）。
 
 用法：
     BONE_DB_PASSWORD=xxx python3 tools/_audit_ddl_vs_db.py
@@ -94,6 +96,44 @@ def classify(doc_cols, db_cols):
     """返回 (差集, 是否仅审计列差异)。"""
     diff = (doc_cols - db_cols) | (db_cols - doc_cols)
     return diff, bool(diff) and diff <= AUDIT_COLS
+
+
+# §9.0（4）汇总表的三行标签。判据取**语义标签**而非行序：
+# 汇总表将来插入新行（如「活库无同名表」）时，按行序取值会静默错位。
+SUMMARY_LABELS = ("列完全一致", "仅审计列差异", "含业务列差异")
+
+
+def _section(lines, head):
+    """截取以 head 开头的小节，到下一个 ### / ## 为止。"""
+    a = next(i for i, l in enumerate(lines) if l.startswith(head))
+    b = next((i for i in range(a + 1, len(lines))
+              if lines[i].startswith("### ") or lines[i].startswith("## ")), len(lines))
+    return a, b
+
+
+def declared_counts(text):
+    """从 §9.0（4）汇总表取 {标签: 张数}；缺任一类返回 None（不按缺失放行）。
+
+    2026-11-09 补：本脚本此前只**打印**实算的 5/7/14，从不回读文档——
+    等于体检报告和文档各说一套，谁都没错。文档数字一旦手改成 6/7/13，
+    报告仍会打印"含业务列差异 14 张"，没人发现两处已经不一致。
+    """
+    lines = text.splitlines()
+    a, b = _section(lines, "### 9.0")
+    got = {}
+    for line in lines[a:b]:
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 2:
+            continue
+        label = cells[0].strip("* ")
+        if label not in SUMMARY_LABELS:
+            continue
+        m = re.fullmatch(r"\**(\d+)\**", cells[1].replace(" ", ""))
+        if m:
+            got[label] = int(m.group(1))
+    return got if len(got) == len(SUMMARY_LABELS) else None
 
 
 def mysql_bin():
@@ -179,13 +219,29 @@ CREATE TABLE bar (
     _, stale3 = ratchet(base[:-1])
     assert stale3 == [base[-1]]
 
+    # §9.0（4）汇总表解析：标签取值、缺项 fail-closed、与行序无关
+    fixture = """### 9.0 物理落地对齐
+| 结论 | 张数 | 说明 |
+|---|---:|---|
+| 活库无同名表 | **2** | 新增行插在中间 |
+| 列完全一致 | **5** | x |
+| 仅审计列差异 | **7** | x |
+| **含业务列差异** | **14** | x |
+### 9.1 表清单
+"""
+    assert declared_counts(fixture) == {"列完全一致": 5, "仅审计列差异": 7,
+                                       "含业务列差异": 14}, declared_counts(fixture)
+    # 少一类 → None（不按缺失当 0），否则"文档删掉一行"会静默通过
+    assert declared_counts(fixture.replace("| **含业务列差异** | **14** | x |\n", "")) is None
+
     print("=== _audit_ddl_vs_db.py --self-test ===")
     print("  ✅ §9.5 块解析（多表 / 围栏收尾 / 到 §10 截止）")
     print("  ✅ 审计列差异单独归类，业务列差异不误判为约定")
     print("  ✅ 物理名归一化（t_ 前缀不统一）")
     print("  ✅ ratchet 基线自洽 / 新增差异判红 / 补齐转 stale")
     print("  ✅ 数量不变但换表仍被抓（集合判据优于计数）")
-    print("  5 通过 / 0 失败")
+    print("  ✅ §9.0（4）汇总按标签取值 / 插行不错位 / 缺项 fail-closed")
+    print("  7 通过 / 0 失败")
     return 0
 
 
@@ -199,7 +255,8 @@ def main():
         print("【FAIL】" + str(e))
         return 2
 
-    doc = parse_ddl(io.open(DDL_DOC, encoding="utf-8").read())
+    text = io.open(DDL_DOC, encoding="utf-8").read()
+    doc = parse_ddl(text)
     same, audit_only, business, missing = [], [], [], []
     for name, cols in sorted(doc.items()):
         hit = next((c for c in normalize(name) if c in db), None)
@@ -232,14 +289,35 @@ def main():
     if stale:
         print("【STALE】基线内已补齐，可从 _audit_ddl_vs_db.py 的 BASELINE_BUSINESS_DIFF 删除：%s"
               % ", ".join(stale))
-    if not new and not stale:
-        print("【OK】业务列差异表集合与存量基线一致（ratchet 未增长）。")
+
+    # 文档声明 vs 实算：同一事实的三份拷贝（§9.0（4）汇总 / 本次实算 / ratchet 基线）
+    # 必须互相相等，否则体检报告的绿只是"脚本和历史基线一致"，不代表文档在说同一件事。
+    mismatch = []
+    declared = declared_counts(text)
+    if declared is None:
+        mismatch.append("未能从 §9.0（4）汇总表解析出三类张数（格式已改？不得按缺失放行）")
+    else:
+        actual = {"列完全一致": len(same), "仅审计列差异": len(audit_only),
+                  "含业务列差异": len(business)}
+        for k in SUMMARY_LABELS:
+            if declared[k] != actual[k]:
+                mismatch.append("「%s」文档写 %d 张，本次实算 %d 张" % (k, declared[k], actual[k]))
+    if mismatch:
+        print()
+        print("【FAIL】§9.0（4）汇总数字与本次实算不一致：")
+        for m in mismatch:
+            print("        " + m)
+        print("        同步改文档数字与 §9.0（5）台账；否则报告与文档各说一套，两边都\"没错\"。")
+
+    if not new and not stale and not mismatch:
+        print("【OK】业务列差异表集合与存量基线一致（ratchet 未增长）；"
+              "§9.0（4）汇总数字与实算一致。")
 
     print()
     print("【结论】§9.5 是设计态 DDL，不是活库现状；物理真源见 V*.sql / bone-init.sql。")
     print("         本脚本不进 CI 门禁；_check_ddl.py 的绿只代表文档内部自洽。")
     print("         业务维度↔目标列↔活库的三方对照见《总体技术方案》§5.2.1。")
-    return 1 if new else 0
+    return 1 if (new or mismatch) else 0
 
 
 if __name__ == "__main__":

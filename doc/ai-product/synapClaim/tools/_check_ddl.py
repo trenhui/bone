@@ -18,6 +18,18 @@ MySQL/TiDB 直接 Duplicate column name），且同批索引引用并不存在�
      （原为硬编码 `len(tables) == 36`：删/增一张表都要手改数字，且无法识别
        「删了 A 又补了 B、总数仍 36」这类实质漂移。现改为集合判据，
        唯一真源是 §9.1 清单与 §9.0 差异登记表，脚本不再持有表数。）
+  D8 §9.0（4）汇总的「5 一致 / 7 仅审计列 / 14 业务列差异」与 §9.5 建表块数自洽，
+     且 §9.0（5）台账行数、表名集合与 _audit_ddl_vs_db.BASELINE_BUSINESS_DIFF 相等
+  D9 §9.5 标题与正文声明「设计态 / 非执行真源」并指向体检脚本；§9.0 保留
+     「为什么不做成硬门禁」的理由
+
+关于 D8/D9（2026-11-09 补）：
+  这两条补的是 D7 管不到的一类漂移。D7 只管「有哪些表」，不管「每张表差几列」；
+  而 §9.0（4）的 14/23/28 是 _audit_ddl_vs_db.py 跑出来的**结论**，脚本只打印、
+  从不回读文档——文档数字被手改成 6/7/13，报告仍打印"含业务列差异 14 张"，
+  两边都"没错"。更要紧的是（5）台账的 14 张表与脚本 ratchet 基线 BASELINE_BUSINESS_DIFF
+  是**同一事实的两份拷贝**（这正是本仓反复出过的事故形态），此前全靠人工同步。
+  D8 只做不连库也能算的那部分；真连库求差仍是 report-only（CI 无 DB，见 §9.0（4））。
 
 关于 D6 的名单来源（2026-10-30 修正）：
   原先本脚本硬编码一份 APPEND_ONLY 副本，注释却写着「本文 §9.2 矩阵登记的名单」——
@@ -29,9 +41,17 @@ MySQL/TiDB 直接 Duplicate column name），且同批索引引用并不存在�
   而不是维护一份表名清单——这才是矩阵真正表达的语义。
   矩阵若解析不出任何表，直接判失败（宁可红着让人看，也不要空集合恒过）。
 """
-import io, re, sys
+import io, os, re, sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import _manifest as M
+
+try:  # D8 要拿 ratchet 基线做集合对账；import 失败即判红，不静默跳过
+    from _audit_ddl_vs_db import BASELINE_BUSINESS_DIFF as BASELINE, declared_counts
+    _IMPORT_ERR = None
+except Exception as e:  # noqa: BLE001
+    BASELINE, declared_counts, _IMPORT_ERR = None, None, e
 
 # 路径取自 docs.manifest.json（doc id），不在此硬编码文件名。
 DOC = M.path('contract.landing')
@@ -141,8 +161,91 @@ def d7_errors(lines, ddl_names):
     return errs
 
 
+def ledger_tables(lines):
+    """§9.0（5）整改台账第一列的表名，归一化为逻辑名（去 `t_` 前缀）。
+
+    归一只去 `t_`，不能去 `t_adj_`：台账写 `t_adj_liability`、正文与脚本写
+    `adj_liability`，把 `t_adj_` 一起吃掉会得到 `liability`，与基线对不上（已踩）。
+    """
+    try:
+        a = next(i for i, l in enumerate(lines) if l.startswith('#### （5）'))
+    except StopIteration:
+        return set()
+    b = next((i for i in range(a + 1, len(lines))
+              if lines[i].startswith('#### ') or lines[i].startswith('### ')), len(lines))
+    names = set()
+    for l in lines[a:b]:
+        if not l.startswith('|'):
+            continue
+        cells = [c.strip() for c in l.strip().strip('|').split('|')]
+        if len(cells) < 6:  # 台账 6 列：表 | 活库多列 | §9.5 多列 | 定性 | 处置 | 优先级
+            continue
+        m = re.fullmatch(r'`([a-z_0-9]+)`', cells[0])
+        if m:
+            names.add(re.sub(r'^t_', '', m.group(1)))
+    return names
+
+
+def d8_errors(lines, ddl_names, baseline=None):
+    """§9.0 对账结论的自洽性（不连库）。baseline 可注入，便于自证反例。"""
+    errs = []
+    base = BASELINE if baseline is None else baseline
+    if declared_counts is None:
+        return ['D8 无法 import _audit_ddl_vs_db（%s）——汇总表解析与 ratchet 基线都拿不到，'
+                '不得按"跳过"放行' % _IMPORT_ERR]
+    # 必须用传入的 lines 重算，不能回读 DOC：回读会让自证里改过的变异体失效
+    #（2026-11-09 初版即如此，变异⑥ 因此假绿——探针抓的是判据没跑，不是判据松）
+    declared = declared_counts('\n'.join(lines))
+    if declared is None:
+        return ['D8 未能从 §9.0（4）汇总表解析出「列完全一致 / 仅审计列差异 / 含业务列差异」三行——'
+                '格式已改，先修解析再看结论（缺项不得当 0）']
+    total = sum(declared.values())
+    if total != len(ddl_names):
+        errs.append('D8 §9.0（4）三类相加 = %d（%s），§9.5 实有 %d 个 CREATE TABLE——'
+                    '§9.5 增删表后未同步汇总表'
+                    % (total, ' + '.join('%s%d' % (k, declared[k]) for k in sorted(declared)),
+                       len(ddl_names)))
+    ledger = ledger_tables(lines)
+    if not ledger:
+        errs.append('D8 未能从 §9.0（5）整改台账解析出任何表名——台账被删或格式已改')
+        return errs
+    if len(ledger) != declared['含业务列差异']:
+        errs.append('D8 §9.0（5）台账 %d 行，但（4）声明「含业务列差异」%d 张——'
+                    '台账增删行后未同步汇总' % (len(ledger), declared['含业务列差异']))
+    if base is None:
+        errs.append('D8 取不到 _audit_ddl_vs_db.BASELINE_BUSINESS_DIFF（import 失败）')
+        return errs
+    if ledger - base:
+        errs.append('D8 §9.0（5）台账有、ratchet 基线无：%s——'
+                    '漏进基线则该表将来漂移不会被判红' % sorted(ledger - base))
+    if base - ledger:
+        errs.append('D8 ratchet 基线有、§9.0（5）台账无：%s——台账漏登记' % sorted(base - ledger))
+    return errs
+
+
+def d9_errors(lines):
+    """§9.5 的时态声明不得被删回「可执行 DDL」的读法。"""
+    errs = []
+    a, b = section(lines, '### 9.5')
+    head = lines[a]
+    if '设计态' not in head and '非执行真源' not in head:
+        errs.append('D9 §9.5 标题未声明时态：%r——标题是目录与大纲里唯一的入口，'
+                    '「核心表 DDL」会被读成可执行脚本' % head)
+    body = '\n'.join(lines[a:b])
+    if '设计态' not in body:
+        errs.append('D9 §9.5 正文缺「设计态」时态声明（横幅被删？）')
+    if '_audit_ddl_vs_db.py' not in body:
+        errs.append('D9 §9.5 未指向 tools/_audit_ddl_vs_db.py——'
+                    '复跑入口消失后，那 14 张表的差异清单就只能靠记忆维护')
+    a0, b0 = section(lines, '### 9.0')
+    if '硬门禁' not in '\n'.join(lines[a0:b0]):
+        errs.append('D9 §9.0 未记录「为什么不做成硬门禁」——后来者会把列级对账接进 CI，'
+                    '用「没起数据库」制造构建失败，与误报同族')
+    return errs
+
+
 def self_test():
-    """D7 判别力反证：「全绿」不等于有判别力，必须证明改坏了会判红。"""
+    """判别力反证：D7 集合对账 + D8/D9 数字与主张。「全绿」不等于有判别力。"""
     lines = io.open(DOC, encoding='utf-8').read().split('\n')
     expected = declared_tables(lines) - stale_tables(lines)
     passed = 0
@@ -183,6 +286,43 @@ def self_test():
     with_extra = lines[:a] + extra + lines[a:]
     expect('变异⑤ §9.0 追加无关表格（含有效表名）→ 不得污染 stale 集合',
            stale_tables(with_extra) == stale_tables(lines))
+
+    print('=== D8/D9 判别力（§9.0 对账数字 + §9.5 时态声明）===')
+    expect('正例：汇总 5/7/14 相加 = §9.5 表数，台账 14 行 = 基线集合',
+           d8_errors(lines, expected) == [])
+
+    # 变异⑥：只改汇总表一个数字（14 → 13），模拟"改了 DDL 但忘了同步结论"
+    bad_sum = [l.replace('| **14** | 见下表', '| **13** | 见下表') for l in lines]
+    e6 = d8_errors(bad_sum, expected)
+    expect('变异⑥ §9.0（4）含业务列差异 14→13 → 判红（相加不符 + 台账行数不符）',
+           any('三类相加' in e for e in e6) and any('台账' in e for e in e6))
+
+    # 变异⑦：台账删掉一行，汇总表仍写 14
+    a5 = next(i for i, l in enumerate(lines) if l.startswith('#### （5）'))
+    b5 = next((i for i in range(a5 + 1, len(lines))
+               if lines[i].startswith('#### ') or lines[i].startswith('### ')), len(lines))
+    drop = next(i for i in range(a5, b5) if '`t_quota_transaction`' in lines[i])
+    no_row = lines[:drop] + lines[drop + 1:]
+    expect('变异⑦ 台账删掉一行（汇总仍 14）→ 判红',
+           any('台账' in e for e in d8_errors(no_row, expected)))
+
+    # 变异⑧：基线少一张 —— 台账与 ratchet 是同一事实的两份拷贝，必须双向相等
+    expect('变异⑧ ratchet 基线漏掉一张 → 判红（否则该表漂移不报案）',
+           any('ratchet 基线无' in e
+               for e in d8_errors(lines, expected, baseline=set(BASELINE) - {'claim_case'})))
+
+    a95, _ = section(lines, '### 9.5')
+    old_head = lines[a95]
+    reverted = lines[:a95] + ['### 9.5 核心表 DDL（MySQL 8.0 / TiDB 同构）'] + lines[a95 + 1:]
+    expect('变异⑨ §9.5 标题退回「核心表 DDL」→ 判红（标题是目录里唯一的入口）',
+           any('标题未声明时态' in e for e in d9_errors(reverted)))
+    expect('正例：§9.5 标题已声明时态 / 正文指向体检脚本 / §9.0 保留硬门禁理由',
+           d9_errors(lines) == [] and '设计态' in old_head)
+
+    a90, b90 = section(lines, '### 9.0')
+    no_reason = lines[:a90] + [l for l in lines[a90:b90] if '硬门禁' not in l] + lines[b90:]
+    expect('变异⑩ 删掉「为什么不做成硬门禁」→ 判红（后来者会把它接进 CI）',
+           any('硬门禁' in e for e in d9_errors(no_reason)))
 
     print('  %d 通过 / %d 失败' % (passed, failed))
     return 0 if failed == 0 else 1
@@ -246,6 +386,8 @@ def main():
                               % (n, t['line'], sorted(bad)))
 
     errors.extend(d7_errors(lines, {t['name'] for t in tables}))
+    errors.extend(d8_errors(lines, {t['name'] for t in tables}))
+    errors.extend(d9_errors(lines))
 
     if errors:
         print('=== DDL 可执行性机检 ===')
@@ -255,7 +397,8 @@ def main():
         return 1
     print('=== DDL 可执行性机检 ===')
     print('【OK】%d 表全部通过：单 id 主键 / 列名唯一 / PK 存在 / 索引列已声明 / 围栏收尾 / '
-          'append-only 无变更列 / §9.1 清单与 §9.0 差异登记的集合对账' % len(tables))
+          'append-only 无变更列 / §9.1 清单与 §9.0 差异登记的集合对账 / '
+          '§9.0 对账数字与台账·ratchet 基线三方一致 / §9.5 时态声明在位' % len(tables))
     return 0
 
 
