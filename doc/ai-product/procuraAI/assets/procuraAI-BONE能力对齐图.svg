@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 660" font-family="'PingFang SC','Microsoft YaHei',sans-serif">
+  <rect width="680" height="660" fill="#f7f9fc"/>
+  <text x="340" y="26" font-size="17" font-weight="700" fill="#1f2d3d" text-anchor="middle">BONE 框架能力对齐与落地基线 · Procura v0.3</text>
+  <text x="340" y="45" font-size="10" fill="#6b7785" text-anchor="middle">三态源码实证（S 已实现 / D 规范承诺 / N 不存在） → 三轨分派 → 采购域一期落地与机器门禁</text>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <text x="30" y="70" font-size="12" font-weight="700" fill="#1f2d3d">① 平台能力三态（能力基线 §1，判据 = 源码 file:line，不采信 README 自述）</text>
+
+  <rect x="30" y="80" width="196" height="158" rx="10" fill="#eaf6ec" stroke="#4c9a5b" stroke-width="1.5"/>
+  <text x="42" y="101" font-size="12" font-weight="700" fill="#256b34">S · 已实现，可直接复用</text>
+  <text x="42" y="122" font-size="10" fill="#24402c">metadata-sdk：@Table / @Version</text>
+  <text x="42" y="139" font-size="10" fill="#24402c">TenantAbstractEntity / @Deleted</text>
+  <text x="42" y="156" font-size="10" fill="#24402c">WF 主干：退回 / 改派 / 转办</text>
+  <text x="42" y="173" font-size="10" fill="#24402c">加签 / CC / 挂起恢复 / 设计器</text>
+  <text x="42" y="190" font-size="10" fill="#24402c">事件信封 8 字段 / 幂等唯一键</text>
+  <text x="42" y="207" font-size="10" fill="#24402c">@PreAuthorize / TenantContext</text>
+  <text x="42" y="226" font-size="9" fill="#4a6b52">CI 门禁守护的公开端口与注解</text>
+
+  <rect x="242" y="80" width="196" height="158" rx="10" fill="#fff6e5" stroke="#d69a34" stroke-width="1.5"/>
+  <text x="254" y="101" font-size="12" font-weight="700" fill="#8a5a10">D · 仅规范 / 设计承诺</text>
+  <text x="254" y="122" font-size="10" fill="#4a3a1c">X-Bone-Signature HMAC 验签</text>
+  <text x="254" y="139" font-size="10" fill="#4a3a1c">统一任务中心 / TaskCenterPort</text>
+  <text x="254" y="156" font-size="10" fill="#4a3a1c">跨领域待办 schema</text>
+  <text x="254" y="173" font-size="10" fill="#4a3a1c">DLQ 转投（integration 仅</text>
+  <text x="254" y="190" font-size="10" fill="#4a3a1c">markFailed，blueprint 已转投）</text>
+  <text x="254" y="226" font-size="9" fill="#7a602c">规范有条文，源码零命中</text>
+
+  <rect x="454" y="80" width="196" height="158" rx="10" fill="#fdeceb" stroke="#cf6a66" stroke-width="1.5"/>
+  <text x="466" y="101" font-size="12" font-weight="700" fill="#9b332e">N · 完全不存在，需新建</text>
+  <text x="466" y="122" font-size="10" fill="#4a2624">WF 子流程 / SLA 超时转交</text>
+  <text x="466" y="139" font-size="10" fill="#4a2624">通用 Outbox starter</text>
+  <text x="466" y="156" font-size="10" fill="#4a2624">@DomainEvent 注解</text>
+  <text x="466" y="173" font-size="10" fill="#4a2624">B2B 供应商门户 / 外部用户</text>
+  <text x="466" y="190" font-size="10" fill="#4a2624">注解 → DDL 生成器</text>
+  <text x="466" y="207" font-size="10" fill="#4a2624">统一审计总线 / schema</text>
+  <text x="466" y="226" font-size="9" fill="#7a403c">禁止写进 WBS「已复用」栏</text>
+
+  <path d="M128 238 L128 262" stroke="#4c9a5b" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+  <path d="M340 238 L340 262" stroke="#d69a34" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+  <path d="M552 238 L552 262" stroke="#cf6a66" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+
+  <text x="30" y="280" font-size="12" font-weight="700" fill="#1f2d3d">② 三轨分派（能力基线 §2；对标 SAP Clean Core Level A–D / Platform Engineering golden path）</text>
+
+  <rect x="30" y="290" width="620" height="40" rx="8" fill="#ffffff" stroke="#4c9a5b" stroke-width="1.2"/>
+  <rect x="40" y="298" width="96" height="24" rx="5" fill="#4c9a5b"/>
+  <text x="88" y="314" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle">① 直接复用</text>
+  <text x="148" y="314" font-size="10.5" fill="#2b3a2e">paved road：只用 S 态公开端口 / 注解，不改平台核心 · Clean Core Level A</text>
+
+  <rect x="30" y="336" width="620" height="40" rx="8" fill="#ffffff" stroke="#d69a34" stroke-width="1.2"/>
+  <rect x="40" y="344" width="96" height="24" rx="5" fill="#d69a34"/>
+  <text x="88" y="360" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle">② 共建回灌</text>
+  <text x="148" y="360" font-size="10.5" fill="#4a3a1c">平台即产品：采购域出规格 + 负向用例，平台组实现并以 PR 回灌，不建第二套</text>
+
+  <rect x="30" y="382" width="620" height="40" rx="8" fill="#ffffff" stroke="#cf6a66" stroke-width="1.2"/>
+  <rect x="40" y="390" width="96" height="24" rx="5" fill="#cf6a66"/>
+  <text x="88" y="406" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle">③ 采购域自建</text>
+  <text x="148" y="406" font-size="10.5" fill="#4a2624">side-by-side：业务专属资产留在业务模块，经 ① 的端口接入，不侵入平台</text>
+
+  <text x="30" y="446" font-size="12" font-weight="700" fill="#1f2d3d">③ 采购域一期落地（单应用多模块 / 单库；仅跨部署单元用 Outbox · 事件 · 补偿）</text>
+
+  <rect x="30" y="456" width="196" height="52" rx="8" fill="#ffffff" stroke="#b9c6d6"/>
+  <text x="42" y="475" font-size="10.5" font-weight="700" fill="#1f2d3d">实体 + 手写 DDL</text>
+  <text x="42" y="493" font-size="9.5" fill="#5b6b7c">bone-init.sql + 列级对账（§3）</text>
+
+  <rect x="242" y="456" width="196" height="52" rx="8" fill="#ffffff" stroke="#b9c6d6"/>
+  <text x="254" y="475" font-size="10.5" font-weight="700" fill="#1f2d3d">WF 主干 + 存量适配层</text>
+  <text x="254" y="493" font-size="9.5" fill="#5b6b7c">bone-app-purchase（§4 / §7）</text>
+
+  <rect x="454" y="456" width="196" height="52" rx="8" fill="#ffffff" stroke="#b9c6d6"/>
+  <text x="466" y="475" font-size="10.5" font-weight="700" fill="#1f2d3d">自建 Outbox + 中继</text>
+  <text x="466" y="493" font-size="9.5" fill="#5b6b7c">t_proc_* · 不写 bp_ 表（§5）</text>
+
+  <rect x="30" y="514" width="196" height="52" rx="8" fill="#ffffff" stroke="#b9c6d6"/>
+  <text x="42" y="533" font-size="10.5" font-weight="700" fill="#1f2d3d">HMAC 验签</text>
+  <text x="42" y="551" font-size="9.5" fill="#5b6b7c">四类负向注入全部拒绝（§5.3）</text>
+
+  <rect x="242" y="514" width="196" height="52" rx="8" fill="#ffffff" stroke="#b9c6d6"/>
+  <text x="254" y="533" font-size="10.5" font-weight="700" fill="#1f2d3d">子流程 / SLA 降级</text>
+  <text x="254" y="551" font-size="9.5" fill="#5b6b7c">2 条降级 + 共建规格冻结（§4.4）</text>
+
+  <rect x="454" y="514" width="196" height="52" rx="8" fill="#ffffff" stroke="#b9c6d6"/>
+  <text x="466" y="533" font-size="10.5" font-weight="700" fill="#1f2d3d">文档族机器门禁</text>
+  <text x="466" y="551" font-size="9.5" fill="#5b6b7c">A1–A10 + --self-test（§6.3）</text>
+
+  <rect x="30" y="578" width="620" height="48" rx="8" fill="#eef2f8" stroke="#b9c6d6"/>
+  <text x="42" y="597" font-size="10.5" font-weight="700" fill="#1f2d3d">门禁口径：CI blocking（ci.yml）= ship-ready 权威判据；check.sh 59 步为本地入口，CI 零调用；HC-001 仍是 Manual</text>
+  <text x="42" y="615" font-size="10" fill="#5b6b7c">负向反证：A2 / A4 / A5 / A6 均注入变异文本或空集合，逐条证明可转红；空集合与缺文件 fail-closed，禁止假绿</text>
+
+  <text x="340" y="646" font-size="9.5" fill="#6b7785" text-anchor="middle">能力状态以「采购域-BONE框架能力对齐与落地基线.md」§1 的 file:line 证据为准，不以平台 README 自述为准</text>
+</svg>

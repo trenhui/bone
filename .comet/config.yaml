@@ -25,3 +25,19 @@ classic:
   # Classic 阶段通过后是否自动进入下一阶段。
   # 可选值：true | false
   auto_transition: true
+# 是否生成可直接打开的 HTML 变更说明，同时作用于 Native 和 Classic；开启会增加讲解内容的 token 消耗。
+# change_walkthrough: true | false（默认 true）
+change_walkthrough: true
+# 当前项目的个人记忆自动学习与注入策略。
+memory:
+  # 是否允许当前项目通过工作流事件自动沉淀新的个人记忆。
+  # 可选值：true | false
+  learning: true
+  # 是否允许当前项目把个人记忆自动注入 Agent 上下文。
+  # 可选值：true | false
+  retrieval: true
+# 普通 Comet 任务使用的项目知识检索 Provider。
+knowledge:
+  # 项目知识 Provider。
+  # 可选值：local | remote
+  provider: local

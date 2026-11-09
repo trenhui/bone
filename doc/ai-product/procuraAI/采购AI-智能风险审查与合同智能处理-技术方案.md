@@ -326,10 +326,10 @@ PRD 规则库 R01–R25 的「条款特征 → 风险类型 → 依据」三元�
 待复核 ──采纳──▶ 已采纳（回写风险库+反馈）
    │──驳回──▶ 已驳回（记录 reject_reason_type 六类，D3 §5 枚举真源；报表层归并三桶）
    │──改判──▶ 已改判（记录改判内容）
-   └（低风险/低置信度自动归档，人工可查）
+   └（低风险 / 低置信度 → **人工确认后归档**；原自动归档口径已撤销，见资产登记 §5）
 ```
 
-- **分派路由**：高风险 → 法务；中风险 → 采购专员（法务抽查）；低风险 → 自动归档；
+- **分派路由（已撤销口径，保留供历史追溯）**：高风险 → 法务；中风险 → 采购专员（法务抽查）；低风险原为自动归档，**现不得实现**——一律人工确认后归档（`总体 §5.1`）；
 - **反馈采集**：驳回必须选 reject_reason_type 六类之一（D3 §5；反馈场景可另选 MISSED 漏检），该样本自动进入评测集（FR-802 闭环）；
 - **确认不阻塞**：先出清单后流转，人工处理时长不计入 P95 审查耗时（PRD §10 口径）。
 
@@ -387,13 +387,13 @@ PRD 规则库 R01–R25 的「条款特征 → 风险类型 → 依据」三元�
 
 ### 3.7 RAG 知识问答（M5）
 
-| 环节 | 设计 |
-|------|------|
-| 知识源 | 政策法规库（195号文/招标投标法及实施条例/政采法及实施条例/87号令/财库〔2021〕22号）+ 范本库 + 历史审查案例 |
-| 入库 | **条款级小片切分**：150–300 token、按法规条款边界优先（document-based chunking，对结构化条款文本优于语义切分）、overlap 降为 0；**与 L1 审查切片（500–1000 token，§3.1.1）分层**：审查切片保语义完整性（防漏检）、问答切片保检索精度；范本/案例等半结构化高价值文档**可选 late chunking**（bge-m3 原生支持）或 contextual retrieval（LLM 前缀，索引成本约 ×120，按需启用）→ 向量化（embedding 基线 bge-m3，8192 上下文）→ pgvector 0.8.2（已修 CVE-2026-3172）+ BM25 索引 |
+| 环节 | 设计 | 备注 / 依据 |
+|------|------|---------------|
+| 知识源 | 政策法规库（195号文/招标投标法及实施条例/政采法及实施条例/87号令/财库〔2021〕22号）+ 范本库 + 历史审查案例 | — |
+| 入库 | **条款级小片切分**：150–300 token、按法规条款边界优先（document-based chunking，对结构化条款文本优于语义切分）、overlap 降为 0；**与 L1 审查切片（500–1000 token，§3.1.1）分层**：审查切片保语义完整性（防漏检）、问答切片保检索精度；范本/案例等半结构化高价值文档**可选 late chunking**（bge-m3 原生支持）或 contextual retrieval（LLM 前缀，索引成本约 ×120，按需启用）→ 向量化（embedding 基线 bge-m3，8192 上下文）→ pgvector 0.8.2（已修 CVE-2026-3172）+ BM25 索引 | — |
 | 检索 | 混合检索（向量 + BM25 + **加权 RRF**：条款精确查询提高 BM25 权重）→ bge-reranker-v2-m3 重排（0.6B 档中文最优，CMTEB-R 72.16；精度档可升 Qwen3-Reranker-4B 75.94，**均需 golden set A/B 实测**）；**长上下文检索预算**：128K 模型扩大候选（5–20 条宽上下文推理 + 相关性阈值过滤，缓解 lost-in-the-middle） | BM25 载体：**Elasticsearch 独立索引**（与 pgvector 分工：ES 负责 BM25 字面召回、pgvector 负责向量召回，RRF 在应用层融合）或 **BGE-M3 稀疏向量（SPLADE 档）**与稠密向量同库（简化部署）；**pg_search（AGPL-3.0）按平台裁决不进分发清单**（见"选型对齐声明"） |
 | embedding 升级档 | 可选 Qwen3-Embedding 8B（MTEB 多语 70.58 vs BGE-M3 63.22，2026 更强替代），按 golden set 实测升级 | 基线维持 bge-m3（成熟稳定，法规/合同中文场景已验证） |
-| 引用溯源 | chunk 保留法规出处元数据（法规名/条款号/原文）；**答案强制带出处链接，无依据如实说明不编造**（FR-601） |
+| 引用溯源 | chunk 保留法规出处元数据（法规名/条款号/原文）；**答案强制带出处链接，无依据如实说明不编造**（FR-601） | — |
 | 增量更新 | 法规新增/修订 → 月度巡检触发入库：原文切片 → 向量 upsert（pgvector）→ BM25 索引增量重建 → 按 doc hash 去重、版本可回滚 | 与 PRD §9.3 法规巡检联动，避免问答引用过期法规 |
 | 评测 | RAGAS 离线批量（核心） + **DeepEval 双轨**（RAGAS 2026.2 后维护信号转弱，DeepEval 可入 pytest CI 门槛）；在线采样监控（Langfuse/TruLens 类）；**judge 模型与被测模型不同族**（防自评偏差）；**FR-601 自定义条款引用正确性指标**（faithfulness ≥0.85，答案带出处比例 100%） | ≥50 题评测集才能暴露 rerank 收益（业界建议）；问答正确率作为质量门禁 |
 
@@ -581,7 +581,7 @@ CREATE TABLE contract_element (
 | POST | /api/v1/documents/analyze | multipart 上传 + doc_type + priority；返回 `{task_id, status}`（202） |
 | GET | /api/v1/tasks/{task_id} | 轮询：`{status, progress, review_id?, error?}`；间隔建议 ≥2s |
 | GET | /api/v1/reviews/{review_id}/risks | 风险清单分页：`{items:[{risk_id, level, confidence, quote_original, basis, suggestion, decision}]}` |
-| POST | /api/v1/reviews/{review_id}/risks/{risk_id}/decision | `{decision: ACCEPTED|REJECTED|MODIFIED, reject_reason_type?, comment?}` → 201 + 审计留痕 |
+| POST | /api/v1/reviews/{review_id}/risks/{risk_id}/decision | `{decision: ACCEPTED\|REJECTED\|MODIFIED, reject_reason_type?, comment?}` → 201 + 审计留痕 |
 | GET | /api/v1/alerts?type=upcoming&status=UPCOMING | 预警列表（合同号/节点/到期日/金额） |
 | GET | /api/v1/vendors/{vendor_id}/profile | 画像（工商/司法/失信/风险标红） |
 | POST | /api/v1/ask | `{question}` → `{answer, sources:[{title, url, quote}]}`；无依据明确说明 |

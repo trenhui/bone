@@ -54,7 +54,7 @@
   <g>
     <rect x="58" y="246" width="330" height="58" rx="8" fill="#ffffff" stroke="#93c5fd"/>
     <text x="223" y="266" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1e293b">数据集成适配服务</text>
-    <text x="223" y="284" text-anchor="middle" font-size="10.5" fill="#64748b">适配器模式 + 标准字段映射（contract_no 主键）</text>
+    <text x="223" y="284" text-anchor="middle" font-size="10.5" fill="#64748b">适配器模式 + 字段映射（contract_no 仅关联键）</text>
     <text x="223" y="298" text-anchor="middle" font-size="10" fill="#94a3b8">OA · U8 · SAP · Oracle · 金蝶 · 信用源（只读）</text>
     <rect x="404" y="246" width="330" height="58" rx="8" fill="#ffffff" stroke="#93c5fd"/>
     <text x="569" y="266" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1e293b">履约预警调度（M4）</text>
