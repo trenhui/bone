@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 1,
+  "evalsetId": "procura-ai-decision-regression",
+  "status": "seededDraft",
+  "needsOwnerReview": true,
+  "owner": "procuraAI",
+  "scope": "采购域 AI 结论与决策分诊档位的确定性回归；复用 synap-claim 评测集模式（schemaVersion/testSymbol/groundTruthRef/regulatoryBasis/piiFree）。当前为种子草稿，仅覆盖关键 fail-closed 路径，规模与通过线待 owner 按 DA-3 排期补全",
+  "seedNote": "本集为设计态 seed 草稿：代码尚未落地（无 bone-procurement-* 模块），故 groundTruthRef 指向文档真源锚点（PRD/LLD）而非源码 path。代码落地后须将 groundTruthRef 重定向到源码契约，并按 DA-3 补齐至 PRD 要求的 ≥200 样本 + 对抗样本。",
+  "groundTruthPolicy": {
+    "provenance": "每条用例标注 groundTruthRef（仓库内真源 path#anchor）与 regulatoryBasis；期望值来自真源或源码契约，不由模型生成",
+    "piiFree": true,
+    "piiPolicy": "监管 §24：PII 禁入评测集。样本均为合成常量与受控枚举，无真实姓名/证件号/手机号/银行卡/供应商机密",
+    "frozenSetDiscipline": "冻结集只用于回归判定，不参与训练、不参与提示词调优（防 Hidden Feedback Loop / 评测集污染）",
+    "changePolicy": "模型版本、提示词契约版本、规则集、分诊阈值任一变更，必跑本集；失败阻断发布并留痕"
+  },
+  "suites": [
+    {
+      "id": "contractReviewTriage",
+      "testClass": "ProcuraContractReviewTriageTest",
+      "description": "合同审查分诊阈值与档位路由（全绿基准 + 材料不全/规则冲突/金额未知负向）"
+    },
+    {
+      "id": "threeWayMatch",
+      "testClass": "ProcuraThreeWayMatchTest",
+      "description": "三单匹配 discrepancy 处理：发票/订单/收货偏差超容差挂起、匹配状态缺失 UNKNOWN fail-closed 转人工"
+    },
+    {
+      "id": "supplierRisk",
+      "testClass": "ProcuraSupplierRiskTest",
+      "description": "供应商风险评级 fail-closed：信号不足 UNKNOWN 不降级为低风险、高风险只标记不自动放行"
+    },
+    {
+      "id": "anomalyDetection",
+      "testClass": "ProcuraAnomalyDetectionTest",
+      "description": "采购异常检测二分类不达标转人工：低置信不自动冻结、对抗注入样本拒收不进集"
+    },
+    {
+      "id": "aiDegradation",
+      "testClass": "ProcuraAiDegradationTest",
+      "description": "AI 网关不可用降级 fail-closed：FALLBACK 不得落成拒批、认知层只留痕"
+    },
+    {
+      "id": "aiDisclosure",
+      "testClass": "ProcuraAiDisclosureTest",
+      "description": "AI 参与决策披露三态：无法确认 ≠ AI 未参与、版本快照不得冒充参与证据、标识不得把 AI 说成决定者"
+    },
+    {
+      "id": "reconciliation",
+      "testClass": "ProcuraReconciliationTest",
+      "description": "对账闭环不变量：净已付 = 最新理算总额；跨域 ACL 未交付前运行期不触发、mock 隔离可独立验证"
+    }
+  ],
+  "cases": [
+    {
+      "id": "CONTRACT-01",
+      "name": "全绿基准 → AUTO_APPROVE",
+      "suite": "contractReviewTriage",
+      "kind": "positive",
+      "expected": {
+        "result": "AUTO_APPROVE",
+        "tier": "AUTO",
+        "reason": "ALL_GATES_PASSED"
+      },
+      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-技术方案.md#合同审查分诊",
+      "regulatoryBasis": "监管 §4 测评用例集；§22 阈值触发记录可解释",
+      "testClass": "ProcuraContractReviewTriageTest",
+      "testSymbol": "baselineGreenScenario_AutoApprove",
+      "piiFree": true
+    },
+    {
+      "id": "CONTRACT-02",
+      "name": "材料不全→补件(MANUAL)",
+      "suite": "contractReviewTriage",
+      "kind": "negative",
+      "expected": {
+        "result": "NEED_MORE_EVIDENCE",
+        "tier": "MANUAL"
+      },
+      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-技术方案.md#合同审查分诊",
+      "regulatoryBasis": "监管 §22 人工最终决策；材料不全不得直出",
+      "testClass": "ProcuraContractReviewTriageTest",
+      "testSymbol": "材料不全→补件(MANUAL)",
+      "piiFree": true
+    },
+    {
+      "id": "CONTRACT-03",
+      "name": "规则冲突无法裁决→人工",
+      "suite": "contractReviewTriage",
+      "kind": "negative",
+      "expected": {
+        "result": "MANUAL_REQUIRED",
+        "tier": "MANUAL"
+      },
+      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-技术方案.md#合同审查分诊",
+      "regulatoryBasis": "监管 §22 可解释性不足时 AI 仅作辅助",
+      "testClass": "ProcuraContractReviewTriageTest",
+      "testSymbol": "规则冲突无法裁决→人工",
+      "piiFree": true
+    },
+    {
+      "id": "MATCH-01",
+      "name": "三单金额偏差超容差→挂起待核",
+      "suite": "threeWayMatch",
+      "kind": "negative",
+      "expected": {
+        "match_status": "PENDING_REVIEW",
+        "auto_passed": false,
+        "blocked_reason_required": true
+      },
+      "groundTruthRef": "doc/ai-product/procuraAI/detailed-design/00-总纲与统一约定.md#InvoiceMatched",
+      "regulatoryBasis": "监管 §22 异常不得自动过账",
+      "testClass": "ProcuraThreeWayMatchTest",
+      "testSymbol": "amountVarianceOverTolerance_blocksAutoPass",
+      "piiFree": true
+    },
+    {
+      "id": "MATCH-02",
+      "name": "匹配状态缺失→UNKNOWN fail-closed 转人工",
+      "suite": "threeWayMatch",
+      "kind": "negative",
+      "expected": {
+        "match_status": "UNKNOWN",
+        "auto_passed": false,
+        "fallback": "MANUAL"
+      },
+      "groundTruthRef": "doc/ai-product/procuraAI/detailed-design/00-总纲与统一约定.md#InvoiceMatched",
+      "regulatoryBasis": "监管 §15/§22 缺省 fail-closed",
+      "testClass": "ProcuraThreeWayMatchTest",
+      "testSymbol": "missingMatchStatus_fallsBackToUnknown",
+      "piiFree": true
+    },
+    {
+      "id": "RISK-01",
+      "name": "风险信号不足→UNKNOWN 不降级为低风险",
+      "suite": "supplierRisk",
+      "kind": "negative",
+      "expected": {
+        "risk_level": "UNKNOWN",
+        "auto_passed": false
+      },
+      "groundTruthRef": "doc/ai-product/procuraAI/详细设计待补#供应商风险评级",
+      "regulatoryBasis": "监管 §15 风险分级缺省 fail-closed",
+      "testClass": "ProcuraSupplierRiskTest",
+      "testSymbol": "insufficientSignal_fallsBackToUnknown",
+      "piiFree": true
+    },
+    {
+      "id": "RISK-02",
+      "name": "高风险供应商→标记且不自动放行",
+      "suite": "supplierRisk",
+      "kind": "negative",
+      "expected": {
+        "risk_level": "HIGH",
+        "auto_released": false,
+        "flagged": true
+      },
+      "groundTruthRef": "doc/ai-product/procuraAI/详细设计待补#供应商风险评级",
+      "regulatoryBasis": "监管 §22 高风险须人工处置",
+      "testClass": "ProcuraSupplierRiskTest",
+      "testSymbol": "highRisk_isFlaggedNotAutoReleased",
+      "piiFree": true
+    },
+    {
+      "id": "ANOMALY-01",
+      "name": "低置信异常→转人工不自动冻结",
+      "suite": "anomalyDetection",
+      "kind": "negative",
+      "expected": {
+        "auto_frozen": false,
+        "tier": "MANUAL",
+        "confidence_required": true
+      },
+      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-技术方案.md#异常检测",
+      "regulatoryBasis": "监管 §22 二分类不达标转人工",
+      "testClass": "ProcuraAnomalyDetectionTest",
+      "testSymbol": "lowConfidence_doesNotAutoFreeze",
+      "piiFree": true
+    },
+    {
+      "id": "ANOMALY-02",
+      "name": "对抗注入样本→拒收不进集",
+      "suite": "anomalyDetection",
+      "kind": "negative",
+      "expected": {
+        "accepted": false,
+        "reason": "PII_OR_ADVERSARIAL_REJECTED"
+      },
+      "groundTruthRef": "doc/ai-product/procuraAI/eval/ai-decision-evalset.json#groundTruthPolicy.piiPolicy",
+      "regulatoryBasis": "监管 §24 PII 禁入；对抗样本不入训练/评测",
+      "testClass": "ProcuraAnomalyDetectionTest",
+      "testSymbol": "adversarialSample_rejectedAtIngest",
+      "piiFree": true
+    },
+    {
+      "id": "DEGRADE-01",
+      "name": "AI 网关不可用→FALLBACK 且不得落成拒批",
+      "suite": "aiDegradation",
+      "kind": "negative",
+      "expected": {
+        "status": "FALLBACK",
+        "rejectSuggested": false,
+        "aiAvailable": false
+      },
+      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-技术方案.md#AI降级路径",
+      "regulatoryBasis": "监管 §17 人工替代与紧急停用；§22 降级不得改变口径",
+      "testClass": "ProcuraAiDegradationTest",
+      "testSymbol": "aiDownDoesNotTurnIntoReject",
+      "piiFree": true
+    },
+    {
+      "id": "DISCLOSE-01",
+      "name": "无法确认≠AI 未参与",
+      "suite": "aiDisclosure",
+      "kind": "negative",
+      "expected": {
+        "state": "UNDETERMINED",
+        "must_not_render_as": "AI_NOT_INVOLVED"
+      },
+      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-技术方案.md#AI参与披露",
+      "regulatoryBasis": "监管 §21 生成内容标识；无法确认不得压成未参与",
+      "testClass": "ProcuraAiDisclosureTest",
+      "testSymbol": "undetermined_notRenderedAsNotInvolved",
+      "piiFree": true
+    },
+    {
+      "id": "DISCLOSE-02",
+      "name": "版本快照不得冒充参与证据",
+      "suite": "aiDisclosure",
+      "kind": "negative",
+      "expected": {
+        "model_version_role": "ENTRY_SNAPSHOT",
+        "counts_as_evidence": false
+      },
+      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-技术方案.md#AI参与披露",
+      "regulatoryBasis": "监管 §21 标识与留存；只认 LLM 节点自报 aiAvailable",
+      "testClass": "ProcuraAiDisclosureTest",
+      "testSymbol": "modelVersion_notTreatedAsEvidence",
+      "piiFree": true
+    },
+    {
+      "id": "RECON-01",
+      "name": "对账净额=最新理算总额不变量",
+      "suite": "reconciliation",
+      "kind": "positive",
+      "expected": {
+        "invariant": "NET_PAID_EQUALS_LATEST_SETTLEMENT",
+        "cross_domain_acl": "MOCK_ISOLATED_WHEN_UNDELIVERED"
+      },
+      "groundTruthRef": "doc/ai-product/procuraAI/一期边界与机制触发条件.md#对账闭环",
+      "regulatoryBasis": "监管 §22 对账可解释；跨域 ACL 未交付前 mock 隔离",
+      "testClass": "ProcuraReconciliationTest",
+      "testSymbol": "netPaidEqualsLatestSettlement",
+      "piiFree": true
+    }
+  ]
+}
