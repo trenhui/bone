@@ -3,6 +3,7 @@ package com.bone.claim.application;
 import com.bone.claim.domain.model.adjustment.engine.RuleGap;
 import com.bone.claim.domain.model.liability.AdjLiability;
 import com.bone.claim.domain.model.liability.LiabilityRuleJson;
+import com.bone.claim.domain.model.liability.LiabilityRuleJsonView;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -108,6 +109,60 @@ public final class LiabilityRuleJsonCodec {
     BigDecimal limit = requireAmount(root, LiabilityRuleJson.KEY_LIABILITY_LIMIT);
     Map<String, String> dimensions = readDimensions(root);
     return new LiabilityRuleJson(version, payPercent, deduct, limit, dimensions);
+  }
+
+  /**
+   * 读侧宽松解码（M2 ③ 3a）：与 {@link #decode} 的唯一区别是 <b>A 类键允许缺失</b>。
+   *
+   * <p><b>为什么读侧必须宽松</b>：写侧要证明 {@code scalar == project(json)}，所以三键必填；读侧要回答 "这一版按哪套值算钱"，历史行整列为
+   * NULL、将来也可能只覆盖部分键。此处允许缺失，回落交给 {@code LiabilityRuleJsonView.resolve(key, scalar)}
+   * 按<b>单个键</b>完成——解码器不替它做"整列判断"。
+   *
+   * <p><b>仍然 fail-closed 的三件事</b>：版本不认识、出现未知键、键的形态不是单一数值。 这三类问题一旦"忽略后继续"，就会按错误语义算钱且不报错，是比抛异常更坏的结果。
+   *
+   * @param raw 列原文；{@code null}/空白 表示历史行（聚合 JSON 为 NULL），返回 {@code empty()} 而非报错
+   */
+  public static LiabilityRuleJsonView decodeView(String raw) {
+    if (raw == null || raw.isBlank()) {
+      return LiabilityRuleJsonView.empty();
+    }
+    if (raw.length() > MAX_RAW_LENGTH) {
+      throw RuleGap.of(
+          RuleGap.Code.INVALID_INPUT,
+          "liability_rule_json 长度 %d 超过上限 %d：它只承载 9 个业务要素",
+          raw.length(),
+          MAX_RAW_LENGTH);
+    }
+    JsonNode root;
+    try {
+      root = MAPPER.readTree(raw);
+    } catch (JsonProcessingException e) {
+      throw RuleGap.of(
+          RuleGap.Code.INVALID_INPUT,
+          "liability_rule_json 不是合法 JSON（读取期拒绝，不得当作「整列为空」走旧路径）：%s",
+          e.getOriginalMessage());
+    }
+    if (root == null || !root.isObject()) {
+      throw RuleGap.of(RuleGap.Code.INVALID_INPUT, "liability_rule_json 必须是 JSON 对象：%s", raw);
+    }
+    int version = requireVersion(root);
+    requireNoUnknownKey(root);
+    Map<String, BigDecimal> amounts = new LinkedHashMap<>();
+    for (String key : LiabilityRuleJson.AMOUNT_KEYS) {
+      JsonNode node = root.get(key);
+      if (node == null || node.isNull()) {
+        continue;
+      }
+      if (!node.isNumber()) {
+        throw RuleGap.of(
+            RuleGap.Code.INVALID_INPUT,
+            "%s 必须是单一数值，当前是 %s：分段 / 金额区间 / 按累计在 ④ Unlock 后才可用",
+            key,
+            node.getNodeType());
+      }
+      amounts.put(key, node.decimalValue());
+    }
+    return new LiabilityRuleJsonView(version, amounts, readDimensions(root));
   }
 
   /**

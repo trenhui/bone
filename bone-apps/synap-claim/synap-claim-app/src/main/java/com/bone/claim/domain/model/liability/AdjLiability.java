@@ -1,11 +1,13 @@
 package com.bone.claim.domain.model.liability;
 
+import com.bone.core.annotation.Transient;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.metadata.sdk.domain.annotation.Version;
 import java.math.BigDecimal;
+import lombok.AccessLevel;
 import lombok.Getter;
 
 /**
@@ -65,6 +67,25 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
    */
   @Column(name = "liability_rule_json")
   private String liabilityRuleJson;
+
+  /**
+   * 读侧按键回落视图（M2 ③ 3a）：<b>非持久化</b>，由应用层在理算前按读开关挂载。
+   *
+   * <p>为什么挂在实体上而不是加进 {@code fromLegacy} 的参数列表：`Adjustment.apply()` 位于领域内部，
+   * 读路径不经过应用层；把视图挂在实体上，装配点仍然是唯一的 {@code fromLegacy}， 不必为了多传一个参数去改 10 个 {@code
+   * calculate/recalculate} 重载。
+   *
+   * <p>为什么 domain 不自己解析 JSON：解析需要 Jackson，而 domain 零框架依赖是硬约束。 解析发生在应用层 codec，领域只接收已结构化的视图。
+   */
+  @Transient private LiabilityRuleJsonView ruleView;
+
+  /** 读侧模式（非持久化）：默认只走旧标量列，故未挂载视图时行为与 ② 逐笔一致。 */
+  @Transient private LiabilityReadMode ruleReadMode = LiabilityReadMode.LEGACY_ONLY;
+
+  /** 本次装配产生的双轨差异（非持久化）：由应用层取走后写日志，不落库、不改金额。 */
+  @Transient
+  @Getter(AccessLevel.NONE)
+  private final java.util.List<RuleValueDiff> ruleDiffs = new java.util.ArrayList<>();
 
   /** 发票级免赔（GAP②）：在比例之前、年度免赔之前，对各费用池基数按比例分摊扣减；0 = 不启用。 */
   @Column(name = "invoice_deduct")
@@ -517,6 +538,47 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
    */
   public void attachRuleJsonShadow(String ruleJson) {
     this.liabilityRuleJson = ruleJson == null || ruleJson.isBlank() ? null : ruleJson;
+  }
+
+  /**
+   * 挂载读侧视图与模式（M2 ③ 3a，非持久化）。
+   *
+   * <p>只允许由应用层在理算前调用一次：重复挂载会让差异收集器攒出上一轮的陈旧条目， 而"差异日志里混入不属于本次请求的数据"正是把证据变成噪音的最短路径。
+   */
+  public void attachRuleRead(LiabilityRuleJsonView view, LiabilityReadMode mode) {
+    this.ruleView = view;
+    this.ruleReadMode = mode == null ? LiabilityReadMode.LEGACY_ONLY : mode;
+    this.ruleDiffs.clear();
+  }
+
+  /** 取走本次装配产生的双轨差异（取后清空，避免被重复记录）。 */
+  public java.util.List<RuleValueDiff> drainRuleDiffs() {
+    if (ruleDiffs.isEmpty()) {
+      return java.util.List.of();
+    }
+    java.util.List<RuleValueDiff> snapshot = java.util.List.copyOf(ruleDiffs);
+    ruleDiffs.clear();
+    return snapshot;
+  }
+
+  /** 未挂载视图时为 {@code null}，表示该行聚合 JSON 为 NULL（历史行）。 */
+  public LiabilityRuleJsonView getRuleView() {
+    return ruleView;
+  }
+
+  public LiabilityReadMode getRuleReadMode() {
+    return ruleReadMode;
+  }
+
+  /**
+   * 收下领域装配产出的差异。
+   *
+   * <p>刻意<b>不</b>把内部列表交出去：调用方能拿到可变集合，就能往"证据"里塞不属于本次请求的条目。 只允许"交进来"，不允许"拿走改"。
+   */
+  public void collectRuleDiffs(java.util.List<RuleValueDiff> found) {
+    if (found != null && !found.isEmpty()) {
+      ruleDiffs.addAll(found);
+    }
   }
 
   /** 仅赔社保内（默认 true，R-DIR-01）。 */

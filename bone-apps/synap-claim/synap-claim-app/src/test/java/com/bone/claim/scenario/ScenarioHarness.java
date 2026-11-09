@@ -176,7 +176,9 @@ public class ScenarioHarness {
             // 年度口径固定自然年（与生产默认值一致）：场景断言不随部署配置变化
             QuotaYearResolver.of(QuotaYearResolver.Basis.CALENDAR, policyPort),
             tenantPort,
-            events);
+            events,
+            // ③ 3a 读开关：场景验证的是「默认关闭 ⇒ 行为与 ② 逐笔一致」，故显式传 false
+            new com.bone.claim.application.LiabilityRuleReadGate(false));
     decExecSvc = new DecisionExecutionApplicationService(decRepo, events);
 
     // 反欺诈 / 知识图谱 端口：默认「能力可用、无命中」，可按场景切换

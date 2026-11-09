@@ -427,6 +427,10 @@ public class Adjustment extends TenantAggregateRoot<Long> {
       java.time.LocalDate catalogAsOf,
       java.util.Map<Long, CatalogAdmission.Verdict> catalogVerdicts,
       List<LiabilityFeeRule> feeRules) {
+    // ③ 3a 双读：视图与模式由应用层按读开关挂载；未挂载时 ruleView 为 null、模式为 LEGACY_ONLY，
+    // 走的是与原签名完全相同的路径。差异先收到局部列表，再交给聚合暂存，避免把内部集合暴露出去。
+    java.util.List<com.bone.claim.domain.model.liability.RuleValueDiff> ruleDiffs =
+        new java.util.ArrayList<>();
     LiabilityRule rule =
         LiabilityRule.fromLegacy(
                 liability.getLiabilityUuid(),
@@ -443,11 +447,15 @@ public class Adjustment extends TenantAggregateRoot<Long> {
                 LiabilityRule.LimitedConditions.of(
                     LiabilityRule.LimitedConditions.Mode.fromCode(liability.limitMode()),
                     liability.limitHospitalCodes(),
-                    liability.limitDiagnosisCodes()))
+                    liability.limitDiagnosisCodes()),
+                liability.getRuleView(),
+                liability.getRuleReadMode(),
+                ruleDiffs)
             .withFeeRules(feeRulesOf(feeRules))
             .withRelation(
                 LiabilityRule.Relation.of(
                     liability.getSharedCode(), liability.getPriorLiabilityUuid()));
+    liability.collectRuleDiffs(ruleDiffs);
 
     AdjustmentEngine.Outcome outcome;
     try {

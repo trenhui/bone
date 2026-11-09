@@ -54,6 +54,7 @@ public class IndemnityApplicationService {
   private final QuotaYearResolver quotaYearResolver;
   private final TenantPort tenantPort;
   private final DomainEventPublisher domainEventPublisher;
+  private final LiabilityRuleReadGate liabilityRuleReadGate;
 
   /**
    * 理算结果（含逐行归因，供拒赔五要素「事实认定」引用）。
@@ -110,6 +111,7 @@ public class IndemnityApplicationService {
     } catch (DomainException ex) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_LIABILITY_NOT_FOUND, claimId, ex);
     }
+    liabilityRuleReadGate.logDiffs(input.liability());
     adjustmentRepository.insert(adjustment);
     domainEventPublisher.publishFrom(adjustment);
     return toResult(adjustment);
@@ -125,6 +127,9 @@ public class IndemnityApplicationService {
   private CalculationInput prepare(long claimId) {
     List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
     AdjLiability liability = resolveLiability(rows);
+    // ③ 3a：开关关闭时这里什么都不做（连 JSON 都不解析），保证零行为变更可被证明；
+    // 打开时挂载按键回落视图，装配阶段产出差异，算出金额后再由 logDiffs 记录。
+    liabilityRuleReadGate.attach(liability);
     return new CalculationInput(
         rows, liability, accumulate(rows, liability), catalogFactsOf(rows, liability));
   }
@@ -157,6 +162,7 @@ public class IndemnityApplicationService {
     } catch (DomainException ex) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_LIABILITY_NOT_FOUND, claimId, ex);
     }
+    liabilityRuleReadGate.logDiffs(input.liability());
     Adjustment baseline = adjustmentRepository.findLatestByClaimId(claimId);
     return new AdjustmentPreview(
         claimId,

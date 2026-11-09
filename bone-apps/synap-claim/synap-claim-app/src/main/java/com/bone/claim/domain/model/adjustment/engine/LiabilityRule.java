@@ -1,5 +1,9 @@
 package com.bone.claim.domain.model.adjustment.engine;
 
+import com.bone.claim.domain.model.liability.LiabilityReadMode;
+import com.bone.claim.domain.model.liability.LiabilityRuleJson;
+import com.bone.claim.domain.model.liability.LiabilityRuleJsonView;
+import com.bone.claim.domain.model.liability.RuleValueDiff;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -773,6 +777,98 @@ public record LiabilityRule(
         .withInvoiceDeductible(DeductibleRule.annualAbsolute(Money.nz(invoiceDeduct)))
         .withAdjustDeductible(DeductibleRule.annualAbsolute(Money.nz(adjustDeduct)))
         .withLimitedConditions(limitedConditions);
+  }
+
+  /**
+   * ③ 3a 双读入口：在旧标量路径之外，再按<b>单个键</b>回落算一遍并逐键比对。
+   *
+   * <p><b>为什么是重载而不是改原签名</b>：原 12 参数签名被两个生产调用点与全部既有夹具使用。改签名会把 「开关关闭」与「没有
+   * JSON」两种完全不同的语义压进同一个参数，且任何一处漏改都会在编译期之外静默走错路。 重载让旧签名保持逐字不变，新语义只在显式传参时生效。
+   *
+   * <p><b>零行为变更的强制做法</b>：本方法<b>先</b>用原签名装配出旧标量路径的规则，<b>再</b>算比对；
+   * 无论差异是否存在，返回的都是前者。这不是"顺手"，而是本阶段的全部承诺—— 3b 切主必须由后续 change 依据这里产出的差异率决定，而不是由这次改动偷偷完成。
+   *
+   * <p><b>差异判定用数值相等</b>（{@code compareTo}）：MySQL 8 的 JSON 列会把 {@code 90.00} 规范化成 {@code 90.0}
+   * 并重排键序（② 阶段临时表实测），逐字比对必然误报，而误报会让作者关掉整道门禁。
+   *
+   * @param ruleView 读侧按键回落视图；{@code null} 表示该行聚合 JSON 为 NULL（历史行）
+   * @param mode 读侧模式；{@link LiabilityReadMode#LEGACY_ONLY} 时不比对、不解析
+   * @param diffs 差异收集器；{@code null} 表示调用方不关心差异（仅测试或纯读路径使用）
+   */
+  public static LiabilityRule fromLegacy(
+      String liabilityUuid,
+      String liabilityVersion,
+      String liabilityType,
+      BigDecimal payPercent,
+      BigDecimal deductibleAmount,
+      BigDecimal liabilityLimit,
+      boolean socialOnly,
+      BigDecimal invoiceDeduct,
+      BigDecimal adjustDeduct,
+      BigDecimal dailyLimit,
+      DailyBasis dailyBasis,
+      LimitedConditions limitedConditions,
+      LiabilityRuleJsonView ruleView,
+      LiabilityReadMode mode,
+      java.util.List<RuleValueDiff> diffs) {
+    LiabilityRule legacy =
+        fromLegacy(
+            liabilityUuid,
+            liabilityVersion,
+            liabilityType,
+            payPercent,
+            deductibleAmount,
+            liabilityLimit,
+            socialOnly,
+            invoiceDeduct,
+            adjustDeduct,
+            dailyLimit,
+            dailyBasis,
+            limitedConditions);
+    if (ruleView == null || mode != LiabilityReadMode.DUAL_READ) {
+      return legacy;
+    }
+    collectDiff(
+        diffs,
+        liabilityUuid,
+        liabilityVersion,
+        LiabilityRuleJson.KEY_PAY_PERCENT,
+        payPercent,
+        ruleView);
+    collectDiff(
+        diffs,
+        liabilityUuid,
+        liabilityVersion,
+        LiabilityRuleJson.KEY_LIABILITY_DEDUCT,
+        deductibleAmount,
+        ruleView);
+    collectDiff(
+        diffs,
+        liabilityUuid,
+        liabilityVersion,
+        LiabilityRuleJson.KEY_LIABILITY_LIMIT,
+        liabilityLimit,
+        ruleView);
+    return legacy;
+  }
+
+  /**
+   * 单键比对：{@code resolve} 已保证"JSON 有值取 JSON、否则回落标量、两侧皆空即拒"， 故这里只需判"回落后的值是否与旧标量相等"。两侧皆空会在 {@code
+   * resolve} 处抛出，不会走到比对。
+   */
+  private static void collectDiff(
+      java.util.List<RuleValueDiff> diffs,
+      String liabilityUuid,
+      String liabilityVersion,
+      String key,
+      BigDecimal scalar,
+      LiabilityRuleJsonView ruleView) {
+    BigDecimal resolved = ruleView.resolve(key, scalar);
+    if (scalar == null || resolved.compareTo(scalar) != 0) {
+      if (diffs != null) {
+        diffs.add(new RuleValueDiff(liabilityUuid, liabilityVersion, key, scalar, resolved));
+      }
+    }
   }
 
   private static LiabilityRule build(
