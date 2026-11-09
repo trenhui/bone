@@ -34,9 +34,9 @@
 
 - [x] 6.1 更新 `04-design/总体技术方案.md` §9.1.1 开工状态（③ 3a 已落地、3b 未开工）与 §13 台账相关行；验证：`check_all.py` 全绿、`_check_numbers.py` 的 REQUIRED 判据仍命中。 <!-- comet-task:efac5643-042d-49c8-bd3b-bf01fa61906d -->
 - [x] 6.2 确认 ② 的写入期 Schema、5 个 SQL 模板、`bone-init.sql` 与 manifest 均未被本 change 改动；验证：`git diff --stat` 只含本 change 声明的路径。 <!-- comet-task:cf3d3491-6582-48ae-bbc4-26f829ee0397 -->
-- [ ] 6.3 运行 `./scripts/check.sh` 全量本地自检；验证：末行「✅ 本地自检通过！」，真实红点为零（大量 ❌ 负向探针属预期）。 <!-- comet-task:0200c698-cebe-4e3d-99c9-45da1dc6cbf0 -->
+- [x] 6.3 运行 `./scripts/check.sh` 全量本地自检；验证：末行「✅ 本地自检通过！」，真实红点为零（大量 ❌ 负向探针属预期）。 <!-- comet-task:0200c698-cebe-4e3d-99c9-45da1dc6cbf0 -->
 
 ## 7. 提交与交付
 
-- [ ] 7.1 按共享树纪律只提交自己路径（`git diff --cached --name-only` 核对，避免夹带并行会话文件）；验证：提交信息含 O-06 闸门更正依据与 L3 阻塞留痕，`git show --stat` 范围正确。 <!-- comet-task:9d8daf33-6b00-4985-866a-0b14b0500ec8 -->
-- [ ] 7.2 推送到双远程并核对 `git ls-remote origin refs/heads/dev` == `HEAD`；验证：Gitee 与 GitHub 两端返回同一 SHA。 <!-- comet-task:d8b8ff3f-b1ca-4e23-b338-e8491459774e -->
+- [x] 7.1 按共享树纪律只提交自己路径（`git diff --cached --name-only` 核对，避免夹带并行会话文件）；验证：提交信息含 O-06 闸门更正依据与 L3 阻塞留痕，`git show --stat` 范围正确。 <!-- comet-task:9d8daf33-6b00-4985-866a-0b14b0500ec8 -->
+- [x] 7.2 推送到双远程并核对 `git ls-remote origin refs/heads/dev` == `HEAD`；验证：Gitee 与 GitHub 两端返回同一 SHA。 <!-- comet-task:d8b8ff3f-b1ca-4e23-b338-e8491459774e -->
