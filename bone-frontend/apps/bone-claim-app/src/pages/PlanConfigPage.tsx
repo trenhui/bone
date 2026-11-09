@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type Key, type ReactElement } from 'react';
 import {
+  Alert,
   App as AntApp,
   Button,
   Card,
@@ -108,6 +109,15 @@ export function PlanConfigPage(): ReactElement {
   const [planEditForm] = Form.useForm();
   const [coverageEditTarget, setCoverageEditTarget] = useState<CoverageView | null>(null);
   const [coverageEditForm] = Form.useForm();
+  /**
+   * 险种层 `liabilityType` 只作登记与新建责任时的默认值，**不参与理算**——`Adjustment.apply()` 读的是
+   * 责任配置层的 `t_adj_liability.liability_type`。故选中非报销型时给出与责任配置页同口径的提示，避免
+   * "在险种页改了就以为生效"（O-03）。
+   */
+  const coverageLiabilityType = Form.useWatch('liabilityType', coverageForm) as string | undefined;
+  const coverageEditLiabilityType = Form.useWatch('liabilityType', coverageEditForm) as
+    | string
+    | undefined;
   const [planImportOpen, setPlanImportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   /** 正在执行发布/下线的计划或险种主键（行级 loading，防重复提交）。 */
@@ -752,6 +762,15 @@ export function PlanConfigPage(): ReactElement {
           preserve={false}
           initialValues={coverageCreateInitialValues}
         >
+          {coverageLiabilityType && coverageLiabilityType !== 'REIMBURSEMENT' && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 12 }}
+              message="该险种选非报销型不参与自动理算"
+              description="V1 只对报销型 REIMBURSEMENT 给出赔付公式。这里选非报销型可正常建档，但理算读取的是「责任配置」里的责任类型——本字段仅作登记与新建责任时的默认值。"
+            />
+          )}
           <Form.Item
             name="coverageCode"
             label="险种编码"
@@ -836,6 +855,15 @@ export function PlanConfigPage(): ReactElement {
           preserve={false}
           initialValues={coverageEditInitialValues}
         >
+          {coverageEditLiabilityType && coverageEditLiabilityType !== 'REIMBURSEMENT' && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 12 }}
+              message="该险种选非报销型不参与自动理算"
+              description="V1 只对报销型 REIMBURSEMENT 给出赔付公式。这里选非报销型可正常建档，但理算读取的是「责任配置」里的责任类型——本字段仅作登记与新建责任时的默认值。"
+            />
+          )}
           <Form.Item name="coverageName" label="险种名称">
             <Input placeholder="选填" />
           </Form.Item>
