@@ -103,6 +103,27 @@ FORBIDDEN = [
     ('synap-claim-oracle 恢复旧「生产级模块」表述（会误导为待上线代码）',
      '../synap-claim-oracle/synap-claim-settlement/README.md',
      r'Maven 模块（生产级|## 生产级实现要点'),
+    # --- 2026-11-09 第七批（O-01：`总体技术方案.md` 数字首次入机检）---
+    #  背景：该文件此前不在 checkKeys 内，同日两次实测类数 378 → 382、Controller
+    #  31 → 35 都无人发现，且 §4 表内 7 行相加 147 与声明 148 互斥（O-01）。
+    #  台账 O-01 原文要求「正则写进脚本，不在正文重复字面量以免自触发」——
+    #  故下列旧数字**只存在于本脚本**，正文只写「已加 FORBIDDEN」。
+    ('Controller 数回退为 31（实测 35，含 `/api/v1/internal` 运维面）', 'arch',
+     r'31 Controller|rest（31）'),
+    ('类总数回退为 370/378（2026-11-08 复测 382）', 'arch',
+     r'(?:370|378) 个 Java 类'),
+    ('`domain/model/` 子集文件数回退为 147/148（实测 150）', 'arch',
+     r'14[78] 个文件'),
+    ('应用服务数回退为 34/35（实测 36）', 'arch',
+     r'3[45] 个应用服务'),
+    # 旧四阶段的行标题：M2 是「标量 → 超集 JSON」，migrate/switch/contract 的
+    # 双向双写前提不成立（旧标量无法表达分段/区间/累计）。只禁**行标题**，
+    # 不禁 expand/contract 这几个词本身——§9.1.1 仍要讲「为什么它不适用」。
+    ('M2 退回 migrate 阶段（存量回填，标量→超集 JSON 不可逆）', 'arch',
+     r'\*\*② Migrate\*\*'),
+    ('M2 退回 switch 阶段（双向双写一个发版周期）', 'arch', r'\*\*③ Switch\*\*'),
+    ('M2 退回 contract 阶段（删旧标量列，历史版本不可还原）', 'arch',
+     r'\*\*④ Contract\*\*'),
 ]
 
 # (说明, 文件键或 glob, 正则) —— 缺失即失败
@@ -191,6 +212,21 @@ REQUIRED = [
     #  该测试类 + 两条租户读取结构锁（tenant_context_read_only_by_tenant_port_adapter）是
     #  OWASP A01 身份边界的自动化护栏，缺位即回退为人工守门。
     ('租户隔离 ArchUnit 反例测试在位（防设计回退为靠人守）', 'landing', r'TenantIsolationGuardrailTest'),
+    # --- 2026-11-09 第七批 REQUIRED（O-01）---
+    #  只锁**结构**不锁数值：数值由「基线行 + 复算命令 + 当天日期」承载，
+    #  自洽性由 arch_baseline_verdict() 算，避免 2026-11-04「644 例」式的脆弱断言。
+    ('基线行须带实测日期（快照必须能判断新旧，否则「382 类」是永久宣称）', 'arch',
+     r'事实基线\*\*（20\d{2}-\d{2}-\d{2}'),
+    ('数字须附复算命令（不能只给结论、不给复核手段）', 'arch',
+     r"find src/main/java -name '\*\.java' \| wc -l"),
+    ('PITest 现状句在位（防把目标态写成已生效门禁）', 'arch',
+     r'当前不存在这个门禁'),
+    ('M2 迁移口径在位（双读回落；退回双写四阶段即失去可回滚性）', 'arch',
+     r'Dual-read'),
+    ('M2 不做全量存量回填的判断在位（否则旧标量要被迫编造数值）', 'arch',
+     r'不做全量存量回填|不回填 6 个新维度默认值'),
+    ('开放项台账在位（未闭环事项必须有归处，不能散在正文）', 'arch',
+     r'## 13\. 开放项台账'),
 ]
 
 
@@ -262,6 +298,104 @@ def check_no_hardcoded_ddl_count():
 ORACLE_PATH_RE = r'`(doc/ai-product/synap-claim-oracle/synap-claim-settlement)/?`'
 
 
+# --- 架构基线算术一致性（2026-11-09，O-01 落地）--------------------------------
+# 为什么**不锁死绝对计数**：本文件 2026-11-04 已有前车之鉴——把「644 例 JUnit」
+# 写进 REQUIRED，每加一批用例就假红，最后被迫改成「结构在位、数值不锁死」。
+# 类数同理：382 这个数字每次加类都会变，锁死它只会逼人删断言。
+# 但「任何数字都不校验」正是本轮要修的 bug：同日两次实测 378 → 382，且 §4 表
+# 内 7 行相加 147 ≠ 声明 148。前者是**日期化快照**（合法），后者是**算错**（非法）。
+# 故这里只校验「同一份文档内多处声明必须自洽」：
+#   ① §4 表逐行类数之和 == 「表内 N 行相加 = M」的 M == 「domain/model 的 M 个文件」
+#   ② §4 表服务名个数之和 == 基线行声明的应用服务数
+#   ③ §4 表反引号子域个数之和 == 基线行声明的子域数
+#   ④ §4.1.x 小节标题里的「N 类 / M 个应用服务」== 对应表格行
+# 这四条在**加类**时不会误报（表与头部一起改就自洽），在**只改一处**时必红。
+ARCH_HEAD_PAT = re.compile(
+    r'事实基线\*\*（(?P<date>\d{4}-\d{2}-\d{2})[^）]*）'
+    r'[^\n]*?\*\*(?P<cls>\d+) 个 Java 类\s*/\s*(?P<sub>\d+) 个领域子域\s*/\s*'
+    r'(?P<svc>\d+) 个应用服务\s*/\s*(?P<ctl>\d+) 个 Controller')
+# | **案件 Claim** | `claim` `inspection` … | 38 | ClaimCase / Inspection / … | 说明 |
+ARCH_ROW_PAT = re.compile(
+    r'^\|\s*\*\*(?P<ctx>[^*|]+?)\*\*\s*\|(?P<subs>[^|]*)\|(?P<cls>\s*(?:\d+|—)\s*)\|(?P<svcs>[^|]*)\|',
+    re.M)
+ARCH_SUM_PAT = re.compile(r'表内\s*(?P<rows>\d+)\s*行相加\s*=\s*(?P<total>\d+)')
+ARCH_SUBSET_PAT = re.compile(r'domain/model/`?\s*的\s*(?P<n>\d+)\s*个文件')
+ARCH_SEC_PAT = re.compile(
+    r'^#### (?P<sec>4\.1\.\d+) (?P<ctx>.+?)（(?P<cls>\d+) 类 / (?P<svc>\d+) 个应用服务）', re.M)
+
+
+def _row_class_count(raw):
+    raw = raw.strip()
+    return 0 if raw in ('', '—') else int(raw)
+
+
+def _row_service_names(raw):
+    # 服务列形如 `ClaimCase / Inspection / …`；空列或单独一个 — 视为 0
+    names = [x.strip() for x in raw.split('/')]
+    return [x for x in names if x and x not in ('—', '-')]
+
+
+def arch_baseline_verdict(text):
+    """纯函数：§4 归属表 ↔ 基线行 ↔ 逐节标题 的三方算术一致性。
+
+    抽成纯函数是为了 `--self-test` 能用假文本反证「算错必红、自洽不红」，
+    而不需要改写真实文档（共享树里改真文档会被并行会话覆盖，代价不可接受）。
+    """
+    probs = []
+    head = ARCH_HEAD_PAT.search(text)
+    if not head:
+        return ['找不到「事实基线（YYYY-MM-DD …）：N 个 Java 类 / … 」基线行，'
+                '或字段顺序被改（本判据按该顺序三元定位）']
+    rows_m = list(ARCH_ROW_PAT.finditer(text))
+    if not rows_m:
+        return ['找不到 §4 上下文归属表（形如 `| **案件 Claim** | `claim` | 38 | … |`）']
+    cls_sum = sum(_row_class_count(m.group('cls')) for m in rows_m)
+    svc_sum = sum(len(_row_service_names(m.group('svcs'))) for m in rows_m)
+    sub_sum = sum(len(re.findall(r'`[^`]+`', m.group('subs'))) for m in rows_m)
+
+    s = ARCH_SUM_PAT.search(text)
+    if not s:
+        probs.append('缺少「表内 N 行相加 = M」自证句（无法对账表格合计）')
+    else:
+        if int(s.group('rows')) != len(rows_m):
+            probs.append('自证句声明 %s 行，实际表格 %d 行' % (s.group('rows'), len(rows_m)))
+        if int(s.group('total')) != cls_sum:
+            probs.append('自证句声明合计 %s，表格逐行相加实为 %d（差 %+d）'
+                         % (s.group('total'), cls_sum, cls_sum - int(s.group('total'))))
+    sub = ARCH_SUBSET_PAT.search(text)
+    if sub and int(sub.group('n')) != cls_sum:
+        probs.append('声明 `domain/model/` 有 %s 个文件，表格逐行相加实为 %d'
+                     % (sub.group('n'), cls_sum))
+    if int(head.group('svc')) != svc_sum:
+        probs.append('基线行声明 %s 个应用服务，表格服务列实为 %d 个'
+                     % (head.group('svc'), svc_sum))
+    if int(head.group('sub')) != sub_sum:
+        probs.append('基线行声明 %s 个领域子域，表格反引号子域实为 %d 个'
+                     % (head.group('sub'), sub_sum))
+
+    by_ctx = {m.group('ctx').strip(): m for m in rows_m}
+    for m in ARCH_SEC_PAT.finditer(text):
+        ctx = m.group('ctx').strip()
+        row = by_ctx.get(ctx)
+        if row is None:
+            probs.append('§%s 小节「%s」在 §4 归属表里找不到同名行（改名未同步？）'
+                         % (m.group('sec'), ctx))
+            continue
+        if int(m.group('cls')) != _row_class_count(row.group('cls')):
+            probs.append('小节「%s」写 %s 类，§4 表实为 %s 类'
+                         % (ctx, m.group('cls'), row.group('cls').strip()))
+        if int(m.group('svc')) != len(_row_service_names(row.group('svcs'))):
+            probs.append('小节「%s」写 %s 个应用服务，§4 表服务列实为 %d 个'
+                         % (ctx, m.group('svc'), len(_row_service_names(row.group('svcs')))))
+    return probs
+
+
+def check_arch_baseline():
+    """§4 归属表 / 基线行 / 逐节标题三方自洽（见 arch_baseline_verdict 注释）。"""
+    return ['【FAIL·架构基线】' + p for p in arch_baseline_verdict(read('arch'))]
+
+
+
 def oracle_ci_verdict(wf_text, ptr_text, has_pom):
     """纯函数：CI working-directory ↔ 真实目录 ↔ 指针文档三者一致性判定。
 
@@ -330,6 +464,37 @@ def self_test():
         if not ok:
             bad.append('oracle CI 判据：' + label)
 
+    # 架构基线算术判据（O-01）：纯函数探针，不读写任何文件。
+    # 每条都是**改坏一处**，验证判据真的在算而不是恒过。
+    good = (
+        '> **事实基线**（2026-11-08 19:40 对 `x` 复测）：**10 个 Java 类 / 2 个领域子域 / '
+        '3 个应用服务 / 3 个 Controller**\n'
+        '| **甲 A** | `a` | 6 | S1 / S2 | 说明 |\n'
+        '| **乙 B** | `b` | 4 | S1 | 说明 |\n'
+        '表内 2 行相加 = 10\n'
+        '**§4 表内类数是 `domain/model/` 的 10 个文件**\n'
+        '#### 4.1.1 甲 A（6 类 / 2 个应用服务）\n'
+        '#### 4.1.2 乙 B（4 类 / 1 个应用服务）\n')
+    arch_probes = [
+        ('基线自洽不误报', arch_baseline_verdict(good) == []),
+        ('行相加合计不符', any('相加' in p for p in arch_baseline_verdict(
+            good.replace('行相加 = 10', '行相加 = 11')))),
+        ('子集文件数不符', any('domain/model' in p for p in arch_baseline_verdict(
+            good.replace('的 10 个文件', '的 11 个文件')))),
+        ('应用服务数不符', any('应用服务' in p for p in arch_baseline_verdict(
+            good.replace('3 个应用服务 / 3 个 Controller', '4 个应用服务 / 3 个 Controller')))),
+        ('子域数不符', any('子域' in p for p in arch_baseline_verdict(
+            good.replace('2 个领域子域', '3 个领域子域')))),
+        ('逐节标题类数不符', any('小节' in p for p in arch_baseline_verdict(
+            good.replace('甲 A（6 类', '甲 A（7 类')))),
+        ('小节在归属表无同名行', any('同名行' in p for p in arch_baseline_verdict(
+            good.replace('#### 4.1.2 乙 B', '#### 4.1.2 丙 C')))),
+        ('基线行整体缺失', bool(arch_baseline_verdict(good.replace('事实基线', '事实')))),
+    ]
+    for label, ok in arch_probes:
+        if not ok:
+            bad.append('架构基线判据：' + label)
+
     print('=== _check_numbers.py --self-test ===')
     if bad:
         for b in bad:
@@ -338,6 +503,7 @@ def self_test():
     print('  ✅ 4 个正例命中（35 表 / 36 张 / 建表数 / DDL 36）')
     print('  ✅ 3 个反例不误报（集合引用 / 机检输出 / 对账式表述）')
     print('  ✅ oracle CI 判据 5 个纯函数探针（不碰文件）：合规正例 + 4 种改坏均判红')
+    print('  ✅ 架构基线判据 8 个纯函数探针（不碰文件）：自洽不误报 + 7 种改坏均判红')
     return 0
 
 
@@ -348,6 +514,7 @@ def main():
     fails += check_adr_traceability()
     fails += check_no_hardcoded_ddl_count()
     fails += check_oracle_ci_wiring()
+    fails += check_arch_baseline()
     for desc, key, pat in FORBIDDEN:
         m = re.search(pat, read(key))
         if m:
