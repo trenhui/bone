@@ -31,7 +31,7 @@ classic_profile: null
 classic_migration: null
 run_checkpoint:
   schema: comet.workflow-run-checkpoint.v1
-  hash: 8ce53121572b5b35c948e6448e0ac169e7a91824ef6e3d17825db937b8acdbcf
+  hash: 72dab97673d7d6b9ba087bb875ddf292f1fe9b0010bf507bd7e54346da969aba
   run:
     protocolVersion: 1
     schemaVersion: 1
@@ -861,7 +861,15 @@ run_checkpoint:
         status: succeeded
         stepId: full.build.execute
         type: invoke_skill
-      - attempt: 9
+      - attempt: 10
+        claim:
+          executorId: comet-classic-check
+          token: portable-e84bb69058398aecf087394933732cfedca6c62b8931551de2ffab01f2de4749
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
         id: synapclaim-architecture-convergence:14
         input:
           input:
@@ -992,6 +1000,7 @@ run_checkpoint:
               contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
         inputHash: 24f2a54c05b2fb0a122b7bb3794324646b630c4f037e869b924a19ff46b6a6d9
         protocolVersion: 1
+        reason: Portable recovery requires reconciliation of external execution
         receipts: []
         reconciliations:
           - attempt: 1
@@ -1042,11 +1051,15 @@ run_checkpoint:
                 秒超时（exitCode 70）未执行子命令、未生成 logRef 或收据；随后重试返回『no pending check
                 Action』。原检查完全未执行，已复位为可重新派发。
             resolution: not-executed
+          - attempt: 9
+            evidence:
+              summary: 释放 running Action 后重试 build check
+            resolution: not-executed
         ref: classic-check
         requiredCapabilities: []
         retry: manual
         runId: synapclaim-architecture-convergence
-        status: pending
+        status: unknown
         stepId: full.build.check
         type: call_tool
     actionContexts:
@@ -2405,6 +2418,6 @@ run_checkpoint:
           contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
     children: []
     lineage: []
-  sourceRevision: 66
-  sourceHash: 5645d68a0f7afbaad8db58d9b492752837ccf27e9d6f69d45a3b747db13224d8
+  sourceRevision: 70
+  sourceHash: fa2fc9a3cf21bfd0f6bfd06258bbee8537ae4d807e8a9c2d1b070039e80efdc0
 check_epoch: 2

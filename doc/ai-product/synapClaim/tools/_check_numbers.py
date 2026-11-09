@@ -441,6 +441,50 @@ def check_ledger():
     return ['【FAIL·开放项台账】' + p for p in ledger_verdict(read('arch'))]
 
 
+# --- 2026-11-09 第八批（§15.2 变异验证接线）---------------------------------
+# 第五轮内存变异 M1–M4 全部漏网：前四轮新增的资金 / 发布 / 质量语义判据
+# 没有任何门禁守护，19 步全绿只证明结构在位。本判据只锁**不变量**
+# （键分类真源、B 类缺省语义、默认值 + 书面改判机制、兼容矩阵、质量场景），
+# **不锁具体默认数值**：默认值允许书面改判，锁死数值会造成高频误报
+# （O-01 已踩过「把结构计数写死」的坑）。回退词字面量只在本脚本，正文不重复。
+def semantic_verdict(text):
+    """《总体技术方案》新增语义判据的防回退 / 防漏（纯函数，供 --self-test 反证）。"""
+    probs = []
+    for pat, label in [
+        (r'待实测校准值', 'Q2 阈值退回「待实测校准」'),
+        (r'连续 N 周', '退役条件退回「连续 N 周」'),
+        (r'待指派', 'owner 退回「待指派」'),
+        (r'仍须业务确认', 'B 类键退回「仍须业务确认」'),
+        (r'留给压测与业务拍板', '阈值退回「留给业务拍板」'),
+    ]:
+        if re.search(pat, text):
+            probs.append('语义回退：' + label)
+    for pat, label in [
+        (r'键分类表（唯一真源）', '键分类表唯一真源声明'),
+        (r'不施加(?:该)?约束', 'B 类键「缺键不施加约束」（缺失会让历史行全量拒赔）'),
+        (r'工程默认值', '工程默认值'),
+        (r'改判须书面评审', '书面改判机制'),
+        (r'默认由架构师承担', 'owner 默认承担机制'),
+        (r'版本兼容矩阵', '三格版本兼容矩阵'),
+        (r'### 11\.1 质量属性场景', 'arc42 §10 质量属性场景'),
+        # 以下 3 条只锁**格式 / 真源行**，不锁具体数值：
+        # 「3 个发版周期」「3 个 10 分钟窗口」这类书面改判仍绿，
+        # 退回「N 周」「N 分钟」这类悬空占位则判红（首轮变异 M2/M3 的漏网补强）。
+        (r'\d+\s*个完整发版周期', '退役条件的发版周期格式'),
+        (r'\d+\s*个\s*\d+\s*分钟观测窗口', 'Q2 多窗口观测格式'),
+        (r'\|\s*B 可选限定维度\s*\|[^\n]*不施加(?:该)?约束',
+         '键分类表真源行（B 类缺省语义）'),
+    ]:
+        if not re.search(pat, text):
+            probs.append('语义缺位：' + label)
+    return probs
+
+
+def check_semantic():
+    """§15.2 变异验证接线：让新增语义判据不再只靠人守。"""
+    return ['【FAIL·语义护栏】' + p for p in semantic_verdict(read('arch'))]
+
+
 def oracle_ci_verdict(wf_text, ptr_text, has_pom):
     """纯函数：CI working-directory ↔ 真实目录 ↔ 指针文档三者一致性判定。
 
@@ -559,6 +603,36 @@ def self_test():
         if not ok:
             bad.append('开放项台账判据：' + label)
 
+    # 语义判据（§15.2 变异验证接线）：纯函数探针，不读写文件。
+    sem_good = (
+        '**键分类表（唯一真源）**\n| B 可选限定维度 | 不施加该约束 |\n'
+        '工程默认值。改判须书面评审。默认由架构师承担。\n'
+        '版本兼容矩阵\n### 11.1 质量属性场景\n'
+        '连续 2 个完整发版周期\n连续 2 个 5 分钟观测窗口\n')
+    sem_probes = [
+        ('语义基线自洽不误报', semantic_verdict(sem_good) == []),
+        ('B 类键改回一刀切拒绝', any('不施加' in p for p in semantic_verdict(
+            sem_good.replace('不施加该约束', 'fail-closed')))),
+        ('owner 退回待指派', any('待指派' in p for p in semantic_verdict(
+            sem_good.replace('默认由架构师承担', '待指派')))),
+        ('书面改判机制缺失', any('书面改判机制' in p for p in semantic_verdict(
+            sem_good.replace('改判须书面评审', '口头放宽')))),
+        ('质量场景整节缺失', any('质量属性场景' in p for p in semantic_verdict(
+            sem_good.replace('### 11.1 质量属性场景', '')))),
+        ('三格兼容矩阵缺失', any('兼容矩阵' in p for p in semantic_verdict(
+            sem_good.replace('版本兼容矩阵', '')))),
+        ('发版周期退回悬空占位', any('发版周期' in p for p in semantic_verdict(
+            sem_good.replace('2 个完整发版周期', 'N 周')))),
+        ('Q2 多窗口退回悬空占位', any('观测格式' in p for p in semantic_verdict(
+            sem_good.replace('2 个 5 分钟观测窗口', 'N 分钟')))),
+        ('键分类表真源行被改坏', any('真源行' in p for p in semantic_verdict(
+            sem_good.replace('| B 可选限定维度 | 不施加该约束 |',
+                             '| B 可选限定维度 | fail-closed |')))),
+    ]
+    for label, ok in sem_probes:
+        if not ok:
+            bad.append('语义判据：' + label)
+
     print('=== _check_numbers.py --self-test ===')
     if bad:
         for b in bad:
@@ -569,6 +643,7 @@ def self_test():
     print('  ✅ oracle CI 判据 5 个纯函数探针（不碰文件）：合规正例 + 4 种改坏均判红')
     print('  ✅ 架构基线判据 8 个纯函数探针（不碰文件）：自洽不误报 + 7 种改坏均判红')
     print('  ✅ 开放项台账判据 5 个纯函数探针（不碰文件）：终态免触发 + 缺触发/重号/缺号/整段缺失均判红')
+    print('  ✅ 语义护栏判据 9 个纯函数探针（不碰文件）：基线不误报 + 8 种改坏均判红')
     return 0
 
 
@@ -581,6 +656,7 @@ def main():
     fails += check_oracle_ci_wiring()
     fails += check_arch_baseline()
     fails += check_ledger()
+    fails += check_semantic()
     for desc, key, pat in FORBIDDEN:
         m = re.search(pat, read(key))
         if m:
@@ -595,7 +671,7 @@ def main():
         print('共 %d 项失败' % len(fails))
         return 1
     print('=== 数值/口径回归机检 ===')
-    print('【OK】%d 项禁用表述零命中，%d 项关键口径均在位，§13 台账结构（触发条件 / ID 连续）通过'
+    print('【OK】%d 项禁用表述零命中，%d 项关键口径均在位，§13 台账结构 + 语义护栏（防回退 5 / 防漏 10）通过'
           % (len(FORBIDDEN), len(REQUIRED)))
     return 0
 
