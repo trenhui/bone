@@ -2858,6 +2858,7 @@ CREATE TABLE t_adj_liability (
   pay_percent       DECIMAL(6,2)  NOT NULL DEFAULT 0 COMMENT '赔付比例(百分数; 缺省0, 禁隐式默认90%)',
   liability_deduct  DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '年度免赔额(R-DED-03)',
   liability_limit   DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '责任额度上限(R-CAP)',
+  liability_rule_json JSON        DEFAULT NULL COMMENT '责任要素聚合列(9要素键+schemaVersion;NULL=历史行或未配置,读侧按键回落旧标量列)',
   invoice_deduct    DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '发票级免赔(GAP②，比例前): 0=不启用',
   adjust_deduct     DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '理算级免赔(GAP⑥，比例后): 0=不启用',
   daily_limit       DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '日赔付限额(Q-05): 同一业务日累计上限; 0=不启用',

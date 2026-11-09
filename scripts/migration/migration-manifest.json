@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 122,
+  "executableCount": 123,
   "retired": [],
   "entries": [
     {
@@ -783,6 +783,12 @@
       "file": "0122_synap_claim_blind_label_task.sql",
       "kind": "ddl",
       "summary": "新建 t_claim_blind_label_task（独立盲标任务，G4-1 数据飞轮的防反馈环闸门）：后督抽检员看得到 AI 建议，其结论不能当金标准（Sculley feedback loops，偏差被当 ground truth 放大）；独立盲标要求标注人在不看任何 AI 痕迹前提下重判同一案件，需与抽检单分离的存储。四道闸应用侧同批落码：①载荷禁区（label_payload_json 键名过 AI 痕迹黑名单扫描，命中 422）②物理分离（ai_suggestion_json 解盲时才从决策轨迹读入，提交前库内无 AI 数据）③一次提交（结论不可改写）④标注人去污染（与该案抽检质检人同人 409）。agreement 仅 PAIRED/AI_ABSENT：PAIRED 只表示成对样本产出，一致率由评测流水线离线判定；AI 参与口径复用 0121 的 confidence_source==MODEL 单一真源（桩/降级环境的建议是假证据）。状态机 PENDING→LABELED→UNBLINDED 终态不可变。bone-init.sql 同批补同款建表块（G39 覆盖纪律）；幂等 CREATE TABLE IF NOT EXISTS；终态断言 fail-closed（information_schema 强断言表+11 关键列，0118/0121 同款临时过程不残留）。"
+    },
+    {
+      "order": 123,
+      "file": "0123_synap_claim_liability_expand.sql",
+      "kind": "ddl",
+      "summary": "M2 ① Expand：给 t_adj_liability 增加 1 个聚合列 liability_rule_json（JSON NULL），把责任要素从 4 维标量升级为 9 个键的可扩展表达（D5 已拍板单聚合列：九列方案在 G3 自设判据下自我否证——新增一类要素仍要 ADD COLUMN；且本仓实测零 JSON codec，「九列改动面更小」不成立）。本阶段只加列：不改旧列类型、不建 _rule 影子列、不做存量回填、不同时做 contract，故旧代码对新列完全无感 ⇒ 线上读写零行为变更，回滚只需 DROP 该列且无数据损失。列 nullable 无默认值：历史行恒为 NULL ⇒ 读侧按键回落旧标量列成为结构保证（A 类必需参数 fail-closed / B 类可选维度缺键不施加约束 / 未知键与未知版本拒，唯一真源见方案 §9.1.1 键分类表）；不给新键编造 0 默认值（「缺键=不施加约束」与「给 0」语义相反，等于凭空新增拒赔条件）。读侧切主在 ③ Dual-read、超集解锁在 ④，均不在本脚本。bone-init.sql 同批补列（防「新装 vs 升级」结构分叉）。终态断言 fail-closed：information_schema 强断言新列为 nullable json，且三个可映射旧标量列（pay_percent/liability_deduct/liability_limit）仍在——防后人把「加列」误写成「改列」，旧列一被动回滚窗口即消失；0118/0121 同款临时过程，不残留过程体。"
     }
   ],
   "ordinalConflicts": [
