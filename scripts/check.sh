@@ -715,8 +715,10 @@ fi
 # 而 `resources/sql/<包路径>/<Repo>/<方法名>.sql` 的 SELECT 列清单是**手写**的。两侧不同源 ⇒
 # 新列「建得进、读不出（字段恒 null）、再被整实体 save 写回抹掉」——数据静默丢失，
 # 只有真实链路 E2E 才会红，单测与编译全绿。本步直接比对二者列集合，缺列即失败。
+# 2026-11-09 修正：此前调用漏了 --check，而脚本无参是 report-only（有缺口也 return 0），
+# 于是本步与 ci.yml 的 (blocking) step 都从未真正拦过缺列。G47 R8 会守住这条接线。
 echo -e "${YELLOW}[48/59] 仓储 SQL 模板 ↔ 实体列覆盖（防「读不出再写回抹掉」· G42）...${RESET}"
-if ! python3 scripts/check-sql-entity-column-coverage.py; then
+if ! python3 scripts/check-sql-entity-column-coverage.py --check; then
   echo -e "${RED}❌ 仓储 SQL 模板缺列（实体有列、手写 SELECT 没有 ⇒ 读回 null 并可能被写回覆盖）${RESET}"
   exit_code=1
 fi

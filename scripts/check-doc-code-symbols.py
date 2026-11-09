@@ -8,7 +8,10 @@
     python3 scripts/check-doc-code-symbols.py --all            # 连 Vision / Target 段落一起报
     python3 scripts/check-doc-code-symbols.py --show-baseline  # 打印 baseline 内容
 
-退出码：0 = 无新增疑似漂移；1 = 存在疑似漂移（仅提示，不阻断）。
+退出码：0 = 无新增疑似漂移且基线无失效；1 = 发现未登记漂移或基线失效项。
+脚本本身不决定阻断语义：活入口 scripts/check.sh 的 [18/59] 用
+`if ! ...; then exit_code=1` 把它当**提交门禁**，故返回 1 会阻断提交。
+本脚本没有 --report-only 模式，需要观察时直接手工运行查看打印结果即可。
 
 baseline 见 doc/architecture/doc-code-symbols-baseline.json，只可收缩：
 文档修订使某个类名不再出现在文中后，应从 baseline 删除对应条目。

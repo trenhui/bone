@@ -574,5 +574,91 @@ class SelfTestWiringTest(unittest.TestCase):
         self.assertEqual(self._notes(), [])
 
 
+class CheckFlagWiringTest(unittest.TestCase):
+    """R8：声明 --check 的门禁不得以无参（report-only）方式接线。
+
+    夹具同 SelfTestWiringTest；重点覆盖「标着 blocking 却恒绿」的真实形态，
+    以及两类不该红的形态（未声明判据参数、零调用由 R4 管、只接 CI 由 R6 管）。
+    """
+
+    DECL = (
+        "#!/usr/bin/env python3\n"
+        "import argparse\n"
+        "parser = argparse.ArgumentParser()\n"
+        'parser.add_argument("--check", action="store_true")\n'
+    )
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp(prefix="gate-checkflag-")
+        _write(self.root, "scripts/check.sh", "echo no-gate\n")
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _gate(self, body, name="check-probe.py"):
+        _write(self.root, "scripts/" + name, body)
+
+    def _notes(self):
+        root = Path(self.root)
+        return mod.check_flag_wiring_notes(root, mod.entry_corpus(root))
+
+    def test_check_mode_call_passes(self):
+        self._gate(self.DECL)
+        _write(self.root, "scripts/check.sh", "python3 scripts/check-probe.py --check\n")
+
+        self.assertEqual(self._notes(), [])
+
+    def test_report_only_call_is_reported(self):
+        # 真实形态：check.sh 与 CI 都调无参版本，两处都标着阻断却恒 exit 0。
+        self._gate(self.DECL)
+        _write(self.root, "scripts/check.sh", "python3 scripts/check-probe.py\n")
+        _write(
+            self.root,
+            ".github/workflows/ci.yml",
+            "jobs:\n  x:\n    steps:\n"
+            "      - name: G (blocking)\n"
+            "        run: /usr/bin/env python3 scripts/check-probe.py\n",
+        )
+
+        notes = self._notes()
+        self.assertTrue(any(n.startswith("R8:") for n in notes), notes)
+
+    def test_comment_mention_is_not_a_call(self):
+        self._gate(self.DECL)
+        _write(
+            self.root,
+            "scripts/check.sh",
+            "python3 scripts/check-probe.py\n"
+            "# python3 scripts/check-probe.py --check\n",
+        )
+
+        notes = self._notes()
+        self.assertTrue(any(n.startswith("R8:") for n in notes), notes)
+
+    def test_undeclared_script_is_not_required(self):
+        self._gate("#!/usr/bin/env python3\n# mentions --check in prose only\n")
+        _write(self.root, "scripts/check.sh", "python3 scripts/check-probe.py\n")
+
+        self.assertEqual(self._notes(), [])
+
+    def test_zero_calls_is_left_to_r4(self):
+        self._gate(self.DECL)
+
+        self.assertEqual(self._notes(), [])
+
+    def test_ci_only_check_call_passes(self):
+        # 只接 CI（allowlist 登记 ci_only）由 R6 管，R8 不重复要求 pre-commit。
+        self._gate(self.DECL)
+        _write(self.root, "scripts/check.sh", "python3 scripts/check-probe.py\n")
+        _write(
+            self.root,
+            ".github/workflows/ci.yml",
+            "jobs:\n  x:\n    steps:\n"
+            "      - run: /usr/bin/env python3 scripts/check-probe.py --check\n",
+        )
+
+        self.assertEqual(self._notes(), [])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

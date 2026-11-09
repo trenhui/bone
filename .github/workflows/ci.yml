@@ -330,8 +330,9 @@ jobs:
         run: /usr/bin/env python3 scripts/check-approver-reference-not-exposed.py
 
       # 写侧列由实体元数据生成、读侧 SQL 模板手写 ⇒ 缺列会「建得进、读不出、再写回抹掉」。
+      # 2026-11-09：必须带 --check，无参是 report-only（恒 exit 0）⇒ 标着 blocking 却从不拦。
       - name: Repository SQL Entity Column Coverage (blocking)
-        run: /usr/bin/env python3 scripts/check-sql-entity-column-coverage.py
+        run: /usr/bin/env python3 scripts/check-sql-entity-column-coverage.py --check
 
       # 2026-11-05：97c6593a7 提交了 `claim.requiresSecondReview(ClaimThresholds.DUAL_REVIEW_AMOUNT)`
       # 及其 import，而 `ClaimThresholds.java` 至今 untracked ⇒ 干净检出直接编不过。

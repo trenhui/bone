@@ -541,6 +541,47 @@ def selftest_wiring_notes(root: Path, corpus: dict[str, str]) -> list[str]:
     return notes
 
 
+# R8（2026-11-09 新增）：脚本声明了 --check 判据参数，活入口却全部无参调用 = 假绿。
+# 起因：G42 的 check-sql-entity-column-coverage.py 无参是 report-only（有缺口也 return 0），
+# 而 check.sh [48/59] 与 ci.yml 的 (blocking) step 都调了无参版本——标着 blocking 却从不拦。
+# 实测对照：注入一处 SQL 缺列后，无参 exit 0、带 --check exit 1 并精确报出缺列。
+CHECK_DECL_RE = re.compile(
+    r"add_argument\(\s*['\"]--check['\"]|['\"]--check['\"]\s+in\s+sys\.argv"
+)
+
+
+def check_flag_wiring_notes(root: Path, corpus: dict[str, str]) -> list[str]:
+    """R8：声明 --check 的门禁，活入口至少要有一处以判据模式调用。纯函数，单测可注入夹具。
+
+    与 R7 的分工：R7 管「自测有没有被跑」，R8 管「主判据是不是以判据模式跑」。
+    R4 只看脚本名出现在调用行上，看不见参数缺失，故这一层必须单独守。
+    通过条件是「任意活入口有一处带 --check」：只接在 CI 的门禁由 R6 / allowlist
+    另行管理，这里不重复要求 pre-commit，避免误伤已登记的 ci_only 条目。
+    """
+    notes: list[str] = []
+    for gate in gate_scripts(root):
+        text = gate.read_text(encoding="utf-8", errors="ignore")
+        if not CHECK_DECL_RE.search(text):
+            continue
+        pattern = re.compile(re.escape(gate.name) + r"(?![A-Za-z0-9_.-])")
+        calls: list[str] = []
+        for _rel, body in corpus.items():
+            for line in body.splitlines():
+                if line.lstrip().startswith("#"):
+                    continue
+                if pattern.search(line) and INVOCATION_RE.search(line):
+                    calls.append(line)
+        if not calls:
+            continue  # 零调用由 R4 管，不重复报
+        if not any("--check" in line for line in calls):
+            rel = gate.relative_to(root).as_posix()
+            notes.append(
+                f"R8: {rel} 声明了 --check 判据参数，但活入口全部是无参调用"
+                "（report-only 恒 exit 0 ⇒ 标着 blocking 也从不拦；请补 --check）"
+            )
+    return notes
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="门禁自身存活判据")
     parser.add_argument("--strict", action="store_true", help="任何违规即 exit 1")
@@ -599,6 +640,12 @@ def main() -> int:
     notes.extend(r7)
     if args.strict:
         violations.extend(r7)
+
+    # R8（2026-11-09 新增）：声明 --check 的门禁不得以无参（report-only）方式接线。
+    r8 = check_flag_wiring_notes(REPO, entry_corpus(REPO))
+    notes.extend(r8)
+    if args.strict:
+        violations.extend(r8)
 
     if violations:
         for v in violations:
