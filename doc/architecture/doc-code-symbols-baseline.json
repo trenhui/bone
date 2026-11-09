@@ -1,7 +1,7 @@
 {
   "version": 1,
   "shrinkOnly": true,
-  "note": "文档类名漂移检查的白名单。docLevel 为整篇豁免；symbols 为符号级豁免，只可收缩。reason=handler-era-naming 的条目属待修订项：模块详设应用层仍用 Handler 命名，代码已按 ADR-0028 收敛为 ApplicationService，应按模块统一修订后删除登记。｜2026-10-03 新增三类 reason：review-snapshot（带时间戳的夜间复核报告快照）、tobe-named（模块详设的目标态类名，实现未落地）、workflow-sample（流程方案文档的示例类名）与 false-positive（Spring 通用词误报）。与既有 handler-era-naming 同理：改文档会丢失这些文档的时间/目标态信息。｜2026-10-30 收缩：删除 6 条指向已不存在的《ClaimSphere 智能理赔平台设计方案.md》的符号级豁免与 1 条已无处出现的 VersionController；同时脚本新增 [path]/[absent] 两类失效判据（豁免指向的文档不存在 / 文档已不再出现该符号），存量失效即判红。",
+  "note": "文档类名漂移检查的白名单。docLevel 为整篇豁免；symbols 为符号级豁免，只可收缩。reason=handler-era-naming 的条目属待修订项：模块详设应用层仍用 Handler 命名，代码已按 ADR-0028 收敛为 ApplicationService，应按模块统一修订后删除登记。｜2026-10-03 新增三类 reason：review-snapshot（带时间戳的夜间复核报告快照）、tobe-named（模块详设的目标态类名，实现未落地）、workflow-sample（流程方案文档的示例类名）与 false-positive（Spring 通用词误报）。与既有 handler-era-naming 同理：改文档会丢失这些文档的时间/目标态信息。｜2026-10-30 收缩：删除 6 条指向已不存在的《ClaimSphere 智能理赔平台设计方案.md》的符号级豁免与 1 条已无处出现的 VersionController；同时脚本新增 [path]/[absent] 两类失效判据（豁免指向的文档不存在 / 文档已不再出现该符号），存量失效即判红。｜2026-11-09 追加：procuraAI 一期规划态详细设计（10 篇）合并引入的 36 个 To-Be 示意类名，按符号级 tobe-named 登记；刻意不用 docLevel 整篇豁免，保证未来新增漂移仍被拦截，类名落地后由 [symbol] 判据强制收缩。",
   "docLevel": [
     {
       "doc": "design/modules/1. 控制台与仪表盘模块详细设计方案.md",
@@ -831,6 +831,296 @@
       ],
       "reason": "tobe-named",
       "note": "§9 支付网关一栏明确写「无独立 PaymentGatewayPortAdapter 实现」，属 Phase C 目标态名"
+    },
+    {
+      "symbol": "AiReviewGateway",
+      "docs": [
+        "doc/ai-product/procuraAI/采购AI-接口契约与数据字典-v2.md",
+        "doc/ai-product/procuraAI/采购总体架构方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "CapaApplicationService",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/03-合同风险绩效与AI模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "CapaController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/03-合同风险绩效与AI模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "ChangeRequestController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/01-供应商主数据模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "ClauseController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/03-合同风险绩效与AI模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "ContractApplicationService",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/03-合同风险绩效与AI模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "ContractController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/03-合同风险绩效与AI模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "ErpAclAdapter",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/01-供应商主数据模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "FinanceWebhookController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/06-编排事件与平台接入详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "InventoryWebhookController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/06-编排事件与平台接入详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "InvoiceSubmissionController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/05-履约协同与门户模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "IrExceptionController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/05-履约协同与门户模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "OnboardingApplicationService",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/02-寻源与准入模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "OnboardingController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/02-寻源与准入模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "PoAckController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/05-履约协同与门户模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "PortalQueryController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/05-履约协同与门户模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "PurchaseCostApplicationService",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/04-采购交易与成本模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "PurchaseCostController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/04-采购交易与成本模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "PurchaseOrderApplicationService",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/04-采购交易与成本模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "PurchaseOrderController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/04-采购交易与成本模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "PurchaseOrderRepository",
+      "docs": [
+        "doc/ai-product/procuraAI/一期边界与机制触发条件.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "QualificationApplicationService",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/02-寻源与准入模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "QualificationController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/02-寻源与准入模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "RequisitionApplicationService",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/04-采购交易与成本模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "RequisitionController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/04-采购交易与成本模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "RiskAlertController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/03-合同风险绩效与AI模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "SourcingController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/02-寻源与准入模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "SourcingProjectApplicationService",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/02-寻源与准入模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "SupplierApplicationService",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/01-供应商主数据模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "SupplierController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/01-供应商主数据模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "SupplierRepository",
+      "docs": [
+        "doc/ai-product/procuraAI/一期边界与机制触发条件.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "TransferApplicationService",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/04-采购交易与成本模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "TransferController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/04-采购交易与成本模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "VendorActivationRepository",
+      "docs": [
+        "doc/ai-product/procuraAI/一期边界与机制触发条件.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "VendorController",
+      "docs": [
+        "doc/ai-product/procuraAI/detailed-design/01-供应商主数据模块详细设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
+    },
+    {
+      "symbol": "VendorRepository",
+      "docs": [
+        "doc/ai-product/procuraAI/一期边界与机制触发条件.md",
+        "doc/ai-product/procuraAI/采购域-BONE框架能力对齐与落地基线.md"
+      ],
+      "reason": "tobe-named",
+      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
     }
   ]
 }

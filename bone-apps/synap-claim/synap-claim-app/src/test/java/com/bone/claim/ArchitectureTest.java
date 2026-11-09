@@ -215,6 +215,12 @@ public class ArchitectureTest {
               "ADR-002/§3.2.1: AI 能力一律经 domain/application 定义的 port（ACL）消费；"
                   + "bone-ai-* 实现类只允许被 infrastructure.client 引入");
 
+  // LGPL / CVE-SBOM：Aviator 死实现已删，禁止重新引入。共享内核里规则早已定义，
+  // 但 @ArchTest 只在声明它的模块内执行；bone-ai 八个模块均已登记，本模块漏登记
+  // 会使该规则对 synap-claim 恒不生效——「规则存在」不等于「规则在本模块被运行」。
+  // advisory 形态（allowEmptyShould=true，零引用恒绿），只锁未来违规，当日即绿。
+  @ArchTest static final ArchRule no_aviator_dependency = BoneDddArchRules.noAviatorDependency();
+
   // E-13.0：Spring bean 名唯一（协议边界后同模块两协议 Controller 可合法同名）
   @ArchTest
   static final ArchRule spring_bean_names_unique =

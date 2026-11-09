@@ -731,9 +731,16 @@ if ! python3 scripts/check-synapclaim-architecture.py; then
 fi
 
 # 2026-11-08 新增（P38 第二轮 / M1·M4）。三模块依赖边界：SDK 零框架依赖、
-# engine 仅 JDK + SDK、app 单向依赖。判据与 7 个负向探针见
-# scripts/check-synapclaim-module-boundaries.py --self-test（G47 活入口即本行调用）。
+# engine 仅 JDK + SDK、app 单向依赖。
+# 2026-11-09 收口：判据的 7 个负向探针必须与主判据同批进入活入口。此前 --self-test
+# 只写在注释里、从未被执行——「没人跑的自测」等于没有保护，绿灯无法证明判据能变红。
+# 口径与 doc/ai-product/synapClaim/tools/check_all.py 一致：同一脚本登记两行执行
+# （自证 + 主判据），且自证由 runner 每次提交强制运行，不是开发时手工跑一次。
 echo -e "${YELLOW}  · 模块边界（B1–B8）：SDK 零框架 / engine 纯 JDK / app 单向依赖${RESET}"
+if ! python3 scripts/check-synapclaim-module-boundaries.py --self-test; then
+  echo -e "${RED}❌ synapClaim 模块边界机检负向探针失效（判据可能恒绿，绿灯不可信）${RESET}"
+  exit_code=1
+fi
 if ! python3 scripts/check-synapclaim-module-boundaries.py; then
   echo -e "${RED}❌ synapClaim 模块边界机检失败（依赖方向或框架污染）${RESET}"
   exit_code=1
