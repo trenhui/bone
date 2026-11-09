@@ -8,6 +8,7 @@ import com.bone.claim.domain.model.adjustment.engine.CatalogAdmission;
 import com.bone.claim.domain.model.adjustment.engine.LiabilityRule;
 import com.bone.claim.domain.model.adjustment.engine.RuleGap;
 import com.bone.claim.domain.model.liability.AdjLiability;
+import com.bone.claim.domain.model.liability.LiabilityRuleJson;
 import com.bone.claim.domain.model.policy.ClaimCoverage;
 import com.bone.claim.domain.model.policy.ClaimPlan;
 import com.bone.claim.domain.model.policy.ClaimPolicy;
@@ -81,8 +82,7 @@ public class LiabilityConfigApplicationService {
             command.sharedCode(),
             command.priorLiabilityUuid(),
             command.status() == null || command.status().isBlank() ? "DRAFT" : command.status());
-    liabilityRepository.save(liability);
-    domainEventPublisher.publishFrom(liability);
+    saveWithRuleShadow(liability);
     return LiabilityView.from(liability);
   }
 
@@ -143,8 +143,7 @@ public class LiabilityConfigApplicationService {
               sharedCode,
               priorLiabilityUuid,
               "DRAFT");
-      liabilityRepository.save(next);
-      domainEventPublisher.publishFrom(next);
+      saveWithRuleShadow(next);
       return LiabilityView.from(next);
     }
     // DRAFT 原地编辑：保留 SDK 管理的 version（乐观锁），并发编辑冲突由框架抛异常→控制器转 409
@@ -166,8 +165,7 @@ public class LiabilityConfigApplicationService {
         values.socialOnly(),
         values.waitingPeriod(),
         targetCoverageId);
-    liabilityRepository.save(existing);
-    domainEventPublisher.publishFrom(existing);
+    saveWithRuleShadow(existing);
     return LiabilityView.from(existing);
   }
 
@@ -214,6 +212,57 @@ public class LiabilityConfigApplicationService {
   @Transactional(readOnly = true)
   public List<LiabilityView> listByPlan(long planId) {
     return liabilityRepository.findByPlanId(planId).stream().map(LiabilityView::from).toList();
+  }
+
+  // ===================== 规则影子写入（M2 ② Shadow） =====================
+
+  /**
+   * 保存责任并把 9 要素的影子写进 `liability_rule_json`，随后<b>从库里回读</b>校验不变量。
+   *
+   * <p><b>为什么 ② 必须有这一步</b>：这一阶段标量仍是真源，JSON 只是影子。影子写歪不会有任何症状—— 页面上一切正常、理算也照旧（没人读它），直到 ③ 把读侧切到 JSON
+   * 才按错值算钱。金额引擎出错的典型表现 就是静默算错，所以唯一可靠的时点是<b>写入当时</b>：写入即回读，{@code scalar == project(json)} 不成立就当场拒绝。
+   *
+   * <p><b>为什么回读而不是拿内存对象自比</b>：见 {@code LiabilityRuleJsonCodec#assertShadowConsistent}——
+   * 内存比对只能证明代码自洽，证明不了"SDK 写进了 JSON 列"和"模板读得回来"。
+   *
+   * <p>代价是一次额外 SELECT（配置写入口由人工触发、量级极低），换来的是 ③ 之前所有新写入行都可证明一致。
+   */
+  private void saveWithRuleShadow(AdjLiability liability) {
+    try {
+      liability.attachRuleJsonShadow(LiabilityRuleJsonCodec.encode(shadowOf(liability)));
+    } catch (RuleGap gap) {
+      // 影子编码失败属于配置面拒绝（例如已有维度值不合法），与形状校验同一出口。
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_LIABILITY_INVALID_ARGUMENT, gap.detail());
+    }
+    liabilityRepository.save(liability);
+    // 必须显式拆箱：本仓储同时存在 {@code findById(long)}（带 @TenantScope 的声明）与基类的
+    // {@code findById(Long)}，传 Long 会命中后者——绕过租户作用域声明，也绕开本方法的回读语义。
+    Long savedId = liability.getId();
+    if (savedId == null) {
+      throw new IllegalStateException("责任配置落库后仍无主键：无法回读验证影子");
+    }
+    LiabilityRuleJsonCodec.assertShadowConsistent(
+        liabilityRepository.findById(savedId.longValue()), savedId);
+    domainEventPublisher.publishFrom(liability);
+  }
+
+  /**
+   * 由当前生效值装配影子：3 个可映射键取自标量，B 类维度若已存在则原样保留。
+   *
+   * <p>保留维度不是"顺手"：{@code ofScalars} 会重建一个只带 3 个键的文档，用在编辑路径上等于 "改个比例顺手删光限定条件"——页面上看不出，金额上立刻生效。
+   */
+  private static LiabilityRuleJson shadowOf(AdjLiability liability) {
+    String existing = liability.getLiabilityRuleJson();
+    if (existing == null || existing.isBlank()) {
+      // 历史行 / 首次写入：只有 3 个可映射键，其余 6 个 B 类键不编造默认值（缺键 = 不施加该约束）。
+      return LiabilityRuleJson.ofScalars(
+          liability.getPayPercent(), liability.getLiabilityDeduct(), liability.getLiabilityLimit());
+    }
+    return LiabilityRuleJsonCodec.decode(existing)
+        .withProjection(
+            liability.getPayPercent(),
+            liability.getLiabilityDeduct(),
+            liability.getLiabilityLimit());
   }
 
   // ===================== 规则自洽校验 =====================

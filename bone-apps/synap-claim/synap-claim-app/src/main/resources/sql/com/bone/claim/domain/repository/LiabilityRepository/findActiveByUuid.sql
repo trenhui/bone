@@ -9,6 +9,7 @@ SELECT
        pay_percent,
        liability_deduct,
        liability_limit,
+       liability_rule_json,
        invoice_deduct,
        adjust_deduct,
        daily_limit,

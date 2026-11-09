@@ -56,6 +56,16 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
   @Column(name = "liability_limit")
   private BigDecimal liabilityLimit;
 
+  /**
+   * 规则影子（M2 ② Shadow）：9 个业务要素的 JSON 表达，物理列 {@code liability_rule_json}。
+   *
+   * <p><b>② 阶段它是影子、不是真源</b>：理算仍然只读上面三个标量列，本列只由 {@code LiabilityRuleJsonCodec} 编码写入，且写完立即回读比对 {@code
+   * scalar == project(json)}。 历史行恒为 {@code null}（永不回填、永不编造），读侧按"JSON 为 NULL ⇒ 逐键回落旧列"处理，
+   * 因此历史案件不需要任何数据迁移即可复算（§9.1.1 ③）。
+   */
+  @Column(name = "liability_rule_json")
+  private String liabilityRuleJson;
+
   /** 发票级免赔（GAP②）：在比例之前、年度免赔之前，对各费用池基数按比例分摊扣减；0 = 不启用。 */
   @Column(name = "invoice_deduct")
   private BigDecimal invoiceDeduct;
@@ -494,6 +504,19 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
 
   public boolean isActive() {
     return "ACTIVE".equals(status);
+  }
+
+  /**
+   * 挂载规则影子（M2 ② 的唯一写入口）。
+   *
+   * <p><b>为什么不让调用方随便塞字符串</b>：本列的内容必须能被 {@code project()} 压回三个标量且逐位相等， 随手拼的 JSON 会让 ③ 双读按错值算钱。生产入口只有
+   * {@code LiabilityRuleJsonCodec#encode} 一个， 这里只做"空串归一成 null"（{@code JSON} 列不允许空串，{@code ''} 不是合法
+   * JSON 会造成读侧解析异常）。
+   *
+   * <p>刻意<b>不提供</b> {@code setLiabilityRuleJson}：与其余配置字段一致，变更走领域方法， 别让外层把影子当成可随意赋值的普通字段。
+   */
+  public void attachRuleJsonShadow(String ruleJson) {
+    this.liabilityRuleJson = ruleJson == null || ruleJson.isBlank() ? null : ruleJson;
   }
 
   /** 仅赔社保内（默认 true，R-DIR-01）。 */

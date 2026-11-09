@@ -98,6 +98,28 @@ class LiabilityCoverageGuardTest {
     lenient().when(claimPolicyRepository.findByPolicyNo(any())).thenReturn(policy);
   }
 
+  /**
+   * 模拟"库里的那一行"：M2 ② Shadow 的服务入口在保存后会回读并校验 {@code scalar == project(json)}，纯 Mock 的仓储没有这条路径，故用 save
+   * → map、findById → map 还原"真的落过库"。
+   *
+   * <p>用 {@code lenient} 是因为拒绝类用例（校验先于保存失败）根本走不到 save，属于有意不用。
+   */
+  @BeforeEach
+  void simulatePersistence() {
+    java.util.Map<Long, AdjLiability> rows = new java.util.HashMap<>();
+    lenient()
+        .when(liabilityRepository.save(any()))
+        .thenAnswer(
+            inv -> {
+              AdjLiability saved = inv.getArgument(0);
+              rows.put(saved.getId(), saved);
+              return saved.getId();
+            });
+    lenient()
+        .when(liabilityRepository.findById(anyLong()))
+        .thenAnswer(inv -> rows.get(inv.getArgument(0)));
+  }
+
   // ===================== 保障归属三道闸门 =====================
 
   @Test
