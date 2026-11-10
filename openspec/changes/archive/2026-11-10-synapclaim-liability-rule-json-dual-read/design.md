@@ -2,6 +2,8 @@
 comet_change: synapclaim-liability-rule-json-dual-read
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-11-10-synapclaim-liability-rule-json-dual-read
+status: final
 ---
 
 ## Context

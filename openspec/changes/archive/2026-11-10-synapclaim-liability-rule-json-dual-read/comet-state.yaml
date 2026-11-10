@@ -1,0 +1,3671 @@
+# comet-execution: managed-run
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: standard
+isolation: current
+bound_branch: dev
+verify_mode: null
+auto_transition: true
+base_ref: e3c940b9ae0c2ab654c9c2d48e5300a351602e5f
+design_doc: openspec/changes/archive/2026-11-10-synapclaim-liability-rule-json-dual-read/design.md
+plan: docs/superpowers/plans/synapclaim-liability-rule-json-dual-read.md
+verify_result: pass
+verify_failures: 0
+check_epoch: 8
+verification_report: docs/superpowers/reports/2026-11-09-synapclaim-liability-rule-json-dual-read-verify.md
+branch_status: pending
+created_at: 2026-11-09
+verified_at: 2026-11-10
+archive_confirmation: confirmed
+archived: true
+direct_override: false
+handoff_context: openspec/changes/archive/2026-11-10-synapclaim-liability-rule-json-dual-read/.comet/handoff/design-context.json
+handoff_hash: eb99f5ef58d56ce5abb5b59e076556ba632542a676c35b387a5ad9af746a63f3
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: fc2add314d8c0118d10ad6ddf033d925b80796e9738dfeedae049dcd5063310e
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: synapclaim-liability-rule-json-dual-read
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: e3e9983240cedf754d4b557c4e6fe4d60b5e44fa23f0c32e2be19cd2db12c841
+    input:
+      change: synapclaim-liability-rule-json-dual-read
+      changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+      workspaceBaseline:
+        ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+    state:
+      archiveConfirmation: confirmed
+      archived: true
+      autoTransition: true
+      baseRef: e3c940b9ae0c2ab654c9c2d48e5300a351602e5f
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 8
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-09
+      designDoc: openspec/changes/archive/2026-11-10-synapclaim-liability-rule-json-dual-read/design.md
+      directOverride: false
+      handoffContext: openspec/changes/archive/2026-11-10-synapclaim-liability-rule-json-dual-read/.comet/handoff/design-context.json
+      handoffHash: eb99f5ef58d56ce5abb5b59e076556ba632542a676c35b387a5ad9af746a63f3
+      isolation: current
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/synapclaim-liability-rule-json-dual-read.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-09-synapclaim-liability-rule-json-dual-read-verify.md
+      verifiedAt: 2026-11-10
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 33
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-e740b52719fe92c9ac9352aec89c6f304845ee5162200159062cad99121f175e
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:1
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: 3f96d10cd3a610a88dc57926d7cb3e8b83ec5b3b6893bc7a9a8ce8c19792da66
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:1
+          attempt: 1
+          claimToken: portable-e740b52719fe92c9ac9352aec89c6f304845ee5162200159062cad99121f175e
+          inputHash: 3f96d10cd3a610a88dc57926d7cb3e8b83ec5b3b6893bc7a9a8ce8c19792da66
+          outcomeId: f903754a-a4bf-49d4-a667-a485e1776924
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 097b5d302a9b138f6bed29dbf2799aaadcedd80a7b5ef721fb0810091d808635
+            outcomeId: f903754a-a4bf-49d4-a667-a485e1776924
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-2d28b62ff1ca7b7a66a664e654923952bc2ffaeef3ea5640c5129027fc6665db
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:4
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: f355744746f120c25eeccba9ea0964a5e4a0552d6717e658a6cf735c006e2348
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:4
+          attempt: 2
+          claimToken: portable-2d28b62ff1ca7b7a66a664e654923952bc2ffaeef3ea5640c5129027fc6665db
+          inputHash: f355744746f120c25eeccba9ea0964a5e4a0552d6717e658a6cf735c006e2348
+          outcomeId: synapclaim-liability-rule-json-dual-read:4:2:executor-result
+          output:
+            contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 97a3cb618c5272db20795774f09e09e7c0ae4acdcd0354803216237318693393
+            outcomeId: synapclaim-liability-rule-json-dual-read:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核对来源：① comet guard <change> open --apply --approval-hash 9489b7a3...
+                --json 返回
+                checks={passed:0,total:1,blocked:true}、issues=CLASSIC_COMMAND_FAILED『Classic
+                SDK has a running Action』，重校验检查未实际执行；② comet state check
+                <change> open --recover --details --json 报
+                record.status=missing、command=null、evidence.receiptRef=null、manifestRef=null；③
+                项目内
+                .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/
+                无任何文件（find 无输出）；④ pgrep -fl comet 仅 3 个常驻 daemon-server（socket
+                服务），无执行 revalidate 的 executor 子进程，原同步命令已返回；⑤ comet runtime
+                dispatch inspect 显示 full.open=succeeded(event
+                open-complete)、full.open.evidence
+                contentHash=9489b7a3...、full.open.confirm choice=approved，四项
+                OpenSpec 产物与用户批准均完整。结论：被 claim 的 full.open.revalidate
+                原尝试完全未执行，业务工作与批准均已入库，仅缺一次重校验。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 3
+        claim:
+          executorId: comet-classic-state
+          token: portable-b9bd28c5b9218cbd4cb8f7a2de98edf663bb4b462b11e704d33318d5abfa86ea
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:5
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: c02e0ce2de7bbf08d13d84080cd91dd4a48f4f9c9f5c5687b0379533ee34f48f
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:5
+          attempt: 3
+          claimToken: portable-b9bd28c5b9218cbd4cb8f7a2de98edf663bb4b462b11e704d33318d5abfa86ea
+          inputHash: c02e0ce2de7bbf08d13d84080cd91dd4a48f4f9c9f5c5687b0379533ee34f48f
+          outcomeId: 7933aae4-d042-45eb-a50d-77523ef3f76f
+          output:
+            handoffContext: openspec/changes/synapclaim-liability-rule-json-dual-read/.comet/handoff/design-context.json
+            handoffHash: eb99f5ef58d56ce5abb5b59e076556ba632542a676c35b387a5ad9af746a63f3
+            proposal: |-
+              【方案】采纳候选 A：domain 值对象 LiabilityRuleJson 新增纯函数 resolve(key, scalar) 做按键回落；LiabilityRule.fromLegacy 增接收 JSON 的重载并复用同一 build 链；application 增读开关 bone.claim.liability.rule-json-read.enabled 默认 false，以模式值参数传入 domain；DUAL_READ 下同时算旧标量路径与回落路径，差异只写结构化日志与计数（责任 ID/版本/差异键/两侧数值），返回金额始终取旧路径。无 DDL、无迁移、无存量回填。
+              【关键取舍】对比 B（application 预解析透传三值）与 C（直接切主+历史回填）：B 结构上做不到——Adjustment.apply() 在 domain，读路径不经过 application，且会拆出第二条参数通道；C 会改赔付金额、需回填且无差异证据，已被用户范围决策排除。A 的代价是一个重载 + 一个模式参数 + 一组比对用例，换来零行为变更、装配点唯一、二进制可自动回滚。等价判据用 BigDecimal.compareTo 而非字符串（② 实测 MySQL 把 90.00 规范化为 90.0 并重排键序）。
+              【风险与验证】整列判断丢键 → 只配 1 键反例 + 改整列判断变异必红；B 类键被当 0 或拒绝 → 单 B 类键反例 + 历史 NULL 行逐笔等价；开关引入新失败模式 → 注入差异仍返回旧金额且必产日志、删比对实现必转红；误报 → 90.00/90.0 判等不误报、90/80 必报差异；改签名波及夹具 → 保留 12 参数原签名，mvn -o -am test 全绿 + 架构测试 28 例。
+              【L3 结论】engine_version 源码读取点为 0 ⇒ 不落实体/DDL，台账登记触发条件与复核命令；本地无 org/pitest 制品、mvn -o 不可解析 ⇒ 不接 pom/check.sh/allowlist，登记触发条件（CI 联网 + 路由开关生产启用评审前）。均不制造孤儿字段或假绿门禁。
+              【O-06】按用户裁定把闸门触发条件收窄为「与 mapping 有交集的配置面改造开工前」，原条文/日期/理由/复核命令留痕；5 个硬缺口与 liability_rule_json 读路径零代码与数据交集。
+              【Spec Patch】无。capability spec 的 6 条需求 18 个场景已覆盖全部行为，本轮只定实现方式；文档措辞更正（§9.1.1 ③ 的 RuleJsonCodec.resolve() → domain 归属）属实现归属更正，不是验收变化。
+              【Design Doc】沿用唯一 openspec/changes/synapclaim-liability-rule-json-dual-read/design.md，已补 frontmatter 与候选方案对比章节，D1–D7 与 specs 对齐。
+            requirementsEvidence:
+              contentHash: a715a60d5da2dffbeaa2cf15a81a7a7fcf4a4b9702a88ec751824609deae02ab
+              ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+            sourceEvidence:
+              contentHash: 8580762e596d5438020bb590dbd133df0f9fd1c2b95cee03b36621cd9021bcd0
+              ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: acd5ce9a8ef49951fef0f225e0791f0063c57b2014cba3ae55a12f248f59a63a
+            outcomeId: 7933aae4-d042-45eb-a50d-77523ef3f76f
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核对来源：① 首次 comet state propose-design 返回
+                exitCode=70、issues=CLASSIC_COMMAND_FAILED『Timed out waiting for
+                file lock .../sdk-runs/classic/.../.write.lock』；锁文件内容
+                pid=12594，ps -p 12594 无输出（进程已死），僵死锁已备份后移出；② 紧随的 comet state next
+                --json 显示 phase=design、revision=11、waits=[]，说明未生成 Design Wait、无
+                proposalHash；③ comet state check ... design --recover --details
+                --json 报 record={ref:null,status:missing,problem:null}，无
+                receiptRef/manifestRef；④ 原执行器为该同步 CLI 命令且已返回，pgrep 仅见常驻
+                daemon-server，无执行 handoff 的 executor 子进程。结论：被 claim 的
+                full.design.handoff 原尝试完全未执行，未产生任何设计提案或批准记录，可安全重放
+                propose-design。
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: 核对来源：① 上一轮 comet runtime dispatch retry 请求在传输层被上游代理返回 '502
+                canceled'，请求未完整送达 Runtime；② 事后 comet state next 显示
+                phase=design、revision=14、waits=[]（无 full.design.confirm Wait、无
+                proposalHash），说明 propose-design 从未产出设计提案；③ comet state check ...
+                design --recover --details 报 action :5 attempt=2 为 running 但
+                record={ref:null,status:missing,problem:null}，无 receiptRef /
+                manifestRef；④
+                openspec/changes/synapclaim-liability-rule-json-dual-read/
+                下无任何生成于该时段的证据文件，design.md 仅含我在 Open 阶段写入的内容；⑤ pgrep 仅见常驻
+                daemon-server，无执行 handoff 的 executor 子进程。结论：被 claim 的
+                full.design.handoff attempt 2 完全未执行，可安全重放。
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-0a9e7a1674da74378c48ca95f9aba9062b7960854a704330684f346429c6d123
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:7
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: f8ca6feb908edcefbef2a4dae6913cbcc7770d1666691fc6d9901b98ccff1792
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:7
+          attempt: 1
+          claimToken: portable-0a9e7a1674da74378c48ca95f9aba9062b7960854a704330684f346429c6d123
+          inputHash: f8ca6feb908edcefbef2a4dae6913cbcc7770d1666691fc6d9901b98ccff1792
+          outcomeId: 47a86988-66ad-4230-a927-d3a116cb7ee1
+          output:
+            designDoc: openspec/changes/synapclaim-liability-rule-json-dual-read/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 9b9b490cb4818da7a8f78b55767890e3815671fac3cfb1d1b321515d5d33c692
+            outcomeId: 47a86988-66ad-4230-a927-d3a116cb7ee1
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-c53709d45e5b7339c598e8704bcc105941bba61f6710acbbee2ce163194bb152
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:9
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: 2b6e3f805bfd234f139d91eafee8dc6aa86935f323a8ff8f2bf023d1b2ad83eb
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:9
+          attempt: 1
+          claimToken: portable-c53709d45e5b7339c598e8704bcc105941bba61f6710acbbee2ce163194bb152
+          inputHash: 2b6e3f805bfd234f139d91eafee8dc6aa86935f323a8ff8f2bf023d1b2ad83eb
+          outcomeId: 2d04f298-bc83-42e6-ad12-d070923db515
+          output:
+            boundBranch: dev
+            buildMode: autonomous
+            directOverride: false
+            isolation: current
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: db0101d1d537c1410daf0d62207869d3a206b66bd9e4a1805c62731c7ead8e2f
+            outcomeId: 2d04f298-bc83-42e6-ad12-d070923db515
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-b531adbb285a901a46342ba9a63206ea6b8edb16669966bb9c1128350f2a365d
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:11
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: bdbd0738c1e3e37168309128d07f06893bea83a68c8d06cd65834a4cf32a6afa
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:11
+          attempt: 1
+          claimToken: portable-b531adbb285a901a46342ba9a63206ea6b8edb16669966bb9c1128350f2a365d
+          inputHash: bdbd0738c1e3e37168309128d07f06893bea83a68c8d06cd65834a4cf32a6afa
+          outcomeId: 0e8d858a-567e-4827-a87f-d103c061ce6b
+          output:
+            designEvidence:
+              contentHash: 09f6c95f632ff0b66bdab42aa630ca9acf49e2644c85364c01ec15aad6423150
+              ref: openspec/changes/synapclaim-liability-rule-json-dual-read/design.md
+            plan: docs/superpowers/plans/synapclaim-liability-rule-json-dual-read.md
+            planEvidence:
+              contentHash: 4b94a27072e1a3c0b72c8e7c67cc2305ab27ec6718eef9aef3920a119c12e7fa
+              ref: docs/superpowers/plans/synapclaim-liability-rule-json-dual-read.md
+            taskRevision: 58af8b121610691603624e3d4fca651ce23ab1e42e4fd6e70f59f2752f17f12b
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 36bed6db379d7eae04ce95630db5ba0cf5c2f5137ff5f2fdd87ccc20c2e37c66
+            outcomeId: 0e8d858a-567e-4827-a87f-d103c061ce6b
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-liability-rule-json-dual-read:13/1
+          token: portable-4e2645c1e8db23c8c26f428b4162d4ea2c173315389a4c47beb5113b76425e99
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:13
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: 183b1c62b69611b37ed10fec829e377239dd3482fb0a04eaae5d5cc477eaf740
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:13
+          attempt: 1
+          claimToken: portable-4e2645c1e8db23c8c26f428b4162d4ea2c173315389a4c47beb5113b76425e99
+          inputHash: 183b1c62b69611b37ed10fec829e377239dd3482fb0a04eaae5d5cc477eaf740
+          outcomeId: 3c41dd17-8c1d-422b-ad02-a9b2c10afc39
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4bcdf925b60cc6ca795bb5270a69e8aa9b49a79839ab77795a9c3ad3a68c64e9
+            outcomeId: 3c41dd17-8c1d-422b-ad02-a9b2c10afc39
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 3
+        claim:
+          executorId: comet-classic-check
+          token: portable-9d853f1b249cb2ea4db74c0e405d14263226ad66368dcddc43813b921cd9fc2a
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:14
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: d16be93a1e8f82604b883d432e10a112a97734722f44b205dd02c1c37ef77b7e
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:14
+          attempt: 3
+          claimToken: portable-9d853f1b249cb2ea4db74c0e405d14263226ad66368dcddc43813b921cd9fc2a
+          inputHash: d16be93a1e8f82604b883d432e10a112a97734722f44b205dd02c1c37ef77b7e
+          outcomeId: ecea385c-f127-449a-9c79-a3e44fa2cac9
+          output:
+            argv:
+              - ./scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: d7607253683b2d992083fa206aa467bb07a839c4bc6d8c7a1676784474e06f3b
+            cwd: .
+            environment: c59f58b64b69a9582b7cfb292a406f4138d31b347627801f310b8d03be571068
+            exitCode: 124
+            inputAfter: 1442303a43bbf531a6b4d3a8eb70160e57cbe4da8cf6b02bb6d906b565a688ad
+            inputBefore: 1442303a43bbf531a6b4d3a8eb70160e57cbe4da8cf6b02bb6d906b565a688ad
+            manifestHash: ce101b33c6fd9deb44f7e9f954fdd7068bfc24c64b3d85942b52362ef6e25c9e
+            manifestRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/6f6755bd-d048-493c-95c0-3848a6acddb2.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/06f4f187-a2dd-4385-9e0f-c5dde995d595.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 300000
+          status: failed
+        protocolVersion: 1
+        receipts:
+          - hash: c3553f9399bdf5222e0b1717715e3fb27ffc6ca09831bb799798247a338da982
+            outcomeId: ecea385c-f127-449a-9c79-a3e44fa2cac9
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: "原尝试在输入快照前置校验即失败，检查程序从未被拉起。(1) 执行器 stdout 原文：`Check input is a symbolic
+                link: .claude/skills/code-localization/latest`（见 comet-guard
+                打印），该判定位于 classic-check-snapshot 构建输入清单阶段，发生在 spawn 之前；(2) 证据目录
+                .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b6\
+                2c45592cbb225d9e90b81993c9b71c96f94 不存在，find 计数 0，无
+                receipt/manifest；(3) recovery.record.status =
+                missing，evidence.receiptRef 与 manifestRef 均为 null；(4) 时间线：该次调用自
+                claim 至报错约 21 秒，而 scripts/check.sh 全量 59 步需数分钟，远超报错耗时；(5) 报错前
+                Runtime 自身打印『核对检查输入：0 项』，说明尚未进入执行阶段，且本次 Run
+                内无第二个并发检查进程。结论：无任何成功或失败收据可回填，属完全未执行。"
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: "第 2 次尝试同样止步于输入快照前置校验，检查程序从未被拉起。(1) 该次 comet check run 的 JSON
+                输出：exitCode=70，issues[0].code=CLASSIC_COMMAND_FAILED，message=`C\
+                heck input is a symbolic link:
+                .claude/skills/code-localization/latest`，stderr 仅一行『核对检查输入：0
+                项』，说明失败发生在枚举输入清单阶段；(2) 结果记录文件
+                .comet/runtime/classic-sdk-checks/8c8093c2.../sdk-ca36a479....j\
+                son 状态为 missing；(3) 证据目录 8c8093c2... 内无 receipt、无
+                manifest、无程序输出日志；(4) 耗时：整次调用约 5 秒，而 scripts/check.sh 全量 59
+                步需数分钟；(5) 本次 Run 内无第二个并发执行器。结论：无收据可回填，属完全未执行。此后已移除
+                .claude/skills/{code-localization,code-review,editing,test-gen}\
+                /latest 四个符号链接（在 HEAD 中本就悬空），输入清单不再含符号链接。"
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: failed
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-liability-rule-json-dual-read:15/1
+          token: portable-cf8445967f89e1e75eb21e904b0c23f6fd9be5b90bdcf6c638568b5035063201
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:15
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: fc417414c7fb41e2cbda2881747264212524c1f74c9c316405cadcfe2026f45e
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:15
+          attempt: 1
+          claimToken: portable-cf8445967f89e1e75eb21e904b0c23f6fd9be5b90bdcf6c638568b5035063201
+          inputHash: fc417414c7fb41e2cbda2881747264212524c1f74c9c316405cadcfe2026f45e
+          outcomeId: a0706e12-bd30-4b95-930e-d8f78fcde05e
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f870f3807962cebdfc1fa52c6272ed4908a5d40183433328581e5e465cd2fb0c
+            outcomeId: a0706e12-bd30-4b95-930e-d8f78fcde05e
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-fa578ef49f5923aac840abfa8fe1da88282f559f8e3672ad9976168eb76da95e
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:16
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: fc417414c7fb41e2cbda2881747264212524c1f74c9c316405cadcfe2026f45e
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:16
+          attempt: 1
+          claimToken: portable-fa578ef49f5923aac840abfa8fe1da88282f559f8e3672ad9976168eb76da95e
+          inputHash: fc417414c7fb41e2cbda2881747264212524c1f74c9c316405cadcfe2026f45e
+          outcomeId: 1af52d630e85eeb78c58d8dd3908d5d6bad1973c6fa715d548ba0da7d59ab4eb
+          output:
+            argv:
+              - ./scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 5ffe844ca1b9df973817fe25e813b313250c4c9dfffd2542a65597c320eba596
+            cwd: .
+            environment: c59f58b64b69a9582b7cfb292a406f4138d31b347627801f310b8d03be571068
+            exitCode: 0
+            inputAfter: 25ec990cc5277fdbd918d367b491986d2f23ea4267ced481e390022e79a61791
+            inputBefore: 25ec990cc5277fdbd918d367b491986d2f23ea4267ced481e390022e79a61791
+            manifestHash: 3d995f0e1115d03e4b4b88553a376c22e4c7bf0f0ec1446280f5d7426eba73e8
+            manifestRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/4dfbbf36-986c-4659-94d8-7b48d4611a26.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/503fe2d9-a1fe-4156-a558-1695e8ac30c2.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: de307c465a7dc8d79d42ffca701f610a18e74bc352651f6546eaace638251378
+            outcomeId: 1af52d630e85eeb78c58d8dd3908d5d6bad1973c6fa715d548ba0da7d59ab4eb
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-31a5ebcc4f00903bed373a1abc6fa0b305bd2458bb74db22f49279ab713437d9
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:18
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: 799a92ab6e1e6446fab6d4d5816ba5dd08d85e12afed34d39feebe90ec3b8e1b
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:18
+          attempt: 1
+          claimToken: portable-31a5ebcc4f00903bed373a1abc6fa0b305bd2458bb74db22f49279ab713437d9
+          inputHash: 799a92ab6e1e6446fab6d4d5816ba5dd08d85e12afed34d39feebe90ec3b8e1b
+          outcomeId: e43bba44-c3a3-406b-ae50-10a6f056add3
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-09-synapclaim-liability-rule-json-dual-read-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 59a313dd1ebc94131e42e19cd3b3096149ad453f0076d8e1ff210de5c63c1811
+            outcomeId: e43bba44-c3a3-406b-ae50-10a6f056add3
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-d8a47bd5b29a6c739c40b2022897f5dc8658d060debc15cbce0f0ef0c2d2429b
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:20
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: 0be212d8e23b58ab21b1ef3890cfdb7238108444618d279c5882c1f569afdb23
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:20
+          attempt: 1
+          claimToken: portable-d8a47bd5b29a6c739c40b2022897f5dc8658d060debc15cbce0f0ef0c2d2429b
+          inputHash: 0be212d8e23b58ab21b1ef3890cfdb7238108444618d279c5882c1f569afdb23
+          outcomeId: 21d89f9c-19b0-4fe8-b580-5381681836b6
+          output:
+            argv:
+              - ./scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: ef1c79ff8494ce3aee0b8868f0d89428109577db32628d0017284daf8a50b92b
+            cwd: .
+            deliveryInputs: {}
+            environment: c59f58b64b69a9582b7cfb292a406f4138d31b347627801f310b8d03be571068
+            exitCode: 0
+            inputAfter: 5429496910af05b3c7c29e7ccb9803370e8568a85636d13fa6b80ca07edf4efb
+            inputBefore: 5429496910af05b3c7c29e7ccb9803370e8568a85636d13fa6b80ca07edf4efb
+            manifestHash: f4aa746f4b7954ecc9a214bcfbfcc1955fb3c056c15ba7b0dcee824cef13b01c
+            manifestRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/2451c8df-56ca-459e-8c31-ee3d7cbc217a.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/2f6ff310-6d52-4163-b2c4-29ea159cab29.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 008e51ba2ceb787e0cf1b7c4d53f728fd630db4de022bf3f4fbaa2208230d4ee
+            outcomeId: 21d89f9c-19b0-4fe8-b580-5381681836b6
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-61efdfbb1307481116e8f6a8858221f0995f42976ff5bb6efd2454ab7e503549
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:22
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: c6218c10da6077bd672f0ac4899b81dd03dee8a8d43821015542cac9b8c928ee
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:22
+          attempt: 1
+          claimToken: portable-61efdfbb1307481116e8f6a8858221f0995f42976ff5bb6efd2454ab7e503549
+          inputHash: c6218c10da6077bd672f0ac4899b81dd03dee8a8d43821015542cac9b8c928ee
+          outcomeId: e51ebd26-496e-4d8d-82dc-1baf73dcf685
+          output:
+            summary: M2 ③ 3a 双读比对落地：按键回落（禁止整列判断）+ 默认关闭的读开关（关闭时不解析聚合 JSON）+ 双轨差异只记录不改金额；L3
+              剩余项按可机检条件收口（engine_version 不落实体/不加列、PITest 不接线）；O-06
+              闸门按用户裁定收窄并留痕。验证：聚焦 20/20、全模块 1382/1382、外置等价变异探针 5 场景 3 差异、check.sh
+              422s 全绿、Comet build/verify 检查均 exitCode=0 且输入快照前后一致。零 DDL / 零迁移 /
+              零回填 / 零金额变更。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 85fc9039d4203745b97f3e79a34d0747426d06064bbeb4a02f174466f394799e
+            outcomeId: e51ebd26-496e-4d8d-82dc-1baf73dcf685
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-3dc6e456438c83302ac943a6c8170f45adc376afc518425d26234fa00f138a00
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:25
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: 82470a9750e4a44116b7d62c1fe7e4587eae0d80a3597c6842fc078c8a08960e
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:25
+          attempt: 1
+          claimToken: portable-3dc6e456438c83302ac943a6c8170f45adc376afc518425d26234fa00f138a00
+          inputHash: 82470a9750e4a44116b7d62c1fe7e4587eae0d80a3597c6842fc078c8a08960e
+          outcomeId: 71c6923b-34d4-4a8a-b6b5-db42ddba8f73
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-09-synapclaim-liability-rule-json-dual-read-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 9576f9f935b8b8f266d113a7cd8b0ff297dce88a5b47da25ce870efb88542c0c
+            outcomeId: 71c6923b-34d4-4a8a-b6b5-db42ddba8f73
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-1c28ba056bac12b46668a1f82ae317b4ec37cee1972b9708416d287b4f0cc338
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:27
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: 82470a9750e4a44116b7d62c1fe7e4587eae0d80a3597c6842fc078c8a08960e
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:27
+          attempt: 2
+          claimToken: portable-1c28ba056bac12b46668a1f82ae317b4ec37cee1972b9708416d287b4f0cc338
+          inputHash: 82470a9750e4a44116b7d62c1fe7e4587eae0d80a3597c6842fc078c8a08960e
+          outcomeId: 4f62a4534eae973733f8a358d40535d26e0ab4a91d227145b0fe7a1c60a6fae1
+          output:
+            argv:
+              - ./scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 5
+            contentHash: d938fbea71f5ea05ceade86c1998ae0a3764a0584e0afc3c4cb7372a06fdadf7
+            cwd: .
+            deliveryInputs: {}
+            environment: c59f58b64b69a9582b7cfb292a406f4138d31b347627801f310b8d03be571068
+            exitCode: 0
+            inputAfter: 9d0703a2673f3c958bf5675bf6e5232cbc1c00a0430a8c7dc43d80f343b87d84
+            inputBefore: 9d0703a2673f3c958bf5675bf6e5232cbc1c00a0430a8c7dc43d80f343b87d84
+            manifestHash: 63cb4fd848887d1896f84ff4f88734e65d6c6accbb69d79b9c7e6af71183182f
+            manifestRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/c990d2f6-4cb3-4715-82a8-ed782f6ad365.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/33ad1a1b-ca24-4bbc-8a5a-58fd13fe54e6.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 59c841301e36c7b7d52e34b112d8333ea7a28be9d9f67f7335d036be56961580
+            outcomeId: 4f62a4534eae973733f8a358d40535d26e0ab4a91d227145b0fe7a1c60a6fae1
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 原尝试未产生可入账的收据（Runtime 侧记录状态停在 started、无 contentHash/manifestHash、无
+                receipt），故按未产出结果重跑。事实核对：(1)
+                .comet/runtime/classic-sdk-checks/8c8093c2.../sdk-d902815e....json
+                的 status=started，receiptRef 只剩日志文件名、未生成最终收据字段；(2) 该次日志
+                c44db390-....log 末尾确实是「✅ 本地自检通过！」且 59/59
+                步齐全，说明子进程跑完，但父进程在收尾阶段被沙箱的删除配额中断（SAFE_DELETE_BULK_CONFIRM_REQUIRED
+                count=50），因此 Runtime 从未收到成功结果；(3) 无
+                inputBefore/inputAfter/manifestHash 可用于回填，不能凭日志推断收据字段；(4) 该 Run
+                内无第二个并发检查进程。结论：无任何可回填收据，须整次重跑并在非沙箱环境下执行以避免同样的收尾中断。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-cba8aab4f42c2ff44cacea592be462ff3011dba5f732690f94455f3947236f9a
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:29
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: 40ca82556c75f19e445c8662d9557588116cbe0ce0b234887370460eac2778b0
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:29
+          attempt: 1
+          claimToken: portable-cba8aab4f42c2ff44cacea592be462ff3011dba5f732690f94455f3947236f9a
+          inputHash: 40ca82556c75f19e445c8662d9557588116cbe0ce0b234887370460eac2778b0
+          outcomeId: cb9d8090-b0eb-4a21-b115-811589beafec
+          output:
+            remote: origin
+            summary: M2 ③ 3a 双读比对落地：domain 值对象新增按键回落 resolve(key,scalar)（禁止整列判断丢键）+
+              application 读开关 bone.claim.liability.rule-json-read.enabled 默认
+              false（关闭时不解析聚合 JSON，走旧标量路径）+ DUAL_READ
+              双轨差异只记录（结构化日志与计数，返回金额恒取旧路径）。L3 剩余项按可机检条件收口：engine_version 源码读取点为 0
+              故不落实体/不加列，PITest 本地无制品故不接 pom/门禁，两项均登记触发条件与复核命令。O-06 闸门按用户裁定收窄为「与
+              mapping 有交集的配置面改造开工前」并留痕。验证：verify 检查 attempt 2 收据
+              exitCode=0、inputBefore==inputAfter=9d0703a2、contentHash=d938fbea、manifestHash=63cb4fd8，59/59
+              步全绿；聚焦用例 20/20、全模块 1382/1382、外置等价变异探针 5 场景 3 差异。零 DDL / 零迁移 / 零回填
+              / 零金额变更。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3d37627f82bec32460475eff97b3bdfc17a97a550c21c3ca5f95f686ecda470e
+            outcomeId: cb9d8090-b0eb-4a21-b115-811589beafec
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-1b6232901e428f0b6739219220f78bb9e5a6733cd0bb25a17346e6399a59021c
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:31
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: b84722d7040c3d3a74a68912d935aeb8cf866994a7de3aa12aaef77d5f7190cd
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:31
+          attempt: 1
+          claimToken: portable-1b6232901e428f0b6739219220f78bb9e5a6733cd0bb25a17346e6399a59021c
+          inputHash: b84722d7040c3d3a74a68912d935aeb8cf866994a7de3aa12aaef77d5f7190cd
+          outcomeId: d386406e-ec9f-4c65-87d7-052437c6f65f
+          output:
+            baseCommit: 841c91fe8b60cdb1e01905cacfd83e2896519ba5
+            deliveryAction: push
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1d29f508cb0d9f57f65d28e98fb7400605293948715542befdf0240fddfc57f8
+            outcomeId: d386406e-ec9f-4c65-87d7-052437c6f65f
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-e1a56833d1a1d50c35e32b9bf38a3f3c28148404118947abc07ad81fe3329eb4
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-liability-rule-json-dual-read:32
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: c2566ad7669cf8f1db5b4895bca2395304c7c47eb2dd279ad470302dd397343e
+        outcome:
+          actionId: synapclaim-liability-rule-json-dual-read:32
+          artifacts:
+            - sha256: cd0dddccbb807961dee7af2493ab3b0f1bfc505f18c747c6814ffcb4ea442743
+              uri: openspec/changes/archive/2026-11-10-synapclaim-liability-rule-json-dual-read/.comet/archive-manifest.json
+          attempt: 1
+          claimToken: portable-e1a56833d1a1d50c35e32b9bf38a3f3c28148404118947abc07ad81fe3329eb4
+          inputHash: c2566ad7669cf8f1db5b4895bca2395304c7c47eb2dd279ad470302dd397343e
+          outcomeId: synapclaim-liability-rule-json-dual-read:32:1:recovered:70
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-10-synapclaim-liability-rule-json-dual-read
+          status: succeeded
+        protocolVersion: 1
+        reason: 原执行器中断，正在核对本次执行结果
+        receipts:
+          - hash: 6b263993e83d9b68a613ac79966e9f96639338cf8aebe8f86f870b3deea35892
+            outcomeId: synapclaim-liability-rule-json-dual-read:32:1:recovered:70
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: succeeded
+        stepId: full.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: synapclaim-liability-rule-json-dual-read:33
+        input:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs: {}
+        inputHash: ed51104d19c82984cff718ba55449d11e20d681004706bfcb3c3024771721dc1
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-liability-rule-json-dual-read
+        status: pending
+        stepId: full.archive.deliver
+        type: invoke_skill
+    actionContexts:
+      synapclaim-liability-rule-json-dual-read:1:
+        results: {}
+        sequence: 1
+      synapclaim-liability-rule-json-dual-read:11:
+        results: {}
+        sequence: 11
+      synapclaim-liability-rule-json-dual-read:13:
+        results: {}
+        sequence: 13
+      synapclaim-liability-rule-json-dual-read:14:
+        results: {}
+        sequence: 14
+      synapclaim-liability-rule-json-dual-read:15:
+        results: {}
+        sequence: 15
+      synapclaim-liability-rule-json-dual-read:16:
+        results: {}
+        sequence: 16
+      synapclaim-liability-rule-json-dual-read:18:
+        results: {}
+        sequence: 18
+      synapclaim-liability-rule-json-dual-read:20:
+        results: {}
+        sequence: 20
+      synapclaim-liability-rule-json-dual-read:22:
+        results: {}
+        sequence: 22
+      synapclaim-liability-rule-json-dual-read:25:
+        results: {}
+        sequence: 25
+      synapclaim-liability-rule-json-dual-read:27:
+        results: {}
+        sequence: 27
+      synapclaim-liability-rule-json-dual-read:29:
+        results: {}
+        sequence: 29
+      synapclaim-liability-rule-json-dual-read:31:
+        results: {}
+        sequence: 31
+      synapclaim-liability-rule-json-dual-read:32:
+        results: {}
+        sequence: 32
+      synapclaim-liability-rule-json-dual-read:33:
+        results: {}
+        sequence: 33
+      synapclaim-liability-rule-json-dual-read:4:
+        results: {}
+        sequence: 4
+      synapclaim-liability-rule-json-dual-read:5:
+        results: {}
+        sequence: 5
+      synapclaim-liability-rule-json-dual-read:7:
+        results: {}
+        sequence: 7
+      synapclaim-liability-rule-json-dual-read:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: synapclaim-liability-rule-json-dual-read:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+              ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+        proposalHash: 81a475bfd1f9e1f27d29f19e390e1c027d69fac31d756cf0b30b06f6eabb2b97
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+          choice: approved
+          proposalHash: 81a475bfd1f9e1f27d29f19e390e1c027d69fac31d756cf0b30b06f6eabb2b97
+      - id: synapclaim-liability-rule-json-dual-read:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-liability-rule-json-dual-read/.comet/handoff/design-context.json
+              handoffHash: eb99f5ef58d56ce5abb5b59e076556ba632542a676c35b387a5ad9af746a63f3
+              proposal: |-
+                【方案】采纳候选 A：domain 值对象 LiabilityRuleJson 新增纯函数 resolve(key, scalar) 做按键回落；LiabilityRule.fromLegacy 增接收 JSON 的重载并复用同一 build 链；application 增读开关 bone.claim.liability.rule-json-read.enabled 默认 false，以模式值参数传入 domain；DUAL_READ 下同时算旧标量路径与回落路径，差异只写结构化日志与计数（责任 ID/版本/差异键/两侧数值），返回金额始终取旧路径。无 DDL、无迁移、无存量回填。
+                【关键取舍】对比 B（application 预解析透传三值）与 C（直接切主+历史回填）：B 结构上做不到——Adjustment.apply() 在 domain，读路径不经过 application，且会拆出第二条参数通道；C 会改赔付金额、需回填且无差异证据，已被用户范围决策排除。A 的代价是一个重载 + 一个模式参数 + 一组比对用例，换来零行为变更、装配点唯一、二进制可自动回滚。等价判据用 BigDecimal.compareTo 而非字符串（② 实测 MySQL 把 90.00 规范化为 90.0 并重排键序）。
+                【风险与验证】整列判断丢键 → 只配 1 键反例 + 改整列判断变异必红；B 类键被当 0 或拒绝 → 单 B 类键反例 + 历史 NULL 行逐笔等价；开关引入新失败模式 → 注入差异仍返回旧金额且必产日志、删比对实现必转红；误报 → 90.00/90.0 判等不误报、90/80 必报差异；改签名波及夹具 → 保留 12 参数原签名，mvn -o -am test 全绿 + 架构测试 28 例。
+                【L3 结论】engine_version 源码读取点为 0 ⇒ 不落实体/DDL，台账登记触发条件与复核命令；本地无 org/pitest 制品、mvn -o 不可解析 ⇒ 不接 pom/check.sh/allowlist，登记触发条件（CI 联网 + 路由开关生产启用评审前）。均不制造孤儿字段或假绿门禁。
+                【O-06】按用户裁定把闸门触发条件收窄为「与 mapping 有交集的配置面改造开工前」，原条文/日期/理由/复核命令留痕；5 个硬缺口与 liability_rule_json 读路径零代码与数据交集。
+                【Spec Patch】无。capability spec 的 6 条需求 18 个场景已覆盖全部行为，本轮只定实现方式；文档措辞更正（§9.1.1 ③ 的 RuleJsonCodec.resolve() → domain 归属）属实现归属更正，不是验收变化。
+                【Design Doc】沿用唯一 openspec/changes/synapclaim-liability-rule-json-dual-read/design.md，已补 frontmatter 与候选方案对比章节，D1–D7 与 specs 对齐。
+              requirementsEvidence:
+                contentHash: a715a60d5da2dffbeaa2cf15a81a7a7fcf4a4b9702a88ec751824609deae02ab
+                ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+              sourceEvidence:
+                contentHash: 8580762e596d5438020bb590dbd133df0f9fd1c2b95cee03b36621cd9021bcd0
+                ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+        proposalHash: 83d68d4ef95eda4510af3599108a2b0e1bdbd2c28108ef9610ede6e30feb76f1
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-83d68d4ef95eda4510af3599108a2b0e1bdbd2c28108ef9610ede6e30feb76f1
+          choice: approved
+          proposalHash: 83d68d4ef95eda4510af3599108a2b0e1bdbd2c28108ef9610ede6e30feb76f1
+      - id: synapclaim-liability-rule-json-dual-read:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: 16e427e42e31959d69ebc11fa7ca2e168f6409789193902c19cf46f17f08df65
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: c264ddc7-8110-4093-9d10-f38d2c902923
+          choice: approved
+          proposalHash: 16e427e42e31959d69ebc11fa7ca2e168f6409789193902c19cf46f17f08df65
+      - id: synapclaim-liability-rule-json-dual-read:23
+        stepId: full.archive.confirm
+        sequence: 23
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs:
+            full.archive.prepare:
+              summary: M2 ③ 3a 双读比对落地：按键回落（禁止整列判断）+ 默认关闭的读开关（关闭时不解析聚合 JSON）+ 双轨差异只记录不改金额；L3
+                剩余项按可机检条件收口（engine_version 不落实体/不加列、PITest 不接线）；O-06
+                闸门按用户裁定收窄并留痕。验证：聚焦 20/20、全模块 1382/1382、外置等价变异探针 5 场景 3
+                差异、check.sh 422s 全绿、Comet build/verify 检查均 exitCode=0
+                且输入快照前后一致。零 DDL / 零迁移 / 零回填 / 零金额变更。
+              targetBranch: dev
+        proposalHash: 83389413a9adc417bee8361a8c133b86d9076cbc2802896e0fdebc2ff238f6e7
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-83389413a9adc417bee8361a8c133b86d9076cbc2802896e0fdebc2ff238f6e7-later
+          choice: later
+          proposalHash: 83389413a9adc417bee8361a8c133b86d9076cbc2802896e0fdebc2ff238f6e7
+      - id: synapclaim-liability-rule-json-dual-read:24
+        stepId: full.archive.confirm
+        sequence: 24
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: M2 ③ 3a 双读比对落地：按键回落（禁止整列判断）+ 默认关闭的读开关（关闭时不解析聚合 JSON）+ 双轨差异只记录不改金额；L3
+                剩余项按可机检条件收口（engine_version 不落实体/不加列、PITest 不接线）；O-06
+                闸门按用户裁定收窄并留痕。验证：聚焦 20/20、全模块 1382/1382、外置等价变异探针 5 场景 3
+                差异、check.sh 422s 全绿、Comet build/verify 检查均 exitCode=0
+                且输入快照前后一致。零 DDL / 零迁移 / 零回填 / 零金额变更。
+              targetBranch: dev
+        proposalHash: 55949d49857d90adc1a2f36b53e4837a403de0ed6806869eedf435b370435cc1
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-55949d49857d90adc1a2f36b53e4837a403de0ed6806869eedf435b370435cc1-reverify
+          choice: reverify
+          proposalHash: 55949d49857d90adc1a2f36b53e4837a403de0ed6806869eedf435b370435cc1
+      - id: synapclaim-liability-rule-json-dual-read:30
+        stepId: full.archive.confirm
+        sequence: 30
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: M2 ③ 3a 双读比对落地：domain 值对象新增按键回落 resolve(key,scalar)（禁止整列判断丢键）+
+                application 读开关 bone.claim.liability.rule-json-read.enabled 默认
+                false（关闭时不解析聚合 JSON，走旧标量路径）+ DUAL_READ
+                双轨差异只记录（结构化日志与计数，返回金额恒取旧路径）。L3 剩余项按可机检条件收口：engine_version 源码读取点为
+                0 故不落实体/不加列，PITest 本地无制品故不接 pom/门禁，两项均登记触发条件与复核命令。O-06
+                闸门按用户裁定收窄为「与 mapping 有交集的配置面改造开工前」并留痕。验证：verify 检查 attempt 2 收据
+                exitCode=0、inputBefore==inputAfter=9d0703a2、contentHash=d938fbea、manifestHash=63cb4fd8，59/59
+                步全绿；聚焦用例 20/20、全模块 1382/1382、外置等价变异探针 5 场景 3 差异。零 DDL / 零迁移 /
+                零回填 / 零金额变更。
+              targetBranch: dev
+        proposalHash: 5bbaaa0646b30973b4ad43ee385a8707c08aa31afca2dca4da979ef9e99ae564
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-5bbaaa0646b30973b4ad43ee385a8707c08aa31afca2dca4da979ef9e99ae564-push
+          choice: push
+          proposalHash: 5bbaaa0646b30973b4ad43ee385a8707c08aa31afca2dca4da979ef9e99ae564
+    evidenceWaits:
+      - id: synapclaim-liability-rule-json-dual-read:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+          contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+          submissionId: 25c2d2fe-f03e-4039-8957-da30b37b32d6
+      - id: synapclaim-liability-rule-json-dual-read:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/synapclaim-liability-rule-json-dual-read/design.md
+          contentHash: 09f6c95f632ff0b66bdab42aa630ca9acf49e2644c85364c01ec15aad6423150
+          submissionId: 4454ceb3-6521-480b-bc78-5b7ec72eced4
+      - id: synapclaim-liability-rule-json-dual-read:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/synapclaim-liability-rule-json-dual-read.md
+          contentHash: 4b94a27072e1a3c0b72c8e7c67cc2305ab27ec6718eef9aef3920a119c12e7fa
+          submissionId: d91b2bf4-48c4-4826-9155-1f188f940c75
+      - id: synapclaim-liability-rule-json-dual-read:17
+        stepId: full.build.check.evidence
+        sequence: 17
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/503fe2d9-a1fe-4156-a558-1695e8ac30c2.log
+          contentHash: 5ffe844ca1b9df973817fe25e813b313250c4c9dfffd2542a65597c320eba596
+          submissionId: 8298a8a1-39f1-4de3-8b4d-5c843d8f8c43
+      - id: synapclaim-liability-rule-json-dual-read:19
+        stepId: full.verify.report.evidence
+        sequence: 19
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-09-synapclaim-liability-rule-json-dual-read-verify.md
+          contentHash: 26d1434aa40011f1c46133a98dde76ea500e190d534d2242832309c10d838ac9
+          submissionId: a194469d-7117-4aa1-8622-cb21285e8c26
+      - id: synapclaim-liability-rule-json-dual-read:21
+        stepId: full.verify.check.evidence
+        sequence: 21
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/2f6ff310-6d52-4163-b2c4-29ea159cab29.log
+          contentHash: ef1c79ff8494ce3aee0b8868f0d89428109577db32628d0017284daf8a50b92b
+          submissionId: 79f7408c-0bdf-44e0-b39e-a49c11661b63
+      - id: synapclaim-liability-rule-json-dual-read:26
+        stepId: full.verify.report.evidence
+        sequence: 26
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-09-synapclaim-liability-rule-json-dual-read-verify.md
+          contentHash: 26d1434aa40011f1c46133a98dde76ea500e190d534d2242832309c10d838ac9
+          submissionId: 162cccd9-d338-4905-a183-7a01cf15b696
+      - id: synapclaim-liability-rule-json-dual-read:28
+        stepId: full.verify.check.evidence
+        sequence: 28
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/33ad1a1b-ca24-4bbc-8a5a-58fd13fe54e6.log
+          contentHash: d938fbea71f5ea05ceade86c1998ae0a3764a0584e0afc3c4cb7372a06fdadf7
+          submissionId: ff3d9c57-ece2-4b74-bbe1-8649a46f842e
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 71
+  sourceHash: 35570a39fd48571a7df55a8331d98ed3fe8899e2d9a5426f894155090d046098
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+              ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+      - contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+        ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+      - contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-liability-rule-json-dual-read/.comet/handoff/design-context.json
+              handoffHash: eb99f5ef58d56ce5abb5b59e076556ba632542a676c35b387a5ad9af746a63f3
+              proposal: |-
+                【方案】采纳候选 A：domain 值对象 LiabilityRuleJson 新增纯函数 resolve(key, scalar) 做按键回落；LiabilityRule.fromLegacy 增接收 JSON 的重载并复用同一 build 链；application 增读开关 bone.claim.liability.rule-json-read.enabled 默认 false，以模式值参数传入 domain；DUAL_READ 下同时算旧标量路径与回落路径，差异只写结构化日志与计数（责任 ID/版本/差异键/两侧数值），返回金额始终取旧路径。无 DDL、无迁移、无存量回填。
+                【关键取舍】对比 B（application 预解析透传三值）与 C（直接切主+历史回填）：B 结构上做不到——Adjustment.apply() 在 domain，读路径不经过 application，且会拆出第二条参数通道；C 会改赔付金额、需回填且无差异证据，已被用户范围决策排除。A 的代价是一个重载 + 一个模式参数 + 一组比对用例，换来零行为变更、装配点唯一、二进制可自动回滚。等价判据用 BigDecimal.compareTo 而非字符串（② 实测 MySQL 把 90.00 规范化为 90.0 并重排键序）。
+                【风险与验证】整列判断丢键 → 只配 1 键反例 + 改整列判断变异必红；B 类键被当 0 或拒绝 → 单 B 类键反例 + 历史 NULL 行逐笔等价；开关引入新失败模式 → 注入差异仍返回旧金额且必产日志、删比对实现必转红；误报 → 90.00/90.0 判等不误报、90/80 必报差异；改签名波及夹具 → 保留 12 参数原签名，mvn -o -am test 全绿 + 架构测试 28 例。
+                【L3 结论】engine_version 源码读取点为 0 ⇒ 不落实体/DDL，台账登记触发条件与复核命令；本地无 org/pitest 制品、mvn -o 不可解析 ⇒ 不接 pom/check.sh/allowlist，登记触发条件（CI 联网 + 路由开关生产启用评审前）。均不制造孤儿字段或假绿门禁。
+                【O-06】按用户裁定把闸门触发条件收窄为「与 mapping 有交集的配置面改造开工前」，原条文/日期/理由/复核命令留痕；5 个硬缺口与 liability_rule_json 读路径零代码与数据交集。
+                【Spec Patch】无。capability spec 的 6 条需求 18 个场景已覆盖全部行为，本轮只定实现方式；文档措辞更正（§9.1.1 ③ 的 RuleJsonCodec.resolve() → domain 归属）属实现归属更正，不是验收变化。
+                【Design Doc】沿用唯一 openspec/changes/synapclaim-liability-rule-json-dual-read/design.md，已补 frontmatter 与候选方案对比章节，D1–D7 与 specs 对齐。
+              requirementsEvidence:
+                contentHash: a715a60d5da2dffbeaa2cf15a81a7a7fcf4a4b9702a88ec751824609deae02ab
+                ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+              sourceEvidence:
+                contentHash: 8580762e596d5438020bb590dbd133df0f9fd1c2b95cee03b36621cd9021bcd0
+                ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+      - handoffContext: openspec/changes/synapclaim-liability-rule-json-dual-read/.comet/handoff/design-context.json
+        handoffHash: eb99f5ef58d56ce5abb5b59e076556ba632542a676c35b387a5ad9af746a63f3
+        proposal: >-
+          【方案】采纳候选 A：domain 值对象 LiabilityRuleJson 新增纯函数 resolve(key, scalar)
+          做按键回落；LiabilityRule.fromLegacy 增接收 JSON 的重载并复用同一 build 链；application
+          增读开关 bone.claim.liability.rule-json-read.enabled 默认 false，以模式值参数传入
+          domain；DUAL_READ 下同时算旧标量路径与回落路径，差异只写结构化日志与计数（责任
+          ID/版本/差异键/两侧数值），返回金额始终取旧路径。无 DDL、无迁移、无存量回填。
+
+          【关键取舍】对比 B（application 预解析透传三值）与 C（直接切主+历史回填）：B
+          结构上做不到——Adjustment.apply() 在 domain，读路径不经过 application，且会拆出第二条参数通道；C
+          会改赔付金额、需回填且无差异证据，已被用户范围决策排除。A 的代价是一个重载 + 一个模式参数 +
+          一组比对用例，换来零行为变更、装配点唯一、二进制可自动回滚。等价判据用 BigDecimal.compareTo 而非字符串（② 实测
+          MySQL 把 90.00 规范化为 90.0 并重排键序）。
+
+          【风险与验证】整列判断丢键 → 只配 1 键反例 + 改整列判断变异必红；B 类键被当 0 或拒绝 → 单 B 类键反例 + 历史 NULL
+          行逐笔等价；开关引入新失败模式 → 注入差异仍返回旧金额且必产日志、删比对实现必转红；误报 → 90.00/90.0 判等不误报、90/80
+          必报差异；改签名波及夹具 → 保留 12 参数原签名，mvn -o -am test 全绿 + 架构测试 28 例。
+
+          【L3 结论】engine_version 源码读取点为 0 ⇒ 不落实体/DDL，台账登记触发条件与复核命令；本地无 org/pitest
+          制品、mvn -o 不可解析 ⇒ 不接 pom/check.sh/allowlist，登记触发条件（CI 联网 +
+          路由开关生产启用评审前）。均不制造孤儿字段或假绿门禁。
+
+          【O-06】按用户裁定把闸门触发条件收窄为「与 mapping 有交集的配置面改造开工前」，原条文/日期/理由/复核命令留痕；5 个硬缺口与
+          liability_rule_json 读路径零代码与数据交集。
+
+          【Spec Patch】无。capability spec 的 6 条需求 18
+          个场景已覆盖全部行为，本轮只定实现方式；文档措辞更正（§9.1.1 ③ 的 RuleJsonCodec.resolve() → domain
+          归属）属实现归属更正，不是验收变化。
+
+          【Design Doc】沿用唯一
+          openspec/changes/synapclaim-liability-rule-json-dual-read/design.md，已补
+          frontmatter 与候选方案对比章节，D1–D7 与 specs 对齐。
+        requirementsEvidence:
+          contentHash: a715a60d5da2dffbeaa2cf15a81a7a7fcf4a4b9702a88ec751824609deae02ab
+          ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+        sourceEvidence:
+          contentHash: 8580762e596d5438020bb590dbd133df0f9fd1c2b95cee03b36621cd9021bcd0
+          ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+      - designDoc: openspec/changes/synapclaim-liability-rule-json-dual-read/design.md
+      - contentHash: 09f6c95f632ff0b66bdab42aa630ca9acf49e2644c85364c01ec15aad6423150
+        ref: openspec/changes/synapclaim-liability-rule-json-dual-read/design.md
+      - boundBranch: dev
+        buildMode: autonomous
+        directOverride: false
+        isolation: current
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 09f6c95f632ff0b66bdab42aa630ca9acf49e2644c85364c01ec15aad6423150
+          ref: openspec/changes/synapclaim-liability-rule-json-dual-read/design.md
+        plan: docs/superpowers/plans/synapclaim-liability-rule-json-dual-read.md
+        planEvidence:
+          contentHash: 4b94a27072e1a3c0b72c8e7c67cc2305ab27ec6718eef9aef3920a119c12e7fa
+          ref: docs/superpowers/plans/synapclaim-liability-rule-json-dual-read.md
+        taskRevision: 58af8b121610691603624e3d4fca651ce23ab1e42e4fd6e70f59f2752f17f12b
+      - contentHash: 4b94a27072e1a3c0b72c8e7c67cc2305ab27ec6718eef9aef3920a119c12e7fa
+        ref: docs/superpowers/plans/synapclaim-liability-rule-json-dual-read.md
+      - event: build-complete
+      - argv:
+          - ./scripts/check.sh
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: d7607253683b2d992083fa206aa467bb07a839c4bc6d8c7a1676784474e06f3b
+        cwd: .
+        environment: c59f58b64b69a9582b7cfb292a406f4138d31b347627801f310b8d03be571068
+        exitCode: 124
+        inputAfter: 1442303a43bbf531a6b4d3a8eb70160e57cbe4da8cf6b02bb6d906b565a688ad
+        inputBefore: 1442303a43bbf531a6b4d3a8eb70160e57cbe4da8cf6b02bb6d906b565a688ad
+        manifestHash: ce101b33c6fd9deb44f7e9f954fdd7068bfc24c64b3d85942b52362ef6e25c9e
+        manifestRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/6f6755bd-d048-493c-95c0-3848a6acddb2.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/06f4f187-a2dd-4385-9e0f-c5dde995d595.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 300000
+      - argv:
+          - ./scripts/check.sh
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 5ffe844ca1b9df973817fe25e813b313250c4c9dfffd2542a65597c320eba596
+        cwd: .
+        environment: c59f58b64b69a9582b7cfb292a406f4138d31b347627801f310b8d03be571068
+        exitCode: 0
+        inputAfter: 25ec990cc5277fdbd918d367b491986d2f23ea4267ced481e390022e79a61791
+        inputBefore: 25ec990cc5277fdbd918d367b491986d2f23ea4267ced481e390022e79a61791
+        manifestHash: 3d995f0e1115d03e4b4b88553a376c22e4c7bf0f0ec1446280f5d7426eba73e8
+        manifestRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/4dfbbf36-986c-4659-94d8-7b48d4611a26.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/503fe2d9-a1fe-4156-a558-1695e8ac30c2.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 5ffe844ca1b9df973817fe25e813b313250c4c9dfffd2542a65597c320eba596
+        ref: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/503fe2d9-a1fe-4156-a558-1695e8ac30c2.log
+      - contentHash: 26d1434aa40011f1c46133a98dde76ea500e190d534d2242832309c10d838ac9
+        ref: docs/superpowers/reports/2026-11-09-synapclaim-liability-rule-json-dual-read-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-09-synapclaim-liability-rule-json-dual-read-verify.md
+      - argv:
+          - ./scripts/check.sh
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: ef1c79ff8494ce3aee0b8868f0d89428109577db32628d0017284daf8a50b92b
+        cwd: .
+        deliveryInputs: {}
+        environment: c59f58b64b69a9582b7cfb292a406f4138d31b347627801f310b8d03be571068
+        exitCode: 0
+        inputAfter: 5429496910af05b3c7c29e7ccb9803370e8568a85636d13fa6b80ca07edf4efb
+        inputBefore: 5429496910af05b3c7c29e7ccb9803370e8568a85636d13fa6b80ca07edf4efb
+        manifestHash: f4aa746f4b7954ecc9a214bcfbfcc1955fb3c056c15ba7b0dcee824cef13b01c
+        manifestRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/2451c8df-56ca-459e-8c31-ee3d7cbc217a.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/2f6ff310-6d52-4163-b2c4-29ea159cab29.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: ef1c79ff8494ce3aee0b8868f0d89428109577db32628d0017284daf8a50b92b
+        ref: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/2f6ff310-6d52-4163-b2c4-29ea159cab29.log
+      - choice: reverify
+        proposal:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: M2 ③ 3a 双读比对落地：按键回落（禁止整列判断）+ 默认关闭的读开关（关闭时不解析聚合 JSON）+ 双轨差异只记录不改金额；L3
+                剩余项按可机检条件收口（engine_version 不落实体/不加列、PITest 不接线）；O-06
+                闸门按用户裁定收窄并留痕。验证：聚焦 20/20、全模块 1382/1382、外置等价变异探针 5 场景 3
+                差异、check.sh 422s 全绿、Comet build/verify 检查均 exitCode=0
+                且输入快照前后一致。零 DDL / 零迁移 / 零回填 / 零金额变更。
+              targetBranch: dev
+      - summary: M2 ③ 3a 双读比对落地：按键回落（禁止整列判断）+ 默认关闭的读开关（关闭时不解析聚合 JSON）+ 双轨差异只记录不改金额；L3
+          剩余项按可机检条件收口（engine_version 不落实体/不加列、PITest 不接线）；O-06
+          闸门按用户裁定收窄并留痕。验证：聚焦 20/20、全模块 1382/1382、外置等价变异探针 5 场景 3 差异、check.sh
+          422s 全绿、Comet build/verify 检查均 exitCode=0 且输入快照前后一致。零 DDL / 零迁移 / 零回填
+          / 零金额变更。
+        targetBranch: dev
+      - argv:
+          - ./scripts/check.sh
+        changedDuringExecution: []
+        checkEpoch: 5
+        contentHash: d938fbea71f5ea05ceade86c1998ae0a3764a0584e0afc3c4cb7372a06fdadf7
+        cwd: .
+        deliveryInputs: {}
+        environment: c59f58b64b69a9582b7cfb292a406f4138d31b347627801f310b8d03be571068
+        exitCode: 0
+        inputAfter: 9d0703a2673f3c958bf5675bf6e5232cbc1c00a0430a8c7dc43d80f343b87d84
+        inputBefore: 9d0703a2673f3c958bf5675bf6e5232cbc1c00a0430a8c7dc43d80f343b87d84
+        manifestHash: 63cb4fd848887d1896f84ff4f88734e65d6c6accbb69d79b9c7e6af71183182f
+        manifestRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/c990d2f6-4cb3-4715-82a8-ed782f6ad365.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/33ad1a1b-ca24-4bbc-8a5a-58fd13fe54e6.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: d938fbea71f5ea05ceade86c1998ae0a3764a0584e0afc3c4cb7372a06fdadf7
+        ref: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/33ad1a1b-ca24-4bbc-8a5a-58fd13fe54e6.log
+      - choice: push
+        proposal:
+          input:
+            change: synapclaim-liability-rule-json-dual-read
+            changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+            workspaceBaseline:
+              ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: M2 ③ 3a 双读比对落地：domain 值对象新增按键回落 resolve(key,scalar)（禁止整列判断丢键）+
+                application 读开关 bone.claim.liability.rule-json-read.enabled 默认
+                false（关闭时不解析聚合 JSON，走旧标量路径）+ DUAL_READ
+                双轨差异只记录（结构化日志与计数，返回金额恒取旧路径）。L3 剩余项按可机检条件收口：engine_version 源码读取点为
+                0 故不落实体/不加列，PITest 本地无制品故不接 pom/门禁，两项均登记触发条件与复核命令。O-06
+                闸门按用户裁定收窄为「与 mapping 有交集的配置面改造开工前」并留痕。验证：verify 检查 attempt 2 收据
+                exitCode=0、inputBefore==inputAfter=9d0703a2、contentHash=d938fbea、manifestHash=63cb4fd8，59/59
+                步全绿；聚焦用例 20/20、全模块 1382/1382、外置等价变异探针 5 场景 3 差异。零 DDL / 零迁移 /
+                零回填 / 零金额变更。
+              targetBranch: dev
+      - remote: origin
+        summary: M2 ③ 3a 双读比对落地：domain 值对象新增按键回落 resolve(key,scalar)（禁止整列判断丢键）+
+          application 读开关 bone.claim.liability.rule-json-read.enabled 默认
+          false（关闭时不解析聚合 JSON，走旧标量路径）+ DUAL_READ 双轨差异只记录（结构化日志与计数，返回金额恒取旧路径）。L3
+          剩余项按可机检条件收口：engine_version 源码读取点为 0 故不落实体/不加列，PITest 本地无制品故不接
+          pom/门禁，两项均登记触发条件与复核命令。O-06 闸门按用户裁定收窄为「与 mapping
+          有交集的配置面改造开工前」并留痕。验证：verify 检查 attempt 2 收据
+          exitCode=0、inputBefore==inputAfter=9d0703a2、contentHash=d938fbea、manifestHash=63cb4fd8，59/59
+          步全绿；聚焦用例 20/20、全模块 1382/1382、外置等价变异探针 5 场景 3 差异。零 DDL / 零迁移 / 零回填 /
+          零金额变更。
+        targetBranch: dev
+      - baseCommit: 841c91fe8b60cdb1e01905cacfd83e2896519ba5
+        deliveryAction: push
+        remote: origin
+        remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+        targetBranch: dev
+        verifiedBranch: dev
+      - archiveDirectory: openspec/changes/archive/2026-11-10-synapclaim-liability-rule-json-dual-read
+      - sequence: 9
+        value:
+          boundBranch: dev
+          buildMode: autonomous
+          directOverride: false
+          isolation: current
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-liability-rule-json-dual-read
+              changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+              workspaceBaseline:
+                ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: autonomous
+                directOverride: false
+                isolation: current
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-liability-rule-json-dual-read
+              changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+              workspaceBaseline:
+                ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/synapclaim-liability-rule-json-dual-read/.comet/handoff/design-context.json
+                handoffHash: eb99f5ef58d56ce5abb5b59e076556ba632542a676c35b387a5ad9af746a63f3
+                proposal: |-
+                  【方案】采纳候选 A：domain 值对象 LiabilityRuleJson 新增纯函数 resolve(key, scalar) 做按键回落；LiabilityRule.fromLegacy 增接收 JSON 的重载并复用同一 build 链；application 增读开关 bone.claim.liability.rule-json-read.enabled 默认 false，以模式值参数传入 domain；DUAL_READ 下同时算旧标量路径与回落路径，差异只写结构化日志与计数（责任 ID/版本/差异键/两侧数值），返回金额始终取旧路径。无 DDL、无迁移、无存量回填。
+                  【关键取舍】对比 B（application 预解析透传三值）与 C（直接切主+历史回填）：B 结构上做不到——Adjustment.apply() 在 domain，读路径不经过 application，且会拆出第二条参数通道；C 会改赔付金额、需回填且无差异证据，已被用户范围决策排除。A 的代价是一个重载 + 一个模式参数 + 一组比对用例，换来零行为变更、装配点唯一、二进制可自动回滚。等价判据用 BigDecimal.compareTo 而非字符串（② 实测 MySQL 把 90.00 规范化为 90.0 并重排键序）。
+                  【风险与验证】整列判断丢键 → 只配 1 键反例 + 改整列判断变异必红；B 类键被当 0 或拒绝 → 单 B 类键反例 + 历史 NULL 行逐笔等价；开关引入新失败模式 → 注入差异仍返回旧金额且必产日志、删比对实现必转红；误报 → 90.00/90.0 判等不误报、90/80 必报差异；改签名波及夹具 → 保留 12 参数原签名，mvn -o -am test 全绿 + 架构测试 28 例。
+                  【L3 结论】engine_version 源码读取点为 0 ⇒ 不落实体/DDL，台账登记触发条件与复核命令；本地无 org/pitest 制品、mvn -o 不可解析 ⇒ 不接 pom/check.sh/allowlist，登记触发条件（CI 联网 + 路由开关生产启用评审前）。均不制造孤儿字段或假绿门禁。
+                  【O-06】按用户裁定把闸门触发条件收窄为「与 mapping 有交集的配置面改造开工前」，原条文/日期/理由/复核命令留痕；5 个硬缺口与 liability_rule_json 读路径零代码与数据交集。
+                  【Spec Patch】无。capability spec 的 6 条需求 18 个场景已覆盖全部行为，本轮只定实现方式；文档措辞更正（§9.1.1 ③ 的 RuleJsonCodec.resolve() → domain 归属）属实现归属更正，不是验收变化。
+                  【Design Doc】沿用唯一 openspec/changes/synapclaim-liability-rule-json-dual-read/design.md，已补 frontmatter 与候选方案对比章节，D1–D7 与 specs 对齐。
+                requirementsEvidence:
+                  contentHash: a715a60d5da2dffbeaa2cf15a81a7a7fcf4a4b9702a88ec751824609deae02ab
+                  ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+                sourceEvidence:
+                  contentHash: 8580762e596d5438020bb590dbd133df0f9fd1c2b95cee03b36621cd9021bcd0
+                  ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/synapclaim-liability-rule-json-dual-read/design.md
+      - sequence: 8
+        value:
+          contentHash: 09f6c95f632ff0b66bdab42aa630ca9acf49e2644c85364c01ec15aad6423150
+          ref: openspec/changes/synapclaim-liability-rule-json-dual-read/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/synapclaim-liability-rule-json-dual-read/.comet/handoff/design-context.json
+          handoffHash: eb99f5ef58d56ce5abb5b59e076556ba632542a676c35b387a5ad9af746a63f3
+          proposal: |-
+            【方案】采纳候选 A：domain 值对象 LiabilityRuleJson 新增纯函数 resolve(key, scalar) 做按键回落；LiabilityRule.fromLegacy 增接收 JSON 的重载并复用同一 build 链；application 增读开关 bone.claim.liability.rule-json-read.enabled 默认 false，以模式值参数传入 domain；DUAL_READ 下同时算旧标量路径与回落路径，差异只写结构化日志与计数（责任 ID/版本/差异键/两侧数值），返回金额始终取旧路径。无 DDL、无迁移、无存量回填。
+            【关键取舍】对比 B（application 预解析透传三值）与 C（直接切主+历史回填）：B 结构上做不到——Adjustment.apply() 在 domain，读路径不经过 application，且会拆出第二条参数通道；C 会改赔付金额、需回填且无差异证据，已被用户范围决策排除。A 的代价是一个重载 + 一个模式参数 + 一组比对用例，换来零行为变更、装配点唯一、二进制可自动回滚。等价判据用 BigDecimal.compareTo 而非字符串（② 实测 MySQL 把 90.00 规范化为 90.0 并重排键序）。
+            【风险与验证】整列判断丢键 → 只配 1 键反例 + 改整列判断变异必红；B 类键被当 0 或拒绝 → 单 B 类键反例 + 历史 NULL 行逐笔等价；开关引入新失败模式 → 注入差异仍返回旧金额且必产日志、删比对实现必转红；误报 → 90.00/90.0 判等不误报、90/80 必报差异；改签名波及夹具 → 保留 12 参数原签名，mvn -o -am test 全绿 + 架构测试 28 例。
+            【L3 结论】engine_version 源码读取点为 0 ⇒ 不落实体/DDL，台账登记触发条件与复核命令；本地无 org/pitest 制品、mvn -o 不可解析 ⇒ 不接 pom/check.sh/allowlist，登记触发条件（CI 联网 + 路由开关生产启用评审前）。均不制造孤儿字段或假绿门禁。
+            【O-06】按用户裁定把闸门触发条件收窄为「与 mapping 有交集的配置面改造开工前」，原条文/日期/理由/复核命令留痕；5 个硬缺口与 liability_rule_json 读路径零代码与数据交集。
+            【Spec Patch】无。capability spec 的 6 条需求 18 个场景已覆盖全部行为，本轮只定实现方式；文档措辞更正（§9.1.1 ③ 的 RuleJsonCodec.resolve() → domain 归属）属实现归属更正，不是验收变化。
+            【Design Doc】沿用唯一 openspec/changes/synapclaim-liability-rule-json-dual-read/design.md，已补 frontmatter 与候选方案对比章节，D1–D7 与 specs 对齐。
+          requirementsEvidence:
+            contentHash: a715a60d5da2dffbeaa2cf15a81a7a7fcf4a4b9702a88ec751824609deae02ab
+            ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+          sourceEvidence:
+            contentHash: 8580762e596d5438020bb590dbd133df0f9fd1c2b95cee03b36621cd9021bcd0
+            ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-liability-rule-json-dual-read
+              changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+              workspaceBaseline:
+                ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+                ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+      - sequence: 2
+        value:
+          contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+          ref: openspec/changes/synapclaim-liability-rule-json-dual-read
+      - sequence: 4
+        value:
+          contentHash: 9489b7a3a77f1d44532e8190f8ed9b609e9e01bc52ade298b5119453deca1eda
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 09f6c95f632ff0b66bdab42aa630ca9acf49e2644c85364c01ec15aad6423150
+            ref: openspec/changes/synapclaim-liability-rule-json-dual-read/design.md
+          plan: docs/superpowers/plans/synapclaim-liability-rule-json-dual-read.md
+          planEvidence:
+            contentHash: 4b94a27072e1a3c0b72c8e7c67cc2305ab27ec6718eef9aef3920a119c12e7fa
+            ref: docs/superpowers/plans/synapclaim-liability-rule-json-dual-read.md
+          taskRevision: 58af8b121610691603624e3d4fca651ce23ab1e42e4fd6e70f59f2752f17f12b
+      - sequence: 12
+        value:
+          contentHash: 4b94a27072e1a3c0b72c8e7c67cc2305ab27ec6718eef9aef3920a119c12e7fa
+          ref: docs/superpowers/plans/synapclaim-liability-rule-json-dual-read.md
+      - sequence: 13
+        value:
+          event: build-complete
+      - sequence: 14
+        value:
+          argv:
+            - ./scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: d7607253683b2d992083fa206aa467bb07a839c4bc6d8c7a1676784474e06f3b
+          cwd: .
+          environment: c59f58b64b69a9582b7cfb292a406f4138d31b347627801f310b8d03be571068
+          exitCode: 124
+          inputAfter: 1442303a43bbf531a6b4d3a8eb70160e57cbe4da8cf6b02bb6d906b565a688ad
+          inputBefore: 1442303a43bbf531a6b4d3a8eb70160e57cbe4da8cf6b02bb6d906b565a688ad
+          manifestHash: ce101b33c6fd9deb44f7e9f954fdd7068bfc24c64b3d85942b52362ef6e25c9e
+          manifestRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/6f6755bd-d048-493c-95c0-3848a6acddb2.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/06f4f187-a2dd-4385-9e0f-c5dde995d595.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 300000
+      - sequence: 15
+        value:
+          event: build-complete
+      - sequence: 16
+        value:
+          argv:
+            - ./scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 5ffe844ca1b9df973817fe25e813b313250c4c9dfffd2542a65597c320eba596
+          cwd: .
+          environment: c59f58b64b69a9582b7cfb292a406f4138d31b347627801f310b8d03be571068
+          exitCode: 0
+          inputAfter: 25ec990cc5277fdbd918d367b491986d2f23ea4267ced481e390022e79a61791
+          inputBefore: 25ec990cc5277fdbd918d367b491986d2f23ea4267ced481e390022e79a61791
+          manifestHash: 3d995f0e1115d03e4b4b88553a376c22e4c7bf0f0ec1446280f5d7426eba73e8
+          manifestRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/4dfbbf36-986c-4659-94d8-7b48d4611a26.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/503fe2d9-a1fe-4156-a558-1695e8ac30c2.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 17
+        value:
+          contentHash: 5ffe844ca1b9df973817fe25e813b313250c4c9dfffd2542a65597c320eba596
+          ref: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/503fe2d9-a1fe-4156-a558-1695e8ac30c2.log
+      - sequence: 19
+        value:
+          contentHash: 26d1434aa40011f1c46133a98dde76ea500e190d534d2242832309c10d838ac9
+          ref: docs/superpowers/reports/2026-11-09-synapclaim-liability-rule-json-dual-read-verify.md
+      - sequence: 18
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-09-synapclaim-liability-rule-json-dual-read-verify.md
+      - sequence: 20
+        value:
+          argv:
+            - ./scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: ef1c79ff8494ce3aee0b8868f0d89428109577db32628d0017284daf8a50b92b
+          cwd: .
+          deliveryInputs: {}
+          environment: c59f58b64b69a9582b7cfb292a406f4138d31b347627801f310b8d03be571068
+          exitCode: 0
+          inputAfter: 5429496910af05b3c7c29e7ccb9803370e8568a85636d13fa6b80ca07edf4efb
+          inputBefore: 5429496910af05b3c7c29e7ccb9803370e8568a85636d13fa6b80ca07edf4efb
+          manifestHash: f4aa746f4b7954ecc9a214bcfbfcc1955fb3c056c15ba7b0dcee824cef13b01c
+          manifestRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/2451c8df-56ca-459e-8c31-ee3d7cbc217a.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/2f6ff310-6d52-4163-b2c4-29ea159cab29.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 21
+        value:
+          contentHash: ef1c79ff8494ce3aee0b8868f0d89428109577db32628d0017284daf8a50b92b
+          ref: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/2f6ff310-6d52-4163-b2c4-29ea159cab29.log
+      - sequence: 24
+        value:
+          choice: reverify
+          proposal:
+            input:
+              change: synapclaim-liability-rule-json-dual-read
+              changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+              workspaceBaseline:
+                ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+            outputs:
+              full.archive.prepare:
+                remote: origin
+                summary: M2 ③ 3a 双读比对落地：按键回落（禁止整列判断）+ 默认关闭的读开关（关闭时不解析聚合 JSON）+ 双轨差异只记录不改金额；L3
+                  剩余项按可机检条件收口（engine_version 不落实体/不加列、PITest 不接线）；O-06
+                  闸门按用户裁定收窄并留痕。验证：聚焦 20/20、全模块 1382/1382、外置等价变异探针 5 场景 3
+                  差异、check.sh 422s 全绿、Comet build/verify 检查均 exitCode=0
+                  且输入快照前后一致。零 DDL / 零迁移 / 零回填 / 零金额变更。
+                targetBranch: dev
+      - sequence: 22
+        value:
+          summary: M2 ③ 3a 双读比对落地：按键回落（禁止整列判断）+ 默认关闭的读开关（关闭时不解析聚合 JSON）+ 双轨差异只记录不改金额；L3
+            剩余项按可机检条件收口（engine_version 不落实体/不加列、PITest 不接线）；O-06
+            闸门按用户裁定收窄并留痕。验证：聚焦 20/20、全模块 1382/1382、外置等价变异探针 5 场景 3 差异、check.sh
+            422s 全绿、Comet build/verify 检查均 exitCode=0 且输入快照前后一致。零 DDL / 零迁移 /
+            零回填 / 零金额变更。
+          targetBranch: dev
+      - sequence: 26
+        value:
+          contentHash: 26d1434aa40011f1c46133a98dde76ea500e190d534d2242832309c10d838ac9
+          ref: docs/superpowers/reports/2026-11-09-synapclaim-liability-rule-json-dual-read-verify.md
+      - sequence: 25
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-09-synapclaim-liability-rule-json-dual-read-verify.md
+      - sequence: 27
+        value:
+          argv:
+            - ./scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 5
+          contentHash: d938fbea71f5ea05ceade86c1998ae0a3764a0584e0afc3c4cb7372a06fdadf7
+          cwd: .
+          deliveryInputs: {}
+          environment: c59f58b64b69a9582b7cfb292a406f4138d31b347627801f310b8d03be571068
+          exitCode: 0
+          inputAfter: 9d0703a2673f3c958bf5675bf6e5232cbc1c00a0430a8c7dc43d80f343b87d84
+          inputBefore: 9d0703a2673f3c958bf5675bf6e5232cbc1c00a0430a8c7dc43d80f343b87d84
+          manifestHash: 63cb4fd848887d1896f84ff4f88734e65d6c6accbb69d79b9c7e6af71183182f
+          manifestRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/c990d2f6-4cb3-4715-82a8-ed782f6ad365.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/33ad1a1b-ca24-4bbc-8a5a-58fd13fe54e6.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 28
+        value:
+          contentHash: d938fbea71f5ea05ceade86c1998ae0a3764a0584e0afc3c4cb7372a06fdadf7
+          ref: .comet/runtime/classic-sdk-checks/8c8093c203decb8cbc8fb73dd95b62c45592cbb225d9e90b81993c9b71c96f94/33ad1a1b-ca24-4bbc-8a5a-58fd13fe54e6.log
+      - sequence: 30
+        value:
+          choice: push
+          proposal:
+            input:
+              change: synapclaim-liability-rule-json-dual-read
+              changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+              workspaceBaseline:
+                ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+            outputs:
+              full.archive.prepare:
+                remote: origin
+                summary: M2 ③ 3a 双读比对落地：domain 值对象新增按键回落 resolve(key,scalar)（禁止整列判断丢键）+
+                  application 读开关 bone.claim.liability.rule-json-read.enabled 默认
+                  false（关闭时不解析聚合 JSON，走旧标量路径）+ DUAL_READ
+                  双轨差异只记录（结构化日志与计数，返回金额恒取旧路径）。L3 剩余项按可机检条件收口：engine_version
+                  源码读取点为 0 故不落实体/不加列，PITest 本地无制品故不接 pom/门禁，两项均登记触发条件与复核命令。O-06
+                  闸门按用户裁定收窄为「与 mapping 有交集的配置面改造开工前」并留痕。验证：verify 检查 attempt 2
+                  收据
+                  exitCode=0、inputBefore==inputAfter=9d0703a2、contentHash=d938fbea、manifestHash=63cb4fd8，59/59
+                  步全绿；聚焦用例 20/20、全模块 1382/1382、外置等价变异探针 5 场景 3 差异。零 DDL / 零迁移 /
+                  零回填 / 零金额变更。
+                targetBranch: dev
+      - sequence: 29
+        value:
+          remote: origin
+          summary: M2 ③ 3a 双读比对落地：domain 值对象新增按键回落 resolve(key,scalar)（禁止整列判断丢键）+
+            application 读开关 bone.claim.liability.rule-json-read.enabled 默认
+            false（关闭时不解析聚合 JSON，走旧标量路径）+ DUAL_READ
+            双轨差异只记录（结构化日志与计数，返回金额恒取旧路径）。L3 剩余项按可机检条件收口：engine_version 源码读取点为 0
+            故不落实体/不加列，PITest 本地无制品故不接 pom/门禁，两项均登记触发条件与复核命令。O-06 闸门按用户裁定收窄为「与
+            mapping 有交集的配置面改造开工前」并留痕。验证：verify 检查 attempt 2 收据
+            exitCode=0、inputBefore==inputAfter=9d0703a2、contentHash=d938fbea、manifestHash=63cb4fd8，59/59
+            步全绿；聚焦用例 20/20、全模块 1382/1382、外置等价变异探针 5 场景 3 差异。零 DDL / 零迁移 / 零回填 /
+            零金额变更。
+          targetBranch: dev
+      - sequence: 31
+        value:
+          baseCommit: 841c91fe8b60cdb1e01905cacfd83e2896519ba5
+          deliveryAction: push
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: dev
+          verifiedBranch: dev
+      - sequence: 32
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-10-synapclaim-liability-rule-json-dual-read
+      - sequence: 23
+        value:
+          choice: later
+          proposal:
+            input:
+              change: synapclaim-liability-rule-json-dual-read
+              changeDir: openspec/changes/synapclaim-liability-rule-json-dual-read
+              workspaceBaseline:
+                ref: fb8f6555-a1ac-4187-9cf4-82d1e87e3252
+            outputs:
+              full.archive.prepare:
+                summary: M2 ③ 3a 双读比对落地：按键回落（禁止整列判断）+ 默认关闭的读开关（关闭时不解析聚合 JSON）+ 双轨差异只记录不改金额；L3
+                  剩余项按可机检条件收口（engine_version 不落实体/不加列、PITest 不接线）；O-06
+                  闸门按用户裁定收窄并留痕。验证：聚焦 20/20、全模块 1382/1382、外置等价变异探针 5 场景 3
+                  差异、check.sh 422s 全绿、Comet build/verify 检查均 exitCode=0
+                  且输入快照前后一致。零 DDL / 零迁移 / 零回填 / 零金额变更。
+                targetBranch: dev
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: 32
+        right: null
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 33
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 34
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 35
+        right: 25
+        height: 5
+      - key: full.build.check
+        value: 14
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 15
+        left: 37
+        right: 38
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 39
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 40
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 41
+        right: 25
+        height: 5
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 16
+        left: null
+        right: 44
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 43
+        right: 45
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 46
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 41
+        right: 47
+        height: 5
+      - key: full.open.revalidate
+        value: 3
+        left: 43
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 16
+        left: 50
+        right: 44
+        height: 2
+      - key: full.verify.check
+        value: 18
+        left: 49
+        right: 51
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 52
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 41
+        right: 53
+        height: 5
+      - key: full.archive.confirm
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 14
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 21
+        left: 55
+        right: 56
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 38
+        right: 27
+        height: 2
+      - key: full.build.check.evidence
+        value: 15
+        left: 57
+        right: 58
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 59
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 60
+        right: 53
+        height: 5
+      - key: full.verify.check.evidence
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 16
+        left: 62
+        right: 44
+        height: 2
+      - key: full.verify.check
+        value: 22
+        left: 49
+        right: 63
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 64
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 60
+        right: 65
+        height: 5
+      - key: full.archive.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 25
+        left: 67
+        right: 56
+        height: 2
+      - key: full.build.check.evidence
+        value: 15
+        left: 68
+        right: 58
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 69
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 70
+        right: 65
+        height: 5
+      - key: full.archive.preflight
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 24
+        left: null
+        right: 72
+        height: 2
+      - key: full.archive.prepare
+        value: 25
+        left: 73
+        right: 56
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 58
+        right: 29
+        height: 3
+      - key: full.build.check.evidence
+        value: 15
+        left: 74
+        right: 75
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 76
+        right: 65
+        height: 5
+      - key: full.archive.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 27
+        left: 78
+        right: 79
+        height: 2
+      - key: full.archive.prepare
+        value: 25
+        left: 80
+        right: 56
+        height: 3
+      - key: full.build.check.evidence
+        value: 15
+        left: 81
+        right: 75
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 82
+        right: 65
+        height: 5
+      - key: full.build.configure
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 29
+        left: 84
+        right: 85
+        height: 2
+      - key: full.design.evidence
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 33
+        left: 87
+        right: 88
+        height: 2
+      - key: full.open.revalidate
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 36
+        left: null
+        right: 90
+        height: 2
+      - key: full.open.confirm
+        value: 35
+        left: 89
+        right: 91
+        height: 3
+      - key: full.design.document
+        value: 31
+        left: 86
+        right: 92
+        height: 4
+      - key: full.build.plan
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 39
+        left: 94
+        right: 95
+        height: 2
+      - key: full.build.confirm
+        value: 29
+        left: 84
+        right: 96
+        height: 3
+      - key: full.design.document
+        value: 31
+        left: 97
+        right: 92
+        height: 4
+      - key: full.build.execute
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 29
+        left: 84
+        right: 99
+        height: 2
+      - key: full.build.plan.evidence
+        value: 39
+        left: null
+        right: 95
+        height: 2
+      - key: full.build.plan
+        value: 38
+        left: 100
+        right: 101
+        height: 3
+      - key: full.design.document
+        value: 31
+        left: 102
+        right: 92
+        height: 4
+      - key: full.build.check
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 28
+        left: 104
+        right: null
+        height: 2
+      - key: full.build.confirm
+        value: 29
+        left: 105
+        right: 99
+        height: 3
+      - key: full.build.plan
+        value: 38
+        left: 106
+        right: 101
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 107
+        right: 92
+        height: 5
+      - key: full.build.execute
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 29
+        left: 105
+        right: 109
+        height: 3
+      - key: full.build.plan
+        value: 38
+        left: 110
+        right: 101
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 111
+        right: 92
+        height: 5
+      - key: full.build.check
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 44
+        left: 113
+        right: 114
+        height: 2
+      - key: full.build.confirm
+        value: 29
+        left: 115
+        right: 109
+        height: 3
+      - key: full.build.plan
+        value: 38
+        left: 116
+        right: 101
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 117
+        right: 92
+        height: 5
+      - key: full.open.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 45
+        left: null
+        right: 120
+        height: 2
+      - key: full.open.revalidate
+        value: 37
+        left: 119
+        right: 121
+        height: 3
+      - key: full.open.confirm
+        value: 35
+        left: 89
+        right: 122
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 117
+        right: 123
+        height: 5
+      - key: full.open.revalidate
+        value: 37
+        left: 119
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 45
+        left: 126
+        right: 120
+        height: 2
+      - key: full.verify.check
+        value: 47
+        left: 125
+        right: 127
+        height: 3
+      - key: full.open.confirm
+        value: 35
+        left: 89
+        right: 128
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 117
+        right: 129
+        height: 5
+      - key: full.archive.confirm
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 50
+        left: 131
+        right: 132
+        height: 2
+      - key: full.build.confirm
+        value: 29
+        left: 114
+        right: 109
+        height: 2
+      - key: full.build.check.evidence
+        value: 44
+        left: 133
+        right: 134
+        height: 3
+      - key: full.build.plan
+        value: 38
+        left: 135
+        right: 101
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 136
+        right: 129
+        height: 5
+      - key: full.verify.run
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 51
+        left: 126
+        right: 138
+        height: 2
+      - key: full.verify.check
+        value: 47
+        left: 125
+        right: 139
+        height: 3
+      - key: full.open.confirm
+        value: 35
+        left: 89
+        right: 140
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 136
+        right: 141
+        height: 5
+      - key: full.verify.check.evidence
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 51
+        left: 143
+        right: 138
+        height: 2
+      - key: full.verify.check
+        value: 53
+        left: 125
+        right: 144
+        height: 3
+      - key: full.open.confirm
+        value: 35
+        left: 89
+        right: 145
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 136
+        right: 146
+        height: 5
+      - key: full.archive.confirm
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 56
+        left: 148
+        right: 132
+        height: 2
+      - key: full.build.check.evidence
+        value: 44
+        left: 149
+        right: 134
+        height: 3
+      - key: full.build.plan
+        value: 38
+        left: 150
+        right: 101
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 151
+        right: 146
+        height: 5
+      - key: full.archive.preflight
+        value: 57
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 55
+        left: null
+        right: 153
+        height: 2
+      - key: full.archive.prepare
+        value: 56
+        left: 154
+        right: 132
+        height: 3
+      - key: full.build.plan
+        value: 38
+        left: 134
+        right: 101
+        height: 3
+      - key: full.build.check.evidence
+        value: 44
+        left: 155
+        right: 156
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 157
+        right: 146
+        height: 5
+      - key: full.archive.confirm
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 57
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 58
+        left: 159
+        right: 160
+        height: 2
+      - key: full.archive.prepare
+        value: 56
+        left: 161
+        right: 132
+        height: 3
+      - key: full.build.check.evidence
+        value: 44
+        left: 162
+        right: 156
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 163
+        right: 146
+        height: 5
+      - key: full.open
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 35
+        left: 165
+        right: 166
+        height: 2
+      - key: full.open.revalidate
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 36
+        left: null
+        right: 168
+        height: 2
+      - key: full.open.confirm
+        value: 35
+        left: 165
+        right: 169
+        height: 3
+      - key: full.design.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 33
+        left: 171
+        right: 172
+        height: 2
+      - key: full.open.confirm
+        value: 35
+        left: 173
+        right: 169
+        height: 3
+      - key: full.design.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 31
+        left: 175
+        right: 176
+        height: 2
+      - key: full.design.handoff
+        value: 33
+        left: 177
+        right: 172
+        height: 3
+      - key: full.open.confirm
+        value: 35
+        left: 178
+        right: 169
+        height: 4
+      - key: full.open.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 34
+        left: null
+        right: 180
+        height: 2
+      - key: full.design.handoff
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 36
+        left: 183
+        right: 184
+        height: 2
+      - key: full.open
+        value: 34
+        left: 182
+        right: 185
+        height: 3
+      - key: full.build.configure
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 32
+        left: 188
+        right: 189
+        height: 2
+      - key: full.design.confirm
+        value: 30
+        left: 187
+        right: 190
+        height: 3
+      - key: full.open
+        value: 34
+        left: 191
+        right: 185
+        height: 4
+      - key: full.archive.prepare
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 43
+        left: 193
+        right: 194
+        height: 2
+      - key: full.build.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 38
+        left: null
+        right: 197
+        height: 2
+      - key: full.build.execute
+        value: 42
+        left: 196
+        right: 198
+        height: 3
+      - key: full.build.configure
+        value: 28
+        left: 195
+        right: 199
+        height: 4
+      - key: full.open.revalidate
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 36
+        left: 183
+        right: 201
+        height: 2
+      - key: full.verify.check.evidence
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 45
+        left: 203
+        right: 204
+        height: 2
+      - key: full.verify.check
+        value: 47
+        left: 202
+        right: 205
+        height: 3
+      - key: full.open
+        value: 34
+        left: 190
+        right: 206
+        height: 4
+      - key: full.design.confirm
+        value: 30
+        left: 200
+        right: 207
+        height: 5
+      - key: full.archive.confirm
+        value: 59
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 50
+        left: 209
+        right: null
+        height: 2
+      - key: full.build.check
+        value: 43
+        left: 210
+        right: 194
+        height: 3
+      - key: full.build.configure
+        value: 28
+        left: 211
+        right: 199
+        height: 4
+      - key: full.design.confirm
+        value: 30
+        left: 212
+        right: 207
+        height: 5
+      - key: full.archive.confirm
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 56
+        left: 214
+        right: null
+        height: 2
+      - key: full.build.check
+        value: 43
+        left: 215
+        right: 194
+        height: 3
+      - key: full.build.configure
+        value: 28
+        left: 216
+        right: 199
+        height: 4
+      - key: full.verify.check.evidence
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 51
+        left: 218
+        right: 219
+        height: 2
+      - key: full.verify.check
+        value: 53
+        left: 202
+        right: 220
+        height: 3
+      - key: full.open
+        value: 34
+        left: 190
+        right: 221
+        height: 4
+      - key: full.design.confirm
+        value: 30
+        left: 217
+        right: 222
+        height: 5
+      - key: full.open
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 31
+        left: 225
+        right: 226
+        height: 2
+      - key: full.open.confirm
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 36
+        left: 228
+        right: 229
+        height: 2
+      - key: full.open
+        value: 34
+        left: 227
+        right: 230
+        height: 3
+      - key: full.build.configure
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 29
+        left: 232
+        right: 233
+        height: 2
+      - key: full.design.document
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 32
+        left: 235
+        right: 236
+        height: 2
+      - key: full.design.confirm
+        value: 30
+        left: 234
+        right: 237
+        height: 3
+      - key: full.open
+        value: 34
+        left: 238
+        right: 230
+        height: 4
+      - key: full.build.check
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 28
+        left: 240
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 38
+        left: 242
+        right: 243
+        height: 2
+      - key: full.build.confirm
+        value: 29
+        left: 241
+        right: 244
+        height: 3
+      - key: full.open
+        value: 34
+        left: 237
+        right: 230
+        height: 3
+      - key: full.design.confirm
+        value: 30
+        left: 245
+        right: 246
+        height: 4
+      - key: full.build.check
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 44
+        left: 248
+        right: 249
+        height: 2
+      - key: full.build.confirm
+        value: 29
+        left: 250
+        right: 244
+        height: 3
+      - key: full.verify.run
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 37
+        left: null
+        right: 252
+        height: 2
+      - key: full.open.evidence
+        value: 36
+        left: 228
+        right: 253
+        height: 3
+      - key: full.open
+        value: 34
+        left: 237
+        right: 254
+        height: 4
+      - key: full.design.confirm
+        value: 30
+        left: 251
+        right: 255
+        height: 5
+      - key: full.open.revalidate
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 36
+        left: 228
+        right: 257
+        height: 2
+      - key: full.verify.report.evidence
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 46
+        left: 259
+        right: null
+        height: 2
+      - key: full.verify.check
+        value: 47
+        left: 258
+        right: 260
+        height: 3
+      - key: full.open
+        value: 34
+        left: 237
+        right: 261
+        height: 4
+      - key: full.design.confirm
+        value: 30
+        left: 251
+        right: 262
+        height: 5
+      - key: full.archive.confirm
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 50
+        left: 264
+        right: 265
+        height: 2
+      - key: full.build.check.evidence
+        value: 44
+        left: 266
+        right: 249
+        height: 3
+      - key: full.build.confirm
+        value: 29
+        left: 267
+        right: 244
+        height: 4
+      - key: full.verify.check.evidence
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 45
+        left: 269
+        right: 270
+        height: 2
+      - key: full.verify.check
+        value: 47
+        left: 258
+        right: 271
+        height: 3
+      - key: full.open
+        value: 34
+        left: 237
+        right: 272
+        height: 4
+      - key: full.design.confirm
+        value: 30
+        left: 268
+        right: 273
+        height: 5
+      - key: full.verify.report.evidence
+        value: 51
+        left: 269
+        right: 270
+        height: 2
+      - key: full.verify.check
+        value: 53
+        left: 258
+        right: 275
+        height: 3
+      - key: full.open
+        value: 34
+        left: 237
+        right: 276
+        height: 4
+      - key: full.design.confirm
+        value: 30
+        left: 268
+        right: 277
+        height: 5
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 36
+      - 42
+      - 48
+      - 54
+      - 61
+      - 66
+      - 71
+      - 77
+      - 83
+      - 93
+      - 98
+      - 103
+      - 108
+      - 112
+      - 118
+      - 124
+      - 130
+      - 137
+      - 142
+      - 147
+      - 152
+      - 158
+      - 164
+      - 167
+      - 170
+      - 174
+      - 179
+      - 181
+      - 186
+      - 192
+      - 208
+      - 213
+      - 223
+      - 224
+      - 231
+      - 239
+      - 247
+      - 256
+      - 263
+      - 274
+      - 278
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "14"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "15"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actions
+          - "16"
+          - input
+          - outputs
+        map: 14
+      - path:
+          - actions
+          - "17"
+          - input
+          - outputs
+        map: 15
+      - path:
+          - actions
+          - "18"
+          - input
+          - outputs
+        map: 16
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:11
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:13
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:14
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:15
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:16
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:18
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:20
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:22
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:25
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:27
+          - results
+        map: 26
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:29
+          - results
+        map: 27
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:31
+          - results
+        map: 28
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:32
+          - results
+        map: 29
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:33
+          - results
+        map: 30
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:4
+          - results
+        map: 31
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:5
+          - results
+        map: 32
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:7
+          - results
+        map: 33
+      - path:
+          - actionContexts
+          - synapclaim-liability-rule-json-dual-read:9
+          - results
+        map: 34
+      - path:
+          - outputs
+        map: 30
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 35
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 36
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 37
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 38
+      - path:
+          - waits
+          - "4"
+          - results
+        map: 39
+      - path:
+          - waits
+          - "5"
+          - results
+        map: 40
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 41
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 42
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 43
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 44
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 45
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 46
+      - path:
+          - evidenceWaits
+          - "6"
+          - results
+        map: 47
+      - path:
+          - evidenceWaits
+          - "7"
+          - results
+        map: 48
+  storageHash: 0fbb3e7b550c5832bea54c5754fb4ffb5d825c04d2710f5977cb6be264c13562
+change_id: c702b9f3-90b5-4620-9d44-4573c719f36e

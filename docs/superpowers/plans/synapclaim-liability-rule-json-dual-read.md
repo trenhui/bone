@@ -2,6 +2,7 @@
 change: synapclaim-liability-rule-json-dual-read
 design-doc: openspec/changes/synapclaim-liability-rule-json-dual-read/design.md
 base-ref: e3c940b9ae0c2ab654c9c2d48e5300a351602e5f
+archived-with: 2026-11-10-synapclaim-liability-rule-json-dual-read
 ---
 
 # 实施计划：M2 ③ 3a 双读比对 + 剩余 L3 项收口
