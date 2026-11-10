@@ -33,7 +33,9 @@
      A10.14 合规工程化清单 / 能力账本 / G12 边界 / 地基层排期（复诊 P1-⑤⑥⑦⑧）、
      A10.15 最小切片事件状态与附录 B 一致（P2-7：B.1/B.2 不得互斥 + 未登记事件须显式标注）、
      A10.16 陈旧表述防回退 / A10.17 三入口**可执行**判据等价（含 continue-on-error / if /
-            注释 run / 子串冒充）/ A10.18 治理清单结构化 + 反复制粘贴、
+            注释 run / 子串冒充）/ A10.18 治理清单结构化 + 反复制粘贴
+            （第五轮原地加固：S1–S8 可验收化 / Decision Governance 四级分层
+             8 能力码不重不漏 / G10 主表分期一致性，均不新增号段）、
 
 用法：
   python3 tools/check_procura_alignment.py              # 全套校验，退出码 0/1
@@ -228,6 +230,11 @@ CI_STEP_HEAD_RE = re.compile(r"^\s*-\s+name:\s*ProcuraAI[^\n]*\(blocking\)\s*$")
 # A10.18：治理清单表格列结构化下界（防止「只有标题 token、没有可验收动作」）。
 COMPLIANCE_ROW_RE = re.compile(r"^\|\s*C-\d+\s*\|", re.M)
 FOUNDATION_ROW_RE = re.compile(r"^\|\s*\*\*F\d+\*\*\s*\|", re.M)
+# 第五轮 A10.18 原地加固：企业侧补齐项 / 自治分层 / 能力地图分期 / 能力码真源表。
+SCENARIO_ROW_RE = re.compile(r"^\|\s*\*\*S\d+\*\*\s*\|", re.M)
+TIER_ROW_RE = re.compile(r"^\|\s*\*\*T\d+\*\*\s*\|", re.M)
+G10_ROW_RE = re.compile(r"^\|\s*\*\*G10\*\*\s*\|", re.M)
+CAP_TRUTH_ROW_RE = re.compile(r"^\|\s*(M\d+|ORCHESTRATION)\s*\|", re.M)
 MIN_ACTION_CHARS = 20
 
 
@@ -1551,6 +1558,59 @@ def check_a10(ctx: Ctx) -> tuple[bool, list[str]]:
             msgs.append("A10.18 地基层出现复制粘贴的验收判据（F1–F4 须各自可验收，"
                         "不得以同一段占位文字充数）")
 
+    # --- 10.18（第五轮原地加固）S1–S8 / 四级分层 / G10 分期一致性 ---------------
+    # 判据真源：D3-v2 第 1.1 节能力码表（外部结构化真源），不从蓝图自身推导。
+    s43 = (bp.split("### 4.3", 1)[1].split("## 5.", 1)[0]
+           if "### 4.3" in bp and "## 5." in bp else "")
+    if not s43:
+        msgs.append("A10.18 场景补齐：蓝图缺第 4.3 节 → 第 5 节区间（结构化校验不可达）")
+    s_rows = [ln for ln in s43.splitlines() if SCENARIO_ROW_RE.match(ln)]
+    if len(s_rows) != 8:
+        msgs.append(f"A10.18 场景补齐 S 行 {len(s_rows)} != 8（S1–S8 不可删）")
+    for ln in s_rows:
+        cols = _md_cols(ln)
+        if len(cols) != 7:
+            msgs.append(f"A10.18 场景补齐 {cols[0] if cols else '?'} 列数 {len(cols)} != 7")
+            continue
+        if not all(cols[4:7]) or len(cols[4]) < MIN_ACTION_CHARS:
+            msgs.append(f"A10.18 场景补齐 {cols[0]} 缺可验收动作 / Owner / 验收判据列")
+    if len(s_rows) == 8:
+        s_criteria = [_md_cols(ln)[6].strip().lower() for ln in s_rows
+                      if len(_md_cols(ln)) == 7]
+        if len(s_criteria) == 8 and len(set(s_criteria)) != len(s_criteria):
+            msgs.append("A10.18 场景补齐出现复制粘贴的验收判据（S1–S8 须各自可验收，"
+                        "不得以同一段占位文字充数）")
+    t_rows = [ln for ln in s43.splitlines() if TIER_ROW_RE.match(ln)]
+    if len(t_rows) != 4:
+        msgs.append(f"A10.18 分层 T 行 {len(t_rows)} != 4（四级治理分层不可删）")
+    tier_codes: list[str] = []
+    for ln in t_rows:
+        cols = _md_cols(ln)
+        if len(cols) != 6:
+            msgs.append(f"A10.18 分层 {cols[0] if cols else '?'} 列数 {len(cols)} != 6")
+            continue
+        if not all(cols[4:6]) or len(cols[4]) < MIN_ACTION_CHARS:
+            msgs.append(f"A10.18 分层 {cols[0]} 缺附加护栏 / 升级审批条件")
+        found = re.findall(r"\b(M\d+|ORCHESTRATION)\b", cols[3])
+        if not found:
+            msgs.append(f"A10.18 分层 {cols[0]} 未登记任何能力码（每级须显式映射）")
+        tier_codes.extend(found)
+    truth_codes = CAP_TRUTH_ROW_RE.findall(s11) if s11 else []
+    if len(truth_codes) != 8 or len(set(truth_codes)) != 8:
+        msgs.append("A10.18 分层：D3-v2 第 1.1 节能力码真源表须 8 行且主键唯一（fail-closed）")
+    if sorted(truth_codes) != sorted(tier_codes):
+        msgs.append(f"A10.18 分层能力码集合 {sorted(tier_codes)} != 真源 "
+                    f"{sorted(truth_codes)}（不重不漏；漏码 / 越界码 / 重复落层均判红）")
+    g10_rows = [ln for ln in bp.splitlines() if G10_ROW_RE.match(ln)]
+    if len(g10_rows) != 1:
+        msgs.append("A10.18 分期：蓝图能力地图 G10 行缺失或重复")
+    else:
+        g10_cols = _md_cols(g10_rows[0])
+        if (len(g10_cols) != 6 or "P2" not in g10_cols[5] or "P4" in g10_cols[5]
+                or "品类智能分类" not in g10_rows[0]):
+            msgs.append("A10.18 分期：G10 主表须标 P2 且写明品类智能分类（不得回退 P4，"
+                        "与第 4.1 节阶段表互斥即判红）")
+
     if "12 条全部补齐" not in ctx.texts.get("领域", ""):
         msgs.append("A10 领域 §6.2 缺「12 条全部补齐」收口说明")
 
@@ -2495,6 +2555,73 @@ def self_test() -> int:
         e["蓝图"] = "".join(out)
         return _mutate(c, extra=e)
 
+    # --- 第五轮：S1–S8 / 四级分层 / G10 分期一致性注入反证 -----------------------
+    def _edit_bp_row(c, row_re, edit, expect_n):
+        e = dict(c.extra)
+        out, n = [], 0
+        for ln in e["蓝图"].splitlines(keepends=True):
+            if row_re.match(ln):
+                ln = edit(ln)
+                n += 1
+            out.append(ln)
+        assert n == expect_n, n
+        e["蓝图"] = "".join(out)
+        return _mutate(c, extra=e)
+
+    def m_scenario_empty_action(c):
+        """S3 可验收动作清空：只留标题 token 的结构退化必须转红。"""
+        def edit(ln):
+            parts = ln.rstrip("\n").split("|")
+            if len(parts) == 9:
+                parts[5] = " "
+            return "|".join(parts) + "\n"
+        return _edit_bp_row(c, re.compile(r"^\|\s*\*\*S3\*\*\s*\|"), edit, 1)
+
+    def m_scenario_drop_column(c):
+        """S1 删掉验收判据列：7 列结构不可缩水。"""
+        def edit(ln):
+            parts = ln.rstrip("\n").split("|")
+            if len(parts) == 9:
+                parts.pop(7)
+            return "|".join(parts) + "\n"
+        return _edit_bp_row(c, re.compile(r"^\|\s*\*\*S1\*\*\s*\|"), edit, 1)
+
+    def m_scenario_copy(c):
+        """8 条 S 验收判据复制粘贴同一段占位文字。"""
+        def edit(ln):
+            parts = ln.rstrip("\n").split("|")
+            if len(parts) == 9:
+                parts[7] = " 同一段验收判据占位文字复制粘贴八次用于测试 "
+            return "|".join(parts) + "\n"
+        return _edit_bp_row(c, SCENARIO_ROW_RE, edit, 8)
+
+    def m_tier_drop_row(c):
+        """删掉 T4 平台治理层：四级缺一 + ORCHESTRATION 漏码。"""
+        e = dict(c.extra)
+        e["蓝图"] = "".join(ln for ln in e["蓝图"].splitlines(keepends=True)
+                            if not re.match(r"^\|\s*\*\*T4\*\*\s*\|", ln))
+        return _mutate(c, extra=e)
+
+    def m_tier_missing_code(c):
+        """T1 覆盖能力码删掉 M7：真源 8 码不重不漏判据转红。"""
+        def edit(ln):
+            return ln.replace("M1 / M2 / M5 / M6 / M7", "M1 / M2 / M5 / M6", 1)
+        return _edit_bp_row(c, re.compile(r"^\|\s*\*\*T1\*\*\s*\|"), edit, 1)
+
+    def m_tier_duplicate_code(c):
+        """T4 重复登记 M1：一个能力码不得落多个自治层级。"""
+        def edit(ln):
+            return ln.replace("ORCHESTRATION |", "ORCHESTRATION / M1 |", 1)
+        return _edit_bp_row(c, re.compile(r"^\|\s*\*\*T4\*\*\s*\|"), edit, 1)
+
+    def m_g10_revert_p4(c):
+        """G10 主表分期回退 P4，与第 4.1 节阶段表 P2 互斥。"""
+        e = dict(c.extra)
+        old = "| `CategoryInsightPort` | **P2** |"
+        assert old in e["蓝图"]
+        e["蓝图"] = e["蓝图"].replace(old, "| `CategoryInsightPort` | P4 |", 1)
+        return _mutate(c, extra=e)
+
     mutations = [
         ("A1", "版本号漂移（v0.3 → v9.9）", m_a1, "版本 v9.9"),
         ("A1", f"LLD 卷版本头漂移（{LLD_VERSION} → v9.9）", m_a1_lld, "版本头缺失"),
@@ -2594,6 +2721,13 @@ def self_test() -> int:
         ("A10", "check.sh G0 主门禁被注释（文本仍在）", m_checksh_comment, "A10.17"),
         ("A10", "C-1–C-8 可验收动作全部复制粘贴", m_compliance_copy, "A10.18"),
         ("A10", "F1–F4 验收判据全部复制粘贴", m_foundation_copy, "A10.18"),
+        ("A10", "S3 可验收动作清空", m_scenario_empty_action, "A10.18 场景补齐"),
+        ("A10", "S1 删掉验收判据列", m_scenario_drop_column, "A10.18 场景补齐"),
+        ("A10", "S1–S8 验收判据全部复制粘贴", m_scenario_copy, "A10.18 场景补齐"),
+        ("A10", "删掉 T4 平台治理层", m_tier_drop_row, "A10.18 分层"),
+        ("A10", "T1 漏登记 M7 能力码", m_tier_missing_code, "A10.18 分层"),
+        ("A10", "T4 重复登记 M1（跨层）", m_tier_duplicate_code, "A10.18 分层"),
+        ("A10", "G10 主表分期回退 P4", m_g10_revert_p4, "A10.18 分期"),
     ]
     all_ok = True
     for target, desc, mutator, expect in mutations:

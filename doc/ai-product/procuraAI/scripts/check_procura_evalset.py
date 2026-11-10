@@ -15,14 +15,17 @@
   A10 capabilityCode 登记与硬编码防误删下界一致（脚本内独立锚点）
   A11 G15 算法公平偏见用例下界与关键 ID 不可删
   A12 关键负向用例 ID 集合不可删 / 不可改成正向
-  A13 ≥200 样本规模路线与合规依据目录登记；金融监管 §xx 编号债务台账
-      （第四轮：计数守恒 + 债务只减不增 + 不得伪造完成）
+  A13 ≥200 样本规模路线 + **法规依据结构化**：每条 case.regulatoryBasis 为
+      {type, source, clauseRef, truthRef}；type 区分 externalRegulation /
+      internalContract，法源名须命中 catalog.sourceAliases，truthRef 须可解析；
+      金融监管 §xx 编号残留独立锚点归零（第五轮：22 条债务二分收敛 + 防回流）
   A14 能力码**跨文档真源**比对：解析 D3-v2 §1.1 表第一列 → 与
       capabilityCodes / cases 三方比对（2026-11-10 第二轮：消除「脚本内常量自证」）
   A15 scalePlan 结构化：阶段 / 目标样本 / 标注规范 Kappa / 通过线占位 /
       交接条件 / 不得伪造 completed（2026-11-10 第二轮：消除「文本 token 判据」）
   A16 groundTruthRef **锚点可达**：path#anchor 必须解析到真源 Markdown 标题 slug
-      或 JSON 字段路径（第三轮：消除「引用写了就算可追溯」的悬空引用）
+      或 JSON 字段路径（第三轮：消除「引用写了就算可追溯」的悬空引用）；
+      第五轮再加「不得指向评测集自身字段」闭环自证守护
   A17 每能力码 ≥1 正向对照 + ≥1 负向用例，testSymbol 唯一；
       **所有正向用例**必须断言 tier=ADVISORY_ONLY + humanFinalDecision=true
       且不得出现自动决策结果码（第四轮：防从理赔域复制的 AUTO_APPROVE 反向放行断言）
@@ -33,7 +36,9 @@
   - groundTruthRef 在设计态指向文档真源锚点，代码落地后须重定向到源码契约；
     A16 只守「锚点解析得到」，**不守期望值是否与真源语义一致**。第四轮已做 25 条
     逐条人工语义复核并修正 P0 反向放行断言，A17 把「正向用例不得越红线」固化为
-    机器判据；但语义一致性本身仍不能由门禁自证，重挂法规条款号仍属 owner 项。
+    机器判据；第五轮把法规依据升级为结构化类型 + 可解析锚点，但
+    **法规原文逐条核对（条款号精确性）仍属 owner 项**（见 basisRebase.residual），
+    语义一致性本身不能由门禁自证。
   - status=seededDraft / needsOwnerReview=true 是**刻意保留**的：CI 绿 ≠ 可上线。
   - A14 的真源是 D3-v2 §1.1 表格，不是本脚本常量；常量只作**独立防误删下界**，
     避免「期望值也来自被校验对象」的闭环自证。
@@ -70,10 +75,11 @@ CAPABILITY_CODES = frozenset({
 # D3-v2 §1.1「AI 能力码 ↔ 采购模块码」表的第一列（唯一结构化真源）
 CAP_TRUTH_ROW_RE = re.compile(r"^\|\s*(M\d+|ORCHESTRATION)\s*\|", re.M)
 
-# 第四轮：金融监管条款号债务的独立锚点（不从被校验对象推导）。
-# 23 = 逐条复核前实测残留数；本轮重挂 CONTRACT-01 后为 22，故上界取 22：
-# 债务只减不增，任何新增用例再引入「监管 §xx」都会立即转红。
-LEGACY_BASIS_MAX = 22
+# 金融监管条款号残留的独立锚点（不从被校验对象推导）。
+# 第四轮为 22（债务只减不增）；第五轮完成「外部法规义务 / 内部 AI 契约断言」
+# 二分收敛后归零：任何新增用例再引入「监管 §xx」银行业保险业专用编号都立即转红。
+# 归零不等于法规原文核对完成，见 basisRebase.residual 与 A13 的 residual 守护。
+LEGACY_BASIS_MAX = 0
 FINANCIAL_CLAUSE_NOS = frozenset({"4", "15", "17", "21", "22", "23", "24"})
 LEGACY_BASIS_RE = re.compile(r"(?:监管\s*)?§\s*(\d{1,2})(?![\d.])")
 # AI 不碰钱 / 人工终决红线：正向对照里不允许出现任何自动决策结果码
@@ -116,21 +122,29 @@ def doc_anchor_slug(heading: str) -> str:
 
 
 def load_ref_docs(data: dict) -> dict[str, str]:
-    """把 groundTruthRef 引用到的真源文件读入内存；缺文件记空串由 A16 fail-closed 判红。"""
+    """把 groundTruthRef 与 regulatoryBasis.truthRef 引用到的真源读入内存。
+
+    缺文件记空串由 A13 / A16 fail-closed 判红。两类引用共用同一解析器，
+    避免「行为真源可达、法源真源悬空」的半绿。
+    """
     out: dict[str, str] = {}
     cases = data.get("cases") if isinstance(data.get("cases"), list) else []
     for c in cases:
-        ref = c.get("groundTruthRef", "")
-        if not isinstance(ref, str) or "#" not in ref:
-            continue
-        path = ref.partition("#")[0]
-        if path in out:
-            continue
-        try:
-            with open(os.path.join(REPO_ROOT, path), "r", encoding="utf-8") as f:
-                out[path] = f.read()
-        except Exception:  # noqa: BLE001 - 真源不可达交 A16 判红
-            out[path] = ""
+        refs = [c.get("groundTruthRef", "")]
+        rb = c.get("regulatoryBasis")
+        if isinstance(rb, dict):
+            refs.append(rb.get("truthRef", ""))
+        for ref in refs:
+            if not isinstance(ref, str) or "#" not in ref:
+                continue
+            path = ref.partition("#")[0]
+            if path in out:
+                continue
+            try:
+                with open(os.path.join(REPO_ROOT, path), "r", encoding="utf-8") as f:
+                    out[path] = f.read()
+            except Exception:  # noqa: BLE001 - 真源不可达交 A13 / A16 判红
+                out[path] = ""
     return out
 
 
@@ -247,15 +261,22 @@ def validate(data: dict, d3_text: str = "", docs: dict[str, str] | None = None
         msgs.append("A16 未提供真源引用语料（fail-closed：锚点可达性不得跳过）")
     else:
         bad_refs: list[str] = []
+        self_refs: list[str] = []
         for c in cases:
             ref = c.get("groundTruthRef", "")
             if not isinstance(ref, str) or "#" not in ref:
                 continue  # A7 已判红
+            if ref.partition("#")[0].endswith("eval/ai-decision-evalset.json"):
+                self_refs.append(str(c.get("id", "?")))
             if not resolve_ref(ref, docs):
                 bad_refs.append(f"{c.get('id', '?')}:{ref.partition('#')[2][:48]}")
         if bad_refs:
             msgs.append("A16 groundTruthRef 锚点悬空（" + "; ".join(bad_refs[:4]) +
                         "；path#anchor 须解析到真源标题 slug / JSON 字段）")
+        if self_refs:
+            msgs.append("A16 groundTruthRef 指向评测集自身字段（闭环自证）：" +
+                        ", ".join(self_refs) +
+                        "；期望值不得来自被校验对象，须挂 D3-v2 第 3.2 节等外部真源")
 
     # A17 正向对照 + 负向用例双向覆盖（防「恒拒绝」退化实现拿高分）+ testSymbol 唯一
     cap_kinds: dict[str, set[str]] = {}
@@ -330,7 +351,7 @@ def validate(data: dict, d3_text: str = "", docs: dict[str, str] | None = None
         elif c.get("kind") != "negative":
             msgs.append(f"A12 关键负向用例 {kid} 不得改成非负向")
 
-    # A13 规模路线文本与合规依据目录（与 A15 结构化判据互为双保险）
+    # A13 规模路线 + 法规依据结构化（第五轮：不再是「债务计数 + 文本 token」）
     corpus = " ".join(str(data.get(k, "")) for k in ("scope", "seedNote"))
     if f"≥{SCALE_TARGET}" not in corpus:
         msgs.append(f"A13 缺 ≥{SCALE_TARGET} 样本规模路线登记（seed 不得被当作终态）")
@@ -338,23 +359,87 @@ def validate(data: dict, d3_text: str = "", docs: dict[str, str] | None = None
     if not isinstance(reg, dict) or not reg.get("sources"):
         msgs.append("A13 缺 regulatoryBasisCatalog（上位合规依据不可达 / 行业适用性未重挂）")
     else:
+        types = reg.get("basisTypes")
+        aliases = reg.get("sourceAliases", {})
+        na = reg.get("internalContractSource")
+        if not (isinstance(types, list)
+                and set(types) == {"externalRegulation", "internalContract"}):
+            msgs.append("A13 缺 basisTypes 枚举（externalRegulation / internalContract，"
+                        "依据类型不可自由文本化）")
+        if not (isinstance(aliases, dict) and aliases):
+            msgs.append("A13 缺 sourceAliases（外部法源名必须命中采购域公开文件清单，"
+                        "不得臆造法规名 / 条款号）")
+        if not (isinstance(na, str) and na.startswith("N/A")):
+            msgs.append("A13 缺 internalContractSource（内部契约断言不得冒充外部法规义务）")
+
         legacy_ids = sorted(str(c.get("id", "?")) for c in cases
-                            if has_legacy_basis(c.get("regulatoryBasis", "")))
+                            if has_legacy_basis(str(c.get("regulatoryBasis", ""))))
         if len(legacy_ids) > LEGACY_BASIS_MAX:
-            msgs.append(f"A13 金融监管 §xx 编号债务扩散：{len(legacy_ids)} > 独立锚点 "
-                        f"{LEGACY_BASIS_MAX}（新增用例不得再引入银行业保险业专用条款号；"
-                        "须挂 regulatoryBasisCatalog.sources 的采购域公开文件）")
+            msgs.append(f"A13 金融监管 §xx 编号回流：{len(legacy_ids)} > 独立锚点 "
+                        f"{LEGACY_BASIS_MAX}（债务已归零，不得再引入银行业保险业专用条款号）")
+
+        ext_ids: list[str] = []
+        int_ids: list[str] = []
+        basis_bad: list[str] = []
+        for c in cases:
+            cid = str(c.get("id", "?"))
+            cb = c.get("regulatoryBasis")
+            if not isinstance(cb, dict):
+                basis_bad.append(f"{cid} regulatoryBasis 退化成非结构化文本"
+                                 "（须 {type, source, clauseRef, truthRef}）")
+                continue
+            if not all(k in cb for k in ("type", "source", "clauseRef", "truthRef")):
+                basis_bad.append(f"{cid} regulatoryBasis 缺必需字段")
+                continue
+            btype, bsrc, bref = cb.get("type"), str(cb.get("source", "")), str(cb.get("truthRef", ""))
+            if btype == "externalRegulation":
+                ext_ids.append(cid)
+                if not any(a in bsrc for a in aliases):
+                    basis_bad.append(f"{cid} externalRegulation.source 未命中 "
+                                     "catalog.sourceAliases（不得臆造法源名）")
+            elif btype == "internalContract":
+                int_ids.append(cid)
+                if bsrc != na:
+                    basis_bad.append(f"{cid} internalContract.source 须为 "
+                                     "catalog.internalContractSource（不得冒充外部法规）")
+            else:
+                basis_bad.append(f"{cid} regulatoryBasis.type 非法：{btype!r}")
+                continue
+            if not cb.get("clauseRef"):
+                basis_bad.append(f"{cid} 缺 clauseRef（法源 / 契约落点不可空）")
+            if not resolve_ref(bref, docs or {}):
+                basis_bad.append(f"{cid} regulatoryBasis.truthRef 不可解析：{bref[:72]}")
+        for problem in basis_bad:
+            msgs.append(f"A13 法规依据：{problem}")
+
         rb = reg.get("basisRebase")
-        if not isinstance(rb, dict) or not rb.get("owner") or not rb.get("exitCriteria"):
-            msgs.append("A13 缺 basisRebase 结构化债务台账（owner / exitCriteria 不可省略；"
-                        "不得把金融监管编号伪称为内部条款号）")
+        if not isinstance(rb, dict) or not all(
+                rb.get(k) for k in ("owner", "exitCriteria", "method", "residual")):
+            msgs.append("A13 缺 basisRebase 结构化台账（owner / exitCriteria / method / "
+                        "residual 不可省略；不得把结构化收敛伪称为法规原文核对完成）")
         else:
+            status = rb.get("status")
+            if status not in ("rebased", "pendingOwnerRebase"):
+                msgs.append(f"A13 basisRebase.status={status!r} 非法（不得伪造 completed / 其它终态）")
+            if legacy_ids and status != "pendingOwnerRebase":
+                msgs.append(f"A13 仍有 {len(legacy_ids)} 条金融监管编号残留却标 rebased"
+                            "（不得伪造完成）")
+            if not legacy_ids and status != "rebased":
+                msgs.append("A13 债务已清零但 status 仍 pendingOwnerRebase（须如实标 rebased，"
+                            "同时保留 residual 说明法规原文核对未完成）")
             if rb.get("affectedCaseCount") != len(legacy_ids):
                 msgs.append(f"A13 basisRebase.affectedCaseCount={rb.get('affectedCaseCount')} "
-                            f"!= 实测残留 {len(legacy_ids)}（债务计数不得腐烂 / 不得悄悄扩大）")
-            if legacy_ids and rb.get("status") != "pendingOwnerRebase":
-                msgs.append(f"A13 basisRebase.status 须为 pendingOwnerRebase（仍有 "
-                            f"{len(legacy_ids)} 条未重挂，不得伪造完成）")
+                            f"!= 实测残留 {len(legacy_ids)}（计数不得腐烂）")
+            if rb.get("affectedCaseIds") != legacy_ids:
+                msgs.append("A13 basisRebase.affectedCaseIds 与实测残留不一致")
+            declared = sorted(rb.get("externalRegulationCaseIds", [])
+                              + rb.get("internalContractCaseIds", []))
+            if declared != sorted(str(c.get("id", "?")) for c in cases):
+                msgs.append("A13 basisRebase 分类编号集合未恰好覆盖全部用例"
+                            "（不得遗漏 / 重复 / 伪造分类）")
+            if (sorted(rb.get("externalRegulationCaseIds", [])) != sorted(ext_ids)
+                    or sorted(rb.get("internalContractCaseIds", [])) != sorted(int_ids)):
+                msgs.append("A13 basisRebase 分类编号与 case.regulatoryBasis.type 实测不一致")
 
     # A15 scalePlan 结构化（防止「写一句 ≥200 就算有路线」）
     sp = data.get("scalePlan")
@@ -422,7 +507,7 @@ def check(evalset_path: str, d3v2_path: str) -> bool:
         print("  - 代码未落地：groundTruthRef 指向文档真源锚点，非源码 path。")
         print(f"  - 规模/通过线待 owner 按 DA-3 补全至 PRD ≥{SCALE_TARGET} + 对抗样本 + 偏见审计集。")
         print("  - 本脚本已接 CI blocking 与本地 pre-commit，只守结构 / 能力码真源 /")
-        print("    正向断言红线 / 锚点可达 / 债务台账 / 关键负向 / scalePlan 路线，")
+        print("    正向断言红线 / 锚点可达 / 法规依据类型 / 关键负向 / scalePlan 路线，")
         print("    **不守模型效果**；CI 绿不等于 AI 能力可上线。")
         print("=" * 68)
     print("RESULT:", "PASS" if ok else "FAIL")
@@ -517,6 +602,14 @@ def self_test(evalset_path: str, d3v2_path: str) -> int:
     def drop_docs(b):
         b["docs"] = None
 
+    def self_referential_ground_truth(b):
+        # 让 JSON 锚点「真的可解析」，否则只会命中通用悬空消息，测不到自引用守护本身。
+        by(b, "ANOMALY-02")["groundTruthRef"] = (
+            "doc/ai-product/procuraAI/eval/ai-decision-evalset.json"
+            "#groundTruthPolicy.adversarialSamplePolicy")
+        b["docs"]["doc/ai-product/procuraAI/eval/ai-decision-evalset.json"] = json.dumps(
+            b["d"], ensure_ascii=False)
+
     # --- A17 正负向对照探针 ---------------------------------------------------
     def drop_all_positive(b):
         b["d"]["cases"] = [c for c in b["d"]["cases"] if c.get("kind") != "positive"]
@@ -547,7 +640,7 @@ def self_test(evalset_path: str, d3v2_path: str) -> int:
         by(b, "POS-M1-01")["expected"]["result"] = "AUTO_PASS"
 
     def legacy_basis_spread(b):
-        by(b, "LABEL-01")["regulatoryBasis"] += "；监管 §22 人工最终决策"
+        by(b, "LABEL-01")["regulatoryBasis"]["source"] += "；监管 §22 人工最终决策"
 
     def drop_basis_rebase(b):
         b["d"]["regulatoryBasisCatalog"].pop("basisRebase", None)
@@ -556,7 +649,37 @@ def self_test(evalset_path: str, d3v2_path: str) -> int:
         b["d"]["regulatoryBasisCatalog"]["basisRebase"]["status"] = "completed"
 
     def wrong_rebase_count(b):
-        b["d"]["regulatoryBasisCatalog"]["basisRebase"]["affectedCaseCount"] = 0
+        b["d"]["regulatoryBasisCatalog"]["basisRebase"]["affectedCaseCount"] = 3
+
+    # --- 第五轮：法规依据结构化探针 --------------------------------------------
+    def basis_to_plain_text(b):
+        by(b, "CONTRACT-01")["regulatoryBasis"] = "195 号文辅助性定位"
+
+    def basis_drop_type(b):
+        by(b, "CONTRACT-01")["regulatoryBasis"].pop("type", None)
+
+    def basis_bad_type(b):
+        by(b, "CONTRACT-01")["regulatoryBasis"]["type"] = "unknownBasis"
+
+    def basis_fake_source(b):
+        by(b, "LABEL-01")["regulatoryBasis"]["source"] = "某不存在的采购法规第 99 条"
+
+    def basis_dangling_truth_ref(b):
+        by(b, "LABEL-01")["regulatoryBasis"]["truthRef"] = (
+            "doc/ai-product/procuraAI/采购AI-接口契约与数据字典-v2.md#不存在的锚点")
+
+    def basis_internal_fake_source(b):
+        by(b, "CONTRACT-02")["regulatoryBasis"]["source"] = "《标识办法》第 4/5 条"
+
+    def drop_basis_types(b):
+        b["d"]["regulatoryBasisCatalog"].pop("basisTypes", None)
+
+    def basis_misclassified_ids(b):
+        rb = b["d"]["regulatoryBasisCatalog"]["basisRebase"]
+        rb["externalRegulationCaseIds"] = rb["externalRegulationCaseIds"][1:]
+
+    def drop_rebase_residual(b):
+        b["d"]["regulatoryBasisCatalog"]["basisRebase"].pop("residual", None)
 
     # --- A14 真源表主键唯一探针 -----------------------------------------------
     def truth_duplicate_row(b):
@@ -586,6 +709,8 @@ def self_test(evalset_path: str, d3v2_path: str) -> int:
         ("groundTruthRef 改成臆造锚点", dangling_anchor, "A16"),
         ("groundTruthRef 指向不存在的文件", missing_ref_file, "A16"),
         ("不提供真源引用语料（A16 fail-closed）", drop_docs, "A16"),
+        ("groundTruthRef 指向评测集自身字段（闭环自证）",
+         self_referential_ground_truth, "闭环自证"),
         ("删掉全部正向对照（恒拒绝退化基线）", drop_all_positive, "A17"),
         ("POS-M1-01 改成负向（M1 缺正向对照）", one_cap_positive_to_negative, "A17"),
         ("两条用例复用同一 testSymbol", dupe_test_symbol, "A17"),
@@ -595,10 +720,19 @@ def self_test(evalset_path: str, d3v2_path: str) -> int:
         ("正向用例删掉 humanFinalDecision", positive_drop_human_final, "A17"),
         ("正向用例删掉 tier=ADVISORY_ONLY", positive_drop_tier, "A17"),
         ("正向用例结果码改成 AUTO_PASS", positive_auto_token, "A17"),
-        ("已重挂用例回流金融监管 §22 编号（债务扩散）", legacy_basis_spread, "A13"),
-        ("删掉 basisRebase 债务台账", drop_basis_rebase, "A13"),
+        ("已收敛用例回流金融监管 §22 编号（债务回流）", legacy_basis_spread, "A13"),
+        ("删掉 basisRebase 台账", drop_basis_rebase, "A13"),
         ("basisRebase.status 伪造 completed", fake_rebase_done, "A13"),
-        ("basisRebase.affectedCaseCount 腐烂成 0", wrong_rebase_count, "A13"),
+        ("basisRebase.affectedCaseCount 腐烂成 3", wrong_rebase_count, "A13"),
+        ("regulatoryBasis 退化成自由文本", basis_to_plain_text, "A13"),
+        ("regulatoryBasis 删 type 字段", basis_drop_type, "A13"),
+        ("regulatoryBasis.type 改成非法枚举", basis_bad_type, "A13"),
+        ("外部法源名改成 catalog 外臆造法规", basis_fake_source, "A13"),
+        ("regulatoryBasis.truthRef 改成臆造锚点", basis_dangling_truth_ref, "A13"),
+        ("internalContract 冒充外部法规依据", basis_internal_fake_source, "A13"),
+        ("删 catalog.basisTypes 枚举", drop_basis_types, "A13"),
+        ("basisRebase 分类编号漏登记一条", basis_misclassified_ids, "A13"),
+        ("删 basisRebase.residual（伪称法规原文已核对）", drop_rebase_residual, "A13"),
     ]
     all_ok = True
     for desc, fn, expect in probes:
