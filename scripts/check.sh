@@ -854,6 +854,23 @@ if ! python3 scripts/ci/check-ddd-doc-code-sync.py --strict; then
   exit_code=1
 fi
 
+# ---------------------------------------------------------------------------
+# G0-procura（2026-11-10 复诊 P0-③）：采购域文档族门禁 + AI 评测集治理骨架。
+# 此前两个脚本在 ci.yml / check.sh 均零引用，只有本地手工运行 ⇒ 分期漂移、
+# InvoiceMatched 字段漂移、评测集删偏见用例都不会被自动化拦截。
+# 沿用既有 G0 做法不带 [x/59] 编号，避免改动计数与逐项标签；CI 侧同名
+# blocking 步骤额外跑 --self-test 注入反证，本地只做快反馈。
+if ! python3 tools/check_procura_alignment.py > /dev/null; then
+  echo -e "${RED}❌ procuraAI 文档族对齐门禁失败（分期真源 / InvoiceMatched 全族字段 / 合规条款）${RESET}"
+  echo -e "${DIM}  复核：python3 tools/check_procura_alignment.py${RESET}"
+  exit_code=1
+fi
+if ! python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py > /dev/null; then
+  echo -e "${RED}❌ procuraAI AI 评测集治理骨架不合规（能力码 / 偏见用例 / 关键负向）${RESET}"
+  echo -e "${DIM}  复核：python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py${RESET}"
+  exit_code=1
+fi
+
 # 结果处理 + 熔断计数
 if [ "$exit_code" -ne 0 ]; then
   count=$(cat "$FAIL_COUNT_FILE" 2>/dev/null || echo 0)

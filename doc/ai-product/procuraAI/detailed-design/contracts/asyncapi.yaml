@@ -1405,7 +1405,7 @@ components:
       payload:
         type: object
         additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
-        x-fields: "`exception_no, invoice_no, exception_code, match_type`"
+        x-fields: "`exception_no, invoice_no, exception_code, match_status`"
         properties:
           aggregate_version:
             type: integer

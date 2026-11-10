@@ -114,6 +114,20 @@ jobs:
       - name: Gate Liveness Check (blocking)
         run: /usr/bin/env python3 scripts/check-gate-liveness.py --strict
 
+      # procuraAI（2026-11-10 复诊 P0-③）：此前 tools/check_procura_alignment.py 与
+      # check_procura_evalset.py 在 ci.yml / check.sh 均零引用，「本地 10/10」被误读成
+      # ship-ready。显式逐条接 blocking，并对门禁自身做注入式负向反证（防判据假绿）。
+      # 注意：评测集 status 仍为 seededDraft，这里守的是结构 / 能力码 / 关键负向，
+      # **不是**模型效果；CI 绿不等于 AI 能力可上线。
+      - name: ProcuraAI Doc Alignment Gate (blocking)
+        run: /usr/bin/env python3 tools/check_procura_alignment.py
+
+      - name: ProcuraAI Gate Negative Probes (blocking)
+        run: /usr/bin/env python3 tools/check_procura_alignment.py --self-test
+
+      - name: ProcuraAI AI Evalset Governance Gate (blocking)
+        run: /usr/bin/env python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py --self-test && /usr/bin/env python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py
+
       # 以下 6 项此前**只存在于 scripts/ci-check.sh 里，而该脚本在全仓零调用者**
       # （2026-10-04 实测：命中全是脚本自身 docstring 与 gate-state.json 的描述文本，
       # ci.yml 里唯一出现处是一句注释）⇒ 六个维度完全没有回归保护。

@@ -26,7 +26,10 @@
      A10.12 一期边界最小切片骨架（O7/R-7）、
      A10.3.1 D3-v2 §2 ai_available 三态（C-B：与 §3 一致，禁 boolean）、
      A10.3.2 D3-v2 §3 算法公平与反歧视条款 + AI-5 负向用例（G15：防 AI 辅助选商/评标歧视，不得删除）、
-     A10.4.1 总体 §7.1 InvoiceMatched 字段 ↔ D3-v2 §2.1 一致（C-A：消除第三份漂移副本）
+     A10.3.3 蓝图 §5.2 G16 有界自治不稀释（人工终决红线：决策权仍在人 / 自动结案：禁止，不得回退为 AI 终决）、
+     A10.4.1 InvoiceMatched **全族**字段收敛（C-A 复诊修复：解析 D3-v2 §2.1 真源字段表 →
+              总体 §3.1/§7/§7.1、各卷 §7、JSON 示例、SVG、AsyncAPI 集合比对 + 漂移字段注入反证）、
+     A10.13 分期唯一真源（44 周三期口径跨文档比对 + 32 周旧口径注入反证）、
 
 用法：
   python3 tools/check_procura_alignment.py              # 全套校验，退出码 0/1
@@ -156,6 +159,33 @@ FROZEN_EVENT_TYPES = (
 )
 LLD_NEW_EVENTS_FLOOR = 17  # 附录 B.2 的 LLD 级新增事件数（B.1 12 + B.2 17 = 29）
 EXPECTED_REGISTRY_SIZE = len(FROZEN_EVENT_TYPES) + LLD_NEW_EVENTS_FLOOR
+
+# --- C-A 复诊修复：InvoiceMatched 全族字段收敛 -------------------------------
+# 漂移字段是「Finance 侧内部判定」，不是事件 payload 字段；硬编码为外部锚点，
+# 不从被校验文档推导，避免「期望值也来自被校验文档」的闭环自证（R5 纪律）。
+INVOICE_DRIFT_FIELDS = ("match_type", "tolerance_applied", "blocked_reason")
+INVOICE_TRUTH_MIN_FIELDS = 7
+INVOICE_PROP_RE = re.compile(r"^          ([a-z_][a-z0-9_]*):\s*$", re.M)
+INVOICE_TRUTH_ROW_RE = re.compile(r"^\|\s*`([a-z_][a-z0-9_]*)`\s*\|", re.M)
+
+# --- P0-① 分期唯一真源（44 周三期，B19 重估后）-------------------------------
+PHASE_WINDOWS = ("T0+0~12 周", "T0+13~28 周", "T0+29~44 周")
+STALE_PHASE_WINDOWS = ("T0+0~8", "T0+9~20", "T0+21~32")
+
+# --- P1-⑦ 合规工程化清单（A10.14 外部锚点，不从被校验文档推导）---------------
+COMPLIANCE_SECTION = "### 3.1 合规依据适用性与工程化清单"
+COMPLIANCE_TOKENS = (
+    "银行业保险业专用", "金融行业客户另叠加",
+    "显式 + 隐式元数据双标识", "算法备案", "数据分类分级",
+    "全域 kill switch", "第三方算法审计", "AI 专项应急预案",
+)
+COMPLIANCE_ITEM_IDS = tuple(f"C-{i}" for i in range(1, 9))
+FOUNDATION_TOKENS = (
+    "### 4.2 地基层", "高质量数据集 + 标注治理", "评测与模型风险工程化",
+    "全域 AI 专项应急预案", "生成内容双标识与合规包",
+    "### 4.3 企业侧场景补齐与依赖顺序修正", "G10 品类智能分类前移为 P2 前置",
+)
+WBS_FOUNDATION_HOOK = "§4.2 地基层 F1–F4"
 
 # A10：SVG 文字层禁止残留的已判废口径（A3 只验 XML/viewBox，不读 <text>）。
 SVG_BANNED_TEXTS = ("AuditBus", "A1–A6", "contract_no 主键", "全覆盖", "LLD v0.2")
@@ -696,6 +726,73 @@ def _generator_namespace(src: str) -> dict:
     return ns
 
 
+
+def _invoice_truth_fields(d3: str) -> set[str]:
+    """解析 D3-v2 §2.1 InvoiceMatched 子表，得到字段级真源集合（不读硬编码期望值）。"""
+    if "### InvoiceMatched" not in d3:
+        return set()
+    seg = d3.split("### InvoiceMatched", 1)[1].split("\n### ", 1)[0]
+    return set(INVOICE_TRUTH_ROW_RE.findall(seg))
+
+
+def _payload_fields(text: str) -> set[str]:
+    """从反引号字段列表（含逗号 / enum / 可空标记）中抽出 snake_case 字段名。"""
+    out: set[str] = set()
+    for chunk in re.findall(r"`([^`]+)`", text):
+        for tok in re.split(r"[,/\s()\[\]?]+", chunk):
+            if (tok not in ("enum", "type", "format", "description", "required")
+                    and re.fullmatch(r"[a-z_][a-z0-9_]*", tok)):
+                out.add(tok)
+    return out
+
+
+def _asyncapi_invoice_properties(yaml_text: str) -> set[str]:
+    """取 AsyncAPI InvoiceMatched message 的 payload.properties 键（排除信封聚合版本戳）。"""
+    m = re.search(r"^    InvoiceMatched:\s*\n(?P<body>.*?)(?=^    [A-Za-z]\w*:\s*$|\Z)",
+                  yaml_text, re.M | re.S)
+    if not m:
+        return set()
+    props = set(INVOICE_PROP_RE.findall(m.group("body")))
+    props.discard("aggregate_version")
+    return props
+
+
+def _invoice_segments(src: str, body: str) -> list[tuple[str, int, str]]:
+    """抽取 InvoiceMatched 相关片段：单行声明 + JSON 事件块 + AsyncAPI message 块。
+
+    逐行扫描会漏掉「eventType 声明行与 payload 字段分处多行」的 JSON 示例——
+    这正是 C-A 复诊发现的假绿根因之一，故此处做块级收集。
+    """
+    lines = body.splitlines()
+    out: list[tuple[str, int, str]] = []
+    i = 0
+    while i < len(lines):
+        ln = lines[i]
+        if "InvoiceMatched" not in ln:
+            i += 1
+            continue
+        is_json = bool(re.search(r'"eventType"\s*:\s*"InvoiceMatched"', ln)
+                       or "eventType: InvoiceMatched" in ln)
+        is_yaml_msg = bool(re.match(r"^    InvoiceMatched:\s*$", ln))
+        if is_json or is_yaml_msg:
+            block = [ln]
+            j = i + 1
+            while j < len(lines) and j < i + 80:
+                nxt = lines[j]
+                block.append(nxt)
+                if is_json and (nxt.strip().startswith("```") or re.search(r'"eventType"\s*:', nxt)):
+                    break
+                if is_yaml_msg and re.match(r"^    [A-Za-z]\w*:\s*$", nxt):
+                    break
+                j += 1
+            out.append((src, i + 1, "\n".join(block)))
+            i = j + 1
+            continue
+        out.append((src, i + 1, ln))
+        i += 1
+    return out
+
+
 def check_a8(ctx: Ctx) -> tuple[bool, list[str]]:
     """契约工件一致性：注册表 ↔ AsyncAPI 零漂移 / 码字唯一性 / topic 白名单 / 资产引用。"""
     msgs: list[str] = []
@@ -897,6 +994,13 @@ def check_a8(ctx: Ctx) -> tuple[bool, list[str]]:
         if ref and reg_map.get(e) and reg_map[e] != ref:
             msgs.append(f"A8 外部锚点 附录 B 注册表 {e} topic 与领域 §6.2 冻结值不一致："
                         f"{reg_map[e]} != {ref}")
+    # --- 8.6+ InvoiceMatched 契约工件字段集合 ↔ D3-v2 §2.1 真源（C-A 复诊修复）---
+    props = _asyncapi_invoice_properties(ctx.artifacts.get("asyncapi.yaml", ""))
+    truth = _invoice_truth_fields(ctx.artifacts.get("D3v2", ""))
+    if len(truth) < INVOICE_TRUTH_MIN_FIELDS or not props or props != truth:
+        msgs.append(f"A8 InvoiceMatched AsyncAPI properties {sorted(props)} != "
+                    f"D3-v2 §2.1 真源 {sorted(truth)}（契约工件字段集合漂移 / 空壳）")
+
     return (not msgs), msgs
 
 
@@ -1074,6 +1178,16 @@ def check_a10(ctx: Ctx) -> tuple[bool, list[str]]:
         if token not in s3:
             msgs.append(f"A10 G15 算法公平：D3-v2 §3 缺 {token}（公平条款与 AI-5 负向用例不得删除 / 淡化）")
 
+    # --- 10.3.3 G16 有界自治不稀释（蓝图 §5.2：人工终决红线不得回退为 AI 终决）---
+    bp = ctx.extra.get("蓝图", "")
+    s52 = (bp.split("### 5.2 ADR-G16", 1)[1].split("### 5.3", 1)[0]
+           if "### 5.2 ADR-G16" in bp else "")
+    if not s52:
+        msgs.append("A10 G16：蓝图缺 §5.2 ADR-G16 章节（有界自治红线基线缺失）")
+    for token in ("决策权仍在人", "自动结案：禁止"):
+        if token not in s52:
+            msgs.append(f"A10 G16 不稀释：蓝图 §5.2 缺「{token}」（有界自治人工终决红线不得删除 / 淡化）")
+
     # --- 10.4 Frozen 事件上游登记与陈旧表述 ----------------------------------
     b1 = (charter.split("**B.1 已冻结", 1)[1].split("**B.2", 1)[0]
           if "**B.1 已冻结" in charter else "")
@@ -1092,21 +1206,106 @@ def check_a10(ctx: Ctx) -> tuple[bool, list[str]]:
         if e not in upstream:
             msgs.append(f"A10 总体 §7.1 未登记冻结事件：{e}")
 
-    # --- 10.4.1 总体 §7.1 INBOUND payload 字段 ↔ D3-v2 §2.1 一致（续诊 C-A 收口，防第三份漂移副本）---
+    # --- 10.4.1 InvoiceMatched 全族字段收敛（C-A 复诊修复：假绿根因 = 只切 §7.1 第一行）---
+    d3_truth = _invoice_truth_fields(art.get("D3v2", ""))
+    if len(d3_truth) < INVOICE_TRUTH_MIN_FIELDS:
+        msgs.append(f"A10 C-A 全族：D3-v2 §2.1 真源字段 {len(d3_truth)} < "
+                    f"{INVOICE_TRUTH_MIN_FIELDS}（字段表被删空 / 截断）")
+
+    # (a) 全族副本扫描：文档 / 新增真源 / SVG / 契约工件 / JSON 示例 / AsyncAPI message 块
+    corpus: dict[str, str] = {}
+    corpus.update({f"doc:{k}": v for k, v in ctx.texts.items()})
+    corpus.update({f"extra:{k}": v for k, v in ctx.extra.items()})
+    corpus.update({f"svg:{k}": v for k, v in ctx.svgs.items()})
+    corpus.update({f"artifact:{k}": v for k, v in art.items()})
+    for src, body in corpus.items():
+        for _label, lineno, seg in _invoice_segments(src, body):
+            for drift in INVOICE_DRIFT_FIELDS:
+                if drift in seg:
+                    msgs.append(f"A10 C-A 全族：{src}:{lineno} InvoiceMatched 片段残留 Finance 内部字段 "
+                                f"{drift}（字段级真源 D3-v2 §2.1；不得出现在 payload / 副本 / 示例 / SVG）")
+
+    # (b) 正向集合比对：总体 §7.1 必须是真源全集，各卷 §7 必须是真源子集（允许显式子集消费）
     s71 = overall.split("### 7.1 关键事件 payload 契约", 1)[1] if "### 7.1 关键事件 payload 契约" in overall else ""
     if "\n> **信封" in s71:
         s71 = s71.split("\n> **信封", 1)[0]
     inv_line = next((ln for ln in s71.splitlines()
                      if "InvoiceMatched" in ln and ln.strip().startswith("|")), "")
     if not inv_line:
-        msgs.append("A10 C-A 总体 §7.1 缺 InvoiceMatched 行（INBOUND 事件登记缺失）")
+        msgs.append("A10 C-A 全族：总体 §7.1 缺 InvoiceMatched 行（INBOUND 事件登记缺失）")
     else:
-        for must in ("match_status", "matched_at", "match_id"):
-            if must not in inv_line:
-                msgs.append(f"A10 C-A 总体 §7.1 InvoiceMatched 缺真源字段 {must}（须对齐 D3-v2 §2.1）")
-        for drift in ("match_type", "tolerance_applied", "blocked_reason"):
-            if drift in inv_line:
-                msgs.append(f"A10 C-A 总体 §7.1 InvoiceMatched 残留漂移字段 {drift}（须删除，真源在 D3-v2 §2.1）")
+        got71 = _payload_fields(inv_line)
+        missing71 = d3_truth - got71
+        if missing71:
+            msgs.append(f"A10 C-A 全族：总体 §7.1 缺真源字段 {sorted(missing71)}（须与 D3-v2 §2.1 全集一致）")
+        stray71 = got71 - d3_truth
+        if stray71:
+            msgs.append(f"A10 C-A 全族：总体 §7.1 出现真源外字段 {sorted(stray71)}")
+    for vol in ("卷01", "卷03", "卷04", "卷05"):
+        body = ctx.texts.get(vol, "")
+        sec7 = (body.split("## 7. 事件契约", 1)[1].split("\n## 8.", 1)[0]
+                if "## 7. 事件契约" in body else "")
+        if not sec7:
+            msgs.append(f"A10 C-A 全族：{vol} 缺 §7 事件契约区段")
+            continue
+        line = next((ln for ln in sec7.splitlines()
+                     if "InvoiceMatched" in ln and ln.strip().startswith("|")
+                     and ("消费" in ln or "INBOUND" in ln)), "")
+        fields = _payload_fields(line)
+        if not fields:
+            msgs.append(f"A10 C-A 全族：{vol} §7 缺 InvoiceMatched INBOUND 字段行")
+        elif not fields <= d3_truth:
+            msgs.append(f"A10 C-A 全族：{vol} §7 出现真源外字段 {sorted(fields - d3_truth)}")
+
+    # (c) AsyncAPI 契约工件字段集合（A8.6+ 同源判据，此处给出 A10 侧可注入证据）
+    props = _asyncapi_invoice_properties(art.get("asyncapi.yaml", ""))
+    if not props or props != d3_truth:
+        msgs.append(f"A10 C-A 全族：AsyncAPI InvoiceMatched properties {sorted(props)} != "
+                    f"D3-v2 §2.1 真源 {sorted(d3_truth)}")
+
+    # --- 10.13 分期唯一真源（P0-①：44 周三期口径跨文档守护）----------------------
+    phase_sources = {k: ctx.texts.get(k, "") for k in ("总体", "领域", "总纲")}
+    phase_sources["一期边界"] = ctx.extra.get("一期边界", "")
+    for name, body in phase_sources.items():
+        for win in PHASE_WINDOWS:
+            if win not in body:
+                msgs.append(f"A10.13 分期：{name} 缺 44 周真源时间窗 {win}"
+                            "（须与总体 §12 / 一期边界 §4 逐字一致）")
+    for src, body in corpus.items():
+        for stale in STALE_PHASE_WINDOWS:
+            if stale in body:
+                msgs.append(f"A10.13 分期：{src} 残留已废止的 32 周旧口径时间窗 {stale}")
+
+    # --- 10.14 合规工程化清单 / 能力账本 / G12 边界（复诊 P1-⑤⑥⑦）-------------
+    d3_extra = ctx.extra.get("D3v2", "")
+    sec31 = (d3_extra.split(COMPLIANCE_SECTION, 1)[1].split("## 4.", 1)[0]
+             if COMPLIANCE_SECTION in d3_extra else "")
+    if not sec31:
+        msgs.append("A10.14 合规：D3-v2 缺 §3.1 合规依据适用性与工程化清单（依据未重挂）")
+    else:
+        for token in COMPLIANCE_TOKENS:
+            if token not in sec31:
+                msgs.append(f"A10.14 合规：D3-v2 §3.1 缺「{token}」（可验收动作 / 适用性裁决不得删除）")
+        for cid in COMPLIANCE_ITEM_IDS:
+            if cid not in sec31:
+                msgs.append(f"A10.14 合规：D3-v2 §3.1 缺义务条目 {cid}（八条清单不可删）")
+    s11 = (d3_extra.split("### 1.1", 1)[1].split("### 1.2", 1)[0]
+           if "### 1.1" in d3_extra else "")
+    for cap in ("| M3 |", "| M6 |", "ORCHESTRATION", "M10 澄清"):
+        if cap not in s11:
+            msgs.append(f"A10.14 能力账本：D3-v2 §1.1 缺 {cap}（M3/M6 悬空或编排治理码未澄清）")
+    bp = ctx.extra.get("蓝图", "")
+    if "| **G15**" not in bp:
+        msgs.append("A10.14 能力账本：蓝图缺 G15 算法公平 / 偏见治理卡片")
+    if "不涉围串标定性" not in bp or "只出线索、不出结论" not in bp:
+        msgs.append("A10.14 G12 边界：蓝图 G12 缺「不涉围串标定性 / 只出线索不出结论」重裁声明")
+    if "G1–G16" not in ctx.extra.get("资产登记", ""):
+        msgs.append("A10.14 资产登记：能力地图编号仍为 G1–G13（须更新至 G1–G16）")
+    for token in FOUNDATION_TOKENS:
+        if token not in bp:
+            msgs.append(f"A10.14 地基层：蓝图缺「{token}」（P0 治理前置 / 依赖顺序修正不得删除）")
+    if WBS_FOUNDATION_HOOK not in ctx.texts.get("总体", ""):
+        msgs.append(f"A10.14 地基层：总体 §12 缺 WBS 估工挂钩 {WBS_FOUNDATION_HOOK}（不得只写条款不排期）")
 
     if "12 条全部补齐" not in ctx.texts.get("领域", ""):
         msgs.append("A10 领域 §6.2 缺「12 条全部补齐」收口说明")
@@ -1316,9 +1515,9 @@ DESCRIPTIONS = {
     "A5": "平台实证锚点",
     "A6": "空集合 fail-closed",
     "A7": "LLD 族 12 节模板与模块覆盖",
-    "A8": "契约工件一致性 / 码字唯一性 / topic 白名单",
+    "A8": "契约工件一致性 / 码字唯一性 / topic 白名单 / InvoiceMatched 字段集合",
     "A9": "逐卷可执行规格 §13 八子节 / 专属锚点 / 七类要素 / v0.3 探针",
-    "A10": "资产裁决 / AI 合规 / 外部锚点 / 版本戳 / 一期边界 / 新资产索引",
+    "A10": "资产裁决 / AI 合规 / 外部锚点 / 版本戳 / 一期边界 / 新资产索引 / 全族字段收敛 / 分期真源 / 合规清单 / 能力账本",
 }
 
 
@@ -1745,6 +1944,136 @@ def self_test() -> int:
         e["D3v2"] = d3
         return _mutate(c, extra=e)
 
+    # --- C-A 复诊反证：全族副本逐处注入漂移字段，任一处都必须让 A10 转红 ---
+    def _inject_line(text: str, needle: str, old: str, new: str) -> str:
+        lines = text.splitlines(keepends=True)
+        for i, ln in enumerate(lines):
+            if needle in ln and old in ln:
+                lines[i] = ln.replace(old, new, 1)
+                return "".join(lines)
+        raise AssertionError(f"inject anchor not found: {needle}")
+
+    def m_ca_p31(c: Ctx) -> Ctx:
+        """总体 §3.1 职责表注入 Finance 内部字段（复诊 INJECT A 上半）。"""
+        t = dict(c.texts)
+        t["总体"] = _inject_line(t["总体"], "三单匹配、容差判定", "match_id", "match_type")
+        return _mutate(c, texts=t)
+
+    def m_ca_integration(c: Ctx) -> Ctx:
+        """总体 §7 集成图注入漂移字段（复诊 INJECT A 下半）。"""
+        t = dict(c.texts)
+        t["总体"] = _inject_line(t["总体"], "Finance → 采购域：InvoiceMatched",
+                                 "match_id", "tolerance_applied")
+        return _mutate(c, texts=t)
+
+    def m_ca_json(c: Ctx) -> Ctx:
+        """05 卷 JSON 事件示例注入漂移字段（复诊发现的第五份副本，逐行扫描会漏）。"""
+        t = dict(c.texts)
+        t["卷05"] = t["卷05"].replace(
+            '    "match_id": "MATCH-2026-0917",',
+            '    "match_id": "MATCH-2026-0917",\n    "match_type": "3W",', 1)
+        return _mutate(c, texts=t)
+
+    def m_ca_v03(c: Ctx) -> Ctx:
+        """03 卷 §7 消费子集注入漂移字段（复诊 INJECT B）。"""
+        t = dict(c.texts)
+        t["卷03"] = _inject_line(t["卷03"], "InvoiceMatched`（**INBOUND** / Finance，只读）",
+                                 "match_status", "blocked_reason")
+        return _mutate(c, texts=t)
+
+    def m_ca_svg(c: Ctx) -> Ctx:
+        """上下文地图 SVG 文字层注入漂移字段。"""
+        sv = dict(c.svgs)
+        key = "procuraAI-采购域上下文地图.svg"
+        sv[key] = sv[key].replace("InvoiceMatched（match_id", "InvoiceMatched（match_type", 1)
+        return _mutate(c, svgs=sv)
+
+    def m_ca_asyncapi(c: Ctx) -> Ctx:
+        """AsyncAPI InvoiceMatched x-fields / properties 注入漂移字段。"""
+        a = dict(c.artifacts)
+        a["asyncapi.yaml"] = a["asyncapi.yaml"].replace(
+            'x-fields: "`match_id, invoice_no, po_no, match_status, matched_amount, exception_code?, matched_at`',
+            'x-fields: "`match_type, invoice_no, po_no, match_status, matched_amount, exception_code?, matched_at`', 1)
+        return _mutate(c, artifacts=a)
+
+    def m_ca_truth(c: Ctx) -> Ctx:
+        """真源字段表删一行 → 集合比对必须转红（防真源被静默稀释）。"""
+        a = dict(c.artifacts)
+        a["D3v2"] = a["D3v2"].replace("| `matched_at` | date-time | ✅ | 匹配时间 |\n", "", 1)
+        return _mutate(c, artifacts=a)
+
+    def m_phase_stale(c: Ctx) -> Ctx:
+        """总体 §12 三期时间窗回退到 32 周旧口径 → A10.13 转红。"""
+        t = dict(c.texts)
+        t["总体"] = t["总体"].replace("T0+29~44 周", "T0+21~32 周", 1)
+        return _mutate(c, texts=t)
+
+    def m_phase_drop(c: Ctx) -> Ctx:
+        """领域 §10 抹掉二期真源时间窗 → 正向锚点缺失 → A10.13 转红。"""
+        t = dict(c.texts)
+        t["领域"] = t["领域"].replace("T0+13~28 周", "T0+13~XX 周", 1)
+        return _mutate(c, texts=t)
+
+    def m_gate_kill(c: Ctx) -> Ctx:
+        """D3-v2 §3.1 删「全域」限定，回退成只有自治车道有 kill switch。"""
+        e = dict(c.extra)
+        e["D3v2"] = e["D3v2"].replace("全域 kill switch", "kill switch", 1)
+        return _mutate(c, extra=e)
+
+    def m_gate_label(c: Ctx) -> Ctx:
+        """D3-v2 §3.1 删显式 + 隐式双标识义务。"""
+        e = dict(c.extra)
+        e["D3v2"] = e["D3v2"].replace("**显式 + 隐式元数据双标识**", "生成内容标识", 1)
+        return _mutate(c, extra=e)
+
+    def m_gate_audit(c: Ctx) -> Ctx:
+        """D3-v2 §3.1 删 C-5 第三方算法审计条目。"""
+        e = dict(c.extra)
+        e["D3v2"] = e["D3v2"].replace("| C-5 | 第三方算法审计 / 偏见定期复检", "| C-5 | 偏见定期复检", 1)
+        return _mutate(c, extra=e)
+
+    def m_gate_g15(c: Ctx) -> Ctx:
+        """蓝图删 G15 公平治理卡片。"""
+        e = dict(c.extra)
+        e["蓝图"] = "\n".join(ln for ln in e["蓝图"].splitlines()
+                              if not ln.startswith("| **G15** |"))
+        return _mutate(c, extra=e)
+
+    def m_gate_g12(c: Ctx) -> Ctx:
+        """蓝图 G12 重裁声明被抹掉，回退为越界定性。"""
+        e = dict(c.extra)
+        e["蓝图"] = e["蓝图"].replace("不涉围串标定性", "围串标定性", 1)
+        return _mutate(c, extra=e)
+
+    def m_gate_cap_m3(c: Ctx) -> Ctx:
+        """D3-v2 §1.1 删 M3 登记（能力账本悬空回退）。"""
+        e = dict(c.extra)
+        e["D3v2"] = re.sub(r"^\| M3 \| .*\n", "", e["D3v2"], count=1, flags=re.M)
+        return _mutate(c, extra=e)
+
+    def m_gate_foundation(c: Ctx) -> Ctx:
+        """蓝图删 §4.2 地基层整节（P0 治理前置回退）。"""
+        e = dict(c.extra)
+        bp = e["蓝图"]
+        st, en = bp.find("### 4.2 地基层"), bp.find("### 4.3", bp.find("### 4.2 地基层") + 1)
+        e["蓝图"] = bp[:st] + bp[en:] if st >= 0 and en > st else bp
+        return _mutate(c, extra=e)
+
+    def m_gate_wbs_hook(c: Ctx) -> Ctx:
+        """总体 §12 抹掉地基层 WBS 估工挂钩（只写条款不排期回退）。"""
+        t = dict(c.texts)
+        t["总体"] = t["总体"].replace(WBS_FOUNDATION_HOOK, "AI 能力扩展", 1)
+        return _mutate(c, texts=t)
+
+    def m_a10_g16(c: Ctx) -> Ctx:
+        """G16 反证：删除蓝图 §5.2 的「决策权仍在人」与「自动结案：禁止」不稀释声明，使 10.3.3 转红。"""
+        e = dict(c.extra)
+        bp = e["蓝图"]
+        bp = bp.replace("决策权仍在人", "决策权", 1)
+        bp = bp.replace("自动结案：禁止", "自动结案", 1)
+        e["蓝图"] = bp
+        return _mutate(c, extra=e)
+
     mutations = [
         ("A1", "版本号漂移（v0.3 → v9.9）", m_a1, "版本 v9.9"),
         ("A1", f"LLD 卷版本头漂移（{LLD_VERSION} → v9.9）", m_a1_lld, "版本头缺失"),
@@ -1804,9 +2133,27 @@ def self_test() -> int:
         ("A10", "总体 §9.1 RA-2 冻结基线版本戳 + 会签栏被抹（O4 回退）", m_a10_ra2, "冻结基线"),
         ("A10", "ATAM §7 排序会议程 + 预排序被删（O6 回退）", m_a10_atam7, "排序会议程"),
         ("A10", "一期边界 §7 最小切片骨架被删（O7 回退）", m_a10_slice, "切片骨架"),
-        ("A10", "总体 §7.1 InvoiceMatched 改回漂移字段（C-A 第三份副本回退）", m_a10_ca, "C-A 总体 §7.1"),
+        ("A10", "总体 §7.1 InvoiceMatched 改回漂移字段（C-A 第三份副本回退）", m_a10_ca, "C-A 全族"),
         ("A10", "D3-v2 §2 ai_available 改回 boolean（C-B 三态回退）", m_a10_cb, "C-B ai_available"),
         ("A10", "D3-v2 §3 删算法公平条款与 AI-5 负向用例（G15 回退）", m_a10_fairness, "G15 算法公平"),
+        ("A10", "蓝图 §5.2 删 G16 不稀释声明（自治红线回退）", m_a10_g16, "G16 不稀释"),
+        ("A10", "总体 §3.1 注入漂移字段（C-A 复诊 INJECT A 上）", m_ca_p31, "C-A 全族"),
+        ("A10", "总体 §7 集成图注入漂移字段（C-A 复诊 INJECT A 下）", m_ca_integration, "C-A 全族"),
+        ("A10", "05 卷 JSON 事件示例注入漂移字段（第五份副本）", m_ca_json, "C-A 全族"),
+        ("A10", "03 卷 §7 消费子集注入漂移字段（C-A 复诊 INJECT B）", m_ca_v03, "C-A 全族"),
+        ("A10", "上下文地图 SVG 文字层注入漂移字段", m_ca_svg, "C-A 全族"),
+        ("A10", "AsyncAPI InvoiceMatched x-fields 注入漂移字段", m_ca_asyncapi, "C-A 全族"),
+        ("A10", "D3-v2 §2.1 真源字段表删一行（集合比对反证）", m_ca_truth, "C-A 全族"),
+        ("A10", "总体 §12 三期时间窗回退 32 周旧口径（分期）", m_phase_stale, "A10.13"),
+        ("A10", "领域 §10 抹掉二期真源时间窗（分期）", m_phase_drop, "A10.13"),
+        ("A10", "D3-v2 §3.1 删全域 kill switch 限定（合规）", m_gate_kill, "A10.14 合规"),
+        ("A10", "D3-v2 §3.1 删显式+隐式双标识义务（合规）", m_gate_label, "A10.14 合规"),
+        ("A10", "D3-v2 §3.1 删第三方算法审计条目（合规）", m_gate_audit, "A10.14 合规"),
+        ("A10", "蓝图删 G15 公平治理卡片（能力账本）", m_gate_g15, "A10.14 能力账本"),
+        ("A10", "蓝图 G12 抹掉不涉定性重裁声明（边界）", m_gate_g12, "A10.14 G12"),
+        ("A10", "D3-v2 §1.1 删 M3 登记（能力账本）", m_gate_cap_m3, "A10.14 能力账本"),
+        ("A10", "蓝图删 §4.2 地基层整节（治理前置回退）", m_gate_foundation, "A10.14 地基层"),
+        ("A10", "总体 §12 抹掉地基层 WBS 估工挂钩（排期回退）", m_gate_wbs_hook, "A10.14 地基层"),
     ]
     all_ok = True
     for target, desc, mutator, expect in mutations:

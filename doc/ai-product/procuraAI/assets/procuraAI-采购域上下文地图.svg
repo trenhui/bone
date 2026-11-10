@@ -86,7 +86,7 @@
   <text x="217" y="432" font-size="10" font-weight="700" fill="#a35b00">跨域裁决边界（§3.1 / PA-04）：采购域产出数据，Finance 裁决匹配与付款</text>
   <text x="217" y="449" font-size="9" fill="#a35b00">采购域：PO / GR / Invoice 数据 + 付款请求 PaymentRequested；不裁决三单匹配与付款许可</text>
   <text x="217" y="465" font-size="9" fill="#a35b00">Finance：2-way / 3-way 匹配 + 容差 + 冻结放行 + IR 例外 + GR/IR 清算 + 付款（MIRO / MRBR 模式）</text>
-  <text x="217" y="481" font-size="9" fill="#a35b00">事件：InvoiceMatched（含 match_type / tolerance_applied / exception_code）· PaymentRecorded 回传</text>
+  <text x="217" y="481" font-size="9" fill="#a35b00">事件：InvoiceMatched（match_id / po_no / match_status / exception_code / matched_at）· PaymentRecorded 回传</text>
   <text x="217" y="498" font-size="9" fill="#a35b00">一致性：跨系统按 E-5.4「状态机 + Outbox + 幂等 + 补偿 + 对账」，不设跨域强一致不变量</text>
 
   <!-- 平台能力带 -->
