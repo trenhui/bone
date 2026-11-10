@@ -122,14 +122,14 @@
         [
           "17",
           "application 层构件白名单（只放 `*ApplicationService` / 契约与端口 / `support`，见 ADR-0035）",
-          "`scripts/check-application-constructs.py --check`（`scripts/ci-check.sh` `[9/9]`；存量 96 条登记在 `doc/architecture/application-constructs-baseline.json`，只可收缩）",
+          "`scripts/check-application-constructs.py --check`（`scripts/ci-check.sh` `[9/9]` + pre-commit `check.sh` `[52/59]`；存量 1 条（RagAnswerService，bone-ai-rag，2026-11-05 登记）在 `doc/architecture/application-constructs-baseline.json`，只可收缩）",
           "Manual（本地脚本；三条判定 = R1 角色包 / R2 `*Service` 命名 / R3 ApplicationService 位置）"
         ],
         [
           "18",
           "domain 分组布局（聚合必须包在 `domain/model/{聚合}/` 下，见 ADR-0036）",
-          "`scripts/check-domain-model-layout.py`（`scripts/ci-check.sh` `[10/10]`；模块自有领域端口子包登记在 `doc/architecture/domain-model-layout-baseline.json`，只可收缩）",
-          "Manual（本地脚本，无 workflow 调用；四条判定 = C1 两套分组并存 / C2 `model/` 下平铺 / C3 空聚合包 / C4 `domain/` 根下未登记子包；非四层模块不适用）"
+          "`scripts/check-domain-model-layout.py`（`scripts/ci-check.sh` `[10/10]` + pre-commit `check.sh` `[57/59]`；模块自有领域端口子包登记在 `doc/architecture/domain-model-layout-baseline.json`，只可收缩）",
+          "Manual（本地脚本，无 workflow 调用；六条判定 = C1 两套分组并存 / C2 `model/` 下平铺 / C3 空聚合包 / C4 `domain/` 根下未登记子包 / C5 基线条目失效 / C6 package 声明与目录一致；非四层模块不适用）"
         ],
         [
           "19",

@@ -240,6 +240,11 @@ skills-lock.json
 generated/
 *.tmp
 reports/
+.worktrees/
+# 例外：以下两个 reports/ 目录存放人工撰写、需入库的文档（架构收敛报告 / Comet 验证报告），
+# 不受上面的运行时产物规则约束；其它任意层级的 reports/ 仍按运行时产物忽略。
+!doc/architecture/reports/
+!docs/superpowers/reports/
 
 # 测试覆盖率报告
 .coverage/
