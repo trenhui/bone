@@ -5,7 +5,8 @@
   1. 头部 frontmatter 含强制字段；
   2. 含发现项闭环表；
   3. currency:current 且 closed_at 空且 mtime>90 天 → 陈旧；
-  4. README/索引中指向已删诊断文档的悬空链接。
+  4. README/索引中指向已删诊断文档的悬空链接；
+  5. 仓库根目录游离过程性报告（联调/核验/验证/复核）告警。
 
 用法：
   python3 doc/_check_diagnosis.py            # 检查默认 doc 根
@@ -27,7 +28,7 @@ REQUIRED_FIELDS = ["doc_id", "role", "currency"]
 RECOMMENDED_FIELDS = ["superseded_by", "closed_at", "related_changes"]
 
 # 已具备自身治理规约的区域，不纳入本机检（避免误判既有规约文件）
-EXCLUDE_DIRS = {"09-records", "archive", "modules", "node_modules", ".git"}
+EXCLUDE_DIRS = {"09-records", "10-archive", "archive", "modules", "node_modules", ".git"}
 # 非诊断类但文件名命中的文档（治理规范本身、工作流方案），排除
 EXCLUDE_NAME_RE = re.compile(r"工作流方案|生命周期规范")
 
@@ -37,9 +38,12 @@ DIAGNOSIS_NAME_RE = re.compile(
 )
 DIAGNOSIS_ROLE_RE = re.compile(r"^\s*role\s*:\s*(review|evidence)\s*$", re.MULTILINE)
 
+# 仓库根目录游离报告识别（比 doc/ 内更宽：覆盖 联调/核验/验证 等命名）
+ROOT_REPORT_RE = re.compile(r"(联调|核验|验证|复核|诊断|report)", re.IGNORECASE)
+
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 CLOSURE_TABLE_RE = re.compile(
-    r"^\s*\|[^|]*\b(状态|闭环|id)\b[^|]*\|", re.IGNORECASE | re.MULTILINE
+    r"^\s*\|.*\b(状态|闭环)\b.*\|", re.IGNORECASE | re.MULTILINE
 )
 
 STALE_DAYS = 90
@@ -153,6 +157,27 @@ def check_dangling_links(ctx: Context, root: str) -> None:
                     )
 
 
+def check_repo_root(ctx: Context, repo_root: str) -> None:
+    """仓库根目录下的游离过程性报告（联调/核验/验证/复核）不应入库根目录。"""
+    if repo_root == ctx.root:
+        return
+    for fn in sorted(os.listdir(repo_root)):
+        full = os.path.join(repo_root, fn)
+        if not fn.endswith(".md") or not os.path.isfile(full):
+            continue
+        try:
+            with open(full, "r", encoding="utf-8") as f:
+                text = f.read()
+        except (OSError, UnicodeDecodeError):
+            continue
+        if ROOT_REPORT_RE.search(fn) or DIAGNOSIS_ROLE_RE.search(text):
+            ctx.add(
+                full,
+                "warning",
+                "仓库根目录存在游离过程性报告，回写真源后应删除或移入 doc/archive/（不应堆积在根目录）",
+            )
+
+
 def run_checks(root: str) -> Context:
     ctx = Context(root=root)
     for path in iter_md_files(root):
@@ -161,6 +186,9 @@ def run_checks(root: str) -> Context:
         if is_diagnosis_doc(path, text):
             check_doc(ctx, path)
     check_dangling_links(ctx, root)
+    repo_root = os.path.dirname(os.path.abspath(root))
+    if os.path.isdir(repo_root):
+        check_repo_root(ctx, repo_root)
     return ctx
 
 
