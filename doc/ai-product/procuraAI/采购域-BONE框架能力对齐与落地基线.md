@@ -289,7 +289,7 @@ public interface VendorRepository extends Repository<Vendor, Long> { }
 | 入口 | 真实载体 | 性质 | 对采购域的含义 |
 |------|----------|------|----------------|
 | **CI blocking** | `.github/workflows/ci.yml:27 backend-quality`（约 30 个 `(blocking)` 脚本）、`:66 mvn clean verify`（ArchUnit）、`:130-131` HC-008、`:136-137` HC-003、`:144-145` HC-006、`:488-534 frontend-quality` | 机器强制，推前必绿 | 采购域代码必须满足这些；**这是 ship-ready 判据** |
-| 本地 59 步 | `scripts/check.sh`（`[n/59]`，`:152-161` HC-001 扫 ORM import/pom） | pre-commit / 人工入口，**CI 零调用**（`ci.yml:122-123` 仅注释） | 不能把「check.sh 绿」当作 CI 绿；本机 `.git/hooks/pre-commit` 亦未接线 |
+| 本地 59 步 | `scripts/check.sh`（`[n/59]`，`:152-161` HC-001 扫 ORM import/pom） | pre-commit / 人工入口，**CI 零调用**（`ci.yml` 仅在注释提及 `check.sh`，行号随版本漂移不写死） | 不能把「check.sh 绿」当作 CI 绿；本机 `.git/hooks/pre-commit` 亦未接线 |
 | 文档族门禁 | `synap-claim-docs.yml:43-46` `check_all.py` | CI blocking（仅理赔族） | 采购族按同模式新增，见 §6.3 |
 
 > v0.2 总体 §13「门禁总入口 `scripts/check.sh` + CI」把两者并列会误导验收；v0.3 已改为「CI blocking 为权威，本地入口为辅助」。

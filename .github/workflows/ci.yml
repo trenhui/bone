@@ -129,7 +129,9 @@ jobs:
         run: /usr/bin/env python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py --self-test && /usr/bin/env python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py
 
       # A10.17 守护：CI / check.sh G0 / check-procura-ci.sh 三处判据集合受控一致，
-      # 防止「本地全绿但 CI 少一条」的静默漂移。CI 与本地一键入口跑全集（5 判据），
+      # 防止「本地全绿但 CI 少一条」的静默漂移；且解析 run: 可执行命令，拦截
+      # continue-on-error / if: 条件跳过 / 注释 run / --self-test 子串冒充 docGate。
+      # CI 与本地一键入口跑全集（5 判据），
       # check.sh G0 跑快反馈子集（3 判据，不含注入式 --self-test）。
       - name: ProcuraAI AsyncAPI Zero-Drift Gate (blocking)
         run: /usr/bin/env python3 doc/ai-product/procuraAI/detailed-design/contracts/generate_asyncapi.py --check

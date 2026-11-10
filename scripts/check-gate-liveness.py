@@ -22,6 +22,10 @@
   R3 每个 step 必须有 `run:` 或 `uses:`。
      反例证伪：某个门禁只剩 `- name: xxx Lint` 而没有命令（空壳步骤）⇒ 红。
      空壳比没有步骤更糟：它让人以为该维度已被覆盖。
+  R9 标注 `(blocking)` 的步骤不得被 `continue-on-error: true` 或 `if: false` 中和
+     （2026-11-10 第三轮新增）。R3 只看「有没有命令」，看不见「命令失败也不拦」：
+     `continue-on-error: true` / `if: false` 让步骤名还叫 blocking，实际永不阻断发布。
+     反例证伪：给任一 blocking 步骤加 `continue-on-error: true` ⇒ 红。
   R4 每个门禁脚本必须被**活入口**调用（2026-11-05 新增）。
      背景：2026-11-05 实测 61 个 `scripts/**/check-*.py` 中，3 个判据与单测齐备却
      **全仓零调用**（check.sh / ci.yml / ci-local.sh 均未引用）——`check-claim-ai-evalset.py`
@@ -247,6 +251,32 @@ def parse_steps(job_lines: list[str]) -> list[tuple[str, bool]]:
         has_body = bool(re.match(r"^\s+(run|uses|with):\s*\S", nxt))
         steps.append((m.group("name"), has_body))
     return steps
+
+
+def neutralized_blocking_steps(job_lines: list[str]) -> list[str]:
+    """R9：名为 (blocking) 的步骤不得被容错 / 条件跳过中和。纯函数，可注入反证。"""
+    blocks: list[list[str]] = []
+    cur: list[str] | None = None
+    for line in job_lines:
+        if STEP_RE.match(line):
+            if cur is not None:
+                blocks.append(cur)
+            cur = [line]
+        elif cur is not None:
+            cur.append(line)
+    if cur is not None:
+        blocks.append(cur)
+    bad: list[str] = []
+    for b in blocks:
+        m = STEP_RE.match(b[0])
+        if not m or not BLOCKING_NAME_RE.search(m.group("name")):
+            continue
+        body = "\n".join(b[1:])
+        if re.search(r"^\s*continue-on-error:\s*(?:true|yes|1)\b", body, re.M | re.I):
+            bad.append(f"{m.group('name')}（continue-on-error: true）")
+        elif re.search(r"^\s*if:\s*(?:false|\$\{\{\s*false\s*\}\})", body, re.M | re.I):
+            bad.append(f"{m.group('name')}（if: false 条件跳过）")
+    return bad
 
 
 def gate_scripts(root: Path) -> list[Path]:
@@ -619,6 +649,9 @@ def main() -> int:
     empty = [n for n, ok in steps if not ok]
     if empty:
         violations.append(f"R3: 存在空壳步骤（只有 name、没有 run/uses）：{empty}")
+    neutral = neutralized_blocking_steps(bq)
+    if neutral:
+        violations.append(f"R9: 标注 (blocking) 却被容错 / 条件跳过中和的门禁步骤：{neutral}")
 
     # R4 族：门禁脚本 ↔ 活入口（孤儿检测）。R1–R3 只能看见"已列出的步骤"，
     # 看不见"从未被任何入口列出的脚本"——那类门禁的判据质量再高也等于零。

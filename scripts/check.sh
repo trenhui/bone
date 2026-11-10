@@ -860,7 +860,8 @@ fi
 # InvoiceMatched 字段漂移、评测集删偏见用例都不会被自动化拦截。
 # 沿用既有 G0 做法不带 [x/59] 编号，避免改动计数与逐项标签；CI 侧同名
 # blocking 步骤额外跑 --self-test 注入反证，本地只做快反馈（3 判据子集）。
-# 判据集合受门禁 A10.17 守护：CI / 本地一键入口 = 全集，本块 = 快反馈子集。
+# 判据集合与可执行语义受门禁 A10.17 守护：CI / 本地一键入口 = 全集，本块 = 快反馈子集；
+# 注释掉本块命令 / 给 CI 步骤加 continue-on-error 或 if: 都会转红，不是口头约定。
 if ! python3 tools/check_procura_alignment.py > /dev/null; then
   echo -e "${RED}❌ procuraAI 文档族对齐门禁失败（分期真源 / InvoiceMatched 全族字段 / 合规条款）${RESET}"
   echo -e "${DIM}  复核：python3 tools/check_procura_alignment.py${RESET}"

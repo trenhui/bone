@@ -32,6 +32,8 @@
      A10.13 分期唯一真源（44 周三期口径跨文档比对 + 32 周旧口径注入反证）、
      A10.14 合规工程化清单 / 能力账本 / G12 边界 / 地基层排期（复诊 P1-⑤⑥⑦⑧）、
      A10.15 最小切片事件状态与附录 B 一致（P2-7：B.1/B.2 不得互斥 + 未登记事件须显式标注）、
+     A10.16 陈旧表述防回退 / A10.17 三入口**可执行**判据等价（含 continue-on-error / if /
+            注释 run / 子串冒充）/ A10.18 治理清单结构化 + 反复制粘贴、
 
 用法：
   python3 tools/check_procura_alignment.py              # 全套校验，退出码 0/1
@@ -218,24 +220,111 @@ ENTRY_FILES = {
     "check.sh": ROOT / "scripts" / "check.sh",
     "check-procura-ci.sh": BASE / "scripts" / "check-procura-ci.sh",
 }
-GATE_NEEDLES = (
-    ("docGate", "tools/check_procura_alignment.py"),
-    ("docProbe", "tools/check_procura_alignment.py --self-test"),
-    ("evalGate", "scripts/check_procura_evalset.py"),
-    ("evalProbe", "scripts/check_procura_evalset.py --self-test"),
-    ("asyncapiCheck", "generate_asyncapi.py --check"),
-)
-FULL_GATE_KEYS = frozenset(k for k, _ in GATE_NEEDLES)
+GATE_KEYS = ("docGate", "docProbe", "evalGate", "evalProbe", "asyncapiCheck")
+FULL_GATE_KEYS = frozenset(GATE_KEYS)
 FAST_GATE_KEYS = frozenset(("docGate", "evalGate", "asyncapiCheck"))
 CI_PROCURA_STEP_MIN = 4
+CI_STEP_HEAD_RE = re.compile(r"^\s*-\s+name:\s*ProcuraAI[^\n]*\(blocking\)\s*$")
 # A10.18：治理清单表格列结构化下界（防止「只有标题 token、没有可验收动作」）。
 COMPLIANCE_ROW_RE = re.compile(r"^\|\s*C-\d+\s*\|", re.M)
 FOUNDATION_ROW_RE = re.compile(r"^\|\s*\*\*F\d+\*\*\s*\|", re.M)
 MIN_ACTION_CHARS = 20
 
 
-def _entry_gate_keys(text: str) -> set[str]:
-    return {k for k, needle in GATE_NEEDLES if needle in text}
+def _ci_blocking_steps(text: str) -> list[list[str]]:
+    """把 ci.yml 按 `- name:` 切成 step 块，只保留 ProcuraAI* (blocking) 步骤。"""
+    blocks: list[list[str]] = []
+    cur: list[str] | None = None
+    for ln in text.splitlines():
+        if re.match(r"^\s*-\s+name:\s", ln):
+            if cur is not None:
+                blocks.append(cur)
+            cur = [ln]
+        elif cur is not None:
+            cur.append(ln)
+    if cur is not None:
+        blocks.append(cur)
+    return [b for b in blocks if b and CI_STEP_HEAD_RE.match(b[0])]
+
+
+def _ci_run_commands(block: list[str]) -> list[str]:
+    """只取 step 内**未被注释**的 run: 命令正文；支持 run: | 块。"""
+    out: list[str] = []
+    i = 0
+    while i < len(block):
+        ln = block[i]
+        m = re.match(r"^(\s*)run:\s*(.*)$", ln)
+        if m and not ln.lstrip().startswith("#"):
+            body, indent = m.group(2).strip(), len(m.group(1))
+            if body in ("|", "|-", ">", ">-"):
+                i += 1
+                parts: list[str] = []
+                while i < len(block) and (not block[i].strip()
+                                          or len(block[i]) - len(block[i].lstrip()) > indent):
+                    parts.append(block[i].strip())
+                    i += 1
+                out.extend(parts)
+                continue
+            out.append(body)
+        i += 1
+    return out
+
+
+def _shell_commands(text: str) -> list[str]:
+    """只取 shell 脚本中**可执行**的 python3 调用行（echo/注释里的文本不算判据）。"""
+    out: list[str] = []
+    for ln in text.splitlines():
+        st = ln.strip()
+        if not st or st.startswith("#"):
+            continue
+        m = re.match(r"^(?:if\s+!\s*)?(?:/usr/bin/env\s+)?python3\s+(.+)$", st)
+        if m:
+            out.append(m.group(1))
+    return out
+
+
+def _parse_py_cmd(part: str) -> tuple[str, frozenset[str]] | None:
+    """把一条命令归一成 (脚本路径, flag 集合)；非 python 脚本返回 None。"""
+    x = part.strip().replace("2>&1", "")
+    x = re.sub(r">\s*\S+", "", x)
+    x = re.sub(r"\bthen\b.*$", "", x)
+    x = re.sub(r"^\s*(?:/usr/bin/env\s+)?python3\s+", "", x.strip())
+    toks = x.split()
+    if not toks or not toks[0].endswith(".py"):
+        return None
+    return toks[0], frozenset(toks[1:])
+
+
+def _cmd_key(path: str, flags: frozenset[str]) -> str | None:
+    """按「脚本路径 + flag」精确判定判据 key，杜绝子串命中（--self-test 冒充 docGate）。"""
+    if path.endswith("tools/check_procura_alignment.py"):
+        return "docProbe" if "--self-test" in flags else ("docGate" if not flags else None)
+    if path.endswith("scripts/check_procura_evalset.py"):
+        return "evalProbe" if "--self-test" in flags else ("evalGate" if not flags else None)
+    if path.endswith("generate_asyncapi.py"):
+        return "asyncapiCheck" if "--check" in flags else None
+    return None
+
+
+def _split_cmds(raw: str) -> list[str]:
+    return [x for x in re.split(r"\s*(?:&&|;)\s*", raw) if x.strip()]
+
+
+def _entry_gate_keys(text: str, kind: str) -> set[str]:
+    """判据集合只从**可执行的命令**推导；ci.yml 额外限定在 blocking step 内。"""
+    if kind == "ci.yml":
+        raws = [x for b in _ci_blocking_steps(text) for x in _ci_run_commands(b)]
+    else:
+        raws = _shell_commands(text)
+    keys: set[str] = set()
+    for raw in raws:
+        for part in _split_cmds(raw):
+            parsed = _parse_py_cmd(part)
+            if parsed:
+                k = _cmd_key(*parsed)
+                if k:
+                    keys.add(k)
+    return keys
 
 
 def _md_cols(line: str) -> list[str]:
@@ -1399,14 +1488,25 @@ def check_a10(ctx: Ctx) -> tuple[bool, list[str]]:
     ci = ctx.entries.get("ci.yml", "")
     sh = ctx.entries.get("check.sh", "")
     loc = ctx.entries.get("check-procura-ci.sh", "")
-    steps = re.findall(r"^\s*-\s+name:\s*ProcuraAI[^\n]*\(blocking\)\s*$", ci, re.M)
+    steps = _ci_blocking_steps(ci)
     if len(steps) < CI_PROCURA_STEP_MIN:
         msgs.append(f"A10.17 ci.yml ProcuraAI* (blocking) 步骤 {len(steps)} < "
                     f"{CI_PROCURA_STEP_MIN}（判据被删 / 降级为 report-only）")
-    for label, body, expect in (("ci.yml", ci, FULL_GATE_KEYS),
-                                ("check-procura-ci.sh", loc, FULL_GATE_KEYS),
-                                ("check.sh", sh, FAST_GATE_KEYS)):
-        got = _entry_gate_keys(body)
+    # 名为 blocking 不等于真 blocking：显式拦截 continue-on-error / if / 空 run / 注释 run。
+    for block in steps:
+        name = block[0].strip()
+        body_lines = block[1:]
+        body = "\n".join(body_lines)
+        if re.search(r"^\s*continue-on-error:\s*(?:true|yes|1)\b", body, re.M | re.I):
+            msgs.append(f"A10.17 {name} 带 continue-on-error: true（标着 blocking 却从不拦）")
+        if re.search(r"^\s*if:", body, re.M):
+            msgs.append(f"A10.17 {name} 带 if: 条件跳过（blocking 步骤不得条件化）")
+        if not _ci_run_commands(block):
+            msgs.append(f"A10.17 {name} 无可执行 run: 命令（判据被注释 / 换成占位命令）")
+    for label, body, kind, expect in (("ci.yml", ci, "ci.yml", FULL_GATE_KEYS),
+                                      ("check-procura-ci.sh", loc, "sh", FULL_GATE_KEYS),
+                                      ("check.sh", sh, "sh", FAST_GATE_KEYS)):
+        got = _entry_gate_keys(body, kind)
         if got != expect:
             msgs.append(f"A10.17 {label} 判据集合 {sorted(got)} != 期望 {sorted(expect)}"
                         "（缺=" + str(sorted(expect - got)) + "，多=" + str(sorted(got - expect)) + "）")
@@ -1424,6 +1524,12 @@ def check_a10(ctx: Ctx) -> tuple[bool, list[str]]:
                 continue
             if len(cols[3]) < MIN_ACTION_CHARS or not cols[4]:
                 msgs.append(f"A10.18 合规清单 {cols[0]} 缺可验收动作 / 状态列（不得只留条款标题）")
+    if len(c_rows) == len(COMPLIANCE_ITEM_IDS):
+        c_actions = [_md_cols(ln)[3].strip().lower() for ln in c_rows
+                     if len(_md_cols(ln)) == 5]
+        if len(c_actions) == len(c_rows) and len(set(c_actions)) != len(c_actions):
+            msgs.append("A10.18 合规清单出现复制粘贴的可验收动作（8 条义务须逐条可区分，"
+                        "不得以同一段占位文字充数）")
     s42 = (bp.split("### 4.2", 1)[1].split("### 4.3", 1)[0]
            if "### 4.2" in bp and "### 4.3" in bp else "")
     if not s42:
@@ -1438,6 +1544,12 @@ def check_a10(ctx: Ctx) -> tuple[bool, list[str]]:
             continue
         if not all(cols[3:6]) or len(cols[3]) < MIN_ACTION_CHARS:
             msgs.append(f"A10.18 地基层 {cols[0]} 缺可验收动作 / Owner / 验收判据列")
+    if len(f_rows) == 4:
+        f_criteria = [_md_cols(ln)[5].strip().lower() for ln in f_rows
+                      if len(_md_cols(ln)) == 6]
+        if len(f_criteria) == 4 and len(set(f_criteria)) != len(f_criteria):
+            msgs.append("A10.18 地基层出现复制粘贴的验收判据（F1–F4 须各自可验收，"
+                        "不得以同一段占位文字充数）")
 
     if "12 条全部补齐" not in ctx.texts.get("领域", ""):
         msgs.append("A10 领域 §6.2 缺「12 条全部补齐」收口说明")
@@ -2314,6 +2426,75 @@ def self_test() -> int:
             "`groundTruthRef` 逐步从文档锚点重定向到源码契约 |", "|", 1)
         return _mutate(c, extra=e)
 
+    def m_ci_continue(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"].replace(
+            "      - name: ProcuraAI Doc Alignment Gate (blocking)\n",
+            "      - name: ProcuraAI Doc Alignment Gate (blocking)\n"
+            "        continue-on-error: true\n", 1)
+        return _mutate(c, entries=en)
+
+    def m_ci_if_false(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"].replace(
+            "      - name: ProcuraAI Doc Alignment Gate (blocking)\n",
+            "      - name: ProcuraAI Doc Alignment Gate (blocking)\n"
+            "        if: false\n", 1)
+        return _mutate(c, entries=en)
+
+    def m_ci_comment_run(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"].replace(
+            "        run: /usr/bin/env python3 tools/check_procura_alignment.py\n",
+            "        # run: /usr/bin/env python3 tools/check_procura_alignment.py\n"
+            "        run: /usr/bin/env true\n", 1)
+        return _mutate(c, entries=en)
+
+    def m_ci_probe_only(c: Ctx) -> Ctx:
+        """docGate 步骤被换成 --self-test：子串式判据会把 docGate 误判为仍存在。"""
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"].replace(
+            "        run: /usr/bin/env python3 tools/check_procura_alignment.py\n",
+            "        run: /usr/bin/env python3 tools/check_procura_alignment.py --self-test\n", 1)
+        return _mutate(c, entries=en)
+
+    def m_checksh_comment(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["check.sh"] = en["check.sh"].replace(
+            "if ! python3 tools/check_procura_alignment.py > /dev/null; then",
+            "# if ! python3 tools/check_procura_alignment.py > /dev/null; then", 1)
+        return _mutate(c, entries=en)
+
+    def m_compliance_copy(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        out, n = [], 0
+        for ln in e["D3v2"].splitlines(keepends=True):
+            if COMPLIANCE_ROW_RE.match(ln):
+                parts = ln.rstrip("\n").split("|")
+                if len(parts) == 7:
+                    parts[4] = " 同一段可验收动作占位文字复制粘贴八次用于测试门禁是否识别重复 "
+                    ln = "|".join(parts) + "\n"
+                    n += 1
+            out.append(ln)
+        assert n == 8, n
+        e["D3v2"] = "".join(out)
+        return _mutate(c, extra=e)
+
+    def m_foundation_copy(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        out, n = [], 0
+        for ln in e["蓝图"].splitlines(keepends=True):
+            if FOUNDATION_ROW_RE.match(ln):
+                parts = ln.rstrip("\n").split("|")
+                if len(parts) == 8:
+                    parts[6] = " 同一段验收判据占位文字复制粘贴四次用于测试 "
+                    ln = "|".join(parts) + "\n"
+                    n += 1
+            out.append(ln)
+        assert n == 4, n
+        e["蓝图"] = "".join(out)
+        return _mutate(c, extra=e)
+
     mutations = [
         ("A1", "版本号漂移（v0.3 → v9.9）", m_a1, "版本 v9.9"),
         ("A1", f"LLD 卷版本头漂移（{LLD_VERSION} → v9.9）", m_a1_lld, "版本头缺失"),
@@ -2406,6 +2587,13 @@ def self_test() -> int:
         ("A10", "C-4 可验收动作清空（合规清单退化成条款）", m_compliance_empty_action, "A10.18"),
         ("A10", "F1 Owner 列清空（地基层缺责任人）", m_foundation_empty_owner, "A10.18"),
         ("A10", "F1 验收判据列删掉（表格结构退化）", m_foundation_drop_column, "A10.18"),
+        ("A10", "ci.yml blocking 步骤加 continue-on-error: true", m_ci_continue, "A10.17"),
+        ("A10", "ci.yml blocking 步骤加 if: false", m_ci_if_false, "A10.17"),
+        ("A10", "ci.yml 判据命令移入注释 + run: true", m_ci_comment_run, "A10.17"),
+        ("A10", "ci.yml docGate 步骤换成 --self-test（子串冒充）", m_ci_probe_only, "A10.17"),
+        ("A10", "check.sh G0 主门禁被注释（文本仍在）", m_checksh_comment, "A10.17"),
+        ("A10", "C-1–C-8 可验收动作全部复制粘贴", m_compliance_copy, "A10.18"),
+        ("A10", "F1–F4 验收判据全部复制粘贴", m_foundation_copy, "A10.18"),
     ]
     all_ok = True
     for target, desc, mutator, expect in mutations:
