@@ -859,7 +859,8 @@ fi
 # 此前两个脚本在 ci.yml / check.sh 均零引用，只有本地手工运行 ⇒ 分期漂移、
 # InvoiceMatched 字段漂移、评测集删偏见用例都不会被自动化拦截。
 # 沿用既有 G0 做法不带 [x/59] 编号，避免改动计数与逐项标签；CI 侧同名
-# blocking 步骤额外跑 --self-test 注入反证，本地只做快反馈。
+# blocking 步骤额外跑 --self-test 注入反证，本地只做快反馈（3 判据子集）。
+# 判据集合受门禁 A10.17 守护：CI / 本地一键入口 = 全集，本块 = 快反馈子集。
 if ! python3 tools/check_procura_alignment.py > /dev/null; then
   echo -e "${RED}❌ procuraAI 文档族对齐门禁失败（分期真源 / InvoiceMatched 全族字段 / 合规条款）${RESET}"
   echo -e "${DIM}  复核：python3 tools/check_procura_alignment.py${RESET}"
@@ -868,6 +869,11 @@ fi
 if ! python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py > /dev/null; then
   echo -e "${RED}❌ procuraAI AI 评测集治理骨架不合规（能力码 / 偏见用例 / 关键负向）${RESET}"
   echo -e "${DIM}  复核：python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py${RESET}"
+  exit_code=1
+fi
+if ! python3 doc/ai-product/procuraAI/detailed-design/contracts/generate_asyncapi.py --check > /dev/null; then
+  echo -e "${RED}❌ procuraAI AsyncAPI 与附录 B 注册表漂移（须重跑生成器）${RESET}"
+  echo -e "${DIM}  复核：python3 doc/ai-product/procuraAI/detailed-design/contracts/generate_asyncapi.py --check${RESET}"
   exit_code=1
 fi
 

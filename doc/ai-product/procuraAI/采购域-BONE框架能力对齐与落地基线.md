@@ -407,7 +407,7 @@ public interface VendorRepository extends Repository<Vendor, Long> { }
 | D3 | `t_proc_processed_event` 是新建还是平台统一幂等表收口 | 架构组 |
 | D4 | Webhook HMAC 验签回灌 `bone-integration` 的排期 | 平台组 |
 | D5 | `bone-app-purchase` 的 `PurchaseOrderPayHandler` 退役或保留为演示 | 采购域 TL + 低代码 Runtime owner |
-| D6 | 采购域门禁脚本接入 `ci.yml` 还是新建 workflow（**可复制片段已给**在 `一期边界与机制触发条件.md §5`，本轮未改 CI） | 平台组 |
+| D6 | ~~采购域门禁脚本接入 `ci.yml` 还是新建 workflow~~ → **已裁决（2026-11-10）**：接入 `ci.yml` 的 `backend-quality` 四条 blocking 步骤 + `check.sh` G0；可复制片段见 `一期边界与机制触发条件.md §5` | 平台组（已闭合） |
 | D7 | RA-2 账套/采购组织清单、§8.3 NFR 数值、一期 DDL 与事件 payload 冻结 | 财务域 / 客户 SLA 评审（沿用总体 §12.2） |
 
 ---

@@ -128,6 +128,12 @@ jobs:
       - name: ProcuraAI AI Evalset Governance Gate (blocking)
         run: /usr/bin/env python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py --self-test && /usr/bin/env python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py
 
+      # A10.17 守护：CI / check.sh G0 / check-procura-ci.sh 三处判据集合受控一致，
+      # 防止「本地全绿但 CI 少一条」的静默漂移。CI 与本地一键入口跑全集（5 判据），
+      # check.sh G0 跑快反馈子集（3 判据，不含注入式 --self-test）。
+      - name: ProcuraAI AsyncAPI Zero-Drift Gate (blocking)
+        run: /usr/bin/env python3 doc/ai-product/procuraAI/detailed-design/contracts/generate_asyncapi.py --check
+
       # 以下 6 项此前**只存在于 scripts/ci-check.sh 里，而该脚本在全仓零调用者**
       # （2026-10-04 实测：命中全是脚本自身 docstring 与 gate-state.json 的描述文本，
       # ci.yml 里唯一出现处是一句注释）⇒ 六个维度完全没有回归保护。

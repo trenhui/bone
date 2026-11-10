@@ -2,9 +2,11 @@
 # Procura 文档族 + AI 评测集治理门禁「本地一键入口」。
 #
 # 状态（2026-11-10 复诊 P0-③ / D6 已闭合）：
-#   - 真正的 ship-ready 判据是 .github/workflows/ci.yml 的三条 ProcuraAI* (blocking) 步骤，
+#   - 真正的 ship-ready 判据是 .github/workflows/ci.yml 的四条 ProcuraAI* (blocking) 步骤，
 #     以及 scripts/check.sh 的 G0-procura 快反馈块；本脚本**不再是 CI 的调用入口**。
-#   - 本脚本保留给本地开发 / 评审前自查，命令与 CI 逐条对齐（含注入式负向反证）。
+#   - 本脚本保留给本地开发 / 评审前自查，跑 5 判据全集（含注入式负向反证）；
+#     ci.yml 四条 ProcuraAI* (blocking) 覆盖同一全集，check.sh G0 跑 3 判据快反馈子集。
+#   - 三处判据集合由门禁 A10.17 守护（任一处删改 → A10 转红），不是口头约定。
 #   - 边界仍然诚实：全绿只代表「文档族一致 + 评测集治理骨架未退化」，
 #     不代表采购模块已落地、SLO 已压测、模型效果已达标；评测集 status 仍为 seededDraft。
 set -euo pipefail
@@ -29,4 +31,4 @@ python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py
 echo "[procura-gate] AI 评测集注入式负向反证"
 python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py --self-test
 
-echo "[procura-gate] 本地全绿；CI blocking 结果以 ci.yml 三条 ProcuraAI* 步骤为准（CI 绿 ≠ 可上线）"
+echo "[procura-gate] 本地全绿；CI blocking 结果以 ci.yml 四条 ProcuraAI* 步骤为准（CI 绿 ≠ 可上线）"

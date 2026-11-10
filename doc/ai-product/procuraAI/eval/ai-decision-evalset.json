@@ -415,5 +415,37 @@
     "M6",
     "M7",
     "ORCHESTRATION"
-  ]
+  ],
+  "scalePlan": {
+    "status": "notStarted",
+    "currentCases": 19,
+    "targetCases": 200,
+    "annotationSpec": "D6 标注规范（见 采购AI-方案包完整性评估与文档补齐计划.md §D6）：双人标注 + 第三方仲裁，Cohen's Kappa ≥ 0.8 方可入冻结集；脱敏字段清单与脱敏算法选型冻结后才允许样本出域；训练 / 验证 / 冻结集三分离，冻结集不进训练与提示词调优。",
+    "phases": [
+      {
+        "phase": "P0-seed",
+        "cases": 19,
+        "gate": "结构门禁（当前，CI blocking）",
+        "exit": "8 能力码全覆盖 + 10 条关键负向 + G15 偏见用例 + 生成内容标识用例；status 保持 seededDraft，不得宣称模型效果达标"
+      },
+      {
+        "phase": "P1-expand",
+        "cases": 200,
+        "gate": "发布门禁（owner 执行，尚未建立）",
+        "exit": "PRD ≥200 样本 + 对抗样本 + 偏见审计集齐备；标注一致性 Kappa ≥ 0.8；字段级指标字典与通过线冻结；冻结集与训练隔离可复核"
+      },
+      {
+        "phase": "P2-release",
+        "cases": 200,
+        "gate": "发布门禁接管",
+        "exit": "升版固定集复跑 + 指标未达标自动回滚；季度公平性复跑；status 才允许从 seededDraft 迁移"
+      }
+    ],
+    "passCriteria": {
+      "highConsequenceRecall": "待 owner 冻结（不伪造数值）",
+      "overrideRate": "待 owner 冻结（不伪造数值）",
+      "fairnessAudit": "FAIR-01/02 季度复跑不得回归"
+    },
+    "handover": "≥200 样本 + 通过线冻结后由发布门禁接管；seed 期间 CI 绿只证明结构 / 能力码 / 关键负向未退化，不等于 AI 能力可上线。本字段 status 不得标 completed。"
+  }
 }

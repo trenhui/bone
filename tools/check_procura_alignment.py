@@ -30,6 +30,8 @@
      A10.4.1 InvoiceMatched **全族**字段收敛（C-A 复诊修复：解析 D3-v2 §2.1 真源字段表 →
               总体 §3.1/§7/§7.1、各卷 §7、JSON 示例、SVG、AsyncAPI 集合比对 + 漂移字段注入反证）、
      A10.13 分期唯一真源（44 周三期口径跨文档比对 + 32 周旧口径注入反证）、
+     A10.14 合规工程化清单 / 能力账本 / G12 边界 / 地基层排期（复诊 P1-⑤⑥⑦⑧）、
+     A10.15 最小切片事件状态与附录 B 一致（P2-7：B.1/B.2 不得互斥 + 未登记事件须显式标注）、
 
 用法：
   python3 tools/check_procura_alignment.py              # 全套校验，退出码 0/1
@@ -187,6 +189,65 @@ FOUNDATION_TOKENS = (
 )
 WBS_FOUNDATION_HOOK = "§4.2 地基层 F1–F4"
 
+# --- 第二轮（2026-11-10）：防回退 / 三入口判据等价 / 治理清单结构化 -----------
+# A10.16：D6 闭合后禁止回流的陈旧表述。判据常量硬编码在脚本、**不在文档内复述**，
+# 避免「期望值来自被校验文档」的闭环自证（R5 纪律）。
+STALE_CI_PHRASES = (
+    "CI 接入仍待 D6", "CI blocking 接入为待决 D6", "CI 接入待 D6",
+    "待接入 CI（D6）", "不擅自改 `ci.yml`", "是否 blocking 由平台组（D6）拍板",
+    "本轮不修改 `.github/workflows/` 与 `check.sh`", "本轮未改 CI", "未接 CI",
+    "未改 `ci.yml`", "接入 CI 后才是 ship-ready 判据",
+    "门禁脚本接入 `ci.yml` 还是新建 workflow（D6）",
+    "D2/D6：平台 Outbox starter 立项、门禁接 CI",
+    "三条 `ProcuraAI*` blocking", "三条 ProcuraAI* blocking",
+    "`ci.yml` 三条 blocking",
+)
+# 当前状态正向锚点：与黑名单互补，防止「把整段删掉」绕过扫描。
+CI_STATE_ANCHORS = (
+    ("texts", "README", "台账阅读约定"),
+    ("texts", "README", "D6 已闭合"),
+    ("extra", "一期边界", "D6 已闭合"),
+    ("texts", "总纲", "D6 已闭合"),
+    ("texts", "基线", "已裁决（2026-11-10）"),
+    ("texts", "卷06", "D6 已裁决"),
+)
+# A10.17：三入口判据集合（Docs-as-Code 单一真源纪律）。
+# CI 与本地一键入口 = 全集（5 判据）；check.sh G0 = 快反馈子集（3 判据，不含 --self-test）。
+ENTRY_FILES = {
+    "ci.yml": ROOT / ".github" / "workflows" / "ci.yml",
+    "check.sh": ROOT / "scripts" / "check.sh",
+    "check-procura-ci.sh": BASE / "scripts" / "check-procura-ci.sh",
+}
+GATE_NEEDLES = (
+    ("docGate", "tools/check_procura_alignment.py"),
+    ("docProbe", "tools/check_procura_alignment.py --self-test"),
+    ("evalGate", "scripts/check_procura_evalset.py"),
+    ("evalProbe", "scripts/check_procura_evalset.py --self-test"),
+    ("asyncapiCheck", "generate_asyncapi.py --check"),
+)
+FULL_GATE_KEYS = frozenset(k for k, _ in GATE_NEEDLES)
+FAST_GATE_KEYS = frozenset(("docGate", "evalGate", "asyncapiCheck"))
+CI_PROCURA_STEP_MIN = 4
+# A10.18：治理清单表格列结构化下界（防止「只有标题 token、没有可验收动作」）。
+COMPLIANCE_ROW_RE = re.compile(r"^\|\s*C-\d+\s*\|", re.M)
+FOUNDATION_ROW_RE = re.compile(r"^\|\s*\*\*F\d+\*\*\s*\|", re.M)
+MIN_ACTION_CHARS = 20
+
+
+def _entry_gate_keys(text: str) -> set[str]:
+    return {k for k, needle in GATE_NEEDLES if needle in text}
+
+
+def _md_cols(line: str) -> list[str]:
+    return [c.strip() for c in re.split(r"(?<!\\)\|", line.strip().strip("|"))]
+
+
+def _load_entries() -> tuple[dict[str, str], list[str]]:
+    """三入口判据文件读入 Ctx；缺文件返回空串由 A10.17 fail-closed 判红。"""
+    entries = {k: (p.read_text(encoding="utf-8") if p.is_file() else "")
+               for k, p in ENTRY_FILES.items()}
+    return entries, [k for k, v in entries.items() if not v]
+
 # A10：SVG 文字层禁止残留的已判废口径（A3 只验 XML/viewBox，不读 <text>）。
 SVG_BANNED_TEXTS = ("AuditBus", "A1–A6", "contract_no 主键", "全覆盖", "LLD v0.2")
 # 「自动归档」只允许出现在撤销 / 禁止语境；其余一律判红。
@@ -342,6 +403,9 @@ class Ctx:
     svgs: dict[str, str] = field(default_factory=dict)
     legacy: dict[str, str] = field(default_factory=dict)
     extra_missing: list[str] = field(default_factory=list)
+    # A10.17：CI / check.sh / 本地一键入口，随 Ctx 注入以支持负向反证（不读真实磁盘）。
+    entries: dict[str, str] = field(default_factory=dict)
+    entry_missing: list[str] = field(default_factory=list)
 
 
 def _sections(text: str) -> set[str]:
@@ -398,6 +462,7 @@ def load() -> Ctx:
     assets = sorted(ASSETS.glob("*.svg")) if ASSETS.is_dir() else []
     artifacts, artifact_missing = _load_artifacts()
     extra, svgs, legacy, extra_missing = _load_a10_assets()
+    entries, entry_missing = _load_entries()
     return Ctx(
         texts=texts,
         sections={k: _sections(v) for k, v in texts.items()},
@@ -409,6 +474,8 @@ def load() -> Ctx:
         svgs=svgs,
         legacy=legacy,
         extra_missing=extra_missing,
+        entries=entries,
+        entry_missing=entry_missing,
     )
 
 
@@ -416,6 +483,7 @@ def derive(texts: dict[str, str], assets: list[Path], missing: list[str] | None 
     """由注入后的文本重建上下文（--self-test 用）。"""
     artifacts, artifact_missing = _load_artifacts()
     extra, svgs, legacy, extra_missing = _load_a10_assets()
+    entries, entry_missing = _load_entries()
     return Ctx(
         texts=dict(texts),
         sections={k: _sections(v) for k, v in texts.items()},
@@ -427,6 +495,8 @@ def derive(texts: dict[str, str], assets: list[Path], missing: list[str] | None 
         svgs=svgs,
         legacy=legacy,
         extra_missing=extra_missing,
+        entries=entries,
+        entry_missing=entry_missing,
     )
 
 
@@ -1307,8 +1377,97 @@ def check_a10(ctx: Ctx) -> tuple[bool, list[str]]:
     if WBS_FOUNDATION_HOOK not in ctx.texts.get("总体", ""):
         msgs.append(f"A10.14 地基层：总体 §12 缺 WBS 估工挂钩 {WBS_FOUNDATION_HOOK}（不得只写条款不排期）")
 
+    # --- 10.15 D6 陈旧表述防回退（第二轮：上轮同步遗漏 9 处，含同节自相矛盾）----
+    stale_corpus: dict[str, str] = {}
+    stale_corpus.update({f"texts:{k}": v for k, v in ctx.texts.items()})
+    stale_corpus.update({f"extra:{k}": v for k, v in ctx.extra.items()})
+    stale_corpus.update({f"legacy:{k}": v for k, v in ctx.legacy.items()})
+    for src, body in stale_corpus.items():
+        for phrase in STALE_CI_PHRASES:
+            if phrase in body:
+                msgs.append(f"A10.16 陈旧表述回流：{src} 残留已废止的「{phrase}」"
+                            "（D6 已闭合，当前状态以 ci.yml blocking 为准）")
+    for bucket, key, anchor in CI_STATE_ANCHORS:
+        body = (ctx.texts if bucket == "texts" else ctx.extra).get(key, "")
+        if anchor not in body:
+            msgs.append(f"A10.16 当前状态锚点缺失：{bucket}:{key} 缺「{anchor}」"
+                        "（不得用删除整段的方式绕过陈旧表述扫描）")
+
+    # --- 10.16 三入口判据集合受控一致（CI / 本地一键 = 全集；check.sh = 快反馈子集）---
+    if ctx.entry_missing:
+        msgs.append(f"A10.17 判据入口文件缺失或读取失败：{sorted(ctx.entry_missing)}（fail-closed）")
+    ci = ctx.entries.get("ci.yml", "")
+    sh = ctx.entries.get("check.sh", "")
+    loc = ctx.entries.get("check-procura-ci.sh", "")
+    steps = re.findall(r"^\s*-\s+name:\s*ProcuraAI[^\n]*\(blocking\)\s*$", ci, re.M)
+    if len(steps) < CI_PROCURA_STEP_MIN:
+        msgs.append(f"A10.17 ci.yml ProcuraAI* (blocking) 步骤 {len(steps)} < "
+                    f"{CI_PROCURA_STEP_MIN}（判据被删 / 降级为 report-only）")
+    for label, body, expect in (("ci.yml", ci, FULL_GATE_KEYS),
+                                ("check-procura-ci.sh", loc, FULL_GATE_KEYS),
+                                ("check.sh", sh, FAST_GATE_KEYS)):
+        got = _entry_gate_keys(body)
+        if got != expect:
+            msgs.append(f"A10.17 {label} 判据集合 {sorted(got)} != 期望 {sorted(expect)}"
+                        "（缺=" + str(sorted(expect - got)) + "，多=" + str(sorted(got - expect)) + "）")
+
+    # --- 10.17 治理清单「可验收动作」结构化（防止只写条款 / 只留标题 token）------
+    if sec31:
+        c_rows = [ln for ln in sec31.splitlines() if COMPLIANCE_ROW_RE.match(ln)]
+        if len(c_rows) != len(COMPLIANCE_ITEM_IDS):
+            msgs.append(f"A10.18 合规清单 C 行 {len(c_rows)} != "
+                        f"{len(COMPLIANCE_ITEM_IDS)}（工程化清单不可删）")
+        for ln in c_rows:
+            cols = _md_cols(ln)
+            if len(cols) != 5:
+                msgs.append(f"A10.18 合规清单列数 {len(cols)} != 5：{ln[:48]}")
+                continue
+            if len(cols[3]) < MIN_ACTION_CHARS or not cols[4]:
+                msgs.append(f"A10.18 合规清单 {cols[0]} 缺可验收动作 / 状态列（不得只留条款标题）")
+    s42 = (bp.split("### 4.2", 1)[1].split("### 4.3", 1)[0]
+           if "### 4.2" in bp and "### 4.3" in bp else "")
+    if not s42:
+        msgs.append("A10.18 地基层：蓝图缺 §4.2 → §4.3 区间（结构化校验不可达）")
+    f_rows = [ln for ln in s42.splitlines() if FOUNDATION_ROW_RE.match(ln)]
+    if len(f_rows) != 4:
+        msgs.append(f"A10.18 地基层 F 行 {len(f_rows)} != 4（F1–F4 不可删）")
+    for ln in f_rows:
+        cols = _md_cols(ln)
+        if len(cols) != 6:
+            msgs.append(f"A10.18 地基层 {cols[0] if cols else '?'} 列数 {len(cols)} != 6：{ln[:48]}")
+            continue
+        if not all(cols[3:6]) or len(cols[3]) < MIN_ACTION_CHARS:
+            msgs.append(f"A10.18 地基层 {cols[0]} 缺可验收动作 / Owner / 验收判据列")
+
     if "12 条全部补齐" not in ctx.texts.get("领域", ""):
         msgs.append("A10 领域 §6.2 缺「12 条全部补齐」收口说明")
+
+    # --- 10.15 最小切片事件状态与附录 B 一致（P2-7：B.1/B.2 不得互斥 + 未登记事件须显式标注）---
+    b2 = (charter.split("**B.2 LLD 级新增", 1)[1].split("**B.3", 1)[0]
+          if "**B.2 LLD 级新增" in charter else "")
+    b2_events = set(re.findall(r"`([A-Z][A-Za-z]+)`", b2))
+    frozen_set = set(FROZEN_EVENT_TYPES)
+    scope = ctx.extra.get("一期边界", "")
+    s75 = (scope.split("### 7.5 事件", 1)[1].split("### 7.6", 1)[0]
+           if "### 7.5 事件" in scope else "")
+    if not s75:
+        msgs.append("A10.15 切片事件：一期边界缺 §7.5 事件表（最小切片事件登记基线缺失）")
+    for ln in s75.splitlines():
+        if not ln.strip().startswith("|"):
+            continue
+        toks = re.findall(r"`([A-Z][A-Za-z]+)`", ln)
+        if not toks:
+            continue
+        ev = toks[0]
+        if ev in frozen_set:
+            if "B.2" in ln and "Proposal" in ln:
+                msgs.append(f"A10.15 切片事件状态冲突：一期边界 §7.5 的 {ev} 标为 B.2 Proposal，但附录 B.1 为 Frozen（状态互斥）")
+        elif ev in b2_events:
+            if "B.1" in ln and "Frozen" in ln:
+                msgs.append(f"A10.15 切片事件状态冲突：一期边界 §7.5 的 {ev} 标为 B.1 Frozen，但附录 B.2 为本族 Proposal（状态互斥）")
+        else:
+            if not any(k in ln for k in ("未登记", "待登记", "未注册")):
+                msgs.append(f"A10.15 切片事件未登记：一期边界 §7.5 的 {ev} 不在附录 B 注册表（B.1/B.2 均无），须显式标「未登记 / 待登记」或移入附录 B")
 
     # --- 10.5 契约工件 / 生成器 / SVG 版本戳 --------------------------------
     for key in ("openapi.yaml", "asyncapi.yaml"):
@@ -1517,7 +1676,7 @@ DESCRIPTIONS = {
     "A7": "LLD 族 12 节模板与模块覆盖",
     "A8": "契约工件一致性 / 码字唯一性 / topic 白名单 / InvoiceMatched 字段集合",
     "A9": "逐卷可执行规格 §13 八子节 / 专属锚点 / 七类要素 / v0.3 探针",
-    "A10": "资产裁决 / AI 合规 / 外部锚点 / 版本戳 / 一期边界 / 新资产索引 / 全族字段收敛 / 分期真源 / 合规清单 / 能力账本",
+    "A10": "资产裁决 / AI 合规 / 外部锚点 / 版本戳 / 一期边界 / 新资产索引 / 全族字段收敛 / 分期真源 / 合规清单 / 能力账本 / 切片事件状态",
 }
 
 
@@ -1544,7 +1703,9 @@ def _mutate(ctx: Ctx, texts: dict[str, str] | None = None,
             extra: dict[str, str] | None = None,
             svgs: dict[str, str] | None = None,
             legacy: dict[str, str] | None = None,
-            extra_missing: list[str] | None = None) -> Ctx:
+            extra_missing: list[str] | None = None,
+            entries: dict[str, str] | None = None,
+            entry_missing: list[str] | None = None) -> Ctx:
     new_texts = dict(ctx.texts if texts is None else texts)
     new_secs = {k: _sections(v) for k, v in new_texts.items()} if sections is None else sections
     return Ctx(
@@ -1558,6 +1719,8 @@ def _mutate(ctx: Ctx, texts: dict[str, str] | None = None,
         svgs=dict(ctx.svgs if svgs is None else svgs),
         legacy=dict(ctx.legacy if legacy is None else legacy),
         extra_missing=list(ctx.extra_missing if extra_missing is None else extra_missing),
+        entries=dict(ctx.entries if entries is None else entries),
+        entry_missing=list(ctx.entry_missing if entry_missing is None else entry_missing),
     )
 
 
@@ -2074,6 +2237,83 @@ def self_test() -> int:
         e["蓝图"] = bp
         return _mutate(c, extra=e)
 
+    def m_a10_slice_status(c: Ctx) -> Ctx:
+        """P2-7(c) 反证：把一期边界 §7.5 一个 B.1 Frozen 事件改标 B.2 Proposal → A10.15 转红。"""
+        e = dict(c.extra)
+        s = e["一期边界"]
+        s = s.replace("`VendorActivated`（B.1 Frozen）", "`VendorActivated`（B.2 Proposal）", 1)
+        e["一期边界"] = s
+        return _mutate(c, extra=e)
+
+    def m_a10_slice_unregistered(c: Ctx) -> Ctx:
+        """P2-7(b) 反证：抹掉一期边界 §7.5 StockSnapshot 的「未登记」标注 → A10.15 转红。"""
+        e = dict(c.extra)
+        s = e["一期边界"]
+        s = s.replace("；**未登记**入附录 B", "", 1)
+        e["一期边界"] = s
+        return _mutate(c, extra=e)
+
+    # --- 第二轮反证：陈旧表述回流 / 三入口漂移 / 治理清单退化 --------------------
+    def m_stale_readme(c: Ctx) -> Ctx:
+        t = dict(c.texts)
+        t["README"] = t["README"].replace("## 定位", "（CI 接入待 D6）\n\n## 定位", 1)
+        return _mutate(c, texts=t)
+
+    def m_stale_scope(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        e["一期边界"] = e["一期边界"].replace(
+            "## 5. CI 接入", "是否 blocking 由平台组（D6）拍板\n\n## 5. CI 接入", 1)
+        return _mutate(c, extra=e)
+
+    def m_stale_anchor(c: Ctx) -> Ctx:
+        t = dict(c.texts)
+        t["README"] = t["README"].replace("台账阅读约定（2026-11-10）", "台账说明", 1)
+        return _mutate(c, texts=t)
+
+    def m_stale_count(c: Ctx) -> Ctx:
+        t = dict(c.texts)
+        t["README"] = t["README"].replace("## 定位", "三条 `ProcuraAI*` blocking\n\n## 定位", 1)
+        return _mutate(c, texts=t)
+
+    def m_ci_drop_check(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"].replace("generate_asyncapi.py --check",
+                                            "generate_asyncapi.py", 1)
+        return _mutate(c, entries=en)
+
+    def m_local_drop_check(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["check-procura-ci.sh"] = en["check-procura-ci.sh"].replace(
+            "generate_asyncapi.py --check", "generate_asyncapi.py", 1)
+        return _mutate(c, entries=en)
+
+    def m_checksh_drop_eval(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["check.sh"] = en["check.sh"].replace("scripts/check_procura_evalset.py",
+                                                "scripts/ZZZ_removed.py")
+        return _mutate(c, entries=en)
+
+    def m_compliance_empty_action(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        e["D3v2"] = e["D3v2"].replace(
+            "覆盖 M1–M7 与编排层的统一停用开关、降级演练、RTO/RPO 与责任人；"
+            "现仅 G16 自治车道有 kill switch，**须扩到全域**", "待补", 1)
+        return _mutate(c, extra=e)
+
+    def m_foundation_empty_owner(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        e["蓝图"] = e["蓝图"].replace(
+            "| 数据 owner + 采购域 TL；**人月待估，须在 WBS 单列，不并入 96 人月** |",
+            "|  |", 1)
+        return _mutate(c, extra=e)
+
+    def m_foundation_drop_column(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        e["蓝图"] = e["蓝图"].replace(
+            "| 数据集版本可追溯、冻结集零污染、标注一致性达 owner 设定阈值；"
+            "`groundTruthRef` 逐步从文档锚点重定向到源码契约 |", "|", 1)
+        return _mutate(c, extra=e)
+
     mutations = [
         ("A1", "版本号漂移（v0.3 → v9.9）", m_a1, "版本 v9.9"),
         ("A1", f"LLD 卷版本头漂移（{LLD_VERSION} → v9.9）", m_a1_lld, "版本头缺失"),
@@ -2154,6 +2394,18 @@ def self_test() -> int:
         ("A10", "D3-v2 §1.1 删 M3 登记（能力账本）", m_gate_cap_m3, "A10.14 能力账本"),
         ("A10", "蓝图删 §4.2 地基层整节（治理前置回退）", m_gate_foundation, "A10.14 地基层"),
         ("A10", "总体 §12 抹掉地基层 WBS 估工挂钩（排期回退）", m_gate_wbs_hook, "A10.14 地基层"),
+        ("A10", "一期边界 §7.5 把 B.1 Frozen 事件改标 B.2 Proposal（P2-7c 状态互斥）", m_a10_slice_status, "A10.15 切片事件状态冲突"),
+        ("A10", "一期边界 §7.5 抹掉 StockSnapshot 未登记标注（P2-7b 未登记混入）", m_a10_slice_unregistered, "A10.15 切片事件未登记"),
+        ("A10", "README 回流已废止的「CI 接入待 D6」（陈旧表述）", m_stale_readme, "A10.16"),
+        ("A10", "一期边界回流「是否 blocking 由平台组拍板」（同节矛盾）", m_stale_scope, "A10.16"),
+        ("A10", "README 抹掉台账阅读约定（当前状态锚点）", m_stale_anchor, "A10.16"),
+        ("A10", "README 回流「三条 ProcuraAI* blocking」旧计数", m_stale_count, "A10.16"),
+        ("A10", "ci.yml 去掉 generate_asyncapi.py --check（CI 判据漂移）", m_ci_drop_check, "A10.17"),
+        ("A10", "本地一键入口去掉 --check（判据集合漂移）", m_local_drop_check, "A10.17"),
+        ("A10", "check.sh G0 删掉评测集判据（快反馈子集被破坏）", m_checksh_drop_eval, "A10.17"),
+        ("A10", "C-4 可验收动作清空（合规清单退化成条款）", m_compliance_empty_action, "A10.18"),
+        ("A10", "F1 Owner 列清空（地基层缺责任人）", m_foundation_empty_owner, "A10.18"),
+        ("A10", "F1 验收判据列删掉（表格结构退化）", m_foundation_drop_column, "A10.18"),
     ]
     all_ok = True
     for target, desc, mutator, expect in mutations:
