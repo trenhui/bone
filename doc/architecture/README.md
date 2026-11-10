@@ -30,6 +30,12 @@
 
 **其他**：[元数据能力-实现映射与竞品对照](../design/modules/元数据能力-实现映射与竞品对照.md) · [smartmeta/README.md](./smartmeta/README.md) · [architecture-layers.svg](./architecture-layers.svg)（架构分层总览图：L1 功能层 / L2 数据层 / L3 扩展层 / L4 生态层 + 四大引擎与端口）
 
+## 工程改造蓝图
+
+| 文档 | 说明 |
+|---|---|
+| [Bone-AI原生工程基础设施改造方案.md](./Bone-AI原生工程基础设施改造方案.md) | AI 编程基础设施收敛型改造的施工蓝图（待审批；非规范正文、非 CI baseline） |
+
 ## 与 `doc/prd`、`doc/design` 的关系
 
 | 目录 | 职责 |

@@ -6,7 +6,7 @@ build_pause: null
 subagent_dispatch: null
 tdd_mode: direct
 review_mode: off
-isolation: null
+isolation: current
 verify_mode: null
 auto_transition: true
 base_ref: 2eb7c2781965a718a039600f6fba620502de77ac
@@ -23,7 +23,7 @@ handoff_context: openspec/changes/synapclaim-ai-governance-hardening/.comet/hand
 handoff_hash: e1a0a14aa3658cdc354f2648ea35208945f87578e101c32b9f4d8be2ea4bc420
 change_id: b7f30fdc-b542-4a3b-bba6-373403f70f34
 language: null
-bound_branch: null
+bound_branch: dev
 verify_failures: 0
 archive_confirmation: null
 classic_profile: full
