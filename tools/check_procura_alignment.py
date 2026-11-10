@@ -25,6 +25,7 @@
      A10.10 RA-2 可见性矩阵冻结安全基线（O4/R-4）、A10.11 ATAM 排序会议程+预排序（O6/R-6）、
      A10.12 一期边界最小切片骨架（O7/R-7）、
      A10.3.1 D3-v2 §2 ai_available 三态（C-B：与 §3 一致，禁 boolean）、
+     A10.3.2 D3-v2 §3 算法公平与反歧视条款 + AI-5 负向用例（G15：防 AI 辅助选商/评标歧视，不得删除）、
      A10.4.1 总体 §7.1 InvoiceMatched 字段 ↔ D3-v2 §2.1 一致（C-A：消除第三份漂移副本）
 
 用法：
@@ -139,6 +140,7 @@ EXTRA_DOCS = {
     "平台RFC": BASE / "平台能力共建RFC.md",
     "ATAM": BASE / "质量属性场景与ATAM.md",
     "答辩包": BASE / "架构师答辩包.md",
+    "蓝图": BASE / "采购AI原生能力蓝图.md",
 }
 # 原有 POC 族（历史归档 / 受限引用），A10 扫描其失效口径仍带撤销标记。
 LEGACY_DOCS = tuple(sorted(p.name for p in BASE.glob("采购AI-*.md")
@@ -1063,6 +1065,15 @@ def check_a10(ctx: Ctx) -> tuple[bool, list[str]]:
         if "boolean" in avail_row:
             msgs.append("A10 C-B ai_available：D3-v2 §2 仍为 boolean（与 §3 三态冲突，须改枚举）")
 
+    # --- 10.3.2 算法公平与反歧视（G15：D3-v2 §3 公平条款 + AI-5 负向用例不得删除）---
+    s3 = (d3.split("## 3. AI 合规契约", 1)[1].split("## 4.", 1)[0]
+          if "## 3. AI 合规契约" in d3 else "")
+    if not s3:
+        msgs.append("A10 G15：D3-v2 缺 §3 AI 合规契约章节（公平治理基线缺失）")
+    for token in ("系统性偏见", "按供应商所有制"):
+        if token not in s3:
+            msgs.append(f"A10 G15 算法公平：D3-v2 §3 缺 {token}（公平条款与 AI-5 负向用例不得删除 / 淡化）")
+
     # --- 10.4 Frozen 事件上游登记与陈旧表述 ----------------------------------
     b1 = (charter.split("**B.1 已冻结", 1)[1].split("**B.2", 1)[0]
           if "**B.1 已冻结" in charter else "")
@@ -1725,6 +1736,15 @@ def self_test() -> int:
             "| `ai_available` | boolean | ✅ |", 1)
         return _mutate(c, extra=e)
 
+    def m_a10_fairness(c: Ctx) -> Ctx:
+        """G15 反证：删除 D3-v2 §3 的算法公平条款行与 AI-5 负向用例行，使 10.3.2 转红。"""
+        e = dict(c.extra)
+        d3 = e["D3v2"]
+        d3 = re.sub(r"^\| 算法公平与反歧视 \|.*\n", "", d3, count=1, flags=re.M)
+        d3 = re.sub(r"^\| AI-5 \|.*\n", "", d3, count=1, flags=re.M)
+        e["D3v2"] = d3
+        return _mutate(c, extra=e)
+
     mutations = [
         ("A1", "版本号漂移（v0.3 → v9.9）", m_a1, "版本 v9.9"),
         ("A1", f"LLD 卷版本头漂移（{LLD_VERSION} → v9.9）", m_a1_lld, "版本头缺失"),
@@ -1786,6 +1806,7 @@ def self_test() -> int:
         ("A10", "一期边界 §7 最小切片骨架被删（O7 回退）", m_a10_slice, "切片骨架"),
         ("A10", "总体 §7.1 InvoiceMatched 改回漂移字段（C-A 第三份副本回退）", m_a10_ca, "C-A 总体 §7.1"),
         ("A10", "D3-v2 §2 ai_available 改回 boolean（C-B 三态回退）", m_a10_cb, "C-B ai_available"),
+        ("A10", "D3-v2 §3 删算法公平条款与 AI-5 负向用例（G15 回退）", m_a10_fairness, "G15 算法公平"),
     ]
     all_ok = True
     for target, desc, mutator, expect in mutations:
