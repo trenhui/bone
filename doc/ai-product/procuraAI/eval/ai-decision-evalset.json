@@ -61,7 +61,7 @@
         "tier": "AUTO",
         "reason": "ALL_GATES_PASSED"
       },
-      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-技术方案.md#合同审查分诊",
+      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-智能风险审查与合同智能处理-PRD.md#FR-203-审查结论流转与留痕",
       "regulatoryBasis": "监管 §4 测评用例集；§22 阈值触发记录可解释",
       "testClass": "ProcuraContractReviewTriageTest",
       "testSymbol": "baselineGreenScenario_AutoApprove",
@@ -76,7 +76,7 @@
         "result": "NEED_MORE_EVIDENCE",
         "tier": "MANUAL"
       },
-      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-技术方案.md#合同审查分诊",
+      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-智能风险审查与合同智能处理-PRD.md#FR-203-审查结论流转与留痕",
       "regulatoryBasis": "监管 §22 人工最终决策；材料不全不得直出",
       "testClass": "ProcuraContractReviewTriageTest",
       "testSymbol": "材料不全→补件(MANUAL)",
@@ -91,7 +91,7 @@
         "result": "MANUAL_REQUIRED",
         "tier": "MANUAL"
       },
-      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-技术方案.md#合同审查分诊",
+      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-智能风险审查与合同智能处理-PRD.md#FR-203-审查结论流转与留痕",
       "regulatoryBasis": "监管 §22 可解释性不足时 AI 仅作辅助",
       "testClass": "ProcuraContractReviewTriageTest",
       "testSymbol": "规则冲突无法裁决→人工",
@@ -103,11 +103,11 @@
       "suite": "threeWayMatch",
       "kind": "negative",
       "expected": {
-        "match_status": "PENDING_REVIEW",
+        "match_status": "EXCEPTION",
         "auto_passed": false,
         "blocked_reason_required": true
       },
-      "groundTruthRef": "doc/ai-product/procuraAI/detailed-design/00-总纲与统一约定.md#InvoiceMatched",
+      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-接口契约与数据字典-v2.md#InvoiceMatched",
       "regulatoryBasis": "监管 §22 异常不得自动过账",
       "testClass": "ProcuraThreeWayMatchTest",
       "testSymbol": "amountVarianceOverTolerance_blocksAutoPass",
@@ -123,7 +123,7 @@
         "auto_passed": false,
         "fallback": "MANUAL"
       },
-      "groundTruthRef": "doc/ai-product/procuraAI/detailed-design/00-总纲与统一约定.md#InvoiceMatched",
+      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-接口契约与数据字典-v2.md#InvoiceMatched",
       "regulatoryBasis": "监管 §15/§22 缺省 fail-closed",
       "testClass": "ProcuraThreeWayMatchTest",
       "testSymbol": "missingMatchStatus_fallsBackToUnknown",
@@ -138,7 +138,7 @@
         "risk_level": "UNKNOWN",
         "auto_passed": false
       },
-      "groundTruthRef": "doc/ai-product/procuraAI/详细设计待补#供应商风险评级",
+      "groundTruthRef": "doc/ai-product/procuraAI/detailed-design/03-合同风险绩效与AI模块详细设计.md#03-合同风险绩效与ai模块详细设计",
       "regulatoryBasis": "监管 §15 风险分级缺省 fail-closed",
       "testClass": "ProcuraSupplierRiskTest",
       "testSymbol": "insufficientSignal_fallsBackToUnknown",
@@ -154,7 +154,7 @@
         "auto_released": false,
         "flagged": true
       },
-      "groundTruthRef": "doc/ai-product/procuraAI/详细设计待补#供应商风险评级",
+      "groundTruthRef": "doc/ai-product/procuraAI/detailed-design/03-合同风险绩效与AI模块详细设计.md#03-合同风险绩效与ai模块详细设计",
       "regulatoryBasis": "监管 §22 高风险须人工处置",
       "testClass": "ProcuraSupplierRiskTest",
       "testSymbol": "highRisk_isFlaggedNotAutoReleased",
@@ -170,7 +170,7 @@
         "tier": "MANUAL",
         "confidence_required": true
       },
-      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-技术方案.md#异常检测",
+      "groundTruthRef": "doc/ai-product/procuraAI/采购总体架构方案.md#3.2-匹配类型容差与例外",
       "regulatoryBasis": "监管 §22 二分类不达标转人工",
       "testClass": "ProcuraAnomalyDetectionTest",
       "testSymbol": "lowConfidence_doesNotAutoFreeze",
@@ -201,7 +201,7 @@
         "rejectSuggested": false,
         "aiAvailable": false
       },
-      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-技术方案.md#AI降级路径",
+      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-智能风险审查与合同智能处理-技术方案.md#6.2-可用性与降级矩阵",
       "regulatoryBasis": "监管 §17 人工替代与紧急停用；§22 降级不得改变口径",
       "testClass": "ProcuraAiDegradationTest",
       "testSymbol": "aiDownDoesNotTurnIntoReject",
@@ -216,7 +216,7 @@
         "state": "UNDETERMINED",
         "must_not_render_as": "AI_NOT_INVOLVED"
       },
-      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-技术方案.md#AI参与披露",
+      "groundTruthRef": "doc/ai-product/procuraAI/detailed-design/03-合同风险绩效与AI模块详细设计.md#03-合同风险绩效与ai模块详细设计",
       "regulatoryBasis": "监管 §21 生成内容标识；无法确认不得压成未参与",
       "testClass": "ProcuraAiDisclosureTest",
       "testSymbol": "undetermined_notRenderedAsNotInvolved",
@@ -231,7 +231,7 @@
         "model_version_role": "ENTRY_SNAPSHOT",
         "counts_as_evidence": false
       },
-      "groundTruthRef": "doc/ai-product/procuraAI/采购AI-技术方案.md#AI参与披露",
+      "groundTruthRef": "doc/ai-product/procuraAI/detailed-design/03-合同风险绩效与AI模块详细设计.md#03-合同风险绩效与ai模块详细设计",
       "regulatoryBasis": "监管 §21 标识与留存；只认 LLM 节点自报 aiAvailable",
       "testClass": "ProcuraAiDisclosureTest",
       "testSymbol": "modelVersion_notTreatedAsEvidence",
@@ -246,7 +246,7 @@
         "invariant": "NET_PAID_EQUALS_LATEST_SETTLEMENT",
         "cross_domain_acl": "MOCK_ISOLATED_WHEN_UNDELIVERED"
       },
-      "groundTruthRef": "doc/ai-product/procuraAI/一期边界与机制触发条件.md#对账闭环",
+      "groundTruthRef": "doc/ai-product/procuraAI/采购总体架构方案.md#6.3-数据一致性模式与对账",
       "regulatoryBasis": "监管 §22 对账可解释；跨域 ACL 未交付前 mock 隔离",
       "testClass": "ProcuraReconciliationTest",
       "testSymbol": "netPaidEqualsLatestSettlement",
