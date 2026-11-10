@@ -364,14 +364,6 @@
       "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
     },
     {
-      "symbol": "EnableConfigurationProperties",
-      "docs": [
-        "doc/ai-product/RAG方案诊断与优化-2026-10-23.md"
-      ],
-      "reason": "false-positive",
-      "note": "Spring 框架注解 @EnableConfigurationProperties 通用词，非项目自定义类名（同 AutoConfiguration 条目口径）"
-    },
-    {
       "symbol": "JsonIgnoreProperties",
       "docs": [
         "doc/design/modules/13. 工作流设计器方案.md"
