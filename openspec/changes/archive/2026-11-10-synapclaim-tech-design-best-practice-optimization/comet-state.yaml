@@ -1,0 +1,2069 @@
+# comet-execution: managed-run
+change_id: 4da5af5b-ff91-4a03-8fb5-470a98aa1e3a
+workflow: tweak
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: direct
+build_pause: null
+subagent_dispatch: null
+tdd_mode: direct
+review_mode: off
+isolation: current
+verify_mode: light
+auto_transition: true
+base_ref: 841c91fe8b60cdb1e01905cacfd83e2896519ba5
+design_doc: null
+plan: null
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+branch_status: pending
+created_at: 2026-11-10
+verified_at: 2026-11-10
+archive_confirmation: confirmed
+archived: true
+bound_branch: dev
+direct_override: null
+handoff_context: null
+handoff_hash: null
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v1
+  hash: de3971159636987c069d375d89af8b2a905159b37159fac6cb26a2998d151661
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: synapclaim-tech-design-best-practice-optimization
+    revision: 1
+    workflow:
+      id: comet-classic-tweak
+      version: "1"
+      hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+    definitionHashes:
+      '["comet-classic-tweak","1"]': fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+    initialStateHash: 70f6cc6675f4246e77cb72f036a70b07de01d2e7464d43bdf292134d8d0ad8de
+    input:
+      change: synapclaim-tech-design-best-practice-optimization
+      changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+      workspaceBaseline:
+        ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+    state:
+      archiveConfirmation: confirmed
+      archived: true
+      autoTransition: true
+      baseRef: 841c91fe8b60cdb1e01905cacfd83e2896519ba5
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: direct
+      buildPause: null
+      checkEpoch: 5
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-10
+      designDoc: null
+      directOverride: null
+      handoffContext: null
+      handoffHash: null
+      isolation: current
+      language: zh-CN
+      phase: archive
+      plan: null
+      reviewMode: off
+      subagentDispatch: null
+      tddMode: direct
+      verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+      verifiedAt: 2026-11-10
+      verifyFailures: 0
+      verifyMode: light
+      verifyResult: pass
+      workflow: tweak
+    status: running
+    sequence: 14
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-fae4d75ab063945f078aa24400e63808c20e0d952fbdff4793809f15aab7adde
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-tech-design-best-practice-optimization:1
+        input:
+          input:
+            change: synapclaim-tech-design-best-practice-optimization
+            changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            workspaceBaseline:
+              ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+          outputs: {}
+        inputHash: 467d8707dcc2796830091da093c436607597e6ede830fd7ec6462660a064ca85
+        outcome:
+          actionId: synapclaim-tech-design-best-practice-optimization:1
+          attempt: 1
+          claimToken: portable-fae4d75ab063945f078aa24400e63808c20e0d952fbdff4793809f15aab7adde
+          inputHash: 467d8707dcc2796830091da093c436607597e6ede830fd7ec6462660a064ca85
+          outcomeId: deda850f-4c8e-4892-a156-816ecb60ead1
+          output:
+            event: open-complete
+            requirementsEvidence:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: b8f8e0693067050ff1997d53d6ecda56120e0705285ea86eea8dbbf45c3915fa
+            outcomeId: deda850f-4c8e-4892-a156-816ecb60ead1
+        reconciliations: []
+        ref: comet-tweak
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-tech-design-best-practice-optimization
+        status: succeeded
+        stepId: tweak.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-tech-design-best-practice-optimization:3/2
+          token: portable-f5d0714929fd1a33f77c6409647b12faa767316849f0c7edc21d47c9c47414eb
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-tech-design-best-practice-optimization:3
+        input:
+          input:
+            change: synapclaim-tech-design-best-practice-optimization
+            changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            workspaceBaseline:
+              ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+          outputs:
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            tweak.open.evidence:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+        inputHash: aedd7fb449d1a854196f5b51bb02aab739cb7d8172b84fc41705c1e756aff068
+        outcome:
+          actionId: synapclaim-tech-design-best-practice-optimization:3
+          attempt: 2
+          claimToken: portable-f5d0714929fd1a33f77c6409647b12faa767316849f0c7edc21d47c9c47414eb
+          inputHash: aedd7fb449d1a854196f5b51bb02aab739cb7d8172b84fc41705c1e756aff068
+          outcomeId: 048275f6-c0f3-467f-a99f-4e3589060e21
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4b89bb5bf0d5662883b46d80922cd03c1dc0daaa585ce269d72b48e34407b7d1
+            outcomeId: 048275f6-c0f3-467f-a99f-4e3589060e21
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核对来源：① guard build --apply 返回 CLASSIC_COMMAND_FAILED / checks=0/1
+                blocked，stderr 无检查输出；② recovery.record.status=missing、receiptRef
+                与 manifestRef 均为 null，证据目录
+                .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6
+                为空或不存在；③ pgrep -fl comet 仅见常驻 daemon-server，无执行中的 guard/build
+                进程；④ 本轮唯一真实执行的检查是独立手动运行 python3
+                doc/ai-product/synapClaim/tools/check_all.py（19/19 全绿），不属于该
+                Action 的 Runtime 收据。结论：该 Action 的检查命令从未执行，符合 not-executed。
+            resolution: not-executed
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-tech-design-best-practice-optimization
+        status: succeeded
+        stepId: tweak.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-94601143588545a0de9d7ea0c7ce39960d91deae7daf97a7d6004ea1f0c38179
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-tech-design-best-practice-optimization:4
+        input:
+          input:
+            change: synapclaim-tech-design-best-practice-optimization
+            changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            workspaceBaseline:
+              ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+          outputs:
+            tweak.build.execute:
+              event: build-complete
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            tweak.open.evidence:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+        inputHash: 6db72bfe0c34a1559894b6426a7c9121a3a9fd5b71a417ed56eb1a8589dbfc29
+        outcome:
+          actionId: synapclaim-tech-design-best-practice-optimization:4
+          attempt: 1
+          claimToken: portable-94601143588545a0de9d7ea0c7ce39960d91deae7daf97a7d6004ea1f0c38179
+          inputHash: 6db72bfe0c34a1559894b6426a7c9121a3a9fd5b71a417ed56eb1a8589dbfc29
+          outcomeId: 2bab7eac5a214efe114d3d28802dcfbc931bf614e7ef452e6d9e18903acf77cf
+          output:
+            argv:
+              - python3
+              - doc/ai-product/synapClaim/tools/check_all.py
+            changedDuringExecution: []
+            checkEpoch: 1
+            contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+            cwd: .
+            environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+            exitCode: 0
+            inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+            inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+            manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+            manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        reason: 原 guard build --apply 进程已退出，检查 Action 的完成回执未提交；已核对真实收据
+          sdk-1f5df398...json：status=completed、result.status=succeeded、exitCode=0、inputBefore==inputAfter，argv=python3
+          doc/ai-product/synapClaim/tools/check_all.py。检查真实通过，仅回执提交中断。
+        receipts:
+          - hash: aa8f0f43f9898a8a9558c28f510c024e03f67372dcb6af970c72d9f9df06f7f9
+            outcomeId: 2bab7eac5a214efe114d3d28802dcfbc931bf614e7ef452e6d9e18903acf77cf
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-tech-design-best-practice-optimization
+        status: succeeded
+        stepId: tweak.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-679e0fe78ffe4eb63b3dc06580abaa91250824864d808ed2fd6c0455a1a40815
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-tech-design-best-practice-optimization:6
+        input:
+          input:
+            change: synapclaim-tech-design-best-practice-optimization
+            changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            workspaceBaseline:
+              ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+          outputs:
+            tweak.build.check:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            tweak.build.check.evidence:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+            tweak.build.execute:
+              event: build-complete
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            tweak.open.evidence:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+        inputHash: 461cb92b3c0fb152bf1cbbc74c3a0fd73947ccef08d24f141dccb8351b247be9
+        outcome:
+          actionId: synapclaim-tech-design-best-practice-optimization:6
+          attempt: 1
+          claimToken: portable-679e0fe78ffe4eb63b3dc06580abaa91250824864d808ed2fd6c0455a1a40815
+          inputHash: 461cb92b3c0fb152bf1cbbc74c3a0fd73947ccef08d24f141dccb8351b247be9
+          outcomeId: b3bb91d0-9e4e-4930-b293-eb409f2c22b6
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 275cded6007d65fb98662ba5b82e6a3a79033428096358667f1979cf8e8e1282
+            outcomeId: b3bb91d0-9e4e-4930-b293-eb409f2c22b6
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-tech-design-best-practice-optimization
+        status: succeeded
+        stepId: tweak.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-833f16be6d1b6d0690720e3048bc0434d8090dacc1f77cce89f285e7a1f01d66
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-tech-design-best-practice-optimization:8
+        input:
+          input:
+            change: synapclaim-tech-design-best-practice-optimization
+            changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            workspaceBaseline:
+              ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+          outputs:
+            tweak.build.check:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            tweak.build.check.evidence:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+            tweak.build.execute:
+              event: build-complete
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            tweak.open.evidence:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            tweak.verify.report.evidence:
+              contentHash: 294a69323a8188876ddefd260e24ff5b56eed476fdbd8061e8666126221fef47
+              ref: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+            tweak.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+        inputHash: 8809f2589a8d33af303a20021f6c44ebc0bfb77e7eef6d32513f6673bf68d9c6
+        outcome:
+          actionId: synapclaim-tech-design-best-practice-optimization:8
+          attempt: 2
+          claimToken: portable-833f16be6d1b6d0690720e3048bc0434d8090dacc1f77cce89f285e7a1f01d66
+          inputHash: 8809f2589a8d33af303a20021f6c44ebc0bfb77e7eef6d32513f6673bf68d9c6
+          outcomeId: 695a0e5f-371d-48a8-ac5d-3ba728be1987
+          output:
+            argv:
+              - python3
+              - doc/ai-product/synapClaim/tools/check_all.py
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+            cwd: .
+            deliveryInputs:
+              doc/ai-product/synapClaim/04-design/总体技术方案.md: git:6f1b110ddece7272ed8be84803aa4a58036a4412
+              doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:82048636a5b44af1eae2aacd5d35b2a9625e12fb
+            environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+            exitCode: 0
+            inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+            inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+            manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+            manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/b0af11b4-05f5-4667-9e31-11d22793649c.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 057abc601e3a348750ffc85b13d3f7cb8dd468848ea7b9f3680eb657b0146560
+            outcomeId: 695a0e5f-371d-48a8-ac5d-3ba728be1987
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: Runtime 收据 sdk-5732e18a...json 仅 status=started，无 completed 结果、无
+                exitCode、无可用回执，故该 Action 没有可采信的完整执行结果；日志 69c4c151...log 显示命令曾跑到
+                19/19，但恢复协议明文「日志、外部 marker 或进程结束本身不能证明检查通过」，因此不采信、不回填任何推测结论。原
+                guard 进程已退出（pgrep 仅见常驻 daemon）。本请求只用于生成新的 pending check
+                Action，随后由 comet check rerun 以同一 argv 真实重跑并由 Runtime
+                记录完整收据；不以本声明代替检查证据。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-tech-design-best-practice-optimization
+        status: succeeded
+        stepId: tweak.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-0374812733ebe036ce5a7c4d9204ac9e3a396a4a0d193a9e90452d2be79d6e04
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-tech-design-best-practice-optimization:10
+        input:
+          input:
+            change: synapclaim-tech-design-best-practice-optimization
+            changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            workspaceBaseline:
+              ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+          outputs:
+            tweak.build.check:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            tweak.build.check.evidence:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+            tweak.build.execute:
+              event: build-complete
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            tweak.open.evidence:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            tweak.verify.check:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              deliveryInputs:
+                doc/ai-product/synapClaim/04-design/总体技术方案.md: git:6f1b110ddece7272ed8be84803aa4a58036a4412
+                doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:82048636a5b44af1eae2aacd5d35b2a9625e12fb
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/b0af11b4-05f5-4667-9e31-11d22793649c.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+            tweak.verify.check.evidence:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+            tweak.verify.report.evidence:
+              contentHash: 294a69323a8188876ddefd260e24ff5b56eed476fdbd8061e8666126221fef47
+              ref: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+            tweak.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+        inputHash: aebebbce80312583abde981b685c51db4858ce7512be9f58138f6f8e85addbdb
+        outcome:
+          actionId: synapclaim-tech-design-best-practice-optimization:10
+          attempt: 1
+          claimToken: portable-0374812733ebe036ce5a7c4d9204ac9e3a396a4a0d193a9e90452d2be79d6e04
+          inputHash: aebebbce80312583abde981b685c51db4858ce7512be9f58138f6f8e85addbdb
+          outcomeId: 0c177b7a-3f1b-49f5-be8a-6459ca6a56db
+          output:
+            remote: origin
+            summary: 归档 tweak change
+              synapclaim-tech-design-best-practice-optimization：Verify
+              通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+              真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告 §14.1
+              交人清单 +4 行）+ 本 change 的 OpenSpec 产物与 docs/superpowers/reports
+              验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已 staged，非本
+              change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+              dev，remote=origin（双推送目标 Gitee+GitHub）。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f0184089830c8b23ebb0d5b0dab9e2e71f4963c83f90a212da687a1413a64515
+            outcomeId: 0c177b7a-3f1b-49f5-be8a-6459ca6a56db
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-tech-design-best-practice-optimization
+        status: succeeded
+        stepId: tweak.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-e48a2dc56d9018a834a9200fd30c4337988e9ad4582bdc472f819bab6ea5280a
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-tech-design-best-practice-optimization:12
+        input:
+          input:
+            change: synapclaim-tech-design-best-practice-optimization
+            changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            workspaceBaseline:
+              ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+          outputs:
+            tweak.archive.confirm:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-tech-design-best-practice-optimization
+                  changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+                  workspaceBaseline:
+                    ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+                outputs:
+                  tweak.archive.prepare:
+                    remote: origin
+                    summary: 归档 tweak change
+                      synapclaim-tech-design-best-practice-optimization：Verify
+                      通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                      真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告
+                      §14.1 交人清单 +4 行）+ 本 change 的 OpenSpec 产物与
+                      docs/superpowers/reports
+                      验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已
+                      staged，非本 change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+                      dev，remote=origin（双推送目标 Gitee+GitHub）。
+                    targetBranch: dev
+            tweak.archive.prepare:
+              remote: origin
+              summary: 归档 tweak change
+                synapclaim-tech-design-best-practice-optimization：Verify
+                通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告 §14.1
+                交人清单 +4 行）+ 本 change 的 OpenSpec 产物与 docs/superpowers/reports
+                验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已 staged，非本
+                change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+                dev，remote=origin（双推送目标 Gitee+GitHub）。
+              targetBranch: dev
+            tweak.build.check:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            tweak.build.check.evidence:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+            tweak.build.execute:
+              event: build-complete
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            tweak.open.evidence:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            tweak.verify.check:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              deliveryInputs:
+                doc/ai-product/synapClaim/04-design/总体技术方案.md: git:6f1b110ddece7272ed8be84803aa4a58036a4412
+                doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:82048636a5b44af1eae2aacd5d35b2a9625e12fb
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/b0af11b4-05f5-4667-9e31-11d22793649c.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+            tweak.verify.check.evidence:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+            tweak.verify.report.evidence:
+              contentHash: 294a69323a8188876ddefd260e24ff5b56eed476fdbd8061e8666126221fef47
+              ref: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+            tweak.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+        inputHash: 5b7a0d36c7801b03c39482986c795c03e1497eea79408260f0e0f30f889bee94
+        outcome:
+          actionId: synapclaim-tech-design-best-practice-optimization:12
+          attempt: 1
+          claimToken: portable-e48a2dc56d9018a834a9200fd30c4337988e9ad4582bdc472f819bab6ea5280a
+          inputHash: 5b7a0d36c7801b03c39482986c795c03e1497eea79408260f0e0f30f889bee94
+          outcomeId: f0e4a413-634a-4a9b-a28b-a81ae2af070b
+          output:
+            baseCommit: 8aa9cb3a7ae83ae0da67bea2fdbf0faa24ea02a5
+            deliveryAction: local
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: fe994a8e6fa576543873b535b8d10a0e32605b422aba4a9812bf8f0c862e26a7
+            outcomeId: f0e4a413-634a-4a9b-a28b-a81ae2af070b
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-tech-design-best-practice-optimization
+        status: succeeded
+        stepId: tweak.archive.preflight
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-archive
+          token: portable-5ee41d7e73a8fe234d00b0f01b789a636ce91026df6c1a1172d50f4c6abfa343
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-tech-design-best-practice-optimization:13
+        input:
+          input:
+            change: synapclaim-tech-design-best-practice-optimization
+            changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            workspaceBaseline:
+              ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+          outputs:
+            tweak.archive.confirm:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-tech-design-best-practice-optimization
+                  changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+                  workspaceBaseline:
+                    ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+                outputs:
+                  tweak.archive.prepare:
+                    remote: origin
+                    summary: 归档 tweak change
+                      synapclaim-tech-design-best-practice-optimization：Verify
+                      通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                      真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告
+                      §14.1 交人清单 +4 行）+ 本 change 的 OpenSpec 产物与
+                      docs/superpowers/reports
+                      验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已
+                      staged，非本 change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+                      dev，remote=origin（双推送目标 Gitee+GitHub）。
+                    targetBranch: dev
+            tweak.archive.preflight:
+              baseCommit: 8aa9cb3a7ae83ae0da67bea2fdbf0faa24ea02a5
+              deliveryAction: local
+              remote: origin
+              remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+              targetBranch: dev
+              verifiedBranch: dev
+            tweak.archive.prepare:
+              remote: origin
+              summary: 归档 tweak change
+                synapclaim-tech-design-best-practice-optimization：Verify
+                通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告 §14.1
+                交人清单 +4 行）+ 本 change 的 OpenSpec 产物与 docs/superpowers/reports
+                验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已 staged，非本
+                change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+                dev，remote=origin（双推送目标 Gitee+GitHub）。
+              targetBranch: dev
+            tweak.build.check:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            tweak.build.check.evidence:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+            tweak.build.execute:
+              event: build-complete
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            tweak.open.evidence:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            tweak.verify.check:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              deliveryInputs:
+                doc/ai-product/synapClaim/04-design/总体技术方案.md: git:6f1b110ddece7272ed8be84803aa4a58036a4412
+                doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:82048636a5b44af1eae2aacd5d35b2a9625e12fb
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/b0af11b4-05f5-4667-9e31-11d22793649c.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+            tweak.verify.check.evidence:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+            tweak.verify.report.evidence:
+              contentHash: 294a69323a8188876ddefd260e24ff5b56eed476fdbd8061e8666126221fef47
+              ref: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+            tweak.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+        inputHash: fbacebba157433ece565e7c3bcc69c06bf0fe08386e59be7bc658733ed52cb26
+        outcome:
+          actionId: synapclaim-tech-design-best-practice-optimization:13
+          artifacts:
+            - sha256: 49f51ff0323f42269551922378346e1fb8e796f422fab32f383741a0218c712c
+              uri: openspec/changes/archive/2026-11-10-synapclaim-tech-design-best-practice-optimization/.comet/archive-manifest.json
+          attempt: 2
+          claimToken: portable-5ee41d7e73a8fe234d00b0f01b789a636ce91026df6c1a1172d50f4c6abfa343
+          inputHash: fbacebba157433ece565e7c3bcc69c06bf0fe08386e59be7bc658733ed52cb26
+          outcomeId: e33d0e8d-9155-4fc6-ab94-3387b7cb6683
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-10-synapclaim-tech-design-best-practice-optimization
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1c681e2de8becbc74d04b10dda10f6458c153cce8daf0d4ef09b311cb651e441
+            outcomeId: e33d0e8d-9155-4fc6-ab94-3387b7cb6683
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 磁盘核对：原 change 目录
+                openspec/changes/synapclaim-tech-design-best-practice-optimization
+                仍存在，归档目录
+                openspec/changes/archive/2026-11-10-synapclaim-tech-design-best-practice-optimization
+                未生成；Runtime recovery.record.status=missing、无收据与日志引用；原 guard
+                进程已退出。结论：tweak.archive.execute 完全未执行，符合 not-executed。重试后由 guard
+                archive --apply 真实执行归档。
+            resolution: not-executed
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-tech-design-best-practice-optimization
+        status: succeeded
+        stepId: tweak.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: synapclaim-tech-design-best-practice-optimization:14
+        input:
+          input:
+            change: synapclaim-tech-design-best-practice-optimization
+            changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            workspaceBaseline:
+              ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+          outputs:
+            tweak.archive.confirm:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-tech-design-best-practice-optimization
+                  changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+                  workspaceBaseline:
+                    ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+                outputs:
+                  tweak.archive.prepare:
+                    remote: origin
+                    summary: 归档 tweak change
+                      synapclaim-tech-design-best-practice-optimization：Verify
+                      通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                      真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告
+                      §14.1 交人清单 +4 行）+ 本 change 的 OpenSpec 产物与
+                      docs/superpowers/reports
+                      验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已
+                      staged，非本 change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+                      dev，remote=origin（双推送目标 Gitee+GitHub）。
+                    targetBranch: dev
+            tweak.archive.execute:
+              archiveDirectory: openspec/changes/archive/2026-11-10-synapclaim-tech-design-best-practice-optimization
+            tweak.archive.preflight:
+              baseCommit: 8aa9cb3a7ae83ae0da67bea2fdbf0faa24ea02a5
+              deliveryAction: local
+              remote: origin
+              remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+              targetBranch: dev
+              verifiedBranch: dev
+            tweak.archive.prepare:
+              remote: origin
+              summary: 归档 tweak change
+                synapclaim-tech-design-best-practice-optimization：Verify
+                通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告 §14.1
+                交人清单 +4 行）+ 本 change 的 OpenSpec 产物与 docs/superpowers/reports
+                验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已 staged，非本
+                change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+                dev，remote=origin（双推送目标 Gitee+GitHub）。
+              targetBranch: dev
+            tweak.build.check:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            tweak.build.check.evidence:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+            tweak.build.execute:
+              event: build-complete
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            tweak.open.evidence:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            tweak.verify.check:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              deliveryInputs:
+                doc/ai-product/synapClaim/04-design/总体技术方案.md: git:6f1b110ddece7272ed8be84803aa4a58036a4412
+                doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:82048636a5b44af1eae2aacd5d35b2a9625e12fb
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/b0af11b4-05f5-4667-9e31-11d22793649c.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+            tweak.verify.check.evidence:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+            tweak.verify.report.evidence:
+              contentHash: 294a69323a8188876ddefd260e24ff5b56eed476fdbd8061e8666126221fef47
+              ref: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+            tweak.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+        inputHash: f515ee2dcbd45d9a726c9b95c3ec11f23902d32e8452da4f6f12f25419bcd315
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-tech-design-best-practice-optimization
+        status: pending
+        stepId: tweak.archive.deliver
+        type: invoke_skill
+    actionContexts:
+      synapclaim-tech-design-best-practice-optimization:1:
+        results: {}
+        sequence: 1
+      synapclaim-tech-design-best-practice-optimization:10:
+        results:
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.verify.check:
+            sequence: 8
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              deliveryInputs:
+                doc/ai-product/synapClaim/04-design/总体技术方案.md: git:6f1b110ddece7272ed8be84803aa4a58036a4412
+                doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:82048636a5b44af1eae2aacd5d35b2a9625e12fb
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/b0af11b4-05f5-4667-9e31-11d22793649c.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.check.evidence:
+            sequence: 9
+            value:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+          tweak.verify.report.evidence:
+            sequence: 7
+            value:
+              contentHash: 294a69323a8188876ddefd260e24ff5b56eed476fdbd8061e8666126221fef47
+              ref: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+        sequence: 10
+      synapclaim-tech-design-best-practice-optimization:12:
+        results:
+          tweak.archive.confirm:
+            sequence: 11
+            value:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-tech-design-best-practice-optimization
+                  changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+                  workspaceBaseline:
+                    ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+                outputs:
+                  tweak.archive.prepare:
+                    remote: origin
+                    summary: 归档 tweak change
+                      synapclaim-tech-design-best-practice-optimization：Verify
+                      通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                      真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告
+                      §14.1 交人清单 +4 行）+ 本 change 的 OpenSpec 产物与
+                      docs/superpowers/reports
+                      验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已
+                      staged，非本 change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+                      dev，remote=origin（双推送目标 Gitee+GitHub）。
+                    targetBranch: dev
+          tweak.archive.prepare:
+            sequence: 10
+            value:
+              remote: origin
+              summary: 归档 tweak change
+                synapclaim-tech-design-best-practice-optimization：Verify
+                通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告 §14.1
+                交人清单 +4 行）+ 本 change 的 OpenSpec 产物与 docs/superpowers/reports
+                验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已 staged，非本
+                change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+                dev，remote=origin（双推送目标 Gitee+GitHub）。
+              targetBranch: dev
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.verify.check:
+            sequence: 8
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              deliveryInputs:
+                doc/ai-product/synapClaim/04-design/总体技术方案.md: git:6f1b110ddece7272ed8be84803aa4a58036a4412
+                doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:82048636a5b44af1eae2aacd5d35b2a9625e12fb
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/b0af11b4-05f5-4667-9e31-11d22793649c.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.check.evidence:
+            sequence: 9
+            value:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+          tweak.verify.report.evidence:
+            sequence: 7
+            value:
+              contentHash: 294a69323a8188876ddefd260e24ff5b56eed476fdbd8061e8666126221fef47
+              ref: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+        sequence: 12
+      synapclaim-tech-design-best-practice-optimization:13:
+        results:
+          tweak.archive.confirm:
+            sequence: 11
+            value:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-tech-design-best-practice-optimization
+                  changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+                  workspaceBaseline:
+                    ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+                outputs:
+                  tweak.archive.prepare:
+                    remote: origin
+                    summary: 归档 tweak change
+                      synapclaim-tech-design-best-practice-optimization：Verify
+                      通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                      真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告
+                      §14.1 交人清单 +4 行）+ 本 change 的 OpenSpec 产物与
+                      docs/superpowers/reports
+                      验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已
+                      staged，非本 change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+                      dev，remote=origin（双推送目标 Gitee+GitHub）。
+                    targetBranch: dev
+          tweak.archive.preflight:
+            sequence: 12
+            value:
+              baseCommit: 8aa9cb3a7ae83ae0da67bea2fdbf0faa24ea02a5
+              deliveryAction: local
+              remote: origin
+              remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+              targetBranch: dev
+              verifiedBranch: dev
+          tweak.archive.prepare:
+            sequence: 10
+            value:
+              remote: origin
+              summary: 归档 tweak change
+                synapclaim-tech-design-best-practice-optimization：Verify
+                通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告 §14.1
+                交人清单 +4 行）+ 本 change 的 OpenSpec 产物与 docs/superpowers/reports
+                验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已 staged，非本
+                change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+                dev，remote=origin（双推送目标 Gitee+GitHub）。
+              targetBranch: dev
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.verify.check:
+            sequence: 8
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              deliveryInputs:
+                doc/ai-product/synapClaim/04-design/总体技术方案.md: git:6f1b110ddece7272ed8be84803aa4a58036a4412
+                doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:82048636a5b44af1eae2aacd5d35b2a9625e12fb
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/b0af11b4-05f5-4667-9e31-11d22793649c.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.check.evidence:
+            sequence: 9
+            value:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+          tweak.verify.report.evidence:
+            sequence: 7
+            value:
+              contentHash: 294a69323a8188876ddefd260e24ff5b56eed476fdbd8061e8666126221fef47
+              ref: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+        sequence: 13
+      synapclaim-tech-design-best-practice-optimization:14:
+        results:
+          tweak.archive.confirm:
+            sequence: 11
+            value:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-tech-design-best-practice-optimization
+                  changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+                  workspaceBaseline:
+                    ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+                outputs:
+                  tweak.archive.prepare:
+                    remote: origin
+                    summary: 归档 tweak change
+                      synapclaim-tech-design-best-practice-optimization：Verify
+                      通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                      真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告
+                      §14.1 交人清单 +4 行）+ 本 change 的 OpenSpec 产物与
+                      docs/superpowers/reports
+                      验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已
+                      staged，非本 change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+                      dev，remote=origin（双推送目标 Gitee+GitHub）。
+                    targetBranch: dev
+          tweak.archive.execute:
+            sequence: 13
+            value:
+              archiveDirectory: openspec/changes/archive/2026-11-10-synapclaim-tech-design-best-practice-optimization
+          tweak.archive.preflight:
+            sequence: 12
+            value:
+              baseCommit: 8aa9cb3a7ae83ae0da67bea2fdbf0faa24ea02a5
+              deliveryAction: local
+              remote: origin
+              remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+              targetBranch: dev
+              verifiedBranch: dev
+          tweak.archive.prepare:
+            sequence: 10
+            value:
+              remote: origin
+              summary: 归档 tweak change
+                synapclaim-tech-design-best-practice-optimization：Verify
+                通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告 §14.1
+                交人清单 +4 行）+ 本 change 的 OpenSpec 产物与 docs/superpowers/reports
+                验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已 staged，非本
+                change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+                dev，remote=origin（双推送目标 Gitee+GitHub）。
+              targetBranch: dev
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.verify.check:
+            sequence: 8
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              deliveryInputs:
+                doc/ai-product/synapClaim/04-design/总体技术方案.md: git:6f1b110ddece7272ed8be84803aa4a58036a4412
+                doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:82048636a5b44af1eae2aacd5d35b2a9625e12fb
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/b0af11b4-05f5-4667-9e31-11d22793649c.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.check.evidence:
+            sequence: 9
+            value:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+          tweak.verify.report.evidence:
+            sequence: 7
+            value:
+              contentHash: 294a69323a8188876ddefd260e24ff5b56eed476fdbd8061e8666126221fef47
+              ref: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+        sequence: 14
+      synapclaim-tech-design-best-practice-optimization:3:
+        results:
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+        sequence: 3
+      synapclaim-tech-design-best-practice-optimization:4:
+        results:
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+        sequence: 4
+      synapclaim-tech-design-best-practice-optimization:6:
+        results:
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+        sequence: 6
+      synapclaim-tech-design-best-practice-optimization:8:
+        results:
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.verify.report.evidence:
+            sequence: 7
+            value:
+              contentHash: 294a69323a8188876ddefd260e24ff5b56eed476fdbd8061e8666126221fef47
+              ref: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+        sequence: 8
+    waits:
+      - id: synapclaim-tech-design-best-practice-optimization:11
+        stepId: tweak.archive.confirm
+        sequence: 11
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-tech-design-best-practice-optimization
+            changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+            workspaceBaseline:
+              ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+          outputs:
+            tweak.archive.prepare:
+              remote: origin
+              summary: 归档 tweak change
+                synapclaim-tech-design-best-practice-optimization：Verify
+                通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告 §14.1
+                交人清单 +4 行）+ 本 change 的 OpenSpec 产物与 docs/superpowers/reports
+                验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已 staged，非本
+                change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+                dev，remote=origin（双推送目标 Gitee+GitHub）。
+              targetBranch: dev
+        proposalHash: 3bd9ba4aafc253dc69c1e749dbc4dbedb2262a773fabe2dc9807947233fb2699
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results:
+          tweak.archive.prepare:
+            sequence: 10
+            value:
+              remote: origin
+              summary: 归档 tweak change
+                synapclaim-tech-design-best-practice-optimization：Verify
+                通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告 §14.1
+                交人清单 +4 行）+ 本 change 的 OpenSpec 产物与 docs/superpowers/reports
+                验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已 staged，非本
+                change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支
+                dev，remote=origin（双推送目标 Gitee+GitHub）。
+              targetBranch: dev
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.verify.check:
+            sequence: 8
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              deliveryInputs:
+                doc/ai-product/synapClaim/04-design/总体技术方案.md: git:6f1b110ddece7272ed8be84803aa4a58036a4412
+                doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:82048636a5b44af1eae2aacd5d35b2a9625e12fb
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/b0af11b4-05f5-4667-9e31-11d22793649c.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.check.evidence:
+            sequence: 9
+            value:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+          tweak.verify.report.evidence:
+            sequence: 7
+            value:
+              contentHash: 294a69323a8188876ddefd260e24ff5b56eed476fdbd8061e8666126221fef47
+              ref: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+        decision:
+          id: classic-archive-3bd9ba4aafc253dc69c1e749dbc4dbedb2262a773fabe2dc9807947233fb2699-local
+          choice: local
+          proposalHash: 3bd9ba4aafc253dc69c1e749dbc4dbedb2262a773fabe2dc9807947233fb2699
+    evidenceWaits:
+      - id: synapclaim-tech-design-best-practice-optimization:2
+        stepId: tweak.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results:
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+        receipt:
+          ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+          submissionId: 95874dd5-0ef7-4c7a-a361-7332fc15c17e
+      - id: synapclaim-tech-design-best-practice-optimization:5
+        stepId: tweak.build.check.evidence
+        sequence: 5
+        kind: classic-build-check
+        status: resolved
+        results:
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          submissionId: 2f9450fe-3417-40a4-bc06-33c16c38073e
+      - id: synapclaim-tech-design-best-practice-optimization:7
+        stepId: tweak.verify.report.evidence
+        sequence: 7
+        kind: classic-verification-report
+        status: resolved
+        results:
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+        receipt:
+          ref: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+          contentHash: 294a69323a8188876ddefd260e24ff5b56eed476fdbd8061e8666126221fef47
+          submissionId: 2f30aead-183b-4f07-9ed9-70009f76ce6e
+      - id: synapclaim-tech-design-best-practice-optimization:9
+        stepId: tweak.verify.check.evidence
+        sequence: 9
+        kind: classic-verify-check
+        status: resolved
+        results:
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+                ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+              ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+          tweak.verify.check:
+            sequence: 8
+            value:
+              argv:
+                - python3
+                - doc/ai-product/synapClaim/tools/check_all.py
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+              cwd: .
+              deliveryInputs:
+                doc/ai-product/synapClaim/04-design/总体技术方案.md: git:6f1b110ddece7272ed8be84803aa4a58036a4412
+                doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:82048636a5b44af1eae2aacd5d35b2a9625e12fb
+              environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+              exitCode: 0
+              inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+              manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+              manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/b0af11b4-05f5-4667-9e31-11d22793649c.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.report.evidence:
+            sequence: 7
+            value:
+              contentHash: 294a69323a8188876ddefd260e24ff5b56eed476fdbd8061e8666126221fef47
+              ref: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          submissionId: f23ec500-f9f0-4cfa-99f8-817429cc6a14
+    ready: []
+    joins: {}
+    outputs:
+      tweak.archive.confirm:
+        sequence: 11
+        value:
+          choice: local
+          proposal:
+            input:
+              change: synapclaim-tech-design-best-practice-optimization
+              changeDir: openspec/changes/synapclaim-tech-design-best-practice-optimization
+              workspaceBaseline:
+                ref: 5af321f8-9916-4ad1-96a9-4a60431068c1
+            outputs:
+              tweak.archive.prepare:
+                remote: origin
+                summary: 归档 tweak change
+                  synapclaim-tech-design-best-practice-optimization：Verify
+                  通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+                  真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告
+                  §14.1 交人清单 +4 行）+ 本 change 的 OpenSpec 产物与
+                  docs/superpowers/reports 验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧
+                  change 归档搬迁残留（已 staged，非本 change），提交时按 --only 精确圈定本 change
+                  路径，不夹带。绑定分支 dev，remote=origin（双推送目标 Gitee+GitHub）。
+                targetBranch: dev
+      tweak.archive.execute:
+        sequence: 13
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-10-synapclaim-tech-design-best-practice-optimization
+      tweak.archive.preflight:
+        sequence: 12
+        value:
+          baseCommit: 8aa9cb3a7ae83ae0da67bea2fdbf0faa24ea02a5
+          deliveryAction: local
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: dev
+          verifiedBranch: dev
+      tweak.archive.prepare:
+        sequence: 10
+        value:
+          remote: origin
+          summary: 归档 tweak change
+            synapclaim-tech-design-best-practice-optimization：Verify
+            通过（verifyResult=pass，check_all.py 19/19、Build/Verify guard
+            真实收据）。实现范围仅 2 份 04-design 文档回写（总体技术方案 18 处口径更正 / 方案质量诊断报告 §14.1 交人清单
+            +4 行）+ 本 change 的 OpenSpec 产物与 docs/superpowers/reports
+            验证报告；零代码/DDL/CI/生产开关改动。共享树存在并行会话的旧 change 归档搬迁残留（已 staged，非本
+            change），提交时按 --only 精确圈定本 change 路径，不夹带。绑定分支 dev，remote=origin（双推送目标
+            Gitee+GitHub）。
+          targetBranch: dev
+      tweak.build.check:
+        sequence: 4
+        value:
+          argv:
+            - python3
+            - doc/ai-product/synapClaim/tools/check_all.py
+          changedDuringExecution: []
+          checkEpoch: 1
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          cwd: .
+          environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+          exitCode: 0
+          inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+          inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+          manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+          manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/df3705ea-682a-4da8-8874-e33cfc3d9e0f.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      tweak.build.check.evidence:
+        sequence: 5
+        value:
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/27e2135d-7cb2-4deb-8b08-6fc2d87b0049.log
+      tweak.build.execute:
+        sequence: 3
+        value:
+          event: build-complete
+      tweak.open:
+        sequence: 1
+        value:
+          event: open-complete
+          requirementsEvidence:
+            contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+            ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+      tweak.open.evidence:
+        sequence: 2
+        value:
+          contentHash: 09081c5eda6535cf222efe07111262396d344e572e2614853bd6ac04ff84a0b6
+          ref: openspec/changes/synapclaim-tech-design-best-practice-optimization
+      tweak.verify.check:
+        sequence: 8
+        value:
+          argv:
+            - python3
+            - doc/ai-product/synapClaim/tools/check_all.py
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          cwd: .
+          deliveryInputs:
+            doc/ai-product/synapClaim/04-design/总体技术方案.md: git:6f1b110ddece7272ed8be84803aa4a58036a4412
+            doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:82048636a5b44af1eae2aacd5d35b2a9625e12fb
+          environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+          exitCode: 0
+          inputAfter: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+          inputBefore: fc82681538ec39c58e5af2cee3f7e3d8490b53890ca6a5845291d70ccb89d431
+          manifestHash: 0fd637175f86f3d927d2ec0e053020a7b3e7c19964c611310fb431a9f22c9f74
+          manifestRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/b0af11b4-05f5-4667-9e31-11d22793649c.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      tweak.verify.check.evidence:
+        sequence: 9
+        value:
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          ref: .comet/runtime/classic-sdk-checks/76191530cc5757377a90381deb8a6ca09766845390b4c64722500219262437e6/061e945a-41dd-4fc9-a665-6acbbf3e20b9.log
+      tweak.verify.report.evidence:
+        sequence: 7
+        value:
+          contentHash: 294a69323a8188876ddefd260e24ff5b56eed476fdbd8061e8666126221fef47
+          ref: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+      tweak.verify.run:
+        sequence: 6
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-10-synapclaim-tech-design-best-practice-optimization-verify.md
+    children: []
+    lineage: []
+  sourceRevision: 32
+  sourceHash: 9730e01efef78cfbb310caf6f1eed1d907ee69b59908e453f170a974a89edb4d
+check_epoch: 5
