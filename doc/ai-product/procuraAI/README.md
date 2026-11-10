@@ -102,7 +102,7 @@
 | **O4** | RA-2 可见性矩阵冻结 | 总体 `§9.1` Frozen-Draft v0.1 + 四角色行 + 会签栏占位 + 门禁 **A10.10** | 矩阵带版本戳 + 会签栏 + 四角色；注入抹除→转红 | 真实审批签名待 owner，未签=未生效 |
 | **O5** | P-RFC-1 闭环 | `平台能力共建RFC.md §5.1` Owner 署名区块 + 跨域接入证据记录表 | 模板就位 | 实名署名 + ≥1 真实跨域接入 PR 待 owner / 跨域，不伪造 |
 | **O6** | ATAM 排序会 | `质量属性场景与ATAM.md §7` 议程草案 + H/M 工程预排序 + 签字栏 + 门禁 **A10.11** | §7 含议程 + 预排序 + 待确认标注；注入删节→转红 | 最终优先级由评审会在排序会上确认 |
-| **O7** | 工程落地最小切片 | 一期边界 `§7` 骨架（目录树 / 实体 / 端口 / 事件 / `t_proc_` DDL 草案 / handler）+ 门禁 **A10.12** | 骨架含 `t_proc_` DDL + Proposal / 不写 `bone-init.sql` 标注；注入删节→转红 | **Proposal 不建真实模块、不写 `bone-init.sql`、不接 CI**；真实 DDL/handler/CI 红绿属 owner 执行（R-7），不伪造「已落地」 |
+| **O7** | 工程落地最小切片 | 一期边界 `§7` 骨架（目录树 / 实体 / 端口 / 事件 / `t_proc_` DDL 草案 / handler）+ 门禁 **A10.12** | 骨架含 `t_proc_` DDL + Proposal / 不写 `bone-init.sql` 标注；注入删节→转红 | **Proposal 不建真实模块、不写 `bone-init.sql`**（门禁本身已接 CI blocking，2026-11-10 D6 闭合）；真实 DDL/handler 红绿属 owner 执行（R-7），不伪造「已落地」 |
 
 > 数值冻结、CI 接入、跨域接入证据与排序会这几项（R-2/R-3/R-5/R-6）以及 O4 的审批签名，本质上是需要决策、授权或真实交付的事项；文档只给出待决项与可复制片段，并标注边界。本轮改动已提交并推送至 dev 分支，但仍保持设计态边界：未改 `ci.yml`、未写 `bone-init.sql`、未废门禁。
 
@@ -112,7 +112,7 @@
 
 | # | 建议 | 落点（file:section） | 验收 / 门禁守护 | 边界说明 |
 |---|------|----------------------|------------------|----------|
-| **C-A** | `InvoiceMatched` 三处 payload 漂移 | 总体 §7.1 L306 + 04 §7 + 05 §7 全部对齐 D3-v2 §2.1（`match_id/po_no/match_status/matched_amount/exception_code/matched_at`，删除 `match_type/tolerance_applied/blocked_reason`） | 门禁 **A10.4.1** 校验总体 §7.1 字段↔D3-v2 §2.1；注入漂移→转红 | 已真实闭合三处副本；`tolerance_applied/blocked_reason` 标注为 Finance 侧内部回传、不在事件 payload |
+| **C-A** | `InvoiceMatched` 全族 payload 漂移 | 复诊发现表格行已对齐但 **总体 §3.1 / §7 集成图 / 03 卷 §7 / 05 卷 JSON 示例 / 上下文地图 SVG** 仍带 Finance 内部字段；本轮全族收敛到 `D3-v2 §2.1` 七字段（`match_id/invoice_no/po_no/match_status/matched_amount/exception_code/matched_at`），`IrExceptionRaised` 与 `t_proc_ir_exception` 同步改用真源可得字段 | 门禁 **A10.4.1** 由「只查 §7.1 一行」升级为「解析真源字段表 → 全族副本 + JSON 块 + SVG + AsyncAPI 集合比对」；注入任一副本漂移必红 | **本轮真实闭合**：复诊 §1 的 INJECT A/B 已转红；三个 Finance 内部字段明确不进事件 payload |
 | **C-B** | `ai_available` 类型自相矛盾 | D3-v2 §2 L58 由 `boolean` 改 `enum(AVAILABLE/UNAVAILABLE/UNKNOWN)`，与 §3/03 卷/总纲统一；`asyncapi.yaml` 同步重生成 | 门禁 **A10.3.1** 校验三态枚举；注入 boolean→转红 | 已真实闭合；`UNKNOWN` 不得压成「未参与」 |
 | **C-C** | AI 能力码双轨撞名 | D3-v2 §1.1 新增「AI 能力码 ↔ 采购模块码」显式映射表（M1/M2/M4/M5/M7 ↔ M02/M04/M10） | 文档就位，消除悬空 | 已真实闭合，无边界项 |
 | **C-D** | 分期泄漏（一期消费二期事件） | 01 §7 `RiskAlertRaised` 标「二期事件，一期接口预留、运行期不触发」；01/04/05 §7 的 INBOUND 事件标「依赖跨域 ACL 交付（F-A），未交付前接口预留、运行期不触发」 | 文档诚实标注 | 跨域 ACL 交付（F-A）仍属 owner，未伪造运行期触发 |
@@ -138,6 +138,10 @@
 > **R8 契约工件闭环（2026-11-09）**：诊断 R8 的验收判据「`openapi` 端点数 ≥ 各卷 §6 的 55」此前未闭合——工件只有 22 条路径、六卷 §6 有 55 行声明，且全部路径模板参数均未声明（工件在 OpenAPI 3.1 语义下不可消费）。本轮补齐 34 条路径、2 个已有路径的 `post` 操作与全部 Path Item 级 `parameters`，并加 `x-endpoint-adjudication` 登记 **R8-a**（05 / 06 卷对账端点重复，收敛到 06 卷 ops 路径）与 **R8-b**（字面量 `finance` 与模板 `{system}` webhook 分工）。新增门禁 **A10.9**（外部锚点下界 55 + 5 个投影白名单 + 双向覆盖）与 3 条负向反证；工件现为 56 路径 / 59 操作，55 行声明零遗漏。仍为 Proposal 设计态，数值与冻结留给 owner。
 >
 > **业界最佳实践对标与 AI 原生能力补全（2026-11-09，复评执行）**：依据 `outputs/procuraAI-业界最佳实践校准与AI原生能力补全诊断-2026-11-09.md`，对标中物联《人工智能+采购供应链应用指南》10 大领域 + Gartner 2026 + Coupa 2025，补齐蓝图 G1–G10 未覆盖的硬缺口：**G11 绿色碳足迹/Scope 3**、**G12 围标串标/反舞弊识别**、**G13 采购知识图谱底座** 三张能力卡片（蓝图 §2，编排层 §3 补图谱基座）；**G15 算法公平/偏见治理** 写入 D3-v2 §3 条款 + AI-5 负向用例，新增门禁 **A10.3.2** 守护（含 `--self-test` 反证探针）；**G17 信创/国产化大模型** 承接写入总体 §5.1（从旧受限引用文档显式迁移到新族真源）。治理补全：蓝图纳入资产登记真源 §3.1 + `EXTRA_DOCS`（A10 扫描，G-A 闭合）；06 卷 §8 留 `ProcurementAiOrchestrationPort` 占位防悬空（G-B）；总体 §12 WBS 挂接 G1–G13 并诚实标注「人月未计入、不伪造」（G-C）。证据：门禁 10/10、`--self-test` 61/61（新增 G15 探针转红命中）、asyncapi 29 事件零漂移。**边界**：全部为 Proposal 设计态文档与门禁层面优化，未实现、未写 `bone-init.sql`、未接 CI、未提交/推送；G14（N-tier/控制塔）、G16（低风险自治车道）为 P3/P4 战略选项，待 owner + 监管确认。
+>
+> **G14/G16 战略选项升级为可评审 ADR 草案（2026-11-10，复评执行）**：承接上一轮，把 G14（N-tier 供应商透明度 + 采购控制塔）与 G16（低风险自治采购执行车道）由一句话「战略选项」升级为蓝图 §5 可评审 ADR 草案——含决策（待定）/ 上下文 / 能力边界 / 不做的事 / 依赖前置 / owner+监管决策点 / 验收基线，全部受 D3-v2 §3 治理铁律约束。G16 显式声明**不触发「自动结案：禁止」条款、决策权仍在人**（业界有界自治 bounded autonomy 模型：四重白名单 AND 才放行 + 四层治理护栏 + 渐进扩边纪律 + Kill switch）；业界对标见蓝图 §5.3（Gartner 2026《AI Agent Shopping Ruling》与「2027 年 40% 企业因治理失败降级自治代理」警告、McKinsey 2030 采购数字孪生）。新增门禁 **A10.3.3** 守护 G16 人工终决红线不被稀释（含 `--self-test` 反证探针）；总体 §12 WBS 纳入 G14/G16 并标注 P4 战略选项、须 owner + 监管/法务评审通过方可立项。证据：门禁 10/10、`--self-test` 62/62（新增 G16 探针转红命中「G16 不稀释」）、asyncapi 29 事件零漂移。**边界**：仅 Proposal 设计态文档与门禁优化，**不实现、不进本期、待 owner + 监管/法务评审**；未写 `bone-init.sql`、未接 CI、未提交/推送。
+>
+> **复诊 P0–P2 收口（2026-11-10，基于 `outputs/procuraAI-逻辑自洽与AI原生复诊-2026-11-10.md`）**：① **P0-① 分期冻结**——`总体 §12` / `一期边界 §4` 为 44 周唯一真源，回改 `领域 §10` / `总纲 §1、§12` / `03 卷 §0` / `资产登记 §6` / `一期边界 §7`，新增门禁 **A10.13** 跨文档守护；② **P0-② 假绿修复**——`InvoiceMatched` 全族（含总体 §3.1 / §7 集成图 / 03 卷 §7 / 05 卷 JSON 示例 / 上下文地图 SVG / AsyncAPI）收敛到 D3-v2 §2.1 七字段，**A10.4.1 升级为「真源字段表 → 全族集合比对」**并加 A8.6+，复诊 INJECT A/B 已实证转红、还原转绿；③ **P0-③ CI blocking**——`ci.yml` 三条 `ProcuraAI*` blocking + `check.sh` G0，评测集补 `capabilityCode` / G15 偏见用例 / 生成内容标识 / 关键负向不可删（19 例，8 能力码全覆盖）；④ **P1** 能力账本补 M3/M6 + ORCHESTRATION、G15 补卡、G12 重裁为「关联关系提示不涉围串标定性」、合规依据按客户行业重挂并落 `D3-v2 §3.1` 工程化清单；⑤ **P1/P2** 蓝图补地基层与排期。证据：`A1–A10` 10/10、`--self-test` 71/71、评测集 11/11 反证、gate-liveness strict 通过。**边界**：仍为 Proposal 设计态，**未建真实模块 / 未写 `bone-init.sql` / 未做压测 / 模型效果未测评**；CI 绿只证明文档族一致与治理骨架未退化。
 >
 > **LLD v0.2 修订（2026-11-08）**：针对 v0.1 的 5 类 P0 / 9 类 P1 缺口做深度优化——补齐事件契约注册表（29 条，遵循事件规范 §4「先登记再写 Producer」）、`partition_key` 双轨与 `aggregate_version` 乱序丢弃、INBOUND 事件外部生产方标注、错误码/权限码完整目录与白名单；新增金额/币种/汇率/税/UOM（ISO 4217）、Saga 隔离与三分类补偿、schema 演进与 Tolerant Reader、Replay `REBUILD/REDELIVER`、RFC 9457 与 cursor 分页、物理模型与软删唯一键、可观测与韧性、安全 SDL、状态机显式迁移表与可量化测试门槛、契约冻结流程与 RACI。产出 `openapi.yaml` / `asyncapi.yaml` / 生成器与关键链路时序 SVG，并新增机器门禁 A8（注册表 ↔ 工件零漂移、码字唯一性、topic 白名单、资产引用）。
 
