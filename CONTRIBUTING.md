@@ -4,7 +4,7 @@
 
 ## 开发环境
 
-- JDK **17+**、Maven **3.8+**
+- JDK **21+**、Maven **3.8+**
 - 前端：`bone-frontend` 使用 **npm workspaces** + **`package-lock.json`**（`npm ci`，勿混用 pnpm 除非全仓迁移）
 - **MySQL / Redis / JWT**：仓库根 [`.env.example`](.env.example) → 复制为 `.env`（已 gitignore），`source scripts/dev/load-env.sh`；说明见 [config/env/README.md](config/env/README.md)
 - 库表：`bone-init.sql`；连通性 `./scripts/dev/db-verify.sh`
@@ -19,7 +19,7 @@
 1. 你对你提交的内容拥有合法权利，并授权 Licensor 按 **BSL 1.1 及其 Change License（MPL 2.0）** 对外发布；
 2. 你同意你的贡献在 Change Date 后随仓库一并转为 MPL 2.0，且该授权不可撤销；
 3. 你提交的内容不得包含第三方受限制代码（与 MPL 2.0 不兼容的许可、商业 SDK、闭源片段）；
-4. 商业授权不包含你的贡献——如需商业条款请单独与 Licensor 联系。
+4. 商业授权不包含你的贡献——如需商业条款，请通过 `914162692@qq.com` 联系 Licensor（见 [LICENSE](LICENSE) 参数区）。
 
 ### AI 辅助产出
 

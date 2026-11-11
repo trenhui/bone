@@ -47,7 +47,8 @@ BASELINE = REPO / "doc/architecture/domain-model-layout-baseline.json"
 PACKAGE_RE = re.compile(r"^\s*package\s+([\w.]+)\s*;", re.M)
 
 ALLOWED_DOMAIN_SUBPACKAGES = {"model", "repository", "service", "gateway"}
-SKIP_PATH_PARTS = {"target", "node_modules", "bone-framework", "bone-metadata-sdk", "go-engine"}
+# .worktrees/ 是并发会话的临时检出，不属于本仓模块；不排除会把在途代码扫成违规并沉淀进基线
+SKIP_PATH_PARTS = {"target", "node_modules", "bone-framework", "bone-metadata-sdk", "go-engine", ".worktrees"}
 
 
 def load_baseline():

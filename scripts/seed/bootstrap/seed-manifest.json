@@ -1,11 +1,11 @@
 {
   "_comment": "bootstrap 种子的行数下限清单。由 scripts/seed-bootstrap.py 生成；--verify 用它判断「灌完 init+seed 的库是否还是空壳」。",
-  "generatedAt": "2026-11-05 16:46:42",
+  "generatedAt": "2026-11-11 10:34:36",
   "tables": {
     "iam_permission": {
       "rows": 103,
-      "source_rows": 103,
-      "excluded": 0,
+      "source_rows": 105,
+      "excluded": 2,
       "where": "deleted = 0 AND code NOT REGEXP 'E2E|e2e' AND name NOT REGEXP 'E2E|e2e|测试'",
       "why": "权限点：接口 @PreAuthorize 与菜单 permission 都按码匹配，缺码即 403 / 菜单被剪；排除 E2E 联调权限"
     },

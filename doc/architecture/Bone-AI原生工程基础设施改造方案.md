@@ -1,6 +1,6 @@
-# Bone AI 原生工程基础设施改造方案（v3 · 独立审查 + 业界实践对照复核）
+# Bone AI 原生工程基础设施改造方案（v3 · 独立审查 + 业界实践对照复核 · 含 11.6 深度优化落点）
 
-> **状态**：待审批施工蓝图 **v3**（2026-11-10）。v1 经三只独立子 Agent 审查判 `Request Changes` → v2 按其发现重写、经三轮独立审查 `Approve` → v3 增补业界实践对照复核（第十一章）。修订记录见附录。
+> **状态**：待审批施工蓝图 **v3**（2026-11-10 收口；2026-11-11 增补 11.6 深度优化落点）。v1 经三只独立子 Agent 审查判 `Request Changes` → v2 按其发现重写、经三轮独立审查 `Approve` → v3 增补业界实践对照复核（第十一章）→ 11.6 对 11.1「合理，可优化」四项与第六章门禁族做三栏深化（现状 / 业界标杆 / Bone 可优化落点）。修订记录见附录。
 > **基准声明**：审查基准固定为 **Bone 项目自身规范真源 > 公认业界实践 > 个人口味**。本文不拿通用最佳实践覆盖已登记决策（ADR / 能力边界裁定 / 显式豁免）。
 > **真源指针**：HC 门禁状态 → `doc/architecture/gate-state.json`（机器真源）与 `Bone-DDD-最终实践方案.md §G-1.7`（HC 状态表）；协作条款 → `doc/agents/06 §12`；工具链裁定 → `Bone-Comet工具链基线与升级运维.md`。本文**不复制** HC 表、不写门禁状态。
 > **命名空间**：改造项用 `T1–T9`；门禁活性判据用 `LIV-R*`（`scripts/check-gate-liveness.py`）；交付流程阶段用 `P1–P8`（`06 §12.5`）；本文分期用「阶段 A/B/C」。三者互不复用编号。
@@ -366,6 +366,59 @@
 
 ---
 
+## 11.6 深度优化落点（2026-11-11 深化，承接 11.2 skeleton）
+
+> 本节把 11.1 判定表中标 **合理，可优化** 的四项（T2 / T4 / T6 / T7）与标 **合理** 的第六章 LIV-R 门禁族，从 11.2 的 skeleton 级「设计意图」深化为「现状 → 业界标杆 → Bone 可优化落点」三栏。
+> **纪律不变**：纯文档层、L4 建议稿边界；不落地任何工程改动、不新增 `check-*.py`、不接 CI、不编造实测值；业界标杆列均附可引用出处，便于架构师按来源核验。
+
+### 11.6.1 T2 图谱纳入加载路由
+
+| 维度 | 内容 |
+|---|---|
+| **现状** | CodeGraph 已建（324 MB SQLite，105,067 节点 / 151,819 边 / 4,830 文件，daemon 增量同步至 2026-11-07）；注册在用户级（`~/.cursor/mcp.json`、`~/.claude/settings.json`），被根 `.gitignore:224` 排除——本机可选、非团队共享。D3（`Bone-Comet工具链基线与升级运维.md:163–170`）已裁定「可选能力、不纳入项目门禁」。缺口：加载路由只有 D3 一处指针，Agent 没有统一的「何时用 / 不可用如何降级 / 能力边界」入口；图谱 `unresolved_refs` 达 297,588（静态盲区大），`calls` 仅 28,476、无 test→code 边 → 符号定位可用、静态调用链不完备。 |
+| **业界标杆** | ① Anthropic《Effective context engineering / Building agents》：**agentic search（grep/glob/LSP 即时探索）优于纯 RAG/embedding 预检索**——语义检索「更快但更不准确、更难维护、更不透明」，建议「先 agentic search，只在需要更快时才加语义」；文件树/命名/时间戳本身即上下文信号，支持渐进式披露。② Claude Code 2.0.74（2025-12）原生 LSP 支持：LSP（go-to-definition / find-references / hover / diagnostics，按 `file:line:column`）与 agentic search 互补——「search 找到位置，LSP 把位置变成精确结构事实」。③ OpenAI Harness：给 Agent 与程序员同样的工具（find files / edit / lint / run / debug），依赖即时检索 + 工具探索而非预建索引。④ 收敛结论：业界最优是 **hybrid**——预取少量关键上下文提速 + Agent 自主探索按需取；且 **search/LSP 互补、静态盲区必须显式化**。 |
+| **Bone 可优化落点（L4 建议稿）** | 1. 在 `06 §12.2` 路由表 / `doc/agents/README.md` 横切触发表补**统一入口三要素**：① 何时用——定位「符号定义/调用方/引用」且 MCP 可用时优先 CodeGraph；② 降级 SOP——MCP 不可用 → 调 LSP（`ENABLE_LSP_TOOLS`）→ 退化到 `rg`/`grep -rn` 结构化检索，**结论无论哪条路径都必须含「文件路径 + 行号」**，不得只回「可能在 X 模块」；③ 能力边界——CodeGraph 为**本机可选、非团队共享**，`unresolved_refs` 量级大 ⇒ **不得据图谱断言「无调用方 / 无影响」**。2. 路由表条目草案：`符号/调用链定位 → 首选 CodeGraph MCP｜降级 LSP → rg｜边界 本机可选，不断言无调用方`。3. 不新建边界文档（与 D3 单一真源一致），只在既有表「加指针 + 降级 SOP」，不复制 D3 正文。4. 与 11.2① 衔接：T2 的「检索命中率评测集」仍保持 skeleton（只定义冻结集结构/哈希/切片维度单一真源），落地需 L3，本 change 不改 PR 模板、不接 CI。 |
+
+### 11.6.2 T4 变更影响面提示
+
+| 维度 | 内容 |
+|---|---|
+| **现状** | 人工条款（06 §11.13④、PR 模板:26「受影响测试已实际执行」）存在，缺自动化推导。图谱现实：edges 无 test→code 边；`contains` 占 65.6%、`calls` 指向测试路径仅 6.6%；`unresolved_refs` 独立表不被遍历 ⇒ 不能承诺「关联测试 / 建议回归集」。计划：report-only；输入 `git diff -U0` + hunk 行号映射；输出变更符号/直接调用者/静态盲区/相关 ADR + 「不构成测试依据」声明；三条硬约束（不阻断、高风险扩大、fail-closed）。 |
+| **业界标杆** | ① 变更影响分析（IA）研究共识（Arnold 1996；Li 2018；Chen 2015）：IA 分**静态 / 动态 / 混合**三类，**静态集合偏大（过报）、动态集合偏小（欠报）**，两者**交集置信最高**，静态独有部分需人工/动态数据收敛；实践顺序「先静态闭包 → 接 CI 覆盖（测试关联）→ 最后生产追踪补盲区」。② 不确定性影响分析（概率性 IA）：现实影响传播非确定（反射/DI/运行时条件/数据依赖），应**量化不确定性（置信度/概率）**，而非二元「是/否受影响」。③ OpenAI/Anthropic 共识：影响面必须**标注盲区（uncertainty calibration）**；「never output empty set」——读失败或结论为空都应 fail-closed（扩大回归），绝不输出空集。④ 与「误报比漏报更致命」同构：宁可过报（多看文件）不可漏报。 |
+| **Bone 可优化落点（L3 建议稿，report-only）** | 1. 影响面报告**字段草案**（深化 11.2② 的「运行时证据字段」到字段级）：`变更符号`（必出，`git diff -U0`+hunk 映射）｜`直接调用者`（CodeGraph `calls`/`references`，标注覆盖率）｜`静态盲区清单`（必出，显式化 `unresolved_refs` 与非 test→code 边）｜`相关 ADR`（含非编号附录，必出）｜`运行时证据`（Trace 覆盖 / 事件 Topic 订阅 / 配置驱动依赖，引用可观测性规范 §3/§4/§5 + 消息与事件规范；**无证据填「待补」，不编造**）｜`受影响测试提示`（仅提示，消费方=PR 勾选项/E2E 清单，须先指定）｜`不确定性标注`（对每个变更符号给高/中/低置信 + 理由，呼应概率性 IA）。2. fail-closed 措辞草案：「影响面未知（图谱读失败/空集）→ 扩大回归至 E2E 全量」；高风险路径（claim/额度/权限/DDL/迁移/事件）固定附加「E2E 全量」提示。3. 与 11.2② 衔接：「PR 人工确认」仅为设计意图，**不改 PR 模板、不新增勾选项**，落地需 L3。4. 前置不变：先做全仓正向审计量化空集率/噪声率，report-only 两轮后再谈转阻断（第十章第 4 条）。 |
+
+### 11.6.3 T6 质量度量口径
+
+| 维度 | 内容 |
+|---|---|
+| **现状** | `analyze-metrics.sh` 仅 2 类指标（功能交付周期含 Ralph Loop 子列 + 自愈统计）+ 2 处 TODO；`.claude/state/` 空且被忽略；`reports/metrics.md` 落在被忽略的运行时产物目录。v1「可复算/样本可追溯/不新建采集平台」与现有数据源不能同时成立。计划：本期只出口径文档 + 手工登记模板（设计一次通过率/AI 缺陷逃逸率/人工返工率），写明「复算需本机 checkout + 本机状态快照」，先盘点可用数据。 |
+| **业界标杆** | ① **DORA（Accelerate / Google Cloud DORA）**：交付效能四指标——部署频率、变更前置时间、变更失败率、服务恢复时间；AI 是「放大器」：提吞吐也可能提不稳定，「若 AI 全上但 DORA 持平，说明工具未产生杠杆」。② **SPACE（Forsgren et al. 2021，Microsoft Research/GitHub/UVic）**：生产力非单一数字，至少五维——Satisfaction / Performance / Activity / Communication / Efficiency；警告「满意度说明 AI 被认可，但不证明 AI 有效」。③ **AI 辅助研发度量陷阱（2026 共识）**：接受率（GitHub/Cursor 30–40%）是**虚荣指标**（接受≠杠杆，可能接受错误再花 15 分钟修）；原始产出量（LOC/PR 数）在 AI 时代「零效用」甚至反向；应测**逃逸缺陷率（按 AI 辅助/人工分段）**、**AI 辅助 vs 非 AI PR 的 time-to-merge**、**开发者满意度（需 6 个月窗口，首月负向是变更疲劳）**；Goodhart 律——单维看板必然说谎，须团队级而非个人排名（避免博弈）。 |
+| **Bone 可优化落点（待定级建议稿）** | 1. **口径模板结构**（深化 11.2③，落到字段级）：`设计一次通过率`＝首次 PR 无需返工比例（源 Comet state + PR 勾选项；反模式 不用 LOC 代理）｜`AI 缺陷逃逸率`＝30 天内线上 bug 中 AI 辅助 PR 段占比（源 PR 勾选项 + 缺陷来源标签；反模式 不用接受率代理）｜`人工返工率`＝AI 产出经人工返工比例（源 PR 勾选项「是否发生人工返工」）｜`DORA 四指标`（并列，不替代）。2. **数据来源清单**（最小可复算、不新建平台）：Comet state（change 进度/审批）、PR 模板勾选项（11.2③ 建议的 2 个可选勾选）、熔断计数（`FAIL_COUNT_FILE`）；先盘点这三类是否够用，再决定是否补最小采集字段。3. **纪律**：① 团队级视角，禁止个人排名；② 满意度类给 6 个月窗口；③ 接受率/LOC 列为「明确不采用」反模式，写入口径文档而非仅口头。4. 与 11.2③ 衔接：2 个 PR 勾选项仍为「建议稿」，**不改 PR 模板**，改模板属 L3 需另行审批。 |
+
+### 11.6.4 T7 路径级自动规则
+
+| 维度 | 内容 |
+|---|---|
+| **现状** | 路由表真源在 `06 §12.2`（非 README；README:32 明写主干表「此处不重复」）。与既有裁定冲突：`06 §12.6:142` 禁「把拆分文档内容抄回入口文件」；`.claude/rules`、`.github/skills` 被有意忽略；`.claude/rules/bone-*.md` 与 `.github/instructions/*.instructions.md` 本身是入口/指令文件。计划：与 T3 合并为同一策略议题；若批准改变「不入库」策略，生成物仅含 paths 指针、不含规范正文、不接 CI；否则不做。 |
+| **业界标杆** | ① **GitHub Copilot 路径级指令（path-specific custom instructions）**：`.github/instructions/**/*.instructions.md`，用 YAML frontmatter 的 `applyTo`（glob）匹配路径（例 `applyTo: "src/**/*.py"`）；仓库级 `copilot-instructions.md` + 路径级按需加载，**避免把仅适用部分文件的规范塞进全仓库指令**。② **Claude Code 规则**：`.claude/rules` 用 `paths`（glob 数组）而非 `applyTo` 激活；`AGENTS.md` 为跨 agent 格式，沿目录树「最近者优先」。③ **单一真源 / 分层指令**：多 harness 并存时选共享格式（如 AGENTS.md）并保持副本一致；指令须「简短、自包含」。④ 收敛结论：路径级规则的价值是**按文件类型/目录加载最小必要约束**，避免全仓库指令过载；但其前提是「本机/仓库内生成且被 harness 消费」，与 Bone 的「不入库」裁定存在张力。 |
+| **Bone 可优化落点（L4 建议稿，拆出零成本动作）** | 1. 把 11.2④ 拆出的 **§12.2 路由表增列「必查约束」** 落到列草案（深化，给出具体列）：`**/domain/**` → 分层/包一致/tenantId（消费方 `check.sh`/ArchUnit）｜`**/infrastructure/**` → HC-001 禁 ORM / SQL 模板首行关键字（消费方 `check.sh`）｜`**/adapter/web/**` → ApiResponse 统一响应（消费方 `check.sh`）。说明：只列「指针 + 路径」，**不抄规范正文**（遵守 §12.6 不回抄）；「必查约束」本身由既有 `check.sh` 门禁承载，不是新增判据。2. 明确边界：本动作**只改 §12.2 表（L4 建议稿），不生成 `.github/instructions` / `.claude/rules` 文件**，不改变「不入库」裁定；与 T3 生成物目录不重叠。3. 与 T3 协同：若架构师最终批准改变「不入库」策略，T7 的 §12.2 增列已先就位，可与 T3 生成物（paths 指针）衔接；若维持现状，本动作独立有效（路由表本就是入库文档）。 |
+
+### 11.6.5 第六章 LIV-R 门禁族（含互斥接线）
+
+| 维度 | 内容 |
+|---|---|
+| **现状** | LIV-R1–R8 已定义（CI 触发器含分支 / 15 个 `(blocking)` 步 / 防空壳 / 调用行 / 豁免收缩 / `partial_wire kind` / `--self-test` 带参 / `--check` 判据模式）；report-only 与阻断互斥接线；`check.sh` 59 步、派生入口被根入口调用。11.2⑤ 已汇总「一次性验收命令清单」（只读脚本）。历史坑：「标着 blocking 却从不拦」假绿、变异 0 红先排除「没跑」、锚定串首/正则只取首个匹配造成假红/静默漏扫。 |
+| **业界标杆** | ① **门禁判别力（discriminative power）**：业界共识「CI 全绿 ≠ 有判别力」。三类死法（dead / broken / **blind** gate）外表都是绿勾；**blind gate 最危险——它在跑、exit 0、但输入从未触发其逻辑**。② **变异验证（mutation testing）是唯一证明门禁「会拦」的方法**：覆盖率只说「代码跑过」，变异分说「门禁/测试真的在乎这行做了什么」；Stryker 等以 mutation score 阈值（如 70% break）进 CI。③ **负向探针（negative control）**：门禁必须同时证明「脏输入被拦」与「干净输入静默」；只测正向=假安全感。④ **gate liveness 本质**：LIV-R 族（尤其 R4 调用行、R7 带参、R8 判据模式）正是把「脚本存在 ≠ 门禁生效」变成可机器复算的判据——与业界「验证门禁真的会拦」同构。 |
+| **Bone 可优化落点（L3/L4 建议稿）** | 1. **验收命令清单深化**（承接 11.2⑤/11.3）：除现有只读脚本外，补充**门禁判别力验证 SOP**（不新增 `check-*.py`，复用既有）：对每个 blocking 判据，文档登记「正向用例（必红）+ 负向探针（必绿）+ 合规正例」；**变异 0 红先排除「没跑」再判真绿**；新判据上线前先对全仓跑正向审计（呼应第六章 6、历史锚定串首/正则首匹配假红教训）。2. 把「**判据验收必须含负向探针 + 变异验证**」写入第六章纪律，作为 LIV 族上位原则（与 LIV-R7/R8 互补：R7/R8 管「接线与模式」，本条管「判别力」）。3. fail-closed 联动：门禁真源不可读 / 输入缺失 → 判红而非静默通过（与 T4 fail-closed 同源）。4. 明确：本落点为**文档层建议稿**，不新增 `check-*.py`、不接 CI；落地需 L3。 |
+
+### 11.6.6 深化收口与边界
+
+- 本节是对 11.2 skeleton 的**深化而非推翻**：11.1 判定、11.2 五项、11.3 命令清单、11.4 边界声明、11.5 收口记录**全部保留**，本节仅把「设计意图」补成「可落地的字段草案 / 列草案 / SOP 草案」。
+- 所有落点仍受第十章「未动 / 待你拍板」约束：T2/T7 的 §12.2 / README 改动属 **L4**（需架构师本人或明确授权）；T4/T6 落地属 **L3 / 待定级**；未获授权前本 change 不改动任何 `doc/agents/06`、`doc/agents/README.md`、PR 模板或 `scripts/`。
+- 业界标杆出处均为公开实践（Anthropic Context Engineering、GitHub Copilot Instructions、Google Cloud DORA、SPACE 框架、IA 静动态融合研究、mutation testing / gate liveness 共识）；未以任何外部收益数字作为 Bone 立项依据（呼应第二章第 49 行）。
+
+---
+
 ## 附录：独立审查与修订记录
 
 | 项 | 内容 |
@@ -379,3 +432,4 @@
 | 第三轮复核 | 2 只全新子 Agent 只读复核 → **Approve**（第二轮 4 条 Critical 与 9 类约束/自洽残留全部消解，无新 Critical）；4 条低置信度润色（`/59` 计数口径、T9 二选一同构、T1 审批行穷举、T5 枚举口径）已收口 |
 | 门禁 | `check-doc-code-symbols.py` / `check-ddd-doc-drift.py` 实跑 **RC=0**；本轮未改动任何 L3/L4 工程文件 |
 | v3（Comet tweak） | 经 `/comet` → classic/tweak，change `ai-native-platform-plan-review`；新增第十一章「业界实践对照复核与优化」，按 8 项任务补 5 项业界实践落点；实测验收：`check-doc-code-symbols.py` RC=0、`check-ddd-doc-drift.py` RC=0、`check-ddd-gate-state.py` RC=0、`openspec validate` valid=true，另发现 1 项范围外既有问题（`generate --check` RC=1），归档前于主工作树以「真源追平」修复（见 11.5④） |
+| 11.6 深化（2026-11-11） | 用户要求基于业界最佳实践对 11.1「合理，可优化」四项（T2/T4/T6/T7）与第六章 LIV-R 门禁族做三栏深化（现状 / 业界标杆 / Bone 可优化落点）；新增 11.6 六小节，均保持纯文档层、L4 建议稿边界，不落地工程改动、不新增 `check-*.py`、不接 CI、不编造实测值；业界标杆附 Anthropic Context Engineering / GitHub Copilot Instructions / Google Cloud DORA / SPACE / IA 静动态融合 / mutation testing·gate liveness 出处。本 change 未改动任何 L3/L4 工程文件，仅扩展文档 |

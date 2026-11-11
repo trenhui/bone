@@ -21,9 +21,9 @@
 | 参数 | 取值 | 含义 |
 |------|------|------|
 | 许可 | Business Source License 1.1（BSL 1.1） | 「源代码可得 / Source Available」，**不是** OSI 定义的开源许可 |
-| Licensor | 梅山 / Meishan | 授权方。花名署名即可，**但商业授权合同与发票须以法定姓名签署**；联系方式见 README §License |
+| Licensor | 梅山 / Meishan | 授权方。花名署名即可，**但商业授权合同与发票须以法定姓名签署**；商业授权咨询邮箱：`914162692@qq.com`（见 LICENSE 参数区） |
 | Licensed Work | Bone 全栈快速开发平台（本仓库） | 版权 (c) 2021-2026 梅山 / Meishan |
-| Change Date | 2030-10-11 | 到期后本版本自动转为 Change License |
+| Change Date | 2030-10-11 | 该版本在 Change Date 或其首次公开发布四周年（孰早）自动转为 Change License；Change Date 可逐版本不同 |
 | Change License | **Mozilla Public License 2.0**（MPL 2.0） | 到期后回归的开源许可，OSI 认证 |
 | 生效日 | 2026-10-11 | 此日之前发布的版本仍按 MIT（见 [LICENSE-MIT](LICENSE-MIT)） |
 
@@ -78,8 +78,9 @@
 需要授权，与 Q5 同理。这是 BSL 相对 MIT 最关键的补强。
 
 **Q8：不想买，等到 2030 年行不行？**
-可以，这是 BSL 的设计本身：Change Date（2030-10-11）一到，该版本自动转为 MPL 2.0（OSI 开源许可），
-届时可自由使用。代价是你要等，且等来的版本不含 SLA / 赔偿 / 支持。
+可以，这是 BSL 的设计本身：该版本在 Change Date（2030-10-11）或其首次公开发布四周年（孰早）
+自动转为 MPL 2.0（OSI 开源许可），届时可自由使用；Change Date 可逐版本不同。
+代价是你要等，且等来的版本不含 SLA / 赔偿 / 支持。
 
 **Q9：我 2025 年就下载了老版本，那时候是 MIT？**
 是。2026-10-11 之前公开发布的版本及其快照仍按 MIT 授权，**不可撤销**——
@@ -102,9 +103,9 @@ MIT 授权一旦授予即不可撤销，本次切换**只能向前生效**，无
 
 1. **商业合同与发票须用法定姓名**：LICENSE 现以花名 `梅山 / Meishan` 署名——署名用花名是国际惯例，没问题；
    但**签署商业授权合同、开具发票、维权起诉时必须使用法定姓名**。成立公司后应将 Licensor 改为公司全称
-   （届时需同步改 4 处：LICENSE、README §License、本文参数表、NOTICE）。
-2. **补联系方式**：README §License 与 LICENSE 参数区需填入真实的商业授权联系邮箱 / 报价页，
-   否则「企业要购买授权」无法落地——想买的人找不到你。
+   （届时需同步改 5 处：LICENSE、README.md、README.en.md、本文参数表、NOTICE）。
+2. ✅ **联系方式已补齐**：商业授权咨询邮箱 `914162692@qq.com` 已写入 LICENSE 参数区、
+   README / README.en.md §License 与本文参数表。
 3. **打 tag 固化 MIT/BSL 边界**：建议给切换点打一个 tag（例如 `v1.0.0-mit`），
    为「哪些版本是 MIT」留下可举证的边界。⚠️ 打 tag 属 L4 操作，AI 不得执行，需你本人操作。
 4. **发版时推进 Change Date**：Change Date 是固定日期，若后续版本不更新该日期，
