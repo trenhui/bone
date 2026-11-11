@@ -1,0 +1,2518 @@
+# comet-execution: managed-run
+change_id: a1c0d34d-4d7e-4185-a926-b6c976909df8
+workflow: tweak
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: direct
+build_pause: null
+subagent_dispatch: null
+tdd_mode: direct
+review_mode: off
+isolation: current
+verify_mode: light
+auto_transition: true
+base_ref: 65b8341d52ca22a93ad326b01dc92ba2fcecfc59
+design_doc: null
+plan: null
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+branch_status: pending
+created_at: 2026-11-11
+verified_at: 2026-11-11
+archive_confirmation: confirmed
+archived: true
+bound_branch: dev
+direct_override: null
+handoff_context: null
+handoff_hash: null
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v1
+  hash: a2d24adc971f9bd2ac46a3edfa947b885a6a583b5ac287a53ee0227560d9941c
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: synapclaim-t4t6-ci-integration
+    revision: 1
+    workflow:
+      id: comet-classic-tweak
+      version: "1"
+      hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+    definitionHashes:
+      '["comet-classic-tweak","1"]': 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+    initialStateHash: 546a566911c89b0b045825870eb3230509926c553b24a7a818f51741e218c8d4
+    input:
+      change: synapclaim-t4t6-ci-integration
+      changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+      workspaceBaseline:
+        ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+    state:
+      archiveConfirmation: confirmed
+      archived: true
+      autoTransition: true
+      baseRef: 65b8341d52ca22a93ad326b01dc92ba2fcecfc59
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: direct
+      buildPause: null
+      checkEpoch: 7
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-11
+      designDoc: null
+      directOverride: null
+      handoffContext: null
+      handoffHash: null
+      isolation: current
+      language: zh-CN
+      phase: archive
+      plan: null
+      reviewMode: off
+      subagentDispatch: null
+      tddMode: direct
+      verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+      verifiedAt: 2026-11-11
+      verifyFailures: 0
+      verifyMode: light
+      verifyResult: pass
+      workflow: tweak
+    status: running
+    sequence: 22
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-b1c78f6645a7e6727c6cac33372d1d8c1bf6bc72b858e56ae66ac84cdbbc3c60
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-t4t6-ci-integration:1
+        input:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs: {}
+        inputHash: 307b3fc2d833b4fcbf77c5894498c196d58478d651397fb6a60474837e68e3ab
+        outcome:
+          actionId: synapclaim-t4t6-ci-integration:1
+          attempt: 1
+          claimToken: portable-b1c78f6645a7e6727c6cac33372d1d8c1bf6bc72b858e56ae66ac84cdbbc3c60
+          inputHash: 307b3fc2d833b4fcbf77c5894498c196d58478d651397fb6a60474837e68e3ab
+          outcomeId: a6002fff-0572-476e-9b08-3b17d5d9d623
+          output:
+            event: open-complete
+            requirementsEvidence:
+              contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 5751d81ccea24692b011ac1ad7e6d0342866fd55982f2b7a2d74b3716fedf122
+            outcomeId: a6002fff-0572-476e-9b08-3b17d5d9d623
+        reconciliations: []
+        ref: comet-tweak
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-t4t6-ci-integration
+        status: succeeded
+        stepId: tweak.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-t4t6-ci-integration:3/1
+          token: portable-a7fd0e8af0340b5e854ddef2cb7dcb831ffe005d075eee6f7d94dca8149666f8
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-t4t6-ci-integration:3
+        input:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs:
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+            tweak.open.evidence:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+        inputHash: fadbeec06d0ec8ec241bf6358a655e8f5d6dfb7acd755532ff8d6b3a4d265305
+        outcome:
+          actionId: synapclaim-t4t6-ci-integration:3
+          attempt: 1
+          claimToken: portable-a7fd0e8af0340b5e854ddef2cb7dcb831ffe005d075eee6f7d94dca8149666f8
+          inputHash: fadbeec06d0ec8ec241bf6358a655e8f5d6dfb7acd755532ff8d6b3a4d265305
+          outcomeId: 40c48264-7b44-4530-8c9e-367637224869
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 65dff82f23fc8f7ee3ab31a007279dd0796658eade9ee51e5dec3660cd568020
+            outcomeId: 40c48264-7b44-4530-8c9e-367637224869
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-t4t6-ci-integration
+        status: succeeded
+        stepId: tweak.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-fb5784d3cd8f1f4fac1b055a784915593457462243a96e223abb9aad1a43cbd5
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-t4t6-ci-integration:4
+        input:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs:
+            tweak.build.execute:
+              event: build-complete
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+            tweak.open.evidence:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+        inputHash: c8cd229aad78efe67bd20cba32accc0176dc41da02bb8b90a6f1bc593be35eb9
+        outcome:
+          actionId: synapclaim-t4t6-ci-integration:4
+          attempt: 1
+          claimToken: portable-fb5784d3cd8f1f4fac1b055a784915593457462243a96e223abb9aad1a43cbd5
+          inputHash: c8cd229aad78efe67bd20cba32accc0176dc41da02bb8b90a6f1bc593be35eb9
+          outcomeId: 0f768c6f-e006-40c2-98e0-6df3b21c0aa1
+          output:
+            argv:
+              - bash
+              - scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 1
+            contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+            cwd: .
+            environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+            exitCode: 0
+            inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+            inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+            manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+            manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 81c881399ff8bf0196e6ca94ffa7aa42ad4b415a3c5805217d682bf093c28739
+            outcomeId: 0f768c6f-e006-40c2-98e0-6df3b21c0aa1
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-t4t6-ci-integration
+        status: succeeded
+        stepId: tweak.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-5374c9118f909e7175c6f9490b96e0a867b0f646ef7d695e23d3aeca17525ec5
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-t4t6-ci-integration:6
+        input:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs:
+            tweak.build.check:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              cwd: .
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            tweak.build.check.evidence:
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+            tweak.build.execute:
+              event: build-complete
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+            tweak.open.evidence:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+        inputHash: 1e2a705b3ee5d75430c4e67e59d60057681cf7bbf00f614b0d6a5d11701a6379
+        outcome:
+          actionId: synapclaim-t4t6-ci-integration:6
+          attempt: 1
+          claimToken: portable-5374c9118f909e7175c6f9490b96e0a867b0f646ef7d695e23d3aeca17525ec5
+          inputHash: 1e2a705b3ee5d75430c4e67e59d60057681cf7bbf00f614b0d6a5d11701a6379
+          outcomeId: 1121ed96-715d-4e56-b601-1c346cd074a4
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4484114783d010c9a4e524f5c701a07798f1b98a7ee70e5532dc1b13acbd01d8
+            outcomeId: 1121ed96-715d-4e56-b601-1c346cd074a4
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-t4t6-ci-integration
+        status: succeeded
+        stepId: tweak.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-7b8632042bc5f017454525c6bb5b9f447bc4f1ddeaf57098f97a3c51044f2ae2
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-t4t6-ci-integration:8
+        input:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs:
+            tweak.build.check:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              cwd: .
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            tweak.build.check.evidence:
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+            tweak.build.execute:
+              event: build-complete
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+            tweak.open.evidence:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+            tweak.verify.report.evidence:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+            tweak.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        inputHash: 5ed0140d1ab27a583b2e6d969b2c573026c58a030d7d647d6022ae81680511cd
+        outcome:
+          actionId: synapclaim-t4t6-ci-integration:8
+          attempt: 1
+          claimToken: portable-7b8632042bc5f017454525c6bb5b9f447bc4f1ddeaf57098f97a3c51044f2ae2
+          inputHash: 5ed0140d1ab27a583b2e6d969b2c573026c58a030d7d647d6022ae81680511cd
+          outcomeId: fa5a88ae-c17a-4aad-859d-659a4fa7449c
+          output:
+            argv:
+              - bash
+              - scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+            cwd: .
+            deliveryInputs: {}
+            environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+            exitCode: 0
+            inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+            inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+            manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+            manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/bd6f66ed-71f9-4f17-b898-e5c5ba3ce054.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 76bd8e4ce983ff3630cfce4c1defb905cf5fcd3a6c2092dc80417609c7af8956
+            outcomeId: fa5a88ae-c17a-4aad-859d-659a4fa7449c
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-t4t6-ci-integration
+        status: succeeded
+        stepId: tweak.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-8c2d9dcc6806736ffcb30e7b6ec54e0706050f4613984a01d4ea1ff38841de60
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-t4t6-ci-integration:10
+        input:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs:
+            tweak.build.check:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              cwd: .
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            tweak.build.check.evidence:
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+            tweak.build.execute:
+              event: build-complete
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+            tweak.open.evidence:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+            tweak.verify.check:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/bd6f66ed-71f9-4f17-b898-e5c5ba3ce054.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+            tweak.verify.check.evidence:
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+            tweak.verify.report.evidence:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+            tweak.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        inputHash: bec54839ea9c1f26d8a54f19dc42d8a7ac5bb71f7d40d8c5b56bc3d73a781e34
+        outcome:
+          actionId: synapclaim-t4t6-ci-integration:10
+          attempt: 1
+          claimToken: portable-8c2d9dcc6806736ffcb30e7b6ec54e0706050f4613984a01d4ea1ff38841de60
+          inputHash: bec54839ea9c1f26d8a54f19dc42d8a7ac5bb71f7d40d8c5b56bc3d73a781e34
+          outcomeId: 2515aaab-f34c-4c42-b2fc-935954e4b8d6
+          output:
+            summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+              report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+              模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+              check.sh 真实执行全绿。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3ea5807ce02d3959476154b1ffc94a100cb147faa929eb87e610b08a7501da69
+            outcomeId: 2515aaab-f34c-4c42-b2fc-935954e4b8d6
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-t4t6-ci-integration
+        status: succeeded
+        stepId: tweak.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-6203fb32297eeefba6412c162e0ce86ec68c3691e784ff17f1b50ae437d7b397
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-t4t6-ci-integration:12
+        input:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs:
+            tweak.archive.confirm:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-t4t6-ci-integration
+                  changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+                  workspaceBaseline:
+                    ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+                outputs:
+                  tweak.archive.prepare:
+                    summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                      report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                      模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit
+                      0d950859a，全仓 check.sh 真实执行全绿。
+                    targetBranch: dev
+            tweak.archive.prepare:
+              summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                check.sh 真实执行全绿。
+              targetBranch: dev
+            tweak.build.check:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              cwd: .
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            tweak.build.check.evidence:
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+            tweak.build.execute:
+              event: build-complete
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+            tweak.open.evidence:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+            tweak.verify.check:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/bd6f66ed-71f9-4f17-b898-e5c5ba3ce054.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+            tweak.verify.check.evidence:
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+            tweak.verify.report.evidence:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+            tweak.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        inputHash: 5fb3075f48dd4b80d43ec05ee7dfc672b87a63b3d6079dc7540839279ac13f76
+        outcome:
+          actionId: synapclaim-t4t6-ci-integration:12
+          attempt: 1
+          claimToken: portable-6203fb32297eeefba6412c162e0ce86ec68c3691e784ff17f1b50ae437d7b397
+          inputHash: 5fb3075f48dd4b80d43ec05ee7dfc672b87a63b3d6079dc7540839279ac13f76
+          outcomeId: 898a7a87-2122-41cb-8537-7559a51c5b78
+          output:
+            baseCommit: 0d950859a43d41fdc4b2181cc975a3871d5d9cbd
+            deliveryAction: local
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: caf640dbe02734db2abc5979262c07dfdb430466fb850d4bce3ac50956432b0f
+            outcomeId: 898a7a87-2122-41cb-8537-7559a51c5b78
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-t4t6-ci-integration
+        status: succeeded
+        stepId: tweak.archive.preflight
+        type: call_tool
+      - attempt: 1
+        id: synapclaim-t4t6-ci-integration:13
+        input:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs:
+            tweak.archive.confirm:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-t4t6-ci-integration
+                  changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+                  workspaceBaseline:
+                    ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+                outputs:
+                  tweak.archive.prepare:
+                    summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                      report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                      模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit
+                      0d950859a，全仓 check.sh 真实执行全绿。
+                    targetBranch: dev
+            tweak.archive.preflight:
+              baseCommit: 0d950859a43d41fdc4b2181cc975a3871d5d9cbd
+              deliveryAction: local
+              targetBranch: dev
+              verifiedBranch: dev
+            tweak.archive.prepare:
+              summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                check.sh 真实执行全绿。
+              targetBranch: dev
+            tweak.build.check:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              cwd: .
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            tweak.build.check.evidence:
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+            tweak.build.execute:
+              event: build-complete
+            tweak.open:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+            tweak.open.evidence:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+            tweak.verify.check:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/bd6f66ed-71f9-4f17-b898-e5c5ba3ce054.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+            tweak.verify.check.evidence:
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+            tweak.verify.report.evidence:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+            tweak.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        inputHash: 87304e012204697540d2fd118ca61a81f8f6b69156081ab2a193dd0c49e8ec02
+        protocolVersion: 1
+        reason: 命令 reopen-verification 已取代待执行 Action
+        receipts: []
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-t4t6-ci-integration
+        status: cancelled
+        stepId: tweak.archive.execute
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-e16a2fbad344a86453ef77ff009a6a9feb734140ac1ab75e9429008a666dca7a
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-t4t6-ci-integration:14
+        input:
+          activation:
+            expectedRevision: 25
+            fromPhase: archive
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs: {}
+        inputHash: e42512f60418487b5a9bc8764e3fafa6a84acf93f1bdd66970e22ef56b327b67
+        outcome:
+          actionId: synapclaim-t4t6-ci-integration:14
+          attempt: 1
+          claimToken: portable-e16a2fbad344a86453ef77ff009a6a9feb734140ac1ab75e9429008a666dca7a
+          inputHash: e42512f60418487b5a9bc8764e3fafa6a84acf93f1bdd66970e22ef56b327b67
+          outcomeId: c9245a7c-066b-48b6-9f83-d3825e6a5f7e
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 09429b3331b40577f68a09d36b6d4df19799ebc852984f7741d3e0af1ed0ec37
+            outcomeId: c9245a7c-066b-48b6-9f83-d3825e6a5f7e
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-t4t6-ci-integration
+        status: succeeded
+        stepId: tweak.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-1f1ab51ac748523537e83670a5d0ac01b53b92bf8d64874d2b8dccb5dd4453fa
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-t4t6-ci-integration:16
+        input:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs:
+            tweak.verify.report.evidence:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+            tweak.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        inputHash: 883471dd5fb970b5840993707f360e4e1d970568574bebf118e09aeb2c28ee12
+        outcome:
+          actionId: synapclaim-t4t6-ci-integration:16
+          attempt: 1
+          claimToken: portable-1f1ab51ac748523537e83670a5d0ac01b53b92bf8d64874d2b8dccb5dd4453fa
+          inputHash: 883471dd5fb970b5840993707f360e4e1d970568574bebf118e09aeb2c28ee12
+          outcomeId: c3eb183e-4d37-4185-afb0-60e40d74f504
+          output:
+            argv:
+              - bash
+              - scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 4
+            contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+            cwd: .
+            deliveryInputs: {}
+            environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+            exitCode: 0
+            inputAfter: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+            inputBefore: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+            manifestHash: 3b67dfb5a9720109f69c0013058aee26f7898200feb420a349a28cb8de94293c
+            manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/4e177ce0-66e7-4666-98df-8ad5951000d4.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 6c23859432b9c9c72760231a7655e4ea3684e6e63627a971734dd93c4fc2ea7e
+            outcomeId: c3eb183e-4d37-4185-afb0-60e40d74f504
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-t4t6-ci-integration
+        status: succeeded
+        stepId: tweak.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-426a89395edda584e322cf94a80683b31117c854d5cf7f5d1efdf8a4a6240d73
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-t4t6-ci-integration:18
+        input:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs:
+            tweak.verify.check:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 4
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              inputBefore: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              manifestHash: 3b67dfb5a9720109f69c0013058aee26f7898200feb420a349a28cb8de94293c
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/4e177ce0-66e7-4666-98df-8ad5951000d4.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+            tweak.verify.check.evidence:
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+            tweak.verify.report.evidence:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+            tweak.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        inputHash: 84ac157ce272a6b98bf8cf37c0e84ba36c9964b58a160450549ea74e6fce594a
+        outcome:
+          actionId: synapclaim-t4t6-ci-integration:18
+          attempt: 1
+          claimToken: portable-426a89395edda584e322cf94a80683b31117c854d5cf7f5d1efdf8a4a6240d73
+          inputHash: 84ac157ce272a6b98bf8cf37c0e84ba36c9964b58a160450549ea74e6fce594a
+          outcomeId: a7595e0d-2caf-415f-bad1-6df99a2bc854
+          output:
+            summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+              report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+              模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+              check.sh 真实执行全绿。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 8cf32bf88f7265e0066f4c5338a9e152a5a60116d9a5991118fb4b2f2a84286d
+            outcomeId: a7595e0d-2caf-415f-bad1-6df99a2bc854
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-t4t6-ci-integration
+        status: succeeded
+        stepId: tweak.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-a0910eaf330e791c12fb31f9c96c0622a501487c8da25b6836b8aa61e775c1b5
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-t4t6-ci-integration:20
+        input:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs:
+            tweak.archive.confirm:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-t4t6-ci-integration
+                  changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+                  workspaceBaseline:
+                    ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+                outputs:
+                  tweak.archive.prepare:
+                    summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                      report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                      模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit
+                      0d950859a，全仓 check.sh 真实执行全绿。
+                    targetBranch: dev
+            tweak.archive.prepare:
+              summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                check.sh 真实执行全绿。
+              targetBranch: dev
+            tweak.verify.check:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 4
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              inputBefore: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              manifestHash: 3b67dfb5a9720109f69c0013058aee26f7898200feb420a349a28cb8de94293c
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/4e177ce0-66e7-4666-98df-8ad5951000d4.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+            tweak.verify.check.evidence:
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+            tweak.verify.report.evidence:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+            tweak.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        inputHash: 2d08ab475ebfddea1ffdff565e1a9f304f2917b3b1bf431c1adb8bc85add346c
+        outcome:
+          actionId: synapclaim-t4t6-ci-integration:20
+          attempt: 1
+          claimToken: portable-a0910eaf330e791c12fb31f9c96c0622a501487c8da25b6836b8aa61e775c1b5
+          inputHash: 2d08ab475ebfddea1ffdff565e1a9f304f2917b3b1bf431c1adb8bc85add346c
+          outcomeId: 017a10e0-4702-47d3-ba55-8ccf2300c430
+          output:
+            baseCommit: 5294274507db77427da196753681927159bccec5
+            deliveryAction: local
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: bd19fe7873a2aa5bcc71fccbb9f52d061b06be6313095b156e50cfe5b2089593
+            outcomeId: 017a10e0-4702-47d3-ba55-8ccf2300c430
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-t4t6-ci-integration
+        status: succeeded
+        stepId: tweak.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-50b374aba011d96b682d3607559d79eeb661a405247d62cb563c8625c65a3f60
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-t4t6-ci-integration:21
+        input:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs:
+            tweak.archive.confirm:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-t4t6-ci-integration
+                  changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+                  workspaceBaseline:
+                    ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+                outputs:
+                  tweak.archive.prepare:
+                    summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                      report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                      模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit
+                      0d950859a，全仓 check.sh 真实执行全绿。
+                    targetBranch: dev
+            tweak.archive.preflight:
+              baseCommit: 5294274507db77427da196753681927159bccec5
+              deliveryAction: local
+              targetBranch: dev
+              verifiedBranch: dev
+            tweak.archive.prepare:
+              summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                check.sh 真实执行全绿。
+              targetBranch: dev
+            tweak.verify.check:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 4
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              inputBefore: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              manifestHash: 3b67dfb5a9720109f69c0013058aee26f7898200feb420a349a28cb8de94293c
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/4e177ce0-66e7-4666-98df-8ad5951000d4.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+            tweak.verify.check.evidence:
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+            tweak.verify.report.evidence:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+            tweak.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        inputHash: da93fd31bade639193446f2396b5b4f3d19de07c0a325a36607fea332d67de92
+        outcome:
+          actionId: synapclaim-t4t6-ci-integration:21
+          artifacts:
+            - sha256: ce1569e316fcb0a09be20f9a56fc9ea797e35c4f406bb32d37a75f6c116ec207
+              uri: openspec/changes/archive/2026-11-11-synapclaim-t4t6-ci-integration/.comet/archive-manifest.json
+          attempt: 1
+          claimToken: portable-50b374aba011d96b682d3607559d79eeb661a405247d62cb563c8625c65a3f60
+          inputHash: da93fd31bade639193446f2396b5b4f3d19de07c0a325a36607fea332d67de92
+          outcomeId: synapclaim-t4t6-ci-integration:21:1:recovered:40
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-11-synapclaim-t4t6-ci-integration
+          status: succeeded
+        protocolVersion: 1
+        reason: 原执行器中断，正在核对本次执行结果
+        receipts:
+          - hash: 804290cb45099a3ccef5b3d49dd1743c871c72449f3fb69038d51c034db9c282
+            outcomeId: synapclaim-t4t6-ci-integration:21:1:recovered:40
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-t4t6-ci-integration
+        status: succeeded
+        stepId: tweak.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: synapclaim-t4t6-ci-integration:22
+        input:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs:
+            tweak.archive.confirm:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-t4t6-ci-integration
+                  changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+                  workspaceBaseline:
+                    ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+                outputs:
+                  tweak.archive.prepare:
+                    summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                      report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                      模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit
+                      0d950859a，全仓 check.sh 真实执行全绿。
+                    targetBranch: dev
+            tweak.archive.execute:
+              archiveDirectory: openspec/changes/archive/2026-11-11-synapclaim-t4t6-ci-integration
+            tweak.archive.preflight:
+              baseCommit: 5294274507db77427da196753681927159bccec5
+              deliveryAction: local
+              targetBranch: dev
+              verifiedBranch: dev
+            tweak.archive.prepare:
+              summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                check.sh 真实执行全绿。
+              targetBranch: dev
+            tweak.verify.check:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 4
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              inputBefore: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              manifestHash: 3b67dfb5a9720109f69c0013058aee26f7898200feb420a349a28cb8de94293c
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/4e177ce0-66e7-4666-98df-8ad5951000d4.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+            tweak.verify.check.evidence:
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+            tweak.verify.report.evidence:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+            tweak.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        inputHash: a350d49652e3e726bc0fb6be5e521dd3159bfc8abf0a8273f85710560975dc4e
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-t4t6-ci-integration
+        status: pending
+        stepId: tweak.archive.deliver
+        type: invoke_skill
+    commands:
+      - id: 9414b97bc215c4216874ad8d4c6de44210886acd710396ab4659df4fbd6beedc
+        name: reopen-verification
+        inputHash: a54cd632fdf6ef36d0242372c4b8ce3b73cc9f12210a6ba41b88693847e54187
+        actionId: synapclaim-t4t6-ci-integration:14
+    actionContexts:
+      synapclaim-t4t6-ci-integration:1:
+        results: {}
+        sequence: 1
+      synapclaim-t4t6-ci-integration:10:
+        results:
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              cwd: .
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.verify.check:
+            sequence: 8
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/bd6f66ed-71f9-4f17-b898-e5c5ba3ce054.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.check.evidence:
+            sequence: 9
+            value:
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+          tweak.verify.report.evidence:
+            sequence: 7
+            value:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        sequence: 10
+      synapclaim-t4t6-ci-integration:12:
+        results:
+          tweak.archive.confirm:
+            sequence: 11
+            value:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-t4t6-ci-integration
+                  changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+                  workspaceBaseline:
+                    ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+                outputs:
+                  tweak.archive.prepare:
+                    summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                      report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                      模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit
+                      0d950859a，全仓 check.sh 真实执行全绿。
+                    targetBranch: dev
+          tweak.archive.prepare:
+            sequence: 10
+            value:
+              summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                check.sh 真实执行全绿。
+              targetBranch: dev
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              cwd: .
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.verify.check:
+            sequence: 8
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/bd6f66ed-71f9-4f17-b898-e5c5ba3ce054.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.check.evidence:
+            sequence: 9
+            value:
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+          tweak.verify.report.evidence:
+            sequence: 7
+            value:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        sequence: 12
+      synapclaim-t4t6-ci-integration:13:
+        results:
+          tweak.archive.confirm:
+            sequence: 11
+            value:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-t4t6-ci-integration
+                  changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+                  workspaceBaseline:
+                    ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+                outputs:
+                  tweak.archive.prepare:
+                    summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                      report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                      模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit
+                      0d950859a，全仓 check.sh 真实执行全绿。
+                    targetBranch: dev
+          tweak.archive.preflight:
+            sequence: 12
+            value:
+              baseCommit: 0d950859a43d41fdc4b2181cc975a3871d5d9cbd
+              deliveryAction: local
+              targetBranch: dev
+              verifiedBranch: dev
+          tweak.archive.prepare:
+            sequence: 10
+            value:
+              summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                check.sh 真实执行全绿。
+              targetBranch: dev
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              cwd: .
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.verify.check:
+            sequence: 8
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/bd6f66ed-71f9-4f17-b898-e5c5ba3ce054.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.check.evidence:
+            sequence: 9
+            value:
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+          tweak.verify.report.evidence:
+            sequence: 7
+            value:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        sequence: 13
+      synapclaim-t4t6-ci-integration:14:
+        results: {}
+        sequence: 14
+      synapclaim-t4t6-ci-integration:16:
+        results:
+          tweak.verify.report.evidence:
+            sequence: 15
+            value:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          tweak.verify.run:
+            sequence: 14
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        sequence: 16
+      synapclaim-t4t6-ci-integration:18:
+        results:
+          tweak.verify.check:
+            sequence: 16
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 4
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              inputBefore: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              manifestHash: 3b67dfb5a9720109f69c0013058aee26f7898200feb420a349a28cb8de94293c
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/4e177ce0-66e7-4666-98df-8ad5951000d4.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.check.evidence:
+            sequence: 17
+            value:
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+          tweak.verify.report.evidence:
+            sequence: 15
+            value:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          tweak.verify.run:
+            sequence: 14
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        sequence: 18
+      synapclaim-t4t6-ci-integration:20:
+        results:
+          tweak.archive.confirm:
+            sequence: 19
+            value:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-t4t6-ci-integration
+                  changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+                  workspaceBaseline:
+                    ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+                outputs:
+                  tweak.archive.prepare:
+                    summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                      report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                      模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit
+                      0d950859a，全仓 check.sh 真实执行全绿。
+                    targetBranch: dev
+          tweak.archive.prepare:
+            sequence: 18
+            value:
+              summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                check.sh 真实执行全绿。
+              targetBranch: dev
+          tweak.verify.check:
+            sequence: 16
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 4
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              inputBefore: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              manifestHash: 3b67dfb5a9720109f69c0013058aee26f7898200feb420a349a28cb8de94293c
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/4e177ce0-66e7-4666-98df-8ad5951000d4.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.check.evidence:
+            sequence: 17
+            value:
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+          tweak.verify.report.evidence:
+            sequence: 15
+            value:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          tweak.verify.run:
+            sequence: 14
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        sequence: 20
+      synapclaim-t4t6-ci-integration:21:
+        results:
+          tweak.archive.confirm:
+            sequence: 19
+            value:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-t4t6-ci-integration
+                  changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+                  workspaceBaseline:
+                    ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+                outputs:
+                  tweak.archive.prepare:
+                    summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                      report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                      模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit
+                      0d950859a，全仓 check.sh 真实执行全绿。
+                    targetBranch: dev
+          tweak.archive.preflight:
+            sequence: 20
+            value:
+              baseCommit: 5294274507db77427da196753681927159bccec5
+              deliveryAction: local
+              targetBranch: dev
+              verifiedBranch: dev
+          tweak.archive.prepare:
+            sequence: 18
+            value:
+              summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                check.sh 真实执行全绿。
+              targetBranch: dev
+          tweak.verify.check:
+            sequence: 16
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 4
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              inputBefore: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              manifestHash: 3b67dfb5a9720109f69c0013058aee26f7898200feb420a349a28cb8de94293c
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/4e177ce0-66e7-4666-98df-8ad5951000d4.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.check.evidence:
+            sequence: 17
+            value:
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+          tweak.verify.report.evidence:
+            sequence: 15
+            value:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          tweak.verify.run:
+            sequence: 14
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        sequence: 21
+      synapclaim-t4t6-ci-integration:22:
+        results:
+          tweak.archive.confirm:
+            sequence: 19
+            value:
+              choice: local
+              proposal:
+                input:
+                  change: synapclaim-t4t6-ci-integration
+                  changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+                  workspaceBaseline:
+                    ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+                outputs:
+                  tweak.archive.prepare:
+                    summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                      report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                      模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit
+                      0d950859a，全仓 check.sh 真实执行全绿。
+                    targetBranch: dev
+          tweak.archive.execute:
+            sequence: 21
+            value:
+              archiveDirectory: openspec/changes/archive/2026-11-11-synapclaim-t4t6-ci-integration
+          tweak.archive.preflight:
+            sequence: 20
+            value:
+              baseCommit: 5294274507db77427da196753681927159bccec5
+              deliveryAction: local
+              targetBranch: dev
+              verifiedBranch: dev
+          tweak.archive.prepare:
+            sequence: 18
+            value:
+              summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                check.sh 真实执行全绿。
+              targetBranch: dev
+          tweak.verify.check:
+            sequence: 16
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 4
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              inputBefore: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              manifestHash: 3b67dfb5a9720109f69c0013058aee26f7898200feb420a349a28cb8de94293c
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/4e177ce0-66e7-4666-98df-8ad5951000d4.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.check.evidence:
+            sequence: 17
+            value:
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+          tweak.verify.report.evidence:
+            sequence: 15
+            value:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          tweak.verify.run:
+            sequence: 14
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        sequence: 22
+      synapclaim-t4t6-ci-integration:3:
+        results:
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+        sequence: 3
+      synapclaim-t4t6-ci-integration:4:
+        results:
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+        sequence: 4
+      synapclaim-t4t6-ci-integration:6:
+        results:
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              cwd: .
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+        sequence: 6
+      synapclaim-t4t6-ci-integration:8:
+        results:
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              cwd: .
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.verify.report.evidence:
+            sequence: 7
+            value:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        sequence: 8
+    waits:
+      - id: synapclaim-t4t6-ci-integration:11
+        stepId: tweak.archive.confirm
+        sequence: 11
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs:
+            tweak.archive.prepare:
+              summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                check.sh 真实执行全绿。
+              targetBranch: dev
+        proposalHash: 0cbfe7d981689a5495b24bc77b7469bbe7adf6b94264574bd4a5103d94fc6749
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results:
+          tweak.archive.prepare:
+            sequence: 10
+            value:
+              summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                check.sh 真实执行全绿。
+              targetBranch: dev
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              cwd: .
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.verify.check:
+            sequence: 8
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/bd6f66ed-71f9-4f17-b898-e5c5ba3ce054.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.check.evidence:
+            sequence: 9
+            value:
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+          tweak.verify.report.evidence:
+            sequence: 7
+            value:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        decision:
+          id: classic-archive-0cbfe7d981689a5495b24bc77b7469bbe7adf6b94264574bd4a5103d94fc6749-local
+          choice: local
+          proposalHash: 0cbfe7d981689a5495b24bc77b7469bbe7adf6b94264574bd4a5103d94fc6749
+      - id: synapclaim-t4t6-ci-integration:19
+        stepId: tweak.archive.confirm
+        sequence: 19
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-t4t6-ci-integration
+            changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+            workspaceBaseline:
+              ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+          outputs:
+            tweak.archive.prepare:
+              summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                check.sh 真实执行全绿。
+              targetBranch: dev
+        proposalHash: 0cbfe7d981689a5495b24bc77b7469bbe7adf6b94264574bd4a5103d94fc6749
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results:
+          tweak.archive.prepare:
+            sequence: 18
+            value:
+              summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                check.sh 真实执行全绿。
+              targetBranch: dev
+          tweak.verify.check:
+            sequence: 16
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 4
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              inputBefore: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              manifestHash: 3b67dfb5a9720109f69c0013058aee26f7898200feb420a349a28cb8de94293c
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/4e177ce0-66e7-4666-98df-8ad5951000d4.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.check.evidence:
+            sequence: 17
+            value:
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+          tweak.verify.report.evidence:
+            sequence: 15
+            value:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          tweak.verify.run:
+            sequence: 14
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        decision:
+          id: classic-archive-0cbfe7d981689a5495b24bc77b7469bbe7adf6b94264574bd4a5103d94fc6749-local
+          choice: local
+          proposalHash: 0cbfe7d981689a5495b24bc77b7469bbe7adf6b94264574bd4a5103d94fc6749
+    evidenceWaits:
+      - id: synapclaim-t4t6-ci-integration:2
+        stepId: tweak.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results:
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+        receipt:
+          ref: openspec/changes/synapclaim-t4t6-ci-integration
+          contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+          submissionId: bd47117c-da21-4659-84de-84af4bfcb242
+      - id: synapclaim-t4t6-ci-integration:5
+        stepId: tweak.build.check.evidence
+        sequence: 5
+        kind: classic-build-check
+        status: resolved
+        results:
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              cwd: .
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+          contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+          submissionId: 62ebf703-13cf-46ad-8abb-5da9b92e7978
+      - id: synapclaim-t4t6-ci-integration:7
+        stepId: tweak.verify.report.evidence
+        sequence: 7
+        kind: classic-verification-report
+        status: resolved
+        results:
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              cwd: .
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        receipt:
+          ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+          submissionId: 0ea5ae80-e6f0-4c30-86ab-ab87de0c5d4f
+      - id: synapclaim-t4t6-ci-integration:9
+        stepId: tweak.verify.check.evidence
+        sequence: 9
+        kind: classic-verify-check
+        status: resolved
+        results:
+          tweak.build.check:
+            sequence: 4
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 1
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              cwd: .
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          tweak.build.check.evidence:
+            sequence: 5
+            value:
+              contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+              ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+          tweak.build.execute:
+            sequence: 3
+            value:
+              event: build-complete
+          tweak.open:
+            sequence: 1
+            value:
+              event: open-complete
+              requirementsEvidence:
+                contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+                ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.open.evidence:
+            sequence: 2
+            value:
+              contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+              ref: openspec/changes/synapclaim-t4t6-ci-integration
+          tweak.verify.check:
+            sequence: 8
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+              manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/bd6f66ed-71f9-4f17-b898-e5c5ba3ce054.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.report.evidence:
+            sequence: 7
+            value:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          tweak.verify.run:
+            sequence: 6
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/1423bb30-509b-476b-a960-0297b2187f18.log
+          contentHash: ddbfa4154cdc1258c817cfe5e93171a71a9e98a3b39f6748f96c6c5a104f7659
+          submissionId: 3d42b809-ed24-4f4e-b785-782d27a836fb
+      - id: synapclaim-t4t6-ci-integration:15
+        stepId: tweak.verify.report.evidence
+        sequence: 15
+        kind: classic-verification-report
+        status: resolved
+        results:
+          tweak.verify.run:
+            sequence: 14
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        receipt:
+          ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+          submissionId: 36287ce7-ae83-461f-aa5c-ea69f64a76eb
+      - id: synapclaim-t4t6-ci-integration:17
+        stepId: tweak.verify.check.evidence
+        sequence: 17
+        kind: classic-verify-check
+        status: resolved
+        results:
+          tweak.verify.check:
+            sequence: 16
+            value:
+              argv:
+                - bash
+                - scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 4
+              contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+              cwd: .
+              deliveryInputs: {}
+              environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+              exitCode: 0
+              inputAfter: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              inputBefore: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+              manifestHash: 3b67dfb5a9720109f69c0013058aee26f7898200feb420a349a28cb8de94293c
+              manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/4e177ce0-66e7-4666-98df-8ad5951000d4.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+              reusable: false
+              reused: false
+              scope: verify
+              tier: full
+              timeoutMs: 900000
+          tweak.verify.report.evidence:
+            sequence: 15
+            value:
+              contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+              ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+          tweak.verify.run:
+            sequence: 14
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+          contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+          submissionId: b4e7e480-7c68-4f0b-aa9d-4970d64c9ac9
+    ready: []
+    joins: {}
+    outputs:
+      tweak.archive.confirm:
+        sequence: 19
+        value:
+          choice: local
+          proposal:
+            input:
+              change: synapclaim-t4t6-ci-integration
+              changeDir: openspec/changes/synapclaim-t4t6-ci-integration
+              workspaceBaseline:
+                ref: 6df2f3ee-aff5-46f2-9f79-18bfd6b1d782
+            outputs:
+              tweak.archive.prepare:
+                summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+                  report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR
+                  模板自检节）；不新增 check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓
+                  check.sh 真实执行全绿。
+                targetBranch: dev
+      tweak.archive.execute:
+        sequence: 21
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-11-synapclaim-t4t6-ci-integration
+      tweak.archive.preflight:
+        sequence: 20
+        value:
+          baseCommit: 5294274507db77427da196753681927159bccec5
+          deliveryAction: local
+          targetBranch: dev
+          verifiedBranch: dev
+      tweak.archive.prepare:
+        sequence: 18
+        value:
+          summary: 将 T4 变更影响面脚本 analyze-impact.py 与 T6 质量度量脚本 analyze-metrics.py 作为
+            report-only、非阻断步骤接入 PR 流（ci.yml backend-quality job + PR 模板自检节）；不新增
+            check、不转阻断、不接外部数据源、不碰 §12 L4。commit 0d950859a，全仓 check.sh 真实执行全绿。
+          targetBranch: dev
+      tweak.build.check:
+        sequence: 4
+        value:
+          argv:
+            - bash
+            - scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 1
+          contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+          cwd: .
+          environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+          exitCode: 0
+          inputAfter: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+          inputBefore: f2f872ceaf9f17b6773b3e632ee296573287e46e78367c246a7cc2d2e6cd4bf5
+          manifestHash: 0f69947f9222f67100582b4302b6cc3a7867597fc4bf2a5f07653ca9f823f051
+          manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b9842f7b-a460-41b2-8769-9d09e3cd59d0.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      tweak.build.check.evidence:
+        sequence: 5
+        value:
+          contentHash: d46d03f75846d2a1324b07e1d4b6203bfa1a42c40da693b1c5b9b482f4f40106
+          ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/b5c2c250-8d1b-4953-be6d-2236d5044d91.log
+      tweak.build.execute:
+        sequence: 3
+        value:
+          event: build-complete
+      tweak.open:
+        sequence: 1
+        value:
+          event: open-complete
+          requirementsEvidence:
+            contentHash: 367c42e635e938a39d95140ba73770225a6106da9bad52ab08dcd120e5705d1b
+            ref: openspec/changes/synapclaim-t4t6-ci-integration
+      tweak.open.evidence:
+        sequence: 2
+        value:
+          contentHash: a0e7836edeac2324d6ee2b3de9381b7bddd4c9b5bcd732ccb74efc53faee4843
+          ref: openspec/changes/synapclaim-t4t6-ci-integration
+      tweak.verify.check:
+        sequence: 16
+        value:
+          argv:
+            - bash
+            - scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 4
+          contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+          cwd: .
+          deliveryInputs: {}
+          environment: 697c65bf6d597b304ec0a46641a121348c22638843cb7b2b7382ecc15f94d478
+          exitCode: 0
+          inputAfter: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+          inputBefore: b2bf5ada6ca8ce930c32b6b7ea1edddac007c11bd0282a854e6563f659ca91bf
+          manifestHash: 3b67dfb5a9720109f69c0013058aee26f7898200feb420a349a28cb8de94293c
+          manifestRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/4e177ce0-66e7-4666-98df-8ad5951000d4.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      tweak.verify.check.evidence:
+        sequence: 17
+        value:
+          contentHash: 21f1d0981127fb7e69fcbf12177e621c4bdae90f206bbe556ad512eb61e9715c
+          ref: .comet/runtime/classic-sdk-checks/e13fb167e6fbae5b53f04d2eced10c6ab58f8ba3338f5893019e7c9231482a08/0d1655b9-9ffb-452e-8ec9-5992547acfdd.log
+      tweak.verify.report.evidence:
+        sequence: 15
+        value:
+          contentHash: e648041302d9f89983b82c1e80914a66acbe10de4980c2d0890b65236f3551bf
+          ref: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+      tweak.verify.run:
+        sequence: 14
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-t4t6-ci-integration-verify.md
+    children: []
+    lineage: []
+    reason: "ACTION_FAILED: tweak.archive.execute"
+  sourceRevision: 41
+  sourceHash: 2f5c1c5c92d2b6e99a884fd2a7ced586292af6aeaf753fffd2c8ec30e8ee471c
+check_epoch: 7
