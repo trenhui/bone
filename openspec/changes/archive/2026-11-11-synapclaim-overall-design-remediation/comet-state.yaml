@@ -1,0 +1,2268 @@
+# comet-execution: managed-run
+change_id: 4a73adfa-50a4-4b8f-8e49-80f1bb7e52bd
+workflow: tweak
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: direct
+build_pause: null
+subagent_dispatch: null
+tdd_mode: direct
+review_mode: off
+isolation: current
+verify_mode: light
+auto_transition: true
+base_ref: 0be607624647c1bd3032debf50caf262f0b17e81
+design_doc: null
+plan: null
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-11-synapclaim-overall-design-remediation-verify.md
+branch_status: pending
+created_at: 2026-11-11
+verified_at: 2026-11-11
+archive_confirmation: confirmed
+archived: false
+bound_branch: dev
+direct_override: null
+handoff_context: null
+handoff_hash: null
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: 641043cf9d1a856fb040a8c354cc0e7dd73f5ccc05f75986a56ca509d28ed4c3
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: synapclaim-overall-design-remediation
+    revision: 1
+    workflow:
+      id: comet-classic-tweak
+      version: "1"
+      hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+    definitionHashes:
+      '["comet-classic-tweak","1"]': fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+    initialStateHash: a3fd2a9c98dd8512ba2f8e1abc2b1f6547d9748e45197e7ab8cc2855fad3f781
+    input:
+      change: synapclaim-overall-design-remediation
+      changeDir: openspec/changes/synapclaim-overall-design-remediation
+      workspaceBaseline:
+        ref: 87cd817b-9df8-4c19-b648-e204be463b54
+    state:
+      archiveConfirmation: confirmed
+      archived: false
+      autoTransition: true
+      baseRef: 0be607624647c1bd3032debf50caf262f0b17e81
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: direct
+      buildPause: null
+      checkEpoch: 6
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-11
+      designDoc: null
+      directOverride: null
+      handoffContext: null
+      handoffHash: null
+      isolation: current
+      language: zh-CN
+      phase: archive
+      plan: null
+      reviewMode: off
+      subagentDispatch: null
+      tddMode: direct
+      verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-overall-design-remediation-verify.md
+      verifiedAt: 2026-11-11
+      verifyFailures: 0
+      verifyMode: light
+      verifyResult: pass
+      workflow: tweak
+    status: running
+    sequence: 22
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-0c3adcce5440d391a7618a478e5a340a2a9e0d12c187f572820ae21ee020d45a
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-overall-design-remediation:1
+        input:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs: {}
+        inputHash: 53440a03f8f7e204eae8f8cb1ee80f986649cb2abe1b9ea022574e9208eab2c8
+        outcome:
+          actionId: synapclaim-overall-design-remediation:1
+          attempt: 1
+          claimToken: portable-0c3adcce5440d391a7618a478e5a340a2a9e0d12c187f572820ae21ee020d45a
+          inputHash: 53440a03f8f7e204eae8f8cb1ee80f986649cb2abe1b9ea022574e9208eab2c8
+          outcomeId: e2839b78-e566-46ee-a838-04d367912871
+          output:
+            event: open-complete
+            requirementsEvidence:
+              contentHash: 8cceacb32a0fe09c7a9247f63e467761ffd7e9ee124b24a4769773b99a1f26a0
+              ref: openspec/changes/synapclaim-overall-design-remediation
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: d7e79e1abc09d00fa1a2a763171ca33dc1273579d4d0b651bf79645ac74829b0
+            outcomeId: e2839b78-e566-46ee-a838-04d367912871
+        reconciliations: []
+        ref: comet-tweak
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-overall-design-remediation
+        status: succeeded
+        stepId: tweak.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: tweak-overall-design-remediation-20261111
+          token: portable-eb94318012facbc1db97e15ca95b53075ce9961dd89cec0b658e16c19f334e9a
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-overall-design-remediation:3
+        input:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs: {}
+        inputHash: 55c9043a3d72e996287d5503fb03ed106dc8f3eed9799033c1f84bb6aa8122a3
+        outcome:
+          actionId: synapclaim-overall-design-remediation:3
+          attempt: 1
+          claimToken: portable-eb94318012facbc1db97e15ca95b53075ce9961dd89cec0b658e16c19f334e9a
+          inputHash: 55c9043a3d72e996287d5503fb03ed106dc8f3eed9799033c1f84bb6aa8122a3
+          outcomeId: 7378a0f3-c265-40fd-b3a1-de812d85d964
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 2c98a0067521c3fced535e228529f9d934523ab483946dd8f399aec5d2addfce
+            outcomeId: 7378a0f3-c265-40fd-b3a1-de812d85d964
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-overall-design-remediation
+        status: succeeded
+        stepId: tweak.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-624e069547041036ddfde2522ec90e668fe671524a014cbd01ad242a2b0fdca2
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-overall-design-remediation:4
+        input:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs: {}
+        inputHash: 67df1dc9cbe77ec7de9781bcc8f8ebcc1ff55f4bbb5be6d3347cba574bc33f75
+        outcome:
+          actionId: synapclaim-overall-design-remediation:4
+          attempt: 1
+          claimToken: portable-624e069547041036ddfde2522ec90e668fe671524a014cbd01ad242a2b0fdca2
+          inputHash: 67df1dc9cbe77ec7de9781bcc8f8ebcc1ff55f4bbb5be6d3347cba574bc33f75
+          outcomeId: 8a1b8516c4d61c878c2dde650164daea1a1f0ca2f6452632c51c50ffe404689e
+          output:
+            argv:
+              - python3
+              - doc/ai-product/synapClaim/tools/check_all.py
+            changedDuringExecution: []
+            checkEpoch: 1
+            contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+            cwd: .
+            environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+            exitCode: 0
+            inputAfter: abcb58175bf0e706fbff609274b56a33c6c878cd807d6d6965214860c892d653
+            inputBefore: abcb58175bf0e706fbff609274b56a33c6c878cd807d6d6965214860c892d653
+            manifestHash: 13453bef31e8f69bae80f229e78742578fd9a11516b4f536fd1bd97f51962e08
+            manifestRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/9dcf9e86-ecb4-4ec8-9f0d-680a5769052b.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/c1116ac6-84db-4e85-8892-80877ec497c9.log
+            reusable: true
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: d66f241ae0fc0c76382a64dd6f1ea2d7a848045ea3ff3a6470e159d1397735be
+            outcomeId: 8a1b8516c4d61c878c2dde650164daea1a1f0ca2f6452632c51c50ffe404689e
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-overall-design-remediation
+        status: succeeded
+        stepId: tweak.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-overall-design-remediation:6/1
+          token: portable-79d3d4f5b4046aba22c24c3f2e376fe6cc65e005d89c428588edb0205ebd900c
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-overall-design-remediation:6
+        input:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs: {}
+        inputHash: 591c20716cf5255ed1b0dd6623e5351e08fbed54b8236ccbf9d34c66a00e1e2c
+        outcome:
+          actionId: synapclaim-overall-design-remediation:6
+          attempt: 1
+          claimToken: portable-79d3d4f5b4046aba22c24c3f2e376fe6cc65e005d89c428588edb0205ebd900c
+          inputHash: 591c20716cf5255ed1b0dd6623e5351e08fbed54b8236ccbf9d34c66a00e1e2c
+          outcomeId: fc533633-314a-4c5a-8d04-406ca9930f0c
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: e2bd06c459cca965f3c81ae3efba906cf17d34448bf46a4b959996a1cfa1dcca
+            outcomeId: fc533633-314a-4c5a-8d04-406ca9930f0c
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-overall-design-remediation
+        status: succeeded
+        stepId: tweak.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-c66efd925a75fa6885e969eca4da13fbcb5328b2556a27b449bb3eb13acccc58
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-overall-design-remediation:7
+        input:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs: {}
+        inputHash: 591c20716cf5255ed1b0dd6623e5351e08fbed54b8236ccbf9d34c66a00e1e2c
+        outcome:
+          actionId: synapclaim-overall-design-remediation:7
+          attempt: 1
+          claimToken: portable-c66efd925a75fa6885e969eca4da13fbcb5328b2556a27b449bb3eb13acccc58
+          inputHash: 591c20716cf5255ed1b0dd6623e5351e08fbed54b8236ccbf9d34c66a00e1e2c
+          outcomeId: 11b847801e519f652242ae3224a83b3f8f12e7a004df03304e7f28986ca503b7
+          output:
+            argv:
+              - python3
+              - doc/ai-product/synapClaim/tools/check_all.py
+            changedDuringExecution: []
+            checkEpoch: 1
+            contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+            cwd: .
+            environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+            exitCode: 0
+            inputAfter: 80ab5de7f41f5a5a47bdf7b264893e70b50eb4ca55571d5d87c628222f52625b
+            inputBefore: 80ab5de7f41f5a5a47bdf7b264893e70b50eb4ca55571d5d87c628222f52625b
+            manifestHash: 951c6c63ce4fa05702ed76ddbcb09c87e99935f395f8cf3adfd4557354d63f50
+            manifestRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/af413a60-f0ce-42fd-bcdd-5e2bbb924903.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/118f5ad3-88c4-49f1-af17-7c0ac4478e20.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 16d93f7f1e16bb7b89cedd4f3664f32f2b75a548ec8effdf8f2b5da49f2a77c5
+            outcomeId: 11b847801e519f652242ae3224a83b3f8f12e7a004df03304e7f28986ca503b7
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-overall-design-remediation
+        status: succeeded
+        stepId: tweak.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-75ce071abd5123659cf188b66c12a8872700339a7aa07910f6412fbd69120581
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-overall-design-remediation:9
+        input:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs: {}
+        inputHash: e31fdc76abfa1069bab670da3d26bbfbea71d5e92ca2332bfeceef39ee7fcc09
+        outcome:
+          actionId: synapclaim-overall-design-remediation:9
+          attempt: 1
+          claimToken: portable-75ce071abd5123659cf188b66c12a8872700339a7aa07910f6412fbd69120581
+          inputHash: e31fdc76abfa1069bab670da3d26bbfbea71d5e92ca2332bfeceef39ee7fcc09
+          outcomeId: d847a47b-64a3-42ef-8fce-e775005c61ac
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-overall-design-remediation-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1c343a2271ff4284331c07535d67e1ec22be1f0336e4d56cad1cb8ef2ac7894a
+            outcomeId: d847a47b-64a3-42ef-8fce-e775005c61ac
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-overall-design-remediation
+        status: succeeded
+        stepId: tweak.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-17028f71baba3170d07f4e9f23313d83ea5b7285cc61bc3ccd1dc3161332f689
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-overall-design-remediation:11
+        input:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs: {}
+        inputHash: 8ccb8fcd6f8699a1f167369d169e7e98039a00f45e2507540881019eef2d045b
+        outcome:
+          actionId: synapclaim-overall-design-remediation:11
+          attempt: 2
+          claimToken: portable-17028f71baba3170d07f4e9f23313d83ea5b7285cc61bc3ccd1dc3161332f689
+          inputHash: 8ccb8fcd6f8699a1f167369d169e7e98039a00f45e2507540881019eef2d045b
+          outcomeId: cc05895b-f8da-41f3-8954-a801770a67a7
+          output:
+            argv:
+              - python3
+              - doc/ai-product/synapClaim/tools/check_all.py
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+            cwd: .
+            deliveryInputs:
+              README.en.md: git:e80b38dcc69ed027e9ac8c031bf9b4479582f2f0
+              README.md: git:63c187362599f84c3044c04702a2459c9b995e8f
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AdjustmentController.java: git:2decc9a666b106bcf3a2511a9a32f3f049a976cf
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java: git:f4aebde70ab815aa413e86e568e09e75fb1016c5
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimIdempotencyProperties.java: git:2594bbbe300d13d209dde4ae5dcad47592d94ea1
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/SettlementController.java: git:6a901761cbfe4395cd466a5f309159d546e407df
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/IndemnityApplicationService.java: git:4127cc28f2225843e3fc0212b390a864f6362ce8
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/claim/ClaimCase.java: git:ef37ff2fdaef2c293f5370a4bfd8e4b584c12373
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/idempotency/IdempotencyRecord.java: git:ac499032076467cf4e6c75aba5f9065e3e0b7288
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/idempotency/IdempotencyStoreAdapter.java: git:8c1ed7d2299a38da96490158f4bef21924e213e0
+              bone-apps/synap-claim/synap-claim-app/src/main/resources/application.yml: git:04ffdc4e400efd53126391ba50c3dabb917839ff
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/ClaimIdempotencyPropertiesTest.java: git:539de1194bf680a5d9a928585b3d214770dd2253
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/ClaimPageDefaultsTest.java: git:b618944ebbdcee01de3ca38e71bb6487c78e4073
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/SettlementControllerIdempotencyTest.java: git:228b01149eb49dbd4bddbf64a48a6eb8c1a7ec95
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimCaseApplicationServiceTest.java: git:8542fbc7be937408d51094d3b8324407e0cfe4f4
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionAiTraceabilityTest.java: git:bb8df7e1d2199a13811b6106365551d855a0072e
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphExecutorModelParticipationTest.java: git:03866ae49e7d7045204a21f4075ec542c1072578
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphExecutorTest.java: git:66e09734d162be187cacef47aba9e6c0e5c94ba9
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphFlowConfigTest.java: git:481962798e3d97dd3d92d461d1f2104580a51b6d
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphFunctionalTest.java: git:936c24b0d07e9240e3407a3ac61e55ed4432c0b1
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/IndemnityApplicationServiceRecalculateBoundVersionTest.java: git:d18f8d8619824e430881f358e4f6bd5d3f65f5f3
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/claim/ClaimCaseConsentTest.java: git:50ad7a2aa38ced8cbf9c8aab2769766cafd54be1
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/claim/ClaimCaseTest.java: git:c8ff5ccc4412f8514e7d1e968d509f4a1ea4b8c6
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/infrastructure/idempotency/IdempotencyStoreAdapterTest.java: git:e6c6425a75d3133bf25e1e6a97e8c9361f3c699c
+              bone-framework/bone-core/src/main/java/com/bone/core/idempotency/IdempotencyService.java: git:33dc8289c87a2610e3a459b3b22dae01c2c194f3
+              doc/ai-product/synapClaim/04-design/总体技术方案.md: git:b314ab0c5714e985071b357bb8b4cf29759520a1
+              doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:946114146034a400bfc9e7eaec80be07b8109730
+              doc/design/assets/architecture.html: git:52b9351cb1dbc3bf9e5c3f0dfb2b0c978463f318
+              doc/design/assets/bone-hero-banner.svg: git:78a479603a23eddcffbfdb21bbdd41e21a7a1d23
+              doc/design/assets/bone-hero-banner.webp: git:27d4f6b3bfcdd35dc410a0994009ac1d9003a7f7
+            environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+            exitCode: 0
+            inputAfter: b9d18de2ef95c5c5ef2fc0a4f05fdd77160d30b5e514628c802cd3f773dca4be
+            inputBefore: b9d18de2ef95c5c5ef2fc0a4f05fdd77160d30b5e514628c802cd3f773dca4be
+            manifestHash: 23b44acca531c92144071e0028b38f2621a5e5275c94f25f0094c7fec790d06f
+            manifestRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/6eeee206-75cc-4363-b9df-cfa3ec337677.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/e3235223-9e35-4398-8c03-8a163baa4971.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 5b5be7a89d7838b6020299bab4fb66d8ba3225b545de56f2a49841ee621f6abc
+            outcomeId: cc05895b-f8da-41f3-8954-a801770a67a7
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 原检查 Action :11 的 Runtime 记录停在 status=started，无 result 字段；原执行器
+                comet-classic-check 随宿主命令退出。日志文件虽含 19/19 全绿输出，但按 Runtime
+                协议日志本身不能证明检查通过，故不采用该日志作为通过证据、不编造成功收据。核对来源：state check <change>
+                verify --recover --details 的 record.status / action.status，以及
+                .comet/runtime/classic-sdk-checks 下的 sdk-d50651b8…json
+                记录。申请重新派发一次完整真实检查（python3
+                doc/ai-product/synapClaim/tools/check_all.py）。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-overall-design-remediation
+        status: succeeded
+        stepId: tweak.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-efe166f7727cdff309e3b34628699929c320c2eac4eb292452197b675b53f92e
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-overall-design-remediation:13
+        input:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs: {}
+        inputHash: b77d94b837d9903290e2ebd011290ddde5953acf6b499f7219a630aad2fbdba9
+        outcome:
+          actionId: synapclaim-overall-design-remediation:13
+          attempt: 1
+          claimToken: portable-efe166f7727cdff309e3b34628699929c320c2eac4eb292452197b675b53f92e
+          inputHash: b77d94b837d9903290e2ebd011290ddde5953acf6b499f7219a630aad2fbdba9
+          outcomeId: 0033f18e-5690-4da1-b4e8-af8e12221cda
+          output:
+            summary: 归档 synapclaim-overall-design-remediation：将《总体技术方案.md》22 处文档整改（里程碑 A/B
+              依赖重划、O-12/O-13 准入门槛、M2.5 工程定义、Port 判据修正、④ 读兼容层、G3
+              一期口径、数字去硬编码、当前态快照）连同 proposal/design/tasks/verify 报告归入 openspec
+              归档目录；Verify 已通过（19/19 全绿、exitCode 0）；仅提交本 change 路径，工作区另有 34
+              项并行会话无关改动原样保留
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 90aeadc58ba330db27a5c056770e64975c2e45825a1e686c7352edffeb99c0e0
+            outcomeId: 0033f18e-5690-4da1-b4e8-af8e12221cda
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-overall-design-remediation
+        status: succeeded
+        stepId: tweak.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-48662b2eabfd343d68f14200285555b25662f37302d846191b7b9d8bd612d600
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-overall-design-remediation:15
+        input:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs: {}
+        inputHash: ecd5f519efffc2e2d93987853b9d06d1925691adc5ba41836f1c1a6ae30d7eca
+        outcome:
+          actionId: synapclaim-overall-design-remediation:15
+          attempt: 1
+          claimToken: portable-48662b2eabfd343d68f14200285555b25662f37302d846191b7b9d8bd612d600
+          inputHash: ecd5f519efffc2e2d93987853b9d06d1925691adc5ba41836f1c1a6ae30d7eca
+          outcomeId: 127a2352-76d9-4d39-bdd1-ba0fb4c0dbb4
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-overall-design-remediation-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 11c91385cd251f18cd47104d1e53454786bea29d51712f637b00033bb3dbc175
+            outcomeId: 127a2352-76d9-4d39-bdd1-ba0fb4c0dbb4
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-overall-design-remediation
+        status: succeeded
+        stepId: tweak.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-602a03aadb0e7a2d23891e10444a2e0f53a46764b8dcf7d4488f0424e6546d38
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-overall-design-remediation:17
+        input:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs: {}
+        inputHash: ecd5f519efffc2e2d93987853b9d06d1925691adc5ba41836f1c1a6ae30d7eca
+        outcome:
+          actionId: synapclaim-overall-design-remediation:17
+          attempt: 2
+          claimToken: portable-602a03aadb0e7a2d23891e10444a2e0f53a46764b8dcf7d4488f0424e6546d38
+          inputHash: ecd5f519efffc2e2d93987853b9d06d1925691adc5ba41836f1c1a6ae30d7eca
+          outcomeId: afe8c0d7f39a9cf3297dccff82c2e066b93cff29ebc2162cb19f616a4b296914
+          output:
+            argv:
+              - python3
+              - doc/ai-product/synapClaim/tools/check_all.py
+            changedDuringExecution: []
+            checkEpoch: 4
+            contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+            cwd: .
+            deliveryInputs:
+              README.en.md: git:08271c0e2a8c1911cd010b17e489129194d16510
+              README.md: git:9fa8e9ba1303e1c7b21e161df83f77371e6b5263
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AdjustmentController.java: git:2decc9a666b106bcf3a2511a9a32f3f049a976cf
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java: git:f4aebde70ab815aa413e86e568e09e75fb1016c5
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimIdempotencyProperties.java: git:2594bbbe300d13d209dde4ae5dcad47592d94ea1
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/SettlementController.java: git:6a901761cbfe4395cd466a5f309159d546e407df
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/IndemnityApplicationService.java: git:4127cc28f2225843e3fc0212b390a864f6362ce8
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/claim/ClaimCase.java: git:ef37ff2fdaef2c293f5370a4bfd8e4b584c12373
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/idempotency/IdempotencyRecord.java: git:ac499032076467cf4e6c75aba5f9065e3e0b7288
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/idempotency/IdempotencyStoreAdapter.java: git:8c1ed7d2299a38da96490158f4bef21924e213e0
+              bone-apps/synap-claim/synap-claim-app/src/main/resources/application.yml: git:04ffdc4e400efd53126391ba50c3dabb917839ff
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/ClaimIdempotencyPropertiesTest.java: git:539de1194bf680a5d9a928585b3d214770dd2253
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/ClaimPageDefaultsTest.java: git:b618944ebbdcee01de3ca38e71bb6487c78e4073
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/SettlementControllerIdempotencyTest.java: git:228b01149eb49dbd4bddbf64a48a6eb8c1a7ec95
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimCaseApplicationServiceTest.java: git:8542fbc7be937408d51094d3b8324407e0cfe4f4
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionAiTraceabilityTest.java: git:bb8df7e1d2199a13811b6106365551d855a0072e
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphExecutorModelParticipationTest.java: git:03866ae49e7d7045204a21f4075ec542c1072578
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphExecutorTest.java: git:66e09734d162be187cacef47aba9e6c0e5c94ba9
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphFlowConfigTest.java: git:481962798e3d97dd3d92d461d1f2104580a51b6d
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphFunctionalTest.java: git:936c24b0d07e9240e3407a3ac61e55ed4432c0b1
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/IndemnityApplicationServiceRecalculateBoundVersionTest.java: git:d18f8d8619824e430881f358e4f6bd5d3f65f5f3
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/claim/ClaimCaseConsentTest.java: git:50ad7a2aa38ced8cbf9c8aab2769766cafd54be1
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/claim/ClaimCaseTest.java: git:c8ff5ccc4412f8514e7d1e968d509f4a1ea4b8c6
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/infrastructure/idempotency/IdempotencyStoreAdapterTest.java: git:e6c6425a75d3133bf25e1e6a97e8c9361f3c699c
+              bone-framework/bone-core/src/main/java/com/bone/core/idempotency/IdempotencyService.java: git:33dc8289c87a2610e3a459b3b22dae01c2c194f3
+              doc/ai-product/synapClaim/04-design/总体技术方案.md: git:b314ab0c5714e985071b357bb8b4cf29759520a1
+              doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:946114146034a400bfc9e7eaec80be07b8109730
+              doc/design/assets/bone-hero-banner.svg: git:f848d31c6098c287b3b455317334b9c150f7bb5d
+            environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+            exitCode: 0
+            inputAfter: adcd558887cc490416437a178eb97cfd82e8df6c5ca253f4cf7fc04aa470130e
+            inputBefore: adcd558887cc490416437a178eb97cfd82e8df6c5ca253f4cf7fc04aa470130e
+            manifestHash: c78579f29c602607e3f7db1a137e39da40295fb00f46b13933f0bde3e63b05e3
+            manifestRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/c506a0a1-2f45-4790-85a9-c447b42b91dc.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/b2a3e2dc-ebb1-4423-9d3a-7fea3ebd1783.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: cce4dbfb8ff23b0d8f52124715b4bd9ed9f282cd33d3666ead6b5a0544b57650
+            outcomeId: afe8c0d7f39a9cf3297dccff82c2e066b93cff29ebc2162cb19f616a4b296914
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 原检查 Action 的 Runtime 记录无完整
+                result（status=started），原执行器已退出；日志不作为通过证据、不编造成功收据。来源：state check
+                <change> verify --recover --details 的 record/action
+                状态。申请重新派发一次完整真实检查 doc/ai-product/synapClaim/tools/check_all.py
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-overall-design-remediation
+        status: succeeded
+        stepId: tweak.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-85b9e8a1194dd180b01ede714888e23cd9412596f8fc30da56b406aec45c9609
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-overall-design-remediation:19
+        input:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs: {}
+        inputHash: 6c5d7ca62fef460844354dc924a9538514661a508e03b461b0f54a197505c8c3
+        outcome:
+          actionId: synapclaim-overall-design-remediation:19
+          attempt: 1
+          claimToken: portable-85b9e8a1194dd180b01ede714888e23cd9412596f8fc30da56b406aec45c9609
+          inputHash: 6c5d7ca62fef460844354dc924a9538514661a508e03b461b0f54a197505c8c3
+          outcomeId: 0c09929a-1344-4bcb-a71f-024b3c2dd6b9
+          output:
+            remote: origin
+            summary: 归档 synapclaim-overall-design-remediation：总体技术方案.md 22 处整改 + OpenSpec 产物
+              + Verify 报告；Verify 复验通过（19/19 全绿、exitCode 0）；仅提交本 change 路径，34
+              项并行会话无关改动保留；交付目标 origin/dev（SSH 双远程 Gitee + GitHub）
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f07fd9f867b916459318e6fd646eba100f59dedc09b86ca21aa6da9723d1b901
+            outcomeId: 0c09929a-1344-4bcb-a71f-024b3c2dd6b9
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-overall-design-remediation
+        status: succeeded
+        stepId: tweak.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-430fde5090bde9d734f94c65ce0b2864369f654f0a101dc3c27bec2f27a448a2
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-overall-design-remediation:21
+        input:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs: {}
+        inputHash: 5f118a72adffbd251781029ebf63d099cdc07ee4291a789450f1e5ef9fe154f2
+        outcome:
+          actionId: synapclaim-overall-design-remediation:21
+          attempt: 1
+          claimToken: portable-430fde5090bde9d734f94c65ce0b2864369f654f0a101dc3c27bec2f27a448a2
+          inputHash: 5f118a72adffbd251781029ebf63d099cdc07ee4291a789450f1e5ef9fe154f2
+          outcomeId: 4d023f49-56a7-4671-acf1-bc39a1b8b8f2
+          output:
+            baseCommit: 65b8341d52ca22a93ad326b01dc92ba2fcecfc59
+            deliveryAction: push
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 552e0588f941eb46c7177caa9aa47f68c240edd7d9dcc7c558b1e49ccd51c93a
+            outcomeId: 4d023f49-56a7-4671-acf1-bc39a1b8b8f2
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-overall-design-remediation
+        status: succeeded
+        stepId: tweak.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-5baa21f4e4788072e0f57e3992a22998ef2225a689122e504a65f9ecdbf15f83
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: synapclaim-overall-design-remediation:22
+        input:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs: {}
+        inputHash: 37841cd857e1543ba6de70da8ca5933c8627c74c1b11b0ecad5440aabeb46976
+        protocolVersion: 1
+        reason: 归档 Action :22 的 Runtime
+          收据缺失（record.status=missing），原执行器随宿主命令退出；磁盘证据显示归档目录已生成。如实标记结果未知，不编造成功收据、不重做不可逆操作
+        receipts: []
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-overall-design-remediation
+        status: unknown
+        stepId: tweak.archive.execute
+        type: call_tool
+    actionContexts:
+      synapclaim-overall-design-remediation:1:
+        results: {}
+        sequence: 1
+      synapclaim-overall-design-remediation:11:
+        results: {}
+        sequence: 11
+      synapclaim-overall-design-remediation:13:
+        results: {}
+        sequence: 13
+      synapclaim-overall-design-remediation:15:
+        results: {}
+        sequence: 15
+      synapclaim-overall-design-remediation:17:
+        results: {}
+        sequence: 17
+      synapclaim-overall-design-remediation:19:
+        results: {}
+        sequence: 19
+      synapclaim-overall-design-remediation:21:
+        results: {}
+        sequence: 21
+      synapclaim-overall-design-remediation:22:
+        results: {}
+        sequence: 22
+      synapclaim-overall-design-remediation:3:
+        results: {}
+        sequence: 3
+      synapclaim-overall-design-remediation:4:
+        results: {}
+        sequence: 4
+      synapclaim-overall-design-remediation:6:
+        results: {}
+        sequence: 6
+      synapclaim-overall-design-remediation:7:
+        results: {}
+        sequence: 7
+      synapclaim-overall-design-remediation:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: synapclaim-overall-design-remediation:14
+        stepId: tweak.archive.confirm
+        sequence: 14
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs:
+            tweak.archive.prepare:
+              summary: 归档 synapclaim-overall-design-remediation：将《总体技术方案.md》22 处文档整改（里程碑 A/B
+                依赖重划、O-12/O-13 准入门槛、M2.5 工程定义、Port 判据修正、④ 读兼容层、G3
+                一期口径、数字去硬编码、当前态快照）连同 proposal/design/tasks/verify 报告归入 openspec
+                归档目录；Verify 已通过（19/19 全绿、exitCode 0）；仅提交本 change 路径，工作区另有 34
+                项并行会话无关改动原样保留
+              targetBranch: dev
+        proposalHash: 84bf446edbde46d16f8da3cde2f3c1acfa4e393958c897df642a5367e7d2d6cf
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-84bf446edbde46d16f8da3cde2f3c1acfa4e393958c897df642a5367e7d2d6cf-reverify
+          choice: reverify
+          proposalHash: 84bf446edbde46d16f8da3cde2f3c1acfa4e393958c897df642a5367e7d2d6cf
+      - id: synapclaim-overall-design-remediation:20
+        stepId: tweak.archive.confirm
+        sequence: 20
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs:
+            tweak.archive.prepare:
+              remote: origin
+              summary: 归档 synapclaim-overall-design-remediation：总体技术方案.md 22 处整改 + OpenSpec 产物
+                + Verify 报告；Verify 复验通过（19/19 全绿、exitCode 0）；仅提交本 change 路径，34
+                项并行会话无关改动保留；交付目标 origin/dev（SSH 双远程 Gitee + GitHub）
+              targetBranch: dev
+        proposalHash: 7b8d95af1f5b2a733b0fb1b1210b435697b25c1eed4adf6ace67cd358af2de34
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-7b8d95af1f5b2a733b0fb1b1210b435697b25c1eed4adf6ace67cd358af2de34-push
+          choice: push
+          proposalHash: 7b8d95af1f5b2a733b0fb1b1210b435697b25c1eed4adf6ace67cd358af2de34
+    evidenceWaits:
+      - id: synapclaim-overall-design-remediation:2
+        stepId: tweak.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/synapclaim-overall-design-remediation
+          contentHash: 8cceacb32a0fe09c7a9247f63e467761ffd7e9ee124b24a4769773b99a1f26a0
+          submissionId: 3f50b1f9-8115-49ea-ab17-5248f2208187
+      - id: synapclaim-overall-design-remediation:5
+        stepId: tweak.build.check.evidence
+        sequence: 5
+        kind: classic-build-check
+        status: invalidated
+        results: {}
+        invalidation:
+          ref: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/c1116ac6-84db-4e85-8892-80877ec497c9.log
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          submissionId: aa33c120-3d19-4c85-9c23-764f7600aa57
+          reason: Classic build check inputs changed
+      - id: synapclaim-overall-design-remediation:8
+        stepId: tweak.build.check.evidence
+        sequence: 8
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/118f5ad3-88c4-49f1-af17-7c0ac4478e20.log
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          submissionId: 11b847801e519f652242ae3224a83b3f8f12e7a004df03304e7f28986ca503b7
+      - id: synapclaim-overall-design-remediation:10
+        stepId: tweak.verify.report.evidence
+        sequence: 10
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-11-synapclaim-overall-design-remediation-verify.md
+          contentHash: cc83ed596daee6e409b0d45d53853cef069b4826cf854c76748d18d5c9f98ae8
+          submissionId: 3bb0d453-3c5d-4365-a88c-41ed7b2937e7
+      - id: synapclaim-overall-design-remediation:12
+        stepId: tweak.verify.check.evidence
+        sequence: 12
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/e3235223-9e35-4398-8c03-8a163baa4971.log
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          submissionId: 4ff9caf4-3c87-49c1-b79f-01f13b2e90b0
+      - id: synapclaim-overall-design-remediation:16
+        stepId: tweak.verify.report.evidence
+        sequence: 16
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-11-synapclaim-overall-design-remediation-verify.md
+          contentHash: cc83ed596daee6e409b0d45d53853cef069b4826cf854c76748d18d5c9f98ae8
+          submissionId: c584fa20-5b89-490e-9f5e-445ed1d68773
+      - id: synapclaim-overall-design-remediation:18
+        stepId: tweak.verify.check.evidence
+        sequence: 18
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/b2a3e2dc-ebb1-4423-9d3a-7fea3ebd1783.log
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          submissionId: afe8c0d7f39a9cf3297dccff82c2e066b93cff29ebc2162cb19f616a4b296914
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 42
+  sourceHash: c9514dae3f8203898dc3ac6601a7fd863a9a201f563c6bae12d7c92d1ccaae51
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+        requirementsEvidence:
+          contentHash: 8cceacb32a0fe09c7a9247f63e467761ffd7e9ee124b24a4769773b99a1f26a0
+          ref: openspec/changes/synapclaim-overall-design-remediation
+      - contentHash: 8cceacb32a0fe09c7a9247f63e467761ffd7e9ee124b24a4769773b99a1f26a0
+        ref: openspec/changes/synapclaim-overall-design-remediation
+      - event: build-complete
+      - argv:
+          - python3
+          - doc/ai-product/synapClaim/tools/check_all.py
+        changedDuringExecution: []
+        checkEpoch: 1
+        contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+        cwd: .
+        environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+        exitCode: 0
+        inputAfter: abcb58175bf0e706fbff609274b56a33c6c878cd807d6d6965214860c892d653
+        inputBefore: abcb58175bf0e706fbff609274b56a33c6c878cd807d6d6965214860c892d653
+        manifestHash: 13453bef31e8f69bae80f229e78742578fd9a11516b4f536fd1bd97f51962e08
+        manifestRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/9dcf9e86-ecb4-4ec8-9f0d-680a5769052b.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/c1116ac6-84db-4e85-8892-80877ec497c9.log
+        reusable: true
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+        reason: Classic build check inputs changed
+        ref: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/c1116ac6-84db-4e85-8892-80877ec497c9.log
+      - argv:
+          - python3
+          - doc/ai-product/synapClaim/tools/check_all.py
+        changedDuringExecution: []
+        checkEpoch: 1
+        contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+        cwd: .
+        environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+        exitCode: 0
+        inputAfter: 80ab5de7f41f5a5a47bdf7b264893e70b50eb4ca55571d5d87c628222f52625b
+        inputBefore: 80ab5de7f41f5a5a47bdf7b264893e70b50eb4ca55571d5d87c628222f52625b
+        manifestHash: 951c6c63ce4fa05702ed76ddbcb09c87e99935f395f8cf3adfd4557354d63f50
+        manifestRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/af413a60-f0ce-42fd-bcdd-5e2bbb924903.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/118f5ad3-88c4-49f1-af17-7c0ac4478e20.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+        ref: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/118f5ad3-88c4-49f1-af17-7c0ac4478e20.log
+      - contentHash: cc83ed596daee6e409b0d45d53853cef069b4826cf854c76748d18d5c9f98ae8
+        ref: docs/superpowers/reports/2026-11-11-synapclaim-overall-design-remediation-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-overall-design-remediation-verify.md
+      - argv:
+          - python3
+          - doc/ai-product/synapClaim/tools/check_all.py
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+        cwd: .
+        deliveryInputs:
+          README.en.md: git:e80b38dcc69ed027e9ac8c031bf9b4479582f2f0
+          README.md: git:63c187362599f84c3044c04702a2459c9b995e8f
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AdjustmentController.java: git:2decc9a666b106bcf3a2511a9a32f3f049a976cf
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java: git:f4aebde70ab815aa413e86e568e09e75fb1016c5
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimIdempotencyProperties.java: git:2594bbbe300d13d209dde4ae5dcad47592d94ea1
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/SettlementController.java: git:6a901761cbfe4395cd466a5f309159d546e407df
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/IndemnityApplicationService.java: git:4127cc28f2225843e3fc0212b390a864f6362ce8
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/claim/ClaimCase.java: git:ef37ff2fdaef2c293f5370a4bfd8e4b584c12373
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/idempotency/IdempotencyRecord.java: git:ac499032076467cf4e6c75aba5f9065e3e0b7288
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/idempotency/IdempotencyStoreAdapter.java: git:8c1ed7d2299a38da96490158f4bef21924e213e0
+          bone-apps/synap-claim/synap-claim-app/src/main/resources/application.yml: git:04ffdc4e400efd53126391ba50c3dabb917839ff
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/ClaimIdempotencyPropertiesTest.java: git:539de1194bf680a5d9a928585b3d214770dd2253
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/ClaimPageDefaultsTest.java: git:b618944ebbdcee01de3ca38e71bb6487c78e4073
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/SettlementControllerIdempotencyTest.java: git:228b01149eb49dbd4bddbf64a48a6eb8c1a7ec95
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimCaseApplicationServiceTest.java: git:8542fbc7be937408d51094d3b8324407e0cfe4f4
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionAiTraceabilityTest.java: git:bb8df7e1d2199a13811b6106365551d855a0072e
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphExecutorModelParticipationTest.java: git:03866ae49e7d7045204a21f4075ec542c1072578
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphExecutorTest.java: git:66e09734d162be187cacef47aba9e6c0e5c94ba9
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphFlowConfigTest.java: git:481962798e3d97dd3d92d461d1f2104580a51b6d
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphFunctionalTest.java: git:936c24b0d07e9240e3407a3ac61e55ed4432c0b1
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/IndemnityApplicationServiceRecalculateBoundVersionTest.java: git:d18f8d8619824e430881f358e4f6bd5d3f65f5f3
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/claim/ClaimCaseConsentTest.java: git:50ad7a2aa38ced8cbf9c8aab2769766cafd54be1
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/claim/ClaimCaseTest.java: git:c8ff5ccc4412f8514e7d1e968d509f4a1ea4b8c6
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/infrastructure/idempotency/IdempotencyStoreAdapterTest.java: git:e6c6425a75d3133bf25e1e6a97e8c9361f3c699c
+          bone-framework/bone-core/src/main/java/com/bone/core/idempotency/IdempotencyService.java: git:33dc8289c87a2610e3a459b3b22dae01c2c194f3
+          doc/ai-product/synapClaim/04-design/总体技术方案.md: git:b314ab0c5714e985071b357bb8b4cf29759520a1
+          doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:946114146034a400bfc9e7eaec80be07b8109730
+          doc/design/assets/architecture.html: git:52b9351cb1dbc3bf9e5c3f0dfb2b0c978463f318
+          doc/design/assets/bone-hero-banner.svg: git:78a479603a23eddcffbfdb21bbdd41e21a7a1d23
+          doc/design/assets/bone-hero-banner.webp: git:27d4f6b3bfcdd35dc410a0994009ac1d9003a7f7
+        environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+        exitCode: 0
+        inputAfter: b9d18de2ef95c5c5ef2fc0a4f05fdd77160d30b5e514628c802cd3f773dca4be
+        inputBefore: b9d18de2ef95c5c5ef2fc0a4f05fdd77160d30b5e514628c802cd3f773dca4be
+        manifestHash: 23b44acca531c92144071e0028b38f2621a5e5275c94f25f0094c7fec790d06f
+        manifestRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/6eeee206-75cc-4363-b9df-cfa3ec337677.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/e3235223-9e35-4398-8c03-8a163baa4971.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+        ref: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/e3235223-9e35-4398-8c03-8a163baa4971.log
+      - choice: reverify
+        proposal:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs:
+            tweak.archive.prepare:
+              summary: 归档 synapclaim-overall-design-remediation：将《总体技术方案.md》22 处文档整改（里程碑 A/B
+                依赖重划、O-12/O-13 准入门槛、M2.5 工程定义、Port 判据修正、④ 读兼容层、G3
+                一期口径、数字去硬编码、当前态快照）连同 proposal/design/tasks/verify 报告归入 openspec
+                归档目录；Verify 已通过（19/19 全绿、exitCode 0）；仅提交本 change 路径，工作区另有 34
+                项并行会话无关改动原样保留
+              targetBranch: dev
+      - summary: 归档 synapclaim-overall-design-remediation：将《总体技术方案.md》22 处文档整改（里程碑 A/B
+          依赖重划、O-12/O-13 准入门槛、M2.5 工程定义、Port 判据修正、④ 读兼容层、G3 一期口径、数字去硬编码、当前态快照）连同
+          proposal/design/tasks/verify 报告归入 openspec 归档目录；Verify 已通过（19/19
+          全绿、exitCode 0）；仅提交本 change 路径，工作区另有 34 项并行会话无关改动原样保留
+        targetBranch: dev
+      - argv:
+          - python3
+          - doc/ai-product/synapClaim/tools/check_all.py
+        changedDuringExecution: []
+        checkEpoch: 4
+        contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+        cwd: .
+        deliveryInputs:
+          README.en.md: git:08271c0e2a8c1911cd010b17e489129194d16510
+          README.md: git:9fa8e9ba1303e1c7b21e161df83f77371e6b5263
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AdjustmentController.java: git:2decc9a666b106bcf3a2511a9a32f3f049a976cf
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java: git:f4aebde70ab815aa413e86e568e09e75fb1016c5
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimIdempotencyProperties.java: git:2594bbbe300d13d209dde4ae5dcad47592d94ea1
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/SettlementController.java: git:6a901761cbfe4395cd466a5f309159d546e407df
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/IndemnityApplicationService.java: git:4127cc28f2225843e3fc0212b390a864f6362ce8
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/claim/ClaimCase.java: git:ef37ff2fdaef2c293f5370a4bfd8e4b584c12373
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/idempotency/IdempotencyRecord.java: git:ac499032076467cf4e6c75aba5f9065e3e0b7288
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/idempotency/IdempotencyStoreAdapter.java: git:8c1ed7d2299a38da96490158f4bef21924e213e0
+          bone-apps/synap-claim/synap-claim-app/src/main/resources/application.yml: git:04ffdc4e400efd53126391ba50c3dabb917839ff
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/ClaimIdempotencyPropertiesTest.java: git:539de1194bf680a5d9a928585b3d214770dd2253
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/ClaimPageDefaultsTest.java: git:b618944ebbdcee01de3ca38e71bb6487c78e4073
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/SettlementControllerIdempotencyTest.java: git:228b01149eb49dbd4bddbf64a48a6eb8c1a7ec95
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimCaseApplicationServiceTest.java: git:8542fbc7be937408d51094d3b8324407e0cfe4f4
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionAiTraceabilityTest.java: git:bb8df7e1d2199a13811b6106365551d855a0072e
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphExecutorModelParticipationTest.java: git:03866ae49e7d7045204a21f4075ec542c1072578
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphExecutorTest.java: git:66e09734d162be187cacef47aba9e6c0e5c94ba9
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphFlowConfigTest.java: git:481962798e3d97dd3d92d461d1f2104580a51b6d
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphFunctionalTest.java: git:936c24b0d07e9240e3407a3ac61e55ed4432c0b1
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/IndemnityApplicationServiceRecalculateBoundVersionTest.java: git:d18f8d8619824e430881f358e4f6bd5d3f65f5f3
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/claim/ClaimCaseConsentTest.java: git:50ad7a2aa38ced8cbf9c8aab2769766cafd54be1
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/claim/ClaimCaseTest.java: git:c8ff5ccc4412f8514e7d1e968d509f4a1ea4b8c6
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/infrastructure/idempotency/IdempotencyStoreAdapterTest.java: git:e6c6425a75d3133bf25e1e6a97e8c9361f3c699c
+          bone-framework/bone-core/src/main/java/com/bone/core/idempotency/IdempotencyService.java: git:33dc8289c87a2610e3a459b3b22dae01c2c194f3
+          doc/ai-product/synapClaim/04-design/总体技术方案.md: git:b314ab0c5714e985071b357bb8b4cf29759520a1
+          doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:946114146034a400bfc9e7eaec80be07b8109730
+          doc/design/assets/bone-hero-banner.svg: git:f848d31c6098c287b3b455317334b9c150f7bb5d
+        environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+        exitCode: 0
+        inputAfter: adcd558887cc490416437a178eb97cfd82e8df6c5ca253f4cf7fc04aa470130e
+        inputBefore: adcd558887cc490416437a178eb97cfd82e8df6c5ca253f4cf7fc04aa470130e
+        manifestHash: c78579f29c602607e3f7db1a137e39da40295fb00f46b13933f0bde3e63b05e3
+        manifestRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/c506a0a1-2f45-4790-85a9-c447b42b91dc.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/b2a3e2dc-ebb1-4423-9d3a-7fea3ebd1783.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+        ref: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/b2a3e2dc-ebb1-4423-9d3a-7fea3ebd1783.log
+      - choice: push
+        proposal:
+          input:
+            change: synapclaim-overall-design-remediation
+            changeDir: openspec/changes/synapclaim-overall-design-remediation
+            workspaceBaseline:
+              ref: 87cd817b-9df8-4c19-b648-e204be463b54
+          outputs:
+            tweak.archive.prepare:
+              remote: origin
+              summary: 归档 synapclaim-overall-design-remediation：总体技术方案.md 22 处整改 + OpenSpec 产物
+                + Verify 报告；Verify 复验通过（19/19 全绿、exitCode 0）；仅提交本 change 路径，34
+                项并行会话无关改动保留；交付目标 origin/dev（SSH 双远程 Gitee + GitHub）
+              targetBranch: dev
+      - remote: origin
+        summary: 归档 synapclaim-overall-design-remediation：总体技术方案.md 22 处整改 + OpenSpec 产物
+          + Verify 报告；Verify 复验通过（19/19 全绿、exitCode 0）；仅提交本 change 路径，34
+          项并行会话无关改动保留；交付目标 origin/dev（SSH 双远程 Gitee + GitHub）
+        targetBranch: dev
+      - baseCommit: 65b8341d52ca22a93ad326b01dc92ba2fcecfc59
+        deliveryAction: push
+        remote: origin
+        remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+        targetBranch: dev
+        verifiedBranch: dev
+      - sequence: 7
+        value:
+          argv:
+            - python3
+            - doc/ai-product/synapClaim/tools/check_all.py
+          changedDuringExecution: []
+          checkEpoch: 1
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          cwd: .
+          environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+          exitCode: 0
+          inputAfter: 80ab5de7f41f5a5a47bdf7b264893e70b50eb4ca55571d5d87c628222f52625b
+          inputBefore: 80ab5de7f41f5a5a47bdf7b264893e70b50eb4ca55571d5d87c628222f52625b
+          manifestHash: 951c6c63ce4fa05702ed76ddbcb09c87e99935f395f8cf3adfd4557354d63f50
+          manifestRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/af413a60-f0ce-42fd-bcdd-5e2bbb924903.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/118f5ad3-88c4-49f1-af17-7c0ac4478e20.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 8
+        value:
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          ref: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/118f5ad3-88c4-49f1-af17-7c0ac4478e20.log
+      - sequence: 6
+        value:
+          event: build-complete
+      - sequence: 1
+        value:
+          event: open-complete
+          requirementsEvidence:
+            contentHash: 8cceacb32a0fe09c7a9247f63e467761ffd7e9ee124b24a4769773b99a1f26a0
+            ref: openspec/changes/synapclaim-overall-design-remediation
+      - sequence: 2
+        value:
+          contentHash: 8cceacb32a0fe09c7a9247f63e467761ffd7e9ee124b24a4769773b99a1f26a0
+          ref: openspec/changes/synapclaim-overall-design-remediation
+      - sequence: 10
+        value:
+          contentHash: cc83ed596daee6e409b0d45d53853cef069b4826cf854c76748d18d5c9f98ae8
+          ref: docs/superpowers/reports/2026-11-11-synapclaim-overall-design-remediation-verify.md
+      - sequence: 9
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-overall-design-remediation-verify.md
+      - sequence: 11
+        value:
+          argv:
+            - python3
+            - doc/ai-product/synapClaim/tools/check_all.py
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          cwd: .
+          deliveryInputs:
+            README.en.md: git:e80b38dcc69ed027e9ac8c031bf9b4479582f2f0
+            README.md: git:63c187362599f84c3044c04702a2459c9b995e8f
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AdjustmentController.java: git:2decc9a666b106bcf3a2511a9a32f3f049a976cf
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java: git:f4aebde70ab815aa413e86e568e09e75fb1016c5
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimIdempotencyProperties.java: git:2594bbbe300d13d209dde4ae5dcad47592d94ea1
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/SettlementController.java: git:6a901761cbfe4395cd466a5f309159d546e407df
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/IndemnityApplicationService.java: git:4127cc28f2225843e3fc0212b390a864f6362ce8
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/claim/ClaimCase.java: git:ef37ff2fdaef2c293f5370a4bfd8e4b584c12373
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/idempotency/IdempotencyRecord.java: git:ac499032076467cf4e6c75aba5f9065e3e0b7288
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/idempotency/IdempotencyStoreAdapter.java: git:8c1ed7d2299a38da96490158f4bef21924e213e0
+            bone-apps/synap-claim/synap-claim-app/src/main/resources/application.yml: git:04ffdc4e400efd53126391ba50c3dabb917839ff
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/ClaimIdempotencyPropertiesTest.java: git:539de1194bf680a5d9a928585b3d214770dd2253
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/ClaimPageDefaultsTest.java: git:b618944ebbdcee01de3ca38e71bb6487c78e4073
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/SettlementControllerIdempotencyTest.java: git:228b01149eb49dbd4bddbf64a48a6eb8c1a7ec95
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimCaseApplicationServiceTest.java: git:8542fbc7be937408d51094d3b8324407e0cfe4f4
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionAiTraceabilityTest.java: git:bb8df7e1d2199a13811b6106365551d855a0072e
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphExecutorModelParticipationTest.java: git:03866ae49e7d7045204a21f4075ec542c1072578
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphExecutorTest.java: git:66e09734d162be187cacef47aba9e6c0e5c94ba9
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphFlowConfigTest.java: git:481962798e3d97dd3d92d461d1f2104580a51b6d
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphFunctionalTest.java: git:936c24b0d07e9240e3407a3ac61e55ed4432c0b1
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/IndemnityApplicationServiceRecalculateBoundVersionTest.java: git:d18f8d8619824e430881f358e4f6bd5d3f65f5f3
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/claim/ClaimCaseConsentTest.java: git:50ad7a2aa38ced8cbf9c8aab2769766cafd54be1
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/claim/ClaimCaseTest.java: git:c8ff5ccc4412f8514e7d1e968d509f4a1ea4b8c6
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/infrastructure/idempotency/IdempotencyStoreAdapterTest.java: git:e6c6425a75d3133bf25e1e6a97e8c9361f3c699c
+            bone-framework/bone-core/src/main/java/com/bone/core/idempotency/IdempotencyService.java: git:33dc8289c87a2610e3a459b3b22dae01c2c194f3
+            doc/ai-product/synapClaim/04-design/总体技术方案.md: git:b314ab0c5714e985071b357bb8b4cf29759520a1
+            doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:946114146034a400bfc9e7eaec80be07b8109730
+            doc/design/assets/architecture.html: git:52b9351cb1dbc3bf9e5c3f0dfb2b0c978463f318
+            doc/design/assets/bone-hero-banner.svg: git:78a479603a23eddcffbfdb21bbdd41e21a7a1d23
+            doc/design/assets/bone-hero-banner.webp: git:27d4f6b3bfcdd35dc410a0994009ac1d9003a7f7
+          environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+          exitCode: 0
+          inputAfter: b9d18de2ef95c5c5ef2fc0a4f05fdd77160d30b5e514628c802cd3f773dca4be
+          inputBefore: b9d18de2ef95c5c5ef2fc0a4f05fdd77160d30b5e514628c802cd3f773dca4be
+          manifestHash: 23b44acca531c92144071e0028b38f2621a5e5275c94f25f0094c7fec790d06f
+          manifestRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/6eeee206-75cc-4363-b9df-cfa3ec337677.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/e3235223-9e35-4398-8c03-8a163baa4971.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 12
+        value:
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          ref: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/e3235223-9e35-4398-8c03-8a163baa4971.log
+      - sequence: 14
+        value:
+          choice: reverify
+          proposal:
+            input:
+              change: synapclaim-overall-design-remediation
+              changeDir: openspec/changes/synapclaim-overall-design-remediation
+              workspaceBaseline:
+                ref: 87cd817b-9df8-4c19-b648-e204be463b54
+            outputs:
+              tweak.archive.prepare:
+                summary: 归档 synapclaim-overall-design-remediation：将《总体技术方案.md》22 处文档整改（里程碑 A/B
+                  依赖重划、O-12/O-13 准入门槛、M2.5 工程定义、Port 判据修正、④ 读兼容层、G3
+                  一期口径、数字去硬编码、当前态快照）连同 proposal/design/tasks/verify 报告归入
+                  openspec 归档目录；Verify 已通过（19/19 全绿、exitCode 0）；仅提交本 change
+                  路径，工作区另有 34 项并行会话无关改动原样保留
+                targetBranch: dev
+      - sequence: 13
+        value:
+          summary: 归档 synapclaim-overall-design-remediation：将《总体技术方案.md》22 处文档整改（里程碑 A/B
+            依赖重划、O-12/O-13 准入门槛、M2.5 工程定义、Port 判据修正、④ 读兼容层、G3
+            一期口径、数字去硬编码、当前态快照）连同 proposal/design/tasks/verify 报告归入 openspec
+            归档目录；Verify 已通过（19/19 全绿、exitCode 0）；仅提交本 change 路径，工作区另有 34
+            项并行会话无关改动原样保留
+          targetBranch: dev
+      - sequence: 16
+        value:
+          contentHash: cc83ed596daee6e409b0d45d53853cef069b4826cf854c76748d18d5c9f98ae8
+          ref: docs/superpowers/reports/2026-11-11-synapclaim-overall-design-remediation-verify.md
+      - sequence: 15
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-11-synapclaim-overall-design-remediation-verify.md
+      - sequence: 17
+        value:
+          argv:
+            - python3
+            - doc/ai-product/synapClaim/tools/check_all.py
+          changedDuringExecution: []
+          checkEpoch: 4
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          cwd: .
+          deliveryInputs:
+            README.en.md: git:08271c0e2a8c1911cd010b17e489129194d16510
+            README.md: git:9fa8e9ba1303e1c7b21e161df83f77371e6b5263
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AdjustmentController.java: git:2decc9a666b106bcf3a2511a9a32f3f049a976cf
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java: git:f4aebde70ab815aa413e86e568e09e75fb1016c5
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimIdempotencyProperties.java: git:2594bbbe300d13d209dde4ae5dcad47592d94ea1
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/SettlementController.java: git:6a901761cbfe4395cd466a5f309159d546e407df
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/IndemnityApplicationService.java: git:4127cc28f2225843e3fc0212b390a864f6362ce8
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/claim/ClaimCase.java: git:ef37ff2fdaef2c293f5370a4bfd8e4b584c12373
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/idempotency/IdempotencyRecord.java: git:ac499032076467cf4e6c75aba5f9065e3e0b7288
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/idempotency/IdempotencyStoreAdapter.java: git:8c1ed7d2299a38da96490158f4bef21924e213e0
+            bone-apps/synap-claim/synap-claim-app/src/main/resources/application.yml: git:04ffdc4e400efd53126391ba50c3dabb917839ff
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/ClaimIdempotencyPropertiesTest.java: git:539de1194bf680a5d9a928585b3d214770dd2253
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/ClaimPageDefaultsTest.java: git:b618944ebbdcee01de3ca38e71bb6487c78e4073
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/SettlementControllerIdempotencyTest.java: git:228b01149eb49dbd4bddbf64a48a6eb8c1a7ec95
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimCaseApplicationServiceTest.java: git:8542fbc7be937408d51094d3b8324407e0cfe4f4
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionAiTraceabilityTest.java: git:bb8df7e1d2199a13811b6106365551d855a0072e
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphExecutorModelParticipationTest.java: git:03866ae49e7d7045204a21f4075ec542c1072578
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphExecutorTest.java: git:66e09734d162be187cacef47aba9e6c0e5c94ba9
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphFlowConfigTest.java: git:481962798e3d97dd3d92d461d1f2104580a51b6d
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/DecisionGraphFunctionalTest.java: git:936c24b0d07e9240e3407a3ac61e55ed4432c0b1
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/IndemnityApplicationServiceRecalculateBoundVersionTest.java: git:d18f8d8619824e430881f358e4f6bd5d3f65f5f3
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/claim/ClaimCaseConsentTest.java: git:50ad7a2aa38ced8cbf9c8aab2769766cafd54be1
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/claim/ClaimCaseTest.java: git:c8ff5ccc4412f8514e7d1e968d509f4a1ea4b8c6
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/infrastructure/idempotency/IdempotencyStoreAdapterTest.java: git:e6c6425a75d3133bf25e1e6a97e8c9361f3c699c
+            bone-framework/bone-core/src/main/java/com/bone/core/idempotency/IdempotencyService.java: git:33dc8289c87a2610e3a459b3b22dae01c2c194f3
+            doc/ai-product/synapClaim/04-design/总体技术方案.md: git:b314ab0c5714e985071b357bb8b4cf29759520a1
+            doc/ai-product/synapClaim/04-design/方案质量诊断报告.md: git:946114146034a400bfc9e7eaec80be07b8109730
+            doc/design/assets/bone-hero-banner.svg: git:f848d31c6098c287b3b455317334b9c150f7bb5d
+          environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+          exitCode: 0
+          inputAfter: adcd558887cc490416437a178eb97cfd82e8df6c5ca253f4cf7fc04aa470130e
+          inputBefore: adcd558887cc490416437a178eb97cfd82e8df6c5ca253f4cf7fc04aa470130e
+          manifestHash: c78579f29c602607e3f7db1a137e39da40295fb00f46b13933f0bde3e63b05e3
+          manifestRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/c506a0a1-2f45-4790-85a9-c447b42b91dc.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/b2a3e2dc-ebb1-4423-9d3a-7fea3ebd1783.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 18
+        value:
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          ref: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/b2a3e2dc-ebb1-4423-9d3a-7fea3ebd1783.log
+      - sequence: 20
+        value:
+          choice: push
+          proposal:
+            input:
+              change: synapclaim-overall-design-remediation
+              changeDir: openspec/changes/synapclaim-overall-design-remediation
+              workspaceBaseline:
+                ref: 87cd817b-9df8-4c19-b648-e204be463b54
+            outputs:
+              tweak.archive.prepare:
+                remote: origin
+                summary: 归档 synapclaim-overall-design-remediation：总体技术方案.md 22 处整改 + OpenSpec 产物
+                  + Verify 报告；Verify 复验通过（19/19 全绿、exitCode 0）；仅提交本 change 路径，34
+                  项并行会话无关改动保留；交付目标 origin/dev（SSH 双远程 Gitee + GitHub）
+                targetBranch: dev
+      - sequence: 19
+        value:
+          remote: origin
+          summary: 归档 synapclaim-overall-design-remediation：总体技术方案.md 22 处整改 + OpenSpec 产物
+            + Verify 报告；Verify 复验通过（19/19 全绿、exitCode 0）；仅提交本 change 路径，34
+            项并行会话无关改动保留；交付目标 origin/dev（SSH 双远程 Gitee + GitHub）
+          targetBranch: dev
+      - sequence: 21
+        value:
+          baseCommit: 65b8341d52ca22a93ad326b01dc92ba2fcecfc59
+          deliveryAction: push
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: dev
+          verifiedBranch: dev
+      - sequence: 3
+        value:
+          event: build-complete
+      - sequence: 4
+        value:
+          argv:
+            - python3
+            - doc/ai-product/synapClaim/tools/check_all.py
+          changedDuringExecution: []
+          checkEpoch: 1
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          cwd: .
+          environment: 6fd371390450b6c21fe3b0849bd5f049006ef733acd59dc7537fc0fd91a9794e
+          exitCode: 0
+          inputAfter: abcb58175bf0e706fbff609274b56a33c6c878cd807d6d6965214860c892d653
+          inputBefore: abcb58175bf0e706fbff609274b56a33c6c878cd807d6d6965214860c892d653
+          manifestHash: 13453bef31e8f69bae80f229e78742578fd9a11516b4f536fd1bd97f51962e08
+          manifestRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/9dcf9e86-ecb4-4ec8-9f0d-680a5769052b.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/c1116ac6-84db-4e85-8892-80877ec497c9.log
+          reusable: true
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 5
+        value:
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          reason: Classic build check inputs changed
+          ref: .comet/runtime/classic-sdk-checks/9c11be1a62d593f61ffb5eb16728f8efa8abb0f586e8712b960fc7a8a09fb088/c1116ac6-84db-4e85-8892-80877ec497c9.log
+    nodes:
+      - key: tweak.open.evidence
+        value: 1
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 0
+        left: null
+        right: 0
+        height: 2
+      - key: tweak.build.execute
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 0
+        left: 2
+        right: 0
+        height: 2
+      - key: tweak.build.check
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.execute
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 4
+        left: 4
+        right: 5
+        height: 2
+      - key: tweak.open
+        value: 0
+        left: 6
+        right: 0
+        height: 3
+      - key: tweak.build.check
+        value: 5
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 6
+        left: 8
+        right: 5
+        height: 2
+      - key: tweak.open
+        value: 0
+        left: 9
+        right: 0
+        height: 3
+      - key: tweak.open.evidence
+        value: 1
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 7
+        left: 11
+        right: 12
+        height: 2
+      - key: tweak.open
+        value: 0
+        left: 9
+        right: 13
+        height: 3
+      - key: tweak.open.evidence
+        value: 1
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check.evidence
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: tweak.verify.report.evidence
+        value: 7
+        left: 17
+        right: 12
+        height: 3
+      - key: tweak.open
+        value: 0
+        left: 9
+        right: 18
+        height: 4
+      - key: tweak.archive.confirm
+        value: 11
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 5
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 12
+        left: 20
+        right: 21
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 6
+        left: 22
+        right: 5
+        height: 3
+      - key: tweak.open
+        value: 0
+        left: 23
+        right: 18
+        height: 4
+      - key: tweak.verify.check.evidence
+        value: 14
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 13
+        left: 15
+        right: 25
+        height: 2
+      - key: tweak.verify.report.evidence
+        value: 7
+        left: 26
+        right: 12
+        height: 3
+      - key: tweak.open
+        value: 0
+        left: 23
+        right: 27
+        height: 4
+      - key: tweak.archive.confirm
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 16
+        left: 29
+        right: 21
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 6
+        left: 30
+        right: 5
+        height: 3
+      - key: tweak.open
+        value: 0
+        left: 31
+        right: 27
+        height: 4
+      - key: tweak.archive.preflight
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.confirm
+        value: 15
+        left: null
+        right: 33
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 6
+        left: 21
+        right: 5
+        height: 2
+      - key: tweak.archive.prepare
+        value: 16
+        left: 34
+        right: 35
+        height: 3
+      - key: tweak.open
+        value: 0
+        left: 36
+        right: 27
+        height: 4
+      - key: tweak.build.check
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.execute
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 19
+        left: 38
+        right: 39
+        height: 2
+      - key: tweak.open.evidence
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 23
+        left: 41
+        right: 42
+        height: 2
+      - key: tweak.open
+        value: 21
+        left: 40
+        right: 43
+        height: 3
+      - key: tweak.open.evidence
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check.evidence
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 25
+        left: 45
+        right: 46
+        height: 2
+      - key: tweak.verify.report.evidence
+        value: 23
+        left: 47
+        right: 42
+        height: 3
+      - key: tweak.open
+        value: 21
+        left: 40
+        right: 48
+        height: 4
+      - key: tweak.archive.confirm
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 28
+        left: 50
+        right: 51
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 19
+        left: 52
+        right: 39
+        height: 3
+      - key: tweak.open
+        value: 21
+        left: 53
+        right: 48
+        height: 4
+      - key: tweak.verify.run
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 29
+        left: 47
+        right: 55
+        height: 3
+      - key: tweak.open
+        value: 21
+        left: 53
+        right: 56
+        height: 4
+      - key: tweak.verify.check.evidence
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 31
+        left: 45
+        right: 58
+        height: 2
+      - key: tweak.verify.report.evidence
+        value: 29
+        left: 59
+        right: 55
+        height: 3
+      - key: tweak.open
+        value: 21
+        left: 53
+        right: 60
+        height: 4
+      - key: tweak.archive.confirm
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 34
+        left: 62
+        right: 51
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 19
+        left: 63
+        right: 39
+        height: 3
+      - key: tweak.open
+        value: 21
+        left: 64
+        right: 60
+        height: 4
+      - key: tweak.archive.preflight
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.confirm
+        value: 33
+        left: null
+        right: 66
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 19
+        left: 51
+        right: 39
+        height: 2
+      - key: tweak.archive.prepare
+        value: 34
+        left: 67
+        right: 68
+        height: 3
+      - key: tweak.open
+        value: 21
+        left: 69
+        right: 60
+        height: 4
+      - key: tweak.open.evidence
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 21
+        left: null
+        right: 71
+        height: 2
+      - key: tweak.build.execute
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 21
+        left: 73
+        right: 71
+        height: 2
+      - key: tweak.build.check
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.execute
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 38
+        left: 75
+        right: 76
+        height: 2
+      - key: tweak.open
+        value: 21
+        left: 77
+        right: 71
+        height: 3
+      - key: tweak.build.execute
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 38
+        left: 75
+        right: 79
+        height: 2
+      - key: tweak.open
+        value: 21
+        left: 80
+        right: 71
+        height: 3
+      - key: tweak.build.check
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 19
+        left: 82
+        right: 79
+        height: 2
+      - key: tweak.open
+        value: 21
+        left: 83
+        right: 71
+        height: 3
+      - key: tweak.archive.prepare
+        value: 28
+        left: null
+        right: 51
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 19
+        left: 85
+        right: 39
+        height: 3
+      - key: tweak.verify.check.evidence
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 25
+        left: 45
+        right: 87
+        height: 2
+      - key: tweak.verify.run
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 23
+        left: 88
+        right: 89
+        height: 3
+      - key: tweak.open
+        value: 21
+        left: 86
+        right: 90
+        height: 4
+      - key: tweak.archive.confirm
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 34
+        left: 92
+        right: 51
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 19
+        left: 93
+        right: 39
+        height: 3
+      - key: tweak.verify.check.evidence
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 31
+        left: 45
+        right: 95
+        height: 2
+      - key: tweak.verify.run
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 29
+        left: 96
+        right: 97
+        height: 3
+      - key: tweak.open
+        value: 21
+        left: 94
+        right: 98
+        height: 4
+      - key: tweak.open
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 21
+        left: null
+        right: 102
+        height: 2
+      - key: tweak.build.execute
+        value: 36
+        left: 101
+        right: 103
+        height: 3
+      - key: tweak.build.check.evidence
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 18
+        left: null
+        right: 105
+        height: 2
+      - key: tweak.build.execute
+        value: 20
+        left: 106
+        right: 103
+        height: 3
+      - key: tweak.build.check.evidence
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 18
+        left: null
+        right: 108
+        height: 2
+      - key: tweak.open
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 22
+        left: 110
+        right: 111
+        height: 2
+      - key: tweak.build.execute
+        value: 20
+        left: 109
+        right: 112
+        height: 3
+      - key: tweak.verify.check
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 23
+        left: 114
+        right: 115
+        height: 2
+      - key: tweak.open.evidence
+        value: 22
+        left: 110
+        right: 116
+        height: 3
+      - key: tweak.build.execute
+        value: 20
+        left: 109
+        right: 117
+        height: 4
+      - key: tweak.archive.prepare
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.confirm
+        value: 27
+        left: null
+        right: 119
+        height: 2
+      - key: tweak.build.check
+        value: 18
+        left: 120
+        right: 108
+        height: 3
+      - key: tweak.open.evidence
+        value: 22
+        left: 110
+        right: null
+        height: 2
+      - key: tweak.verify.check.evidence
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 23
+        left: 123
+        right: 124
+        height: 2
+      - key: tweak.verify.check
+        value: 25
+        left: 122
+        right: 125
+        height: 3
+      - key: tweak.build.execute
+        value: 20
+        left: 121
+        right: 126
+        height: 4
+      - key: tweak.verify.report.evidence
+        value: 29
+        left: 123
+        right: 124
+        height: 2
+      - key: tweak.verify.check
+        value: 31
+        left: 122
+        right: 128
+        height: 3
+      - key: tweak.build.execute
+        value: 20
+        left: 121
+        right: 129
+        height: 4
+    maps:
+      - null
+      - 1
+      - 3
+      - 7
+      - 10
+      - 14
+      - 19
+      - 24
+      - 28
+      - 32
+      - 37
+      - 44
+      - 49
+      - 54
+      - 57
+      - 61
+      - 65
+      - 70
+      - 72
+      - 74
+      - 78
+      - 81
+      - 84
+      - 91
+      - 99
+      - 100
+      - 104
+      - 107
+      - 113
+      - 118
+      - 127
+      - 130
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actionContexts
+          - synapclaim-overall-design-remediation:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - synapclaim-overall-design-remediation:11
+          - results
+        map: 11
+      - path:
+          - actionContexts
+          - synapclaim-overall-design-remediation:13
+          - results
+        map: 12
+      - path:
+          - actionContexts
+          - synapclaim-overall-design-remediation:15
+          - results
+        map: 13
+      - path:
+          - actionContexts
+          - synapclaim-overall-design-remediation:17
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - synapclaim-overall-design-remediation:19
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - synapclaim-overall-design-remediation:21
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - synapclaim-overall-design-remediation:22
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - synapclaim-overall-design-remediation:3
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - synapclaim-overall-design-remediation:4
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - synapclaim-overall-design-remediation:6
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - synapclaim-overall-design-remediation:7
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - synapclaim-overall-design-remediation:9
+          - results
+        map: 22
+      - path:
+          - outputs
+        map: 17
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 23
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 24
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 25
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 26
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 27
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 28
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 29
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 30
+      - path:
+          - evidenceWaits
+          - "6"
+          - results
+        map: 31
+  storageHash: b893e53a8f41cab67db3be107333c0d48005f3bd60d1f26bd593321f0f69b99d
+check_epoch: 6
