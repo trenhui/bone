@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext, useMemo, useCallback, Component, ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Layout, Menu, Button, Avatar, Dropdown, App as AntdApp, Form, Input, Card, Popover, Tooltip, Badge, Result, List, Tag, Spin, Empty, Select } from 'antd';
+import type { MenuProps } from 'antd';
 const { Password } = Input;
 import axios from 'axios';
 import { createApiClient, notificationService, type NotificationDTO } from '@bone/shared-services';
@@ -1116,16 +1117,14 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
 
   // 初始化展开父分组
   useEffect(() => {
-    if (parentKey && !openKeys.includes(parentKey)) {
-      setOpenKeys([parentKey]);
-    }
-    if (!parentKey) {
-      setOpenKeys([]);
-    }
+    setOpenKeys((prev) => {
+      if (!parentKey) return [];
+      return prev.includes(parentKey) ? prev : [parentKey];
+    });
   }, [parentKey]);
 
   // 将 ShellMenuItem[] 转换为 antd Menu items
-  const buildMenuItems = (items: ShellMenuItem[]): any[] =>
+  const buildMenuItems = (items: ShellMenuItem[]): NonNullable<MenuProps['items']> =>
     items.map((item) => {
       if (item.children && item.children.length > 0) {
         return {
