@@ -188,15 +188,56 @@ public class IndemnityApplicationService {
       boolean totalChanged,
       boolean formulaHashChanged) {}
 
-  /** 重算（规则/责任版本变更后；已 CONFIRMED 拒绝，由聚合抛领域异常）。 */
+  /**
+   * 重算（<b>按绑定版本复核</b>：规则/责任版本变更后，用案件理算时绑定的责任版本重出一套归因；已 CONFIRMED 拒绝，由聚合抛领域异常）。
+   *
+   * <p><b>P0-1（2026-11-11 落地）</b>：复算取 {@code latest} 落库的 {@code liabilityUuid + liabilityVersion}
+   * 回查历史版本，而非当期 ACTIVE 配置——否则「配置变更不影响在途案件」（一期目标 G2）在复算入口被静默击穿： 新版本一发布，历史案件的金额与公式快照就被今天的条款覆盖，审计回放失真。
+   * 绑定版本已不可用（被物理清理）即 fail-closed 422，<b>绝不静默回落当期版本</b>。
+   *
+   * <p>业务上确实要「按今天的条款重算这案」时，走 {@link #readjudicate} 显式改绑——两个用例的界限就是 G2 的边界。
+   */
   @Transactional
   public AdjustmentResult recalculate(long claimId, String ruleVersion) {
     Adjustment latest = adjustmentRepository.findLatestByClaimId(claimId);
     if (latest == null) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_ADJUST_NOT_FOUND, claimId);
     }
+    AdjLiability bound =
+        liabilityRepository.findByUuidAndVersion(
+            latest.getLiabilityUuid(), latest.getLiabilityVersion());
+    if (bound == null) {
+      throw ClaimErrors.of(
+          ClaimErrorCodes.CLAIM_LIABILITY_NOT_FOUND,
+          "案件绑定的责任版本已不可用: " + latest.getLiabilityUuid() + "@" + latest.getLiabilityVersion());
+    }
     List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
-    AdjLiability liability = resolveLiability(rows);
+    return doRecalculate(claimId, latest, ruleVersion, rows, bound);
+  }
+
+  /**
+   * 按新条款重新理算（<b>显式改绑用例</b>）：取当期 ACTIVE 责任重算，绑定版本与公式快照随新条款同步改写。
+   *
+   * <p>与 {@link #recalculate} 的分工：复算是「用原来的依据复核原来的账」，结果不得漂移； 重新理算是「业务决定按今天的条款重算这案」，改绑随之发生。
+   * 二者同属资金行为变更——改绑必须显式调用本用例，不允许在复核入口隐式发生； 生产启用同 M2.5 口径受四道闸门约束（§13.1）。
+   */
+  @Transactional
+  public AdjustmentResult readjudicate(long claimId, String ruleVersion) {
+    Adjustment latest = adjustmentRepository.findLatestByClaimId(claimId);
+    if (latest == null) {
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_ADJUST_NOT_FOUND, claimId);
+    }
+    List<ClaimWithItemsProjection> rows = claimCaseApplicationService.getClaimWithItems(claimId);
+    return doRecalculate(claimId, latest, ruleVersion, rows, resolveLiability(rows));
+  }
+
+  /** 复算/改绑共享路径：同一 calculation_id 重出一套归因，责任由调用方按用例语义提供。 */
+  private AdjustmentResult doRecalculate(
+      long claimId,
+      Adjustment latest,
+      String ruleVersion,
+      List<ClaimWithItemsProjection> rows,
+      AdjLiability liability) {
     CatalogFacts catalog = catalogFactsOf(rows, liability);
     latest.recalculate(
         rows,

@@ -35,6 +35,7 @@ public class SettlementController {
 
   private final SettlementApplicationService settlementApplicationService;
   private final IdempotencyService idempotencyService;
+  private final ClaimIdempotencyProperties idempotencyProperties;
 
   public record CreateSettlementReq(
       @NotNull(message = "占额周期序号必填") Integer attempt, AccountType accountType) {}
@@ -87,8 +88,8 @@ public class SettlementController {
   @PostMapping("/pay")
   public ApiResponse<SettlementResult> pay(
       @Parameter(description = "案件ID") @PathVariable long claimId,
-      @Parameter(description = "幂等键（UUID v4）；不传则不启用幂等")
-          @RequestHeader(value = IdempotencyService.IDEMPOTENCY_KEY_HEADER, required = false)
+      @Parameter(description = "幂等键（UUID v4），必传（P0-3：缺失即 400，服务端不代生成）")
+          @RequestHeader(value = IdempotencyService.IDEMPOTENCY_KEY_HEADER, required = true)
           String idempotencyKey,
       HttpServletRequest httpRequest) {
     Optional<IdempotencyService.ReplayedResponse> replayed =
@@ -109,7 +110,8 @@ public class SettlementController {
         httpRequest.getMethod(),
         httpRequest.getRequestURI(),
         claimId,
-        new IdempotencyService.ReplayedResponse(HttpStatus.OK.value(), null, body));
+        new IdempotencyService.ReplayedResponse(HttpStatus.OK.value(), null, body),
+        idempotencyProperties.getTtl());
     return body;
   }
 
@@ -129,8 +131,8 @@ public class SettlementController {
   @PostMapping("/refund")
   public ApiResponse<SettlementResult> refund(
       @Parameter(description = "案件ID") @PathVariable long claimId,
-      @Parameter(description = "幂等键（UUID v4）；不传则不启用幂等")
-          @RequestHeader(value = IdempotencyService.IDEMPOTENCY_KEY_HEADER, required = false)
+      @Parameter(description = "幂等键（UUID v4），必传（P0-3：缺失即 400，服务端不代生成）")
+          @RequestHeader(value = IdempotencyService.IDEMPOTENCY_KEY_HEADER, required = true)
           String idempotencyKey,
       HttpServletRequest httpRequest) {
     Optional<IdempotencyService.ReplayedResponse> replayed =
@@ -152,7 +154,8 @@ public class SettlementController {
         httpRequest.getMethod(),
         httpRequest.getRequestURI(),
         claimId,
-        new IdempotencyService.ReplayedResponse(HttpStatus.OK.value(), null, body));
+        new IdempotencyService.ReplayedResponse(HttpStatus.OK.value(), null, body),
+        idempotencyProperties.getTtl());
     return body;
   }
 

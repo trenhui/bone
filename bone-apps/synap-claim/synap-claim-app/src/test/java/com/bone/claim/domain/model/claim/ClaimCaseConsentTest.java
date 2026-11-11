@@ -38,6 +38,7 @@ class ClaimCaseConsentTest {
         "12345678",
         OUT_INSURE,
         "B20260312",
+        "idem-key-test-0",
         "v3",
         List.of(
             ClaimItem.of(

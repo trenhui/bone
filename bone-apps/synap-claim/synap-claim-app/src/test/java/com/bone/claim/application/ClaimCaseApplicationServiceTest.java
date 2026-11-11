@@ -226,6 +226,7 @@ class ClaimCaseApplicationServiceTest {
             "",
             OUT_INSURE,
             "B1",
+            "idem-key-test-0",
             "v3",
             List.of(
                 ClaimItem.of(
@@ -507,6 +508,7 @@ class ClaimCaseApplicationServiceTest {
             "",
             OUT_INSURE,
             "B1",
+            "idem-key-test-1",
             "v3",
             List.of(
                 ClaimItem.of(
@@ -564,6 +566,7 @@ class ClaimCaseApplicationServiceTest {
             "",
             OUT_INSURE,
             "B1",
+            "idem-key-test-2",
             "v3",
             List.of(
                 ClaimItem.of(
@@ -614,6 +617,7 @@ class ClaimCaseApplicationServiceTest {
             "",
             OUT_INSURE,
             "B1",
+            "idem-key-test-3",
             "v3",
             List.of(
                 ClaimItem.of(

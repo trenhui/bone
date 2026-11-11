@@ -44,7 +44,12 @@ class ClaimPageDefaultsTest {
         .thenReturn(PageResult.of(List.<ClaimHeadProjection>of(), 0L, 1, 20));
     mvc =
         MockMvcBuilders.standaloneSetup(
-                new ClaimCaseController(service, null, ClaimCaseAssembler.INSTANCE, null))
+                new ClaimCaseController(
+                    service,
+                    null,
+                    ClaimCaseAssembler.INSTANCE,
+                    null,
+                    new ClaimIdempotencyProperties()))
             .build();
   }
 

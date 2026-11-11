@@ -47,7 +47,9 @@ public class AdjustmentController {
     return ApiResponse.success(indemnityApplicationService.calculate(claimId, ruleVersion));
   }
 
-  @Operation(summary = "重算", description = "规则/责任版本变更后重算；已确认 CONFIRMED 拒绝")
+  @Operation(
+      summary = "重算（按绑定版本复核）",
+      description = "用案件理算时绑定的责任版本重出一套归因；结果不得随新条款漂移（G2）。已确认 CONFIRMED 拒绝；绑定版本已清理即 422")
   @PreAuthorize("hasAuthority('claim:review:write')")
   @PostMapping("/recalculate")
   public ApiResponse<IndemnityApplicationService.AdjustmentResult> recalculate(
@@ -55,6 +57,18 @@ public class AdjustmentController {
       @Parameter(description = "规则版本") @RequestHeader(value = "X-Rule-Version", required = false)
           String ruleVersion) {
     return ApiResponse.success(indemnityApplicationService.recalculate(claimId, ruleVersion));
+  }
+
+  @Operation(
+      summary = "按新条款重新理算（显式改绑）",
+      description = "取当期 ACTIVE 责任重算并同步改写绑定版本与公式快照；资金行为变更，不得在复核入口隐式发生")
+  @PreAuthorize("hasAuthority('claim:review:write')")
+  @PostMapping("/readjudicate")
+  public ApiResponse<IndemnityApplicationService.AdjustmentResult> readjudicate(
+      @Parameter(description = "案件ID") @PathVariable long claimId,
+      @Parameter(description = "规则版本") @RequestHeader(value = "X-Rule-Version", required = false)
+          String ruleVersion) {
+    return ApiResponse.success(indemnityApplicationService.readjudicate(claimId, ruleVersion));
   }
 
   @Operation(summary = "理算确认", description = "核赔通过：理算结果锁定（额度占额在 A7 资金阶段）")

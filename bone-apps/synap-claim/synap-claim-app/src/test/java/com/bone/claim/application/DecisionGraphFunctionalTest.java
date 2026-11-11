@@ -74,6 +74,7 @@ class DecisionGraphFunctionalTest {
             "12345678",
             Instant.parse("2026-03-12T10:00:00Z"),
             "B1",
+            "idem-key-test-0",
             "v3",
             List.of(
                 ClaimItem.of(

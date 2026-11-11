@@ -58,8 +58,9 @@ public class ClaimCaseController {
   private final AutoApprovalApplicationService autoApprovalApplicationService;
   private final ClaimCaseAssembler claimCaseAssembler;
   private final IdempotencyService idempotencyService;
+  private final ClaimIdempotencyProperties idempotencyProperties;
 
-  @Operation(summary = "提交理赔申请", description = "报案建案并受理签收（DRAFT→7）；可带 Idempotency-Key 幂等")
+  @Operation(summary = "提交理赔申请", description = "报案建案并受理签收（DRAFT→7）；Idempotency-Key 必传（缺失 400）")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "201",
@@ -87,16 +88,14 @@ public class ClaimCaseController {
   // 尾斜杠匹配 ⇒ 报案提交与待办列表全数 404「请求地址不存在」（2026-10-28 全模块联调实测确诊）。
   @PostMapping({"", "/"})
   public ApiResponse<ClaimCaseResp> submit(
-      @Parameter(description = "幂等键（UUID v4）；不传则不启用幂等")
-          @RequestHeader(value = IdempotencyService.IDEMPOTENCY_KEY_HEADER, required = false)
+      @Parameter(description = "幂等键（UUID v4），必传（P0-3：缺失即 400，服务端不代生成）")
+          @RequestHeader(value = IdempotencyService.IDEMPOTENCY_KEY_HEADER, required = true)
           String idempotencyKey,
       @Parameter(description = "报案请求") @Valid @RequestBody SubmitClaimReq request,
       HttpServletRequest httpRequest) {
     SubmitClaim command = claimCaseAssembler.toSubmitClaim(request);
     // 幂等键来自请求头（MapStruct 从体映射不到），补进命令供域层查重与 NOT NULL 列落库
-    if (idempotencyKey != null && !idempotencyKey.isBlank()) {
-      command = command.withIdempotencyKey(idempotencyKey);
-    }
+    command = command.withIdempotencyKey(idempotencyKey);
     String method = httpRequest.getMethod();
     String path = httpRequest.getRequestURI();
 
@@ -119,7 +118,8 @@ public class ClaimCaseController {
         path,
         command,
         new IdempotencyService.ReplayedResponse(
-            HttpStatus.CREATED.value(), "/api/v1/claims/" + submitted.claimId(), body));
+            HttpStatus.CREATED.value(), "/api/v1/claims/" + submitted.claimId(), body),
+        idempotencyProperties.getTtl());
     return body;
   }
 

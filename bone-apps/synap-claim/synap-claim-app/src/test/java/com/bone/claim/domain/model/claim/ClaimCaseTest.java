@@ -33,6 +33,7 @@ class ClaimCaseTest {
         "12345678",
         OUT_INSURE,
         "B20260312",
+        "idem-key-test-0",
         "v3",
         List.of(
             ClaimItem.of(
@@ -181,6 +182,7 @@ class ClaimCaseTest {
           "12345678",
           OUT_INSURE,
           "B20260312",
+          "idem-key-test-1",
           "v3",
           List.of(
               ClaimItem.of(
@@ -280,21 +282,57 @@ class ClaimCaseTest {
     assertThatThrownBy(
             () ->
                 ClaimCase.draft(
-                    1L, 42L, "P1", 1L, "h", "OUTPATIENT", "", "", OUT_INSURE, "", "v1", List.of()))
+                    1L,
+                    42L,
+                    "P1",
+                    1L,
+                    "h",
+                    "OUTPATIENT",
+                    "",
+                    "",
+                    OUT_INSURE,
+                    "",
+                    "idem-key-test-2",
+                    "v1",
+                    List.of()))
         .isInstanceOf(DomainException.class)
         .hasMessageContaining("明细");
     // 违反对：被保人假名化 ID 为空
     assertThatThrownBy(
             () ->
                 ClaimCase.draft(
-                    1L, 42L, "P1", 1L, "", "OUTPATIENT", "", "", OUT_INSURE, "", "v1", oneItem))
+                    1L,
+                    42L,
+                    "P1",
+                    1L,
+                    "",
+                    "OUTPATIENT",
+                    "",
+                    "",
+                    OUT_INSURE,
+                    "",
+                    "idem-key-test-3",
+                    "v1",
+                    oneItem))
         .isInstanceOf(DomainException.class)
         .hasMessageContaining("假名化");
     // 违反对：出险时间为空
     assertThatThrownBy(
             () ->
                 ClaimCase.draft(
-                    1L, 42L, "P1", 1L, "h", "OUTPATIENT", "", "", null, "", "v1", oneItem))
+                    1L,
+                    42L,
+                    "P1",
+                    1L,
+                    "h",
+                    "OUTPATIENT",
+                    "",
+                    "",
+                    null,
+                    "",
+                    "idem-key-test-4",
+                    "v1",
+                    oneItem))
         .isInstanceOf(DomainException.class)
         .hasMessageContaining("出险时间");
   }

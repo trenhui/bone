@@ -46,13 +46,7 @@ public class IdempotencyRecord extends AggregateRoot<Long> {
     return record;
   }
 
-  /** 覆盖快照（同一 scopeKey 重复请求时刷新指纹、快照与 TTL）。 */
-  public void refresh(String requestFingerprint, String snapshotJson, Instant expiresAt) {
-    this.requestFingerprint = requestFingerprint;
-    this.snapshotJson = snapshotJson;
-    this.expiresAt = expiresAt;
-  }
-
+  /** 首快不可变（P0-3）：记录一旦写入，指纹/快照/TTL 均不提供覆盖入口；重放由 {@code find()} 读取，过期由 {@code expiredAt} 判定。 */
   public boolean expiredAt(Instant now) {
     return expiresAt != null && !expiresAt.isAfter(now);
   }

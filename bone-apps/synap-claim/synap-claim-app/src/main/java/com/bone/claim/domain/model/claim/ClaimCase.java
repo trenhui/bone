@@ -20,7 +20,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -216,46 +215,14 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   // ===================== 工厂方法 =====================
 
   /**
-   * 报案建案（DRAFT）。
-   *
-   * <p>此步只落草稿：受理签收（{@link #accept}）才进入 7 并对外可见。id 由调用方预分配（雪花），报案号由 id 派生，全局唯一且可重复推导（对账友好）。
-   */
-  public static ClaimCase draft(
-      long id,
-      Long tenantId,
-      String policyNo,
-      Long planId,
-      String insuredIdHash,
-      String claimType,
-      String invoiceCode,
-      String invoiceNo,
-      Instant outInsureTime,
-      String batchNo,
-      String planVersion,
-      List<ClaimItem> items) {
-    // 便利重载：调用方未携带幂等键（协议层 Idempotency-Key 可选）时由域内生成，见全参重载注释
-    return draft(
-        id,
-        tenantId,
-        policyNo,
-        planId,
-        insuredIdHash,
-        claimType,
-        invoiceCode,
-        invoiceNo,
-        outInsureTime,
-        batchNo,
-        null,
-        planVersion,
-        items);
-  }
-
-  /**
    * 报案草稿（受理前）。
    *
-   * @param idempotencyKey 写接口幂等键（{@code Idempotency-Key} 请求头值）。为 {@code null}/空时域内生成 UUID——{@code
-   *     t_claim_case.idempotency_key} 为 NOT NULL 且租户内唯一（{@code uk_tenant_idem}），
-   *     无键提交即独立案件（协议语义「不传则不启用幂等」）；携键时同租户同键重复提交由应用层查重返回首案， 并发双写由唯一键兜底。
+   * <p>此步只落草稿：受理签收（{@link #accept}）才进入 7 并对外可见。id 由调用方预分配（雪花），报案号由 id 派生，全局唯一且可重复推导（对账友好）。
+   *
+   * @param idempotencyKey 写接口幂等键（{@code Idempotency-Key} 请求头值）。<b>P0-3（2026-11-11 落地）</b>：必传、
+   *     不得服务端代生成——无键提交即独立案件的兼容底已移除（IETF / Stripe 惯例：幂等键由客户端生成， 服务端代生成会让重试必然建案，恰恰放大重复提交）；缺失由 adapter
+   *     层以 400 拒绝（请求头 {@code required=true}），域层只做兜底断言。同租户同键重复提交由应用层查重返回首案，并发双写由 {@code
+   *     uk_tenant_idem} 唯一键兜底。
    */
   public static ClaimCase draft(
       long id,
@@ -310,10 +277,12 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
     claim.status = ClaimStatus.DRAFT.name();
     claim.stage = ClaimStage.SIGNING.name();
     claim.sourceSystem = "self";
-    claim.idempotencyKey =
-        (idempotencyKey == null || idempotencyKey.isBlank())
-            ? UUID.randomUUID().toString()
-            : idempotencyKey;
+    if (idempotencyKey == null || idempotencyKey.isBlank()) {
+      // P0-3：幂等键必传。adapter 层（ClaimCaseController#submit）已在入口以 400 拦截，
+      // 这里是域层兜底断言——绕过 adapter 的内部调用同样不允许无键建案。
+      throw new DomainException("报案必须携带 Idempotency-Key（客户端生成），服务端不代生成");
+    }
+    claim.idempotencyKey = idempotencyKey;
     claim.items = new ArrayList<>(items);
     claim.version = 0L;
     Instant now = Instant.now();

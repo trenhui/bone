@@ -216,6 +216,7 @@ class DecisionAiTraceabilityTest {
             "INVNO-1",
             Instant.now(),
             null,
+            "idem-key-test-0",
             "v1",
             List.of(
                 ClaimItem.of(

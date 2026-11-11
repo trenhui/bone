@@ -44,9 +44,13 @@ bone:
       secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
   claim:
     idempotency:
-      # 提交理赔的 Idempotency-Key 快照落库开关（表 claim_idempotency_record）；
-      # false 时退化为「不记录快照」（同 blueprint bone.blueprint.idempotency.enabled 口径）。
+      # 报案/资金写端点的 Idempotency-Key 快照落库开关（表 claim_idempotency_record）。
+      # false 时本 Bean 不装配 → IdempotencyService 缺构造依赖、应用拒绝启动（P0-3 fail-closed，
+      # 2026-11-11 起：资金写路径不允许"无幂等也能跑"的降级形态；开关只用于紧急回滚到上一镜像）。
+      # ttl 默认 30 天 ≥ 理赔争议窗口（原 24h 覆盖不了"已成功但响应丢失后隔天重试"的二次出金/建案风险）；
+      # 过期同键在保留期内重放一律 409，不重新执行。
       enabled: ${BONE_CLAIM_IDEMPOTENCY_ENABLED:true}
+      ttl: ${BONE_CLAIM_IDEMPOTENCY_TTL:30d}
     ruleset:
       # 核责规则资产位置：默认 classpath 内的 claim-ruleset.json；指向外部文件即可不发版调整规则。
       # 配置文件缺失/损坏/为空时适配器回退内置规则集（fail-closed 方向），不会静默放行。

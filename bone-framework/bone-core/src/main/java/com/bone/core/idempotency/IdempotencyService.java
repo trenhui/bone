@@ -167,6 +167,24 @@ public class IdempotencyService {
     remember(buildScopeKey(idempotencyKey, userId, method, path), payload, response);
   }
 
+  /**
+   * 便捷版 remember（自定义 TTL）：资金写路径按业务语义传入保留期（如理赔模块 30 天争议窗口）， 不再共用写死的 {@link #DEFAULT_TTL}——TTL
+   * 覆盖不了业务争议窗口时，重试会绕过重放造成重复副作用。
+   */
+  public void remember(
+      String idempotencyKey,
+      String userId,
+      String method,
+      String path,
+      Object payload,
+      ReplayedResponse response,
+      Duration ttl) {
+    if (!hasKey(idempotencyKey)) {
+      return;
+    }
+    remember(buildScopeKey(idempotencyKey, userId, method, path), payload, response, ttl);
+  }
+
   // ===================== 底层编排（需自行拼 scopeKey） =====================
 
   /**

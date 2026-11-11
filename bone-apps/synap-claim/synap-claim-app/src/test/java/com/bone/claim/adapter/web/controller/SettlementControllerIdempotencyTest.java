@@ -58,7 +58,10 @@ class SettlementControllerIdempotencyTest {
     MDC.put("userId", OPERATOR);
     settlementService = mock(SettlementApplicationService.class);
     controller =
-        new SettlementController(settlementService, new IdempotencyService(new InMemoryStore()));
+        new SettlementController(
+            settlementService,
+            new IdempotencyService(new InMemoryStore()),
+            new ClaimIdempotencyProperties());
   }
 
   @AfterEach
