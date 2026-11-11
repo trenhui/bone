@@ -125,6 +125,8 @@ read -rs BONE_DB_PASSWORD && export BONE_DB_PASSWORD   # enter the value from .e
 | Extension and integration | ExtPoint injects custom logic; connectors, flow orchestration and Outbox live in the integration engine |
 | AI | LLM gateway, RAG with grounding guard, agent orchestration, AI tracing |
 
+![Bone admin console: platform console, modeling stats and service health](doc/design/assets/ui-dashboard.png)
+
 ---
 
 ## Architecture and Deployment

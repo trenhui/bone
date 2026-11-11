@@ -125,6 +125,8 @@ read -rs BONE_DB_PASSWORD && export BONE_DB_PASSWORD   # 输入 .env 中的值�
 | 扩展与集成 | ExtPoint 注入差异化逻辑，连接器、流程编排和 Outbox 投递在集成引擎里 |
 | AI 能力 | LLM 网关、RAG 与接地守卫、智能体编排、AI 链路追踪 |
 
+![Bone 管理后台：平台控制台、建模统计与服务健康](doc/design/assets/ui-dashboard.png)
+
 ---
 
 ## 架构与部署
