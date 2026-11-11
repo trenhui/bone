@@ -508,7 +508,7 @@ flowchart TD
 | 框架 | `bone-framework/*` |
 | DDD 蓝图 | `bone-blueprint/`（是否纳入根 `pom.xml` 以仓库为准） |
 
-**易混点**：引擎与平台下可能存在同名业务域（如 integration），文档、日志与监控指标须用 **全限定模块名**。`bone-iam` 默认 HTTP 端口以 **`bone-platform/bone-iam/src/main/resources/application.yml` 中 `server.port` 为准**（当前仓库为 **8081**），勿与 `bone-masterdata` 的 **8084**、`bone-extension-studio` 的 **8088** 等混用（全表见 wiki/03）。**各模块默认端口总表**见 [doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)「常见服务端口」；根 [README.md](../../README.md) 快速开始中的 **8080** 为营销/演示入口示意，非 IAM 真源。
+**易混点**：引擎与平台下可能存在同名业务域（如 integration），文档、日志与监控指标须用 **全限定模块名**。`bone-iam` 默认 HTTP 端口以 **`bone-platform/bone-iam/src/main/resources/application.yml` 中 `server.port` 为准**（当前仓库为 **8081**），勿与 `bone-masterdata` 的 **8084**、`bone-extension-studio` 的 **8088** 等混用（全表见 wiki/03）。**各模块默认端口总表**见 [doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)「常见服务端口」。
 
 **端口（2026-08 校正）**：`bone-integration`=**8085**、`studio-generator`=**8086**、`bone-masterdata`=**8084**（以各模块 `application.yml` 为准）；统一入口走 `bone-gateway`（**8888**），由网关按 `/api/v1/{domain}` 转发。端口总表见 [wiki/03](../wiki/03-本地开发与构建.md)。
 

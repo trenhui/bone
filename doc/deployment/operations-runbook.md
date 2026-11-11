@@ -2,8 +2,8 @@
 
 > 面向 SRE / 运维。设计类文档在 `doc/architecture`、`doc/design`，本文件聚焦「怎么跑、怎么排障、怎么回滚」。
 
-## 1. 服务总览（见 `deploy/README.md` 端口表）
-网关 8888 → iam 8080 / system 8083 / masterdata 8084 / integration 8085 / file 8107 / notification 8100 / blueprint 8082 / studio-generator 8086 / extension-studio 8088 / metadata-server 8081。
+## 1. 服务总览
+统一入口为网关 8888。默认端口见 [03-本地开发与构建](../wiki/03-本地开发与构建.md)，K8s 编排清单见 [deploy/README.md](../../deploy/README.md)。
 
 ## 2. 健康检查
 - 端点：`/actuator/health`（各服务已暴露）、`/actuator/info`、`/actuator/metrics`。

@@ -25,7 +25,8 @@ bone-platform/bone-gateway 8888
 '
 
 echo "=== ① 端口一致性 check ==="
-echo "$PORT_BASELINE" | while read -r mod port; do
+# here-string 让 while 在当前 shell 执行：若走管道，fail=1 只改子 shell 副本，端口漂移会恒绿。
+while read -r mod port; do
   [ -n "$mod" ] || continue
   yml="$mod/src/main/resources/application.yml"
   [ -f "$yml" ] || yml="$mod/src/main/resources/application.yaml"
@@ -44,7 +45,7 @@ echo "$PORT_BASELINE" | while read -r mod port; do
   else
     echo "OK    $mod 端口 $port 一致"
   fi
-done
+done <<< "$PORT_BASELINE"
 
 # ---------- 2) 任务状态反漂移 ----------
 KANBAN="doc/wiki/07-P0-TODO看板.md"
@@ -77,7 +78,7 @@ for item in INT-09 INT-10 INT-11; do
   esac
 done
 
-# fail 标志跨管道丢失，改用临时文件聚合（bash <4 无 shopt lastpipe 保证）
+# while 在当前 shell 执行，fail 可直接判定，无需临时文件聚合
 if [ "$fail" -ne 0 ]; then
   echo ""
   echo "❌ README 事实校验未通过，请修正 README 或脚手架基线后再提交"
