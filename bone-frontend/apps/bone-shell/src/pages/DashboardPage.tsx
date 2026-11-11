@@ -299,7 +299,7 @@ export default function DashboardPage(): JSX.Element {
           </div>
           <div>
             <h1 className="db-hero-title">BONE 平台控制台</h1>
-            <p className="db-hero-sub">企业级元数据驱动 · DDD + CQRS · 微前端开发平台</p>
+            <p className="db-hero-sub">元数据驱动 · DDD + CQRS · 微前端开发平台</p>
             <span className="db-hero-chip">
               <span className="db-live-dot" />
               系统运行中 · 实时数据
