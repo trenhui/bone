@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1536" height="480" viewBox="0 0 1536 480" role="img" aria-labelledby="hero-title hero-desc" font-family="sans-serif">
-  <title id="hero-title">Bone 企业级 AI 应用开发平台</title>
+  <title id="hero-title">Bone AI 应用开发平台</title>
   <desc id="hero-desc">Build Once, Natively Everywhere。统一元模型 Meta 连接元数据引擎、主数据平台、扩展引擎、集成引擎与 AI 能力中台；技术栈为 Java 21、Spring Boot 3.5、React 18、LLM 网关、RAG、Agent、DDD 与 ArchUnit。</desc>
 
   <defs>
@@ -48,7 +48,7 @@
   <text class="brand" x="80" y="220">BONE</text>
   <rect x="84" y="240" width="300" height="4" rx="2" fill="url(#hb-accent)"/>
   <text class="tagline" x="84" y="288">Build Once, Natively Everywhere</text>
-  <text class="zh" x="84" y="330">企业级 AI 应用开发平台 · 业务建模、数据访问和应用交付共用一份元模型</text>
+  <text class="zh" x="84" y="330">AI 应用开发平台 · 业务建模、数据访问和应用交付共用一份元模型</text>
 
   <g stroke="#22D3EE" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="5 6" fill="none">
     <path d="M1180 230L1000 112"/><path d="M1180 230L1370 112"/>

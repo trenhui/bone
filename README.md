@@ -1,6 +1,6 @@
 # Bone — Build Once, Natively Everywhere
 
-企业级 AI 应用开发平台，业务建模、数据访问和应用交付共用一份元模型。
+元数据驱动的 AI 应用开发平台。业务建模、数据访问和应用交付共用一份元模型。
 
 **简体中文** | [English](README.en.md)
 
@@ -9,9 +9,9 @@
 ![JDK](https://img.shields.io/badge/JDK-21+-orange.svg)
 ![AI-Native](https://img.shields.io/badge/AI--Native-purple.svg)
 
-![Bone 企业级 AI 应用开发平台](doc/design/assets/bone-hero-banner.svg)
+![Bone AI 应用开发平台](doc/design/assets/bone-hero-banner.svg)
 
-Bone 把实体、字段和关系写进一份元模型。每个实体可以选模式 A（`GENERATIVE`，生成可审计的源码）或模式 B（`RUNTIME`，运行时提供 CRUD 和 API）。主数据、扩展、集成和 AI 能力都建在这份模型上。
+Bone 用一份元模型描述业务：每个实体可走模式 A（生成可入库审计的源码）或模式 B（运行时直接提供 CRUD 与 API）。主数据、扩展、集成和 AI 能力都长在这份模型上——一次建模，代码和运行时 API 两种交付。
 
 ![Bone 平台架构与两种部署形态](doc/design/assets/readme-architecture-layers.svg)
 
@@ -37,7 +37,7 @@ Bone 把实体、字段和关系写进一份元模型。每个实体可以选模
 
 ## 快速开始
 
-按下面几步可以跑起网关、IAM、系统服务、元数据服务和前端 Shell，并完成登录。完整说明见 [本地开发与构建](doc/wiki/03-本地开发与构建.md)。
+按下面几步可以跑起网关、IAM、系统服务、元数据服务和前端 Shell，并完成登录。跑通后访问 http://localhost:3000 即可登录管理后台，看到由元模型驱动的业务对象。完整说明见 [本地开发与构建](doc/wiki/03-本地开发与构建.md)。
 
 端口以各模块 `application.yml` 和各前端 `vite.config.ts` 为准，进程与端口见[架构与部署](#架构与部署)。
 
@@ -111,6 +111,8 @@ read -rs BONE_DB_PASSWORD && export BONE_DB_PASSWORD   # 输入 .env 中的值�
 3. 常见故障：端口占用；`.env` 没填 `BONE_DB_PASSWORD` 或各终端取值不一致；`bone-init.sql` 没导入。更多见 [本地开发与构建](doc/wiki/03-本地开发与构建.md)。
 
 ---
+
+> **不是低代码平台。** 低代码通常按表单生成、产物留在平台内；Bone 从统一元模型出发，模式 A 生成可入库审计的源码，模式 B 直接提供运行时 API，扩展点、集成和 AI 模块共用同一份模型。一次建模，两种交付。
 
 ## 能力快照
 
@@ -286,10 +288,11 @@ RBAC、JWT、多租户、审计日志和部分指标已交付，列级权限、S
 - AI 助手与贡献者规则：[AGENTS.md](AGENTS.md) · [CONTRIBUTING.md](CONTRIBUTING.md)。其余文档为中文。
 - [元数据三模块对照](doc/design/modules/元数据能力-实现映射与竞品对照.md) · [主 PRD](doc/prd/BONE产品需求文档正式版.md) · [引擎索引](bone-engine/README.md)
 - 品牌素材：[doc/design/assets/](doc/design/assets/)。商用宣发要遵守 [License](#license)。
-- 贡献：[CONTRIBUTING.md](CONTRIBUTING.md)；Issue / PR：[Gitee 仓库](https://gitee.com/meishan315/bone)
+- 贡献：[CONTRIBUTING.md](CONTRIBUTING.md)；Issue / PR：[Gitee 仓库](https://gitee.com/meishan315/bone) · [GitHub 仓库](https://github.com/trenhui/bone)
 - 社区：[https://gitee.com/meishan315/bone](https://gitee.com/meishan315/bone) · 公众号「梅山见道（MeishanInsight）」 · 微信 `meishan-bone`
 
 [![Star on Gitee](https://gitee.com/meishan315/bone/badge/star.svg)](https://gitee.com/meishan315/bone)
+[![Star on GitHub](https://img.shields.io/github/stars/trenhui/bone?style=social)](https://github.com/trenhui/bone)
 
 ---
 

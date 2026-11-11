@@ -1,6 +1,6 @@
 # Bone — Build Once, Natively Everywhere
 
-An enterprise AI application platform. Modeling, data access and application delivery share one metamodel.
+A metadata-driven AI application platform. Modeling, data access and application delivery share one metamodel.
 
 **English** | [简体中文](README.md)
 
@@ -9,9 +9,9 @@ An enterprise AI application platform. Modeling, data access and application del
 ![JDK](https://img.shields.io/badge/JDK-21+-orange.svg)
 ![AI-Native](https://img.shields.io/badge/AI--Native-purple.svg)
 
-![Bone enterprise AI application platform](doc/design/assets/bone-hero-banner.svg)
+![Bone AI application platform](doc/design/assets/bone-hero-banner.svg)
 
-Bone keeps entities, fields and relations in one metamodel. Each entity picks Mode A (`GENERATIVE`, generate auditable source) or Mode B (`RUNTIME`, CRUD and API at runtime). Master data, extension, integration and AI capabilities all build on that model.
+Bone describes business with one metamodel: each entity takes Mode A (generate auditable source) or Mode B (serve CRUD and API at runtime). Master data, extension, integration and AI capabilities all build on that model — define once, get both generated code and a runtime API.
 
 ![Bone platform architecture and deployment modes](doc/design/assets/readme-architecture-layers.svg)
 
@@ -37,7 +37,7 @@ Contents: [Quick Start](#quick-start) · [Capability Snapshot](#capability-snaps
 
 ## Quick Start
 
-These steps bring up the gateway, IAM, system service, metadata service and frontend Shell, then log in. Full walkthrough: [Local development & build (zh)](doc/wiki/03-本地开发与构建.md).
+These steps bring up the gateway, IAM, system service, metadata service and frontend Shell, then log in. Once up, open http://localhost:3000 to log into the admin Shell and see the metamodel-driven business objects. Full walkthrough: [Local development & build (zh)](doc/wiki/03-本地开发与构建.md).
 
 Ports come from each module's `application.yml` and each app's `vite.config.ts`. See [Architecture and Deployment](#architecture-and-deployment) for the processes and ports.
 
@@ -111,6 +111,8 @@ read -rs BONE_DB_PASSWORD && export BONE_DB_PASSWORD   # enter the value from .e
 3. Common failures: port conflicts; `BONE_DB_PASSWORD` unset in `.env` or differing between terminals; `bone-init.sql` not imported. More in [Local development & build (zh)](doc/wiki/03-本地开发与构建.md).
 
 ---
+
+> **Not a low-code platform.** Low-code usually generates from forms and keeps the output inside the platform. Bone starts from one metamodel: Mode A generates auditable source you can commit, Mode B serves a runtime API directly, and extension points, integration and AI modules share the same model. Define once, deliver both ways.
 
 ## Capability Snapshot
 
@@ -286,10 +288,11 @@ Details are in the [P0 board (zh)](doc/wiki/07-P0-TODO看板.md) and module desi
 - AI assistant and contributor rules: [AGENTS.md (zh)](AGENTS.md) · [CONTRIBUTING.md (zh)](CONTRIBUTING.md). Other docs are in Chinese (中文).
 - [Metadata three-module comparison (zh)](doc/design/modules/元数据能力-实现映射与竞品对照.md) · [Main PRD (zh)](doc/prd/BONE产品需求文档正式版.md) · [Engine index (zh)](bone-engine/README.md)
 - Brand assets: [doc/design/assets/](doc/design/assets/). Commercial promotion must follow the [License](#license) terms.
-- Contributing: [CONTRIBUTING.md (zh)](CONTRIBUTING.md); issues / PRs: [Gitee repository](https://gitee.com/meishan315/bone)
+- Contributing: [CONTRIBUTING.md (zh)](CONTRIBUTING.md); issues / PRs: [Gitee repository](https://gitee.com/meishan315/bone) · [GitHub repository](https://github.com/trenhui/bone)
 - Community: [https://gitee.com/meishan315/bone](https://gitee.com/meishan315/bone) · WeChat Official Account 梅山见道 (MeishanInsight) · WeChat `meishan-bone`
 
 [![Star on Gitee](https://gitee.com/meishan315/bone/badge/star.svg)](https://gitee.com/meishan315/bone)
+[![Star on GitHub](https://img.shields.io/github/stars/trenhui/bone?style=social)](https://github.com/trenhui/bone)
 
 ---
 
