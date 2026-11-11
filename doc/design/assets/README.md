@@ -2,10 +2,13 @@
 
 | 文件 | 说明 |
 |------|------|
+| [bone-hero-banner.svg](./bone-hero-banner.svg) | README 顶部 Hero 主视觉（矢量 1536×480；无第三方工具水印，文字与技术栈对齐 README） |
+| [readme-architecture-layers.svg](./readme-architecture-layers.svg) | 根 README 逻辑架构与两种部署形态图 |
 | [readme-runtime-topology.svg](./readme-runtime-topology.svg) | 根 README 运行时拓扑图（由 `scripts/check-runtime-topology.py` 校验端口与真源一致） |
-| [bone-hero-banner.webp](./bone-hero-banner.webp) | README 顶部 Hero 主视觉（横版 1536×1024） |
-| [bone-poster.webp](./bone-poster.webp) | 宣传海报（竖版·深色 1024×1536） |
-| [bone-poster-light.webp](./bone-poster-light.webp) | 宣传海报（竖版·浅色 1024×1536） |
+| [architecture.html](./architecture.html) | 架构与部署图预览页（自包含，可直接打开或静态托管） |
+| [bone-hero-banner.webp](./bone-hero-banner.webp) | 旧版 Hero 位图（1536×1024）；已去除右下角 AI 工具水印，文案口径较旧，不再用于 README |
+| [bone-poster.webp](./bone-poster.webp) | 宣传海报（竖版·深色 1024×1536）；仍含 AI 工具水印与 `Nativaly` 拼写错误，待重制 |
+| [bone-poster-light.webp](./bone-poster-light.webp) | 宣传海报（竖版·浅色 1024×1536）；待核水印后重制 |
 
 无 CI 脚本写死路径（`readme-runtime-topology.svg` 除外，见上表）；新增示意图优先放本目录。
 

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bone 架构与部署图</title>
+<style>
+  body { margin:0; padding:32px 24px 64px; background:#F1F5F9;
+         font-family:-apple-system,'PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif;
+         color:#0F172A; }
+  main { max-width:1080px; margin:0 auto; }
+  h1 { font-size:20px; margin:0 0 6px; }
+  .lead { margin:0 0 24px; color:#64748B; font-size:14px; }
+  section { background:#fff; border:1px solid #E2E8F0; border-radius:14px;
+            padding:20px; margin-bottom:24px; }
+  h2 { font-size:16px; margin:0 0 4px; }
+  .cap { margin:0 0 16px; color:#94A3B8; font-size:12.5px; }
+  img { display:block; width:100%; height:auto; }
+  footer { color:#94A3B8; font-size:12px; }
+  a { color:#2563EB; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Bone 架构与部署图</h1>
+  <p class="lead">先看平台分层与两种装配方式，再看本地开发环境实际起的进程与端口。端口真源是各模块 application.yml 与前端 vite.config.ts。</p>
+
+  <section>
+    <h2>平台架构与部署形态</h2>
+    <p class="cap">统一元模型贯穿模式 A / B；底部对比已交付的合并进程与独立进程两种形态。本图不标端口。</p>
+    <img src="readme-architecture-layers.svg" alt="Bone 平台架构与两种部署形态">
+  </section>
+
+  <section>
+    <h2>开发环境运行时拓扑</h2>
+    <p class="cap">默认独立进程形态；bone-boot 组合根可把元数据服务与业务模块合并到 :9001 单进程。G41 门禁守护端口一致性。</p>
+    <img src="readme-runtime-topology.svg" alt="Bone 开发环境运行时拓扑">
+  </section>
+
+  <footer>两张图与 README.md / README.en.md 引用的是同一份文件；端口改动需同步运行时拓扑图与 G41 门禁。</footer>
+</main>
+</body>
+</html>

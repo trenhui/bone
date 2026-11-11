@@ -9,9 +9,11 @@ An enterprise AI application platform. Modeling, data access and application del
 ![JDK](https://img.shields.io/badge/JDK-21+-orange.svg)
 ![AI-Native](https://img.shields.io/badge/AI--Native-purple.svg)
 
-![BONE Enterprise AI-Native Application Development Platform](doc/design/assets/bone-hero-banner.webp)
+![Bone enterprise AI application platform](doc/design/assets/bone-hero-banner.svg)
 
 Bone keeps entities, fields and relations in one metamodel. Each entity picks Mode A (`GENERATIVE`, generate auditable source) or Mode B (`RUNTIME`, CRUD and API at runtime). Master data, extension, integration and AI capabilities all build on that model.
+
+![Bone platform architecture and deployment modes](doc/design/assets/readme-architecture-layers.svg)
 
 <details>
 <summary>Glossary</summary>
@@ -29,14 +31,7 @@ Bone keeps entities, fields and relations in one metamodel. Each entity picks Mo
 
 > Licensing is judged by use, regardless of entity type. Personal learning, teaching at accredited institutions, non-commercial evaluation of up to 90 days, and development / testing / CI without real business traffic are free. Production use for a commercial purpose requires a written commercial license, as does removing BSL restrictions or requiring indemnification, SLA or technical support. Versions released on/after 2026-10-11 are under [BSL 1.1](LICENSE); earlier releases remain under [MIT](LICENSE-MIT). See [License](#license).
 
-| What you need | Where to look |
-|---------------|---------------|
-| Engineering, API, DDL, local debugging | [doc/README.md (zh)](doc/README.md) → [Architecture (zh)](doc/architecture/README.md) · [Local build (zh)](doc/wiki/03-本地开发与构建.md) |
-| AI assistant and contributor rules | [AGENTS.md (zh)](AGENTS.md) · [CONTRIBUTING.md (zh)](CONTRIBUTING.md) |
-
-Other docs are in Chinese (中文).
-
-Contents: [Quick Start](#quick-start) · [Capability Snapshot](#capability-snapshot) · [The Four Engines and Bone AI Capability Platform](#the-four-engines-and-bone-ai-capability-platform) · [Technology Roadmap](#technology-roadmap) · [Implementation Status and Roadmap](#implementation-status-and-roadmap) · [Design Principles](#design-principles) · [Docs and Community](#docs-and-community) · [FAQ](#faq) · [License](#license)
+Contents: [Quick Start](#quick-start) · [Capability Snapshot](#capability-snapshot) · [Architecture and Deployment](#architecture-and-deployment) · [The Four Engines and Bone AI Capability Platform](#the-four-engines-and-bone-ai-capability-platform) · [Technology Roadmap](#technology-roadmap) · [Implementation Status and Roadmap](#implementation-status-and-roadmap) · [Design Principles](#design-principles) · [Docs and Community](#docs-and-community) · [FAQ](#faq) · [License](#license)
 
 ---
 
@@ -44,7 +39,7 @@ Contents: [Quick Start](#quick-start) · [Capability Snapshot](#capability-snaps
 
 These steps bring up the gateway, IAM, system service, metadata service and frontend Shell, then log in. Full walkthrough: [Local development & build (zh)](doc/wiki/03-本地开发与构建.md).
 
-Ports come from each module's `application.yml` and each app's `vite.config.ts`. Gate G41 in [`scripts/check.sh`](scripts/check.sh) checks the [runtime topology diagram](doc/design/assets/readme-runtime-topology.svg), so a changed port without a diagram update fails the check.
+Ports come from each module's `application.yml` and each app's `vite.config.ts`. See [Architecture and Deployment](#architecture-and-deployment) for the processes and ports.
 
 ### Requirements
 
@@ -130,9 +125,28 @@ read -rs BONE_DB_PASSWORD && export BONE_DB_PASSWORD   # enter the value from .e
 
 ---
 
+## Architecture and Deployment
+
+![Bone local development runtime topology](doc/design/assets/readme-runtime-topology.svg)
+
+The diagram shows the processes and ports a local development environment actually starts. Ports come from each module's `application.yml` and each app's `vite.config.ts`; gate G41 in [`scripts/check.sh`](scripts/check.sh) checks the diagram, so a changed port without a diagram update fails the check.
+
+Both assembly modes share one metamodel:
+
+| Mode | Carrier | Status |
+|------|---------|--------|
+| Merged process | [`bone-boot`](bone-boot/) puts the metadata server and expense / purchase business modules into one Spring context, reusing the `:9001` host | Local composition root, delivered; not in compose or the CI image matrix |
+| Separate processes | One executable JAR and JVM per module, with [`bone-gateway`](bone-platform/bone-gateway/) routing | Default, delivered; 8 compose service keys and 9 CI service images |
+
+The "four engines" are a product grouping, not four required processes: the extension SDK is embedded in the business host, the integration engine runs in one process, and the AI Capability Platform can be embedded per module or deployed on its own.
+
+Boundary: packaging the whole platform into a single process (all-in-one) is not delivered; production-grade K8s orchestration is still a draft, see [Deployment and orchestration (draft, zh)](deploy/README.md) and [Operations runbook (draft, zh)](doc/deployment/operations-runbook.md). Do not treat them as production-ready.
+
+---
+
 ## The Four Engines and Bone AI Capability Platform
 
-The "four engines" are a product grouping: Smart Metadata Engine, Master Data Platform, Extension Engine and Integration Engine. The AI Capability Platform is separate and not counted as an engine. In DDD terms, metadata and modeling form the core domain and the rest are supporting domains. Deployment does not need four separate processes: the extension SDK is embedded in the business host, integration runs in one process, and the AI Capability Platform can be embedded per module or deployed on its own. See the [metadata capability mapping (zh)](doc/design/modules/元数据能力-实现映射与竞品对照.md) for module relationships.
+The "four engines" are a product grouping: Smart Metadata Engine, Master Data Platform, Extension Engine and Integration Engine. The AI Capability Platform is separate and not counted as an engine. In DDD terms, metadata and modeling form the core domain and the rest are supporting domains. See the [metadata capability mapping (zh)](doc/design/modules/元数据能力-实现映射与竞品对照.md) for module relationships.
 
 ### Smart Metadata Engine
 
@@ -268,7 +282,8 @@ Details are in the [P0 board (zh)](doc/wiki/07-P0-TODO看板.md) and module desi
 
 ## Docs and Community
 
-- [doc/README.md (zh)](doc/README.md): master index. [BONE overall architecture (zh)](doc/architecture/BONE-总体架构设计方案.md), [Bone API Spec (zh)](doc/architecture/Bone-API-规范.md)
+- [doc/README.md (zh)](doc/README.md): master index. Engineering, API, DDL and local debugging start at [Architecture (zh)](doc/architecture/README.md) and [Local build (zh)](doc/wiki/03-本地开发与构建.md); see also [BONE overall architecture (zh)](doc/architecture/BONE-总体架构设计方案.md) and [Bone API Spec (zh)](doc/architecture/Bone-API-规范.md)
+- AI assistant and contributor rules: [AGENTS.md (zh)](AGENTS.md) · [CONTRIBUTING.md (zh)](CONTRIBUTING.md). Other docs are in Chinese (中文).
 - [Metadata three-module comparison (zh)](doc/design/modules/元数据能力-实现映射与竞品对照.md) · [Main PRD (zh)](doc/prd/BONE产品需求文档正式版.md) · [Engine index (zh)](bone-engine/README.md)
 - Brand assets: [doc/design/assets/](doc/design/assets/). Commercial promotion must follow the [License](#license) terms.
 - Contributing: [CONTRIBUTING.md (zh)](CONTRIBUTING.md); issues / PRs: [Gitee repository](https://gitee.com/meishan315/bone)

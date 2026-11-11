@@ -9,9 +9,11 @@
 ![JDK](https://img.shields.io/badge/JDK-21+-orange.svg)
 ![AI-Native](https://img.shields.io/badge/AI--Native-purple.svg)
 
-![BONE 企业级原生 AI 应用开发平台](doc/design/assets/bone-hero-banner.webp)
+![Bone 企业级 AI 应用开发平台](doc/design/assets/bone-hero-banner.svg)
 
 Bone 把实体、字段和关系写进一份元模型。每个实体可以选模式 A（`GENERATIVE`，生成可审计的源码）或模式 B（`RUNTIME`，运行时提供 CRUD 和 API）。主数据、扩展、集成和 AI 能力都建在这份模型上。
+
+![Bone 平台架构与两种部署形态](doc/design/assets/readme-architecture-layers.svg)
 
 <details>
 <summary>术语速览</summary>
@@ -29,14 +31,7 @@ Bone 把实体、字段和关系写进一份元模型。每个实体可以选模
 
 > 授权按用途判定，与主体性质无关。个人学习、经认证机构教学、≤ 90 天的非商业评估，以及不承载真实业务流量的开发 / 测试 / CI 免费。商业生产使用，以及需要移除 BSL 限制或要求赔偿条款、SLA、技术支持保障的，要书面商业授权。2026-10-11 起发布的版本适用 [BSL 1.1](LICENSE)，此前版本仍按 [MIT](LICENSE-MIT)。详见 [License](#license)。
 
-| 想做什么 | 看哪里 |
-|----------|--------|
-| 查工程实现、API、DDL、本地调试 | [doc/README.md](doc/README.md) → [架构规范](doc/architecture/README.md) · [本地构建](doc/wiki/03-本地开发与构建.md) |
-| 查 AI 助手与贡献者规则 | [AGENTS.md](AGENTS.md) · [CONTRIBUTING.md](CONTRIBUTING.md) |
-
-其余文档为中文。
-
-目录：[快速开始](#快速开始) · [能力快照](#能力快照) · [四大引擎与 AI 能力中台](#四大引擎与-ai-能力中台) · [技术路线](#技术路线) · [实现状态与演进路线](#实现状态与演进路线) · [设计原则](#设计原则) · [文档与社区](#文档与社区) · [常见问题](#常见问题) · [License](#license)
+目录：[快速开始](#快速开始) · [能力快照](#能力快照) · [架构与部署](#架构与部署) · [四大引擎与 AI 能力中台](#四大引擎与-ai-能力中台) · [技术路线](#技术路线) · [实现状态与演进路线](#实现状态与演进路线) · [设计原则](#设计原则) · [文档与社区](#文档与社区) · [常见问题](#常见问题) · [License](#license)
 
 ---
 
@@ -44,7 +39,7 @@ Bone 把实体、字段和关系写进一份元模型。每个实体可以选模
 
 按下面几步可以跑起网关、IAM、系统服务、元数据服务和前端 Shell，并完成登录。完整说明见 [本地开发与构建](doc/wiki/03-本地开发与构建.md)。
 
-端口以各模块 `application.yml` 和各前端 `vite.config.ts` 为准。[`scripts/check.sh`](scripts/check.sh) 的 G41 会校验 [运行时拓扑图](doc/design/assets/readme-runtime-topology.svg)，改端口不改图会失败。
+端口以各模块 `application.yml` 和各前端 `vite.config.ts` 为准，进程与端口见[架构与部署](#架构与部署)。
 
 ### 环境要求
 
@@ -130,9 +125,28 @@ read -rs BONE_DB_PASSWORD && export BONE_DB_PASSWORD   # 输入 .env 中的值�
 
 ---
 
+## 架构与部署
+
+![Bone 开发环境运行时拓扑](doc/design/assets/readme-runtime-topology.svg)
+
+图上画的是本地开发环境实际会起哪些进程、走哪些端口。端口真源是各模块 `application.yml` 和前端 `vite.config.ts`，[`scripts/check.sh`](scripts/check.sh) 的 G41 校验这张图，改端口不改图会失败。
+
+两种装配方式共用同一份元模型：
+
+| 形态 | 载体 | 状态 |
+|------|------|------|
+| 合并进程 | [`bone-boot`](bone-boot/) 把元数据服务与报销 / 采购业务模块装进同一个 Spring 上下文，复用 `:9001` 宿主 | 局部组合根，已交付；不进 compose 与 CI 镜像矩阵 |
+| 独立进程 | 每个模块一个可执行 JAR 和独立 JVM，[`bone-gateway`](bone-platform/bone-gateway/) 统一转发 | 默认形态，已交付；compose 8 个服务键、CI 9 个服务镜像 |
+
+「四大引擎」是产品划分，不是四个必起进程：扩展 SDK 嵌在业务宿主里，集成引擎跑在一个进程，AI 能力中台可以嵌入业务模块，也可以单独部署。
+
+边界：全平台打包成单一进程（all-in-one）尚未交付；生产级 K8s 编排仍是草稿，见 [部署与编排（草稿）](deploy/README.md) 与 [运维手册（草稿）](doc/deployment/operations-runbook.md)，不能当上线依据。
+
+---
+
 ## 四大引擎与 AI 能力中台
 
-「四大引擎」指智能元数据引擎、主数据平台、扩展引擎、集成引擎，是产品上的划分。AI 能力中台另算，不计入引擎数。DDD 战略分类里核心域是元数据和建模，其余是支撑域。部署时不需要四个独立进程：扩展 SDK 嵌在业务宿主里，集成跑在一个进程，AI 能力中台可以按模块嵌入，也可以单独部署。模块关系见 [元数据能力对照](doc/design/modules/元数据能力-实现映射与竞品对照.md)。
+「四大引擎」指智能元数据引擎、主数据平台、扩展引擎、集成引擎，是产品上的划分。AI 能力中台另算，不计入引擎数。DDD 战略分类里核心域是元数据和建模，其余是支撑域。模块关系见 [元数据能力对照](doc/design/modules/元数据能力-实现映射与竞品对照.md)。
 
 ### 智能元数据引擎（Smart Metadata Engine）
 
@@ -268,7 +282,8 @@ RBAC、JWT、多租户、审计日志和部分指标已交付，列级权限、S
 
 ## 文档与社区
 
-- [doc/README.md](doc/README.md)：总索引。[BONE 总体架构](doc/architecture/BONE-总体架构设计方案.md)、[Bone-API-规范](doc/architecture/Bone-API-规范.md)
+- [doc/README.md](doc/README.md)：总索引。工程实现、API、DDL、本地调试从这里进 [架构规范](doc/architecture/README.md) 与 [本地构建](doc/wiki/03-本地开发与构建.md)；[BONE 总体架构](doc/architecture/BONE-总体架构设计方案.md)、[Bone-API-规范](doc/architecture/Bone-API-规范.md)
+- AI 助手与贡献者规则：[AGENTS.md](AGENTS.md) · [CONTRIBUTING.md](CONTRIBUTING.md)。其余文档为中文。
 - [元数据三模块对照](doc/design/modules/元数据能力-实现映射与竞品对照.md) · [主 PRD](doc/prd/BONE产品需求文档正式版.md) · [引擎索引](bone-engine/README.md)
 - 品牌素材：[doc/design/assets/](doc/design/assets/)。商用宣发要遵守 [License](#license)。
 - 贡献：[CONTRIBUTING.md](CONTRIBUTING.md)；Issue / PR：[Gitee 仓库](https://gitee.com/meishan315/bone)

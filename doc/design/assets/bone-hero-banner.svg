@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1536" height="480" viewBox="0 0 1536 480" role="img" aria-labelledby="hero-title hero-desc" font-family="sans-serif">
+  <title id="hero-title">Bone 企业级 AI 应用开发平台</title>
+  <desc id="hero-desc">Build Once, Natively Everywhere。统一元模型 Meta 连接元数据引擎、主数据平台、扩展引擎、集成引擎与 AI 能力中台；技术栈为 Java 21、Spring Boot 3.5、React 18、LLM 网关、RAG、Agent、DDD 与 ArchUnit。</desc>
+
+  <defs>
+    <linearGradient id="hb-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070B1A"/><stop offset="0.55" stop-color="#0F172A"/><stop offset="1" stop-color="#231A4A"/>
+    </linearGradient>
+    <linearGradient id="hb-accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22D3EE"/><stop offset="0.5" stop-color="#6366F1"/><stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+    <linearGradient id="hb-node" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22D3EE"/><stop offset="1" stop-color="#6366F1"/>
+    </linearGradient>
+    <radialGradient id="hb-halo"><stop offset="0" stop-color="#6366F1" stop-opacity="0.38"/><stop offset="1" stop-color="#6366F1" stop-opacity="0"/></radialGradient>
+    <pattern id="hb-grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#334155" stroke-width="1" stroke-opacity="0.28"/>
+    </pattern>
+    <filter id="hb-blur"><feGaussianBlur stdDeviation="9"/></filter>
+  </defs>
+
+  <style>
+    .brand { font-size:122px; font-weight:800; fill:#FFFFFF; letter-spacing:10px; }
+    .tagline { font-size:27px; font-weight:600; fill:#67E8F9; letter-spacing:1px; }
+    .zh { font-size:23px; fill:#CBD5E1; letter-spacing:1px; }
+    .node { font-size:15px; font-weight:600; fill:#E2E8F0; text-anchor:middle; }
+    .core { font-size:26px; font-weight:700; fill:#FFFFFF; text-anchor:middle; }
+    .stack { font-size:14px; fill:#CBD5E1; }
+    .stack-l { font-size:12px; fill:#94A3B8; letter-spacing:1.5px; }
+  </style>
+
+  <rect width="1536" height="480" fill="url(#hb-bg)"/>
+  <rect width="1536" height="480" fill="url(#hb-grid)"/>
+  <rect width="1536" height="5" fill="url(#hb-accent)"/>
+
+  <circle cx="1180" cy="230" r="290" fill="url(#hb-halo)"/>
+  <circle cx="1180" cy="230" r="150" fill="#6366F1" fill-opacity="0.10" filter="url(#hb-blur)"/>
+  <g fill="#22D3EE">
+    <circle cx="880" cy="70" r="2.5" opacity="0.8"/><circle cx="1480" cy="130" r="3" opacity="0.7"/>
+    <circle cx="840" cy="290" r="2" opacity="0.6"/><circle cx="1450" cy="400" r="2.5" opacity="0.8"/>
+    <circle cx="980" cy="430" r="2" opacity="0.5"/><circle cx="1330" cy="60" r="2" opacity="0.6"/>
+  </g>
+  <g fill="#A855F7">
+    <circle cx="900" cy="180" r="2" opacity="0.7"/><circle cx="1500" cy="300" r="2.5" opacity="0.7"/>
+    <circle cx="1060" cy="40" r="2" opacity="0.6"/><circle cx="1380" cy="440" r="2" opacity="0.6"/>
+  </g>
+
+  <text class="brand" x="80" y="220">BONE</text>
+  <rect x="84" y="240" width="300" height="4" rx="2" fill="url(#hb-accent)"/>
+  <text class="tagline" x="84" y="288">Build Once, Natively Everywhere</text>
+  <text class="zh" x="84" y="330">企业级 AI 应用开发平台 · 业务建模、数据访问和应用交付共用一份元模型</text>
+
+  <g stroke="#22D3EE" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="5 6" fill="none">
+    <path d="M1180 230L1000 112"/><path d="M1180 230L1370 112"/>
+    <path d="M1180 230L1000 348"/><path d="M1180 230L1370 348"/>
+    <path d="M1180 230L1180 62"/>
+  </g>
+  <circle cx="1180" cy="230" r="66" fill="none" stroke="#A855F7" stroke-opacity="0.55" stroke-width="8" filter="url(#hb-blur)"/>
+
+  <g>
+    <circle cx="1180" cy="62" r="42" fill="#1E1B4B" stroke="#A855F7" stroke-width="2"/>
+    <text class="node" x="1180" y="68">AI 中台</text>
+    <circle cx="1000" cy="112" r="44" fill="#0B1220" stroke="url(#hb-node)" stroke-width="2"/>
+    <text class="node" x="1000" y="107">元数据</text><text class="node" x="1000" y="127">引擎</text>
+    <circle cx="1370" cy="112" r="44" fill="#0B1220" stroke="url(#hb-node)" stroke-width="2"/>
+    <text class="node" x="1370" y="107">主数据</text><text class="node" x="1370" y="127">平台</text>
+    <circle cx="1000" cy="348" r="44" fill="#0B1220" stroke="url(#hb-node)" stroke-width="2"/>
+    <text class="node" x="1000" y="343">扩展</text><text class="node" x="1000" y="363">引擎</text>
+    <circle cx="1370" cy="348" r="44" fill="#0B1220" stroke="url(#hb-node)" stroke-width="2"/>
+    <text class="node" x="1370" y="343">集成</text><text class="node" x="1370" y="363">引擎</text>
+  </g>
+
+  <circle cx="1180" cy="230" r="66" fill="#111C3A" stroke="url(#hb-accent)" stroke-width="3"/>
+  <circle cx="1180" cy="230" r="56" fill="none" stroke="#22D3EE" stroke-opacity="0.35" stroke-width="1"/>
+  <text class="core" x="1180" y="238">Meta</text>
+  <text class="stack-l" x="1180" y="262" text-anchor="middle">统一元模型</text>
+
+  <line x1="80" y1="404" x2="1456" y2="404" stroke="#334155" stroke-width="1"/>
+  <text class="stack-l" x="80" y="440">TECH STACK</text>
+  <g>
+    <rect x="220" y="420" width="106" height="32" rx="16" fill="#1E293B" stroke="#334155"/>
+    <text class="stack" x="273" y="441" text-anchor="middle">Java 21</text>
+    <rect x="338" y="420" width="168" height="32" rx="16" fill="#1E293B" stroke="#334155"/>
+    <text class="stack" x="422" y="441" text-anchor="middle">Spring Boot 3.5</text>
+    <rect x="518" y="420" width="112" height="32" rx="16" fill="#1E293B" stroke="#334155"/>
+    <text class="stack" x="574" y="441" text-anchor="middle">React 18</text>
+    <rect x="642" y="420" width="116" height="32" rx="16" fill="#1E293B" stroke="#334155"/>
+    <text class="stack" x="700" y="441" text-anchor="middle">LLM 网关</text>
+    <rect x="770" y="420" width="82" height="32" rx="16" fill="#1E293B" stroke="#334155"/>
+    <text class="stack" x="811" y="441" text-anchor="middle">RAG</text>
+    <rect x="864" y="420" width="96" height="32" rx="16" fill="#1E293B" stroke="#334155"/>
+    <text class="stack" x="912" y="441" text-anchor="middle">Agent</text>
+    <rect x="972" y="420" width="82" height="32" rx="16" fill="#1E293B" stroke="#334155"/>
+    <text class="stack" x="1013" y="441" text-anchor="middle">DDD</text>
+    <rect x="1066" y="420" width="126" height="32" rx="16" fill="#1E293B" stroke="#334155"/>
+    <text class="stack" x="1129" y="441" text-anchor="middle">ArchUnit</text>
+  </g>
+  <text class="stack-l" x="1456" y="440" text-anchor="end">BSL 1.1 · 个人学习免费 · 商业使用需授权</text>
+</svg>
