@@ -29,7 +29,7 @@ Bone describes business with one metamodel: each entity takes Mode A (generate a
 
 > Delivery currently focuses on the web (Qiankun micro-frontends). `Natively Everywhere` is the long-term goal; mobile apps and mini-programs are still on the roadmap.
 
-> Licensing is judged by use, regardless of entity type. Personal learning, teaching at accredited institutions, non-commercial evaluation of up to 90 days, and development / testing / CI without real business traffic are free. Production use for a commercial purpose requires a written commercial license, as does removing BSL restrictions or requiring indemnification, SLA or technical support. Versions released on/after 2026-10-11 are under [BSL 1.1](LICENSE); earlier releases remain under [MIT](LICENSE-MIT). See [License](#license).
+> Licensing is judged by use, regardless of entity type: personal learning, teaching, non-commercial evaluation, and development / testing / CI are free, including employees studying on their own; commercial production use needs a written license. See [License](#license) for license files and effective boundaries.
 
 Contents: [Quick Start](#quick-start) · [Capability Snapshot](#capability-snapshot) · [Architecture and Deployment](#architecture-and-deployment) · [The Four Engines and Bone AI Capability Platform](#the-four-engines-and-bone-ai-capability-platform) · [Technology Roadmap](#technology-roadmap) · [Implementation Status and Roadmap](#implementation-status-and-roadmap) · [Design Principles](#design-principles) · [Docs and Community](#docs-and-community) · [FAQ](#faq) · [License](#license)
 
@@ -50,7 +50,7 @@ MySQL 8+ and Redis 7.x come from compose containers, no local install needed. Re
 ### Steps
 
 ```bash
-git clone https://gitee.com/meishan315/bone.git
+git clone https://github.com/trenhui/bone.git   # Gitee mirror: https://gitee.com/meishan315/bone.git
 cd bone
 
 # 0. Environment: .env is gitignored and read automatically by docker compose

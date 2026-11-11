@@ -29,7 +29,7 @@ Bone 用一份元模型描述业务：每个实体可走模式 A（生成可入�
 
 > 当前交付以 Web 端为主（Qiankun 微前端）。`Natively Everywhere` 是长期目标，移动端和小程序还在路线图上。
 
-> 授权按用途判定，与主体性质无关。个人学习、经认证机构教学、≤ 90 天的非商业评估，以及不承载真实业务流量的开发 / 测试 / CI 免费。商业生产使用，以及需要移除 BSL 限制或要求赔偿条款、SLA、技术支持保障的，要书面商业授权。2026-10-11 起发布的版本适用 [BSL 1.1](LICENSE)，此前版本仍按 [MIT](LICENSE-MIT)。详见 [License](#license)。
+> 授权按用途判定，与主体性质无关：个人学习、教学、非商业评估、开发 / 测试 / CI 都免费，公司员工个人学习同样免费；商业生产使用需书面授权。许可文件与生效边界见 [License](#license)。
 
 目录：[快速开始](#快速开始) · [能力快照](#能力快照) · [架构与部署](#架构与部署) · [四大引擎与 AI 能力中台](#四大引擎与-ai-能力中台) · [技术路线](#技术路线) · [实现状态与演进路线](#实现状态与演进路线) · [设计原则](#设计原则) · [文档与社区](#文档与社区) · [常见问题](#常见问题) · [License](#license)
 
@@ -50,7 +50,7 @@ MySQL 8+ 和 Redis 7.x 由 compose 容器提供，本机不用装。Redis 用于
 ### 步骤
 
 ```bash
-git clone https://gitee.com/meishan315/bone.git
+git clone https://gitee.com/meishan315/bone.git   # GitHub 镜像：https://github.com/trenhui/bone
 cd bone
 
 # 0. 环境变量：.env 已被 .gitignore 忽略，docker compose 会自动读取
