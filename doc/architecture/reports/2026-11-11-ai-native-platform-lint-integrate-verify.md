@@ -43,8 +43,29 @@
 - 门禁「会拦」的判别力（负向探针 + 变异验证）属于 11.6.5 后续 L3 落地项，本次仅验证「全绿通过」，未构造负向用例。
 - 业务系统级前后端实际跑通（Bone 后端 8081 + 前端 shell :3000）属另一范围，不在本方案模块联调内。
 
-## 5. 下一步
+## 5. 收口状态（2026-11-11 11:03）
 
-- [ ] 提交本轮 11.6 方案深化 + 本报告（如授权）
-- [ ] 是否 PUSH 到 `dev` / 合并 `master`（需明确授权，建议走 PR 而非直接 merge）
-- [ ] 落地 T2/T4/T6/T7 后再做一轮联调
+- [x] 提交本轮 11.6 方案深化 + 本报告：`744418897`（pre-commit 全绿，「✅ 本地自检通过！」）
+- [x] PUSH `dev` → 双远程（Gitee + GitHub）成功
+- [x] 合并 `master`：fast-forward 至 `744418897`，双远程 PUSH 成功；四引用（dev/origin/dev/master/origin/master）一致
+- [ ] 落地 T2/T4/T6/T7 后再做一轮联调（待 L3/L4 授权）
+
+## 6. 合并 master 后复跑结论（2026-11-11 11:03）
+
+在 `744418897` 已合并 `master`、四引用一致后，**重新实跑 §2 联调套件**，确认无回归：
+
+| # | 脚本 | RC |
+|---|------|----|
+| 1 | `check-gate-liveness.py` | 0 |
+| 2 | `check-doc-code-symbols.py` | 0 |
+| 3 | `check-ddd-doc-drift.py` | 0 |
+| 4 | `check-ddd-gate-state.py` | 0 |
+| 5 | `check-frontend-response-contract.py` | 0 |
+| 6 | `check-frontend-route-param.py` | 0 |
+| 7 | `check-ui-schema-sync.py` | 0 |
+
+**结论：7/7 全绿复跑通过，合并 master 未引入回归。** 各脚本关键结论与 §2 首次联调一致（门禁 62/64 接线、3692 Java 类无漂移、DDD 防漂移通过、前端 284 文件 R1/R2 无违规、[G31] 路由绑定链完整、schema 双契约一致）。
+
+## 7. 关联 change 归档
+
+`openspec/changes/ai-native-platform-plan-review`（8/8 任务完成，纯文档/评审类、skip_specs）已按 OpenSpec/Comet 流程归档至 `openspec/changes/archive/2026-11-11-ai-native-platform-plan-review`。
