@@ -42,3 +42,10 @@
 ## 风险与回滚
 
 <!-- 破坏性变更（DDL / 契约 / 事件 schema / 规则语义）必须写明：影响面、灰度或双发方案、回滚方式。 -->
+
+## AI 辅助影响面 / 度量自检（report-only，非阻断）
+
+> CI 在 PR 自动运行 `scripts/analyze-impact.py` 与 `scripts/analyze-metrics.py`（步骤「AI Impact & Metrics Self-Check」，失败不阻断）。本栏供作者补充与复核。
+
+- [ ] 已查看 CI 影响面报告；对 **高风险路径**（claim / quota / permission / ddl / migration / event / iam / security / auth）变更，已在「风险与回滚」注明 **E2E 全量回归** 计划
+- [ ] 度量报告中的「待补」字段（设计一次通过率 / AI 缺陷逃逸率 / 人工返工率）已知悉——当前需 CI/PR 系统数据，未编造

@@ -362,6 +362,13 @@ jobs:
       - name: Java Import Integrity (blocking)
         run: /usr/bin/env python3 scripts/check-java-import-integrity.py --check
 
+      # T4/T6 report-only 自检（非阻断）：PR 流提供变更影响面与质量度量信号，不拦合并。
+      # 浅克隆（fetch-depth:1）下三点点 diff 算不出 merge-base，先 unshallow 兜底。
+      - name: AI Impact & Metrics Self-Check (report-only, non-blocking)
+        run: 'git fetch --no-tags --unshallow origin ${{ github.base_ref }} >/dev/null 2>&1 || git fetch --no-tags --deepen=300 origin ${{ github.base_ref }} >/dev/null 2>&1 || true; echo "===== T4 变更影响面分析（vs ${{ github.base_ref }}）====="; /usr/bin/env python3 scripts/analyze-impact.py --base origin/${{ github.base_ref }} --head HEAD || echo "(impact analysis skipped: 浅克隆/基线不可达，请本地运行 analyze-impact.py)"; echo; echo "===== T6 质量度量（report-only；待补字段为外部数据源缺口，非脚本缺陷）====="; /usr/bin/env python3 scripts/analyze-metrics.py || true'
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+
   backend-security:
     name: Backend Security Scan
     runs-on: ubuntu-latest
