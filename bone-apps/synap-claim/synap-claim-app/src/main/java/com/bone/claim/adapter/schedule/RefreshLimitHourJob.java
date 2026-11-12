@@ -3,6 +3,7 @@ package com.bone.claim.adapter.schedule;
 import com.bone.claim.application.SlaApplicationService;
 import com.bone.claim.domain.model.claim.projection.ClaimTenantRef;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
+import com.bone.claim.infrastructure.schedule.ScheduleLockService;
 import com.bone.core.tenant.context.TenantContextRunner;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -24,14 +25,21 @@ import org.springframework.stereotype.Component;
  * 承载。
  *
  * <p><b>E-2 显式租户</b>：扫描行租户必须显式带入刷新动作（异步分支不依赖线程上下文），否则非平台租户案件被静默漏算。
+ *
+ * <p><b>调度单写者（P1-2，2026-11-12）</b>：本任务经 {@link #refreshLimitHour} 由 {@link ScheduleLockService} 包裹，
+ * 多副本下仅一个实例执行物化，杜绝重复刷新。业务逻辑本体见 {@link #refreshLimitHourBody}。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class RefreshLimitHourJob {
 
+  /** 调度单写者锁名（P1-2）。 */
+  public static final String LOCK_NAME = "schedule:refresh-limit-hour";
+
   private final ClaimCaseRepository claimCaseRepository;
   private final SlaApplicationService slaApplicationService;
+  private final ScheduleLockService scheduleLockService;
 
   /** 单批扫描上限。 */
   @Value("${bone.claim.schedule.sla-batch:500}")
@@ -40,6 +48,11 @@ public class RefreshLimitHourJob {
   /** 周期可配置（默认每 20 分钟）。 */
   @Scheduled(cron = "${bone.claim.schedule.refresh-limit-hour-cron:0 */20 * * * ?}")
   public void refreshLimitHour() {
+    scheduleLockService.execute(LOCK_NAME, this::refreshLimitHourBody);
+  }
+
+  /** SLA/limit_hour 物化业务逻辑本体（无锁；单测直接调用，锁由 {@link #refreshLimitHour} 的调度单写者包裹）。 */
+  void refreshLimitHourBody() {
     List<ClaimTenantRef> active = claimCaseRepository.findActiveClaimsAllTenants(batch);
     int refreshed = 0;
     int failed = 0;

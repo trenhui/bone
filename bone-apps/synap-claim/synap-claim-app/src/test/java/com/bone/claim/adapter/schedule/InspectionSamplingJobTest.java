@@ -12,6 +12,7 @@ import com.bone.claim.application.InspectionApplicationService;
 import com.bone.claim.application.InspectionApplicationService.SampleOutcome;
 import com.bone.claim.domain.model.claim.projection.ClaimTenantRef;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
+import com.bone.claim.infrastructure.schedule.ScheduleLockService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,12 +31,15 @@ class InspectionSamplingJobTest {
 
   @Mock private ClaimCaseRepository claimCaseRepository;
   @Mock private InspectionApplicationService inspectionApplicationService;
+  @Mock private ScheduleLockService scheduleLockService;
 
   private InspectionSamplingJob job;
 
   @BeforeEach
   void setUp() {
-    job = new InspectionSamplingJob(claimCaseRepository, inspectionApplicationService);
+    job =
+        new InspectionSamplingJob(
+            claimCaseRepository, inspectionApplicationService, scheduleLockService);
     ReflectionTestUtils.setField(job, "batch", 100);
     ReflectionTestUtils.setField(job, "samplingRatePercent", 5);
     when(inspectionApplicationService.sampleIfEligible(anyLong(), anyInt()))
@@ -48,7 +52,7 @@ class InspectionSamplingJobTest {
     when(claimCaseRepository.findFinishedForInspectionAllTenants(100))
         .thenReturn(List.of(ref(1L, 7L), ref(2L, 8L)));
 
-    job.sampleDaily();
+    job.sampleDailyBody();
 
     verify(inspectionApplicationService).sampleIfEligible(1L, 5);
     verify(inspectionApplicationService).sampleIfEligible(2L, 5);
@@ -63,7 +67,7 @@ class InspectionSamplingJobTest {
         .when(inspectionApplicationService)
         .sampleIfEligible(eq(1L), anyInt());
 
-    job.sampleDaily();
+    job.sampleDailyBody();
 
     verify(inspectionApplicationService, times(1)).sampleIfEligible(eq(1L), anyInt());
     verify(inspectionApplicationService, times(1)).sampleIfEligible(eq(2L), anyInt());

@@ -3,6 +3,7 @@ package com.bone.claim.adapter.schedule;
 import com.bone.claim.application.ClaimCaseApplicationService;
 import com.bone.claim.domain.model.claim.projection.ClaimTenantRef;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
+import com.bone.claim.infrastructure.schedule.ScheduleLockService;
 import com.bone.core.tenant.context.TenantContextRunner;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -27,14 +28,21 @@ import org.springframework.stereotype.Component;
  * <p><b>全租户扫描 + 显式租户（E-2）</b>：扫描行的 {@code tenantId} 必须<strong>显式携带</strong>进关闭动作（异步分支不依赖线程上下文）；
  * 否则除平台租户外的赔案会静默漏掉，而日志仍显示「扫描完成」。写路径 ADR-0029 对租户表失败关闭，必须用 {@link TenantContextRunner#runAs}
  * 显式声明租户，否则 {@code MissingTenantContextException} 被下方 catch 静默吞掉。
+ *
+ * <p><b>调度单写者（P1-2，2026-11-12）</b>：本任务经 {@link #closeStaleClaims} 由 {@link ScheduleLockService} 包裹，
+ * 多副本下仅一个实例执行自动关单，杜绝重复关单。业务逻辑本体见 {@link #closeStaleClaimsBody}。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class CloseExpiredClaimJob {
 
+  /** 调度单写者锁名（P1-2）。 */
+  public static final String LOCK_NAME = "schedule:close-stale-claims";
+
   private final ClaimCaseRepository claimCaseRepository;
   private final ClaimCaseApplicationService claimCaseApplicationService;
+  private final ScheduleLockService scheduleLockService;
 
   /**
    * 超期阈值（天）：{@code EVIDENCE_SUBMITTING} 状态停留超过该时长即自动关单（领域标注 21→45，默认 45d）。
@@ -51,6 +59,11 @@ public class CloseExpiredClaimJob {
   /** 扫描周期可配置（默认每日 03:00 扫一次）。 */
   @Scheduled(cron = "${bone.claim.schedule.close-stale-claims-cron:0 0 3 * * ?}")
   public void closeStaleClaims() {
+    scheduleLockService.execute(LOCK_NAME, this::closeStaleClaimsBody);
+  }
+
+  /** 超期关单业务逻辑本体（无锁；单测直接调用，锁由 {@link #closeStaleClaims} 的调度单写者包裹）。 */
+  void closeStaleClaimsBody() {
     Timestamp before = Timestamp.from(Instant.now().minus(staleEvidenceDays, ChronoUnit.DAYS));
     List<ClaimTenantRef> stale = claimCaseRepository.findStaleEvidenceClaimsAllTenants(before);
     int closed = 0;

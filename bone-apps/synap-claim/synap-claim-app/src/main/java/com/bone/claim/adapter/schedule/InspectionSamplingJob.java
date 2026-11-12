@@ -4,6 +4,7 @@ import com.bone.claim.application.InspectionApplicationService;
 import com.bone.claim.application.InspectionApplicationService.SampleOutcome;
 import com.bone.claim.domain.model.claim.projection.ClaimTenantRef;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
+import com.bone.claim.infrastructure.schedule.ScheduleLockService;
 import com.bone.core.tenant.context.TenantContextRunner;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -28,14 +29,21 @@ import org.springframework.stereotype.Component;
  * com.bone.claim.domain.model.inspection.InspectionSamplingPolicy}），同批案件重复跑结果一致。
  *
  * <p><b>日志必须区分四种结果</b>：命中抽样/未命中/已抽检/不适用任一被合并，都会让「抽样没生效」看起来像「样本本来就少」。
+ *
+ * <p><b>调度单写者（P1-2，2026-11-12）</b>：本任务经 {@link #sampleDaily} 由 {@link ScheduleLockService} 包裹，
+ * 多副本下仅一个实例执行抽样，杜绝重复建抽检单。业务逻辑本体见 {@link #sampleDailyBody}。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class InspectionSamplingJob {
 
+  /** 调度单写者锁名（P1-2）。 */
+  public static final String LOCK_NAME = "schedule:inspection-sampling";
+
   private final ClaimCaseRepository claimCaseRepository;
   private final InspectionApplicationService inspectionApplicationService;
+  private final ScheduleLockService scheduleLockService;
 
   /** 单批扫描上限。 */
   @Value("${bone.claim.schedule.inspection-batch:500}")
@@ -48,6 +56,11 @@ public class InspectionSamplingJob {
   /** 每日 02:30（对账 01:00 之后，避开日终批处理高峰）。 */
   @Scheduled(cron = "${bone.claim.schedule.inspection-sampling-cron:0 30 2 * * ?}")
   public void sampleDaily() {
+    scheduleLockService.execute(LOCK_NAME, this::sampleDailyBody);
+  }
+
+  /** 后督抽样业务逻辑本体（无锁；单测直接调用，锁由 {@link #sampleDaily} 的调度单写者包裹）。 */
+  void sampleDailyBody() {
     List<ClaimTenantRef> candidates =
         claimCaseRepository.findFinishedForInspectionAllTenants(batch);
     int sampled = 0;

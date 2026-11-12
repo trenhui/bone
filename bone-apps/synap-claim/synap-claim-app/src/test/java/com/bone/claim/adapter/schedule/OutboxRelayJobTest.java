@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import com.bone.claim.application.OutboxApplicationService;
 import com.bone.claim.domain.model.event.DomainEventOutbox;
 import com.bone.claim.domain.repository.DomainEventOutboxRepository;
+import com.bone.claim.infrastructure.schedule.ScheduleLockService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,12 +33,13 @@ class OutboxRelayJobTest {
   @Mock private DomainEventOutboxRepository outboxRepository;
 
   @Mock private OutboxApplicationService outboxApplicationService;
+  @Mock private ScheduleLockService scheduleLockService;
 
   private OutboxRelayJob job;
 
   @BeforeEach
   void setUp() {
-    job = new OutboxRelayJob(outboxRepository, outboxApplicationService);
+    job = new OutboxRelayJob(outboxRepository, outboxApplicationService, scheduleLockService);
     ReflectionTestUtils.setField(job, "olderThanMinutes", 60L);
     ReflectionTestUtils.setField(job, "batch", 200);
   }
@@ -49,7 +51,7 @@ class OutboxRelayJobTest {
     when(outboxRepository.findPendingOutboxAllTenants(any(), anyInt())).thenReturn(List.of(r1, r2));
     when(outboxApplicationService.dispatchAndAck(anyLong(), anyLong())).thenReturn(true);
 
-    job.relayPending();
+    job.relayPendingBody();
 
     ArgumentCaptor<Long> tenantCaptor = ArgumentCaptor.forClass(Long.class);
     ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);
@@ -67,7 +69,7 @@ class OutboxRelayJobTest {
     when(outboxRepository.findPendingOutboxAllTenants(any(), anyInt())).thenReturn(List.of(r1, r2));
     when(outboxApplicationService.dispatchAndAck(anyLong(), anyLong())).thenReturn(false);
 
-    job.relayPending();
+    job.relayPendingBody();
 
     verify(outboxApplicationService, times(2)).dispatchAndAck(anyLong(), anyLong());
   }
@@ -81,7 +83,7 @@ class OutboxRelayJobTest {
         .when(outboxApplicationService)
         .dispatchAndAck(anyLong(), anyLong());
 
-    job.relayPending();
+    job.relayPendingBody();
 
     verify(outboxApplicationService, times(2)).dispatchAndAck(anyLong(), anyLong());
   }

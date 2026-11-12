@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.bone.claim.application.ClaimCaseApplicationService;
 import com.bone.claim.domain.model.claim.projection.ClaimTenantRef;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
+import com.bone.claim.infrastructure.schedule.ScheduleLockService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,12 +31,15 @@ class CloseExpiredClaimJobTest {
   @Mock private ClaimCaseRepository claimCaseRepository;
 
   @Mock private ClaimCaseApplicationService claimCaseApplicationService;
+  @Mock private ScheduleLockService scheduleLockService;
 
   private CloseExpiredClaimJob job;
 
   @BeforeEach
   void setUp() {
-    job = new CloseExpiredClaimJob(claimCaseRepository, claimCaseApplicationService);
+    job =
+        new CloseExpiredClaimJob(
+            claimCaseRepository, claimCaseApplicationService, scheduleLockService);
     // @Value 字段由 Spring 在运行期注入，单测里手工置入（默认 45，与 @Value 占位符默认值一致）
     ReflectionTestUtils.setField(job, "staleEvidenceDays", 45L);
   }
@@ -45,7 +49,7 @@ class CloseExpiredClaimJobTest {
     when(claimCaseRepository.findStaleEvidenceClaimsAllTenants(any()))
         .thenReturn(List.of(ref(0L, 11L), ref(888L, 12L)));
 
-    job.closeStaleClaims();
+    job.closeStaleClaimsBody();
 
     ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
     verify(claimCaseApplicationService, times(2)).closeForStale(captor.capture(), any());
@@ -60,7 +64,7 @@ class CloseExpiredClaimJobTest {
         .when(claimCaseApplicationService)
         .closeForStale(anyLong(), any());
 
-    job.closeStaleClaims();
+    job.closeStaleClaimsBody();
 
     verify(claimCaseApplicationService, times(2)).closeForStale(anyLong(), any());
   }

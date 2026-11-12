@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.bone.claim.application.SlaApplicationService;
 import com.bone.claim.domain.model.claim.projection.ClaimTenantRef;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
+import com.bone.claim.infrastructure.schedule.ScheduleLockService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,12 +28,13 @@ class RefreshLimitHourJobTest {
 
   @Mock private ClaimCaseRepository claimCaseRepository;
   @Mock private SlaApplicationService slaApplicationService;
+  @Mock private ScheduleLockService scheduleLockService;
 
   private RefreshLimitHourJob job;
 
   @BeforeEach
   void setUp() {
-    job = new RefreshLimitHourJob(claimCaseRepository, slaApplicationService);
+    job = new RefreshLimitHourJob(claimCaseRepository, slaApplicationService, scheduleLockService);
     ReflectionTestUtils.setField(job, "batch", 500);
   }
 
@@ -44,7 +46,7 @@ class RefreshLimitHourJobTest {
                 new ClaimTenantRef(7L, 11L, "C1", "ADJUSTING"),
                 new ClaimTenantRef(8L, 12L, "C2", "PENDING_ADJUST")));
 
-    job.refreshLimitHour();
+    job.refreshLimitHourBody();
 
     verify(slaApplicationService).refreshForClaim(11L);
     verify(slaApplicationService).refreshForClaim(12L);
@@ -59,7 +61,7 @@ class RefreshLimitHourJobTest {
                 new ClaimTenantRef(8L, 12L, "C2", "PENDING_ADJUST")));
     doThrow(new RuntimeException("boom")).when(slaApplicationService).refreshForClaim(11L);
 
-    job.refreshLimitHour();
+    job.refreshLimitHourBody();
 
     verify(slaApplicationService, times(2)).refreshForClaim(anyLong());
   }

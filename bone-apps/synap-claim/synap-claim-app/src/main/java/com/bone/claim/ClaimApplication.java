@@ -28,7 +28,8 @@ import org.springframework.context.annotation.Import;
 @EnableSqlRepositories(
     basePackages = {
       "com.bone.claim.domain.repository",
-      "com.bone.claim.infrastructure.idempotency"
+      "com.bone.claim.infrastructure.idempotency",
+      "com.bone.claim.infrastructure.schedule"
     })
 @Import({MetadataAutoConfiguration.class, SqlRepositoryAutoConfiguration.class})
 public class ClaimApplication {

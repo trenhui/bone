@@ -51,6 +51,12 @@ bone:
       # 过期同键在保留期内重放一律 409，不重新执行。
       enabled: ${BONE_CLAIM_IDEMPOTENCY_ENABLED:true}
       ttl: ${BONE_CLAIM_IDEMPOTENCY_TTL:30d}
+    schedule:
+      # 调度单写者（P1-2，2026-11-12 落地）：多副本仅一个实例执行定时任务。
+      # instance-id 未配置时按进程生成 UUID；K8s 可注入 pod 名以便排障（同 bone.claim.schedule.instance-id）。
+      instance-id: ${BONE_CLAIM_SCHEDULE_INSTANCE_ID:}
+      # 持锁租约（分钟）：必须 > 单次任务耗时、< 任务周期；任务崩溃未释放时到期由他副本接管。
+      lock-lease-minutes: ${BONE_CLAIM_SCHEDULE_LOCK_LEASE_MINUTES:30}
     ruleset:
       # 核责规则资产位置：默认 classpath 内的 claim-ruleset.json；指向外部文件即可不发版调整规则。
       # 配置文件缺失/损坏/为空时适配器回退内置规则集（fail-closed 方向），不会静默放行。

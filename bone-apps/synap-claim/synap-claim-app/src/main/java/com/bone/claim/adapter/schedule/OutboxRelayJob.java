@@ -3,6 +3,7 @@ package com.bone.claim.adapter.schedule;
 import com.bone.claim.application.OutboxApplicationService;
 import com.bone.claim.domain.model.event.DomainEventOutbox;
 import com.bone.claim.domain.repository.DomainEventOutboxRepository;
+import com.bone.claim.infrastructure.schedule.ScheduleLockService;
 import com.bone.core.tenant.context.TenantContextRunner;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -24,14 +25,21 @@ import org.springframework.stereotype.Component;
  * {@code *AllTenants} 仓储方法 + 应用服务，符合 ADR-0030 守卫。
  *
  * <p><b>E-2 显式租户</b>：扫描行的 {@code tenantId} 必须显式带入派发动作（异步分支不依赖线程上下文），否则非平台租户记录会被静默漏发。
+ *
+ * <p><b>调度单写者（P1-2，2026-11-12）</b>：本任务经 {@link #relayPending} 由 {@link ScheduleLockService} 包裹，
+ * 多副本下仅一个实例执行中继，杜绝重复派发（配合 outbox 自身幂等，保证资金事件零丢失且不重投）。业务逻辑本体见 {@link #relayPendingBody}。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OutboxRelayJob {
 
+  /** 调度单写者锁名（P1-2）。 */
+  public static final String LOCK_NAME = "schedule:outbox-relay";
+
   private final DomainEventOutboxRepository outboxRepository;
   private final OutboxApplicationService outboxApplicationService;
+  private final ScheduleLockService scheduleLockService;
 
   /** 扫描窗口（分钟）：早于此刻仍未 SENT 的 PENDING 记录纳入本次中继。 */
   @Value("${bone.claim.schedule.outbox-older-than-minutes:60}")
@@ -48,6 +56,12 @@ public class OutboxRelayJob {
   /** 周期可配置（默认每分钟一轮）。 */
   @Scheduled(cron = "${bone.claim.schedule.outbox-relay-cron:0 */1 * * * ?}")
   public void relayPending() {
+    // outbox 中继每分钟一轮，租约用 5 分钟：正常单次派发远小于此，崩溃未释放时 5 分钟内由他副本接管。
+    scheduleLockService.execute(LOCK_NAME, 5L, this::relayPendingBody);
+  }
+
+  /** outbox 中继业务逻辑本体（无锁；单测直接调用，锁由 {@link #relayPending} 的调度单写者包裹）。 */
+  void relayPendingBody() {
     Timestamp before = Timestamp.from(Instant.now().minus(olderThanMinutes, ChronoUnit.MINUTES));
     List<DomainEventOutbox> pending = outboxRepository.findPendingOutboxAllTenants(before, batch);
     int dispatched = 0;

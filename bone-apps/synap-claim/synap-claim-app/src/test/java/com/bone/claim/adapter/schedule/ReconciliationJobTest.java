@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.bone.claim.application.ReconciliationApplicationService;
 import com.bone.claim.domain.model.reconciliation.ReconTenantRef;
 import com.bone.claim.domain.repository.ReconciliationReportRepository;
+import com.bone.claim.infrastructure.schedule.ScheduleLockService;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,12 +28,15 @@ class ReconciliationJobTest {
 
   @Mock private ReconciliationReportRepository reportRepository;
   @Mock private ReconciliationApplicationService reconciliationApplicationService;
+  @Mock private ScheduleLockService scheduleLockService;
 
   private ReconciliationJob job;
 
   @BeforeEach
   void setUp() {
-    job = new ReconciliationJob(reportRepository, reconciliationApplicationService);
+    job =
+        new ReconciliationJob(
+            reportRepository, reconciliationApplicationService, scheduleLockService);
     ReflectionTestUtils.setField(job, "bizDateOffsetDays", 1L);
   }
 
@@ -41,7 +45,7 @@ class ReconciliationJobTest {
     when(reportRepository.findTenantIdsAllTenants())
         .thenReturn(List.of(new ReconTenantRef(7L), new ReconTenantRef(8L)));
 
-    job.reconcileDaily();
+    job.reconcileDailyBody();
 
     verify(reconciliationApplicationService, times(2)).reconcileForTenant(any(LocalDate.class));
   }
@@ -54,7 +58,7 @@ class ReconciliationJobTest {
         .when(reconciliationApplicationService)
         .reconcileForTenant(any(LocalDate.class));
 
-    job.reconcileDaily();
+    job.reconcileDailyBody();
 
     verify(reconciliationApplicationService, times(2)).reconcileForTenant(any(LocalDate.class));
   }
