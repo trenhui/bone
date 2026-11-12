@@ -137,7 +137,7 @@
 | `match_id` | string | ✅ | 匹配单号；消费幂等关联键 |
 | `invoice_no` | string | ✅ | 关联发票 |
 | `po_no` | string | ✅ | 关联采购单 |
-| `match_status` | enum(`MATCHED`/`EXCEPTION`/`REVIEW`) | ✅ | 三单匹配结果状态；**缺失/非法值 fail-closed，不得推断为 `MATCHED`**，消费方须转人工复核（与同节 `risk_level` / `ai_available` fail-closed 纪律一致；精确目标枚举值映射待 owner 裁决） |
+| `match_status` | enum(`MATCHED`/`EXCEPTION`/`REVIEW`) | ✅ | 三单匹配结果状态；**缺失/非法值 fail-closed，不得推断为 `MATCHED`**，消费方须转人工复核（与同节 fail-closed 纪律一致；精确目标枚举值映射待 owner 裁决） |
 | `matched_amount` | Money | ✅ | 匹配金额 |
 | `exception_code` | string | ⚠️ 可空 | 例外码（EXCEPTION 时必填） |
 | `matched_at` | date-time | ✅ | 匹配时间 |

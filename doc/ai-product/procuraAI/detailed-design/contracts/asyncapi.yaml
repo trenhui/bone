@@ -975,7 +975,7 @@ components:
           match_status:
             type: string
             enum: ['MATCHED', 'EXCEPTION', 'REVIEW']
-            description: "三单匹配结果状态；**缺失/非法值 fail-closed，不得推断为 `MATCHED`**，消费方须转人工复核（与同节 `risk_level` / `ai_available` fail-closed 纪律一致；精确目标枚举值映射待 owner 裁决）"
+            description: "三单匹配结果状态；**缺失/非法值 fail-closed，不得推断为 `MATCHED`**，消费方须转人工复核（与同节 fail-closed 纪律一致；精确目标枚举值映射待 owner 裁决）"
           matched_amount:
             $ref: '#/components/schemas/Money'
             description: "匹配金额"
