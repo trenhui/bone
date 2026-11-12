@@ -809,8 +809,9 @@ function renderRules(){
           <div><div style="font-size:22px;font-weight:700;color:var(--green)">94.2%</div><div class="muted">AI 语义准确率</div></div>
           <div><div style="font-size:22px;font-weight:700;color:var(--blue)">3.1%</div><div class="muted">误报率</div></div>
         </div>
+        <div class="muted mt8">以上三项为界面示意占位值，非模型效果实测；指标与通过线待 owner 按 DA-3 冻结。</div>
         <div class="prog mt16"><i style="width:64%"></i></div>
-        <div class="muted mt8">评测样本 200 条（双人标注 · Kappa 0.84）· 生产反馈季度回流 · 对抗样本 32 条</div>
+        <div class="muted mt8">评测集 27 例 seed（设计态草稿）· Kappa 与对抗样本规模待 owner 实测 · 生产反馈季度回流</div>
       </div>
     </div>
     <div class="card">
@@ -818,8 +819,8 @@ function renderRules(){
       <div class="card-b">
         <table class="t">
           <tr><th>批次</th><th>样本</th><th>进度</th><th>一致性</th></tr>
-          <tr><td>2026-Q4-A</td><td>48 条</td><td>37/48</td><td><span class="tag rule">Kappa 0.84</span></td></tr>
-          <tr><td>2026-Q4-B（对抗）</td><td>32 条</td><td>12/32</td><td>—</td></tr>
+          <tr><td>2026-Q4-A</td><td>27 例 seed</td><td>结构回归（CI blocking）</td><td><span class="tag rule">待 owner 实测</span></td></tr>
+          <tr><td>2026-Q4-B（对抗）</td><td>待 owner 实测</td><td>待 owner 实测</td><td>—</td></tr>
         </table>
       </div>
     </div>

@@ -172,13 +172,53 @@ def parse_payload_schemas(text: str) -> dict[str, list[tuple[str, str, bool, str
     return schemas
 
 
+ENUM_LITERAL_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
+
+
+def _enum_literal(raw: str) -> str:
+    """把 D3-v2 §2.1 的 markdown code 写法（enum(`A`/`B`)）还原为枚举字面量。
+
+    反引号是文档可读性表示，**不是合法值的一部分**：早期渲染器只做 split("/")，
+    产出 enum: ['`MATCHED`', ...]，按该 schema 校验会判所有真实事件非法。
+    这里剥离并 fail-closed 校验，杜绝生成源的格式瑕疵污染派生物。
+    """
+    v = raw.strip().strip("`").strip().strip("'\"").strip()
+    if not ENUM_LITERAL_RE.match(v):
+        raise SystemExit(
+            f"enum 合法值含非法字符（渲染将产出非法 schema）：{raw!r}；"
+            "D3-v2 §2.1 只允许 enum(`UPPER_SNAKE`/...) 写法")
+    return v
+
+
+def validate_rendered(content: str) -> None:
+    """派生物语义自检：enum 字面量不得残留 markdown 字符或嵌套引号。
+
+    --check 用同一渲染器重算属「工件忠实于生成源」的闭环自证，不能证明生成源
+    自洽；本函数对**渲染结果**做独立语义校验，正常生成与 --check 都强制执行。
+    主门禁 A8 另有一条独立正则复验（不调用本生成器），避免闭环自证。
+    """
+    for ln in content.splitlines():
+        if re.match(r"^\s*enum:\s*\[", ln) and ("`" in ln or "'`" in ln):
+            raise SystemExit(f"渲染产物 enum 字面量含 markdown 反引号：{ln.strip()}")
+    for ln in content.splitlines():
+        m = re.match(r"^\s*enum:\s*\[(.*)\]\s*$", ln)
+        if not m:
+            continue
+        for raw in m.group(1).split(","):
+            v = raw.strip().strip("'\"").strip()
+            if not ENUM_LITERAL_RE.match(v):
+                raise SystemExit(f"渲染产物 enum 合法值非法：{v!r}（行：{ln.strip()}）")
+
+
 def _render_property(field: str, typ: str, desc: str) -> list[str]:
     out = [f"          {field}:"]
     t = typ.strip()
     if t == "Money":
         out.append("            $ref: '#/components/schemas/Money'")
     elif t.startswith("enum("):
-        vals = [v.strip() for v in t[5:-1].split("/") if v.strip()]
+        vals = [_enum_literal(v) for v in t[5:-1].split("/") if v.strip()]
+        if not vals:
+            raise SystemExit(f"enum 类型未给出任何合法值：{t}")
         out.append("            type: string")
         out.append("            enum: [" + ", ".join(f"'{v}'" for v in vals) + "]")
     elif t == "boolean":
@@ -187,6 +227,9 @@ def _render_property(field: str, typ: str, desc: str) -> list[str]:
         out.append("            type: integer")
     elif t == "decimal":
         out.append("            type: number")
+    elif t == "array":
+        out.append("            type: array")
+        out.append("            items: { type: object }")
     elif t == "date-time":
         out.append("            type: string")
         out.append("            format: date-time")
@@ -336,6 +379,9 @@ def render(rows: list[dict[str, str]], fields: dict[str, str],
         "        fx_rate: { type: string, nullable: true }",
         "        fx_as_of: { type: string, format: date-time, nullable: true }",
         "        fx_source: { type: string, nullable: true }",
+        # 与 openapi.yaml#/components/schemas/Money 对齐（§14 D-01–D-03）：
+        # 舍入模式随快照落库，否则重放/对账时无法复现金额。
+        "        rounding_mode: { type: string, enum: [HALF_UP, HALF_EVEN], nullable: true }",
         "",
         "x-platform-channels:",
         "  description: 平台 / 基础设施事件，不属采购域注册表（附录 B.3），仅列引用",
@@ -353,6 +399,9 @@ def main() -> int:
     fields = parse_fields(rows)
     schemas = parse_payload_schemas(D3V2.read_text(encoding="utf-8"))
     content = render(rows, fields, schemas)
+    # 渲染期语义自检（不依赖「同一渲染器重算」的零漂移闭环）：
+    # enum 字面量残留 markdown 反引号时直接失败，禁止写出非法 schema。
+    validate_rendered(content)
     if args.check:
         current = OUT.read_text(encoding="utf-8") if OUT.is_file() else ""
         if current != content:
