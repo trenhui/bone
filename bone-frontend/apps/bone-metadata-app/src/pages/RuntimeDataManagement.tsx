@@ -416,9 +416,24 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       .slice(0, 5);
   }, [entities, resolvedId]);
 
+  /**
+   * 当前实体自己的字段（按 entityId 过滤）。
+   *
+   * <p>为什么需要这层过滤：`fields` 是**异步**加载的 state，切换实体（/entities/:id/data
+   * 之间跳转）时本组件被复用而不重挂，`entityCode` 先变、`fields` 后变——中间这一帧
+   * `fields` 仍是上一个实体的列。若此时就把它们拼成 `fields=` 发给新实体，
+   * 后端会因「fields 含未建模列」直接 400（实测：费用报销单 → 费用类别，页面整页报错）。
+   * 过滤后不匹配即视为「字段未知」，宁可少传 `fields`（后端返回全列）也不串实体。
+   */
+  const entityFields = useMemo(() => {
+    const eid = selectedEntity?.id;
+    if (eid == null) return fields;
+    return fields.filter((f) => String(f.entityId) === String(eid));
+  }, [fields, selectedEntity?.id]);
+
   const writableFields = useMemo(
-    () => fields.filter((f) => !RUNTIME_READONLY_FIELDS.has(f.code)),
-    [fields],
+    () => entityFields.filter((f) => !RUNTIME_READONLY_FIELDS.has(f.code)),
+    [entityFields],
   );
 
   /**
@@ -640,14 +655,18 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     });
   }, [resolvedId]);
 
-  // 字段随选中实体变化加载
+  // 字段随选中实体变化加载（切实体先清空，避免上一实体的列被当成当前实体的列）
+  const fieldsEntityRef = useRef<string | null>(null);
   useEffect(() => {
     const eid = selectedEntity?.id;
+    setFields([]);
+    fieldsEntityRef.current = eid == null ? null : String(eid);
     if (!eid) {
-      setFields([]);
       return;
     }
     metadataFieldApi.page(eid, { page: 1, size: 500 }).then((res) => {
+      // 竞态：切到别的实体后，上一实体的慢响应必须丢弃（否则又串回去）
+      if (fieldsEntityRef.current !== String(eid)) return;
       if (res.code === 200) setFields(normalizePageRecords(res.data));
     });
   }, [selectedEntity?.id]);

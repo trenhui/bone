@@ -1,5 +1,8 @@
 server:
   port: 8107
+  # 全 scope JWT 约 4.5KB + 网关注入头会越过 Tomcat 默认 8KB，
+  # 真实浏览器偶发 400「Request header is too large」（curl 头少永不复现）。
+  max-http-request-header-size: 16KB
 
 spring:
   application:

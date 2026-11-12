@@ -744,10 +744,9 @@ function AppContent({
 
     startQiankun({
       // ⚠️ 必须是 false（按 activeRule 匹配时才加载），不能是 'all'。
-      // `#subapp-viewport` 只在微应用路由（/iam/*、/system/* …）被渲染后才存在于 DOM，
-      // 登录后默认停在 `/`（仪表盘）——此刻容器尚未挂载。qiankun 的 prefetch 在 start()
-      // 里同步发起，若为 'all' 会在容器出现前就加载全部微应用，八个应用全部抛
-      // 「Target container with #subapp-viewport not existed while loading」并停在空白页。
+      // prefetch 'all' 会在 start() 里同步加载全部微应用——即使容器已常驻
+      // （见 microAppViewport 竞态修复），此刻拉起九个应用也是无谓的带宽/内存开销，
+      // 且并行加载失败难以归因。保持按需：用户点到对应菜单才加载。
       prefetch: false,
       sandbox: {
         strictStyleIsolation: false,
@@ -973,6 +972,17 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
   const microAppMountKey = String(tenantRevision);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // 当前路径是否为微应用路由（与下方 Routes 中的微应用路由前缀一一对应）。
+  // 用于控制常驻容器的显隐——见 microAppViewport 处的竞态修复说明。
+  const MICRO_APP_BASES = [
+    '/iam', '/metadata', '/masterdata', '/commerce', '/integration',
+    '/system', '/extension', '/generator', '/claim',
+  ];
+  const isMicroAppPath = MICRO_APP_BASES.some(
+    (base) => location.pathname === base || location.pathname.startsWith(`${base}/`),
+  );
+
   const [openKeys, setOpenKeys] = useState<string[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -1162,15 +1172,23 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
   // 微应用容器 + 加载失败归因层。
   // ⚠ 容器 div 必须**始终存在**：qiankun 找不到 #subapp-viewport 会直接报
   // 「container not existed」而挂载失败，故失败提示只能作为覆盖层，不能替代容器。
+  //
+  // 🐛 竞态修复（2026-11-12）：容器原先作为 <Route element> 渲染在微应用路由里，
+  // 登录后停在 `/`（仪表盘）时容器不在 DOM —— 首次点击微应用菜单时
+  // 「Router 导航 → qiankun 触发加载」与「React 提交渲染容器」存在竞态，
+  // qiankun 偶发在容器挂载前查询 #subapp-viewport，抛
+  // 「Target container with #subapp-viewport not existed」→ 应用 LOADING_SOURCE_CODE
+  // 死亡 → 白屏（扩展点目录页 3/3 复现）。修复：容器无条件常驻本组件，
+  // 仅按路由切换 display，微应用路由 element 置 null（路由仍需保留以拦截 `*` 重定向）。
   const microAppViewport = (
-    <MicroAppErrorBoundary key={microAppMountKey}>
-      <div className="subapp-host">
+    <div className="subapp-host" style={{ display: isMicroAppPath ? 'block' : 'none' }}>
+      <MicroAppErrorBoundary key={microAppMountKey}>
         <div id="subapp-viewport" />
         {subappError && (
           <MicroAppLoadError info={subappError} onRetry={() => window.location.reload()} />
         )}
-      </div>
-    </MicroAppErrorBoundary>
+      </MicroAppErrorBoundary>
+    </div>
   );
 
   return (
@@ -1293,6 +1311,14 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
             minHeight: 280,
           }}
         >
+          {/* qiankun 微应用挂载容器：无条件常驻 DOM（display 按路由切换）。
+              ⚠ 不能放进 <Route element>：登录后停在 `/` 时容器不在 DOM，
+              首次点微应用菜单会与 React 渲染竞态，qiankun 报
+              「Target container with #subapp-viewport not existed」→ 白屏。
+              ⚠ 不做 SYS_CONSOLE_READ 门禁——租户管理员只有 iam:* 作用域，包一层控制台权限码
+              会把整个微前端挡成 403。登录态由 App 级 user 判空保证；
+              真实授权 = 后端 @PreAuthorize + 子应用内路由守卫。 */}
+          {microAppViewport}
           <Routes>
             <Route
               path="/"
@@ -1310,48 +1336,20 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
                 </Authorized>
               }
             />
-            {/* qiankun 微应用挂载容器：所有微应用路由都渲染此容器。
-                ⚠ 不做 SYS_CONSOLE_READ 门禁——租户管理员只有 iam:* 作用域，包一层控制台权限码
-                会把整个微前端挡成 403（容器不渲染 → qiankun 报 container not existed）。
-                登录态由 App 级 user 判空保证；真实授权 = 后端 @PreAuthorize + 子应用内路由守卫。 */}
-            <Route
-              path="/iam/*"
-              element={microAppViewport}
-            />
-            <Route
-              path="/metadata/*"
-              element={microAppViewport}
-            />
-            <Route
-              path="/masterdata/*"
-              element={microAppViewport}
-            />
-            <Route
-              path="/commerce/*"
-              element={microAppViewport}
-            />
-            <Route
-              path="/integration/*"
-              element={microAppViewport}
-            />
-            <Route
-              path="/system/*"
-              element={microAppViewport}
-            />
-            <Route
-              path="/extension/*"
-              element={microAppViewport}
-            />
-            <Route
-              path="/generator/*"
-              element={microAppViewport}
-            />
-            {/* 智能理赔（bone-claim-app，2026-10-26 联调补线）：与其它微应用同构——
-                缺此路由时 /claim/* 命中下方 `*` 被静默送回首页（菜单可见也点不开）。 */}
-            <Route
-              path="/claim/*"
-              element={microAppViewport}
-            />
+            {/* 微应用路由：容器已常驻（见上方 microAppViewport），这里 element 置 null
+                只负责「吃掉」路径，防止命中下方 `*` 被 Navigate 回首页导致
+                qiankun activeRule 失活。路由必须逐条保留，不能用通配。 */}
+            <Route path="/iam/*" element={null} />
+            <Route path="/metadata/*" element={null} />
+            <Route path="/masterdata/*" element={null} />
+            <Route path="/commerce/*" element={null} />
+            <Route path="/integration/*" element={null} />
+            <Route path="/system/*" element={null} />
+            {/* 智能理赔（bone-claim-app，2026-10-26 联调补线）：缺此路由时
+                /claim/* 命中 `*` 被静默送回首页（菜单可见也点不开）。 */}
+            <Route path="/claim/*" element={null} />
+            <Route path="/extension/*" element={null} />
+            <Route path="/generator/*" element={null} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Content>

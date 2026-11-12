@@ -197,6 +197,8 @@ export function InsurerManagementPage(): ReactElement {
               icon={<EditOutlined />}
               onClick={() => {
                 setEditing(row);
+                // 常驻 Modal 不再随关闭销毁表单：先 reset 再回填，避免上一条记录残留
+                form.resetFields();
                 form.setFieldsValue({
                   insurerCode: row.insurerCode,
                   insurerName: row.insurerName,
@@ -312,7 +314,10 @@ export function InsurerManagementPage(): ReactElement {
           setModalOpen(false);
           setEditing(null);
         }}
-        destroyOnHidden
+        // 不用 destroyOnHidden：它在关闭时销毁 Form，导致 useForm 实例在页面挂载时
+        // 没有可连接的 Form 元素（antd 告警 + 首次提交前 setFieldsValue 静默失效）。
+        // 改为常驻渲染，打开前显式 resetFields 保证每次都是干净表单。
+        forceRender
       >
         <Form form={form} layout="vertical">
           <Form.Item

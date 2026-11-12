@@ -27,7 +27,7 @@ import {
 import { PRE_EXAM_TODO_STATUSES, claimStatusMeta, statusOptions } from '../services/claimStatus';
 import { PageHeader } from '../components/PageHeader';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
-import { AuthButton } from '@bone/ui';
+import { Auth, AuthButton } from '@bone/ui';
 import { PERMISSIONS } from '../constants/permissions';
 
 /**
@@ -278,22 +278,19 @@ export function PreExamWorkbenchPage(): ReactElement {
               render: (_, row) => (
                 <Space size={4} wrap>
                   {row.status === 'ACCEPTED' && (
-                    <Popconfirm
-                      title="分配初审"
-                      description="确认材料齐备并分配初审？"
-                      okText="分配"
-                      cancelText="取消"
-                      onConfirm={() => onAllocate(row)}
-                    >
-                      <AuthButton
-                        code={PERMISSIONS.REVIEW_WRITE}
-                        type="link"
-                        size="small"
-                        loading={rowBusy(row)}
+                    <Auth code={PERMISSIONS.REVIEW_WRITE}>
+                      <Popconfirm
+                        title="分配初审"
+                        description="确认材料齐备并分配初审？"
+                        okText="分配"
+                        cancelText="取消"
+                        onConfirm={() => onAllocate(row)}
                       >
-                        分配初审
-                      </AuthButton>
-                    </Popconfirm>
+                        <Button type="link" size="small" loading={rowBusy(row)}>
+                          分配初审
+                        </Button>
+                      </Popconfirm>
+                    </Auth>
                   )}
                   {row.status === 'PENDING_PRE_EXAM' && (
                     <>
@@ -306,23 +303,24 @@ export function PreExamWorkbenchPage(): ReactElement {
                       >
                         开始初审
                       </AuthButton>
-                      <Popconfirm
-                        title="自动化初审"
-                        description="交给决策图自动初审？结论仍受确定性规则约束。"
-                        okText="开始"
-                        cancelText="取消"
-                        onConfirm={() => onStart(row, true)}
-                      >
-                        <AuthButton
-                          code={PERMISSIONS.REVIEW_WRITE}
-                          type="link"
-                          size="small"
-                          icon={<ThunderboltOutlined />}
-                          loading={rowBusy(row)}
+                      <Auth code={PERMISSIONS.REVIEW_WRITE}>
+                        <Popconfirm
+                          title="自动化初审"
+                          description="交给决策图自动初审？结论仍受确定性规则约束。"
+                          okText="开始"
+                          cancelText="取消"
+                          onConfirm={() => onStart(row, true)}
                         >
-                          自动化
-                        </AuthButton>
-                      </Popconfirm>
+                          <Button
+                            type="link"
+                            size="small"
+                            icon={<ThunderboltOutlined />}
+                            loading={rowBusy(row)}
+                          >
+                            自动化
+                          </Button>
+                        </Popconfirm>
+                      </Auth>
                     </>
                   )}
                   {(row.status === 'PRE_EXAMINING' || row.status === 'AUTO_PRE_EXAMINING') && (
@@ -337,23 +335,24 @@ export function PreExamWorkbenchPage(): ReactElement {
                       >
                         完成初审
                       </AuthButton>
-                      <Popconfirm
-                        title="转人工核赔"
-                        description="初审后仍需资金/责任判断，转核赔工作台处理？"
-                        okText="转核赔"
-                        cancelText="取消"
-                        onConfirm={() => onEscalate(row)}
-                      >
-                        <AuthButton
-                          code={PERMISSIONS.REVIEW_WRITE}
-                          type="link"
-                          size="small"
-                          icon={<UserSwitchOutlined />}
-                          loading={rowBusy(row)}
+                      <Auth code={PERMISSIONS.REVIEW_WRITE}>
+                        <Popconfirm
+                          title="转人工核赔"
+                          description="初审后仍需资金/责任判断，转核赔工作台处理？"
+                          okText="转核赔"
+                          cancelText="取消"
+                          onConfirm={() => onEscalate(row)}
                         >
-                          转核赔
-                        </AuthButton>
-                      </Popconfirm>
+                          <Button
+                            type="link"
+                            size="small"
+                            icon={<UserSwitchOutlined />}
+                            loading={rowBusy(row)}
+                          >
+                            转核赔
+                          </Button>
+                        </Popconfirm>
+                      </Auth>
                     </>
                   )}
                 </Space>

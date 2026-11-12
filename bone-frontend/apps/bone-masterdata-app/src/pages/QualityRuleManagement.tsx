@@ -16,6 +16,7 @@ import {
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { Auth, AuthButton } from '@bone/ui';
+import { resolveErrorMessage } from '@bone/shared-utils';
 import { BonePermissionCodes } from '@bone/shared-types';
 import { ProTable } from '@ant-design/pro-components';
 import type { ProColumns } from '@ant-design/pro-components';
@@ -194,7 +195,10 @@ const QualityRuleManagement: React.FC = () => {
         message.error(response.message);
       }
     } catch (error) {
-      console.error('提交失败:', error);
+      // 表单校验失败已由 antd 就地标红；接口错误必须出声——此前只 console.error，
+      // 用户点「确定」后弹窗不动、页面无任何提示（实证：表达式非法 400 完全静默）。
+      const isFieldError = !!(error as { errorFields?: unknown } | null)?.errorFields;
+      if (!isFieldError) message.error(resolveErrorMessage(error, '保存质量规则失败'));
     }
   };
 

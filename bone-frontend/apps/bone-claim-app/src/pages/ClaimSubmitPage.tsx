@@ -120,7 +120,7 @@ export function ClaimSubmitPage(): ReactElement {
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ claimType: 'OUTPATIENT', items: [] as ClaimItemReq[] }}
+          initialValues={{ claimType: 'OUTPATIENT', items: [{}] as ClaimItemReq[] }}
         >
           <Space size="large" wrap>
             <Form.Item
@@ -180,13 +180,18 @@ export function ClaimSubmitPage(): ReactElement {
             </Form.Item>
           </Space>
 
-          <Form.List name="items" initialValue={[{}]}>
+          <Form.List name="items">
             {(fields, { add, remove }) => (
               <>
                 <Typography.Text strong>费用明细（至少一项）</Typography.Text>
-                <Table<ClaimItemReq>
-                  rowKey={(_, i) => String(i)}
-                  dataSource={fields.map((f) => form.getFieldValue(['items', f.name]) as ClaimItemReq)}
+                {/* antd 已弃用 rowKey 回调的第二参 index；改用 Form.List 自带稳定 key，
+                    删行后行标识不漂移（否则输入框焦点/校验态会错位到相邻行）。 */}
+                <Table<ClaimItemReq & { __rowKey: number }>
+                  rowKey="__rowKey"
+                  dataSource={fields.map((f) => ({
+                    ...(form.getFieldValue(['items', f.name]) as ClaimItemReq),
+                    __rowKey: f.key,
+                  }))}
                   pagination={false}
                   size="small"
                   style={{ marginBottom: 12 }}

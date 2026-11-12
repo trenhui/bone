@@ -38,6 +38,7 @@ import {
   type MenuReq,
 } from '../services/api';
 import { AuthButton } from '@bone/ui';
+import { resolveErrorMessage } from '@bone/shared-utils';
 import { BonePermissionCodes } from '@bone/shared-types';
 import ModulePage from '../components/ModulePage';
 import { ProCard, StatisticCard } from '@ant-design/pro-components';
@@ -247,9 +248,11 @@ const MenuManagement: React.FC = () => {
   };
 
   const submit = async () => {
-    const values = await form.validateFields();
     setSubmitting(true);
     try {
+      // validateFields 必须放在 try 内：放在外面时校验失败会变成未捕获 rejection，
+      // 用户只会看到表单标红、控制台一条 PAGEERROR，没有任何可读提示。
+      const values = await form.validateFields();
       const parentId = values.parentId && values.parentId !== '0' ? values.parentId : null;
       const payload = { ...values, parentId };
       if (editing) {
@@ -261,8 +264,11 @@ const MenuManagement: React.FC = () => {
       }
       setDrawerOpen(false);
       await load();
-    } catch {
-      msg.error('保存失败');
+    } catch (error) {
+      // 表单校验失败已由 antd 就地标红，无需再弹一次；接口失败必须透出后端原因
+      // （如「菜单路由必须以 / 开头」），否则用户只看到无信息量的「保存失败」。
+      const isFieldError = !!(error as { errorFields?: unknown } | null)?.errorFields;
+      if (!isFieldError) msg.error(resolveErrorMessage(error, '保存失败'));
     } finally {
       setSubmitting(false);
     }

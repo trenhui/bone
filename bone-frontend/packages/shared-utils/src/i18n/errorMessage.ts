@@ -65,6 +65,32 @@ function extractErrorDetail(error: unknown): string {
 }
 
 /**
+ * 从后端消息里取「可读原因」，用于译文缺失时的兜底。
+ *
+ * <p>回退链的最后一级原本直接用调用方的通用文案（如「保存失败」），
+ * 用户因此看不到后端其实已经说清楚的原因（实证：质量规则表达式非法 →
+ * 只弹「保存质量规则失败」，而 400 里写着「规则表达式无法解析: 片段不是 k=v 形式」）。
+ * 取后端消息比通用文案更有信息量，且与通用文案同为中文，不引入新的语言问题。
+ */
+function extractBackendMessage(error: unknown): string {
+  const err = error as {
+    displayMessage?: unknown;
+    message?: unknown;
+    response?: { data?: { message?: unknown } };
+  } | null;
+  const candidates = [err?.displayMessage, err?.response?.data?.message, err?.message];
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim().length > 0) return c.trim();
+  }
+  return '';
+}
+
+/** 去掉 `SOME_CODE: ` 前缀（业务码已由 i18n 承担，前缀对用户是噪音）。 */
+function stripErrorCodePrefix(text: string): string {
+  return text.replace(/^[A-Z][A-Z0-9_]{2,}:\s*/, '');
+}
+
+/**
  * 解析错误提示文案。
  *
  * @param error 任意捕获到的错误（通常是 axios 错误）
@@ -72,15 +98,20 @@ function extractErrorDetail(error: unknown): string {
  */
 export function resolveErrorMessage(error: unknown, fallback: string): string {
   const errorCode = extractErrorCode(error);
-  if (!errorCode) {
-    return fallback;
+  if (errorCode) {
+    // defaultValue 给空串：i18next 在键缺失时会回传 key 本身（'errors.XXX'），不能直接展示
+    const translated = i18n.t(`errors.${errorCode}`, {
+      defaultValue: '',
+      errors: extractErrorDetail(error),
+    });
+    if (typeof translated === 'string' && translated.length > 0) {
+      return translated;
+    }
   }
-  // defaultValue 给空串：i18next 在键缺失时会回传 key 本身（'errors.XXX'），不能直接展示
-  const translated = i18n.t(`errors.${errorCode}`, {
-    defaultValue: '',
-    errors: extractErrorDetail(error),
-  });
-  return typeof translated === 'string' && translated.length > 0 ? translated : fallback;
+  // 译文缺失：先试后端明细（更有信息量），再退到调用方文案
+  const detail = extractErrorDetail(error) || extractBackendMessage(error);
+  const cleaned = stripErrorCodePrefix(detail);
+  return cleaned.length > 0 ? cleaned : fallback;
 }
 
 /**

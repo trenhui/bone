@@ -98,6 +98,21 @@ export function createApiClient(baseURL: string, config?: AxiosRequestConfig): A
         err.displayMessage = (data as { message?: string }).message;
         return Promise.reject(err);
       }
+      // 归一「2xx + 业务码非 200」：REST 语义下 201 Created / 204 No Content 都是成功，
+      // 后端 ApiResponse.code 直接镜像 HTTP 状态，于是创建类接口会回 code:201。
+      // 消费端历史上普遍写 `if (res.code !== 200) 报错`，结果「明明创建成功却提示注册失败」
+      // （实证：智能理赔 承保主体注册 → DB 已落库 + 提示「注册失败」）。
+      // 成功与否的唯一真源是 success 布尔（见上），故这里把 2xx 成功体的 code 归一为 200，
+      // 既不改前端 20+ 处既有判断，也不改后端正确的 201 语义。
+      if (
+        data &&
+        typeof data === 'object' &&
+        (data as { success?: boolean }).success === true &&
+        typeof (data as { code?: number }).code === 'number' &&
+        (data as { code: number }).code !== 200
+      ) {
+        (data as { code: number }).code = 200;
+      }
       return data;
     },
     (error) => {

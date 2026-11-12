@@ -39,6 +39,10 @@ spring:
 
 server:
   port: ${BONE_SERVER_PORT:8081}
+  # 全 scope JWT 约 4.5KB + 网关注入的 X-* 头，会越过 Tomcat 默认 8KB 上限，
+  # 表现为真实浏览器偶发 400「Request header is too large」（curl 头少永不复现）。
+  # 与网关 server.max-http-request-header-size 保持一致取 16KB。
+  max-http-request-header-size: 16KB
   servlet:
     context-path: /
 
