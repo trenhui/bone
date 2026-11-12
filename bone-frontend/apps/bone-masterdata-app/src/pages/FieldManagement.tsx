@@ -25,6 +25,7 @@ import { masterDataFieldApi } from '../services/api';
 import { useEntityScope } from '../context/EntityScopeContext';
 import EntityScopeSelect from '../components/EntityScopeSelect';
 import { useMessage } from '../App';
+import { resolveErrorMessage } from '@bone/shared-utils';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -138,7 +139,10 @@ const FieldManagement: React.FC = () => {
         message.error(response.message);
       }
     } catch (error) {
-      console.error('提交失败:', error);
+      // 表单校验失败由 antd 就地标红；接口错误必须出声——此前只 console.error，
+      // 编码重复 409 时弹窗不动、页面零提示（造数实证：字段管理点了「确定」没反应）。
+      const isFieldError = !!(error as { errorFields?: unknown } | null)?.errorFields;
+      if (!isFieldError) message.error(resolveErrorMessage(error, '保存字段失败'));
     }
   };
 

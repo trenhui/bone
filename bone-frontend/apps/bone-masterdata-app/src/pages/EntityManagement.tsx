@@ -26,7 +26,7 @@ import type {
 } from '../types';
 import { masterDataEntityApi } from '../services/api';
 import { useMessage } from '../App';
-import { normalizeTotal } from '@bone/shared-utils';
+import { normalizeTotal, resolveErrorMessage } from '@bone/shared-utils';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -237,7 +237,10 @@ const EntityManagement: React.FC = () => {
         message.error(response.message);
       }
     } catch (error) {
-      console.error('提交失败:', error);
+      // 同 FieldManagement：编码重复 409 等接口错误必须让用户看到原因并保持弹窗开启，
+      // 否则表现为「点了没反应」（表单校验失败由 antd 就地标红，不重复弹提示）。
+      const isFieldError = !!(error as { errorFields?: unknown } | null)?.errorFields;
+      if (!isFieldError) message.error(resolveErrorMessage(error, '保存主数据模型失败'));
     }
   };
 
