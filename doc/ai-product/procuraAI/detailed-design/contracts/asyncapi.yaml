@@ -714,7 +714,7 @@ components:
       payload:
         type: object
         additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
-        x-fields: "`vendor_id, supplier_id, legal_entity_id, company_code, payment_terms, bank_account_ref`"
+        x-fields: "`vendor_id, supplier_id, legal_entity_id, company_code, activated_at, purchasing_org?, payment_terms?, bank_account_ref?`（字段名真源 D3-v2 §2.1）"
         properties:
           aggregate_version:
             type: integer
@@ -738,6 +738,12 @@ components:
           purchasing_org:
             type: string
             description: "采购组织"
+          payment_terms:
+            type: string
+            description: "付款条件（Vendor 财务主体侧，非 Supplier 主档字段）"
+          bank_account_ref:
+            type: string
+            description: "银行账号引用（只存引用，禁账号明文入事件）"
         required: [aggregate_version, vendor_id, supplier_id, legal_entity_id, company_code, activated_at]
 
     PurchaseOrderCreated:
@@ -754,7 +760,7 @@ components:
       payload:
         type: object
         additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
-        x-fields: "`po_no, po_version, vendor_id, legal_entity_id, lines[], contract_no, price_snapshot_ref`"
+        x-fields: "`po_no, tenant_id, supplier_id, total_amount, currency, po_version, created_at, requisition_no?, legal_entity_id, lines[], contract_no?, price_snapshot_ref?`（字段名真源 D3-v2 §2.1）"
         properties:
           aggregate_version:
             type: integer
@@ -784,7 +790,20 @@ components:
           requisition_no:
             type: string
             description: "来源请购单"
-        required: [aggregate_version, po_no, tenant_id, supplier_id, total_amount, currency, po_version, created_at]
+          legal_entity_id:
+            type: string
+            description: "合作法人（多法人隔离，领域 §2.2.1）"
+          lines:
+            type: array
+            items: { type: object }
+            description: "PO 行数组（行内 `net_price` 为 Money，禁裸数字）"
+          contract_no:
+            type: string
+            description: "关联合同号（仅入参关联键，非结论回写目标）"
+          price_snapshot_ref:
+            type: string
+            description: "价格快照引用"
+        required: [aggregate_version, po_no, tenant_id, supplier_id, total_amount, currency, po_version, created_at, legal_entity_id, lines]
 
     PurchaseOrderAcknowledged:
       name: PurchaseOrderAcknowledged
@@ -840,7 +859,7 @@ components:
       payload:
         type: object
         additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
-        x-fields: "`gr_no, po_no, po_line_no, received_qty, asn_no`（字段名对齐 D3-v2 §2.1；含 `site_id/tenant_id/supplier_id/uom/received_at`）"
+        x-fields: "`gr_no, po_no, po_line_no, received_qty, uom, received_at, site_id, tenant_id, supplier_id?, asn_no?`（字段名真源 D3-v2 §2.1）"
         properties:
           aggregate_version:
             type: integer
@@ -873,6 +892,9 @@ components:
           supplier_id:
             type: string
             description: "供应商（直运场景可缺省）"
+          asn_no:
+            type: string
+            description: "预约送货单号（无 ASN 场景可缺省；字段名以此为准）"
         required: [aggregate_version, gr_no, po_no, po_line_no, received_qty, uom, received_at, site_id, tenant_id]
 
     InvoiceSubmitted:
@@ -889,7 +911,7 @@ components:
       payload:
         type: object
         additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
-        x-fields: "`invoice_no, po_no, supplier_id, amount, tax, currency`（字段名对齐 D3-v2 §2.1 `supplier_id`；Supplier↔Vendor 分离）"
+        x-fields: "`invoice_no, po_no?, supplier_id, invoice_amount, tax_amount?, invoice_date, due_date?, currency`（字段名真源 D3-v2 §2.1；金额一律 Money，Supplier↔Vendor 分离）"
         properties:
           aggregate_version:
             type: integer
@@ -952,8 +974,8 @@ components:
             description: "关联采购单"
           match_status:
             type: string
-            enum: ['`MATCHED`', '`EXCEPTION`', '`REVIEW`']
-            description: "三单匹配结果状态"
+            enum: ['MATCHED', 'EXCEPTION', 'REVIEW']
+            description: "三单匹配结果状态；**缺失/非法值 fail-closed，不得推断为 `MATCHED`**，消费方须转人工复核（与同节 `risk_level` / `ai_available` fail-closed 纪律一致；精确目标枚举值映射待 owner 裁决）"
           matched_amount:
             $ref: '#/components/schemas/Money'
             description: "匹配金额"
@@ -980,11 +1002,27 @@ components:
       payload:
         type: object
         additionalProperties: true   # tolerant reader：生产方加性变更不得压垮消费者
-        x-fields: "`po_no, invoice_no, vendor_id, legal_entity_id, amount`"
+        x-fields: "`po_no, invoice_no, vendor_id, legal_entity_id, amount(Money)`（字段名真源 D3-v2 §2.1；金额与币种同行）"
         properties:
           aggregate_version:
             type: integer
             description: 聚合版本戳，供消费侧丢弃乱序或旧版本事件（总纲 §6 双轨）
+          po_no:
+            type: string
+            description: "采购单号"
+          invoice_no:
+            type: string
+            description: "关联发票"
+          vendor_id:
+            type: string
+            description: "收款 Vendor（财务主体；Supplier↔Vendor 分离）"
+          legal_entity_id:
+            type: string
+            description: "付款法人"
+          amount:
+            $ref: '#/components/schemas/Money'
+            description: "**请求付款金额**；金额与币种同行，禁裸数字（§14 D-01–D-03）；采购域只发请求，付款裁决归 Finance"
+        required: [aggregate_version, po_no, invoice_no, vendor_id, legal_entity_id, amount]
 
     PaymentRecorded:
       name: PaymentRecorded
@@ -1020,7 +1058,7 @@ components:
             description: "付款时间"
           payment_method:
             type: string
-            enum: ['`BANK_TRANSFER`', '`CHECK`', '`OTHER`']
+            enum: ['BANK_TRANSFER', 'CHECK', 'OTHER']
             description: "付款方式"
           payer_legal_entity:
             type: string
@@ -1054,7 +1092,7 @@ components:
             description: "仅入参关联键；**不得作为结论回写目标**"
           risk_level:
             type: string
-            enum: ['`LOW`', '`MEDIUM`', '`HIGH`', '`UNKNOWN`']
+            enum: ['LOW', 'MEDIUM', 'HIGH', 'UNKNOWN']
             description: "`UNKNOWN` 不得压成「无风险」；消费方隔离告警"
           risk_items_hash:
             type: string
@@ -1064,7 +1102,7 @@ components:
             description: "审查快照引用（AI 运行时独立对象存储），采购域只存引用不存原文"
           ai_available:
             type: string
-            enum: ['`AVAILABLE`', '`UNAVAILABLE`', '`UNKNOWN`']
+            enum: ['AVAILABLE', 'UNAVAILABLE', 'UNKNOWN']
             description: "**唯一认可的 AI 参与证据来源**（LLM 节点自报）；三态须区分 参与/未参与/UNKNOWN（详见 §3「三态」条款），`UNKNOWN` 不得压成「未参与」；缺省 fail-closed 视为 `UNKNOWN`"
           model_version_snapshot:
             type: string
@@ -1454,6 +1492,7 @@ components:
         fx_rate: { type: string, nullable: true }
         fx_as_of: { type: string, format: date-time, nullable: true }
         fx_source: { type: string, nullable: true }
+        rounding_mode: { type: string, enum: [HALF_UP, HALF_EVEN], nullable: true }
 
 x-platform-channels:
   description: 平台 / 基础设施事件，不属采购域注册表（附录 B.3），仅列引用

@@ -33,9 +33,17 @@
      A10.14 合规工程化清单 / 能力账本 / G12 边界 / 地基层排期（复诊 P1-⑤⑥⑦⑧）、
      A10.15 最小切片事件状态与附录 B 一致（P2-7：B.1/B.2 不得互斥 + 未登记事件须显式标注）、
      A10.16 陈旧表述防回退 / A10.17 三入口**可执行**判据等价（含 continue-on-error / if /
-            注释 run / 子串冒充）/ A10.18 治理清单结构化 + 反复制粘贴
+            注释 run / 子串冒充 / run 正文 shell 层吞错 set +e、exit 0、|| true、; exit 0、trap ERR）/ A10.18 治理清单结构化 + 反复制粘贴
             （第五轮原地加固：S1–S8 可验收化 / Decision Governance 四级分层
              8 能力码不重不漏 / G10 主表分期一致性，均不新增号段）、
+     A10.19–A10.28 语义判据（第十二 / 十八轮原地加固）：enum 字面量 / 核心事件字段集合 /
+            L3 重试预算 / 金额裸数字 + HTML 纳管 / 新真源与射程分层 / 独立 WBS 行 /
+            评测集 seed 口径由 evalset 真源单点裁决（数字不写死在判据里），
+            A10.28 当前态证据清单由运行时 manifest 逐字段裁决（CI 日志留存 [MANIFEST]）、
+            A10.26 CI 软件供应链基线现状由 ci.yml 动态解析（Dangerous-Workflow 恒 0 硬红线 /
+            分支引用债务只减不增 / 状态列禁伪造完成）、A10.27 外部诊断证据索引
+            （indexCount / git ls-files 跟踪真值 / 本机新增报告须登记 / 跨机器 outputs 为空宽容放行），
+            每条均配 --self-test 注入必红反证（A10.25 / A10.17 各配正例对照防「一律 FAIL」假安全）、
 
 用法：
   python3 tools/check_procura_alignment.py              # 全套校验，退出码 0/1
@@ -49,10 +57,13 @@ from __future__ import annotations
 
 import argparse
 import collections
+import json
 import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 from typing import Callable
 
@@ -150,7 +161,61 @@ EXTRA_DOCS = {
     "ATAM": BASE / "质量属性场景与ATAM.md",
     "答辩包": BASE / "架构师答辩包.md",
     "蓝图": BASE / "采购AI原生能力蓝图.md",
+    "AI接入": BASE / "AI接入判定与AI原生内核补充设计.md",
+    "射程ADR": BASE / "法源射程分层与自治边界-ADR.md",
 }
+# 第十二轮：售前 HTML 交付物纳入门禁（此前 A10 只扫 md 与 SVG <text>，DEMO.html 完全在范围外）。
+HTML_DOCS = {"DEMO.html": BASE / "procuraAI-DEMO.html"}
+# A10.25：评测集 seed 口径的唯一数字真源。文档里出现「N 例 seed」/「caseCount: N」
+# 一律由本 JSON 的 caseCount 裁决，禁止把数字写死在判据里（防真源扩容后全族腐烂）。
+EVALSET_JSON = BASE / "eval" / "ai-decision-evalset.json"
+
+# A10.26 / A10.27（第十八轮）：CI 软件供应链基线 + 外部诊断证据索引。
+# 现状数字一律由 ci.yml / git ls-files 动态解析；判据内只保留「分支引用债务冻结上界」
+# 一个常量：债务可减少（owner 修 ci.yml 并同步登记），新增则无条件判红。
+CI_BRANCH_REF_CEILING = 1
+
+# A10.28（第十九轮）：当前态证据清单 = 运行时真值的唯一机器可验证投影。
+# 判据内不写死任何证据数字：真值由源码 / evalset / 登记表推导，README 的
+# gateEvidenceManifest 行由 --sync-manifest 生成。历史轮次日志的 N/N 用单调上界守护，
+# 不采用冻结白名单（README 里存在 30 余种历史值，白名单会退化成硬编码负担）。
+MANIFEST_FIELDS = ("checks", "probes", "positiveControls", "criteriaMax",
+                   "seedCaseCount", "indexCount")
+MANIFEST_LINE_RE = re.compile(r"gateEvidenceManifest:\s*(\{[^}]*\})")
+SELFTEST_COUNT_RE = re.compile(r"\*\*(\d+)/(\d+)\*\*")
+CI_BASELINE_KEYS = (
+    "permissions", "timeoutMinutes", "concurrency", "uses", "pinnedSha",
+    "branchRef", "dangerousTrigger", "inlineEventExpr",
+)
+CIS_ROW_RE = re.compile(r"^\|\s*(CIS-\d+)\s*\|", re.M)
+EVIDENCE_ROW_RE = re.compile(r"^\|\s*(E-\d+)\s*\|\s*`([^`]+)`", re.M)
+SEED_CLAIM_RE = re.compile(r"(?<!\d)(\d+)\s*例\s*seed")
+CASECOUNT_LITERAL_RE = re.compile(r"caseCount:\s*(\d+)")
+SEED_SPLIT_RE = re.compile(r"(\d+)\s*负向\s*/\s*(\d+)\s*正向对照")
+# 承载「当前态」seed 口径的文档（历史轮次台账 / 诊断时点快照不在此列，不受本判据约束）。
+# key 与 all_texts 对齐：texts / extra / legacy(文件名) / html。
+SEED_CURRENT_DOCS = (
+    "总体", "README", "蓝图", "D3v2", "AI接入", "DEMO.html",
+    "采购AI-商业化卖点与FDE落地交付方案.md",
+    "采购AI-企业项目立项评估.md",
+    "采购AI-项目计划与排期.md",
+    "采购AI-智能风险审查与合同智能处理-PRD.md",
+)
+# A10.25 历史时点快照豁免：必须「明确时点」且「无完成态宣称」才能保留旧例数。
+# 「历史」/「原 」这类宽词不得单独豁免——否则「历史 25 例 seed 已可复制交付」
+# （即设计态声明被按已完成口径引用）会被放过，形成判据假阴。
+SEED_HISTORY_MARKS = ("诊断时点", "当时", "修订前", "历史快照")
+SEED_COMPLETION_MARKS = ("已交付", "可复制", "开箱即用", "已达成", "已实测", "已验证", "已具备")
+# 有 D3-v2 §2.1 字段级 schema 的核心事件：x-fields（各卷 §7 生成）↔ properties（§2.1 生成）须集合一致。
+CORE_SCHEMA_EVENTS = frozenset({
+    "GoodsReceived", "InvoiceSubmitted", "InvoiceMatched", "PaymentRecorded",
+    "PurchaseOrderCreated", "VendorActivated", "PaymentRequested",
+})
+# 未实测售前数字黑名单：出现即判红，杜绝「设计态声明被下游按已完成口径引用」。
+UNMEASURED_CLAIM_TOKENS = (
+    "Kappa 0.84", "200+ 标注样本", "200 条评测集", "评测样本 200 条",
+    "对抗样本 32 条", "人工降 80%+",
+)
 # 原有 POC 族（历史归档 / 受限引用），A10 扫描其失效口径仍带撤销标记。
 LEGACY_DOCS = tuple(sorted(p.name for p in BASE.glob("采购AI-*.md")
                             if "-v2" not in p.name))
@@ -227,6 +292,21 @@ FULL_GATE_KEYS = frozenset(GATE_KEYS)
 FAST_GATE_KEYS = frozenset(("docGate", "evalGate", "asyncapiCheck"))
 CI_PROCURA_STEP_MIN = 4
 CI_STEP_HEAD_RE = re.compile(r"^\s*-\s+name:\s*ProcuraAI[^\n]*\(blocking\)\s*$")
+# A10.17 第十三轮加固（2026-11-12）：判据「可执行」不能只看命令集合，还要看 run 正文的
+# **shell 语义**。实测：run: | 多行块内 `set +e` + `exit 0` 在 GHA 默认 shell
+# `bash -e -o pipefail` 下把真实转红的主门禁压成 rc=0，而判据集合仍完整 ⇒ 假绿；
+# 原有四类拦截（continue-on-error / if: / 注释 run / 子串冒充）全在 YAML 键层，够不到。
+GATE_CMD_RE = re.compile(
+    r"check_procura_alignment\.py|check_procura_evalset\.py|generate_asyncapi\.py")
+SHELL_SWALLOW_RULES = (
+    (re.compile(r"\bset\s+\+(?:e|eo|eu|euo)\b"), "set +e 关闭 errexit"),
+    (re.compile(r"\bset\s+\+o\s+(?:errexit|pipefail)\b"), "set +o 关闭 errexit/pipefail"),
+    (re.compile(r"\|\|\s*(?:true|:|exit\s+0|echo\b)"), "|| 吞掉判据退出码"),
+    (re.compile(r"(?<!\|)\|(?!\|)\s*(?:true|:)\b"), "管道到 true 吞掉退出码"),
+    (re.compile(r";\s*(?:true|:|exit\s+0)\s*(?:$|;)"), "; 强制成功"),
+    (re.compile(r"^\s*exit\s+0\s*$"), "exit 0 强制成功"),
+    (re.compile(r"\btrap\b[^\n]*\bexit\s+0\b"), "trap ERR 吞错"),
+)
 # A10.18：治理清单表格列结构化下界（防止「只有标题 token、没有可验收动作」）。
 COMPLIANCE_ROW_RE = re.compile(r"^\|\s*C-\d+\s*\|", re.M)
 FOUNDATION_ROW_RE = re.compile(r"^\|\s*\*\*F\d+\*\*\s*\|", re.M)
@@ -275,6 +355,34 @@ def _ci_run_commands(block: list[str]) -> list[str]:
             out.append(body)
         i += 1
     return out
+
+
+def _shell_swallow_hits(lines: list[str]) -> list[tuple[str, str]]:
+    """run 正文 / 判据命令行中的 shell 层吞错构造，返回 (原因, 命中行)。
+
+    只作用于 blocking step 的 run 正文与三入口的判据命令上下文，
+    避免把脚本里合法的 `|| echo` 取值兜底误判成吞错（2026-11-12 实测零误伤）。
+    """
+    out: list[tuple[str, str]] = []
+    for raw in lines:
+        ln = raw.strip()
+        if not ln or ln.startswith("#"):
+            continue
+        for pat, why in SHELL_SWALLOW_RULES:
+            if pat.search(ln):
+                out.append((why, ln[:100]))
+    return out
+
+
+def _entry_swallow_lines(text: str) -> list[str]:
+    """shell 入口里需要审 shell 语义的行：判据命令行 + 脚本级 errexit 开关。"""
+    watched: list[str] = []
+    for ln in text.splitlines():
+        if (GATE_CMD_RE.search(ln)
+                or SHELL_SWALLOW_RULES[0][0].search(ln)
+                or SHELL_SWALLOW_RULES[1][0].search(ln)):
+            watched.append(ln)
+    return watched
 
 
 def _shell_commands(text: str) -> list[str]:
@@ -502,6 +610,17 @@ class Ctx:
     # A10.17：CI / check.sh / 本地一键入口，随 Ctx 注入以支持负向反证（不读真实磁盘）。
     entries: dict[str, str] = field(default_factory=dict)
     entry_missing: list[str] = field(default_factory=list)
+    # A10.22：HTML 交付物随 Ctx 注入，支持负向反证（不读真实磁盘）。
+    html: dict[str, str] = field(default_factory=dict)
+    html_missing: list[str] = field(default_factory=list)
+    # A10.25：评测集 JSON 真源随 Ctx 注入，支持负向反证（不读真实磁盘、不硬编码数字）。
+    evalset: str = ""
+    evalset_missing: list[str] = field(default_factory=list)
+    # A10.27：本机 outputs 报告清单 + git 跟踪真值（跨机器 outputs 为空则宽容放行）。
+    evidence_files: list[str] = field(default_factory=list)
+    tracked_evidence: set[str] = field(default_factory=set)
+    # A10.28：门禁自身源码快照，随 Ctx 注入以支持「真源扩容但文档未同步」负向反证。
+    manifest_source: str = ""
 
 
 def _sections(text: str) -> set[str]:
@@ -547,6 +666,39 @@ def _load_a10_assets() -> tuple[dict[str, str], dict[str, str], dict[str, str], 
     return extra, svgs, legacy, missing
 
 
+def _load_html() -> tuple[dict[str, str], list[str]]:
+    """A10.22：售前 HTML 交付物纳入 Ctx；缺文件 fail-closed。"""
+    html: dict[str, str] = {}
+    missing: list[str] = []
+    for name, path in HTML_DOCS.items():
+        if path.is_file():
+            html[name] = path.read_text(encoding="utf-8")
+        else:
+            missing.append(f"html:{name}: {path}")
+    return html, missing
+
+
+def _load_evalset() -> tuple[str, list[str]]:
+    """A10.25：评测集 JSON 真源纳入 Ctx；缺文件 / 空文件 fail-closed。"""
+    if not EVALSET_JSON.is_file():
+        return "", [f"evalset:{EVALSET_JSON}"]
+    text = EVALSET_JSON.read_text(encoding="utf-8")
+    return text, ([] if text.strip() else [f"evalset:empty:{EVALSET_JSON}"])
+
+
+def _load_evidence() -> tuple[list[str], set[str]]:
+    """A10.27：本机 outputs 诊断报告 + git 跟踪真值，随 Ctx 注入以支持负向反证。"""
+    out_dir = ROOT / "outputs"
+    files = sorted(p.name for p in out_dir.glob("procuraAI-*.md")) if out_dir.is_dir() else []
+    try:
+        res = subprocess.run(["git", "ls-files", "outputs/"], cwd=ROOT,
+                             capture_output=True, text=True, timeout=10)
+        tracked = {Path(x).name for x in res.stdout.splitlines() if x.strip()}
+    except (OSError, subprocess.SubprocessError):
+        tracked = set()
+    return files, tracked
+
+
 def load() -> Ctx:
     texts: dict[str, str] = {}
     missing: list[str] = []
@@ -559,6 +711,10 @@ def load() -> Ctx:
     artifacts, artifact_missing = _load_artifacts()
     extra, svgs, legacy, extra_missing = _load_a10_assets()
     entries, entry_missing = _load_entries()
+    html, html_missing = _load_html()
+    evalset, evalset_missing = _load_evalset()
+    evidence_files, tracked_evidence = _load_evidence()
+    manifest_source = _load_manifest_source()
     return Ctx(
         texts=texts,
         sections={k: _sections(v) for k, v in texts.items()},
@@ -572,6 +728,13 @@ def load() -> Ctx:
         extra_missing=extra_missing,
         entries=entries,
         entry_missing=entry_missing,
+        html=html,
+        html_missing=html_missing,
+        evalset=evalset,
+        evalset_missing=evalset_missing,
+        evidence_files=evidence_files,
+        tracked_evidence=tracked_evidence,
+        manifest_source=manifest_source,
     )
 
 
@@ -580,6 +743,10 @@ def derive(texts: dict[str, str], assets: list[Path], missing: list[str] | None 
     artifacts, artifact_missing = _load_artifacts()
     extra, svgs, legacy, extra_missing = _load_a10_assets()
     entries, entry_missing = _load_entries()
+    html, html_missing = _load_html()
+    evalset, evalset_missing = _load_evalset()
+    evidence_files, tracked_evidence = _load_evidence()
+    manifest_source = _load_manifest_source()
     return Ctx(
         texts=dict(texts),
         sections={k: _sections(v) for k, v in texts.items()},
@@ -593,6 +760,13 @@ def derive(texts: dict[str, str], assets: list[Path], missing: list[str] | None 
         extra_missing=extra_missing,
         entries=entries,
         entry_missing=entry_missing,
+        html=html,
+        html_missing=html_missing,
+        evalset=evalset,
+        evalset_missing=evalset_missing,
+        evidence_files=evidence_files,
+        tracked_evidence=tracked_evidence,
+        manifest_source=manifest_source,
     )
 
 
@@ -1240,6 +1414,312 @@ def check_a9(ctx: Ctx) -> tuple[bool, list[str]]:
     return (not msgs), msgs
 
 
+
+# ---------------------------------------------------------------- A10.19–A10.28
+# 第十二轮：把「只查结构不查语义」补上。所有判据均从 Ctx 注入内容读取，
+# 不调用被校验对象自身的渲染器，避免「同一渲染器重算」的闭环自证。
+MONEY_BARE_RE = re.compile(
+    r'"(net_price|amount|invoice_amount|tax_amount|paid_amount|total_amount|line_amount)"\s*:\s*[0-9]')
+EVENT_BLOCK_RE = re.compile(r"^    (?P<ev>[A-Z][A-Za-z0-9]*):\s*$", re.M)
+PROP_FIELD_RE = re.compile(r"^          ([a-z_][a-z0-9_]*):\s*$", re.M)
+
+
+def _norm_fields(raw: str) -> set[str]:
+    """x-fields 速查串 → 字段名集合（剥离 markdown / 可空 ? / 数组 [] / 类型括注）。"""
+    out: set[str] = set()
+    for tok in raw.split(","):
+        tok = re.sub(r"\(.*?\)", "", tok.strip().strip("`").strip())
+        tok = tok.strip("?[] ").strip()
+        if re.fullmatch(r"[a-z_][a-z0-9_]*", tok):
+            out.add(tok)
+    return out
+
+
+def _seed_history_exempt(line: str) -> bool:
+    """A10.25：仅「明确历史时点」且「不含完成态宣称」的行可保留旧例数。"""
+    return (any(h in line for h in SEED_HISTORY_MARKS)
+            and not any(c in line for c in SEED_COMPLETION_MARKS))
+
+
+def _a10_semantic_checks(ctx: Ctx) -> list[str]:
+    msgs: list[str] = []
+    asyncapi = ctx.artifacts.get("asyncapi.yaml", "")
+    gen_src = ctx.artifacts.get("generate_asyncapi.py", "")
+    v06 = ctx.texts.get("卷06", "")
+    overall = ctx.texts.get("总体", "")
+    ai_doc = ctx.extra.get("AI接入", "")
+    adr = ctx.extra.get("射程ADR", "")
+    d3 = ctx.extra.get("D3v2", "")
+    blueprint = ctx.extra.get("蓝图", "")
+    demo = ctx.html.get("DEMO.html", "")
+    all_texts = {**ctx.texts, **ctx.extra, **ctx.legacy, **ctx.html}
+
+    # --- A10.19 enum 字面量 + 生成器渲染期自检 -------------------------------
+    for ln in asyncapi.splitlines():
+        if not re.match(r"^\s*enum:\s*\[", ln):
+            continue
+        if "`" in ln:
+            msgs.append("A10.19 enum 字面量含 markdown 反引号（按此 schema 所有真实事件非法）")
+            break
+        body = ln.split("[", 1)[1].rstrip().rstrip("]")
+        for raw in body.split(","):
+            v = raw.strip().strip("'\"").strip()
+            if not re.fullmatch(r"[A-Z][A-Z0-9_]*", v):
+                msgs.append(f"A10.19 enum 合法值非法：{v!r}")
+                break
+    if "validate_rendered" not in gen_src or "_enum_literal" not in gen_src:
+        msgs.append("A10.19 生成器缺渲染期语义自检（validate_rendered / _enum_literal）")
+
+    # --- A10.20 x-fields ↔ properties 集合比对 -------------------------------
+    blocks = list(EVENT_BLOCK_RE.finditer(asyncapi))
+    seen_events = 0
+    for i, m in enumerate(blocks):
+        ev = m.group("ev")
+        if ev not in CORE_SCHEMA_EVENTS:
+            continue
+        seen_events += 1
+        end = blocks[i + 1].start() if i + 1 < len(blocks) else len(asyncapi)
+        block = asyncapi[m.start():end]
+        xm = re.search(r"^\s*x-fields:\s*(.*)$", block, re.M)
+        pm = re.search(r"^\s*properties:\s*$", block, re.M)
+        if not xm or not pm:
+            msgs.append(f"A10.20 {ev} 缺 x-fields / properties（无法集合比对）")
+            continue
+        first = re.search(r"`([^`]*)`", xm.group(1))
+        xf = _norm_fields(first.group(1) if first else xm.group(1))
+        props = set(PROP_FIELD_RE.findall(block[pm.end():])) - {"aggregate_version"}
+        if xf != props:
+            msgs.append(f"A10.20 {ev} x-fields↔properties 字段集合漂移："
+                        f"缺 {sorted(props - xf)} / 多 {sorted(xf - props)}")
+    if seen_events < len(CORE_SCHEMA_EVENTS):
+        msgs.append(f"A10.20 核心 schema 事件只解析到 {seen_events}/{len(CORE_SCHEMA_EVENTS)}（集合比对被绕过）")
+
+    # --- A10.21 L3 重试预算：迁移表数值须与正文一致 --------------------------
+    sm = v06.split("## 5. 状态机", 1)[1].split("## 6.", 1)[0] if "## 5. 状态机" in v06 else ""
+    if not sm:
+        msgs.append("A10.21 06 卷缺状态机迁移表")
+    else:
+        if "retry_count < 8" not in sm or "retry_count ≥ 8" not in sm or "10min" not in sm:
+            msgs.append("A10.21 06 卷迁移表 L3 重试预算未对齐 ≤8 次 / 10min")
+        if "retry_count < 3" in sm or "retry_count ≥ 3" in sm:
+            msgs.append("A10.21 06 卷迁移表残留 L1/L2 的 3 次预算（对象混用）")
+    if "≤8 次 / 累计 ≤10min" not in v06:
+        msgs.append("A10.21 06 卷正文缺 L3 ≤8 次 / 10min 预算声明")
+
+    # --- A10.22 金额裸数字 + HTML 交付物纳管 ---------------------------------
+    if ctx.html_missing or not demo:
+        msgs.append("A10.22 HTML 交付物未纳入扫描（DEMO.html 缺失或 Ctx 未注入）")
+    for name, text in all_texts.items():
+        for ln in text.splitlines():
+            if MONEY_BARE_RE.search(ln):
+                msgs.append(f"A10.22 {name} 示例金额裸数字（须 Money 对象，金额与币种同行）")
+                break
+    for token in UNMEASURED_CLAIM_TOKENS:
+        if token in demo:
+            msgs.append(f"A10.22 HTML 交付物出现未实测售前数字：{token}")
+    for name, text in ctx.legacy.items():
+        for token in UNMEASURED_CLAIM_TOKENS:
+            if token in text:
+                msgs.append(f"A10.22 旧族 {name} 出现未实测售前数字：{token}")
+    if "Kappa" in demo and "待 owner 实测" not in demo:
+        msgs.append("A10.22 DEMO.html 的 Kappa 口径未标「待 owner 实测」")
+
+    # --- A10.23 新真源 / 射程 ADR / 三处真源引用 / 统一端口 ------------------
+    for key, doc in (("AI接入", ai_doc), ("射程ADR", adr)):
+        if not doc:
+            msgs.append(f"A10.23 新真源 {key} 未纳入 Ctx（索引不可达）")
+    for token in ("四条件", "A 档", "B 档", "C 档", "N1", "N8", "ProcurementAiOrchestrationPort"):
+        if token not in ai_doc:
+            msgs.append(f"A10.23 AI 接入判定真源缺 {token}")
+    for token in ("档 A", "档 B", "不可稀释红线", "人工终决", "法务结论"):
+        if token not in adr:
+            msgs.append(f"A10.23 射程 ADR 缺 {token}")
+    for name, text in (("D3-v2", d3), ("蓝图", blueprint), ("总体", overall)):
+        if "法源射程分层与自治边界-ADR.md" not in text:
+            msgs.append(f"A10.23 {name} 未引用射程分层 ADR（分层未反哺治理）")
+    if "不可信输入隔离" not in d3:
+        msgs.append("A10.23 D3-v2 §3 缺不可信输入隔离条款（推理期防御未进真源链）")
+    if "一期不实现" in v06:
+        msgs.append("A10.23 06 卷仍把统一端口标为「一期不实现」（双端口悬空未收敛）")
+
+    # --- A10.24 WBS 独立行 / N 态资产 ----------------------------------------
+    if "### 12.3" not in overall:
+        msgs.append("A10.24 总体缺 §12.3 独立 WBS 附表（F1–F4 永不验收死锁未解）")
+    sec123 = (overall.split("### 12.3", 1)[1].split("## 13.", 1)[0]
+              if "### 12.3" in overall else "")
+    wbs_rows = re.findall(r"^\| \*\*W-AI-(\d+)\*\* \|", sec123, re.M)
+    if sorted(int(x) for x in wbs_rows) != list(range(1, 10)):
+        msgs.append("A10.24 总体 §12.3 独立 WBS 行缺失 / 重复（须 W-AI-1…W-AI-9 逐行齐全）")
+    if "N 态零实现资产" not in overall:
+        msgs.append("A10.24 总体 §12.1 未把 procuraAI 审查流水线标为 N 态零实现资产")
+    if "M04 合同（复用 procuraAI）" in overall:
+        msgs.append("A10.24 总体一期交付仍把 AI 审查写成「复用 procuraAI」")
+
+    # --- A10.25 评测集 seed 口径：数字由 evalset 真源单点裁决 ------------------
+    # 不硬编码 27：真源扩容后全族任一处残留旧数字即转红；历史时点快照显式豁免。
+    if ctx.evalset_missing or not ctx.evalset:
+        msgs.append("A10.25 评测集真源未纳入 Ctx（seed 口径无法裁决）")
+    else:
+        try:
+            ev = json.loads(ctx.evalset)
+        except (ValueError, TypeError) as exc:
+            ev = {}
+            msgs.append(f"A10.25 评测集真源 JSON 不可解析：{exc}")
+        case_n, neg_n = ev.get("caseCount"), ev.get("negativeCaseCount")
+        if (not isinstance(case_n, int) or isinstance(case_n, bool) or case_n <= 0
+                or not isinstance(neg_n, int) or isinstance(neg_n, bool) or neg_n <= 0):
+            msgs.append("A10.25 评测集真源缺合法 caseCount / negativeCaseCount")
+        else:
+            pos_n = case_n - neg_n
+            for name in SEED_CURRENT_DOCS:
+                text = all_texts.get(name, "")
+                claims = SEED_CLAIM_RE.findall(text)
+                if str(case_n) not in claims:
+                    msgs.append(f"A10.25 {name} 缺当前 seed 口径声明"
+                                f"（须写明 {case_n} 例 seed，与评测集真源一致）")
+                for got in claims:
+                    if int(got) != case_n:
+                        msgs.append(f"A10.25 {name} seed 例数 {got} != "
+                                    f"评测集真源 caseCount {case_n}（口径漂移）")
+                        break
+                for lit in CASECOUNT_LITERAL_RE.findall(text):
+                    if int(lit) != case_n:
+                        msgs.append(f"A10.25 {name} `caseCount: {lit}` != 评测集真源 {case_n}")
+                        break
+            # 全族兜底：白名单外新增的 seed 声明同样受真源裁决。
+            # 豁免只认「明确时点 + 无完成态宣称」，杜绝借「历史」二字掩盖已交付口径。
+            for name, text in all_texts.items():
+                if name in SEED_CURRENT_DOCS:
+                    continue
+                for ln in text.splitlines():
+                    if _seed_history_exempt(ln):
+                        continue
+                    for got in SEED_CLAIM_RE.findall(ln):
+                        if int(got) != case_n:
+                            msgs.append(f"A10.25 {name} 出现过期 seed 口径 {got} 例"
+                                        f"（真源 caseCount={case_n}）")
+                            break
+            split = SEED_SPLIT_RE.search(all_texts.get("D3v2", ""))
+            if not split or (int(split.group(1)), int(split.group(2))) != (neg_n, pos_n):
+                got = split.groups() if split else None
+                msgs.append(f"A10.25 D3-v2 正/负向分子 {got} != "
+                            f"评测集真源 ({neg_n} 负向 / {pos_n} 正向)")
+
+    # --- A10.26 CI 软件供应链基线：现状由 ci.yml 动态真源单点裁决 --------------
+    # 判据内不写死 0 / 20 等数字：ci.yml 加固而登记未同步 → 红；登记写假数字 → 同样红。
+    # 唯一冻结常量是分支引用债务上界（只减不增），防止「同步登记」洗白新增债务。
+    reg_text = ctx.extra.get("资产登记", "")
+    sec10 = (reg_text.split("## 10.", 1)[1].split("\n## 11.", 1)[0]
+             if "## 10." in reg_text else "")
+    cis_rows = CIS_ROW_RE.findall(sec10)
+    if sorted(cis_rows) != [f"CIS-{i}" for i in range(1, 7)]:
+        msgs.append("A10.26 资产登记第 10 节供应链基线行缺失 / 重复（须 CIS-1…CIS-6 逐行齐全）")
+    ci_text = ctx.entries.get("ci.yml", "")
+    uses = re.findall(r"^\s*(?:-\s*)?uses:\s*(\S+)", ci_text, re.M)
+    actual = {
+        "permissions": len(re.findall(r"^\s*permissions:", ci_text, re.M)),
+        "timeoutMinutes": len(re.findall(r"^\s*timeout-minutes:", ci_text, re.M)),
+        "concurrency": len(re.findall(r"^\s*concurrency:", ci_text, re.M)),
+        "uses": len(uses),
+        "pinnedSha": sum(1 for u in uses if re.search(r"@[0-9a-f]{40}$", u)),
+        "branchRef": sum(1 for u in uses if re.search(r"@(?:master|main)$", u)),
+        "dangerousTrigger": len(re.findall(r"pull_request_target", ci_text)),
+        "inlineEventExpr": len(re.findall(r"\$\{\{\s*github\.event\.", ci_text)),
+    }
+    declared: dict[str, set[int]] = {}
+    for ln in sec10.splitlines():
+        if not CIS_ROW_RE.match(ln):
+            continue
+        cells = _md_cols(ln)
+        if len(cells) < 8:
+            msgs.append("A10.26 供应链基线行列数不足（表格结构退化）")
+            continue
+        for k, v in re.findall(r"([A-Za-z][A-Za-z0-9]*):\s*(\d+)", cells[3]):
+            declared.setdefault(k, set()).add(int(v))
+        allowed = ("已达标（现状 0，须保持）" if cells[0] == "CIS-6"
+                   else "N 态 / 待 owner 审批")
+        if cells[-1] != allowed:
+            msgs.append(f"A10.26 供应链基线 {cells[0]} 状态列非法 / 伪造完成：{cells[-1]!r}")
+    for k in CI_BASELINE_KEYS:
+        vals = declared.get(k)
+        if not vals:
+            msgs.append(f"A10.26 供应链基线缺现状实测声明 `{k}: N`")
+        elif vals != {actual[k]}:
+            msgs.append(f"A10.26 供应链基线 `{k}` 登记 {sorted(vals)} != "
+                        f"ci.yml 动态真源 {actual[k]}（改 CI 须同步登记）")
+    if actual["dangerousTrigger"] or actual["inlineEventExpr"]:
+        msgs.append("A10.26 ci.yml 出现 pull_request_target / 内联 github.event.* "
+                    "（Dangerous-Workflow 恒 0 硬红线）")
+    if actual["branchRef"] > CI_BRANCH_REF_CEILING:
+        msgs.append(f"A10.26 ci.yml 分支引用债务只减不增："
+                    f"{actual['branchRef']} > 冻结上界 {CI_BRANCH_REF_CEILING}")
+
+    # --- A10.27 外部诊断证据索引：结构 + 跟踪真值 + 本机新增登记 ---------------
+    sec11 = reg_text.split("## 11.", 1)[1] if "## 11." in reg_text else ""
+    ev_ids = [r[0] for r in EVIDENCE_ROW_RE.findall(sec11)]
+    if sorted(ev_ids) != [f"E-{i}" for i in range(1, 10)]:
+        msgs.append("A10.27 资产登记第 11 节证据索引行缺失 / 重复（须 E-1…E-9 逐行齐全）")
+    cnt = re.search(r"^\s*`?indexCount:\s*(\d+)`?\s*$", sec11, re.M)
+    if not cnt or int(cnt.group(1)) != len(ev_ids):
+        msgs.append("A10.27 证据索引 indexCount 与登记行数不一致")
+    ev_paths: set[str] = set()
+    for ln in sec11.splitlines():
+        if not re.match(r"^\|\s*E-\d+\s*\|", ln):
+            continue
+        cells = _md_cols(ln)
+        if len(cells) < 6:
+            msgs.append("A10.27 证据索引行列数不足（表格结构退化）")
+            continue
+        name = Path(cells[1].strip("`")).name
+        ev_paths.add(name)
+        state = cells[4]
+        if state not in ("未跟踪", "已跟踪"):
+            msgs.append(f"A10.27 证据索引 {cells[0]} 跟踪状态非法：{state!r}")
+        elif state == "已跟踪" and name not in ctx.tracked_evidence:
+            msgs.append(f"A10.27 证据索引 {cells[0]} 伪造「已跟踪」（git ls-files 无此文件）")
+    # 跨机器 clone 时 outputs/ 为空 → 跳过本机存在性校验，只校验索引结构（防门禁自身断链）
+    if ctx.evidence_files:
+        unregistered = [f for f in ctx.evidence_files if f not in ev_paths]
+        if unregistered:
+            msgs.append(f"A10.27 本机新增诊断报告未登记索引：{unregistered}")
+
+    # --- A10.28 当前态证据清单：文档声明 ↔ 运行时真值逐字段裁决 -----------------
+    # 修的是实测假阴：README 写 999/999 时门禁仍绿，因为脚本从未校验证据数字。
+    truth = evidence_manifest(ctx)
+    readme_now = ctx.texts.get("README", "")
+    declared_lines = MANIFEST_LINE_RE.findall(readme_now)
+    if len(declared_lines) != 1:
+        msgs.append(f"A10.28 README 当前态证据清单行须恰好 1 条，实得 {len(declared_lines)}")
+    else:
+        try:
+            declared = json.loads(declared_lines[0])
+        except (ValueError, TypeError):
+            declared = {}
+            msgs.append("A10.28 README 当前态证据清单不是合法 JSON")
+        if not isinstance(declared, dict):
+            msgs.append("A10.28 README 当前态证据清单须为 JSON 对象")
+        else:
+            if set(declared) != set(MANIFEST_FIELDS):
+                msgs.append(f"A10.28 证据清单字段集合不匹配：{sorted(declared)} != "
+                            f"{sorted(MANIFEST_FIELDS)}")
+            for key in MANIFEST_FIELDS:
+                if key in declared and declared[key] != truth[key]:
+                    msgs.append(f"A10.28 证据清单 `{key}` 声明 {declared[key]!r} != "
+                                f"运行时真值 {truth[key]!r}（加判据后须 --sync-manifest）")
+    # 单调上界：轮次日志里的 --self-test N/N 只可能 <= 当前真值；写假（999/999）
+    # 或新增轮次未同步清单都会转红。当前值由唯一清单行逐字段声明并校验，
+    # 不额外要求出现在轮次日志里——否则 --sync-manifest 后仍需手改历史快照，
+    # 与「一条命令同步」的目标冲突（真实文件级 ⑧ 场景实测）。
+    cur_probes = int(truth["probes"])
+    st_counts = [int(a) for ln in readme_now.splitlines() if "--self-test" in ln
+                 for a, b in SELFTEST_COUNT_RE.findall(ln) if a == b]
+    over = sorted({n for n in st_counts if n > cur_probes})
+    if over:
+        msgs.append(f"A10.28 README --self-test 计数 {over} 超过当前反证真值 {cur_probes}"
+                    "（写假或新增轮次未同步证据清单）")
+    return msgs
+
+
 def check_a10(ctx: Ctx) -> tuple[bool, list[str]]:
     """资产裁决与收口守护（总纲附录 F A10.1–A10.9），含 R5 冻结事件外部锚点复核。"""
     msgs: list[str] = []
@@ -1508,8 +1988,18 @@ def check_a10(ctx: Ctx) -> tuple[bool, list[str]]:
             msgs.append(f"A10.17 {name} 带 continue-on-error: true（标着 blocking 却从不拦）")
         if re.search(r"^\s*if:", body, re.M):
             msgs.append(f"A10.17 {name} 带 if: 条件跳过（blocking 步骤不得条件化）")
-        if not _ci_run_commands(block):
+        run_lines = _ci_run_commands(block)
+        if not run_lines:
             msgs.append(f"A10.17 {name} 无可执行 run: 命令（判据被注释 / 换成占位命令）")
+        # YAML 键层之外，还要审 run 正文的 shell 语义：多行 run: | 块可关掉 -e 再强制成功。
+        for why, ln in _shell_swallow_hits(run_lines):
+            msgs.append(f"A10.17 {name} run 正文含 shell 层吞错构造「{why}」：{ln}"
+                        "（标着 blocking 却从不拦；set +e + exit 0 在 GHA 默认 -e 下实测 rc=0）")
+    # shell 入口：判据命令行 / 脚本级 errexit 开关不得吞掉失败（G0 的 if ! 亦靠退出码）。
+    for label, body in (("check.sh", sh), ("check-procura-ci.sh", loc)):
+        for why, ln in _shell_swallow_hits(_entry_swallow_lines(body)):
+            msgs.append(f"A10.17 {label} 判据上下文含 shell 层吞错构造「{why}」：{ln}"
+                        "（判据命令文本仍在但失败不会传导）")
     for label, body, kind, expect in (("ci.yml", ci, "ci.yml", FULL_GATE_KEYS),
                                       ("check-procura-ci.sh", loc, "sh", FULL_GATE_KEYS),
                                       ("check.sh", sh, "sh", FAST_GATE_KEYS)):
@@ -1822,6 +2312,7 @@ def check_a10(ctx: Ctx) -> tuple[bool, list[str]]:
     for name in ("README", "总体", "领域", "基线"):
         if "A10" not in ctx.texts.get(name, ""):
             msgs.append(f"A10 {name} 未登记门禁 A10（索引失真）")
+    msgs.extend(_a10_semantic_checks(ctx))
     return (not msgs), msgs
 
 
@@ -1848,12 +2339,83 @@ DESCRIPTIONS = {
     "A7": "LLD 族 12 节模板与模块覆盖",
     "A8": "契约工件一致性 / 码字唯一性 / topic 白名单 / InvoiceMatched 字段集合",
     "A9": "逐卷可执行规格 §13 八子节 / 专属锚点 / 七类要素 / v0.3 探针",
-    "A10": "资产裁决 / AI 合规 / 外部锚点 / 版本戳 / 一期边界 / 新资产索引 / 全族字段收敛 / 分期真源 / 合规清单 / 能力账本 / 切片事件状态",
+    "A10": "资产裁决 / AI 合规 / 外部锚点 / 版本戳 / 一期边界 / 新资产索引 / 全族字段收敛 / 分期真源 / 合规清单 / 能力账本 / 切片事件状态 / 语义判据 A10.19–A10.28 / CI 供应链基线 / 证据索引 / 当前态证据清单 SSOT",
 }
 
 
 def run(ctx: Ctx) -> dict[str, tuple[bool, list[str]]]:
     return {name: fn(ctx) for name, fn in CHECKS.items()}
+
+
+def _load_manifest_source() -> str:
+    """A10.28：门禁自身源码快照（真源之一），随 Ctx 注入以支持负向反证。"""
+    return Path(__file__).read_text(encoding="utf-8")
+
+
+@lru_cache(maxsize=8)
+def _manifest_static(src: str) -> tuple[int, int, str]:
+    """源码派生字段是进程内常量；--self-test 会跑 146 次 run()，缓存避免对
+    196KB 源码重复做全量正则（实测每次省约 8ms，全程约 1s）。
+    以源码字符串为 key：真源扩容的注入反证自然得到不同 key，不影响裁决。
+    注：曾怀疑 A10.28 导致 26.4s→48.5s 回归，A/B 对照（完整 277.8ms/run vs
+    剥离 A10.28 285.4ms/run）证伪——波动来自沙箱文件代理的 SVG XML 解析，
+    本缓存只是小幅优化，不是那 22s 的修复。"""
+    # 用 rsplit 取最后一处：mutator 定义里含 "    mutations = [" 字面量，
+    # 用 split 会命中该字面量而得到空段（实测 probes=0），必须以真实列表为准。
+    mut_seg = (src.rsplit("    mutations = [", 1)[1].split("    all_ok = True", 1)[0]
+               if "    mutations = [" in src else "")
+    probes = len(re.findall(r'^\s*\("A\d+",', mut_seg, re.M))
+    positives = len(re.findall(r"^\s*positive_ok\d*\s*=", src, re.M))
+    crit_ids = [int(x) for x in re.findall(r"A10\.(\d+)", src)]
+    return probes, positives, (f"A10.{max(crit_ids)}" if crit_ids else "")
+
+
+def evidence_manifest(ctx: Ctx) -> dict[str, object]:
+    """当前态证据真值：全部由源码 / evalset / 资产登记表推导，判据内不写死数字。
+
+    与 A10.25（evalset.caseCount）/ A10.26（ci.yml）同一模式：真源在代码与工件里，
+    文档声明是被校验对象，避免「期望值来自被校验对象」的闭环自证。
+    """
+    probes, positives, crit_max = _manifest_static(
+        ctx.manifest_source or _load_manifest_source())
+    try:
+        seed = int(json.loads(ctx.evalset)["caseCount"])
+    except (ValueError, KeyError, TypeError):
+        seed = -1
+    idx_match = re.search(r"indexCount:\s*(\d+)", ctx.extra.get("资产登记", ""))
+    idx = int(idx_match.group(1)) if idx_match else -1
+    return {
+        "checks": len(CHECKS),
+        "probes": probes,
+        "positiveControls": positives,
+        "criteriaMax": crit_max,
+        "seedCaseCount": seed,
+        "indexCount": idx,
+    }
+
+
+def sync_manifest() -> int:
+    """把 README 唯一当前态证据清单行同步为运行时真值（仅开发期显式调用，CI 不调用）。"""
+    truth = evidence_manifest(load())
+    path = ALL_DOCS["README"]
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines(keepends=True)
+    hits = [i for i, ln in enumerate(lines) if "gateEvidenceManifest:" in ln]
+    if len(hits) != 1:
+        print(f"[SYNC] FAIL: README 中证据清单行须恰好 1 条，实得 {len(hits)}")
+        return 1
+    old = lines[hits[0]].rstrip("\n")
+    # 只替换 JSON 对象，保留人类可读前缀（上一版整行覆盖会吞掉标题）。
+    prefix = old.split("`gateEvidenceManifest:")[0]
+    line = prefix + "`gateEvidenceManifest: " + json.dumps(truth, ensure_ascii=False, sort_keys=True) + "`"
+    if old == line:
+        print("[SYNC] 已一致，无需更新：" + line)
+        return 0
+    lines[hits[0]] = line + "\n"
+    path.write_text("".join(lines), encoding="utf-8")
+    print("[SYNC] 旧：" + old)
+    print("[SYNC] 新：" + line)
+    return 0
 
 
 def report(results: dict[str, tuple[bool, list[str]]]) -> bool:
@@ -1877,7 +2439,14 @@ def _mutate(ctx: Ctx, texts: dict[str, str] | None = None,
             legacy: dict[str, str] | None = None,
             extra_missing: list[str] | None = None,
             entries: dict[str, str] | None = None,
-            entry_missing: list[str] | None = None) -> Ctx:
+            entry_missing: list[str] | None = None,
+            html: dict[str, str] | None = None,
+            html_missing: list[str] | None = None,
+            evalset: str | None = None,
+            evalset_missing: list[str] | None = None,
+            evidence_files: list[str] | None = None,
+            tracked_evidence: set[str] | None = None,
+            manifest_source: str | None = None) -> Ctx:
     new_texts = dict(ctx.texts if texts is None else texts)
     new_secs = {k: _sections(v) for k, v in new_texts.items()} if sections is None else sections
     return Ctx(
@@ -1893,6 +2462,13 @@ def _mutate(ctx: Ctx, texts: dict[str, str] | None = None,
         extra_missing=list(ctx.extra_missing if extra_missing is None else extra_missing),
         entries=dict(ctx.entries if entries is None else entries),
         entry_missing=list(ctx.entry_missing if entry_missing is None else entry_missing),
+        html=dict(ctx.html if html is None else html),
+        html_missing=list(ctx.html_missing if html_missing is None else html_missing),
+        evalset=ctx.evalset if evalset is None else evalset,
+        evalset_missing=list(ctx.evalset_missing if evalset_missing is None else evalset_missing),
+        evidence_files=list(ctx.evidence_files if evidence_files is None else evidence_files),
+        tracked_evidence=set(ctx.tracked_evidence if tracked_evidence is None else tracked_evidence),
+        manifest_source=ctx.manifest_source if manifest_source is None else manifest_source,
     )
 
 
@@ -1903,6 +2479,126 @@ def self_test() -> int:
         print("\n[SELF-TEST] 基线未全绿，负向反证无意义，先修复真实问题。")
         return 1
     print(f"\n[SELF-TEST] 基线 {len(CHECKS)}/{len(CHECKS)} 全绿，开始注入式负向反证：\n")
+
+    # ---- 第十二轮 A10.19–A10.25 注入反证 ---------------------------------
+    # （第十八轮 A10.26 / A10.27 反证见下方独立块；第十九轮 A10.28 见 mutations 前的独立块）
+    def m_new_enum_backtick(c: Ctx) -> Ctx:
+        a = dict(c.artifacts)
+        a["asyncapi.yaml"] = a["asyncapi.yaml"].replace(
+            "enum: ['MATCHED', 'EXCEPTION', 'REVIEW']",
+            "enum: ['`MATCHED`', 'EXCEPTION', 'REVIEW']", 1)
+        return _mutate(c, artifacts=a)
+
+    def m_new_enum_illegal(c: Ctx) -> Ctx:
+        a = dict(c.artifacts)
+        a["asyncapi.yaml"] = a["asyncapi.yaml"].replace(
+            "enum: ['MATCHED', 'EXCEPTION', 'REVIEW']",
+            "enum: ['matched', 'EXCEPTION', 'REVIEW']", 1)
+        return _mutate(c, artifacts=a)
+
+    def m_new_gen_selfcheck(c: Ctx) -> Ctx:
+        a = dict(c.artifacts)
+        a["generate_asyncapi.py"] = a["generate_asyncapi.py"].replace("validate_rendered", "vr_disabled")
+        return _mutate(c, artifacts=a)
+
+    def m_new_xfields_drift(c: Ctx) -> Ctx:
+        a = dict(c.artifacts)
+        a["asyncapi.yaml"] = a["asyncapi.yaml"].replace(
+            'x-fields: "`po_no, tenant_id', 'x-fields: "`po_no_x, tenant_id', 1)
+        return _mutate(c, artifacts=a)
+
+    def m_new_retry(c: Ctx) -> Ctx:
+        x = dict(c.texts)
+        x["卷06"] = x["卷06"].replace("retry_count < 8", "retry_count < 3", 1)
+        return _mutate(c, texts=x)
+
+    def m_new_money_bare(c: Ctx) -> Ctx:
+        x = dict(c.texts)
+        x["卷04"] = x["卷04"] + "\n> 注入探针：{\"amount\": 4250.00}\n"
+        return _mutate(c, texts=x)
+
+    def m_new_html_unmeasured(c: Ctx) -> Ctx:
+        h = dict(c.html)
+        h["DEMO.html"] = h["DEMO.html"].replace("待 owner 实测", "Kappa 0.84", 1)
+        return _mutate(c, html=h)
+
+    def m_new_html_missing(c: Ctx) -> Ctx:
+        return _mutate(c, html={}, html_missing=["html:DEMO.html: injected"])
+
+    def m_new_adr_dropped(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        e["射程ADR"] = e["射程ADR"].replace("档 B", "档 X")
+        return _mutate(c, extra=e)
+
+    def m_new_injection_clause(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        e["D3v2"] = e["D3v2"].replace("不可信输入隔离", "输入隔离（已删）")
+        return _mutate(c, extra=e)
+
+    def m_new_scope_ref(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        e["蓝图"] = e["蓝图"].replace("法源射程分层与自治边界-ADR.md", "不存在的ADR.md")
+        return _mutate(c, extra=e)
+
+    def m_new_port_placeholder(c: Ctx) -> Ctx:
+        x = dict(c.texts)
+        x["卷06"] = x["卷06"] + "\n> 注入探针：一期不实现\n"
+        return _mutate(c, texts=x)
+
+    def m_new_wbs_row(c: Ctx) -> Ctx:
+        x = dict(c.texts)
+        x["总体"] = x["总体"].replace("| **W-AI-1** |", "| ~~已删~~ |", 1)
+        return _mutate(c, texts=x)
+
+    def m_new_reuse_claim(c: Ctx) -> Ctx:
+        x = dict(c.texts)
+        x["总体"] = x["总体"].replace(
+            "M04 合同（**AI 审查为 N 态新建，非复用既有实现**", "M04 合同（复用 procuraAI）", 1)
+        return _mutate(c, texts=x)
+
+    def m_new_seed_drift(c: Ctx) -> Ctx:
+        # 旧族口径回退到 25 例 seed：真源仍是 27，必须转红
+        l = dict(c.legacy)
+        k = "采购AI-商业化卖点与FDE落地交付方案.md"
+        l[k] = l[k].replace("27 例 seed", "25 例 seed")
+        return _mutate(c, legacy=l)
+
+    def m_new_seed_truth_drift(c: Ctx) -> Ctx:
+        # 只改真源 caseCount（文档不动）：证明判据读真源而非把 27 写死在脚本里
+        d = json.loads(c.evalset)
+        d["caseCount"] = d["caseCount"] + 1
+        return _mutate(c, evalset=json.dumps(d, ensure_ascii=False))
+
+    def m_new_seed_dropped(c: Ctx) -> Ctx:
+        # HTML 交付物删光 seed 声明：防「全删了反而恒绿」
+        h = dict(c.html)
+        h["DEMO.html"] = h["DEMO.html"].replace("27 例 seed", "seed 评测集")
+        return _mutate(c, html=h)
+
+    def m_new_seed_split(c: Ctx) -> Ctx:
+        # D3-v2 正/负向分子回退：分子也须由真源裁决
+        e = dict(c.extra)
+        e["D3v2"] = e["D3v2"].replace("18 负向 / 9 正向对照", "17 负向 / 8 正向对照", 1)
+        return _mutate(c, extra=e)
+
+    def _seed_probe(c: Ctx, line: str) -> Ctx:
+        # 在非白名单旧族文档尾部注入一行（白名单一律不豁免，故用旧族验证兜底判据）
+        l = dict(c.legacy)
+        k = "采购AI-方案包完整性评估与文档补齐计划.md"
+        l[k] = l[k] + "\n" + line + "\n"
+        return _mutate(c, legacy=l)
+
+    def m_new_seed_exempt_abuse(c: Ctx) -> Ctx:
+        # 「历史」宽词 + 完成态宣称：修复前被宽豁免放过（真实假阴），必须转红
+        return _seed_probe(c, "> 历史：25 例 seed 已可复制交付。")
+
+    def m_new_seed_exempt_completion(c: Ctx) -> Ctx:
+        # 精确历史时点标记 + 完成态宣称：完成态不得借历史豁免蒙混
+        return _seed_probe(c, "> 诊断时点（当时）：25 例 seed 已实测达标。")
+
+    def m_new_seed_history_ok(c: Ctx) -> Ctx:
+        # 正例对照：合法的历史时点快照不应被误杀（防「一律 FAIL」假安全）
+        return _seed_probe(c, "> 诊断时点（当时）：25 例 seed 为当时快照，尚未扩容。")
 
     def m_a1(c: Ctx) -> Ctx:
         t = dict(c.texts)
@@ -2525,6 +3221,61 @@ def self_test() -> int:
             "# if ! python3 tools/check_procura_alignment.py > /dev/null; then", 1)
         return _mutate(c, entries=en)
 
+    # ---- 第十三轮 A10.17 shell 层吞错反证（判据集合完整但失败不传导）----------
+    CI_DOC_RUN = "        run: /usr/bin/env python3 tools/check_procura_alignment.py\n"
+
+    def m_ci_run_swallow_block(c: Ctx) -> Ctx:
+        """真实假绿主场景：run: | 多行块 set +e 关掉 GHA 默认 -e，再 exit 0 强制成功。"""
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"].replace(
+            CI_DOC_RUN,
+            "        run: |\n"
+            "          set +e\n"
+            "          /usr/bin/env python3 tools/check_procura_alignment.py\n"
+            "          exit 0\n", 1)
+        return _mutate(c, entries=en)
+
+    def m_ci_run_semicolon_exit(c: Ctx) -> Ctx:
+        """单行 ; exit 0：_split_cmds 忽略非 python 段 ⇒ 集合完整（原假阴）。"""
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"].replace(
+            CI_DOC_RUN,
+            "        run: /usr/bin/env python3 tools/check_procura_alignment.py; exit 0\n", 1)
+        return _mutate(c, entries=en)
+
+    def m_ci_run_trap_err(c: Ctx) -> Ctx:
+        """trap ERR 吞错：失败后 ERR trap 强制 exit 0。"""
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"].replace(
+            CI_DOC_RUN,
+            "        run: |\n"
+            "          trap 'exit 0' ERR\n"
+            "          /usr/bin/env python3 tools/check_procura_alignment.py\n", 1)
+        return _mutate(c, entries=en)
+
+    def m_checksh_set_plus_e(c: Ctx) -> Ctx:
+        """check.sh 脚本级关掉 errexit：G0 的 if ! 之外所有判据失败都不再熔断。"""
+        en = dict(c.entries)
+        en["check.sh"] = en["check.sh"].replace("set -euo pipefail", "set +e", 1)
+        return _mutate(c, entries=en)
+
+    def m_local_or_true(c: Ctx) -> Ctx:
+        """本地一键入口判据行加 || true：set -e 被 || 条件列表短路。"""
+        en = dict(c.entries)
+        en["check-procura-ci.sh"] = en["check-procura-ci.sh"].replace(
+            "python3 tools/check_procura_alignment.py\n",
+            "python3 tools/check_procura_alignment.py || true\n", 1)
+        return _mutate(c, entries=en)
+
+    def m_ci_run_multiline_ok(c: Ctx) -> Ctx:
+        """正例：合法多行 run: | 块（仅判据命令、无吞错构造）不得被一律 FAIL。"""
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"].replace(
+            CI_DOC_RUN,
+            "        run: |\n"
+            "          /usr/bin/env python3 tools/check_procura_alignment.py\n", 1)
+        return _mutate(c, entries=en)
+
     def m_compliance_copy(c: Ctx) -> Ctx:
         e = dict(c.extra)
         out, n = [], 0
@@ -2621,6 +3372,130 @@ def self_test() -> int:
         assert old in e["蓝图"]
         e["蓝图"] = e["蓝图"].replace(old, "| `CategoryInsightPort` | P4 |", 1)
         return _mutate(c, extra=e)
+
+    # ---- 第十八轮 A10.26 / A10.27 注入反证 ---------------------------------
+    def m_cis_drop_row(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        e["资产登记"] = "\n".join(ln for ln in e["资产登记"].splitlines()
+                               if not ln.startswith("| CIS-4 |"))
+        return _mutate(c, extra=e)
+
+    def m_cis_fake_current(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        e["资产登记"] = e["资产登记"].replace("`permissions: 0`", "`permissions: 3`", 1)
+        return _mutate(c, extra=e)
+
+    def m_cis_fake_status(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        e["资产登记"] = e["资产登记"].replace(
+            "| N 态 / 待 owner 审批 |", "| 已修复 |", 1)
+        return _mutate(c, extra=e)
+
+    def m_ci_dangerous_trigger(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"] + "\n# 注入探针\n  pull_request_target: probe\n"
+        return _mutate(c, entries=en)
+
+    def m_ci_branch_added(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"] + "\n      - uses: probe/unpinned-action@main\n"
+        return _mutate(c, entries=en)
+
+    def m_cis_supply_fixed_ok(c: Ctx) -> Ctx:
+        # 正例：owner 真实加固 ci.yml 并同步登记 → 判据须放行（证明数字不写死）
+        en = dict(c.entries)
+        en["ci.yml"] = "permissions:\n  contents: read\n" + en["ci.yml"]
+        e = dict(c.extra)
+        e["资产登记"] = e["资产登记"].replace("`permissions: 0`", "`permissions: 1`", 1)
+        return _mutate(c, entries=en, extra=e)
+
+    def m_ev_drop_row(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        e["资产登记"] = "\n".join(ln for ln in e["资产登记"].splitlines()
+                               if not ln.startswith("| E-9 |"))
+        return _mutate(c, extra=e)
+
+    def m_ev_fake_tracked(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        e["资产登记"] = e["资产登记"].replace(
+            "| 未跟踪 | 按路径原文引用，不回改当时数字 |",
+            "| 已跟踪 | 按路径原文引用，不回改当时数字 |", 1)
+        return _mutate(c, extra=e)
+
+    def m_ev_index_count(c: Ctx) -> Ctx:
+        e = dict(c.extra)
+        e["资产登记"] = e["资产登记"].replace(
+            "`indexCount: 9`\n\n| 编号", "`indexCount: 8`\n\n| 编号", 1)
+        return _mutate(c, extra=e)
+
+    def m_ev_new_report(c: Ctx) -> Ctx:
+        return _mutate(c, evidence_files=list(c.evidence_files)
+                       + ["procuraAI-新诊断报告-2026-11-12.md"])
+
+    def m_ev_clone_ok(c: Ctx) -> Ctx:
+        # 正例：跨机器 clone 时 outputs/ 为空，索引结构校验仍须放行
+        return _mutate(c, evidence_files=[], tracked_evidence=set())
+
+
+    # ---- 第十九轮 A10.28 注入反证 -------------------------------------------
+    def m_manifest_fake_probes(c: Ctx) -> Ctx:
+        x = dict(c.texts)
+        x["README"] = re.sub(r'("probes":\s*)\d+', r'\g<1>9999', x["README"], count=1)
+        return _mutate(c, texts=x)
+
+    def m_manifest_drop_line(c: Ctx) -> Ctx:
+        x = dict(c.texts)
+        x["README"] = "\n".join(ln for ln in x["README"].splitlines()
+                                if "gateEvidenceManifest:" not in ln) + "\n"
+        return _mutate(c, texts=x)
+
+    def m_manifest_missing_field(c: Ctx) -> Ctx:
+        x = dict(c.texts)
+        x["README"] = re.sub(r', "indexCount":\s*\d+', '', x["README"], count=1)
+        return _mutate(c, texts=x)
+
+    def m_manifest_extra_field(c: Ctx) -> Ctx:
+        x = dict(c.texts)
+        x["README"] = re.sub(r'("checks":\s*\d+)', r'\1, "bogus": 1',
+                             x["README"], count=1)
+        return _mutate(c, texts=x)
+
+    def m_selftest_fake_count(c: Ctx) -> Ctx:
+        x = dict(c.texts)
+        x["README"] += "\n> 探针：主门禁 `--self-test` **9999/9999**。\n"
+        return _mutate(c, texts=x)
+
+    def m_manifest_source_grew(c: Ctx) -> Ctx:
+        # 真源扩容（新增一条反证）但 README 清单未同步 → 必须转红
+        head, sep, tail = c.manifest_source.rpartition("    mutations = [\n")
+        assert sep, "真源扩容探针锚点缺失"
+        src = head + sep + '        ("A10", "探针", m_a1, "x"),\n' + tail
+        return _mutate(c, manifest_source=src)
+
+    def m_manifest_stale_criteria(c: Ctx) -> Ctx:
+        # 校验字段不止 probes：判据上限回退同样须转红
+        x = dict(c.texts)
+        x["README"] = x["README"].replace('"criteriaMax": "A10.28"',
+                                          '"criteriaMax": "A10.27"', 1)
+        return _mutate(c, texts=x)
+
+    def m_manifest_history_ok(c: Ctx) -> Ctx:
+        # 正例：合法历史快照行不得被单调上界误杀
+        x = dict(c.texts)
+        x["README"] += "\n> 历史轮次探针：`--self-test` **130/130**（当时快照）。\n"
+        return _mutate(c, texts=x)
+
+    def m_manifest_synced_ok(c: Ctx) -> Ctx:
+        # 正例：真源扩容 + 清单同步 + 当前态声明同步 → 须仍绿（证明数字非写死）
+        cur = int(evidence_manifest(c)["probes"])
+        head, sep, tail = c.manifest_source.rpartition("    mutations = [\n")
+        assert sep, "正例真源扩容探针锚点缺失"
+        src = head + sep + '        ("A10", "探针", m_a1, "x"),\n' + tail
+        x = dict(c.texts)
+        x["README"] = re.sub(r'("probes":\s*)\d+', rf'\g<1>{cur + 1}',
+                             x["README"], count=1)
+        x["README"] = x["README"].replace(f"**{cur}/{cur}**", f"**{cur + 1}/{cur + 1}**", 1)
+        return _mutate(c, texts=x, manifest_source=src)
 
     mutations = [
         ("A1", "版本号漂移（v0.3 → v9.9）", m_a1, "版本 v9.9"),
@@ -2728,6 +3603,74 @@ def self_test() -> int:
         ("A10", "T1 漏登记 M7 能力码", m_tier_missing_code, "A10.18 分层"),
         ("A10", "T4 重复登记 M1（跨层）", m_tier_duplicate_code, "A10.18 分层"),
         ("A10", "G10 主表分期回退 P4", m_g10_revert_p4, "A10.18 分期"),
+        ("A10", "AsyncAPI enum 字面量注入 markdown 反引号", m_new_enum_backtick, "A10.19 enum 字面量含 markdown"),
+        ("A10", "AsyncAPI enum 合法值注入小写非法值", m_new_enum_illegal, "A10.19 enum 合法值非法"),
+        ("A10", "生成器抹掉渲染期语义自检", m_new_gen_selfcheck, "A10.19 生成器缺渲染期语义自检"),
+        ("A10", "PO 事件 x-fields 注入漂移字段（集合比对）", m_new_xfields_drift, "A10.20"),
+        ("A10", "06 卷迁移表重试预算回退 3 次", m_new_retry, "A10.21"),
+        ("A10", "04 卷注入裸金额数字", m_new_money_bare, "A10.22"),
+        ("A10", "DEMO.html 注入未实测 Kappa 0.84", m_new_html_unmeasured, "A10.22 HTML 交付物出现未实测"),
+        ("A10", "HTML 交付物从扫描范围移除", m_new_html_missing, "A10.22 HTML 交付物未纳入扫描"),
+        ("A10", "射程 ADR 删掉档 B 分层", m_new_adr_dropped, "A10.23 射程 ADR 缺"),
+        ("A10", "D3-v2 §3 删不可信输入隔离条款", m_new_injection_clause, "A10.23 D3-v2 §3 缺不可信输入隔离"),
+        ("A10", "蓝图抹掉射程 ADR 引用", m_new_scope_ref, "A10.23 蓝图 未引用射程分层 ADR"),
+        ("A10", "06 卷回流统一端口「一期不实现」", m_new_port_placeholder, "A10.23 06 卷仍把统一端口"),
+        ("A10", "总体 §12.3 删 W-AI-1 独立行", m_new_wbs_row, "A10.24 总体 §12.3 独立 WBS 行"),
+        ("A10", "总体一期交付回流「复用 procuraAI」", m_new_reuse_claim, "A10.24 总体一期交付仍把"),
+        ("A10", "旧族 seed 口径回退 25 例（真源已 27）", m_new_seed_drift,
+         "A10.25 采购AI-商业化卖点与FDE落地交付方案.md seed 例数 25"),
+        ("A10", "评测集真源 caseCount 扩容但文档未同步", m_new_seed_truth_drift,
+         "A10.25 总体 seed 例数 27"),
+        ("A10", "DEMO.html 删光 seed 口径声明", m_new_seed_dropped,
+         "A10.25 DEMO.html 缺当前 seed 口径声明"),
+        ("A10", "D3-v2 正/负向分子回退 17/8", m_new_seed_split,
+         "A10.25 D3-v2 正/负向分子"),
+        ("A10", "借「历史」宽词掩盖 25 例 seed 已交付（判据假阴回归）", m_new_seed_exempt_abuse,
+         "A10.25 采购AI-方案包完整性评估与文档补齐计划.md 出现过期 seed 口径 25 例"),
+        ("A10", "历史时点标记 + 完成态宣称不得豁免", m_new_seed_exempt_completion,
+         "A10.25 采购AI-方案包完整性评估与文档补齐计划.md 出现过期 seed 口径 25 例"),
+        ("A10", "ci.yml run: | 多行块 set +e + exit 0（真实假绿主场景）", m_ci_run_swallow_block,
+         "A10.17 - name: ProcuraAI Doc Alignment Gate (blocking) run 正文含 shell 层吞错构造"),
+        ("A10", "ci.yml 单行 ; exit 0（集合完整型假阴）", m_ci_run_semicolon_exit,
+         "A10.17 - name: ProcuraAI Doc Alignment Gate (blocking) run 正文含 shell 层吞错构造"),
+        ("A10", "ci.yml run 块 trap ERR 强制 exit 0", m_ci_run_trap_err,
+         "A10.17 - name: ProcuraAI Doc Alignment Gate (blocking) run 正文含 shell 层吞错构造"),
+        ("A10", "check.sh 脚本级 set +e 关掉 errexit", m_checksh_set_plus_e,
+         "A10.17 check.sh 判据上下文含 shell 层吞错构造"),
+        ("A10", "本地一键入口判据行加 || true", m_local_or_true,
+         "A10.17 check-procura-ci.sh 判据上下文含 shell 层吞错构造"),
+        ("A10", "§10 删掉 CIS-4 供应链基线行", m_cis_drop_row,
+         "A10.26 资产登记第 10 节供应链基线行缺失"),
+        ("A10", "§10 现状实测写假数字 permissions: 3", m_cis_fake_current,
+         "A10.26 供应链基线 `permissions` 登记"),
+        ("A10", "§10 状态列伪造完成态", m_cis_fake_status,
+         "A10.26 供应链基线 CIS-1 状态列非法"),
+        ("A10", "ci.yml 注入 pull_request_target", m_ci_dangerous_trigger,
+         "A10.26 ci.yml 出现 pull_request_target"),
+        ("A10", "ci.yml 新增 @main 分支引用", m_ci_branch_added,
+         "A10.26 ci.yml 分支引用债务只减不增"),
+        ("A10", "§11 删掉 E-9 证据索引行", m_ev_drop_row,
+         "A10.27 资产登记第 11 节证据索引行缺失"),
+        ("A10", "§11 伪造「已跟踪」", m_ev_fake_tracked,
+         "A10.27 证据索引 E-1 伪造"),
+        ("A10", "§11 indexCount 与行数不一致", m_ev_index_count,
+         "A10.27 证据索引 indexCount 与登记行数不一致"),
+        ("A10", "本机新增诊断报告未登记索引", m_ev_new_report,
+         "A10.27 本机新增诊断报告未登记索引"),
+        ("A10", "证据清单 probes 写假数字 9999", m_manifest_fake_probes,
+         "A10.28 证据清单 `probes` 声明"),
+        ("A10", "删掉唯一证据清单行", m_manifest_drop_line,
+         "A10.28 README 当前态证据清单行须恰好 1 条"),
+        ("A10", "证据清单缺 indexCount 字段", m_manifest_missing_field,
+         "A10.28 证据清单字段集合不匹配"),
+        ("A10", "证据清单多出未知字段", m_manifest_extra_field,
+         "A10.28 证据清单字段集合不匹配"),
+        ("A10", "README --self-test 写假 9999/9999", m_selftest_fake_count,
+         "A10.28 README --self-test 计数"),
+        ("A10", "真源新增反证但清单未同步", m_manifest_source_grew,
+         "A10.28 证据清单 `probes` 声明"),
+        ("A10", "清单 criteriaMax 回退 A10.27", m_manifest_stale_criteria,
+         "A10.28 证据清单 `criteriaMax` 声明"),
     ]
     all_ok = True
     for target, desc, mutator, expect in mutations:
@@ -2745,15 +3688,53 @@ def self_test() -> int:
         else:
             print(f"       - 转红证据：{next(m for m in errs if expect in m)}")
         all_ok = all_ok and ok
+    # 正例对照：合法历史时点快照须仍判绿，防「一律 FAIL」式假安全
+    positive_ok = all(passed for passed, _ in run(m_new_seed_history_ok(base)).values())
+    print(f"[{'PASS' if positive_ok else 'FAIL'}] 正例：合法历史时点快照未被误杀（防一律 FAIL 假安全）")
+    all_ok = all_ok and positive_ok
+    positive_ok2 = all(passed for passed, _ in run(m_ci_run_multiline_ok(base)).values())
+    print(f"[{'PASS' if positive_ok2 else 'FAIL'}] 正例：合法多行 run: | 块无吞错构造，未被误杀"
+          "（防 A10.17 一律 FAIL 假安全）")
+    if not positive_ok2:
+        print("       - 误杀证据：" + str([m for _, e in run(m_ci_run_multiline_ok(base)).values() for m in e][:2]))
+    all_ok = all_ok and positive_ok2
+    positive_ok3 = all(passed for passed, _ in run(m_cis_supply_fixed_ok(base)).values())
+    print(f"[{'PASS' if positive_ok3 else 'FAIL'}] 正例：ci.yml 加固并同步登记后仍判绿"
+          "（证明 A10.26 数字由真源动态裁决，非写死 0）")
+    if not positive_ok3:
+        print("       - 误杀证据：" + str([m for _, e in run(m_cis_supply_fixed_ok(base)).values() for m in e][:2]))
+    all_ok = all_ok and positive_ok3
+    positive_ok4 = all(passed for passed, _ in run(m_ev_clone_ok(base)).values())
+    print(f"[{'PASS' if positive_ok4 else 'FAIL'}] 正例：跨机器 outputs/ 为空仍判绿"
+          "（防 A10.27 自身断链）")
+    all_ok = all_ok and positive_ok4
+    positive_ok5 = all(passed for passed, _ in run(m_manifest_history_ok(base)).values())
+    print(f"[{'PASS' if positive_ok5 else 'FAIL'}] 正例：合法历史快照 N/N 未被单调上界误杀")
+    all_ok = all_ok and positive_ok5
+    positive_ok6 = all(passed for passed, _ in run(m_manifest_synced_ok(base)).values())
+    print(f"[{'PASS' if positive_ok6 else 'FAIL'}] 正例：真源扩容并同步清单后仍判绿"
+          "（证明 A10.28 数字由运行时真值裁决，非写死）")
+    if not positive_ok6:
+        print("       - 误杀证据：" + str([m for _, e in run(m_manifest_synced_ok(base)).values() for m in e][:2]))
+    all_ok = all_ok and positive_ok6
+    print("[MANIFEST] " + json.dumps(evidence_manifest(base), ensure_ascii=False, sort_keys=True))
     print(f"\n[SELF-TEST] {len(mutations)}/{len(mutations)} 负向探针全部转红且命中预期 key" if all_ok
-          else "\n[SELF-TEST] 存在未转红或 key 未命中的判据，需修复")
+          else "\n[SELF-TEST] 存在未转红、key 未命中或正例被误杀的判据，需修复")
     return 0 if all_ok else 1
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="采购域文档族机器门禁")
     ap.add_argument("--self-test", action="store_true", help="注入式负向反证")
+    ap.add_argument("--manifest", action="store_true", help="输出运行时证据真值 JSON（只读）")
+    ap.add_argument("--sync-manifest", action="store_true",
+                    help="把 README 当前态证据清单同步为运行时真值（仅开发期显式调用）")
     args = ap.parse_args()
+    if args.manifest:
+        print(json.dumps(evidence_manifest(load()), ensure_ascii=False, sort_keys=True))
+        return 0
+    if args.sync_manifest:
+        return sync_manifest()
     if args.self_test:
         return self_test()
     results = run(load())

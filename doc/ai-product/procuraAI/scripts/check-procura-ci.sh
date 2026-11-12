@@ -7,7 +7,10 @@
 #   - 本脚本保留给本地开发 / 评审前自查，跑 5 判据全集（含注入式负向反证）；
 #     ci.yml 四条 ProcuraAI* (blocking) 覆盖同一全集，check.sh G0 跑 3 判据快反馈子集。
 #   - 三处判据集合与**可执行语义**由门禁 A10.17 守护：解析 blocking step 的 run: 命令，
-#     拦截 continue-on-error / if: 条件跳过 / 注释 run / 子串冒充（任一处删改 → A10 转红）。
+#     拦截 continue-on-error / if: 条件跳过 / 注释 run / 子串冒充，以及 run 正文
+#     shell 层吞错（set +e / exit 0 / || true / ; exit 0 / trap ERR）——任一处删改 → A10 转红。
+#     A10.26 / A10.27 另守 CI 软件供应链基线现状与证据索引（动态真源裁决）。
+#     A10.28 另守当前态证据清单 SSOT；--self-test 末尾打印 [MANIFEST] 机器可读证据。
 #   - 边界仍然诚实：全绿只代表「文档族一致 + 评测集治理骨架未退化」，
 #     不代表采购模块已落地、SLO 已压测、模型效果已达标；评测集 status 仍为 seededDraft。
 set -euo pipefail
