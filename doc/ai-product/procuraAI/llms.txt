@@ -1,0 +1,55 @@
+# procuraAI
+
+> 采购域（SRM/PMS）内 AI 风险 / 合同智能子能力的设计文档族，处于 **Proposal 设计态**：`t_proc_*` 未落库、`bone-procurement-*` 模块未建、模型效果未测评、法务结论未出具。本文件只是导航索引，不是业务真源；AI 编码前的行为约束见 [AGENTS.md](./AGENTS.md)，业务结论一律以第 2 组真源为准。**文档写了 ≠ 已实现**。
+
+## 协作合同与变更史
+
+- [AGENTS.md](./AGENTS.md)：真源读取顺序、门禁命令、禁改清单（写码前先读）
+- [CHANGELOG.md](./CHANGELOG.md)：20 轮执行台账，全部是当时快照，不参与裁决
+- [README.md](./README.md)：索引与当前态证据（gateEvidenceManifest 是当前值唯一真源）
+
+## 治理与真源（冲突时自上而下，命中即止）
+
+- [文档资产登记与真源裁决.md](./文档资产登记与真源裁决.md)：资产四态 / 八级裁决链 / 模块注册表，状态与冲突的最高裁决者
+- [采购领域架构设计方案.md](./采购领域架构设计方案.md)：领域语义（限界上下文 / 聚合 / 状态机 / 事件语义）
+- [采购总体架构方案.md](./采购总体架构方案.md)：技术架构 / 部署 / NFR / 事件 payload / WBS
+- [采购域-BONE框架能力对齐与落地基线.md](./采购域-BONE框架能力对齐与落地基线.md)：平台能力「是否真已实现」的 file:line 源码实证
+- [采购AI-接口契约与数据字典-v2.md](./采购AI-接口契约与数据字典-v2.md)：AI 子能力契约（D3-v2），字段与合规的唯一真源
+- [开发基线与开发就绪清单.md](./开发基线与开发就绪清单.md)：唯一开发基线 + Sprint 0 就绪清单
+
+## 编码唯一输入：契约工件（优先于散文）
+
+- [detailed-design/contracts/openapi.yaml](./detailed-design/contracts/openapi.yaml)：端点 / DTO 契约
+- [detailed-design/00-总纲与统一约定.md](./detailed-design/00-总纲与统一约定.md) 附录 A–F：概念注册表；**附录 B 是事件契约生成源**
+- [detailed-design/contracts/asyncapi.yaml](./detailed-design/contracts/asyncapi.yaml)：派生物，禁止手改，由生成器产出
+- [eval/ai-decision-evalset.json](./eval/ai-decision-evalset.json)：AI 决策评测集（seededDraft）
+
+## LLD 六卷（按模块分卷，镜像被描述对象结构）
+
+- [00-总纲与统一约定.md](./detailed-design/00-总纲与统一约定.md)
+- [01-供应商主数据模块详细设计.md](./detailed-design/01-供应商主数据模块详细设计.md)
+- [02-寻源与准入模块详细设计.md](./detailed-design/02-寻源与准入模块详细设计.md)
+- [03-合同风险绩效与AI模块详细设计.md](./detailed-design/03-合同风险绩效与AI模块详细设计.md)
+- [04-采购交易与成本模块详细设计.md](./detailed-design/04-采购交易与成本模块详细设计.md)
+- [05-履约协同与门户模块详细设计.md](./detailed-design/05-履约协同与门户模块详细设计.md)
+- [06-编排事件与平台接入详细设计.md](./detailed-design/06-编排事件与平台接入详细设计.md)
+
+> 六卷的 §4/§5/§6/§7/§9/§11/§12 各含一段逐字相同的「通用基线声明」（错误码 / 事件注册表 / 分页 / 冻结流程引用）。这是**受控复用**，用于保证只读单卷时也能看到契约唯一真源约束，不是卷间差异；理解一次即可，不要用重复文本推断模块差异。
+
+## 决策与开口项
+
+- [decisions/DECISION-REGISTER.md](./decisions/DECISION-REGISTER.md)：建议 → 决策四态登记与开口项清单（要判断「还有哪些没做」，读这里）
+
+## 专题（Proposal / 派生 / 评审产物，不作编码依据）
+
+- [采购AI原生能力蓝图.md](./采购AI原生能力蓝图.md) · [AI接入判定与AI原生内核补充设计.md](./AI接入判定与AI原生内核补充设计.md) · [法源射程分层与自治边界-ADR.md](./法源射程分层与自治边界-ADR.md)：Proposal
+- [质量属性场景与ATAM.md](./质量属性场景与ATAM.md) · [平台能力共建RFC.md](./平台能力共建RFC.md) · [架构师答辩包.md](./架构师答辩包.md)：评审 / 派生
+- [一期边界与机制触发条件.md](./一期边界与机制触发条件.md) · [跨域契约与外部域依赖.md](./跨域契约与外部域依赖.md)：一期状态与外部依赖
+
+## 历史归档（禁止作为现行设计或编码依据）
+
+顶层 `采购AI-*.md` 中除 `-v2` 外的 8 份 POC 文档及 5 张旧 SVG、DEMO.html 已判历史归档 / 受限引用，正文带状态 banner。其中「每客户私有化部署 / 独立库 / 不套 DDD / ADR-06 低风险自动归档」等结论**已撤销**，仅在带撤销标注的语境中保留。
+
+## 门禁
+
+主门禁 `tools/check_procura_alignment.py`（A1–A10）、`--self-test`、`--manifest`、AsyncAPI 生成器 `--check`、评测集双判据、本地一键 `scripts/check-procura-ci.sh`；补充判据 `scripts/check_procura_frontmatter.py`（**未纳入 CI 三入口判据集合**，见 AGENTS.md）。CI blocking 结果以 `.github/workflows/ci.yml` 四条 `ProcuraAI*` 步骤为准；**CI 绿 ≠ 可上线**。

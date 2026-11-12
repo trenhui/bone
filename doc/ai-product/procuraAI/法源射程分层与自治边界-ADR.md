@@ -1,3 +1,12 @@
+---
+status: Active
+layer: decision
+maturity: Proposal
+kind: adr
+truth-for: 法源射程两档治理 / 六条红线（待法务结论）
+updated-on: 2026-11-12
+---
+
 # ADR：法源射程分层与自治边界（2026-11-11）
 
 > **版本**：v0.3　**状态**：真源（**Proposal 设计态**，待法务出具主体适用性与场景射程结论后方可转为生效）

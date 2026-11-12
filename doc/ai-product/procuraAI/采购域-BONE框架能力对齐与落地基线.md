@@ -1,3 +1,12 @@
+---
+status: Active
+layer: architecture
+maturity: Frozen-v0.3
+kind: evidence
+truth-for: BONE 能力三态实证与落地约束（file:line）
+updated-on: 2026-11-12
+---
+
 # 采购域 · BONE 框架能力对齐与落地基线
 
 > **版本**：v0.3（2026-11-09；v0.1 为初版，正文 v0.3 修订记录与 SVG 版本戳此前已先行，本轮统一）

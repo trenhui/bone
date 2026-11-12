@@ -1,3 +1,11 @@
+---
+status: Active
+layer: delivery
+kind: rfc
+truth-for: 统一待办聚合 schema / 接入规范 / 跨域复用证据
+updated-on: 2026-11-12
+---
+
 # 平台能力共建 RFC：统一待办聚合与跨域接入契约
 
 > **RFC 编号**：PLAT-RFC-001　|　**版本**：v0.3（2026-11-09）　|　**状态**：**Proposed（待平台组评审）**

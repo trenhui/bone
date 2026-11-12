@@ -1,3 +1,10 @@
+---
+status: Active
+layer: delivery
+truth-for: 效用树 / 质量属性场景 / 敏感点与权衡点
+updated-on: 2026-11-12
+---
+
 # 质量属性场景与 ATAM 评估（Utility Tree & Tradeoffs）
 
 > **版本**：v0.3（2026-11-09）　|　**状态**：**Proposal（评估草案，利益相关者排序待评审会确认）**
