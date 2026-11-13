@@ -1,0 +1,1326 @@
+# comet-execution: managed-run
+change_id: 00b605f4-1b87-415e-865f-a9c260e07df8
+workflow: full
+language: zh-CN
+phase: build
+context_compression: off
+build_mode: null
+build_pause: null
+subagent_dispatch: null
+tdd_mode: null
+review_mode: off
+isolation: worktree
+verify_mode: null
+auto_transition: true
+base_ref: 6f0ea427fdee36fad49994bf7854bf075e6a9a28
+design_doc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+plan: null
+verify_result: pending
+verify_failures: 0
+verification_report: null
+branch_status: pending
+created_at: 2026-11-13
+verified_at: null
+archive_confirmation: null
+archived: false
+bound_branch: comet/synapclaim-inspection-handoff-timeout
+direct_override: null
+handoff_context: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+handoff_hash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v1
+  hash: f33296f7da2b54c0a5785dfde0edadc6f826164709302609cdf857a34251e62b
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: synapclaim-inspection-handoff-timeout
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: 8c7f133989444a19b2e8e1af3a5671f279c8af507774fc5dac0a9f399c8eed2b
+    input:
+      change: synapclaim-inspection-handoff-timeout
+      changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+      workspaceBaseline:
+        ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+    state:
+      archiveConfirmation: null
+      archived: false
+      autoTransition: true
+      baseRef: 6f0ea427fdee36fad49994bf7854bf075e6a9a28
+      boundBranch: comet/synapclaim-inspection-handoff-timeout
+      branchStatus: pending
+      buildMode: null
+      buildPause: null
+      checkEpoch: 2
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-13
+      designDoc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+      directOverride: null
+      handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+      handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+      isolation: worktree
+      language: zh-CN
+      phase: build
+      plan: null
+      reviewMode: off
+      subagentDispatch: null
+      tddMode: null
+      verificationReport: null
+      verifiedAt: null
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pending
+      workflow: full
+    status: running
+    sequence: 9
+    actions:
+      - attempt: 3
+        claim:
+          executorId: comet-classic-guard
+          token: portable-5ff7b425bcd2dbd56e151335b12979349b81dcb045a1a7fbe15538dc377877b2
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-inspection-handoff-timeout:1
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs: {}
+        inputHash: c8a2ebc421c641c6379995d77efb47d2030b6490c3545d1d0f6dbca761e20b48
+        outcome:
+          actionId: synapclaim-inspection-handoff-timeout:1
+          attempt: 3
+          claimToken: portable-5ff7b425bcd2dbd56e151335b12979349b81dcb045a1a7fbe15538dc377877b2
+          inputHash: c8a2ebc421c641c6379995d77efb47d2030b6490c3545d1d0f6dbca761e20b48
+          outcomeId: 799ff4c0-5696-43e4-b2ad-31b198cc6dd0
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: bf9dd2344178874a32fa1687ae02bf0d26fc5eebb74a2e8087a0ca8b66908878
+            outcomeId: 799ff4c0-5696-43e4-b2ad-31b198cc6dd0
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 取证：inspect 显示 synapclaim-inspection-handoff-timeout:1 attempt=1
+                status=running 且无 receipts/outcome；recovery.evidence.directory
+                映射到全局 Runtime 后不存在（exists=False）；guard --apply 被
+                CLASSIC_COMMAND_FAILED『has a running Action』阻断，未运行任何检查；guard
+                --json 的 checks 为静态产物预检。故核实该 attempt 原检查完全未执行，按 not-executed
+                重试（revision=3），由 guard 真实重跑 revalidate。
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: 取证：inspect 显示 synapclaim-inspection-handoff-timeout:1 attempt=2
+                status=running 且无 receipts/outcome；recovery.evidence.directory
+                映射到全局 Runtime 后不存在（exists=False）；guard --apply 被
+                CLASSIC_COMMAND_FAILED『has a running Action』阻断，未运行任何检查；guard
+                --json 的 checks 为静态产物预检。故核实该 attempt 原检查完全未执行，按 not-executed
+                重试（revision=6），由 guard 真实重跑 revalidate。
+            resolution: not-executed
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-36621ad77af4c224d60e6df849837c6f4f7c2338aa6c370acc6fb78efef034d1
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-inspection-handoff-timeout:4
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+                    ref: openspec/changes/synapclaim-inspection-handoff-timeout
+            full.open.evidence:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+        inputHash: 4e39f795ddd11532d3b0032ed058905bfb5b2ea73c83fd8208ee75978202de7a
+        outcome:
+          actionId: synapclaim-inspection-handoff-timeout:4
+          attempt: 2
+          claimToken: portable-36621ad77af4c224d60e6df849837c6f4f7c2338aa6c370acc6fb78efef034d1
+          inputHash: 4e39f795ddd11532d3b0032ed058905bfb5b2ea73c83fd8208ee75978202de7a
+          outcomeId: synapclaim-inspection-handoff-timeout:4:2:executor-result
+          output:
+            contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 02e3ab9b0b5664a081ec653a1f34231bd5dd492335947a6d17365b72e6c807f2
+            outcomeId: synapclaim-inspection-handoff-timeout:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 取证：inspect(revision=12) 显示 synapclaim-inspection-handoff-timeout:4
+                status=running、receipts=0、outcome=null；recovery.record.status=missing，evidence
+                目录
+                .comet/runtime/classic-sdk-checks/befbedc82cf847fef19f54644bf5c1d702a003813d1472d08deb92d26a0db8ed
+                在全局 Runtime 中不存在；该步骤为 Open
+                产物静态预检/revalidate，不含外部副作用，原尝试未产生任何检查收据。据此核实原尝试完全未执行。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-b8628dc11d0324319a6c52272584a8e7ea887e0e9b046976d2821c843175439e
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-inspection-handoff-timeout:5
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+                    ref: openspec/changes/synapclaim-inspection-handoff-timeout
+            full.open.evidence:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+            full.open.revalidate:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+        inputHash: 88db63680ddd31e98ccd692b2f5ba2b679372cd8810ed8eb34126ec5020cb572
+        outcome:
+          actionId: synapclaim-inspection-handoff-timeout:5
+          attempt: 2
+          claimToken: portable-b8628dc11d0324319a6c52272584a8e7ea887e0e9b046976d2821c843175439e
+          inputHash: 88db63680ddd31e98ccd692b2f5ba2b679372cd8810ed8eb34126ec5020cb572
+          outcomeId: 81f6045c-5bf1-48d2-9208-f83f97442780
+          output:
+            handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+            handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+            proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+              t_claim_task_transfer / t_claim_user_agent 三张 append-only
+              事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+              UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+              index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+              拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+              available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+              REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+              不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+              乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+              t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+              finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+              打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+              分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+              UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言 +
+              乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；② 实体
+              @Column 与 information_schema 逐列求差、末尾强断言 + SIGNAL（MESSAGE_TEXT ≤128
+              字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤
+              门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律 string；⑦
+              不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+              终态断言、启动期无
+              TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+              / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+              Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+              §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+            requirementsEvidence:
+              contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+            sourceEvidence:
+              contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 0c9eaa0e1d9170fd73d015203bc718a76e2be82bf33a6db3ccd563973095e038
+            outcomeId: 81f6045c-5bf1-48d2-9208-f83f97442780
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 取证：inspect(revision=17) 显示
+                synapclaim-inspection-handoff-timeout:5(full.design.handoff)
+                status=running、receipts=0、outcome=null；Run outputs 无任何 design
+                相关项，configuration.handoffContext=null，未生成 Design
+                Wait；recovery.record.status=missing，evidence 目录
+                classic-sdk-checks/befbedc82cf847fef19f54644bf5c1d702a003813d1472d08deb92d26a0db8ed
+                在全局 Runtime 中不存在；本次 comet state propose-design 连续因 Timed out
+                waiting for file lock 返回 exitCode=70，随后因 claimed Action unknown
+                被拒；官方 diagnoseRecoverableFileLock 取证三批主锁均为 status=stale、持有 PID
+                已退出、无 coordinator blocker。state check 另报 Design requirements
+                changed after the proposal，恢复后按官方 revise-design
+                重新对齐设计输入再重提，不把该提示当作已执行证据。据此核实该 claim 对应的原尝试完全未执行，未产生任何效果或收据。
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 3
+        claim:
+          executorId: comet-classic-state
+          token: portable-78cb914b92529900323080cda9b5bff2c09c84b88dbbf3c54cb51d0fd3b63b76
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-inspection-handoff-timeout:7
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs:
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+                    handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+                    proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                      t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                      事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                      UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                      index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实
+                      MUST 拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                      available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                      REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                      不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                      乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value
+                      迁入 t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL
+                      文档一致性门禁用 finditer + 计数对账并先跑全仓正向审计，避免 package-info.java
+                      类假红。【比较】方案 B 打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案
+                      C 代理用应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                      UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                      + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql
+                      同批、已发迁移含注释不回改；② 实体 @Column 与 information_schema 逐列求差、末尾强断言
+                      + SIGNAL（MESSAGE_TEXT ≤128 字符）；③ 新增仓储方法同批 SQL
+                      模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤ 门禁误报比漏报更致命 → 正向审计
+                      + 互补变异；⑥ 前端 ID 一律 string；⑦
+                      不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                      终态断言、启动期无
+                      TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                      / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
+                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                      Build；本阶段只出设计文档，不写实现代码。
+                    requirementsEvidence:
+                      contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                      ref: openspec/changes/synapclaim-inspection-handoff-timeout
+                    sourceEvidence:
+                      contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                      ref: openspec/changes/synapclaim-inspection-handoff-timeout
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+              handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+              proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+                拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+                t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+                finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+                打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+                分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；②
+                实体 @Column 与 information_schema 逐列求差、末尾强断言 + SIGNAL（MESSAGE_TEXT
+                ≤128 字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤
+                门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律 string；⑦
+                不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                终态断言、启动期无
+                TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+              sourceEvidence:
+                contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+                    ref: openspec/changes/synapclaim-inspection-handoff-timeout
+            full.open.evidence:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+            full.open.revalidate:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+        inputHash: a282d2d05cf155192a312f57b218ed61c7cfffff22da981ac2795fd51e7dfa6b
+        outcome:
+          actionId: synapclaim-inspection-handoff-timeout:7
+          attempt: 3
+          claimToken: portable-78cb914b92529900323080cda9b5bff2c09c84b88dbbf3c54cb51d0fd3b63b76
+          inputHash: a282d2d05cf155192a312f57b218ed61c7cfffff22da981ac2795fd51e7dfa6b
+          outcomeId: dbc45c04-840e-4efe-8da1-a36f2ff683f6
+          output:
+            designDoc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 69136721b5273b1b84a769600a2a584385504b272b6390d2d7b49ce59fae8c79
+            outcomeId: dbc45c04-840e-4efe-8da1-a36f2ff683f6
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 取证：inspect(revision=23) 显示 :7 full.design.document
+                status=running、receipts=0、outcome=null；Run outputs 无
+                full.design.document/evidence；recovery.record.status=missing，evidence
+                目录在全局 Runtime 中不存在；本次 complete-design 因 Timed out waiting for
+                file lock 返回 exitCode=70 未生成任何文档收据。官方
+                diagnoseRecoverableFileLock 取证主锁为 stale、持有 PID 已退出、无
+                blocker。据此核实原尝试完全未执行。
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: 取证：inspect(revision=26) 显示 :7 full.design.document
+                status=running、receipts=0、outcome=null；Run outputs 无
+                full.design.document/evidence；recovery.record.status=missing，evidence
+                目录在全局 Runtime 中不存在；本次 complete-design 因 Timed out waiting for
+                file lock 返回 exitCode=70 未生成任何文档收据。官方
+                diagnoseRecoverableFileLock 取证主锁为 stale、持有 PID 已退出、无
+                blocker。据此核实原尝试完全未执行。
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        id: synapclaim-inspection-handoff-timeout:9
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs:
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+                    handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+                    proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                      t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                      事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                      UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                      index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实
+                      MUST 拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                      available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                      REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                      不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                      乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value
+                      迁入 t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL
+                      文档一致性门禁用 finditer + 计数对账并先跑全仓正向审计，避免 package-info.java
+                      类假红。【比较】方案 B 打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案
+                      C 代理用应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                      UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                      + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql
+                      同批、已发迁移含注释不回改；② 实体 @Column 与 information_schema 逐列求差、末尾强断言
+                      + SIGNAL（MESSAGE_TEXT ≤128 字符）；③ 新增仓储方法同批 SQL
+                      模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤ 门禁误报比漏报更致命 → 正向审计
+                      + 互补变异；⑥ 前端 ID 一律 string；⑦
+                      不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                      终态断言、启动期无
+                      TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                      / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
+                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                      Build；本阶段只出设计文档，不写实现代码。
+                    requirementsEvidence:
+                      contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                      ref: openspec/changes/synapclaim-inspection-handoff-timeout
+                    sourceEvidence:
+                      contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                      ref: openspec/changes/synapclaim-inspection-handoff-timeout
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+            full.design.evidence:
+              contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+              handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+              proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+                拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+                t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+                finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+                打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+                分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；②
+                实体 @Column 与 information_schema 逐列求差、末尾强断言 + SIGNAL（MESSAGE_TEXT
+                ≤128 字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤
+                门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律 string；⑦
+                不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                终态断言、启动期无
+                TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+              sourceEvidence:
+                contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+                    ref: openspec/changes/synapclaim-inspection-handoff-timeout
+            full.open.evidence:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+            full.open.revalidate:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+        inputHash: f2862ac852fc6d7fc514992f4b5d0e7242feb7737ca81f02ea320ab71a2c9a02
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: pending
+        stepId: full.build.configure
+        type: invoke_skill
+    actionContexts:
+      synapclaim-inspection-handoff-timeout:1:
+        results: {}
+        sequence: 1
+      synapclaim-inspection-handoff-timeout:4:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+                    ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+        sequence: 4
+      synapclaim-inspection-handoff-timeout:5:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+                    ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+        sequence: 5
+      synapclaim-inspection-handoff-timeout:7:
+        results:
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+                    handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+                    proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                      t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                      事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                      UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                      index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实
+                      MUST 拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                      available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                      REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                      不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                      乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value
+                      迁入 t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL
+                      文档一致性门禁用 finditer + 计数对账并先跑全仓正向审计，避免 package-info.java
+                      类假红。【比较】方案 B 打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案
+                      C 代理用应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                      UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                      + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql
+                      同批、已发迁移含注释不回改；② 实体 @Column 与 information_schema 逐列求差、末尾强断言
+                      + SIGNAL（MESSAGE_TEXT ≤128 字符）；③ 新增仓储方法同批 SQL
+                      模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤ 门禁误报比漏报更致命 → 正向审计
+                      + 互补变异；⑥ 前端 ID 一律 string；⑦
+                      不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                      终态断言、启动期无
+                      TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                      / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
+                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                      Build；本阶段只出设计文档，不写实现代码。
+                    requirementsEvidence:
+                      contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                      ref: openspec/changes/synapclaim-inspection-handoff-timeout
+                    sourceEvidence:
+                      contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                      ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+              handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+              proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+                拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+                t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+                finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+                打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+                分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；②
+                实体 @Column 与 information_schema 逐列求差、末尾强断言 + SIGNAL（MESSAGE_TEXT
+                ≤128 字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤
+                门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律 string；⑦
+                不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                终态断言、启动期无
+                TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+              sourceEvidence:
+                contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+                    ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+        sequence: 7
+      synapclaim-inspection-handoff-timeout:9:
+        results:
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+                    handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+                    proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                      t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                      事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                      UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                      index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实
+                      MUST 拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                      available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                      REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                      不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                      乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value
+                      迁入 t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL
+                      文档一致性门禁用 finditer + 计数对账并先跑全仓正向审计，避免 package-info.java
+                      类假红。【比较】方案 B 打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案
+                      C 代理用应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                      UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                      + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql
+                      同批、已发迁移含注释不回改；② 实体 @Column 与 information_schema 逐列求差、末尾强断言
+                      + SIGNAL（MESSAGE_TEXT ≤128 字符）；③ 新增仓储方法同批 SQL
+                      模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤ 门禁误报比漏报更致命 → 正向审计
+                      + 互补变异；⑥ 前端 ID 一律 string；⑦
+                      不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                      终态断言、启动期无
+                      TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                      / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
+                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                      Build；本阶段只出设计文档，不写实现代码。
+                    requirementsEvidence:
+                      contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                      ref: openspec/changes/synapclaim-inspection-handoff-timeout
+                    sourceEvidence:
+                      contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                      ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+              handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+              proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+                拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+                t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+                finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+                打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+                分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；②
+                实体 @Column 与 information_schema 逐列求差、末尾强断言 + SIGNAL（MESSAGE_TEXT
+                ≤128 字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤
+                门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律 string；⑦
+                不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                终态断言、启动期无
+                TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+              sourceEvidence:
+                contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+                    ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+        sequence: 9
+    waits:
+      - id: synapclaim-inspection-handoff-timeout:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+        proposalHash: dcdda6d9d1a1d5356eafd2d67cbde9ba4d8d60621b082ad334e14a0c979071a5
+        choices:
+          - approved
+          - rejected
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+        decision:
+          id: classic-open-287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+          choice: approved
+          proposalHash: dcdda6d9d1a1d5356eafd2d67cbde9ba4d8d60621b082ad334e14a0c979071a5
+      - id: synapclaim-inspection-handoff-timeout:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+              handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+              proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+                拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+                t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+                finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+                打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+                分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；②
+                实体 @Column 与 information_schema 逐列求差、末尾强断言 + SIGNAL（MESSAGE_TEXT
+                ≤128 字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤
+                门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律 string；⑦
+                不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                终态断言、启动期无
+                TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+              sourceEvidence:
+                contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+        proposalHash: 67c84ab6564473079a8bec0fb16cf26f9caff14dc9ee72ad1f9bdc7b4a191630
+        choices:
+          - approved
+          - rejected
+        results:
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+              handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+              proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+                拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+                t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+                finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+                打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+                分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；②
+                实体 @Column 与 information_schema 逐列求差、末尾强断言 + SIGNAL（MESSAGE_TEXT
+                ≤128 字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤
+                门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律 string；⑦
+                不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                终态断言、启动期无
+                TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+              sourceEvidence:
+                contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+                    ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+        decision:
+          id: classic-design-67c84ab6564473079a8bec0fb16cf26f9caff14dc9ee72ad1f9bdc7b4a191630-approved
+          choice: approved
+          proposalHash: 67c84ab6564473079a8bec0fb16cf26f9caff14dc9ee72ad1f9bdc7b4a191630
+    evidenceWaits:
+      - id: synapclaim-inspection-handoff-timeout:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+        receipt:
+          ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+          submissionId: f79c7892-00aa-4b39-b175-2b7508b0da63
+      - id: synapclaim-inspection-handoff-timeout:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results:
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+                    handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+                    proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                      t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                      事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                      UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                      index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实
+                      MUST 拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                      available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                      REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                      不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                      乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value
+                      迁入 t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL
+                      文档一致性门禁用 finditer + 计数对账并先跑全仓正向审计，避免 package-info.java
+                      类假红。【比较】方案 B 打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案
+                      C 代理用应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                      UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                      + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql
+                      同批、已发迁移含注释不回改；② 实体 @Column 与 information_schema 逐列求差、末尾强断言
+                      + SIGNAL（MESSAGE_TEXT ≤128 字符）；③ 新增仓储方法同批 SQL
+                      模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤ 门禁误报比漏报更致命 → 正向审计
+                      + 互补变异；⑥ 前端 ID 一律 string；⑦
+                      不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                      终态断言、启动期无
+                      TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                      / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
+                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                      Build；本阶段只出设计文档，不写实现代码。
+                    requirementsEvidence:
+                      contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                      ref: openspec/changes/synapclaim-inspection-handoff-timeout
+                    sourceEvidence:
+                      contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                      ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+              handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+              proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+                拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+                t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+                finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+                打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+                分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；②
+                实体 @Column 与 information_schema 逐列求差、末尾强断言 + SIGNAL（MESSAGE_TEXT
+                ≤128 字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤
+                门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律 string；⑦
+                不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                终态断言、启动期无
+                TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+              sourceEvidence:
+                contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-inspection-handoff-timeout
+                  changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+                  workspaceBaseline:
+                    ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+                    ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+        receipt:
+          ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+          contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
+          submissionId: 70319c6c-02bc-4722-b80f-0f479f546de2
+    ready: []
+    joins: {}
+    outputs:
+      full.design.confirm:
+        sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-inspection-handoff-timeout
+              changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+              workspaceBaseline:
+                ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+                handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+                proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                  t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                  事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                  UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                  index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+                  拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                  available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                  REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                  不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                  乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+                  t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+                  finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+                  打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+                  分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                  UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                  + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；②
+                  实体 @Column 与 information_schema 逐列求差、末尾强断言 +
+                  SIGNAL（MESSAGE_TEXT ≤128 字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT
+                  列对齐、含租户锚点；④ 新错误码四处齐；⑤ 门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律
+                  string；⑦
+                  不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                  终态断言、启动期无
+                  TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                  / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                  Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+                  §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+                requirementsEvidence:
+                  contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                  ref: openspec/changes/synapclaim-inspection-handoff-timeout
+                sourceEvidence:
+                  contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                  ref: openspec/changes/synapclaim-inspection-handoff-timeout
+      full.design.document:
+        sequence: 7
+        value:
+          designDoc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+      full.design.evidence:
+        sequence: 8
+        value:
+          contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
+          ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+      full.design.handoff:
+        sequence: 5
+        value:
+          handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+          handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+          proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+            t_claim_task_transfer / t_claim_user_agent 三张 append-only
+            事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+            UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+            index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+            拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+            available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+            REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+            不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+            乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+            t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+            finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+            打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+            分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+            UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言 +
+            乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；② 实体
+            @Column 与 information_schema 逐列求差、末尾强断言 + SIGNAL（MESSAGE_TEXT ≤128
+            字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤
+            门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律 string；⑦
+            不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+            终态断言、启动期无
+            TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+            / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+            Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+            §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+          requirementsEvidence:
+            contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+            ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          sourceEvidence:
+            contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+            ref: openspec/changes/synapclaim-inspection-handoff-timeout
+      full.open:
+        sequence: 1
+        value:
+          event: open-complete
+      full.open.confirm:
+        sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-inspection-handoff-timeout
+              changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+              workspaceBaseline:
+                ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+      full.open.evidence:
+        sequence: 2
+        value:
+          contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+          ref: openspec/changes/synapclaim-inspection-handoff-timeout
+      full.open.revalidate:
+        sequence: 4
+        value:
+          contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+    children: []
+    lineage: []
+  sourceRevision: 31
+  sourceHash: fc65f2a5f94fd5d562fbb834cbb3a6ca222be0bfb904afdad20051d2db5f7928
+check_epoch: 2
