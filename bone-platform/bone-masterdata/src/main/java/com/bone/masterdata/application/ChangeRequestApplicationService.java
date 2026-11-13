@@ -220,7 +220,7 @@ public class ChangeRequestApplicationService {
         .segments(segments)
         .distinctApprovers(cr.approvers().size())
         .appliedBy(cr.getAppliedBy())
-        .trailSize(cr.getTrail().size())
+        .trailCount(cr.getTrail().size())
         .activated(cr.getStatus() == Status.APPLIED)
         .build();
   }

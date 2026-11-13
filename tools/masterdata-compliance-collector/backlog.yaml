@@ -21,7 +21,7 @@ items:
     tier: P0-Target
     title: 黄金记录合并与匹配（survivorship / 误合并回滚）
     reference: 3a 详设 §11.3 / 终局裁决 2-A1
-    tracking: partial — 领域内核（17 例纯单测）+ GoldenRecordOrchestrationService + GoldenRecordController + HTTP 联调 24 例已落地；mdm_golden_record 与 mdm_merge_audit 建表、JDBC adapter、消费侧接入未交付
+    tracking: partial — 领域内核（17 例纯单测）+ GoldenRecordApplicationService + GoldenRecordController + HTTP 联调 24 例已落地；mdm_golden_record 与 mdm_merge_audit 建表、JDBC adapter、消费侧接入未交付
 
   - id: entity-resolution-xref
     tier: P0-Target

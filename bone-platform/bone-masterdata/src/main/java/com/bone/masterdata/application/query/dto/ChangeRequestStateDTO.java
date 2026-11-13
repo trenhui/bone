@@ -16,7 +16,7 @@ public class ChangeRequestStateDTO {
   private Map<String, SegmentState> segments;
   private int distinctApprovers;
   private String appliedBy;
-  private int trailSize;
+  private int trailCount;
   private boolean activated;
 
   @Data

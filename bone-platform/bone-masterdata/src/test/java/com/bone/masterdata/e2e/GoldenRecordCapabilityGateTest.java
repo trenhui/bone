@@ -3,7 +3,7 @@ package com.bone.masterdata.e2e;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.bone.masterdata.adapter.web.controller.GoldenRecordController;
-import com.bone.masterdata.application.GoldenRecordOrchestrationService;
+import com.bone.masterdata.application.GoldenRecordApplicationService;
 import com.bone.masterdata.testsupport.MetadataSdkIntegrationTestConfiguration;
 import com.bone.masterdata.testsupport.goldenrecord.GoldenRecordHttpTestConfiguration;
 import org.junit.jupiter.api.DisplayName;
@@ -30,7 +30,7 @@ class GoldenRecordCapabilityGateTest {
   @Test
   @DisplayName("开关关闭时编排服务与 Controller 均不装配")
   void disabledCapabilityShouldNotExposeBeans() {
-    assertThat(context.getBeanNamesForType(GoldenRecordOrchestrationService.class)).isEmpty();
+    assertThat(context.getBeanNamesForType(GoldenRecordApplicationService.class)).isEmpty();
     assertThat(context.getBeanNamesForType(GoldenRecordController.class)).isEmpty();
   }
 }

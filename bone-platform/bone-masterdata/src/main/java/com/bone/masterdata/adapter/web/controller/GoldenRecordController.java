@@ -2,7 +2,7 @@ package com.bone.masterdata.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
-import com.bone.masterdata.application.GoldenRecordOrchestrationService;
+import com.bone.masterdata.application.GoldenRecordApplicationService;
 import com.bone.masterdata.application.command.ResolveAndMergeCommand;
 import com.bone.masterdata.application.command.RollbackMergeCommand;
 import com.bone.masterdata.application.query.dto.GoldenRecordMergeResultDTO;
@@ -35,9 +35,9 @@ import org.springframework.web.bind.annotation.RestController;
     havingValue = "true")
 public class GoldenRecordController {
 
-  private final GoldenRecordOrchestrationService orchestration;
+  private final GoldenRecordApplicationService orchestration;
 
-  public GoldenRecordController(GoldenRecordOrchestrationService orchestration) {
+  public GoldenRecordController(GoldenRecordApplicationService orchestration) {
     this.orchestration = orchestration;
   }
 

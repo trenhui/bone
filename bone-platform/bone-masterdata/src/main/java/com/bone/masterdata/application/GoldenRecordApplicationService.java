@@ -66,7 +66,7 @@ import org.springframework.transaction.annotation.Transactional;
     prefix = "bone.masterdata.golden-record",
     name = "enabled",
     havingValue = "true")
-public class GoldenRecordOrchestrationService {
+public class GoldenRecordApplicationService {
 
   static final String EVENT_MERGED = "GOLDEN_RECORD_MERGED";
   static final String EVENT_ROLLED_BACK = "GOLDEN_RECORD_ROLLED_BACK";
@@ -82,7 +82,7 @@ public class GoldenRecordOrchestrationService {
 
   private static final String HMAC_ALGORITHM = "HmacSHA256";
 
-  public GoldenRecordOrchestrationService(
+  public GoldenRecordApplicationService(
       GoldenRecordPort goldenRecordPort,
       EntityKeyMappingPort keyMappingPort,
       MasterDataOutboxPort outboxPort,

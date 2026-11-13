@@ -43,7 +43,7 @@ class GoldenRecordOrchestrationIntegrationTest {
   private InMemoryEntityKeyMappingAdapter xref;
   private InMemoryMasterDataOutboxAdapter outbox;
   private TestCurrentUserPort currentUser;
-  private GoldenRecordOrchestrationService service;
+  private GoldenRecordApplicationService service;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
@@ -55,8 +55,8 @@ class GoldenRecordOrchestrationIntegrationTest {
     service = newService(PEPPER);
   }
 
-  private GoldenRecordOrchestrationService newService(String pepper) {
-    return new GoldenRecordOrchestrationService(golden, xref, outbox, currentUser, pepper);
+  private GoldenRecordApplicationService newService(String pepper) {
+    return new GoldenRecordApplicationService(golden, xref, outbox, currentUser, pepper);
   }
 
   // ---------------------------------------------------------------- 正常链路
@@ -330,7 +330,7 @@ class GoldenRecordOrchestrationIntegrationTest {
     golden.reset();
     xref.reset();
     outbox.reset();
-    GoldenRecordOrchestrationService other = newService("another-platform-pepper-2026-11-13");
+    GoldenRecordApplicationService other = newService("another-platform-pepper-2026-11-13");
     String h2 =
         other.resolveAndMerge(cmd("M1", "P-1", "L-1", values1(), values2())).getPayloadHash();
 

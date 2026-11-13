@@ -60,7 +60,7 @@ CAPABILITY_PROBES = {
     "golden-record-merge": {
         "presence": r"GoldenRecord|Survivorship|MergeAudit|GoldenRecordMerger",
         "completion": r"GoldenRecordMergeApplicationService",
-        "orchestration": r"GoldenRecordOrchestrationService|GoldenRecordController|GoldenRecordPort",
+        "orchestration": r"GoldenRecordApplicationService|GoldenRecordController|GoldenRecordPort",
         "ddl": ["mdm_golden_record", "mdm_merge_audit"],
         "scope": "all",
     },
@@ -82,7 +82,7 @@ CAPABILITY_PROBES = {
     "field-level-lineage": {
         "presence": r"FieldLineage|FieldProvenance|sourceRecordId.*ruleId",
         "completion": r"FieldLineageRepository|FieldLineageApplicationService",
-        "orchestration": r"FieldProvenance|GoldenRecordOrchestrationService",
+        "orchestration": r"FieldProvenance|GoldenRecordApplicationService",
         "ddl": ["mdm_field_lineage"],
         "scope": "all",
     },
