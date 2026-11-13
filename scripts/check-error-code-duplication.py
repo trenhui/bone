@@ -51,6 +51,10 @@ def scan() -> dict[str, list[str]]:
     """返回 {码值: ["模块#常量名", ...]}，含真源自身。"""
     by_value: dict[str, list[str]] = defaultdict(list)
     for path in sorted(ROOT.rglob("*ErrorCodes.java")):
+        # 跳过 git worktree 工作目录（.worktrees/），它不在主仓库工作区内，
+        # 文件系统扫描不应把它当成待审源码。CI 无 worktree，此排除为 no-op。
+        if ".worktrees" in path.parts:
+            continue
         rel = path.relative_to(ROOT).as_posix()
         if "/target/" in rel:
             continue

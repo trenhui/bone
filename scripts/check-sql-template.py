@@ -53,6 +53,9 @@ def templates() -> list[Path]:
     """运行时 SQL 模板：*/src/main/resources/sql/**/*.sql，排除片段目录。"""
     out: list[Path] = []
     for p in REPO.rglob("*.sql"):
+        # 跳过 git 工作树目录（.worktrees/），CI 无 worktree，此排除为 no-op。
+        if ".worktrees" in p.parts:
+            continue
         s = p.as_posix()
         if "/target/" in s or "/src/main/resources/" not in s:
             continue

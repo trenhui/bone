@@ -25,7 +25,9 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 LEDGER = REPO / "doc/architecture/freeze-ledger.yaml"
-ARCHUNIT_STORE_DIRS = sorted(REPO.glob("**/archunit_store"))
+# 跳过 git worktree 工作目录（.worktrees/），它不在主仓库工作区内，文件系统扫描
+# 不应把它当成待审源码。CI 无 worktree，此排除为 no-op。
+ARCHUNIT_STORE_DIRS = sorted(p for p in REPO.glob("**/archunit_store") if ".worktrees" not in p.parts)
 
 try:  # PyYAML 是脚本门禁的软依赖：缺失时退化为逐行结构检查
     import yaml  # type: ignore

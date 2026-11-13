@@ -46,7 +46,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-SKIP = {"target", "node_modules", "dist", "build", ".git", "generated-code"}
+SKIP = {"target", "node_modules", "dist", "build", ".git", "generated-code", ".worktrees"}
 
 LOCALE_DIR = "bone-frontend/packages/shared-utils/src/i18n/locales"
 LEDGER = "doc/architecture/Bone-错误码登记.md"

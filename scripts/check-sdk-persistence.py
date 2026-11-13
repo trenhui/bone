@@ -54,6 +54,10 @@ IMPORT_RE = re.compile(
 def hits() -> list[str]:
     found: list[str] = []
     for path in REPO.glob("**/src/main/java/**/*.java"):
+        # 跳过 git worktree 工作目录（.worktrees/），它不在主仓库工作区内，
+        # 文件系统扫描不应把它当成待审源码。CI 无 worktree，此排除为 no-op。
+        if ".worktrees" in path.parts:
+            continue
         rel = path.relative_to(REPO).as_posix()
         if rel.startswith(ALLOW_PREFIXES) or rel.startswith(DOC_SAMPLE_PREFIX):
             continue
