@@ -87,7 +87,7 @@ public class GoldenRecordApplicationService {
       EntityKeyMappingPort keyMappingPort,
       MasterDataOutboxPort outboxPort,
       CurrentUserPort currentUserPort,
-      @Value("${bone.masterdata.golden-record.digest-pepper}") String digestPepper) {
+      @Value("${masterdata.golden-record.digest-pepper}") String digestPepper) {
     if (isBlank(digestPepper) || digestPepper.length() < 16) {
       throw new DomainException("Golden Record 摘要密钥缺失或过短，禁止产出可反推的事件摘要");
     }

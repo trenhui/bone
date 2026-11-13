@@ -31,7 +31,7 @@ classic_profile: null
 classic_migration: null
 run_checkpoint:
   schema: comet.workflow-run-checkpoint.v1
-  hash: feb040b29a14ed3c499238f4ce88573a7f0a7da641f54eda6bcb0c1c0c38d7ef
+  hash: adce07d51a02707583e9c4099d7e8afa80ad031caeffbf92da4f3ae49ae139a0
   run:
     protocolVersion: 1
     schemaVersion: 1
@@ -121,15 +121,7 @@ run_checkpoint:
         status: succeeded
         stepId: full.open
         type: invoke_skill
-      - attempt: 1
-        claim:
-          executorId: comet-classic-open-revalidate
-          token: portable-b946791b2837f551926019999a6d71d34aa1b3fe6f5ca988c1e5a0891684b122
-        executionOrigin:
-          workflow:
-            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
-            id: comet-classic-full
-            version: "1"
+      - attempt: 2
         id: procuraai-ai-first-landing:4
         input:
           input:
@@ -159,14 +151,19 @@ run_checkpoint:
               ref: openspec/changes/procuraai-ai-first-landing
         inputHash: 83948b65541644e2a1bcf80409732ab600b44292fc6de3acb45066e75ed20179
         protocolVersion: 1
-        reason: Portable recovery requires reconciliation of external execution
         receipts: []
-        reconciliations: []
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 原 full.open.revalidate 自动动作由上一会话（上下文溢出/网络中断）派发后未执行完成即终止，outcome 不明。已按
+                recovery 协议 mark-unknown（revision 6→7），现声明该尝试 not-executed
+                并重新派发，重新核对 open 阶段产物一致性。
+            resolution: not-executed
         ref: classic-open-revalidate
         requiredCapabilities: []
         retry: manual
         runId: procuraai-ai-first-landing
-        status: unknown
+        status: pending
         stepId: full.open.revalidate
         type: call_tool
     actionContexts:
@@ -281,5 +278,5 @@ run_checkpoint:
           ref: openspec/changes/procuraai-ai-first-landing
     children: []
     lineage: []
-  sourceRevision: 6
-  sourceHash: ad14296ea65a5093dbe3a9808ced3309431d1a98b9addf1faba2eae2ddbe5956
+  sourceRevision: 8
+  sourceHash: d5bf9078319dbdfa205efb56d46c649a0516adca3dc810ebd1543e3067404029

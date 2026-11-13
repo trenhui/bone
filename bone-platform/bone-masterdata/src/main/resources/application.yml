@@ -65,6 +65,14 @@ masterdata:
   entity-max-fields: 100
   record-max-size: 1048576
   export-max-records: 10000
+  # 本轮新增：Golden Record 摘要与 Outbox 中继配置（@Value 须在此显式声明，strict 门禁禁止静默回落）
+  golden-record:
+    # 防低熵 PII 摘要被反推的盐值；生产由环境变量 BONE_MASTERDATA_DIGEST_PEPPER 注入，dev 仅占位
+    digest-pepper: ${BONE_MASTERDATA_DIGEST_PEPPER:dev-only-digest-pepper-change-in-prod}
+  outbox-relay:
+    # 具名消费者，禁止匿名投递
+    consumer-id: ${BONE_MASTERDATA_OUTBOX_CONSUMER_ID:bone-masterdata-relay}
+    max-attempts: 3
 
 logging:
   level:

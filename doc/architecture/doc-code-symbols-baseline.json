@@ -850,14 +850,6 @@
       "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
     },
     {
-      "symbol": "ChangeRequestController",
-      "docs": [
-        "doc/ai-product/procuraAI/detailed-design/01-供应商主数据模块详细设计.md"
-      ],
-      "reason": "tobe-named",
-      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
-    },
-    {
       "symbol": "ClauseController",
       "docs": [
         "doc/ai-product/procuraAI/detailed-design/03-合同风险绩效与AI模块详细设计.md"

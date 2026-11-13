@@ -52,8 +52,8 @@ public class MasterDataOutboxRelay {
   public MasterDataOutboxRelay(
       OutboxRelayStorePort store,
       MasterDataProjectionPort projection,
-      @Value("${bone.masterdata.outbox-relay.consumer-id}") String consumerId,
-      @Value("${bone.masterdata.outbox-relay.max-attempts:3}") int maxAttempts) {
+      @Value("${masterdata.outbox-relay.consumer-id}") String consumerId,
+      @Value("${masterdata.outbox-relay.max-attempts:3}") int maxAttempts) {
     if (consumerId == null || consumerId.trim().isEmpty()) {
       throw new DomainException("Outbox 中继缺少具名 consumer-id，禁止匿名投递");
     }
