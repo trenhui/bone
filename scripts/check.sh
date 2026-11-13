@@ -619,6 +619,18 @@ if ! python3 scripts/check-eval-baseline.py --check; then
   echo -e "${RED}❌ G0 基线真源不合规（冻结集骨架 / 指标字典 / wired 符号，详见上方逐条）${RESET}"
   exit_code=1
 fi
+# 造数闭环（同属 [42/59] 这一步，不改 59 步编号；注册表由 bone.py sync 从调用行派生）：
+#   ① 真实性 R1–R5：挡住「张三 / 8800 / Math.random」这类机器味数据；
+#   ② 功能 / DDL / Entity 变更 → 造数资产与 E2E 用例同步义务（清单 / 场景不变量 / 同批同步）。
+# 判据与规范见 scripts/e2e/README.md §3.3 / §3.4。
+if ! python3 scripts/e2e/check-data-realism.py; then
+  echo -e "${RED}❌ 造数真实性不合规（业务值统一走 e2e_lib/fixtures 或 datagen.py）${RESET}"
+  exit_code=1
+fi
+if ! python3 scripts/check-feature-data-impact.py --staged --strict; then
+  echo -e "${RED}❌ 功能变更未同步造数资产 / E2E 用例（详见 e2e/README.md §3.4）${RESET}"
+  exit_code=1
+fi
 echo -e "${YELLOW}[42/59] 门禁脚本自身单元测试（防门禁回归 · scripts/tests）...${RESET}"
 if ! python3 -m unittest discover -s scripts/tests -p 'test_*.py' --verbose 2>&1; then
   echo -e "${RED}❌ 门禁自身单元测试失败（门禁脚本可能已回归，详见上方 traceback）${RESET}"

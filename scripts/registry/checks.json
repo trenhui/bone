@@ -1,0 +1,848 @@
+{
+  "schema": "bone.registry.v1",
+  "source": "scripts/check.sh",
+  "counts": {
+    "checks": 61,
+    "groups": 40
+  },
+  "groups": [
+    "application",
+    "approver",
+    "archunit",
+    "async",
+    "autoconfig",
+    "claim",
+    "config",
+    "controller",
+    "cross",
+    "data",
+    "ddd",
+    "ddl",
+    "deterministic",
+    "doc",
+    "domain",
+    "error",
+    "eval",
+    "feature",
+    "freeze",
+    "frontend",
+    "gate",
+    "i18n",
+    "iam",
+    "id",
+    "java",
+    "menu",
+    "migration",
+    "openapi",
+    "orm",
+    "orphan",
+    "paging",
+    "runtime",
+    "sdk",
+    "security",
+    "seed",
+    "slice",
+    "soft",
+    "sql",
+    "synapclaim",
+    "three"
+  ],
+  "checks": [
+    {
+      "id": "check-orm-banned",
+      "path": "scripts/check-orm-banned.py",
+      "group": "orm",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-orm-banned.py"
+      ]
+    },
+    {
+      "id": "check-i18n-sync",
+      "path": "scripts/check-i18n-sync.py",
+      "group": "i18n",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-i18n-sync.py"
+      ]
+    },
+    {
+      "id": "check-paging-param-names",
+      "path": "scripts/check-paging-param-names.py",
+      "group": "paging",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-paging-param-names.py"
+      ]
+    },
+    {
+      "id": "check-paging-param-ssot",
+      "path": "scripts/check-paging-param-ssot.py",
+      "group": "paging",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-paging-param-ssot.py"
+      ]
+    },
+    {
+      "id": "check-error-code-landing",
+      "path": "scripts/check-error-code-landing.py",
+      "group": "error",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-error-code-landing.py"
+      ]
+    },
+    {
+      "id": "check-cross-service-exception-mapping",
+      "path": "scripts/check-cross-service-exception-mapping.py",
+      "group": "cross",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-cross-service-exception-mapping.py"
+      ]
+    },
+    {
+      "id": "check-id-annotation",
+      "path": "scripts/check-id-annotation.py",
+      "group": "id",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-id-annotation.py"
+      ]
+    },
+    {
+      "id": "check-frontend-id-types",
+      "path": "scripts/frontend/check-frontend-id-types.py",
+      "group": "frontend",
+      "args": [
+        "--check"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/frontend/check-frontend-id-types.py",
+        "--check"
+      ]
+    },
+    {
+      "id": "check-sdk-persistence",
+      "path": "scripts/check-sdk-persistence.py",
+      "group": "sdk",
+      "args": [
+        "--check"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-sdk-persistence.py",
+        "--check"
+      ]
+    },
+    {
+      "id": "check-frontend-response-contract",
+      "path": "scripts/check-frontend-response-contract.py",
+      "group": "frontend",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-frontend-response-contract.py"
+      ]
+    },
+    {
+      "id": "check-paging-total-normalize",
+      "path": "scripts/check-paging-total-normalize.py",
+      "group": "paging",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-paging-total-normalize.py"
+      ]
+    },
+    {
+      "id": "check-paging-current-field",
+      "path": "scripts/check-paging-current-field.py",
+      "group": "paging",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-paging-current-field.py"
+      ]
+    },
+    {
+      "id": "check-openapi-contract",
+      "path": "scripts/check-openapi-contract.py",
+      "group": "openapi",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-openapi-contract.py"
+      ]
+    },
+    {
+      "id": "check-soft-delete-declaration",
+      "path": "scripts/check-soft-delete-declaration.py",
+      "group": "soft",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-soft-delete-declaration.py"
+      ]
+    },
+    {
+      "id": "check-config-key-contract",
+      "path": "scripts/ci/check-config-key-contract.py",
+      "group": "config",
+      "args": [
+        "--strict"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/ci/check-config-key-contract.py",
+        "--strict"
+      ]
+    },
+    {
+      "id": "check-doc-code-symbols",
+      "path": "scripts/check-doc-code-symbols.py",
+      "group": "doc",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-doc-code-symbols.py"
+      ]
+    },
+    {
+      "id": "check-openapi-int64-contract",
+      "path": "scripts/check-openapi-int64-contract.py",
+      "group": "openapi",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-openapi-int64-contract.py"
+      ]
+    },
+    {
+      "id": "check-controller-authorization",
+      "path": "scripts/check-controller-authorization.py",
+      "group": "controller",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-controller-authorization.py"
+      ]
+    },
+    {
+      "id": "check-controller-authorization-url-bypass",
+      "path": "scripts/check-controller-authorization-url-bypass.py",
+      "group": "controller",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-controller-authorization-url-bypass.py"
+      ]
+    },
+    {
+      "id": "check-openapi-generation-readiness",
+      "path": "scripts/check-openapi-generation-readiness.py",
+      "group": "openapi",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-openapi-generation-readiness.py"
+      ]
+    },
+    {
+      "id": "check-security-fail-open-default",
+      "path": "scripts/check-security-fail-open-default.py",
+      "group": "security",
+      "args": [
+        "--strict"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-security-fail-open-default.py",
+        "--strict"
+      ]
+    },
+    {
+      "id": "check-error-code-duplication",
+      "path": "scripts/check-error-code-duplication.py",
+      "group": "error",
+      "args": [
+        "--check"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-error-code-duplication.py",
+        "--check"
+      ]
+    },
+    {
+      "id": "check-archunit-freeze-baseline",
+      "path": "scripts/check-archunit-freeze-baseline.py",
+      "group": "archunit",
+      "args": [
+        "--check"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-archunit-freeze-baseline.py",
+        "--check"
+      ]
+    },
+    {
+      "id": "check-error-endpoint-permit-all",
+      "path": "scripts/ci/check-error-endpoint-permit-all.py",
+      "group": "error",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/ci/check-error-endpoint-permit-all.py"
+      ]
+    },
+    {
+      "id": "check-async-tenant-context",
+      "path": "scripts/ci/check-async-tenant-context.py",
+      "group": "async",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/ci/check-async-tenant-context.py"
+      ]
+    },
+    {
+      "id": "check-controller-response-envelope",
+      "path": "scripts/check-controller-response-envelope.py",
+      "group": "controller",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-controller-response-envelope.py"
+      ]
+    },
+    {
+      "id": "check-autoconfig-registration",
+      "path": "scripts/check-autoconfig-registration.py",
+      "group": "autoconfig",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-autoconfig-registration.py"
+      ]
+    },
+    {
+      "id": "check-deterministic-cache",
+      "path": "scripts/check-deterministic-cache.py",
+      "group": "deterministic",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-deterministic-cache.py"
+      ]
+    },
+    {
+      "id": "check-frontend-route-param",
+      "path": "scripts/check-frontend-route-param.py",
+      "group": "frontend",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-frontend-route-param.py"
+      ]
+    },
+    {
+      "id": "check-menu-route-consistency",
+      "path": "scripts/check-menu-route-consistency.py",
+      "group": "menu",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-menu-route-consistency.py"
+      ]
+    },
+    {
+      "id": "check-menu-icon-whitelist",
+      "path": "scripts/check-menu-icon-whitelist.py",
+      "group": "menu",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-menu-icon-whitelist.py"
+      ]
+    },
+    {
+      "id": "check-slice-truncation",
+      "path": "scripts/check-slice-truncation.py",
+      "group": "slice",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-slice-truncation.py"
+      ]
+    },
+    {
+      "id": "check-menu-single-entry",
+      "path": "scripts/check-menu-single-entry.py",
+      "group": "menu",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-menu-single-entry.py"
+      ]
+    },
+    {
+      "id": "check-orphan-tables",
+      "path": "scripts/check-orphan-tables.py",
+      "group": "orphan",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-orphan-tables.py"
+      ]
+    },
+    {
+      "id": "check-freeze-ledger",
+      "path": "scripts/check-freeze-ledger.py",
+      "group": "freeze",
+      "args": [
+        "--check"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-freeze-ledger.py",
+        "--check"
+      ]
+    },
+    {
+      "id": "check-three-entry-boundaries",
+      "path": "scripts/check-three-entry-boundaries.py",
+      "group": "three",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-three-entry-boundaries.py"
+      ]
+    },
+    {
+      "id": "check-migration-manifest",
+      "path": "scripts/check-migration-manifest.py",
+      "group": "migration",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-migration-manifest.py"
+      ]
+    },
+    {
+      "id": "check-migration-init-coverage",
+      "path": "scripts/check-migration-init-coverage.py",
+      "group": "migration",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-migration-init-coverage.py"
+      ]
+    },
+    {
+      "id": "check-seed-menu-permission",
+      "path": "scripts/check-seed-menu-permission.py",
+      "group": "seed",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-seed-menu-permission.py"
+      ]
+    },
+    {
+      "id": "check-eval-baseline",
+      "path": "scripts/check-eval-baseline.py",
+      "group": "eval",
+      "args": [
+        "--check"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-eval-baseline.py",
+        "--check"
+      ]
+    },
+    {
+      "id": "check-data-realism",
+      "path": "scripts/e2e/check-data-realism.py",
+      "group": "data",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/e2e/check-data-realism.py"
+      ]
+    },
+    {
+      "id": "check-feature-data-impact",
+      "path": "scripts/check-feature-data-impact.py",
+      "group": "feature",
+      "args": [
+        "--staged",
+        "--strict"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-feature-data-impact.py",
+        "--staged",
+        "--strict"
+      ]
+    },
+    {
+      "id": "check-ddl-duplicate-column",
+      "path": "scripts/check-ddl-duplicate-column.py",
+      "group": "ddl",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-ddl-duplicate-column.py"
+      ]
+    },
+    {
+      "id": "check-iam-runtime-baseline",
+      "path": "scripts/check-iam-runtime-baseline.py",
+      "group": "iam",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-iam-runtime-baseline.py"
+      ]
+    },
+    {
+      "id": "check-runtime-topology",
+      "path": "scripts/check-runtime-topology.py",
+      "group": "runtime",
+      "args": [
+        "--quiet"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-runtime-topology.py",
+        "--quiet"
+      ]
+    },
+    {
+      "id": "check-claim-ai-evalset",
+      "path": "scripts/check-claim-ai-evalset.py",
+      "group": "claim",
+      "args": [
+        "--check"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-claim-ai-evalset.py",
+        "--check"
+      ]
+    },
+    {
+      "id": "check-approver-reference-not-exposed",
+      "path": "scripts/check-approver-reference-not-exposed.py",
+      "group": "approver",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-approver-reference-not-exposed.py"
+      ]
+    },
+    {
+      "id": "check-sql-entity-column-coverage",
+      "path": "scripts/check-sql-entity-column-coverage.py",
+      "group": "sql",
+      "args": [
+        "--check"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-sql-entity-column-coverage.py",
+        "--check"
+      ]
+    },
+    {
+      "id": "check-synapclaim-architecture",
+      "path": "scripts/check-synapclaim-architecture.py",
+      "group": "synapclaim",
+      "args": [],
+      "self_tests": [
+        [
+          "--self-test"
+        ]
+      ],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-synapclaim-architecture.py"
+      ]
+    },
+    {
+      "id": "check-synapclaim-module-boundaries",
+      "path": "scripts/check-synapclaim-module-boundaries.py",
+      "group": "synapclaim",
+      "args": [],
+      "self_tests": [
+        [
+          "--self-test"
+        ]
+      ],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-synapclaim-module-boundaries.py"
+      ]
+    },
+    {
+      "id": "check-gate-liveness",
+      "path": "scripts/check-gate-liveness.py",
+      "group": "gate",
+      "args": [
+        "--strict"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-gate-liveness.py",
+        "--strict"
+      ]
+    },
+    {
+      "id": "check-java-import-integrity",
+      "path": "scripts/check-java-import-integrity.py",
+      "group": "java",
+      "args": [
+        "--check"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-java-import-integrity.py",
+        "--check"
+      ]
+    },
+    {
+      "id": "check-sql-template",
+      "path": "scripts/check-sql-template.py",
+      "group": "sql",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-sql-template.py"
+      ]
+    },
+    {
+      "id": "check-application-constructs",
+      "path": "scripts/check-application-constructs.py",
+      "group": "application",
+      "args": [
+        "--check"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-application-constructs.py",
+        "--check"
+      ]
+    },
+    {
+      "id": "check-ddd-doc-drift",
+      "path": "scripts/check-ddd-doc-drift.py",
+      "group": "ddd",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-ddd-doc-drift.py"
+      ]
+    },
+    {
+      "id": "check-ddd-gate-state",
+      "path": "scripts/check-ddd-gate-state.py",
+      "group": "ddd",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-ddd-gate-state.py"
+      ]
+    },
+    {
+      "id": "check-ddl-doc-sync",
+      "path": "scripts/check-ddl-doc-sync.py",
+      "group": "ddl",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-ddl-doc-sync.py"
+      ]
+    },
+    {
+      "id": "check-ddl-required-columns",
+      "path": "scripts/check-ddl-required-columns.py",
+      "group": "ddl",
+      "args": [
+        "--check"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-ddl-required-columns.py",
+        "--check"
+      ]
+    },
+    {
+      "id": "check-domain-model-layout",
+      "path": "scripts/check-domain-model-layout.py",
+      "group": "domain",
+      "args": [],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-domain-model-layout.py"
+      ]
+    },
+    {
+      "id": "check-sdk-contract-surface",
+      "path": "scripts/check-sdk-contract-surface.py",
+      "group": "sdk",
+      "args": [
+        "--check"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-sdk-contract-surface.py",
+        "--check"
+      ]
+    },
+    {
+      "id": "check-ddd-doc-code-sync",
+      "path": "scripts/ci/check-ddd-doc-code-sync.py",
+      "group": "ddd",
+      "args": [
+        "--strict"
+      ],
+      "self_tests": [],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/ci/check-ddd-doc-code-sync.py",
+        "--strict"
+      ]
+    }
+  ]
+}

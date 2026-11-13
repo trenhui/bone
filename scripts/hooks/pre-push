@@ -1,0 +1,75 @@
+#!/bin/sh
+# 入库版 pre-push（由 scripts/setup-hooks.sh 安装到 .git/hooks/pre-push）。
+#
+# 推送前只做「本次推上去的代码」相关的事，不重复跑 check.sh（那是 pre-commit 的活）：
+#   1. 影响分析 --strict：本次范围里改了 Controller 但端点零覆盖 → 阻断；
+#   2. 自动跑受影响用例：栈可达（preflight 通）才跑，避免无服务环境误红；
+#      栈不可达时明确告警并跳过，除非 BONE_E2E_PREPUSH=require 要求强制。
+#
+# 环境变量：
+#   BONE_E2E_PREPUSH=off       完全跳过本 hook
+#   BONE_E2E_PREPUSH=require   栈不可达也阻断（CI/发布机用）
+#   BONE_E2E_IMPACT=off        跳过影响分析（同 pre-commit）
+set -u
+cd "$(git rev-parse --show-toplevel)" || exit 2
+
+[ "${BONE_E2E_PREPUSH:-on}" = "off" ] && exit 0
+
+REV="HEAD~1...HEAD"
+UPSTREAM="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
+if [ -n "$UPSTREAM" ]; then
+  REV="$UPSTREAM...HEAD"
+fi
+
+if [ "${BONE_E2E_IMPACT:-on}" != "off" ]; then
+  if ! python3 scripts/e2e/impact.py --rev "$REV" --strict; then
+    echo ""
+    echo "阻断推送：本次变更的 Controller 存在零覆盖端点（见上）。"
+    echo "处理：补用例后重推；确属纯重构可 BONE_E2E_IMPACT=off git push ..."
+    exit 1
+  fi
+fi
+
+# 造数闭环：本次推送范围内的功能/DDL/Entity 变更必须同步造数资产；全场景不变量与
+# 真实性 R1–R5 也在这里再验一次（CI 的 bone.py verify 覆盖同一批判据，本地先给快反馈）。
+if [ "${BONE_DATA_IMPACT:-on}" != "off" ]; then
+  if ! python3 scripts/check-feature-data-impact.py --rev "$REV" --strict; then
+    echo ""
+    echo "阻断推送：功能变更未同步造数资产 / E2E 用例（规范见 e2e/README.md §3.4）。"
+    exit 1
+  fi
+  if ! python3 scripts/e2e/check-data-realism.py; then
+    echo ""
+    echo "阻断推送：造数真实性 R1–R5 不合规（业务值走 e2e_lib/fixtures 或 datagen.py）。"
+    exit 1
+  fi
+fi
+
+FILES="$(python3 scripts/e2e/impact.py --rev "$REV" --print-case-files 2>/dev/null || true)"
+if [ -z "$FILES" ]; then
+  echo "pre-push: 无受影响的既有 e2e 用例，跳过。"
+  exit 0
+fi
+
+case "$FILES" in
+  *ui/*) PREFLIGHT_ARGS="--ui" ;;
+  *)     PREFLIGHT_ARGS="" ;;
+esac
+
+if ! python3 scripts/e2e/preflight.py $PREFLIGHT_ARGS >/dev/null 2>&1; then
+  echo "⚠ pre-push: 本地栈不可达，跳过受影响用例："
+  echo "$FILES" | sed 's/^/    /'
+  echo "  手动执行：cd scripts/e2e && ./run.sh <用例>"
+  if [ "${BONE_E2E_PREPUSH:-on}" = "require" ]; then
+    echo "BONE_E2E_PREPUSH=require：栈不可达按失败处理。"
+    exit 1
+  fi
+  exit 0
+fi
+
+echo "pre-push: 自动执行受影响用例（栈已就绪）"
+for f in $FILES; do
+  echo ">> $f"
+  ./scripts/e2e/run.sh "$f" || exit 1
+done
+exit 0

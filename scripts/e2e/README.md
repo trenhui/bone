@@ -21,14 +21,18 @@ scripts/e2e/
 │   ├── chain_runner.py 链路通用执行器（run_steps：步骤声明 → 发请求/取变量/落断言/传下一步；见 §8）
 │   ├── client.cjs      Node 侧同源常量与登录（Node 探针共用；含 registerCleanup/runCleanup 对称 Python teardown）
 │   ├── fixtures.cjs    Node 侧生产化测试数据（口径对齐 fixtures.py，见 §3）
+│   ├── scenarios.py    企业业务场景造数（订单+理赔 / 采购三单 / 租户 IAM / 主数据，带机器可校验不变量，见 §3.1）
 │   └── ui.cjs          共享 UI 交互层（uiLogin/shot/waitAppReady；禁止在探针内重抄登录选择器）
 ├── *-full-chain-e2e.py / claim-full-chain-e2e.mjs 全链路用例（断言制；理赔为 Node 侧，造数走 fixtures）
 ├── *-sweep.py / chains.py / multichannel*.py / channel_*  联调扫描与渠道链路
+├── datagen.py          **零代码造数 CLI**（场景/原子值 → json/env/md，见 §3.1）
+├── impact.py           接口变更 ↔ 用例映射（变更体检 / --strict 阻断 / --print-case-files，见 §3.2）
+├── check-data-realism.py  造数真实性门禁 R1–R5（lint.sh 已接线，见 §3.3）
 ├── cleanup-residue.py  残留定点回收执行体（teardown.register 的落点）
 ├── lowcode-closed-loop.cjs  低代码最小闭环端到端（非 UI 探针族，见 §4.2）
 ├── ui/                 浏览器探针**单族**：27 个探针全为 `.mjs`（写新探针前必读 ui/README.md 第 0 条）
-├── run.sh              统一入口（list/lint/selftest/preflight/py-core|sweep|chain/py/node-api|node/all）
-├── lint.sh             零依赖语法门禁（py_compile + node --check）
+├── run.sh              统一入口（list/lint/selftest/preflight/datagen/impact/py-core|sweep|chain|domain/py/node-api|node/all）
+├── lint.sh             零依赖语法门禁（py_compile + node --check + 造数真实性 R1–R5）
 ├── selftest.py/.cjs    共享层离线自证（无需起服务；见 §4.7）
 └── preflight.py        环境快检（端口 + 可选登录探活；见 §4.7）
 ```
@@ -40,6 +44,8 @@ scripts/e2e/
 | 离线层 | `./run.sh lint` / `./run.sh selftest` | 不要 | 秒级 | 改完共享层先自证，别拿业务失败当基础设施坏 |
 | 环境层 | `./run.sh preflight [--ui\|--deep\|--all]` | 只探端口 | 2 秒 | 栈没起时**立即**给出「起哪个服务」，而不是 11 个脚本各等 40s |
 | 业务层 | `py-core` / `py-sweep` / `py-chain` / `node-api` / `node` / `py` | 要完整栈 | 分钟级 | 真联调；默认先过 preflight（`BONE_E2E_SKIP_PREFLIGHT=1` 可跳） |
+| 造数层 | `./run.sh datagen ...` / `./run.sh impact ...` | 不要 | 秒级 | 场景造数 / 变更↔用例映射；**不造新轮子、不各写一套**（§3.1 §3.2） |
+| 域能力层 | `py-domain` | 要完整栈 + 直连后端 | 分钟级 | 预留列机制 B / system-app 联调 / 主数据租户隔离；**拓扑要求不同，不进 `all`** |
 
 **分层铁律**：脚本只写业务断言，基础设施一律 `import e2e_lib`，禁止再在脚本内
 复制 login / call / check / teardown 样板（发现即重构回公共层）。
@@ -62,6 +68,24 @@ scripts/e2e/
 7. **收口**：`report.finish("汇总")` 输出统计并按失败数定退出码。
 8. **自检后提交**：`python3 -m py_compile scripts/e2e/<脚本>` / `node --check <探针>`，
    真跑一遍全绿，再过 `./scripts/check.sh`。
+
+### 提交 / 推送自动校验（git hooks）
+
+`./scripts/setup-hooks.sh` 安装两个入库版 hook（`.git/hooks` 本机文件不入库，新 clone 必须跑一次）：
+
+| 时机 | 做什么 | 耗时 | 绕过 |
+|---|---|---|---|
+| pre-commit | ① `impact.py --staged --strict`（零覆盖端点阻断）；② **自动刷新** `impact-map.json` 与 `data-assets.json` 的 `coverage` 派生段并按路径 `git add` 进本次提交；③ `check-feature-data-impact.py --staged --strict`（清单 / 全场景不变量 / 功能变更同步义务）；④ `./scripts/check.sh`（含造数真实性 R1–R5） | 秒级 + 门禁时长 | `BONE_E2E_IMPACT=off` / `BONE_DATA_IMPACT=off git commit ...` |
+| pre-push | `impact.py --rev <upstream>...HEAD` + `check-feature-data-impact.py --rev ... --strict` + 真实性 R1–R5 → 找受影响用例 → preflight → `run.sh` 逐个实跑 | 分钟级（栈可达时） | `BONE_E2E_PREPUSH=off git push`；`BONE_E2E_PREPUSH=require` 则栈不可达也判失败；造数侧可用 `BONE_DATA_IMPACT=off` |
+
+栈没起时 pre-push 会**告警跳过**（不是静默假绿，也不是把「环境没起」当代码错）；
+如需在 CI 上强制，设 `BONE_E2E_PREPUSH=require`。
+
+**自动修改的边界**：hook 只自动写**派生物**（映射、`coverage` 机器段）并加入本次提交；
+业务用例与断言不自动生成——静默生成空壳用例会让「零覆盖」判据假绿。脚手架命令由
+`impact.py` 输出，显式执行 `./run.sh new ... --register` 后补断言，见 §3.2 / §3.4。
+CI 侧由 `.github/workflows/ci.yml` 的 `Scripts Registry & Catalog Guard` 调
+`bone.py verify`，其 `checks` 步骤按注册表跑同一批造数判据。
 
 ### 元组口径（公共层契约，写错会静默错位）
 
@@ -98,6 +122,102 @@ ds = fx.dataset(SUFFIX)              # 同后缀 ⇒ 同数据（复跑可比对
 total = ds.amount()                  # 2863.50
 parts = ds.split(total, 2)           # Σ == total
 ```
+
+### 3.1 造数唯一入口（禁止各 agent 各造一套）
+
+按「要造什么」选档，**从下往上找，能复用就不要新写**：
+
+| 档 | 入口 | 适用 | 怎么用 |
+|---|---|---|---|
+| 原子值 | `e2e_lib/fixtures.py` | 单个客户名/金额/单号/拆分 | `fx.dataset(seed).person()` / `.amount()` / `.split()`；Node 侧 `fixtures.cjs` 同口径 |
+| 业务场景 | `e2e_lib/scenarios.py` | 一条能讲通的企业故事（订单→理赔、采购三单、租户 IAM、主数据 overlay、AI 建议回流） | `scenarios.build("sales-claim", seed)` → dict + `invariants`（金额守恒/日期单调/SoD/引用完整/幂等键唯一） |
+| 零代码 | `datagen.py`（`./run.sh datagen`） | agent 不想写脚本、只想拿一份可用数据 | `datagen.py list`；`datagen.py sales-claim --seed demo-a --format json\|env\|md` |
+
+```bash
+./run.sh datagen list                                   # 有哪些场景/原子值
+./run.sh datagen procurement --seed demo-a --format md  # 直接贴进用例说明/报告
+./run.sh datagen fixture amount --count 5               # 只取原子值
+```
+
+**铁律**
+- 新用例先 `datagen list`；现有场景能覆盖就用，覆盖不了**先在 `scenarios.py` 加场景**（补不变量断言），再写用例——场景是全员共享资产，用例只消费。
+- 需要「同 seed 同数据」时必须 `fx.Dataset(seed)` 新建实例；`fx.dataset(seed)` 是单次运行内**共享缓存实例**，rng 持续推进（这是为了连续出单号），直接拿它两次会得到不同数据。
+- 场景必须自带 `invariants`（`all_ok` + 逐项 checks），用例断言之余可直接断言 `all_ok`，防止「数据自相矛盾但接口 200」。
+
+### 3.2 功能变更 → 用例同步（`impact.py`）
+
+后端 Controller 增删改接口时，靠人记「要补用例」不可靠。`impact.py` 把这件事变成可执行判据：
+
+```bash
+./run.sh impact                          # 全量映射报告（端点 / 已覆盖 / 零覆盖）
+./run.sh impact --status                 # 只看工作区未提交的 Controller 变更
+./run.sh impact --staged --strict        # pre-commit 用：有零覆盖端点即退出 1
+./run.sh impact --rev origin/main...HEAD --strict   # pre-push 用
+./run.sh impact --rev <range> --print-case-files    # 只输出受影响用例文件，供 pre-push 实跑
+./run.sh impact --write-map              # 重新生成 impact-map.json（派生文件，勿手改）
+```
+
+匹配口径：路径按段比较，`{}`/`${x}` 通配；用例路径可短于端点，但多出来的端点段必须全是变量段
+（`/orders` 覆盖 `/orders/{id}`，**不**覆盖 `/orders/{id}/cancel`）。**两侧都先剥网关前缀**
+（`/api/v1`、`/v1`）：端点是 `@RequestMapping` 的绝对路径，用例写的是相对 `config.BASE` 的路径
+（`/claims/${id}/ai/feedback`）——不剥前缀，真实存在的用例会被判「零覆盖」，门禁反过来逼人
+再写一份重复脚本。零覆盖时输出可直接执行的 `run.sh new py-sweep ... --register` 脚手架命令。
+
+**阻断范围只算本次 diff 真正改到的映射行**（`@GetMapping("/x")` 等；类级 `@RequestMapping`
+变动视为整文件触及）——同一 Controller 里历史遗留的零覆盖端点不计入，避免「改一行代码、
+被 20 个历史端点拦下」导致门禁被整体关掉。
+
+**同步义务**：新增/修改/删除端点 → 同一次提交内补/改用例；确属纯重构无法补用例时，
+在提交信息里说明并用 `BONE_E2E_IMPACT=off` 显式跳过（会被记录在命令历史里，便于复盘）。
+
+### 3.3 造数真实性门禁（`check-data-realism.py`）
+
+`lint.sh` 已接线，扫 `scripts/e2e/**` 的 `.py/.mjs/.cjs`（跳过注释与 docstring）：
+
+| 规则 | 拦什么 |
+|---|---|
+| R1 | 占位人名/垃圾串：`"张三"` `"李四"` `"test123"` `"abc123"` `"lorem ipsum"` |
+| R2 | 未播种随机造数：Python `random.randint/choice`；JS `Math.random()` 落在 name/amount/price 等数据字段 |
+| R3 | 整百/整千金额字面量：`amount: 8800`、`price: 199.0`（业务金额应带分位） |
+| R4 | UUID 当显示名：`name = str(uuid4())` |
+| R5 | 测试态占位显示值：`"测试地址"` `"测试商品"` `"E2E商品"` `"某省某市某区…"` |
+
+存量违规走 `data-realism-baseline.json` 棘轮：**只可收缩**——新增违规必红，修掉不下调基线也红。
+当前仓库 0 违规，基线为空（任何新增都直接红）。
+
+### 3.4 后端功能变更 → 造数资产同步（提交纪律）
+
+`impact.py` 只管「Controller 端点 → 用例」。DDL / Entity / 迁移 / 枚举变更后，接口仍可能返回 200，
+但演示与联调数据还是旧结构，AI 下次造数又另写一套。同步义务由
+`check-feature-data-impact.py` + `scripts/registry/data-assets.json`（唯一清单）机械判定。
+
+| 后端变更 | 必须同步 | 阻断判据 |
+|---|---|---|
+| 新增 / 修改 / 删除表或字段（`bone-init.sql`、`scripts/migration/*`、`*/domain/model/*`、`db/migration/*`） | 命中域的 `scenarios.py` / `fixtures.py|.cjs` / `wordlist.json` / `gen.py` / `95_validate.py`，或该域 E2E 用例，**同一次提交内** | C3 |
+| 新增 / 修改 / 删除接口（Controller / OpenAPI） | 用例由 §3.2 `impact.py --strict` 阻断；造数侧只提醒 | `impact.py` |
+| 枚举 / 状态机变更 | 场景不变量 `invariants.all_ok` 仍为真，词表口径对齐 | C2 |
+| 纯重构（无上述路径） | 不需同步 | 仅提醒 |
+| 确属无需同步 | 在 `registry/data-assets.json` 的 `acks` 登记 `domain` / `owner` / `reason` / ISO `expires`；过期判红 | C1 |
+
+**唯一清单**：`scripts/registry/data-assets.json` 登记 9 项造数资产（`assets`）、5 个功能域
+（`domains`：变更路径 globs / 场景 / 必须同步的资产 / E2E 用例）、`acks` 与 `coverage` 派生段。
+新增造数能力先登记 `assets`；新增业务域先登记 `domains`，并在 `scenarios.py` 补场景与不变量断言。
+
+```bash
+python3 scripts/bone.py data list                 # AI 造数第一步：有哪些资产 / 场景 / 原子值
+python3 scripts/bone.py data validate            # 清单 + 全场景不变量 + 本次同步义务
+python3 scripts/check-feature-data-impact.py --staged --strict
+python3 scripts/check-feature-data-impact.py --rev origin/main...HEAD --strict
+python3 scripts/check-feature-data-impact.py --write-map   # 刷新 coverage（hook 自动执行）
+```
+
+三条判据：**C1** 资产 / 场景 / 用例真实存在、引用有效、acks 有效、`coverage` 无漂移；
+**C2** 全部企业场景 `invariants.all_ok` 且 `checks` 非空（数据自相矛盾不许入库）；
+**C3** 数据契约变更必须同批同步。退出码 `0 合规 / 1 违规 / 2 运行错误`（清单损坏不静默放行）。
+
+**自动更新的边界**：提交 / 推送时 hook 自动刷新派生映射（`impact-map.json`、`coverage`）并 `git add`，
+受影响用例只输出可执行的脚手架命令；**业务用例与断言不自动生成**——静默生成空壳用例会让
+「零覆盖」判据假绿。骨架用 `./run.sh new ... --register` 显式生成后补断言。
 
 ## 4. 脚本清单（全量能力目录）
 
@@ -215,7 +335,7 @@ Python 侧（`report.summary()` + atexit）与 Node 侧（`makeChecker()` + `pro
 
 > **目录纪律（2026-10-28 整合）**
 > - 一次性诊断探针（`diag-*` / `debug-form.mjs`，硬编码特定实体编码、针对某次发布的「快速实证」）：首轮整合归档至 `archive/`，**第二轮（2026-10-28 收口）确认无复用价值后整体删除**——它们不是回归资产、不进任何套件，结论以 Git 历史为准。新增可复用 UI 用例一律放进 `ui/`（2026-10-28 单族化后不再落根目录）。
-> - `run.sh` / `lint.sh`：统一入口与零依赖语法门禁。各 agent / CI 无需记住每个脚本名——`./run.sh list`（看有什么）、`lint`、`selftest`、`preflight`、`py-core|py-sweep|py-chain|py`、`node-api|node`、`all`（默认 = lint+selftest+preflight+py）、`<脚本名>`（指定脚本）。
+> - `run.sh` / `lint.sh`：统一入口与零依赖语法门禁。各 agent / CI 无需记住每个脚本名——`./run.sh list`（看有什么）、`lint`、`selftest`、`preflight`、`py-core|py-sweep|py-chain|py-domain|py`、`node-api|node`、`all`（默认 = lint+selftest+preflight+py）、`<脚本名>`（指定脚本）。
 > - 环境变量唯一清单见 [`.env.example`](.env.example)；`config.py` 与 `client.cjs` 的默认值须保持同步。
 
 ## 5. 环境变量（`e2e_lib/config.py` 是唯一真源）
@@ -329,6 +449,8 @@ node --check scripts/e2e/<探针>.mjs
 | 方案只活在本 README，架构层文档无从引用（`Bone-测试策略.md` 只覆盖单测/契约/E2E 分层，没有 scripts/e2e 的操作口径） | 架构层新增 [Bone-测试策略.md §7「端到端可复用测试方案」](../../doc/architecture/Bone-测试策略.md)：三层沉淀入口（04 §6 认知 → README 操作 → e2e_lib docstring 真源）、库四层职责、八步门禁、数据铁律、基线表（90/54/31）——**只做指针不复制正文**；README 顶部补回链 |
 | `perf` 场景度量中断仍返回 0（「有产出即通过」的假绿口子，违反 §9.7 退出码即契约） | `ui-designer-probe.mjs` 加 `failed` 中断标记，任一档失败或 `table.length < SIZES.length`（档位产出不全）一律退出码 1 |
 | **教训：共享无后缀夹具实体会被并行种子演化**——`expense_reimbursement_item` 因协议样例 `props.childEntity` 固定引用此名无法加运行后缀，2026-10-28 并发会话迁移种子给它补必填「消费说明」`note`，`ui-schema-samples-e2e.py` 与 `two-scenario-full-chain-e2e.py` 明细负载没带 → 400 拦下全部明细写入、下游 submit 断言级联假红（31→22、90 套件同病） | 两套件明细行构造补 `note`（每个值只生成一次存变量、正负两版共用），重跑 31/31、90/90 恢复；**复用铁律**：写共享（无运行后缀）实体的负载前，先直查 `meta_field` 确认必填集，种子给共享实体加必填字段必须显式适配所有套件负载 |
+| 三个「唯一能力」域验收脚本（预留列机制 B / system-app / 主数据租户隔离）在 `scripts/` 根、零引用、跑不到 = 事实上的死代码 | 新增 `py-domain` 分组接入 `run.sh`（拓扑要求不同故**不进 `all`**）；实跑 23/23 + 19/19 + 54/54 全绿 |
+| **`py-core` / `py-sweep` / `py-chain` 分组失败仍退出 0**——`run_py_group` 的返回值被其后的 `report_card` 覆盖，与文件头「任一子项失败即非零」契约相反（CI 会假绿） | 三组统一改为 `rc` 聚合 + `exit "$rc"`；变异验证 `PYTHON=/bin/false ./run.sh py-domain` → **EXIT=1**（修复前为 0） |
 
 **仍开放（待后续）**
 

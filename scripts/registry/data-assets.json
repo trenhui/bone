@@ -1,0 +1,401 @@
+{
+  "schema": "bone.data-assets.v1",
+  "_note": "造数能力唯一清单：AI / agent 造数前先查这里，禁止另写一套生成器。coverage 段由 check-feature-data-impact.py --write-map 生成，勿手改。",
+  "policy": {
+    "entry": "python3 scripts/bone.py data list",
+    "discovery_rule": "先 data list；现有场景能覆盖就复用，覆盖不了先在 e2e_lib/scenarios.py 加场景并补不变量断言，再写用例消费",
+    "data_contract_rule": "DDL / Entity / 迁移 SQL / OpenAPI 变更必须同一次提交同步受影响域的造数资产，或登记带 owner/reason/expires 的 ack",
+    "ack_required_fields": [
+      "owner",
+      "reason",
+      "expires"
+    ]
+  },
+  "assets": {
+    "datagen": {
+      "path": "scripts/e2e/datagen.py",
+      "role": "造数唯一 CLI 入口（list / fixture / <场景>，输出 json|env|md）",
+      "cli": "python3 scripts/bone.py data scenario sales-claim --seed demo-a --format md",
+      "sync_on": [
+        "scenario",
+        "fixture"
+      ]
+    },
+    "fixtures-py": {
+      "path": "scripts/e2e/e2e_lib/fixtures.py",
+      "role": "Python 原子值真源：可读单号 / 非圆整金额 / 守恒拆分 / 受控词表 / 数据老化",
+      "cli": "from e2e_lib import fixtures as fx; ds = fx.Dataset(seed)",
+      "sync_on": [
+        "ddl",
+        "entity",
+        "enum"
+      ]
+    },
+    "fixtures-cjs": {
+      "path": "scripts/e2e/e2e_lib/fixtures.cjs",
+      "role": "Node 侧对称原子值（同 seed 同数据，与 Python 共用词表）",
+      "cli": "require('./e2e_lib/fixtures.cjs')",
+      "sync_on": [
+        "ddl",
+        "entity",
+        "enum"
+      ]
+    },
+    "scenarios": {
+      "path": "scripts/e2e/e2e_lib/scenarios.py",
+      "role": "企业业务场景拼装 + 机器可校验不变量（金额守恒 / 日期单调 / SoD / 引用完整）",
+      "cli": "python3 scripts/bone.py data list",
+      "sync_on": [
+        "ddl",
+        "entity",
+        "enum",
+        "endpoint"
+      ]
+    },
+    "wordlist": {
+      "path": "scripts/seed/uat/wordlist.json",
+      "role": "中文受控词表唯一真源（gen.py / fixtures.py / fixtures.cjs 三处同读）",
+      "cli": "增删词条只改本文件",
+      "sync_on": [
+        "enum",
+        "org"
+      ]
+    },
+    "uat-gen": {
+      "path": "scripts/seed/uat/gen.py",
+      "role": "UAT 演示大盘确定性造数（企业真实场景：组织 / 客户 / 订单 / 理赔 / 资金）",
+      "cli": "python3 scripts/seed/uat/gen.py --scale medium --apply",
+      "sync_on": [
+        "ddl",
+        "entity",
+        "enum",
+        "org"
+      ]
+    },
+    "uat-validate": {
+      "path": "scripts/seed/uat/95_validate.py",
+      "role": "UAT 数据不变量门禁 G1-G8（参照完整 / 金额守恒 / 拟真可读 / 黄金动线）",
+      "cli": "python3 scripts/seed/uat/95_validate.py",
+      "sync_on": [
+        "ddl",
+        "entity"
+      ]
+    },
+    "bootstrap-seed": {
+      "path": "scripts/seed/bootstrap/10_bootstrap_seed.sql",
+      "role": "启动种子（菜单 / 权限 / 字典；由 seed-bootstrap.py 生成，禁止手改）",
+      "cli": "python3 scripts/seed-bootstrap.py --apply",
+      "sync_on": [
+        "menu",
+        "permission"
+      ]
+    },
+    "impact-map": {
+      "path": "scripts/e2e/impact-map.json",
+      "role": "Controller 端点 ↔ e2e 用例派生映射（由 impact.py --write-map 生成）",
+      "cli": "python3 scripts/e2e/impact.py --write-map",
+      "sync_on": [
+        "endpoint"
+      ]
+    }
+  },
+  "domains": {
+    "claim": {
+      "desc": "智能理赔",
+      "module_globs": [
+        "bone-apps/synap-claim/**",
+        "scripts/migration/*claim*",
+        "doc/architecture/openapi/*claim*"
+      ],
+      "data_contract_globs": [
+        "bone-apps/synap-claim/**/domain/model/**",
+        "bone-apps/synap-claim/**/infrastructure/**",
+        "scripts/migration/*claim*",
+        "db/migration/**",
+        "bone-init.sql"
+      ],
+      "scenario": "sales-claim",
+      "assets": [
+        "scenarios",
+        "fixtures-py",
+        "fixtures-cjs",
+        "wordlist",
+        "uat-gen",
+        "uat-validate"
+      ],
+      "cases": [
+        "scripts/e2e/claim-full-chain-e2e.mjs",
+        "scripts/e2e/claim-fee-category-e2e.mjs"
+      ]
+    },
+    "purchase-expense": {
+      "desc": "采购 / 报销 / 资金",
+      "module_globs": [
+        "bone-apps/bone-app-purchase/**",
+        "bone-apps/bone-app-expense/**",
+        "scripts/migration/*purchase*",
+        "scripts/migration/*expense*"
+      ],
+      "data_contract_globs": [
+        "bone-apps/bone-app-purchase/**/domain/**",
+        "bone-apps/bone-app-expense/**/domain/**",
+        "scripts/migration/*purchase*",
+        "scripts/migration/*expense*",
+        "bone-init.sql"
+      ],
+      "scenario": "procurement",
+      "assets": [
+        "scenarios",
+        "fixtures-py",
+        "fixtures-cjs",
+        "wordlist",
+        "uat-gen"
+      ],
+      "cases": [
+        "scripts/e2e/expense-purchase-approval-integration-e2e.py"
+      ]
+    },
+    "iam-tenant": {
+      "desc": "IAM / 租户 / 组织",
+      "module_globs": [
+        "bone-iam/**",
+        "bone-platform/bone-iam*/**",
+        "scripts/migration/*iam*",
+        "scripts/migration/*tenant*"
+      ],
+      "data_contract_globs": [
+        "bone-iam/**/domain/**",
+        "scripts/migration/*iam*",
+        "scripts/migration/*tenant*",
+        "bone-init.sql"
+      ],
+      "scenario": "tenant-iam",
+      "assets": [
+        "scenarios",
+        "wordlist",
+        "uat-gen",
+        "bootstrap-seed"
+      ],
+      "cases": [
+        "scripts/e2e/workflow-org-routing-e2e.py"
+      ]
+    },
+    "metadata-masterdata": {
+      "desc": "元数据 / 主数据 / 低代码",
+      "module_globs": [
+        "bone-metadata-engine/**",
+        "bone-platform/bone-metadata*/**",
+        "bone-apps/bone-app-masterdata/**",
+        "scripts/migration/*masterdata*",
+        "scripts/migration/*metadata*"
+      ],
+      "data_contract_globs": [
+        "bone-metadata-engine/**/domain/**",
+        "scripts/migration/*masterdata*",
+        "scripts/migration/*metadata*",
+        "bone-init.sql"
+      ],
+      "scenario": "master-data",
+      "assets": [
+        "scenarios",
+        "fixtures-py",
+        "wordlist",
+        "uat-gen"
+      ],
+      "cases": [
+        "scripts/e2e/app-to-data-full-chain-e2e.py",
+        "scripts/e2e/ui-schema-samples-e2e.py"
+      ]
+    },
+    "generic-backend": {
+      "fallback": true,
+      "desc": "其它后端改动（仅在未命中具体域时提示，不强制同步）",
+      "module_globs": [
+        "bone-*/src/main/java/**",
+        "bone-apps/**/src/main/java/**"
+      ],
+      "data_contract_globs": [],
+      "scenario": null,
+      "assets": [],
+      "cases": []
+    }
+  },
+  "acks": [],
+  "coverage": {
+    "claim": {
+      "scenario": "sales-claim",
+      "scenario_exists": true,
+      "invariants_all_ok": true,
+      "invariant_checks": [
+        "订单应付 = Σ明细 + 运费 − 优惠",
+        "理赔明细 Σ = 理赔总额",
+        "每行理赔金额 ≤ 该行货值",
+        "日期单调：下单 < 发货 < 报案",
+        "SoD：提交人 ≠ 审批人",
+        "理赔金额 ≤ 订单应付"
+      ],
+      "assets": [
+        {
+          "id": "scenarios",
+          "exists": true
+        },
+        {
+          "id": "fixtures-py",
+          "exists": true
+        },
+        {
+          "id": "fixtures-cjs",
+          "exists": true
+        },
+        {
+          "id": "wordlist",
+          "exists": true
+        },
+        {
+          "id": "uat-gen",
+          "exists": true
+        },
+        {
+          "id": "uat-validate",
+          "exists": true
+        }
+      ],
+      "cases": [
+        {
+          "path": "scripts/e2e/claim-full-chain-e2e.mjs",
+          "exists": true
+        },
+        {
+          "path": "scripts/e2e/claim-fee-category-e2e.mjs",
+          "exists": true
+        }
+      ],
+      "pending": []
+    },
+    "purchase-expense": {
+      "scenario": "procurement",
+      "scenario_exists": true,
+      "invariants_all_ok": true,
+      "invariant_checks": [
+        "采购金额 = Σ明细",
+        "应付金额 = 采购金额",
+        "日期单调：合同 < 下单 < 收货",
+        "SoD：申请人/审批人/收货人互不相同"
+      ],
+      "assets": [
+        {
+          "id": "scenarios",
+          "exists": true
+        },
+        {
+          "id": "fixtures-py",
+          "exists": true
+        },
+        {
+          "id": "fixtures-cjs",
+          "exists": true
+        },
+        {
+          "id": "wordlist",
+          "exists": true
+        },
+        {
+          "id": "uat-gen",
+          "exists": true
+        }
+      ],
+      "cases": [
+        {
+          "path": "scripts/e2e/expense-purchase-approval-integration-e2e.py",
+          "exists": true
+        }
+      ],
+      "pending": []
+    },
+    "iam-tenant": {
+      "scenario": "tenant-iam",
+      "scenario_exists": true,
+      "invariants_all_ok": true,
+      "invariant_checks": [
+        "用户部门引用完整",
+        "用户角色引用完整",
+        "子公司租户挂在集团下",
+        "SoD：提交人 ≠ 审批人"
+      ],
+      "assets": [
+        {
+          "id": "scenarios",
+          "exists": true
+        },
+        {
+          "id": "wordlist",
+          "exists": true
+        },
+        {
+          "id": "uat-gen",
+          "exists": true
+        },
+        {
+          "id": "bootstrap-seed",
+          "exists": true
+        }
+      ],
+      "cases": [
+        {
+          "path": "scripts/e2e/workflow-org-routing-e2e.py",
+          "exists": true
+        }
+      ],
+      "pending": []
+    },
+    "metadata-masterdata": {
+      "scenario": "master-data",
+      "scenario_exists": true,
+      "invariants_all_ok": true,
+      "invariant_checks": [
+        "overlay 物料引用平台编码",
+        "overlay 客户引用平台编码",
+        "平台数据 tenant_id = 0",
+        "overlay 价格为正"
+      ],
+      "assets": [
+        {
+          "id": "scenarios",
+          "exists": true
+        },
+        {
+          "id": "fixtures-py",
+          "exists": true
+        },
+        {
+          "id": "wordlist",
+          "exists": true
+        },
+        {
+          "id": "uat-gen",
+          "exists": true
+        }
+      ],
+      "cases": [
+        {
+          "path": "scripts/e2e/app-to-data-full-chain-e2e.py",
+          "exists": true
+        },
+        {
+          "path": "scripts/e2e/ui-schema-samples-e2e.py",
+          "exists": true
+        }
+      ],
+      "pending": []
+    },
+    "generic-backend": {
+      "scenario": null,
+      "scenario_exists": false,
+      "invariants_all_ok": false,
+      "invariant_checks": [],
+      "assets": [],
+      "cases": [],
+      "pending": []
+    }
+  }
+}
