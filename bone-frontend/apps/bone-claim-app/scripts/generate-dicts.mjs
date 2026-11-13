@@ -77,7 +77,6 @@ function toLiteral(map) {
 async function main() {
   const categories = await loadCategories();
   const lines = [
-    '/* eslint-disable */',
     '/* AUTO-GENERATED from GET /api/v1/claim-config/dicts — do not edit by hand.',
     ' * Regenerate: `npm run gen:dicts`. Single source of truth = backend ClaimConfigApplicationService.',
     ' */',
