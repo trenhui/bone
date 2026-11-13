@@ -2,6 +2,8 @@
 comet_change: synapclaim-workbench-assignment-review-quality
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-11-13-synapclaim-workbench-assignment-review-quality
+status: final
 ---
 
 ## Context

@@ -1,0 +1,2637 @@
+# comet-execution: managed-run
+change_id: ae5bef7e-1cfd-4b10-a786-8d7e96dd349d
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: direct
+review_mode: standard
+isolation: worktree
+verify_mode: null
+auto_transition: true
+base_ref: 6f0ea427fdee36fad49994bf7854bf075e6a9a28
+design_doc: openspec/changes/synapclaim-workbench-assignment-review-quality/design.md
+plan: docs/superpowers/plans/synapclaim-workbench-assignment-review-quality.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-13-synapclaim-workbench-assignment-review-quality-verify.md
+branch_status: pending
+created_at: 2026-11-13
+verified_at: 2026-11-13
+archive_confirmation: confirmed
+archived: false
+bound_branch: comet/synapclaim-workbench-assignment-review-quality
+direct_override: false
+handoff_context: openspec/changes/synapclaim-workbench-assignment-review-quality/.comet/handoff/design-context.json
+handoff_hash: c41d8457a26b85a57c7a07adc9f018d29ac6f54d2a7a66752369009a2ec8cb92
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: c0fc3cdf691a84d9726abfe9dfef81d1d94d8a2b9d43c1f75c208f8c8c6483b7
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: synapclaim-workbench-assignment-review-quality
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    definitionHashes:
+      '["comet-classic-full","1"]': 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    initialStateHash: 221b957426ea8edae1eb351d6f002144aa862ded1ea62ac34b346e608ae71d2b
+    input:
+      change: synapclaim-workbench-assignment-review-quality
+      changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+      workspaceBaseline:
+        ref: 6a63445d-198d-4648-9e30-a2470eefb138
+    state:
+      archiveConfirmation: confirmed
+      archived: false
+      autoTransition: true
+      baseRef: 6f0ea427fdee36fad49994bf7854bf075e6a9a28
+      boundBranch: comet/synapclaim-workbench-assignment-review-quality
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 5
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-13
+      designDoc: openspec/changes/synapclaim-workbench-assignment-review-quality/design.md
+      directOverride: false
+      handoffContext: openspec/changes/synapclaim-workbench-assignment-review-quality/.comet/handoff/design-context.json
+      handoffHash: c41d8457a26b85a57c7a07adc9f018d29ac6f54d2a7a66752369009a2ec8cb92
+      isolation: worktree
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/synapclaim-workbench-assignment-review-quality.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: direct
+      verificationReport: docs/superpowers/reports/2026-11-13-synapclaim-workbench-assignment-review-quality-verify.md
+      verifiedAt: 2026-11-13
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 25
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-4d37078a0eb45d291e85126c456dae76b0af04e95d8f2c93f17d9ce0fe118ff5
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-workbench-assignment-review-quality:1
+        input:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs: {}
+        inputHash: c7271b6e6a314d0e7ab18c02fa166c7251e27752979351e90c64deafb2489b30
+        outcome:
+          actionId: synapclaim-workbench-assignment-review-quality:1
+          attempt: 1
+          claimToken: portable-4d37078a0eb45d291e85126c456dae76b0af04e95d8f2c93f17d9ce0fe118ff5
+          inputHash: c7271b6e6a314d0e7ab18c02fa166c7251e27752979351e90c64deafb2489b30
+          outcomeId: 3b4420c3-c101-4603-bf99-d6b918d8b29d
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 91d51b3c5f55fa953fd7ac61378d692b8dd2001b743595d714a0293488018300
+            outcomeId: 3b4420c3-c101-4603-bf99-d6b918d8b29d
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-workbench-assignment-review-quality
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-6f98ef5b72a4d19b083433aa5c6ad51ce9188ceadcab80dc518c669cb16dc5c3
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-workbench-assignment-review-quality:4
+        input:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs: {}
+        inputHash: 200247f0c9330b8b53649c352adac1df392ff8af7a5ada3968524f2b448d16b0
+        outcome:
+          actionId: synapclaim-workbench-assignment-review-quality:4
+          attempt: 2
+          claimToken: portable-6f98ef5b72a4d19b083433aa5c6ad51ce9188ceadcab80dc518c669cb16dc5c3
+          inputHash: 200247f0c9330b8b53649c352adac1df392ff8af7a5ada3968524f2b448d16b0
+          outcomeId: synapclaim-workbench-assignment-review-quality:4:2:executor-result
+          output:
+            contentHash: 4df0e2eba2d87cbe7f9b1d63958e17c09f768f3f409382b0dd64db45a3d8e856
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 5fa2fde12d44aee268b49cf990c792f6a8d2316de8a8698b8c703b9df4a4b031
+            outcomeId: synapclaim-workbench-assignment-review-quality:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: classic-open-revalidate 仅计算 change 目录内容哈希（无外部副作用），原执行器随 guard --apply
+                进程退出而未落库；重放该幂等计算安全
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-workbench-assignment-review-quality
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-22e9be56e38dd119e46240f0f7e42ffc15b6359dbeeb4f035489c272ce404292
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-workbench-assignment-review-quality:5
+        input:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs: {}
+        inputHash: dd76fffffe0e07f99e78cbaa02c987f849a8e1c3916647c94bcad36eedb17f1b
+        outcome:
+          actionId: synapclaim-workbench-assignment-review-quality:5
+          attempt: 1
+          claimToken: portable-22e9be56e38dd119e46240f0f7e42ffc15b6359dbeeb4f035489c272ce404292
+          inputHash: dd76fffffe0e07f99e78cbaa02c987f849a8e1c3916647c94bcad36eedb17f1b
+          outcomeId: 39a0d16c-3e8a-4bb2-a666-c46bdc3799ed
+          output:
+            handoffContext: openspec/changes/synapclaim-workbench-assignment-review-quality/.comet/handoff/design-context.json
+            handoffHash: bd74f0b58e484b7e20931f24cb378328081b05c18baa59d512b5f1a96bca8c76
+            proposal: 作业台融合增强技术方案（8 项决策）：t_claim_task 承载一案多任务归属与 SLA；作业组真源为 IAM iam_dept
+              并纠正文档中不存在的 org_id；分配采用规则表+候选集打分+超时回落公共池；转交/代理/不可用三层不自建
+              HR；独立复审新增状态码 43/46 与 claim:re-review:write，与 44 双人复核并列不合并；AI 自动初审分
+              L1 代码规则/L2 租户策略/L3 作业参数三层配置，阈值只可收紧且不引入自动拒赔；抽检打回新增
+              t_claim_inspection_action 且已支付必须先冲正；统一 ClaimQuery
+              服务端分页修掉假分页。本轮为纯设计+文档交付（skip_specs），无 Spec Patch。
+            requirementsEvidence:
+              contentHash: 35856491067cd4f521dcb1dae1472adbcc90e20226ed104e3e4ee4f3ce75a3cc
+              ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+            sourceEvidence:
+              contentHash: e85b8f4add397fd650c3f6d72534a31049d1ef3dadf8245403c2a5cb262e62e5
+              ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: dbac9f03e2e1988a2223e5e7685f3efdc14425477300bc6e7bca3c83192e32d4
+            outcomeId: 39a0d16c-3e8a-4bb2-a666-c46bdc3799ed
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-workbench-assignment-review-quality
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 3
+        claim:
+          executorId: comet-classic-state
+          token: portable-d1afc76c4dffa2f267a2d5ae22d3a0528d5d8d24bba58da90e891f9a11fc9ebd
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-workbench-assignment-review-quality:7
+        input:
+          activation:
+            expectedRevision: 12
+            fromPhase: design
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs: {}
+        inputHash: 392b3e1ea9222509bb4cb4e4c7e5fed33f1db1615c02d6b615cfa43e0189288a
+        outcome:
+          actionId: synapclaim-workbench-assignment-review-quality:7
+          attempt: 3
+          claimToken: portable-d1afc76c4dffa2f267a2d5ae22d3a0528d5d8d24bba58da90e891f9a11fc9ebd
+          inputHash: 392b3e1ea9222509bb4cb4e4c7e5fed33f1db1615c02d6b615cfa43e0189288a
+          outcomeId: 3327a2b9-cd7f-4ccf-9c2d-482edaabfe2b
+          output:
+            handoffContext: openspec/changes/synapclaim-workbench-assignment-review-quality/.comet/handoff/design-context.json
+            handoffHash: c41d8457a26b85a57c7a07adc9f018d29ac6f54d2a7a66752369009a2ec8cb92
+            proposal: 作业台融合增强技术方案（8 项决策）：t_claim_task 承载一案多任务归属与 SLA；作业组真源为 IAM iam_dept
+              并纠正文档中不存在的 org_id；分配采用规则表+候选集打分+超时回落公共池；转交/代理/不可用三层不自建
+              HR；独立复审新增状态码 43/46 与 claim:re-review:write，与 44 双人复核并列不合并；AI 自动初审分
+              L1 代码规则/L2 租户策略/L3 作业参数三层配置，阈值只可收紧且不引入自动拒赔；抽检打回新增
+              t_claim_inspection_action 且已支付必须先冲正；统一 ClaimQuery
+              服务端分页修掉假分页。本轮纯设计+文档交付（skip_specs），无 Spec Patch；Design Doc 采用
+              change 内 design.md 并加 comet_change/role/canonical_spec
+              frontmatter。
+            requirementsEvidence:
+              contentHash: 35856491067cd4f521dcb1dae1472adbcc90e20226ed104e3e4ee4f3ce75a3cc
+              ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+            sourceEvidence:
+              contentHash: ad0d86d8189c1f8a08c030c888b88eb0f6d61696015d48849ec4dc03c1777a73
+              ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c18afcbed19d2dadefa33037f9bfc5db28d03012fb0c0352857db17f02789017
+            outcomeId: 3327a2b9-cd7f-4ccf-9c2d-482edaabfe2b
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: full.design.handoff 仅登记设计提案与 handoff 包，无外部副作用；原执行器因 runtime 写锁超时退出
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: full.design.handoff 只登记设计提案与 handoff 包，无外部副作用；原执行器抢写锁失败退出，动作可安全重放
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-workbench-assignment-review-quality
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-f6cdb66bbdf554bb8c97963f2cc594e740f777ff96db820157d6741dda480dcd
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-workbench-assignment-review-quality:9
+        input:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs: {}
+        inputHash: 40604dae6177d24a8f325b1f1948bfadbd876f4ef019787e6c097b7aab81ffaf
+        outcome:
+          actionId: synapclaim-workbench-assignment-review-quality:9
+          attempt: 2
+          claimToken: portable-f6cdb66bbdf554bb8c97963f2cc594e740f777ff96db820157d6741dda480dcd
+          inputHash: 40604dae6177d24a8f325b1f1948bfadbd876f4ef019787e6c097b7aab81ffaf
+          outcomeId: 70230fc1-fcbe-412a-b2f4-f265b8ffd1e6
+          output:
+            designDoc: openspec/changes/synapclaim-workbench-assignment-review-quality/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c8f447b5c39522d8c119789c40dc6342ef69abac2819ea2738498db4cdec6a2b
+            outcomeId: 70230fc1-fcbe-412a-b2f4-f265b8ffd1e6
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: full.design.document 仅校验 design.md frontmatter 并写收据，无外部副作用；原执行器退出后重放安全
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-workbench-assignment-review-quality
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-b424e43103b011d6b2af26c7f72ccdab8cdf3d023b6099681f04ff1191b24842
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-workbench-assignment-review-quality:11
+        input:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs: {}
+        inputHash: 4dedae5a1befde89c1ef77fabdd8373174251c12011b46e60d7a3af2700ebe01
+        outcome:
+          actionId: synapclaim-workbench-assignment-review-quality:11
+          attempt: 1
+          claimToken: portable-b424e43103b011d6b2af26c7f72ccdab8cdf3d023b6099681f04ff1191b24842
+          inputHash: 4dedae5a1befde89c1ef77fabdd8373174251c12011b46e60d7a3af2700ebe01
+          outcomeId: 76361753-1fe9-4a19-8bfc-eb3082156afd
+          output:
+            boundBranch: comet/synapclaim-workbench-assignment-review-quality
+            buildMode: autonomous
+            directOverride: false
+            isolation: worktree
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: direct
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: af6ab56a96779f82b92d13df87f1eed32fe1c0330ee706311f825470838f3a50
+            outcomeId: 76361753-1fe9-4a19-8bfc-eb3082156afd
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-workbench-assignment-review-quality
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-8250fe2bb49566e51f5949c7f2775fb7a594942821ca129bbd2a0cee5d2e282e
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-workbench-assignment-review-quality:13
+        input:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs: {}
+        inputHash: ed6c14c926ea46b2a4b3d1db5e98816e8a8cbd164bd4395ef05068e2b454608d
+        outcome:
+          actionId: synapclaim-workbench-assignment-review-quality:13
+          attempt: 1
+          claimToken: portable-8250fe2bb49566e51f5949c7f2775fb7a594942821ca129bbd2a0cee5d2e282e
+          inputHash: ed6c14c926ea46b2a4b3d1db5e98816e8a8cbd164bd4395ef05068e2b454608d
+          outcomeId: 4c93d7f6-f500-4d21-8f70-28f48ba587c2
+          output:
+            designEvidence:
+              contentHash: 34ed33ece51f059a9f9f2c68e97b492e9b6af669e9b01b393b4fbcb5f942e1de
+              ref: openspec/changes/synapclaim-workbench-assignment-review-quality/design.md
+            plan: docs/superpowers/plans/synapclaim-workbench-assignment-review-quality.md
+            planEvidence:
+              contentHash: 311e2c63cda4dc492bba26c10e27cf26e9e433c1379b1127b850066e59b0c947
+              ref: docs/superpowers/plans/synapclaim-workbench-assignment-review-quality.md
+            taskRevision: 197d3ff8480b203b465e14ac7f9a70cb51dc035ae0bb593f3f6646eca18e58a1
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f185dd1392408a2f8ad52015ae17088e1270f2ef5708769bc80d92ec6ac52271
+            outcomeId: 4c93d7f6-f500-4d21-8f70-28f48ba587c2
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-workbench-assignment-review-quality
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-workbench-assignment-review-quality:15/1
+          token: portable-1658d1ab22b24b18b7e32bb4eff5d668280137ffe2451c4b3b8c6af3d7e667b0
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-workbench-assignment-review-quality:15
+        input:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs: {}
+        inputHash: cad65bdc23d9300506c907d8bdc3375b841c02e74684ae5122e1c20f90ae3c66
+        outcome:
+          actionId: synapclaim-workbench-assignment-review-quality:15
+          attempt: 1
+          claimToken: portable-1658d1ab22b24b18b7e32bb4eff5d668280137ffe2451c4b3b8c6af3d7e667b0
+          inputHash: cad65bdc23d9300506c907d8bdc3375b841c02e74684ae5122e1c20f90ae3c66
+          outcomeId: b5068912-b599-45a3-a679-f05d92d8a653
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 2fdbf6b63c6551f4ee703df1f19d2fc49ac0d9f3b783b314549aff89891645a9
+            outcomeId: b5068912-b599-45a3-a679-f05d92d8a653
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-workbench-assignment-review-quality
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-bc5e632a155627f228e952f6350e79109429a8bfa88053c9fc91c8c24a9a9750
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-workbench-assignment-review-quality:16
+        input:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs: {}
+        inputHash: 36dc1b1a1555efa0b9604bc5d0b0376e4ed4976bc79b00c93f428f5626b900ec
+        outcome:
+          actionId: synapclaim-workbench-assignment-review-quality:16
+          attempt: 2
+          claimToken: portable-bc5e632a155627f228e952f6350e79109429a8bfa88053c9fc91c8c24a9a9750
+          inputHash: 36dc1b1a1555efa0b9604bc5d0b0376e4ed4976bc79b00c93f428f5626b900ec
+          outcomeId: c77b936b-169f-4fe4-97a3-9de8890f005c
+          output:
+            argv:
+              - python3
+              - doc/ai-product/synapClaim/tools/check_all.py
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+            cwd: .
+            environment: 9b3803844efac7d956c174c0d87d127b14716c01cce4a01c3b08ab40330210dd
+            exitCode: 0
+            inputAfter: ebd52cda095f77d7d50d7155db5cd68511bdffbda51a4d224a1ed69d5c944f59
+            inputBefore: ebd52cda095f77d7d50d7155db5cd68511bdffbda51a4d224a1ed69d5c944f59
+            manifestHash: 4c5b458fe0b59095e35263a3abc5035a7577b6b02a7780664f88956cb514d7a1
+            manifestRef: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/258065e7-10f9-4618-95aa-a0adf703390f.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/7e633801-1117-4077-ab38-648b8bd951a9.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: b0a23a309745f931e7095c37addc7dd78d9770c3621f18d044d09a86dc2bb2be
+            outcomeId: c77b936b-169f-4fe4-97a3-9de8890f005c
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: full.build.check 是确定性文档门禁（check_all.py 19 项），无外部副作用；原执行器退出后可安全重放
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-workbench-assignment-review-quality
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-d4e7a3e8b043eba208b2bc3fd2c46478c5fb7a8b76ada84ade52aeab088d808d
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-workbench-assignment-review-quality:18
+        input:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs: {}
+        inputHash: f013b95b076b7e99b331196555a015d2262bd68d2736a81580094cea8349ada6
+        outcome:
+          actionId: synapclaim-workbench-assignment-review-quality:18
+          attempt: 1
+          claimToken: portable-d4e7a3e8b043eba208b2bc3fd2c46478c5fb7a8b76ada84ade52aeab088d808d
+          inputHash: f013b95b076b7e99b331196555a015d2262bd68d2736a81580094cea8349ada6
+          outcomeId: 7419cc2b-9762-463b-978f-22c7e37b4cb9
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-13-synapclaim-workbench-assignment-review-quality-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 65f8653b1398fc99382c4e99c0e1894afc826b37f82d575028dbb4e13a929977
+            outcomeId: 7419cc2b-9762-463b-978f-22c7e37b4cb9
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-workbench-assignment-review-quality
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-dd211b4f7fdbbb75983b610e821b5d99679bb6961d93a39296de1b1e9e5bb55d
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-workbench-assignment-review-quality:20
+        input:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs: {}
+        inputHash: 3fe4403efc0a56d52e22b6302c775fe6bbb8d30b8d5f0d128fb5418bc2259ece
+        outcome:
+          actionId: synapclaim-workbench-assignment-review-quality:20
+          attempt: 2
+          claimToken: portable-dd211b4f7fdbbb75983b610e821b5d99679bb6961d93a39296de1b1e9e5bb55d
+          inputHash: 3fe4403efc0a56d52e22b6302c775fe6bbb8d30b8d5f0d128fb5418bc2259ece
+          outcomeId: 5feddede-7ef8-4c67-9b1e-7143502ad3bd
+          output:
+            argv:
+              - bash
+              - openspec/changes/synapclaim-workbench-assignment-review-quality/verify.sh
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: 0015bd25474ab5570f979b587d80108e1053bb283cc41ff24d7eedbec81f723e
+            cwd: .
+            deliveryInputs:
+              scripts/ci/scripts-registry-guard.sh: git:0ffcd9c20d60819b8ab5b25f23b42ecdf3a47fc6
+              scripts/e2e/check-data-realism.py: git:75dc7927498f5298622c33b1c0d3046014948b86
+              scripts/e2e/datagen.py: git:354a8e6797a3e5224651b310a12d4cf0e2ea478d
+              scripts/e2e/impact-map.json: git:b4b47ea76c7ca0d6da34e6710f652c460db4e404
+              scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+              scripts/lib/__init__.py: git:2e3534761dec1091a4f725d5c42826fa4e83adf5
+              scripts/lib/gate.py: git:1533ff5bf41f25f1b5d3528c3d48e93fb2b359ae
+              scripts/lib/registry.py: git:e46c4ed8ca1b82145de3a44da0e3c4410c2ce2a7
+              scripts/lib/waivers.py: git:f9d270737ddeb1fb6bacb7a915ae53a329295d43
+              scripts/registry/external-known-failures.txt: git:046de2424dc6d90d57c4eec10605ef6f8b87dfe5
+              scripts/registry/external.json: git:02213791dd7163fe0f1d6b4614e06f7b2ef207ad
+              scripts/registry/waivers.json: git:51e93bfe1bf9ff9947d46b5394bffe7f4ca43d66
+            environment: b50e5879eaff3e99cfc9b6f5b9e93b579a0fc0b0aa07f2320adefb7ea9f3ffdb
+            exitCode: 0
+            inputAfter: 5f066d6c58b98ba09b5d8e502ac0402c2db5b6e4ec39384ab9b42b7f31941789
+            inputBefore: 5f066d6c58b98ba09b5d8e502ac0402c2db5b6e4ec39384ab9b42b7f31941789
+            manifestHash: 29bd1b2125f1ffdb1f530b3c60bcd36e2580864e1f178f4f400b7ae4963a11eb
+            manifestRef: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/9b278c33-af80-4f96-b76d-0f1012684f69.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/3bea8869-846e-481b-99d2-331829558460.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 6a88b8ccead69ef8c316ad1b931d9a3f98b217a4caa4ea7ec5ab1f5f4402f3b3
+            outcomeId: 5feddede-7ef8-4c67-9b1e-7143502ad3bd
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: full.verify.check 为确定性文档验证脚本（5 项只读检查），无外部副作用；preview 遗留 claim 可安全重放
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-workbench-assignment-review-quality
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-086959d15187f4132de2092ce657bb8036d074628c44f65601186d52c2b398b3
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-workbench-assignment-review-quality:22
+        input:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs: {}
+        inputHash: 2c52a0b1b9871ae2e69de53662376dd89ff0d239bbf9ac335d29a97158e32e38
+        outcome:
+          actionId: synapclaim-workbench-assignment-review-quality:22
+          attempt: 1
+          claimToken: portable-086959d15187f4132de2092ce657bb8036d074628c44f65601186d52c2b398b3
+          inputHash: 2c52a0b1b9871ae2e69de53662376dd89ff0d239bbf9ac335d29a97158e32e38
+          outcomeId: 503d67e8-7b8c-4b2e-983d-841145b83ebf
+          output:
+            summary: 本地归档（local）：纯设计与文档交付。三份 04-design 新文档、深度分析与验证报告、§9.3/§10.3 的 org_id
+              纠正、§7.6/§11.10 复审与后督边界、AI §10.1.1 三层配置边界、总体方案 §7/§8.3、易用性提案 v2.3 与
+              4 批落地清单；manifest/AI-INDEX/README 治理同步。不推送、不建 PR；代码落地留给后续 4 批
+              change。
+            targetBranch: comet/synapclaim-workbench-assignment-review-quality
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 0e8ed7b025eb038524d6cdbccb3ab3e64af2297954e1d2e855fc2d7d1388badf
+            outcomeId: 503d67e8-7b8c-4b2e-983d-841145b83ebf
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-workbench-assignment-review-quality
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-fe80948ceaebbfe1fe2efa00d82079732392fa4e261870f01449d7118745eb44
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-workbench-assignment-review-quality:24
+        input:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs: {}
+        inputHash: 5f69906c09db23ae564bf224652c9e6e84283050aa48309ce2a7f211db5fedc4
+        outcome:
+          actionId: synapclaim-workbench-assignment-review-quality:24
+          attempt: 1
+          claimToken: portable-fe80948ceaebbfe1fe2efa00d82079732392fa4e261870f01449d7118745eb44
+          inputHash: 5f69906c09db23ae564bf224652c9e6e84283050aa48309ce2a7f211db5fedc4
+          outcomeId: b5043e88-5b47-4ab6-9237-a35f7a52fe5c
+          output:
+            baseCommit: df5cca99fec8f8f1069ab98fc735c3d32fac67dc
+            deliveryAction: local
+            targetBranch: comet/synapclaim-workbench-assignment-review-quality
+            verifiedBranch: comet/synapclaim-workbench-assignment-review-quality
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3b3c7867fb3213fff30caf06f61b336e3081b3da9a67d3ea1d356832b62a1848
+            outcomeId: b5043e88-5b47-4ab6-9237-a35f7a52fe5c
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-workbench-assignment-review-quality
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-185b094ca5d6c3c809c8954c166213f719fd0f133018ee701d64b86b084aa9ee
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-workbench-assignment-review-quality:25
+        input:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs: {}
+        inputHash: 8dc56a45c1c8efc7ed00a99d8cd93a1ccb770b0307cb5685ea8cae9d1be93814
+        protocolVersion: 1
+        reason: Portable recovery requires reconciliation of external execution
+        receipts: []
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-workbench-assignment-review-quality
+        status: unknown
+        stepId: full.archive.execute
+        type: call_tool
+    commands:
+      - id: dc549b12eddbd780f87dac0b5d977e57f31f73173956cc47349222ae2dd4fdad
+        name: revise-design
+        inputHash: 546d49533631a54d6cd528cea62232f54bb5ae8135d891791c307e18295eb619
+        actionId: synapclaim-workbench-assignment-review-quality:7
+    actionContexts:
+      synapclaim-workbench-assignment-review-quality:1:
+        results: {}
+        sequence: 1
+      synapclaim-workbench-assignment-review-quality:11:
+        results: {}
+        sequence: 11
+      synapclaim-workbench-assignment-review-quality:13:
+        results: {}
+        sequence: 13
+      synapclaim-workbench-assignment-review-quality:15:
+        results: {}
+        sequence: 15
+      synapclaim-workbench-assignment-review-quality:16:
+        results: {}
+        sequence: 16
+      synapclaim-workbench-assignment-review-quality:18:
+        results: {}
+        sequence: 18
+      synapclaim-workbench-assignment-review-quality:20:
+        results: {}
+        sequence: 20
+      synapclaim-workbench-assignment-review-quality:22:
+        results: {}
+        sequence: 22
+      synapclaim-workbench-assignment-review-quality:24:
+        results: {}
+        sequence: 24
+      synapclaim-workbench-assignment-review-quality:25:
+        results: {}
+        sequence: 25
+      synapclaim-workbench-assignment-review-quality:4:
+        results: {}
+        sequence: 4
+      synapclaim-workbench-assignment-review-quality:5:
+        results: {}
+        sequence: 5
+      synapclaim-workbench-assignment-review-quality:7:
+        results: {}
+        sequence: 7
+      synapclaim-workbench-assignment-review-quality:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: synapclaim-workbench-assignment-review-quality:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 4df0e2eba2d87cbe7f9b1d63958e17c09f768f3f409382b0dd64db45a3d8e856
+              ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+        proposalHash: 237b53d33f66584a68847fc5141feb714c5b9ccb91421f90b3e4a31efa0ba764
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-4df0e2eba2d87cbe7f9b1d63958e17c09f768f3f409382b0dd64db45a3d8e856
+          choice: approved
+          proposalHash: 237b53d33f66584a68847fc5141feb714c5b9ccb91421f90b3e4a31efa0ba764
+      - id: synapclaim-workbench-assignment-review-quality:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: cancelled
+        proposal:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-workbench-assignment-review-quality/.comet/handoff/design-context.json
+              handoffHash: bd74f0b58e484b7e20931f24cb378328081b05c18baa59d512b5f1a96bca8c76
+              proposal: 作业台融合增强技术方案（8 项决策）：t_claim_task 承载一案多任务归属与 SLA；作业组真源为 IAM iam_dept
+                并纠正文档中不存在的 org_id；分配采用规则表+候选集打分+超时回落公共池；转交/代理/不可用三层不自建
+                HR；独立复审新增状态码 43/46 与 claim:re-review:write，与 44 双人复核并列不合并；AI
+                自动初审分 L1 代码规则/L2 租户策略/L3 作业参数三层配置，阈值只可收紧且不引入自动拒赔；抽检打回新增
+                t_claim_inspection_action 且已支付必须先冲正；统一 ClaimQuery
+                服务端分页修掉假分页。本轮为纯设计+文档交付（skip_specs），无 Spec Patch。
+              requirementsEvidence:
+                contentHash: 35856491067cd4f521dcb1dae1472adbcc90e20226ed104e3e4ee4f3ce75a3cc
+                ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+              sourceEvidence:
+                contentHash: e85b8f4add397fd650c3f6d72534a31049d1ef3dadf8245403c2a5cb262e62e5
+                ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+        proposalHash: d39f937ccb4718378aa4117ff8f4b5838b272adf8e06cc0547ca828e8c8ba707
+        choices:
+          - approved
+          - rejected
+        results: {}
+      - id: synapclaim-workbench-assignment-review-quality:8
+        stepId: full.design.confirm
+        sequence: 8
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-workbench-assignment-review-quality/.comet/handoff/design-context.json
+              handoffHash: c41d8457a26b85a57c7a07adc9f018d29ac6f54d2a7a66752369009a2ec8cb92
+              proposal: 作业台融合增强技术方案（8 项决策）：t_claim_task 承载一案多任务归属与 SLA；作业组真源为 IAM iam_dept
+                并纠正文档中不存在的 org_id；分配采用规则表+候选集打分+超时回落公共池；转交/代理/不可用三层不自建
+                HR；独立复审新增状态码 43/46 与 claim:re-review:write，与 44 双人复核并列不合并；AI
+                自动初审分 L1 代码规则/L2 租户策略/L3 作业参数三层配置，阈值只可收紧且不引入自动拒赔；抽检打回新增
+                t_claim_inspection_action 且已支付必须先冲正；统一 ClaimQuery
+                服务端分页修掉假分页。本轮纯设计+文档交付（skip_specs），无 Spec Patch；Design Doc 采用
+                change 内 design.md 并加 comet_change/role/canonical_spec
+                frontmatter。
+              requirementsEvidence:
+                contentHash: 35856491067cd4f521dcb1dae1472adbcc90e20226ed104e3e4ee4f3ce75a3cc
+                ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+              sourceEvidence:
+                contentHash: ad0d86d8189c1f8a08c030c888b88eb0f6d61696015d48849ec4dc03c1777a73
+                ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+        proposalHash: eaa5e9992fd5f174a3290eb5e00ceb931683b1e25048495afc3f791d0c1bb899
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-eaa5e9992fd5f174a3290eb5e00ceb931683b1e25048495afc3f791d0c1bb899-approved
+          choice: approved
+          proposalHash: eaa5e9992fd5f174a3290eb5e00ceb931683b1e25048495afc3f791d0c1bb899
+      - id: synapclaim-workbench-assignment-review-quality:12
+        stepId: full.build.confirm
+        sequence: 12
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs:
+            full.build.configure:
+              boundBranch: comet/synapclaim-workbench-assignment-review-quality
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: direct
+        proposalHash: e4a1daa3bf0384f51a510bb2651e442054dcb595d7bc94e10e769e2d51ec55ba
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: 483f1345-8f5f-491e-988b-943b3f8f92bb
+          choice: approved
+          proposalHash: e4a1daa3bf0384f51a510bb2651e442054dcb595d7bc94e10e769e2d51ec55ba
+      - id: synapclaim-workbench-assignment-review-quality:23
+        stepId: full.archive.confirm
+        sequence: 23
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs:
+            full.archive.prepare:
+              summary: 本地归档（local）：纯设计与文档交付。三份 04-design 新文档、深度分析与验证报告、§9.3/§10.3 的 org_id
+                纠正、§7.6/§11.10 复审与后督边界、AI §10.1.1 三层配置边界、总体方案 §7/§8.3、易用性提案 v2.3
+                与 4 批落地清单；manifest/AI-INDEX/README 治理同步。不推送、不建 PR；代码落地留给后续 4 批
+                change。
+              targetBranch: comet/synapclaim-workbench-assignment-review-quality
+        proposalHash: c1767f175122e75bab7f24a1591851778467a69ee90370f7b7162c08198cd562
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-c1767f175122e75bab7f24a1591851778467a69ee90370f7b7162c08198cd562-local
+          choice: local
+          proposalHash: c1767f175122e75bab7f24a1591851778467a69ee90370f7b7162c08198cd562
+    evidenceWaits:
+      - id: synapclaim-workbench-assignment-review-quality:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+          contentHash: 4df0e2eba2d87cbe7f9b1d63958e17c09f768f3f409382b0dd64db45a3d8e856
+          submissionId: 84e32be1-2c1c-48ba-9be9-f5a589f7a991
+      - id: synapclaim-workbench-assignment-review-quality:10
+        stepId: full.design.evidence
+        sequence: 10
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/synapclaim-workbench-assignment-review-quality/design.md
+          contentHash: 34ed33ece51f059a9f9f2c68e97b492e9b6af669e9b01b393b4fbcb5f942e1de
+          submissionId: 4c8120d6-01ae-4bdb-aceb-9a3215744ec1
+      - id: synapclaim-workbench-assignment-review-quality:14
+        stepId: full.build.plan.evidence
+        sequence: 14
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/synapclaim-workbench-assignment-review-quality.md
+          contentHash: 311e2c63cda4dc492bba26c10e27cf26e9e433c1379b1127b850066e59b0c947
+          submissionId: f96b30a2-d7cb-49fc-b0bc-845485d04a00
+      - id: synapclaim-workbench-assignment-review-quality:17
+        stepId: full.build.check.evidence
+        sequence: 17
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/7e633801-1117-4077-ab38-648b8bd951a9.log
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          submissionId: e984acc8-2a0c-47e1-9658-131f5c6ca59b
+      - id: synapclaim-workbench-assignment-review-quality:19
+        stepId: full.verify.report.evidence
+        sequence: 19
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-13-synapclaim-workbench-assignment-review-quality-verify.md
+          contentHash: 3dd471eea542911fef4e2d96d05ba6f9e9cfba67f0d805dbc32c2697520ce303
+          submissionId: 7fa8cd5d-e062-4106-8c87-ffa6b01a068b
+      - id: synapclaim-workbench-assignment-review-quality:21
+        stepId: full.verify.check.evidence
+        sequence: 21
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/3bea8869-846e-481b-99d2-331829558460.log
+          contentHash: 0015bd25474ab5570f979b587d80108e1053bb283cc41ff24d7eedbec81f723e
+          submissionId: e77a82f2-931d-4d58-a6cb-77782d5269c8
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 57
+  sourceHash: 8fdb22049de11e13ade26dbf4a1891f9b4d69b53cb983d5041c5e219527ec745
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 4df0e2eba2d87cbe7f9b1d63958e17c09f768f3f409382b0dd64db45a3d8e856
+              ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+      - contentHash: 4df0e2eba2d87cbe7f9b1d63958e17c09f768f3f409382b0dd64db45a3d8e856
+        ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+      - contentHash: 4df0e2eba2d87cbe7f9b1d63958e17c09f768f3f409382b0dd64db45a3d8e856
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-workbench-assignment-review-quality/.comet/handoff/design-context.json
+              handoffHash: c41d8457a26b85a57c7a07adc9f018d29ac6f54d2a7a66752369009a2ec8cb92
+              proposal: 作业台融合增强技术方案（8 项决策）：t_claim_task 承载一案多任务归属与 SLA；作业组真源为 IAM iam_dept
+                并纠正文档中不存在的 org_id；分配采用规则表+候选集打分+超时回落公共池；转交/代理/不可用三层不自建
+                HR；独立复审新增状态码 43/46 与 claim:re-review:write，与 44 双人复核并列不合并；AI
+                自动初审分 L1 代码规则/L2 租户策略/L3 作业参数三层配置，阈值只可收紧且不引入自动拒赔；抽检打回新增
+                t_claim_inspection_action 且已支付必须先冲正；统一 ClaimQuery
+                服务端分页修掉假分页。本轮纯设计+文档交付（skip_specs），无 Spec Patch；Design Doc 采用
+                change 内 design.md 并加 comet_change/role/canonical_spec
+                frontmatter。
+              requirementsEvidence:
+                contentHash: 35856491067cd4f521dcb1dae1472adbcc90e20226ed104e3e4ee4f3ce75a3cc
+                ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+              sourceEvidence:
+                contentHash: ad0d86d8189c1f8a08c030c888b88eb0f6d61696015d48849ec4dc03c1777a73
+                ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+      - handoffContext: openspec/changes/synapclaim-workbench-assignment-review-quality/.comet/handoff/design-context.json
+        handoffHash: c41d8457a26b85a57c7a07adc9f018d29ac6f54d2a7a66752369009a2ec8cb92
+        proposal: 作业台融合增强技术方案（8 项决策）：t_claim_task 承载一案多任务归属与 SLA；作业组真源为 IAM iam_dept
+          并纠正文档中不存在的 org_id；分配采用规则表+候选集打分+超时回落公共池；转交/代理/不可用三层不自建 HR；独立复审新增状态码
+          43/46 与 claim:re-review:write，与 44 双人复核并列不合并；AI 自动初审分 L1 代码规则/L2
+          租户策略/L3 作业参数三层配置，阈值只可收紧且不引入自动拒赔；抽检打回新增 t_claim_inspection_action
+          且已支付必须先冲正；统一 ClaimQuery 服务端分页修掉假分页。本轮纯设计+文档交付（skip_specs），无 Spec
+          Patch；Design Doc 采用 change 内 design.md 并加
+          comet_change/role/canonical_spec frontmatter。
+        requirementsEvidence:
+          contentHash: 35856491067cd4f521dcb1dae1472adbcc90e20226ed104e3e4ee4f3ce75a3cc
+          ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+        sourceEvidence:
+          contentHash: ad0d86d8189c1f8a08c030c888b88eb0f6d61696015d48849ec4dc03c1777a73
+          ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+      - designDoc: openspec/changes/synapclaim-workbench-assignment-review-quality/design.md
+      - contentHash: 34ed33ece51f059a9f9f2c68e97b492e9b6af669e9b01b393b4fbcb5f942e1de
+        ref: openspec/changes/synapclaim-workbench-assignment-review-quality/design.md
+      - boundBranch: comet/synapclaim-workbench-assignment-review-quality
+        buildMode: autonomous
+        directOverride: false
+        isolation: worktree
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: direct
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs:
+            full.build.configure:
+              boundBranch: comet/synapclaim-workbench-assignment-review-quality
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: direct
+      - designEvidence:
+          contentHash: 34ed33ece51f059a9f9f2c68e97b492e9b6af669e9b01b393b4fbcb5f942e1de
+          ref: openspec/changes/synapclaim-workbench-assignment-review-quality/design.md
+        plan: docs/superpowers/plans/synapclaim-workbench-assignment-review-quality.md
+        planEvidence:
+          contentHash: 311e2c63cda4dc492bba26c10e27cf26e9e433c1379b1127b850066e59b0c947
+          ref: docs/superpowers/plans/synapclaim-workbench-assignment-review-quality.md
+        taskRevision: 197d3ff8480b203b465e14ac7f9a70cb51dc035ae0bb593f3f6646eca18e58a1
+      - contentHash: 311e2c63cda4dc492bba26c10e27cf26e9e433c1379b1127b850066e59b0c947
+        ref: docs/superpowers/plans/synapclaim-workbench-assignment-review-quality.md
+      - event: build-complete
+      - argv:
+          - python3
+          - doc/ai-product/synapClaim/tools/check_all.py
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+        cwd: .
+        environment: 9b3803844efac7d956c174c0d87d127b14716c01cce4a01c3b08ab40330210dd
+        exitCode: 0
+        inputAfter: ebd52cda095f77d7d50d7155db5cd68511bdffbda51a4d224a1ed69d5c944f59
+        inputBefore: ebd52cda095f77d7d50d7155db5cd68511bdffbda51a4d224a1ed69d5c944f59
+        manifestHash: 4c5b458fe0b59095e35263a3abc5035a7577b6b02a7780664f88956cb514d7a1
+        manifestRef: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/258065e7-10f9-4618-95aa-a0adf703390f.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/7e633801-1117-4077-ab38-648b8bd951a9.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+        ref: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/7e633801-1117-4077-ab38-648b8bd951a9.log
+      - contentHash: 3dd471eea542911fef4e2d96d05ba6f9e9cfba67f0d805dbc32c2697520ce303
+        ref: docs/superpowers/reports/2026-11-13-synapclaim-workbench-assignment-review-quality-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-13-synapclaim-workbench-assignment-review-quality-verify.md
+      - argv:
+          - bash
+          - openspec/changes/synapclaim-workbench-assignment-review-quality/verify.sh
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: 0015bd25474ab5570f979b587d80108e1053bb283cc41ff24d7eedbec81f723e
+        cwd: .
+        deliveryInputs:
+          scripts/ci/scripts-registry-guard.sh: git:0ffcd9c20d60819b8ab5b25f23b42ecdf3a47fc6
+          scripts/e2e/check-data-realism.py: git:75dc7927498f5298622c33b1c0d3046014948b86
+          scripts/e2e/datagen.py: git:354a8e6797a3e5224651b310a12d4cf0e2ea478d
+          scripts/e2e/impact-map.json: git:b4b47ea76c7ca0d6da34e6710f652c460db4e404
+          scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+          scripts/lib/__init__.py: git:2e3534761dec1091a4f725d5c42826fa4e83adf5
+          scripts/lib/gate.py: git:1533ff5bf41f25f1b5d3528c3d48e93fb2b359ae
+          scripts/lib/registry.py: git:e46c4ed8ca1b82145de3a44da0e3c4410c2ce2a7
+          scripts/lib/waivers.py: git:f9d270737ddeb1fb6bacb7a915ae53a329295d43
+          scripts/registry/external-known-failures.txt: git:046de2424dc6d90d57c4eec10605ef6f8b87dfe5
+          scripts/registry/external.json: git:02213791dd7163fe0f1d6b4614e06f7b2ef207ad
+          scripts/registry/waivers.json: git:51e93bfe1bf9ff9947d46b5394bffe7f4ca43d66
+        environment: b50e5879eaff3e99cfc9b6f5b9e93b579a0fc0b0aa07f2320adefb7ea9f3ffdb
+        exitCode: 0
+        inputAfter: 5f066d6c58b98ba09b5d8e502ac0402c2db5b6e4ec39384ab9b42b7f31941789
+        inputBefore: 5f066d6c58b98ba09b5d8e502ac0402c2db5b6e4ec39384ab9b42b7f31941789
+        manifestHash: 29bd1b2125f1ffdb1f530b3c60bcd36e2580864e1f178f4f400b7ae4963a11eb
+        manifestRef: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/9b278c33-af80-4f96-b76d-0f1012684f69.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/3bea8869-846e-481b-99d2-331829558460.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 0015bd25474ab5570f979b587d80108e1053bb283cc41ff24d7eedbec81f723e
+        ref: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/3bea8869-846e-481b-99d2-331829558460.log
+      - choice: local
+        proposal:
+          input:
+            change: synapclaim-workbench-assignment-review-quality
+            changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+            workspaceBaseline:
+              ref: 6a63445d-198d-4648-9e30-a2470eefb138
+          outputs:
+            full.archive.prepare:
+              summary: 本地归档（local）：纯设计与文档交付。三份 04-design 新文档、深度分析与验证报告、§9.3/§10.3 的 org_id
+                纠正、§7.6/§11.10 复审与后督边界、AI §10.1.1 三层配置边界、总体方案 §7/§8.3、易用性提案 v2.3
+                与 4 批落地清单；manifest/AI-INDEX/README 治理同步。不推送、不建 PR；代码落地留给后续 4 批
+                change。
+              targetBranch: comet/synapclaim-workbench-assignment-review-quality
+      - summary: 本地归档（local）：纯设计与文档交付。三份 04-design 新文档、深度分析与验证报告、§9.3/§10.3 的 org_id
+          纠正、§7.6/§11.10 复审与后督边界、AI §10.1.1 三层配置边界、总体方案 §7/§8.3、易用性提案 v2.3 与 4
+          批落地清单；manifest/AI-INDEX/README 治理同步。不推送、不建 PR；代码落地留给后续 4 批 change。
+        targetBranch: comet/synapclaim-workbench-assignment-review-quality
+      - baseCommit: df5cca99fec8f8f1069ab98fc735c3d32fac67dc
+        deliveryAction: local
+        targetBranch: comet/synapclaim-workbench-assignment-review-quality
+        verifiedBranch: comet/synapclaim-workbench-assignment-review-quality
+      - sequence: 8
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-workbench-assignment-review-quality
+              changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+              workspaceBaseline:
+                ref: 6a63445d-198d-4648-9e30-a2470eefb138
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/synapclaim-workbench-assignment-review-quality/.comet/handoff/design-context.json
+                handoffHash: c41d8457a26b85a57c7a07adc9f018d29ac6f54d2a7a66752369009a2ec8cb92
+                proposal: 作业台融合增强技术方案（8 项决策）：t_claim_task 承载一案多任务归属与 SLA；作业组真源为 IAM iam_dept
+                  并纠正文档中不存在的 org_id；分配采用规则表+候选集打分+超时回落公共池；转交/代理/不可用三层不自建
+                  HR；独立复审新增状态码 43/46 与 claim:re-review:write，与 44 双人复核并列不合并；AI
+                  自动初审分 L1 代码规则/L2 租户策略/L3 作业参数三层配置，阈值只可收紧且不引入自动拒赔；抽检打回新增
+                  t_claim_inspection_action 且已支付必须先冲正；统一 ClaimQuery
+                  服务端分页修掉假分页。本轮纯设计+文档交付（skip_specs），无 Spec Patch；Design Doc 采用
+                  change 内 design.md 并加 comet_change/role/canonical_spec
+                  frontmatter。
+                requirementsEvidence:
+                  contentHash: 35856491067cd4f521dcb1dae1472adbcc90e20226ed104e3e4ee4f3ce75a3cc
+                  ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+                sourceEvidence:
+                  contentHash: ad0d86d8189c1f8a08c030c888b88eb0f6d61696015d48849ec4dc03c1777a73
+                  ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+      - sequence: 9
+        value:
+          designDoc: openspec/changes/synapclaim-workbench-assignment-review-quality/design.md
+      - sequence: 10
+        value:
+          contentHash: 34ed33ece51f059a9f9f2c68e97b492e9b6af669e9b01b393b4fbcb5f942e1de
+          ref: openspec/changes/synapclaim-workbench-assignment-review-quality/design.md
+      - sequence: 7
+        value:
+          handoffContext: openspec/changes/synapclaim-workbench-assignment-review-quality/.comet/handoff/design-context.json
+          handoffHash: c41d8457a26b85a57c7a07adc9f018d29ac6f54d2a7a66752369009a2ec8cb92
+          proposal: 作业台融合增强技术方案（8 项决策）：t_claim_task 承载一案多任务归属与 SLA；作业组真源为 IAM iam_dept
+            并纠正文档中不存在的 org_id；分配采用规则表+候选集打分+超时回落公共池；转交/代理/不可用三层不自建 HR；独立复审新增状态码
+            43/46 与 claim:re-review:write，与 44 双人复核并列不合并；AI 自动初审分 L1 代码规则/L2
+            租户策略/L3 作业参数三层配置，阈值只可收紧且不引入自动拒赔；抽检打回新增 t_claim_inspection_action
+            且已支付必须先冲正；统一 ClaimQuery 服务端分页修掉假分页。本轮纯设计+文档交付（skip_specs），无 Spec
+            Patch；Design Doc 采用 change 内 design.md 并加
+            comet_change/role/canonical_spec frontmatter。
+          requirementsEvidence:
+            contentHash: 35856491067cd4f521dcb1dae1472adbcc90e20226ed104e3e4ee4f3ce75a3cc
+            ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+          sourceEvidence:
+            contentHash: ad0d86d8189c1f8a08c030c888b88eb0f6d61696015d48849ec4dc03c1777a73
+            ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+      - sequence: 11
+        value:
+          boundBranch: comet/synapclaim-workbench-assignment-review-quality
+          buildMode: autonomous
+          directOverride: false
+          isolation: worktree
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: direct
+      - sequence: 12
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-workbench-assignment-review-quality
+              changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+              workspaceBaseline:
+                ref: 6a63445d-198d-4648-9e30-a2470eefb138
+            outputs:
+              full.build.configure:
+                boundBranch: comet/synapclaim-workbench-assignment-review-quality
+                buildMode: autonomous
+                directOverride: false
+                isolation: worktree
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: direct
+      - sequence: 13
+        value:
+          designEvidence:
+            contentHash: 34ed33ece51f059a9f9f2c68e97b492e9b6af669e9b01b393b4fbcb5f942e1de
+            ref: openspec/changes/synapclaim-workbench-assignment-review-quality/design.md
+          plan: docs/superpowers/plans/synapclaim-workbench-assignment-review-quality.md
+          planEvidence:
+            contentHash: 311e2c63cda4dc492bba26c10e27cf26e9e433c1379b1127b850066e59b0c947
+            ref: docs/superpowers/plans/synapclaim-workbench-assignment-review-quality.md
+          taskRevision: 197d3ff8480b203b465e14ac7f9a70cb51dc035ae0bb593f3f6646eca18e58a1
+      - sequence: 14
+        value:
+          contentHash: 311e2c63cda4dc492bba26c10e27cf26e9e433c1379b1127b850066e59b0c947
+          ref: docs/superpowers/plans/synapclaim-workbench-assignment-review-quality.md
+      - sequence: 15
+        value:
+          event: build-complete
+      - sequence: 16
+        value:
+          argv:
+            - python3
+            - doc/ai-product/synapClaim/tools/check_all.py
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          cwd: .
+          environment: 9b3803844efac7d956c174c0d87d127b14716c01cce4a01c3b08ab40330210dd
+          exitCode: 0
+          inputAfter: ebd52cda095f77d7d50d7155db5cd68511bdffbda51a4d224a1ed69d5c944f59
+          inputBefore: ebd52cda095f77d7d50d7155db5cd68511bdffbda51a4d224a1ed69d5c944f59
+          manifestHash: 4c5b458fe0b59095e35263a3abc5035a7577b6b02a7780664f88956cb514d7a1
+          manifestRef: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/258065e7-10f9-4618-95aa-a0adf703390f.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/7e633801-1117-4077-ab38-648b8bd951a9.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 17
+        value:
+          contentHash: 89e60450905ad906cf4a62aff05a016b7ecf4f8e6164cc239f7155d333d3997b
+          ref: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/7e633801-1117-4077-ab38-648b8bd951a9.log
+      - sequence: 19
+        value:
+          contentHash: 3dd471eea542911fef4e2d96d05ba6f9e9cfba67f0d805dbc32c2697520ce303
+          ref: docs/superpowers/reports/2026-11-13-synapclaim-workbench-assignment-review-quality-verify.md
+      - sequence: 18
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-13-synapclaim-workbench-assignment-review-quality-verify.md
+      - sequence: 20
+        value:
+          argv:
+            - bash
+            - openspec/changes/synapclaim-workbench-assignment-review-quality/verify.sh
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: 0015bd25474ab5570f979b587d80108e1053bb283cc41ff24d7eedbec81f723e
+          cwd: .
+          deliveryInputs:
+            scripts/ci/scripts-registry-guard.sh: git:0ffcd9c20d60819b8ab5b25f23b42ecdf3a47fc6
+            scripts/e2e/check-data-realism.py: git:75dc7927498f5298622c33b1c0d3046014948b86
+            scripts/e2e/datagen.py: git:354a8e6797a3e5224651b310a12d4cf0e2ea478d
+            scripts/e2e/impact-map.json: git:b4b47ea76c7ca0d6da34e6710f652c460db4e404
+            scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+            scripts/lib/__init__.py: git:2e3534761dec1091a4f725d5c42826fa4e83adf5
+            scripts/lib/gate.py: git:1533ff5bf41f25f1b5d3528c3d48e93fb2b359ae
+            scripts/lib/registry.py: git:e46c4ed8ca1b82145de3a44da0e3c4410c2ce2a7
+            scripts/lib/waivers.py: git:f9d270737ddeb1fb6bacb7a915ae53a329295d43
+            scripts/registry/external-known-failures.txt: git:046de2424dc6d90d57c4eec10605ef6f8b87dfe5
+            scripts/registry/external.json: git:02213791dd7163fe0f1d6b4614e06f7b2ef207ad
+            scripts/registry/waivers.json: git:51e93bfe1bf9ff9947d46b5394bffe7f4ca43d66
+          environment: b50e5879eaff3e99cfc9b6f5b9e93b579a0fc0b0aa07f2320adefb7ea9f3ffdb
+          exitCode: 0
+          inputAfter: 5f066d6c58b98ba09b5d8e502ac0402c2db5b6e4ec39384ab9b42b7f31941789
+          inputBefore: 5f066d6c58b98ba09b5d8e502ac0402c2db5b6e4ec39384ab9b42b7f31941789
+          manifestHash: 29bd1b2125f1ffdb1f530b3c60bcd36e2580864e1f178f4f400b7ae4963a11eb
+          manifestRef: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/9b278c33-af80-4f96-b76d-0f1012684f69.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/3bea8869-846e-481b-99d2-331829558460.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 21
+        value:
+          contentHash: 0015bd25474ab5570f979b587d80108e1053bb283cc41ff24d7eedbec81f723e
+          ref: .comet/runtime/classic-sdk-checks/972c87f45f1562fe62fb063499aec7e72f99dae8aba7e6d7adba01c81e7bf5e8/3bea8869-846e-481b-99d2-331829558460.log
+      - sequence: 23
+        value:
+          choice: local
+          proposal:
+            input:
+              change: synapclaim-workbench-assignment-review-quality
+              changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+              workspaceBaseline:
+                ref: 6a63445d-198d-4648-9e30-a2470eefb138
+            outputs:
+              full.archive.prepare:
+                summary: 本地归档（local）：纯设计与文档交付。三份 04-design 新文档、深度分析与验证报告、§9.3/§10.3 的 org_id
+                  纠正、§7.6/§11.10 复审与后督边界、AI §10.1.1 三层配置边界、总体方案 §7/§8.3、易用性提案
+                  v2.3 与 4 批落地清单；manifest/AI-INDEX/README 治理同步。不推送、不建
+                  PR；代码落地留给后续 4 批 change。
+                targetBranch: comet/synapclaim-workbench-assignment-review-quality
+      - sequence: 22
+        value:
+          summary: 本地归档（local）：纯设计与文档交付。三份 04-design 新文档、深度分析与验证报告、§9.3/§10.3 的 org_id
+            纠正、§7.6/§11.10 复审与后督边界、AI §10.1.1 三层配置边界、总体方案 §7/§8.3、易用性提案 v2.3 与 4
+            批落地清单；manifest/AI-INDEX/README 治理同步。不推送、不建 PR；代码落地留给后续 4 批 change。
+          targetBranch: comet/synapclaim-workbench-assignment-review-quality
+      - sequence: 24
+        value:
+          baseCommit: df5cca99fec8f8f1069ab98fc735c3d32fac67dc
+          deliveryAction: local
+          targetBranch: comet/synapclaim-workbench-assignment-review-quality
+          verifiedBranch: comet/synapclaim-workbench-assignment-review-quality
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-workbench-assignment-review-quality
+              changeDir: openspec/changes/synapclaim-workbench-assignment-review-quality
+              workspaceBaseline:
+                ref: 6a63445d-198d-4648-9e30-a2470eefb138
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 4df0e2eba2d87cbe7f9b1d63958e17c09f768f3f409382b0dd64db45a3d8e856
+                ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+      - sequence: 2
+        value:
+          contentHash: 4df0e2eba2d87cbe7f9b1d63958e17c09f768f3f409382b0dd64db45a3d8e856
+          ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+      - sequence: 4
+        value:
+          contentHash: 4df0e2eba2d87cbe7f9b1d63958e17c09f768f3f409382b0dd64db45a3d8e856
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/synapclaim-workbench-assignment-review-quality/.comet/handoff/design-context.json
+          handoffHash: bd74f0b58e484b7e20931f24cb378328081b05c18baa59d512b5f1a96bca8c76
+          proposal: 作业台融合增强技术方案（8 项决策）：t_claim_task 承载一案多任务归属与 SLA；作业组真源为 IAM iam_dept
+            并纠正文档中不存在的 org_id；分配采用规则表+候选集打分+超时回落公共池；转交/代理/不可用三层不自建 HR；独立复审新增状态码
+            43/46 与 claim:re-review:write，与 44 双人复核并列不合并；AI 自动初审分 L1 代码规则/L2
+            租户策略/L3 作业参数三层配置，阈值只可收紧且不引入自动拒赔；抽检打回新增 t_claim_inspection_action
+            且已支付必须先冲正；统一 ClaimQuery 服务端分页修掉假分页。本轮为纯设计+文档交付（skip_specs），无 Spec
+            Patch。
+          requirementsEvidence:
+            contentHash: 35856491067cd4f521dcb1dae1472adbcc90e20226ed104e3e4ee4f3ce75a3cc
+            ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+          sourceEvidence:
+            contentHash: e85b8f4add397fd650c3f6d72534a31049d1ef3dadf8245403c2a5cb262e62e5
+            ref: openspec/changes/synapclaim-workbench-assignment-review-quality
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.handoff
+        value: 5
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: 6
+        height: 2
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 9
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 8
+        right: 10
+        height: 3
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 12
+        right: 13
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 14
+        right: 10
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 16
+        right: 17
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 12
+        right: 18
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 19
+        right: 10
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 12
+        right: 21
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 17
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 22
+        right: 23
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 10
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 14
+        left: 26
+        right: 27
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 28
+        right: 21
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 23
+        right: 10
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 29
+        right: 30
+        height: 4
+      - key: full.verify.run
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: null
+        right: 32
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 9
+        right: 33
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 23
+        right: 34
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: 29
+        right: 35
+        height: 5
+      - key: full.design.handoff
+        value: 5
+        left: 9
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: 38
+        right: 32
+        height: 2
+      - key: full.verify.check
+        value: 17
+        left: 37
+        right: 39
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 23
+        right: 40
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: 29
+        right: 41
+        height: 5
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 20
+        left: 43
+        right: 44
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 27
+        right: 21
+        height: 2
+      - key: full.build.check.evidence
+        value: 14
+        left: 45
+        right: 46
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 47
+        right: 41
+        height: 5
+      - key: full.archive.preflight
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: 49
+        height: 2
+      - key: full.archive.prepare
+        value: 20
+        left: 50
+        right: 44
+        height: 3
+      - key: full.build.check.evidence
+        value: 14
+        left: 51
+        right: 46
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: 52
+        right: 41
+        height: 5
+      - key: full.design.confirm
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 24
+        left: null
+        right: 55
+        height: 2
+      - key: full.design.document
+        value: 23
+        left: 54
+        right: 56
+        height: 3
+      - key: full.build.configure
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 27
+        left: 58
+        right: 59
+        height: 2
+      - key: full.design.document
+        value: 23
+        left: 60
+        right: 56
+        height: 3
+      - key: full.build.plan
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 29
+        left: 62
+        right: 63
+        height: 2
+      - key: full.build.confirm
+        value: 27
+        left: 58
+        right: 64
+        height: 3
+      - key: full.design.document
+        value: 23
+        left: 65
+        right: 56
+        height: 4
+      - key: full.build.execute
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 27
+        left: 58
+        right: 67
+        height: 2
+      - key: full.build.plan.evidence
+        value: 29
+        left: null
+        right: 63
+        height: 2
+      - key: full.build.plan
+        value: 28
+        left: 68
+        right: 69
+        height: 3
+      - key: full.design.document
+        value: 23
+        left: 70
+        right: 56
+        height: 4
+      - key: full.build.check
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 32
+        left: 72
+        right: 73
+        height: 2
+      - key: full.build.confirm
+        value: 27
+        left: 74
+        right: 67
+        height: 3
+      - key: full.design.document
+        value: 23
+        left: 69
+        right: 56
+        height: 3
+      - key: full.build.plan
+        value: 28
+        left: 75
+        right: 76
+        height: 4
+      - key: full.design.evidence
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 33
+        left: null
+        right: 79
+        height: 2
+      - key: full.design.handoff
+        value: 25
+        left: 78
+        right: 80
+        height: 3
+      - key: full.design.document
+        value: 23
+        left: 69
+        right: 81
+        height: 4
+      - key: full.build.plan
+        value: 28
+        left: 75
+        right: 82
+        height: 5
+      - key: full.design.handoff
+        value: 25
+        left: 78
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 33
+        left: 85
+        right: 79
+        height: 2
+      - key: full.verify.check
+        value: 35
+        left: 84
+        right: 86
+        height: 3
+      - key: full.design.document
+        value: 23
+        left: 69
+        right: 87
+        height: 4
+      - key: full.build.plan
+        value: 28
+        left: 75
+        right: 88
+        height: 5
+      - key: full.archive.confirm
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 38
+        left: 90
+        right: 91
+        height: 2
+      - key: full.build.confirm
+        value: 27
+        left: 73
+        right: 67
+        height: 2
+      - key: full.build.check.evidence
+        value: 32
+        left: 92
+        right: 93
+        height: 3
+      - key: full.build.plan
+        value: 28
+        left: 94
+        right: 88
+        height: 5
+      - key: full.archive.preflight
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 37
+        left: null
+        right: 96
+        height: 2
+      - key: full.archive.prepare
+        value: 38
+        left: 97
+        right: 91
+        height: 3
+      - key: full.build.check.evidence
+        value: 32
+        left: 98
+        right: 93
+        height: 4
+      - key: full.build.plan
+        value: 28
+        left: 99
+        right: 88
+        height: 5
+      - key: full.open
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 41
+        left: 101
+        right: 102
+        height: 2
+      - key: full.open.revalidate
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 42
+        left: null
+        right: 104
+        height: 2
+      - key: full.open.confirm
+        value: 41
+        left: 101
+        right: 105
+        height: 3
+      - key: full.design.handoff
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 22
+        left: null
+        right: 107
+        height: 2
+      - key: full.archive.confirm
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 39
+        left: 109
+        right: null
+        height: 2
+      - key: full.build.check
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 32
+        left: 111
+        right: null
+        height: 2
+      - key: full.archive.prepare
+        value: 38
+        left: 110
+        right: 112
+        height: 3
+      - key: full.build.confirm
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.build.execute
+        value: 30
+        left: 114
+        right: null
+        height: 2
+      - key: full.build.plan.evidence
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 22
+        left: 116
+        right: 117
+        height: 2
+      - key: full.build.plan
+        value: 28
+        left: 115
+        right: 118
+        height: 3
+      - key: full.build.configure
+        value: 26
+        left: 113
+        right: 119
+        height: 4
+      - key: full.design.handoff
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 40
+        left: 121
+        right: 122
+        height: 2
+      - key: full.open.revalidate
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 33
+        left: 125
+        right: 126
+        height: 2
+      - key: full.verify.check
+        value: 35
+        left: 124
+        right: 127
+        height: 3
+      - key: full.open.evidence
+        value: 42
+        left: 123
+        right: 128
+        height: 4
+      - key: full.design.evidence
+        value: 24
+        left: 120
+        right: 129
+        height: 5
+      - key: full.open.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 40
+        left: null
+        right: 131
+        height: 2
+      - key: full.design.handoff
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 42
+        left: 134
+        right: 135
+        height: 2
+      - key: full.open
+        value: 40
+        left: 133
+        right: 136
+        height: 3
+      - key: full.design.handoff
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 24
+        left: 140
+        right: 141
+        height: 2
+      - key: full.design.confirm
+        value: 22
+        left: 139
+        right: 142
+        height: 3
+      - key: full.archive.prepare
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 31
+        left: 144
+        right: 145
+        height: 2
+      - key: full.build.confirm
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 26
+        left: 146
+        right: 147
+        height: 3
+      - key: full.build.plan.evidence
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 28
+        left: null
+        right: 149
+        height: 2
+      - key: full.design.handoff
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 24
+        left: 140
+        right: 151
+        height: 2
+      - key: full.verify.check.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 33
+        left: 153
+        right: 154
+        height: 2
+      - key: full.verify.check
+        value: 35
+        left: 152
+        right: 155
+        height: 3
+      - key: full.design.confirm
+        value: 22
+        left: 150
+        right: 156
+        height: 4
+      - key: full.build.execute
+        value: 30
+        left: 148
+        right: 157
+        height: 5
+      - key: full.open
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 23
+        left: 160
+        right: 161
+        height: 2
+      - key: full.build.configure
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 27
+        left: 163
+        right: 164
+        height: 2
+      - key: full.design.document
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 24
+        left: 166
+        right: 167
+        height: 2
+      - key: full.design.confirm
+        value: 22
+        left: 165
+        right: 168
+        height: 3
+      - key: full.build.check
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 26
+        left: 170
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 28
+        left: 172
+        right: 173
+        height: 2
+      - key: full.build.confirm
+        value: 27
+        left: 171
+        right: 174
+        height: 3
+      - key: full.design.confirm
+        value: 22
+        left: 175
+        right: 168
+        height: 4
+      - key: full.build.check
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 32
+        left: 177
+        right: 178
+        height: 2
+      - key: full.build.confirm
+        value: 27
+        left: 179
+        right: 174
+        height: 3
+      - key: full.verify.run
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 25
+        left: null
+        right: 181
+        height: 2
+      - key: full.design.evidence
+        value: 24
+        left: 166
+        right: 182
+        height: 3
+      - key: full.design.confirm
+        value: 22
+        left: 180
+        right: 183
+        height: 4
+      - key: full.design.handoff
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 24
+        left: 166
+        right: 185
+        height: 2
+      - key: full.verify.report.evidence
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 34
+        left: 187
+        right: null
+        height: 2
+      - key: full.verify.check
+        value: 35
+        left: 186
+        right: 188
+        height: 3
+      - key: full.design.confirm
+        value: 22
+        left: 180
+        right: 189
+        height: 4
+    maps:
+      - null
+      - 2
+      - 5
+      - 7
+      - 11
+      - 15
+      - 20
+      - 25
+      - 31
+      - 36
+      - 42
+      - 48
+      - 53
+      - 57
+      - 61
+      - 66
+      - 71
+      - 77
+      - 83
+      - 89
+      - 95
+      - 100
+      - 103
+      - 106
+      - 108
+      - 130
+      - 132
+      - 137
+      - 138
+      - 143
+      - 158
+      - 159
+      - 162
+      - 169
+      - 176
+      - 184
+      - 190
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actionContexts
+          - synapclaim-workbench-assignment-review-quality:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - synapclaim-workbench-assignment-review-quality:11
+          - results
+        map: 13
+      - path:
+          - actionContexts
+          - synapclaim-workbench-assignment-review-quality:13
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - synapclaim-workbench-assignment-review-quality:15
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - synapclaim-workbench-assignment-review-quality:16
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - synapclaim-workbench-assignment-review-quality:18
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - synapclaim-workbench-assignment-review-quality:20
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - synapclaim-workbench-assignment-review-quality:22
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - synapclaim-workbench-assignment-review-quality:24
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - synapclaim-workbench-assignment-review-quality:25
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - synapclaim-workbench-assignment-review-quality:4
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - synapclaim-workbench-assignment-review-quality:5
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - synapclaim-workbench-assignment-review-quality:7
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - synapclaim-workbench-assignment-review-quality:9
+          - results
+        map: 24
+      - path:
+          - outputs
+        map: 25
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 26
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 27
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 28
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 29
+      - path:
+          - waits
+          - "4"
+          - results
+        map: 30
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 31
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 32
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 33
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 34
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 35
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 36
+  storageHash: c98d625209178e2238712a072d6fe265b64392537b79a4ffdb66f65066d201fb
+check_epoch: 5

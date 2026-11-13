@@ -1,7 +1,8 @@
 ---
 change: synapclaim-workbench-assignment-review-quality
-design-doc: openspec/changes/synapclaim-workbench-assignment-review-quality/design.md
+design-doc: openspec/changes/archive/2026-11-13-synapclaim-workbench-assignment-review-quality/design.md
 base-ref: 6f0ea427fdee36fad49994bf7854bf075e6a9a28
+archived-with: 2026-11-13-synapclaim-workbench-assignment-review-quality
 ---
 
 # 实施计划：理赔作业台融合增强（分配 / 复审 / 抽检打回）
