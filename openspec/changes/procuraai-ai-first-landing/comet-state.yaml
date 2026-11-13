@@ -1,0 +1,285 @@
+# comet-execution: managed-run
+change_id: f6ad6a40-6473-41ad-885e-aa6d1978144d
+workflow: full
+language: zh-CN
+phase: open
+context_compression: off
+build_mode: null
+build_pause: null
+subagent_dispatch: null
+tdd_mode: null
+review_mode: off
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: b04b2a8d62599acf433180aa4f57b97eb5e18346
+design_doc: null
+plan: null
+verify_result: pending
+verify_failures: 0
+verification_report: null
+branch_status: pending
+created_at: 2026-11-12
+verified_at: null
+archive_confirmation: null
+archived: false
+bound_branch: dev
+direct_override: null
+handoff_context: null
+handoff_hash: null
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v1
+  hash: feb040b29a14ed3c499238f4ce88573a7f0a7da641f54eda6bcb0c1c0c38d7ef
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: procuraai-ai-first-landing
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: c60b3ae34d8df4b4f0530a1476acaea7e71a408d9b1ce97e8857356c594996a4
+    input:
+      change: procuraai-ai-first-landing
+      changeDir: openspec/changes/procuraai-ai-first-landing
+      workspaceBaseline:
+        ref: a037bac8-929f-4d57-9834-d84f0a1e6fab
+    state:
+      archiveConfirmation: null
+      archived: false
+      autoTransition: true
+      baseRef: b04b2a8d62599acf433180aa4f57b97eb5e18346
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: null
+      buildPause: null
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-12
+      designDoc: null
+      directOverride: null
+      handoffContext: null
+      handoffHash: null
+      isolation: current
+      language: zh-CN
+      phase: open
+      plan: null
+      reviewMode: off
+      subagentDispatch: null
+      tddMode: null
+      verificationReport: null
+      verifiedAt: null
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pending
+      workflow: full
+    status: running
+    sequence: 4
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-3dba6ff377b70019ab27b656dd9444c708e5d8f0a6d07bb20564f63e0e631ce4
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-ai-first-landing:1
+        input:
+          input:
+            change: procuraai-ai-first-landing
+            changeDir: openspec/changes/procuraai-ai-first-landing
+            workspaceBaseline:
+              ref: a037bac8-929f-4d57-9834-d84f0a1e6fab
+          outputs: {}
+        inputHash: 0c5a6fa6f47628e5adacfc794a765075f91d6ae2cbe4bdee0a5c8f5d0929a758
+        outcome:
+          actionId: procuraai-ai-first-landing:1
+          attempt: 1
+          claimToken: portable-3dba6ff377b70019ab27b656dd9444c708e5d8f0a6d07bb20564f63e0e631ce4
+          inputHash: 0c5a6fa6f47628e5adacfc794a765075f91d6ae2cbe4bdee0a5c8f5d0929a758
+          outcomeId: 6e5f1841-9846-47cc-911f-bcf370eaa1bf
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: fba3a0f270d04330451cdff15dedf513e57634597f08868a7c841ed76166b87f
+            outcomeId: 6e5f1841-9846-47cc-911f-bcf370eaa1bf
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-ai-first-landing
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-b946791b2837f551926019999a6d71d34aa1b3fe6f5ca988c1e5a0891684b122
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-ai-first-landing:4
+        input:
+          input:
+            change: procuraai-ai-first-landing
+            changeDir: openspec/changes/procuraai-ai-first-landing
+            workspaceBaseline:
+              ref: a037bac8-929f-4d57-9834-d84f0a1e6fab
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-ai-first-landing
+                  changeDir: openspec/changes/procuraai-ai-first-landing
+                  workspaceBaseline:
+                    ref: a037bac8-929f-4d57-9834-d84f0a1e6fab
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 1cba4209402f995dc85f4d8e8cff9d5d235eb1abe768f9aa2ff1ee0df235b3a8
+                    ref: openspec/changes/procuraai-ai-first-landing
+            full.open.evidence:
+              contentHash: 1cba4209402f995dc85f4d8e8cff9d5d235eb1abe768f9aa2ff1ee0df235b3a8
+              ref: openspec/changes/procuraai-ai-first-landing
+        inputHash: 83948b65541644e2a1bcf80409732ab600b44292fc6de3acb45066e75ed20179
+        protocolVersion: 1
+        reason: Portable recovery requires reconciliation of external execution
+        receipts: []
+        reconciliations: []
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-ai-first-landing
+        status: unknown
+        stepId: full.open.revalidate
+        type: call_tool
+    actionContexts:
+      procuraai-ai-first-landing:1:
+        results: {}
+        sequence: 1
+      procuraai-ai-first-landing:4:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-ai-first-landing
+                  changeDir: openspec/changes/procuraai-ai-first-landing
+                  workspaceBaseline:
+                    ref: a037bac8-929f-4d57-9834-d84f0a1e6fab
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 1cba4209402f995dc85f4d8e8cff9d5d235eb1abe768f9aa2ff1ee0df235b3a8
+                    ref: openspec/changes/procuraai-ai-first-landing
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 1cba4209402f995dc85f4d8e8cff9d5d235eb1abe768f9aa2ff1ee0df235b3a8
+              ref: openspec/changes/procuraai-ai-first-landing
+        sequence: 4
+    waits:
+      - id: procuraai-ai-first-landing:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-ai-first-landing
+            changeDir: openspec/changes/procuraai-ai-first-landing
+            workspaceBaseline:
+              ref: a037bac8-929f-4d57-9834-d84f0a1e6fab
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 1cba4209402f995dc85f4d8e8cff9d5d235eb1abe768f9aa2ff1ee0df235b3a8
+              ref: openspec/changes/procuraai-ai-first-landing
+        proposalHash: 1da066d81af0dffbe6ef7258cd581af8af4399f11217fc262ae6fe7c4efce744
+        choices:
+          - approved
+          - rejected
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 1cba4209402f995dc85f4d8e8cff9d5d235eb1abe768f9aa2ff1ee0df235b3a8
+              ref: openspec/changes/procuraai-ai-first-landing
+        decision:
+          id: classic-open-1cba4209402f995dc85f4d8e8cff9d5d235eb1abe768f9aa2ff1ee0df235b3a8
+          choice: approved
+          proposalHash: 1da066d81af0dffbe6ef7258cd581af8af4399f11217fc262ae6fe7c4efce744
+    evidenceWaits:
+      - id: procuraai-ai-first-landing:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+        receipt:
+          ref: openspec/changes/procuraai-ai-first-landing
+          contentHash: 1cba4209402f995dc85f4d8e8cff9d5d235eb1abe768f9aa2ff1ee0df235b3a8
+          submissionId: 55c5397f-7d64-41b2-8432-fb73290fb283
+    ready: []
+    joins: {}
+    outputs:
+      full.open:
+        sequence: 1
+        value:
+          event: open-complete
+      full.open.confirm:
+        sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-ai-first-landing
+              changeDir: openspec/changes/procuraai-ai-first-landing
+              workspaceBaseline:
+                ref: a037bac8-929f-4d57-9834-d84f0a1e6fab
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 1cba4209402f995dc85f4d8e8cff9d5d235eb1abe768f9aa2ff1ee0df235b3a8
+                ref: openspec/changes/procuraai-ai-first-landing
+      full.open.evidence:
+        sequence: 2
+        value:
+          contentHash: 1cba4209402f995dc85f4d8e8cff9d5d235eb1abe768f9aa2ff1ee0df235b3a8
+          ref: openspec/changes/procuraai-ai-first-landing
+    children: []
+    lineage: []
+  sourceRevision: 6
+  sourceHash: ad14296ea65a5093dbe3a9808ced3309431d1a98b9addf1faba2eae2ddbe5956
