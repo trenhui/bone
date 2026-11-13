@@ -3,7 +3,8 @@
 > 2026-11-13 ｜ change: `synapclaim-workbench-assignment-review-quality`
 > 分支 `comet/synapclaim-workbench-assignment-review-quality` ｜ 基线 `dev@6f0ea427f` ｜ 主体交付提交 `6f83e67ef`
 > 性质：**纯设计与文档交付**（不改 Java / TS / SQL / DDL / 权限码数据）。所有数字均来自本次真实运行。
-> 本报告自身与 `tasks.md` 的勾选状态由紧随其后的补提交入库；§一 V8 记录的是 `6f83e67ef` 当时的 `git show --stat` 真实输出。
+> 提交链：`6f83e67ef`（主体 17 文件）→ `a335ef799`（本报告 + tasks 17/17）→ `df5cca99f`（verify.sh）
+> → `c9661f9ad`（唯一归档提交）；§一 V8 记录的是 `6f83e67ef` 当时的 `git show --stat` 真实输出。
 
 ## 一、验证矩阵（真实输出）
 
@@ -18,6 +19,7 @@
 | V7 | 漂移纠正 | `grep -c org_id` | 2 次，均出现在「更正注 / 漂移说明」中，无一处仍把 `org_id` 当路由依据 |
 | V8 | 提交范围隔离 | `git show --stat HEAD` | 17 文件 / +2707 / −4，**仅本 change 路径**；`outputs/` 与 11 个复制的门禁工具均未入库 |
 | V9 | 任务闭包 | `comet state artifacts` | `skip_specs: true` 合法跳过 specs；proposal / design / tasks / plan 齐备 |
+| V10 | 三阶段门禁 | `guard build --apply` / `guard verify --apply` / `guard archive --apply` | build `ALL CHECKS PASSED — phase=verify`（快照 6556 项）；verify `ALL CHECKS PASSED — phase=archive`（快照 6555 项前后一致，check-policy 排除 tsbuildinfo）；archive 物理完成并落在 `c9661f9ad`，运行时收口见 §五.5 |
 
 ## 二、全仓门禁对照实验（本报告最重要的一节，如实披露）
 
@@ -78,8 +80,15 @@
 | 2 | `check_all.py` 的 `_ai_native_readiness.py --self-test` 依赖 `outputs/claims-e2e-result.json`（gitignored 运行期证据） | 同步主树**既有** E2E 证据消除 worktree 环境差异后 19/19；**这不代表本 change 重跑过 E2E**，未声称任何 UI/契约测试通过 |
 | 3 | `scripts/check.sh` 全仓 RC=1 | 见 §二；如实记录，不绕过不伪造 |
 | 4 | 本轮无代码改动 | 用户裁定「文档 + 分批实现」，能力落地在后续 4 批 change；本 change 不宣称系统行为已改变 |
-| 5 | Comet 运行时归档标志 | 若复现上一 change 的 `archive.execute` 卡死（comet 0.5.2 的已知能力缺口），以归档目录与提交为最终事实，不破坏交付物去凑运行时布尔值 |
+| 5 | Comet 运行时 `archived=false` | **已复现并定性**：`archive.execute`（action `:25`）执行器搬走 active 目录、给 plan 写入 `archived-with` 后退出，**未写执行收据**（`--recover` 诊断：`record.status=missing`、`receiptRef/manifestRef=null`）。`state check archive --details` 为 2/6 未通过（`claimed Action with an unknown outcome` + `Classic change directory does not exist`）；`complete-delivery --commit c9661f9ad` → RC=70「requires an archived, running change」。诊断指令明确「已执行或结果不明时**不得**声明 not-executed」，故不做 `mark-unknown + retry` 重放（那等于伪造「未执行」）。属 comet 0.5.2 能力缺口，**以归档目录与提交 `c9661f9ad` 为最终事实**，不回滚交付物去凑运行时布尔值 |
 
 ## 六、后续
 
 批 1（任务表 + 规则表 + 分配器 + 我的待办 + 统一查询）→ 批 2（AI 配置 API + 治理页可写 + 建议触达）→ 批 3（独立复审 43/46）→ 批 4（抽检打回 + 转交代理）。每批独立 change、独立回退开关，且必须走仓库原生全量门禁。
+
+## 七、运行时状态说明（不掩盖）
+
+物理归档、docs/plan 注记、归档提交、verify 收据均已完成；唯一未收口的是 Comet 运行时内部的 `archived` 布尔值与 `:25` 的 unknown 结果。
+SDK 守卫是 **per-run** 的，该状态不影响后续任何 change；本 change 的后续 4 批实现会各自新建 Run。
+若升级 comet 后需要补齐，唯一合规路径是让新版 `archive --recover` 从 **preparation snapshot** 重建执行收据
+（不得重放 OpenSpec Archive、不得把已执行的动作声明为 not-executed）。
