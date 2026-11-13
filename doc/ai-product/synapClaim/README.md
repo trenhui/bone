@@ -6,7 +6,7 @@ currency: current
 
 # synapClaim 文档入口（1 屏版）
 
-> 全族 63 份文档已登记在 [`docs.manifest.json`](docs.manifest.json)，你通常只需要读 1–2 份。**先回答：你这次来做什么？**
+> 全族 72 份文档已登记在 [`docs.manifest.json`](docs.manifest.json)，你通常只需要读 1–2 份。**先回答：你这次来做什么？**
 >
 > **AI Agent 请先读 [`AI-INDEX.md`](AI-INDEX.md)** —— 那是机器优先入口，含「按来意路由」表与每份文档的
 > `role`（权威角色）/ `currency`（时效）标记；默认只信任 `currency=current`。

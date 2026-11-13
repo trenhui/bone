@@ -55,7 +55,7 @@ currency: current
 | 多保司接入 / 保单配置面 / 主数据映射 / 新保司接入周期 | `design.multi-insurer-mapping` |
 | 反欺诈 / 视觉反诈 / 图计算 / 直付通道 / 模型风险（MRM） | `design.risk-payment` |
 
-## 三、ACTIVE 现行真源（currency=current，可引用为事实，共 34 份）
+## 三、ACTIVE 现行真源（currency=current，可引用为事实，共 37 份）
 
 | id | 路径 | role | 一句话 |
 |---|---|---|---|
@@ -68,9 +68,12 @@ currency: current
 | `contract.rules-v1` | `03-contract/智能理算引擎业务规则V1.md` | ssot | 理算业务口径真源(V1)：责任 11 要素、发票 6 公式、九步主流程、免赔 6 维、控额 7 层；含 Q-01–Q-15 待澄清 |
 | `design.ai` | `04-design/AI技术方案.md` | ssot | bone-ai 落地：六模块映射、DAG 执行器、五段式编排预算、资金、评测、ADR 摘记 |
 | `design.bone-ai-deps` | `04-design/BONE-AI能力依赖图谱.md` | ssot | 中台依赖真源：C1–C11 复用映射、平台缺口 E1–E5、6 节点串联 |
+| `design.assign-agent` | `04-design/作业分配与代理交接设计.md` | ssot | 作业任务的归属模型（t_claim_task）、分配规则与候选集打分、超时回落公共池、转交/代理/不可用三层与并发幂等 |
 | `design.architecture` | `04-design/总体技术方案.md` | ssot | 总体技术方案：系统上下文（8 个外部系统）、7 个限界上下文划分与 §4.1 组件视图（C4 L3，实测 382 类 / 20 子域 / 36 应用服务 / 35 Controller / 20 Port / 52 错误码，§4 表内逐子域合计 150 类）、§5 三层时态声明（活库现状 / §9.5 设计态 DDL / §5.2 目标态九要素）与 §5.2.1「业务 11 维 ↔ 目标 9 列 ↔ 活库列」唯一对照表、纯函数理算引擎与三策略、三条关键链路、迁移五步 + §9.1.1 M2 高风险步的 Expand→Shadow→Dual-read→Unlock 迁移方案（脚本 0123–0126 为规划占位，未开工）、模块方案路由表、5 条风险与 §12 四项决策全部结案（D1 三模块父聚合 + 独立 groupId com.bone.claim / D3 配置与引擎并行 / D4 quota 归 Funds 并收敛 7 上下文，均 2026-11-08 拍板；D2 早前收口） |
+| `design.inspection-action` | `04-design/抽检打回闭环设计.md` | ssot | 后督抽检结论的可执行化：处置表、未支付/已支付两条打回路径、强制冲正前置、抽检队列与比例可配 |
 | `review.design-quality` | `04-design/方案质量诊断报告.md` | review | 04-design 六份设计文档的质量诊断：S1–S8 强项、P1–P8 问题、6 条优化建议与两轮执行记录 |
 | `method.capability-evidence` | `04-design/方法论-能力取证.md` | method | 「按读取点取证，不按声明处」方法论的唯一权威：核心规则、工具陷阱、与 fail-closed 的关系、各文档领域落点 |
+| `design.re-review` | `04-design/独立复审阶段设计.md` | ssot | 独立复审阶段：状态码 43/46、合法迁移、与 44 双人复核的边界、职责分离与权限码、灰度开关 |
 | `design.adjustment` | `04-design/理算引擎设计.md` | ssot | 理算子域唯一设计真源：架构决策、引擎编排顺序、三类策略算法、控额、快照契约、端口。双角色已显式标注：§1–§13 是 synap-claim-oracle 语义基线/目标态（非生产，§1 开头有统一时态横幅），§14 是生产九步内核的权威现状；D2「是否拆分」已按 B 案结案 |
 | `design.risk-payment` | `04-design/风控与支付通道设计.md` | ssot | 风控与直付真源：视觉反诈 E1、图计算 E2、MRM E4、C10 直付三态 |
 | `plan.mvp` | `05-plan/MVP可落地执行方案.md` | ssot | 实施计划真源：范围 In/Out、迭代 I0–I4、任务拆解、里程碑与 Go/No-Go |

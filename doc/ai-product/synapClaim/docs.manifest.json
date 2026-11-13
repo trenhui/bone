@@ -840,6 +840,48 @@
       "authority": "M2 迁移评审输入",
       "role": "evidence",
       "currency": "current"
+    },
+    {
+      "id": "design.assign-agent",
+      "path": "04-design/作业分配与代理交接设计.md",
+      "layer": "L4",
+      "diataxis": "reference",
+      "status": "active",
+      "summary": "作业任务的归属模型（t_claim_task）、分配规则与候选集打分、超时回落公共池、转交/代理/不可用三层与并发幂等",
+      "authority": "作业分配与代理交接的唯一设计口径",
+      "role": "ssot",
+      "currency": "current",
+      "shortNames": [
+        "作业分配与代理交接设计"
+      ]
+    },
+    {
+      "id": "design.re-review",
+      "path": "04-design/独立复审阶段设计.md",
+      "layer": "L4",
+      "diataxis": "reference",
+      "status": "active",
+      "summary": "独立复审阶段：状态码 43/46、合法迁移、与 44 双人复核的边界、职责分离与权限码、灰度开关",
+      "authority": "复审阶段的唯一设计口径",
+      "role": "ssot",
+      "currency": "current",
+      "shortNames": [
+        "独立复审阶段设计"
+      ]
+    },
+    {
+      "id": "design.inspection-action",
+      "path": "04-design/抽检打回闭环设计.md",
+      "layer": "L4",
+      "diataxis": "reference",
+      "status": "active",
+      "summary": "后督抽检结论的可执行化：处置表、未支付/已支付两条打回路径、强制冲正前置、抽检队列与比例可配",
+      "authority": "抽检打回处置的唯一设计口径",
+      "role": "ssot",
+      "currency": "current",
+      "shortNames": [
+        "抽检打回闭环设计"
+      ]
     }
   ],
   "aiRouting": [
