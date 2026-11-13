@@ -31,7 +31,7 @@ classic_profile: null
 classic_migration: null
 run_checkpoint:
   schema: comet.workflow-run-checkpoint.v2
-  hash: c0fc3cdf691a84d9726abfe9dfef81d1d94d8a2b9d43c1f75c208f8c8c6483b7
+  hash: 60c3c61eaf58b2545f2c9a6f7bd92740616859ec5899ce59aab8af56915f5944
   run:
     protocolVersion: 1
     schemaVersion: 1
@@ -736,7 +736,7 @@ run_checkpoint:
           outputs: {}
         inputHash: 8dc56a45c1c8efc7ed00a99d8cd93a1ccb770b0307cb5685ea8cae9d1be93814
         protocolVersion: 1
-        reason: Portable recovery requires reconciliation of external execution
+        reason: 原归档执行器会话已结束且未写执行收据；归档目录与提交 c9661f9ad 已在磁盘，结果标为未知以待核对，不声明未执行
         receipts: []
         reconciliations: []
         ref: classic-archive
@@ -1011,8 +1011,8 @@ run_checkpoint:
     outputs: {}
     children: []
     lineage: []
-  sourceRevision: 57
-  sourceHash: 8fdb22049de11e13ade26dbf4a1891f9b4d69b53cb983d5041c5e219527ec745
+  sourceRevision: 58
+  sourceHash: 7dcf1bed8634034463231c3f296698193ab16504572461c372194fa70f0be2bb
   pool:
     version: 3
     values:
@@ -2633,5 +2633,5 @@ run_checkpoint:
           - "5"
           - results
         map: 36
-  storageHash: c98d625209178e2238712a072d6fe265b64392537b79a4ffdb66f65066d201fb
+  storageHash: 1cccf740182428b0519b38b2ed5423277a74f0a843138d7e18807a4b6e3dbff6
 check_epoch: 5
