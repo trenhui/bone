@@ -1,3 +1,11 @@
+---
+status: Active
+layer: contract
+maturity: Proposal
+truth-for: AI 子能力契约：唯一 payload / 合规 / 错误码映射
+updated-on: 2026-11-12
+---
+
 # procuraAI 接口契约与数据字典 v2（D3-v2）
 
 > **版本**：v0.3（2026-11-09）
