@@ -81,24 +81,24 @@ const STP_CONDITION_LABEL: Record<string, string> = {
 async function loadStandardOptions(domain: MappingDomain): Promise<{ label: string; value: string }[]> {
   const p = { page: 1, size: 200 };
   switch (domain) {
-    case 'HOSPITAL': {
-      const r = await claimConfigApi.listHospitals(p);
-      return r.data.records.map((x) => ({ label: `${x.hospitalName}(${x.hospitalCode})`, value: x.hospitalCode }));
-    }
-    case 'DISEASE': {
-      const r = await claimConfigApi.listDiseases(p);
-      return r.data.records.map((x) => ({ label: `${x.diseaseName}(${x.diseaseCode})`, value: x.diseaseCode }));
-    }
-    case 'DRUG': {
-      const r = await claimConfigApi.listDrugs(p);
-      return r.data.records.map((x) => ({ label: `${x.drugName}(${x.drugCode})`, value: x.drugCode }));
-    }
-    case 'FEE_CATEGORY': {
-      const r = await claimConfigApi.listFeeCategories(p);
-      return r.data.records.map((x) => ({ label: `${x.feeName}(${x.feeCode})`, value: x.feeCode }));
-    }
-    default:
-      return [];
+  case 'HOSPITAL': {
+    const r = await claimConfigApi.listHospitals(p);
+    return r.data.records.map((x) => ({ label: `${x.hospitalName}(${x.hospitalCode})`, value: x.hospitalCode }));
+  }
+  case 'DISEASE': {
+    const r = await claimConfigApi.listDiseases(p);
+    return r.data.records.map((x) => ({ label: `${x.diseaseName}(${x.diseaseCode})`, value: x.diseaseCode }));
+  }
+  case 'DRUG': {
+    const r = await claimConfigApi.listDrugs(p);
+    return r.data.records.map((x) => ({ label: `${x.drugName}(${x.drugCode})`, value: x.drugCode }));
+  }
+  case 'FEE_CATEGORY': {
+    const r = await claimConfigApi.listFeeCategories(p);
+    return r.data.records.map((x) => ({ label: `${x.feeName}(${x.feeCode})`, value: x.feeCode }));
+  }
+  default:
+    return [];
   }
 }
 
@@ -687,7 +687,7 @@ export function MappingPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="多保司主数据映射"
+        title="主数据映射"
         description="基础目录库是标准码真源（一份主数据）；不同保司码值/名称/标准不同，在此登记「保司码 → 标准码」映射。收单遇无映射的保司码落入未命中队列，运营在此补映射。"
       />
       <Card>
@@ -1098,41 +1098,41 @@ export function MappingPage(): ReactElement {
             <Input maxLength={64} placeholder="拆分后的标准码" />
           </Form.Item>
         </Form>
-        </Modal>
-        <Modal
+      </Modal>
+      <Modal
         title="绑定/更新字段到选项集"
         open={bindModalOpen}
         onOk={() => bindForm.submit()}
         onCancel={() => setBindModalOpen(false)}
         destroyOnHidden
-        >
+      >
         <Form form={bindForm} layout="vertical" onFinish={(v) => void submitBinding(v)}>
-        <Form.Item
-          name="fieldCode"
-          label="字段编码"
-          rules={[{ required: true, message: '请输入字段编码' }]}
-        >
-          <Input maxLength={64} placeholder="如 gender / visit_type" />
-        </Form.Item>
-        <Form.Item
-          name="insurerCode"
-          label="承保主体（空 = 平台基线）"
-          tooltip="空值表示平台标准基线 '*'；填值表示该保司的专属覆盖"
-        >
-          <Input maxLength={64} placeholder="空 = 平台基线 '*'" />
-        </Form.Item>
-        <Form.Item name="sourceType" label="来源类型" initialValue="">
-          <Input maxLength={64} placeholder="可选" />
-        </Form.Item>
-        <Form.Item
-          name="refCode"
-          label="标准选项集编码"
-          rules={[{ required: true, message: '请输入标准选项集编码' }]}
-        >
-          <Input maxLength={64} placeholder="绑定的标准选项集" />
-        </Form.Item>
+          <Form.Item
+            name="fieldCode"
+            label="字段编码"
+            rules={[{ required: true, message: '请输入字段编码' }]}
+          >
+            <Input maxLength={64} placeholder="如 gender / visit_type" />
+          </Form.Item>
+          <Form.Item
+            name="insurerCode"
+            label="承保主体（空 = 平台基线）"
+            tooltip="空值表示平台标准基线 '*'；填值表示该保司的专属覆盖"
+          >
+            <Input maxLength={64} placeholder="空 = 平台基线 '*'" />
+          </Form.Item>
+          <Form.Item name="sourceType" label="来源类型" initialValue="">
+            <Input maxLength={64} placeholder="可选" />
+          </Form.Item>
+          <Form.Item
+            name="refCode"
+            label="标准选项集编码"
+            rules={[{ required: true, message: '请输入标准选项集编码' }]}
+          >
+            <Input maxLength={64} placeholder="绑定的标准选项集" />
+          </Form.Item>
         </Form>
-        </Modal>
-        </>
-        );
-        }
+      </Modal>
+    </>
+  );
+}

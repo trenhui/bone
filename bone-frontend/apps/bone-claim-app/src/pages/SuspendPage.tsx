@@ -43,8 +43,14 @@ type ClaimHead = Pick<ClaimWithItemsProjection, 'claimId' | 'claimNo' | 'status'
 
 const MSG_KEY = 'claim-hangup-action';
 
-export function SuspendPage(): ReactElement {
-  const { claimId, input, setInput, submit } = useClaimIdParam();
+export interface CasePageProps {
+  /** 案件 360 内嵌时由 Tab 传入 claimId；传入即进入「无壳内容形态」。 */
+  embeddedClaimId?: string;
+}
+
+export function SuspendPage({ embeddedClaimId }: CasePageProps = {}): ReactElement {
+  const { claimId: urlClaimId, input, setInput, submit } = useClaimIdParam();
+  const claimId = embeddedClaimId ?? urlClaimId;
   const [type, setType] = useState<HangUpType>('EVIDENCE');
   const [head, setHead] = useState<ClaimHead | null>(null);
   const [loading, setLoading] = useState(false);
@@ -109,13 +115,20 @@ export function SuspendPage(): ReactElement {
   const statusMeta = head ? claimStatusMeta(head.status) : null;
   const terminal = statusMeta?.terminal ?? false;
 
+  const embedded = Boolean(embeddedClaimId);
+
   return (
-    <div style={{ padding: 24 }}>
-      <PageHeader title="挂起/恢复" />
+    <div
+      data-case-content={embedded ? 'true' : undefined}
+      style={embedded ? undefined : { padding: 24 }}
+    >
+      {embedded ? null : <PageHeader title="挂起/恢复" />}
       <Card
-        title="挂起操作"
+        title={embedded ? undefined : '挂起操作'}
         loading={loading}
-        extra={<CaseIdBar value={input} onChange={setInput} onSubmit={submit} loading={loading} />}
+        extra={embedded ? undefined : (
+          <CaseIdBar value={input} onChange={setInput} onSubmit={submit} loading={loading} />
+        )}
       >
         {!claimId ? (
           <CaseNotSelected hint="挂起按案件执行，输入案件ID后即可查看当前挂起状态并操作" />

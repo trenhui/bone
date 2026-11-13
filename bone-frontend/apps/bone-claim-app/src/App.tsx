@@ -53,11 +53,16 @@ function DevNav({ collapsed }: { collapsed?: boolean }): JSX.Element {
       <Menu
         mode="inline"
         selectedKeys={[selectedKey]}
-        items={CLAIM_ROUTES.filter((r) => !r.hidden).map((r) => ({
-          key: r.path,
-          icon: r.icon,
-          label: r.name,
-        }))}
+        items={[
+          // hidden 路由不占产品菜单，但独立调试态需要能回到默认落点，否则 :3013 直开
+          // 只能看到作业页、无法验证工作台本身（不是产品导航，不承载权限）。
+          { key: '/workbench', label: '我的工作台（默认落点）' },
+          ...CLAIM_ROUTES.filter((r) => !r.hidden).map((r) => ({
+            key: r.path,
+            icon: r.icon,
+            label: r.name,
+          })),
+        ]}
         onClick={({ key }) => navigate(key)}
       />
     </Layout.Sider>

@@ -54,8 +54,14 @@ const REVIEW_RESULT: Record<string, { color: string; label: string }> = {
 
 const MSG_KEY = 'claim-appeal-action';
 
-export function AppealPage(): ReactElement {
-  const { claimId, input, setInput, submit: submitCaseId } = useClaimIdParam();
+export interface CasePageProps {
+  /** 案件 360 内嵌时由 Tab 传入 claimId；传入即进入「无壳内容形态」。 */
+  embeddedClaimId?: string;
+}
+
+export function AppealPage({ embeddedClaimId }: CasePageProps = {}): ReactElement {
+  const { claimId: urlClaimId, input, setInput, submit: submitCaseId } = useClaimIdParam();
+  const claimId = embeddedClaimId ?? urlClaimId;
   const [appeal, setAppeal] = useState<AppealResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState(false);
@@ -116,29 +122,36 @@ export function AppealPage(): ReactElement {
     : null;
   const originalMeta = appeal ? claimStatusMeta(appeal.originalStatus) : null;
 
+  const embedded = Boolean(embeddedClaimId);
+
   return (
-    <div style={{ padding: 24 }}>
-      <PageHeader title="申诉复议" />
+    <div
+      data-case-content={embedded ? 'true' : undefined}
+      style={embedded ? undefined : { padding: 24 }}
+    >
+      {embedded ? null : <PageHeader title="申诉复议" />}
       <Card
-        title="申诉记录"
+        title={embedded ? undefined : '申诉记录'}
         loading={loading}
         extra={
-          <CaseIdBar
-            value={input}
-            onChange={setInput}
-            onSubmit={submitCaseId}
-            loading={loading}
-            extra={
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={() => void load()}
-                disabled={!claimId}
+          <Space wrap>
+            {embedded ? null : (
+              <CaseIdBar
+                value={input}
+                onChange={setInput}
+                onSubmit={submitCaseId}
                 loading={loading}
-              >
-                刷新
-              </Button>
-            }
-          />
+              />
+            )}
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => void load()}
+              disabled={!claimId}
+              loading={loading}
+            >
+              刷新
+            </Button>
+          </Space>
         }
       >
         {!claimId ? (

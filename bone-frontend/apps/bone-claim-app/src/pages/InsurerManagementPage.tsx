@@ -256,7 +256,7 @@ export function InsurerManagementPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="承保主体管理"
+        title="承保主体"
         description="受控的保险公司主数据（直保/经纪/代理），替代保单上的保险公司自由文本；保单通过业务主体码引用，跨保司码值映射也以它为主键。"
       />
       <Card>

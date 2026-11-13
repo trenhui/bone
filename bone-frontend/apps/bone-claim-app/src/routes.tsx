@@ -36,6 +36,8 @@ import { InsurerManagementPage } from './pages/InsurerManagementPage';
 import { MappingPage } from './pages/MappingPage';
 import { AiGovernancePage } from './pages/AiGovernancePage';
 import { BlindLabelWorkbenchPage } from './pages/BlindLabelWorkbenchPage';
+import { WorkbenchPage } from './pages/WorkbenchPage';
+import { Case360Page } from './pages/Case360Page';
 
 /**
  * 智能理赔 · 路由与页面名的**唯一真源**（单导航架构的前端侧锚点）。
@@ -72,6 +74,12 @@ import { BlindLabelWorkbenchPage } from './pages/BlindLabelWorkbenchPage';
  *   /inspection 后督抽检 A9 · /suspend 挂起/恢复 正交机制 · /submit 理赔申请 A1
  *   /policy 保单管理 · /quota 额度管理（运营配置面，不属 A1–A9 能力编号体系；
  *   /plan /liability 为保单下钻页，hidden）
+ *
+ * 2026-11-12 追加两条**不进菜单的 hidden 路由**：`/workbench`（我的工作台，默认落点）与
+ * `/case`（案件 360）。它们不是「第 16、17 个菜单」，而是 Fiori Launchpad 形态的 My Home 与
+ * case record：由工作台卡片 / 深链 / 命令面板进入，**不占 IAM 菜单、不改 permission、不改迁移**。
+ * 故 `visibleRoutes` 的顺序与条数完全不变，单导航探针的「菜单顺序 = 声明顺序」断言不受影响；
+ * 探针在 `claim-single-nav-probe.mjs:98-101` 对 hidden 路由豁免「功能不可达」断言。
  */
 export interface ClaimRoute {
   /** 微应用内 hash 路由（shell 侧菜单 path 形如 `/claim#/review`）。 */
@@ -104,7 +112,7 @@ export interface ClaimRoute {
 
 export const CLAIM_ROUTES: ClaimRoute[] = [
   { path: '/pre-exam', name: '初审工作台', icon: <SolutionOutlined />, element: <PreExamWorkbenchPage /> },
-  { path: '/review', name: '核赔工作台', icon: <AuditOutlined />, element: <ReviewWorkbenchPage />, isDefault: true },
+  { path: '/review', name: '核赔工作台', icon: <AuditOutlined />, element: <ReviewWorkbenchPage /> },
   { path: '/adjust', name: '理算归因', icon: <CalculatorOutlined />, element: <AdjustmentAttributionPage /> },
   { path: '/evidence', name: '材料上传', icon: <FileAddOutlined />, element: <EvidenceUploadPage /> },
   { path: '/fund', name: '资金工作台', icon: <BankOutlined />, element: <FundWorkbenchPage /> },
@@ -126,6 +134,10 @@ export const CLAIM_ROUTES: ClaimRoute[] = [
   { path: '/ai-governance', name: 'AI 治理', icon: <SafetyCertificateOutlined />, element: <AiGovernancePage />, hidden: true },
   // 盲标工作台：防反馈环金标准闸门的标注面，hidden 路由，从核赔工作台「盲标」深链进入（同 /ai-governance 形态）。
   { path: '/blind-labels', name: '盲标工作台', icon: <FormOutlined />, element: <BlindLabelWorkbenchPage />, hidden: true },
+  // My Home：登录后默认落点。hidden 且 isDefault —— 不占菜单，但空 hash / 未知 hash 都落到这里。
+  { path: '/workbench', name: '我的工作台', icon: <SolutionOutlined />, element: <WorkbenchPage />, hidden: true, isDefault: true },
+  // 案件 360：单一 case record，URL 契约 /case?claimId=...&tab=...（见 workbench/caseDeepLinks.ts）。
+  { path: '/case', name: '案件 360', icon: <AuditOutlined />, element: <Case360Page />, hidden: true },
 ];
 
 /** shell（qiankun activeRule）侧的路由前缀；菜单 path 形如 `/claim#/<hash>`。 */

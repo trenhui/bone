@@ -37,6 +37,7 @@ currency: current
 
 | 你想做什么 | 读这些（id） |
 |---|---|
+| 易用性 / 信息架构 / 角色工作台 / 菜单重构 / 查询与作业便利性 / AI 融合 | `plan.ux-workbench` |
 | 产品定位 / 卖给谁 / 能做什么 | `prd` / `strategy` |
 | 改代码 / 加接口 / 动数据模型 / 契约口径 | `contract.landing` / `design.adjustment` / `delivery.05` |
 | 模块划分 / 代码放哪 / 依赖方向 / 上下文边界 | `design.architecture` / `contract.landing` |
@@ -110,9 +111,10 @@ currency: current
 - `golive.12` → `08-go-live/12-资金累计DB级并发正确性.md`：累计扣减的 DB 级并发正确性（单测契约不足）
 - `golive.13` → `08-go-live/13-理算引擎三重路径收敛与护栏移植（F1）.md`：唯一权威资金路径决策、整改步骤、双路径歧义根除
 
-## 五、GUIDE 操作指南（role=guide，可执行步骤；结论以对应 ssot 为准，共 2 份）
+## 五、GUIDE 操作指南（role=guide，可执行步骤；结论以对应 ssot 为准，共 3 份）
 
 - `plan.ainative` → `05-plan/AI原生改造执行计划.md`：AI 原生改造执行计划：将 _ai_native_readiness.py 的 12 判据映射为阶段/负责/动作/验收，并叠加 Phase B/V2 能力纵深路线，作为 gsd-core Plan 阶段交付物与循环可复用终止判据
+- `plan.ux-workbench` → `05-plan/智能理赔-易用性与角色工作台设计提案.md`：智能理赔易用性优化提案：现状六条诊断（菜单平铺/无角色差异/作业断点/查询缺口/效率设施/AI 悬空）、四空间信息架构与角色工作台矩阵、案件 360 与队列驱动、全局检索基座、AI 四层融合、分期路线图、度量与决策速查表
 - `delivery.11` → `07-delivery/11-L3外部前置运行手册.md`：L3 外部前置运行手册：provider 配置 → 探活 → 实跑 E2E → 复核器归因的可执行闭环
 
 ## 六、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 17 份）

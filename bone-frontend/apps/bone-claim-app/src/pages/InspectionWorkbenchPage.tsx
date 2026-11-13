@@ -99,8 +99,14 @@ interface ConcludeFormValues {
   diffRows?: DiffRow[];
 }
 
-export function InspectionWorkbenchPage(): ReactElement {
-  const { claimId, input, setInput, submit } = useClaimIdParam();
+export interface CasePageProps {
+  /** 案件 360 内嵌时由 Tab 传入 claimId；传入即进入「无壳内容形态」。 */
+  embeddedClaimId?: string;
+}
+
+export function InspectionWorkbenchPage({ embeddedClaimId }: CasePageProps = {}): ReactElement {
+  const { claimId: urlClaimId, input, setInput, submit } = useClaimIdParam();
+  const claimId = embeddedClaimId ?? urlClaimId;
   const [dimension, setDimension] = useState<InspectionDimension>('AMOUNT');
   const [inspection, setInspection] = useState<InspectionView | null>(null);
   const [loading, setLoading] = useState(false);
@@ -190,34 +196,36 @@ export function InspectionWorkbenchPage(): ReactElement {
   const concluded = inspection?.status === 'CONCLUDED';
   const statusTag = inspection ? STATUS_TAG[inspection.status] : null;
 
+  const embedded = Boolean(embeddedClaimId);
+
   return (
-    <div style={{ padding: 24 }}>
-      <PageHeader title="后督抽检" />
+    <div
+      data-case-content={embedded ? 'true' : undefined}
+      style={embedded ? undefined : { padding: 24 }}
+    >
+      {embedded ? null : <PageHeader title="后督抽检" />}
       <Card
-        title={
+        title={embedded ? undefined : (
           <Space>
             <SafetyCertificateOutlined />
             抽检任务
           </Space>
-        }
+        )}
         loading={loading}
         extra={
-          <CaseIdBar
-            value={input}
-            onChange={setInput}
-            onSubmit={submit}
-            loading={loading}
-            extra={
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={() => void load()}
-                disabled={!claimId}
-                loading={loading}
-              >
-                刷新
-              </Button>
-            }
-          />
+          <Space wrap>
+            {embedded ? null : (
+              <CaseIdBar value={input} onChange={setInput} onSubmit={submit} loading={loading} />
+            )}
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => void load()}
+              disabled={!claimId}
+              loading={loading}
+            >
+              刷新
+            </Button>
+          </Space>
         }
       >
         <Space direction="vertical" size="large" style={{ width: '100%' }}>

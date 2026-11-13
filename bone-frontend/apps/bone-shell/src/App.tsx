@@ -42,6 +42,7 @@ import './App.css';
 const { Header, Sider, Content } = Layout;
 
 import BrandMark from './components/BrandMark';
+import CommandPalette from './components/CommandPalette';
 import MicroAppLoadError, { type MicroAppLoadErrorInfo } from './components/MicroAppLoadError';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/Profile';
@@ -51,6 +52,7 @@ import {
   type ShellMenuItem,
 } from './shellContext';
 import Authorized from './auth/Authorized';
+import { groupClaimMenuItems, isClaimMenuLeaf } from './utils/claimMenuGroups';
 import { PermissionCodes, clearScopes, persistScopesFromToken, readScopes } from './auth/jwt';
 import { PERMISSIONS_CHANGE_EVENT } from '@bone/shared-utils';
 
@@ -1105,6 +1107,11 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
     const { pathname, hash } = location;
     if (pathname === '/profile') return '个人中心';
     const currentHash = hash.replace('#', '');
+    // hidden 的 My Home / case record 不在 IAM 菜单树里，顶栏若回退成「BONE 平台控制台」
+    // 用户就不知道自己在哪（Nielsen #1 Visibility of system status）。这里只补标题，
+    // 不改菜单数据与选中态 —— 零门禁风险。
+    if (pathname === '/claim' && currentHash === '/workbench') return '我的工作台';
+    if (pathname === '/claim' && currentHash.startsWith('/case')) return '案件 360';
     const walk = (items: ShellMenuItem[]): string => {
       let fallback = '';
       for (const item of items) {
@@ -1133,16 +1140,61 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
     });
   }, [parentKey]);
 
-  // 将 ShellMenuItem[] 转换为 antd Menu items
+  /**
+   * 将 ShellMenuItem[] 转换为 antd Menu items。
+   *
+   * 智能理赔域额外加「作业 / 查询 / 配置 / 治理」**常驻可见**的分组标题：
+   * 用 antd `type: 'group'`（MenuItemGroup）而不是折叠 SubMenu —— 子项仍以
+   * `.ant-menu-item` 直接渲染、默认全部可见可点，不改名称 / 顺序 / 图标 / 权限码 / hash。
+   * 未知 hash 落「未分组」，绝不会因为归类失败丢菜单。依据 NN/g 隐藏导航实测（隐藏后
+   * 使用率 48–50% → 27%、任务时间 +39%）与单导航探针「菜单项可见 + 逐个点击」判据。
+   */
   const buildMenuItems = (items: ShellMenuItem[]): NonNullable<MenuProps['items']> =>
     items.map((item) => {
       if (item.children && item.children.length > 0) {
+        const renderedChildren = buildMenuItems(item.children);
+        // 命中「理赔域可导航叶子」的，按四空间分组；其余（submenu / 非理赔域）保持原样。
+        // 关键：绝不因为某个子节点是 submenu 就把整组分组丢掉（fail-safe 而非 fail-open）；
+        // 与「未知 hash 落未分组、绝不因归类失败丢菜单」的承诺一致。
+        // 同一谓词严格划分两类子节点，避免叶子既被分组又被原样渲染导致重复。
+        const isClaimLeaf = (child: ShellMenuItem): boolean =>
+          !child.children?.length && isClaimMenuLeaf(child);
+        const leafEntries = item.children
+          .map((child, i) => ({ child, i }))
+          .filter(({ child }) => isClaimLeaf(child));
+        const otherChildren = item.children
+          .map((child, i) => ({ child, i }))
+          .filter(({ child }) => !isClaimLeaf(child))
+          .map(({ i }) => renderedChildren[i]);
+        if (leafEntries.length === 0) {
+          return {
+            key: item.key,
+            icon: item.icon,
+            label: item.label,
+            children: renderedChildren,
+            popupClassName: 'shell-menu-popup',
+          };
+        }
+        const children = [
+          ...groupClaimMenuItems(
+            leafEntries.map(({ child, i }) => ({
+              hash: child.hash,
+              path: child.path,
+              menuItem: renderedChildren[i],
+            })),
+          ).map((group) => ({
+            type: 'group' as const,
+            key: `${item.key}-group-${group.title}`,
+            label: group.title,
+            children: group.items.map((entry) => entry.menuItem),
+          })),
+          ...otherChildren,
+        ];
         return {
           key: item.key,
           icon: item.icon,
           label: item.label,
-          children: buildMenuItems(item.children),
-          // 折叠态 hover 弹层 portal 到 body，不在 .shell-sider 作用域内 ⇒ 挂类名以复用同一设计语言
+          children,
           popupClassName: 'shell-menu-popup',
         };
       }
@@ -1239,6 +1291,8 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
             )}
           </div>
           <div className="header-right">
+            {/* Fiori shell bar：enterprise search 与通知并列常驻。结果只用 IAM 已下发的可见菜单。 */}
+            <CommandPalette menuConfig={menuConfig} onNavigate={(target) => navigate(target)} />
             <Popover
               open={notifOpen}
               onOpenChange={(o) => {

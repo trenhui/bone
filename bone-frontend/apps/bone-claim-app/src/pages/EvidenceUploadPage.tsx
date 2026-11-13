@@ -150,8 +150,18 @@ const columns: TableColumnsType<EvidenceResp> = [
 /** 同类失败共用 message key：重复触发时替换而非堆叠。 */
 const MSG_KEY_UPLOAD = 'claim-evidence-upload';
 
-export function EvidenceUploadPage(): ReactElement {
-  const { claimId, input, setInput, submit } = useClaimIdParam();
+export interface CasePageProps {
+  /**
+   * 案件 360 内嵌时由 Tab 直接传入 claimId；**传入即表示「无壳内容形态」**：
+   * 不渲染 PageHeader / CaseIdBar / 外层留白，业务逻辑与取数仍是同一份实现。
+   * 旧路由不带此 prop，继续从 `?claimId=` 读取。
+   */
+  embeddedClaimId?: string;
+}
+
+export function EvidenceUploadPage({ embeddedClaimId }: CasePageProps = {}): ReactElement {
+  const { claimId: urlClaimId, input, setInput, submit } = useClaimIdParam();
+  const claimId = embeddedClaimId ?? urlClaimId;
   const [docType, setDocType] = useState('INVOICE');
   const [rows, setRows] = useState<EvidenceResp[]>([]);
   const [loading, setLoading] = useState(false);
@@ -250,29 +260,30 @@ export function EvidenceUploadPage(): ReactElement {
 
   const jobList = Object.entries(jobs);
   const allLocked = rows.length > 0 && rows.every((r) => r.locked);
+  const embedded = Boolean(embeddedClaimId);
 
   return (
-    <div style={{ padding: 24 }}>
-      <PageHeader title="材料上传" />
+    <div
+      data-case-content={embedded ? 'true' : undefined}
+      style={embedded ? undefined : { padding: 24 }}
+    >
+      {embedded ? null : <PageHeader title="材料上传" />}
       <Card
-        title="材料清单"
+        title={embedded ? undefined : '材料清单'}
         extra={
-          <CaseIdBar
-            value={input}
-            onChange={setInput}
-            onSubmit={submit}
-            loading={loading}
-            extra={
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={() => void load()}
-                disabled={!claimId}
-                loading={loading}
-              >
-                刷新
-              </Button>
-            }
-          />
+          <Space wrap>
+            {embedded ? null : (
+              <CaseIdBar value={input} onChange={setInput} onSubmit={submit} loading={loading} />
+            )}
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => void load()}
+              disabled={!claimId}
+              loading={loading}
+            >
+              刷新
+            </Button>
+          </Space>
         }
       >
         {!claimId ? (

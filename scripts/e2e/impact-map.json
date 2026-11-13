@@ -1,0 +1,4761 @@
+{
+ "_note": "由 scripts/e2e/impact.py --write-map 生成的派生文件，勿手改。",
+ "endpoints": [
+  {
+   "http": "POST",
+   "path": "/api/v1/integration/executions",
+   "controller": "MonitorController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/MonitorController.java",
+   "cases": [
+    "chains.py",
+    "integration-flow-exec-chain.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/integration/executions",
+   "controller": "MonitorController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/MonitorController.java",
+   "cases": [
+    "chains.py",
+    "integration-flow-exec-chain.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/integration/executions/{id}",
+   "controller": "MonitorController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/MonitorController.java",
+   "cases": [
+    "chains.py",
+    "integration-flow-exec-chain.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/integration/executions/{id}/logs",
+   "controller": "MonitorController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/MonitorController.java",
+   "cases": [
+    "integration-flow-exec-chain.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/integration/executions/{id}/retry",
+   "controller": "MonitorController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/MonitorController.java",
+   "cases": [
+    "integration-flow-exec-chain.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/integration/statistics",
+   "controller": "MonitorController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/MonitorController.java",
+   "cases": [
+    "chains.py",
+    "integration-flow-exec-chain.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/integration/connectors/{id}",
+   "controller": "ConnectorController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/ConnectorController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/integration/connectors/{id}",
+   "controller": "ConnectorController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/ConnectorController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/integration/connectors/{id}",
+   "controller": "ConnectorController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/ConnectorController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/integration/connectors/{id}/test",
+   "controller": "ConnectorController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/ConnectorController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/integration/connectors/{id}/enable",
+   "controller": "ConnectorController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/ConnectorController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/integration/connectors/{id}/disable",
+   "controller": "ConnectorController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/ConnectorController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/integration/flows/{id}",
+   "controller": "FlowController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/FlowController.java",
+   "cases": [
+    "chains.py",
+    "integration-flow-exec-chain.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/integration/flows/{id}",
+   "controller": "FlowController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/FlowController.java",
+   "cases": [
+    "chains.py",
+    "integration-flow-exec-chain.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/integration/flows/{id}",
+   "controller": "FlowController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/FlowController.java",
+   "cases": [
+    "chains.py",
+    "integration-flow-exec-chain.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/integration/flows/{id}/activate",
+   "controller": "FlowController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/FlowController.java",
+   "cases": [
+    "integration-flow-exec-chain.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/integration/flows/{id}/deactivate",
+   "controller": "FlowController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/FlowController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/integration/flows/{id}/test",
+   "controller": "FlowController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/FlowController.java",
+   "cases": [
+    "integration-flow-exec-chain.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/integration/flows/{id}/versions",
+   "controller": "FlowController",
+   "file": "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/FlowController.java",
+   "cases": [
+    "integration-flow-exec-chain.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/fields/{id}",
+   "controller": "MasterDataFieldTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataFieldTopController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/masterdata/fields/{id}",
+   "controller": "MasterDataFieldTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataFieldTopController.java",
+   "cases": []
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/masterdata/fields/{id}",
+   "controller": "MasterDataFieldTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataFieldTopController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/masterdata/templates/{id}",
+   "controller": "DomainTemplateController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DomainTemplateController.java",
+   "cases": [
+    "chains.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/templates/{id}/versions",
+   "controller": "DomainTemplateController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DomainTemplateController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/templates/{id}/archive",
+   "controller": "DomainTemplateController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DomainTemplateController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/templates/instantiate",
+   "controller": "DomainTemplateController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DomainTemplateController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/templates/{id}",
+   "controller": "DomainTemplateController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DomainTemplateController.java",
+   "cases": [
+    "chains.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/templates/{id}/versions",
+   "controller": "DomainTemplateController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DomainTemplateController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/model-drifts/reconcile",
+   "controller": "ModelDriftController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ModelDriftController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/model-drifts/{id}/handle",
+   "controller": "ModelDriftController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ModelDriftController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/entities/{entityId}/fields",
+   "controller": "MasterDataFieldController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataFieldController.java",
+   "cases": [
+    "chains.py",
+    "ui/ui-full-module-crud-probe.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/entities/{entityId}/fields",
+   "controller": "MasterDataFieldController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataFieldController.java",
+   "cases": [
+    "chains.py",
+    "ui/ui-full-module-crud-probe.mjs"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/masterdata/entities/{id}",
+   "controller": "MasterDataEntityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
+   "cases": [
+    "chains.py",
+    "ui/ui-full-module-crud-probe.mjs",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/entities/{id}/publish",
+   "controller": "MasterDataEntityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/entities/{id}/submit-review",
+   "controller": "MasterDataEntityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/entities/{id}/approve",
+   "controller": "MasterDataEntityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/entities/{id}/reject",
+   "controller": "MasterDataEntityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/entities/{id}/disable",
+   "controller": "MasterDataEntityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
+   "cases": []
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/masterdata/entities/{id}",
+   "controller": "MasterDataEntityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
+   "cases": [
+    "chains.py",
+    "ui/ui-full-module-crud-probe.mjs",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/entities/{id}",
+   "controller": "MasterDataEntityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
+   "cases": [
+    "chains.py",
+    "ui/ui-full-module-crud-probe.mjs",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/entities/convert",
+   "controller": "MasterDataEntityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/entities/{id}/governance-tier",
+   "controller": "MasterDataEntityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/entities/{id}/owning-app",
+   "controller": "MasterDataEntityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/quality-issues/{id}/fix",
+   "controller": "QualityIssueController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/QualityIssueController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/quality-issues/{id}/close",
+   "controller": "QualityIssueController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/QualityIssueController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/quality-issues/{id}/ignore",
+   "controller": "QualityIssueController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/QualityIssueController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/quality-issues/open-count",
+   "controller": "QualityIssueController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/QualityIssueController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/masterdata/data-standards/{id}",
+   "controller": "DataStandardController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataStandardController.java",
+   "cases": []
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/masterdata/data-standards/{id}",
+   "controller": "DataStandardController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataStandardController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/data-standards/entity/{entityCode}",
+   "controller": "DataStandardController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataStandardController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/data-standards/page",
+   "controller": "DataStandardController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataStandardController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/quality/rules",
+   "controller": "DataQualityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataQualityController.java",
+   "cases": [
+    "real-id-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/quality/rules",
+   "controller": "DataQualityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataQualityController.java",
+   "cases": [
+    "real-id-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/quality/rules/{id}",
+   "controller": "DataQualityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataQualityController.java",
+   "cases": [
+    "real-id-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/masterdata/quality/rules/{id}",
+   "controller": "DataQualityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataQualityController.java",
+   "cases": [
+    "real-id-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/masterdata/quality/rules/{id}",
+   "controller": "DataQualityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataQualityController.java",
+   "cases": [
+    "real-id-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/quality/check",
+   "controller": "DataQualityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataQualityController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/quality/checks",
+   "controller": "DataQualityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataQualityController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/quality/checks/{id}",
+   "controller": "DataQualityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataQualityController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/quality/checks/{id}/report",
+   "controller": "DataQualityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataQualityController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/quality/reports",
+   "controller": "DataQualityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataQualityController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/quality/reports/{id}",
+   "controller": "DataQualityController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataQualityController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/masterdata/categories/{id}",
+   "controller": "MasterDataCategoryController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataCategoryController.java",
+   "cases": []
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/masterdata/categories/{id}",
+   "controller": "MasterDataCategoryController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataCategoryController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/categories/assign",
+   "controller": "MasterDataCategoryController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataCategoryController.java",
+   "cases": []
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/masterdata/categories/assign",
+   "controller": "MasterDataCategoryController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataCategoryController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/categories/record/{recordId}",
+   "controller": "MasterDataCategoryController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataCategoryController.java",
+   "cases": []
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/masterdata/governance-roles/{id}",
+   "controller": "StewardController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/StewardController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/subscriptions/{id}/approve",
+   "controller": "EntitySubscriptionController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/EntitySubscriptionController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/subscriptions/{id}/revoke",
+   "controller": "EntitySubscriptionController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/EntitySubscriptionController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/feedbacks/{id}/accept",
+   "controller": "DataFeedbackController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataFeedbackController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/feedbacks/{id}/reject",
+   "controller": "DataFeedbackController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataFeedbackController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/feedbacks/{id}/complete",
+   "controller": "DataFeedbackController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataFeedbackController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/masterdata/reference-sets/{id}",
+   "controller": "ReferenceDataController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ReferenceDataController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/reference-sets/{id}/archive",
+   "controller": "ReferenceDataController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ReferenceDataController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/reference-sets/{id}/values",
+   "controller": "ReferenceDataController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ReferenceDataController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/masterdata/reference-sets/values/{valueId}",
+   "controller": "ReferenceDataController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ReferenceDataController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/reference-sets/values/{valueId}/disable",
+   "controller": "ReferenceDataController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ReferenceDataController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/reference-sets/{id}/values",
+   "controller": "ReferenceDataController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ReferenceDataController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/records/{id}",
+   "controller": "MasterDataRecordTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/records/by-code",
+   "controller": "MasterDataRecordTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/records/entity/{masterDataEntityId}",
+   "controller": "MasterDataRecordTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/masterdata/records/{id}",
+   "controller": "MasterDataRecordTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/masterdata/records/{id}",
+   "controller": "MasterDataRecordTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/records/{id}/publish",
+   "controller": "MasterDataRecordTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/records/{id}/submit",
+   "controller": "MasterDataRecordTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/records/{id}/approve",
+   "controller": "MasterDataRecordTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/records/{id}/reject",
+   "controller": "MasterDataRecordTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/records/{id}/versions",
+   "controller": "MasterDataRecordTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/records/{id}/archive",
+   "controller": "MasterDataRecordTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/records",
+   "controller": "MasterDataRecordTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/records/export",
+   "controller": "MasterDataRecordTopController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/file/files",
+   "controller": "FileController",
+   "file": "bone-platform/bone-file/src/main/java/com/bone/file/adapter/web/controller/FileController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/file/files/{objectName}",
+   "controller": "FileController",
+   "file": "bone-platform/bone-file/src/main/java/com/bone/file/adapter/web/controller/FileController.java",
+   "cases": []
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/file/files/{objectName}",
+   "controller": "FileController",
+   "file": "bone-platform/bone-file/src/main/java/com/bone/file/adapter/web/controller/FileController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/file/files/test",
+   "controller": "FileController",
+   "file": "bone-platform/bone-file/src/main/java/com/bone/file/adapter/web/controller/FileController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/console/overview",
+   "controller": "ConsoleController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConsoleController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/console/services",
+   "controller": "ConsoleController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConsoleController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/console/resources",
+   "controller": "ConsoleController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConsoleController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/console/metrics",
+   "controller": "ConsoleController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConsoleController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/console/quick-actions",
+   "controller": "ConsoleController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConsoleController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/system/dict/items/{id}",
+   "controller": "DictItemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictItemController.java",
+   "cases": [
+    "real-id-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/system/dict/items/{id}",
+   "controller": "DictItemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictItemController.java",
+   "cases": [
+    "real-id-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/system/dict/items/{id}/move",
+   "controller": "DictItemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictItemController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/system/dict/items/{id}/default",
+   "controller": "DictItemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictItemController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/system/dict/items/{id}/deprecate",
+   "controller": "DictItemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictItemController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/system/dict/items/{id}/restore",
+   "controller": "DictItemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictItemController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/dict/items/{typeCode}/{code}",
+   "controller": "DictItemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictItemController.java",
+   "cases": [
+    "real-id-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/dict/items/page",
+   "controller": "DictItemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictItemController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/dict/items/tree",
+   "controller": "DictItemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictItemController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/dict/items/{typeCode}/{code}/texts",
+   "controller": "DictItemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictItemController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/system/dict/items/{typeCode}/{code}/texts",
+   "controller": "DictItemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictItemController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/dict/items/options",
+   "controller": "DictItemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictItemController.java",
+   "cases": []
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/system/config/{id}",
+   "controller": "ConfigController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConfigController.java",
+   "cases": [
+    "chains.py",
+    "real-id-sweep.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/config/{id}",
+   "controller": "ConfigController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConfigController.java",
+   "cases": [
+    "chains.py",
+    "real-id-sweep.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/config/key/{key}",
+   "controller": "ConfigController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConfigController.java",
+   "cases": [
+    "real-id-sweep.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/config/page",
+   "controller": "ConfigController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/config/export",
+   "controller": "ConfigController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/config/import",
+   "controller": "ConfigController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/config/{id}/history",
+   "controller": "ConfigController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConfigController.java",
+   "cases": [
+    "real-id-sweep.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/health",
+   "controller": "SystemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/SystemController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/info",
+   "controller": "SystemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/SystemController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/metrics",
+   "controller": "SystemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/SystemController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/deploy",
+   "controller": "SystemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/SystemController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/upgrade",
+   "controller": "SystemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/SystemController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/restart",
+   "controller": "SystemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/SystemController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/shutdown",
+   "controller": "SystemController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/SystemController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/alert/rules",
+   "controller": "AlertController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/system/alert/rules",
+   "controller": "AlertController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/alert/rules/{id}/enable",
+   "controller": "AlertController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/alert/rules/{id}/disable",
+   "controller": "AlertController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/system/alert/rules/{id}",
+   "controller": "AlertController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/alert/rules/{id}",
+   "controller": "AlertController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/alert/rules",
+   "controller": "AlertController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/alert/rules/page",
+   "controller": "AlertController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/alert/events",
+   "controller": "AlertController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/alert/events/{id}/resolve",
+   "controller": "AlertController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/alert/events/{id}",
+   "controller": "AlertController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/alert/events",
+   "controller": "AlertController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/alert/events/page",
+   "controller": "AlertController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/logs/{id}",
+   "controller": "LogController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/LogController.java",
+   "cases": [
+    "chains.py",
+    "real-id-sweep.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/logs/page",
+   "controller": "LogController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/LogController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/logs/export",
+   "controller": "LogController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/LogController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/logs/analyze",
+   "controller": "LogController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/LogController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/system/schedule-tasks/{id}",
+   "controller": "ScheduleTaskController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ScheduleTaskController.java",
+   "cases": [
+    "real-id-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/system/schedule-tasks/{id}",
+   "controller": "ScheduleTaskController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ScheduleTaskController.java",
+   "cases": [
+    "real-id-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/system/schedule-tasks/{id}/toggle",
+   "controller": "ScheduleTaskController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ScheduleTaskController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/schedule-tasks/{id}/run",
+   "controller": "ScheduleTaskController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ScheduleTaskController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/schedule-tasks/{id}",
+   "controller": "ScheduleTaskController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ScheduleTaskController.java",
+   "cases": [
+    "real-id-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/schedule-tasks/page",
+   "controller": "ScheduleTaskController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ScheduleTaskController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/schedule-tasks/{id}/executions",
+   "controller": "ScheduleTaskController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ScheduleTaskController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/system/dict/types/{id}",
+   "controller": "DictTypeController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictTypeController.java",
+   "cases": [
+    "chains.py",
+    "real-id-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/system/dict/types/{id}",
+   "controller": "DictTypeController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictTypeController.java",
+   "cases": [
+    "chains.py",
+    "real-id-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/dict/types/{code}",
+   "controller": "DictTypeController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictTypeController.java",
+   "cases": [
+    "chains.py",
+    "real-id-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/dict/types/page",
+   "controller": "DictTypeController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictTypeController.java",
+   "cases": [
+    "chains.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/dict/types/{code}/hierarchies",
+   "controller": "DictTypeController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictTypeController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/dict/types/{code}/enum-diff",
+   "controller": "DictTypeController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictTypeController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/dict/types/{code}/version",
+   "controller": "DictTypeController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictTypeController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/dict/types/{code}/enum-sync",
+   "controller": "DictTypeController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictTypeController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/system/dict/types/{code}/export",
+   "controller": "DictTypeController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictTypeController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/system/dict/types/{code}/import",
+   "controller": "DictTypeController",
+   "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictTypeController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/me/roles",
+   "controller": "MeController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MeController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/iam/me/change-password",
+   "controller": "MeController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MeController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/apps/mine",
+   "controller": "AppController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AppController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/apps/{id}",
+   "controller": "AppController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AppController.java",
+   "cases": [
+    "api-sweep.py",
+    "app-to-data-full-chain-e2e.py",
+    "real-id-sweep.py",
+    "ui/micro-app-matrix-probe.mjs",
+    "ui/ui-designer-probe.mjs",
+    "write-sweep.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/apps/{id}",
+   "controller": "AppController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AppController.java",
+   "cases": [
+    "api-sweep.py",
+    "app-to-data-full-chain-e2e.py",
+    "real-id-sweep.py",
+    "ui/micro-app-matrix-probe.mjs",
+    "ui/ui-designer-probe.mjs",
+    "write-sweep.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/apps/{id}",
+   "controller": "AppController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AppController.java",
+   "cases": [
+    "api-sweep.py",
+    "app-to-data-full-chain-e2e.py",
+    "real-id-sweep.py",
+    "ui/micro-app-matrix-probe.mjs",
+    "ui/ui-designer-probe.mjs",
+    "write-sweep.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/apps/{id}/permissions",
+   "controller": "AppController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AppController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/apps/{id}/permissions",
+   "controller": "AppController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AppController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/apps/{id}/permissions/{userId}",
+   "controller": "AppController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AppController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/iam/login",
+   "controller": "AuthController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuthController.java",
+   "cases": [
+    "e2e_synap_claim.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/iam/logout",
+   "controller": "AuthController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuthController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/iam/refresh",
+   "controller": "AuthController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuthController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/sso/config",
+   "controller": "AuthController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuthController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/sso/callback",
+   "controller": "AuthController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuthController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/iam/menus/{id}",
+   "controller": "MenuController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MenuController.java",
+   "cases": [
+    "ui/claim-single-nav-probe.mjs",
+    "ui/micro-app-matrix-probe.mjs",
+    "ui/ui-all-menu-regression.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-runtime-evidences-regression.mjs"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/iam/menus/{id}",
+   "controller": "MenuController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MenuController.java",
+   "cases": [
+    "ui/claim-single-nav-probe.mjs",
+    "ui/micro-app-matrix-probe.mjs",
+    "ui/ui-all-menu-regression.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-runtime-evidences-regression.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/menus/tree",
+   "controller": "MenuController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MenuController.java",
+   "cases": [
+    "ui/ui-all-menu-regression.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-runtime-evidences-regression.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/menus/current",
+   "controller": "MenuController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MenuController.java",
+   "cases": [
+    "ui/claim-single-nav-probe.mjs",
+    "ui/micro-app-matrix-probe.mjs",
+    "ui/ui-full-module-crud-probe.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/mfa/status",
+   "controller": "MfaController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MfaController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/iam/mfa/enroll",
+   "controller": "MfaController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MfaController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/iam/mfa/verify",
+   "controller": "MfaController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MfaController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/roles/{id}",
+   "controller": "RoleController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "workflow-org-routing-e2e.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/iam/roles/{id}",
+   "controller": "RoleController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "workflow-org-routing-e2e.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/iam/roles/{id}",
+   "controller": "RoleController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "workflow-org-routing-e2e.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/iam/roles/{id}/permissions",
+   "controller": "RoleController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "workflow-org-routing-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/roles/{id}/permissions",
+   "controller": "RoleController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "workflow-org-routing-e2e.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/iam/accounts/{id}",
+   "controller": "AccountController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
+   "cases": [
+    "chains.py",
+    "claim-full-chain-e2e.mjs",
+    "expense-purchase-approval-integration-e2e.py",
+    "two-scenario-full-chain-e2e.py",
+    "ui/ui-approval-sendback-probe.mjs",
+    "workflow-org-routing-e2e.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/iam/accounts/{id}",
+   "controller": "AccountController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
+   "cases": [
+    "chains.py",
+    "claim-full-chain-e2e.mjs",
+    "expense-purchase-approval-integration-e2e.py",
+    "two-scenario-full-chain-e2e.py",
+    "ui/ui-approval-sendback-probe.mjs",
+    "workflow-org-routing-e2e.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/iam/accounts/{id}/enable",
+   "controller": "AccountController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/iam/accounts/{id}/disable",
+   "controller": "AccountController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/iam/accounts/{id}/reset-password",
+   "controller": "AccountController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "expense-purchase-approval-integration-e2e.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/accounts/{id}",
+   "controller": "AccountController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
+   "cases": [
+    "chains.py",
+    "claim-full-chain-e2e.mjs",
+    "expense-purchase-approval-integration-e2e.py",
+    "two-scenario-full-chain-e2e.py",
+    "ui/ui-approval-sendback-probe.mjs",
+    "workflow-org-routing-e2e.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/accounts/{id}/org-hierarchy",
+   "controller": "AccountController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/iam/accounts/import",
+   "controller": "AccountController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/accounts/export",
+   "controller": "AccountController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/.well-known/jwks.json",
+   "controller": "JwksController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/JwksController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/iam/depts/{id}",
+   "controller": "DeptController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/DeptController.java",
+   "cases": [
+    "chains.py",
+    "claim-full-chain-e2e.mjs",
+    "workflow-org-routing-e2e.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/iam/depts/{id}",
+   "controller": "DeptController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/DeptController.java",
+   "cases": [
+    "chains.py",
+    "claim-full-chain-e2e.mjs",
+    "workflow-org-routing-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/depts/tree",
+   "controller": "DeptController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/DeptController.java",
+   "cases": [
+    "chains.py",
+    "claim-full-chain-e2e.mjs",
+    "workflow-org-routing-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/audit/logs",
+   "controller": "AuditController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuditController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/audit/logs/export",
+   "controller": "AuditController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuditController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/audit/settings",
+   "controller": "AuditController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuditController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/iam/audit/settings",
+   "controller": "AuditController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuditController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/accounts/{accountId}/sessions",
+   "controller": "SessionController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/SessionController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/iam/sessions/{id}",
+   "controller": "SessionController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/SessionController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/iam/accounts/{accountId}/sessions",
+   "controller": "SessionController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/SessionController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/tenants/{id}",
+   "controller": "TenantController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/TenantController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/iam/tenants/{id}",
+   "controller": "TenantController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/TenantController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/iam/tenants/{id}/enable",
+   "controller": "TenantController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/TenantController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/iam/tenants/{id}/disable",
+   "controller": "TenantController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/TenantController.java",
+   "cases": []
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/iam/tenants/{id}",
+   "controller": "TenantController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/TenantController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/iam/tenants/{id}/quota",
+   "controller": "TenantController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/TenantController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/points",
+   "controller": "ExtensionE2eController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/ExtensionE2eController.java",
+   "cases": [
+    "chains.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/points/{id}:enable",
+   "controller": "ExtensionE2eController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/ExtensionE2eController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/points/{id}:disable",
+   "controller": "ExtensionE2eController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/ExtensionE2eController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/plugins",
+   "controller": "ExtensionE2eController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/ExtensionE2eController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/plugins/{id}:deploy",
+   "controller": "ExtensionE2eController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/ExtensionE2eController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/plugins/{id}:undeploy",
+   "controller": "ExtensionE2eController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/ExtensionE2eController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/apps/{appId}/modules/{id}",
+   "controller": "ModuleController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/ModuleController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "ui/ui-designer-probe.mjs"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/apps/{appId}/modules/{id}",
+   "controller": "ModuleController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/ModuleController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "ui/ui-designer-probe.mjs"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/apps/{appId}/modules/{id}",
+   "controller": "ModuleController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/ModuleController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "ui/ui-designer-probe.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/permissions/tree",
+   "controller": "PermissionController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/PermissionController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/iam/permissions/{id}",
+   "controller": "PermissionController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/PermissionController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/iam/permissions/{id}",
+   "controller": "PermissionController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/PermissionController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/iam/permissions/{id}",
+   "controller": "PermissionController",
+   "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/PermissionController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/notification/messages/unread-count",
+   "controller": "NotificationController",
+   "file": "bone-platform/bone-notification/src/main/java/com/bone/platform/alert/adapter/web/NotificationController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/notification/messages/summary",
+   "controller": "NotificationController",
+   "file": "bone-platform/bone-notification/src/main/java/com/bone/platform/alert/adapter/web/NotificationController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/notification/messages/{id}/read",
+   "controller": "NotificationController",
+   "file": "bone-platform/bone-notification/src/main/java/com/bone/platform/alert/adapter/web/NotificationController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/entities/{entityId}/fields/{fieldId}",
+   "controller": "MetaFieldCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldCatalogController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "lowcode-closed-loop.cjs",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-personal-views-probe.mjs"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/metadata/entities/{entityId}/fields/{fieldId}",
+   "controller": "MetaFieldCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldCatalogController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "lowcode-closed-loop.cjs",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-personal-views-probe.mjs"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/metadata/entities/{entityId}/fields/{fieldId}",
+   "controller": "MetaFieldCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldCatalogController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "lowcode-closed-loop.cjs",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-personal-views-probe.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/entities/{entityId}/structure/drop-column",
+   "controller": "PhysicalStructureController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/PhysicalStructureController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/entities/{entityId}/structure/drop-drifted",
+   "controller": "PhysicalStructureController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/PhysicalStructureController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/fields/{fieldId}/options",
+   "controller": "MetaFieldOptionsController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldOptionsController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/fields/{fieldId}/options/version",
+   "controller": "MetaFieldOptionsController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldOptionsController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/fields/{fieldId}/option-diff",
+   "controller": "MetaFieldOptionsController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldOptionsController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/fields/{fieldId}/options/refresh",
+   "controller": "MetaFieldOptionsController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldOptionsController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/fields/dict-bindings",
+   "controller": "MetaFieldOptionsController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldOptionsController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/fields/{fieldId}/migrate-to-dict/preview",
+   "controller": "MetaFieldOptionsController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldOptionsController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/fields/{fieldId}/migrate-to-dict",
+   "controller": "MetaFieldOptionsController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldOptionsController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/metadata/entities/{id}",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "lowcode-closed-loop.cjs",
+    "seed_stable_purchase_order.py",
+    "two-scenario-full-chain-e2e.py",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-personal-views-probe.mjs",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/entities/{id}",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "lowcode-closed-loop.cjs",
+    "seed_stable_purchase_order.py",
+    "two-scenario-full-chain-e2e.py",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-personal-views-probe.mjs",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/entities/{id}/publish",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "lowcode-closed-loop.cjs",
+    "ui/ui-personal-views-probe.mjs",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/entities/{id}/archive",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "two-scenario-full-chain-e2e.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/entities/{id}/revert-draft",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "two-scenario-full-chain-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/entities/{id}/action-defs",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "seed_stable_purchase_order.py",
+    "two-scenario-full-chain-e2e.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/entities/{id}/action-defs",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "seed_stable_purchase_order.py",
+    "two-scenario-full-chain-e2e.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/metadata/entities/{id}/action-defs/{actionCode}",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "seed_stable_purchase_order.py",
+    "two-scenario-full-chain-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/entities/{id}/validate",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/entities/{id}/publish-preview",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "two-scenario-full-chain-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/entities/{entityCode}/ui-overlay",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "two-scenario-full-chain-e2e.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/metadata/entities/{entityCode}/ui-overlay",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "two-scenario-full-chain-e2e.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/metadata/entities/{entityCode}/ui-overlay",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "two-scenario-full-chain-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/entities/{id}/ui-schema",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "two-scenario-full-chain-e2e.py",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-personal-views-probe.mjs"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/metadata/entities/{id}/ui-schema",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "two-scenario-full-chain-e2e.py",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-personal-views-probe.mjs"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/metadata/entities/{id}/ui-schema",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "two-scenario-full-chain-e2e.py",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-personal-views-probe.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/entities/{id}/ui-schema/validate",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "ui/ui-designer-probe.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/entities/{id}/ui-schema/base-update",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/entities/{id}/ui-schema/merge-preview",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/entities/{id}/ui-schema/merge-confirm",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/entities/{id}/copy",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/metadata/entities/{id}",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "lowcode-closed-loop.cjs",
+    "seed_stable_purchase_order.py",
+    "two-scenario-full-chain-e2e.py",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-personal-views-probe.mjs",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/entities/import-from-table",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "lowcode-closed-loop.cjs",
+    "seed_stable_purchase_order.py",
+    "two-scenario-full-chain-e2e.py",
+    "ui/ui-designer-probe.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/entities/batch-publish",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "lowcode-closed-loop.cjs",
+    "seed_stable_purchase_order.py",
+    "two-scenario-full-chain-e2e.py",
+    "ui/ui-designer-probe.mjs",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/entities/batch-delete",
+   "controller": "MetaEntityCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "lowcode-closed-loop.cjs",
+    "seed_stable_purchase_order.py",
+    "two-scenario-full-chain-e2e.py",
+    "ui/ui-designer-probe.mjs",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/modeling/workspace",
+   "controller": "ModelingWorkspaceController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/ModelingWorkspaceController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/relationships/{id}",
+   "controller": "MetaRelationCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaRelationCatalogController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/metadata/relationships/{id}",
+   "controller": "MetaRelationCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaRelationCatalogController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/metadata/relationships/{id}",
+   "controller": "MetaRelationCatalogController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaRelationCatalogController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/templates/{id}/fields",
+   "controller": "MetaTemplateController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaTemplateController.java",
+   "cases": [
+    "lowcode-closed-loop.cjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/templates/{id}/instantiate",
+   "controller": "MetaTemplateController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaTemplateController.java",
+   "cases": [
+    "lowcode-closed-loop.cjs",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-personal-views-probe.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/runtime/entities/{entityCode}/lookup-options",
+   "controller": "RuntimeRelationController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRelationController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/runtime/entities/{entityCode}/records/{id}/children/{childEntityCode}",
+   "controller": "RuntimeRelationController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRelationController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/runtime/entities/{entityCode}/records/{id}/children/{childEntityCode}",
+   "controller": "RuntimeRelationController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRelationController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/runtime/entities/{entityCode}/records/{id}",
+   "controller": "RuntimeRecordController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "expense-purchase-approval-integration-e2e.py",
+    "lowcode-closed-loop.cjs",
+    "two-scenario-full-chain-e2e.py",
+    "ui-schema-samples-e2e.py",
+    "ui/ui-app-to-data-probe.mjs",
+    "ui/ui-approval-sendback-probe.mjs",
+    "ui/ui-approval-suspend-reason-probe.mjs",
+    "ui/ui-org-routing-probe.mjs",
+    "ui/ui-personal-views-probe.mjs",
+    "workflow-org-routing-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/runtime/entities/{entityCode}/records/{id}/action-executions",
+   "controller": "RuntimeRecordController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java",
+   "cases": [
+    "two-scenario-full-chain-e2e.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/runtime/entities/{entityCode}/records/{id}",
+   "controller": "RuntimeRecordController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "expense-purchase-approval-integration-e2e.py",
+    "lowcode-closed-loop.cjs",
+    "two-scenario-full-chain-e2e.py",
+    "ui-schema-samples-e2e.py",
+    "ui/ui-app-to-data-probe.mjs",
+    "ui/ui-approval-sendback-probe.mjs",
+    "ui/ui-approval-suspend-reason-probe.mjs",
+    "ui/ui-org-routing-probe.mjs",
+    "ui/ui-personal-views-probe.mjs",
+    "workflow-org-routing-e2e.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/runtime/entities/{entityCode}/records/{id}",
+   "controller": "RuntimeRecordController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "expense-purchase-approval-integration-e2e.py",
+    "lowcode-closed-loop.cjs",
+    "two-scenario-full-chain-e2e.py",
+    "ui-schema-samples-e2e.py",
+    "ui/ui-app-to-data-probe.mjs",
+    "ui/ui-approval-sendback-probe.mjs",
+    "ui/ui-approval-suspend-reason-probe.mjs",
+    "ui/ui-org-routing-probe.mjs",
+    "ui/ui-personal-views-probe.mjs",
+    "workflow-org-routing-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/runtime/entities/{entityCode}/records/deleted",
+   "controller": "RuntimeRecordController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "expense-purchase-approval-integration-e2e.py",
+    "lowcode-closed-loop.cjs",
+    "two-scenario-full-chain-e2e.py",
+    "ui-schema-samples-e2e.py",
+    "ui/ui-approval-sendback-probe.mjs",
+    "ui/ui-org-routing-probe.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/runtime/entities/{entityCode}/records/{id}/restore",
+   "controller": "RuntimeRecordController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "two-scenario-full-chain-e2e.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/runtime/entities/{entityCode}/records/{id}/actions/{actionCode}",
+   "controller": "RuntimeActionController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeActionController.java",
+   "cases": [
+    "lowcode-closed-loop.cjs",
+    "ui/ui-approval-sendback-probe.mjs",
+    "ui/ui-approval-suspend-reason-probe.mjs",
+    "ui/ui-org-routing-probe.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/runtime/entities/{entityCode}/actions",
+   "controller": "RuntimeActionController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeActionController.java",
+   "cases": [
+    "two-scenario-full-chain-e2e.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/fields:search",
+   "controller": "MetadataController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/adapter/web/controller/MetadataController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/fields:searchByNames",
+   "controller": "MetadataController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/adapter/web/controller/MetadataController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/metadata/fields:allocate",
+   "controller": "MetadataController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/adapter/web/controller/MetadataController.java",
+   "cases": [
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/metadata/health",
+   "controller": "MetadataController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/adapter/web/controller/MetadataController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/runtime/approval/tasks/pending",
+   "controller": "RuntimeApprovalController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/approval/adapter/web/RuntimeApprovalController.java",
+   "cases": [
+    "expense-purchase-approval-integration-e2e.py",
+    "workflow-org-routing-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/runtime/approval/records/{entityCode}/{recordId}",
+   "controller": "RuntimeApprovalController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/approval/adapter/web/RuntimeApprovalController.java",
+   "cases": [
+    "expense-purchase-approval-integration-e2e.py",
+    "real-id-sweep.py",
+    "ui/ui-approval-sendback-probe.mjs",
+    "ui/ui-approval-suspend-reason-probe.mjs",
+    "ui/ui-org-routing-probe.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/runtime/approval/summaries",
+   "controller": "RuntimeApprovalController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/approval/adapter/web/RuntimeApprovalController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/runtime/approval/tasks/decided",
+   "controller": "RuntimeApprovalController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/approval/adapter/web/RuntimeApprovalController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/runtime/approval/tasks/{taskId}/reassign",
+   "controller": "RuntimeApprovalController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/approval/adapter/web/RuntimeApprovalController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/runtime/approval/tasks/{taskId}/urge",
+   "controller": "RuntimeApprovalController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/approval/adapter/web/RuntimeApprovalController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/runtime/approval/instances/{instanceId}/assign",
+   "controller": "RuntimeApprovalController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/approval/adapter/web/RuntimeApprovalController.java",
+   "cases": [
+    "expense-purchase-approval-integration-e2e.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/runtime/approval/instances/{instanceId}/terminate",
+   "controller": "RuntimeApprovalController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/approval/adapter/web/RuntimeApprovalController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/runtime/approval/tasks/{taskId}/transfer",
+   "controller": "RuntimeApprovalController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/approval/adapter/web/RuntimeApprovalController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/runtime/approval/tasks/{taskId}/addSign",
+   "controller": "RuntimeApprovalController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/approval/adapter/web/RuntimeApprovalController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/runtime/approval/instances/{instanceId}/resume",
+   "controller": "RuntimeApprovalController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/approval/adapter/web/RuntimeApprovalController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/runtime/approval/inbox",
+   "controller": "RuntimeApprovalController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/approval/adapter/web/RuntimeApprovalController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/runtime/approval/instances",
+   "controller": "RuntimeApprovalController",
+   "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/approval/adapter/web/RuntimeApprovalController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/demo/e2eentity1202624423478541/{id}",
+   "controller": "E2eEntity1202624423478541Controller",
+   "file": "bone-engine/studio-generator/generated-code/com/demo/demo/adapter/web/controller/E2eEntity1202624423478541Controller.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/demo/e2eentity1202624423478541/page",
+   "controller": "E2eEntity1202624423478541Controller",
+   "file": "bone-engine/studio-generator/generated-code/com/demo/demo/adapter/web/controller/E2eEntity1202624423478541Controller.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/catalog/e2eentity1202624423478541/{id}",
+   "controller": "E2eEntity1202624423478541Controller",
+   "file": "bone-engine/studio-generator/generated-code/com/bone/catalog/catalog/adapter/web/controller/E2eEntity1202624423478541Controller.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/catalog/e2eentity1202624423478541/page",
+   "controller": "E2eEntity1202624423478541Controller",
+   "file": "bone-engine/studio-generator/generated-code/com/bone/catalog/catalog/adapter/web/controller/E2eEntity1202624423478541Controller.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/{id}",
+   "controller": "CodeTemplateController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeTemplateController.java",
+   "cases": [
+    "api-sweep.py",
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "channel-buyer-broadcast.py",
+    "claim-config-e2e.mjs",
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
+    "multichannel.py",
+    "mutate_quota_release.py",
+    "real-id-sweep.py",
+    "selftest.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "ui/claim-functional-probe.mjs",
+    "ui/claim-single-nav-probe.mjs",
+    "ui/claim-toast-hygiene-probe.mjs",
+    "ui/micro-app-matrix-probe.mjs",
+    "ui/probe-commerce.mjs",
+    "ui/probe-empty.mjs",
+    "ui/ui-app-to-data-probe.mjs",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs",
+    "write-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/{id}",
+   "controller": "CodeTemplateController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeTemplateController.java",
+   "cases": [
+    "api-sweep.py",
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "channel-buyer-broadcast.py",
+    "claim-config-e2e.mjs",
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
+    "multichannel.py",
+    "mutate_quota_release.py",
+    "real-id-sweep.py",
+    "selftest.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "ui/claim-functional-probe.mjs",
+    "ui/claim-single-nav-probe.mjs",
+    "ui/claim-toast-hygiene-probe.mjs",
+    "ui/micro-app-matrix-probe.mjs",
+    "ui/probe-commerce.mjs",
+    "ui/probe-empty.mjs",
+    "ui/ui-app-to-data-probe.mjs",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs",
+    "write-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/{id}",
+   "controller": "CodeTemplateController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeTemplateController.java",
+   "cases": [
+    "api-sweep.py",
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "channel-buyer-broadcast.py",
+    "claim-config-e2e.mjs",
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
+    "multichannel.py",
+    "mutate_quota_release.py",
+    "real-id-sweep.py",
+    "selftest.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "ui/claim-functional-probe.mjs",
+    "ui/claim-single-nav-probe.mjs",
+    "ui/claim-toast-hygiene-probe.mjs",
+    "ui/micro-app-matrix-probe.mjs",
+    "ui/probe-commerce.mjs",
+    "ui/probe-empty.mjs",
+    "ui/ui-app-to-data-probe.mjs",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs",
+    "write-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/{id}:publish",
+   "controller": "CodeTemplateController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeTemplateController.java",
+   "cases": [
+    "ui/micro-app-matrix-probe.mjs"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/{id}",
+   "controller": "DataSourceController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
+   "cases": [
+    "api-sweep.py",
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "channel-buyer-broadcast.py",
+    "claim-config-e2e.mjs",
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
+    "multichannel.py",
+    "mutate_quota_release.py",
+    "real-id-sweep.py",
+    "selftest.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "ui/claim-functional-probe.mjs",
+    "ui/claim-single-nav-probe.mjs",
+    "ui/claim-toast-hygiene-probe.mjs",
+    "ui/micro-app-matrix-probe.mjs",
+    "ui/probe-commerce.mjs",
+    "ui/probe-empty.mjs",
+    "ui/ui-app-to-data-probe.mjs",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs",
+    "write-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/{id}",
+   "controller": "DataSourceController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
+   "cases": [
+    "api-sweep.py",
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "channel-buyer-broadcast.py",
+    "claim-config-e2e.mjs",
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
+    "multichannel.py",
+    "mutate_quota_release.py",
+    "real-id-sweep.py",
+    "selftest.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "ui/claim-functional-probe.mjs",
+    "ui/claim-single-nav-probe.mjs",
+    "ui/claim-toast-hygiene-probe.mjs",
+    "ui/micro-app-matrix-probe.mjs",
+    "ui/probe-commerce.mjs",
+    "ui/probe-empty.mjs",
+    "ui/ui-app-to-data-probe.mjs",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs",
+    "write-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/{id}/tables",
+   "controller": "DataSourceController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "channel-buyer-broadcast.py",
+    "channel_simulator.py",
+    "claim-full-chain-e2e.mjs",
+    "multichannel.py",
+    "selftest.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/{id}/synced-tables",
+   "controller": "DataSourceController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "channel-buyer-broadcast.py",
+    "channel_simulator.py",
+    "claim-full-chain-e2e.mjs",
+    "multichannel.py",
+    "selftest.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/{id}/tables:sync",
+   "controller": "DataSourceController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "channel-buyer-broadcast.py",
+    "channel_simulator.py",
+    "claim-full-chain-e2e.mjs",
+    "multichannel.py",
+    "selftest.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/{id}/tables:repair-columns",
+   "controller": "DataSourceController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
+   "cases": [
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "channel-buyer-broadcast.py",
+    "channel_simulator.py",
+    "claim-full-chain-e2e.mjs",
+    "multichannel.py",
+    "selftest.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/{id}:test-connection",
+   "controller": "DataSourceController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
+   "cases": [
+    "ui/micro-app-matrix-probe.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/{id}",
+   "controller": "DataSourceController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
+   "cases": [
+    "api-sweep.py",
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "channel-buyer-broadcast.py",
+    "claim-config-e2e.mjs",
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
+    "multichannel.py",
+    "mutate_quota_release.py",
+    "real-id-sweep.py",
+    "selftest.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "ui/claim-functional-probe.mjs",
+    "ui/claim-single-nav-probe.mjs",
+    "ui/claim-toast-hygiene-probe.mjs",
+    "ui/micro-app-matrix-probe.mjs",
+    "ui/probe-commerce.mjs",
+    "ui/probe-empty.mjs",
+    "ui/ui-app-to-data-probe.mjs",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs",
+    "write-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/{name}",
+   "controller": "CapabilityController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CapabilityController.java",
+   "cases": [
+    "api-sweep.py",
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "channel-buyer-broadcast.py",
+    "claim-config-e2e.mjs",
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
+    "multichannel.py",
+    "mutate_quota_release.py",
+    "real-id-sweep.py",
+    "selftest.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "ui/claim-functional-probe.mjs",
+    "ui/claim-single-nav-probe.mjs",
+    "ui/claim-toast-hygiene-probe.mjs",
+    "ui/micro-app-matrix-probe.mjs",
+    "ui/probe-commerce.mjs",
+    "ui/probe-empty.mjs",
+    "ui/ui-app-to-data-probe.mjs",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs",
+    "write-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/repair-entity-names",
+   "controller": "StudioGeneratorAdminController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/StudioGeneratorAdminController.java",
+   "cases": [
+    "ui/micro-app-matrix-probe.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/{operationId}",
+   "controller": "GeneratorOperationController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/GeneratorOperationController.java",
+   "cases": [
+    "api-sweep.py",
+    "app-to-data-full-chain-e2e.py",
+    "chains.py",
+    "channel-buyer-broadcast.py",
+    "claim-config-e2e.mjs",
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
+    "multichannel.py",
+    "mutate_quota_release.py",
+    "real-id-sweep.py",
+    "selftest.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "ui/claim-functional-probe.mjs",
+    "ui/claim-single-nav-probe.mjs",
+    "ui/claim-toast-hygiene-probe.mjs",
+    "ui/micro-app-matrix-probe.mjs",
+    "ui/probe-commerce.mjs",
+    "ui/probe-empty.mjs",
+    "ui/ui-app-to-data-probe.mjs",
+    "ui/ui-designer-probe.mjs",
+    "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs",
+    "write-sweep.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/tasks/{taskId}/download",
+   "controller": "CodeGenerationController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeGenerationController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/tasks/{taskId}/files",
+   "controller": "CodeGenerationController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeGenerationController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/tasks/{taskId}/status",
+   "controller": "CodeGenerationController",
+   "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeGenerationController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/workflow/definitions/validate",
+   "controller": "WorkflowDesignerController",
+   "file": "bone-engine/bone-workflow-engine/bone-workflow-spring-boot-starter/src/main/java/com/bone/workflow/starter/designer/web/WorkflowDesignerController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/workflow/definitions/{key}/draft",
+   "controller": "WorkflowDesignerController",
+   "file": "bone-engine/bone-workflow-engine/bone-workflow-spring-boot-starter/src/main/java/com/bone/workflow/starter/designer/web/WorkflowDesignerController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/workflow/definitions/{key}/draft",
+   "controller": "WorkflowDesignerController",
+   "file": "bone-engine/bone-workflow-engine/bone-workflow-spring-boot-starter/src/main/java/com/bone/workflow/starter/designer/web/WorkflowDesignerController.java",
+   "cases": []
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/workflow/definitions/{key}/draft",
+   "controller": "WorkflowDesignerController",
+   "file": "bone-engine/bone-workflow-engine/bone-workflow-spring-boot-starter/src/main/java/com/bone/workflow/starter/designer/web/WorkflowDesignerController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/workflow/definitions/{key}/publish",
+   "controller": "WorkflowDesignerController",
+   "file": "bone-engine/bone-workflow-engine/bone-workflow-spring-boot-starter/src/main/java/com/bone/workflow/starter/designer/web/WorkflowDesignerController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/workflow/definitions/{key}/enabled",
+   "controller": "WorkflowDesignerController",
+   "file": "bone-engine/bone-workflow-engine/bone-workflow-spring-boot-starter/src/main/java/com/bone/workflow/starter/designer/web/WorkflowDesignerController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/workflow/definitions/{key}/versions",
+   "controller": "WorkflowDesignerController",
+   "file": "bone-engine/bone-workflow-engine/bone-workflow-spring-boot-starter/src/main/java/com/bone/workflow/starter/designer/web/WorkflowDesignerController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/workflow/definitions/{key}/versions/{version}",
+   "controller": "WorkflowDesignerController",
+   "file": "bone-engine/bone-workflow-engine/bone-workflow-spring-boot-starter/src/main/java/com/bone/workflow/starter/designer/web/WorkflowDesignerController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/workflow/definitions/simulate",
+   "controller": "WorkflowDesignerController",
+   "file": "bone-engine/bone-workflow-engine/bone-workflow-spring-boot-starter/src/main/java/com/bone/workflow/starter/designer/web/WorkflowDesignerController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/points",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": [
+    "chains.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/points/{id}",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": [
+    "chains.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/points",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": [
+    "chains.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/extension/points/{id}",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": [
+    "chains.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "PATCH",
+   "path": "/api/v1/extension/points/{id}",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": [
+    "chains.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/extension/points/{id}",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": [
+    "chains.py",
+    "write_coverage.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/points/{id}:enable",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/points/{id}:disable",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/plugins",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/plugins/{id}",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/plugins/{id}/doc",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/plugins",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/extension/plugins/{id}",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "PATCH",
+   "path": "/api/v1/extension/plugins/{id}",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/plugins/{id}/versions/{ver}:download",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/extension/plugins/{id}",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": [
+    "chains.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/plugins/{id}/versions",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": [
+    "api-sweep.py",
+    "real-id-sweep.py",
+    "ui/micro-app-matrix-probe.mjs",
+    "write-sweep.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/plugins/{id}:deploy",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/operations/{operationId}",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/plugins/{id}:undeploy",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/plugins/{id}:rollback",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/plugins/{id}:publish-runtime",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/plugins/{id}:bind",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/plugins/{id}:unbind",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/overview",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/execution-logs",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/plugins/{id}:simulate",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/audit-logs",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/plugins/{id}/deployment-state",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/dependency-graph",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/marketplace",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/extension/marketplace/{itemId}:install",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/extension/sandbox/config",
+   "controller": "ExtensionManagementController",
+   "file": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/plans",
+   "controller": "PlanConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PlanConfigController.java",
+   "cases": [
+    "ui/claim-config-ui-probe.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/plans",
+   "controller": "PlanConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PlanConfigController.java",
+   "cases": [
+    "ui/claim-config-ui-probe.mjs"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/claim-config/plans/{planId}",
+   "controller": "PlanConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PlanConfigController.java",
+   "cases": [
+    "ui/claim-config-ui-probe.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/plans/{planId}/publish",
+   "controller": "PlanConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PlanConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/plans/{planId}/retire",
+   "controller": "PlanConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PlanConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/flows/decision-graph",
+   "controller": "ClaimFlowConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimFlowConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/claim-config/flows/decision-graph",
+   "controller": "ClaimFlowConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimFlowConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/analytics/summary",
+   "controller": "ClaimAnalyticsController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimAnalyticsController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/ai-calibration/report",
+   "controller": "AiCalibrationReportController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiCalibrationReportController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/reconciliation-diffs/pending",
+   "controller": "ReconciliationDiffController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReconciliationDiffController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-ops/reconciliation-diffs/{diffId}/resolution",
+   "controller": "ReconciliationDiffController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReconciliationDiffController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/reconciliation-diffs/{diffId}/actions",
+   "controller": "ReconciliationDiffController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReconciliationDiffController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/reconciliation-diffs/resolutions",
+   "controller": "ReconciliationDiffController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReconciliationDiffController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-ops/claim-assistant",
+   "controller": "ClaimAssistantController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimAssistantController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/claim-assistant/tools",
+   "controller": "ClaimAssistantController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimAssistantController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-ops/claim-assistant/tool",
+   "controller": "ClaimAssistantController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimAssistantController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/ai-runtime-health",
+   "controller": "AiRuntimeHealthController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiRuntimeHealthController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/review/inspections/{inspectionNo}/claim",
+   "controller": "InspectionController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/InspectionController.java",
+   "cases": [
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/review/inspections/{inspectionNo}/conclusion",
+   "controller": "InspectionController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/InspectionController.java",
+   "cases": [
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/review/inspections/{inspectionNo}",
+   "controller": "InspectionController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/InspectionController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
+    "real-id-sweep.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/ai-readiness",
+   "controller": "AiCapabilityReadinessController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiCapabilityReadinessController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-ops/blind-labels/{id}/submit",
+   "controller": "BlindLabelController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/BlindLabelController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-ops/blind-labels/{id}/unblind",
+   "controller": "BlindLabelController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/BlindLabelController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/blind-labels/{id}",
+   "controller": "BlindLabelController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/BlindLabelController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": [
+    "api-sweep.py",
+    "chains.py",
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
+    "real-id-sweep.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "ui/claim-functional-probe.mjs",
+    "ui/claim-toast-hygiene-probe.mjs",
+    "ui/micro-app-matrix-probe.mjs",
+    "write-sweep.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": [
+    "api-sweep.py",
+    "chains.py",
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
+    "real-id-sweep.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "ui/claim-functional-probe.mjs",
+    "ui/claim-toast-hygiene-probe.mjs",
+    "ui/micro-app-matrix-probe.mjs",
+    "write-sweep.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/{id}",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": [
+    "api-sweep.py",
+    "chains.py",
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
+    "real-id-sweep.py",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "synap-claim-workbench-ui-smoke.mjs",
+    "ui/claim-functional-probe.mjs",
+    "ui/claim-toast-hygiene-probe.mjs",
+    "ui/micro-app-matrix-probe.mjs",
+    "write-sweep.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{id}/allocate",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": [
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{id}/pre-exam/start",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": [
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{id}/pre-exam/complete",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": [
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{id}/escalate",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": [
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{id}/adjust/claim",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": [
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{id}/decision",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{id}/second-review",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{id}/second-review/complete",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{id}/auto-approve",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{id}/hangup",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{id}/consent/revoke",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/adjust/recalculate",
+   "controller": "AdjustmentController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AdjustmentController.java",
+   "cases": [
+    "claim-fee-category-e2e.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/adjust/readjudicate",
+   "controller": "AdjustmentController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AdjustmentController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/adjust/confirm",
+   "controller": "AdjustmentController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AdjustmentController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/mappings/resolve",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/mappings",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/mappings/import/template",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/mappings/health",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/mappings/stp-gate",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/mappings/{id}/disable",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/mappings/misses",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/mappings/misses/{id}/resolve",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/mappings/misses/{id}/ignore",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/mappings/resolve-batch",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/mappings/insurers",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/mappings/insurers",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/mappings/insurers/{insurerCode}",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/mappings/insurers/{insurerCode}/status",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/mappings/code-items",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/mappings/code-items",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/mappings/aliases",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/mappings/splits",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/mappings/field-bindings",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/mappings/field-bindings",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/mappings/aliases",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/mappings/splits",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/claim-config/mappings/aliases/{id}",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "DELETE",
+   "path": "/api/v1/claim-config/mappings/splits/{id}",
+   "controller": "CodeMappingController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CodeMappingController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/policies",
+   "controller": "PolicyConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
+   "cases": [
+    "ui/claim-config-ui-probe.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/policies/{policyNo}",
+   "controller": "PolicyConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
+   "cases": [
+    "ui/claim-config-ui-probe.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/policies/{policyNo}/detail",
+   "controller": "PolicyConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/policies",
+   "controller": "PolicyConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
+   "cases": [
+    "ui/claim-config-ui-probe.mjs"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/claim-config/policies/{policyNo}",
+   "controller": "PolicyConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
+   "cases": [
+    "ui/claim-config-ui-probe.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/policies/{policyNo}/activate",
+   "controller": "PolicyConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/policies/{policyNo}/pause",
+   "controller": "PolicyConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/eval/samples",
+   "controller": "EvalSampleController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/EvalSampleController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/eval/diff-samples",
+   "controller": "EvalSampleController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/EvalSampleController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/quota-accounts",
+   "controller": "QuotaConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/QuotaConfigController.java",
+   "cases": [
+    "ui/claim-config-ui-probe.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/quota-accounts/by-insured",
+   "controller": "QuotaConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/QuotaConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/quota-accounts/public-summary",
+   "controller": "QuotaConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/QuotaConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/quota-accounts/{quotaAccountId}/changes",
+   "controller": "QuotaConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/QuotaConfigController.java",
+   "cases": [
+    "ui/claim-config-ui-probe.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/quota-accounts/{quotaAccountId}/adjust",
+   "controller": "QuotaConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/QuotaConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/quota-accounts/{quotaAccountId}/remove",
+   "controller": "QuotaConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/QuotaConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/quota-accounts/{quotaAccountId}/restore",
+   "controller": "QuotaConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/QuotaConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/review/tasks/{claimId}/decision",
+   "controller": "ReviewTaskController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReviewTaskController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/review/tasks/{claimId}/execution",
+   "controller": "ReviewTaskController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReviewTaskController.java",
+   "cases": [
+    "synap-claim-workbench-feedback-e2e.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/review/tasks/{claimId}/trace",
+   "controller": "ReviewTaskController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReviewTaskController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/decision/execute",
+   "controller": "DecisionController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/DecisionController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/{claimId}/decision/trace",
+   "controller": "DecisionController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/DecisionController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/review",
+   "controller": "AppealController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AppealController.java",
+   "cases": [
+    "api-sweep.py",
+    "real-id-sweep.py",
+    "ui/micro-app-matrix-probe.mjs",
+    "write-sweep.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/ai-rollout/drill",
+   "controller": "AiRolloutDrillController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiRolloutDrillController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/internal/adjust/preview",
+   "controller": "ClaimInternalOpsController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimInternalOpsController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/internal/adjust/recompute",
+   "controller": "ClaimInternalOpsController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimInternalOpsController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/internal/rules/regression",
+   "controller": "ClaimInternalOpsController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimInternalOpsController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/internal/claims/{claimId}/decide",
+   "controller": "ClaimInternalOpsController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimInternalOpsController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/internal/reconciliation/{bizDate}",
+   "controller": "ClaimInternalOpsController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimInternalOpsController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/{claimId}/decision/disclosure",
+   "controller": "AiDecisionDisclosureController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiDecisionDisclosureController.java",
+   "cases": [
+    "synap-claim-workbench-feedback-e2e.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/search",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "synap-claim-workbench-feedback-e2e.mjs",
+    "synap-claim-workbench-ui-smoke.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/ai/feedback",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "synap-claim-workbench-feedback-e2e.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/{claimId}/ai/feedback",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "synap-claim-workbench-feedback-e2e.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/ai/feedback/summary",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "synap-claim-workbench-feedback-e2e.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/ai-provider-probe",
+   "controller": "AiProviderProbeController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiProviderProbeController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/evidences/{evidenceId}/parse",
+   "controller": "EvidenceController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/EvidenceController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/evidences/{evidenceId}/parse-image",
+   "controller": "EvidenceController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/EvidenceController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/evidences/{evidenceId}/parse-result",
+   "controller": "EvidenceController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/EvidenceController.java",
+   "cases": [
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/evidences/lock",
+   "controller": "EvidenceController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/EvidenceController.java",
+   "cases": [
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/ai-rollout",
+   "controller": "AiRolloutController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiRolloutController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/evidences/{evidenceId}/verify",
+   "controller": "InvoiceVerificationController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/InvoiceVerificationController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/coverage-overrides/preview",
+   "controller": "CoverageOverrideController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageOverrideController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/coverage-overrides/affected-count",
+   "controller": "CoverageOverrideController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageOverrideController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/coverage-overrides/publish",
+   "controller": "CoverageOverrideController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageOverrideController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/coverage-overrides/{id}/disable",
+   "controller": "CoverageOverrideController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageOverrideController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/coverage-overrides/effective",
+   "controller": "CoverageOverrideController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageOverrideController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/coverages",
+   "controller": "CoverageConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/coverages",
+   "controller": "CoverageConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/claim-config/coverages/{coverageId}",
+   "controller": "CoverageConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/coverages/{coverageId}/publish",
+   "controller": "CoverageConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/coverages/{coverageId}/retire",
+   "controller": "CoverageConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/settlement/audit-pass",
+   "controller": "SettlementController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/SettlementController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/settlement/review-confirm",
+   "controller": "SettlementController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/SettlementController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/settlement/pay",
+   "controller": "SettlementController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/SettlementController.java",
+   "cases": [
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/settlement/cancel",
+   "controller": "SettlementController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/SettlementController.java",
+   "cases": [
+    "e2e_synap_claim.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/settlement/refund",
+   "controller": "SettlementController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/SettlementController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-ops/quota-accounts/{quotaAccountId}/projection/rebuild",
+   "controller": "QuotaRepairController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/QuotaRepairController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/ai-eval-sample-index",
+   "controller": "AiEvalSampleIndexController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiEvalSampleIndexController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/libraries/hospitals",
+   "controller": "ReferenceLibraryController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReferenceLibraryController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/libraries/hospitals",
+   "controller": "ReferenceLibraryController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReferenceLibraryController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/claim-config/libraries/hospitals/{id}",
+   "controller": "ReferenceLibraryController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReferenceLibraryController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/libraries/diseases",
+   "controller": "ReferenceLibraryController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReferenceLibraryController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/libraries/diseases",
+   "controller": "ReferenceLibraryController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReferenceLibraryController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/claim-config/libraries/diseases/{id}",
+   "controller": "ReferenceLibraryController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReferenceLibraryController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/libraries/drugs",
+   "controller": "ReferenceLibraryController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReferenceLibraryController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/libraries/drugs",
+   "controller": "ReferenceLibraryController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReferenceLibraryController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/claim-config/libraries/drugs/{id}",
+   "controller": "ReferenceLibraryController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReferenceLibraryController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/libraries/fee-categories",
+   "controller": "ReferenceLibraryController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReferenceLibraryController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/libraries/fee-categories/all",
+   "controller": "ReferenceLibraryController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReferenceLibraryController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/libraries/fee-categories",
+   "controller": "ReferenceLibraryController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReferenceLibraryController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/claim-config/libraries/fee-categories/{id}",
+   "controller": "ReferenceLibraryController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReferenceLibraryController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/claim-config/liabilities/{liabilityId}",
+   "controller": "LiabilityConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/LiabilityConfigController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/liabilities/{liabilityId}/publish",
+   "controller": "LiabilityConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/LiabilityConfigController.java",
+   "cases": [
+    "claim-fee-category-e2e.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/liabilities/{liabilityId}/retire",
+   "controller": "LiabilityConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/LiabilityConfigController.java",
+   "cases": [
+    "claim-fee-category-e2e.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/liabilities/plan/{planId}",
+   "controller": "LiabilityConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/LiabilityConfigController.java",
+   "cases": [
+    "claim-fee-category-e2e.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-config/liabilities/{liabilityId}/fee-rules",
+   "controller": "LiabilityConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/LiabilityConfigController.java",
+   "cases": [
+    "claim-fee-category-e2e.mjs"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/claim-config/liabilities/{liabilityId}/fee-rules",
+   "controller": "LiabilityConfigController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/LiabilityConfigController.java",
+   "cases": [
+    "claim-fee-category-e2e.mjs"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/claim",
+   "controller": "ClaimController",
+   "file": "bone-ai/bone-ai-server/src/main/java/com/bone/aiserver/web/ClaimController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/claim/{itemId}/act",
+   "controller": "ClaimController",
+   "file": "bone-ai/bone-ai-server/src/main/java/com/bone/aiserver/web/ClaimController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/claim/{itemId}/history",
+   "controller": "ClaimController",
+   "file": "bone-ai/bone-ai-server/src/main/java/com/bone/aiserver/web/ClaimController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/notify/dispatch",
+   "controller": "NotificationController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/NotificationController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/notify/ack",
+   "controller": "NotificationController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/NotificationController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/ai/v1/eval/runs",
+   "controller": "EvalController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/EvalController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/eval/cases",
+   "controller": "EvalController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/EvalController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/eval/runs",
+   "controller": "EvalController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/EvalController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/eval/judge",
+   "controller": "EvalController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/EvalController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/eval/answer-quality",
+   "controller": "EvalController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/EvalController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/ai/v1/trace/{traceId}",
+   "controller": "TraceController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/TraceController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/ai/v1/trace/item/{id}",
+   "controller": "TraceController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/TraceController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/rag/retrieve",
+   "controller": "RagController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/RagController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/rag/answer",
+   "controller": "RagController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/RagController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/rag/ingest",
+   "controller": "RagController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/RagController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/integration/invoke",
+   "controller": "IntegrationController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/IntegrationController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/ai/v1/hitl/items",
+   "controller": "HitlController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/HitlController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/hitl/items/{itemId}/act",
+   "controller": "HitlController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/HitlController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/ai/v1/hitl/items/{itemId}/dispositions",
+   "controller": "HitlController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/HitlController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/ai/v1/hitl/items/{itemId}",
+   "controller": "HitlController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/HitlController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/ai/v1/hitl/items/overdue",
+   "controller": "HitlController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/HitlController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/hitl/items/escalate-overdue",
+   "controller": "HitlController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/HitlController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/ai/v1/rules/{ruleId}",
+   "controller": "RuleController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/RuleController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/ai/v1/rules/{ruleId}/history",
+   "controller": "RuleController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/RuleController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/rules/{ruleId}/publish",
+   "controller": "RuleController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/RuleController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/rules/{ruleId}/rollback",
+   "controller": "RuleController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/RuleController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/rules/{ruleId}/gray",
+   "controller": "RuleController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/RuleController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/rules/{ruleId}/hit-block",
+   "controller": "RuleController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/RuleController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/rules/{ruleId}/deprecate",
+   "controller": "RuleController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/RuleController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/ai/v1/rules/{ruleId}/evaluate",
+   "controller": "RuleController",
+   "file": "bone-ai/bone-ai-app/src/main/java/com/bone/aiapp/web/RuleController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/capabilities/{name}",
+   "controller": "CapabilityController",
+   "file": "bone-framework/bone-web/src/main/java/com/bone/web/controller/CapabilityController.java",
+   "cases": []
+  }
+ ],
+ "summary": {
+  "endpoints": 537,
+  "covered": 243,
+  "uncovered": 294
+ }
+}

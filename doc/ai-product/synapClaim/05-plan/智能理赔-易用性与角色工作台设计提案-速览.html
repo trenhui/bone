@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>synapClaim 智能理赔 · 易用性与角色工作台设计提案 v2.2（速览）</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --border:#e4e7ec; --text:#1f2329; --muted:#646a73;
+    --primary:#2563eb; --primary-soft:#eef4ff; --red:#d4380d; --red-soft:#fff1ed;
+    --green:#237804; --green-soft:#f0f9e8; --purple:#722ed1; --purple-soft:#f7efff;
+    --amber:#ad6800; --amber-soft:#fff8e6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 28px 80px}
+  header{border-bottom:2px solid var(--text);padding-bottom:22px;margin-bottom:28px}
+  .eyebrow{font-size:12px;letter-spacing:.16em;color:var(--primary);font-weight:700}
+  h1{font-size:30px;margin:8px 0 10px;letter-spacing:-.02em}
+  .meta{font-size:13px;color:var(--muted)}
+  .badge{display:inline-block;padding:2px 9px;border-radius:4px;font-size:12px;font-weight:600;
+    background:var(--green-soft);color:var(--green);border:1px solid #c9e8b0;margin-left:8px}
+  .badge.amber{background:var(--amber-soft);color:var(--amber);border-color:#f0d9a8}
+  h2{font-size:20px;margin:44px 0 6px;padding-left:12px;border-left:4px solid var(--primary)}
+  .sub{font-size:13px;color:var(--muted);margin:0 0 18px 16px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px}
+  .lead{background:linear-gradient(135deg,#eef4ff 0%,#f7fbff 100%);
+    border:1px solid #cfe0ff;border-radius:12px;padding:22px 24px}
+  .lead strong{font-size:17px}
+  .lead p{margin:8px 0 0;color:#33405c;font-size:14px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
+  .kpi{background:#fff;border:1px solid #dbe6ff;border-radius:8px;padding:12px 14px}
+  .kpi b{display:block;font-size:24px;color:var(--primary);line-height:1.2}
+  .kpi span{font-size:12px;color:var(--muted)}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .diag{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--red);
+    border-radius:8px;padding:16px 18px}
+  .diag .no{font-size:11px;font-weight:700;color:var(--red);letter-spacing:.1em}
+  .diag h3{font-size:15px;margin:6px 0 8px}
+  .diag p{font-size:13px;color:var(--muted);margin:0}
+  code{background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:11px;color:#414855}
+  .compare{display:grid;grid-template-columns:1fr 48px 1fr;gap:0;align-items:stretch}
+  .col{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px}
+  .col.bad{border-top:3px solid var(--red)}
+  .col.good{border-top:3px solid var(--green)}
+  .col h3{font-size:15px;margin:0 0 12px}
+  .col ul{margin:0;padding-left:18px;font-size:13px;color:#3c4350}
+  .col li{margin-bottom:7px}
+  .arrow{display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--primary)}
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden;
+    font-size:13px;border:1px solid var(--border)}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:#f3f6fb;font-weight:600;color:#344054}
+  tr:last-child td{border-bottom:none}
+  .tag{display:inline-block;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600}
+  .tag.g{background:var(--green-soft);color:var(--green)}
+  .tag.r{background:var(--red-soft);color:var(--red)}
+  .tag.a{background:var(--amber-soft);color:var(--amber)}
+  .tag.b{background:var(--primary-soft);color:var(--primary)}
+  .note{background:var(--amber-soft);border:1px solid #f0d9a8;border-radius:8px;
+    padding:14px 16px;font-size:13px;color:#6b4b12;margin-top:14px}
+  .note.ok{background:var(--green-soft);border-color:#c9e8b0;color:#2c5c14}
+  footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+  @media(max-width:900px){.kpis,.grid3,.grid2{grid-template-columns:1fr 1fr}.compare{grid-template-columns:1fr}.arrow{padding:8px}}
+  @media(max-width:600px){.kpis,.grid3,.grid2{grid-template-columns:1fr}.wrap{padding:24px 16px 60px}h1{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">SYNAPCLAIM · UX / IA 设计提案</div>
+    <h1>智能理赔 · 易用性与角色工作台优化<span class="badge">v2.2 · 对象内聚 + 常驻分组 + 前后端联调已落地</span></h1>
+    <div class="meta">2026-11-13 ｜ 完整论证见同目录 <code>智能理赔-易用性与角色工作台设计提案.md</code>（十二章 + 证据索引）</div>
+  </header>
+
+  <div class="lead">
+    <strong>根因不是「菜单太多」，而是三条组织轴都选错了</strong>
+    <p>按流程环节切菜单、按权限码裁可见性、按案件 ID 找活干；AI 被做成藏在角落的面板，没有进入作业动线。</p>
+    <p><b>目标态：一个入口（我的工作台）＋ 一个对象（案件 360）＋ 一个搜索框（⌘K）＋ 一层 AI（每一屏）。</b></p>
+    <div class="kpis">
+      <div class="kpi"><b>15 → 15</b><span>可见菜单条数与顺序不变，新增常驻四空间分组标题（不折叠）</span></div>
+      <div class="kpi"><b>6 → 1</b><span>单案作业页内嵌为案件 360 的 Tab（对象内聚，不再手输 ID）</span></div>
+      <div class="kpi"><b>119+</b><span>前端单测全绿（含内容组件 / 分组映射 / 变异验证用例）</span></div>
+      <div class="kpi"><b>40 / 18</b><span>契约级联调 40/40 · 浏览器 UI 冒烟 18/18</span></div>
+    </div>
+  </div>
+
+  <h2>一、现状诊断（2026-11-12 主工作树实测）</h2>
+  <p class="sub">每条结论都带代码定位，完整证据见方案第一章与附录。</p>
+  <div class="grid3">
+    <div class="diag"><div class="no">D1</div><h3>菜单平铺、无角色差异</h3><p>15 条一级叶子挂同一目录，仅用 3 个读权限码；<code>/menus/current</code> 只判 <code>scopes.contains(permission)</code>，全员同一套。</p></div>
+    <div class="diag"><div class="no">D2</div><h3>按流程环节而非「角色＋对象」</h3><p>菜单顺序自述＝作业链路，一件赔案要跨 8 个菜单；菜单是系统能力目录，不是「我今天要干的活」。</p></div>
+    <div class="diag"><div class="no">D3</div><h3>作业断点：6 页先手输 ID</h3><p>6 个单案页用 CaseIdBar；全仓 <code>navigate()</code> <b>0 处</b>带 claimId ⇒ 0 条案件级深链；8 环节 ≥14 次无价值操作。</p></div>
+    <div class="diag"><div class="no">D4</div><h3>查询缺口</h3><p><code>claimApi</code> 零 keyword 检索；进度页只认纯数字案件 ID；筛选在 5 个页面各写一遍，无保存视图。</p></div>
+    <div class="diag"><div class="no">D5</div><h3>效率设施缺失</h3><p>0 个 <code>rowSelection</code>、0 个 <code>onKeyDown</code>；详设里「审核疲劳防控四项」只在文档、未上屏。</p></div>
+    <div class="diag"><div class="no">D6</div><h3>AI 悬空</h3><p><code>AiSuggestion</code> 前端 0 展示、采纳/驳回 0 回流；对话式 <code>ClaimAssistant</code> 三端点已实现但前端 0 引用。</p></div>
+  </div>
+
+  <h2>二、v2.0 实证补正：两条会推翻原方案的事实</h2>
+  <p class="sub">这不是保守，而是避免「配了不生效」和「假成功」。</p>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0;font-size:15px">① 仓库里<b>没有理赔业务角色码</b></h3>
+      <p style="font-size:13px;color:var(--muted);margin:0"><code>bone-init.sql:281-285</code> 只有 SUPER_ADMIN / USER / TENANT_ADMIN_demo；<code>uat/gen.py:239-252</code> 是 12 个平台通用 DEMO_* 角色。照字面做「按角色渲染」只能拿到空数组。<br><b>裁定：改用权限码能力画像</b> —— 写权限码是运行时唯一有区分度的信号；角色码降为未来 IAM 下发后的可选优先信号。</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;font-size:15px">② 后端<b>没有 AI 建议采纳端点</b></h3>
+      <p style="font-size:13px;color:var(--muted);margin:0"><code>bone-ai</code> 的 HitlController 有 confirm/reject/modify 与 <code>ReasonType</code> 四值，但网关不转发 <code>/api/ai/v1/**</code>。发一个必然 404 却提示「已保存」＝假绿。<br><b>裁定：先落结构化本地事件</b>，事件带 <code>persisted:false</code> / <code>backendContract:'pending'</code>，界面明写未落库；端点就绪后在事件总线一处接线。</p>
+    </div>
+  </div>
+
+  <h2>三、信息架构：15 条平铺 → My Home 四空间</h2>
+  <p class="sub">Fiori Launchpad 的 role-based 落点是首页，不是菜单树。</p>
+  <div class="compare">
+    <div class="col bad">
+      <h3>现状 · 按流程环节平铺</h3>
+      <ul>
+        <li>15 条一级叶子，顺序＝初审→核赔→理算→材料→资金→申诉→挂起→后督</li>
+        <li>默认落点「核赔工作台」对所有人一样</li>
+        <li>可见性只看权限码，角色无维度</li>
+        <li>换菜单丢一次上下文、重输一次 19 位 ID</li>
+        <li>AI 治理 / 盲标藏在 hidden 面板，靠核赔页两个按钮进入</li>
+      </ul>
+    </div>
+    <div class="arrow">→</div>
+    <div class="col good">
+      <h3>目标 · 按「人今天要办什么事」</h3>
+      <ul>
+        <li><b>我的工作台</b>为默认落点：4 个 Section（作业 / 查询 / 配置 / 治理），按画像排序</li>
+        <li><b>侧栏常驻四空间分组标题</b>：15 条菜单不折叠、不减条目、可直接点击任一功能</li>
+        <li>一套骨架 + 能力画像卡片，不复制 N 套菜单</li>
+        <li><b>案件 360</b>：<code>?claimId=&amp;tab=</code> 单一 case record，7 个深链 Tab 自动带 ID</li>
+        <li><b>⌘K 命令面板</b>常驻 shell 顶栏，只取 IAM 可见菜单</li>
+        <li>AI 结论卡进主决策面；治理按画像给入口</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>侧栏怎么分组？</b> 取 NN/g 隐藏导航实测结论：可见导航可发现性 48–50%、隐藏式仅 27%（降 &gt;20%）、完成任务时间 +39%——故采用<b>常驻可见</b>的四空间分组标题（作业 / 查询 / 配置 / 治理），<b>不折叠、不减条目、不改顺序、不动 permission 与 0078 SIGNAL</b>；菜单数据、权限、后端契约一律未动，撤菜单另立 change。当前实现：可见 15 条菜单与顺序<b>完全不变</b>，仅展示层加分组标题，新增两条 hidden 路由。</div>
+
+  <h2>四、业界依据（v2.0 增补，可引用）</h2>
+  <table>
+    <tr><th style="width:22%">来源</th><th>关键事实 / 门槛</th><th style="width:34%">迁移到本方案</th></tr>
+    <tr><td>SAP Fiori Spaces &amp; Pages</td><td>2–5 sections/page、3–7 apps/section、≤25 apps/page；1-1-3（≤3 屏）；My Home 个性化首页；shell bar 常驻 enterprise search</td><td>四空间落成 4 个 Section；<code>assertFioriQuota</code> 把配额变成可执行护栏（只判上限，避免只读画像误报）</td></tr>
+    <tr><td>Nielsen Norman Group（NN/g）</td><td><b>隐藏/折叠导航实测</b>：可见导航可发现性 48–50%、隐藏式仅 27%（降 &gt;20%）、完成任务时间 +39%；另 #6 识别优于回忆、#7 accelerator、#3 可退出、#9 错误给下一步、#1 状态可见</td><td>卡片写「待我审核」；⌘K 叠加；非法输入给解法；hidden 首页补顶栏标题；<b>侧栏四空间分组常驻可见、不折叠</b></td></tr>
+    <tr><td>Guidewire / Duck Creek</td><td>tasks / documents / decision points / event history 绑到同一 case record；规则驱动队列；settlement authority limit</td><td>案件 360 收敛；受保护动作禁批量</td></tr>
+    <tr><td>Duck Creek 上线指导</td><td>先达 <b>90% human-AI agreement</b> 再开 full STP；跳过会因严重度误分类带来 <b>15–20% 返工增长</b></td><td>采纳率分母必须是<b>曝光</b>；新增一致率 / override / 返工率为闸门指标</td></tr>
+    <tr><td>Five Sigma 四级自主度</td><td>Assist / Collaborate / Lead / Autonomous；capability 与 permission 是两个独立旋钮</td><td>本轮埋点只增强观测，<b>不提高任何自动生效档位</b></td></tr>
+    <tr><td>NAIC Model Bulletin / EIP 2026</td><td>2026 中 24 州采纳；250 位从业者 99% 要求人工监督、87% 担忧偏见；治理首选「透明算法 + 决策日志」</td><td>驳回/修改强制 <code>ReasonType</code> 四值、全链留痕、AI 参与显著标识</td></tr>
+    <tr><td>Insurance Thought Leadership 2026</td><td>「AI 建议采纳率」是可持续成功的领先指标，用户绕开系统是早期预警</td><td>曝光埋点作为一等公民；漏斗对账防只统计成功裁决</td></tr>
+  </table>
+
+  <h2>五、代码已落地（纯前端，零 IAM / 零迁移 / 零后端改动）</h2>
+  <table>
+    <tr><th style="width:34%">能力</th><th>实现要点</th><th style="width:16%">状态</th></tr>
+    <tr><td>能力画像 + 四空间首页</td><td><code>workbench/profiles.ts</code>：20 张卡 / 9 类画像 / 写权限码有序规则 / Fiori 配额护栏；<code>WorkbenchPage</code> 真实待办计数（失败显示「—」，不拿 0 冒充）</td><td><span class="tag g">已落地</span></td></tr>
+    <tr><td>案件 360 深链桥</td><td><code>caseDeepLinks.ts</code> 统一 <code>?claimId=&amp;tab=</code>、8 Tab、ID 白名单、未知值 fail-closed；<code>CaseIdBar</code> 一处改动让 6 个单案页全部获得入口</td><td><span class="tag g">已落地</span></td></tr>
+    <tr><td>全局命令面板</td><td>shell 顶栏 ⌘K / Ctrl+K / <code>/</code>，↑↓↵Esc；结果只取 IAM 已下发可见叶子，不构造越权入口</td><td><span class="tag g">已落地</span></td></tr>
+    <tr><td>AI 结论卡 + 回流埋点</td><td>四态 fail-closed（仅 AI_ASSISTED 可裁决）、不编造置信度、曝光事件为分母、驳回/修改必填原因码、盲标禁区拒绝曝光、事件体永不含金额</td><td><span class="tag g">已落地</span></td></tr>
+    <tr><td>跨键检索 / Copilot / 保存视图</td><td>需后端 keyword 端点、ClaimAssistant 前端接线、查询基座；界面明确标注 P1，不做假实现</td><td><span class="tag a">P1</span></td></tr>
+    <tr><td>Tab 内嵌（案件 360 收编 6 单案页）</td><td>无壳内容组件 <code>cases/caseSections.tsx</code>；切换 Tab 不跳离、不出现第二套 ID 输入；旧路由与回案件 360 仍可用</td><td><span class="tag g">已落地</span></td></tr>
+    <tr><td>角色→工作台配置表 / 治理空间提一级</td><td>需 IAM 业务角色码 + 明确消费方；需同批改单导航探针</td><td><span class="tag b">P2</span></td></tr>
+  </table>
+
+  <h2>六、AI 深度融合：从「一个面板」到「每一屏的一层」</h2>
+  <div class="grid2">
+    <div class="card"><h3 style="margin-top:0;font-size:15px">L1 建议进主决策面 <span class="tag g">P0+后端联调已落地</span></h3><p style="font-size:13px;color:var(--muted);margin:0">结论 + 依据 + 五要素 + 可解释 trace + AI 参与显著标识；<b>采纳 / 驳回（必选原因码）/ 修改后采纳</b>，曝光/裁决已落库 append-only 表并经网关真机联调。金额与资金仍由确定性引擎计算，AI 卡只读。</p></div>
+    <div class="card"><h3 style="margin-top:0;font-size:15px">L2 Copilot 常驻 <span class="tag a">P1</span></h3><p style="font-size:13px;color:var(--muted);margin:0">接已有 ClaimAssistant 三端点，上下文自动带 claimId；工具白名单不含拒赔 / 调账 / 支付。</p></div>
+    <div class="card"><h3 style="margin-top:0;font-size:15px">L3 主动推送 <span class="tag a">P1–P2</span></h3><p style="font-size:13px;color:var(--muted);margin:0">高风险 / 重复发票 / OCR 低置信 / SLA 临期 / 质检 DIFF 进待办，每条带「为什么推给我」。</p></div>
+    <div class="card"><h3 style="margin-top:0;font-size:15px">L4 治理可见 <span class="tag b">P2</span></h3><p style="font-size:13px;color:var(--muted);margin:0">采纳率、驳回原因分布、校准曲线、漂移 PSI、评测集覆盖上屏；P0 已在工作台 Govern Section 按画像给入口。</p></div>
+  </div>
+  <div class="note"><b>分级自动化（不可让步）</b>：全自动 STP＝低风险小额 + 事后 100% 质检；人工确认后生效＝自动通过建议；<b>仅建议、人做终审</b>＝拒赔 / ≥1 万 / FRAUD / 质检 DIFF。禁批量：拒赔、调账、支付、恢复 FRAUD 挂起、≥1 万复核。</div>
+
+  <h2>七、验收结果（实测，非计划值）</h2>
+  <table>
+    <tr><th style="width:34%">验证项</th><th>判据</th><th style="width:16%">结果</th></tr>
+    <tr><td>前端单测</td><td><code>npm run test --workspace=bone-claim-app</code>（含 <code>workbench.test.ts</code> 32 例、新增 <code>isClaimIdLike</code> 与 AI 卡组件用例）+ shell 命令面板用例</td><td><span class="tag g">119 + 8 passed</span></td></tr>
+    <tr><td>类型 / 静态检查</td><td>两个 workspace 的 <code>typecheck</code> 与 <code>lint --max-warnings 0</code></td><td><span class="tag g">全绿</span></td></tr>
+    <tr><td>生产构建</td><td>claim-app 3365 modules / shell 3691 modules</td><td><span class="tag g">✓ built</span></td></tr>
+    <tr><td>全仓门禁</td><td><code>bash scripts/check.sh</code> 当前非全绿：R6 孤儿门禁 / G40 种子过期为工作树既有、C3-0124 为 append-only 提醒（与本方案改动无因果），不写「59 步 exit 0」</td><td><span class="tag a">如实标注</span></td></tr>
+    <tr><td>单导航探针静态部分</td><td>离线复现 <code>parseRoutes</code>：可见 15 条顺序未变、6 条 hidden 正确识别</td><td><span class="tag g">通过</span></td></tr>
+    <tr><td>文档族门禁</td><td><code>tools/check_all.py</code> 19 步 + AI-INDEX 无漂移</td><td><span class="tag g">全绿</span></td></tr>
+    <tr><td>前后端真机联调（经网关 :8888）</td><td>检索 / 曝光 / 采纳 / 驳回落库 200、幂等重放 <code>replayed=true</code>、summary；9 类负向 400</td><td><span class="tag g">全通过</span></td></tr>
+    <tr><td>浏览器点击级 E2E（Playwright）</td><td>真实登录 → 工作台真实计数 → 跨键检索 → 案件 360 → AI 结论卡，零 pageerror / 零失败请求；并修复一处跨键检索 UI 路由缺陷（保单号被误判为 claimId → 400）</td><td><span class="tag g">18/18 通过</span></td></tr>
+    <tr><td>UI 采纳路径 + 回归</td><td><code>AiSuggestionCard.test.tsx</code> 3 例（mock 披露 AI_ASSISTED：采纳 → 落库 → 成功提示；反向断言非 AI_ASSISTED 无裁决动作）；claim-app 全套单测、<code>tsc</code>、eslint</td><td><span class="tag g">119/119 通过</span></td></tr>
+  </table>
+
+  <h2>八、仍需你拍板 / 后端契约落地状态</h2>
+  <div class="grid2">
+    <div class="card"><h3 style="margin-top:0;font-size:15px">待拍板（仅 2 条）</h3><p style="font-size:13px;color:var(--muted);margin:0">① 排期与人力（按容量校验矩阵，本文不擅自给人日）；② 是否需要 PPT 汇报版 / 可点击低保真原型。其余 7 条已按工程实证给默认裁定并落地，可按编号推翻。</p></div>
+    <div class="card"><h3 style="margin-top:0;font-size:15px">后端契约已落地并真实验证 <span class="tag g">v2.2</span></h3><p style="font-size:13px;color:var(--muted);margin:0">① AI 采纳端点（append-only 表 <code>t_claim_ai_feedback_event</code>，幂等重放）✅；② 跨键检索端点（复用 SDK <code>@TenantScope</code>，结果不回 PII）✅，前端 <code>claimSearchApi</code> 已接线。仅剩 ③ 置信度 / SLA 字段属 P2 度量增强。</p></div>
+  </div>
+
+  <footer>完整论证、证据索引、同批改动清单、风险与回退见 Markdown v2.2 第十二章。本页为可分享速览，非交付真源。</footer>
+</div>
+</body>
+</html>

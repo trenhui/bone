@@ -78,8 +78,14 @@ function stageStep(stage?: string): { current: number; status: 'process' | 'fini
   }
 }
 
-export function FundWorkbenchPage(): ReactElement {
-  const { claimId, input, setInput, submit } = useClaimIdParam();
+export interface CasePageProps {
+  /** 案件 360 内嵌时由 Tab 传入 claimId；传入即进入「无壳内容形态」。 */
+  embeddedClaimId?: string;
+}
+
+export function FundWorkbenchPage({ embeddedClaimId }: CasePageProps = {}): ReactElement {
+  const { claimId: urlClaimId, input, setInput, submit } = useClaimIdParam();
+  const claimId = embeddedClaimId ?? urlClaimId;
   const [accountType, setAccountType] = useState<AccountType>('PERSONAL');
   const [settlement, setSettlement] = useState<SettlementResult | null>(null);
   const [quota, setQuota] = useState<QuotaSummary | null>(null);
@@ -159,28 +165,30 @@ export function FundWorkbenchPage(): ReactElement {
   const step = stageStep(stage);
   const terminal = isTerminal(stage);
 
+  const embedded = Boolean(embeddedClaimId);
+
   return (
-    <div style={{ padding: 24 }}>
-      <PageHeader title="资金工作台" />
+    <div
+      data-case-content={embedded ? 'true' : undefined}
+      style={embedded ? undefined : { padding: 24 }}
+    >
+      {embedded ? null : <PageHeader title="资金工作台" />}
       <Card
-        title="结算单与额度"
+        title={embedded ? undefined : '结算单与额度'}
         extra={
-          <CaseIdBar
-            value={input}
-            onChange={setInput}
-            onSubmit={submit}
-            loading={loading}
-            extra={
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={() => void load()}
-                disabled={!claimId}
-                loading={loading}
-              >
-                刷新
-              </Button>
-            }
-          />
+          <Space wrap>
+            {embedded ? null : (
+              <CaseIdBar value={input} onChange={setInput} onSubmit={submit} loading={loading} />
+            )}
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => void load()}
+              disabled={!claimId}
+              loading={loading}
+            >
+              刷新
+            </Button>
+          </Space>
         }
       >
         {!claimId ? (

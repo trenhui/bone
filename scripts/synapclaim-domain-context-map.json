@@ -16,8 +16,8 @@
       "responsibility": "九步管线、免赔、控额、快照"
     },
     "Decision": {
-      "subdomains": ["decision", "evaluation", "rule", "event"],
-      "responsibility": "决策图执行、AI 编排、自动审批、发票查验"
+      "subdomains": ["decision", "evaluation", "rule", "event", "feedback"],
+      "responsibility": "决策图执行、AI 编排、自动审批、发票查验、AI 建议处置回流审计（feedback：采纳/驳回/修改 append-only 事件）"
     },
     "Funds": {
       "subdomains": ["settlement", "reconciliation", "quota"],

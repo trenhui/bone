@@ -1058,14 +1058,14 @@ export function PolicyManagementPage(): ReactElement {
                                   render: (rows: { overrideField: string; status: string }[]) =>
                                     rows?.length
                                       ? rows.map((o) => (
-                                          <Tag
-                                            key={o.overrideField}
-                                            color={o.status === 'ACTIVE' ? 'green' : 'orange'}
-                                          >
-                                            {o.overrideField}
-                                            {o.status === 'ACTIVE' ? '·生效' : '·未发布'}
-                                          </Tag>
-                                        ))
+                                        <Tag
+                                          key={o.overrideField}
+                                          color={o.status === 'ACTIVE' ? 'green' : 'orange'}
+                                        >
+                                          {o.overrideField}
+                                          {o.status === 'ACTIVE' ? '·生效' : '·未发布'}
+                                        </Tag>
+                                      ))
                                       : '—',
                                 },
                                 {

@@ -84,7 +84,9 @@ export function catalogPairProblem(getFieldValue: FieldGetter): string | null {
  * 把成对校验函数包装成 antd Form 的 Rule。挂在"主字段"上，用 {@code dependencies} 联动另一侧，
  * 一个矛盾只报一次错。
  */
-export function pairValidator(check: PairCheck) {
+export function pairValidator(
+  check: PairCheck,
+): (ctx: { getFieldValue: FieldGetter }) => { validator: () => Promise<void> } {
   return ({ getFieldValue }: { getFieldValue: FieldGetter }) => ({
     validator() {
       const problem = check(getFieldValue);

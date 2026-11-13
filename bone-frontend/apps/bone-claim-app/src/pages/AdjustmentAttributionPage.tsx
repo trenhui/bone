@@ -134,8 +134,14 @@ function summarize(lines: AdjustmentLine[]): AttributionSummary {
 
 const money = (v: number): string => `¥${v.toFixed(2)}`;
 
-export function AdjustmentAttributionPage(): ReactElement {
-  const { claimId, input, setInput, submit } = useClaimIdParam();
+export interface CasePageProps {
+  /** 案件 360 内嵌时由 Tab 传入 claimId；传入即进入「无壳内容形态」。 */
+  embeddedClaimId?: string;
+}
+
+export function AdjustmentAttributionPage({ embeddedClaimId }: CasePageProps = {}): ReactElement {
+  const { claimId: urlClaimId, input, setInput, submit } = useClaimIdParam();
+  const claimId = embeddedClaimId ?? urlClaimId;
   const [result, setResult] = useState<AdjustmentResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState(false);
@@ -235,17 +241,26 @@ export function AdjustmentAttributionPage(): ReactElement {
     result.lines.length > 0 &&
     Math.abs(summary.feePayout - num(result.totalAmount)) > 0.01;
 
+  const embedded = Boolean(embeddedClaimId);
+
   return (
-    <div style={{ padding: 24 }}>
-      <PageHeader
-        title="理算归因"
-        description="逐行拆解「赔付金额怎么算出来的」：合理费用 → 免赔扣减 → 按比例应付 → 占额 → 实付 → 剩余额度。"
-      />
+    <div
+      data-case-content={embedded ? 'true' : undefined}
+      style={embedded ? undefined : { padding: 24 }}
+    >
+      {embedded ? null : (
+        <PageHeader
+          title="理算归因"
+          description="逐行拆解「赔付金额怎么算出来的」：合理费用 → 免赔扣减 → 按比例应付 → 占额 → 实付 → 剩余额度。"
+        />
+      )}
       <Card
-        title="理算明细"
+        title={embedded ? undefined : '理算明细'}
         extra={
           <Space wrap>
-            <CaseIdBar value={input} onChange={setInput} onSubmit={submit} loading={loading} />
+            {embedded ? null : (
+              <CaseIdBar value={input} onChange={setInput} onSubmit={submit} loading={loading} />
+            )}
             <Button icon={<ReloadOutlined />} onClick={() => void load()} disabled={!claimId}>
               刷新
             </Button>

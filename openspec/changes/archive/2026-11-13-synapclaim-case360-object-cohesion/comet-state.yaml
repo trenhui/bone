@@ -1,0 +1,3936 @@
+# comet-execution: managed-run
+change_id: da1bcb17-cf20-4f7a-a705-93e6fb324f8f
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: standard
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: 669354a3877c07b876f2cea314ebb3d5d7447cbc
+design_doc: openspec/changes/synapclaim-case360-object-cohesion/design.md
+plan: docs/superpowers/plans/2026-11-13-synapclaim-case360-object-cohesion.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/verification-report.md
+branch_status: pending
+created_at: 2026-11-13
+verified_at: 2026-11-13
+archive_confirmation: confirmed
+archived: false
+bound_branch: dev
+direct_override: false
+handoff_context: openspec/changes/synapclaim-case360-object-cohesion/.comet/handoff/design-context.json
+handoff_hash: 8f1b717594ff70fef141b8ee452db18edd3501f95ea670a2b68a7e95860227f5
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: cd436266959069a73058acaa9f9e870a74f63bfa0253523c0a6c6392b4b04e03
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: synapclaim-case360-object-cohesion
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    definitionHashes:
+      '["comet-classic-full","1"]': 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    initialStateHash: d11d3fdef4c08396f1c6257b3475db4150a446313487b7931da8744d7f2728b9
+    input:
+      change: synapclaim-case360-object-cohesion
+      changeDir: openspec/changes/synapclaim-case360-object-cohesion
+      workspaceBaseline:
+        ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+    state:
+      archiveConfirmation: confirmed
+      archived: false
+      autoTransition: true
+      baseRef: 669354a3877c07b876f2cea314ebb3d5d7447cbc
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 8
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-13
+      designDoc: openspec/changes/synapclaim-case360-object-cohesion/design.md
+      directOverride: false
+      handoffContext: openspec/changes/synapclaim-case360-object-cohesion/.comet/handoff/design-context.json
+      handoffHash: 8f1b717594ff70fef141b8ee452db18edd3501f95ea670a2b68a7e95860227f5
+      isolation: current
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/2026-11-13-synapclaim-case360-object-cohesion.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/verification-report.md
+      verifiedAt: 2026-11-13
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 35
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-2179747fe68241f20c3a65ceb993f8fdb23f7fbcfe58feb684fa15c0173a2126
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:1
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 1e700ea1da004036b1f52510a775c8185bc16bdb7188acc8cfbd5659863048f6
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:1
+          attempt: 1
+          claimToken: portable-2179747fe68241f20c3a65ceb993f8fdb23f7fbcfe58feb684fa15c0173a2126
+          inputHash: 1e700ea1da004036b1f52510a775c8185bc16bdb7188acc8cfbd5659863048f6
+          outcomeId: fa5c5d57-84e7-471f-ab29-142e33849d4f
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 66b7b96600638e1da1ac281b9c940af74540e3c7449f1bd78af66b2e11374078
+            outcomeId: fa5c5d57-84e7-471f-ab29-142e33849d4f
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-3aee7c767d04c4335be87bda0bd4daf049b3275dc20aa16e49355846297b8bce
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:4
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 05f37107649d5b23a27598a8da1194a55879b74115bfb374a50ca5ecf880a753
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:4
+          attempt: 2
+          claimToken: portable-3aee7c767d04c4335be87bda0bd4daf049b3275dc20aa16e49355846297b8bce
+          inputHash: 05f37107649d5b23a27598a8da1194a55879b74115bfb374a50ca5ecf880a753
+          outcomeId: synapclaim-case360-object-cohesion:4:2:executor-result
+          output:
+            contentHash: 52c02fc3230c349ba045a4f70ecf49aacb343724e9cf0c21107f6b96aadd9004
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1b246091016e9fd689fe38e22377cf0b564dab196ce34fd1ce6be92adc8523f7
+            outcomeId: synapclaim-case360-object-cohesion:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 只读核实：runtime inspect 显示 action :4 (full.open.revalidate)
+                status=running、receipts=0、reconciliations=0；state check
+                --recover 显示
+                record.status=missing、receiptRef=null、manifestRef=null、command=null；Runtime
+                根目录下 classic-sdk-checks/69b076ee... 证据目录不存在；guard --apply 首次返回
+                checks.passed=0/total=1/blocked=true 与 BLOCKED(running
+                Action)。前序
+                full.open(open-complete)、full.open.evidence(contentHash=52c02fc3...)、full.open.confirm(choice=approved)
+                均已写入 outputs。据此核实原检查完全未执行，未产生检查结果、收据或副作用。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-d64d08e3d13005fc609683f5123c17102785cfd42a06a9177d14cadaa7177d04
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:5
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 085dc8cec5f520a831deb7a7f8f74b6b5b106f08bad3c3139345cf79439f4354
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:5
+          attempt: 1
+          claimToken: portable-d64d08e3d13005fc609683f5123c17102785cfd42a06a9177d14cadaa7177d04
+          inputHash: 085dc8cec5f520a831deb7a7f8f74b6b5b106f08bad3c3139345cf79439f4354
+          outcomeId: 4c42e10d-0c49-4076-ab35-d2624498c8ec
+          output:
+            handoffContext: openspec/changes/synapclaim-case360-object-cohesion/.comet/handoff/design-context.json
+            handoffHash: 8f1b717594ff70fef141b8ee452db18edd3501f95ea670a2b68a7e95860227f5
+            proposal: 候选方案 A（推荐）：对象内聚 + 常驻可见分组，不改 IAM。① 把 6 个使用 CaseIdBar/useClaimIdParam
+              的单案作业页拆成「无壳内容组件 + 页面壳」，内嵌为案件 360 的 Tab，claimId 由 ?claimId=&tab=
+              唯一真源提供，overview 保留概览与 AI 结论卡，trace（核赔工作台，队列型）保留深链桥，旧作业路由与「回案件
+              360」继续可达且不出现双标题双 ID 输入；② shell 侧栏按 hash
+              常量加「作业/查询/配置/治理」常驻可见分组标题，子项默认展开且仍可直接点击，未知 hash
+              落「未分组」并保留可点性，菜单名/顺序/permission/icon/hash 一字不改；③ 单导航探针与 UI
+              冒烟同批新增断言（分组常驻、15 项可见可点、Tab 内无需再输 ID、深链分享/回退、18 位雪花 ID 无截断、非
+              AI_ASSISTED 无裁决动作），计数用精确值并做三种缺陷写法的互补变异验证；④ 清理设计提案中与 v2.0
+              改判矛盾的旧表述、补 NN/g/Fiori/Guidewire 依据强度、同步速览 HTML。关键取舍：依据 NN/g
+              隐藏导航实测（可见 48–50% vs 隐藏 27%、时间 +39%）与 Fiori/Guidewire
+              对象内聚，否决「折叠四空间」「只做分组」「直接改 IAM 菜单树撤 6 条」三案；本 change
+              不撤任何菜单条目，撤菜单待真实使用率可观测后另立 change 与 IAM
+              迁移、探针同批改；不新增角色表、不改后端契约、不做数据迁移、不做真人卡片分类。风险与缓解：6 页抽组件可能改变既有页面行为 →
+              页面壳复用同一组件与取数入口、逐页单测 + 探针逐项点击；并行会话在途文件可能被代提交 →
+              精确路径暂存、提交前核对；qiankun/shell 下分组选择器兼容 → 真实浏览器验证 + 变异验证；受保护动作被误做成批量 →
+              规格约束 + UI 冒烟负向断言；回滚只需恢复深链桥渲染并移除分组映射。Spec Patch：无，本轮不修改两份 delta
+              spec 的任何 requirement/scenario。测试策略：tsc --noEmit、改动文件 eslint
+              零警告、claim-app 全量单测、契约联调 40/40、UI 冒烟、单导航探针、文档族门禁
+              19/19、变异验证对照记录，全部实际运行并保存退出码。待确认：方案 A 及 D1–D5 取舍、无 Spec Patch、「本
+              change 不撤菜单」边界；确认后沿用 design.md 为唯一 Design Doc 并进入 Build。
+            requirementsEvidence:
+              contentHash: 7ab6808ceaed06956e715e89a4c913d74e9fb3a2ede3bc22e596f90471526295
+              ref: openspec/changes/synapclaim-case360-object-cohesion
+            sourceEvidence:
+              contentHash: 6abc7905052ec9744e09c32c55aef3678d3cb59c1fba9359a66841706451551b
+              ref: openspec/changes/synapclaim-case360-object-cohesion
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: ea52f2f2d8a5b67b8c5e2a55b10378fc428b891d37f46bb64a31b0d2ea30f91d
+            outcomeId: 4c42e10d-0c49-4076-ab35-d2624498c8ec
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-91f30f83b08ec7b5597404d0f4f51fa2e36b78676a6b74e8d1c31f659a3227dd
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:7
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 051ef9d2d32e7dd845cee6ca8eecb35612be05dbd73f16f6a795f1a4011112a0
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:7
+          attempt: 1
+          claimToken: portable-91f30f83b08ec7b5597404d0f4f51fa2e36b78676a6b74e8d1c31f659a3227dd
+          inputHash: 051ef9d2d32e7dd845cee6ca8eecb35612be05dbd73f16f6a795f1a4011112a0
+          outcomeId: cb18817b-5f03-4625-b2ad-171ea9dd76f5
+          output:
+            designDoc: openspec/changes/synapclaim-case360-object-cohesion/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3aa972cf1b77355a85936dbe7ff75b2091572405c53192f8cc5a0b4f2e6edbe4
+            outcomeId: cb18817b-5f03-4625-b2ad-171ea9dd76f5
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-7ec97a271760b5460ce989912d145902e704b0d1f974788208b2719c5e374d6c
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:9
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: e3d53b16c1d4702794a479f9baeb1a2f4c93b89aaf8ab3257f418bdf1cba5447
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:9
+          attempt: 1
+          claimToken: portable-7ec97a271760b5460ce989912d145902e704b0d1f974788208b2719c5e374d6c
+          inputHash: e3d53b16c1d4702794a479f9baeb1a2f4c93b89aaf8ab3257f418bdf1cba5447
+          outcomeId: fa89447a-59f4-4f19-b833-1af42a7554ee
+          output:
+            boundBranch: dev
+            buildMode: autonomous
+            directOverride: false
+            isolation: current
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: e2270eaee9e8146e0b5f0ac19d45aa89a02b0662b176e9926a84da1dd572a37a
+            outcomeId: fa89447a-59f4-4f19-b833-1af42a7554ee
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-17e62a62f64b5196730eae03661334aac1a6447b77d15dda721d79d02f15def6
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:11
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 06f243eaecc21609d4d807f27451c817b03304148d387d2db64db08867931494
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:11
+          attempt: 1
+          claimToken: portable-17e62a62f64b5196730eae03661334aac1a6447b77d15dda721d79d02f15def6
+          inputHash: 06f243eaecc21609d4d807f27451c817b03304148d387d2db64db08867931494
+          outcomeId: 22a1d53f-3787-4a70-be3a-7e7e262160d4
+          output:
+            designEvidence:
+              contentHash: 8810d4373c04563c1c3531e5d4d5385f77ee24d64ba0f7097eb7928ce67975d8
+              ref: openspec/changes/synapclaim-case360-object-cohesion/design.md
+            plan: docs/superpowers/plans/2026-11-13-synapclaim-case360-object-cohesion.md
+            planEvidence:
+              contentHash: 0dc2c929017747cc246522e9078cbc51797a53fe3a327285f6cd2d8e399d0763
+              ref: docs/superpowers/plans/2026-11-13-synapclaim-case360-object-cohesion.md
+            taskRevision: 7bae927777822cce4422ed2824b3f90819b280c7542330f488a2079ab261f9e3
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: cec91b120d11d01f6da25eaed96a6b3227855d317ad43cf4d451d304f157b1b4
+            outcomeId: 22a1d53f-3787-4a70-be3a-7e7e262160d4
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-case360-object-cohesion:13/1
+          token: portable-5083aa237007d5851599a025a1aa7e82d43ab11b81fe9cbc10857f3f3ee3e50f
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:13
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 9f7f5bce461e7aea9dc6cf0d3f569b7bae05f8ffda6134cd47faa742eb138310
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:13
+          attempt: 1
+          claimToken: portable-5083aa237007d5851599a025a1aa7e82d43ab11b81fe9cbc10857f3f3ee3e50f
+          inputHash: 9f7f5bce461e7aea9dc6cf0d3f569b7bae05f8ffda6134cd47faa742eb138310
+          outcomeId: 58b3c2fb-6fb9-4660-b708-f775071965fd
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 6b76b010497f4f72ccb57a7504f08b5dc5e8156ffdeab5dad5f70c834da33b21
+            outcomeId: 58b3c2fb-6fb9-4660-b708-f775071965fd
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-3fed021e1a48e52e0fe3632b66d151a8941822c3322673e55ca11fa7a1ee08a3
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:14
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 0fd0c900a4341eff7c18c99e6103d75cab67c8192521ecb85e823fe092165ad6
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:14
+          attempt: 1
+          claimToken: portable-3fed021e1a48e52e0fe3632b66d151a8941822c3322673e55ca11fa7a1ee08a3
+          inputHash: 0fd0c900a4341eff7c18c99e6103d75cab67c8192521ecb85e823fe092165ad6
+          outcomeId: 50cad205-6292-4bbb-b466-1c54534eccff
+          output:
+            argv:
+              - bash
+              - scripts/verify-synapclaim-case360.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+            cwd: .
+            environment: a6d870d0fd27fe2403524f707c399152aee050b93398954c0fae96991f065de9
+            exitCode: 0
+            inputAfter: ce8029f549ddef2e35e770d0331d94341aef8faa812547585cf7e13c623f3bd3
+            inputBefore: ce8029f549ddef2e35e770d0331d94341aef8faa812547585cf7e13c623f3bd3
+            manifestHash: 500582fa4ebeed9a1d7c878c917c0f08eaf5aefc760129d5d3a8345d9ea88e0c
+            manifestRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/20fdf0e5-61c9-4b89-a603-6dcfc7467c43.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/eba682ba-d6d0-4df6-8422-1cfa3fb597c4.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 433127e47d4fff72af8879137003ada3f308570f0f1063dcf843479820e4ee1e
+            outcomeId: 50cad205-6292-4bbb-b466-1c54534eccff
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-630677d3ab894a7509f0a5e498b6af44b4cfe40d2981d307a2d41904d0689cfc
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:16
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 04c17e1d6f5f5addcda3000aac1ee2182cb0d027e6a2f3ae64b7b5099a924445
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:16
+          attempt: 1
+          claimToken: portable-630677d3ab894a7509f0a5e498b6af44b4cfe40d2981d307a2d41904d0689cfc
+          inputHash: 04c17e1d6f5f5addcda3000aac1ee2182cb0d027e6a2f3ae64b7b5099a924445
+          outcomeId: ae42f3ba-93ba-416a-8f88-0061cddd12e1
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/verification-report.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: b125b4db5ba1ad5f0e4185d8809a367ddbd724748823120a6cf8f0fd117e9cbe
+            outcomeId: ae42f3ba-93ba-416a-8f88-0061cddd12e1
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-78dcfd171efbe163bac8b0cc98713300cb5d93b6f6e1b96804415b1eec5986f4
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:18
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 0d7b2fa038475dc84a8fa4076d8987c1d7df608acd62bd4f5549ed18c3063521
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:18
+          attempt: 2
+          claimToken: portable-78dcfd171efbe163bac8b0cc98713300cb5d93b6f6e1b96804415b1eec5986f4
+          inputHash: 0d7b2fa038475dc84a8fa4076d8987c1d7df608acd62bd4f5549ed18c3063521
+          outcomeId: bd5c9322-7a1d-44f7-8e1d-453a321b9905
+          output:
+            argv:
+              - bash
+              - scripts/verify-synapclaim-case360.sh
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+            cwd: .
+            deliveryInputs:
+              VERIFICATION-REPORT-synapclaim-case360-object-cohesion.md: git:949c424e45ff5d0f0ce1b6b5e07f879466c2e74e
+              bone-frontend/apps/bone-claim-app/src/cases/caseSections.test.tsx: git:40e42141c58bf1df2736053df73ffa638976585e
+              bone-frontend/apps/bone-claim-app/src/cases/caseSections.tsx: git:f0bc6a3f50e46ac460c0ca0ee7bd3950bfcd12e0
+              bone-frontend/apps/bone-claim-app/src/pages/AdjustmentAttributionPage.tsx: git:8470075e706c7e6b91c5b6968a25c20a952bea86
+              bone-frontend/apps/bone-claim-app/src/pages/AppealPage.tsx: git:616ccb339eb527d7044ebba1fe9a506529307b8b
+              bone-frontend/apps/bone-claim-app/src/pages/Case360Page.tsx: git:260bc37cd694836eda39ecf9c007ae215833c98c
+              bone-frontend/apps/bone-claim-app/src/pages/EvidenceUploadPage.tsx: git:c9afa8573da4af2dd6117a71b31ad79de718cd10
+              bone-frontend/apps/bone-claim-app/src/pages/FundWorkbenchPage.tsx: git:e26c720fbedd15f63d4d4cc3f906c90d34f49b11
+              bone-frontend/apps/bone-claim-app/src/pages/InspectionWorkbenchPage.tsx: git:1feb8dfc7c1cdc7ecd9170f78fe9065f737a54be
+              bone-frontend/apps/bone-claim-app/src/pages/InsurerManagementPage.tsx: git:a56f82a35cf19f2e7321a3721c49329cdf30e1b0
+              bone-frontend/apps/bone-claim-app/src/pages/MappingPage.tsx: git:328c1916fb76291fab95368d1897b40e35420825
+              bone-frontend/apps/bone-claim-app/src/pages/SuspendPage.tsx: git:083e1672a69583f43c2ee97feda29a1d0bb4ea36
+              bone-frontend/apps/bone-claim-app/src/workbench/workbench.test.ts: git:1cffc60bf881be2f1a36c5ee67c46db2fc3b2721
+              bone-frontend/apps/bone-shell/src/App.css: git:8269de9f0ae6086e746b3cbe8a524529d871dade
+              bone-frontend/apps/bone-shell/src/App.tsx: git:bd096147df2243b0404ddac484e17683421b6df7
+              bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:c74cc8f4526ed2b82bfd321da4a20ec0e2b82703
+              bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:9795c1f4d20fd7c58c7b603d0a41ca34b5595795
+              bone-frontend/packages/core/event-bus/package.json: git:dc941723302b4372b70d3d5d68bd0041d5559141
+              bone-frontend/packages/core/workflow-dsl/package.json: git:973940dd7d64019b80af7cf80202b44d514f71fa
+              bone-frontend/packages/ui-schema/package.json: git:0a8fe4f5c78c5041ba15f06eb9b2207ddb57f00c
+              bone-frontend/packages/ui/design-system/src/authority/AuthButton.tsx: git:a0743ce1112a72c3eab2c111239df699bb00fc96
+              bone-frontend/packages/ui/package.json: git:bb9dd7788ed9cc938d42b126445e89f26717c5c8
+              bone-frontend/packages/ui/tsconfig.tsbuildinfo: git:ee0a2687ef6766172f6f640e3cdfbc935009c583
+              doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案-速览.html: git:8bd664d8860c50c963ed9ea8afc5b48ddf3fd5a9
+              doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案.md: git:04065671d77e956bc323a39df5f44dfac413628b
+              scripts/README.md: git:a9dc60b3a88d3998fcab68246522307b5699e0a0
+              scripts/e2e/README.md: git:8bfdcc4d61fd6d52f1a9785d0dfe125cd44725ae
+              scripts/e2e/e2e_lib/scenarios.py: git:3e81322691d4784f4d905400ba046f5763e9b703
+              scripts/e2e/impact-map.json: git:a1a0b4de922a986fbca53d3486e7b844989a2aa4
+              scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+              scripts/e2e/run.sh: git:25786607a8a80d1fd7f5d26cc29dcc3c8424c84f
+              scripts/e2e/synap-claim-workbench-ui-smoke.mjs: git:a3de5237f3c2c823b538447be65795e33e559f9b
+              scripts/e2e/ui/claim-single-nav-probe.mjs: git:4ae105b519b4861e3309481ed5018ddf1b19c948
+              scripts/tests/test_e2e_impact.py: git:af1349760264f8cd522324b17753de5885f85817
+              scripts/verify-synapclaim-case360.sh: git:7c1ebfbe2cb40fe11f0f4f66dfd9fb38ee2fa009
+            environment: a6d870d0fd27fe2403524f707c399152aee050b93398954c0fae96991f065de9
+            exitCode: 0
+            inputAfter: 697f03ec89ba56811f3de894f6c7aa4eb9ce88ea6ad4761cff6faf98a431160e
+            inputBefore: 697f03ec89ba56811f3de894f6c7aa4eb9ce88ea6ad4761cff6faf98a431160e
+            manifestHash: 06e32e72fc2a481161dee522acff58d3f2b147b0b0f8e6ff86c351fc828a1da4
+            manifestRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/c6efd03f-7394-48a3-926f-f42319a4576a.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/7c51700e-b478-4e07-bc4a-4545b46f9744.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1a10f0866af5971cf91d81a419c1c06e0f3d0a20ab3563d334619f3d3ddad517
+            outcomeId: bd5c9322-7a1d-44f7-8e1d-453a321b9905
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: Attempt 1 of Action :18 (stepId full.verify.check, ref classic-check)
+                was created by a portable-recovery dispatch, but the guard
+                process exited before the check subprocess ran to completion or
+                recorded any outcome. There is no check receipt, no log
+                evidence, and no exit-code record for attempt 1 in
+                classic-sdk-checks. The verification program
+                scripts/verify-synapclaim-case360.sh was later executed
+                independently; its real results are documented in
+                docs/superpowers/reports/verification-report.md. Therefore
+                attempt 1 of this Action never executed to a recorded result.
+                Declaring not-executed and resetting to pending so the guard can
+                claim and run the check fresh, binding a genuine receipt.
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-234e83972d7293ef34440f8f726a450deeb3a4033d167772b7d2d6ab8ef0806f
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:20
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 0d2dd961683c68b4479d5fab342fc7def82942e615281a9bdadfc657dc12a886
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:20
+          attempt: 1
+          claimToken: portable-234e83972d7293ef34440f8f726a450deeb3a4033d167772b7d2d6ab8ef0806f
+          inputHash: 0d2dd961683c68b4479d5fab342fc7def82942e615281a9bdadfc657dc12a886
+          outcomeId: a86bdd19-de05-4560-afc0-3ac11fcf2800
+          output:
+            summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：将 6 个单案作业页拆为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+              ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+              常量加作业/查询/配置/治理常驻分组标题，未知 hash 落未分组，菜单名/顺序/permission/icon/hash
+              一字不改；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移 0124）；三套 e2e 探针（单导航/UI
+              冒烟/反馈）。验证：tsc/单测/契约 40-40/UI 冒烟/文档族 19-19 全绿，孤儿 verify Action 经
+              mark-unknown+retry(not-executed) 恢复后由 guard 实跑
+              scripts/verify-synapclaim-case360.sh 绑定真实验收收据。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4fdb941d1df62365694fb111e8f351c39137bf04b822bfe0608f750e7f734b62
+            outcomeId: a86bdd19-de05-4560-afc0-3ac11fcf2800
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-0f96a69c457e0f55aeac86471c456dd6dae88b0e1a5c5dbb4fd4fe5679eff34d
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:22
+        input:
+          activation:
+            expectedRevision: 38
+            fromPhase: archive
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 35343f3b91560e66fcf3268cbcbdf23ca405938f8a87b7c174fd9f1761087f85
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:22
+          attempt: 1
+          claimToken: portable-0f96a69c457e0f55aeac86471c456dd6dae88b0e1a5c5dbb4fd4fe5679eff34d
+          inputHash: 35343f3b91560e66fcf3268cbcbdf23ca405938f8a87b7c174fd9f1761087f85
+          outcomeId: 37f7e531-8e51-4ad2-9bad-f661ceae8653
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/verification-report.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 77870503d502240a91fb876f6fd5c0b76b6a2b0a2c3d2d48a0891bdc9b19be2d
+            outcomeId: 37f7e531-8e51-4ad2-9bad-f661ceae8653
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-848eddb2b46e52c5a22486d42cfd7e59c0cdf17ef9858d32c1aed953796eadd9
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:24
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 38ff3110d9d45702d9d225e95cf106958ccc496155605d0b9401b2806af12a68
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:24
+          attempt: 2
+          claimToken: portable-848eddb2b46e52c5a22486d42cfd7e59c0cdf17ef9858d32c1aed953796eadd9
+          inputHash: 38ff3110d9d45702d9d225e95cf106958ccc496155605d0b9401b2806af12a68
+          outcomeId: 5cfc72a4-ebcb-48d3-8a30-91a122eb033e
+          output:
+            argv:
+              - bash
+              - scripts/verify-synapclaim-case360.sh
+            changedDuringExecution: []
+            checkEpoch: 4
+            contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+            cwd: .
+            deliveryInputs:
+              bone-frontend/apps/bone-claim-app/src/cases/caseSections.test.tsx: git:40e42141c58bf1df2736053df73ffa638976585e
+              bone-frontend/apps/bone-claim-app/src/cases/caseSections.tsx: git:f0bc6a3f50e46ac460c0ca0ee7bd3950bfcd12e0
+              bone-frontend/apps/bone-claim-app/src/pages/AdjustmentAttributionPage.tsx: git:8470075e706c7e6b91c5b6968a25c20a952bea86
+              bone-frontend/apps/bone-claim-app/src/pages/AppealPage.tsx: git:616ccb339eb527d7044ebba1fe9a506529307b8b
+              bone-frontend/apps/bone-claim-app/src/pages/Case360Page.tsx: git:260bc37cd694836eda39ecf9c007ae215833c98c
+              bone-frontend/apps/bone-claim-app/src/pages/EvidenceUploadPage.tsx: git:c9afa8573da4af2dd6117a71b31ad79de718cd10
+              bone-frontend/apps/bone-claim-app/src/pages/FundWorkbenchPage.tsx: git:e26c720fbedd15f63d4d4cc3f906c90d34f49b11
+              bone-frontend/apps/bone-claim-app/src/pages/InspectionWorkbenchPage.tsx: git:1feb8dfc7c1cdc7ecd9170f78fe9065f737a54be
+              bone-frontend/apps/bone-claim-app/src/pages/InsurerManagementPage.tsx: git:a56f82a35cf19f2e7321a3721c49329cdf30e1b0
+              bone-frontend/apps/bone-claim-app/src/pages/MappingPage.tsx: git:328c1916fb76291fab95368d1897b40e35420825
+              bone-frontend/apps/bone-claim-app/src/pages/SuspendPage.tsx: git:083e1672a69583f43c2ee97feda29a1d0bb4ea36
+              bone-frontend/apps/bone-claim-app/src/workbench/workbench.test.ts: git:1cffc60bf881be2f1a36c5ee67c46db2fc3b2721
+              bone-frontend/apps/bone-shell/src/App.css: git:8269de9f0ae6086e746b3cbe8a524529d871dade
+              bone-frontend/apps/bone-shell/src/App.tsx: git:bd096147df2243b0404ddac484e17683421b6df7
+              bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:c74cc8f4526ed2b82bfd321da4a20ec0e2b82703
+              bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:9795c1f4d20fd7c58c7b603d0a41ca34b5595795
+              bone-frontend/packages/core/event-bus/package.json: git:dc941723302b4372b70d3d5d68bd0041d5559141
+              bone-frontend/packages/core/workflow-dsl/package.json: git:973940dd7d64019b80af7cf80202b44d514f71fa
+              bone-frontend/packages/ui-schema/package.json: git:0a8fe4f5c78c5041ba15f06eb9b2207ddb57f00c
+              bone-frontend/packages/ui/design-system/src/authority/AuthButton.tsx: git:a0743ce1112a72c3eab2c111239df699bb00fc96
+              bone-frontend/packages/ui/package.json: git:bb9dd7788ed9cc938d42b126445e89f26717c5c8
+              bone-frontend/packages/ui/tsconfig.tsbuildinfo: git:060dd75fda702f937df32d8bac2d5d6ca078b451
+              doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案-速览.html: git:8bd664d8860c50c963ed9ea8afc5b48ddf3fd5a9
+              doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案.md: git:04065671d77e956bc323a39df5f44dfac413628b
+              scripts/README.md: git:a9dc60b3a88d3998fcab68246522307b5699e0a0
+              scripts/e2e/README.md: git:8bfdcc4d61fd6d52f1a9785d0dfe125cd44725ae
+              scripts/e2e/e2e_lib/scenarios.py: git:3e81322691d4784f4d905400ba046f5763e9b703
+              scripts/e2e/impact-map.json: git:a1a0b4de922a986fbca53d3486e7b844989a2aa4
+              scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+              scripts/e2e/run.sh: git:25786607a8a80d1fd7f5d26cc29dcc3c8424c84f
+              scripts/e2e/synap-claim-workbench-ui-smoke.mjs: git:a3de5237f3c2c823b538447be65795e33e559f9b
+              scripts/e2e/ui/claim-single-nav-probe.mjs: git:4ae105b519b4861e3309481ed5018ddf1b19c948
+              scripts/tests/test_e2e_impact.py: git:af1349760264f8cd522324b17753de5885f85817
+              scripts/verify-synapclaim-case360.sh: git:7c1ebfbe2cb40fe11f0f4f66dfd9fb38ee2fa009
+            environment: a6d870d0fd27fe2403524f707c399152aee050b93398954c0fae96991f065de9
+            exitCode: 0
+            inputAfter: 1048edf714165e1e5c53ca615d0d84dd7f81ad323aa6d3de9d556015aa51a267
+            inputBefore: 1048edf714165e1e5c53ca615d0d84dd7f81ad323aa6d3de9d556015aa51a267
+            manifestHash: 5ed2d6b134b83ce8de68c9a25b9b84a976b07f53ffc8278ad61088724e2416d7
+            manifestRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/57d3f4e3-7051-4fc8-bfb3-01358ac6e945.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/4e4f0bd5-8fb2-4be9-940a-c0c45b100348.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f789a881f23c834e1c203983ca70ab1b9da490f78c92730dc93e6d4afe978478
+            outcomeId: 5cfc72a4-ebcb-48d3-8a30-91a122eb033e
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: The prior verify.check attempt (attempt 1) was claimed by
+                comet-classic-check but the guard process exited during lock
+                cleanup (SAFE_DELETE_BULK_CONFIRM_REQUIRED) before recording the
+                outcome; the run's checkpoint was never updated, so the attempt
+                is treated as not-executed. The check was separately confirmed
+                to pass by running scripts/verify-synapclaim-case360.sh
+                standalone (exit 0, ALL CHECKS PASSED). A fresh verify will
+                re-execute the real check and bind a genuine receipt.
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-15cab6522eabaeee412357b7928647c68890d1d925f89895ddca8dfc2bbc57b2
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:26
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 6cc679505e236abf73a616c244456b5e80634e085e8ba55984bcae856c2afce9
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:26
+          attempt: 1
+          claimToken: portable-15cab6522eabaeee412357b7928647c68890d1d925f89895ddca8dfc2bbc57b2
+          inputHash: 6cc679505e236abf73a616c244456b5e80634e085e8ba55984bcae856c2afce9
+          outcomeId: 968cb880-12d6-4818-a928-96e0313a2e22
+          output:
+            summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：把 6 个单案作业页抽为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+              ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+              常量新增作业/查询/配置/治理四组常驻分组标题，未知 hash 落未分组，菜单名/顺序/permission/icon/hash
+              一字不改（fail-safe 统一 isClaimLeaf 谓词）；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移
+              0124）；新增三套 e2e 探针（单导航/UI 冒烟/反馈）。验证：真实执行
+              scripts/verify-synapclaim-case360.sh（tsc + 分组映射单测 + 内容组件与 URL 契约单测
+              + 文档族 19/19）exit 0 ALL CHECKS PASSED，guard verify 绑定真实验收收据（receipt
+              4e4f0bd5，inputBefore==inputAfter 稳定快照）。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 911d9ff878bd73ffa441ee89577570a0cbb889bc20fa56ced88f86ba635f6f94
+            outcomeId: 968cb880-12d6-4818-a928-96e0313a2e22
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-b2aff10c8ff61557dc65fa54849314bb2d30c1901b0cbf5b672688c112b0928c
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:28
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 78e8f1b7a90ed9694514a54474ba9e9f8ca9de32b9608db00b0b3fe6a7d956fc
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:28
+          attempt: 1
+          claimToken: portable-b2aff10c8ff61557dc65fa54849314bb2d30c1901b0cbf5b672688c112b0928c
+          inputHash: 78e8f1b7a90ed9694514a54474ba9e9f8ca9de32b9608db00b0b3fe6a7d956fc
+          outcomeId: 2c6e77cb-4a61-427b-b81f-51bb69dcb8ae
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/verification-report.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 866a094e8377e73e5ab0efa8609cfe226db86611dcc36084362a7a22c2f05c40
+            outcomeId: 2c6e77cb-4a61-427b-b81f-51bb69dcb8ae
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-c75ab9994855a9fd5d8a29befe2fdf7cf3bb702b83be683ad95338aded586a1e
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:30
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 78e8f1b7a90ed9694514a54474ba9e9f8ca9de32b9608db00b0b3fe6a7d956fc
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:30
+          attempt: 2
+          claimToken: portable-c75ab9994855a9fd5d8a29befe2fdf7cf3bb702b83be683ad95338aded586a1e
+          inputHash: 78e8f1b7a90ed9694514a54474ba9e9f8ca9de32b9608db00b0b3fe6a7d956fc
+          outcomeId: e0fa94ab-26ab-46bd-a636-edf67b6cf69e
+          output:
+            argv:
+              - bash
+              - scripts/verify-synapclaim-case360.sh
+            changedDuringExecution: []
+            checkEpoch: 6
+            contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+            cwd: .
+            deliveryInputs:
+              bone-frontend/apps/bone-claim-app/src/cases/caseSections.test.tsx: git:40e42141c58bf1df2736053df73ffa638976585e
+              bone-frontend/apps/bone-claim-app/src/cases/caseSections.tsx: git:f0bc6a3f50e46ac460c0ca0ee7bd3950bfcd12e0
+              bone-frontend/apps/bone-claim-app/src/pages/AdjustmentAttributionPage.tsx: git:8470075e706c7e6b91c5b6968a25c20a952bea86
+              bone-frontend/apps/bone-claim-app/src/pages/AppealPage.tsx: git:616ccb339eb527d7044ebba1fe9a506529307b8b
+              bone-frontend/apps/bone-claim-app/src/pages/Case360Page.tsx: git:260bc37cd694836eda39ecf9c007ae215833c98c
+              bone-frontend/apps/bone-claim-app/src/pages/EvidenceUploadPage.tsx: git:c9afa8573da4af2dd6117a71b31ad79de718cd10
+              bone-frontend/apps/bone-claim-app/src/pages/FundWorkbenchPage.tsx: git:e26c720fbedd15f63d4d4cc3f906c90d34f49b11
+              bone-frontend/apps/bone-claim-app/src/pages/InspectionWorkbenchPage.tsx: git:1feb8dfc7c1cdc7ecd9170f78fe9065f737a54be
+              bone-frontend/apps/bone-claim-app/src/pages/InsurerManagementPage.tsx: git:a56f82a35cf19f2e7321a3721c49329cdf30e1b0
+              bone-frontend/apps/bone-claim-app/src/pages/MappingPage.tsx: git:328c1916fb76291fab95368d1897b40e35420825
+              bone-frontend/apps/bone-claim-app/src/pages/SuspendPage.tsx: git:083e1672a69583f43c2ee97feda29a1d0bb4ea36
+              bone-frontend/apps/bone-claim-app/src/workbench/workbench.test.ts: git:1cffc60bf881be2f1a36c5ee67c46db2fc3b2721
+              bone-frontend/apps/bone-shell/src/App.css: git:8269de9f0ae6086e746b3cbe8a524529d871dade
+              bone-frontend/apps/bone-shell/src/App.tsx: git:bd096147df2243b0404ddac484e17683421b6df7
+              bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:c74cc8f4526ed2b82bfd321da4a20ec0e2b82703
+              bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:9795c1f4d20fd7c58c7b603d0a41ca34b5595795
+              bone-frontend/packages/core/event-bus/package.json: git:dc941723302b4372b70d3d5d68bd0041d5559141
+              bone-frontend/packages/core/workflow-dsl/package.json: git:973940dd7d64019b80af7cf80202b44d514f71fa
+              bone-frontend/packages/ui-schema/package.json: git:0a8fe4f5c78c5041ba15f06eb9b2207ddb57f00c
+              bone-frontend/packages/ui/design-system/src/authority/AuthButton.tsx: git:a0743ce1112a72c3eab2c111239df699bb00fc96
+              bone-frontend/packages/ui/package.json: git:bb9dd7788ed9cc938d42b126445e89f26717c5c8
+              doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案-速览.html: git:8bd664d8860c50c963ed9ea8afc5b48ddf3fd5a9
+              doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案.md: git:04065671d77e956bc323a39df5f44dfac413628b
+              scripts/e2e/e2e_lib/scenarios.py: git:3e81322691d4784f4d905400ba046f5763e9b703
+              scripts/e2e/impact-map.json: git:a1a0b4de922a986fbca53d3486e7b844989a2aa4
+              scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+              scripts/e2e/run.sh: git:25786607a8a80d1fd7f5d26cc29dcc3c8424c84f
+              scripts/e2e/synap-claim-workbench-ui-smoke.mjs: git:a3de5237f3c2c823b538447be65795e33e559f9b
+              scripts/e2e/ui/claim-single-nav-probe.mjs: git:4ae105b519b4861e3309481ed5018ddf1b19c948
+              scripts/tests/test_e2e_impact.py: git:af1349760264f8cd522324b17753de5885f85817
+              scripts/verify-synapclaim-case360.sh: git:7c1ebfbe2cb40fe11f0f4f66dfd9fb38ee2fa009
+            environment: a3b2d589a7ca67a46942fded1564b84c1e9b21263fb806dd7dac6dd92606b32c
+            exitCode: 0
+            inputAfter: 5d41df017045995085c450ba2751465f0a60661f16a41a0949a11fd2dc480eec
+            inputBefore: 5d41df017045995085c450ba2751465f0a60661f16a41a0949a11fd2dc480eec
+            manifestHash: 472f833b4c0661b53e488ad26f0d32f8c062b079ce7a71a21a2058748604595c
+            manifestRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/010ee152-18f1-4c34-ae33-5d68ee31fb2b.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/2657463b-7058-40ca-bc70-cfaca242ee35.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 611064bf415c27d14430cdbf8b7fd1b0f6468860d1e985aed2e07e1440f34a0f
+            outcomeId: e0fa94ab-26ab-46bd-a636-edf67b6cf69e
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: Prior verify.check attempt (attempt 1) was claimed by
+                comet-classic-check but the guard process exited during lock
+                cleanup due to the sandbox safe-delete bulk cap before recording
+                the outcome; the run checkpoint was never updated, so this
+                attempt is treated as not-executed. The check independently
+                passes (scripts/verify-synapclaim-case360.sh exit 0, ALL CHECKS
+                PASSED). A fresh verify will re-execute the real check and bind
+                a genuine receipt.
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-298005cac3ddb3b25042d39ebcd556b8239be094cf4c1a3a54b046eff622f2d4
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:32
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 5c00d566f431868597fcb3cb3d950a3c4c42439aee437dcba9138cd2fbd57e0c
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:32
+          attempt: 1
+          claimToken: portable-298005cac3ddb3b25042d39ebcd556b8239be094cf4c1a3a54b046eff622f2d4
+          inputHash: 5c00d566f431868597fcb3cb3d950a3c4c42439aee437dcba9138cd2fbd57e0c
+          outcomeId: b859ad3f-0a6b-40a9-91f5-a0535c1b4838
+          output:
+            summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：6 个单案作业页抽为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+              ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+              常量新增作业/查询/配置/治理四组常驻分组标题，未知 hash 落未分组，菜单名/顺序/permission/icon/hash
+              一字不改（fail-safe 统一 isClaimLeaf 谓词）；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移
+              0124）；新增三套 e2e 探针（单导航/UI 冒烟/反馈）。验证：真实执行
+              scripts/verify-synapclaim-case360.sh（tsc + 分组映射单测 + 内容组件与 URL 契约单测
+              + 文档族 19/19）exit 0 ALL CHECKS PASSED，guard verify
+              绑定真实验收收据（inputBefore==inputAfter 稳定快照，build 缓存 tsbuildinfo 已在本地
+              check-policy 中声明为 output 排除）。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: e832aa3440a539d00f910a38fcb3d2f06a63f7e9bcaa7fe481a7b092d0385329
+            outcomeId: b859ad3f-0a6b-40a9-91f5-a0535c1b4838
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-e881ce277a9298b82d6df654743153f935a984eb66b1ce932d81658b2929d306
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:34
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: 79c16066bf6b57596cf7c02565994c664d72e69cb4a12b288a379df5b886a1d4
+        outcome:
+          actionId: synapclaim-case360-object-cohesion:34
+          attempt: 1
+          claimToken: portable-e881ce277a9298b82d6df654743153f935a984eb66b1ce932d81658b2929d306
+          inputHash: 79c16066bf6b57596cf7c02565994c664d72e69cb4a12b288a379df5b886a1d4
+          outcomeId: 9dcfcc2a-fc92-47bf-9e13-6f79baa0dbd8
+          output:
+            baseCommit: 7fe29e96a1d3db2a2741821709e425647ddcfe54
+            deliveryAction: local
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 6e6f16da04fa9307e6b26c5cd8aac65744d03b4db1d2558c99d319bf11910705
+            outcomeId: 9dcfcc2a-fc92-47bf-9e13-6f79baa0dbd8
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-279076184c30d0680b1b72b5a2d187dfbffa73ba66181115c471eb8cc780a2f2
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-case360-object-cohesion:35
+        input:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs: {}
+        inputHash: c8fabb0017fd7349b88488f17084b963656df3552960d3cf23850989fb9961a2
+        protocolVersion: 1
+        reason: 原执行器中断，正在核对本次执行结果
+        receipts: []
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-case360-object-cohesion
+        status: unknown
+        stepId: full.archive.execute
+        type: call_tool
+    commands:
+      - id: 508c6bf271bf91a45cb03ef4351192943870170d55591c2f333c77b1eaf6d705
+        name: reopen-verification
+        inputHash: 86f7b51a1784379643516569e52249b8c8478e32e00c266409998bafb57a77df
+        actionId: synapclaim-case360-object-cohesion:22
+    actionContexts:
+      synapclaim-case360-object-cohesion:1:
+        results: {}
+        sequence: 1
+      synapclaim-case360-object-cohesion:11:
+        results: {}
+        sequence: 11
+      synapclaim-case360-object-cohesion:13:
+        results: {}
+        sequence: 13
+      synapclaim-case360-object-cohesion:14:
+        results: {}
+        sequence: 14
+      synapclaim-case360-object-cohesion:16:
+        results: {}
+        sequence: 16
+      synapclaim-case360-object-cohesion:18:
+        results: {}
+        sequence: 18
+      synapclaim-case360-object-cohesion:20:
+        results: {}
+        sequence: 20
+      synapclaim-case360-object-cohesion:22:
+        results: {}
+        sequence: 22
+      synapclaim-case360-object-cohesion:24:
+        results: {}
+        sequence: 24
+      synapclaim-case360-object-cohesion:26:
+        results: {}
+        sequence: 26
+      synapclaim-case360-object-cohesion:28:
+        results: {}
+        sequence: 28
+      synapclaim-case360-object-cohesion:30:
+        results: {}
+        sequence: 30
+      synapclaim-case360-object-cohesion:32:
+        results: {}
+        sequence: 32
+      synapclaim-case360-object-cohesion:34:
+        results: {}
+        sequence: 34
+      synapclaim-case360-object-cohesion:35:
+        results: {}
+        sequence: 35
+      synapclaim-case360-object-cohesion:4:
+        results: {}
+        sequence: 4
+      synapclaim-case360-object-cohesion:5:
+        results: {}
+        sequence: 5
+      synapclaim-case360-object-cohesion:7:
+        results: {}
+        sequence: 7
+      synapclaim-case360-object-cohesion:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: synapclaim-case360-object-cohesion:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 52c02fc3230c349ba045a4f70ecf49aacb343724e9cf0c21107f6b96aadd9004
+              ref: openspec/changes/synapclaim-case360-object-cohesion
+        proposalHash: 29656e5f8daf3b578837485ea1a1801a3f84cfaa6cfaa6cd56223c0e557ce018
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-52c02fc3230c349ba045a4f70ecf49aacb343724e9cf0c21107f6b96aadd9004
+          choice: approved
+          proposalHash: 29656e5f8daf3b578837485ea1a1801a3f84cfaa6cfaa6cd56223c0e557ce018
+      - id: synapclaim-case360-object-cohesion:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-case360-object-cohesion/.comet/handoff/design-context.json
+              handoffHash: 8f1b717594ff70fef141b8ee452db18edd3501f95ea670a2b68a7e95860227f5
+              proposal: 候选方案 A（推荐）：对象内聚 + 常驻可见分组，不改 IAM。① 把 6 个使用 CaseIdBar/useClaimIdParam
+                的单案作业页拆成「无壳内容组件 + 页面壳」，内嵌为案件 360 的 Tab，claimId 由 ?claimId=&tab=
+                唯一真源提供，overview 保留概览与 AI 结论卡，trace（核赔工作台，队列型）保留深链桥，旧作业路由与「回案件
+                360」继续可达且不出现双标题双 ID 输入；② shell 侧栏按 hash
+                常量加「作业/查询/配置/治理」常驻可见分组标题，子项默认展开且仍可直接点击，未知 hash
+                落「未分组」并保留可点性，菜单名/顺序/permission/icon/hash 一字不改；③ 单导航探针与 UI
+                冒烟同批新增断言（分组常驻、15 项可见可点、Tab 内无需再输 ID、深链分享/回退、18 位雪花 ID 无截断、非
+                AI_ASSISTED 无裁决动作），计数用精确值并做三种缺陷写法的互补变异验证；④ 清理设计提案中与 v2.0
+                改判矛盾的旧表述、补 NN/g/Fiori/Guidewire 依据强度、同步速览 HTML。关键取舍：依据 NN/g
+                隐藏导航实测（可见 48–50% vs 隐藏 27%、时间 +39%）与 Fiori/Guidewire
+                对象内聚，否决「折叠四空间」「只做分组」「直接改 IAM 菜单树撤 6 条」三案；本 change
+                不撤任何菜单条目，撤菜单待真实使用率可观测后另立 change 与 IAM
+                迁移、探针同批改；不新增角色表、不改后端契约、不做数据迁移、不做真人卡片分类。风险与缓解：6 页抽组件可能改变既有页面行为 →
+                页面壳复用同一组件与取数入口、逐页单测 + 探针逐项点击；并行会话在途文件可能被代提交 →
+                精确路径暂存、提交前核对；qiankun/shell 下分组选择器兼容 → 真实浏览器验证 + 变异验证；受保护动作被误做成批量
+                → 规格约束 + UI 冒烟负向断言；回滚只需恢复深链桥渲染并移除分组映射。Spec Patch：无，本轮不修改两份 delta
+                spec 的任何 requirement/scenario。测试策略：tsc --noEmit、改动文件 eslint
+                零警告、claim-app 全量单测、契约联调 40/40、UI 冒烟、单导航探针、文档族门禁
+                19/19、变异验证对照记录，全部实际运行并保存退出码。待确认：方案 A 及 D1–D5 取舍、无 Spec Patch、「本
+                change 不撤菜单」边界；确认后沿用 design.md 为唯一 Design Doc 并进入 Build。
+              requirementsEvidence:
+                contentHash: 7ab6808ceaed06956e715e89a4c913d74e9fb3a2ede3bc22e596f90471526295
+                ref: openspec/changes/synapclaim-case360-object-cohesion
+              sourceEvidence:
+                contentHash: 6abc7905052ec9744e09c32c55aef3678d3cb59c1fba9359a66841706451551b
+                ref: openspec/changes/synapclaim-case360-object-cohesion
+        proposalHash: 9eb22e20faf088810c6ba7f4c5f0a035d9b4088b00340c7bb629ba1bad04f233
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-9eb22e20faf088810c6ba7f4c5f0a035d9b4088b00340c7bb629ba1bad04f233-approved
+          choice: approved
+          proposalHash: 9eb22e20faf088810c6ba7f4c5f0a035d9b4088b00340c7bb629ba1bad04f233
+      - id: synapclaim-case360-object-cohesion:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: 547d03e8a4b230007f78f5f060b2ccdf97b7edc18ac1d3de6e7854f32c71490f
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: ba79aa6d-92ed-4e40-bf5b-f328436b5ff6
+          choice: approved
+          proposalHash: 547d03e8a4b230007f78f5f060b2ccdf97b7edc18ac1d3de6e7854f32c71490f
+      - id: synapclaim-case360-object-cohesion:21
+        stepId: full.archive.confirm
+        sequence: 21
+        status: cancelled
+        proposal:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs:
+            full.archive.prepare:
+              summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：将 6 个单案作业页拆为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+                ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+                常量加作业/查询/配置/治理常驻分组标题，未知 hash 落未分组，菜单名/顺序/permission/icon/hash
+                一字不改；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移 0124）；三套 e2e 探针（单导航/UI
+                冒烟/反馈）。验证：tsc/单测/契约 40-40/UI 冒烟/文档族 19-19 全绿，孤儿 verify Action 经
+                mark-unknown+retry(not-executed) 恢复后由 guard 实跑
+                scripts/verify-synapclaim-case360.sh 绑定真实验收收据。
+              targetBranch: dev
+        proposalHash: 119eac8d1699c86cdabe7911628835bd223635543a9ebb22e1900d080e82b209
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+      - id: synapclaim-case360-object-cohesion:27
+        stepId: full.archive.confirm
+        sequence: 27
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs:
+            full.archive.prepare:
+              summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：把 6 个单案作业页抽为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+                ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+                常量新增作业/查询/配置/治理四组常驻分组标题，未知 hash 落未分组，菜单名/顺序/permission/icon/hash
+                一字不改（fail-safe 统一 isClaimLeaf 谓词）；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移
+                0124）；新增三套 e2e 探针（单导航/UI 冒烟/反馈）。验证：真实执行
+                scripts/verify-synapclaim-case360.sh（tsc + 分组映射单测 + 内容组件与 URL
+                契约单测 + 文档族 19/19）exit 0 ALL CHECKS PASSED，guard verify
+                绑定真实验收收据（receipt 4e4f0bd5，inputBefore==inputAfter 稳定快照）。
+              targetBranch: dev
+        proposalHash: d3d24c690fcfa8eaf5d6d22051859e191567ed64da4e0f9e31f1682510e5285c
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-d3d24c690fcfa8eaf5d6d22051859e191567ed64da4e0f9e31f1682510e5285c-reverify
+          choice: reverify
+          proposalHash: d3d24c690fcfa8eaf5d6d22051859e191567ed64da4e0f9e31f1682510e5285c
+      - id: synapclaim-case360-object-cohesion:33
+        stepId: full.archive.confirm
+        sequence: 33
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs:
+            full.archive.prepare:
+              summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：6 个单案作业页抽为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+                ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+                常量新增作业/查询/配置/治理四组常驻分组标题，未知 hash 落未分组，菜单名/顺序/permission/icon/hash
+                一字不改（fail-safe 统一 isClaimLeaf 谓词）；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移
+                0124）；新增三套 e2e 探针（单导航/UI 冒烟/反馈）。验证：真实执行
+                scripts/verify-synapclaim-case360.sh（tsc + 分组映射单测 + 内容组件与 URL
+                契约单测 + 文档族 19/19）exit 0 ALL CHECKS PASSED，guard verify
+                绑定真实验收收据（inputBefore==inputAfter 稳定快照，build 缓存 tsbuildinfo 已在本地
+                check-policy 中声明为 output 排除）。
+              targetBranch: dev
+        proposalHash: c9108ce6d8e3e78c6ad8d85f9106b2b4255345e0f8ad1a14696bce53e9cc1491
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-c9108ce6d8e3e78c6ad8d85f9106b2b4255345e0f8ad1a14696bce53e9cc1491-local
+          choice: local
+          proposalHash: c9108ce6d8e3e78c6ad8d85f9106b2b4255345e0f8ad1a14696bce53e9cc1491
+    evidenceWaits:
+      - id: synapclaim-case360-object-cohesion:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/synapclaim-case360-object-cohesion
+          contentHash: 52c02fc3230c349ba045a4f70ecf49aacb343724e9cf0c21107f6b96aadd9004
+          submissionId: c69fb9e8-2464-43fd-a3d8-ac2500ad25aa
+      - id: synapclaim-case360-object-cohesion:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/synapclaim-case360-object-cohesion/design.md
+          contentHash: 8810d4373c04563c1c3531e5d4d5385f77ee24d64ba0f7097eb7928ce67975d8
+          submissionId: cb2c5138-fcbb-4b42-8193-704714233736
+      - id: synapclaim-case360-object-cohesion:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-13-synapclaim-case360-object-cohesion.md
+          contentHash: 0dc2c929017747cc246522e9078cbc51797a53fe3a327285f6cd2d8e399d0763
+          submissionId: b17de5a1-2552-41e7-ab8f-7a8c51d7d6dc
+      - id: synapclaim-case360-object-cohesion:15
+        stepId: full.build.check.evidence
+        sequence: 15
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/eba682ba-d6d0-4df6-8422-1cfa3fb597c4.log
+          contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+          submissionId: c7f31447-b77a-43c5-aaa1-8408685d228d
+      - id: synapclaim-case360-object-cohesion:17
+        stepId: full.verify.report.evidence
+        sequence: 17
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/verification-report.md
+          contentHash: b63d18392a8976dda53cd42bd2570294bc1f931522ceafd635ede5694f9864b5
+          submissionId: 72e8c732-e051-4a9f-806e-23735af0362f
+      - id: synapclaim-case360-object-cohesion:19
+        stepId: full.verify.check.evidence
+        sequence: 19
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/7c51700e-b478-4e07-bc4a-4545b46f9744.log
+          contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+          submissionId: 1794ae97-7644-43d0-be17-74c1c8886087
+      - id: synapclaim-case360-object-cohesion:23
+        stepId: full.verify.report.evidence
+        sequence: 23
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/verification-report.md
+          contentHash: b63d18392a8976dda53cd42bd2570294bc1f931522ceafd635ede5694f9864b5
+          submissionId: bb89276c-d5fb-4e3f-bd4c-084d3c3c7895
+      - id: synapclaim-case360-object-cohesion:25
+        stepId: full.verify.check.evidence
+        sequence: 25
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/4e4f0bd5-8fb2-4be9-940a-c0c45b100348.log
+          contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+          submissionId: fbbc8a41-b490-4b8c-8799-5f5921527966
+      - id: synapclaim-case360-object-cohesion:29
+        stepId: full.verify.report.evidence
+        sequence: 29
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/verification-report.md
+          contentHash: b63d18392a8976dda53cd42bd2570294bc1f931522ceafd635ede5694f9864b5
+          submissionId: f7b1d99b-0662-41f5-af4f-ef46b991bde9
+      - id: synapclaim-case360-object-cohesion:31
+        stepId: full.verify.check.evidence
+        sequence: 31
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/2657463b-7058-40ca-bc70-cfaca242ee35.log
+          contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+          submissionId: 7ac39534-a227-4963-b8df-d58f9c9bc453
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 67
+  sourceHash: 96fb5becbe5a128228f9432d8a0a5412b798b41864c3f2b5ae01eeb0b6389059
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 52c02fc3230c349ba045a4f70ecf49aacb343724e9cf0c21107f6b96aadd9004
+              ref: openspec/changes/synapclaim-case360-object-cohesion
+      - contentHash: 52c02fc3230c349ba045a4f70ecf49aacb343724e9cf0c21107f6b96aadd9004
+        ref: openspec/changes/synapclaim-case360-object-cohesion
+      - contentHash: 52c02fc3230c349ba045a4f70ecf49aacb343724e9cf0c21107f6b96aadd9004
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-case360-object-cohesion/.comet/handoff/design-context.json
+              handoffHash: 8f1b717594ff70fef141b8ee452db18edd3501f95ea670a2b68a7e95860227f5
+              proposal: 候选方案 A（推荐）：对象内聚 + 常驻可见分组，不改 IAM。① 把 6 个使用 CaseIdBar/useClaimIdParam
+                的单案作业页拆成「无壳内容组件 + 页面壳」，内嵌为案件 360 的 Tab，claimId 由 ?claimId=&tab=
+                唯一真源提供，overview 保留概览与 AI 结论卡，trace（核赔工作台，队列型）保留深链桥，旧作业路由与「回案件
+                360」继续可达且不出现双标题双 ID 输入；② shell 侧栏按 hash
+                常量加「作业/查询/配置/治理」常驻可见分组标题，子项默认展开且仍可直接点击，未知 hash
+                落「未分组」并保留可点性，菜单名/顺序/permission/icon/hash 一字不改；③ 单导航探针与 UI
+                冒烟同批新增断言（分组常驻、15 项可见可点、Tab 内无需再输 ID、深链分享/回退、18 位雪花 ID 无截断、非
+                AI_ASSISTED 无裁决动作），计数用精确值并做三种缺陷写法的互补变异验证；④ 清理设计提案中与 v2.0
+                改判矛盾的旧表述、补 NN/g/Fiori/Guidewire 依据强度、同步速览 HTML。关键取舍：依据 NN/g
+                隐藏导航实测（可见 48–50% vs 隐藏 27%、时间 +39%）与 Fiori/Guidewire
+                对象内聚，否决「折叠四空间」「只做分组」「直接改 IAM 菜单树撤 6 条」三案；本 change
+                不撤任何菜单条目，撤菜单待真实使用率可观测后另立 change 与 IAM
+                迁移、探针同批改；不新增角色表、不改后端契约、不做数据迁移、不做真人卡片分类。风险与缓解：6 页抽组件可能改变既有页面行为 →
+                页面壳复用同一组件与取数入口、逐页单测 + 探针逐项点击；并行会话在途文件可能被代提交 →
+                精确路径暂存、提交前核对；qiankun/shell 下分组选择器兼容 → 真实浏览器验证 + 变异验证；受保护动作被误做成批量
+                → 规格约束 + UI 冒烟负向断言；回滚只需恢复深链桥渲染并移除分组映射。Spec Patch：无，本轮不修改两份 delta
+                spec 的任何 requirement/scenario。测试策略：tsc --noEmit、改动文件 eslint
+                零警告、claim-app 全量单测、契约联调 40/40、UI 冒烟、单导航探针、文档族门禁
+                19/19、变异验证对照记录，全部实际运行并保存退出码。待确认：方案 A 及 D1–D5 取舍、无 Spec Patch、「本
+                change 不撤菜单」边界；确认后沿用 design.md 为唯一 Design Doc 并进入 Build。
+              requirementsEvidence:
+                contentHash: 7ab6808ceaed06956e715e89a4c913d74e9fb3a2ede3bc22e596f90471526295
+                ref: openspec/changes/synapclaim-case360-object-cohesion
+              sourceEvidence:
+                contentHash: 6abc7905052ec9744e09c32c55aef3678d3cb59c1fba9359a66841706451551b
+                ref: openspec/changes/synapclaim-case360-object-cohesion
+      - handoffContext: openspec/changes/synapclaim-case360-object-cohesion/.comet/handoff/design-context.json
+        handoffHash: 8f1b717594ff70fef141b8ee452db18edd3501f95ea670a2b68a7e95860227f5
+        proposal: 候选方案 A（推荐）：对象内聚 + 常驻可见分组，不改 IAM。① 把 6 个使用 CaseIdBar/useClaimIdParam
+          的单案作业页拆成「无壳内容组件 + 页面壳」，内嵌为案件 360 的 Tab，claimId 由 ?claimId=&tab=
+          唯一真源提供，overview 保留概览与 AI 结论卡，trace（核赔工作台，队列型）保留深链桥，旧作业路由与「回案件
+          360」继续可达且不出现双标题双 ID 输入；② shell 侧栏按 hash
+          常量加「作业/查询/配置/治理」常驻可见分组标题，子项默认展开且仍可直接点击，未知 hash
+          落「未分组」并保留可点性，菜单名/顺序/permission/icon/hash 一字不改；③ 单导航探针与 UI
+          冒烟同批新增断言（分组常驻、15 项可见可点、Tab 内无需再输 ID、深链分享/回退、18 位雪花 ID 无截断、非
+          AI_ASSISTED 无裁决动作），计数用精确值并做三种缺陷写法的互补变异验证；④ 清理设计提案中与 v2.0 改判矛盾的旧表述、补
+          NN/g/Fiori/Guidewire 依据强度、同步速览 HTML。关键取舍：依据 NN/g 隐藏导航实测（可见 48–50% vs
+          隐藏 27%、时间 +39%）与 Fiori/Guidewire 对象内聚，否决「折叠四空间」「只做分组」「直接改 IAM 菜单树撤 6
+          条」三案；本 change 不撤任何菜单条目，撤菜单待真实使用率可观测后另立 change 与 IAM
+          迁移、探针同批改；不新增角色表、不改后端契约、不做数据迁移、不做真人卡片分类。风险与缓解：6 页抽组件可能改变既有页面行为 →
+          页面壳复用同一组件与取数入口、逐页单测 + 探针逐项点击；并行会话在途文件可能被代提交 →
+          精确路径暂存、提交前核对；qiankun/shell 下分组选择器兼容 → 真实浏览器验证 + 变异验证；受保护动作被误做成批量 →
+          规格约束 + UI 冒烟负向断言；回滚只需恢复深链桥渲染并移除分组映射。Spec Patch：无，本轮不修改两份 delta spec
+          的任何 requirement/scenario。测试策略：tsc --noEmit、改动文件 eslint 零警告、claim-app
+          全量单测、契约联调 40/40、UI 冒烟、单导航探针、文档族门禁 19/19、变异验证对照记录，全部实际运行并保存退出码。待确认：方案 A
+          及 D1–D5 取舍、无 Spec Patch、「本 change 不撤菜单」边界；确认后沿用 design.md 为唯一 Design
+          Doc 并进入 Build。
+        requirementsEvidence:
+          contentHash: 7ab6808ceaed06956e715e89a4c913d74e9fb3a2ede3bc22e596f90471526295
+          ref: openspec/changes/synapclaim-case360-object-cohesion
+        sourceEvidence:
+          contentHash: 6abc7905052ec9744e09c32c55aef3678d3cb59c1fba9359a66841706451551b
+          ref: openspec/changes/synapclaim-case360-object-cohesion
+      - designDoc: openspec/changes/synapclaim-case360-object-cohesion/design.md
+      - contentHash: 8810d4373c04563c1c3531e5d4d5385f77ee24d64ba0f7097eb7928ce67975d8
+        ref: openspec/changes/synapclaim-case360-object-cohesion/design.md
+      - boundBranch: dev
+        buildMode: autonomous
+        directOverride: false
+        isolation: current
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 8810d4373c04563c1c3531e5d4d5385f77ee24d64ba0f7097eb7928ce67975d8
+          ref: openspec/changes/synapclaim-case360-object-cohesion/design.md
+        plan: docs/superpowers/plans/2026-11-13-synapclaim-case360-object-cohesion.md
+        planEvidence:
+          contentHash: 0dc2c929017747cc246522e9078cbc51797a53fe3a327285f6cd2d8e399d0763
+          ref: docs/superpowers/plans/2026-11-13-synapclaim-case360-object-cohesion.md
+        taskRevision: 7bae927777822cce4422ed2824b3f90819b280c7542330f488a2079ab261f9e3
+      - contentHash: 0dc2c929017747cc246522e9078cbc51797a53fe3a327285f6cd2d8e399d0763
+        ref: docs/superpowers/plans/2026-11-13-synapclaim-case360-object-cohesion.md
+      - event: build-complete
+      - argv:
+          - bash
+          - scripts/verify-synapclaim-case360.sh
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+        cwd: .
+        environment: a6d870d0fd27fe2403524f707c399152aee050b93398954c0fae96991f065de9
+        exitCode: 0
+        inputAfter: ce8029f549ddef2e35e770d0331d94341aef8faa812547585cf7e13c623f3bd3
+        inputBefore: ce8029f549ddef2e35e770d0331d94341aef8faa812547585cf7e13c623f3bd3
+        manifestHash: 500582fa4ebeed9a1d7c878c917c0f08eaf5aefc760129d5d3a8345d9ea88e0c
+        manifestRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/20fdf0e5-61c9-4b89-a603-6dcfc7467c43.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/eba682ba-d6d0-4df6-8422-1cfa3fb597c4.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+        ref: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/eba682ba-d6d0-4df6-8422-1cfa3fb597c4.log
+      - contentHash: b63d18392a8976dda53cd42bd2570294bc1f931522ceafd635ede5694f9864b5
+        ref: docs/superpowers/reports/verification-report.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/verification-report.md
+      - argv:
+          - bash
+          - scripts/verify-synapclaim-case360.sh
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+        cwd: .
+        deliveryInputs:
+          VERIFICATION-REPORT-synapclaim-case360-object-cohesion.md: git:949c424e45ff5d0f0ce1b6b5e07f879466c2e74e
+          bone-frontend/apps/bone-claim-app/src/cases/caseSections.test.tsx: git:40e42141c58bf1df2736053df73ffa638976585e
+          bone-frontend/apps/bone-claim-app/src/cases/caseSections.tsx: git:f0bc6a3f50e46ac460c0ca0ee7bd3950bfcd12e0
+          bone-frontend/apps/bone-claim-app/src/pages/AdjustmentAttributionPage.tsx: git:8470075e706c7e6b91c5b6968a25c20a952bea86
+          bone-frontend/apps/bone-claim-app/src/pages/AppealPage.tsx: git:616ccb339eb527d7044ebba1fe9a506529307b8b
+          bone-frontend/apps/bone-claim-app/src/pages/Case360Page.tsx: git:260bc37cd694836eda39ecf9c007ae215833c98c
+          bone-frontend/apps/bone-claim-app/src/pages/EvidenceUploadPage.tsx: git:c9afa8573da4af2dd6117a71b31ad79de718cd10
+          bone-frontend/apps/bone-claim-app/src/pages/FundWorkbenchPage.tsx: git:e26c720fbedd15f63d4d4cc3f906c90d34f49b11
+          bone-frontend/apps/bone-claim-app/src/pages/InspectionWorkbenchPage.tsx: git:1feb8dfc7c1cdc7ecd9170f78fe9065f737a54be
+          bone-frontend/apps/bone-claim-app/src/pages/InsurerManagementPage.tsx: git:a56f82a35cf19f2e7321a3721c49329cdf30e1b0
+          bone-frontend/apps/bone-claim-app/src/pages/MappingPage.tsx: git:328c1916fb76291fab95368d1897b40e35420825
+          bone-frontend/apps/bone-claim-app/src/pages/SuspendPage.tsx: git:083e1672a69583f43c2ee97feda29a1d0bb4ea36
+          bone-frontend/apps/bone-claim-app/src/workbench/workbench.test.ts: git:1cffc60bf881be2f1a36c5ee67c46db2fc3b2721
+          bone-frontend/apps/bone-shell/src/App.css: git:8269de9f0ae6086e746b3cbe8a524529d871dade
+          bone-frontend/apps/bone-shell/src/App.tsx: git:bd096147df2243b0404ddac484e17683421b6df7
+          bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:c74cc8f4526ed2b82bfd321da4a20ec0e2b82703
+          bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:9795c1f4d20fd7c58c7b603d0a41ca34b5595795
+          bone-frontend/packages/core/event-bus/package.json: git:dc941723302b4372b70d3d5d68bd0041d5559141
+          bone-frontend/packages/core/workflow-dsl/package.json: git:973940dd7d64019b80af7cf80202b44d514f71fa
+          bone-frontend/packages/ui-schema/package.json: git:0a8fe4f5c78c5041ba15f06eb9b2207ddb57f00c
+          bone-frontend/packages/ui/design-system/src/authority/AuthButton.tsx: git:a0743ce1112a72c3eab2c111239df699bb00fc96
+          bone-frontend/packages/ui/package.json: git:bb9dd7788ed9cc938d42b126445e89f26717c5c8
+          bone-frontend/packages/ui/tsconfig.tsbuildinfo: git:ee0a2687ef6766172f6f640e3cdfbc935009c583
+          doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案-速览.html: git:8bd664d8860c50c963ed9ea8afc5b48ddf3fd5a9
+          doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案.md: git:04065671d77e956bc323a39df5f44dfac413628b
+          scripts/README.md: git:a9dc60b3a88d3998fcab68246522307b5699e0a0
+          scripts/e2e/README.md: git:8bfdcc4d61fd6d52f1a9785d0dfe125cd44725ae
+          scripts/e2e/e2e_lib/scenarios.py: git:3e81322691d4784f4d905400ba046f5763e9b703
+          scripts/e2e/impact-map.json: git:a1a0b4de922a986fbca53d3486e7b844989a2aa4
+          scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+          scripts/e2e/run.sh: git:25786607a8a80d1fd7f5d26cc29dcc3c8424c84f
+          scripts/e2e/synap-claim-workbench-ui-smoke.mjs: git:a3de5237f3c2c823b538447be65795e33e559f9b
+          scripts/e2e/ui/claim-single-nav-probe.mjs: git:4ae105b519b4861e3309481ed5018ddf1b19c948
+          scripts/tests/test_e2e_impact.py: git:af1349760264f8cd522324b17753de5885f85817
+          scripts/verify-synapclaim-case360.sh: git:7c1ebfbe2cb40fe11f0f4f66dfd9fb38ee2fa009
+        environment: a6d870d0fd27fe2403524f707c399152aee050b93398954c0fae96991f065de9
+        exitCode: 0
+        inputAfter: 697f03ec89ba56811f3de894f6c7aa4eb9ce88ea6ad4761cff6faf98a431160e
+        inputBefore: 697f03ec89ba56811f3de894f6c7aa4eb9ce88ea6ad4761cff6faf98a431160e
+        manifestHash: 06e32e72fc2a481161dee522acff58d3f2b147b0b0f8e6ff86c351fc828a1da4
+        manifestRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/c6efd03f-7394-48a3-926f-f42319a4576a.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/7c51700e-b478-4e07-bc4a-4545b46f9744.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+        ref: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/7c51700e-b478-4e07-bc4a-4545b46f9744.log
+      - argv:
+          - bash
+          - scripts/verify-synapclaim-case360.sh
+        changedDuringExecution: []
+        checkEpoch: 4
+        contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+        cwd: .
+        deliveryInputs:
+          bone-frontend/apps/bone-claim-app/src/cases/caseSections.test.tsx: git:40e42141c58bf1df2736053df73ffa638976585e
+          bone-frontend/apps/bone-claim-app/src/cases/caseSections.tsx: git:f0bc6a3f50e46ac460c0ca0ee7bd3950bfcd12e0
+          bone-frontend/apps/bone-claim-app/src/pages/AdjustmentAttributionPage.tsx: git:8470075e706c7e6b91c5b6968a25c20a952bea86
+          bone-frontend/apps/bone-claim-app/src/pages/AppealPage.tsx: git:616ccb339eb527d7044ebba1fe9a506529307b8b
+          bone-frontend/apps/bone-claim-app/src/pages/Case360Page.tsx: git:260bc37cd694836eda39ecf9c007ae215833c98c
+          bone-frontend/apps/bone-claim-app/src/pages/EvidenceUploadPage.tsx: git:c9afa8573da4af2dd6117a71b31ad79de718cd10
+          bone-frontend/apps/bone-claim-app/src/pages/FundWorkbenchPage.tsx: git:e26c720fbedd15f63d4d4cc3f906c90d34f49b11
+          bone-frontend/apps/bone-claim-app/src/pages/InspectionWorkbenchPage.tsx: git:1feb8dfc7c1cdc7ecd9170f78fe9065f737a54be
+          bone-frontend/apps/bone-claim-app/src/pages/InsurerManagementPage.tsx: git:a56f82a35cf19f2e7321a3721c49329cdf30e1b0
+          bone-frontend/apps/bone-claim-app/src/pages/MappingPage.tsx: git:328c1916fb76291fab95368d1897b40e35420825
+          bone-frontend/apps/bone-claim-app/src/pages/SuspendPage.tsx: git:083e1672a69583f43c2ee97feda29a1d0bb4ea36
+          bone-frontend/apps/bone-claim-app/src/workbench/workbench.test.ts: git:1cffc60bf881be2f1a36c5ee67c46db2fc3b2721
+          bone-frontend/apps/bone-shell/src/App.css: git:8269de9f0ae6086e746b3cbe8a524529d871dade
+          bone-frontend/apps/bone-shell/src/App.tsx: git:bd096147df2243b0404ddac484e17683421b6df7
+          bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:c74cc8f4526ed2b82bfd321da4a20ec0e2b82703
+          bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:9795c1f4d20fd7c58c7b603d0a41ca34b5595795
+          bone-frontend/packages/core/event-bus/package.json: git:dc941723302b4372b70d3d5d68bd0041d5559141
+          bone-frontend/packages/core/workflow-dsl/package.json: git:973940dd7d64019b80af7cf80202b44d514f71fa
+          bone-frontend/packages/ui-schema/package.json: git:0a8fe4f5c78c5041ba15f06eb9b2207ddb57f00c
+          bone-frontend/packages/ui/design-system/src/authority/AuthButton.tsx: git:a0743ce1112a72c3eab2c111239df699bb00fc96
+          bone-frontend/packages/ui/package.json: git:bb9dd7788ed9cc938d42b126445e89f26717c5c8
+          bone-frontend/packages/ui/tsconfig.tsbuildinfo: git:060dd75fda702f937df32d8bac2d5d6ca078b451
+          doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案-速览.html: git:8bd664d8860c50c963ed9ea8afc5b48ddf3fd5a9
+          doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案.md: git:04065671d77e956bc323a39df5f44dfac413628b
+          scripts/README.md: git:a9dc60b3a88d3998fcab68246522307b5699e0a0
+          scripts/e2e/README.md: git:8bfdcc4d61fd6d52f1a9785d0dfe125cd44725ae
+          scripts/e2e/e2e_lib/scenarios.py: git:3e81322691d4784f4d905400ba046f5763e9b703
+          scripts/e2e/impact-map.json: git:a1a0b4de922a986fbca53d3486e7b844989a2aa4
+          scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+          scripts/e2e/run.sh: git:25786607a8a80d1fd7f5d26cc29dcc3c8424c84f
+          scripts/e2e/synap-claim-workbench-ui-smoke.mjs: git:a3de5237f3c2c823b538447be65795e33e559f9b
+          scripts/e2e/ui/claim-single-nav-probe.mjs: git:4ae105b519b4861e3309481ed5018ddf1b19c948
+          scripts/tests/test_e2e_impact.py: git:af1349760264f8cd522324b17753de5885f85817
+          scripts/verify-synapclaim-case360.sh: git:7c1ebfbe2cb40fe11f0f4f66dfd9fb38ee2fa009
+        environment: a6d870d0fd27fe2403524f707c399152aee050b93398954c0fae96991f065de9
+        exitCode: 0
+        inputAfter: 1048edf714165e1e5c53ca615d0d84dd7f81ad323aa6d3de9d556015aa51a267
+        inputBefore: 1048edf714165e1e5c53ca615d0d84dd7f81ad323aa6d3de9d556015aa51a267
+        manifestHash: 5ed2d6b134b83ce8de68c9a25b9b84a976b07f53ffc8278ad61088724e2416d7
+        manifestRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/57d3f4e3-7051-4fc8-bfb3-01358ac6e945.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/4e4f0bd5-8fb2-4be9-940a-c0c45b100348.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+        ref: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/4e4f0bd5-8fb2-4be9-940a-c0c45b100348.log
+      - choice: reverify
+        proposal:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs:
+            full.archive.prepare:
+              summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：把 6 个单案作业页抽为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+                ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+                常量新增作业/查询/配置/治理四组常驻分组标题，未知 hash 落未分组，菜单名/顺序/permission/icon/hash
+                一字不改（fail-safe 统一 isClaimLeaf 谓词）；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移
+                0124）；新增三套 e2e 探针（单导航/UI 冒烟/反馈）。验证：真实执行
+                scripts/verify-synapclaim-case360.sh（tsc + 分组映射单测 + 内容组件与 URL
+                契约单测 + 文档族 19/19）exit 0 ALL CHECKS PASSED，guard verify
+                绑定真实验收收据（receipt 4e4f0bd5，inputBefore==inputAfter 稳定快照）。
+              targetBranch: dev
+      - summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：把 6 个单案作业页抽为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+          ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+          常量新增作业/查询/配置/治理四组常驻分组标题，未知 hash 落未分组，菜单名/顺序/permission/icon/hash
+          一字不改（fail-safe 统一 isClaimLeaf 谓词）；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移
+          0124）；新增三套 e2e 探针（单导航/UI 冒烟/反馈）。验证：真实执行
+          scripts/verify-synapclaim-case360.sh（tsc + 分组映射单测 + 内容组件与 URL 契约单测 +
+          文档族 19/19）exit 0 ALL CHECKS PASSED，guard verify 绑定真实验收收据（receipt
+          4e4f0bd5，inputBefore==inputAfter 稳定快照）。
+        targetBranch: dev
+      - argv:
+          - bash
+          - scripts/verify-synapclaim-case360.sh
+        changedDuringExecution: []
+        checkEpoch: 6
+        contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+        cwd: .
+        deliveryInputs:
+          bone-frontend/apps/bone-claim-app/src/cases/caseSections.test.tsx: git:40e42141c58bf1df2736053df73ffa638976585e
+          bone-frontend/apps/bone-claim-app/src/cases/caseSections.tsx: git:f0bc6a3f50e46ac460c0ca0ee7bd3950bfcd12e0
+          bone-frontend/apps/bone-claim-app/src/pages/AdjustmentAttributionPage.tsx: git:8470075e706c7e6b91c5b6968a25c20a952bea86
+          bone-frontend/apps/bone-claim-app/src/pages/AppealPage.tsx: git:616ccb339eb527d7044ebba1fe9a506529307b8b
+          bone-frontend/apps/bone-claim-app/src/pages/Case360Page.tsx: git:260bc37cd694836eda39ecf9c007ae215833c98c
+          bone-frontend/apps/bone-claim-app/src/pages/EvidenceUploadPage.tsx: git:c9afa8573da4af2dd6117a71b31ad79de718cd10
+          bone-frontend/apps/bone-claim-app/src/pages/FundWorkbenchPage.tsx: git:e26c720fbedd15f63d4d4cc3f906c90d34f49b11
+          bone-frontend/apps/bone-claim-app/src/pages/InspectionWorkbenchPage.tsx: git:1feb8dfc7c1cdc7ecd9170f78fe9065f737a54be
+          bone-frontend/apps/bone-claim-app/src/pages/InsurerManagementPage.tsx: git:a56f82a35cf19f2e7321a3721c49329cdf30e1b0
+          bone-frontend/apps/bone-claim-app/src/pages/MappingPage.tsx: git:328c1916fb76291fab95368d1897b40e35420825
+          bone-frontend/apps/bone-claim-app/src/pages/SuspendPage.tsx: git:083e1672a69583f43c2ee97feda29a1d0bb4ea36
+          bone-frontend/apps/bone-claim-app/src/workbench/workbench.test.ts: git:1cffc60bf881be2f1a36c5ee67c46db2fc3b2721
+          bone-frontend/apps/bone-shell/src/App.css: git:8269de9f0ae6086e746b3cbe8a524529d871dade
+          bone-frontend/apps/bone-shell/src/App.tsx: git:bd096147df2243b0404ddac484e17683421b6df7
+          bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:c74cc8f4526ed2b82bfd321da4a20ec0e2b82703
+          bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:9795c1f4d20fd7c58c7b603d0a41ca34b5595795
+          bone-frontend/packages/core/event-bus/package.json: git:dc941723302b4372b70d3d5d68bd0041d5559141
+          bone-frontend/packages/core/workflow-dsl/package.json: git:973940dd7d64019b80af7cf80202b44d514f71fa
+          bone-frontend/packages/ui-schema/package.json: git:0a8fe4f5c78c5041ba15f06eb9b2207ddb57f00c
+          bone-frontend/packages/ui/design-system/src/authority/AuthButton.tsx: git:a0743ce1112a72c3eab2c111239df699bb00fc96
+          bone-frontend/packages/ui/package.json: git:bb9dd7788ed9cc938d42b126445e89f26717c5c8
+          doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案-速览.html: git:8bd664d8860c50c963ed9ea8afc5b48ddf3fd5a9
+          doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案.md: git:04065671d77e956bc323a39df5f44dfac413628b
+          scripts/e2e/e2e_lib/scenarios.py: git:3e81322691d4784f4d905400ba046f5763e9b703
+          scripts/e2e/impact-map.json: git:a1a0b4de922a986fbca53d3486e7b844989a2aa4
+          scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+          scripts/e2e/run.sh: git:25786607a8a80d1fd7f5d26cc29dcc3c8424c84f
+          scripts/e2e/synap-claim-workbench-ui-smoke.mjs: git:a3de5237f3c2c823b538447be65795e33e559f9b
+          scripts/e2e/ui/claim-single-nav-probe.mjs: git:4ae105b519b4861e3309481ed5018ddf1b19c948
+          scripts/tests/test_e2e_impact.py: git:af1349760264f8cd522324b17753de5885f85817
+          scripts/verify-synapclaim-case360.sh: git:7c1ebfbe2cb40fe11f0f4f66dfd9fb38ee2fa009
+        environment: a3b2d589a7ca67a46942fded1564b84c1e9b21263fb806dd7dac6dd92606b32c
+        exitCode: 0
+        inputAfter: 5d41df017045995085c450ba2751465f0a60661f16a41a0949a11fd2dc480eec
+        inputBefore: 5d41df017045995085c450ba2751465f0a60661f16a41a0949a11fd2dc480eec
+        manifestHash: 472f833b4c0661b53e488ad26f0d32f8c062b079ce7a71a21a2058748604595c
+        manifestRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/010ee152-18f1-4c34-ae33-5d68ee31fb2b.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/2657463b-7058-40ca-bc70-cfaca242ee35.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+        ref: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/2657463b-7058-40ca-bc70-cfaca242ee35.log
+      - choice: local
+        proposal:
+          input:
+            change: synapclaim-case360-object-cohesion
+            changeDir: openspec/changes/synapclaim-case360-object-cohesion
+            workspaceBaseline:
+              ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+          outputs:
+            full.archive.prepare:
+              summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：6 个单案作业页抽为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+                ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+                常量新增作业/查询/配置/治理四组常驻分组标题，未知 hash 落未分组，菜单名/顺序/permission/icon/hash
+                一字不改（fail-safe 统一 isClaimLeaf 谓词）；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移
+                0124）；新增三套 e2e 探针（单导航/UI 冒烟/反馈）。验证：真实执行
+                scripts/verify-synapclaim-case360.sh（tsc + 分组映射单测 + 内容组件与 URL
+                契约单测 + 文档族 19/19）exit 0 ALL CHECKS PASSED，guard verify
+                绑定真实验收收据（inputBefore==inputAfter 稳定快照，build 缓存 tsbuildinfo 已在本地
+                check-policy 中声明为 output 排除）。
+              targetBranch: dev
+      - summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：6 个单案作业页抽为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+          ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+          常量新增作业/查询/配置/治理四组常驻分组标题，未知 hash 落未分组，菜单名/顺序/permission/icon/hash
+          一字不改（fail-safe 统一 isClaimLeaf 谓词）；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移
+          0124）；新增三套 e2e 探针（单导航/UI 冒烟/反馈）。验证：真实执行
+          scripts/verify-synapclaim-case360.sh（tsc + 分组映射单测 + 内容组件与 URL 契约单测 +
+          文档族 19/19）exit 0 ALL CHECKS PASSED，guard verify
+          绑定真实验收收据（inputBefore==inputAfter 稳定快照，build 缓存 tsbuildinfo 已在本地
+          check-policy 中声明为 output 排除）。
+        targetBranch: dev
+      - baseCommit: 7fe29e96a1d3db2a2741821709e425647ddcfe54
+        deliveryAction: local
+        targetBranch: dev
+        verifiedBranch: dev
+      - sequence: 9
+        value:
+          boundBranch: dev
+          buildMode: autonomous
+          directOverride: false
+          isolation: current
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-case360-object-cohesion
+              changeDir: openspec/changes/synapclaim-case360-object-cohesion
+              workspaceBaseline:
+                ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: autonomous
+                directOverride: false
+                isolation: current
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-case360-object-cohesion
+              changeDir: openspec/changes/synapclaim-case360-object-cohesion
+              workspaceBaseline:
+                ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/synapclaim-case360-object-cohesion/.comet/handoff/design-context.json
+                handoffHash: 8f1b717594ff70fef141b8ee452db18edd3501f95ea670a2b68a7e95860227f5
+                proposal: 候选方案 A（推荐）：对象内聚 + 常驻可见分组，不改 IAM。① 把 6 个使用 CaseIdBar/useClaimIdParam
+                  的单案作业页拆成「无壳内容组件 + 页面壳」，内嵌为案件 360 的 Tab，claimId 由
+                  ?claimId=&tab= 唯一真源提供，overview 保留概览与 AI
+                  结论卡，trace（核赔工作台，队列型）保留深链桥，旧作业路由与「回案件 360」继续可达且不出现双标题双 ID 输入；②
+                  shell 侧栏按 hash 常量加「作业/查询/配置/治理」常驻可见分组标题，子项默认展开且仍可直接点击，未知 hash
+                  落「未分组」并保留可点性，菜单名/顺序/permission/icon/hash 一字不改；③ 单导航探针与 UI
+                  冒烟同批新增断言（分组常驻、15 项可见可点、Tab 内无需再输 ID、深链分享/回退、18 位雪花 ID 无截断、非
+                  AI_ASSISTED 无裁决动作），计数用精确值并做三种缺陷写法的互补变异验证；④ 清理设计提案中与 v2.0
+                  改判矛盾的旧表述、补 NN/g/Fiori/Guidewire 依据强度、同步速览 HTML。关键取舍：依据 NN/g
+                  隐藏导航实测（可见 48–50% vs 隐藏 27%、时间 +39%）与 Fiori/Guidewire
+                  对象内聚，否决「折叠四空间」「只做分组」「直接改 IAM 菜单树撤 6 条」三案；本 change
+                  不撤任何菜单条目，撤菜单待真实使用率可观测后另立 change 与 IAM
+                  迁移、探针同批改；不新增角色表、不改后端契约、不做数据迁移、不做真人卡片分类。风险与缓解：6 页抽组件可能改变既有页面行为
+                  → 页面壳复用同一组件与取数入口、逐页单测 + 探针逐项点击；并行会话在途文件可能被代提交 →
+                  精确路径暂存、提交前核对；qiankun/shell 下分组选择器兼容 → 真实浏览器验证 +
+                  变异验证；受保护动作被误做成批量 → 规格约束 + UI 冒烟负向断言；回滚只需恢复深链桥渲染并移除分组映射。Spec
+                  Patch：无，本轮不修改两份 delta spec 的任何 requirement/scenario。测试策略：tsc
+                  --noEmit、改动文件 eslint 零警告、claim-app 全量单测、契约联调 40/40、UI
+                  冒烟、单导航探针、文档族门禁 19/19、变异验证对照记录，全部实际运行并保存退出码。待确认：方案 A 及 D1–D5
+                  取舍、无 Spec Patch、「本 change 不撤菜单」边界；确认后沿用 design.md 为唯一 Design
+                  Doc 并进入 Build。
+                requirementsEvidence:
+                  contentHash: 7ab6808ceaed06956e715e89a4c913d74e9fb3a2ede3bc22e596f90471526295
+                  ref: openspec/changes/synapclaim-case360-object-cohesion
+                sourceEvidence:
+                  contentHash: 6abc7905052ec9744e09c32c55aef3678d3cb59c1fba9359a66841706451551b
+                  ref: openspec/changes/synapclaim-case360-object-cohesion
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/synapclaim-case360-object-cohesion/design.md
+      - sequence: 8
+        value:
+          contentHash: 8810d4373c04563c1c3531e5d4d5385f77ee24d64ba0f7097eb7928ce67975d8
+          ref: openspec/changes/synapclaim-case360-object-cohesion/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/synapclaim-case360-object-cohesion/.comet/handoff/design-context.json
+          handoffHash: 8f1b717594ff70fef141b8ee452db18edd3501f95ea670a2b68a7e95860227f5
+          proposal: 候选方案 A（推荐）：对象内聚 + 常驻可见分组，不改 IAM。① 把 6 个使用 CaseIdBar/useClaimIdParam
+            的单案作业页拆成「无壳内容组件 + 页面壳」，内嵌为案件 360 的 Tab，claimId 由 ?claimId=&tab=
+            唯一真源提供，overview 保留概览与 AI 结论卡，trace（核赔工作台，队列型）保留深链桥，旧作业路由与「回案件
+            360」继续可达且不出现双标题双 ID 输入；② shell 侧栏按 hash
+            常量加「作业/查询/配置/治理」常驻可见分组标题，子项默认展开且仍可直接点击，未知 hash
+            落「未分组」并保留可点性，菜单名/顺序/permission/icon/hash 一字不改；③ 单导航探针与 UI
+            冒烟同批新增断言（分组常驻、15 项可见可点、Tab 内无需再输 ID、深链分享/回退、18 位雪花 ID 无截断、非
+            AI_ASSISTED 无裁决动作），计数用精确值并做三种缺陷写法的互补变异验证；④ 清理设计提案中与 v2.0 改判矛盾的旧表述、补
+            NN/g/Fiori/Guidewire 依据强度、同步速览 HTML。关键取舍：依据 NN/g 隐藏导航实测（可见 48–50% vs
+            隐藏 27%、时间 +39%）与 Fiori/Guidewire 对象内聚，否决「折叠四空间」「只做分组」「直接改 IAM 菜单树撤 6
+            条」三案；本 change 不撤任何菜单条目，撤菜单待真实使用率可观测后另立 change 与 IAM
+            迁移、探针同批改；不新增角色表、不改后端契约、不做数据迁移、不做真人卡片分类。风险与缓解：6 页抽组件可能改变既有页面行为 →
+            页面壳复用同一组件与取数入口、逐页单测 + 探针逐项点击；并行会话在途文件可能被代提交 →
+            精确路径暂存、提交前核对；qiankun/shell 下分组选择器兼容 → 真实浏览器验证 + 变异验证；受保护动作被误做成批量 →
+            规格约束 + UI 冒烟负向断言；回滚只需恢复深链桥渲染并移除分组映射。Spec Patch：无，本轮不修改两份 delta spec
+            的任何 requirement/scenario。测试策略：tsc --noEmit、改动文件 eslint 零警告、claim-app
+            全量单测、契约联调 40/40、UI 冒烟、单导航探针、文档族门禁 19/19、变异验证对照记录，全部实际运行并保存退出码。待确认：方案
+            A 及 D1–D5 取舍、无 Spec Patch、「本 change 不撤菜单」边界；确认后沿用 design.md 为唯一
+            Design Doc 并进入 Build。
+          requirementsEvidence:
+            contentHash: 7ab6808ceaed06956e715e89a4c913d74e9fb3a2ede3bc22e596f90471526295
+            ref: openspec/changes/synapclaim-case360-object-cohesion
+          sourceEvidence:
+            contentHash: 6abc7905052ec9744e09c32c55aef3678d3cb59c1fba9359a66841706451551b
+            ref: openspec/changes/synapclaim-case360-object-cohesion
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-case360-object-cohesion
+              changeDir: openspec/changes/synapclaim-case360-object-cohesion
+              workspaceBaseline:
+                ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 52c02fc3230c349ba045a4f70ecf49aacb343724e9cf0c21107f6b96aadd9004
+                ref: openspec/changes/synapclaim-case360-object-cohesion
+      - sequence: 2
+        value:
+          contentHash: 52c02fc3230c349ba045a4f70ecf49aacb343724e9cf0c21107f6b96aadd9004
+          ref: openspec/changes/synapclaim-case360-object-cohesion
+      - sequence: 4
+        value:
+          contentHash: 52c02fc3230c349ba045a4f70ecf49aacb343724e9cf0c21107f6b96aadd9004
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 8810d4373c04563c1c3531e5d4d5385f77ee24d64ba0f7097eb7928ce67975d8
+            ref: openspec/changes/synapclaim-case360-object-cohesion/design.md
+          plan: docs/superpowers/plans/2026-11-13-synapclaim-case360-object-cohesion.md
+          planEvidence:
+            contentHash: 0dc2c929017747cc246522e9078cbc51797a53fe3a327285f6cd2d8e399d0763
+            ref: docs/superpowers/plans/2026-11-13-synapclaim-case360-object-cohesion.md
+          taskRevision: 7bae927777822cce4422ed2824b3f90819b280c7542330f488a2079ab261f9e3
+      - sequence: 12
+        value:
+          contentHash: 0dc2c929017747cc246522e9078cbc51797a53fe3a327285f6cd2d8e399d0763
+          ref: docs/superpowers/plans/2026-11-13-synapclaim-case360-object-cohesion.md
+      - sequence: 13
+        value:
+          event: build-complete
+      - sequence: 14
+        value:
+          argv:
+            - bash
+            - scripts/verify-synapclaim-case360.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+          cwd: .
+          environment: a6d870d0fd27fe2403524f707c399152aee050b93398954c0fae96991f065de9
+          exitCode: 0
+          inputAfter: ce8029f549ddef2e35e770d0331d94341aef8faa812547585cf7e13c623f3bd3
+          inputBefore: ce8029f549ddef2e35e770d0331d94341aef8faa812547585cf7e13c623f3bd3
+          manifestHash: 500582fa4ebeed9a1d7c878c917c0f08eaf5aefc760129d5d3a8345d9ea88e0c
+          manifestRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/20fdf0e5-61c9-4b89-a603-6dcfc7467c43.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/eba682ba-d6d0-4df6-8422-1cfa3fb597c4.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 15
+        value:
+          contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+          ref: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/eba682ba-d6d0-4df6-8422-1cfa3fb597c4.log
+      - sequence: 17
+        value:
+          contentHash: b63d18392a8976dda53cd42bd2570294bc1f931522ceafd635ede5694f9864b5
+          ref: docs/superpowers/reports/verification-report.md
+      - sequence: 16
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/verification-report.md
+      - sequence: 18
+        value:
+          argv:
+            - bash
+            - scripts/verify-synapclaim-case360.sh
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+          cwd: .
+          deliveryInputs:
+            VERIFICATION-REPORT-synapclaim-case360-object-cohesion.md: git:949c424e45ff5d0f0ce1b6b5e07f879466c2e74e
+            bone-frontend/apps/bone-claim-app/src/cases/caseSections.test.tsx: git:40e42141c58bf1df2736053df73ffa638976585e
+            bone-frontend/apps/bone-claim-app/src/cases/caseSections.tsx: git:f0bc6a3f50e46ac460c0ca0ee7bd3950bfcd12e0
+            bone-frontend/apps/bone-claim-app/src/pages/AdjustmentAttributionPage.tsx: git:8470075e706c7e6b91c5b6968a25c20a952bea86
+            bone-frontend/apps/bone-claim-app/src/pages/AppealPage.tsx: git:616ccb339eb527d7044ebba1fe9a506529307b8b
+            bone-frontend/apps/bone-claim-app/src/pages/Case360Page.tsx: git:260bc37cd694836eda39ecf9c007ae215833c98c
+            bone-frontend/apps/bone-claim-app/src/pages/EvidenceUploadPage.tsx: git:c9afa8573da4af2dd6117a71b31ad79de718cd10
+            bone-frontend/apps/bone-claim-app/src/pages/FundWorkbenchPage.tsx: git:e26c720fbedd15f63d4d4cc3f906c90d34f49b11
+            bone-frontend/apps/bone-claim-app/src/pages/InspectionWorkbenchPage.tsx: git:1feb8dfc7c1cdc7ecd9170f78fe9065f737a54be
+            bone-frontend/apps/bone-claim-app/src/pages/InsurerManagementPage.tsx: git:a56f82a35cf19f2e7321a3721c49329cdf30e1b0
+            bone-frontend/apps/bone-claim-app/src/pages/MappingPage.tsx: git:328c1916fb76291fab95368d1897b40e35420825
+            bone-frontend/apps/bone-claim-app/src/pages/SuspendPage.tsx: git:083e1672a69583f43c2ee97feda29a1d0bb4ea36
+            bone-frontend/apps/bone-claim-app/src/workbench/workbench.test.ts: git:1cffc60bf881be2f1a36c5ee67c46db2fc3b2721
+            bone-frontend/apps/bone-shell/src/App.css: git:8269de9f0ae6086e746b3cbe8a524529d871dade
+            bone-frontend/apps/bone-shell/src/App.tsx: git:bd096147df2243b0404ddac484e17683421b6df7
+            bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:c74cc8f4526ed2b82bfd321da4a20ec0e2b82703
+            bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:9795c1f4d20fd7c58c7b603d0a41ca34b5595795
+            bone-frontend/packages/core/event-bus/package.json: git:dc941723302b4372b70d3d5d68bd0041d5559141
+            bone-frontend/packages/core/workflow-dsl/package.json: git:973940dd7d64019b80af7cf80202b44d514f71fa
+            bone-frontend/packages/ui-schema/package.json: git:0a8fe4f5c78c5041ba15f06eb9b2207ddb57f00c
+            bone-frontend/packages/ui/design-system/src/authority/AuthButton.tsx: git:a0743ce1112a72c3eab2c111239df699bb00fc96
+            bone-frontend/packages/ui/package.json: git:bb9dd7788ed9cc938d42b126445e89f26717c5c8
+            bone-frontend/packages/ui/tsconfig.tsbuildinfo: git:ee0a2687ef6766172f6f640e3cdfbc935009c583
+            doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案-速览.html: git:8bd664d8860c50c963ed9ea8afc5b48ddf3fd5a9
+            doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案.md: git:04065671d77e956bc323a39df5f44dfac413628b
+            scripts/README.md: git:a9dc60b3a88d3998fcab68246522307b5699e0a0
+            scripts/e2e/README.md: git:8bfdcc4d61fd6d52f1a9785d0dfe125cd44725ae
+            scripts/e2e/e2e_lib/scenarios.py: git:3e81322691d4784f4d905400ba046f5763e9b703
+            scripts/e2e/impact-map.json: git:a1a0b4de922a986fbca53d3486e7b844989a2aa4
+            scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+            scripts/e2e/run.sh: git:25786607a8a80d1fd7f5d26cc29dcc3c8424c84f
+            scripts/e2e/synap-claim-workbench-ui-smoke.mjs: git:a3de5237f3c2c823b538447be65795e33e559f9b
+            scripts/e2e/ui/claim-single-nav-probe.mjs: git:4ae105b519b4861e3309481ed5018ddf1b19c948
+            scripts/tests/test_e2e_impact.py: git:af1349760264f8cd522324b17753de5885f85817
+            scripts/verify-synapclaim-case360.sh: git:7c1ebfbe2cb40fe11f0f4f66dfd9fb38ee2fa009
+          environment: a6d870d0fd27fe2403524f707c399152aee050b93398954c0fae96991f065de9
+          exitCode: 0
+          inputAfter: 697f03ec89ba56811f3de894f6c7aa4eb9ce88ea6ad4761cff6faf98a431160e
+          inputBefore: 697f03ec89ba56811f3de894f6c7aa4eb9ce88ea6ad4761cff6faf98a431160e
+          manifestHash: 06e32e72fc2a481161dee522acff58d3f2b147b0b0f8e6ff86c351fc828a1da4
+          manifestRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/c6efd03f-7394-48a3-926f-f42319a4576a.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/7c51700e-b478-4e07-bc4a-4545b46f9744.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 19
+        value:
+          contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+          ref: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/7c51700e-b478-4e07-bc4a-4545b46f9744.log
+      - sequence: 23
+        value:
+          contentHash: b63d18392a8976dda53cd42bd2570294bc1f931522ceafd635ede5694f9864b5
+          ref: docs/superpowers/reports/verification-report.md
+      - sequence: 22
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/verification-report.md
+      - sequence: 24
+        value:
+          argv:
+            - bash
+            - scripts/verify-synapclaim-case360.sh
+          changedDuringExecution: []
+          checkEpoch: 4
+          contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+          cwd: .
+          deliveryInputs:
+            bone-frontend/apps/bone-claim-app/src/cases/caseSections.test.tsx: git:40e42141c58bf1df2736053df73ffa638976585e
+            bone-frontend/apps/bone-claim-app/src/cases/caseSections.tsx: git:f0bc6a3f50e46ac460c0ca0ee7bd3950bfcd12e0
+            bone-frontend/apps/bone-claim-app/src/pages/AdjustmentAttributionPage.tsx: git:8470075e706c7e6b91c5b6968a25c20a952bea86
+            bone-frontend/apps/bone-claim-app/src/pages/AppealPage.tsx: git:616ccb339eb527d7044ebba1fe9a506529307b8b
+            bone-frontend/apps/bone-claim-app/src/pages/Case360Page.tsx: git:260bc37cd694836eda39ecf9c007ae215833c98c
+            bone-frontend/apps/bone-claim-app/src/pages/EvidenceUploadPage.tsx: git:c9afa8573da4af2dd6117a71b31ad79de718cd10
+            bone-frontend/apps/bone-claim-app/src/pages/FundWorkbenchPage.tsx: git:e26c720fbedd15f63d4d4cc3f906c90d34f49b11
+            bone-frontend/apps/bone-claim-app/src/pages/InspectionWorkbenchPage.tsx: git:1feb8dfc7c1cdc7ecd9170f78fe9065f737a54be
+            bone-frontend/apps/bone-claim-app/src/pages/InsurerManagementPage.tsx: git:a56f82a35cf19f2e7321a3721c49329cdf30e1b0
+            bone-frontend/apps/bone-claim-app/src/pages/MappingPage.tsx: git:328c1916fb76291fab95368d1897b40e35420825
+            bone-frontend/apps/bone-claim-app/src/pages/SuspendPage.tsx: git:083e1672a69583f43c2ee97feda29a1d0bb4ea36
+            bone-frontend/apps/bone-claim-app/src/workbench/workbench.test.ts: git:1cffc60bf881be2f1a36c5ee67c46db2fc3b2721
+            bone-frontend/apps/bone-shell/src/App.css: git:8269de9f0ae6086e746b3cbe8a524529d871dade
+            bone-frontend/apps/bone-shell/src/App.tsx: git:bd096147df2243b0404ddac484e17683421b6df7
+            bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:c74cc8f4526ed2b82bfd321da4a20ec0e2b82703
+            bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:9795c1f4d20fd7c58c7b603d0a41ca34b5595795
+            bone-frontend/packages/core/event-bus/package.json: git:dc941723302b4372b70d3d5d68bd0041d5559141
+            bone-frontend/packages/core/workflow-dsl/package.json: git:973940dd7d64019b80af7cf80202b44d514f71fa
+            bone-frontend/packages/ui-schema/package.json: git:0a8fe4f5c78c5041ba15f06eb9b2207ddb57f00c
+            bone-frontend/packages/ui/design-system/src/authority/AuthButton.tsx: git:a0743ce1112a72c3eab2c111239df699bb00fc96
+            bone-frontend/packages/ui/package.json: git:bb9dd7788ed9cc938d42b126445e89f26717c5c8
+            bone-frontend/packages/ui/tsconfig.tsbuildinfo: git:060dd75fda702f937df32d8bac2d5d6ca078b451
+            doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案-速览.html: git:8bd664d8860c50c963ed9ea8afc5b48ddf3fd5a9
+            doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案.md: git:04065671d77e956bc323a39df5f44dfac413628b
+            scripts/README.md: git:a9dc60b3a88d3998fcab68246522307b5699e0a0
+            scripts/e2e/README.md: git:8bfdcc4d61fd6d52f1a9785d0dfe125cd44725ae
+            scripts/e2e/e2e_lib/scenarios.py: git:3e81322691d4784f4d905400ba046f5763e9b703
+            scripts/e2e/impact-map.json: git:a1a0b4de922a986fbca53d3486e7b844989a2aa4
+            scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+            scripts/e2e/run.sh: git:25786607a8a80d1fd7f5d26cc29dcc3c8424c84f
+            scripts/e2e/synap-claim-workbench-ui-smoke.mjs: git:a3de5237f3c2c823b538447be65795e33e559f9b
+            scripts/e2e/ui/claim-single-nav-probe.mjs: git:4ae105b519b4861e3309481ed5018ddf1b19c948
+            scripts/tests/test_e2e_impact.py: git:af1349760264f8cd522324b17753de5885f85817
+            scripts/verify-synapclaim-case360.sh: git:7c1ebfbe2cb40fe11f0f4f66dfd9fb38ee2fa009
+          environment: a6d870d0fd27fe2403524f707c399152aee050b93398954c0fae96991f065de9
+          exitCode: 0
+          inputAfter: 1048edf714165e1e5c53ca615d0d84dd7f81ad323aa6d3de9d556015aa51a267
+          inputBefore: 1048edf714165e1e5c53ca615d0d84dd7f81ad323aa6d3de9d556015aa51a267
+          manifestHash: 5ed2d6b134b83ce8de68c9a25b9b84a976b07f53ffc8278ad61088724e2416d7
+          manifestRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/57d3f4e3-7051-4fc8-bfb3-01358ac6e945.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/4e4f0bd5-8fb2-4be9-940a-c0c45b100348.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 25
+        value:
+          contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+          ref: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/4e4f0bd5-8fb2-4be9-940a-c0c45b100348.log
+      - sequence: 27
+        value:
+          choice: reverify
+          proposal:
+            input:
+              change: synapclaim-case360-object-cohesion
+              changeDir: openspec/changes/synapclaim-case360-object-cohesion
+              workspaceBaseline:
+                ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+            outputs:
+              full.archive.prepare:
+                summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：把 6 个单案作业页抽为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+                  ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+                  常量新增作业/查询/配置/治理四组常驻分组标题，未知 hash
+                  落未分组，菜单名/顺序/permission/icon/hash 一字不改（fail-safe 统一 isClaimLeaf
+                  谓词）；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移 0124）；新增三套 e2e 探针（单导航/UI
+                  冒烟/反馈）。验证：真实执行 scripts/verify-synapclaim-case360.sh（tsc +
+                  分组映射单测 + 内容组件与 URL 契约单测 + 文档族 19/19）exit 0 ALL CHECKS
+                  PASSED，guard verify 绑定真实验收收据（receipt
+                  4e4f0bd5，inputBefore==inputAfter 稳定快照）。
+                targetBranch: dev
+      - sequence: 26
+        value:
+          summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：把 6 个单案作业页抽为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+            ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+            常量新增作业/查询/配置/治理四组常驻分组标题，未知 hash 落未分组，菜单名/顺序/permission/icon/hash
+            一字不改（fail-safe 统一 isClaimLeaf 谓词）；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移
+            0124）；新增三套 e2e 探针（单导航/UI 冒烟/反馈）。验证：真实执行
+            scripts/verify-synapclaim-case360.sh（tsc + 分组映射单测 + 内容组件与 URL 契约单测 +
+            文档族 19/19）exit 0 ALL CHECKS PASSED，guard verify 绑定真实验收收据（receipt
+            4e4f0bd5，inputBefore==inputAfter 稳定快照）。
+          targetBranch: dev
+      - sequence: 29
+        value:
+          contentHash: b63d18392a8976dda53cd42bd2570294bc1f931522ceafd635ede5694f9864b5
+          ref: docs/superpowers/reports/verification-report.md
+      - sequence: 28
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/verification-report.md
+      - sequence: 30
+        value:
+          argv:
+            - bash
+            - scripts/verify-synapclaim-case360.sh
+          changedDuringExecution: []
+          checkEpoch: 6
+          contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+          cwd: .
+          deliveryInputs:
+            bone-frontend/apps/bone-claim-app/src/cases/caseSections.test.tsx: git:40e42141c58bf1df2736053df73ffa638976585e
+            bone-frontend/apps/bone-claim-app/src/cases/caseSections.tsx: git:f0bc6a3f50e46ac460c0ca0ee7bd3950bfcd12e0
+            bone-frontend/apps/bone-claim-app/src/pages/AdjustmentAttributionPage.tsx: git:8470075e706c7e6b91c5b6968a25c20a952bea86
+            bone-frontend/apps/bone-claim-app/src/pages/AppealPage.tsx: git:616ccb339eb527d7044ebba1fe9a506529307b8b
+            bone-frontend/apps/bone-claim-app/src/pages/Case360Page.tsx: git:260bc37cd694836eda39ecf9c007ae215833c98c
+            bone-frontend/apps/bone-claim-app/src/pages/EvidenceUploadPage.tsx: git:c9afa8573da4af2dd6117a71b31ad79de718cd10
+            bone-frontend/apps/bone-claim-app/src/pages/FundWorkbenchPage.tsx: git:e26c720fbedd15f63d4d4cc3f906c90d34f49b11
+            bone-frontend/apps/bone-claim-app/src/pages/InspectionWorkbenchPage.tsx: git:1feb8dfc7c1cdc7ecd9170f78fe9065f737a54be
+            bone-frontend/apps/bone-claim-app/src/pages/InsurerManagementPage.tsx: git:a56f82a35cf19f2e7321a3721c49329cdf30e1b0
+            bone-frontend/apps/bone-claim-app/src/pages/MappingPage.tsx: git:328c1916fb76291fab95368d1897b40e35420825
+            bone-frontend/apps/bone-claim-app/src/pages/SuspendPage.tsx: git:083e1672a69583f43c2ee97feda29a1d0bb4ea36
+            bone-frontend/apps/bone-claim-app/src/workbench/workbench.test.ts: git:1cffc60bf881be2f1a36c5ee67c46db2fc3b2721
+            bone-frontend/apps/bone-shell/src/App.css: git:8269de9f0ae6086e746b3cbe8a524529d871dade
+            bone-frontend/apps/bone-shell/src/App.tsx: git:bd096147df2243b0404ddac484e17683421b6df7
+            bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:c74cc8f4526ed2b82bfd321da4a20ec0e2b82703
+            bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:9795c1f4d20fd7c58c7b603d0a41ca34b5595795
+            bone-frontend/packages/core/event-bus/package.json: git:dc941723302b4372b70d3d5d68bd0041d5559141
+            bone-frontend/packages/core/workflow-dsl/package.json: git:973940dd7d64019b80af7cf80202b44d514f71fa
+            bone-frontend/packages/ui-schema/package.json: git:0a8fe4f5c78c5041ba15f06eb9b2207ddb57f00c
+            bone-frontend/packages/ui/design-system/src/authority/AuthButton.tsx: git:a0743ce1112a72c3eab2c111239df699bb00fc96
+            bone-frontend/packages/ui/package.json: git:bb9dd7788ed9cc938d42b126445e89f26717c5c8
+            doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案-速览.html: git:8bd664d8860c50c963ed9ea8afc5b48ddf3fd5a9
+            doc/ai-product/synapClaim/05-plan/智能理赔-易用性与角色工作台设计提案.md: git:04065671d77e956bc323a39df5f44dfac413628b
+            scripts/e2e/e2e_lib/scenarios.py: git:3e81322691d4784f4d905400ba046f5763e9b703
+            scripts/e2e/impact-map.json: git:a1a0b4de922a986fbca53d3486e7b844989a2aa4
+            scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+            scripts/e2e/run.sh: git:25786607a8a80d1fd7f5d26cc29dcc3c8424c84f
+            scripts/e2e/synap-claim-workbench-ui-smoke.mjs: git:a3de5237f3c2c823b538447be65795e33e559f9b
+            scripts/e2e/ui/claim-single-nav-probe.mjs: git:4ae105b519b4861e3309481ed5018ddf1b19c948
+            scripts/tests/test_e2e_impact.py: git:af1349760264f8cd522324b17753de5885f85817
+            scripts/verify-synapclaim-case360.sh: git:7c1ebfbe2cb40fe11f0f4f66dfd9fb38ee2fa009
+          environment: a3b2d589a7ca67a46942fded1564b84c1e9b21263fb806dd7dac6dd92606b32c
+          exitCode: 0
+          inputAfter: 5d41df017045995085c450ba2751465f0a60661f16a41a0949a11fd2dc480eec
+          inputBefore: 5d41df017045995085c450ba2751465f0a60661f16a41a0949a11fd2dc480eec
+          manifestHash: 472f833b4c0661b53e488ad26f0d32f8c062b079ce7a71a21a2058748604595c
+          manifestRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/010ee152-18f1-4c34-ae33-5d68ee31fb2b.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/2657463b-7058-40ca-bc70-cfaca242ee35.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 31
+        value:
+          contentHash: 38a01c381ece4c9a3e46f56a9e7ae2b9c408b39ac92fe30c226e50c0cb36eb8d
+          ref: .comet/runtime/classic-sdk-checks/69b076eeeaa7d3e68abae8011b81b331ca07a2e90050fa14d1c97205c3801317/2657463b-7058-40ca-bc70-cfaca242ee35.log
+      - sequence: 33
+        value:
+          choice: local
+          proposal:
+            input:
+              change: synapclaim-case360-object-cohesion
+              changeDir: openspec/changes/synapclaim-case360-object-cohesion
+              workspaceBaseline:
+                ref: 16704dae-f1d8-4a4c-9d63-ec5f162d63fb
+            outputs:
+              full.archive.prepare:
+                summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：6 个单案作业页抽为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+                  ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+                  常量新增作业/查询/配置/治理四组常驻分组标题，未知 hash
+                  落未分组，菜单名/顺序/permission/icon/hash 一字不改（fail-safe 统一 isClaimLeaf
+                  谓词）；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移 0124）；新增三套 e2e 探针（单导航/UI
+                  冒烟/反馈）。验证：真实执行 scripts/verify-synapclaim-case360.sh（tsc +
+                  分组映射单测 + 内容组件与 URL 契约单测 + 文档族 19/19）exit 0 ALL CHECKS
+                  PASSED，guard verify 绑定真实验收收据（inputBefore==inputAfter
+                  稳定快照，build 缓存 tsbuildinfo 已在本地 check-policy 中声明为 output 排除）。
+                targetBranch: dev
+      - sequence: 32
+        value:
+          summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：6 个单案作业页抽为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+            ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+            常量新增作业/查询/配置/治理四组常驻分组标题，未知 hash 落未分组，菜单名/顺序/permission/icon/hash
+            一字不改（fail-safe 统一 isClaimLeaf 谓词）；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移
+            0124）；新增三套 e2e 探针（单导航/UI 冒烟/反馈）。验证：真实执行
+            scripts/verify-synapclaim-case360.sh（tsc + 分组映射单测 + 内容组件与 URL 契约单测 +
+            文档族 19/19）exit 0 ALL CHECKS PASSED，guard verify
+            绑定真实验收收据（inputBefore==inputAfter 稳定快照，build 缓存 tsbuildinfo 已在本地
+            check-policy 中声明为 output 排除）。
+          targetBranch: dev
+      - sequence: 34
+        value:
+          baseCommit: 7fe29e96a1d3db2a2741821709e425647ddcfe54
+          deliveryAction: local
+          targetBranch: dev
+          verifiedBranch: dev
+      - sequence: 20
+        value:
+          summary: 智能理赔 Case360 对象内聚 + 侧栏常驻分组：将 6 个单案作业页拆为无壳内容组件并内嵌为案件 360 的 Tab（claimId 由
+            ?claimId=&tab= 唯一真源），保留 trace 深链桥与回退；shell 侧栏按 hash
+            常量加作业/查询/配置/治理常驻分组标题，未知 hash 落未分组，菜单名/顺序/permission/icon/hash
+            一字不改；新增 AI 建议卡、作业工作台遥测与反馈事件（含迁移 0124）；三套 e2e 探针（单导航/UI
+            冒烟/反馈）。验证：tsc/单测/契约 40-40/UI 冒烟/文档族 19-19 全绿，孤儿 verify Action 经
+            mark-unknown+retry(not-executed) 恢复后由 guard 实跑
+            scripts/verify-synapclaim-case360.sh 绑定真实验收收据。
+          targetBranch: dev
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 14
+        left: 32
+        right: 33
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 34
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 35
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 25
+        height: 5
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: null
+        right: 39
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: 40
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 41
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 42
+        height: 5
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: 45
+        right: 39
+        height: 2
+      - key: full.verify.check
+        value: 17
+        left: 44
+        right: 46
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 47
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 48
+        height: 5
+      - key: full.verify.run
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: null
+        right: 50
+        height: 2
+      - key: full.verify.check.evidence
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 19
+        left: null
+        right: 52
+        height: 2
+      - key: full.verify.report.evidence
+        value: 15
+        left: 53
+        right: 50
+        height: 3
+      - key: full.archive.prepare
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 21
+        left: null
+        right: 55
+        height: 2
+      - key: full.verify.report.evidence
+        value: 15
+        left: 52
+        right: 50
+        height: 2
+      - key: full.verify.check
+        value: 19
+        left: 56
+        right: 57
+        height: 3
+      - key: full.verify.check.evidence
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: 59
+        right: 50
+        height: 2
+      - key: full.verify.check
+        value: 23
+        left: 56
+        right: 60
+        height: 3
+      - key: full.archive.prepare
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 25
+        left: null
+        right: 62
+        height: 2
+      - key: full.verify.check
+        value: 23
+        left: 63
+        right: 60
+        height: 3
+      - key: full.archive.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 27
+        left: 65
+        right: 66
+        height: 2
+      - key: full.verify.check
+        value: 23
+        left: 67
+        right: 60
+        height: 3
+      - key: full.build.configure
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 29
+        left: 69
+        right: 70
+        height: 2
+      - key: full.design.evidence
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 33
+        left: 72
+        right: 73
+        height: 2
+      - key: full.open.revalidate
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 36
+        left: null
+        right: 75
+        height: 2
+      - key: full.open.confirm
+        value: 35
+        left: 74
+        right: 76
+        height: 3
+      - key: full.design.document
+        value: 31
+        left: 71
+        right: 77
+        height: 4
+      - key: full.build.plan
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 39
+        left: 79
+        right: 80
+        height: 2
+      - key: full.build.confirm
+        value: 29
+        left: 69
+        right: 81
+        height: 3
+      - key: full.design.document
+        value: 31
+        left: 82
+        right: 77
+        height: 4
+      - key: full.build.execute
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 29
+        left: 69
+        right: 84
+        height: 2
+      - key: full.build.plan.evidence
+        value: 39
+        left: null
+        right: 80
+        height: 2
+      - key: full.build.plan
+        value: 38
+        left: 85
+        right: 86
+        height: 3
+      - key: full.design.document
+        value: 31
+        left: 87
+        right: 77
+        height: 4
+      - key: full.build.check
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 42
+        left: 89
+        right: 90
+        height: 2
+      - key: full.build.confirm
+        value: 29
+        left: 91
+        right: 84
+        height: 3
+      - key: full.build.plan
+        value: 38
+        left: 92
+        right: 86
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 93
+        right: 77
+        height: 5
+      - key: full.open.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 43
+        left: null
+        right: 96
+        height: 2
+      - key: full.open.revalidate
+        value: 37
+        left: 95
+        right: 97
+        height: 3
+      - key: full.open.confirm
+        value: 35
+        left: 74
+        right: 98
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 93
+        right: 99
+        height: 5
+      - key: full.open.revalidate
+        value: 37
+        left: 95
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 43
+        left: 102
+        right: 96
+        height: 2
+      - key: full.verify.check
+        value: 45
+        left: 101
+        right: 103
+        height: 3
+      - key: full.open.confirm
+        value: 35
+        left: 74
+        right: 104
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 93
+        right: 105
+        height: 5
+      - key: full.verify.run
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 47
+        left: null
+        right: 107
+        height: 2
+      - key: full.verify.check.evidence
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 49
+        left: null
+        right: 109
+        height: 2
+      - key: full.verify.report.evidence
+        value: 47
+        left: 110
+        right: 107
+        height: 3
+      - key: full.archive.prepare
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 51
+        left: null
+        right: 112
+        height: 2
+      - key: full.verify.report.evidence
+        value: 47
+        left: 109
+        right: 107
+        height: 2
+      - key: full.verify.check
+        value: 49
+        left: 113
+        right: 114
+        height: 3
+      - key: full.verify.run
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 53
+        left: 109
+        right: 116
+        height: 2
+      - key: full.verify.check
+        value: 49
+        left: 113
+        right: 117
+        height: 3
+      - key: full.verify.check.evidence
+        value: 56
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 53
+        left: 119
+        right: 116
+        height: 2
+      - key: full.verify.check
+        value: 55
+        left: 113
+        right: 120
+        height: 3
+      - key: full.archive.prepare
+        value: 58
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 57
+        left: null
+        right: 122
+        height: 2
+      - key: full.verify.check
+        value: 55
+        left: 123
+        right: 120
+        height: 3
+      - key: full.archive.confirm
+        value: 57
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 58
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 59
+        left: 125
+        right: 126
+        height: 2
+      - key: full.verify.check
+        value: 55
+        left: 127
+        right: 120
+        height: 3
+      - key: full.open
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 35
+        left: 129
+        right: 130
+        height: 2
+      - key: full.open.revalidate
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 36
+        left: null
+        right: 132
+        height: 2
+      - key: full.open.confirm
+        value: 35
+        left: 129
+        right: 133
+        height: 3
+      - key: full.design.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 33
+        left: 135
+        right: 136
+        height: 2
+      - key: full.open.confirm
+        value: 35
+        left: 137
+        right: 133
+        height: 3
+      - key: full.design.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 31
+        left: 139
+        right: 140
+        height: 2
+      - key: full.design.handoff
+        value: 33
+        left: 141
+        right: 136
+        height: 3
+      - key: full.open.confirm
+        value: 35
+        left: 142
+        right: 133
+        height: 4
+      - key: full.archive.confirm
+        value: 57
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 58
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 59
+        left: 144
+        right: 145
+        height: 2
+      - key: full.build.check.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 28
+        left: 147
+        right: 148
+        height: 2
+      - key: full.build.plan
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 39
+        left: 150
+        right: 151
+        height: 2
+      - key: full.build.execute
+        value: 40
+        left: 149
+        right: 152
+        height: 3
+      - key: full.build.check
+        value: 41
+        left: 146
+        right: 153
+        height: 4
+      - key: full.design.handoff
+        value: 33
+        left: 140
+        right: 136
+        height: 2
+      - key: full.open.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 37
+        left: 156
+        right: 157
+        height: 2
+      - key: full.verify.run
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 53
+        left: null
+        right: 159
+        height: 2
+      - key: full.verify.check.evidence
+        value: 56
+        left: 158
+        right: 160
+        height: 3
+      - key: full.open.confirm
+        value: 35
+        left: 155
+        right: 161
+        height: 4
+      - key: full.design.document
+        value: 31
+        left: 154
+        right: 162
+        height: 5
+      - key: full.open.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 34
+        left: null
+        right: 164
+        height: 2
+      - key: full.design.handoff
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 36
+        left: 167
+        right: 168
+        height: 2
+      - key: full.open
+        value: 34
+        left: 166
+        right: 169
+        height: 3
+      - key: full.build.configure
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 32
+        left: 172
+        right: 173
+        height: 2
+      - key: full.design.confirm
+        value: 30
+        left: 171
+        right: 174
+        height: 3
+      - key: full.open
+        value: 34
+        left: 175
+        right: 169
+        height: 4
+      - key: full.archive.prepare
+        value: 60
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 41
+        left: 177
+        right: 178
+        height: 2
+      - key: full.build.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 38
+        left: null
+        right: 181
+        height: 2
+      - key: full.build.execute
+        value: 40
+        left: 180
+        right: 182
+        height: 3
+      - key: full.build.configure
+        value: 28
+        left: 179
+        right: 183
+        height: 4
+      - key: full.open.revalidate
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 36
+        left: 167
+        right: 185
+        height: 2
+      - key: full.verify.check.evidence
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 43
+        left: 187
+        right: 188
+        height: 2
+      - key: full.verify.check
+        value: 45
+        left: 186
+        right: 189
+        height: 3
+      - key: full.open
+        value: 34
+        left: 174
+        right: 190
+        height: 4
+      - key: full.design.confirm
+        value: 30
+        left: 184
+        right: 191
+        height: 5
+      - key: full.archive.prepare
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check.evidence
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 47
+        left: 194
+        right: 195
+        height: 2
+      - key: full.verify.check
+        value: 49
+        left: 193
+        right: 196
+        height: 3
+      - key: full.archive.confirm
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 58
+        left: 198
+        right: 199
+        height: 2
+      - key: full.verify.run
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 53
+        left: null
+        right: 201
+        height: 2
+      - key: full.verify.check.evidence
+        value: 56
+        left: 200
+        right: 202
+        height: 3
+      - key: full.open
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 31
+        left: 205
+        right: 206
+        height: 2
+      - key: full.open.confirm
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 36
+        left: 208
+        right: 209
+        height: 2
+      - key: full.open
+        value: 34
+        left: 207
+        right: 210
+        height: 3
+      - key: full.build.configure
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 29
+        left: 212
+        right: 213
+        height: 2
+      - key: full.design.document
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 32
+        left: 215
+        right: 216
+        height: 2
+      - key: full.design.confirm
+        value: 30
+        left: 214
+        right: 217
+        height: 3
+      - key: full.open
+        value: 34
+        left: 218
+        right: 210
+        height: 4
+      - key: full.build.check
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 28
+        left: 220
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 38
+        left: 222
+        right: 223
+        height: 2
+      - key: full.build.confirm
+        value: 29
+        left: 221
+        right: 224
+        height: 3
+      - key: full.open
+        value: 34
+        left: 217
+        right: 210
+        height: 3
+      - key: full.design.confirm
+        value: 30
+        left: 225
+        right: 226
+        height: 4
+      - key: full.build.check
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 42
+        left: 228
+        right: 229
+        height: 2
+      - key: full.build.confirm
+        value: 29
+        left: 230
+        right: 224
+        height: 3
+      - key: full.verify.run
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 37
+        left: null
+        right: 232
+        height: 2
+      - key: full.open.evidence
+        value: 36
+        left: 208
+        right: 233
+        height: 3
+      - key: full.open
+        value: 34
+        left: 217
+        right: 234
+        height: 4
+      - key: full.design.confirm
+        value: 30
+        left: 231
+        right: 235
+        height: 5
+      - key: full.open.revalidate
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 36
+        left: 208
+        right: 237
+        height: 2
+      - key: full.verify.report.evidence
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 44
+        left: 239
+        right: null
+        height: 2
+      - key: full.verify.check
+        value: 45
+        left: 238
+        right: 240
+        height: 3
+      - key: full.open
+        value: 34
+        left: 217
+        right: 241
+        height: 4
+      - key: full.design.confirm
+        value: 30
+        left: 231
+        right: 242
+        height: 5
+      - key: full.verify.run
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 47
+        left: 245
+        right: 246
+        height: 2
+      - key: full.archive.confirm
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 52
+        left: 248
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 47
+        left: 250
+        right: 251
+        height: 2
+      - key: full.verify.check
+        value: 49
+        left: 249
+        right: 252
+        height: 3
+      - key: full.verify.report.evidence
+        value: 53
+        left: 250
+        right: 251
+        height: 2
+      - key: full.verify.check
+        value: 55
+        left: 249
+        right: 254
+        height: 3
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 37
+      - 43
+      - 49
+      - 51
+      - 54
+      - 58
+      - 61
+      - 64
+      - 68
+      - 78
+      - 83
+      - 88
+      - 94
+      - 100
+      - 106
+      - 108
+      - 111
+      - 115
+      - 118
+      - 121
+      - 124
+      - 128
+      - 131
+      - 134
+      - 138
+      - 143
+      - 163
+      - 165
+      - 170
+      - 176
+      - 192
+      - 197
+      - 203
+      - 204
+      - 211
+      - 219
+      - 227
+      - 236
+      - 243
+      - 244
+      - 247
+      - 253
+      - 255
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "14"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actions
+          - "15"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actions
+          - "16"
+          - input
+          - outputs
+        map: 14
+      - path:
+          - actions
+          - "17"
+          - input
+          - outputs
+        map: 15
+      - path:
+          - actions
+          - "18"
+          - input
+          - outputs
+        map: 16
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:11
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:13
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:14
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:16
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:18
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:20
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:22
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:24
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:26
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:28
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:30
+          - results
+        map: 26
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:32
+          - results
+        map: 27
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:34
+          - results
+        map: 28
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:35
+          - results
+        map: 29
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:4
+          - results
+        map: 30
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:5
+          - results
+        map: 31
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:7
+          - results
+        map: 32
+      - path:
+          - actionContexts
+          - synapclaim-case360-object-cohesion:9
+          - results
+        map: 33
+      - path:
+          - outputs
+        map: 34
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 35
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 36
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 37
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 38
+      - path:
+          - waits
+          - "4"
+          - results
+        map: 39
+      - path:
+          - waits
+          - "5"
+          - results
+        map: 40
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 41
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 42
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 43
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 44
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 45
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 46
+      - path:
+          - evidenceWaits
+          - "6"
+          - results
+        map: 47
+      - path:
+          - evidenceWaits
+          - "7"
+          - results
+        map: 48
+      - path:
+          - evidenceWaits
+          - "8"
+          - results
+        map: 49
+      - path:
+          - evidenceWaits
+          - "9"
+          - results
+        map: 50
+  storageHash: a04ffd2e694391cd36d3e2e0cebd3ab95027bd882dc7129f417e4863b97bf1fe
+check_epoch: 8

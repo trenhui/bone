@@ -13,6 +13,8 @@
  *                     从对象列表深链进入，本就不该有菜单。
  *   C. 真实点击    —— 逐个点侧边栏菜单（不是 goto），断言 hash 落地、顶栏标题、页面标题、内容非空
  *   D. 无致命错误  —— 导航期间无 5xx、无 console error（第三方噪音除外）
+ *   E. 常驻分组    —— 四个分组标题常驻可见、15 条菜单项默认全部可见可点、
+ *                     DOM 序仍等于 routes.tsx 声明顺序、分组内无折叠 SubMenu（2026-11-13 新增）
  *
  * 为什么 C 用「点击」而不是 goto：goto 绕过了 shell 的菜单点击链路（handleMenuClick → navigate）。
  * 用户报的缺陷正是「菜单里的子项和页面不是一回事」，只有点菜单才能复现。
@@ -217,6 +219,53 @@ try {
   // 进入理赔域：点分组（accent 展开）→ 点第一个子项，模拟真实用户
   await page.waitForSelector('.shell-sider', { timeout: 20000 });
   await expandGroup();
+
+  // ---------- E. 四空间常驻分组（本 change 新增，计数用精确值） ----------
+  // 判据与「常驻可见、不折叠、不重排」一一对应；折叠/隐藏/搬动任一种缺陷都会转红。
+  const GROUP_TITLES = ['作业', '查询', '配置', '治理'];
+  const groupTitles = (await page.locator('.shell-sider .ant-menu-item-group-title').allInnerTexts())
+    .map((t) => t.trim());
+  const claimGroups = groupTitles.filter((t) => GROUP_TITLES.includes(t));
+  check(
+    '侧栏四个分组标题常驻可见且顺序为 作业/查询/配置/治理',
+    JSON.stringify(claimGroups) === JSON.stringify(GROUP_TITLES),
+    `实际 ${groupTitles.join(' | ')}`,
+  );
+  check('分组标题精确 4 个（无第三层导航标题）', claimGroups.length === 4, `实际 ${claimGroups.length}`);
+
+  let visibleCount = 0;
+  for (const r of visibleRoutes) {
+    const item = page.locator('.shell-sider .ant-menu-item').filter({ hasText: r.name }).first();
+    if (await item.isVisible().catch(() => false)) visibleCount += 1;
+  }
+  check(
+    '分组后 15 条菜单项默认全部可见（无需任何展开动作）',
+    visibleCount === visibleRoutes.length,
+    `实际 ${visibleCount}/${visibleRoutes.length}`,
+  );
+
+  const domOrder = (await page.locator('.shell-sider .ant-menu-item').allInnerTexts())
+    .map((t) => t.trim())
+    .filter((t) => visibleRoutes.some((r) => r.name === t));
+  check(
+    '分组未改变菜单顺序（DOM 序 = routes.tsx 声明序）',
+    JSON.stringify(domOrder) === JSON.stringify(visibleRoutes.map((r) => r.name)),
+    `DOM 序 ${domOrder.join(' → ')}`,
+  );
+
+  const groupContainers = await page.locator('.shell-sider .ant-menu-item-group').count();
+  const nestedSubmenus = await page.locator('.shell-sider .ant-menu-item-group .ant-menu-submenu').count();
+  check(
+    '分组内没有折叠 SubMenu（不引入第三层导航）',
+    groupContainers === 4 && nestedSubmenus === 0,
+    `group 容器 ${groupContainers} / 嵌套折叠 ${nestedSubmenus}`,
+  );
+  const groupedClickable = await page.locator('.shell-sider .ant-menu-item-group .ant-menu-item').count();
+  check(
+    '分组内菜单仍是可直接点击的 .ant-menu-item（15 条）',
+    groupedClickable === visibleRoutes.length,
+    `实际 ${groupedClickable}`,
+  );
   await page
     .locator('.shell-sider .ant-menu-item')
     .filter({ hasText: visibleRoutes[0].name })

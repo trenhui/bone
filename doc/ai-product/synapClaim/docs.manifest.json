@@ -297,6 +297,16 @@
       "currency": "current"
     },
     {
+      "id": "plan.ux-workbench",
+      "path": "05-plan/智能理赔-易用性与角色工作台设计提案.md",
+      "layer": "L5",
+      "diataxis": "explanation",
+      "status": "active",
+      "summary": "智能理赔易用性优化提案：现状六条诊断（菜单平铺/无角色差异/作业断点/查询缺口/效率设施/AI 悬空）、四空间信息架构与角色工作台矩阵、案件 360 与队列驱动、全局检索基座、AI 四层融合、分期路线图、度量与决策速查表",
+      "role": "guide",
+      "currency": "current"
+    },
+    {
       "id": "verify.adjustment",
       "path": "06-verification/理算引擎验证套件.md",
       "layer": "L6",
@@ -833,6 +843,12 @@
     }
   ],
   "aiRouting": [
+    {
+      "intent": "易用性 / 信息架构 / 角色工作台 / 菜单重构 / 查询与作业便利性 / AI 融合",
+      "docs": [
+        "plan.ux-workbench"
+      ]
+    },
     {
       "intent": "产品定位 / 卖给谁 / 能做什么",
       "docs": [

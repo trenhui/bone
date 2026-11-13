@@ -77,13 +77,21 @@
   font-size: 13px;
 }
 
-/* 分组标题降权：与可点击条目区分，形成「概览 / 业务」两段结构 */
+/* 分组标题降权：与可点击条目区分，形成「概览 / 业务」两段结构。
+   2026-11-13：理赔侧栏按四空间常驻分组后，标题改为 sticky —— 15 条菜单需要滚动时，
+   当前所在分组名始终留在视野里（NN/g：信息 scent 不随滚动丢失）。
+   吸顶只在本组的 li 容器内生效，不新增第三层导航、不折叠任何菜单项。 */
 .shell-sider .ant-menu-item-group-title {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   padding-inline: 16px;
+  padding-block: 4px;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.04em;
   color: var(--bone-color-text-tertiary);
+  background: var(--bone-color-bg-container);
 }
 
 /* 图标统一尺寸 */
