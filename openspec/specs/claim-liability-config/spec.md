@@ -1,7 +1,7 @@
 # claim-liability-config Specification
 
 ## Purpose
-TBD - created by archiving change claim-liability-limit-negative-reject. Update Purpose after archive.
+把责任额度上限的合法取值收敛为「非负数」，并让 `0` 与未填写统一表达「不封顶」，避免负数被静默按无上限解释而取消限额；同时要求写入期给出可操作的错误消息，并为存量脏数据提供不改变行为的归一化路径。
 
 ## Requirements
 
