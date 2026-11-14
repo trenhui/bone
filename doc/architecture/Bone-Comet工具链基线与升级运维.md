@@ -43,9 +43,10 @@ runtime）都是本机状态，一律忽略。曾出现「配置只在本机、�
 ```bash
 python3 scripts/ops/verify_comet_install.py                 # 严格模式(默认)：8 项判据，缺 tarball 即 UNVERIFIED
 python3 scripts/ops/verify_comet_install.py --fetch-tarball # 无本地包时自动 npm pack 复现官方包并校验
-python3 scripts/ops/verify_comet_install.py --self-test     # 16 条探针（含自适应白名单/严格模式/重复 Guard 变异），证明判据非恒绿
-python3 scripts/ops/verify_comet_install.py --json          # 供 CI/脚本消费（含 verified/skipped/verdict）
+python3 scripts/ops/verify_comet_install.py --self-test     # 变异探针，证明判据非恒绿；条数以实跑输出为准
+python3 scripts/ops/verify_comet_install.py --json          # 供 CI/脚本消费（含 baseline provenance / verified / skipped / verdict）
 python3 scripts/ops/verify_comet_install.py --no-strict    # 降级：C3 缺失不阻拦（本地体检用，CI/交接勿用）
+python3 scripts/ops/verify_comet_install.py --self-test | grep -c '\[PASS\]'  # 当前探针数，不写死在文档里
 ```
 
 | 判据 | 检查内容 | 为什么必须有 |
@@ -66,8 +67,30 @@ python3 scripts/ops/verify_comet_install.py --no-strict    # 降级：C3 缺失�
 ### 变异验证纪律
 
 `--self-test` 通过注入伪造采集结果**真实调用判据函数**，每条「必须判红」都配一条
-「必须判绿」正例，避免把判据改成一律 FAIL 也能通过。当前 **16 条探针**（含 C5/C6 自适应白名单、
-verdict 严格模式 SKIP→exit 2、C6 同事件重复 Guard 变异）。新增/修改判据时必须同批补探针。
+「必须判绿」正例，避免把判据改成一律 FAIL 也能通过。覆盖 C1/C3/C5/C6/C7/C8、
+verdict 严格模式 SKIP→exit 2，以及**基线三元组 fail-closed**；探针总数随判据增长，
+**不在 `currency: current` 文档里写死**，实时取上面的 `--self-test | grep -c` 命令。
+自测刻意不依赖本机 `/tmp` 是否残留 tarball（C3 探针显式 mock `is_file`），
+团队换机 clone 后同样可跑。新增/修改判据时必须同批补探针。
+
+### 基线三元组绑定（升级必读）
+
+C1 的期望版本、C3 的 tarball sha256、C3 的全包文件数是**同一语义**，由
+`resolve_baseline()` 一处解析，禁止拆成两个配置源。内置 0.5.2 基线的
+`sha256:2003eb17…d1339` 与 3656 文件来自同一次 `npm pack` 实算。
+
+升级 CLI 的唯一正确顺序（**先取证、后改常量**，顺序反了就是刷绿）：
+
+1. `npm view @rpamis/comet@<v> dist.shasum` 取官方 shasum；
+2. `npm pack @rpamis/comet@<v>` + `shasum -a 256` 实算 tarball sha256；
+3. 用 C3 同口径（`package/` 下普通文件、排除 `node_modules`）数出文件数；
+4. 三项一起写进 `BUILTIN_BASELINES` 并更新 `DEFAULT_VERSION`，**同批入库**；
+5. `--json` 8/8 + `--self-test` 全 PASS 后才可宣告升级完成。
+
+临时演练可用 `COMET_EXPECTED_VERSION` + `COMET_TARBALL_SHA256` + `COMET_PKG_FILES`
+三项环境变量覆盖；**只覆盖任一项即 fail-fast（exit 2、零 stdout、拒绝出报告）**，
+错误信息直接给出修复方式。`--json` 的 `baseline.source` 标注 `builtin` 或 `env`，
+供 CI 判断基线是否同源。**不提供「自动放宽指纹/文件数」开关**——那等于让判据失效。
 
 ---
 
@@ -92,10 +115,16 @@ verdict 严格模式 SKIP→exit 2、C6 同事件重复 Guard 变异）。新增
 120s SIGTERM（Exit 137）。用单进程 tar 批量解出，约 24 秒完成，之后记得补可执行位：
 
 ```bash
+# 版本必须等于 §一 当前基线；用旧版 tarball 覆盖新安装会造成静默降级
 # 清单里每行加 package/ 前缀，一次性解出
-tar -xzf /tmp/rpamis-comet-0.5.1.tgz -C "$PKG" --strip-components=1 -T /tmp/tar-list.txt
+COMET_VERSION=0.5.2
+tar -xzf "/tmp/rpamis-comet-${COMET_VERSION}.tgz" -C "$PKG" --strip-components=1 -T /tmp/tar-list.txt
 chmod +x "$PKG/bin/comet.js"
 ```
+
+> 0.5.1 时期的 `/tmp/rpamis-comet-0.5.1.tgz` 命令已废弃：在 0.5.2 环境照抄会把
+> 旧文件解进新安装，而 `comet --version` / doctor 都未必报错。历史数值只在
+> §八 历史快照章节保留，现行操作手册不得出现过期版本的可执行命令。
 
 ---
 
@@ -427,6 +456,8 @@ npm pack @rpamis/comet@0.5.2 && shasum -a 256 rpamis-comet-0.5.2.tgz   # 期望 
 python3 scripts/ops/verify_comet_install.py --json         # 期望 verified=8 failed=0 verdict=0
 python3 scripts/ops/verify_comet_install.py --self-test    # 期望全 PASS「判据可证伪，非恒绿」
 python3 scripts/ops/verify_comet_install.py --fetch-tarball --json  # 换机复现，期望 verdict=0
+COMET_EXPECTED_VERSION=0.5.3 python3 scripts/ops/verify_comet_install.py --json  # 期望 RC=2、零 stdout、提示三元组同源
+COMET_TARBALL=/tmp/absent.tgz COMET_BASELINE_CACHE=/tmp/absent-cache python3 scripts/ops/verify_comet_install.py --self-test  # 换机仍全 PASS
 comet state check <change> <phase> --recover --details --json      # RC=1 是恢复态提示，不是命令失败
 git show --stat 87d753d6                                   # 归档终态事实
 ```
@@ -451,3 +482,35 @@ assertion）、CD4ML（官方 registry provenance + 全包逐字节可复现比�
 Known-Issues Register、恢复条件显式化）、Blameless Postmortem（unknown 如实登记、
 不刷绿）、ADR（不可逆的归档终态决策版本化留痕），以及仓库既有纪律「误报比漏报更致命」
 「最小爆炸半径」「fail-closed」「同一语义两处配置源 = 配了不生效」。
+
+### 9.5 本轮（2026-11-14 复核轮）：对「已全绿」的资产再做一次证伪
+
+上一轮把遗留建议升级为版本化资产并留下「8/8 + 18/18 全绿」的证据。本轮不重复交付，
+而是复核**资产自身是否经得起换机、升级与照抄**，发现并修复 4 个真实缺陷。
+
+| # | 候选动作 | 裁定 | 依据 |
+|---|---|---|---|
+| 1 | 保留 `COMET_EXPECTED_VERSION` 可覆盖、而指纹与文件数硬编码 0.5.2 | **拒绝，已修** | C1 期望新版、C3 拿旧指纹拒绝新版包，报告自相矛盾且把原因误报为「包不可信」；属「配置源两个 = 配了不生效」 |
+| 2 | 为消除该报错而自动放宽指纹/文件数 | **拒绝** | 等于让 C3 强校验失效，是刷绿；正解是同源校验 + fail-fast |
+| 3 | 三元组收敛到 `resolve_baseline()` 单一真源 + 环境变量同源校验 + fail-fast + `--json` provenance | **执行** | 升级需三项由同一次 `npm pack` 实算后同批入库；不完整覆盖即 `exit 2`、零 stdout、拒绝出报告 |
+| 4 | §三 现行手册保留 `tar -xzf /tmp/rpamis-comet-0.5.1.tgz` | **拒绝，已修** | 这是**可执行命令**不是历史数值；在 0.5.2 环境照抄会把旧文件解进新安装，而 version/doctor 未必报错 ⇒ 静默降级 |
+| 5 | §二 继续写死「16 条探针」 | **拒绝，已修改动态** | 上一轮实跑已是 18 条、本轮 24 条，恰好违反上一轮自己登记的「volatile 事实不写死在 current 文档」；改为实时获取命令 |
+| 6 | C3 变异探针依赖本机 `/tmp` 残留 tarball | **拒绝，已修** | 团队换机 clone 后该探针会假红，使自测不可移交；显式 mock `is_file` |
+| 7 | 回改 §八 / §九 历史快照中的 `3570`、`14/14`、`9/7` | **拒绝** | 历史快照保留观测时点值，改写等于伪造证据；只有 `current` 手册需与实证一致 |
+| 8 | 把完整性校验接进 `scripts/check.sh` | **拒绝** | 沿用 §八 #13 裁定，避免把全仓提交强绑本机全局 npm 安装 |
+
+#### 门禁证据（本轮实跑）
+
+- `python3 -m py_compile scripts/ops/verify_comet_install.py`：OK。
+- `--json`：**8/8 PASS、verdict 0**；C3 `3656/3656 differ=0 missing=0`；
+  `baseline.source=builtin`、指纹与文件数随报告输出，CI 可判同源。
+- `--self-test`：**24/24 PASS、0 FAIL**，新增 6 条基线三元组探针（正例 2 / 变异 4）。
+- 换机模拟（无 `/tmp` tarball、无缓存）：`--self-test` 仍 **24/24**；正式 `--json` 为
+  `exit 2`、`verified=7 / skipped=1 / failed=0 / verdict=2` ⇒ fail-closed 未因改动退化。
+- 只覆盖版本：`RC=2`、stdout **0 字节**、stderr 给出三项同源的修复方式；只覆盖指纹同样 `RC=2`。
+- 未改 `scripts/check.sh` 接线；全量提交门禁由 pre-commit 执行，结果以对应提交为准。
+
+**新增业界实践依据**：12-Factor「config 与 code 严格分离且校验先于执行」（fail-fast
+configuration validation）、SLSA provenance（把基线来源写进机器可读输出而非口头约定）、
+Single Source of Truth（同一语义只允许一个配置源）、Docs-as-Code（现行手册中的命令必须
+可执行且不依赖会话残留）、可移植测试（自测不得依赖本机临时文件）。

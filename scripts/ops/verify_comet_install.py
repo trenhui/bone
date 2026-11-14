@@ -10,7 +10,9 @@
     python3 scripts/ops/verify_comet_install.py --json          # 供 CI/脚本消费
 
 环境变量:
-    COMET_EXPECTED_VERSION  期望版本，默认 0.5.2
+    COMET_EXPECTED_VERSION  期望版本，默认 0.5.2；改版本时下面两项必须同批提供
+    COMET_TARBALL_SHA256   该版本官方 tarball 实算 sha256（仅覆盖版本时必填）
+    COMET_PKG_FILES        该版本 package/ 下普通文件数（仅覆盖版本时必填）
     COMET_PKG_ROOT          npm 全局包目录，默认 Homebrew 的 node_modules 路径
     COMET_TARBALL           官方 tarball 显式路径（优先于自动候选）
     COMET_BASELINE_CACHE   npm pack 缓存目录，默认 ~/.cache/comet-baseline
@@ -35,6 +37,11 @@
   * doctor 0.5.2 新增的 "current selection" 告警是**工作区运行态**（无 selection 时
     Router 只读推断），不是安装缺陷；C5 据此精确化为「安装完整性相关告警」，运行态告警
     显式登记但不计入 fail。分类自适应（形态不符即判红），并配 2 条变异探针防静态放水。
+  * 基线三元组（版本 / tarball sha256 / 全包文件数）是**同一语义，只能有一个配置源**：
+    此前 COMET_EXPECTED_VERSION 可被覆盖，而另两项硬编码 0.5.2，导致任何非默认版本
+    必然「C1 期望新版、C3 拿旧指纹拒绝新版包」，还把原因误报为「包不可信」。现改为
+    resolve_baseline() 统一解析，覆盖版本而不同批给出实算指纹与文件数即 fail-fast
+    （exit 2，拒绝出报告），--json 输出基线来源 provenance，并配变异探针防退化。
 """
 from __future__ import annotations
 
@@ -51,17 +58,74 @@ import tarfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-# 0.5.2 基线（2026-11-14 实测）：npm view @rpamis/comet@0.5.2 → shasum
+
+# 基线三元组（版本 / 官方 tarball sha256 / C3 同口径文件数）必须同源：
+# 三者取自同一次 npm pack 实算，任一项单独变化都会让判据说谎。
+# 0.5.2（2026-11-14 实测）：npm view @rpamis/comet@0.5.2 → shasum
 # 11866c3e3a2e78a3792cd15b3afe038b9a326a6a；npm pack 复现 tarball 的 sha256、
-# 以及 C3 同口径的 package/ 下普通文件数均由官方包实算，不沿用 0.5.1 的常量。
-EXPECTED_VERSION = os.environ.get("COMET_EXPECTED_VERSION", "0.5.2")
+# 以及 package/ 下普通文件数均由官方包实算，不沿用 0.5.1 的常量。
+DEFAULT_VERSION = "0.5.2"
+BUILTIN_BASELINES: dict[str, dict[str, object]] = {
+    DEFAULT_VERSION: {
+        "sha256": "2003eb1797fcb693ec1c3160fcd97c86b66c0530e9f73ff78804e9d9b3dd1339",
+        "pkg_files": 3656,
+    },
+}
+
+
+class BaselineConfigError(Exception):
+    """基线三元组不自洽；fail-closed，不允许带着可疑配置继续出报告。"""
+
+
+def resolve_baseline(env: dict[str, str] | None = None) -> dict[str, object]:
+    """唯一真源解析：默认用内置基线；覆盖版本时必须同时给出实算的指纹与文件数。
+
+    只改 COMET_EXPECTED_VERSION 而不改指纹/文件数，会产生「C1 期望新版、C3 拿旧
+    指纹拒绝新版包」的自相矛盾报告，且错误提示误导为「包不可信」。这里直接
+    fail-fast，并给出可执行的修复方式（见运维文档 §二）。
+    """
+    e = os.environ if env is None else env
+    version = e.get("COMET_EXPECTED_VERSION", DEFAULT_VERSION)
+    sha = e.get("COMET_TARBALL_SHA256")
+    files = e.get("COMET_PKG_FILES")
+    if version == DEFAULT_VERSION:
+        if sha or files:
+            raise BaselineConfigError(
+                "只设置 COMET_TARBALL_SHA256 / COMET_PKG_FILES 而未设置 "
+                "COMET_EXPECTED_VERSION，属同一语义两处配置源；升级时三者必须同批替换")
+        return {"version": version,
+                "sha256": BUILTIN_BASELINES[version]["sha256"],
+                "pkg_files": BUILTIN_BASELINES[version]["pkg_files"],
+                "source": "builtin"}
+    if not sha or not files:
+        raise BaselineConfigError(
+            f"COMET_EXPECTED_VERSION={version} 未登记内置基线；必须同时设置 "
+            "COMET_TARBALL_SHA256（npm pack 实算 sha256）与 COMET_PKG_FILES（同口径文件数），"
+            "或把新基线写进 BUILTIN_BASELINES 后入库")
+    if not re.fullmatch(r"[0-9a-f]{64}", sha):
+        raise BaselineConfigError("COMET_TARBALL_SHA256 必须是 64 位小写 sha256 十六进制")
+    if not files.isdigit() or int(files) <= 0:
+        raise BaselineConfigError("COMET_PKG_FILES 必须是正整数（同口径 package/ 普通文件数）")
+    return {"version": version, "sha256": sha,
+            "pkg_files": int(files), "source": "env"}
+
+
+try:
+    BASELINE = resolve_baseline()
+except BaselineConfigError as exc:
+    sys.stderr.write(f"[baseline] 配置不自洽，拒绝出报告：{exc}\n")
+    raise SystemExit(2) from exc
+
+# 以下是同一基线三元组的只读投影，禁止单独修改（单独改一处等于制造第二配置源）。
+EXPECTED_VERSION = str(BASELINE["version"])
+TARBALL_SHA256 = str(BASELINE["sha256"])
+EXPECTED_PKG_FILES = int(BASELINE["pkg_files"])
+
 PKG_ROOT = Path(os.environ.get(
     "COMET_PKG_ROOT", "/opt/homebrew/lib/node_modules/@rpamis/comet"))
 NPM_PKG = "@rpamis/comet"
 TARBALL_DEFAULT = os.environ.get(
     "COMET_TARBALL", f"/tmp/rpamis-comet-{EXPECTED_VERSION}.tgz")
-TARBALL_SHA256 = "2003eb1797fcb693ec1c3160fcd97c86b66c0530e9f73ff78804e9d9b3dd1339"
-EXPECTED_PKG_FILES = 3656
 CACHE_DIR = Path(os.environ.get(
     "COMET_BASELINE_CACHE", Path.home() / ".cache" / "comet-baseline"))
 
@@ -171,7 +235,9 @@ def c3_full_package(rep: Report, tarball: Path | None) -> dict:
 
     if sha256_file(tarball) != TARBALL_SHA256:
         rep.add("C3 全包逐字节一致", False,
-                f"{tarball} 的 sha256 与基线不符，拒绝用不可信包做完整性证明")
+                f"{tarball} 的 sha256 与 {EXPECTED_VERSION} 基线不符，拒绝用不可信包做完整性证明"
+                "；若 CLI 已升级，须先按官方包实算并同批更新基线三元组（见运维文档 §二），"
+                "不可只改版本号")
         return {"same": 0, "differ": 0, "missing": 0, "total": 0}
 
     same = differ = missing = 0
@@ -465,7 +531,9 @@ def fetch_tarball() -> Path | None:
     if got is None:
         return None
     if sha256_file(got) != TARBALL_SHA256:
-        sys.stderr.write(f"[fetch] 复现包 sha256 与基线不符，拒绝使用（已保留 {got} 供排查）\n")
+        sys.stderr.write(
+            f"[fetch] 复现包 sha256 与 {EXPECTED_VERSION} 基线不符，拒绝使用（已保留 {got} 供排查）"
+            "；若确已升级 CLI，须由官方包实算后同批更新基线三元组，不可只改版本号\n")
         return None
     if got != dest:
         shutil.move(str(got), str(dest))
@@ -557,12 +625,43 @@ def self_test() -> int:
     probe(c8_no_generated_pollution, lambda *a, **k: (0, ".trae-cn/skills/comet/SKILL.md\n"),
           expect_fail=True, label="C8 变异：生成资产泄漏判红")
 
-    # C3 变异：tarball 指纹不符必须拒绝，不能拿不可信包做完整性证明
+    # C3 变异：tarball 指纹不符必须拒绝，不能拿不可信包做完整性证明。
+    # 显式 patch is_file，使自测不依赖本机 /tmp 是否残留 tarball（团队换机同样可跑）。
     r = Report()
-    with patch.object(mod, "sha256_file", return_value="0" * 64):
+    with patch.object(Path, "is_file", return_value=True), \
+         patch.object(mod, "sha256_file", return_value="0" * 64):
         c3_full_package(r, Path(TARBALL_DEFAULT))
     cases.append(("C3 变异：tarball 指纹不符判红", len(r.failed) == 1,
                   f"期望 1 个 FAIL，实际 {len(r.failed)} 个"))
+
+    # 基线三元组：单一真源 + fail-closed。单独覆盖任一项都必须拒绝出报告，
+    # 完整同源三元组才允许覆盖（供未来的升级演练使用）。
+    def probe_baseline(env: dict[str, str], *, expect_error: bool, label: str) -> None:
+        try:
+            got = resolve_baseline(env)
+            passed = (not expect_error and got["version"] ==
+                      env.get("COMET_EXPECTED_VERSION", DEFAULT_VERSION))
+            note = f"期望 {'拒绝' if expect_error else '接受'}，实际接受 source={got['source']}"
+        except BaselineConfigError as exc:
+            passed = expect_error
+            note = f"期望 {'拒绝' if expect_error else '接受'}，实际拒绝：{str(exc)[:52]}"
+        cases.append((label, passed, note))
+
+    probe_baseline({}, expect_error=False,
+                   label="基线正例：默认内置三元组可用")
+    probe_baseline({"COMET_EXPECTED_VERSION": "0.5.3"}, expect_error=True,
+                   label="基线变异：只改版本不换指纹/文件数必须 fail-fast")
+    probe_baseline({"COMET_TARBALL_SHA256": "a" * 64}, expect_error=True,
+                   label="基线变异：只改指纹不改版本(两处配置源)必须 fail-fast")
+    probe_baseline({"COMET_EXPECTED_VERSION": "0.5.3",
+                    "COMET_TARBALL_SHA256": "a" * 64}, expect_error=True,
+                   label="基线变异：缺文件数必须 fail-fast")
+    probe_baseline({"COMET_EXPECTED_VERSION": "0.5.3",
+                    "COMET_TARBALL_SHA256": "xyz", "COMET_PKG_FILES": "4000"},
+                   expect_error=True, label="基线变异：指纹格式非法必须 fail-fast")
+    probe_baseline({"COMET_EXPECTED_VERSION": "0.5.3",
+                    "COMET_TARBALL_SHA256": "a" * 64, "COMET_PKG_FILES": "4000"},
+                   expect_error=False, label="基线正例：完整同源三元组覆盖被接受")
 
     # 严格模式：存在 SKIP 必须使 verdict 返回非 0（fail-closed，杜绝假绿）
     r = Report()
@@ -643,6 +742,11 @@ def main() -> int:
     if args.json:
         out = {
             "expectedVersion": EXPECTED_VERSION,
+            "baseline": {
+                "tarballSha256": TARBALL_SHA256,
+                "pkgFiles": EXPECTED_PKG_FILES,
+                "source": BASELINE["source"],
+            },
             "strict": strict,
             "checks": rep.checks,
             "verified": sum(c["status"] == "PASS" for c in rep.checks),
