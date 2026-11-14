@@ -2,6 +2,7 @@
 comet_change: synapclaim-ai-governance-hardening
 role: implementation-plan
 canonical_spec: openspec
+archived-with: 2026-11-14-synapclaim-ai-governance-hardening
 ---
 
 # synapClaim AI 治理收口实施计划

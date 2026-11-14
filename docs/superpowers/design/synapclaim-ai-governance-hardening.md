@@ -2,6 +2,8 @@
 comet_change: synapclaim-ai-governance-hardening
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-11-14-synapclaim-ai-governance-hardening
+status: final
 ---
 
 # synapClaim AI 治理收口技术设计

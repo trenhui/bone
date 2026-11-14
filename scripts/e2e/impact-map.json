@@ -1697,6 +1697,7 @@
    "cases": [
     "chains.py",
     "claim-full-chain-e2e.mjs",
+    "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -1708,6 +1709,7 @@
    "cases": [
     "chains.py",
     "claim-full-chain-e2e.mjs",
+    "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -1719,6 +1721,7 @@
    "cases": [
     "chains.py",
     "claim-full-chain-e2e.mjs",
+    "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
