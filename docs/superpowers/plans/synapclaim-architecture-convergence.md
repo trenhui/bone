@@ -2,6 +2,7 @@
 change: synapclaim-architecture-convergence
 design-doc: openspec/changes/synapclaim-architecture-convergence/design.md
 base-ref: 3d43aa238ad243a0e022ed36ff345a5e6e841ece
+archived-with: 2026-11-14-synapclaim-architecture-convergence
 ---
 
 # 实施计划：synapClaim 架构收敛剩余项

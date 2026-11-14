@@ -1,0 +1,3156 @@
+# comet-execution: managed-run
+change_id: 0ec0ff33-98ed-46b5-8679-35f1e8704744
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: direct
+build_pause: null
+subagent_dispatch: null
+tdd_mode: direct
+review_mode: off
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: 3d43aa238ad243a0e022ed36ff345a5e6e841ece
+design_doc: openspec/changes/synapclaim-architecture-convergence/design.md
+plan: docs/superpowers/plans/synapclaim-architecture-convergence.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-14-synapclaim-architecture-convergence-verify.md
+branch_status: pending
+created_at: 2026-11-08
+verified_at: 2026-11-14
+archive_confirmation: confirmed
+archived: false
+bound_branch: dev
+direct_override: true
+handoff_context: openspec/changes/synapclaim-architecture-convergence/.comet/handoff/design-context.json
+handoff_hash: 4833fe7dc3fae8bd282ae7ec8f6bde464b381cbdb2343486ca71c5d7bf84b11b
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: e8122ee8c8b04de63ee125b053dc25eaf2681c9731aa51b917bff3b4ba27d29a
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: synapclaim-architecture-convergence
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: 1e01396b67d0d2143df33fb3d46bda844ca9414e97094e21a3b9bd336d3eb5c1
+    input:
+      change: synapclaim-architecture-convergence
+      changeDir: openspec/changes/synapclaim-architecture-convergence
+      workspaceBaseline:
+        ref: f204d601-2546-4dd2-8893-1701c823f9d3
+    state:
+      archiveConfirmation: confirmed
+      archived: false
+      autoTransition: true
+      baseRef: 3d43aa238ad243a0e022ed36ff345a5e6e841ece
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: direct
+      buildPause: null
+      checkEpoch: 5
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-08
+      designDoc: openspec/changes/synapclaim-architecture-convergence/design.md
+      directOverride: true
+      handoffContext: openspec/changes/synapclaim-architecture-convergence/.comet/handoff/design-context.json
+      handoffHash: 4833fe7dc3fae8bd282ae7ec8f6bde464b381cbdb2343486ca71c5d7bf84b11b
+      isolation: current
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/synapclaim-architecture-convergence.md
+      reviewMode: off
+      subagentDispatch: null
+      tddMode: direct
+      verificationReport: docs/superpowers/reports/2026-11-14-synapclaim-architecture-convergence-verify.md
+      verifiedAt: 2026-11-14
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 23
+    actions:
+      - attempt: 6
+        claim:
+          executorId: comet-classic-guard
+          token: portable-9d3fa07ae1d95d4c62126e608f02bd0bbdb06bc7db4f01366686a407c631955b
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-architecture-convergence:1
+        input:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs: {}
+        inputHash: ac1bcda8c07d06c7c769ec16c8be74b08eafd48357d6b84432aba359a604bc4d
+        outcome:
+          actionId: synapclaim-architecture-convergence:1
+          attempt: 6
+          claimToken: portable-9d3fa07ae1d95d4c62126e608f02bd0bbdb06bc7db4f01366686a407c631955b
+          inputHash: ac1bcda8c07d06c7c769ec16c8be74b08eafd48357d6b84432aba359a604bc4d
+          outcomeId: 006aae46-5a2b-438a-91f3-a1b1833a7e44
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: ba87ea52b370d522b10d2c2a12119a4607decd528a3ed59c7a564a79b77f2163
+            outcomeId: 006aae46-5a2b-438a-91f3-a1b1833a7e44
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: guard --apply 首次执行 exitCode 70 Timed out waiting for file lock；锁持有 pid
+                87508 已不存在、pgrep 无 comet
+                进程；recovery.record.status=missing，evidence 目录
+                .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2
+                不存在，receiptRef 与 manifestRef 均为 null；comet doctor 显示
+                comet-state.yaml valid 且 step 仍为 full.open。证明原检查与结果写入完全未执行。
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: guard attempt 2 returned running-action error before any check; receipt
+                absent, evidence directory absent, stale write lock holder 87508
+                dead and removed; comet doctor reports valid state still at
+                full.open.
+            resolution: not-executed
+          - attempt: 3
+            evidence:
+              summary: guard returned running-action error before any check; receipt and
+                evidence directory absent; stale lock holders are dead
+                processes; comet doctor reports valid state at full.open.
+            resolution: not-executed
+          - attempt: 4
+            evidence:
+              summary: guard returned running-action error before any check; receipt and
+                evidence directory absent; stale lock holders are dead
+                processes; comet doctor reports valid state at full.open.
+            resolution: not-executed
+          - attempt: 5
+            evidence:
+              summary: guard returned running-action error before any check; receipt and
+                evidence directory absent; lock holders are dead processes;
+                comet doctor reports valid state at full.open.
+            resolution: not-executed
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-architecture-convergence
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-fc5f03c072335db7343f545db52d4482f66acb46f1ece43d66336198e60637cf
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-architecture-convergence:4
+        input:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs: {}
+        inputHash: 0d63355ac79fc20305b8fec5771f76663ec56035806755e91d7fea11097be3f9
+        outcome:
+          actionId: synapclaim-architecture-convergence:4
+          attempt: 1
+          claimToken: portable-fc5f03c072335db7343f545db52d4482f66acb46f1ece43d66336198e60637cf
+          inputHash: 0d63355ac79fc20305b8fec5771f76663ec56035806755e91d7fea11097be3f9
+          outcomeId: synapclaim-architecture-convergence:4:1:executor-result
+          output:
+            contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: ae8ae770eed8b3ddfa80dba75bca11029092b023f889d620123b1d5e8b7af84e
+            outcomeId: synapclaim-architecture-convergence:4:1:executor-result
+        reconciliations: []
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-architecture-convergence
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-65ba75869e4546a65d242d3a641c329703fcbfc126d022680ed2db67383f773f
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-architecture-convergence:5
+        input:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs: {}
+        inputHash: c3bc5ea32c8afd8aaf714f464a9719fd8edda774d5f0293520cbd15cad1b613d
+        outcome:
+          actionId: synapclaim-architecture-convergence:5
+          attempt: 2
+          claimToken: portable-65ba75869e4546a65d242d3a641c329703fcbfc126d022680ed2db67383f773f
+          inputHash: c3bc5ea32c8afd8aaf714f464a9719fd8edda774d5f0293520cbd15cad1b613d
+          outcomeId: 21aaf4d6-054a-41e2-aad9-0c529eb5cd8e
+          output:
+            handoffContext: openspec/changes/synapclaim-architecture-convergence/.comet/handoff/design-context.json
+            handoffHash: 4833fe7dc3fae8bd282ae7ec8f6bde464b381cbdb2343486ca71c5d7bf84b11b
+            proposal: 方案：以代码事实为单一真源，按 design.md 的 D-1~D-10 分四阶段收口九项剩余项。阶段 A 文档口径、20 子域到 7
+              上下文的机器可读映射与门禁、响应契约机检；阶段 B 显式流程层与声明式
+              Condition、脚本沙箱（能力白名单加超时步数、fail-closed）、理算三策略（旧实现保留标 Deprecated
+              并加回退开关）；阶段 C 纯函数内核迁 adjustment-engine、synap-claim-sdk 落纯 Java
+              契约、依赖边界机检；阶段 D 人工窗口（M2 责任要素 DDL、D4 物理包重构、05 契约 node_type
+              枚举扩展、FraudScreen 真实接入）。关键取舍：一是不伪造 7 步节点，canonical 五节点保持唯一真源，落地版
+              7.3 改写为现状加待评审扩展阶段；用户 Q3 要求强制全做，但 L4 项 AI
+              不得执行，本轮另产出可直接进入评审的人工窗口执行包。二是脚本沙箱不用 JVM 全局 SecurityManager，不引
+              Aviator。三是复用双轨对拍、缺口哨兵、变异鉴别三轨锁金额等价，oracle 不并入生产。四是 D4
+              用逻辑映射加门禁而非物理移动 500 余个 Java 文件。风险：L4 架构师审批与 R1-R8
+              未拍板、文档目标态定义不自洽、并发提交者混入、全仓门禁基线、全量提交含他人增量。验证：1290 例单测零失败、12
+              道提交门禁、文档机检 19 步、错误码 52 对 52 与双语覆盖、clean test 核对提交树。Spec Patch：无，三份
+              delta spec 与 proposal 一致，不改动需求。
+            requirementsEvidence:
+              contentHash: 4e4dd0cb1bde50aaef7708f30e0caffbed5b1f626e32f13022914296f7462c38
+              ref: openspec/changes/synapclaim-architecture-convergence
+            sourceEvidence:
+              contentHash: e94c9005e2b7e0ce47ae55621b452c4197cdb5950913c90c02a8cf18ce7e9c17
+              ref: openspec/changes/synapclaim-architecture-convergence
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: a103e3b24677fe7075cb741d58b00990d7c8589f8e6307cdaa75d2d3b20841db
+            outcomeId: 21aaf4d6-054a-41e2-aad9-0c529eb5cd8e
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: propose-design exited before writing any wait or receipt;
+                design.handoff Action 5 has no receipt; lock holders are dead
+                processes; state remains full.design.handoff.
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-architecture-convergence
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-785e4e565f75ee5ff67a312f462ef1eefc12af8a15a1bd623d4f65f97c360cb8
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-architecture-convergence:7
+        input:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs: {}
+        inputHash: f251ce44618e1559058b7c3216e9feabfd58440cfb329014f6f799f3c6706b5f
+        outcome:
+          actionId: synapclaim-architecture-convergence:7
+          attempt: 1
+          claimToken: portable-785e4e565f75ee5ff67a312f462ef1eefc12af8a15a1bd623d4f65f97c360cb8
+          inputHash: f251ce44618e1559058b7c3216e9feabfd58440cfb329014f6f799f3c6706b5f
+          outcomeId: 9d4f3ee2-948f-49ea-88a7-1b4556cdb9e1
+          output:
+            designDoc: openspec/changes/synapclaim-architecture-convergence/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 65587bee9821e5c95389d245cc000285696e336529d169a8022d3125711a2840
+            outcomeId: 9d4f3ee2-948f-49ea-88a7-1b4556cdb9e1
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-architecture-convergence
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-2da9b81664fead132c369624c6af91a8a4ad2b098d907ce07c75d95e9723b410
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-architecture-convergence:9
+        input:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs: {}
+        inputHash: d1c66c8e835d2bba85c419ec57ae4e91af70c5e0320a02592451078e4b144d79
+        outcome:
+          actionId: synapclaim-architecture-convergence:9
+          attempt: 1
+          claimToken: portable-2da9b81664fead132c369624c6af91a8a4ad2b098d907ce07c75d95e9723b410
+          inputHash: d1c66c8e835d2bba85c419ec57ae4e91af70c5e0320a02592451078e4b144d79
+          outcomeId: 8b8ff49c-9fbe-43cd-ab1b-d0c9fb089202
+          output:
+            boundBranch: dev
+            buildMode: direct
+            directOverride: true
+            isolation: current
+            reviewMode: off
+            subagentDispatch: null
+            tddMode: direct
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: d300b17ca226c0d8c77f817e1e1cee009c7501fddc104bbfbb524e59bc6c372e
+            outcomeId: 8b8ff49c-9fbe-43cd-ab1b-d0c9fb089202
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-architecture-convergence
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-b68c92f0e18d7721f282985faf70ba039832338d0ac0083472847fe4f2e18615
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-architecture-convergence:11
+        input:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs: {}
+        inputHash: 1fd1c99941601c1170ac888e3b5be0cfb84ad5f8327eb4db789ea205b8f43b1a
+        outcome:
+          actionId: synapclaim-architecture-convergence:11
+          attempt: 1
+          claimToken: portable-b68c92f0e18d7721f282985faf70ba039832338d0ac0083472847fe4f2e18615
+          inputHash: 1fd1c99941601c1170ac888e3b5be0cfb84ad5f8327eb4db789ea205b8f43b1a
+          outcomeId: 3a6d8d6d-4cd0-4b8a-960e-1df15b69ae29
+          output:
+            designEvidence:
+              contentHash: 19a50da4301ccb73b5771e8ae5e42efff40ba097799d9b993ab799bdd653c571
+              ref: openspec/changes/synapclaim-architecture-convergence/design.md
+            plan: docs/superpowers/plans/synapclaim-architecture-convergence.md
+            planEvidence:
+              contentHash: 6078348af0826eb54199c8a9368678eeb8928ea1973d39c37e727821bac895d7
+              ref: docs/superpowers/plans/synapclaim-architecture-convergence.md
+            taskRevision: 98418c087c6799cd11c14e6210e5acc120d6e25b48445f84108069cdbe92a491
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 6b1555350c30ae2df314ed4d8f35a511cfba28074f9515679391dea9f5f3b85f
+            outcomeId: 3a6d8d6d-4cd0-4b8a-960e-1df15b69ae29
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-architecture-convergence
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-architecture-convergence:13/2
+          token: portable-d2f2762e0fd573c60dff052c719d9329f792e840d2e6a4e74252d5e8408ed9c7
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-architecture-convergence:13
+        input:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs: {}
+        inputHash: bfd2196238b4bb2449fceb356f8c1c67facecf7f436562953b8246a2e8bee954
+        outcome:
+          actionId: synapclaim-architecture-convergence:13
+          attempt: 2
+          claimToken: portable-d2f2762e0fd573c60dff052c719d9329f792e840d2e6a4e74252d5e8408ed9c7
+          inputHash: bfd2196238b4bb2449fceb356f8c1c67facecf7f436562953b8246a2e8bee954
+          outcomeId: 01682b55-8aff-4802-8cb3-1a22dd293dfa
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: d6cdab613442b006f1e9e9d95c4bae81a39cd619bd60c246dcc446508674d429
+            outcomeId: 01682b55-8aff-4802-8cb3-1a22dd293dfa
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: comet state complete-build 首次返回 exitCode 70（Timed out waiting for file
+                lock）；.write.lock 持有 pid 60510 经 ps -p 60510 与 pgrep -fl comet
+                双重确认均已退出。comet state check --recover --details 显示
+                action.status=unknown、record.status=missing、evidence 目录
+                .comet/runtime/classic-sdk-checks/b9b6d785... 不存在（ls 报 Not a
+                directory）、receiptRef=null、manifestRef=null、checks.blocked=true。本次尝试未执行任何
+                build check、未生成收据或清单，故判定原尝试完全未执行。
+            resolution: not-executed
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-architecture-convergence
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 11
+        claim:
+          executorId: comet-classic-check
+          token: portable-64c5f3b6dae326f4e48d744277cb0bce673538d9ff1902c08021cb37eb176673
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-architecture-convergence:14
+        input:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs: {}
+        inputHash: 24f2a54c05b2fb0a122b7bb3794324646b630c4f037e869b924a19ff46b6a6d9
+        outcome:
+          actionId: synapclaim-architecture-convergence:14
+          attempt: 11
+          claimToken: portable-64c5f3b6dae326f4e48d744277cb0bce673538d9ff1902c08021cb37eb176673
+          inputHash: 24f2a54c05b2fb0a122b7bb3794324646b630c4f037e869b924a19ff46b6a6d9
+          outcomeId: e687a307-8c1c-4626-ac02-41a57f751673
+          output:
+            argv:
+              - bash
+              - scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: d2a4836ad96bdfcbb688e4dfc9c962a882a85078ee96c9048b41e41e9abc222c
+            cwd: .
+            environment: acaffa39e221d0ca45c04c5ba154b8eb7d14814f8a8b4ec39859f88d624cd82e
+            exitCode: 0
+            inputAfter: c96811561907647e8f874a91e9a2942c173c3448dab6b18712e75367ba90c58c
+            inputBefore: c96811561907647e8f874a91e9a2942c173c3448dab6b18712e75367ba90c58c
+            manifestHash: ba454f13e8adbcc8de1ce0c2e6e04dd524bdbe8c3a30db81b72e4aef05698278
+            manifestRef: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/27ec1eb7-f7a3-4223-b6eb-4786526446e8.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/f9ecca5c-0dab-4f0c-862a-cc236c8db97b.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 2657a8bce25443a5a4a2a949048d3322395e1e590ac68f37a0327cce2ca291a9
+            outcomeId: e687a307-8c1c-4626-ac02-41a57f751673
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: comet check run build 因全局 .write.lock 僵死（pid 67158 已退出）返回 exitCode 70
+                CLASSIC_COMMAND_FAILED，卡在输入核对阶段，未执行任何子命令、未生成 logRef
+                或收据；随后一次重试返回『no pending check Action』，证实该 Action 被认领后结果未知。comet
+                state check --recover --details 显示 reconcile 且无检查记录。原检查完全未执行。
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: comet check run build 在输入核对阶段因全局 .write.lock 僵死（pid 71949 已由 kill -0
+                确认退出、pgrep -fl comet 无输出）返回 exitCode 70
+                CLASSIC_COMMAND_FAILED，未执行子命令、未生成 logRef 或收据。原检查完全未执行。
+            resolution: not-executed
+          - attempt: 3
+            evidence:
+              summary: comet check run build 连续因 SDK 全局 .write.lock 超时（exitCode 70
+                CLASSIC_COMMAND_FAILED）在输入核对阶段失败，未执行子命令、未生成 logRef 或收据；pgrep -fl
+                comet 无存活进程。原检查完全未执行，已复位为可重新派发。
+            resolution: not-executed
+          - attempt: 4
+            evidence:
+              summary: comet check run build 在『核对检查输入』阶段因 SDK 全局 .write.lock 僵死（spawn 子进程 pid
+                已死）返回 exitCode 70，未执行子命令、未生成 logRef 或收据；重试返回『no pending check
+                Action』，证实 Action 被认领后结果未知。原检查完全未执行，已复位为可重新派发。
+            resolution: not-executed
+          - attempt: 5
+            evidence:
+              summary: comet check run build 在『核对检查输入』阶段因 SDK 全局 .write.lock 僵死（spawn
+                子进程静默崩溃，pid 已死、stderr 为空）返回 exitCode 70，未执行子命令、未生成 logRef
+                或收据；重试返回『no pending check Action』。原检查完全未执行，已复位为可重新派发。
+            resolution: not-executed
+          - attempt: 6
+            evidence:
+              summary: comet check run build 在『核对检查输入』阶段因 SDK spawn 的子进程崩溃（僵尸/持锁不释放）导致全局
+                .write.lock 30 秒超时（exitCode 70），未执行子命令、未生成 logRef 或收据；重试返回『no
+                pending check Action』。原检查完全未执行，已复位为可重新派发。
+            resolution: not-executed
+          - attempt: 7
+            evidence:
+              summary: 0.5.2 升级并清锁后 comet check run build 仍因 SDK 锁超时（exitCode 70）未执行子命令、未生成
+                logRef 或收据；随后一次重试返回『no pending check Action』。原检查完全未执行，已复位为可重新派发。
+            resolution: not-executed
+          - attempt: 8
+            evidence:
+              summary: 0.5.2 升级并清锁后 comet check run build 在『核对检查输入』阶段仍因 SDK 全局 .write.lock 30
+                秒超时（exitCode 70）未执行子命令、未生成 logRef 或收据；随后重试返回『no pending check
+                Action』。原检查完全未执行，已复位为可重新派发。
+            resolution: not-executed
+          - attempt: 9
+            evidence:
+              summary: 释放 running Action 后重试 build check
+            resolution: not-executed
+          - attempt: 10
+            evidence:
+              summary: 用户于 2026-11-14 明确授权按 Runtime 恢复协议恢复本 Run 后，逐项只读核对本次
+                claim（executorId=comet-classic-check,
+                token=7646d009-603e-4855-9524-6ab68bd6ba47）对应的执行事实：(1) comet
+                runtime dispatch inspect 显示 Action
+                synapclaim-architecture-convergence:14
+                status=running→unknown、attempt=10、receipts=[]、command=null，即
+                Runtime 从未为该 claim 绑定待执行命令；(2) comet state check build --recover
+                --details 的
+                recovery.record.status=missing、evidence.receiptRef=null、manifestRef=null；(3)
+                evidence 目录 .comet/runtime/classic-sdk-checks/b9b6d785…/ 实存但文件数为
+                0，无 logRef、无收据、无 manifest；(4) find .comet -name '*.lock' 结果为
+                0，历史 9 次 reconciliation 记载的 SDK 全局 .write.lock 僵死锁已不存在；(5) pgrep
+                -fl comet 仅有 1 个 daemon-server.js 常驻服务，无任何原检查执行器进程；(6) 本 Run 已有
+                9 条历史 reconciliation 全部为 resolution=not-executed，证据一致指向『comet
+                check run build 在核对检查输入阶段因 .write.lock 僵死返回 exitCode
+                70，未执行任何子命令、未生成 logRef
+                或收据』。据此核实原检查命令从未被执行，本次不是编造成功收据；执行器已中断且无存活进程，符合 Runtime 的
+                not-executed 声明条件。来源：comet runtime dispatch inspect、comet state
+                check --recover --details、ls/find/pgrep 现场核对、Run 内
+                reconciliations 历史。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-architecture-convergence
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-5b633b9776a41a48bf7b2b3246b712191c29220ba8bd4e8597acf1edea9de510
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-architecture-convergence:16
+        input:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs: {}
+        inputHash: c12fb901a74327025b7196e83336374200bb31fc0499159869609a12d294b46b
+        outcome:
+          actionId: synapclaim-architecture-convergence:16
+          attempt: 1
+          claimToken: portable-5b633b9776a41a48bf7b2b3246b712191c29220ba8bd4e8597acf1edea9de510
+          inputHash: c12fb901a74327025b7196e83336374200bb31fc0499159869609a12d294b46b
+          outcomeId: bae15758-9fc1-443e-8d8a-2febcae39347
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-14-synapclaim-architecture-convergence-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 19b0bf96eba0a4e035e9cff0e064123ed68f286b42b02d935901c4111471b8f7
+            outcomeId: bae15758-9fc1-443e-8d8a-2febcae39347
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-architecture-convergence
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-e08c1cc7c1499029d1a3207160f8eb6e5edca842fd5bd11028d305dc24c774c6
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-architecture-convergence:18
+        input:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs: {}
+        inputHash: 7517fb586abfdb89bae5c1dce7145d238fe06c8a79c9c429ef4a4bf7530e0306
+        outcome:
+          actionId: synapclaim-architecture-convergence:18
+          attempt: 2
+          claimToken: portable-e08c1cc7c1499029d1a3207160f8eb6e5edca842fd5bd11028d305dc24c774c6
+          inputHash: 7517fb586abfdb89bae5c1dce7145d238fe06c8a79c9c429ef4a4bf7530e0306
+          outcomeId: fb1c7a02-e3af-4c42-8670-6c04f5185e10
+          output:
+            argv:
+              - bash
+              - scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: 229ef2cc75b4fbdc68aed1c09c340599bea7d4cc77e7cc9d0fd6b693b97b0a8e
+            cwd: .
+            deliveryInputs:
+              .github/workflows/ci.yml: git:d90073578c739f969fa11f9ec72044eb35f06c77
+              AGENTS.md: git:151e8af0e28b0ba423a816f024d00642769e14bc
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java: git:b1b70b54af50317a6ac0b8272d9cb98bdc55cec5
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/AiFeedbackEventReq.java: git:bbb293bf91fb0473490e8952fc2a8b04c5dfa83b
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/AiFeedbackEventResp.java: git:e28158d1d99f61c6bf19da22ea9a68f43b3c98c5
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/AiFeedbackSummaryResp.java: git:907cf0acff11ecc35a7ac8b6c52705d5f9d06b53
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/AiFeedbackCommand.java: git:aca61702abc49ad9965aa81c1f627ae49e7a5dca
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/AiFeedbackRules.java: git:eff9af0326e777045b26503875b129d0e466d41f
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimFeedbackApplicationService.java: git:04cf611f2f5df1514b4e98057cc312dd51bceec0
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimSearchApplicationService.java: git:6b3c34e5857d2da3ff308c14f48be7f42e205540
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimSearchRules.java: git:c2d6104c04a47cbf7b3bdbb9b05b02895e11ec51
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrorCodes.java: git:80ad1132fbc8a941d14085a8cfa763d060c64219
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrors.java: git:57bcb31385ba2eb01c972541ba88a4551b42808b
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/claim/projection/ClaimSearchHit.java: git:c0aeb386c678b263e302f6adc58b131ed362e656
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/feedback/AiFeedbackFact.java: git:338f46222dd4e45cb51e7c1eefa0f89675ff8c53
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/feedback/ClaimAiFeedbackEvent.java: git:dab65fd31cf1f0415c8ef6f0b284b9bfcf1d028d
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/feedback/FeedbackCountRow.java: git:bb1cf3d74dd4f05acf7ad156342878a9a0267671
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimAiFeedbackEventRepository.java: git:71d0bdddaedef1536434e8298615d5b740a16858
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimCaseRepository.java: git:f832d9902c43d9765d92ae9ecfdd0a915fd2a280
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/schedule/ScheduleLockService.java: git:5c64376b87502fd38cb3c02c94856ca4e4c19c6c
+              bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimAiFeedbackEventRepository/countByBucket.sql: git:aa2ee8aaaf4f45f87bea4b78d0adfe0d152e5329
+              bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimCaseRepository/searchByKeyword.sql: git:48cece5e2997c803a319ca0e8837cdc0542c5ed8
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/AiFeedbackRulesTest.java: git:0648c5c991cccc3032a248fa51769c055a34e90b
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimSearchRulesTest.java: git:5fe09b040fe2c2dc0c4293f149cd6d1e8a16485c
+              bone-frontend/.eslintrc.json: git:5841215208bda5ae893d6d1bccffc5764212c80d
+              bone-frontend/apps/bone-commerce-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+              bone-frontend/apps/bone-commerce-app/src/main.tsx: git:f1b90727640f8f7d663d2471b79cb8af790505be
+              bone-frontend/apps/bone-commerce-app/src/services/api.ts: git:997cf57c003a861396d9f4a15d1eb24f0dea5217
+              bone-frontend/apps/bone-extension-app/src/main.tsx: git:f7b1aa4dde73ea096dc4b48ba9f841ed7f9897e0
+              bone-frontend/apps/bone-extension-app/src/pages/Marketplace.tsx: git:eb30931049842bb5200875581229827c0c926ead
+              bone-frontend/apps/bone-extension-app/src/pages/PluginManagement.tsx: git:27c8bd8b1c98ec751ceff762d3c8e54df81d736a
+              bone-frontend/apps/bone-extension-app/src/services/extensionApi.test.ts: git:d8a465bf4ad9e60694ea6c869f0aa3356b45f20a
+              bone-frontend/apps/bone-iam-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+              bone-frontend/apps/bone-iam-app/src/main.tsx: git:d175d5e570330db6304abafd7ab35fe2e6e53b7f
+              bone-frontend/apps/bone-iam-app/src/pages/AccountManagement.tsx: git:879887b9d0b17414ecc30aa9d56801b0ddb220bd
+              bone-frontend/apps/bone-iam-app/src/pages/AuditSettings.tsx: git:002510661095d0a9b10ae650062ed836ed2f8c88
+              bone-frontend/apps/bone-iam-app/src/pages/MenuManagement.tsx: git:b5dd11d15c944b449b7303380ea14ac0a7d94ff9
+              bone-frontend/apps/bone-iam-app/src/pages/OrganizationManagement.tsx: git:519444988fb95dc19b3e590dae3a17b76c13abf0
+              bone-frontend/apps/bone-integration-app/src/App.tsx: git:945bb2025483dff53410d99c78e8962d5d924a44
+              bone-frontend/apps/bone-integration-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+              bone-frontend/apps/bone-integration-app/src/main.tsx: git:f1b90727640f8f7d663d2471b79cb8af790505be
+              bone-frontend/apps/bone-integration-app/src/pages/FlowDesign.tsx: git:4654022ce7bcc5460e306cbddd15da253dd9a700
+              bone-frontend/apps/bone-masterdata-app/src/App.tsx: git:52b3f8f4e7806724909715ca49de22c8065974c8
+              bone-frontend/apps/bone-masterdata-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+              bone-frontend/apps/bone-masterdata-app/src/main.tsx: git:ba83aea2962b564e7d872fbcb7f533b565fa6165
+              bone-frontend/apps/bone-masterdata-app/src/pages/CategoryManagement.tsx: git:89680a6c5ed58a6941049f3cbe22a3dcd8b3afba
+              bone-frontend/apps/bone-masterdata-app/src/pages/DomainWorkbench.tsx: git:c154d2b6ea51f94de01c36599c44c0286ebe46b7
+              bone-frontend/apps/bone-masterdata-app/src/pages/EntityManagement.tsx: git:7a33e7a52f45877ed477dce2e0c95d9b3c3a5a9a
+              bone-frontend/apps/bone-masterdata-app/src/pages/FieldManagement.tsx: git:9963a9caf26cb9cdc9d46cc972f399f02de0da06
+              bone-frontend/apps/bone-masterdata-app/src/pages/GovernanceBoard.tsx: git:c1302840cbc2c05c7763fc3bb38303b87b2190b3
+              bone-frontend/apps/bone-masterdata-app/src/pages/QualityRuleManagement.tsx: git:0882b00c0cecfbb038d9113b6115674858351e23
+              bone-frontend/apps/bone-masterdata-app/src/pages/RecordManagement.tsx: git:56cdae680505bb8b43a0a730ac5ef5e58212a307
+              bone-frontend/apps/bone-masterdata-app/src/pages/TemplateManagement.tsx: git:cfda7a8d3f411b48b80230f8460acb0c5ff35ca1
+              bone-frontend/apps/bone-masterdata-app/src/services/api.ts: git:963ecf11d1d45469ace192a0442faa0ff75ffca7
+              bone-frontend/apps/bone-metadata-app/src/components/uiSchema/structurePanelPerf.test.tsx: git:09b802d2657c1c4fa09d8651fc67ccd43f9135e7
+              bone-frontend/apps/bone-system-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+              bone-frontend/apps/bone-system-app/src/main.tsx: git:fff59ea64efd7dc7d58ce69f445c8343d6df2992
+              bone-frontend/apps/bone-system-app/src/pages/MonitorAlert.tsx: git:2bb3f1925741a7ddf4810816b23e6b1cee2834f3
+              bone-frontend/apps/bone-system-app/src/pages/ScheduleTaskManagement.tsx: git:13d17b64b52416c1484783ed2f39c1d2b00514bb
+              bone-frontend/apps/bone-system-app/src/pages/SystemDeployment.tsx: git:121c287d4b19d8a5e06d28ed054fcfa5093de013
+              bone-frontend/apps/bone-system-app/src/pages/WorkflowDesigner.tsx: git:0b6fec643b80de6f7f6c671b9038f70e4bdd9908
+              bone-frontend/packages/core/event-bus/package.json: git:dc941723302b4372b70d3d5d68bd0041d5559141
+              bone-frontend/packages/core/event-bus/src/micro-app-messenger.ts: git:1febc07bdee9d99be00de2f4e562b5d5c8894ac7
+              bone-frontend/packages/core/event-bus/src/typedEventBus.ts: git:4953eaa4a05d65bfbca99b2eff6a8c685f054f65
+              bone-frontend/packages/core/performance-monitor/src/index.ts: git:fefab71f1a531b298d2a3a7c23c62338d13cc1ec
+              bone-frontend/packages/core/workflow-dsl/package.json: git:973940dd7d64019b80af7cf80202b44d514f71fa
+              bone-frontend/packages/shared-utils/src/i18n/locales/en-US.json: git:427c048629b7746ab45ab8720a93a0b817fed9e0
+              bone-frontend/packages/shared-utils/src/i18n/locales/zh-CN.json: git:a0e21dab7528ef11187768bccb6abe754947a30d
+              bone-frontend/packages/ui-schema/package.json: git:0a8fe4f5c78c5041ba15f06eb9b2207ddb57f00c
+              bone-frontend/packages/ui-schema/src/SchemaRenderer.tsx: git:1e9a69b287ebcdf550a181becc89bbb0b3a8fb35
+              bone-frontend/packages/ui/components/src/button/useButton.ts: git:cfeb6619ca68638c5ae1dff4ae30118d2efe0bad
+              bone-frontend/packages/ui/design-system/src/authority/AuthButton.tsx: git:a0743ce1112a72c3eab2c111239df699bb00fc96
+              bone-frontend/packages/ui/design-system/src/components/BoneAppProvider.tsx: git:128b9f00c4453715636a26687b809dcfc1d81077
+              bone-frontend/packages/ui/design-system/src/micro-app/createBoneMicroAppRenderer.tsx: git:5d211fef28c70c147ba130eb2f52e21ead9e710f
+              bone-frontend/packages/ui/design-system/src/theme/applyThemeCss.ts: git:072a5dd7c2670eb28f4228605dae018750621684
+              bone-frontend/packages/ui/design-system/src/theme/index.ts: git:487be8c9b84b0d7f80520760bbd09ea25b44ec36
+              bone-frontend/packages/ui/design-system/src/theme/useBoneTheme.ts: git:dea6ebd76a802ada0096e358b39fe11431eaaed6
+              bone-frontend/packages/ui/package.json: git:bb9dd7788ed9cc938d42b126445e89f26717c5c8
+              bone-frontend/packages/ui/styled-system/src/index.ts: git:860940559346c2be1f0c0863bd83c880e0efa45c
+              bone-frontend/packages/ui/styled-system/src/utils.ts: git:4695c2fa2d51aafb65dce59da33334e0a45191cd
+              bone-init.sql: git:f12fe0a4cef19b69b1bc0b998614f06abda928b4
+              doc/architecture/Bone-错误码登记.md: git:ee4ac8f70fd308055afae6e440b8621bf0114f60
+              doc/architecture/数据库开发规范.md: git:df46aa850d59ad7b0fa01fe042d6bdb676b2827d
+              scripts/_e2e_uischema.js: missing
+              scripts/_probe_designer_polish.js: missing
+              scripts/_probe_p1_contract.js: missing
+              scripts/_probe_p5_publish_visibility.js: missing
+              scripts/_probe_p6_negative.js: missing
+              scripts/_probe_p6_onboarding.js: missing
+              scripts/_probe_scenario_filter.js: missing
+              scripts/archive/README.md: git:029813a40f78d9f3e6f70504dbb558b5365df32d
+              scripts/archive/_e2e_uischema.js: git:96ee9f9ac700d8619f6f33f8b6ce4cf1b44c2524
+              scripts/archive/_probe_designer_polish.js: git:fdbf71b1507ed51682bcdc9d7d2f22875b3fb79d
+              scripts/archive/_probe_p1_contract.js: git:d4cd35f945dbef6853a2c75b6da76be13d4d3980
+              scripts/archive/_probe_p5_publish_visibility.js: git:559b31d39f6620388aebc57f743461b31ee5ec3b
+              scripts/archive/_probe_p6_negative.js: git:dae41df41bcd86c791a1232195102d0edd3cdaab
+              scripts/archive/_probe_p6_onboarding.js: git:443998d1862c39cbfab4e6591241d688b9508b8a
+              scripts/archive/_probe_scenario_filter.js: git:65485448883287f85f8126e17b68f7994b1e21c9
+              scripts/archive/endpoint-test.sh: git:75fe8ef1c6f899f907bbddb1de0a6ebed573e12f
+              scripts/archive/tmp-iam-gateway-rename.py: git:430df80070d5b40e49fa627cdb3d22a98aec906b
+              scripts/archive/verify_all.sh: git:fa2fb084dd9007ea4289bd779f58b42365f8f1b3
+              scripts/archive/verify_iam.sh: git:58cdcfa34c80bfebe8738f182bb3f7a4cbf5de6b
+              scripts/ci/scripts-registry-guard.sh: git:0ffcd9c20d60819b8ab5b25f23b42ecdf3a47fc6
+              scripts/e2e/_extract_endpoints.py: git:5d084444071951f44666c09c16d02e2fd8796513
+              scripts/e2e/channel-buyer-broadcast.py: git:c39f9c6a4f601e561132b23dfc11a0cd6431e2c3
+              scripts/e2e/check-data-realism.py: git:75dc7927498f5298622c33b1c0d3046014948b86
+              scripts/e2e/claim-full-chain-e2e.mjs: git:f87098894ccdf14dc102fed67d5da708aadb619c
+              scripts/e2e/datagen.py: git:354a8e6797a3e5224651b310a12d4cf0e2ea478d
+              scripts/e2e/e2e_lib/__init__.py: git:a3f6784ca8406fae89bacc10c13c280576af3693
+              scripts/e2e/expense-purchase-approval-integration-e2e.py: git:3ccf9ccb1d086d2c86ee373be3bddde3d5db264c
+              scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+              scripts/e2e/lint.sh: git:7a4c4e34ee6eca7dc66ff1f0522225b97802c854
+              scripts/e2e/multichannel.py: git:35b6e5d482cad139ef61f7148a96daef7a695c03
+              scripts/e2e/run.sh: git:25786607a8a80d1fd7f5d26cc29dcc3c8424c84f
+              scripts/e2e/templates/py-chain.py.tpl: git:fd2fbfaac229d2889e705447b35b1f93cf2d3cf8
+              scripts/e2e/templates/py-sweep.py.tpl: git:a048beb94229b94f4e1337689459311396022ea6
+              scripts/e2e/two-scenario-full-chain-e2e.py: git:e03af234a97a88437b5cad678f2bf78115cdbb32
+              scripts/e2e/ui/ui-approval-sendback-probe.mjs: git:c7670a9bc83e9440f649804aaca8c4ab0409bc8b
+              scripts/e2e/ui/ui-approval-suspend-reason-probe.mjs: git:26bdd5aa40a7fc6036de0018c567b511f287f899
+              scripts/e2e/ui/ui-metadata-approver-model-probe.mjs: git:5b67d536fd4373eae329351af7c52d22ead37406
+              scripts/e2e/ui/ui-org-routing-probe.mjs: git:96254d375a5dc98c40d5d00b7435119c75850af3
+              scripts/endpoint-test.sh: missing
+              scripts/lib/__init__.py: git:2e3534761dec1091a4f725d5c42826fa4e83adf5
+              scripts/lib/gate.py: git:1533ff5bf41f25f1b5d3528c3d48e93fb2b359ae
+              scripts/lib/registry.py: git:e46c4ed8ca1b82145de3a44da0e3c4410c2ce2a7
+              scripts/lib/waivers.py: git:f9d270737ddeb1fb6bacb7a915ae53a329295d43
+              scripts/migration/migration-manifest.json: git:6b761380cb52361f6ef42f92479248fb987c1432
+              scripts/mysql-84-upgrade.sh: git:473721b1c2e95a783ac2ed822627e39160b38df4
+              scripts/registry/external-known-failures.txt: git:046de2424dc6d90d57c4eec10605ef6f8b87dfe5
+              scripts/registry/external.json: git:02213791dd7163fe0f1d6b4614e06f7b2ef207ad
+              scripts/registry/waivers.json: git:51e93bfe1bf9ff9947d46b5394bffe7f4ca43d66
+              scripts/requirements-dev.txt: git:5c90dd49902728e77e9880db143d6fb1710353da
+              scripts/sync-init-from-live.py: git:c9d5c8d1db3472cc0f1b12a669c64aca1e0fb16b
+              scripts/tests/test_bone_cli.py: git:5153ad71eee0d90b3dede40fcb084a97e8b0447d
+              scripts/tests/test_bone_registry.py: git:58f0ae92d10f4a868be65bb3e88d8c30f5d5ebc1
+              scripts/tests/test_bone_verify.py: git:1f14261ccc7eaae048c9b91d95ccebd90bef0e3c
+              scripts/tests/test_bone_waivers.py: git:c3f49114b765ae6286b7e6ff49ad6d4c8d2f2f01
+              scripts/tests/test_check_error_code_duplication.py: git:f7d354e7ba58df41e96055b3311f51fe0fd23a98
+              scripts/tests/test_check_error_code_landing.py: git:16d29569e0b09f2a84620047bde9f07bad2e04bb
+              scripts/tests/test_check_event_envelope_version.py: git:2ab361764c223d6cc1360d34c7830795ffa0b545
+              scripts/tests/test_check_i18n_sync.py: git:efa59a014a43c53501f33149f13c7d47f957b605
+              scripts/tests/test_check_menu_icon_whitelist.py: git:e8b021d6505c65333c2201cbe8855aa8f03015e4
+              scripts/tests/test_check_menu_route_consistency.py: git:9e84fe58a94b1ec439825b8f515f90c0c8a5e2a5
+              scripts/tests/test_check_menu_single_entry.py: git:f55ed8298348a4057d60cafe7897e9b04781a1cc
+              scripts/tests/test_check_paging_current_field.py: git:b9414f8b2af07f6709e30f15c318d6624e7db3c2
+              scripts/tests/test_check_paging_param_names.py: git:0e53fe37704d0648a4b74af88c044e7394f0322e
+              scripts/tests/test_check_paging_param_ssot.py: git:d5f837e17323aa410ca65c10453497e1a1fe8dc2
+              scripts/tests/test_check_paging_total_normalize.py: git:048eaa4adbb75375296e6aee0b83e93e0a331bc6
+              scripts/tests/test_e2e_data_realism.py: git:e678967c9661ed491b646e71f68a9c50c077d138
+              scripts/tests/test_e2e_datagen.py: git:0d7a4627295faa0f9cc21e1ebc3400d313a32ffb
+              scripts/tests/test_e2e_impact.py: git:af1349760264f8cd522324b17753de5885f85817
+              scripts/tests/test_gate_lib.py: git:817e122eca5acfb7ef9484ade485d89246658c27
+              scripts/tests/test_scripts_catalog.py: git:0738612ce9a8002d82ab85cccefd61d2de5018b7
+              scripts/tmp-iam-gateway-rename.py: missing
+              scripts/verify-claim-e2e.sh: git:a771e33bc29805f54671b759f387e6ed807b5516
+              scripts/verify-workflow-designer.sh: git:36527db53b4c179b3d326c0486ccdfb37a225856
+              scripts/verify_all.sh: missing
+              scripts/verify_iam.sh: missing
+            environment: acaffa39e221d0ca45c04c5ba154b8eb7d14814f8a8b4ec39859f88d624cd82e
+            exitCode: 0
+            inputAfter: 6ca466bf505bf7fd16503db24d77d2ddc00ac1088bd422277c8dfb66e75d9eb0
+            inputBefore: 6ca466bf505bf7fd16503db24d77d2ddc00ac1088bd422277c8dfb66e75d9eb0
+            manifestHash: 23b198d018a4264230ef066d5400dbd03b944511cc71d80001921f661b812efa
+            manifestRef: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/bc57192f-ef8b-46c2-9ab9-a1d4998829b1.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/e2f24a7a-a286-4185-861b-5fd285be9484.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 58901a84a4a2dfa8ee55ad56bbb9261f1ac9adccf868fcf4c2b0e15efb8b9288
+            outcomeId: fb1c7a02-e3af-4c42-8670-6c04f5185e10
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 复核对象：本次
+                claim（executorId=comet-classic-check，token=19e7b0e3-27f1-49f0-a974-3732e9a33a51）对应的
+                full.verify.check Action synapclaim-architecture-convergence:18
+                attempt 1，命令 bash scripts/check.sh（cwd=.,
+                timeoutMs=900000）。事实核对：(1) 原执行器及所有后代进程均已停止——后台 Guard
+                任务已结束（RC=70），pgrep -fl "comet|check.sh|mvn" 无输出，Run
+                内无第二个并发检查进程。(2) 子进程确实执行完成——Comet stderr 显示「执行 verify 检查：bash」持续至
+                405 秒，随后「核对检查输入：0 项，已用 411 秒」；收据日志
+                432ec658-cbe4-4f12-83b8-9d550de87c76.log 共 1282 行，末行 [59/59] DDD
+                doc↔code 同步与「✅ 本地自检通过！」；manifest
+                cc08fe86-4bd9-47d0-93c1-3e736247ef58.manifest（1222223 字节）已生成。(3)
+                但 Runtime 从未收到可入账结果——记录
+                sdk-a9ec3eb00f1128ef641d031be4237ae2f30b021cefcec7699b80a6f1b20a9a46.json
+                的 status 停在 started、problem=null，无
+                exitCode、inputBefore/inputAfter、contentHash、manifestHash 或终态
+                receipt；Guard 顶层
+                exitCode=70，data.issues=CLASSIC_COMMAND_FAILED，根因是
+                [safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED]
+                {"count":50,"threshold":50,"scope":"turn"} 在收尾释放文件锁时拦截，后续
+                state.json.lock 等锁清理亦失败。(4) 按 Runtime 恢复规则，日志、manifest
+                与进程结束本身均不能证明检查通过，且无任何字段可回填；recordOutcome 通道要求记录完整（本例
+                completed=false），comet check rerun 明确返回「requires a new pending
+                check Action」，故无法取回原结果。(5)
+                未生成、未回填、未伪造任何成功收据，未声明本次检查通过；验证报告（Action
+                :16，succeeded）与本检查收据相互独立。结论：Runtime 侧本次尝试未产出任何可入账的执行结果，须复位
+                Action 后整次真实重跑以生成新的完整收据。此处 resolution=not-executed 仅指「Runtime
+                侧无可入账结果」，不表示 bash scripts/check.sh
+                子进程未运行——子进程已运行完成并留下完整日志，此事实已如实披露，不作隐瞒。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-architecture-convergence
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-7f449193f115c96dff957dc18846391e27bea5e1e2c07a7d92eb48f41b8afb42
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-architecture-convergence:20
+        input:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs: {}
+        inputHash: 9d9a8ba991f2fd6333dc38a691ca305e08d300e27ecc0a03089ae3cc55319668
+        outcome:
+          actionId: synapclaim-architecture-convergence:20
+          attempt: 1
+          claimToken: portable-7f449193f115c96dff957dc18846391e27bea5e1e2c07a7d92eb48f41b8afb42
+          inputHash: 9d9a8ba991f2fd6333dc38a691ca305e08d300e27ecc0a03089ae3cc55319668
+          outcomeId: 0ad7babf-554a-47b7-94ec-f35162b2d8d0
+          output:
+            summary: 按用户已确认的 local 交付：只归档并用 git commit --only 精确提交本 change 路径，不 push、不建
+              PR、不改共享 dev 历史；当前 dev 为共享工作树且 origin/dev...dev = 9/5 已分叉。Verify
+              全量门禁真实执行（bash scripts/check.sh，exitCode 0，输入快照前后一致，59/59 通过），验证报告
+              docs/superpowers/reports/2026-11-14-synapclaim-architecture-convergence-verify.md
+              已登记。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 7f4eb4302a96d0b8f93bda3875a64ddc73534b153ab501cb99b5dc652b664b4d
+            outcomeId: 0ad7babf-554a-47b7-94ec-f35162b2d8d0
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-architecture-convergence
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-667df15fd1053d2e132528c41314c901dc8c2dd891c4941866bbb3ec90db8af5
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-architecture-convergence:22
+        input:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs: {}
+        inputHash: 9f84bcd6a22ef2157a079a673c1b9f5da1a4670016bf5109cf23182fc319a1a3
+        outcome:
+          actionId: synapclaim-architecture-convergence:22
+          attempt: 1
+          claimToken: portable-667df15fd1053d2e132528c41314c901dc8c2dd891c4941866bbb3ec90db8af5
+          inputHash: 9f84bcd6a22ef2157a079a673c1b9f5da1a4670016bf5109cf23182fc319a1a3
+          outcomeId: ed4b0cff-3890-4cf8-96d4-05ca945d0968
+          output:
+            baseCommit: 7821688cfc128545b026331385b1e65c359c6f94
+            deliveryAction: local
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: aeaf129a0c67708180b09ac574b72b095e176c20a89084a448bef6fc757bbce6
+            outcomeId: ed4b0cff-3890-4cf8-96d4-05ca945d0968
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-architecture-convergence
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-50471fdbd8e25c8750f0de473c7c6805aba01398fe84b209ae40f1c4c7d7407b
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-architecture-convergence:23
+        input:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs: {}
+        inputHash: 125ead13721f179bceb4be5d06803b2d9cf3ab3829bfe6516b63222393c42f07
+        protocolVersion: 1
+        reason: Portable recovery requires reconciliation of external execution
+        receipts: []
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-architecture-convergence
+        status: unknown
+        stepId: full.archive.execute
+        type: call_tool
+    actionContexts:
+      synapclaim-architecture-convergence:1:
+        results: {}
+        sequence: 1
+      synapclaim-architecture-convergence:11:
+        results: {}
+        sequence: 11
+      synapclaim-architecture-convergence:13:
+        results: {}
+        sequence: 13
+      synapclaim-architecture-convergence:14:
+        results: {}
+        sequence: 14
+      synapclaim-architecture-convergence:16:
+        results: {}
+        sequence: 16
+      synapclaim-architecture-convergence:18:
+        results: {}
+        sequence: 18
+      synapclaim-architecture-convergence:20:
+        results: {}
+        sequence: 20
+      synapclaim-architecture-convergence:22:
+        results: {}
+        sequence: 22
+      synapclaim-architecture-convergence:23:
+        results: {}
+        sequence: 23
+      synapclaim-architecture-convergence:4:
+        results: {}
+        sequence: 4
+      synapclaim-architecture-convergence:5:
+        results: {}
+        sequence: 5
+      synapclaim-architecture-convergence:7:
+        results: {}
+        sequence: 7
+      synapclaim-architecture-convergence:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: synapclaim-architecture-convergence:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+              ref: openspec/changes/synapclaim-architecture-convergence
+        proposalHash: 7f9e930c2631a28b560650a09ac760cd3ad830ede6c6c45400b0fec2aaf53405
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+          choice: approved
+          proposalHash: 7f9e930c2631a28b560650a09ac760cd3ad830ede6c6c45400b0fec2aaf53405
+      - id: synapclaim-architecture-convergence:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-architecture-convergence/.comet/handoff/design-context.json
+              handoffHash: 4833fe7dc3fae8bd282ae7ec8f6bde464b381cbdb2343486ca71c5d7bf84b11b
+              proposal: 方案：以代码事实为单一真源，按 design.md 的 D-1~D-10 分四阶段收口九项剩余项。阶段 A 文档口径、20 子域到 7
+                上下文的机器可读映射与门禁、响应契约机检；阶段 B 显式流程层与声明式
+                Condition、脚本沙箱（能力白名单加超时步数、fail-closed）、理算三策略（旧实现保留标 Deprecated
+                并加回退开关）；阶段 C 纯函数内核迁 adjustment-engine、synap-claim-sdk 落纯 Java
+                契约、依赖边界机检；阶段 D 人工窗口（M2 责任要素 DDL、D4 物理包重构、05 契约 node_type
+                枚举扩展、FraudScreen 真实接入）。关键取舍：一是不伪造 7 步节点，canonical 五节点保持唯一真源，落地版
+                7.3 改写为现状加待评审扩展阶段；用户 Q3 要求强制全做，但 L4 项 AI
+                不得执行，本轮另产出可直接进入评审的人工窗口执行包。二是脚本沙箱不用 JVM 全局 SecurityManager，不引
+                Aviator。三是复用双轨对拍、缺口哨兵、变异鉴别三轨锁金额等价，oracle 不并入生产。四是 D4
+                用逻辑映射加门禁而非物理移动 500 余个 Java 文件。风险：L4 架构师审批与 R1-R8
+                未拍板、文档目标态定义不自洽、并发提交者混入、全仓门禁基线、全量提交含他人增量。验证：1290 例单测零失败、12
+                道提交门禁、文档机检 19 步、错误码 52 对 52 与双语覆盖、clean test 核对提交树。Spec
+                Patch：无，三份 delta spec 与 proposal 一致，不改动需求。
+              requirementsEvidence:
+                contentHash: 4e4dd0cb1bde50aaef7708f30e0caffbed5b1f626e32f13022914296f7462c38
+                ref: openspec/changes/synapclaim-architecture-convergence
+              sourceEvidence:
+                contentHash: e94c9005e2b7e0ce47ae55621b452c4197cdb5950913c90c02a8cf18ce7e9c17
+                ref: openspec/changes/synapclaim-architecture-convergence
+        proposalHash: 461f85f9439019e53655502536350efbd2e01878b5e553522ad51ab06691e66d
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-461f85f9439019e53655502536350efbd2e01878b5e553522ad51ab06691e66d-approved
+          choice: approved
+          proposalHash: 461f85f9439019e53655502536350efbd2e01878b5e553522ad51ab06691e66d
+      - id: synapclaim-architecture-convergence:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: direct
+        proposalHash: 452138c0dc7560ebbfd6184728c0bdae0efb3b1d3ed04e33461357d728c17d72
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: 697a8a47-11d4-4732-96be-ad9e029abdd4
+          choice: approved
+          proposalHash: 452138c0dc7560ebbfd6184728c0bdae0efb3b1d3ed04e33461357d728c17d72
+      - id: synapclaim-architecture-convergence:21
+        stepId: full.archive.confirm
+        sequence: 21
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs:
+            full.archive.prepare:
+              summary: 按用户已确认的 local 交付：只归档并用 git commit --only 精确提交本 change 路径，不 push、不建
+                PR、不改共享 dev 历史；当前 dev 为共享工作树且 origin/dev...dev = 9/5 已分叉。Verify
+                全量门禁真实执行（bash scripts/check.sh，exitCode 0，输入快照前后一致，59/59
+                通过），验证报告
+                docs/superpowers/reports/2026-11-14-synapclaim-architecture-convergence-verify.md
+                已登记。
+              targetBranch: dev
+        proposalHash: f7908671347522783c2822639b7d96fd801c07ca12353ecd11a4d0d2e6bce62f
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-f7908671347522783c2822639b7d96fd801c07ca12353ecd11a4d0d2e6bce62f-local
+          choice: local
+          proposalHash: f7908671347522783c2822639b7d96fd801c07ca12353ecd11a4d0d2e6bce62f
+    evidenceWaits:
+      - id: synapclaim-architecture-convergence:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/synapclaim-architecture-convergence
+          contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+          submissionId: 93899183-42fb-4cca-a98f-ce4b92bfa4e5
+      - id: synapclaim-architecture-convergence:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/synapclaim-architecture-convergence/design.md
+          contentHash: 19a50da4301ccb73b5771e8ae5e42efff40ba097799d9b993ab799bdd653c571
+          submissionId: f08e7092-d85b-4214-964f-ad1ede134581
+      - id: synapclaim-architecture-convergence:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/synapclaim-architecture-convergence.md
+          contentHash: 6078348af0826eb54199c8a9368678eeb8928ea1973d39c37e727821bac895d7
+          submissionId: fd352743-fd00-49f8-87a3-cb63d7b2b568
+      - id: synapclaim-architecture-convergence:15
+        stepId: full.build.check.evidence
+        sequence: 15
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/f9ecca5c-0dab-4f0c-862a-cc236c8db97b.log
+          contentHash: d2a4836ad96bdfcbb688e4dfc9c962a882a85078ee96c9048b41e41e9abc222c
+          submissionId: a7c8c1ef-07fa-499e-8594-6cc04abbea48
+      - id: synapclaim-architecture-convergence:17
+        stepId: full.verify.report.evidence
+        sequence: 17
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-14-synapclaim-architecture-convergence-verify.md
+          contentHash: 7f684761ab7214f0521879fe8ccaf445727d4da24b8ed9d5374afe2c87ba3756
+          submissionId: 60b604bf-1f97-4641-b6f6-901f9b696273
+      - id: synapclaim-architecture-convergence:19
+        stepId: full.verify.check.evidence
+        sequence: 19
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/e2f24a7a-a286-4185-861b-5fd285be9484.log
+          contentHash: 229ef2cc75b4fbdc68aed1c09c340599bea7d4cc77e7cc9d0fd6b693b97b0a8e
+          submissionId: 7e846bc0-dc72-46f4-9afa-c1b4ff6d338d
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 90
+  sourceHash: 688b418110b8659882de889587971e33babfaba0e3fad31332f8a50f757c4938
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+              ref: openspec/changes/synapclaim-architecture-convergence
+      - contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+        ref: openspec/changes/synapclaim-architecture-convergence
+      - contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-architecture-convergence/.comet/handoff/design-context.json
+              handoffHash: 4833fe7dc3fae8bd282ae7ec8f6bde464b381cbdb2343486ca71c5d7bf84b11b
+              proposal: 方案：以代码事实为单一真源，按 design.md 的 D-1~D-10 分四阶段收口九项剩余项。阶段 A 文档口径、20 子域到 7
+                上下文的机器可读映射与门禁、响应契约机检；阶段 B 显式流程层与声明式
+                Condition、脚本沙箱（能力白名单加超时步数、fail-closed）、理算三策略（旧实现保留标 Deprecated
+                并加回退开关）；阶段 C 纯函数内核迁 adjustment-engine、synap-claim-sdk 落纯 Java
+                契约、依赖边界机检；阶段 D 人工窗口（M2 责任要素 DDL、D4 物理包重构、05 契约 node_type
+                枚举扩展、FraudScreen 真实接入）。关键取舍：一是不伪造 7 步节点，canonical 五节点保持唯一真源，落地版
+                7.3 改写为现状加待评审扩展阶段；用户 Q3 要求强制全做，但 L4 项 AI
+                不得执行，本轮另产出可直接进入评审的人工窗口执行包。二是脚本沙箱不用 JVM 全局 SecurityManager，不引
+                Aviator。三是复用双轨对拍、缺口哨兵、变异鉴别三轨锁金额等价，oracle 不并入生产。四是 D4
+                用逻辑映射加门禁而非物理移动 500 余个 Java 文件。风险：L4 架构师审批与 R1-R8
+                未拍板、文档目标态定义不自洽、并发提交者混入、全仓门禁基线、全量提交含他人增量。验证：1290 例单测零失败、12
+                道提交门禁、文档机检 19 步、错误码 52 对 52 与双语覆盖、clean test 核对提交树。Spec
+                Patch：无，三份 delta spec 与 proposal 一致，不改动需求。
+              requirementsEvidence:
+                contentHash: 4e4dd0cb1bde50aaef7708f30e0caffbed5b1f626e32f13022914296f7462c38
+                ref: openspec/changes/synapclaim-architecture-convergence
+              sourceEvidence:
+                contentHash: e94c9005e2b7e0ce47ae55621b452c4197cdb5950913c90c02a8cf18ce7e9c17
+                ref: openspec/changes/synapclaim-architecture-convergence
+      - handoffContext: openspec/changes/synapclaim-architecture-convergence/.comet/handoff/design-context.json
+        handoffHash: 4833fe7dc3fae8bd282ae7ec8f6bde464b381cbdb2343486ca71c5d7bf84b11b
+        proposal: 方案：以代码事实为单一真源，按 design.md 的 D-1~D-10 分四阶段收口九项剩余项。阶段 A 文档口径、20 子域到 7
+          上下文的机器可读映射与门禁、响应契约机检；阶段 B 显式流程层与声明式
+          Condition、脚本沙箱（能力白名单加超时步数、fail-closed）、理算三策略（旧实现保留标 Deprecated
+          并加回退开关）；阶段 C 纯函数内核迁 adjustment-engine、synap-claim-sdk 落纯 Java
+          契约、依赖边界机检；阶段 D 人工窗口（M2 责任要素 DDL、D4 物理包重构、05 契约 node_type
+          枚举扩展、FraudScreen 真实接入）。关键取舍：一是不伪造 7 步节点，canonical 五节点保持唯一真源，落地版 7.3
+          改写为现状加待评审扩展阶段；用户 Q3 要求强制全做，但 L4 项 AI
+          不得执行，本轮另产出可直接进入评审的人工窗口执行包。二是脚本沙箱不用 JVM 全局 SecurityManager，不引
+          Aviator。三是复用双轨对拍、缺口哨兵、变异鉴别三轨锁金额等价，oracle 不并入生产。四是 D4 用逻辑映射加门禁而非物理移动
+          500 余个 Java 文件。风险：L4 架构师审批与 R1-R8
+          未拍板、文档目标态定义不自洽、并发提交者混入、全仓门禁基线、全量提交含他人增量。验证：1290 例单测零失败、12 道提交门禁、文档机检
+          19 步、错误码 52 对 52 与双语覆盖、clean test 核对提交树。Spec Patch：无，三份 delta spec 与
+          proposal 一致，不改动需求。
+        requirementsEvidence:
+          contentHash: 4e4dd0cb1bde50aaef7708f30e0caffbed5b1f626e32f13022914296f7462c38
+          ref: openspec/changes/synapclaim-architecture-convergence
+        sourceEvidence:
+          contentHash: e94c9005e2b7e0ce47ae55621b452c4197cdb5950913c90c02a8cf18ce7e9c17
+          ref: openspec/changes/synapclaim-architecture-convergence
+      - designDoc: openspec/changes/synapclaim-architecture-convergence/design.md
+      - contentHash: 19a50da4301ccb73b5771e8ae5e42efff40ba097799d9b993ab799bdd653c571
+        ref: openspec/changes/synapclaim-architecture-convergence/design.md
+      - boundBranch: dev
+        buildMode: direct
+        directOverride: true
+        isolation: current
+        reviewMode: off
+        subagentDispatch: null
+        tddMode: direct
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: direct
+      - designEvidence:
+          contentHash: 19a50da4301ccb73b5771e8ae5e42efff40ba097799d9b993ab799bdd653c571
+          ref: openspec/changes/synapclaim-architecture-convergence/design.md
+        plan: docs/superpowers/plans/synapclaim-architecture-convergence.md
+        planEvidence:
+          contentHash: 6078348af0826eb54199c8a9368678eeb8928ea1973d39c37e727821bac895d7
+          ref: docs/superpowers/plans/synapclaim-architecture-convergence.md
+        taskRevision: 98418c087c6799cd11c14e6210e5acc120d6e25b48445f84108069cdbe92a491
+      - contentHash: 6078348af0826eb54199c8a9368678eeb8928ea1973d39c37e727821bac895d7
+        ref: docs/superpowers/plans/synapclaim-architecture-convergence.md
+      - event: build-complete
+      - argv:
+          - bash
+          - scripts/check.sh
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: d2a4836ad96bdfcbb688e4dfc9c962a882a85078ee96c9048b41e41e9abc222c
+        cwd: .
+        environment: acaffa39e221d0ca45c04c5ba154b8eb7d14814f8a8b4ec39859f88d624cd82e
+        exitCode: 0
+        inputAfter: c96811561907647e8f874a91e9a2942c173c3448dab6b18712e75367ba90c58c
+        inputBefore: c96811561907647e8f874a91e9a2942c173c3448dab6b18712e75367ba90c58c
+        manifestHash: ba454f13e8adbcc8de1ce0c2e6e04dd524bdbe8c3a30db81b72e4aef05698278
+        manifestRef: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/27ec1eb7-f7a3-4223-b6eb-4786526446e8.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/f9ecca5c-0dab-4f0c-862a-cc236c8db97b.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: d2a4836ad96bdfcbb688e4dfc9c962a882a85078ee96c9048b41e41e9abc222c
+        ref: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/f9ecca5c-0dab-4f0c-862a-cc236c8db97b.log
+      - contentHash: 7f684761ab7214f0521879fe8ccaf445727d4da24b8ed9d5374afe2c87ba3756
+        ref: docs/superpowers/reports/2026-11-14-synapclaim-architecture-convergence-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-14-synapclaim-architecture-convergence-verify.md
+      - argv:
+          - bash
+          - scripts/check.sh
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: 229ef2cc75b4fbdc68aed1c09c340599bea7d4cc77e7cc9d0fd6b693b97b0a8e
+        cwd: .
+        deliveryInputs:
+          .github/workflows/ci.yml: git:d90073578c739f969fa11f9ec72044eb35f06c77
+          AGENTS.md: git:151e8af0e28b0ba423a816f024d00642769e14bc
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java: git:b1b70b54af50317a6ac0b8272d9cb98bdc55cec5
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/AiFeedbackEventReq.java: git:bbb293bf91fb0473490e8952fc2a8b04c5dfa83b
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/AiFeedbackEventResp.java: git:e28158d1d99f61c6bf19da22ea9a68f43b3c98c5
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/AiFeedbackSummaryResp.java: git:907cf0acff11ecc35a7ac8b6c52705d5f9d06b53
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/AiFeedbackCommand.java: git:aca61702abc49ad9965aa81c1f627ae49e7a5dca
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/AiFeedbackRules.java: git:eff9af0326e777045b26503875b129d0e466d41f
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimFeedbackApplicationService.java: git:04cf611f2f5df1514b4e98057cc312dd51bceec0
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimSearchApplicationService.java: git:6b3c34e5857d2da3ff308c14f48be7f42e205540
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimSearchRules.java: git:c2d6104c04a47cbf7b3bdbb9b05b02895e11ec51
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrorCodes.java: git:80ad1132fbc8a941d14085a8cfa763d060c64219
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrors.java: git:57bcb31385ba2eb01c972541ba88a4551b42808b
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/claim/projection/ClaimSearchHit.java: git:c0aeb386c678b263e302f6adc58b131ed362e656
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/feedback/AiFeedbackFact.java: git:338f46222dd4e45cb51e7c1eefa0f89675ff8c53
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/feedback/ClaimAiFeedbackEvent.java: git:dab65fd31cf1f0415c8ef6f0b284b9bfcf1d028d
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/feedback/FeedbackCountRow.java: git:bb1cf3d74dd4f05acf7ad156342878a9a0267671
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimAiFeedbackEventRepository.java: git:71d0bdddaedef1536434e8298615d5b740a16858
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimCaseRepository.java: git:f832d9902c43d9765d92ae9ecfdd0a915fd2a280
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/schedule/ScheduleLockService.java: git:5c64376b87502fd38cb3c02c94856ca4e4c19c6c
+          bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimAiFeedbackEventRepository/countByBucket.sql: git:aa2ee8aaaf4f45f87bea4b78d0adfe0d152e5329
+          bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimCaseRepository/searchByKeyword.sql: git:48cece5e2997c803a319ca0e8837cdc0542c5ed8
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/AiFeedbackRulesTest.java: git:0648c5c991cccc3032a248fa51769c055a34e90b
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimSearchRulesTest.java: git:5fe09b040fe2c2dc0c4293f149cd6d1e8a16485c
+          bone-frontend/.eslintrc.json: git:5841215208bda5ae893d6d1bccffc5764212c80d
+          bone-frontend/apps/bone-commerce-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+          bone-frontend/apps/bone-commerce-app/src/main.tsx: git:f1b90727640f8f7d663d2471b79cb8af790505be
+          bone-frontend/apps/bone-commerce-app/src/services/api.ts: git:997cf57c003a861396d9f4a15d1eb24f0dea5217
+          bone-frontend/apps/bone-extension-app/src/main.tsx: git:f7b1aa4dde73ea096dc4b48ba9f841ed7f9897e0
+          bone-frontend/apps/bone-extension-app/src/pages/Marketplace.tsx: git:eb30931049842bb5200875581229827c0c926ead
+          bone-frontend/apps/bone-extension-app/src/pages/PluginManagement.tsx: git:27c8bd8b1c98ec751ceff762d3c8e54df81d736a
+          bone-frontend/apps/bone-extension-app/src/services/extensionApi.test.ts: git:d8a465bf4ad9e60694ea6c869f0aa3356b45f20a
+          bone-frontend/apps/bone-iam-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+          bone-frontend/apps/bone-iam-app/src/main.tsx: git:d175d5e570330db6304abafd7ab35fe2e6e53b7f
+          bone-frontend/apps/bone-iam-app/src/pages/AccountManagement.tsx: git:879887b9d0b17414ecc30aa9d56801b0ddb220bd
+          bone-frontend/apps/bone-iam-app/src/pages/AuditSettings.tsx: git:002510661095d0a9b10ae650062ed836ed2f8c88
+          bone-frontend/apps/bone-iam-app/src/pages/MenuManagement.tsx: git:b5dd11d15c944b449b7303380ea14ac0a7d94ff9
+          bone-frontend/apps/bone-iam-app/src/pages/OrganizationManagement.tsx: git:519444988fb95dc19b3e590dae3a17b76c13abf0
+          bone-frontend/apps/bone-integration-app/src/App.tsx: git:945bb2025483dff53410d99c78e8962d5d924a44
+          bone-frontend/apps/bone-integration-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+          bone-frontend/apps/bone-integration-app/src/main.tsx: git:f1b90727640f8f7d663d2471b79cb8af790505be
+          bone-frontend/apps/bone-integration-app/src/pages/FlowDesign.tsx: git:4654022ce7bcc5460e306cbddd15da253dd9a700
+          bone-frontend/apps/bone-masterdata-app/src/App.tsx: git:52b3f8f4e7806724909715ca49de22c8065974c8
+          bone-frontend/apps/bone-masterdata-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+          bone-frontend/apps/bone-masterdata-app/src/main.tsx: git:ba83aea2962b564e7d872fbcb7f533b565fa6165
+          bone-frontend/apps/bone-masterdata-app/src/pages/CategoryManagement.tsx: git:89680a6c5ed58a6941049f3cbe22a3dcd8b3afba
+          bone-frontend/apps/bone-masterdata-app/src/pages/DomainWorkbench.tsx: git:c154d2b6ea51f94de01c36599c44c0286ebe46b7
+          bone-frontend/apps/bone-masterdata-app/src/pages/EntityManagement.tsx: git:7a33e7a52f45877ed477dce2e0c95d9b3c3a5a9a
+          bone-frontend/apps/bone-masterdata-app/src/pages/FieldManagement.tsx: git:9963a9caf26cb9cdc9d46cc972f399f02de0da06
+          bone-frontend/apps/bone-masterdata-app/src/pages/GovernanceBoard.tsx: git:c1302840cbc2c05c7763fc3bb38303b87b2190b3
+          bone-frontend/apps/bone-masterdata-app/src/pages/QualityRuleManagement.tsx: git:0882b00c0cecfbb038d9113b6115674858351e23
+          bone-frontend/apps/bone-masterdata-app/src/pages/RecordManagement.tsx: git:56cdae680505bb8b43a0a730ac5ef5e58212a307
+          bone-frontend/apps/bone-masterdata-app/src/pages/TemplateManagement.tsx: git:cfda7a8d3f411b48b80230f8460acb0c5ff35ca1
+          bone-frontend/apps/bone-masterdata-app/src/services/api.ts: git:963ecf11d1d45469ace192a0442faa0ff75ffca7
+          bone-frontend/apps/bone-metadata-app/src/components/uiSchema/structurePanelPerf.test.tsx: git:09b802d2657c1c4fa09d8651fc67ccd43f9135e7
+          bone-frontend/apps/bone-system-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+          bone-frontend/apps/bone-system-app/src/main.tsx: git:fff59ea64efd7dc7d58ce69f445c8343d6df2992
+          bone-frontend/apps/bone-system-app/src/pages/MonitorAlert.tsx: git:2bb3f1925741a7ddf4810816b23e6b1cee2834f3
+          bone-frontend/apps/bone-system-app/src/pages/ScheduleTaskManagement.tsx: git:13d17b64b52416c1484783ed2f39c1d2b00514bb
+          bone-frontend/apps/bone-system-app/src/pages/SystemDeployment.tsx: git:121c287d4b19d8a5e06d28ed054fcfa5093de013
+          bone-frontend/apps/bone-system-app/src/pages/WorkflowDesigner.tsx: git:0b6fec643b80de6f7f6c671b9038f70e4bdd9908
+          bone-frontend/packages/core/event-bus/package.json: git:dc941723302b4372b70d3d5d68bd0041d5559141
+          bone-frontend/packages/core/event-bus/src/micro-app-messenger.ts: git:1febc07bdee9d99be00de2f4e562b5d5c8894ac7
+          bone-frontend/packages/core/event-bus/src/typedEventBus.ts: git:4953eaa4a05d65bfbca99b2eff6a8c685f054f65
+          bone-frontend/packages/core/performance-monitor/src/index.ts: git:fefab71f1a531b298d2a3a7c23c62338d13cc1ec
+          bone-frontend/packages/core/workflow-dsl/package.json: git:973940dd7d64019b80af7cf80202b44d514f71fa
+          bone-frontend/packages/shared-utils/src/i18n/locales/en-US.json: git:427c048629b7746ab45ab8720a93a0b817fed9e0
+          bone-frontend/packages/shared-utils/src/i18n/locales/zh-CN.json: git:a0e21dab7528ef11187768bccb6abe754947a30d
+          bone-frontend/packages/ui-schema/package.json: git:0a8fe4f5c78c5041ba15f06eb9b2207ddb57f00c
+          bone-frontend/packages/ui-schema/src/SchemaRenderer.tsx: git:1e9a69b287ebcdf550a181becc89bbb0b3a8fb35
+          bone-frontend/packages/ui/components/src/button/useButton.ts: git:cfeb6619ca68638c5ae1dff4ae30118d2efe0bad
+          bone-frontend/packages/ui/design-system/src/authority/AuthButton.tsx: git:a0743ce1112a72c3eab2c111239df699bb00fc96
+          bone-frontend/packages/ui/design-system/src/components/BoneAppProvider.tsx: git:128b9f00c4453715636a26687b809dcfc1d81077
+          bone-frontend/packages/ui/design-system/src/micro-app/createBoneMicroAppRenderer.tsx: git:5d211fef28c70c147ba130eb2f52e21ead9e710f
+          bone-frontend/packages/ui/design-system/src/theme/applyThemeCss.ts: git:072a5dd7c2670eb28f4228605dae018750621684
+          bone-frontend/packages/ui/design-system/src/theme/index.ts: git:487be8c9b84b0d7f80520760bbd09ea25b44ec36
+          bone-frontend/packages/ui/design-system/src/theme/useBoneTheme.ts: git:dea6ebd76a802ada0096e358b39fe11431eaaed6
+          bone-frontend/packages/ui/package.json: git:bb9dd7788ed9cc938d42b126445e89f26717c5c8
+          bone-frontend/packages/ui/styled-system/src/index.ts: git:860940559346c2be1f0c0863bd83c880e0efa45c
+          bone-frontend/packages/ui/styled-system/src/utils.ts: git:4695c2fa2d51aafb65dce59da33334e0a45191cd
+          bone-init.sql: git:f12fe0a4cef19b69b1bc0b998614f06abda928b4
+          doc/architecture/Bone-错误码登记.md: git:ee4ac8f70fd308055afae6e440b8621bf0114f60
+          doc/architecture/数据库开发规范.md: git:df46aa850d59ad7b0fa01fe042d6bdb676b2827d
+          scripts/_e2e_uischema.js: missing
+          scripts/_probe_designer_polish.js: missing
+          scripts/_probe_p1_contract.js: missing
+          scripts/_probe_p5_publish_visibility.js: missing
+          scripts/_probe_p6_negative.js: missing
+          scripts/_probe_p6_onboarding.js: missing
+          scripts/_probe_scenario_filter.js: missing
+          scripts/archive/README.md: git:029813a40f78d9f3e6f70504dbb558b5365df32d
+          scripts/archive/_e2e_uischema.js: git:96ee9f9ac700d8619f6f33f8b6ce4cf1b44c2524
+          scripts/archive/_probe_designer_polish.js: git:fdbf71b1507ed51682bcdc9d7d2f22875b3fb79d
+          scripts/archive/_probe_p1_contract.js: git:d4cd35f945dbef6853a2c75b6da76be13d4d3980
+          scripts/archive/_probe_p5_publish_visibility.js: git:559b31d39f6620388aebc57f743461b31ee5ec3b
+          scripts/archive/_probe_p6_negative.js: git:dae41df41bcd86c791a1232195102d0edd3cdaab
+          scripts/archive/_probe_p6_onboarding.js: git:443998d1862c39cbfab4e6591241d688b9508b8a
+          scripts/archive/_probe_scenario_filter.js: git:65485448883287f85f8126e17b68f7994b1e21c9
+          scripts/archive/endpoint-test.sh: git:75fe8ef1c6f899f907bbddb1de0a6ebed573e12f
+          scripts/archive/tmp-iam-gateway-rename.py: git:430df80070d5b40e49fa627cdb3d22a98aec906b
+          scripts/archive/verify_all.sh: git:fa2fb084dd9007ea4289bd779f58b42365f8f1b3
+          scripts/archive/verify_iam.sh: git:58cdcfa34c80bfebe8738f182bb3f7a4cbf5de6b
+          scripts/ci/scripts-registry-guard.sh: git:0ffcd9c20d60819b8ab5b25f23b42ecdf3a47fc6
+          scripts/e2e/_extract_endpoints.py: git:5d084444071951f44666c09c16d02e2fd8796513
+          scripts/e2e/channel-buyer-broadcast.py: git:c39f9c6a4f601e561132b23dfc11a0cd6431e2c3
+          scripts/e2e/check-data-realism.py: git:75dc7927498f5298622c33b1c0d3046014948b86
+          scripts/e2e/claim-full-chain-e2e.mjs: git:f87098894ccdf14dc102fed67d5da708aadb619c
+          scripts/e2e/datagen.py: git:354a8e6797a3e5224651b310a12d4cf0e2ea478d
+          scripts/e2e/e2e_lib/__init__.py: git:a3f6784ca8406fae89bacc10c13c280576af3693
+          scripts/e2e/expense-purchase-approval-integration-e2e.py: git:3ccf9ccb1d086d2c86ee373be3bddde3d5db264c
+          scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+          scripts/e2e/lint.sh: git:7a4c4e34ee6eca7dc66ff1f0522225b97802c854
+          scripts/e2e/multichannel.py: git:35b6e5d482cad139ef61f7148a96daef7a695c03
+          scripts/e2e/run.sh: git:25786607a8a80d1fd7f5d26cc29dcc3c8424c84f
+          scripts/e2e/templates/py-chain.py.tpl: git:fd2fbfaac229d2889e705447b35b1f93cf2d3cf8
+          scripts/e2e/templates/py-sweep.py.tpl: git:a048beb94229b94f4e1337689459311396022ea6
+          scripts/e2e/two-scenario-full-chain-e2e.py: git:e03af234a97a88437b5cad678f2bf78115cdbb32
+          scripts/e2e/ui/ui-approval-sendback-probe.mjs: git:c7670a9bc83e9440f649804aaca8c4ab0409bc8b
+          scripts/e2e/ui/ui-approval-suspend-reason-probe.mjs: git:26bdd5aa40a7fc6036de0018c567b511f287f899
+          scripts/e2e/ui/ui-metadata-approver-model-probe.mjs: git:5b67d536fd4373eae329351af7c52d22ead37406
+          scripts/e2e/ui/ui-org-routing-probe.mjs: git:96254d375a5dc98c40d5d00b7435119c75850af3
+          scripts/endpoint-test.sh: missing
+          scripts/lib/__init__.py: git:2e3534761dec1091a4f725d5c42826fa4e83adf5
+          scripts/lib/gate.py: git:1533ff5bf41f25f1b5d3528c3d48e93fb2b359ae
+          scripts/lib/registry.py: git:e46c4ed8ca1b82145de3a44da0e3c4410c2ce2a7
+          scripts/lib/waivers.py: git:f9d270737ddeb1fb6bacb7a915ae53a329295d43
+          scripts/migration/migration-manifest.json: git:6b761380cb52361f6ef42f92479248fb987c1432
+          scripts/mysql-84-upgrade.sh: git:473721b1c2e95a783ac2ed822627e39160b38df4
+          scripts/registry/external-known-failures.txt: git:046de2424dc6d90d57c4eec10605ef6f8b87dfe5
+          scripts/registry/external.json: git:02213791dd7163fe0f1d6b4614e06f7b2ef207ad
+          scripts/registry/waivers.json: git:51e93bfe1bf9ff9947d46b5394bffe7f4ca43d66
+          scripts/requirements-dev.txt: git:5c90dd49902728e77e9880db143d6fb1710353da
+          scripts/sync-init-from-live.py: git:c9d5c8d1db3472cc0f1b12a669c64aca1e0fb16b
+          scripts/tests/test_bone_cli.py: git:5153ad71eee0d90b3dede40fcb084a97e8b0447d
+          scripts/tests/test_bone_registry.py: git:58f0ae92d10f4a868be65bb3e88d8c30f5d5ebc1
+          scripts/tests/test_bone_verify.py: git:1f14261ccc7eaae048c9b91d95ccebd90bef0e3c
+          scripts/tests/test_bone_waivers.py: git:c3f49114b765ae6286b7e6ff49ad6d4c8d2f2f01
+          scripts/tests/test_check_error_code_duplication.py: git:f7d354e7ba58df41e96055b3311f51fe0fd23a98
+          scripts/tests/test_check_error_code_landing.py: git:16d29569e0b09f2a84620047bde9f07bad2e04bb
+          scripts/tests/test_check_event_envelope_version.py: git:2ab361764c223d6cc1360d34c7830795ffa0b545
+          scripts/tests/test_check_i18n_sync.py: git:efa59a014a43c53501f33149f13c7d47f957b605
+          scripts/tests/test_check_menu_icon_whitelist.py: git:e8b021d6505c65333c2201cbe8855aa8f03015e4
+          scripts/tests/test_check_menu_route_consistency.py: git:9e84fe58a94b1ec439825b8f515f90c0c8a5e2a5
+          scripts/tests/test_check_menu_single_entry.py: git:f55ed8298348a4057d60cafe7897e9b04781a1cc
+          scripts/tests/test_check_paging_current_field.py: git:b9414f8b2af07f6709e30f15c318d6624e7db3c2
+          scripts/tests/test_check_paging_param_names.py: git:0e53fe37704d0648a4b74af88c044e7394f0322e
+          scripts/tests/test_check_paging_param_ssot.py: git:d5f837e17323aa410ca65c10453497e1a1fe8dc2
+          scripts/tests/test_check_paging_total_normalize.py: git:048eaa4adbb75375296e6aee0b83e93e0a331bc6
+          scripts/tests/test_e2e_data_realism.py: git:e678967c9661ed491b646e71f68a9c50c077d138
+          scripts/tests/test_e2e_datagen.py: git:0d7a4627295faa0f9cc21e1ebc3400d313a32ffb
+          scripts/tests/test_e2e_impact.py: git:af1349760264f8cd522324b17753de5885f85817
+          scripts/tests/test_gate_lib.py: git:817e122eca5acfb7ef9484ade485d89246658c27
+          scripts/tests/test_scripts_catalog.py: git:0738612ce9a8002d82ab85cccefd61d2de5018b7
+          scripts/tmp-iam-gateway-rename.py: missing
+          scripts/verify-claim-e2e.sh: git:a771e33bc29805f54671b759f387e6ed807b5516
+          scripts/verify-workflow-designer.sh: git:36527db53b4c179b3d326c0486ccdfb37a225856
+          scripts/verify_all.sh: missing
+          scripts/verify_iam.sh: missing
+        environment: acaffa39e221d0ca45c04c5ba154b8eb7d14814f8a8b4ec39859f88d624cd82e
+        exitCode: 0
+        inputAfter: 6ca466bf505bf7fd16503db24d77d2ddc00ac1088bd422277c8dfb66e75d9eb0
+        inputBefore: 6ca466bf505bf7fd16503db24d77d2ddc00ac1088bd422277c8dfb66e75d9eb0
+        manifestHash: 23b198d018a4264230ef066d5400dbd03b944511cc71d80001921f661b812efa
+        manifestRef: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/bc57192f-ef8b-46c2-9ab9-a1d4998829b1.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/e2f24a7a-a286-4185-861b-5fd285be9484.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 229ef2cc75b4fbdc68aed1c09c340599bea7d4cc77e7cc9d0fd6b693b97b0a8e
+        ref: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/e2f24a7a-a286-4185-861b-5fd285be9484.log
+      - choice: local
+        proposal:
+          input:
+            change: synapclaim-architecture-convergence
+            changeDir: openspec/changes/synapclaim-architecture-convergence
+            workspaceBaseline:
+              ref: f204d601-2546-4dd2-8893-1701c823f9d3
+          outputs:
+            full.archive.prepare:
+              summary: 按用户已确认的 local 交付：只归档并用 git commit --only 精确提交本 change 路径，不 push、不建
+                PR、不改共享 dev 历史；当前 dev 为共享工作树且 origin/dev...dev = 9/5 已分叉。Verify
+                全量门禁真实执行（bash scripts/check.sh，exitCode 0，输入快照前后一致，59/59
+                通过），验证报告
+                docs/superpowers/reports/2026-11-14-synapclaim-architecture-convergence-verify.md
+                已登记。
+              targetBranch: dev
+      - summary: 按用户已确认的 local 交付：只归档并用 git commit --only 精确提交本 change 路径，不 push、不建
+          PR、不改共享 dev 历史；当前 dev 为共享工作树且 origin/dev...dev = 9/5 已分叉。Verify
+          全量门禁真实执行（bash scripts/check.sh，exitCode 0，输入快照前后一致，59/59 通过），验证报告
+          docs/superpowers/reports/2026-11-14-synapclaim-architecture-convergence-verify.md
+          已登记。
+        targetBranch: dev
+      - baseCommit: 7821688cfc128545b026331385b1e65c359c6f94
+        deliveryAction: local
+        targetBranch: dev
+        verifiedBranch: dev
+      - sequence: 9
+        value:
+          boundBranch: dev
+          buildMode: direct
+          directOverride: true
+          isolation: current
+          reviewMode: off
+          subagentDispatch: null
+          tddMode: direct
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-architecture-convergence
+              changeDir: openspec/changes/synapclaim-architecture-convergence
+              workspaceBaseline:
+                ref: f204d601-2546-4dd2-8893-1701c823f9d3
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: direct
+                directOverride: true
+                isolation: current
+                reviewMode: off
+                subagentDispatch: null
+                tddMode: direct
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-architecture-convergence
+              changeDir: openspec/changes/synapclaim-architecture-convergence
+              workspaceBaseline:
+                ref: f204d601-2546-4dd2-8893-1701c823f9d3
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/synapclaim-architecture-convergence/.comet/handoff/design-context.json
+                handoffHash: 4833fe7dc3fae8bd282ae7ec8f6bde464b381cbdb2343486ca71c5d7bf84b11b
+                proposal: 方案：以代码事实为单一真源，按 design.md 的 D-1~D-10 分四阶段收口九项剩余项。阶段 A 文档口径、20 子域到 7
+                  上下文的机器可读映射与门禁、响应契约机检；阶段 B 显式流程层与声明式
+                  Condition、脚本沙箱（能力白名单加超时步数、fail-closed）、理算三策略（旧实现保留标 Deprecated
+                  并加回退开关）；阶段 C 纯函数内核迁 adjustment-engine、synap-claim-sdk 落纯 Java
+                  契约、依赖边界机检；阶段 D 人工窗口（M2 责任要素 DDL、D4 物理包重构、05 契约 node_type
+                  枚举扩展、FraudScreen 真实接入）。关键取舍：一是不伪造 7 步节点，canonical
+                  五节点保持唯一真源，落地版 7.3 改写为现状加待评审扩展阶段；用户 Q3 要求强制全做，但 L4 项 AI
+                  不得执行，本轮另产出可直接进入评审的人工窗口执行包。二是脚本沙箱不用 JVM 全局 SecurityManager，不引
+                  Aviator。三是复用双轨对拍、缺口哨兵、变异鉴别三轨锁金额等价，oracle 不并入生产。四是 D4
+                  用逻辑映射加门禁而非物理移动 500 余个 Java 文件。风险：L4 架构师审批与 R1-R8
+                  未拍板、文档目标态定义不自洽、并发提交者混入、全仓门禁基线、全量提交含他人增量。验证：1290 例单测零失败、12
+                  道提交门禁、文档机检 19 步、错误码 52 对 52 与双语覆盖、clean test 核对提交树。Spec
+                  Patch：无，三份 delta spec 与 proposal 一致，不改动需求。
+                requirementsEvidence:
+                  contentHash: 4e4dd0cb1bde50aaef7708f30e0caffbed5b1f626e32f13022914296f7462c38
+                  ref: openspec/changes/synapclaim-architecture-convergence
+                sourceEvidence:
+                  contentHash: e94c9005e2b7e0ce47ae55621b452c4197cdb5950913c90c02a8cf18ce7e9c17
+                  ref: openspec/changes/synapclaim-architecture-convergence
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/synapclaim-architecture-convergence/design.md
+      - sequence: 8
+        value:
+          contentHash: 19a50da4301ccb73b5771e8ae5e42efff40ba097799d9b993ab799bdd653c571
+          ref: openspec/changes/synapclaim-architecture-convergence/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/synapclaim-architecture-convergence/.comet/handoff/design-context.json
+          handoffHash: 4833fe7dc3fae8bd282ae7ec8f6bde464b381cbdb2343486ca71c5d7bf84b11b
+          proposal: 方案：以代码事实为单一真源，按 design.md 的 D-1~D-10 分四阶段收口九项剩余项。阶段 A 文档口径、20 子域到 7
+            上下文的机器可读映射与门禁、响应契约机检；阶段 B 显式流程层与声明式
+            Condition、脚本沙箱（能力白名单加超时步数、fail-closed）、理算三策略（旧实现保留标 Deprecated
+            并加回退开关）；阶段 C 纯函数内核迁 adjustment-engine、synap-claim-sdk 落纯 Java
+            契约、依赖边界机检；阶段 D 人工窗口（M2 责任要素 DDL、D4 物理包重构、05 契约 node_type
+            枚举扩展、FraudScreen 真实接入）。关键取舍：一是不伪造 7 步节点，canonical 五节点保持唯一真源，落地版 7.3
+            改写为现状加待评审扩展阶段；用户 Q3 要求强制全做，但 L4 项 AI
+            不得执行，本轮另产出可直接进入评审的人工窗口执行包。二是脚本沙箱不用 JVM 全局 SecurityManager，不引
+            Aviator。三是复用双轨对拍、缺口哨兵、变异鉴别三轨锁金额等价，oracle 不并入生产。四是 D4 用逻辑映射加门禁而非物理移动
+            500 余个 Java 文件。风险：L4 架构师审批与 R1-R8
+            未拍板、文档目标态定义不自洽、并发提交者混入、全仓门禁基线、全量提交含他人增量。验证：1290 例单测零失败、12 道提交门禁、文档机检
+            19 步、错误码 52 对 52 与双语覆盖、clean test 核对提交树。Spec Patch：无，三份 delta spec 与
+            proposal 一致，不改动需求。
+          requirementsEvidence:
+            contentHash: 4e4dd0cb1bde50aaef7708f30e0caffbed5b1f626e32f13022914296f7462c38
+            ref: openspec/changes/synapclaim-architecture-convergence
+          sourceEvidence:
+            contentHash: e94c9005e2b7e0ce47ae55621b452c4197cdb5950913c90c02a8cf18ce7e9c17
+            ref: openspec/changes/synapclaim-architecture-convergence
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-architecture-convergence
+              changeDir: openspec/changes/synapclaim-architecture-convergence
+              workspaceBaseline:
+                ref: f204d601-2546-4dd2-8893-1701c823f9d3
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+                ref: openspec/changes/synapclaim-architecture-convergence
+      - sequence: 2
+        value:
+          contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+          ref: openspec/changes/synapclaim-architecture-convergence
+      - sequence: 4
+        value:
+          contentHash: 79ff6456083cd946c0cee3cff42065bc72f3e8677c6be74f8529e8377b8515dd
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 19a50da4301ccb73b5771e8ae5e42efff40ba097799d9b993ab799bdd653c571
+            ref: openspec/changes/synapclaim-architecture-convergence/design.md
+          plan: docs/superpowers/plans/synapclaim-architecture-convergence.md
+          planEvidence:
+            contentHash: 6078348af0826eb54199c8a9368678eeb8928ea1973d39c37e727821bac895d7
+            ref: docs/superpowers/plans/synapclaim-architecture-convergence.md
+          taskRevision: 98418c087c6799cd11c14e6210e5acc120d6e25b48445f84108069cdbe92a491
+      - sequence: 12
+        value:
+          contentHash: 6078348af0826eb54199c8a9368678eeb8928ea1973d39c37e727821bac895d7
+          ref: docs/superpowers/plans/synapclaim-architecture-convergence.md
+      - sequence: 13
+        value:
+          event: build-complete
+      - sequence: 14
+        value:
+          argv:
+            - bash
+            - scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: d2a4836ad96bdfcbb688e4dfc9c962a882a85078ee96c9048b41e41e9abc222c
+          cwd: .
+          environment: acaffa39e221d0ca45c04c5ba154b8eb7d14814f8a8b4ec39859f88d624cd82e
+          exitCode: 0
+          inputAfter: c96811561907647e8f874a91e9a2942c173c3448dab6b18712e75367ba90c58c
+          inputBefore: c96811561907647e8f874a91e9a2942c173c3448dab6b18712e75367ba90c58c
+          manifestHash: ba454f13e8adbcc8de1ce0c2e6e04dd524bdbe8c3a30db81b72e4aef05698278
+          manifestRef: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/27ec1eb7-f7a3-4223-b6eb-4786526446e8.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/f9ecca5c-0dab-4f0c-862a-cc236c8db97b.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 15
+        value:
+          contentHash: d2a4836ad96bdfcbb688e4dfc9c962a882a85078ee96c9048b41e41e9abc222c
+          ref: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/f9ecca5c-0dab-4f0c-862a-cc236c8db97b.log
+      - sequence: 17
+        value:
+          contentHash: 7f684761ab7214f0521879fe8ccaf445727d4da24b8ed9d5374afe2c87ba3756
+          ref: docs/superpowers/reports/2026-11-14-synapclaim-architecture-convergence-verify.md
+      - sequence: 16
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-14-synapclaim-architecture-convergence-verify.md
+      - sequence: 18
+        value:
+          argv:
+            - bash
+            - scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: 229ef2cc75b4fbdc68aed1c09c340599bea7d4cc77e7cc9d0fd6b693b97b0a8e
+          cwd: .
+          deliveryInputs:
+            .github/workflows/ci.yml: git:d90073578c739f969fa11f9ec72044eb35f06c77
+            AGENTS.md: git:151e8af0e28b0ba423a816f024d00642769e14bc
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java: git:b1b70b54af50317a6ac0b8272d9cb98bdc55cec5
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/AiFeedbackEventReq.java: git:bbb293bf91fb0473490e8952fc2a8b04c5dfa83b
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/AiFeedbackEventResp.java: git:e28158d1d99f61c6bf19da22ea9a68f43b3c98c5
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/AiFeedbackSummaryResp.java: git:907cf0acff11ecc35a7ac8b6c52705d5f9d06b53
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/AiFeedbackCommand.java: git:aca61702abc49ad9965aa81c1f627ae49e7a5dca
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/AiFeedbackRules.java: git:eff9af0326e777045b26503875b129d0e466d41f
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimFeedbackApplicationService.java: git:04cf611f2f5df1514b4e98057cc312dd51bceec0
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimSearchApplicationService.java: git:6b3c34e5857d2da3ff308c14f48be7f42e205540
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimSearchRules.java: git:c2d6104c04a47cbf7b3bdbb9b05b02895e11ec51
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrorCodes.java: git:80ad1132fbc8a941d14085a8cfa763d060c64219
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrors.java: git:57bcb31385ba2eb01c972541ba88a4551b42808b
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/claim/projection/ClaimSearchHit.java: git:c0aeb386c678b263e302f6adc58b131ed362e656
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/feedback/AiFeedbackFact.java: git:338f46222dd4e45cb51e7c1eefa0f89675ff8c53
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/feedback/ClaimAiFeedbackEvent.java: git:dab65fd31cf1f0415c8ef6f0b284b9bfcf1d028d
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/feedback/FeedbackCountRow.java: git:bb1cf3d74dd4f05acf7ad156342878a9a0267671
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimAiFeedbackEventRepository.java: git:71d0bdddaedef1536434e8298615d5b740a16858
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimCaseRepository.java: git:f832d9902c43d9765d92ae9ecfdd0a915fd2a280
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/infrastructure/schedule/ScheduleLockService.java: git:5c64376b87502fd38cb3c02c94856ca4e4c19c6c
+            bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimAiFeedbackEventRepository/countByBucket.sql: git:aa2ee8aaaf4f45f87bea4b78d0adfe0d152e5329
+            bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimCaseRepository/searchByKeyword.sql: git:48cece5e2997c803a319ca0e8837cdc0542c5ed8
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/AiFeedbackRulesTest.java: git:0648c5c991cccc3032a248fa51769c055a34e90b
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimSearchRulesTest.java: git:5fe09b040fe2c2dc0c4293f149cd6d1e8a16485c
+            bone-frontend/.eslintrc.json: git:5841215208bda5ae893d6d1bccffc5764212c80d
+            bone-frontend/apps/bone-commerce-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+            bone-frontend/apps/bone-commerce-app/src/main.tsx: git:f1b90727640f8f7d663d2471b79cb8af790505be
+            bone-frontend/apps/bone-commerce-app/src/services/api.ts: git:997cf57c003a861396d9f4a15d1eb24f0dea5217
+            bone-frontend/apps/bone-extension-app/src/main.tsx: git:f7b1aa4dde73ea096dc4b48ba9f841ed7f9897e0
+            bone-frontend/apps/bone-extension-app/src/pages/Marketplace.tsx: git:eb30931049842bb5200875581229827c0c926ead
+            bone-frontend/apps/bone-extension-app/src/pages/PluginManagement.tsx: git:27c8bd8b1c98ec751ceff762d3c8e54df81d736a
+            bone-frontend/apps/bone-extension-app/src/services/extensionApi.test.ts: git:d8a465bf4ad9e60694ea6c869f0aa3356b45f20a
+            bone-frontend/apps/bone-iam-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+            bone-frontend/apps/bone-iam-app/src/main.tsx: git:d175d5e570330db6304abafd7ab35fe2e6e53b7f
+            bone-frontend/apps/bone-iam-app/src/pages/AccountManagement.tsx: git:879887b9d0b17414ecc30aa9d56801b0ddb220bd
+            bone-frontend/apps/bone-iam-app/src/pages/AuditSettings.tsx: git:002510661095d0a9b10ae650062ed836ed2f8c88
+            bone-frontend/apps/bone-iam-app/src/pages/MenuManagement.tsx: git:b5dd11d15c944b449b7303380ea14ac0a7d94ff9
+            bone-frontend/apps/bone-iam-app/src/pages/OrganizationManagement.tsx: git:519444988fb95dc19b3e590dae3a17b76c13abf0
+            bone-frontend/apps/bone-integration-app/src/App.tsx: git:945bb2025483dff53410d99c78e8962d5d924a44
+            bone-frontend/apps/bone-integration-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+            bone-frontend/apps/bone-integration-app/src/main.tsx: git:f1b90727640f8f7d663d2471b79cb8af790505be
+            bone-frontend/apps/bone-integration-app/src/pages/FlowDesign.tsx: git:4654022ce7bcc5460e306cbddd15da253dd9a700
+            bone-frontend/apps/bone-masterdata-app/src/App.tsx: git:52b3f8f4e7806724909715ca49de22c8065974c8
+            bone-frontend/apps/bone-masterdata-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+            bone-frontend/apps/bone-masterdata-app/src/main.tsx: git:ba83aea2962b564e7d872fbcb7f533b565fa6165
+            bone-frontend/apps/bone-masterdata-app/src/pages/CategoryManagement.tsx: git:89680a6c5ed58a6941049f3cbe22a3dcd8b3afba
+            bone-frontend/apps/bone-masterdata-app/src/pages/DomainWorkbench.tsx: git:c154d2b6ea51f94de01c36599c44c0286ebe46b7
+            bone-frontend/apps/bone-masterdata-app/src/pages/EntityManagement.tsx: git:7a33e7a52f45877ed477dce2e0c95d9b3c3a5a9a
+            bone-frontend/apps/bone-masterdata-app/src/pages/FieldManagement.tsx: git:9963a9caf26cb9cdc9d46cc972f399f02de0da06
+            bone-frontend/apps/bone-masterdata-app/src/pages/GovernanceBoard.tsx: git:c1302840cbc2c05c7763fc3bb38303b87b2190b3
+            bone-frontend/apps/bone-masterdata-app/src/pages/QualityRuleManagement.tsx: git:0882b00c0cecfbb038d9113b6115674858351e23
+            bone-frontend/apps/bone-masterdata-app/src/pages/RecordManagement.tsx: git:56cdae680505bb8b43a0a730ac5ef5e58212a307
+            bone-frontend/apps/bone-masterdata-app/src/pages/TemplateManagement.tsx: git:cfda7a8d3f411b48b80230f8460acb0c5ff35ca1
+            bone-frontend/apps/bone-masterdata-app/src/services/api.ts: git:963ecf11d1d45469ace192a0442faa0ff75ffca7
+            bone-frontend/apps/bone-metadata-app/src/components/uiSchema/structurePanelPerf.test.tsx: git:09b802d2657c1c4fa09d8651fc67ccd43f9135e7
+            bone-frontend/apps/bone-system-app/src/components/AppAntdProvider.tsx: git:8c9be0ed8453acf9092833c4ec6420f3435ae92b
+            bone-frontend/apps/bone-system-app/src/main.tsx: git:fff59ea64efd7dc7d58ce69f445c8343d6df2992
+            bone-frontend/apps/bone-system-app/src/pages/MonitorAlert.tsx: git:2bb3f1925741a7ddf4810816b23e6b1cee2834f3
+            bone-frontend/apps/bone-system-app/src/pages/ScheduleTaskManagement.tsx: git:13d17b64b52416c1484783ed2f39c1d2b00514bb
+            bone-frontend/apps/bone-system-app/src/pages/SystemDeployment.tsx: git:121c287d4b19d8a5e06d28ed054fcfa5093de013
+            bone-frontend/apps/bone-system-app/src/pages/WorkflowDesigner.tsx: git:0b6fec643b80de6f7f6c671b9038f70e4bdd9908
+            bone-frontend/packages/core/event-bus/package.json: git:dc941723302b4372b70d3d5d68bd0041d5559141
+            bone-frontend/packages/core/event-bus/src/micro-app-messenger.ts: git:1febc07bdee9d99be00de2f4e562b5d5c8894ac7
+            bone-frontend/packages/core/event-bus/src/typedEventBus.ts: git:4953eaa4a05d65bfbca99b2eff6a8c685f054f65
+            bone-frontend/packages/core/performance-monitor/src/index.ts: git:fefab71f1a531b298d2a3a7c23c62338d13cc1ec
+            bone-frontend/packages/core/workflow-dsl/package.json: git:973940dd7d64019b80af7cf80202b44d514f71fa
+            bone-frontend/packages/shared-utils/src/i18n/locales/en-US.json: git:427c048629b7746ab45ab8720a93a0b817fed9e0
+            bone-frontend/packages/shared-utils/src/i18n/locales/zh-CN.json: git:a0e21dab7528ef11187768bccb6abe754947a30d
+            bone-frontend/packages/ui-schema/package.json: git:0a8fe4f5c78c5041ba15f06eb9b2207ddb57f00c
+            bone-frontend/packages/ui-schema/src/SchemaRenderer.tsx: git:1e9a69b287ebcdf550a181becc89bbb0b3a8fb35
+            bone-frontend/packages/ui/components/src/button/useButton.ts: git:cfeb6619ca68638c5ae1dff4ae30118d2efe0bad
+            bone-frontend/packages/ui/design-system/src/authority/AuthButton.tsx: git:a0743ce1112a72c3eab2c111239df699bb00fc96
+            bone-frontend/packages/ui/design-system/src/components/BoneAppProvider.tsx: git:128b9f00c4453715636a26687b809dcfc1d81077
+            bone-frontend/packages/ui/design-system/src/micro-app/createBoneMicroAppRenderer.tsx: git:5d211fef28c70c147ba130eb2f52e21ead9e710f
+            bone-frontend/packages/ui/design-system/src/theme/applyThemeCss.ts: git:072a5dd7c2670eb28f4228605dae018750621684
+            bone-frontend/packages/ui/design-system/src/theme/index.ts: git:487be8c9b84b0d7f80520760bbd09ea25b44ec36
+            bone-frontend/packages/ui/design-system/src/theme/useBoneTheme.ts: git:dea6ebd76a802ada0096e358b39fe11431eaaed6
+            bone-frontend/packages/ui/package.json: git:bb9dd7788ed9cc938d42b126445e89f26717c5c8
+            bone-frontend/packages/ui/styled-system/src/index.ts: git:860940559346c2be1f0c0863bd83c880e0efa45c
+            bone-frontend/packages/ui/styled-system/src/utils.ts: git:4695c2fa2d51aafb65dce59da33334e0a45191cd
+            bone-init.sql: git:f12fe0a4cef19b69b1bc0b998614f06abda928b4
+            doc/architecture/Bone-错误码登记.md: git:ee4ac8f70fd308055afae6e440b8621bf0114f60
+            doc/architecture/数据库开发规范.md: git:df46aa850d59ad7b0fa01fe042d6bdb676b2827d
+            scripts/_e2e_uischema.js: missing
+            scripts/_probe_designer_polish.js: missing
+            scripts/_probe_p1_contract.js: missing
+            scripts/_probe_p5_publish_visibility.js: missing
+            scripts/_probe_p6_negative.js: missing
+            scripts/_probe_p6_onboarding.js: missing
+            scripts/_probe_scenario_filter.js: missing
+            scripts/archive/README.md: git:029813a40f78d9f3e6f70504dbb558b5365df32d
+            scripts/archive/_e2e_uischema.js: git:96ee9f9ac700d8619f6f33f8b6ce4cf1b44c2524
+            scripts/archive/_probe_designer_polish.js: git:fdbf71b1507ed51682bcdc9d7d2f22875b3fb79d
+            scripts/archive/_probe_p1_contract.js: git:d4cd35f945dbef6853a2c75b6da76be13d4d3980
+            scripts/archive/_probe_p5_publish_visibility.js: git:559b31d39f6620388aebc57f743461b31ee5ec3b
+            scripts/archive/_probe_p6_negative.js: git:dae41df41bcd86c791a1232195102d0edd3cdaab
+            scripts/archive/_probe_p6_onboarding.js: git:443998d1862c39cbfab4e6591241d688b9508b8a
+            scripts/archive/_probe_scenario_filter.js: git:65485448883287f85f8126e17b68f7994b1e21c9
+            scripts/archive/endpoint-test.sh: git:75fe8ef1c6f899f907bbddb1de0a6ebed573e12f
+            scripts/archive/tmp-iam-gateway-rename.py: git:430df80070d5b40e49fa627cdb3d22a98aec906b
+            scripts/archive/verify_all.sh: git:fa2fb084dd9007ea4289bd779f58b42365f8f1b3
+            scripts/archive/verify_iam.sh: git:58cdcfa34c80bfebe8738f182bb3f7a4cbf5de6b
+            scripts/ci/scripts-registry-guard.sh: git:0ffcd9c20d60819b8ab5b25f23b42ecdf3a47fc6
+            scripts/e2e/_extract_endpoints.py: git:5d084444071951f44666c09c16d02e2fd8796513
+            scripts/e2e/channel-buyer-broadcast.py: git:c39f9c6a4f601e561132b23dfc11a0cd6431e2c3
+            scripts/e2e/check-data-realism.py: git:75dc7927498f5298622c33b1c0d3046014948b86
+            scripts/e2e/claim-full-chain-e2e.mjs: git:f87098894ccdf14dc102fed67d5da708aadb619c
+            scripts/e2e/datagen.py: git:354a8e6797a3e5224651b310a12d4cf0e2ea478d
+            scripts/e2e/e2e_lib/__init__.py: git:a3f6784ca8406fae89bacc10c13c280576af3693
+            scripts/e2e/expense-purchase-approval-integration-e2e.py: git:3ccf9ccb1d086d2c86ee373be3bddde3d5db264c
+            scripts/e2e/impact.py: git:45f2fb983b519aa55637550968a4a361b6615e5d
+            scripts/e2e/lint.sh: git:7a4c4e34ee6eca7dc66ff1f0522225b97802c854
+            scripts/e2e/multichannel.py: git:35b6e5d482cad139ef61f7148a96daef7a695c03
+            scripts/e2e/run.sh: git:25786607a8a80d1fd7f5d26cc29dcc3c8424c84f
+            scripts/e2e/templates/py-chain.py.tpl: git:fd2fbfaac229d2889e705447b35b1f93cf2d3cf8
+            scripts/e2e/templates/py-sweep.py.tpl: git:a048beb94229b94f4e1337689459311396022ea6
+            scripts/e2e/two-scenario-full-chain-e2e.py: git:e03af234a97a88437b5cad678f2bf78115cdbb32
+            scripts/e2e/ui/ui-approval-sendback-probe.mjs: git:c7670a9bc83e9440f649804aaca8c4ab0409bc8b
+            scripts/e2e/ui/ui-approval-suspend-reason-probe.mjs: git:26bdd5aa40a7fc6036de0018c567b511f287f899
+            scripts/e2e/ui/ui-metadata-approver-model-probe.mjs: git:5b67d536fd4373eae329351af7c52d22ead37406
+            scripts/e2e/ui/ui-org-routing-probe.mjs: git:96254d375a5dc98c40d5d00b7435119c75850af3
+            scripts/endpoint-test.sh: missing
+            scripts/lib/__init__.py: git:2e3534761dec1091a4f725d5c42826fa4e83adf5
+            scripts/lib/gate.py: git:1533ff5bf41f25f1b5d3528c3d48e93fb2b359ae
+            scripts/lib/registry.py: git:e46c4ed8ca1b82145de3a44da0e3c4410c2ce2a7
+            scripts/lib/waivers.py: git:f9d270737ddeb1fb6bacb7a915ae53a329295d43
+            scripts/migration/migration-manifest.json: git:6b761380cb52361f6ef42f92479248fb987c1432
+            scripts/mysql-84-upgrade.sh: git:473721b1c2e95a783ac2ed822627e39160b38df4
+            scripts/registry/external-known-failures.txt: git:046de2424dc6d90d57c4eec10605ef6f8b87dfe5
+            scripts/registry/external.json: git:02213791dd7163fe0f1d6b4614e06f7b2ef207ad
+            scripts/registry/waivers.json: git:51e93bfe1bf9ff9947d46b5394bffe7f4ca43d66
+            scripts/requirements-dev.txt: git:5c90dd49902728e77e9880db143d6fb1710353da
+            scripts/sync-init-from-live.py: git:c9d5c8d1db3472cc0f1b12a669c64aca1e0fb16b
+            scripts/tests/test_bone_cli.py: git:5153ad71eee0d90b3dede40fcb084a97e8b0447d
+            scripts/tests/test_bone_registry.py: git:58f0ae92d10f4a868be65bb3e88d8c30f5d5ebc1
+            scripts/tests/test_bone_verify.py: git:1f14261ccc7eaae048c9b91d95ccebd90bef0e3c
+            scripts/tests/test_bone_waivers.py: git:c3f49114b765ae6286b7e6ff49ad6d4c8d2f2f01
+            scripts/tests/test_check_error_code_duplication.py: git:f7d354e7ba58df41e96055b3311f51fe0fd23a98
+            scripts/tests/test_check_error_code_landing.py: git:16d29569e0b09f2a84620047bde9f07bad2e04bb
+            scripts/tests/test_check_event_envelope_version.py: git:2ab361764c223d6cc1360d34c7830795ffa0b545
+            scripts/tests/test_check_i18n_sync.py: git:efa59a014a43c53501f33149f13c7d47f957b605
+            scripts/tests/test_check_menu_icon_whitelist.py: git:e8b021d6505c65333c2201cbe8855aa8f03015e4
+            scripts/tests/test_check_menu_route_consistency.py: git:9e84fe58a94b1ec439825b8f515f90c0c8a5e2a5
+            scripts/tests/test_check_menu_single_entry.py: git:f55ed8298348a4057d60cafe7897e9b04781a1cc
+            scripts/tests/test_check_paging_current_field.py: git:b9414f8b2af07f6709e30f15c318d6624e7db3c2
+            scripts/tests/test_check_paging_param_names.py: git:0e53fe37704d0648a4b74af88c044e7394f0322e
+            scripts/tests/test_check_paging_param_ssot.py: git:d5f837e17323aa410ca65c10453497e1a1fe8dc2
+            scripts/tests/test_check_paging_total_normalize.py: git:048eaa4adbb75375296e6aee0b83e93e0a331bc6
+            scripts/tests/test_e2e_data_realism.py: git:e678967c9661ed491b646e71f68a9c50c077d138
+            scripts/tests/test_e2e_datagen.py: git:0d7a4627295faa0f9cc21e1ebc3400d313a32ffb
+            scripts/tests/test_e2e_impact.py: git:af1349760264f8cd522324b17753de5885f85817
+            scripts/tests/test_gate_lib.py: git:817e122eca5acfb7ef9484ade485d89246658c27
+            scripts/tests/test_scripts_catalog.py: git:0738612ce9a8002d82ab85cccefd61d2de5018b7
+            scripts/tmp-iam-gateway-rename.py: missing
+            scripts/verify-claim-e2e.sh: git:a771e33bc29805f54671b759f387e6ed807b5516
+            scripts/verify-workflow-designer.sh: git:36527db53b4c179b3d326c0486ccdfb37a225856
+            scripts/verify_all.sh: missing
+            scripts/verify_iam.sh: missing
+          environment: acaffa39e221d0ca45c04c5ba154b8eb7d14814f8a8b4ec39859f88d624cd82e
+          exitCode: 0
+          inputAfter: 6ca466bf505bf7fd16503db24d77d2ddc00ac1088bd422277c8dfb66e75d9eb0
+          inputBefore: 6ca466bf505bf7fd16503db24d77d2ddc00ac1088bd422277c8dfb66e75d9eb0
+          manifestHash: 23b198d018a4264230ef066d5400dbd03b944511cc71d80001921f661b812efa
+          manifestRef: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/bc57192f-ef8b-46c2-9ab9-a1d4998829b1.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/e2f24a7a-a286-4185-861b-5fd285be9484.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 19
+        value:
+          contentHash: 229ef2cc75b4fbdc68aed1c09c340599bea7d4cc77e7cc9d0fd6b693b97b0a8e
+          ref: .comet/runtime/classic-sdk-checks/b9b6d785294790e403d2546677bc0efa605f2a2227d26d5d19ad38b987907eb2/e2f24a7a-a286-4185-861b-5fd285be9484.log
+      - sequence: 21
+        value:
+          choice: local
+          proposal:
+            input:
+              change: synapclaim-architecture-convergence
+              changeDir: openspec/changes/synapclaim-architecture-convergence
+              workspaceBaseline:
+                ref: f204d601-2546-4dd2-8893-1701c823f9d3
+            outputs:
+              full.archive.prepare:
+                summary: 按用户已确认的 local 交付：只归档并用 git commit --only 精确提交本 change 路径，不 push、不建
+                  PR、不改共享 dev 历史；当前 dev 为共享工作树且 origin/dev...dev = 9/5
+                  已分叉。Verify 全量门禁真实执行（bash scripts/check.sh，exitCode
+                  0，输入快照前后一致，59/59 通过），验证报告
+                  docs/superpowers/reports/2026-11-14-synapclaim-architecture-convergence-verify.md
+                  已登记。
+                targetBranch: dev
+      - sequence: 20
+        value:
+          summary: 按用户已确认的 local 交付：只归档并用 git commit --only 精确提交本 change 路径，不 push、不建
+            PR、不改共享 dev 历史；当前 dev 为共享工作树且 origin/dev...dev = 9/5 已分叉。Verify
+            全量门禁真实执行（bash scripts/check.sh，exitCode 0，输入快照前后一致，59/59 通过），验证报告
+            docs/superpowers/reports/2026-11-14-synapclaim-architecture-convergence-verify.md
+            已登记。
+          targetBranch: dev
+      - sequence: 22
+        value:
+          baseCommit: 7821688cfc128545b026331385b1e65c359c6f94
+          deliveryAction: local
+          targetBranch: dev
+          verifiedBranch: dev
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 14
+        left: 32
+        right: 33
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 34
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 35
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 25
+        height: 5
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: null
+        right: 39
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: 40
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 41
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 42
+        height: 5
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: 45
+        right: 39
+        height: 2
+      - key: full.verify.check
+        value: 17
+        left: 44
+        right: 46
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 47
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 48
+        height: 5
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 20
+        left: 50
+        right: 51
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 33
+        right: 27
+        height: 2
+      - key: full.build.check.evidence
+        value: 14
+        left: 52
+        right: 53
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 54
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 55
+        right: 48
+        height: 5
+      - key: full.archive.preflight
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: 57
+        height: 2
+      - key: full.archive.prepare
+        value: 20
+        left: 58
+        right: 51
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 53
+        right: 29
+        height: 3
+      - key: full.build.check.evidence
+        value: 14
+        left: 59
+        right: 60
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 61
+        right: 48
+        height: 5
+      - key: full.build.configure
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 23
+        left: 63
+        right: 64
+        height: 2
+      - key: full.design.evidence
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 27
+        left: 66
+        right: 67
+        height: 2
+      - key: full.open.revalidate
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 30
+        left: null
+        right: 69
+        height: 2
+      - key: full.open.confirm
+        value: 29
+        left: 68
+        right: 70
+        height: 3
+      - key: full.design.document
+        value: 25
+        left: 65
+        right: 71
+        height: 4
+      - key: full.build.plan
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 33
+        left: 73
+        right: 74
+        height: 2
+      - key: full.build.confirm
+        value: 23
+        left: 63
+        right: 75
+        height: 3
+      - key: full.design.document
+        value: 25
+        left: 76
+        right: 71
+        height: 4
+      - key: full.build.execute
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 23
+        left: 63
+        right: 78
+        height: 2
+      - key: full.build.plan.evidence
+        value: 33
+        left: null
+        right: 74
+        height: 2
+      - key: full.build.plan
+        value: 32
+        left: 79
+        right: 80
+        height: 3
+      - key: full.design.document
+        value: 25
+        left: 81
+        right: 71
+        height: 4
+      - key: full.build.check
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 36
+        left: 83
+        right: 84
+        height: 2
+      - key: full.build.confirm
+        value: 23
+        left: 85
+        right: 78
+        height: 3
+      - key: full.build.plan
+        value: 32
+        left: 86
+        right: 80
+        height: 4
+      - key: full.design.document
+        value: 25
+        left: 87
+        right: 71
+        height: 5
+      - key: full.open.evidence
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 37
+        left: null
+        right: 90
+        height: 2
+      - key: full.open.revalidate
+        value: 31
+        left: 89
+        right: 91
+        height: 3
+      - key: full.open.confirm
+        value: 29
+        left: 68
+        right: 92
+        height: 4
+      - key: full.design.document
+        value: 25
+        left: 87
+        right: 93
+        height: 5
+      - key: full.open.revalidate
+        value: 31
+        left: 89
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 37
+        left: 96
+        right: 90
+        height: 2
+      - key: full.verify.check
+        value: 39
+        left: 95
+        right: 97
+        height: 3
+      - key: full.open.confirm
+        value: 29
+        left: 68
+        right: 98
+        height: 4
+      - key: full.design.document
+        value: 25
+        left: 87
+        right: 99
+        height: 5
+      - key: full.archive.confirm
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 42
+        left: 101
+        right: 102
+        height: 2
+      - key: full.build.confirm
+        value: 23
+        left: 84
+        right: 78
+        height: 2
+      - key: full.build.check.evidence
+        value: 36
+        left: 103
+        right: 104
+        height: 3
+      - key: full.build.plan
+        value: 32
+        left: 105
+        right: 80
+        height: 4
+      - key: full.design.document
+        value: 25
+        left: 106
+        right: 99
+        height: 5
+      - key: full.archive.preflight
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 41
+        left: null
+        right: 108
+        height: 2
+      - key: full.archive.prepare
+        value: 42
+        left: 109
+        right: 102
+        height: 3
+      - key: full.build.plan
+        value: 32
+        left: 104
+        right: 80
+        height: 3
+      - key: full.build.check.evidence
+        value: 36
+        left: 110
+        right: 111
+        height: 4
+      - key: full.design.document
+        value: 25
+        left: 112
+        right: 99
+        height: 5
+      - key: full.open
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 29
+        left: 114
+        right: 115
+        height: 2
+      - key: full.open.revalidate
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 30
+        left: null
+        right: 117
+        height: 2
+      - key: full.open.confirm
+        value: 29
+        left: 114
+        right: 118
+        height: 3
+      - key: full.design.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 27
+        left: 120
+        right: 121
+        height: 2
+      - key: full.open.confirm
+        value: 29
+        left: 122
+        right: 118
+        height: 3
+      - key: full.design.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 25
+        left: 124
+        right: 125
+        height: 2
+      - key: full.design.handoff
+        value: 27
+        left: 126
+        right: 121
+        height: 3
+      - key: full.open.confirm
+        value: 29
+        left: 127
+        right: 118
+        height: 4
+      - key: full.open.evidence
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 28
+        left: null
+        right: 129
+        height: 2
+      - key: full.design.handoff
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 30
+        left: 132
+        right: 133
+        height: 2
+      - key: full.open
+        value: 28
+        left: 131
+        right: 134
+        height: 3
+      - key: full.build.configure
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 26
+        left: 137
+        right: 138
+        height: 2
+      - key: full.design.confirm
+        value: 24
+        left: 136
+        right: 139
+        height: 3
+      - key: full.open
+        value: 28
+        left: 140
+        right: 134
+        height: 4
+      - key: full.archive.prepare
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 35
+        left: 142
+        right: 143
+        height: 2
+      - key: full.build.confirm
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 32
+        left: null
+        right: 146
+        height: 2
+      - key: full.build.execute
+        value: 34
+        left: 145
+        right: 147
+        height: 3
+      - key: full.build.configure
+        value: 22
+        left: 144
+        right: 148
+        height: 4
+      - key: full.open.revalidate
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 30
+        left: 132
+        right: 150
+        height: 2
+      - key: full.verify.check.evidence
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 37
+        left: 152
+        right: 153
+        height: 2
+      - key: full.verify.check
+        value: 39
+        left: 151
+        right: 154
+        height: 3
+      - key: full.open
+        value: 28
+        left: 139
+        right: 155
+        height: 4
+      - key: full.design.confirm
+        value: 24
+        left: 149
+        right: 156
+        height: 5
+      - key: full.open
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 25
+        left: 159
+        right: 160
+        height: 2
+      - key: full.open.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 30
+        left: 162
+        right: 163
+        height: 2
+      - key: full.open
+        value: 28
+        left: 161
+        right: 164
+        height: 3
+      - key: full.build.configure
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 23
+        left: 166
+        right: 167
+        height: 2
+      - key: full.design.document
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 26
+        left: 169
+        right: 170
+        height: 2
+      - key: full.design.confirm
+        value: 24
+        left: 168
+        right: 171
+        height: 3
+      - key: full.open
+        value: 28
+        left: 172
+        right: 164
+        height: 4
+      - key: full.build.check
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 22
+        left: 174
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 32
+        left: 176
+        right: 177
+        height: 2
+      - key: full.build.confirm
+        value: 23
+        left: 175
+        right: 178
+        height: 3
+      - key: full.open
+        value: 28
+        left: 171
+        right: 164
+        height: 3
+      - key: full.design.confirm
+        value: 24
+        left: 179
+        right: 180
+        height: 4
+      - key: full.build.check
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 36
+        left: 182
+        right: 183
+        height: 2
+      - key: full.build.confirm
+        value: 23
+        left: 184
+        right: 178
+        height: 3
+      - key: full.verify.run
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 31
+        left: null
+        right: 186
+        height: 2
+      - key: full.open.evidence
+        value: 30
+        left: 162
+        right: 187
+        height: 3
+      - key: full.open
+        value: 28
+        left: 171
+        right: 188
+        height: 4
+      - key: full.design.confirm
+        value: 24
+        left: 185
+        right: 189
+        height: 5
+      - key: full.open.revalidate
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 30
+        left: 162
+        right: 191
+        height: 2
+      - key: full.verify.report.evidence
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 38
+        left: 193
+        right: null
+        height: 2
+      - key: full.verify.check
+        value: 39
+        left: 192
+        right: 194
+        height: 3
+      - key: full.open
+        value: 28
+        left: 171
+        right: 195
+        height: 4
+      - key: full.design.confirm
+        value: 24
+        left: 185
+        right: 196
+        height: 5
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 37
+      - 43
+      - 49
+      - 56
+      - 62
+      - 72
+      - 77
+      - 82
+      - 88
+      - 94
+      - 100
+      - 107
+      - 113
+      - 116
+      - 119
+      - 123
+      - 128
+      - 130
+      - 135
+      - 141
+      - 157
+      - 158
+      - 165
+      - 173
+      - 181
+      - 190
+      - 197
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actionContexts
+          - synapclaim-architecture-convergence:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - synapclaim-architecture-convergence:11
+          - results
+        map: 13
+      - path:
+          - actionContexts
+          - synapclaim-architecture-convergence:13
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - synapclaim-architecture-convergence:14
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - synapclaim-architecture-convergence:16
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - synapclaim-architecture-convergence:18
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - synapclaim-architecture-convergence:20
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - synapclaim-architecture-convergence:22
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - synapclaim-architecture-convergence:23
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - synapclaim-architecture-convergence:4
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - synapclaim-architecture-convergence:5
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - synapclaim-architecture-convergence:7
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - synapclaim-architecture-convergence:9
+          - results
+        map: 24
+      - path:
+          - outputs
+        map: 20
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 25
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 26
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 27
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 28
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 29
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 30
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 31
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 32
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 33
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 34
+  storageHash: 970d7de70922fb70c29fe4283f841be1c27391b3c280b0826f67d8d51edd5c76
+check_epoch: 5

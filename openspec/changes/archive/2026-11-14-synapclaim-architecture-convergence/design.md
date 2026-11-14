@@ -2,6 +2,8 @@
 comet_change: synapclaim-architecture-convergence
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-11-14-synapclaim-architecture-convergence
+status: final
 ---
 
 ## Context
