@@ -10,7 +10,7 @@
     python3 scripts/ops/verify_comet_install.py --json          # 供 CI/脚本消费
 
 环境变量:
-    COMET_EXPECTED_VERSION  期望版本，默认 0.5.1
+    COMET_EXPECTED_VERSION  期望版本，默认 0.5.2
     COMET_PKG_ROOT          npm 全局包目录，默认 Homebrew 的 node_modules 路径
     COMET_TARBALL           官方 tarball 显式路径（优先于自动候选）
     COMET_BASELINE_CACHE   npm pack 缓存目录，默认 ~/.cache/comet-baseline
@@ -28,6 +28,13 @@
   * 只读：不执行 comet update、不改任何 Comet 状态文件、不写项目文件。
   * 不接入 scripts/check.sh：工具链健康是运维动作，不是每次提交的业务门禁；
     接进去会强绑全局 npm 安装，反而是「配了不生效」的假绿。
+  * 0.5.2 基线升级（2026-11-14）：CLI 已升 0.5.2，旧常量（期望 0.5.1 / 0.5.1 包
+    sha256 / 3570 文件）会让 C1、C3 恒红，是「文档状态与实证不一致」的典型。新常量
+    全部由官方包实算：tarball sha256=2003eb17…d1339、package/ 下普通文件 3656；
+    实测本地安装 3656/3656 逐字节一致（differ=0 / missing=0），不是靠放宽阈值刷绿。
+  * doctor 0.5.2 新增的 "current selection" 告警是**工作区运行态**（无 selection 时
+    Router 只读推断），不是安装缺陷；C5 据此精确化为「安装完整性相关告警」，运行态告警
+    显式登记但不计入 fail。分类自适应（形态不符即判红），并配 2 条变异探针防静态放水。
 """
 from __future__ import annotations
 
@@ -44,14 +51,17 @@ import tarfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-EXPECTED_VERSION = os.environ.get("COMET_EXPECTED_VERSION", "0.5.1")
+# 0.5.2 基线（2026-11-14 实测）：npm view @rpamis/comet@0.5.2 → shasum
+# 11866c3e3a2e78a3792cd15b3afe038b9a326a6a；npm pack 复现 tarball 的 sha256、
+# 以及 C3 同口径的 package/ 下普通文件数均由官方包实算，不沿用 0.5.1 的常量。
+EXPECTED_VERSION = os.environ.get("COMET_EXPECTED_VERSION", "0.5.2")
 PKG_ROOT = Path(os.environ.get(
     "COMET_PKG_ROOT", "/opt/homebrew/lib/node_modules/@rpamis/comet"))
 NPM_PKG = "@rpamis/comet"
 TARBALL_DEFAULT = os.environ.get(
     "COMET_TARBALL", f"/tmp/rpamis-comet-{EXPECTED_VERSION}.tgz")
-TARBALL_SHA256 = "4942b8b896a94e0b9ece98fdf502f53a75922c95be9e14b4a704545941b33d6d"
-EXPECTED_PKG_FILES = 3570
+TARBALL_SHA256 = "2003eb1797fcb693ec1c3160fcd97c86b66c0530e9f73ff78804e9d9b3dd1339"
+EXPECTED_PKG_FILES = 3656
 CACHE_DIR = Path(os.environ.get(
     "COMET_BASELINE_CACHE", Path.home() / ".cache" / "comet-baseline"))
 
@@ -61,6 +71,21 @@ CACHE_DIR = Path(os.environ.get(
 UPSTREAM_DEFECT_WARNS = ("hooks: Trae (project)", "hooks: Trae CN (project)")
 # CodeGraph 是可选能力、global 级用户目录 skills 不计入项目安装缺陷。
 IGNORABLE_CHECK_PREFIXES = ("skills: ", "CodeGraph")
+
+# 0.5.2 新增的 doctor 检查："current selection" 在多个 active change 且未显式
+# select 时返回 warn（Router 退化为只读推断）。这是**工作区运行态**，不是安装缺陷；
+# 把它计入「安装完整性」C5 属于判据语义错位（误报比漏报更致命）。
+# 但绝不做静态白名单：只在告警形态确为「selection 缺失 + Router 只读推断」时归类，
+# 且必须在报告中显式列出。任何 fail/error、措辞变化或新增同类告警仍按未登记告警判红。
+WORKSPACE_SELECTION_CHECK = "current selection"
+WORKSPACE_SELECTION_MARKER = "Router can infer"
+
+
+def is_workspace_state_warn(item: dict) -> bool:
+    """自适应识别工作区运行态告警；形态不符即不豁免，交给 unexpected 判红。"""
+    return (item.get("check") == WORKSPACE_SELECTION_CHECK
+            and item.get("status") == "warn"
+            and WORKSPACE_SELECTION_MARKER in item.get("message", ""))
 
 # 平台 hook 配置 -> (允许的 platform 集合 | None, 是否必填 | None)。
 # 两处用 None 表示「自适应」：依赖上游缺陷是否仍存在（见 trae_hook_split）。
@@ -211,8 +236,12 @@ def c5_doctor(rep: Report, split: bool | None = None) -> None:
     warns = [x for x in results if x.get("status") == "warn"]
     # 自适应：上游缺陷仍在时容忍已知互斥告警；修复后白名单自动失效。
     allowed_known = set() if split else set(UPSTREAM_DEFECT_WARNS)
+    # 工作区运行态告警单独分类：不计入安装完整性缺陷，但必须显式出现在报告里，
+    # 且只能在形态完全匹配时豁免（见 is_workspace_state_warn）。
+    state_warns = [x for x in warns if is_workspace_state_warn(x)]
     unexpected = [x for x in warns
                   if x.get("check") not in allowed_known
+                  and not is_workspace_state_warn(x)
                   and not any(x.get("check", "").startswith(p) for p in IGNORABLE_CHECK_PREFIXES)
                   and "(global)" not in x.get("check", "")]
     classified = [x["check"] for x in warns if x.get("check") in allowed_known]
@@ -221,7 +250,9 @@ def c5_doctor(rep: Report, split: bool | None = None) -> None:
             f"healthy={d.get('healthy')} pass={sum(x['status']=='pass' for x in results)} "
             f"fail={len(fails)} warn={len(warns)}; 上游缺陷白名单="
             f"{'已失效(上游已修复)' if split else '生效中(缺陷仍在)'}; "
-            f"命中={classified or '无'}; 未登记 project 级告警={[x['check'] for x in unexpected] or '无'}")
+            f"命中={classified or '无'}; "
+            f"工作区运行态告警(显式登记,不计入安装缺陷)={[x['check'] for x in state_warns] or '无'}; "
+            f"未登记 project 级告警={[x['check'] for x in unexpected] or '无'}")
 
 
 # 识别 hook 配置里承载命令的「事件」键（不同平台命名大小写不一）。
@@ -503,6 +534,18 @@ def self_test() -> int:
     with patch.object(mod, "trae_hook_split", return_value=True):
         probe(c5_doctor, run_healthy, expect_fail=True,
               label="C5 自适应：上游修复后残留 Trae warn 必须判红")
+
+    # 0.5.2：工作区运行态告警的分类必须自适应且可证伪，不能变成静态放水。
+    state_warn = json.dumps({"healthy": True, "results": [
+        {"check": "current selection", "status": "warn",
+         "message": "missing; Router can infer classic:some-change read-only"}]})
+    state_warn_changed = json.dumps({"healthy": True, "results": [
+        {"check": "current selection", "status": "warn",
+         "message": "selection points at an archived change"}]})
+    probe(c5_doctor, lambda *a, **k: (0, state_warn), expect_fail=False,
+          label="C5 正例：selection 缺失的只读推断告警属运行态，判绿")
+    probe(c5_doctor, lambda *a, **k: (0, state_warn_changed), expect_fail=True,
+          label="C5 变异：同名告警措辞变化(非只读推断)必须判红")
 
     probe(c7_project_config_tracked, lambda *a, **k: (0, ".comet/config.yaml\n"),
           expect_fail=False, label="C7 正例：配置已入库判绿")

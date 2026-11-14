@@ -3,10 +3,10 @@ doc_id: tooling.comet-baseline
 role: runbook
 currency: current
 owner: 工具链维护
-last_verified: 2026-11-07
+last_verified: 2026-11-14
 ---
 
-# Bone · Comet 工具链基线与升级运维（0.5.1）
+# Bone · Comet 工具链基线与升级运维（0.5.2）
 
 > 本文只记录**已实测**的安装基线、升级 SOP、可复现校验与已知边界。
 > 定位裁定：Comet 是**流程编排 + 技能质量评估中枢**，不是 DDD 架构门禁。
@@ -14,18 +14,22 @@ last_verified: 2026-11-07
 
 ---
 
-## 一、当前基线（2026-11-07 实测）
+## 一、当前基线（2026-11-14 实测；0.5.2）
 
 | 项 | 值 | 验证方式 |
 |---|---|---|
-| CLI 版本 | `0.5.1`（由 `0.4.0-beta.18` → `0.4.5` → `0.5.1`） | `comet --version` |
-| npm 安装前缀 | `/opt/homebrew`（包在 `lib/node_modules/@rpamis/comet`） | `npm install -g --prefix /opt/homebrew @rpamis/comet@0.5.1` |
-| 官方 tarball 指纹 | `sha256:4942b8b896a94e0b9ece98fdf502f53a75922c95be9e14b4a704545941b33d6d` | `shasum -a 256 /tmp/rpamis-comet-0.5.1.tgz` |
-| 全包文件数 | **3570**（排除 node_modules） | 官方 tarball 全量逐字节比对 |
-| 功能资产 | `assets/` 153 文件（26 个 SKILL.md）、`eval/` 524 文件 | `verify_comet_install.py` C4 |
-| 项目级默认 workflow | `classic` / `zh-CN` / `artifact_layout: legacy` | `.comet/config.yaml`（**已入库**） |
-| 项目级平台集成 | 5 平台（Claude Code / GitHub Copilot / CodeBuddy / Trae / Trae CN）各 65 skills、rules、hooks | `comet update --scope project --json` |
-| doctor | `healthy=true`，50~51 pass / 0 fail / 15 warn | `comet doctor --json` |
+| CLI 版本 | `0.5.2`（由 `0.4.0-beta.18` → `0.4.5` → `0.5.1` → `0.5.2`） | `comet --version` 与包目录 `package.json` 双证 |
+| npm 安装前缀 | `/opt/homebrew`（包在 `lib/node_modules/@rpamis/comet`） | `npm install -g --prefix /opt/homebrew @rpamis/comet@0.5.2` |
+| 官方 tarball 指纹 | `sha256:2003eb1797fcb693ec1c3160fcd97c86b66c0530e9f73ff78804e9d9b3dd1339`（npm `dist.shasum` = `11866c3e3a2e78a3792cd15b3afe038b9a326a6a`） | `npm pack @rpamis/comet@0.5.2` + `shasum -a 256` |
+| 全包文件数 | **3656**（`package/` 下普通文件、排除 node_modules） | 官方 tarball 全量逐字节比对；实测本地 `3656/3656`，`differ=0` / `missing=0` |
+| 功能资产 | `assets/` 155 文件（26 个 SKILL.md）、`eval/` 568 文件 | `verify_comet_install.py` C4 |
+| 项目级默认 workflow | `classic` / `zh-CN` / `artifact_layout: legacy` | `.comet/config.yaml`（**已入库**）；C7 判据守住 |
+| 项目级平台集成 | 5 平台（Claude Code / GitHub Copilot / CodeBuddy / Trae / Trae CN）各 65 skills、rules、hooks | 2026-11-07 `comet update --scope project --json` 实测；**本轮未重跑，不冒充新证据** |
+| doctor | `healthy=true`，43 pass / 0 fail / 21 warn | `comet doctor --json`；其中 1 个上游缺陷（D1）、1 个工作区运行态（D7），其余为 global / 可选能力告警 |
+
+本轮只做**基线同步与判据修正**：CLI 早已是 0.5.2，没有重装、没有执行 `comet update`、
+没有改写任何 hook 配置。§四 升级 SOP 与其中的回滚点路径仍是 2026-11-07 历史快照，
+保留原样；0.5.1 时期的指纹与文件数只作为历史，不再作为 C1/C3 的判据输入。
 
 **配置入库的唯一例外**：`.gitignore` 官方托管块用 `!/.comet/config.yaml` 显式放行该文件，
 它是团队共享的 workflow 配置，必须入库；其余 `.comet/*`（selection、state、run-state、
@@ -169,6 +173,71 @@ chmod +x "$PKG/bin/comet.js"
 `codegraph sync` 已执行成功，但共享树并行会话持续写文件，索引会立刻再次出现
 pending，属动态状态而非缺陷；CodeGraph 是可选能力，不纳入项目门禁。
 
+### D4：SDK 全局写锁僵死（0.5.2 / macOS，偶发）
+
+**现象**：`comet check run <change> build` 卡在「核对检查输入：0 项」，等待全局写锁
+30 秒后超时，RC=70。
+
+**取证**：锁在 `~/.comet/workspaces/<workspace>/runtime/**/.runtime-store-v2/**/.write.lock`，
+**不在项目内 `.comet/`**。只读核对 6 个锁文件 pid 全部 DEAD、mtime 集中在 11-09～11-13；
+`comet-sdk-blocking-bug.md` 记录前 9 次同一失败，而 `scripts/check.sh` 与 `mvn clean test`
+独立运行均 PASS。
+
+**裁定**：判为 SDK spawn 子进程静默崩溃后遗留的僵死锁，不清理全局锁、不改 SDK。
+本轮 `check run ... build` 真实执行 7m16s、`exitCode=0`、Run 自动推进 verify，说明**非必现**；
+登记为已知偶发缺陷，复发时须先确认 pid 已死且无后代进程，再决定是否清理。
+
+### D5：宿主删除配额打断检查收据（0.5.2 × 宿主交互）
+
+**现象**：Verify Guard 的 `bash scripts/check.sh` 真实跑完 411 秒、日志 59/59 +
+「✅ 本地自检通过！」，但收尾写收据被
+`SAFE_DELETE_BULK_CONFIRM_REQUIRED(count=50, threshold=50, scope=turn)` 拦下，
+Guard RC=70，Runtime 记录停在 `status=started`。
+
+**取证**：删除目标是全局 runtime 的 `.write.lock.contenders/*.choosing`。日志 1282 行、
+manifest 1.22 MB 均已生成，但记录无 `inputBefore` / `inputAfter` / `manifestHash` /
+`contentHash`。**日志全绿 ≠ Runtime 收据**：`record-outcome` 只在记录为 `completed` 时可用，
+`check rerun` 需要新的 pending Action。
+
+**裁定**：按 2026-11-10 同类故障先例，经用户确认后 `mark-unknown` → `retry`（证据摘要逐条
+如实披露「子进程已执行且日志全绿 / Runtime 无可入账收据 / 无字段可回填 / 原执行器及后代
+已停止」，并把 `not-executed` 明确限定为 **Runtime 侧语义**）→ **真实重跑** 7m34s，
+`exitCode=0`、输入快照前后一致、收据齐全、safe-delete 0 次。不伪造成功收据；
+删除配额按 turn 累计，新一轮会重置。
+
+### D6：Archive Guard 部分执行导致交付回执死锁（结构性，未收口）
+
+**现象**：`comet guard <change> archive --apply` 返回 RC=1，但 OpenSpec 归档已完整落盘
+（active 目录移入 `archive/`、3 份主 spec 合并、plan 加 `archived-with` 标注）；
+Action `full.archive.execute` 停在 `outcome-unknown`、`state.archived=false`，
+诊断 `CLASSIC_EVIDENCE_DRIFT: Classic change directory does not exist`。
+
+**取证**：源码级排除全部官方通道（完整矩阵见 §九）：`completeClassicSdkDelivery` 要求
+`archived=true` + 无 running/unknown Action + 存在 pending 的 deliver Action；
+`canRepairClassicDelivery` 同样要求 `archived=true`；`repair-archive` 要求「failed 且
+**未创建**归档目录」；诊断给出的 `edit-review prepare-applied` 只替换
+`revise-*` / `propose-escalation` / `continue-build` 类设计、计划漂移修复；
+`interruptedOutcomeRequestTemplate` 仅在 `*.build.execute` 的 unknown `invoke_skill` 下生成。
+
+**裁定**：归档是不可逆一次性副作用，**停手**；不回滚目录、不重放归档、不手改
+`comet-state.yaml`、不声明 `not-executed`。以归档目录 + 精确提交 `87d753d6` 为最终事实，
+Run 运行态缺口如实登记。宿主允许自由编辑文件也不改变结论：Run 真实状态在全局
+runtime store，改投影文件既违规又无效。恢复条件见 §七。
+
+### D7：doctor `current selection` 告警（0.5.2 新增检查，非安装缺陷）
+
+**现象**：清除失效 selection 后，`comet doctor --json` 新增 project 级 warn：
+`missing; Router can infer classic:<change> read-only — select it explicitly before
+concurrent work`。
+
+**取证**：这是**工作区运行态**（Router 退化为只读推断），与包完整性无关；把它计入
+安装完整性 C5 会让 `verify_comet_install.py` 恒红，属判据语义错位（误报比漏报更致命）。
+
+**裁定**：C5 精确化为「安装完整性相关告警」，运行态告警**显式登记但不计入 fail**；
+分类自适应——仅当 `check` 与 message 形态完全匹配时豁免，任何 fail/error、措辞变化或
+新增同类告警仍判红，并配 2 条变异探针。不静态白名单，也不伪造一个指向已归档 change
+的 selection 来「消掉」告警。
+
 ---
 
 ## 六、能力边界裁定
@@ -215,6 +284,17 @@ pending，属动态状态而非缺陷；CodeGraph 是可选能力，不纳入项
    可审计性更低；手工改成相对路径则会被下次 `comet update` 覆盖（配了不生效）。
    建议后续推动上游改用相对路径/平台变量，或与官方生成结果对齐后另立 change。
    该文件保持工作树未提交状态，不属本轮交付。
+7. **`synapclaim-architecture-convergence` 的 SDK 交付回执**（D6）：归档目录与提交
+   `87d753d6` 已是最终事实，但 Run rev90 仍停在 `outcome-unknown` / `archived=false`。
+   需 Comet 提供接受「归档已落盘但收据缺失」的合法恢复通道，或用户明确接受终态；
+   在此之前不重放归档、不回滚目录、不手改状态字段。
+8. **`synapclaim-risk-fraud-dimensions` 运行态恢复**：业务实现已落地、`tasks.md` 15/15，
+   但 Run rev6 停在 `full.open.revalidate` 的 `outcome-unknown`、无 `verify.md` / plan，
+   且缺 `build_mode` / `tdd_mode`。恢复会推翻既有「只恢复架构收敛」的选择，属不可逆
+   Runtime 写入，需用户新的明确授权并指定配置值，之后仍要走完整 full 流程。
+9. **本地提交推送 `origin/dev`**：当前 `origin/dev...dev = 9/7` 已分叉，用户已确认
+   `local` 交付（不 push、不建 PR）。若要推送，须先决定 rebase / merge 策略并处理
+   与远端 9 个提交的冲突；本轮未执行、未改共享 dev 历史。
 
 ---
 
@@ -291,3 +371,81 @@ assertion）、CD4ML（可复现证据链：内容哈希、provenance）、NIST 
 证据：`--self-test` **16/16 PASS**（新增 2 条 C6 探针：同事件 2 条 router 必须判红、
 单事件单 router 必须判绿）；真实环境 `verify` 8/8 PASS、exit 0，C6 对
 `.github/hooks/comet-guard.json` 正确报 `router=1 单事件最多1`（修复前误报 `router=2`）。
+
+---
+
+## 九、本轮（2026-11-14）合理性裁定矩阵与运行时决策矩阵
+
+指令是「基于业界最佳实践对以上合理的建议执行优化」。承接 §八 的裁定方式：
+「合理」是判据，不是修辞；逐项给出裁定与依据，执行合理项、拒绝不合理项。
+本轮的「以上建议」是上一轮遗留的三类恢复建议（归档回执、change 恢复授权、
+分叉推送）；优化方向是把它们从**对话里的口头建议**升级为**版本化、可核验、
+可复用的工程资产**，并同步修复因此暴露的过期基线。
+
+### 9.1 合理性裁定矩阵
+
+| # | 候选动作 | 裁定 | 依据 |
+|---|---|---|---|
+| 1 | 把 `verify_comet_install.py` 基线由 0.5.1 同步到 0.5.2 | **执行** | 实测 `comet --version=0.5.2`，脚本仍期望 0.5.1 ⇒ C1 FAIL；C3 拿 0.5.1 包比对 0.5.2 安装得 2980/3570、differ=510。属 NIST AI RMF「文档状态须与实证一致」的反例 |
+| 2 | 新常量全部由官方包实算，不放宽任何阈值 | **执行** | `npm pack` 得 sha256 `2003eb17…d1339`、C3 同口径 3656 文件；实测本地 **3656/3656、differ=0、missing=0**。先有证据再改常量，不是先放宽阈值刷绿 |
+| 3 | 把 doctor `current selection` 静态加进白名单 | **拒绝** | 静态豁免永久放水，状态变化后不会自动失效；且它是真实运行态，不该被「消掉」 |
+| 4 | C5 精确化为安装完整性告警 + 自适应分类 + 显式登记 + 变异探针 | **执行** | 把工作区运行态计入安装完整性属判据语义错位（误报）；分类仅在形态完全匹配时豁免，措辞变化即判红 |
+| 5 | 补实 `claim-liability-config` 主 spec 的 `TBD Purpose` | **执行** | 归档生成的占位符属死配置；selection 清除后 Guard 放行主规格文档修订，提交 `27ee5127a`；仅改 Purpose 段，不动任何 Requirement / Scenario |
+| 6 | 把 D4–D7 四个 0.5.2 运行时缺陷登记进 §五 | **执行** | Single Source of Truth + Known-Issues Register；此前只存在于本机缓存与会话记忆，团队不可见 |
+| 7 | 手改 `comet-state.yaml` 把 `archived` 置 true 以「收口」交付 | **拒绝** | 伪造收据；Run 真实状态在全局 runtime store，改投影文件既违规又无效 |
+| 8 | 回滚归档目录 / 重放 `guard archive --apply` | **拒绝** | 归档不可逆；二次搬运会制造更严重的证据漂移 |
+| 9 | 声明 `not-executed` 走 `mark-unknown` + `retry` 复位 `:23` | **拒绝** | 归档确已执行，恢复协议明确禁止在「已执行或仍不明」时声明 not-executed |
+| 10 | 把完整性校验接进 `scripts/check.sh` | **拒绝** | §八 #13 已裁定：会把全仓提交强绑本机全局 npm 安装，是「配了不生效」假绿 |
+| 11 | 强行归档 `risk-fraud-dimensions` / `multi-insurer` | **拒绝** | 前者缺 verify 与 `build_mode` / `tdd_mode`、后者 0/15 且 P0 内核在途；归档即文档抢跑 |
+| 12 | push / 建 PR 处理 `9/7` 分叉 | **拒绝** | 用户已确认 `local` 交付；分叉处理会改写共享 dev 历史 |
+| 13 | 伪造一个指向已归档 change 的 selection 来消掉 doctor 告警 | **拒绝** | 制造假绿，并会让 Phase Guard 把后续写入错误归属 |
+
+### 9.2 `outcome-unknown` 恢复决策矩阵（Runbook）
+
+三条阶段共用同一取证清单：`revision` 未变（未发生写入）、`claim.token`、
+`record.status`、`receiptRef` / `manifestRef`、原执行器及**所有后代进程**已停、
+输入快照前后是否一致。日志、外部 marker 或进程结束本身**都不能**充当 Runtime 收据。
+
+| 阶段 | 典型静态证据 | 唯一合法通道 | 明确禁止 |
+|---|---|---|---|
+| build `*.build.execute` | `command=null`、`record.status=missing`、`receipts=[]`、无执行器残留 | 核实「原尝试完全未执行」后 `mark-unknown` → `retry(not-executed)` → **真实重跑**生成新收据 | 直接重放外部动作；不写证据摘要 |
+| verify `full.verify.check` | 子进程已执行且日志全绿，但记录停在 `status=started`、无输入快照与哈希 | `record-outcome` **仅在记录 `completed` 时**可用；否则经用户确认按先例复位，并在 `evidence.summary` 逐条如实披露「子进程已执行 / Runtime 无可入账收据 / 无字段可回填」，再**真实重跑** | 把 `not-executed` 泛化到子进程；把日志全绿当成功收据 |
+| archive `full.archive.execute` | 归档目录已落盘、主 spec 已合并，但回执缺失、`archived=false` | **无官方通道**：停手，以归档目录 + 精确提交为终态，如实登记运行态缺口 | 回滚目录、重放归档、`mark-unknown`+`retry`、手改状态字段 |
+
+判定要点：**verify 阶段可复位重跑，archive 阶段不可**——差别不在「能否重试命令」，
+而在副作用是否可逆。归档一旦搬走 active 目录，重放即二次副作用，任何
+「补一张成功收据」的做法都是伪造证据。
+
+### 9.3 可复现核验命令（只读，任何人可复核）
+
+```bash
+comet --version                                             # 期望 0.5.2
+npm view @rpamis/comet@0.5.2 dist.shasum --json            # 期望 11866c3e…326a6a
+npm pack @rpamis/comet@0.5.2 && shasum -a 256 rpamis-comet-0.5.2.tgz   # 期望 2003eb17…d1339
+python3 scripts/ops/verify_comet_install.py --json         # 期望 verified=8 failed=0 verdict=0
+python3 scripts/ops/verify_comet_install.py --self-test    # 期望全 PASS「判据可证伪，非恒绿」
+python3 scripts/ops/verify_comet_install.py --fetch-tarball --json  # 换机复现，期望 verdict=0
+comet state check <change> <phase> --recover --details --json      # RC=1 是恢复态提示，不是命令失败
+git show --stat 87d753d6                                   # 归档终态事实
+```
+
+`--json` 的 C5 断言：必须同时出现 `工作区运行态告警(显式登记,不计入安装缺陷)=['current selection']`
+与 `未登记 project 级告警=无`——前者证明没有隐藏状态，后者证明没有放水。
+
+### 9.4 门禁证据
+
+- `python3 -m py_compile scripts/ops/verify_comet_install.py`：OK。
+- `verify_comet_install.py --json`：**8/8 PASS、verdict 0**；C3 `3656/3656 differ=0 missing=0`。
+- `verify_comet_install.py --self-test`：**18/18 PASS**，「判据可证伪，非恒绿」；含新增 2 条 C5 变异探针。
+- `verify_comet_install.py --fetch-tarball --json`：verdict 0，官方包可换机复现。
+- `comet doctor --json`：`healthy=true`，43 pass / 0 fail / 21 warn（D1 上游缺陷 1 个、
+  D7 工作区运行态 1 个，其余 global / 可选能力告警）。
+- 全量提交门禁由 pre-commit 执行，结果以对应提交记录为准；本轮未改动
+  `scripts/check.sh` 的门禁接线。
+
+**业界实践依据**：Google《Rules of ML》/ ML Test Score（判据须可证伪、写成可执行
+assertion）、CD4ML（官方 registry provenance + 全包逐字节可复现比对）、NIST AI RMF
+（文档状态须与实证一致，本次据此修过期基线）、Google SRE Workbook（Runbook 决策矩阵、
+Known-Issues Register、恢复条件显式化）、Blameless Postmortem（unknown 如实登记、
+不刷绿）、ADR（不可逆的归档终态决策版本化留痕），以及仓库既有纪律「误报比漏报更致命」
+「最小爆炸半径」「fail-closed」「同一语义两处配置源 = 配了不生效」。
