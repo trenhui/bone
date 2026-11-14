@@ -3732,9 +3732,7 @@
    "path": "/api/v1/claims/{id}/auto-approve",
    "controller": "ClaimCaseController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
-   "cases": [
-    "claim-full-chain-e2e.mjs"
-   ]
+   "cases": []
   },
   {
    "http": "POST",
@@ -4758,7 +4756,7 @@
  ],
  "summary": {
   "endpoints": 537,
-  "covered": 243,
-  "uncovered": 294
+  "covered": 242,
+  "uncovered": 295
  }
 }

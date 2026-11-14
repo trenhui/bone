@@ -94,11 +94,185 @@ APPROVER_TOKEN, APPROVER_ID = ensure_approver()
 APPROVER_HDR = session_headers(APPROVER_TOKEN)
 
 
+# ---- 采购审批组织上下文（对齐 purchase_order v3 的 DEPT_HEAD 指派）----
+# 根因：purchase_order v3 的 approve 节点用 DEPT_HEAD（部门负责人指派）。引擎经 IAM
+# GET /api/v1/iam/accounts/{发起人}/org-hierarchy 取「发起人所属部门负责人(deptHeadId)」。
+# 而 admin(userId=1) 在 IAM 中 dept_id 为 NULL ⇒ deptHeadId 为 NULL ⇒ 引擎解析不出审批人
+# ⇒ 实例挂起（400「审批流程已挂起（审批人待分配）」）。报销场景走 FIELD(approver_id=1) 不受影响。
+# 这里幂等地为 admin 建一个部门、把审批人账号设为该部门负责人，使 DEPT_HEAD(admin) 解析到
+# 审批人，与下方 approve 用的 APPROVER_HDR 对齐（发起人 admin ≠ 审批人 ⇒ 也绕开自审批守卫）。
+_PURCHASE_DEPT_BASE = "采购E2E审批部门"   # 基类前缀：动态名 = 基类_后缀，每次新建、按后缀回收，跨运行不累积
+_PURCHASE_DEPT_NAME = _PURCHASE_DEPT_BASE + "_" + SUFFIX  # 本次运行动态部门（新部门 id ⇒ 引擎 DEPT_HEAD 重新解析，避开引擎部门负责人缓存）
+_PURCHASE_DEPT_ID = None
+_ADMIN_DEPT_BEFORE = None
+
+
+def _find_dept_id(nodes, name):
+    for n in (nodes or []):
+        if n.get("name") == name:
+            return n.get("id")
+        r = _find_dept_id(n.get("children"), name)
+        if r:
+            return r
+    return None
+
+
+def _iter_depts(nodes, out):
+    for n in (nodes or []):
+        out.append((n.get("id"), n.get("name")))
+        _iter_depts(n.get("children"), out)
+
+
+def _cleanup_stale_purchase_depts():
+    # 清理历史上崩溃遗留的「采购E2E审批部门_<后缀>」与 TMP 探针部门，避免无限累积。
+    # 注意：固定名「采购E2E审批部门」（无后缀）是本基金复用固件，此处不删。
+    try:
+        s, d = call("GET", "/iam/depts/tree")
+        tree = d.get("data") or []
+        nodes = tree if isinstance(tree, list) else (tree.get("tree") or tree.get("children") or [])
+        out = []
+        _iter_depts(nodes, out)
+        for did, dname in out:
+            if dname and (dname.startswith(_PURCHASE_DEPT_BASE + "_") or dname.startswith("TMP_")):
+                try:
+                    call("DELETE", f"/iam/depts/{did}", {})
+                except Exception:
+                    pass
+    except Exception as e:
+        note(f"[warn] 清理遗留采购部门失败: {e}")
+
+
+def _resolve_purchase_dept():
+    # 幂等：先查固定名部门，没有再建。POST 返回 data 是字符串 id（已实测）。
+    s, d = call("GET", "/iam/depts/tree")
+    tree = d.get("data") or []
+    nodes = tree if isinstance(tree, list) else (tree.get("tree") or tree.get("children") or [])
+    did = _find_dept_id(nodes, _PURCHASE_DEPT_NAME)
+    if not did:
+        s, d = call("POST", "/iam/depts",
+                     {"name": _PURCHASE_DEPT_NAME, "leaderId": APPROVER_ID, "tenantId": 0})
+        dd = d.get("data")
+        if isinstance(dd, str) and dd.strip():
+            did = dd.strip()
+        elif isinstance(dd, int):
+            did = dd
+        elif isinstance(dd, dict):
+            did = dd.get("id")
+    return did
+
+
+def _find_dept_node_by_id(nodes, did):
+    """递归按 id 取完整部门节点（含 name/parentId/orderNo/status），用于整字段回填。"""
+    for n in (nodes or []):
+        if str(n.get("id")) == str(did):
+            return n
+        r = _find_dept_node_by_id(n.get("children"), did)
+        if r:
+            return r
+    return None
+
+
+def _get_dept_node(did):
+    """取固定名部门节点（含 name/parentId/orderNo/status），用于整字段回填负责人。"""
+    try:
+        s, d = call("GET", "/iam/depts/tree")
+        tree = d.get("data") or []
+        nodes = tree if isinstance(tree, list) else (tree.get("tree") or tree.get("children") or [])
+        return _find_dept_node_by_id(nodes, did)
+    except Exception:
+        pass
+    return None
+
+
+def ensure_purchase_org():
+    global _PURCHASE_DEPT_ID, _ADMIN_DEPT_BEFORE
+    if not APPROVER_ID:
+        note("[warn] 审批人账号未就绪，跳过采购组织上下文搭建（采购审批可能仍挂起）")
+        return
+    _cleanup_stale_purchase_depts()
+    dept_id = _resolve_purchase_dept()
+    if not dept_id:
+        note("[warn] 未能确定采购E2E部门 id，采购审批可能仍挂起")
+        return
+    _PURCHASE_DEPT_ID = dept_id
+    # 对齐部门负责人到当前审批人账号：审批人账号每次 teardown 被删、重建后 id 会变（雪花新 id），
+    # 而固定名部门（teardown 不删）的 leaderId 会滞留旧 id ⇒ DEPT_HEAD(admin) 解析到旧 id
+    # ≠ APPROVER_ID ⇒ approve/reject 任务级 SoD 恒 403、采购链连锁 409。故每次都 PUT 重新对齐（幂等）。
+    # 部门更新端点要求完整必填字段（name/parentId/orderNo/status），仅传 leaderId 会被完整性约束拒（400）。
+    node = _get_dept_node(dept_id)
+    if node:
+        body = {
+            "name": node.get("name"),
+            "leaderId": APPROVER_ID,
+            "orderNo": node.get("orderNo", 1),
+            "status": node.get("status", 1),
+        }
+        if node.get("parentId") is not None:
+            body["parentId"] = node.get("parentId")
+        s, d = call("PUT", f"/iam/depts/{dept_id}", body)
+        if s not in (200, 204):
+            note(f"[warn] 采购部门负责人对齐失败（{s}），审批人={APPROVER_ID}：{str(d)[:120]}")
+        else:
+            note(f"采购部门负责人已对齐到审批人 {APPROVER_ID}")
+    else:
+        note(f"[warn] 未取到采购部门节点，跳过负责人对齐（审批人={APPROVER_ID}）")
+    # 记录 admin 原部门，仅用于日志/还原；IAM 不支持把 deptId 清回 NULL
+    # （0 / 显式 null 均被拒或保持原值），故原值为 NULL 时不还原。
+    try:
+        s, d = call("GET", "/iam/accounts/1")
+        _ADMIN_DEPT_BEFORE = (d.get("data") or {}).get("deptId")
+    except Exception:
+        _ADMIN_DEPT_BEFORE = None
+    call("PUT", "/iam/accounts/1", {"deptId": dept_id})
+    note(f"采购组织上下文：admin 归入部门 {dept_id}（负责人=审批人 {APPROVER_ID}）")
+
+
+def _dept_exists(did):
+    try:
+        s, d = call("GET", "/iam/depts/tree")
+        tree = d.get("data") or []
+        nodes = tree if isinstance(tree, list) else (tree.get("tree") or tree.get("children") or [])
+        out = []
+        _iter_depts(nodes, out)
+        return any(str(i) == str(did) for i, _ in out)
+    except Exception:
+        return False
+
+
+def _restore_admin_dept():
+    # 先还原 admin 部门（避免 deptId 悬空），再回收本次动态采购部门。
+    if _ADMIN_DEPT_BEFORE and _dept_exists(_ADMIN_DEPT_BEFORE):
+        try:
+            call("PUT", "/iam/accounts/1", {"deptId": _ADMIN_DEPT_BEFORE})
+            note("采购组织上下文：admin 部门已还原至基线")
+        except Exception as e:  # 还原失败不该污染测试结果
+            note(f"[warn] 还原 admin 部门失败: {e}")
+    else:
+        # 基线部门不存在（历史崩溃遗留/已删）：把 admin 放回稳定的种子部门，避免 deptId 悬空。
+        try:
+            call("PUT", "/iam/accounts/1", {"deptId": APPROVER_DEPT_ID})
+            note(f"采购组织上下文：admin 部门回退至种子部门 {APPROVER_DEPT_ID}")
+        except Exception as e:
+            note(f"[warn] 回退 admin 部门失败: {e}")
+    # 回收本次运行的动态采购部门（下次运行起点的 _cleanup_stale_purchase_depts 也会兜底清理同前缀部门）。
+    if _PURCHASE_DEPT_ID and _dept_exists(_PURCHASE_DEPT_ID):
+        try:
+            call("DELETE", f"/iam/depts/{_PURCHASE_DEPT_ID}", {})
+            note(f"采购组织上下文：动态部门 {_PURCHASE_DEPT_ID} 已回收")
+        except Exception as e:
+            note(f"[warn] 回收采购部门失败: {e}")
+
+
+ensure_purchase_org()
+teardown.register(SUFFIX, on_clean=_restore_admin_dept)
+
+
 # ---- 运行级残留 teardown ----
-# 本次运行会在库里留下：带 <SUFFIX> 的动态物理表 + meta_entity 定义及子表 + 工作流行
-# + 本脚本创建的审批账号 e2e_po_appr2。默认退出时（含异常/sys.exit）自动回收，
-# 防止 E2E 反复联调把库越堆越脏；BONE_E2E_KEEP_RESIDUE=1 跳过清理、保留现场供排查。
-teardown.register(SUFFIX, accounts=(APPROVER_USER,))
+# 本次运行会在库里留下：带 <SUFFIX> 的动态物理表 + meta_entity 定义及子表 + 工作流行。
+# 审批账号 e2e_po_appr2 刻意【持久化、不删除】：其 id 必须跨运行稳定，否则引擎对 admin 的
+# DEPT_HEAD(deptHeadId) 缓存会与重建后的新 id 错配 ⇒ approve/reject 任务级 SoD 恒 403、采购链连锁 409。
+# 该账号为固定用户名、不会累积，留作长期固件；BONE_E2E_KEEP_RESIDUE=1 跳过清理、保留现场供排查。
+teardown.register(SUFFIX, accounts=())
 
 
 # ==================================================================
