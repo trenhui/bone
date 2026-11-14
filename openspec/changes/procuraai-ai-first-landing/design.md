@@ -1,3 +1,9 @@
+---
+comet_change: procuraai-ai-first-landing
+role: technical-design
+canonical_spec: openspec
+---
+
 # Design — procuraAI AI-first 落地
 
 > 本版为**业界最佳实践校准后的可验证设计**（2026-11-13）。相较首版，新增：WSJF 量化与敏感性、walking skeleton 的 DoD、timeboxed spike 决策树、运行时治理控制点、分任务评测指标、合规条款→工程控制点→证据矩阵、成功度量与可证伪假设、ATAM 风险表。决策 D1–D7 的方法与结论不变，**变的是"怎么证明它做对了"**。
