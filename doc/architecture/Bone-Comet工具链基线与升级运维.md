@@ -292,9 +292,11 @@ concurrent work`。
    但 Run rev6 停在 `full.open.revalidate` 的 `outcome-unknown`、无 `verify.md` / plan，
    且缺 `build_mode` / `tdd_mode`。恢复会推翻既有「只恢复架构收敛」的选择，属不可逆
    Runtime 写入，需用户新的明确授权并指定配置值，之后仍要走完整 full 流程。
-9. **本地提交推送 `origin/dev`**：当前 `origin/dev...dev = 9/7` 已分叉，用户已确认
-   `local` 交付（不 push、不建 PR）。若要推送，须先决定 rebase / merge 策略并处理
-   与远端 9 个提交的冲突；本轮未执行、未改共享 dev 历史。
+9. **本地提交推送 `origin/dev`**：dev 是共享工作树，本地与远端由并行会话持续推进，
+   **分叉数是动态状态，不在 current 文档里写死**；实时值取
+   `git rev-list --left-right --count origin/dev...dev`（本轮观测区间为 `9/7` → `10/8`）。
+   用户已确认 `local` 交付（不 push、不建 PR）。若要推送，须先决定 rebase / merge
+   策略并处理冲突；本轮未执行、未改共享 dev 历史。
 
 ---
 
