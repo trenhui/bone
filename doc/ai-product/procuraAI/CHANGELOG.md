@@ -30,6 +30,7 @@ updated-on: 2026-11-12
 | 第二十三轮 | 2026-11-14 | 业界最佳实践独立复核后的契约状态收敛 + AI 原生运行时契约层设计增补 |
 | 第二十四轮 | 2026-11-14 | 跨文档引用纪律 + 同文件内部口径互斥收敛 + 剩余事实漂移与状态护栏 |
 | 第二十五轮 | 2026-11-14 | X1–X4 字段级契约工件 + 外部一手依据入族 + 实现态澄清与 D-14 裁决输入 |
+| 第二十六轮 | 2026-11-15 | E-10 诊断证据索引登记 + Outbox 配置注入假绿修复 + A10.27 索引扩容 |
 
 ---
 
@@ -181,6 +182,14 @@ updated-on: 2026-11-12
 > **证据（沙箱 + 本仓双跑）**：主门禁 **10/10**、`--self-test` **146/146** + 6 条正例、`--manifest` 未动（`10/A10.28/9/6/146/27`）、evalset **PASS + 69/69**、frontmatter **33 份全绿**、`check-procura-ci.sh` rc=0；35 份 md 的 A10.16 黑名单 **0 命中**；三入口 + 门禁脚本 `git diff` 为空。**注入必红 / 还原必绿 4 组全通过**：删「四条件」（A10.23）、ADR 删「档 B」（A10.23）、蓝图删「决策权仍在人」（A10.3.3）、README 注入黑名单串（A10.16），还原均绿。
 >
 > **暴露面（诚实标注，不掩盖）**：删除**整节 §8** 后主门禁 **exit=0 仍绿**（沙箱注入实测）⇒ 本节全部为纯叙述 `DesignOnly` 草案，**不在 CI 三入口判据集合内**，`CI 绿 ≠ 本节已被守护`。纳判据须同步三入口 + `FULL_GATE_KEYS` + 门禁常量 + 注入必红反证 + 自检探针（D-11 / A10.17，L3），留 owner。**CI 绿 ≠ AI 可上线**：仍为 Proposal 设计态，0 个 `bone-procurement-*` 模块 / 0 条 `t_proc_*` DDL / 0 个 handler 的事实未变。
+
+> **第二十六轮「E-10 外部诊断证据索引登记 + Outbox 配置注入假绿修复（业界最佳实践落地）」（2026-11-15，用户「基于业界最佳实践对以上合理的建议执行优化」；承接第二十三 / 二十四轮明确留 L3 的 E-10 项与诊断报告 §7 边界声明）**：① **前置条件变化**：`procuraai-ai-first-landing` 已完成 Verify / Archive / push `origin/dev`（HEAD `02b55faf4`），Comet build phase guard 前置消失；基线主门禁 **10/10** + `--self-test` **146/146** + 评测集 **PASS / 69/69** + frontmatter **33 份** + 一键入口 rc=0。② **E-10 落位（M3「存在即登记」/ ISO 42001 文档化信息与可追溯性）**：`/tmp/` 的独立复核报告原样移入 `outputs/procuraAI-方案独立复核与业界对标-2026-11-14.md`，**正文 §0–§7 与附录 A/B 一字未回改**，仅更新落点元信息并追加附录 C（记录 P0-1/2/3、C-2、X1–X10、32 周 / 7 卷漂移的后续处置与仍未闭合的 owner 项）。③ **当前态索引同步**：`资产登记 §11` 索引 9→10 行、`indexCount: 9`→`10`、背景 / 性质 / 门禁 / 跟踪纪律同步，新增 E-10 行「未跟踪」；README `gateEvidenceManifest` 唯一行 `indexCount` 9→10；`DECISION-REGISTER` 前言 9→10 份；`README` / `llms.txt` / 资产表 / 决策登记轮次 25→26；`AI接入判定 §8.1` 两句当前态口径同步（避免族内互斥），E-1…E-9 改为 §11 索引 E-1…E-10。④ **A10.27 判据扩容（不新增判据、三入口零改动）**：`range(1,10)`→`range(1,11)`、错误信息 E-1…E-9→E-1…E-10、`m_ev_index_count` 探针锚点 9/8→10/9、`m_ev_drop_row` 改为同时删 E-9/E-10 使新增登记行也有注入必红守护；`FULL_GATE_KEYS` / `ci.yml` / `scripts/check.sh` / `check-procura-ci.sh` 保持原样，`probes: 146` 不变。⑤ **扩容暴露并修复两处真实缺陷**：**(a) 字符串排序假红**——`sorted(ev_ids)` 把 `E-10` 排在 `E-2` 前（E-1…E-9 时恰好掩盖），改为按编号数值排序并保留重复检测；**(b) `indexCount` 双读 fail-open**——本轮在 §11 背景段写了第二个数字 token，A10.28 `evidence_manifest` 用宽松 `re.search` 取第一个、A10.27 用整行锚点取独立行，双层同步改 9 时整体仍绿；已删除叙述文字里的数字 token，全族当前态只保留唯一独立登记行，`AI接入判定 §8.1` 同步不写数字。⑥ **Outbox 配置注入假绿（Spring Boot 配置单一真源 / 测试注入必须真生效）**：实证 `MasterDataOutboxRelay` 的 `@ConditionalOnProperty(bone.masterdata.outbox-relay.enabled)` 与 `@Value(masterdata.outbox-relay.consumer-id / max-attempts)` 属两棵配置树；`ChangeRequestHttpIntegrationTest` 原注入 `bone.masterdata.outbox-relay.consumer-id=procura-srm` / `max-attempts=1` **从未生效**，静默回落 yml 默认 `bone-masterdata-relay`，使 `projection.authorize(1L,"P-1","procura-srm")` 成为空设置（与上一轮 GoldenRecord `digest-pepper` 同类缺陷）。对齐测试注入前缀、Javadoc 补两棵配置树契约，新增 `namedConsumerIdIsActuallyInjected` 真实投递断言（合法信封 → `relayBatch` → `delivered=1` / `unauthorized=0` / `dead=0`）。
+>
+> **证据**：`mvn -o -f bone-platform/bone-masterdata/pom.xml clean test` **251/251 BUILD SUCCESS**（原 250 + 新增 1）；负向探针把前缀改回 `bone.masterdata.outbox-relay.consumer-id` → `namedConsumerIdIsActuallyInjected:155 expected: 1 but was: 0` → **BUILD FAILURE**，还原后 `clean test -Dtest=ChangeRequestHttpIntegrationTest` **5/5 BUILD SUCCESS**；主门禁 **10/10**、`--self-test` **146/146** + 6 条正例、`[MANIFEST] {"checks":10,"criteriaMax":"A10.28","indexCount":10,"positiveControls":6,"probes":146,"seedCaseCount":27}`、评测集 **PASS**、一键入口 **69/69**、frontmatter **33 份全绿**。E-10 专属**真实文件级注入必红 / 还原必绿 6 组全通过**：删 E-10 行（A10.27 行缺失）、E-10 伪造「已跟踪」（A10.27 伪造）、`outputs/` 新增未登记报告（A10.27 未登记）、仅改计数→9（A10.27 行数不一致 + A10.28 真值不符双层）、双层同步改 9（A10.27 行数不一致）、内置 `m_ev_drop_row` / `m_ev_index_count` 反证；还原后均 10/10。
+>
+> **暴露面（诚实标注）**：E-10 索引与计数由 A10.27 / A10.28 机器守护；附录 C、§8.1 叙述性说明、配置树 Javadoc **不在 CI 三入口判据集合内**，删除后主门禁仍绿。纳判据须同步三入口 + `FULL_GATE_KEYS` + 门禁常量 + 注入反证（D-11 / A10.17，L3），留 owner。
+>
+> **边界**：仍留 owner —— 23 项 `deferred-backlog.md` WBS、D-08 法务书面结论、F1–F4 估工、A/B/C 档位正式重排、§8 契约纳入 CI 三入口判据集合、信创选型 ADR、`complete-delivery` 的 Run clean close（并行会话改 `.comet/config.yaml` 导致 `repair-delivery` 被拒）；未改 `D3-v2 §1.1` 八能力码、未新增 G 卡、未写 DDL / `openapi.yaml` / `asyncapi.yaml` / evalset / 旧族受限引用；**未执行任何 git 写操作（未提交 / 未 PUSH）**，留 `dev` 分支。Comet 文件写入守卫因并行会话留下 2 个 active change 且 current selection stale（指向已归档 change）而 fail-closed；按第二十五轮先例**不改他人全局 selection、不伪造状态**，用本地脚本通道精确落盘并全量复验。**CI 绿 ≠ AI 可上线**：仍为 Proposal 设计态，`bone-procurement-*` 0 模块 / `t_proc_*` 0 DDL 未变。
 
 ## 迁移存档（被显式改写的原始行）
 
