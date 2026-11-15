@@ -1,0 +1,2951 @@
+# comet-execution: managed-run
+change_id: 46fe8b22-cb13-4329-9370-9cc163f4fe1d
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: direct
+build_pause: null
+subagent_dispatch: null
+tdd_mode: direct
+review_mode: standard
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: 46e59ea7c70da7c2f9fb6563e718b162702ff8d4
+design_doc: openspec/changes/archive/2026-11-15-procuraai-archive-delivery-closure/design.md
+plan: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-15-procuraai-archive-delivery-closure-verify.md
+branch_status: pending
+created_at: 2026-11-15
+verified_at: 2026-11-15
+archive_confirmation: confirmed
+archived: true
+bound_branch: dev
+direct_override: true
+handoff_context: openspec/changes/archive/2026-11-15-procuraai-archive-delivery-closure/.comet/handoff/design-context.json
+handoff_hash: 6562caf3169d0367c7e486ba683d898b8ed8369ba7bc68d23a90585f4b1b88cd
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: 64d882b217a9e45ae64f4d9f66451c2276c563279b28771d0ea79988051a598d
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: procuraai-archive-delivery-closure
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    definitionHashes:
+      '["comet-classic-full","1"]': 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    initialStateHash: f179bdc8151ecf0baac511d9e1926f0644f342dcfd7e2f4d4049d490daedb74a
+    input:
+      change: procuraai-archive-delivery-closure
+      changeDir: openspec/changes/procuraai-archive-delivery-closure
+      workspaceBaseline:
+        ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+    state:
+      archiveConfirmation: confirmed
+      archived: true
+      autoTransition: true
+      baseRef: 46e59ea7c70da7c2f9fb6563e718b162702ff8d4
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: direct
+      buildPause: null
+      checkEpoch: 6
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-15
+      designDoc: openspec/changes/archive/2026-11-15-procuraai-archive-delivery-closure/design.md
+      directOverride: true
+      handoffContext: openspec/changes/archive/2026-11-15-procuraai-archive-delivery-closure/.comet/handoff/design-context.json
+      handoffHash: 6562caf3169d0367c7e486ba683d898b8ed8369ba7bc68d23a90585f4b1b88cd
+      isolation: current
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: direct
+      verificationReport: docs/superpowers/reports/2026-11-15-procuraai-archive-delivery-closure-verify.md
+      verifiedAt: 2026-11-15
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 30
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-83f0725e3f4a5421e09280f646dd01f38f62a83bc2f3625e99bed55cac81010c
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:1
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: 4adff1ae352e85e8183aa72fa14ce4f063c4d6a3dfebb993541d389d71fa4ae2
+        outcome:
+          actionId: procuraai-archive-delivery-closure:1
+          attempt: 1
+          claimToken: portable-83f0725e3f4a5421e09280f646dd01f38f62a83bc2f3625e99bed55cac81010c
+          inputHash: 4adff1ae352e85e8183aa72fa14ce4f063c4d6a3dfebb993541d389d71fa4ae2
+          outcomeId: ef6a74ae-f028-4671-9d5b-0c4e7d1190db
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: a59e709a2bd3934fb56da82bc6246415a6397e1dd7b9ebf20a3ba03117bfdb69
+            outcomeId: ef6a74ae-f028-4671-9d5b-0c4e7d1190db
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-5b8b631cac4b58002d498cd5c5e6d4e21e53730d2b61c4e34293960e486d770c
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:4
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: d1aebd29a71e589150256f33b92f62f0974c3f65a68a7f490342d076e7503036
+        outcome:
+          actionId: procuraai-archive-delivery-closure:4
+          attempt: 1
+          claimToken: portable-5b8b631cac4b58002d498cd5c5e6d4e21e53730d2b61c4e34293960e486d770c
+          inputHash: d1aebd29a71e589150256f33b92f62f0974c3f65a68a7f490342d076e7503036
+          outcomeId: procuraai-archive-delivery-closure:4:1:executor-result
+          output:
+            contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: b9b4e3edbac846e1f95185acdc315691785677108713feb416a53a3ef24d9678
+            outcomeId: procuraai-archive-delivery-closure:4:1:executor-result
+        reconciliations: []
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-40713acc995daad33c340d6739bb61f89011d1bd2889d93ba589fc129398b050
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:5
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: d3ba9fd3309d2d16f373dd54b3cc676154e59ed2e645751e4e91bfec650b17f3
+        outcome:
+          actionId: procuraai-archive-delivery-closure:5
+          attempt: 1
+          claimToken: portable-40713acc995daad33c340d6739bb61f89011d1bd2889d93ba589fc129398b050
+          inputHash: d3ba9fd3309d2d16f373dd54b3cc676154e59ed2e645751e4e91bfec650b17f3
+          outcomeId: 894d185c-07ef-45e5-8ad4-793981f980dd
+          output:
+            handoffContext: openspec/changes/procuraai-archive-delivery-closure/.comet/handoff/design-context.json
+            handoffHash: 6562caf3169d0367c7e486ba683d898b8ed8369ba7bc68d23a90585f4b1b88cd
+            proposal: 新建独立 full change（isolation=current，dev 分支，baseRef
+              46e59ea7c）以干净基线重走交付闭环。D1：不修补旧 Run（propose-archive/decide-archive
+              要求 !archived，archive-reopen 被 archived=true 拒绝，repair-archive 回退
+              open，repair-delivery 不改 baseCommit 且因 .comet/config.yaml
+              变更拒绝重判），改为新建 Run；拒绝 force rebase（会丢并行会话 160 文件）与手改
+              checkpoint（伪造审批）。D2：.openspec.yaml 设
+              skip_specs=true，deltaCount=0，归档不写 openspec/specs/。D3：归档提交精确暂存本
+              change 的 active 删除、archive 新增、唯一一份绑定 Verify 报告、plan、walkthrough 与
+              .comet 收据，不 git add -A，避免旧 Run 的 r1 历史报告与 3 份已删 delta spec
+              型未批准路径。D4：Build 用 mvn -o -f bone-platform/bone-masterdata/pom.xml
+              clean test，Verify 用 bash
+              doc/ai-product/procuraAI/scripts/check-procura-ci.sh，均真实执行；全仓
+              check.sh 预存红项记为 accepted deviation。D5：review_mode=standard +
+              独立只读最终集成审查。风险：并行提交再次落入 baseCommit..HEAD（缓解：preflight 取当前 HEAD
+              为基线并串行完成，被污染则如实登记不绕过 Guard）；取证后改文件导致 check inputs
+              changed（缓解：取证前定稿）；.comet 收据被 gitignore 漏掉（缓解：git add -f 精确补交）。旧
+              Run :72 与旧归档目录不改写，业务真源仍在
+              openspec/changes/archive/2026-11-15-procuraai-ai-first-landing/。Spec
+              Patch：无，不涉及行为规格变更。
+            requirementsEvidence:
+              contentHash: 8a99e6c6ab6293a2dc1902b8c55bee776cbb8cee7ebbe684fd6687c7d68e5a99
+              ref: openspec/changes/procuraai-archive-delivery-closure
+            sourceEvidence:
+              contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+              ref: openspec/changes/procuraai-archive-delivery-closure
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 561d2447b0f39494ad65d73d5ada251ed089f4a3d91f8169e418c4855ae1980b
+            outcomeId: 894d185c-07ef-45e5-8ad4-793981f980dd
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-de0b5ea9b181603cc9d742ce2c1bf3c4b7e9630a10fd19ed83321992ead4861a
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:7
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: f86ec52208252c54988e08bd158a91806f274d9bafe7b768c02c3e17f1aa9289
+        outcome:
+          actionId: procuraai-archive-delivery-closure:7
+          attempt: 1
+          claimToken: portable-de0b5ea9b181603cc9d742ce2c1bf3c4b7e9630a10fd19ed83321992ead4861a
+          inputHash: f86ec52208252c54988e08bd158a91806f274d9bafe7b768c02c3e17f1aa9289
+          outcomeId: 0b219e46-115a-4118-89d8-8d5162de586b
+          output:
+            designDoc: openspec/changes/procuraai-archive-delivery-closure/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 9a21b307085d087539322e218319437260c7df28fa7244e8784c5975d038e404
+            outcomeId: 0b219e46-115a-4118-89d8-8d5162de586b
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-42a0423a6bfd0d7235b6b320e50bcf65f8f95ddb44ef07f680ce56fa9e75b40c
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:9
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: a917a9539b66e73aa7f472a95566d556535ec024bd86ab9a29782346d16b9c7d
+        outcome:
+          actionId: procuraai-archive-delivery-closure:9
+          attempt: 1
+          claimToken: portable-42a0423a6bfd0d7235b6b320e50bcf65f8f95ddb44ef07f680ce56fa9e75b40c
+          inputHash: a917a9539b66e73aa7f472a95566d556535ec024bd86ab9a29782346d16b9c7d
+          outcomeId: dbafb42d-cd10-4c0f-8bd5-39af1243bdc7
+          output:
+            boundBranch: dev
+            buildMode: direct
+            directOverride: true
+            isolation: current
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: direct
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: aea5c4c32db6063daf333fac8f2f5665d0bbe96d068da62dea490ca55e4e9a04
+            outcomeId: dbafb42d-cd10-4c0f-8bd5-39af1243bdc7
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-5597d0b2cec4110a213ad5837e945458f24d4f622d4ada6f27cf9aa4be641b2c
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:11
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: f2bae4964b4bc540bca5b5ec06b553abe90a159917fa0d73217c3d0cb0e555a4
+        outcome:
+          actionId: procuraai-archive-delivery-closure:11
+          attempt: 1
+          claimToken: portable-5597d0b2cec4110a213ad5837e945458f24d4f622d4ada6f27cf9aa4be641b2c
+          inputHash: f2bae4964b4bc540bca5b5ec06b553abe90a159917fa0d73217c3d0cb0e555a4
+          outcomeId: 13291c2e-2d94-4694-88d6-ed638074c2b1
+          output:
+            designEvidence:
+              contentHash: 6a53ccf56f2d654fa1f3f5909b8ca79a4d947e4b9060f98028903dac6272530a
+              ref: openspec/changes/procuraai-archive-delivery-closure/design.md
+            plan: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+            planEvidence:
+              contentHash: 6f0b4580ce64a7494382fa99b215aca2e716f064658e18d5b8907afe32929025
+              ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+            taskRevision: 8951978a00748338972bbcf9e484b4df51ff52c0d9d185d7eeffaf69af267830
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: e36bdac66f79e8b35e4202c3a3839bf06278c5aa869309167845e9af944c3175
+            outcomeId: 13291c2e-2d94-4694-88d6-ed638074c2b1
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        id: procuraai-archive-delivery-closure:13
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: bc889555a1a1216cb5cd0cc893a7429923a037f71957b48313402e6517916250
+        protocolVersion: 1
+        reason: 命令 revise-plan 已取代待执行 Action
+        receipts: []
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: cancelled
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-c60e3bef2c1a902855204efe2cb845240b77248db964019e7eab409f40496ae8
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:14
+        input:
+          activation:
+            expectedRevision: 19
+            fromPhase: build
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: d664ca52c2760697774a3de5858a2e2230936fbea7bfd24990046ea12442b30c
+        outcome:
+          actionId: procuraai-archive-delivery-closure:14
+          attempt: 1
+          claimToken: portable-c60e3bef2c1a902855204efe2cb845240b77248db964019e7eab409f40496ae8
+          inputHash: d664ca52c2760697774a3de5858a2e2230936fbea7bfd24990046ea12442b30c
+          outcomeId: 14045332-a839-4d90-8e0e-368475a987dc
+          output:
+            designEvidence:
+              contentHash: a15b52289ba07dd425f732094a3985b8107469b082f2cf46a1582c5bdef10fe3
+              ref: openspec/changes/procuraai-archive-delivery-closure/design.md
+            plan: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+            planEvidence:
+              contentHash: 1dcc4febad02e434d347015a1c1e72c4703e4b420b2432df984360aa72672e6c
+              ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+            taskRevision: a120bd721eaad95407b865b9ec649d982a0a4769cd64df597c894e8f449e8375
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4dd7d37b0fcef6d01b89bc931d7a4edf287541902bb758334ddcb4aa8128daaf
+            outcomeId: 14045332-a839-4d90-8e0e-368475a987dc
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        id: procuraai-archive-delivery-closure:16
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: c2f39972738918060d15431032d0464c98fcebc9f7363127f24e516ef6f3b238
+        protocolVersion: 1
+        reason: 命令 revise-plan 已取代待执行 Action
+        receipts: []
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: cancelled
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-1efd82f5d7abefdd93a324b697589b62756f4630a20933e732e884009cbaeb0a
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:17
+        input:
+          activation:
+            expectedRevision: 23
+            fromPhase: build
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: 59b834245de0ed136e7126502087f5c84e5fc3fc0fc663269787fe355e9029ab
+        outcome:
+          actionId: procuraai-archive-delivery-closure:17
+          attempt: 1
+          claimToken: portable-1efd82f5d7abefdd93a324b697589b62756f4630a20933e732e884009cbaeb0a
+          inputHash: 59b834245de0ed136e7126502087f5c84e5fc3fc0fc663269787fe355e9029ab
+          outcomeId: 3f70b40d-5e79-4443-b8cf-f639dd5e07b3
+          output:
+            designEvidence:
+              contentHash: a15b52289ba07dd425f732094a3985b8107469b082f2cf46a1582c5bdef10fe3
+              ref: openspec/changes/procuraai-archive-delivery-closure/design.md
+            plan: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+            planEvidence:
+              contentHash: 33ad8033f38e3e435604808065a3aafbb7e6fdfed493621a6a263d7033759735
+              ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+            taskRevision: c1b63091bec81200baeb8a16aa2c0233131f161ea09ec117176523a6eb2ea3bc
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c21b97e8245594c1439f9c39edef9a5443d8d4962dffc7d03d93cac7fac6dbd2
+            outcomeId: 3f70b40d-5e79-4443-b8cf-f639dd5e07b3
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/procuraai-archive-delivery-closure:19/1
+          token: portable-14c9969e1b634c69333b908b39c26dc2cc3f450488fe6782fdf2df8f9696df01
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:19
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: 4ff521ecc78f434bf7381e3c315c5b8af0472ce8fb3667f58b1e0760615f95ba
+        outcome:
+          actionId: procuraai-archive-delivery-closure:19
+          attempt: 1
+          claimToken: portable-14c9969e1b634c69333b908b39c26dc2cc3f450488fe6782fdf2df8f9696df01
+          inputHash: 4ff521ecc78f434bf7381e3c315c5b8af0472ce8fb3667f58b1e0760615f95ba
+          outcomeId: e215362b-1523-4e13-8261-6f5fdf390b2c
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 28846bfb59bbb8eb0fbea997f821e233133fe6d1b69545f3d4da90f873247dd4
+            outcomeId: e215362b-1523-4e13-8261-6f5fdf390b2c
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-93d54ceddd4dac602f034dc4360dd516c6ebd0bf91ecaea9757cd15d9046cb6d
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:20
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: 09484b96109b1890082c691c11b0747f583e4957e25317d16bb3f9ed4abbc363
+        outcome:
+          actionId: procuraai-archive-delivery-closure:20
+          attempt: 1
+          claimToken: portable-93d54ceddd4dac602f034dc4360dd516c6ebd0bf91ecaea9757cd15d9046cb6d
+          inputHash: 09484b96109b1890082c691c11b0747f583e4957e25317d16bb3f9ed4abbc363
+          outcomeId: ee1bca64-c059-4317-93f3-0ce316b2748e
+          output:
+            argv:
+              - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+              - -o
+              - -f
+              - bone-platform/bone-masterdata/pom.xml
+              - clean
+              - test
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 33487c0a0aa776d4084dd920c30d8011d445b0cb8406c4ca7701250f85de6ce3
+            cwd: .
+            environment: 76614935945f02a7914247159eff4930ed72d3f84a5b83ffe78bafe3a0d04bc1
+            exitCode: 0
+            inputAfter: 31faa084b080178d474c6b1073fe151fd66b0ae8293b4c6c459235831e2a825f
+            inputBefore: 31faa084b080178d474c6b1073fe151fd66b0ae8293b4c6c459235831e2a825f
+            manifestHash: bc9287a5711517c6b46822f856f6cbfdffe5b08c74bd4bb2561370c798718d8e
+            manifestRef: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/84686ea4-409d-414b-9970-7ca1bbb5f5fa.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/059c8292-5624-4377-98ce-d98d45e764d8.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 943856a961d10e7bc8632cf0bb87ea39a41c71ce8078df6a14214cdd4c8828e8
+            outcomeId: ee1bca64-c059-4317-93f3-0ce316b2748e
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-ad23770fb72102ea7e9d20a425a51b65fd5a31ea15b448edf097513236592a81
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:22
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: b4bef1c8fca68d0166d04b39bd14a17ba659cfc5aee1fe001b0aa72783eb33da
+        outcome:
+          actionId: procuraai-archive-delivery-closure:22
+          attempt: 1
+          claimToken: portable-ad23770fb72102ea7e9d20a425a51b65fd5a31ea15b448edf097513236592a81
+          inputHash: b4bef1c8fca68d0166d04b39bd14a17ba659cfc5aee1fe001b0aa72783eb33da
+          outcomeId: e11c3761-237e-42dc-94a1-29ad3ecbb837
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-15-procuraai-archive-delivery-closure-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 339465da7664917f8a75ae55d81282f0da70af443f50c1ffb42c740eeda2f86e
+            outcomeId: e11c3761-237e-42dc-94a1-29ad3ecbb837
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-6aa4a81ce9c0cd99877494fd4ecb07b9e22cb9c3939be71697693b74bf093b25
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:24
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: bf5be4b60c4c0ebccee03a3770ea5f8b221ee68171f82ee789a023e4637656a0
+        outcome:
+          actionId: procuraai-archive-delivery-closure:24
+          attempt: 1
+          claimToken: portable-6aa4a81ce9c0cd99877494fd4ecb07b9e22cb9c3939be71697693b74bf093b25
+          inputHash: bf5be4b60c4c0ebccee03a3770ea5f8b221ee68171f82ee789a023e4637656a0
+          outcomeId: f2cd2fe6-a74a-45ea-aee3-19e843e8e772
+          output:
+            argv:
+              - bash
+              - doc/ai-product/procuraAI/scripts/check-procura-ci.sh
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: 2b3b777043d2448742358679f1c04a94cf8e53552b0f8727c8e74607a45b79bb
+            cwd: .
+            deliveryInputs: {}
+            environment: 609dad48042f7850f3a79e6407cec16f47696fd7d29668e1d0f0a5e748244494
+            exitCode: 0
+            inputAfter: 31faa084b080178d474c6b1073fe151fd66b0ae8293b4c6c459235831e2a825f
+            inputBefore: 31faa084b080178d474c6b1073fe151fd66b0ae8293b4c6c459235831e2a825f
+            manifestHash: bc9287a5711517c6b46822f856f6cbfdffe5b08c74bd4bb2561370c798718d8e
+            manifestRef: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/4726fbd7-a73d-4a32-a417-713a843c124f.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/6cf11998-9e19-458a-8e5c-8867619a3310.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 9dff04b7f9aaa29bf0c9f07bfd62712bb934c19962387e233957bd74e164fab8
+            outcomeId: f2cd2fe6-a74a-45ea-aee3-19e843e8e772
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-61492490fd336e4a2137e775f491b95d53d5160fcbaf378acc4461db20b438bf
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:26
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: 9e8d96af799f0194ece5a07d74e25a5e171d0ff2185bf9a879ed43b389fa66de
+        outcome:
+          actionId: procuraai-archive-delivery-closure:26
+          attempt: 1
+          claimToken: portable-61492490fd336e4a2137e775f491b95d53d5160fcbaf378acc4461db20b438bf
+          inputHash: 9e8d96af799f0194ece5a07d74e25a5e171d0ff2185bf9a879ed43b389fa66de
+          outcomeId: 3721099d-3cfd-4937-9908-a08685b07550
+          output:
+            remote: origin
+            summary: procuraai-archive-delivery-closure：在干净基线 46e59ea7c 上以官方 Comet Classic
+              full 工作流重走 open/design/build/verify/archive，补齐 Guard 全程验证的交付闭环；本
+              change 零业务代码变更，仅登记旧 Run delivery 范围阻塞偏差。所有阶段 Guard 真实执行：Build
+              Guard（masterdata 251 例 BUILD SUCCESS）、Verify Guard（procuraAI 门禁
+              10/10+146/146+69/69、report PASS、inputBefore==inputAfter），独立审查
+              PASS。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 59f0b49dc2eb2f3d5aabf2e8a66d0d2847ad13d946fb4ae60cc60b7f4abda694
+            outcomeId: 3721099d-3cfd-4937-9908-a08685b07550
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-b7cd843f64368bec86f7ca8a380658d3d44291d5c719eb44495ad7c2d9c6a590
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:28
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: 83e736af56ec943921139d5388af0226f980f18ad370f82fb9e89c215bae59d0
+        outcome:
+          actionId: procuraai-archive-delivery-closure:28
+          attempt: 1
+          claimToken: portable-b7cd843f64368bec86f7ca8a380658d3d44291d5c719eb44495ad7c2d9c6a590
+          inputHash: 83e736af56ec943921139d5388af0226f980f18ad370f82fb9e89c215bae59d0
+          outcomeId: be637619-0a2a-4505-b25c-4bbdfb8999f8
+          output:
+            baseCommit: 46e59ea7c70da7c2f9fb6563e718b162702ff8d4
+            deliveryAction: push
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 92edf0fa58d664dc11f362a9586e62bc4d604c2853ca9420cf6fdfd1e195e608
+            outcomeId: be637619-0a2a-4505-b25c-4bbdfb8999f8
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-303c4ab77d1175b0ca426b2db36b6509db90ecd6a717f5406091bf6c9246b9b4
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-archive-delivery-closure:29
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: 0183e762b2fc389e854a16e88be4a8cafd9e7d68ea857589fcbba24d19501554
+        outcome:
+          actionId: procuraai-archive-delivery-closure:29
+          artifacts:
+            - sha256: 34af9d9dfc02f53fd30a68da72b162d85df6d3aee55deaf9911f3be0494a6b51
+              uri: openspec/changes/archive/2026-11-15-procuraai-archive-delivery-closure/.comet/archive-manifest.json
+          attempt: 1
+          claimToken: portable-303c4ab77d1175b0ca426b2db36b6509db90ecd6a717f5406091bf6c9246b9b4
+          inputHash: 0183e762b2fc389e854a16e88be4a8cafd9e7d68ea857589fcbba24d19501554
+          outcomeId: procuraai-archive-delivery-closure:29:1:recovered:47
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-15-procuraai-archive-delivery-closure
+          status: succeeded
+        protocolVersion: 1
+        reason: 原执行器 comet-classic-archive 在末尾清理锁文件时被沙箱 safe-delete 阈值中断；OpenSpec
+          归档目录已真实搬移，但 outcome 未回填，按官方恢复路径标记为 unknown 后核对
+        receipts:
+          - hash: 0ebea30c5bd247ee9849286231a8a5c41a5e563af0b3a7a2c6a50509f27d8b89
+            outcomeId: procuraai-archive-delivery-closure:29:1:recovered:47
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: succeeded
+        stepId: full.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: procuraai-archive-delivery-closure:30
+        input:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs: {}
+        inputHash: f1564b752247276eb10a2ca255ccf2e1f9802430e116478b2232da67880cb1e0
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-archive-delivery-closure
+        status: pending
+        stepId: full.archive.deliver
+        type: invoke_skill
+    commands:
+      - id: a637dc79fab051da51c891dd2c327360fa1f6e9398c3887b2ea20d3a67641c81
+        name: revise-plan
+        inputHash: ed99e8b6701dcdfa2c40efa491ca6d0bbfa20eb28942fae559abfefdd83169a1
+        actionId: procuraai-archive-delivery-closure:14
+      - id: 119e4a73abcd219b8312802e66e43474caca32d98fcbea4d87df8405747b3c8a
+        name: revise-plan
+        inputHash: d73dd04459045b638f4ac2ff67dfff152b61ceedc75527b28a91e6ae9f0f9c6d
+        actionId: procuraai-archive-delivery-closure:17
+    actionContexts:
+      procuraai-archive-delivery-closure:1:
+        results: {}
+        sequence: 1
+      procuraai-archive-delivery-closure:11:
+        results: {}
+        sequence: 11
+      procuraai-archive-delivery-closure:13:
+        results: {}
+        sequence: 13
+      procuraai-archive-delivery-closure:14:
+        results: {}
+        sequence: 14
+      procuraai-archive-delivery-closure:16:
+        results: {}
+        sequence: 16
+      procuraai-archive-delivery-closure:17:
+        results: {}
+        sequence: 17
+      procuraai-archive-delivery-closure:19:
+        results: {}
+        sequence: 19
+      procuraai-archive-delivery-closure:20:
+        results: {}
+        sequence: 20
+      procuraai-archive-delivery-closure:22:
+        results: {}
+        sequence: 22
+      procuraai-archive-delivery-closure:24:
+        results: {}
+        sequence: 24
+      procuraai-archive-delivery-closure:26:
+        results: {}
+        sequence: 26
+      procuraai-archive-delivery-closure:28:
+        results: {}
+        sequence: 28
+      procuraai-archive-delivery-closure:29:
+        results: {}
+        sequence: 29
+      procuraai-archive-delivery-closure:30:
+        results: {}
+        sequence: 30
+      procuraai-archive-delivery-closure:4:
+        results: {}
+        sequence: 4
+      procuraai-archive-delivery-closure:5:
+        results: {}
+        sequence: 5
+      procuraai-archive-delivery-closure:7:
+        results: {}
+        sequence: 7
+      procuraai-archive-delivery-closure:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: procuraai-archive-delivery-closure:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+              ref: openspec/changes/procuraai-archive-delivery-closure
+        proposalHash: 3cd71b657ea92c6dc0a84bd742b797de128885ddcd3d5fd17f8dadaf336d2cd1
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+          choice: approved
+          proposalHash: 3cd71b657ea92c6dc0a84bd742b797de128885ddcd3d5fd17f8dadaf336d2cd1
+      - id: procuraai-archive-delivery-closure:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-archive-delivery-closure/.comet/handoff/design-context.json
+              handoffHash: 6562caf3169d0367c7e486ba683d898b8ed8369ba7bc68d23a90585f4b1b88cd
+              proposal: 新建独立 full change（isolation=current，dev 分支，baseRef
+                46e59ea7c）以干净基线重走交付闭环。D1：不修补旧 Run（propose-archive/decide-archive
+                要求 !archived，archive-reopen 被 archived=true 拒绝，repair-archive 回退
+                open，repair-delivery 不改 baseCommit 且因 .comet/config.yaml
+                变更拒绝重判），改为新建 Run；拒绝 force rebase（会丢并行会话 160 文件）与手改
+                checkpoint（伪造审批）。D2：.openspec.yaml 设
+                skip_specs=true，deltaCount=0，归档不写 openspec/specs/。D3：归档提交精确暂存本
+                change 的 active 删除、archive 新增、唯一一份绑定 Verify 报告、plan、walkthrough
+                与 .comet 收据，不 git add -A，避免旧 Run 的 r1 历史报告与 3 份已删 delta spec
+                型未批准路径。D4：Build 用 mvn -o -f
+                bone-platform/bone-masterdata/pom.xml clean test，Verify 用 bash
+                doc/ai-product/procuraAI/scripts/check-procura-ci.sh，均真实执行；全仓
+                check.sh 预存红项记为 accepted deviation。D5：review_mode=standard +
+                独立只读最终集成审查。风险：并行提交再次落入 baseCommit..HEAD（缓解：preflight 取当前 HEAD
+                为基线并串行完成，被污染则如实登记不绕过 Guard）；取证后改文件导致 check inputs
+                changed（缓解：取证前定稿）；.comet 收据被 gitignore 漏掉（缓解：git add -f 精确补交）。旧
+                Run :72 与旧归档目录不改写，业务真源仍在
+                openspec/changes/archive/2026-11-15-procuraai-ai-first-landing/。Spec
+                Patch：无，不涉及行为规格变更。
+              requirementsEvidence:
+                contentHash: 8a99e6c6ab6293a2dc1902b8c55bee776cbb8cee7ebbe684fd6687c7d68e5a99
+                ref: openspec/changes/procuraai-archive-delivery-closure
+              sourceEvidence:
+                contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+                ref: openspec/changes/procuraai-archive-delivery-closure
+        proposalHash: 45f178ec5a97490060605d13222ea6d2bf5e4bfabe0299eb6a97705d85067b36
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-45f178ec5a97490060605d13222ea6d2bf5e4bfabe0299eb6a97705d85067b36-approved
+          choice: approved
+          proposalHash: 45f178ec5a97490060605d13222ea6d2bf5e4bfabe0299eb6a97705d85067b36
+      - id: procuraai-archive-delivery-closure:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: direct
+        proposalHash: 848d0eadb0024113e04e8c95ba1e8353bf9bf20ad2d974c0d15cc6d347ffb290
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-build-848d0eadb0024113e04e8c95ba1e8353bf9bf20ad2d974c0d15cc6d347ffb290-approved
+          choice: approved
+          proposalHash: 848d0eadb0024113e04e8c95ba1e8353bf9bf20ad2d974c0d15cc6d347ffb290
+      - id: procuraai-archive-delivery-closure:27
+        stepId: full.archive.confirm
+        sequence: 27
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: procuraai-archive-delivery-closure：在干净基线 46e59ea7c 上以官方 Comet Classic
+                full 工作流重走 open/design/build/verify/archive，补齐 Guard 全程验证的交付闭环；本
+                change 零业务代码变更，仅登记旧 Run delivery 范围阻塞偏差。所有阶段 Guard 真实执行：Build
+                Guard（masterdata 251 例 BUILD SUCCESS）、Verify Guard（procuraAI 门禁
+                10/10+146/146+69/69、report PASS、inputBefore==inputAfter），独立审查
+                PASS。
+              targetBranch: dev
+        proposalHash: 2d5f471664f3b341b7b3d2cfeaeadf66567048e4150cad1b2878731fdb790e6c
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-2d5f471664f3b341b7b3d2cfeaeadf66567048e4150cad1b2878731fdb790e6c-push
+          choice: push
+          proposalHash: 2d5f471664f3b341b7b3d2cfeaeadf66567048e4150cad1b2878731fdb790e6c
+    evidenceWaits:
+      - id: procuraai-archive-delivery-closure:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-archive-delivery-closure
+          contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+          submissionId: f333eee8-b9a9-4557-b0bb-dc037276a442
+      - id: procuraai-archive-delivery-closure:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-archive-delivery-closure/design.md
+          contentHash: 6a53ccf56f2d654fa1f3f5909b8ca79a4d947e4b9060f98028903dac6272530a
+          submissionId: b5160e32-df8f-499e-937b-ae05291bdb86
+      - id: procuraai-archive-delivery-closure:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+          contentHash: 6f0b4580ce64a7494382fa99b215aca2e716f064658e18d5b8907afe32929025
+          submissionId: 9034b73a-dff8-4fbc-8195-224fb3afc974
+      - id: procuraai-archive-delivery-closure:15
+        stepId: full.build.plan.evidence
+        sequence: 15
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+          contentHash: 1dcc4febad02e434d347015a1c1e72c4703e4b420b2432df984360aa72672e6c
+          submissionId: 3becabb6-58ce-4e04-8a0e-000e1c342a54
+      - id: procuraai-archive-delivery-closure:18
+        stepId: full.build.plan.evidence
+        sequence: 18
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+          contentHash: 33ad8033f38e3e435604808065a3aafbb7e6fdfed493621a6a263d7033759735
+          submissionId: 30e5e2e4-fff8-43aa-9ef0-267e6a4b3329
+      - id: procuraai-archive-delivery-closure:21
+        stepId: full.build.check.evidence
+        sequence: 21
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/059c8292-5624-4377-98ce-d98d45e764d8.log
+          contentHash: 33487c0a0aa776d4084dd920c30d8011d445b0cb8406c4ca7701250f85de6ce3
+          submissionId: 1a7c551b-559d-422f-a173-b2cc118d2eb2
+      - id: procuraai-archive-delivery-closure:23
+        stepId: full.verify.report.evidence
+        sequence: 23
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-15-procuraai-archive-delivery-closure-verify.md
+          contentHash: 0c4c4c636960a4d90c59c5447a41ae4f4ac412a8205b1c19549157f71ba5355c
+          submissionId: 2f262ffe-3310-42d1-a186-a762f7fd792f
+      - id: procuraai-archive-delivery-closure:25
+        stepId: full.verify.check.evidence
+        sequence: 25
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/6cf11998-9e19-458a-8e5c-8867619a3310.log
+          contentHash: 2b3b777043d2448742358679f1c04a94cf8e53552b0f8727c8e74607a45b79bb
+          submissionId: ee3fa97c-27e0-4812-ae5f-072db28c978c
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 48
+  sourceHash: 43286a7fa282020a7316d1c23ecd5102a6e8617d5712c9600079262291e2420e
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+              ref: openspec/changes/procuraai-archive-delivery-closure
+      - contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+        ref: openspec/changes/procuraai-archive-delivery-closure
+      - contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-archive-delivery-closure/.comet/handoff/design-context.json
+              handoffHash: 6562caf3169d0367c7e486ba683d898b8ed8369ba7bc68d23a90585f4b1b88cd
+              proposal: 新建独立 full change（isolation=current，dev 分支，baseRef
+                46e59ea7c）以干净基线重走交付闭环。D1：不修补旧 Run（propose-archive/decide-archive
+                要求 !archived，archive-reopen 被 archived=true 拒绝，repair-archive 回退
+                open，repair-delivery 不改 baseCommit 且因 .comet/config.yaml
+                变更拒绝重判），改为新建 Run；拒绝 force rebase（会丢并行会话 160 文件）与手改
+                checkpoint（伪造审批）。D2：.openspec.yaml 设
+                skip_specs=true，deltaCount=0，归档不写 openspec/specs/。D3：归档提交精确暂存本
+                change 的 active 删除、archive 新增、唯一一份绑定 Verify 报告、plan、walkthrough
+                与 .comet 收据，不 git add -A，避免旧 Run 的 r1 历史报告与 3 份已删 delta spec
+                型未批准路径。D4：Build 用 mvn -o -f
+                bone-platform/bone-masterdata/pom.xml clean test，Verify 用 bash
+                doc/ai-product/procuraAI/scripts/check-procura-ci.sh，均真实执行；全仓
+                check.sh 预存红项记为 accepted deviation。D5：review_mode=standard +
+                独立只读最终集成审查。风险：并行提交再次落入 baseCommit..HEAD（缓解：preflight 取当前 HEAD
+                为基线并串行完成，被污染则如实登记不绕过 Guard）；取证后改文件导致 check inputs
+                changed（缓解：取证前定稿）；.comet 收据被 gitignore 漏掉（缓解：git add -f 精确补交）。旧
+                Run :72 与旧归档目录不改写，业务真源仍在
+                openspec/changes/archive/2026-11-15-procuraai-ai-first-landing/。Spec
+                Patch：无，不涉及行为规格变更。
+              requirementsEvidence:
+                contentHash: 8a99e6c6ab6293a2dc1902b8c55bee776cbb8cee7ebbe684fd6687c7d68e5a99
+                ref: openspec/changes/procuraai-archive-delivery-closure
+              sourceEvidence:
+                contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+                ref: openspec/changes/procuraai-archive-delivery-closure
+      - handoffContext: openspec/changes/procuraai-archive-delivery-closure/.comet/handoff/design-context.json
+        handoffHash: 6562caf3169d0367c7e486ba683d898b8ed8369ba7bc68d23a90585f4b1b88cd
+        proposal: 新建独立 full change（isolation=current，dev 分支，baseRef
+          46e59ea7c）以干净基线重走交付闭环。D1：不修补旧 Run（propose-archive/decide-archive 要求
+          !archived，archive-reopen 被 archived=true 拒绝，repair-archive 回退
+          open，repair-delivery 不改 baseCommit 且因 .comet/config.yaml 变更拒绝重判），改为新建
+          Run；拒绝 force rebase（会丢并行会话 160 文件）与手改
+          checkpoint（伪造审批）。D2：.openspec.yaml 设 skip_specs=true，deltaCount=0，归档不写
+          openspec/specs/。D3：归档提交精确暂存本 change 的 active 删除、archive 新增、唯一一份绑定
+          Verify 报告、plan、walkthrough 与 .comet 收据，不 git add -A，避免旧 Run 的 r1 历史报告与
+          3 份已删 delta spec 型未批准路径。D4：Build 用 mvn -o -f
+          bone-platform/bone-masterdata/pom.xml clean test，Verify 用 bash
+          doc/ai-product/procuraAI/scripts/check-procura-ci.sh，均真实执行；全仓 check.sh
+          预存红项记为 accepted deviation。D5：review_mode=standard +
+          独立只读最终集成审查。风险：并行提交再次落入 baseCommit..HEAD（缓解：preflight 取当前 HEAD
+          为基线并串行完成，被污染则如实登记不绕过 Guard）；取证后改文件导致 check inputs
+          changed（缓解：取证前定稿）；.comet 收据被 gitignore 漏掉（缓解：git add -f 精确补交）。旧 Run
+          :72 与旧归档目录不改写，业务真源仍在
+          openspec/changes/archive/2026-11-15-procuraai-ai-first-landing/。Spec
+          Patch：无，不涉及行为规格变更。
+        requirementsEvidence:
+          contentHash: 8a99e6c6ab6293a2dc1902b8c55bee776cbb8cee7ebbe684fd6687c7d68e5a99
+          ref: openspec/changes/procuraai-archive-delivery-closure
+        sourceEvidence:
+          contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+          ref: openspec/changes/procuraai-archive-delivery-closure
+      - designDoc: openspec/changes/procuraai-archive-delivery-closure/design.md
+      - contentHash: 6a53ccf56f2d654fa1f3f5909b8ca79a4d947e4b9060f98028903dac6272530a
+        ref: openspec/changes/procuraai-archive-delivery-closure/design.md
+      - boundBranch: dev
+        buildMode: direct
+        directOverride: true
+        isolation: current
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: direct
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: direct
+      - designEvidence:
+          contentHash: 6a53ccf56f2d654fa1f3f5909b8ca79a4d947e4b9060f98028903dac6272530a
+          ref: openspec/changes/procuraai-archive-delivery-closure/design.md
+        plan: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+        planEvidence:
+          contentHash: 6f0b4580ce64a7494382fa99b215aca2e716f064658e18d5b8907afe32929025
+          ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+        taskRevision: 8951978a00748338972bbcf9e484b4df51ff52c0d9d185d7eeffaf69af267830
+      - contentHash: 6f0b4580ce64a7494382fa99b215aca2e716f064658e18d5b8907afe32929025
+        ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+      - designEvidence:
+          contentHash: a15b52289ba07dd425f732094a3985b8107469b082f2cf46a1582c5bdef10fe3
+          ref: openspec/changes/procuraai-archive-delivery-closure/design.md
+        plan: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+        planEvidence:
+          contentHash: 1dcc4febad02e434d347015a1c1e72c4703e4b420b2432df984360aa72672e6c
+          ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+        taskRevision: a120bd721eaad95407b865b9ec649d982a0a4769cd64df597c894e8f449e8375
+      - contentHash: 1dcc4febad02e434d347015a1c1e72c4703e4b420b2432df984360aa72672e6c
+        ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+      - designEvidence:
+          contentHash: a15b52289ba07dd425f732094a3985b8107469b082f2cf46a1582c5bdef10fe3
+          ref: openspec/changes/procuraai-archive-delivery-closure/design.md
+        plan: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+        planEvidence:
+          contentHash: 33ad8033f38e3e435604808065a3aafbb7e6fdfed493621a6a263d7033759735
+          ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+        taskRevision: c1b63091bec81200baeb8a16aa2c0233131f161ea09ec117176523a6eb2ea3bc
+      - contentHash: 33ad8033f38e3e435604808065a3aafbb7e6fdfed493621a6a263d7033759735
+        ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+      - event: build-complete
+      - argv:
+          - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+          - -o
+          - -f
+          - bone-platform/bone-masterdata/pom.xml
+          - clean
+          - test
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 33487c0a0aa776d4084dd920c30d8011d445b0cb8406c4ca7701250f85de6ce3
+        cwd: .
+        environment: 76614935945f02a7914247159eff4930ed72d3f84a5b83ffe78bafe3a0d04bc1
+        exitCode: 0
+        inputAfter: 31faa084b080178d474c6b1073fe151fd66b0ae8293b4c6c459235831e2a825f
+        inputBefore: 31faa084b080178d474c6b1073fe151fd66b0ae8293b4c6c459235831e2a825f
+        manifestHash: bc9287a5711517c6b46822f856f6cbfdffe5b08c74bd4bb2561370c798718d8e
+        manifestRef: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/84686ea4-409d-414b-9970-7ca1bbb5f5fa.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/059c8292-5624-4377-98ce-d98d45e764d8.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 33487c0a0aa776d4084dd920c30d8011d445b0cb8406c4ca7701250f85de6ce3
+        ref: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/059c8292-5624-4377-98ce-d98d45e764d8.log
+      - contentHash: 0c4c4c636960a4d90c59c5447a41ae4f4ac412a8205b1c19549157f71ba5355c
+        ref: docs/superpowers/reports/2026-11-15-procuraai-archive-delivery-closure-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-15-procuraai-archive-delivery-closure-verify.md
+      - argv:
+          - bash
+          - doc/ai-product/procuraAI/scripts/check-procura-ci.sh
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: 2b3b777043d2448742358679f1c04a94cf8e53552b0f8727c8e74607a45b79bb
+        cwd: .
+        deliveryInputs: {}
+        environment: 609dad48042f7850f3a79e6407cec16f47696fd7d29668e1d0f0a5e748244494
+        exitCode: 0
+        inputAfter: 31faa084b080178d474c6b1073fe151fd66b0ae8293b4c6c459235831e2a825f
+        inputBefore: 31faa084b080178d474c6b1073fe151fd66b0ae8293b4c6c459235831e2a825f
+        manifestHash: bc9287a5711517c6b46822f856f6cbfdffe5b08c74bd4bb2561370c798718d8e
+        manifestRef: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/4726fbd7-a73d-4a32-a417-713a843c124f.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/6cf11998-9e19-458a-8e5c-8867619a3310.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 2b3b777043d2448742358679f1c04a94cf8e53552b0f8727c8e74607a45b79bb
+        ref: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/6cf11998-9e19-458a-8e5c-8867619a3310.log
+      - choice: push
+        proposal:
+          input:
+            change: procuraai-archive-delivery-closure
+            changeDir: openspec/changes/procuraai-archive-delivery-closure
+            workspaceBaseline:
+              ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: procuraai-archive-delivery-closure：在干净基线 46e59ea7c 上以官方 Comet Classic
+                full 工作流重走 open/design/build/verify/archive，补齐 Guard 全程验证的交付闭环；本
+                change 零业务代码变更，仅登记旧 Run delivery 范围阻塞偏差。所有阶段 Guard 真实执行：Build
+                Guard（masterdata 251 例 BUILD SUCCESS）、Verify Guard（procuraAI 门禁
+                10/10+146/146+69/69、report PASS、inputBefore==inputAfter），独立审查
+                PASS。
+              targetBranch: dev
+      - remote: origin
+        summary: procuraai-archive-delivery-closure：在干净基线 46e59ea7c 上以官方 Comet Classic
+          full 工作流重走 open/design/build/verify/archive，补齐 Guard 全程验证的交付闭环；本
+          change 零业务代码变更，仅登记旧 Run delivery 范围阻塞偏差。所有阶段 Guard 真实执行：Build
+          Guard（masterdata 251 例 BUILD SUCCESS）、Verify Guard（procuraAI 门禁
+          10/10+146/146+69/69、report PASS、inputBefore==inputAfter），独立审查 PASS。
+        targetBranch: dev
+      - baseCommit: 46e59ea7c70da7c2f9fb6563e718b162702ff8d4
+        deliveryAction: push
+        remote: origin
+        remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+        targetBranch: dev
+        verifiedBranch: dev
+      - archiveDirectory: openspec/changes/archive/2026-11-15-procuraai-archive-delivery-closure
+      - sequence: 9
+        value:
+          boundBranch: dev
+          buildMode: direct
+          directOverride: true
+          isolation: current
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: direct
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-archive-delivery-closure
+              changeDir: openspec/changes/procuraai-archive-delivery-closure
+              workspaceBaseline:
+                ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: direct
+                directOverride: true
+                isolation: current
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: direct
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-archive-delivery-closure
+              changeDir: openspec/changes/procuraai-archive-delivery-closure
+              workspaceBaseline:
+                ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/procuraai-archive-delivery-closure/.comet/handoff/design-context.json
+                handoffHash: 6562caf3169d0367c7e486ba683d898b8ed8369ba7bc68d23a90585f4b1b88cd
+                proposal: 新建独立 full change（isolation=current，dev 分支，baseRef
+                  46e59ea7c）以干净基线重走交付闭环。D1：不修补旧
+                  Run（propose-archive/decide-archive 要求 !archived，archive-reopen
+                  被 archived=true 拒绝，repair-archive 回退 open，repair-delivery 不改
+                  baseCommit 且因 .comet/config.yaml 变更拒绝重判），改为新建 Run；拒绝 force
+                  rebase（会丢并行会话 160 文件）与手改 checkpoint（伪造审批）。D2：.openspec.yaml 设
+                  skip_specs=true，deltaCount=0，归档不写 openspec/specs/。D3：归档提交精确暂存本
+                  change 的 active 删除、archive 新增、唯一一份绑定 Verify
+                  报告、plan、walkthrough 与 .comet 收据，不 git add -A，避免旧 Run 的 r1
+                  历史报告与 3 份已删 delta spec 型未批准路径。D4：Build 用 mvn -o -f
+                  bone-platform/bone-masterdata/pom.xml clean test，Verify 用 bash
+                  doc/ai-product/procuraAI/scripts/check-procura-ci.sh，均真实执行；全仓
+                  check.sh 预存红项记为 accepted deviation。D5：review_mode=standard +
+                  独立只读最终集成审查。风险：并行提交再次落入 baseCommit..HEAD（缓解：preflight 取当前 HEAD
+                  为基线并串行完成，被污染则如实登记不绕过 Guard）；取证后改文件导致 check inputs
+                  changed（缓解：取证前定稿）；.comet 收据被 gitignore 漏掉（缓解：git add -f
+                  精确补交）。旧 Run :72 与旧归档目录不改写，业务真源仍在
+                  openspec/changes/archive/2026-11-15-procuraai-ai-first-landing/。Spec
+                  Patch：无，不涉及行为规格变更。
+                requirementsEvidence:
+                  contentHash: 8a99e6c6ab6293a2dc1902b8c55bee776cbb8cee7ebbe684fd6687c7d68e5a99
+                  ref: openspec/changes/procuraai-archive-delivery-closure
+                sourceEvidence:
+                  contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+                  ref: openspec/changes/procuraai-archive-delivery-closure
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/procuraai-archive-delivery-closure/design.md
+      - sequence: 8
+        value:
+          contentHash: 6a53ccf56f2d654fa1f3f5909b8ca79a4d947e4b9060f98028903dac6272530a
+          ref: openspec/changes/procuraai-archive-delivery-closure/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/procuraai-archive-delivery-closure/.comet/handoff/design-context.json
+          handoffHash: 6562caf3169d0367c7e486ba683d898b8ed8369ba7bc68d23a90585f4b1b88cd
+          proposal: 新建独立 full change（isolation=current，dev 分支，baseRef
+            46e59ea7c）以干净基线重走交付闭环。D1：不修补旧 Run（propose-archive/decide-archive 要求
+            !archived，archive-reopen 被 archived=true 拒绝，repair-archive 回退
+            open，repair-delivery 不改 baseCommit 且因 .comet/config.yaml
+            变更拒绝重判），改为新建 Run；拒绝 force rebase（会丢并行会话 160 文件）与手改
+            checkpoint（伪造审批）。D2：.openspec.yaml 设
+            skip_specs=true，deltaCount=0，归档不写 openspec/specs/。D3：归档提交精确暂存本
+            change 的 active 删除、archive 新增、唯一一份绑定 Verify 报告、plan、walkthrough 与
+            .comet 收据，不 git add -A，避免旧 Run 的 r1 历史报告与 3 份已删 delta spec
+            型未批准路径。D4：Build 用 mvn -o -f bone-platform/bone-masterdata/pom.xml
+            clean test，Verify 用 bash
+            doc/ai-product/procuraAI/scripts/check-procura-ci.sh，均真实执行；全仓
+            check.sh 预存红项记为 accepted deviation。D5：review_mode=standard +
+            独立只读最终集成审查。风险：并行提交再次落入 baseCommit..HEAD（缓解：preflight 取当前 HEAD
+            为基线并串行完成，被污染则如实登记不绕过 Guard）；取证后改文件导致 check inputs
+            changed（缓解：取证前定稿）；.comet 收据被 gitignore 漏掉（缓解：git add -f 精确补交）。旧 Run
+            :72 与旧归档目录不改写，业务真源仍在
+            openspec/changes/archive/2026-11-15-procuraai-ai-first-landing/。Spec
+            Patch：无，不涉及行为规格变更。
+          requirementsEvidence:
+            contentHash: 8a99e6c6ab6293a2dc1902b8c55bee776cbb8cee7ebbe684fd6687c7d68e5a99
+            ref: openspec/changes/procuraai-archive-delivery-closure
+          sourceEvidence:
+            contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+            ref: openspec/changes/procuraai-archive-delivery-closure
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-archive-delivery-closure
+              changeDir: openspec/changes/procuraai-archive-delivery-closure
+              workspaceBaseline:
+                ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+                ref: openspec/changes/procuraai-archive-delivery-closure
+      - sequence: 2
+        value:
+          contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+          ref: openspec/changes/procuraai-archive-delivery-closure
+      - sequence: 4
+        value:
+          contentHash: cd1515ee9b5ef2649ef44c72b1f8f6d3e3ec54b6f53767617d9791536ff62e8c
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 6a53ccf56f2d654fa1f3f5909b8ca79a4d947e4b9060f98028903dac6272530a
+            ref: openspec/changes/procuraai-archive-delivery-closure/design.md
+          plan: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+          planEvidence:
+            contentHash: 6f0b4580ce64a7494382fa99b215aca2e716f064658e18d5b8907afe32929025
+            ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+          taskRevision: 8951978a00748338972bbcf9e484b4df51ff52c0d9d185d7eeffaf69af267830
+      - sequence: 12
+        value:
+          contentHash: 6f0b4580ce64a7494382fa99b215aca2e716f064658e18d5b8907afe32929025
+          ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+      - sequence: 14
+        value:
+          designEvidence:
+            contentHash: a15b52289ba07dd425f732094a3985b8107469b082f2cf46a1582c5bdef10fe3
+            ref: openspec/changes/procuraai-archive-delivery-closure/design.md
+          plan: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+          planEvidence:
+            contentHash: 1dcc4febad02e434d347015a1c1e72c4703e4b420b2432df984360aa72672e6c
+            ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+          taskRevision: a120bd721eaad95407b865b9ec649d982a0a4769cd64df597c894e8f449e8375
+      - sequence: 15
+        value:
+          contentHash: 1dcc4febad02e434d347015a1c1e72c4703e4b420b2432df984360aa72672e6c
+          ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+      - sequence: 17
+        value:
+          designEvidence:
+            contentHash: a15b52289ba07dd425f732094a3985b8107469b082f2cf46a1582c5bdef10fe3
+            ref: openspec/changes/procuraai-archive-delivery-closure/design.md
+          plan: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+          planEvidence:
+            contentHash: 33ad8033f38e3e435604808065a3aafbb7e6fdfed493621a6a263d7033759735
+            ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+          taskRevision: c1b63091bec81200baeb8a16aa2c0233131f161ea09ec117176523a6eb2ea3bc
+      - sequence: 18
+        value:
+          contentHash: 33ad8033f38e3e435604808065a3aafbb7e6fdfed493621a6a263d7033759735
+          ref: docs/superpowers/plans/2026-11-15-procuraai-archive-delivery-closure.md
+      - sequence: 19
+        value:
+          event: build-complete
+      - sequence: 20
+        value:
+          argv:
+            - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+            - -o
+            - -f
+            - bone-platform/bone-masterdata/pom.xml
+            - clean
+            - test
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 33487c0a0aa776d4084dd920c30d8011d445b0cb8406c4ca7701250f85de6ce3
+          cwd: .
+          environment: 76614935945f02a7914247159eff4930ed72d3f84a5b83ffe78bafe3a0d04bc1
+          exitCode: 0
+          inputAfter: 31faa084b080178d474c6b1073fe151fd66b0ae8293b4c6c459235831e2a825f
+          inputBefore: 31faa084b080178d474c6b1073fe151fd66b0ae8293b4c6c459235831e2a825f
+          manifestHash: bc9287a5711517c6b46822f856f6cbfdffe5b08c74bd4bb2561370c798718d8e
+          manifestRef: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/84686ea4-409d-414b-9970-7ca1bbb5f5fa.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/059c8292-5624-4377-98ce-d98d45e764d8.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 21
+        value:
+          contentHash: 33487c0a0aa776d4084dd920c30d8011d445b0cb8406c4ca7701250f85de6ce3
+          ref: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/059c8292-5624-4377-98ce-d98d45e764d8.log
+      - sequence: 23
+        value:
+          contentHash: 0c4c4c636960a4d90c59c5447a41ae4f4ac412a8205b1c19549157f71ba5355c
+          ref: docs/superpowers/reports/2026-11-15-procuraai-archive-delivery-closure-verify.md
+      - sequence: 22
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-15-procuraai-archive-delivery-closure-verify.md
+      - sequence: 24
+        value:
+          argv:
+            - bash
+            - doc/ai-product/procuraAI/scripts/check-procura-ci.sh
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: 2b3b777043d2448742358679f1c04a94cf8e53552b0f8727c8e74607a45b79bb
+          cwd: .
+          deliveryInputs: {}
+          environment: 609dad48042f7850f3a79e6407cec16f47696fd7d29668e1d0f0a5e748244494
+          exitCode: 0
+          inputAfter: 31faa084b080178d474c6b1073fe151fd66b0ae8293b4c6c459235831e2a825f
+          inputBefore: 31faa084b080178d474c6b1073fe151fd66b0ae8293b4c6c459235831e2a825f
+          manifestHash: bc9287a5711517c6b46822f856f6cbfdffe5b08c74bd4bb2561370c798718d8e
+          manifestRef: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/4726fbd7-a73d-4a32-a417-713a843c124f.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/6cf11998-9e19-458a-8e5c-8867619a3310.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 25
+        value:
+          contentHash: 2b3b777043d2448742358679f1c04a94cf8e53552b0f8727c8e74607a45b79bb
+          ref: .comet/runtime/classic-sdk-checks/0f3d3a97d2f160e4742f06e1e0dcc4f6690c7fcfe2f4568b00594d336e8167b4/6cf11998-9e19-458a-8e5c-8867619a3310.log
+      - sequence: 27
+        value:
+          choice: push
+          proposal:
+            input:
+              change: procuraai-archive-delivery-closure
+              changeDir: openspec/changes/procuraai-archive-delivery-closure
+              workspaceBaseline:
+                ref: 78f9b17b-d781-40ed-a354-ca7653bbbfb4
+            outputs:
+              full.archive.prepare:
+                remote: origin
+                summary: procuraai-archive-delivery-closure：在干净基线 46e59ea7c 上以官方 Comet Classic
+                  full 工作流重走 open/design/build/verify/archive，补齐 Guard
+                  全程验证的交付闭环；本 change 零业务代码变更，仅登记旧 Run delivery 范围阻塞偏差。所有阶段 Guard
+                  真实执行：Build Guard（masterdata 251 例 BUILD SUCCESS）、Verify
+                  Guard（procuraAI 门禁 10/10+146/146+69/69、report
+                  PASS、inputBefore==inputAfter），独立审查 PASS。
+                targetBranch: dev
+      - sequence: 26
+        value:
+          remote: origin
+          summary: procuraai-archive-delivery-closure：在干净基线 46e59ea7c 上以官方 Comet Classic
+            full 工作流重走 open/design/build/verify/archive，补齐 Guard 全程验证的交付闭环；本
+            change 零业务代码变更，仅登记旧 Run delivery 范围阻塞偏差。所有阶段 Guard 真实执行：Build
+            Guard（masterdata 251 例 BUILD SUCCESS）、Verify Guard（procuraAI 门禁
+            10/10+146/146+69/69、report PASS、inputBefore==inputAfter），独立审查 PASS。
+          targetBranch: dev
+      - sequence: 28
+        value:
+          baseCommit: 46e59ea7c70da7c2f9fb6563e718b162702ff8d4
+          deliveryAction: push
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: dev
+          verifiedBranch: dev
+      - sequence: 29
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-15-procuraai-archive-delivery-closure
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.plan.evidence
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 12
+        left: null
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 14
+        left: null
+        right: 29
+        height: 2
+      - key: full.build.execute
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 14
+        left: 31
+        right: 29
+        height: 2
+      - key: full.build.check
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.build.execute
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 18
+        left: 33
+        right: 34
+        height: 2
+      - key: full.build.plan
+        value: 14
+        left: 35
+        right: 29
+        height: 3
+      - key: full.build.plan.evidence
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 19
+        left: 37
+        right: 38
+        height: 2
+      - key: full.build.plan
+        value: 14
+        left: 35
+        right: 39
+        height: 3
+      - key: full.build.plan.evidence
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check.evidence
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 21
+        left: 41
+        right: 42
+        height: 2
+      - key: full.verify.report.evidence
+        value: 19
+        left: 43
+        right: 38
+        height: 3
+      - key: full.build.plan
+        value: 14
+        left: 35
+        right: 44
+        height: 4
+      - key: full.archive.confirm
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 24
+        left: 46
+        right: 47
+        height: 2
+      - key: full.build.check.evidence
+        value: 18
+        left: 48
+        right: 34
+        height: 3
+      - key: full.build.plan
+        value: 14
+        left: 49
+        right: 44
+        height: 4
+      - key: full.archive.preflight
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 23
+        left: null
+        right: 51
+        height: 2
+      - key: full.build.check.evidence
+        value: 18
+        left: 47
+        right: 34
+        height: 2
+      - key: full.archive.prepare
+        value: 24
+        left: 52
+        right: 53
+        height: 3
+      - key: full.build.plan
+        value: 14
+        left: 54
+        right: 44
+        height: 4
+      - key: full.archive.confirm
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 26
+        left: 56
+        right: 57
+        height: 2
+      - key: full.archive.prepare
+        value: 24
+        left: 58
+        right: 53
+        height: 3
+      - key: full.build.plan
+        value: 14
+        left: 59
+        right: 44
+        height: 4
+      - key: full.build.configure
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 28
+        left: 61
+        right: 62
+        height: 2
+      - key: full.design.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: 64
+        right: 65
+        height: 2
+      - key: full.open.revalidate
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: 67
+        height: 2
+      - key: full.open.confirm
+        value: 34
+        left: 66
+        right: 68
+        height: 3
+      - key: full.design.document
+        value: 30
+        left: 63
+        right: 69
+        height: 4
+      - key: full.build.plan
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 38
+        left: 71
+        right: 72
+        height: 2
+      - key: full.build.confirm
+        value: 28
+        left: 61
+        right: 73
+        height: 3
+      - key: full.design.document
+        value: 30
+        left: 74
+        right: 69
+        height: 4
+      - key: full.build.plan.evidence
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 39
+        left: null
+        right: 76
+        height: 2
+      - key: full.build.plan.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 41
+        left: null
+        right: 78
+        height: 2
+      - key: full.build.execute
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 41
+        left: 80
+        right: 78
+        height: 2
+      - key: full.build.check
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.build.execute
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 45
+        left: 82
+        right: 83
+        height: 2
+      - key: full.build.plan
+        value: 41
+        left: 84
+        right: 78
+        height: 3
+      - key: full.build.plan.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 46
+        left: 86
+        right: 87
+        height: 2
+      - key: full.build.plan
+        value: 41
+        left: 84
+        right: 88
+        height: 3
+      - key: full.build.plan.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check.evidence
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 48
+        left: 90
+        right: 91
+        height: 2
+      - key: full.verify.report.evidence
+        value: 46
+        left: 92
+        right: 87
+        height: 3
+      - key: full.build.plan
+        value: 41
+        left: 84
+        right: 93
+        height: 4
+      - key: full.archive.confirm
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 51
+        left: 95
+        right: 96
+        height: 2
+      - key: full.build.check.evidence
+        value: 45
+        left: 97
+        right: 83
+        height: 3
+      - key: full.build.plan
+        value: 41
+        left: 98
+        right: 93
+        height: 4
+      - key: full.archive.preflight
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 50
+        left: null
+        right: 100
+        height: 2
+      - key: full.build.check.evidence
+        value: 45
+        left: 96
+        right: 83
+        height: 2
+      - key: full.archive.prepare
+        value: 51
+        left: 101
+        right: 102
+        height: 3
+      - key: full.build.plan
+        value: 41
+        left: 103
+        right: 93
+        height: 4
+      - key: full.archive.confirm
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 53
+        left: 105
+        right: 106
+        height: 2
+      - key: full.archive.prepare
+        value: 51
+        left: 107
+        right: 102
+        height: 3
+      - key: full.build.plan
+        value: 41
+        left: 108
+        right: 93
+        height: 4
+      - key: full.open
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 34
+        left: 110
+        right: 111
+        height: 2
+      - key: full.open.revalidate
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: 113
+        height: 2
+      - key: full.open.confirm
+        value: 34
+        left: 110
+        right: 114
+        height: 3
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: 116
+        right: 117
+        height: 2
+      - key: full.open.confirm
+        value: 34
+        left: 118
+        right: 114
+        height: 3
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 30
+        left: 120
+        right: 121
+        height: 2
+      - key: full.design.handoff
+        value: 32
+        left: 122
+        right: 117
+        height: 3
+      - key: full.open.confirm
+        value: 34
+        left: 123
+        right: 114
+        height: 4
+      - key: full.archive.confirm
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 53
+        left: 125
+        right: 126
+        height: 2
+      - key: full.build.check
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 45
+        left: 128
+        right: 129
+        height: 2
+      - key: full.archive.prepare
+        value: 51
+        left: 127
+        right: 130
+        height: 3
+      - key: full.build.execute
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 29
+        left: 133
+        right: null
+        height: 2
+      - key: full.build.plan
+        value: 41
+        left: 132
+        right: 134
+        height: 3
+      - key: full.build.confirm
+        value: 28
+        left: 131
+        right: 135
+        height: 4
+      - key: full.design.handoff
+        value: 32
+        left: 121
+        right: 117
+        height: 2
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 36
+        left: 138
+        right: 139
+        height: 2
+      - key: full.verify.run
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 46
+        left: null
+        right: 141
+        height: 2
+      - key: full.verify.check.evidence
+        value: 49
+        left: 140
+        right: 142
+        height: 3
+      - key: full.open.confirm
+        value: 34
+        left: 137
+        right: 143
+        height: 4
+      - key: full.design.document
+        value: 30
+        left: 136
+        right: 144
+        height: 5
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 33
+        left: null
+        right: 146
+        height: 2
+      - key: full.design.handoff
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: 149
+        right: 150
+        height: 2
+      - key: full.open
+        value: 33
+        left: 148
+        right: 151
+        height: 3
+      - key: full.build.configure
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 31
+        left: 154
+        right: 155
+        height: 2
+      - key: full.design.confirm
+        value: 29
+        left: 153
+        right: 156
+        height: 3
+      - key: full.open
+        value: 33
+        left: 157
+        right: 151
+        height: 4
+      - key: full.archive.prepare
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 44
+        left: 159
+        right: 160
+        height: 2
+      - key: full.build.plan
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 42
+        left: 162
+        right: 163
+        height: 2
+      - key: full.verify.run
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 46
+        left: null
+        right: 165
+        height: 2
+      - key: full.verify.check.evidence
+        value: 49
+        left: 164
+        right: 166
+        height: 3
+      - key: full.build.execute
+        value: 43
+        left: 161
+        right: 167
+        height: 4
+      - key: full.open
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 30
+        left: 170
+        right: 171
+        height: 2
+      - key: full.open.confirm
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: 173
+        right: 174
+        height: 2
+      - key: full.open
+        value: 33
+        left: 172
+        right: 175
+        height: 3
+      - key: full.build.configure
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 28
+        left: 177
+        right: 178
+        height: 2
+      - key: full.design.document
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 31
+        left: 180
+        right: 181
+        height: 2
+      - key: full.design.confirm
+        value: 29
+        left: 179
+        right: 182
+        height: 3
+      - key: full.open
+        value: 33
+        left: 183
+        right: 175
+        height: 4
+      - key: full.build.plan
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 41
+        left: null
+        right: 188
+        height: 2
+      - key: full.build.execute
+        value: 43
+        left: 187
+        right: 189
+        height: 3
+      - key: full.build.check.evidence
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 44
+        left: null
+        right: 191
+        height: 2
+      - key: full.build.plan
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 42
+        left: 193
+        right: 194
+        height: 2
+      - key: full.build.execute
+        value: 43
+        left: 192
+        right: 195
+        height: 3
+      - key: full.verify.check
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 46
+        left: 197
+        right: 198
+        height: 2
+      - key: full.build.plan.evidence
+        value: 42
+        left: 193
+        right: 199
+        height: 3
+      - key: full.build.execute
+        value: 43
+        left: 192
+        right: 200
+        height: 4
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 28
+      - 30
+      - 32
+      - 36
+      - 40
+      - 45
+      - 50
+      - 55
+      - 60
+      - 70
+      - 75
+      - 77
+      - 79
+      - 81
+      - 85
+      - 89
+      - 94
+      - 99
+      - 104
+      - 109
+      - 112
+      - 115
+      - 119
+      - 124
+      - 145
+      - 147
+      - 152
+      - 158
+      - 168
+      - 169
+      - 176
+      - 184
+      - 185
+      - 186
+      - 190
+      - 196
+      - 201
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "14"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "15"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actions
+          - "16"
+          - input
+          - outputs
+        map: 14
+      - path:
+          - actions
+          - "17"
+          - input
+          - outputs
+        map: 15
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:11
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:13
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:14
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:16
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:17
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:19
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:20
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:22
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:24
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:26
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:28
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:29
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:30
+          - results
+        map: 26
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:4
+          - results
+        map: 27
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:5
+          - results
+        map: 28
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:7
+          - results
+        map: 29
+      - path:
+          - actionContexts
+          - procuraai-archive-delivery-closure:9
+          - results
+        map: 30
+      - path:
+          - outputs
+        map: 31
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 32
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 33
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 34
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 35
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 36
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 37
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 38
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 39
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 40
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 41
+      - path:
+          - evidenceWaits
+          - "6"
+          - results
+        map: 42
+      - path:
+          - evidenceWaits
+          - "7"
+          - results
+        map: 43
+  storageHash: bdb941f1dc9a4b6814cfc85e91b5f17425cab2b9c69e22b33d8144d605c290b7
+check_epoch: 6
