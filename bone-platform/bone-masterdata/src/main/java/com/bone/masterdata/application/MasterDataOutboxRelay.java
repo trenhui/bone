@@ -34,6 +34,18 @@ import org.springframework.stereotype.Service;
  *
  * <p><b>终局一致性</b>：生产只替换 {@code OutboxRelayStorePort}（{@code mdm_outbox} JDBC）与 {@code
  * MasterDataProjectionPort}（消费侧 adapter），本类的语义、幂等键与版本规则不变。 能力开关默认关闭：Outbox 表/中继部署未就绪时不注册 bean。
+ *
+ * <p><b>配置树契约（2026-11-15 澄清）</b>：本模块刻意存在两棵配置树，<b>不可混写</b>——
+ *
+ * <ul>
+ *   <li>能力开关：{@code bone.masterdata.outbox-relay.enabled}（{@code @ConditionalOnProperty}），缺省不装配；
+ *   <li>业务取值：{@code masterdata.outbox-relay.consumer-id} / {@code max-attempts}（{@code @Value}）， 与
+ *       {@code application.yml} 的 {@code masterdata:} 段、{@code MasterDataProperties} 同树。
+ * </ul>
+ *
+ * <p>曾把测试属性注入到 {@code bone.masterdata.outbox-relay.consumer-id}，导致注入从未生效、静默回落到 yml 默认值，具名消费者授权在 E2E
+ * 里成了空设置（假绿）。现由 {@code ChangeRequestHttpIntegrationTest#namedConsumerIdIsActuallyInjected}
+ * 以真实投递断言守护： 恢复错误前缀即必红。同类约束见 {@link GoldenRecordApplicationService} 的 digest-pepper 说明。
  */
 @Service
 @ConditionalOnProperty(
