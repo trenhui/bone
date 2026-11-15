@@ -15,6 +15,9 @@ e2e_lib.chain_runner.run_steps 统一执行（README §9）。新增一条链路
 步骤字段（全可选）：method/path/body/token/call/when/checks/extract/stop_if_empty/post
 判据 kind：status | eq | cond | err | page | list（语义见 e2e_lib/chain_runner.py 头注释）
 
+造数：整条业务故事先 `./run.sh datagen list`（orders→claim / procurement / tenant-iam /
+master-data），能复用就别自己拼；缺场景先加 e2e_lib/scenarios.py（带不变量，README §3.1）。
+
 注意：`config.BASE` **已含** `/api/v1`，path 写 `/apps` 而不是 `/api/v1/apps`。
 """
 from e2e_lib import config, http

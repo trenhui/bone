@@ -67,7 +67,7 @@ function applyThemeConfig(themeConfig: ThemeConfig, resolved: 'light' | 'dark') 
 }
 
 /** 将解析后的主题写入 CSS 变量并持久化用户偏好 */
-export function applyThemeCss(theme: Theme, resolved: 'light' | 'dark') {
+export function applyThemeCss(theme: Theme, resolved: 'light' | 'dark'): void {
   const themeConfig = resolved === 'dark' ? darkTheme : lightTheme;
   applyThemeConfig(themeConfig, resolved);
   localStorage.setItem(BONE_THEME_STORAGE_KEY, theme);

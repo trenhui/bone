@@ -490,6 +490,27 @@ async function main() {
     check('列表覆盖多个状态（链路产物）', statuses.size >= 3, [...statuses].join(','));
   }
 
+  // ---------- 跨键检索投影契约（domain/model/claim/projection/ClaimSearchHit） ----------
+  // 与新增 ClaimSearchHit 同批：只回最小字段，matchedKey 是受控分类码
+  // （见 ClaimCaseRepository/searchByKeyword.sql 的 CASE），绝不回 PII 原始值列。
+  console.log('\n--- 跨键检索投影契约（ClaimSearchHit） ---');
+  {
+    const r = await api('GET', `/claims/search?keyword=${encodeURIComponent(POLICY.policyNo)}&limit=5`, undefined, { token: admin });
+    const hits = Array.isArray(r.data?.data) ? r.data.data : [];
+    const hit = hits.find((h) => h.policyNo === POLICY.policyNo) ?? hits[0];
+    check('检索投影: 保单号命中 >=1 条', r.status === 200 && hits.length >= 1,
+      `http=${r.status} hits=${hits.length}`);
+    const allowed = new Set(['claimId', 'claimNo', 'policyNo', 'status', 'stage', 'createdAt', 'matchedKey']);
+    check('检索投影: 字段集 ⊆ ClaimSearchHit 最小投影',
+      Boolean(hit) && Object.keys(hit).every((k) => allowed.has(k)),
+      JSON.stringify(Object.keys(hit ?? {})).slice(0, 160));
+    const piiKeys = ['name_masked', 'phone_masked', 'person_id_hash',
+      'nameMasked', 'phoneMasked', 'personIdHash'];
+    check('检索投影: 不回 PII 原始值',
+      Boolean(hit) && !piiKeys.some((k) => Object.prototype.hasOwnProperty.call(hit, k)),
+      JSON.stringify(hit ?? null).slice(0, 160));
+  }
+
   // ---------- 第二证据源：MySQL 落库对账（防「接口 200 但没落库」） ----------
   console.log('\n--- 第二证据源：MySQL 落库对账 ---');
   {

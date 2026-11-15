@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -48,7 +48,7 @@ const MonitorAlertPage: React.FC = () => {
   const [editingRule, setEditingRule] = useState<AlertRule | null>(null);
   const [form] = Form.useForm();
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [metricsRes, healthRes, rulesRes, eventsRes] = await Promise.all([
@@ -91,13 +91,13 @@ const MonitorAlertPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
+    void fetchData();
+    const interval = setInterval(() => void fetchData(), 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   const handleCreateRule = () => {
     setEditingRule(null);

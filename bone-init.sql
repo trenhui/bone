@@ -3768,6 +3768,34 @@ CREATE TABLE `t_adj_fee_type` (
   KEY `idx_parent` (`tenant_id`,`parent_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='费用类型字典(录入项/计算项)';
 
+-- ── t_claim_ai_feedback_event（建自 0124_synap_claim_ai_feedback_event.sql） ──
+DROP TABLE IF EXISTS `t_claim_ai_feedback_event`;
+CREATE TABLE `t_claim_ai_feedback_event` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `event_id` varchar(64) NOT NULL COMMENT '客户端事件UUID(幂等键,租户内唯一)',
+  `claim_id` bigint NOT NULL COMMENT '案件ID',
+  `event_type` varchar(16) NOT NULL COMMENT 'IMPRESSION/DISPOSITION',
+  `trace_id` varchar(128) NOT NULL DEFAULT '' COMMENT '决策轨迹ID',
+  `involvement` varchar(32) NOT NULL COMMENT 'AI参与四态，DISPOSITION仅允许AI_ASSISTED',
+  `disposition` varchar(16) DEFAULT NULL COMMENT 'ADOPT/REJECT/MODIFY',
+  `reason_type` varchar(32) DEFAULT NULL COMMENT 'ReasonType四值，REJECT/MODIFY必填',
+  `comment_text` varchar(200) DEFAULT NULL COMMENT '人工备注(不进结构化口径)',
+  `modified_fields_json` varchar(512) DEFAULT NULL COMMENT '被改字段名白名单JSON(不含值)',
+  `scene` varchar(32) NOT NULL DEFAULT 'case' COMMENT 'case/review，禁blind_label',
+  `actor_id` varchar(64) NOT NULL DEFAULT '' COMMENT '操作人(取认证主体,不接受客户端声明)',
+  `version` bigint NOT NULL DEFAULT '0' COMMENT 'SDK版本列',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '服务端接收时间(唯一时间真源)',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `deleted` tinyint NOT NULL DEFAULT '0' COMMENT '软删标记',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_event` (`tenant_id`,`event_id`),
+  KEY `idx_tenant_claim` (`tenant_id`,`claim_id`,`created_at`),
+  KEY `idx_tenant_type` (`tenant_id`,`event_type`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='AI建议曝光与人工裁决回流(append-only,不碰金额与决策)';
+
 -- ── t_claim_blind_label_task（建自 0122_synap_claim_blind_label_task.sql） ──
 DROP TABLE IF EXISTS `t_claim_blind_label_task`;
 CREATE TABLE `t_claim_blind_label_task` (

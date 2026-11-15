@@ -8,6 +8,12 @@ import { BonePermissionCodes } from '@bone/shared-types';
 import { feedbackApi, driftApi, governanceRoleApi, subscriptionApi } from '../services/api';
 import { useEntityScope } from '../context/EntityScopeContext';
 import EntityScopeSelect from '../components/EntityScopeSelect';
+import type {
+  EntitySubscription,
+  StewardAssignment,
+  ModelDrift,
+  DataFeedback,
+} from '../types/governance';
 import { useMessage } from '../App';
 
 const driftTypeLabel: Record<string, string> = {
@@ -23,10 +29,10 @@ const GovernanceBoard: React.FC = () => {
   const message = useMessage();
   // 模型选择已提升为全局作用域（EntityScopeContext），跨页面共享
   const { entityId } = useEntityScope();
-  const [subs, setSubs] = useState<any[]>([]);
-  const [roles, setRoles] = useState<any[]>([]);
-  const [drifts, setDrifts] = useState<any[]>([]);
-  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [subs, setSubs] = useState<EntitySubscription[]>([]);
+  const [roles, setRoles] = useState<StewardAssignment[]>([]);
+  const [drifts, setDrifts] = useState<ModelDrift[]>([]);
+  const [feedbacks, setFeedbacks] = useState<DataFeedback[]>([]);
   const [roleOpen, setRoleOpen] = useState(false);
   const [roleForm] = Form.useForm();
 
@@ -70,7 +76,7 @@ const GovernanceBoard: React.FC = () => {
     {
       title: '操作',
       key: 'act',
-      render: (_: unknown, r: any) => (
+      render: (_: unknown, r: EntitySubscription) => (
         <Space>
           {r.status === 'PENDING' && (
             <AuthButton code={BonePermissionCodes.MASTERDATA_SUBSCRIPTIONS_WRITE} size="small" type="primary" onClick={async () => {
@@ -117,7 +123,7 @@ const GovernanceBoard: React.FC = () => {
     {
       title: '操作',
       key: 'act',
-      render: (_: unknown, r: any) => (
+      render: (_: unknown, r: StewardAssignment) => (
         /* Popconfirm 会对 children 做 cloneElement：用 <Auth> 包外层，不能把内部 Button 换成 AuthButton */
         <Auth code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}>
           <Popconfirm title="移除该角色？" onConfirm={async () => {
@@ -151,7 +157,7 @@ const GovernanceBoard: React.FC = () => {
     {
       title: '处置',
       key: 'act',
-      render: (_: unknown, r: any) =>
+      render: (_: unknown, r: ModelDrift) =>
         r.status === 'PENDING' ? (
           <Space>
             <AuthButton code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE} size="small" onClick={async () => {
@@ -193,7 +199,7 @@ const GovernanceBoard: React.FC = () => {
     {
       title: '处理',
       key: 'act',
-      render: (_: unknown, r: any) => (
+      render: (_: unknown, r: DataFeedback) => (
         <Space>
           {r.status === 'PENDING' && (
             <AuthButton code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE} size="small" type="primary" onClick={async () => {

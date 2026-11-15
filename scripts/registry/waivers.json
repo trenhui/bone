@@ -1,0 +1,206 @@
+{
+  "schema": "bone.waivers.v1",
+  "_comment": "全仓豁免台账的唯一元数据登记（24 份）。本文件只登记元数据，不复制任何台账内容，也不作为第 25 份判据清单。status=active：必须有 owner/reason/ISO expires，过期由 bone.py waivers 与 sync --check 硬失败；status=legacy：存量历史台账，owner/到期尚未认领，允许为空但持续出现在待认领告警里，转 active 时须补齐。机械规则：scan() 枚举到的新台账若不在此登记即判红；登记了不存在的路径也判红。",
+  "policy": {
+    "warn_within_days": 14,
+    "expires_required_for": "active",
+    "scan_excludes": ["openspec/changes/archive/"],
+    "review_note": "owner 续期须同时更新 expires 与 reason；例外不得续成永久。"
+  },
+  "entries": [
+    {
+      "path": ".gitleaks.baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "bone-ai/bone-ai-rag/eval/baseline-metrics.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "config/i18n/errorcode-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/application-constructs-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/controller-authorization-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/controller-response-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/ddl-required-columns-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/doc-code-symbols-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/domain-model-layout-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/error-code-duplication-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/error-code-landing-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/event-envelope-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/freeze-ledger.yaml",
+      "kind": "ledger",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "注释声明 exception 需 expires 且到期由 check-freeze-ledger.py R4 硬失败，但当前数据无一条 expires；待 owner 认领并统一到本台账"
+    },
+    {
+      "path": "doc/architecture/frontend-id-type-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/paging-param-ssot-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/sdk-contract-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/sdk-persistence-bypass-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/soft-delete-declaration-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/sql-entity-column-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "doc/architecture/tenant-entity-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "scripts/gate-liveness-allowlist.json",
+      "kind": "allowlist",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "scripts/iam-runtime-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "scripts/migration/init-coverage-baseline.json",
+      "kind": "baseline",
+      "status": "legacy",
+      "owner": null,
+      "expires": null,
+      "reason": "存量台账，待 owner 认领"
+    },
+    {
+      "path": "scripts/registry/external-known-failures.txt",
+      "kind": "known_failure",
+      "status": "active",
+      "owner": "scripts-governance",
+      "review_by": "scripts-governance",
+      "expires": "2026-12-12",
+      "reason": "2026-11-12 首次全量实跑 9 个库外判据发现的 1 条既有漂移（check-contrast.py 选择器）；shadow 观察期豁免，到期须按 S7 修复并删除基线行，或由 owner 续期并写明理由。",
+      "item_count": 1
+    }
+  ]
+}

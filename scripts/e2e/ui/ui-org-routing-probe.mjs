@@ -66,7 +66,7 @@ async function seedSubmitted() {
     {
       claim_no: claim,
       title: 'UI 探针·组织路由验证',
-      amount: 500,
+      amount: 518.4,
       expense_date: '2026-11-01',
       applicant: 'E2E',
       cost_center: 'CC-RD-01',

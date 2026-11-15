@@ -11,6 +11,8 @@
 骨架自带四条纪律（改用例时别删——它们是「可复用」的全部内容）：
   1. 地址/凭据只从 e2e_lib.config 取：脚本内**不出现** host:port 与口令（README §2.1，gitleaks 友好）；
   2. 造数只从 e2e_lib.fixtures 取：可种子化，同 seed 跨进程同值（README §3，残留可归因）；
+     整条业务故事先看 `./run.sh datagen list`（orders→claim / procurement / tenant-iam / master-data），
+     能复用就别自己拼；需要新的先在 e2e_lib/scenarios.py 加场景（带不变量），见 README §3.1；
   3. 断言只走 e2e_lib.report：失败详情必须写**实测值**（状态码/错误码/报文片段），否则红了没法定位；
   4. 结果出口是**退出码**（+可选 JUnit XML），不靠人读控制台（README §5）。
 

@@ -178,6 +178,34 @@
    ]
   },
   {
+   "http": "POST",
+   "path": "/api/v1/masterdata/change-requests/{id}/submit",
+   "controller": "ChangeRequestController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ChangeRequestController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/change-requests/{id}/segments/{segment}/decide",
+   "controller": "ChangeRequestController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ChangeRequestController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/change-requests/{id}/apply",
+   "controller": "ChangeRequestController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ChangeRequestController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/change-requests/{id}",
+   "controller": "ChangeRequestController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ChangeRequestController.java",
+   "cases": []
+  },
+  {
    "http": "GET",
    "path": "/api/v1/masterdata/fields/{id}",
    "controller": "MasterDataFieldTopController",
@@ -407,6 +435,27 @@
    "path": "/api/v1/masterdata/quality-issues/open-count",
    "controller": "QualityIssueController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/QualityIssueController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/golden-records/merge",
+   "controller": "GoldenRecordController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/GoldenRecordController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/golden-records/rollback",
+   "controller": "GoldenRecordController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/GoldenRecordController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/golden-records/{partyId}",
+   "controller": "GoldenRecordController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/GoldenRecordController.java",
    "cases": []
   },
   {
@@ -4755,8 +4804,8 @@
   }
  ],
  "summary": {
-  "endpoints": 537,
+  "endpoints": 544,
   "covered": 242,
-  "uncovered": 295
+  "uncovered": 302
  }
 }

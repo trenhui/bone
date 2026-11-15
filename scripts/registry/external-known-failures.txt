@@ -1,0 +1,8 @@
+# 库外判据实跑基线（只可收缩）。每行一个已知失败的 path。
+# 2026-11-12 首次把 9 个 invokable 判据全部实跑时发现 1 条既有漂移：
+#   HTML 中 .actionbar 存在，但 .actionbar button.primary 规则缺失，
+#   check-contrast.py 报 FATAL「选择器未匹配到规则」。
+# 该判据此前不在任何门禁/入口里，所以漂移长期不可见；owner 待定，修复条件为补齐或更正选择器。
+# 治理规则：基线里的失败允许 shadow 观察；新出现的失败一律判红；
+# 基线里已修复的条目必须删除本行（bone.py --ratchet 会报 stale_entries）。
+doc/design/lowcode/ui/ui-protocol/check-contrast.py

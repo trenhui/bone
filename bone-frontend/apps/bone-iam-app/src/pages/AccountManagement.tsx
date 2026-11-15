@@ -181,7 +181,7 @@ const AccountManagement: React.FC = () => {
   useEffect(() => {
     void fetchRoles();
     void fetchDeptTree();
-  }, []);
+  }, [fetchRoles, fetchDeptTree]);
 
   useEffect(() => {
     void fetchStats();
