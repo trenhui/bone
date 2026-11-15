@@ -596,6 +596,12 @@ export interface CreateLiabilityReq {
   limitDiagnosisCodes?: string;
   catalogPolicy?: string;
   catalogCode?: string;
+  /**
+   * 目录准入 MANDATORY 的二次确认位。后端 Liabilities 写接口在「合并后的生效策略」为
+   * MANDATORY 时要求显式 true：目录未接入会让整批费用明细落 CATALOG_UNRESOLVED 转人工补件。
+   * 编辑一条本就是 MANDATORY 的责任时同样要带（哪怕本次没改策略），否则等于绕过确认。
+   */
+  confirmCatalogMandatory?: boolean;
   socialOnly?: number;
   waitingPeriod?: number;
   status?: ConfigStatus;
@@ -619,6 +625,8 @@ export interface UpdateLiabilityReq {
   limitDiagnosisCodes?: string;
   catalogPolicy?: string;
   catalogCode?: string;
+  /** 目录准入 MANDATORY 二次确认；后端按合并后的生效策略校验，编辑时同样需要。 */
+  confirmCatalogMandatory?: boolean;
   socialOnly?: number;
   waitingPeriod?: number;
   /**
