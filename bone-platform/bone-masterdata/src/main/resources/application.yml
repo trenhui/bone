@@ -67,8 +67,11 @@ masterdata:
   export-max-records: 10000
   # 本轮新增：Golden Record 摘要与 Outbox 中继配置（@Value 须在此显式声明，strict 门禁禁止静默回落）
   golden-record:
-    # 防低熵 PII 摘要被反推的盐值；生产由环境变量 BONE_MASTERDATA_DIGEST_PEPPER 注入，dev 仅占位
-    digest-pepper: ${BONE_MASTERDATA_DIGEST_PEPPER:dev-only-digest-pepper-change-in-prod}
+    # 防低熵 PII 摘要被反推的盐值；生产必须由环境变量 BONE_MASTERDATA_DIGEST_PEPPER 注入。
+    # 2026-11-14 Verify IMPORTANT-1 修复：此处曾有可过校验的 dev 占位串，生产漏配会静默使用公开弱盐值（fail-open）。
+    # 现默认值只保留空串，由 GoldenRecordApplicationService 构造器的 blank/长度校验在能力启用时显式拒绝（fail-closed）。
+    # 不设非空默认值，也不把占位串写进任何测试夹具以外的位置。
+    digest-pepper: ${BONE_MASTERDATA_DIGEST_PEPPER:}
   outbox-relay:
     # 具名消费者，禁止匿名投递
     consumer-id: ${BONE_MASTERDATA_OUTBOX_CONSUMER_ID:bone-masterdata-relay}

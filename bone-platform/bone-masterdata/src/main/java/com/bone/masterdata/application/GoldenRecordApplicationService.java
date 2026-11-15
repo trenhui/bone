@@ -59,7 +59,9 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p><b>PII 最小化</b>：事件信封只携带 {@code payloadHash}，且摘要为<b>平台密钥参与的 HMAC-SHA256</b> 而非裸哈希。
  * 税号/统一社会信用代码等低熵标识符的裸 SHA-256 可被离线字典反推，等同于泄露；HMAC 使离线反推不可行。 密钥由 {@code
- * bone.masterdata.golden-record.digest-pepper} 注入且无默认值，缺失即无法装配（fail-closed）。
+ * masterdata.golden-record.digest-pepper} 注入（注意：与 {@code @ConditionalOnProperty} 的 {@code
+ * bone.masterdata.golden-record.enabled} 前缀不同，二者是两棵配置树，不可混写）。配置缺省为空串、 不含任何可用默认值；本类构造器在能力启用时校验 blank
+ * 与最小长度并抛 {@link DomainException}（fail-closed）， 确保生产漏配时不会静默使用公开弱盐值。
  */
 @Service
 @ConditionalOnProperty(

@@ -2,9 +2,22 @@
 comet_change: procuraai-ai-first-landing
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-11-15-procuraai-ai-first-landing
+status: final
 ---
 
 # Design — procuraAI AI-first 落地
+
+> **范围修订声明（2026-11-14，已由用户显式重新批准，SDK proposalHash `e414b3db…`）**
+>
+> 本文 D1–D7 及后续章节是 2026-11-13 的**原始完整 AI-first MVP 技术设计**，作为设计储备保留不改。但**本 change 的实际交付范围**以 `tasks.md` §3 与 `specs/SCOPE.md` 为准，二者不一致时以本声明裁决：
+>
+> - 实际交付仅为 `bone-platform/bone-masterdata` 上的**通用主数据 Golden Record 去重内核**（既有模块扩展 9 端口、通用领域模型、分段变更请求、Outbox 中继、治理 API、250 例单测）；**零 AI 能力、零 `bone-procurement-*` 模块、零 `t_proc_*` DDL、零 Supplier/Vendor 聚合**。
+> - 本文描述的 AI 合同审查流水线、AI 决策治理、HITL 评测、评测集 ≥200 例、SLO 冻结、供应商 MDM 实体**均未实现**，属 `deferred-backlog.md` 的 23 项 owner/L3 WBS；3 份对应 delta spec 已全文未改迁出 `specs/` 至 `deferred-specs/procurement/`，本 change `deltaCount: 0`，归档不得把未实现需求合入主 spec。
+> - 验收文字已按真实代码改写（`tasks.md` §3，含「验收文字—代码证据映射」表），权限点为 `masterdata:governance:*`；`application.yml` 摘要盐值已去 dev 占位默认值，由构造器在能力启用时 fail-closed。
+> - **CI 绿 ≠ AI 可上线**；文档族 X1–X4 字段级契约为纯叙述 `DesignOnly`，不在 CI 三入口判据集合内。
+>
+> 本声明对应 Verify 独立审查 CRITICAL-1/CRITICAL-2/IMPORTANT-1/2/3 的修复轮，证据见 Verify r2 报告。
 
 > 本版为**业界最佳实践校准后的可验证设计**（2026-11-13）。相较首版，新增：WSJF 量化与敏感性、walking skeleton 的 DoD、timeboxed spike 决策树、运行时治理控制点、分任务评测指标、合规条款→工程控制点→证据矩阵、成功度量与可证伪假设、ATAM 风险表。决策 D1–D7 的方法与结论不变，**变的是"怎么证明它做对了"**。
 

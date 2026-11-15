@@ -37,7 +37,10 @@ import org.springframework.test.context.ActiveProfiles;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       "bone.masterdata.golden-record.enabled=true",
-      "bone.masterdata.golden-record.digest-pepper=http-integration-pepper-2026-11-13"
+      // 2026-11-14 Verify IMPORTANT-1 修复：@Value 读的是 masterdata.* 前缀（见
+      // GoldenRecordApplicationService:90），此前注入到 bone.masterdata.* 的 pepper 从未生效，
+      // 实为 application.yml 的 dev 占位串兜底。去掉占位默认值后必须注入到正确前缀。
+      "masterdata.golden-record.digest-pepper=http-integration-pepper-2026-11-13"
     })
 @ActiveProfiles("test")
 @Import({MetadataSdkIntegrationTestConfiguration.class, GoldenRecordHttpTestConfiguration.class})

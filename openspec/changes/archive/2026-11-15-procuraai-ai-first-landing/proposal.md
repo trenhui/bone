@@ -1,5 +1,10 @@
 # Proposal — procuraAI AI-first 落地
 
+> **范围状态声明（2026-11-14，Verify FAIL 回 Build 后补充）**
+> 本文是 Open 阶段的**历史原始提案**，描述的是完整 AI-first MVP 目标，正文保留不改以维持决策链证据。
+> **本 change 实际交付范围以 `tasks.md` §3 为准**：仅 `bone-platform/bone-masterdata` 上的通用主数据 Golden Record 去重内核（通用领域模型 / 分段变更请求 / Outbox 中继 / 治理 API / 250 例单测），**零 AI 能力、零 `bone-procurement-*` 模块、零 `t_proc_*` DDL、零 Supplier/Vendor 聚合**。
+> 本文与 `deferred-specs/` 中 3 份 delta spec 描述的 AI 合同审查、AI 决策治理、供应商 MDM 实体均**未在本次交付实现**，已迁出 `deferred-backlog.md` 作为独立 owner/L3 WBS；归档时不得据此合入主 spec 或宣称 AI-first MVP 已交付。范围裁决全文见 `specs/SCOPE.md`。
+
 ## Why
 
 procuraAI 架构方案（LLD 六卷 + 契约工件）已完备，但代码侧仅有 `bone-app-purchase` 低代码 Runtime 适配层（0 个 `@Table` 实体、0 采购业务 DDL、0 `Repository`），**真正的采购业务聚合与 AI 审查能力尚未落地**。对标《发改法规〔2026〕195 号》"中标合同签订风险提示 / 协同监管"等场景，需以最短路径把 **AI 合同风险审查** 落到 BONE 底座，复用 `bone-ai` 与 `metadata-sdk`，避免重造轮子与第二套真源。
