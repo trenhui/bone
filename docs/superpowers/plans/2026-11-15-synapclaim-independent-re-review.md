@@ -5,7 +5,7 @@ base-ref: 08dd98997762db523696bd9dbfba0a456cf641a8
 baseline-head: 285827275
 baseline-manifest-order: 124
 baseline-gate: 59/59
-plan-revision: 2
+plan-revision: 3
 ---
 
 <!-- comet-task-authority: openspec/changes/synapclaim-independent-re-review/tasks.md -->
@@ -96,6 +96,8 @@ plan-revision: 2
 | 变异验证 | 门禁日志 + 报告 | 每个**新增**判据至少 1 个正向用例 + 1 个互补变异能判红；排除模运算式 / 阈值式退化 |
 | 编译与启动 | `mvn -o compile` / 启动日志 | 无 `TemplateNotFoundException`、无缺列告警、类加载不抛 |
 | 任务勾选 | `comet state task-complete` | 由 CLI 驱动，**不手改 `tasks.md`**（会被证据哈希判为 drift） |
+| 基线指纹消费方 | 提交门禁输出 | `baseline-head` / `baseline-manifest-order` / `plan-revision` 三项**机检 MATCH**；`baseline-gate` 显式标注 **advisory 人工复核快照、不机检**，不得当作实时判据 |
+| 门禁判别力 | 判别力自测输出 | 每批 1 个正向 + 至少 4 个变异判红 + 1 个**互补变异判绿**；输入现场由 git 生成，不依赖临时目录残留 |
 
 ## 10. 风险登记
 
@@ -114,13 +116,15 @@ plan-revision: 2
 - **备选与代价**：① `revise-design` 重走 Design —— 4 批 `phase` 退回 design、批 1 已批准的 Build 配置作废、四分支产物重写重推，代价最大；② 直接改文档 —— 可逆实测证实立即 `5/6 blocked`（`CLASSIC_EVIDENCE_DRIFT`），不可行；③ 只放外部清单 —— Comet 流程内看不到口径来源，且 `/tmp` 会丢。
 - **后果**：plan 成为唯一口径，但 `design.md` / `tasks.md` 文本仍含过时表述，靠本 plan 的「不采信」声明消解；后续若需**语义**变更，仍须走 `revise-design` 并由用户重新批准，不得用 edit-review 非语义白名单伪造证据。
 
-## 12. 开工前 pre-flight（三条，必须在各自 worktree 内执行）
+## 12. 开工前 pre-flight（四条，必须在各自 worktree 内执行）
 
 1. `comet state check <change> build --json` —— 必须 `5/5 blocked=False`；在主树跑会报 `4/5` 路径归属假红。
 2. `python3 scripts/check-migration-manifest.py` —— 确认清单判据全绿，并记下当前 `max(order)`。
-3. `git -C "$(git worktree list --porcelain | head -1 | sed 's/^worktree //')" show HEAD:scripts/migration/migration-manifest.json` —— 用主树真源复核基线；与 frontmatter 的 `baseline-manifest-order` 不一致即停手更新 plan，不得照抄旧值。
+3. `env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_COMMON_DIR git -C "$(git worktree list --porcelain | head -1 | sed 's/^worktree //')" show HEAD:scripts/migration/migration-manifest.json` —— 用**主树真源**复核基线（命令已剥离会重定向仓库解析的 `GIT_*`，可直接复制）；与 frontmatter 的 `baseline-head` / `baseline-manifest-order` 不一致即停手更新 plan，不得照抄旧值。
 
-> ⚠️ **环境变量陷阱（2026-11-15 实测）**：在 pre-commit 钩子或任何注入了 `GIT_DIR` 的上下文里，`git -C <主树>` 会被 `GIT_DIR` 覆盖，**静默读到当前分支 HEAD** 的旧清单。四条分支自身 HEAD 的清单 `max(order)=123`（分支点 `6f0ea427f` 早于 `285827275` 引入 0124），`dev` 主树才是 124。故执行上述命令前须 `unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR`；提交门禁 `verify-baseline.py` 已按此修复，并以「声明 123 判红 / 声明 124 判绿」双向变异验证，未通过改指纹凑绿。
+4. 核对门禁指纹消费方与判据文档同步：`baseline-head` / `baseline-manifest-order` / `plan-revision` 三项**机检**，`baseline-gate` 仅为**人工复核快照（不机检）**；plan 正文改动必须 bump `plan-revision`；plan 与 `tasks.md` 一律以**暂存快照**校验、不读工作树。新增判据须同批更新第 9 节证据表并跑「正向 + 互补变异」自测，不得只报全绿。
+
+> ⚠️ **环境变量陷阱（2026-11-15 实测）**：在 pre-commit 钩子或任何注入了 `GIT_DIR` 的上下文里，`git -C <主树>` 会被 `GIT_DIR` 覆盖，**静默读到当前分支 HEAD** 的旧清单。四条分支自身 HEAD 的清单 `max(order)=123`（分支点 `6f0ea427f` 早于 `285827275` 引入 0124），`dev` 主树才是 124。故执行上述命令前须 `unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR`；提交门禁已按此修复，并以 4 批 × 8 组（含互补变异）判别力自测 **32/32 通过**，未通过改指纹凑绿。
 
 ## 13. 停止条件
 
