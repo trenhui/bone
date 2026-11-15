@@ -2,6 +2,10 @@
 change: synapclaim-task-assignment-workbench
 design-doc: openspec/changes/synapclaim-task-assignment-workbench/design.md
 base-ref: 9e45e5abf3361a6c970ef370e5d957d81d97378f
+baseline-head: 285827275
+baseline-manifest-order: 124
+baseline-gate: 59/59
+plan-revision: 2
 ---
 
 <!-- comet-task-authority: openspec/changes/synapclaim-task-assignment-workbench/tasks.md -->
@@ -15,7 +19,7 @@ base-ref: 9e45e5abf3361a6c970ef370e5d957d81d97378f
 
 - `dev` HEAD = `285827275`「归集并行会话在途资产并同批同步 E2E 投影契约」，主树 `git status --porcelain` = **0 在途**。`ClaimWorkbenchController` / `ClaimSearchApplicationService` / `AiFeedbackRules` 经 `git cat-file -e HEAD:<f>` 确认 IN HEAD。
 - `./scripts/check.sh` 实跑 13 分钟：`CHECK_EXIT=0`、`[59/59]`、末行「✅ 本地自检通过！」。日志中的 `[FAIL]` / `❌` 全部落在 `[42/59]` 种子校验**负向探针**内部，非步骤级红点 —— 判据看 exit 0 + 末行。
-- `scripts/migration/migration-manifest.json`：`entries=131` / `executableCount=124`，末尾 `order=124`（`0124_synap_claim_ai_feedback_event.sql` 已入库并登记）。⇒ **新迁移从 0125 起按批次顺序分配**；脚本 + 清单 + `bone-init.sql` 同批入库；已发迁移（含注释）不回改（sha256 journal）。
+- `scripts/migration/migration-manifest.json`：`entries=131` / `executableCount=124`，末尾 `order=124`（`0124_synap_claim_ai_feedback_event.sql` 已入库并登记）。⇒ **文件前缀 `0125_` 与 `order` 是两回事**（详见第 7 节并行分支迁移合并协议）：`order` 是 `1..N` 连续执行序号，只能取清单 `max(order)+1`，**禁止跳号 / 预留号段 / 四批各写同一个号**；脚本 + 清单 + `bone-init.sql` 同批入库；已发迁移（含注释）不回改（sha256 journal）。
 - `ClaimWorkbenchController` 挂 `/api/v1/claims/**`，已有 `GET /search`（keyword + limit 跨键检索，**无 total / 分页**）与 3 个 AI 回流端点，权限 `claim:claims:read` / `claim:review:write`。
 - `ClaimErrorCodes.java` / `ClaimErrors.java` 已被并行会话改动（新增 `CLAIM_AI_FEEDBACK_CONFLICT`→409、`CLAIM_SEARCH_KEYWORD_INVALID`→400），台账 `doc/architecture/Bone-错误码登记.md` §6 第 622/623 行已登记。⇒ 新增错误码须**基于 HEAD 追加**，且三处必齐（常量 + `DEFAULT_HTTP_STATUS` + 前端两语言包 + 台账 §6）。
 - `t_claim_review_record` 已存在（`0101_synap_claim_phase1_record_tables.sql` 建表，append-only，含 `uk_claim_role_reviewer`），勿重复建同义表。
@@ -48,8 +52,8 @@ base-ref: 9e45e5abf3361a6c970ef370e5d957d81d97378f
 
 ## 6. 任务映射（逐条口径；「新建」= 仍需编码，「补齐对接」= 复用既有入口扩展，「验收/验收留证」= 已实现，只跑探针与留证）
 
-- 1.1 追加增量迁移脚本建 `t_claim_task` / `t_claim_assign_rule` 与三条索引，末尾 `information_schema` 强断言 + `SIGNAL`，并验证 `python3 scripts/check-migration-manifest.py` 与迁移脚本语法检查通过 【新建】— 新迁移号从 **0125** 起（design 中「止于 123 / 0124 仅 staged」过时）；末尾 information_schema 强断言 + SIGNAL，MESSAGE_TEXT ≤128 字符。L3：脚本落盘前须架构师审批。 <!-- comet-task-ref:7f7bb6e0-567f-466a-9e67-be547cca0f5b -->
-- 1.2 同批把新脚本登记到 `migration-manifest.json` 末尾空位、补 `bone-init.sql` 建表块，验证清单 M1/M2/M3/M4/M11 判据全绿且 `order` 与文件名词典序一致 【新建】— 清单末尾空位 `order=125` 登记，与脚本、bone-init.sql 同批；M1/M2/M3/M4/M11 判据全绿且 order 与文件名词典序一致。 <!-- comet-task-ref:60ec4f13-b861-489a-b48e-1cc44b151b97 -->
+- 1.1 追加增量迁移脚本建 `t_claim_task` / `t_claim_assign_rule` 与三条索引，末尾 `information_schema` 强断言 + `SIGNAL`，并验证 `python3 scripts/check-migration-manifest.py` 与迁移脚本语法检查通过 【新建】— 文件前缀与 `order` 分离（第 7 节）：**不得预占 0125 / 不得写死 order**，落脚本时按合并后清单 `max(order)+1` 重算；design 中「止于 123 / 0124 仅 staged」过时；末尾 information_schema 强断言 + SIGNAL，MESSAGE_TEXT ≤128 字符。L3：脚本落盘前须架构师审批。 <!-- comet-task-ref:7f7bb6e0-567f-466a-9e67-be547cca0f5b -->
+- 1.2 同批把新脚本登记到 `migration-manifest.json` 末尾空位、补 `bone-init.sql` 建表块，验证清单 M1/M2/M3/M4/M11 判据全绿且 `order` 与文件名词典序一致 【新建】— 清单末尾登记（`order` = 合并后 `max+1`，不写死 125），与脚本、bone-init.sql 同批；M1/M2/M3/M4/M11 判据全绿且 order 与文件名词典序一致。 <!-- comet-task-ref:60ec4f13-b861-489a-b48e-1cc44b151b97 -->
 - 1.3 新增任务与规则实体，`@Column` 与活库 `information_schema` 逐列求差，验证 `mvn -o compile` 通过且无缺失列告警 【新建】— 实体 @Column 与活库 information_schema 逐列求差；生成列不进实体；mvn -o compile 通过且无缺列告警。 <!-- comet-task-ref:57dc571b-ce1f-4208-9c67-6b2fe5ae10a6 -->
 - 2.1 新增任务/规则仓储接口及每个方法对应的 SQL 模板（首行为语句关键字、SELECT 列对齐实体、含 `/*bone:tenant*/` 锚点），验证启动期无 `TemplateNotFoundException` 且单测可读回写入值 【新建】— 每个仓储方法同批交 SQL 模板；首行语句关键字、模板内不放注释、SELECT 列对齐实体、含 /*bone:tenant*/ 锚点；方法名避开 ArchUnit 保留字。 <!-- comet-task-ref:40f2ed49-2148-49f4-9858-da4cffd5e7fa -->
 - 2.2 实现规则求解与候选打分（固定顺序、优先级、`USER|DEPT|ROLE` 目标），验证命中用例与「候选集全不可用」用例分别断言已指派与入池 【新建】— 规则求解固定顺序 + 优先级 + USER|DEPT|ROLE 目标；命中用例与「候选集全不可用」用例分别断言已指派 / 入池。 <!-- comet-task-ref:aa736cb6-c0bb-43df-8083-7b6c1c3f0d5d -->
@@ -64,7 +68,67 @@ base-ref: 9e45e5abf3361a6c970ef370e5d957d81d97378f
 - 5.2 跑仓库原生全量门禁（含 `check.sh`、DDL 文档一致性、造数资产同步、E2E 影响分析），验证所有红点归零或明确归因为与本 change 零交集的基线项 【验收】— 重跑全量门禁（含本批新增判据），不复用 2026-11-15 基线绿；红点归零或明确归因为零交集基线项。 <!-- comet-task-ref:0ef895a4-2dad-43f5-9c40-0ace78e43673 -->
 - 5.3 变异验证「前端固定切片」与「整表判断」两处判据确实会转红，验证门禁有判别力而非恒绿 【验收】— 变异验证「前端固定切片」与「整表判断」两处判据确实转红，并补互补变异排除模运算式/阈值式退化。 <!-- comet-task-ref:649c4240-35ed-40d1-a9fe-32156c4bb2a9 -->
 
-## 7. 停止条件
+## 7. 并行分支迁移合并协议（依据已接受 ADR + 清单判据，纠正上一版口径）
+
+> 上一版写「新迁移从 `0125` 起按批次顺序分配」并给批 1 写死 `order=125`。经 `scripts/check-migration-manifest.py` 判据与 ADR-0001 /《ADR-生产数据库增量迁移策略》复核，该表述会让 M3 / M4 判红。**本节为唯一口径**。
+
+| 概念 | 定义 | 约束来源 |
+|---|---|---|
+| 文件名 4 位前缀（如 `0125_`） | 脚本命名，按字典序参与顺序冻结 | M4：按 `order` 排开必须等于文件名词典序；不一致须在 `outOfLexOrder` 逐项声明理由 |
+| `order` | **连续执行序号** `1..N`（N = 可执行 SQL 数） | M3：`1..N` 连续无重复 ⇒ **禁止跳号、禁止预留号段、禁止四批各写同一个号** |
+| `ordinalConflicts` | 4 位前缀重号组（≥2 文件）登记 | M6：实际重号组与登记必须双向一致，且每条带 `verdict`（谁先谁后、为何可共存） |
+
+协议（实现落脚本时执行，设计期不占号）：
+
+1. **不预占**：四批均不固定 `0125_...` 或 `order=125`。落脚本前先 `git fetch` + 读主树 `scripts/migration/migration-manifest.json` 的 `max(order)`，取 `max+1`（当前 124 ⇒ 125；若并行会话已占用则继续后移）。
+2. **同批三件**：脚本 + 清单末尾条目 + `bone-init.sql` 建表块同批入库；M1/M2/M3/M4/M11 全绿。依据 ADR-0001（DDL 单轨真源）与《生产数据库增量迁移策略》（「迁移脚本必须与 bone-init.sql 最终状态一致」、expand/contract 新增列 nullable + DEFAULT）。
+3. **合并时重算**：后合并的分支必须重算 `order` 并同步改文件名前缀以保持 M4 词典序；调整对象是**尚未应用的新脚本**。已发脚本（含注释）不可回改——`migrate.py` 按 sha256 journal 校验。
+4. **避免重号前缀**：每脚本使用唯一 4 位前缀，不制造 M6 重号组；万不得已共用前缀须登记 `ordinalConflicts` + `verdict`。
+5. **大表**：按 ADR 走 gh-ost / pt-osc，不做原地锁表变更。
+
+## 8. 执行顺序与共享文件串行化
+
+依赖顺序：**批 1 → 批 3 → 批 4**；批 2 可与批 1 并行。本批是**前置批**：批 3 的复审队列（3.1 按持权人 + 任务归属过滤）与批 4 的转交 / 超时回池都作用于 `t_claim_task`，须最先落数据地基。
+
+共享文件（四批都会碰）必须**串行合并、基于 HEAD 追加、不得整文件覆盖**：`ClaimErrorCodes.java`、`ClaimErrors.java`、`migration-manifest.json`、`bone-init.sql`、`ClaimWorkbenchController.java`、前端两语言包、`doc/architecture/Bone-错误码登记.md` §6。新增错误码三处必齐（常量 + `DEFAULT_HTTP_STATUS` + 前端两语言包 + 台账 §6）；每次合并后重跑对应判据，避免「静默丢一条改动」。
+
+## 9. Definition of Done / 验收证据（可机器判读）
+
+| 证据 | 产出 | 判据 |
+|---|---|---|
+| 运行期证据报告 | `docs/superpowers/reports/<change>-*.md` | 含本批每条判据的**实测数值**，不接受「应该通过」 |
+| 全量门禁 | `/tmp/<change>-check.log` | `./scripts/check.sh` `exit 0` **且**末行「✅ 本地自检通过！」；日志内 ❌ 须逐条归因为负向探针 |
+| 迁移清单判据 | `python3 scripts/check-migration-manifest.py` | M1/M2/M3/M4/M6/M11 全绿，`order` 连续且等于词典序 |
+| 变异验证 | 门禁日志 + 报告 | 每个**新增**判据至少 1 个正向用例 + 1 个互补变异能判红；排除模运算式 / 阈值式退化 |
+| 编译与启动 | `mvn -o compile` / 启动日志 | 无 `TemplateNotFoundException`、无缺列告警、类加载不抛 |
+| 任务勾选 | `comet state task-complete` | 由 CLI 驱动，**不手改 `tasks.md`**（会被证据哈希判为 drift） |
+
+## 10. 风险登记
+
+| 风险 | 触发信号 | 影响 | 缓解 |
+|---|---|---|---|
+| 并行会话占用 `0125` / 推进 `order` | 主树清单 `max(order) > 124` | 合并撞号，M3 / M4 判红 | 落脚本前重算 `max+1`（第 7 节）；提交门禁第 5 道 fail-fast |
+| 已实现能力被重写 | `telemetry.ts` / `AiFeedbackRules` / 0124 被改动 | 重复造轮子、与并行会话冲突 | 批 2 的 2.2/3.1/3.2 只验收留证 |
+| 基线声明漂移 | 主树 HEAD / 清单 order / 门禁项数变化 | 照抄旧基线静默降级 | frontmatter 指纹 + 提交门禁同源校验；开工前 pre-flight（第 12 节） |
+| 错误码 i18n 覆盖盲区 | 新码在 `constants/errorCodes.ts` 0 命中却门禁全绿 | 前端无法展示错误语义 | **单列独立核实**，不混入四批 |
+| 共享文件并发覆盖 | 错误码 / 清单 / Controller 同时被多会话改 | 静默丢改动 | 串行合并 + 基于 HEAD 追加（第 8 节） |
+
+## 11. 决策记录（ADR-lite）
+
+- **上下文**：`design.md` / `tasks.md` 在 Design 阶段已批准，被 Runtime 以 sha256 锁定为已接受证据；范围重核又发现并行会话已入库部分目标能力，四份 design 的迁移基线全部过时。
+- **决策**：重标与基线校正结论写进本 plan，并声明本 plan 为实现口径唯一真源；**不改已批准文档**。
+- **备选与代价**：① `revise-design` 重走 Design —— 4 批 `phase` 退回 design、批 1 已批准的 Build 配置作废、四分支产物重写重推，代价最大；② 直接改文档 —— 可逆实测证实立即 `5/6 blocked`（`CLASSIC_EVIDENCE_DRIFT`），不可行；③ 只放外部清单 —— Comet 流程内看不到口径来源，且 `/tmp` 会丢。
+- **后果**：plan 成为唯一口径，但 `design.md` / `tasks.md` 文本仍含过时表述，靠本 plan 的「不采信」声明消解；后续若需**语义**变更，仍须走 `revise-design` 并由用户重新批准，不得用 edit-review 非语义白名单伪造证据。
+
+## 12. 开工前 pre-flight（三条，必须在各自 worktree 内执行）
+
+1. `comet state check <change> build --json` —— 必须 `5/5 blocked=False`；在主树跑会报 `4/5` 路径归属假红。
+2. `python3 scripts/check-migration-manifest.py` —— 确认清单判据全绿，并记下当前 `max(order)`。
+3. `git -C "$(git worktree list --porcelain | head -1 | sed 's/^worktree //')" show HEAD:scripts/migration/migration-manifest.json` —— 用主树真源复核基线；与 frontmatter 的 `baseline-manifest-order` 不一致即停手更新 plan，不得照抄旧值。
+
+> ⚠️ **环境变量陷阱（2026-11-15 实测）**：在 pre-commit 钩子或任何注入了 `GIT_DIR` 的上下文里，`git -C <主树>` 会被 `GIT_DIR` 覆盖，**静默读到当前分支 HEAD** 的旧清单。四条分支自身 HEAD 的清单 `max(order)=123`（分支点 `6f0ea427f` 早于 `285827275` 引入 0124），`dev` 主树才是 124。故执行上述命令前须 `unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR`；提交门禁 `verify-baseline.py` 已按此修复，并以「声明 123 判红 / 声明 124 判绿」双向变异验证，未通过改指纹凑绿。
+
+## 13. 停止条件
 
 - 本 plan 只登记实施口径；**未调用 `submit-plan`、未写实现代码、未勾选任何 task**。后续 `submit-plan` 与逐批 Build 配置须经用户过目 / 单独确认。
 - 若实现中发现与第 1 节基线冲突（例如迁移号被并行会话占用），先停下来重新取证并报用户，不得自行改号或回改已发迁移。
