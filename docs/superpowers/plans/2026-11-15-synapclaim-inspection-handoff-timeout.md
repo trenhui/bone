@@ -2,10 +2,10 @@
 change: synapclaim-inspection-handoff-timeout
 design-doc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
 base-ref: ceded7b69333cb6c0b1dd5ca2cea2d0c9b16bc1f
-baseline-head: 285827275
-baseline-manifest-order: 124
+baseline-head: f329228ad
+baseline-manifest-order: 125
 baseline-gate: 59/59
-plan-revision: 3
+plan-revision: 4
 ---
 
 <!-- comet-task-authority: openspec/changes/synapclaim-inspection-handoff-timeout/tasks.md -->
@@ -48,7 +48,7 @@ plan-revision: 3
 
 ## 5. 执行配置
 
-**待单独确认**（当前缺 build_mode + tdd_mode，reviewMode=off）。按用户裁定不沿用批 1 批准值，开工前须本批单独 propose-build + decide-build。
+**已批准（沿用批 1 配置）**：`build_mode=executing-plans` / `tdd_mode=tdd` / `review_mode=thorough` / `subagent_dispatch=null`。用户明确裁定批 2/3/4 统一沿用批 1 已批准值（覆盖早期"待单独确认"口径），`propose-build --confirmed` 已落库；不再单独询问。基线指纹已同步至合并后的 dev HEAD `f329228ad` / manifest order=125（plan-revision=4）。
 
 ## 6. 任务映射（逐条口径；「新建」= 仍需编码，「补齐对接」= 复用既有入口扩展，「验收/验收留证」= 已实现，只跑探针与留证）
 
