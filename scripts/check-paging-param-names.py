@@ -37,7 +37,7 @@ from collections import defaultdict
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-SKIP = {"target", "node_modules", "dist", "build", ".git", "generated-code"}
+SKIP = {"target", "node_modules", "dist", "build", ".git", "generated-code", ".worktrees"}
 
 # 对外入参类的命名特征：被 Spring 以 @ModelAttribute / 显式参数绑定的分页载体
 QUERY_CLASS_RE = re.compile(r"(Qry|Query|PageQuery|PageReq|Request|DTO)$")

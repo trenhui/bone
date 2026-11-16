@@ -40,7 +40,7 @@ export function BoneAppProvider({
   children,
   themeMode,
   locale: localeProp,
-}: BoneAppProviderProps) {
+}: BoneAppProviderProps): React.ReactElement {
   const [mode, setMode] = useState<Theme>(() => themeMode ?? readStoredTheme());
 
   // locale 初始化优先级：Shell 下发 prop > i18next LanguageDetector 的检测结果

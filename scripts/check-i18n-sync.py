@@ -46,7 +46,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-SKIP = {"target", "node_modules", "dist", "build", ".git", "generated-code"}
+SKIP = {"target", "node_modules", "dist", "build", ".git", "generated-code", ".worktrees"}
 
 LOCALE_DIR = "bone-frontend/packages/shared-utils/src/i18n/locales"
 LEDGER = "doc/architecture/Bone-错误码登记.md"
@@ -63,11 +63,22 @@ CODE_SHAPE_RE = re.compile(r"[A-Z][A-Z0-9_]{2,}")
 
 
 def walk(suffixes, roots=None):
-    """遍历仓库文件，跳过构建产物；roots 用于限定 apps/packages 等顶层目录。"""
+    """遍历仓库文件，跳过构建产物；roots 用于限定 apps/packages 等顶层目录。
+
+    判定一律用「相对 REPO 的路径」：SKIP 里的 `.worktrees` 若拿绝对路径的 parts 比对，
+    脚本自身在 `.worktrees/<change>/` 内运行时会把整个仓库跳过 ⇒ 代码常量 0 个、
+    白名单里每一条都显得「已不需要豁免」，判据变成一片假红（comet 每批都在 worktree 内跑）。
+    """
     for p in REPO.rglob("*"):
-        if not p.is_file() or p.suffix not in suffixes or (SKIP & set(p.parts)):
+        if not p.is_file() or p.suffix not in suffixes:
             continue
-        if roots and not (roots & set(p.parts)):
+        try:
+            rel_parts = set(p.relative_to(REPO).parts)
+        except ValueError:
+            continue
+        if SKIP & rel_parts:
+            continue
+        if roots and not (roots & rel_parts):
             continue
         yield p
 

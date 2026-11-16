@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -54,7 +54,7 @@ const SystemDeploymentPage: React.FC = () => {
   const [deploymentRecords, setDeploymentRecords] = useState<DeploymentRecord[]>([]);
   const [form] = Form.useForm();
 
-  const fetchSystemInfo = async () => {
+  const fetchSystemInfo = useCallback(async () => {
     try {
       const response = await systemApi.getInfo();
       if (response.code === 200) {
@@ -72,18 +72,18 @@ const SystemDeploymentPage: React.FC = () => {
     } catch (error) {
       message.error(t('system.systemDeployment.fetchSystemInfoFailed'));
     }
-  };
+  }, [t]);
 
-  const fetchDeploymentRecords = () => {
+  const fetchDeploymentRecords = useCallback(() => {
     // 后端尚未提供部署历史端点（/system/deploy-history 等），此处不再伪造记录——
     // 假数据会被当成真实历史，误导值班判断。待后端端点就绪后再接入。
     setDeploymentRecords([]);
-  };
+  }, []);
 
   useEffect(() => {
-    fetchSystemInfo();
+    void fetchSystemInfo();
     fetchDeploymentRecords();
-  }, []);
+  }, [fetchSystemInfo, fetchDeploymentRecords]);
 
   const handleDeploy = async () => {
     try {

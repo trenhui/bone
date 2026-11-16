@@ -2,6 +2,9 @@
   "name": "@bone/ui",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+  },
   "description": "BONE design system and themed Ant Design provider",
   "type": "module",
   "main": "./design-system/src/index.ts",

@@ -56,7 +56,7 @@ const FieldManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [message]);
 
   useEffect(() => {
     if (selectedEntityId) {
@@ -442,8 +442,8 @@ const FieldManagement: React.FC = () => {
                 ? currentField.minValue == null && currentField.maxValue == null
                   ? '未限制'
                   : `[${currentField.minValue == null ? '-∞' : currentField.minValue}, ${
-                      currentField.maxValue == null ? '+∞' : currentField.maxValue
-                    }]`
+                    currentField.maxValue == null ? '+∞' : currentField.maxValue
+                  }]`
                 : '不适用'}
             </Descriptions.Item>
             <Descriptions.Item label="所属模型">

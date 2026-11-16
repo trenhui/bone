@@ -16,7 +16,7 @@ import type { ReactNode } from 'react';
  * （实测其 {@code Form} 键为空对象）⇒ 只设 {@code locale} 改不掉它。
  * 只有 {@code ConfigProvider form.validateMessages} 才是覆盖这张表的正确入口。
  */
-export function AppAntdProvider({ children }: { children: ReactNode }) {
+export function AppAntdProvider({ children }: { children: ReactNode }): JSX.Element {
   return (
     <ConfigProvider
       locale={zhCN}

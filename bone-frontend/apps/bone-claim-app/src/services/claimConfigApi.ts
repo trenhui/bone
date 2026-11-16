@@ -201,12 +201,47 @@ export interface PolicyPlanNode {
   liabilities: PolicyLiabilityNode[];
 }
 
+/**
+ * 适用被保人名单行：假名化 ID + 该人名下额度账户汇总。
+ *
+ * <p>名单以保单 {@code insured_snapshot} 为唯一真源（额度账户只覆盖已开户的人），
+ * 响应里绝不出现明文证件；额度为三值口径（initial / claimed / frozen / available）。
+ */
+export interface PolicyInsuredRosterRow {
+  insuredIdHash: string;
+  accountCount: number;
+  quotaInitial: number;
+  quotaClaimed: number;
+  quotaFrozen: number;
+  available: number;
+}
+
+/** 额度池账户明细：available = initial − claimed − frozen。 */
+export interface PolicyQuotaAccountRow {
+  insuredIdHash: string;
+  /** 计划 ID（雪花 ID，序列化为 string，禁 number 化 / toLocaleString）。 */
+  planId: string;
+  quotaYear: number;
+  quotaType: string;
+  liabilityUuid: string;
+  quotaInitial: number;
+  quotaClaimed: number;
+  quotaFrozen: number;
+  available: number;
+  /** 0 正常 / 1 减人（减人不参与额度累计）。 */
+  insuredState: number;
+}
+
 /** 保单聚合详情响应体。 */
 export interface PolicyDetail {
   summary: Omit<PolicyView, 'insuredSnapshot' | 'stale' | 'createdAt' | 'docClaimApply' | 'docClaimNotice'>;
   /** 主体映射健康度（bizIdentityCode 为空时为空数组——存量保单尚未对齐主体）。 */
   insurerHealth: MappingHealthRow[];
   plans: PolicyPlanNode[];
+  /** 适用被保人名单（假名化），对齐 policy-detail-view/spec.md。 */
+  insuredRoster: PolicyInsuredRosterRow[];
+  /** 额度池账户明细，对齐 policy-detail-view/spec.md。 */
+  quotaAccounts: PolicyQuotaAccountRow[];
 }
 
 export interface PlanView {
@@ -596,6 +631,12 @@ export interface CreateLiabilityReq {
   limitDiagnosisCodes?: string;
   catalogPolicy?: string;
   catalogCode?: string;
+  /**
+   * 目录准入 MANDATORY 的二次确认位。后端 Liabilities 写接口在「合并后的生效策略」为
+   * MANDATORY 时要求显式 true：目录未接入会让整批费用明细落 CATALOG_UNRESOLVED 转人工补件。
+   * 编辑一条本就是 MANDATORY 的责任时同样要带（哪怕本次没改策略），否则等于绕过确认。
+   */
+  confirmCatalogMandatory?: boolean;
   socialOnly?: number;
   waitingPeriod?: number;
   status?: ConfigStatus;
@@ -619,6 +660,8 @@ export interface UpdateLiabilityReq {
   limitDiagnosisCodes?: string;
   catalogPolicy?: string;
   catalogCode?: string;
+  /** 目录准入 MANDATORY 二次确认；后端按合并后的生效策略校验，编辑时同样需要。 */
+  confirmCatalogMandatory?: boolean;
   socialOnly?: number;
   waitingPeriod?: number;
   /**

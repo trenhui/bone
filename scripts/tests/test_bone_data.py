@@ -32,7 +32,7 @@ class DataCatalogTest(unittest.TestCase):
         self.assertIn("wordlist", d["assets"])
         names = {s["name"] for s in d["scenarios"]}
         self.assertEqual(names, {"sales-claim", "procurement", "tenant-iam", "master-data",
-                                 "claim-ai-feedback"})
+                                 "claim-ai-feedback", "claim-task-assignment"})
         self.assertIn("amount", d["fixtures"])
         self.assertTrue(all(v["all_ok"] and v["checks"] for v in d["invariants"].values()),
                         "每个企业场景都必须带非空且成立的不变量")

@@ -6,7 +6,15 @@ import { publishThemeChange, readStoredTheme, resolveThemeMode } from './resolve
 
 const THEME_CYCLE: Theme[] = ['system', 'light', 'dark'];
 
-export function useBoneThemeController(initial?: Theme) {
+export interface BoneThemeController {
+  preference: Theme;
+  resolved: 'light' | 'dark';
+  cycleTheme: (current: Theme) => Theme;
+  applyTheme: (theme: Theme) => void;
+  publishThemeChange: (theme: Theme) => void;
+}
+
+export function useBoneThemeController(initial?: Theme): BoneThemeController {
   const preference = initial ?? readStoredTheme();
 
   const cycleTheme = useCallback((current: Theme): Theme => {

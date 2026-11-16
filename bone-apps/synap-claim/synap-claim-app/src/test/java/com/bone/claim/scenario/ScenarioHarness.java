@@ -647,6 +647,55 @@ public class ScenarioHarness {
       return rows;
     }
 
+    /**
+     * 跨键检索的内存夹具：与 {@code searchByKeyword.sql} 同口径的最小实现。
+     *
+     * <p>SQL 的 {@code LIKE :pattern}（{@code %xxx%}）在内存里退化为 contains；{@code matchedKey}
+     * 仍只回受控分类码，绝不回被匹配到的 PII 值。此夹具此前漏实现该接口，因增量编译长期未暴露，全量 {@code mvn test} 会在 test-compile 阶段直接失败。
+     */
+    @Override
+    public List<com.bone.claim.domain.model.claim.projection.ClaimSearchHit> searchByKeyword(
+        String pattern, int limit) {
+      String needle = pattern == null ? "" : pattern.replace("%", "").replace("!", "");
+      if (needle.isEmpty() || limit <= 0) {
+        return List.of();
+      }
+      List<com.bone.claim.domain.model.claim.projection.ClaimSearchHit> rows = new ArrayList<>();
+      for (ClaimCase c : store.values()) {
+        String matchedKey = searchMatchedKey(c, needle);
+        if (matchedKey == null) {
+          continue;
+        }
+        rows.add(
+            new com.bone.claim.domain.model.claim.projection.ClaimSearchHit(
+                c.getId(),
+                c.getClaimNo(),
+                c.getPolicyNo(),
+                c.status().name(),
+                c.status().name(),
+                matchedKey,
+                c.getCreatedAt()));
+        if (rows.size() >= limit) {
+          break;
+        }
+      }
+      return rows;
+    }
+
+    /** CASE 顺序与 SQL 一致； insure/person hash 命中归为 OTHER（不回 PII 原值）。 */
+    private static String searchMatchedKey(ClaimCase c, String needle) {
+      if (searchLike(c.getClaimNo(), needle)) return "CLAIM_NO";
+      if (searchLike(c.getPolicyNo(), needle)) return "POLICY_NO";
+      if (searchLike(c.getInvoiceNo(), needle)) return "INVOICE_NO";
+      if (searchLike(c.getInvoiceCode(), needle)) return "INVOICE_CODE";
+      if (searchLike(c.getInsuredIdHash(), needle)) return "OTHER";
+      return null;
+    }
+
+    private static boolean searchLike(String value, String needle) {
+      return value != null && value.toLowerCase().contains(needle.toLowerCase());
+    }
+
     @Override
     public List<ClaimTenantRef> findStaleEvidenceClaimsAllTenants(java.sql.Timestamp before) {
       return List.of();

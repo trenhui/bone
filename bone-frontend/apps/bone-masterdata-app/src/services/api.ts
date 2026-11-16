@@ -30,7 +30,18 @@ import type {
   CreateDataStandardReq,
   UpdateDataStandardReq,
   LineageRecord,
-  RecordLineageReq
+  RecordLineageReq,
+  DomainTemplate,
+  TemplateVersion,
+  MasterDataCategory,
+  StewardAssignment,
+  EntitySubscription,
+  QualityIssue,
+  ReferenceSet,
+  ReferenceValue,
+  ModelDrift,
+  DataFeedback,
+  RecordVersion
 } from '../types/governance';
 
 export { setQiankunToken };
@@ -272,9 +283,9 @@ export const qualityResultApi = {
 
 // 域模板（G9 / UC-P1 P2 T1）
 export const domainTemplateApi = {
-  page: (params?: { page?: number; size?: number; status?: string }): Promise<ApiResponse<any>> =>
+  page: (params?: { page?: number; size?: number; status?: string }): Promise<ApiResponse<PageResult<DomainTemplate>>> =>
     apiClient.get(`${MD}/templates`, { params }),
-  detail: (id: string): Promise<ApiResponse<any>> => apiClient.get(`${MD}/templates/${id}`),
+  detail: (id: string): Promise<ApiResponse<DomainTemplate>> => apiClient.get(`${MD}/templates/${id}`),
   create: (data: Record<string, unknown>): Promise<ApiResponse<number>> => apiClient.post(`${MD}/templates`, data),
   update: (id: string, data: Record<string, unknown>): Promise<ApiResponse<void>> =>
     apiClient.put(`${MD}/templates/${id}`, data),
@@ -290,12 +301,12 @@ export const domainTemplateApi = {
     owningAppId?: string;
     withFields?: boolean;
   }): Promise<ApiResponse<number>> => apiClient.post(`${MD}/templates/instantiate`, data),
-  versions: (id: string): Promise<ApiResponse<any[]>> => apiClient.get(`${MD}/templates/${id}/versions`),
+  versions: (id: string): Promise<ApiResponse<TemplateVersion[]>> => apiClient.get(`${MD}/templates/${id}/versions`),
 };
 
 // 分类体系（G4 / UC-T3）
 export const categoryApi = {
-  tree: (masterDataEntityId: string): Promise<ApiResponse<any[]>> =>
+  tree: (masterDataEntityId: string): Promise<ApiResponse<MasterDataCategory[]>> =>
     apiClient.get(`${MD}/categories`, { params: { masterDataEntityId } }),
   create: (data: Record<string, unknown>): Promise<ApiResponse<string>> =>
     apiClient.post(`${MD}/categories`, data),
@@ -315,7 +326,7 @@ export const categoryApi = {
 // accountId 后端为 Long（AssignGovernanceRoleCommand），全平台 Long→JSON string；
 // 前端按门禁须声明为 string（雪花 ID 超 JS Number 上限，以 number 返回会被静默截断）。
 export const governanceRoleApi = {
-  byEntity: (masterDataEntityId: string): Promise<ApiResponse<any[]>> =>
+  byEntity: (masterDataEntityId: string): Promise<ApiResponse<StewardAssignment[]>> =>
     apiClient.get(`${MD}/governance-roles`, { params: { masterDataEntityId } }),
   assign: (data: { masterDataEntityId: string; accountId: string; roleType: string }): Promise<ApiResponse<number>> =>
     apiClient.post(`${MD}/governance-roles`, data),
@@ -324,7 +335,7 @@ export const governanceRoleApi = {
 
 // 消费订阅（G10 / UC-C1 C3）
 export const subscriptionApi = {
-  byEntity: (masterDataEntityId: string): Promise<ApiResponse<any[]>> =>
+  byEntity: (masterDataEntityId: string): Promise<ApiResponse<EntitySubscription[]>> =>
     apiClient.get(`${MD}/subscriptions`, { params: { masterDataEntityId } }),
   request: (data: { masterDataEntityId: string; appId: string; subscribeMode?: string }): Promise<ApiResponse<number>> =>
     apiClient.post(`${MD}/subscriptions`, data),
@@ -334,7 +345,7 @@ export const subscriptionApi = {
 
 // 质量整改工单（G11 / UC-T9）
 export const qualityIssueApi = {
-  byEntity: (masterDataEntityId: string, status?: string): Promise<ApiResponse<any[]>> =>
+  byEntity: (masterDataEntityId: string, status?: string): Promise<ApiResponse<QualityIssue[]>> =>
     apiClient.get(`${MD}/quality-issues`, { params: { masterDataEntityId, status } }),
   openCount: (masterDataEntityId: string): Promise<ApiResponse<number>> =>
     apiClient.get(`${MD}/quality-issues/open-count`, { params: { masterDataEntityId } }),
@@ -347,11 +358,11 @@ export const qualityIssueApi = {
 
 // 参考数据（G15 / §2.3）
 export const referenceApi = {
-  sets: (): Promise<ApiResponse<any[]>> => apiClient.get(`${MD}/reference-sets`),
+  sets: (): Promise<ApiResponse<ReferenceSet[]>> => apiClient.get(`${MD}/reference-sets`),
   createSet: (data: Record<string, unknown>): Promise<ApiResponse<number>> =>
     apiClient.post(`${MD}/reference-sets`, data),
   archiveSet: (id: string): Promise<ApiResponse<void>> => apiClient.post(`${MD}/reference-sets/${id}/archive`),
-  values: (setId: string): Promise<ApiResponse<any[]>> => apiClient.get(`${MD}/reference-sets/${setId}/values`),
+  values: (setId: string): Promise<ApiResponse<ReferenceValue[]>> => apiClient.get(`${MD}/reference-sets/${setId}/values`),
   createValue: (setId: string, data: Record<string, unknown>): Promise<ApiResponse<number>> =>
     apiClient.post(`${MD}/reference-sets/${setId}/values`, data),
   disableValue: (valueId: string): Promise<ApiResponse<void>> =>
@@ -360,9 +371,9 @@ export const referenceApi = {
 
 // 模型漂移（G16 / UC-T10）
 export const driftApi = {
-  byEntity: (masterDataEntityId: string): Promise<ApiResponse<any[]>> =>
+  byEntity: (masterDataEntityId: string): Promise<ApiResponse<ModelDrift[]>> =>
     apiClient.get(`${MD}/model-drifts`, { params: { masterDataEntityId } }),
-  reconcile: (masterDataEntityId: string): Promise<ApiResponse<any[]>> =>
+  reconcile: (masterDataEntityId: string): Promise<ApiResponse<ModelDrift[]>> =>
     apiClient.post(`${MD}/model-drifts/reconcile`, null, { params: { masterDataEntityId } }),
   handle: (id: string, status: string): Promise<ApiResponse<void>> =>
     apiClient.post(`${MD}/model-drifts/${id}/handle`, { status }),
@@ -370,7 +381,7 @@ export const driftApi = {
 
 // 下游反馈（G17 / UC-C4）
 export const feedbackApi = {
-  byEntity: (masterDataEntityId: string, status?: string): Promise<ApiResponse<any[]>> =>
+  byEntity: (masterDataEntityId: string, status?: string): Promise<ApiResponse<DataFeedback[]>> =>
     apiClient.get(`${MD}/feedbacks`, { params: { masterDataEntityId, status } }),
   submit: (data: Record<string, unknown>): Promise<ApiResponse<number>> => apiClient.post(`${MD}/feedbacks`, data),
   accept: (id: string): Promise<ApiResponse<void>> => apiClient.post(`${MD}/feedbacks/${id}/accept`),
@@ -387,7 +398,7 @@ export const approvalApi = {
     apiClient.post(`${MD}/records/${id}/approve`, { comment }),
   reject: (id: string, comment?: string): Promise<ApiResponse<void>> =>
     apiClient.post(`${MD}/records/${id}/reject`, { comment }),
-  versions: (id: string): Promise<ApiResponse<any[]>> => apiClient.get(`${MD}/records/${id}/versions`),
+  versions: (id: string): Promise<ApiResponse<RecordVersion[]>> => apiClient.get(`${MD}/records/${id}/versions`),
   changeGovernanceTier: (id: string, tier: string): Promise<ApiResponse<void>> =>
     apiClient.post(`${MD}/entities/${id}/governance-tier`, { tier }),
   bindOwningApp: (id: string, owningAppId: string | null): Promise<ApiResponse<void>> =>

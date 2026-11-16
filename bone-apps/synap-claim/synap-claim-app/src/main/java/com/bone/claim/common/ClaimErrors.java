@@ -79,7 +79,26 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.SC_CLAIM_BLIND_LABEL_PAYLOAD_FORBIDDEN, 422),
           Map.entry(ClaimErrorCodes.SC_CLAIM_BLIND_LABEL_ANNOTATOR_CONFLICT, 409),
           // 400：流程配置的跳过节点越白名单 / JSON 序列化失败，属调用方输入错，不得翻成 500 污染 SLI
-          Map.entry(ClaimErrorCodes.CLAIM_FLOW_CONFIG_INVALID, 400));
+          Map.entry(ClaimErrorCodes.CLAIM_FLOW_CONFIG_INVALID, 400),
+          // 400：AI 回流事件的非法值全属调用方输入错；500 会把「有人绕过闸门」误报成服务故障
+          Map.entry(ClaimErrorCodes.CLAIM_AI_FEEDBACK_INVALID, 400),
+          // 409：同一 eventId 携带不同载荷，幂等重放不成立
+          Map.entry(ClaimErrorCodes.CLAIM_AI_FEEDBACK_CONFLICT, 409),
+          // 400：检索护栏越界是调用方参数错，静默裁剪会让用户以为「已经搜完全库」
+          Map.entry(ClaimErrorCodes.CLAIM_SEARCH_KEYWORD_INVALID, 400),
+          // 404：任务不存在（或跨租户按不存在处理，不泄露存在性）
+          Map.entry(ClaimErrorCodes.SC_CLAIM_TASK_NOT_FOUND, 404),
+          // 409：并发自领互斥——乐观锁或唯一键冲突，恰 1 成功、另 1 冲突。不是参数错，重试无用（要刷新列表）
+          Map.entry(ClaimErrorCodes.SC_CLAIM_TASK_CONFLICT, 409),
+          // 400：配置放宽被拒——棘轮只允许相等或更严格，相对当前生效值判定
+          Map.entry(ClaimErrorCodes.SC_CLAIM_CONFIG_RATCHET_VIOLATION, 400),
+          // 403：写 API 开关关闭（含未配置 fail-closed），配置写请求一律拒绝
+          Map.entry(ClaimErrorCodes.SC_CLAIM_CONFIG_WRITE_DISABLED, 403),
+          // 400：配置请求非法（未知键/类型错误/越界），写入期拒绝而非静默忽略
+          Map.entry(ClaimErrorCodes.SC_CLAIM_CONFIG_INVALID, 400),
+          // 独立复审：404 复审任务不存在/跨租户；409 同人不可自审（职责分离失效，须单列告警）
+          Map.entry(ClaimErrorCodes.SC_CLAIM_REREVIEW_NOT_FOUND, 404),
+          Map.entry(ClaimErrorCodes.SC_CLAIM_REREVIEWER_CONFLICT, 409));
 
   static {
     checkEveryCodeRegistered();

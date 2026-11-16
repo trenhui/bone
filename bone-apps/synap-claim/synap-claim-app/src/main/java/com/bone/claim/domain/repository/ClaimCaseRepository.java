@@ -2,6 +2,7 @@ package com.bone.claim.domain.repository;
 
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.projection.ClaimHeadProjection;
+import com.bone.claim.domain.model.claim.projection.ClaimSearchHit;
 import com.bone.claim.domain.model.claim.projection.ClaimSettlementRef;
 import com.bone.claim.domain.model.claim.projection.ClaimTenantRef;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
@@ -122,6 +123,34 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
   }
 
   /** 待办分页（工作台）：按状态集 + 可选挂起/渠道过滤，priority 排序由读侧投影组装。 */
+  /**
+   * 独立复审队列过滤条件（批 3，任务 3.1）：tenantId + 状态 43 + 复审持权人，列表与计数共用唯一口径。
+   *
+   * <p><b>为什么按 secondReviewerId 而不是新建任务表</b>：独立复审的持权人就是登记在案件上的独立复审人 （{@code
+   * submitForIndependentReReview} 写入 {@code secondReviewerId}）。复用案件字段即可表达「按持权人 + 归属过滤」，
+   * 不新建第二套任务表（design D2）。跨租户不可见由显式 {@code eq(tenantId)} + {@code @TenantScope(AUTO)} 双重保证； 只出 43
+   * 状态案件由 {@code eq(status, RE_REVIEW_PENDING.name())} 保证——44 双人复核案件不会混进独立复审队列。
+   */
+  private static Criteria<ClaimCase> reReviewQueueCriteria(Long tenantId, String reviewerId) {
+    return Criteria.<ClaimCase>create()
+        .eq(ClaimCase::getTenantId, tenantId)
+        .eq(ClaimCase::getStatus, ClaimStatus.RE_REVIEW_PENDING.name())
+        .eq(ClaimCase::getSecondReviewerId, reviewerId);
+  }
+
+  /** 独立复审队列（分页，持权人视角，只出 43 状态案件）。 */
+  default List<ClaimCase> findReReviewQueue(Long tenantId, String reviewerId, int page, int size) {
+    Criteria<ClaimCase> criteria = reReviewQueueCriteria(tenantId, reviewerId);
+    criteria.orderByAsc(ClaimCase::getCreatedAt).orderByAsc(ClaimCase::getId);
+    criteria.page(page, size);
+    return findByCriteria(criteria);
+  }
+
+  /** 独立复审队列总数（与 {@link #findReReviewQueue} 同源）。 */
+  default long countReReviewQueue(Long tenantId, String reviewerId) {
+    return countByCriteria(reReviewQueueCriteria(tenantId, reviewerId));
+  }
+
   default PageResult<ClaimHeadProjection> findClaimPage(
       Long tenantId, List<ClaimStatus> statuses, String sourceChannel, int page, int size) {
     // DB 存枚举 name，查询值须转 name（SDK String 持久化口径）
@@ -177,4 +206,14 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
                 ClaimStatus.FINISHED.name(),
                 ClaimStatus.CLOSED_REJECTED.name()));
   }
+
+  /**
+   * 工作台跨键检索：报案号 / 保单号 / 发票代码 / 发票号 / 批次号，以及干系人遮蔽姓名 / 手机 / 假名化 ID。
+   *
+   * <p>联表查询必须同时满足三条：方法级 {@code @TenantScope(AUTO, column = "c.tenant_id")}、 模板内 {@code
+   * /*bone:tenant*}{@code /} 锚点、显式 {@code c.deleted = 0}。 少任一条都会让 SDK 启动期拒绝注册或运行期 fail-closed
+   * 抛错——这是「不静默跨租户」的结构保证。 结果只回最小字段，匹配到的 PII 值不出库；pattern 已在应用层做 LIKE 通配符转义。
+   */
+  @TenantScope(value = TenantScopeMode.AUTO, column = "c.tenant_id")
+  List<ClaimSearchHit> searchByKeyword(@Param("pattern") String pattern, @Param("limit") int limit);
 }

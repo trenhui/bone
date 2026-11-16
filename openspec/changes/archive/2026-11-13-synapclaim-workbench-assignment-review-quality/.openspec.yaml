@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-13
+# 纯设计 + 文档交付：不改变运行时行为，行为规格由后续实现批次回写。
+skip_specs: true

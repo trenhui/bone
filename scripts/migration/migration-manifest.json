@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 123,
+  "executableCount": 125,
   "retired": [],
   "entries": [
     {
@@ -789,6 +789,18 @@
       "file": "0123_synap_claim_liability_expand.sql",
       "kind": "ddl",
       "summary": "M2 ① Expand：给 t_adj_liability 增加 1 个聚合列 liability_rule_json（JSON NULL），把责任要素从 4 维标量升级为 9 个键的可扩展表达（D5 已拍板单聚合列：九列方案在 G3 自设判据下自我否证——新增一类要素仍要 ADD COLUMN；且本仓实测零 JSON codec，「九列改动面更小」不成立）。本阶段只加列：不改旧列类型、不建 _rule 影子列、不做存量回填、不同时做 contract，故旧代码对新列完全无感 ⇒ 线上读写零行为变更，回滚只需 DROP 该列且无数据损失。列 nullable 无默认值：历史行恒为 NULL ⇒ 读侧按键回落旧标量列成为结构保证（A 类必需参数 fail-closed / B 类可选维度缺键不施加约束 / 未知键与未知版本拒，唯一真源见方案 §9.1.1 键分类表）；不给新键编造 0 默认值（「缺键=不施加约束」与「给 0」语义相反，等于凭空新增拒赔条件）。读侧切主在 ③ Dual-read、超集解锁在 ④，均不在本脚本。bone-init.sql 同批补列（防「新装 vs 升级」结构分叉）。终态断言 fail-closed：information_schema 强断言新列为 nullable json，且三个可映射旧标量列（pay_percent/liability_deduct/liability_limit）仍在——防后人把「加列」误写成「改列」，旧列一被动回滚窗口即消失；0118/0121 同款临时过程，不残留过程体。"
+    },
+    {
+      "order": 124,
+      "file": "0124_synap_claim_ai_feedback_event.sql",
+      "kind": "ddl",
+      "summary": "新增 t_claim_ai_feedback_event（AI 建议曝光→人工裁决的服务端 append-only 回流）：v2.0 设计里前端只发本地事件并明写「未落库」，本迁移把 L1 回流闭环补齐——曝光是采纳率的分母、裁决带 traceId + AI 参与四态 + ReasonType 四值，只有 AI_ASSISTED 且非 blind_label 场景可裁决；event_id 客户端 UUID 作租户内唯一幂等键，重放返回首次结果、同键不同载荷 409；表内不存姓名/证件/金额/决策结论值，端点不改案件状态、不写资金。选理赔域自建而非复用 bone-ai hitl_item：网关只转发 /api/v1/claims/**，/api/ai/v1/** 不通，且通用 HITL 没有曝光事实。bone-init.sql 托管区块同批并入（G39 覆盖纪律），MERGED_SOURCES 同批登记；终态断言 fail-closed：information_schema 强断言 12 个关键列 + uk_tenant_event 唯一键两列，临时过程用完即删，不残留过程体。"
+    },
+    {
+      "order": 125,
+      "file": "0125_synap_claim_task.sql",
+      "kind": "ddl",
+      "summary": "新建 t_claim_task（一案多任务的归属事实）与 t_claim_assign_rule（可审计分配规则），把「案件归属」从 t_claim_case.first_reviewer_id 一类单列升级为独立可领取、可审计、可回退的行级事实。为什么必须新表：① 一案多任务（初审/补件/复审/抽检各自独立状态与独立领取对象），单列只能表达一个负责人，加列即覆盖；② 行级并发领取需要独立主键与乐观锁，加列无法区分「谁领到了哪个任务」；③ 归属是事实（D4 写入期分配、查询期只读），事实需要独立行的 assign_rule_id/claimed_at，加列只能留最后一次。为什么用生成列：判据「同案同类型至多一条生效任务」在 MySQL 无 partial unique index，标准解法是 active_key = IF(生效, CONCAT(claim_id,':',task_type), NULL) + UNIQUE(tenant_id, active_key)；唯一索引不把 NULL 视为重复 ⇒ 终态行可任意多条、只有生效行占名额；同时把 deleted 纳入条件，避免软删行挡住新版任务。应用层先查后写在并发下有双写窗口，「并发双领取恰 1 成功」无法由数据库强保证。生成列不进实体（SDK 的 SELECT/INSERT 列清单由实体元数据生成，写进实体反而报未知列）。三条业务索引分别覆盖：我的待办（tenant_id, assignee_id, status, priority, created_at）、部门池（tenant_id, assign_dept_id, status, created_at）、同案任务（tenant_id, claim_id, task_type）。规则表固定求解顺序 priority 升序 + id 升序：同优先级按主键定序，保证同一输入永远同一结果——否则同一任务在不同时刻归属不同，批 2 的 AI 归因与批 4 的超时回池都会读到漂移结果。bone-init.sql 同批补两张建表块（G39 覆盖纪律，防「新装 vs 升级」结构分叉）。终态断言 fail-closed：information_schema 强断言两张表关键列、三条索引、生效唯一键与生成列均真实存在（漏唯一键 = 并发互斥退化成应用层约定，漏索引 = 待办列表退化为全表扫描），临时过程用完即删不残留过程体。"
     }
   ],
   "ordinalConflicts": [

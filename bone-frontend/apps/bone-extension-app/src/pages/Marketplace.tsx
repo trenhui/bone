@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Button,
@@ -44,17 +44,21 @@ const Marketplace: React.FC = () => {
     new Set(items.map((i) => i.category).filter((c): c is string => !!c)),
   );
 
-  const load = async () => {
+  // 显式传参而不是隐式读 keyword/category：查询条件变化由「搜索」「刷新」按钮触发，
+  // 挂载时的首屏加载不跟随输入抖动
+  const loadItems = useCallback(async (kw: string, cat?: string) => {
     setLoading(true);
     try {
-      const result = await listMarketplaceItems({ keyword: keyword || undefined, category });
+      const result = await listMarketplaceItems({ keyword: kw || undefined, category: cat });
       setItems(result);
     } catch (e) {
       message.error(formatStudioError(e, '加载市场失败'));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const load = () => void loadItems(keyword, category);
 
   useEffect(() => {
     listExtPoints()
@@ -67,8 +71,8 @@ const Marketplace: React.FC = () => {
         );
       })
       .catch(() => undefined);
-    load();
-  }, []);
+    void loadItems('', undefined);
+  }, [loadItems]);
 
   const handleInstallConfirm = async () => {
     if (!installTarget) return;

@@ -190,6 +190,16 @@ public class CodeMapping extends TenantAggregateRoot<Long> {
     this.updatedAt = now;
   }
 
+  /**
+   * 发布/导入时记录判定理由码（与 {@link #close} 的停用理由区分：本方法不改变状态）。
+   *
+   * <p>导入批次固定写 {@code IMPORT}，否则事后从 {@code reason_code} 分不清「人工逐条发布」与「Excel 批次」，审计回放只能靠 version_no
+   * 猜。
+   */
+  public void markReason(String reasonCode) {
+    this.reasonCode = reasonCode == null ? "" : reasonCode.trim();
+  }
+
   public void markReviewed(Long reviewerId, Instant now) {
     this.reviewedBy = reviewerId;
     this.reviewedAt = now;

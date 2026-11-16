@@ -18,10 +18,17 @@ type AppComponent<P> = React.ComponentType<P>;
 /**
  * 统一微应用 bootstrap / mount / unmount，注入 Bone 主题与 Ant Design ConfigProvider。
  */
+export interface BoneMicroAppRenderer {
+  render: (props: BoneMicroAppProps) => void;
+  bootstrap: () => Promise<void>;
+  mount: (props: BoneMicroAppProps) => Promise<void>;
+  unmount: () => Promise<void>;
+}
+
 export function createBoneMicroAppRenderer<P extends { user?: Record<string, unknown> }>(
   App: AppComponent<P>,
   appName: string,
-) {
+): BoneMicroAppRenderer {
   let root: Root | null = null;
 
   function render(props: BoneMicroAppProps) {

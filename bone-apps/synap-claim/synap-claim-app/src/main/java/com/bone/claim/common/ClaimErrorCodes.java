@@ -281,4 +281,63 @@ public final class ClaimErrorCodes {
   /** 标注人与本案后督抽检质检人相同（盲标已被既有印象污染，不可作为独立判定）。 */
   public static final String SC_CLAIM_BLIND_LABEL_ANNOTATOR_CONFLICT =
       "SC_CLAIM_BLIND_LABEL_ANNOTATOR_CONFLICT";
+
+  // ===== 工作台 AI 回流 / 跨键检索 =====
+
+  /** AI 回流事件非法：未知字段 / 非 AI_ASSISTED 裁决 / 原因码缺失或越界 / 盲标禁区 / 字段白名单命中。 */
+  public static final String CLAIM_AI_FEEDBACK_INVALID = "SC_CLAIM_AI_FEEDBACK_INVALID";
+
+  /** eventId 重放但载荷不同：不得静默覆盖，也不得让同一事件产生第二条曝光或裁决。 */
+  public static final String CLAIM_AI_FEEDBACK_CONFLICT = "SC_CLAIM_AI_FEEDBACK_CONFLICT";
+
+  /** 跨键检索参数非法：关键词长度 / 危险字符 / limit 越界；显式拒绝，不静默裁剪。 */
+  public static final String CLAIM_SEARCH_KEYWORD_INVALID = "SC_CLAIM_SEARCH_KEYWORD_INVALID";
+
+  // ===== 任务分配工作台（批 1） =====
+
+  /** 任务不存在（含已逻辑删除 / 跨租户按不存在处理，不泄露存在性）。 */
+  public static final String SC_CLAIM_TASK_NOT_FOUND = "SC_CLAIM_TASK_NOT_FOUND";
+
+  /**
+   * 任务并发冲突：同一任务被两人同时领取（乐观锁失败）或同案同类型已存在生效任务（唯一键冲突）。
+   *
+   * <p><b>为什么必须单独一个码而不是复用 409 通用冲突</b>：这两种失败在监控里含义完全不同——
+   * 前者是"抢单撞车"（正常业务现象，计数即可），后者是"任务重复创建"（代码路径问题，需要告警）。 前端也要区分提示：「已被他人领取，请刷新」与「该案件已有在办任务」是两种不同的用户动作。
+   */
+  public static final String SC_CLAIM_TASK_CONFLICT = "SC_CLAIM_TASK_CONFLICT";
+
+  // ===== AI 配置治理（批 2） =====
+
+  /**
+   * 配置放宽被拒：请求值比当前生效值更宽松。棘轮只允许相等或更严格，写入期拒绝且不改库。
+   *
+   * <p>注意与基线校验的区别：请求 9000 虽低于代码基线 10000，但若当前已收紧到 8000，仍是放宽，必须拒绝。
+   */
+  public static final String SC_CLAIM_CONFIG_RATCHET_VIOLATION =
+      "SC_CLAIM_CONFIG_RATCHET_VIOLATION";
+
+  /** 写 API 关闭或未配置：配置写请求一律拒绝，治理页回落只读（fail-closed，默认不可写）。 */
+  public static final String SC_CLAIM_CONFIG_WRITE_DISABLED = "SC_CLAIM_CONFIG_WRITE_DISABLED";
+
+  /** 配置请求非法：未知键 / 类型错误 / 越界值，写入期拒绝而不是静默忽略（配了不生效）。 */
+  public static final String SC_CLAIM_CONFIG_INVALID = "SC_CLAIM_CONFIG_INVALID";
+
+  // ===== 独立复审（批 3） =====
+
+  /**
+   * 独立复审任务不存在（或跨租户按不存在处理，不泄露存在性）。
+   *
+   * <p>404 而非 409：复审队列按持权人 + 批 1 任务归属 + 租户隔离过滤，取不到即为「对本操作人不存在」， 与 {@link #SC_CLAIM_TASK_NOT_FOUND}
+   * 同一防枚举口径。
+   */
+  public static final String SC_CLAIM_REREVIEW_NOT_FOUND = "SC_CLAIM_REREVIEW_NOT_FOUND";
+
+  /**
+   * 独立复审人冲突：复审人与初审人为同一人（含空白/大小写绕过），或与登记的独立复审人不一致。
+   *
+   * <p><b>为什么必须单独给码而不是复用 {@link #CLAIM_REVIEWER_CONFLICT}</b>：双人复核冲突与独立复审冲突是两种不同的职责分离
+   * 违规——监控里前者是「复核人=初审人」，后者是「独立复审人=初审人」，混码会让「独立复审这道防线被绕过」消失在普通复核冲突里，
+   * 恰好掩盖职责分离失效这一内控风险。409：请求合法、状态正确，是「该操作人不满足职责分离」这一前提不成立。
+   */
+  public static final String SC_CLAIM_REREVIEWER_CONFLICT = "SC_CLAIM_REREVIEWER_CONFLICT";
 }

@@ -1,0 +1,7 @@
+# scripts/ 下 Python 判据的第三方依赖。
+# 此前 6 个 check-*.py 已在 import 这些包，但全仓没有任何依赖声明，
+# 换机器/CI 上会因缺包而崩溃或「自动跳过」造成假绿。
+# 安装：python3 -m pip install -r scripts/requirements-dev.txt
+# 共享层 lib/gate.py、统一入口 bone.py 本身只用标准库，不需要本文件。
+PyYAML>=6.0,<7
+PyMySQL>=1.1,<3

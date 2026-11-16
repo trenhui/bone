@@ -204,7 +204,7 @@ const PluginManagement: React.FC = () => {
     } else {
       uploadForm.setFieldsValue({ version: '1.0.0' });
     }
-  }, [uploadOpen, uploadPlugin, uploadForm]);
+  }, [uploadOpen, uploadTarget, uploadForm]);
 
   const openVersions = async (plugin: ExtensionRow) => {
     setSelectedPlugin(plugin);

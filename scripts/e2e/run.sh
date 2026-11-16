@@ -17,6 +17,7 @@
 #   ./run.sh py-core              # 全链路三样板（two-scenario / app-to-data / ui-schema-samples）
 #   ./run.sh py-sweep             # 扫描类（api-sweep / real-id-sweep / write-sweep / write_coverage）
 #   ./run.sh py-chain             # 链路类（chains / multichannel / channel-buyer / integration-flow）
+#   ./run.sh py-domain            # 域能力验收（预留列机制B / system-app / 主数据租户隔离；不进 all）
 #   ./run.sh py                   # 全部 Python（core + sweep + chain，共 11 个）
 #   ./run.sh node                 # ui/probe-*.mjs 核心 UI 探针
 #   ./run.sh node-api             # Node API 全链（claim-full-chain-e2e.mjs，仅需网关）
@@ -38,10 +39,15 @@ NODE_BIN="$(command -v node || ls /Users/renhui.trh/.workbuddy/binaries/node/ver
 
 # 业务层分组：只在这里声明一次，list / 执行 / 文档共用同一份真相
 PY_CORE=(two-scenario-full-chain-e2e.py app-to-data-full-chain-e2e.py ui-schema-samples-e2e.py)
-PY_SWEEP=(api-sweep.py real-id-sweep.py write-sweep.py write_coverage.py)
+PY_SWEEP=(api-sweep.py real-id-sweep.py write-sweep.py write_coverage.py synap-claim-ai-config-governance-e2e.py)
 PY_CHAIN=(chains.py multichannel.py channel-buyer-broadcast.py integration-flow-exec-chain.py)
-# Node API 全链（走网关、无需前端）；与 UI 探针分组分开，API 环境也能独立跑
-NODE_API=(claim-full-chain-e2e.mjs)
+# Node API 全链（走网关、无需前端）；与 UI 探针分组分开，API 环境也能独立跑。
+# 顺序即依赖：workbench-feedback 复用 full-chain 落地的案件数据（CLAIM_ID），必须排在其后。
+NODE_API=(claim-full-chain-e2e.mjs synap-claim-workbench-feedback-e2e.mjs)
+# 域能力验收：三个仍在 scripts/ 根的「唯一能力」脚本（预留列机制B / system-app 联调 / 主数据租户隔离）。
+# 单独成组、**不进 all**，原因是拓扑要求不同：reserved-column 直连 :9001（不走网关），
+# system-app 需要 bone-system 在跑；把它们塞进 CI 口径的 all 会让「栈只起了网关」的环境整组假红。
+PY_DOMAIN=(../verify-reserved-column-e2e.py ../verify-system-app-integration.py ../verify_masterdata_tenant_isolation.py)
 
 usage() {
   # 取文件头注释块（到第一行非注释实现为止），去掉 '#' 前缀；按行号切会随编辑错位
@@ -62,7 +68,7 @@ run_py_group() {
   local files=("$@")
   local failed=0
   for f in "${files[@]}"; do
-    echo ">> [$group_name] $f"
+    echo ">> [$group_name] $(basename "$f")"
     "$PY" "$DIR/$f" || { failed=1; echo "!! 失败: $f"; }
   done
   return "$failed"
@@ -88,6 +94,10 @@ MODE="${1:-all}"
 case "$MODE" in
   list)
     echo "离线层（无需服务，秒级）"
+    echo "  datagen     ./run.sh datagen list | sales-claim --seed demo | fixture person --count 3"
+    echo "              —— 企业级造数统一入口（勿再手写造数脚本；json/env/md 三种输出）"
+    echo "  impact      ./run.sh impact [--staged|--rev R] [--strict]"
+    echo "              —— Controller 端点 ↔ e2e 用例映射；--strict 零覆盖端点即判红"
     echo "  new         ./run.sh new <py-sweep|py-chain|ui-probe> <name> [--desc ...] [--register]"
     echo "              —— 新用例骨架（自带配置/fixtures/断言/清理四件套），生成即语法校验"
     echo "  lint        py_compile + node --check 全量语法门禁"
@@ -103,6 +113,7 @@ case "$MODE" in
     echo "  py          上述三组全部"
     echo "  node        ui/probe-*.mjs 核心 UI 探针（需前端 :3000）"
     echo "  node-api    ${NODE_API[*]}（智能理赔 A1-A9 全链，仅需网关）"
+    echo "  py-domain   域能力验收（预留列机制B / system-app / 主数据租户隔离；拓扑要求不同，不进 all）"
     echo
     echo "辅助（不进分组）"
     echo "  new <kind> <name> [--desc ..] [--register]  新用例骨架（见上；UI 探针自动进 node 分组）"
@@ -116,23 +127,44 @@ case "$MODE" in
     [ $# -gt 0 ] || { "$PY" "$DIR/scaffold.py" list; exit 0; }
     "$PY" "$DIR/scaffold.py" new "$@"
     ;;
+  datagen)
+    shift
+    "$PY" "$DIR/datagen.py" "$@"
+    ;;
+  impact)
+    shift
+    "$PY" "$DIR/impact.py" "$@"
+    ;;
   lint)     "$DIR/lint.sh" ;;
   selftest) run_selftest ;;
   preflight) shift; "$PY" "$DIR/preflight.py" "$@" ;;
   py-core)
     preflight || exit $?
-    run_py_group py-core "${PY_CORE[@]}"
+    rc=0
+    run_py_group py-core "${PY_CORE[@]}" || rc=1
     report_card
+    exit "$rc"
     ;;
   py-sweep)
     preflight || exit $?
-    run_py_group py-sweep "${PY_SWEEP[@]}"
+    rc=0
+    run_py_group py-sweep "${PY_SWEEP[@]}" || rc=1
     report_card
+    exit "$rc"
     ;;
   py-chain)
     preflight || exit $?
-    run_py_group py-chain "${PY_CHAIN[@]}"
+    rc=0
+    run_py_group py-chain "${PY_CHAIN[@]}" || rc=1
     report_card
+    exit "$rc"
+    ;;
+  py-domain)
+    preflight || exit $?
+    rc=0
+    run_py_group py-domain "${PY_DOMAIN[@]}" || rc=1
+    report_card
+    exit "$rc"
     ;;
   py)
     preflight || exit $?

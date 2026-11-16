@@ -282,7 +282,17 @@
     "SC_CLAIM_COVERAGE_NOT_FOUND": "保障项/险种不存在（或不属于当前租户）",
     "SC_CLAIM_COVERAGE_DUPLICATED": "险种编码已存在（同计划下险种编码唯一）",
     "SC_CLAIM_MAPPING_IMPORT_REJECTED": "映射批量导入被整批拒绝（文件不可解析或超过单批 2000 行上限）",
-    "SC_CLAIM_BIZ_IDENTITY_INVALID": "引用的业务主体不存在，或已停用/终止"
+    "SC_CLAIM_BIZ_IDENTITY_INVALID": "引用的业务主体不存在，或已停用/终止",
+    "SC_CLAIM_AI_FEEDBACK_INVALID": "AI 建议回流事件非法（未知字段 / 非真实模型参与却裁决 / 原因码缺失或越界 / 盲标禁区 / 字段白名单命中）",
+    "SC_CLAIM_AI_FEEDBACK_CONFLICT": "同一事件 ID 已落库但载荷不同，拒绝覆盖审计事实（幂等重放不成立）",
+    "SC_CLAIM_SEARCH_KEYWORD_INVALID": "跨键检索参数非法（关键词长度 2..64、危险字符、limit 1..20），护栏显式拒绝而非静默裁剪",
+    "SC_CLAIM_TASK_NOT_FOUND": "任务不存在或不属于当前租户",
+    "SC_CLAIM_TASK_CONFLICT": "任务已被他人领取或同案同类型已有在办任务，请刷新后重试",
+    "SC_CLAIM_CONFIG_RATCHET_VIOLATION": "配置放宽被拒：只能提交与当前生效值相等或更严格的配置",
+    "SC_CLAIM_CONFIG_WRITE_DISABLED": "配置写入已关闭或未配置，当前为只读",
+    "SC_CLAIM_CONFIG_INVALID": "配置请求非法（未知键、类型错误或越界值）",
+    "SC_CLAIM_REREVIEW_NOT_FOUND": "独立复审任务不存在或不属于当前租户",
+    "SC_CLAIM_REREVIEWER_CONFLICT": "独立复审人不得为初审人本人，也不能与登记的复审人不一致（职责分离）"
   },
   "enums": {
     "ORDER_STATUS": {

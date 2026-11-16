@@ -25,8 +25,8 @@ function render(props?: QiankunProps) {
   root.render(
     <React.StrictMode>
       <AppAntdProvider>
-      <App />
-    </AppAntdProvider>
+        <App />
+      </AppAntdProvider>
     </React.StrictMode>,
   );
 }
