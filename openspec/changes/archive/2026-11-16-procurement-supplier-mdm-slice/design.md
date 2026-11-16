@@ -2,6 +2,8 @@
 comet_change: procurement-supplier-mdm-slice
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-11-16-procurement-supplier-mdm-slice
+status: final
 ---
 
 # Design — 采购供应商主数据模块（最小可验证切片）

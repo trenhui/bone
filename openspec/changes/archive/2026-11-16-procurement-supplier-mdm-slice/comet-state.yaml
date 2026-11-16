@@ -13,7 +13,7 @@ isolation: worktree
 verify_mode: null
 auto_transition: true
 base_ref: c395e4b603202c3567408c1843f8ed9b232ffa26
-design_doc: openspec/changes/procurement-supplier-mdm-slice/design.md
+design_doc: openspec/changes/archive/2026-11-16-procurement-supplier-mdm-slice/design.md
 plan: docs/superpowers/plans/procurement-supplier-mdm-slice.md
 verify_result: pass
 verify_failures: 0
@@ -21,17 +21,17 @@ verification_report: docs/superpowers/reports/2026-11-16-procurement-supplier-md
 branch_status: pending
 created_at: 2026-11-15
 verified_at: 2026-11-16
-archive_confirmation: pending
-archived: false
+archive_confirmation: confirmed
+archived: true
 bound_branch: comet/procurement-supplier-mdm-slice
 direct_override: false
-handoff_context: openspec/changes/procurement-supplier-mdm-slice/.comet/handoff/design-context.json
+handoff_context: openspec/changes/archive/2026-11-16-procurement-supplier-mdm-slice/.comet/handoff/design-context.json
 handoff_hash: e2ddd28ccc090b0c8683c281038ecbc1f4fd123c8d94403703c97f7c46e050b4
 classic_profile: null
 classic_migration: null
 run_checkpoint:
   schema: comet.workflow-run-checkpoint.v2
-  hash: 6cca19f67bc08f3083264d0ea97bd0ffe2ef895f4509683ec4c3a98ebbafbb58
+  hash: 0ae0b933555e579f533ff4671a086380ad3dc6faeb859593cc8b92734a771aec
   run:
     protocolVersion: 1
     schemaVersion: 1
@@ -50,22 +50,22 @@ run_checkpoint:
       workspaceBaseline:
         ref: 9872e244-56c8-462b-93a5-a7e5006166a7
     state:
-      archiveConfirmation: pending
-      archived: false
+      archiveConfirmation: confirmed
+      archived: true
       autoTransition: true
       baseRef: c395e4b603202c3567408c1843f8ed9b232ffa26
       boundBranch: comet/procurement-supplier-mdm-slice
       branchStatus: pending
       buildMode: autonomous
       buildPause: null
-      checkEpoch: 6
+      checkEpoch: 10
       classicMigration: null
       classicProfile: null
       contextCompression: off
       createdAt: 2026-11-15
-      designDoc: openspec/changes/procurement-supplier-mdm-slice/design.md
+      designDoc: openspec/changes/archive/2026-11-16-procurement-supplier-mdm-slice/design.md
       directOverride: false
-      handoffContext: openspec/changes/procurement-supplier-mdm-slice/.comet/handoff/design-context.json
+      handoffContext: openspec/changes/archive/2026-11-16-procurement-supplier-mdm-slice/.comet/handoff/design-context.json
       handoffHash: e2ddd28ccc090b0c8683c281038ecbc1f4fd123c8d94403703c97f7c46e050b4
       isolation: worktree
       language: zh-CN
@@ -81,7 +81,7 @@ run_checkpoint:
       verifyResult: pass
       workflow: full
     status: running
-    sequence: 26
+    sequence: 36
     actions:
       - attempt: 1
         claim:
@@ -837,6 +837,14 @@ run_checkpoint:
         stepId: full.verify.check
         type: call_tool
       - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-9818de5b21b633f3d6ea8f4cb0569e68e89ff868cd208dc3de6a4cd9e415492c
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
         id: procurement-supplier-mdm-slice:26
         input:
           input:
@@ -846,6 +854,313 @@ run_checkpoint:
               ref: 9872e244-56c8-462b-93a5-a7e5006166a7
           outputs: {}
         inputHash: 538f92beae4e5f688a985a39ef9d8e638bf9e477ffe5310ccdbf63f8fe92ddf6
+        outcome:
+          actionId: procurement-supplier-mdm-slice:26
+          attempt: 1
+          claimToken: portable-9818de5b21b633f3d6ea8f4cb0569e68e89ff868cd208dc3de6a4cd9e415492c
+          inputHash: 538f92beae4e5f688a985a39ef9d8e638bf9e477ffe5310ccdbf63f8fe92ddf6
+          outcomeId: 8220debb-19d5-4d88-ace9-476c940e40a7
+          output:
+            prBaseBranch: dev
+            remote: origin
+            summary: 目标：按 spec.md 的 7 Requirement / 19 Scenario，交付供应商主数据治理的最小可验证切片（领域内核 +
+              端口契约 + 端到端用例），不含 t_proc_* DDL、不含生产 adapter、不含 AI
+              handler。归档影响：openspec/changes/procurement-supplier-mdm-slice 将移入
+              archive 目录，spec 增量同步至
+              openspec/specs；代码与报告本已入库，归档只搬运变更目录并更新索引。交付摘要：4 个提交（e3162bc45
+              领域内核与端口契约 / 3e5334228 用例与测试支撑 / 281f7e3b5 openspec 真源 / 4dbe7d539
+              计划与 Verify 报告），分支 comet/procurement-supplier-mdm-slice 已推送
+              origin，本地与远程 SHA 均为 4dbe7d539，关键文件远程可达性逐项核对通过。验证：clean test 346 例
+              0 失败，ArchUnit 26 条绿，12 个负向探针注入必红还原必绿，第二轮独立限定范围复审 PASS（0 CRITICAL /
+              4 IMPORTANT / 4
+              SUGGESTION），verifyResult=pass、verifyFailures=0。上线前置：A-2 生产
+              adapter、A-4 跨域上游对接、A-8 身份主键唯一索引（DDL 属 R-2）、A-5 全仓 check.sh 未跑。
+            targetBranch: comet/procurement-supplier-mdm-slice
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1e58e974fad4f416caeebb8ebcf1b814cf44302b5de912ef11ccbdda94031b07
+            outcomeId: 8220debb-19d5-4d88-ace9-476c940e40a7
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-d630e0b63b434cda69996f836be9a5c6d6af87163fdd388121adfdeb95a78420
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:28
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: 3442cd8e95f5da4d8ab5bd8fa601144fd8b1191dfee21912ed0b2ffb34a110e2
+        outcome:
+          actionId: procurement-supplier-mdm-slice:28
+          attempt: 1
+          claimToken: portable-d630e0b63b434cda69996f836be9a5c6d6af87163fdd388121adfdeb95a78420
+          inputHash: 3442cd8e95f5da4d8ab5bd8fa601144fd8b1191dfee21912ed0b2ffb34a110e2
+          outcomeId: cb1f3437-6c4f-4322-ac3e-f4e4346019a9
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-16-procurement-supplier-mdm-slice-verify-r2.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c107a5735de7f21ca98a4e330b116385b89d12435c2627bc28253dd34537c62f
+            outcomeId: cb1f3437-6c4f-4322-ac3e-f4e4346019a9
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-5d42398afcc5ac9285df502fa8fb5934cdcde3d2f42ee66d046e509776224470
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:30
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: 26c883f663de56f79762821a7c2c7cbd59452fb3e9af091c66383223210b6c9d
+        outcome:
+          actionId: procurement-supplier-mdm-slice:30
+          attempt: 2
+          claimToken: portable-5d42398afcc5ac9285df502fa8fb5934cdcde3d2f42ee66d046e509776224470
+          inputHash: 26c883f663de56f79762821a7c2c7cbd59452fb3e9af091c66383223210b6c9d
+          outcomeId: b18ca87f-cbec-4000-b110-5322ceb398cd
+          output:
+            argv:
+              - mvn
+              - -o
+              - -f
+              - bone-platform/bone-masterdata/pom.xml
+              - clean
+              - test
+            changedDuringExecution: []
+            checkEpoch: 7
+            contentHash: dbbb1e6e532d818913b4987ecb9fb672d657c86c46474498b0ea95f75c3aa4a1
+            cwd: .
+            deliveryInputs: {}
+            environment: f41429415a6ee36cd235204ada374e462a55d30e8ab7551941bf23460da87881
+            exitCode: 0
+            inputAfter: 00683b74914ca503df862b57af8dd4416183d9443c2cdab50f516211aa726b95
+            inputBefore: 00683b74914ca503df862b57af8dd4416183d9443c2cdab50f516211aa726b95
+            manifestHash: d304a073d13fbfbb044846ac636bb82bea59ad1c2036da159f7a6d84679aa577
+            manifestRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/e52c07c7-6db9-4219-ac5e-584508189ae9.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/2b312dd1-9802-4085-8fac-9a66aa8d9a90.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c3f82b97516fa2792147a03354286a6a14e2017f621181faebe851b64f91f0dd
+            outcomeId: b18ca87f-cbec-4000-b110-5322ceb398cd
+        reconciliations:
+          - attempt: 1
+            evidence: 口径说明：not-executed 表示本次 attempt 不产出可信结局、需重放，不代表命令物理上未执行。事实：本次为 reverify
+              重新取证（因报告在首次取证后补入 §10 与 V8 两处，内容哈希变化触发 revalidate）。guard verify
+              --apply 在核对 6765 项检查输入阶段累计第 50
+              次删除撞上环境守卫阈值（SAFE_DELETE_BULK_CONFIRM_REQUIRED），父进程 exitCode=70
+              退出，检查 Action procurement-supplier-mdm-slice:30 停在
+              status=running、无收据。原执行器 comet-classic-check（claim token
+              7a12c22c-1d67-45f6-88c9-745cbb350406）已不存在。前一次同形态恢复（action :24）已用
+              comet check run 重放成功，本次同样重放同一条确定性命令取证。报告与工作区自上次提交起未变更（工作树
+              clean，HEAD=4dbe7d539）。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-6ab1777cad80572fc51e72bdc7b0efcb6e2581663293107bb8d4574dff6aae46
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:32
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: 73e751078e2ed9762a0608db978420f1302159db33c15eaf46dd08399b841331
+        outcome:
+          actionId: procurement-supplier-mdm-slice:32
+          attempt: 1
+          claimToken: portable-6ab1777cad80572fc51e72bdc7b0efcb6e2581663293107bb8d4574dff6aae46
+          inputHash: 73e751078e2ed9762a0608db978420f1302159db33c15eaf46dd08399b841331
+          outcomeId: 487f0f08-32ab-4a83-b1fb-8067fe5fb52f
+          output:
+            prBaseBranch: dev
+            remote: origin
+            summary: 目标：按 spec.md 的 7 Requirement / 19 Scenario，交付供应商主数据治理的最小可验证切片（领域内核 +
+              端口契约 + 端到端用例），不含 t_proc_* DDL、不含生产 adapter、不含 AI
+              handler。归档影响：openspec/changes/procurement-supplier-mdm-slice 移入
+              archive 目录，spec 增量同步至
+              openspec/specs；代码与报告已入库，归档只搬运变更目录并更新索引。交付摘要：4 个提交（e3162bc45
+              领域内核与端口契约 / 3e5334228 用例与测试支撑 / 281f7e3b5 openspec 真源 / 4dbe7d539
+              计划与 Verify 报告），分支 comet/procurement-supplier-mdm-slice 已推送
+              origin，本地与远程 SHA 均为 4dbe7d539，关键文件远程可达性逐项核对通过。验证：clean test 346 例
+              0 失败 0 错误 0 跳过，ArchUnit 26 条绿，12 个负向探针注入必红还原必绿，第二轮独立限定范围复审 PASS（0
+              CRITICAL / 4 IMPORTANT / 4
+              SUGGESTION），verifyResult=pass、verifyFailures=0，检查收据 action :30
+              attempt 2 status=completed。上线前置：A-2 生产 adapter、A-4 跨域上游对接、A-8
+              身份主键唯一索引（DDL 属 R-2）、A-5 全仓 check.sh 未跑。
+            targetBranch: comet/procurement-supplier-mdm-slice
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 2b4412338a960b394f89911e2e44f60242058709ad08ab7d0126c0939a03e544
+            outcomeId: 487f0f08-32ab-4a83-b1fb-8067fe5fb52f
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-2554e623c68131a7ec6cb44058712a0c3d15da8eba4ab893985ee8365e349375
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:34
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: 6d6761e782b37f973d51017b61a784d2035c667394ed7040c6003576288fc6de
+        outcome:
+          actionId: procurement-supplier-mdm-slice:34
+          attempt: 1
+          claimToken: portable-2554e623c68131a7ec6cb44058712a0c3d15da8eba4ab893985ee8365e349375
+          inputHash: 6d6761e782b37f973d51017b61a784d2035c667394ed7040c6003576288fc6de
+          outcomeId: 7835a39e-2b2f-41af-9005-097854f66ad6
+          output:
+            baseCommit: 4dbe7d5394136232ec4b8462062a12f328daf30d
+            deliveryAction: push
+            prBaseBranch: dev
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: comet/procurement-supplier-mdm-slice
+            verifiedBranch: comet/procurement-supplier-mdm-slice
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: d37381f7757dcf183064260f9c45db4ead08a5b8bedbe7b92513803658278362
+            outcomeId: 7835a39e-2b2f-41af-9005-097854f66ad6
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-5391a0801a0b181ccf3efd4ce9c8d8d77a90e6dca72df246921b588ca8b5003a
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:35
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: f4eab92881d833661a31b5783d4ce3b79241511cd61c37a4cc052caa88ae5eec
+        outcome:
+          actionId: procurement-supplier-mdm-slice:35
+          artifacts:
+            - sha256: 645f322f61c214e36e4ca3bbddd620b2ebf8a2baf0ebe31f079c90729eeb46ee
+              uri: openspec/changes/archive/2026-11-16-procurement-supplier-mdm-slice/.comet/archive-manifest.json
+          attempt: 1
+          claimToken: portable-5391a0801a0b181ccf3efd4ce9c8d8d77a90e6dca72df246921b588ca8b5003a
+          inputHash: f4eab92881d833661a31b5783d4ce3b79241511cd61c37a4cc052caa88ae5eec
+          outcomeId: procurement-supplier-mdm-slice:35:1:recovered:62
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-16-procurement-supplier-mdm-slice
+          status: succeeded
+        protocolVersion: 1
+        reason: 原执行器 comet-classic-archive 在写收据前中断（环境批量删除守卫
+          SAFE_DELETE_BULK_CONFIRM_REQUIRED）。归档本身已在磁盘完成：openspec/changes/archive/2026-11-16-procurement-supplier-mdm-slice/
+          含
+          design.md/proposal.md/tasks.md/specs/walkthrough.html/comet-state.yaml
+          全部文件，openspec/specs/procurement/supplier-mdm/spec.md 已按 openspec
+          同步规则生成（标题与 Requirements 段落已转换）；原
+          openspec/changes/procurement-supplier-mdm-slice 已移走。但无完整结果记录，故标记
+          unknown 后走 archive --recover 核对，不重放归档。
+        receipts:
+          - hash: b686e638276dab6751a1bafd29d59e32de6bd7455469311a8af9d7d724c5f565
+            outcomeId: procurement-supplier-mdm-slice:35:1:recovered:62
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: procurement-supplier-mdm-slice:36
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: 204d558bb8665214c3a77eb0e3c43b3b7c896ea43b7389e8a95a47095deb7949
         protocolVersion: 1
         receipts: []
         reconciliations: []
@@ -854,7 +1169,7 @@ run_checkpoint:
         retry: manual
         runId: procurement-supplier-mdm-slice
         status: pending
-        stepId: full.archive.prepare
+        stepId: full.archive.deliver
         type: invoke_skill
     actionContexts:
       procurement-supplier-mdm-slice:1:
@@ -890,6 +1205,24 @@ run_checkpoint:
       procurement-supplier-mdm-slice:26:
         results: {}
         sequence: 26
+      procurement-supplier-mdm-slice:28:
+        results: {}
+        sequence: 28
+      procurement-supplier-mdm-slice:30:
+        results: {}
+        sequence: 30
+      procurement-supplier-mdm-slice:32:
+        results: {}
+        sequence: 32
+      procurement-supplier-mdm-slice:34:
+        results: {}
+        sequence: 34
+      procurement-supplier-mdm-slice:35:
+        results: {}
+        sequence: 35
+      procurement-supplier-mdm-slice:36:
+        results: {}
+        sequence: 36
       procurement-supplier-mdm-slice:4:
         results: {}
         sequence: 4
@@ -1006,6 +1339,85 @@ run_checkpoint:
           id: 978e4290-d3b5-4ec8-970b-50f2bc915f81
           choice: approved
           proposalHash: b58013ba15af1f1856a8c48dc71608e830c831741e3d34871259198dc095cb60
+      - id: procurement-supplier-mdm-slice:27
+        stepId: full.archive.confirm
+        sequence: 27
+        status: resolved
+        proposal:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs:
+            full.archive.prepare:
+              prBaseBranch: dev
+              remote: origin
+              summary: 目标：按 spec.md 的 7 Requirement / 19 Scenario，交付供应商主数据治理的最小可验证切片（领域内核 +
+                端口契约 + 端到端用例），不含 t_proc_* DDL、不含生产 adapter、不含 AI
+                handler。归档影响：openspec/changes/procurement-supplier-mdm-slice 将移入
+                archive 目录，spec 增量同步至
+                openspec/specs；代码与报告本已入库，归档只搬运变更目录并更新索引。交付摘要：4 个提交（e3162bc45
+                领域内核与端口契约 / 3e5334228 用例与测试支撑 / 281f7e3b5 openspec 真源 /
+                4dbe7d539 计划与 Verify 报告），分支 comet/procurement-supplier-mdm-slice
+                已推送 origin，本地与远程 SHA 均为 4dbe7d539，关键文件远程可达性逐项核对通过。验证：clean test
+                346 例 0 失败，ArchUnit 26 条绿，12 个负向探针注入必红还原必绿，第二轮独立限定范围复审 PASS（0
+                CRITICAL / 4 IMPORTANT / 4
+                SUGGESTION），verifyResult=pass、verifyFailures=0。上线前置：A-2 生产
+                adapter、A-4 跨域上游对接、A-8 身份主键唯一索引（DDL 属 R-2）、A-5 全仓 check.sh 未跑。
+              targetBranch: comet/procurement-supplier-mdm-slice
+        proposalHash: d5116ab567a87f58a24d4c2a0effe6c82c4af7b8081cefc00a35d1e0dc602e84
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-d5116ab567a87f58a24d4c2a0effe6c82c4af7b8081cefc00a35d1e0dc602e84-reverify
+          choice: reverify
+          proposalHash: d5116ab567a87f58a24d4c2a0effe6c82c4af7b8081cefc00a35d1e0dc602e84
+      - id: procurement-supplier-mdm-slice:33
+        stepId: full.archive.confirm
+        sequence: 33
+        status: resolved
+        proposal:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs:
+            full.archive.prepare:
+              prBaseBranch: dev
+              remote: origin
+              summary: 目标：按 spec.md 的 7 Requirement / 19 Scenario，交付供应商主数据治理的最小可验证切片（领域内核 +
+                端口契约 + 端到端用例），不含 t_proc_* DDL、不含生产 adapter、不含 AI
+                handler。归档影响：openspec/changes/procurement-supplier-mdm-slice 移入
+                archive 目录，spec 增量同步至
+                openspec/specs；代码与报告已入库，归档只搬运变更目录并更新索引。交付摘要：4 个提交（e3162bc45
+                领域内核与端口契约 / 3e5334228 用例与测试支撑 / 281f7e3b5 openspec 真源 /
+                4dbe7d539 计划与 Verify 报告），分支 comet/procurement-supplier-mdm-slice
+                已推送 origin，本地与远程 SHA 均为 4dbe7d539，关键文件远程可达性逐项核对通过。验证：clean test
+                346 例 0 失败 0 错误 0 跳过，ArchUnit 26 条绿，12 个负向探针注入必红还原必绿，第二轮独立限定范围复审
+                PASS（0 CRITICAL / 4 IMPORTANT / 4
+                SUGGESTION），verifyResult=pass、verifyFailures=0，检查收据 action :30
+                attempt 2 status=completed。上线前置：A-2 生产 adapter、A-4 跨域上游对接、A-8
+                身份主键唯一索引（DDL 属 R-2）、A-5 全仓 check.sh 未跑。
+              targetBranch: comet/procurement-supplier-mdm-slice
+        proposalHash: 9220f52058270087519d386bcb8b687885566aa8fea42e5e16b522e4fe2e26f4
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-9220f52058270087519d386bcb8b687885566aa8fea42e5e16b522e4fe2e26f4-push
+          choice: push
+          proposalHash: 9220f52058270087519d386bcb8b687885566aa8fea42e5e16b522e4fe2e26f4
     evidenceWaits:
       - id: procurement-supplier-mdm-slice:2
         stepId: full.open.evidence
@@ -1087,13 +1499,33 @@ run_checkpoint:
           ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/ee8345cc-9beb-43ea-8b3c-60caf2511249.log
           contentHash: ad70bea82d96680f4f66bd8918316b3a346db650e9975ca909ea7b3a4b099d7f
           submissionId: d3353e15-d63f-496e-a1a5-0595ae26c87a
+      - id: procurement-supplier-mdm-slice:29
+        stepId: full.verify.report.evidence
+        sequence: 29
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-16-procurement-supplier-mdm-slice-verify-r2.md
+          contentHash: 5c7c918e449330e05c378f63489f9b3f6b9760d3ac30bc19a5f95afcf7739930
+          submissionId: 8fca9ef0-8ad8-4a97-bf14-c673cfc37c4b
+      - id: procurement-supplier-mdm-slice:31
+        stepId: full.verify.check.evidence
+        sequence: 31
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/2b312dd1-9802-4085-8fac-9a66aa8d9a90.log
+          contentHash: dbbb1e6e532d818913b4987ecb9fb672d657c86c46474498b0ea95f75c3aa4a1
+          submissionId: 9fd17361-f8a1-4890-94ea-23f7e07da15f
     ready: []
     joins: {}
     outputs: {}
     children: []
     lineage: []
-  sourceRevision: 43
-  sourceHash: 5f019f6cb216db42a649adaf51e3c22d2d3eca6170ecb28366f7fc235e37faaf
+  sourceRevision: 63
+  sourceHash: 1b0c9fd8d8e25480cbcfbe8e2f86503d98732b173d535eaad27240889f657312
   pool:
     version: 3
     values:
@@ -1375,6 +1807,118 @@ run_checkpoint:
         timeoutMs: 900000
       - contentHash: ad70bea82d96680f4f66bd8918316b3a346db650e9975ca909ea7b3a4b099d7f
         ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/ee8345cc-9beb-43ea-8b3c-60caf2511249.log
+      - choice: reverify
+        proposal:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs:
+            full.archive.prepare:
+              prBaseBranch: dev
+              remote: origin
+              summary: 目标：按 spec.md 的 7 Requirement / 19 Scenario，交付供应商主数据治理的最小可验证切片（领域内核 +
+                端口契约 + 端到端用例），不含 t_proc_* DDL、不含生产 adapter、不含 AI
+                handler。归档影响：openspec/changes/procurement-supplier-mdm-slice 将移入
+                archive 目录，spec 增量同步至
+                openspec/specs；代码与报告本已入库，归档只搬运变更目录并更新索引。交付摘要：4 个提交（e3162bc45
+                领域内核与端口契约 / 3e5334228 用例与测试支撑 / 281f7e3b5 openspec 真源 /
+                4dbe7d539 计划与 Verify 报告），分支 comet/procurement-supplier-mdm-slice
+                已推送 origin，本地与远程 SHA 均为 4dbe7d539，关键文件远程可达性逐项核对通过。验证：clean test
+                346 例 0 失败，ArchUnit 26 条绿，12 个负向探针注入必红还原必绿，第二轮独立限定范围复审 PASS（0
+                CRITICAL / 4 IMPORTANT / 4
+                SUGGESTION），verifyResult=pass、verifyFailures=0。上线前置：A-2 生产
+                adapter、A-4 跨域上游对接、A-8 身份主键唯一索引（DDL 属 R-2）、A-5 全仓 check.sh 未跑。
+              targetBranch: comet/procurement-supplier-mdm-slice
+      - prBaseBranch: dev
+        remote: origin
+        summary: 目标：按 spec.md 的 7 Requirement / 19 Scenario，交付供应商主数据治理的最小可验证切片（领域内核 +
+          端口契约 + 端到端用例），不含 t_proc_* DDL、不含生产 adapter、不含 AI
+          handler。归档影响：openspec/changes/procurement-supplier-mdm-slice 将移入
+          archive 目录，spec 增量同步至 openspec/specs；代码与报告本已入库，归档只搬运变更目录并更新索引。交付摘要：4
+          个提交（e3162bc45 领域内核与端口契约 / 3e5334228 用例与测试支撑 / 281f7e3b5 openspec 真源 /
+          4dbe7d539 计划与 Verify 报告），分支 comet/procurement-supplier-mdm-slice 已推送
+          origin，本地与远程 SHA 均为 4dbe7d539，关键文件远程可达性逐项核对通过。验证：clean test 346 例 0
+          失败，ArchUnit 26 条绿，12 个负向探针注入必红还原必绿，第二轮独立限定范围复审 PASS（0 CRITICAL / 4
+          IMPORTANT / 4 SUGGESTION），verifyResult=pass、verifyFailures=0。上线前置：A-2
+          生产 adapter、A-4 跨域上游对接、A-8 身份主键唯一索引（DDL 属 R-2）、A-5 全仓 check.sh 未跑。
+        targetBranch: comet/procurement-supplier-mdm-slice
+      - contentHash: 5c7c918e449330e05c378f63489f9b3f6b9760d3ac30bc19a5f95afcf7739930
+        ref: docs/superpowers/reports/2026-11-16-procurement-supplier-mdm-slice-verify-r2.md
+      - argv:
+          - mvn
+          - -o
+          - -f
+          - bone-platform/bone-masterdata/pom.xml
+          - clean
+          - test
+        changedDuringExecution: []
+        checkEpoch: 7
+        contentHash: dbbb1e6e532d818913b4987ecb9fb672d657c86c46474498b0ea95f75c3aa4a1
+        cwd: .
+        deliveryInputs: {}
+        environment: f41429415a6ee36cd235204ada374e462a55d30e8ab7551941bf23460da87881
+        exitCode: 0
+        inputAfter: 00683b74914ca503df862b57af8dd4416183d9443c2cdab50f516211aa726b95
+        inputBefore: 00683b74914ca503df862b57af8dd4416183d9443c2cdab50f516211aa726b95
+        manifestHash: d304a073d13fbfbb044846ac636bb82bea59ad1c2036da159f7a6d84679aa577
+        manifestRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/e52c07c7-6db9-4219-ac5e-584508189ae9.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/2b312dd1-9802-4085-8fac-9a66aa8d9a90.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: dbbb1e6e532d818913b4987ecb9fb672d657c86c46474498b0ea95f75c3aa4a1
+        ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/2b312dd1-9802-4085-8fac-9a66aa8d9a90.log
+      - choice: push
+        proposal:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs:
+            full.archive.prepare:
+              prBaseBranch: dev
+              remote: origin
+              summary: 目标：按 spec.md 的 7 Requirement / 19 Scenario，交付供应商主数据治理的最小可验证切片（领域内核 +
+                端口契约 + 端到端用例），不含 t_proc_* DDL、不含生产 adapter、不含 AI
+                handler。归档影响：openspec/changes/procurement-supplier-mdm-slice 移入
+                archive 目录，spec 增量同步至
+                openspec/specs；代码与报告已入库，归档只搬运变更目录并更新索引。交付摘要：4 个提交（e3162bc45
+                领域内核与端口契约 / 3e5334228 用例与测试支撑 / 281f7e3b5 openspec 真源 /
+                4dbe7d539 计划与 Verify 报告），分支 comet/procurement-supplier-mdm-slice
+                已推送 origin，本地与远程 SHA 均为 4dbe7d539，关键文件远程可达性逐项核对通过。验证：clean test
+                346 例 0 失败 0 错误 0 跳过，ArchUnit 26 条绿，12 个负向探针注入必红还原必绿，第二轮独立限定范围复审
+                PASS（0 CRITICAL / 4 IMPORTANT / 4
+                SUGGESTION），verifyResult=pass、verifyFailures=0，检查收据 action :30
+                attempt 2 status=completed。上线前置：A-2 生产 adapter、A-4 跨域上游对接、A-8
+                身份主键唯一索引（DDL 属 R-2）、A-5 全仓 check.sh 未跑。
+              targetBranch: comet/procurement-supplier-mdm-slice
+      - prBaseBranch: dev
+        remote: origin
+        summary: 目标：按 spec.md 的 7 Requirement / 19 Scenario，交付供应商主数据治理的最小可验证切片（领域内核 +
+          端口契约 + 端到端用例），不含 t_proc_* DDL、不含生产 adapter、不含 AI
+          handler。归档影响：openspec/changes/procurement-supplier-mdm-slice 移入
+          archive 目录，spec 增量同步至 openspec/specs；代码与报告已入库，归档只搬运变更目录并更新索引。交付摘要：4
+          个提交（e3162bc45 领域内核与端口契约 / 3e5334228 用例与测试支撑 / 281f7e3b5 openspec 真源 /
+          4dbe7d539 计划与 Verify 报告），分支 comet/procurement-supplier-mdm-slice 已推送
+          origin，本地与远程 SHA 均为 4dbe7d539，关键文件远程可达性逐项核对通过。验证：clean test 346 例 0 失败
+          0 错误 0 跳过，ArchUnit 26 条绿，12 个负向探针注入必红还原必绿，第二轮独立限定范围复审 PASS（0 CRITICAL
+          / 4 IMPORTANT / 4 SUGGESTION），verifyResult=pass、verifyFailures=0，检查收据
+          action :30 attempt 2 status=completed。上线前置：A-2 生产 adapter、A-4
+          跨域上游对接、A-8 身份主键唯一索引（DDL 属 R-2）、A-5 全仓 check.sh 未跑。
+        targetBranch: comet/procurement-supplier-mdm-slice
+      - baseCommit: 4dbe7d5394136232ec4b8462062a12f328daf30d
+        deliveryAction: push
+        prBaseBranch: dev
+        remote: origin
+        remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+        targetBranch: comet/procurement-supplier-mdm-slice
+        verifiedBranch: comet/procurement-supplier-mdm-slice
+      - archiveDirectory: openspec/changes/archive/2026-11-16-procurement-supplier-mdm-slice
       - sequence: 9
         value:
           boundBranch: comet/procurement-supplier-mdm-slice
@@ -1714,6 +2258,143 @@ run_checkpoint:
         value:
           contentHash: ad70bea82d96680f4f66bd8918316b3a346db650e9975ca909ea7b3a4b099d7f
           ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/ee8345cc-9beb-43ea-8b3c-60caf2511249.log
+      - sequence: 27
+        value:
+          choice: reverify
+          proposal:
+            input:
+              change: procurement-supplier-mdm-slice
+              changeDir: openspec/changes/procurement-supplier-mdm-slice
+              workspaceBaseline:
+                ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+            outputs:
+              full.archive.prepare:
+                prBaseBranch: dev
+                remote: origin
+                summary: 目标：按 spec.md 的 7 Requirement / 19 Scenario，交付供应商主数据治理的最小可验证切片（领域内核 +
+                  端口契约 + 端到端用例），不含 t_proc_* DDL、不含生产 adapter、不含 AI
+                  handler。归档影响：openspec/changes/procurement-supplier-mdm-slice
+                  将移入 archive 目录，spec 增量同步至
+                  openspec/specs；代码与报告本已入库，归档只搬运变更目录并更新索引。交付摘要：4 个提交（e3162bc45
+                  领域内核与端口契约 / 3e5334228 用例与测试支撑 / 281f7e3b5 openspec 真源 /
+                  4dbe7d539 计划与 Verify 报告），分支
+                  comet/procurement-supplier-mdm-slice 已推送 origin，本地与远程 SHA 均为
+                  4dbe7d539，关键文件远程可达性逐项核对通过。验证：clean test 346 例 0 失败，ArchUnit 26
+                  条绿，12 个负向探针注入必红还原必绿，第二轮独立限定范围复审 PASS（0 CRITICAL / 4 IMPORTANT
+                  / 4 SUGGESTION），verifyResult=pass、verifyFailures=0。上线前置：A-2 生产
+                  adapter、A-4 跨域上游对接、A-8 身份主键唯一索引（DDL 属 R-2）、A-5 全仓 check.sh 未跑。
+                targetBranch: comet/procurement-supplier-mdm-slice
+      - sequence: 26
+        value:
+          prBaseBranch: dev
+          remote: origin
+          summary: 目标：按 spec.md 的 7 Requirement / 19 Scenario，交付供应商主数据治理的最小可验证切片（领域内核 +
+            端口契约 + 端到端用例），不含 t_proc_* DDL、不含生产 adapter、不含 AI
+            handler。归档影响：openspec/changes/procurement-supplier-mdm-slice 将移入
+            archive 目录，spec 增量同步至 openspec/specs；代码与报告本已入库，归档只搬运变更目录并更新索引。交付摘要：4
+            个提交（e3162bc45 领域内核与端口契约 / 3e5334228 用例与测试支撑 / 281f7e3b5 openspec 真源
+            / 4dbe7d539 计划与 Verify 报告），分支 comet/procurement-supplier-mdm-slice
+            已推送 origin，本地与远程 SHA 均为 4dbe7d539，关键文件远程可达性逐项核对通过。验证：clean test 346
+            例 0 失败，ArchUnit 26 条绿，12 个负向探针注入必红还原必绿，第二轮独立限定范围复审 PASS（0 CRITICAL /
+            4 IMPORTANT / 4
+            SUGGESTION），verifyResult=pass、verifyFailures=0。上线前置：A-2 生产
+            adapter、A-4 跨域上游对接、A-8 身份主键唯一索引（DDL 属 R-2）、A-5 全仓 check.sh 未跑。
+          targetBranch: comet/procurement-supplier-mdm-slice
+      - sequence: 29
+        value:
+          contentHash: 5c7c918e449330e05c378f63489f9b3f6b9760d3ac30bc19a5f95afcf7739930
+          ref: docs/superpowers/reports/2026-11-16-procurement-supplier-mdm-slice-verify-r2.md
+      - sequence: 28
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-16-procurement-supplier-mdm-slice-verify-r2.md
+      - sequence: 30
+        value:
+          argv:
+            - mvn
+            - -o
+            - -f
+            - bone-platform/bone-masterdata/pom.xml
+            - clean
+            - test
+          changedDuringExecution: []
+          checkEpoch: 7
+          contentHash: dbbb1e6e532d818913b4987ecb9fb672d657c86c46474498b0ea95f75c3aa4a1
+          cwd: .
+          deliveryInputs: {}
+          environment: f41429415a6ee36cd235204ada374e462a55d30e8ab7551941bf23460da87881
+          exitCode: 0
+          inputAfter: 00683b74914ca503df862b57af8dd4416183d9443c2cdab50f516211aa726b95
+          inputBefore: 00683b74914ca503df862b57af8dd4416183d9443c2cdab50f516211aa726b95
+          manifestHash: d304a073d13fbfbb044846ac636bb82bea59ad1c2036da159f7a6d84679aa577
+          manifestRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/e52c07c7-6db9-4219-ac5e-584508189ae9.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/2b312dd1-9802-4085-8fac-9a66aa8d9a90.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 31
+        value:
+          contentHash: dbbb1e6e532d818913b4987ecb9fb672d657c86c46474498b0ea95f75c3aa4a1
+          ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/2b312dd1-9802-4085-8fac-9a66aa8d9a90.log
+      - sequence: 33
+        value:
+          choice: push
+          proposal:
+            input:
+              change: procurement-supplier-mdm-slice
+              changeDir: openspec/changes/procurement-supplier-mdm-slice
+              workspaceBaseline:
+                ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+            outputs:
+              full.archive.prepare:
+                prBaseBranch: dev
+                remote: origin
+                summary: 目标：按 spec.md 的 7 Requirement / 19 Scenario，交付供应商主数据治理的最小可验证切片（领域内核 +
+                  端口契约 + 端到端用例），不含 t_proc_* DDL、不含生产 adapter、不含 AI
+                  handler。归档影响：openspec/changes/procurement-supplier-mdm-slice
+                  移入 archive 目录，spec 增量同步至
+                  openspec/specs；代码与报告已入库，归档只搬运变更目录并更新索引。交付摘要：4 个提交（e3162bc45
+                  领域内核与端口契约 / 3e5334228 用例与测试支撑 / 281f7e3b5 openspec 真源 /
+                  4dbe7d539 计划与 Verify 报告），分支
+                  comet/procurement-supplier-mdm-slice 已推送 origin，本地与远程 SHA 均为
+                  4dbe7d539，关键文件远程可达性逐项核对通过。验证：clean test 346 例 0 失败 0 错误 0
+                  跳过，ArchUnit 26 条绿，12 个负向探针注入必红还原必绿，第二轮独立限定范围复审 PASS（0 CRITICAL
+                  / 4 IMPORTANT / 4
+                  SUGGESTION），verifyResult=pass、verifyFailures=0，检查收据 action :30
+                  attempt 2 status=completed。上线前置：A-2 生产 adapter、A-4 跨域上游对接、A-8
+                  身份主键唯一索引（DDL 属 R-2）、A-5 全仓 check.sh 未跑。
+                targetBranch: comet/procurement-supplier-mdm-slice
+      - sequence: 32
+        value:
+          prBaseBranch: dev
+          remote: origin
+          summary: 目标：按 spec.md 的 7 Requirement / 19 Scenario，交付供应商主数据治理的最小可验证切片（领域内核 +
+            端口契约 + 端到端用例），不含 t_proc_* DDL、不含生产 adapter、不含 AI
+            handler。归档影响：openspec/changes/procurement-supplier-mdm-slice 移入
+            archive 目录，spec 增量同步至 openspec/specs；代码与报告已入库，归档只搬运变更目录并更新索引。交付摘要：4
+            个提交（e3162bc45 领域内核与端口契约 / 3e5334228 用例与测试支撑 / 281f7e3b5 openspec 真源
+            / 4dbe7d539 计划与 Verify 报告），分支 comet/procurement-supplier-mdm-slice
+            已推送 origin，本地与远程 SHA 均为 4dbe7d539，关键文件远程可达性逐项核对通过。验证：clean test 346
+            例 0 失败 0 错误 0 跳过，ArchUnit 26 条绿，12 个负向探针注入必红还原必绿，第二轮独立限定范围复审 PASS（0
+            CRITICAL / 4 IMPORTANT / 4
+            SUGGESTION），verifyResult=pass、verifyFailures=0，检查收据 action :30
+            attempt 2 status=completed。上线前置：A-2 生产 adapter、A-4 跨域上游对接、A-8
+            身份主键唯一索引（DDL 属 R-2）、A-5 全仓 check.sh 未跑。
+          targetBranch: comet/procurement-supplier-mdm-slice
+      - sequence: 34
+        value:
+          baseCommit: 4dbe7d5394136232ec4b8462062a12f328daf30d
+          deliveryAction: push
+          prBaseBranch: dev
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: comet/procurement-supplier-mdm-slice
+          verifiedBranch: comet/procurement-supplier-mdm-slice
+      - sequence: 35
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-16-procurement-supplier-mdm-slice
     nodes:
       - key: full.open
         value: 0
@@ -2015,695 +2696,1235 @@ run_checkpoint:
         left: 46
         right: 58
         height: 5
-      - key: full.build.configure
+      - key: full.archive.confirm
         value: 22
         left: null
         right: null
         height: 1
-      - key: full.design.confirm
-        value: 24
+      - key: full.build.check
+        value: 16
         left: null
         right: null
         height: 1
-      - key: full.build.confirm
+      - key: full.archive.prepare
         value: 23
         left: 60
         right: 61
         height: 2
-      - key: full.design.evidence
+      - key: full.build.confirm
+        value: 9
+        left: 33
+        right: 27
+        height: 2
+      - key: full.build.check.evidence
+        value: 17
+        left: 62
+        right: 63
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 64
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 65
+        right: 58
+        height: 5
+      - key: full.verify.report.evidence
+        value: 24
+        left: 54
+        right: 55
+        height: 2
+      - key: full.verify.check
+        value: 20
+        left: 53
+        right: 67
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 68
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 65
+        right: 69
+        height: 5
+      - key: full.verify.check.evidence
         value: 26
         left: null
         right: null
         height: 1
-      - key: full.open
-        value: 28
-        left: null
-        right: null
-        height: 1
-      - key: full.design.handoff
-        value: 27
-        left: 63
-        right: 64
+      - key: full.verify.report.evidence
+        value: 24
+        left: 71
+        right: 55
         height: 2
-      - key: full.open.revalidate
-        value: 31
-        left: null
-        right: null
-        height: 1
-      - key: full.open.evidence
-        value: 30
-        left: null
-        right: 66
-        height: 2
-      - key: full.open.confirm
-        value: 29
-        left: 65
-        right: 67
-        height: 3
-      - key: full.design.document
+      - key: full.verify.check
         value: 25
-        left: 62
-        right: 68
+        left: 53
+        right: 72
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 73
         height: 4
+      - key: full.design.document
+        value: 6
+        left: 65
+        right: 74
+        height: 5
+      - key: full.archive.confirm
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 28
+        left: 76
+        right: 61
+        height: 2
+      - key: full.build.check.evidence
+        value: 17
+        left: 77
+        right: 63
+        height: 3
       - key: full.build.plan
-        value: 32
+        value: 10
+        left: 78
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 79
+        right: 74
+        height: 5
+      - key: full.archive.preflight
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 27
+        left: null
+        right: 81
+        height: 2
+      - key: full.archive.prepare
+        value: 28
+        left: 82
+        right: 61
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 63
+        right: 29
+        height: 3
+      - key: full.build.check.evidence
+        value: 17
+        left: 83
+        right: 84
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 85
+        right: 74
+        height: 5
+      - key: full.archive.confirm
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 30
+        left: 87
+        right: 88
+        height: 2
+      - key: full.archive.prepare
+        value: 28
+        left: 89
+        right: 61
+        height: 3
+      - key: full.build.check.evidence
+        value: 17
+        left: 90
+        right: 84
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 91
+        right: 74
+        height: 5
+      - key: full.build.configure
+        value: 31
         left: null
         right: null
         height: 1
       - key: full.design.confirm
-        value: 24
-        left: null
-        right: null
-        height: 1
-      - key: full.build.plan.evidence
         value: 33
-        left: 70
-        right: 71
-        height: 2
-      - key: full.build.confirm
-        value: 23
-        left: 60
-        right: 72
-        height: 3
-      - key: full.design.document
-        value: 25
-        left: 73
-        right: 68
-        height: 4
-      - key: full.build.execute
-        value: 34
         left: null
         right: null
         height: 1
       - key: full.build.confirm
-        value: 23
-        left: 60
-        right: 75
-        height: 2
-      - key: full.build.plan.evidence
-        value: 33
-        left: null
-        right: 71
-        height: 2
-      - key: full.build.plan
         value: 32
-        left: 76
-        right: 77
-        height: 3
-      - key: full.design.document
-        value: 25
-        left: 78
-        right: 68
-        height: 4
-      - key: full.build.check
+        left: 93
+        right: 94
+        height: 2
+      - key: full.design.evidence
         value: 35
         left: null
         right: null
         height: 1
-      - key: full.build.configure
-        value: 22
-        left: null
-        right: null
-        height: 1
-      - key: full.build.check.evidence
-        value: 36
-        left: 80
-        right: 81
-        height: 2
-      - key: full.build.confirm
-        value: 23
-        left: 82
-        right: 75
-        height: 3
-      - key: full.build.plan
-        value: 32
-        left: 83
-        right: 77
-        height: 4
-      - key: full.design.document
-        value: 25
-        left: 84
-        right: 68
-        height: 5
-      - key: full.open.evidence
-        value: 30
-        left: null
-        right: null
-        height: 1
-      - key: full.verify.run
+      - key: full.open
         value: 37
         left: null
         right: null
         height: 1
+      - key: full.design.handoff
+        value: 36
+        left: 96
+        right: 97
+        height: 2
       - key: full.open.revalidate
-        value: 31
-        left: 86
-        right: 87
-        height: 2
-      - key: full.open.confirm
-        value: 29
-        left: 65
-        right: 88
-        height: 3
-      - key: full.design.document
-        value: 25
-        left: 84
-        right: 89
-        height: 5
-      - key: full.build.plan.evidence
-        value: 39
-        left: null
-        right: 71
-        height: 2
-      - key: full.build.plan
-        value: 38
-        left: 83
-        right: 91
-        height: 4
-      - key: full.design.document
-        value: 25
-        left: 92
-        right: 89
-        height: 5
-      - key: full.build.execute
         value: 40
         left: null
         right: null
         height: 1
-      - key: full.build.confirm
-        value: 23
-        left: 82
-        right: 94
-        height: 3
-      - key: full.build.plan
+      - key: full.open.evidence
+        value: 39
+        left: null
+        right: 99
+        height: 2
+      - key: full.open.confirm
         value: 38
-        left: 95
-        right: 91
-        height: 4
+        left: 98
+        right: 100
+        height: 3
       - key: full.design.document
-        value: 25
-        left: 96
-        right: 89
-        height: 5
-      - key: full.build.check
+        value: 34
+        left: 95
+        right: 101
+        height: 4
+      - key: full.build.plan
         value: 41
         left: null
         right: null
         height: 1
-      - key: full.build.check.evidence
+      - key: full.design.confirm
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
         value: 42
-        left: 98
-        right: 81
+        left: 103
+        right: 104
         height: 2
       - key: full.build.confirm
-        value: 23
-        left: 99
-        right: 94
+        value: 32
+        left: 93
+        right: 105
         height: 3
-      - key: full.build.plan
-        value: 38
-        left: 100
-        right: 91
-        height: 4
       - key: full.design.document
-        value: 25
-        left: 101
-        right: 89
-        height: 5
-      - key: full.verify.report.evidence
+        value: 34
+        left: 106
+        right: 101
+        height: 4
+      - key: full.build.execute
         value: 43
         left: null
         right: null
         height: 1
-      - key: full.verify.run
-        value: 44
-        left: 103
-        right: null
+      - key: full.build.confirm
+        value: 32
+        left: 93
+        right: 108
         height: 2
-      - key: full.open.revalidate
-        value: 31
-        left: 86
+      - key: full.build.plan.evidence
+        value: 42
+        left: null
         right: 104
+        height: 2
+      - key: full.build.plan
+        value: 41
+        left: 109
+        right: 110
         height: 3
-      - key: full.open.confirm
-        value: 29
-        left: 65
-        right: 105
+      - key: full.design.document
+        value: 34
+        left: 111
+        right: 101
+        height: 4
+      - key: full.build.check
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 45
+        left: 113
+        right: 114
+        height: 2
+      - key: full.build.confirm
+        value: 32
+        left: 115
+        right: 108
+        height: 3
+      - key: full.build.plan
+        value: 41
+        left: 116
+        right: 110
         height: 4
       - key: full.design.document
-        value: 25
-        left: 101
-        right: 106
+        value: 34
+        left: 117
+        right: 101
         height: 5
-      - key: full.open.revalidate
-        value: 31
-        left: 86
+      - key: full.open.evidence
+        value: 39
+        left: null
         right: null
-        height: 2
-      - key: full.verify.check.evidence
+        height: 1
+      - key: full.verify.run
         value: 46
         left: null
         right: null
         height: 1
-      - key: full.verify.run
-        value: 44
-        left: null
-        right: null
-        height: 1
-      - key: full.verify.report.evidence
-        value: 43
-        left: 109
-        right: 110
-        height: 2
-      - key: full.verify.check
-        value: 45
-        left: 108
-        right: 111
-        height: 3
-      - key: full.open.confirm
-        value: 29
-        left: 65
-        right: 112
-        height: 4
-      - key: full.design.document
-        value: 25
-        left: 101
-        right: 113
-        height: 5
-      - key: full.open
-        value: 28
-        left: null
-        right: null
-        height: 1
-      - key: full.open.evidence
-        value: 30
-        left: null
-        right: null
-        height: 1
-      - key: full.open.confirm
-        value: 29
-        left: 115
-        right: 116
-        height: 2
       - key: full.open.revalidate
-        value: 31
-        left: null
-        right: null
-        height: 1
-      - key: full.open.evidence
-        value: 30
-        left: null
-        right: 118
+        value: 40
+        left: 119
+        right: 120
         height: 2
       - key: full.open.confirm
-        value: 29
-        left: 115
-        right: 119
+        value: 38
+        left: 98
+        right: 121
         height: 3
-      - key: full.design.confirm
-        value: 24
-        left: null
-        right: null
-        height: 1
-      - key: full.open
-        value: 28
-        left: null
-        right: null
-        height: 1
-      - key: full.design.handoff
-        value: 27
-        left: 121
-        right: 122
-        height: 2
-      - key: full.open.confirm
-        value: 29
-        left: 123
-        right: 119
-        height: 3
-      - key: full.design.confirm
-        value: 24
-        left: null
-        right: null
-        height: 1
-      - key: full.design.evidence
-        value: 26
-        left: null
-        right: null
-        height: 1
       - key: full.design.document
-        value: 25
-        left: 125
-        right: 126
-        height: 2
-      - key: full.design.handoff
-        value: 27
-        left: 127
-        right: 122
-        height: 3
-      - key: full.open.confirm
-        value: 29
-        left: 128
-        right: 119
-        height: 4
-      - key: full.open.evidence
-        value: 30
-        left: null
-        right: null
-        height: 1
-      - key: full.open
-        value: 28
-        left: null
-        right: 130
-        height: 2
-      - key: full.design.handoff
-        value: 27
-        left: null
-        right: null
-        height: 1
-      - key: full.open.confirm
-        value: 29
-        left: null
-        right: null
-        height: 1
-      - key: full.open.revalidate
-        value: 31
-        left: null
-        right: null
-        height: 1
-      - key: full.open.evidence
-        value: 30
-        left: 133
-        right: 134
-        height: 2
-      - key: full.open
-        value: 28
-        left: 132
-        right: 135
-        height: 3
-      - key: full.build.configure
-        value: 22
-        left: null
-        right: null
-        height: 1
-      - key: full.design.document
-        value: 25
-        left: null
-        right: null
-        height: 1
-      - key: full.design.handoff
-        value: 27
-        left: null
-        right: null
-        height: 1
-      - key: full.design.evidence
-        value: 26
-        left: 138
-        right: 139
-        height: 2
-      - key: full.design.confirm
-        value: 24
-        left: 137
-        right: 140
-        height: 3
-      - key: full.open
-        value: 28
-        left: 141
-        right: 135
-        height: 4
-      - key: full.open
-        value: 28
-        left: null
-        right: null
-        height: 1
-      - key: full.design.confirm
-        value: 24
-        left: null
-        right: null
-        height: 1
-      - key: full.design.handoff
-        value: 27
-        left: null
-        right: null
-        height: 1
-      - key: full.design.document
-        value: 25
-        left: 144
-        right: 145
-        height: 2
-      - key: full.open.confirm
-        value: 29
-        left: null
-        right: null
-        height: 1
-      - key: full.open.revalidate
-        value: 31
-        left: null
-        right: null
-        height: 1
-      - key: full.open.evidence
-        value: 30
-        left: 147
-        right: 148
-        height: 2
-      - key: full.open
-        value: 28
-        left: 146
-        right: 149
-        height: 3
-      - key: full.build.configure
-        value: 22
-        left: null
-        right: null
-        height: 1
-      - key: full.build.plan
-        value: 32
-        left: null
-        right: null
-        height: 1
-      - key: full.build.confirm
-        value: 23
-        left: 151
-        right: 152
-        height: 2
-      - key: full.design.document
-        value: 25
-        left: null
-        right: null
-        height: 1
-      - key: full.design.handoff
-        value: 27
-        left: null
-        right: null
-        height: 1
-      - key: full.design.evidence
-        value: 26
-        left: 154
-        right: 155
-        height: 2
-      - key: full.design.confirm
-        value: 24
-        left: 153
-        right: 156
-        height: 3
-      - key: full.open
-        value: 28
-        left: 157
-        right: 149
-        height: 4
-      - key: full.build.check
-        value: 35
-        left: null
-        right: null
-        height: 1
-      - key: full.build.configure
-        value: 22
-        left: 159
-        right: null
-        height: 2
-      - key: full.build.execute
         value: 34
-        left: null
-        right: null
-        height: 1
+        left: 117
+        right: 122
+        height: 5
       - key: full.build.plan.evidence
-        value: 33
+        value: 48
         left: null
-        right: null
-        height: 1
-      - key: full.build.plan
-        value: 32
-        left: 161
-        right: 162
+        right: 104
         height: 2
-      - key: full.build.confirm
-        value: 23
-        left: 160
-        right: 163
-        height: 3
-      - key: full.open
-        value: 28
-        left: 156
-        right: 149
-        height: 3
-      - key: full.design.confirm
-        value: 24
-        left: 164
-        right: 165
+      - key: full.build.plan
+        value: 47
+        left: 116
+        right: 124
         height: 4
-      - key: full.build.check
-        value: 35
+      - key: full.design.document
+        value: 34
+        left: 125
+        right: 122
+        height: 5
+      - key: full.build.execute
+        value: 49
         left: null
         right: null
         height: 1
-      - key: full.build.configure
-        value: 22
+      - key: full.build.confirm
+        value: 32
+        left: 115
+        right: 127
+        height: 3
+      - key: full.build.plan
+        value: 47
+        left: 128
+        right: 124
+        height: 4
+      - key: full.design.document
+        value: 34
+        left: 129
+        right: 122
+        height: 5
+      - key: full.build.check
+        value: 50
         left: null
         right: null
         height: 1
       - key: full.build.check.evidence
-        value: 36
-        left: 167
-        right: 168
-        height: 2
-      - key: full.build.plan
-        value: 38
-        left: 161
-        right: 162
+        value: 51
+        left: 131
+        right: 114
         height: 2
       - key: full.build.confirm
-        value: 23
-        left: 169
-        right: 170
+        value: 32
+        left: 132
+        right: 127
         height: 3
+      - key: full.build.plan
+        value: 47
+        left: 133
+        right: 124
+        height: 4
+      - key: full.design.document
+        value: 34
+        left: 134
+        right: 122
+        height: 5
+      - key: full.verify.report.evidence
+        value: 52
+        left: null
+        right: null
+        height: 1
       - key: full.verify.run
+        value: 53
+        left: 136
+        right: null
+        height: 2
+      - key: full.open.revalidate
+        value: 40
+        left: 119
+        right: 137
+        height: 3
+      - key: full.open.confirm
+        value: 38
+        left: 98
+        right: 138
+        height: 4
+      - key: full.design.document
+        value: 34
+        left: 134
+        right: 139
+        height: 5
+      - key: full.open.revalidate
+        value: 40
+        left: 119
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 53
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 52
+        left: 142
+        right: 143
+        height: 2
+      - key: full.verify.check
+        value: 54
+        left: 141
+        right: 144
+        height: 3
+      - key: full.open.confirm
+        value: 38
+        left: 98
+        right: 145
+        height: 4
+      - key: full.design.document
+        value: 34
+        left: 134
+        right: 146
+        height: 5
+      - key: full.archive.confirm
+        value: 56
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 57
+        left: 148
+        right: 149
+        height: 2
+      - key: full.build.confirm
+        value: 32
+        left: 114
+        right: 127
+        height: 2
+      - key: full.build.check.evidence
+        value: 51
+        left: 150
+        right: 151
+        height: 3
+      - key: full.build.plan
+        value: 47
+        left: 152
+        right: 124
+        height: 4
+      - key: full.design.document
+        value: 34
+        left: 153
+        right: 146
+        height: 5
+      - key: full.verify.run
+        value: 59
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 58
+        left: 142
+        right: 155
+        height: 2
+      - key: full.verify.check
+        value: 54
+        left: 141
+        right: 156
+        height: 3
+      - key: full.open.confirm
+        value: 38
+        left: 98
+        right: 157
+        height: 4
+      - key: full.design.document
+        value: 34
+        left: 153
+        right: 158
+        height: 5
+      - key: full.verify.check.evidence
+        value: 61
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 58
+        left: 160
+        right: 155
+        height: 2
+      - key: full.verify.check
+        value: 60
+        left: 141
+        right: 161
+        height: 3
+      - key: full.open.confirm
+        value: 38
+        left: 98
+        right: 162
+        height: 4
+      - key: full.design.document
+        value: 34
+        left: 153
+        right: 163
+        height: 5
+      - key: full.archive.confirm
+        value: 62
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 63
+        left: 165
+        right: 149
+        height: 2
+      - key: full.build.check.evidence
+        value: 51
+        left: 166
+        right: 151
+        height: 3
+      - key: full.build.plan
+        value: 47
+        left: 167
+        right: 124
+        height: 4
+      - key: full.design.document
+        value: 34
+        left: 168
+        right: 163
+        height: 5
+      - key: full.archive.preflight
+        value: 64
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 62
+        left: null
+        right: 170
+        height: 2
+      - key: full.archive.prepare
+        value: 63
+        left: 171
+        right: 149
+        height: 3
+      - key: full.build.plan
+        value: 47
+        left: 151
+        right: 124
+        height: 3
+      - key: full.build.check.evidence
+        value: 51
+        left: 172
+        right: 173
+        height: 4
+      - key: full.design.document
+        value: 34
+        left: 174
+        right: 163
+        height: 5
+      - key: full.archive.confirm
+        value: 62
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 64
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 65
+        left: 176
+        right: 177
+        height: 2
+      - key: full.archive.prepare
+        value: 63
+        left: 178
+        right: 149
+        height: 3
+      - key: full.build.check.evidence
+        value: 51
+        left: 179
+        right: 173
+        height: 4
+      - key: full.design.document
+        value: 34
+        left: 180
+        right: 163
+        height: 5
+      - key: full.open
         value: 37
         left: null
         right: null
         height: 1
-      - key: full.open.revalidate
-        value: 31
-        left: null
-        right: 172
-        height: 2
       - key: full.open.evidence
-        value: 30
-        left: 147
-        right: 173
-        height: 3
-      - key: full.open
-        value: 28
-        left: 156
-        right: 174
-        height: 4
-      - key: full.design.confirm
-        value: 24
-        left: 171
-        right: 175
-        height: 5
-      - key: full.build.check
-        value: 41
-        left: null
-        right: null
-        height: 1
-      - key: full.build.check.evidence
-        value: 36
-        left: 177
-        right: 168
-        height: 2
-      - key: full.build.execute
-        value: 40
-        left: null
-        right: null
-        height: 1
-      - key: full.build.plan.evidence
         value: 39
         left: null
         right: null
         height: 1
-      - key: full.build.plan
+      - key: full.open.confirm
         value: 38
-        left: 179
-        right: 180
+        left: 182
+        right: 183
         height: 2
-      - key: full.build.confirm
-        value: 23
-        left: 178
-        right: 181
+      - key: full.open.revalidate
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 39
+        left: null
+        right: 185
+        height: 2
+      - key: full.open.confirm
+        value: 38
+        left: 182
+        right: 186
         height: 3
       - key: full.design.confirm
-        value: 24
-        left: 182
-        right: 175
-        height: 5
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 36
+        left: 188
+        right: 189
+        height: 2
+      - key: full.open.confirm
+        value: 38
+        left: 190
+        right: 186
+        height: 3
+      - key: full.design.confirm
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 34
+        left: 192
+        right: 193
+        height: 2
+      - key: full.design.handoff
+        value: 36
+        left: 194
+        right: 189
+        height: 3
+      - key: full.open.confirm
+        value: 38
+        left: 195
+        right: 186
+        height: 4
+      - key: full.open.evidence
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 37
+        left: null
+        right: 197
+        height: 2
+      - key: full.design.handoff
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 39
+        left: 200
+        right: 201
+        height: 2
+      - key: full.open
+        value: 37
+        left: 199
+        right: 202
+        height: 3
+      - key: full.build.configure
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 35
+        left: 205
+        right: 206
+        height: 2
+      - key: full.design.confirm
+        value: 33
+        left: 204
+        right: 207
+        height: 3
+      - key: full.open
+        value: 37
+        left: 208
+        right: 202
+        height: 4
+      - key: full.archive.prepare
+        value: 57
+        left: null
+        right: null
+        height: 1
       - key: full.build.check.evidence
-        value: 42
-        left: 177
-        right: 168
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 50
+        left: 210
+        right: 211
         height: 2
       - key: full.build.confirm
-        value: 23
-        left: 184
-        right: 181
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 47
+        left: null
+        right: 214
+        height: 2
+      - key: full.build.execute
+        value: 49
+        left: 213
+        right: 215
         height: 3
+      - key: full.build.configure
+        value: 31
+        left: 212
+        right: 216
+        height: 4
+      - key: full.open.revalidate
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 39
+        left: 200
+        right: 218
+        height: 2
+      - key: full.verify.check.evidence
+        value: 55
+        left: null
+        right: null
+        height: 1
       - key: full.verify.run
+        value: 53
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 52
+        left: 220
+        right: 221
+        height: 2
+      - key: full.verify.check
+        value: 54
+        left: 219
+        right: 222
+        height: 3
+      - key: full.open
+        value: 37
+        left: 207
+        right: 223
+        height: 4
+      - key: full.design.confirm
+        value: 33
+        left: 217
+        right: 224
+        height: 5
+      - key: full.archive.confirm
+        value: 56
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 63
+        left: 226
+        right: null
+        height: 2
+      - key: full.build.check
+        value: 50
+        left: 227
+        right: 211
+        height: 3
+      - key: full.build.configure
+        value: 31
+        left: 228
+        right: 216
+        height: 4
+      - key: full.verify.check.evidence
+        value: 61
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 59
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 58
+        left: 230
+        right: 231
+        height: 2
+      - key: full.verify.check
+        value: 60
+        left: 219
+        right: 232
+        height: 3
+      - key: full.open
+        value: 37
+        left: 207
+        right: 233
+        height: 4
+      - key: full.design.confirm
+        value: 33
+        left: 229
+        right: 234
+        height: 5
+      - key: full.open
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 34
+        left: 237
+        right: 238
+        height: 2
+      - key: full.open.confirm
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 39
+        left: 240
+        right: 241
+        height: 2
+      - key: full.open
+        value: 37
+        left: 239
+        right: 242
+        height: 3
+      - key: full.build.configure
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 32
+        left: 244
+        right: 245
+        height: 2
+      - key: full.design.document
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 35
+        left: 247
+        right: 248
+        height: 2
+      - key: full.design.confirm
+        value: 33
+        left: 246
+        right: 249
+        height: 3
+      - key: full.open
+        value: 37
+        left: 250
+        right: 242
+        height: 4
+      - key: full.build.check
         value: 44
         left: null
         right: null
         height: 1
-      - key: full.open.revalidate
+      - key: full.build.configure
         value: 31
-        left: null
-        right: 186
-        height: 2
-      - key: full.open.evidence
-        value: 30
-        left: 147
-        right: 187
-        height: 3
-      - key: full.open
-        value: 28
-        left: 156
-        right: 188
-        height: 4
-      - key: full.design.confirm
-        value: 24
-        left: 185
-        right: 189
-        height: 5
-      - key: full.open.revalidate
-        value: 31
-        left: null
+        left: 252
         right: null
-        height: 1
-      - key: full.open.evidence
-        value: 30
-        left: 147
-        right: 191
         height: 2
-      - key: full.verify.report.evidence
+      - key: full.build.execute
         value: 43
         left: null
         right: null
         height: 1
-      - key: full.verify.run
+      - key: full.build.plan.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 41
+        left: 254
+        right: 255
+        height: 2
+      - key: full.build.confirm
+        value: 32
+        left: 253
+        right: 256
+        height: 3
+      - key: full.open
+        value: 37
+        left: 249
+        right: 242
+        height: 3
+      - key: full.design.confirm
+        value: 33
+        left: 257
+        right: 258
+        height: 4
+      - key: full.build.check
         value: 44
-        left: 193
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 45
+        left: 260
+        right: 261
+        height: 2
+      - key: full.build.plan
+        value: 47
+        left: 254
+        right: 255
+        height: 2
+      - key: full.build.confirm
+        value: 32
+        left: 262
+        right: 263
+        height: 3
+      - key: full.verify.run
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 40
+        left: null
+        right: 265
+        height: 2
+      - key: full.open.evidence
+        value: 39
+        left: 240
+        right: 266
+        height: 3
+      - key: full.open
+        value: 37
+        left: 249
+        right: 267
+        height: 4
+      - key: full.design.confirm
+        value: 33
+        left: 264
+        right: 268
+        height: 5
+      - key: full.build.check
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 45
+        left: 270
+        right: 261
+        height: 2
+      - key: full.build.execute
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 47
+        left: 272
+        right: 273
+        height: 2
+      - key: full.build.confirm
+        value: 32
+        left: 271
+        right: 274
+        height: 3
+      - key: full.design.confirm
+        value: 33
+        left: 275
+        right: 268
+        height: 5
+      - key: full.build.check.evidence
+        value: 51
+        left: 270
+        right: 261
+        height: 2
+      - key: full.build.confirm
+        value: 32
+        left: 277
+        right: 274
+        height: 3
+      - key: full.verify.run
+        value: 53
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 40
+        left: null
+        right: 279
+        height: 2
+      - key: full.open.evidence
+        value: 39
+        left: 240
+        right: 280
+        height: 3
+      - key: full.open
+        value: 37
+        left: 249
+        right: 281
+        height: 4
+      - key: full.design.confirm
+        value: 33
+        left: 278
+        right: 282
+        height: 5
+      - key: full.open.revalidate
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 39
+        left: 240
+        right: 284
+        height: 2
+      - key: full.verify.report.evidence
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 53
+        left: 286
         right: null
         height: 2
       - key: full.verify.check
-        value: 45
-        left: 192
-        right: 194
+        value: 54
+        left: 285
+        right: 287
         height: 3
       - key: full.open
-        value: 28
-        left: 156
-        right: 195
+        value: 37
+        left: 249
+        right: 288
         height: 4
       - key: full.design.confirm
-        value: 24
-        left: 185
-        right: 196
+        value: 33
+        left: 278
+        right: 289
+        height: 5
+      - key: full.archive.confirm
+        value: 56
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 57
+        left: 291
+        right: 292
+        height: 2
+      - key: full.build.check.evidence
+        value: 51
+        left: 293
+        right: 261
+        height: 3
+      - key: full.build.confirm
+        value: 32
+        left: 294
+        right: 274
+        height: 4
+      - key: full.verify.check.evidence
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 59
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 52
+        left: 296
+        right: 297
+        height: 2
+      - key: full.verify.check
+        value: 54
+        left: 285
+        right: 298
+        height: 3
+      - key: full.open
+        value: 37
+        left: 249
+        right: 299
+        height: 4
+      - key: full.design.confirm
+        value: 33
+        left: 295
+        right: 300
+        height: 5
+      - key: full.verify.report.evidence
+        value: 58
+        left: 296
+        right: 297
+        height: 2
+      - key: full.verify.check
+        value: 60
+        left: 285
+        right: 302
+        height: 3
+      - key: full.open
+        value: 37
+        left: 249
+        right: 303
+        height: 4
+      - key: full.design.confirm
+        value: 33
+        left: 295
+        right: 304
         height: 5
     maps:
       - null
@@ -2719,31 +3940,47 @@ run_checkpoint:
       - 47
       - 52
       - 59
-      - 69
-      - 74
-      - 79
-      - 85
-      - 90
-      - 93
-      - 97
+      - 66
+      - 70
+      - 75
+      - 80
+      - 86
+      - 92
       - 102
       - 107
-      - 114
-      - 117
-      - 120
-      - 124
-      - 129
-      - 131
-      - 136
-      - 142
-      - 143
-      - 150
-      - 158
-      - 166
-      - 176
-      - 183
-      - 190
-      - 197
+      - 112
+      - 118
+      - 123
+      - 126
+      - 130
+      - 135
+      - 140
+      - 147
+      - 154
+      - 159
+      - 164
+      - 169
+      - 175
+      - 181
+      - 184
+      - 187
+      - 191
+      - 196
+      - 198
+      - 203
+      - 209
+      - 225
+      - 235
+      - 236
+      - 243
+      - 251
+      - 259
+      - 269
+      - 276
+      - 283
+      - 290
+      - 301
+      - 305
     bindings:
       - path:
           - actions
@@ -2836,6 +4073,42 @@ run_checkpoint:
           - outputs
         map: 12
       - path:
+          - actions
+          - "15"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actions
+          - "16"
+          - input
+          - outputs
+        map: 14
+      - path:
+          - actions
+          - "17"
+          - input
+          - outputs
+        map: 15
+      - path:
+          - actions
+          - "18"
+          - input
+          - outputs
+        map: 16
+      - path:
+          - actions
+          - "19"
+          - input
+          - outputs
+        map: 17
+      - path:
+          - actions
+          - "20"
+          - input
+          - outputs
+        map: 18
+      - path:
           - actionContexts
           - procurement-supplier-mdm-slice:1
           - results
@@ -2844,129 +4117,179 @@ run_checkpoint:
           - actionContexts
           - procurement-supplier-mdm-slice:11
           - results
-        map: 13
+        map: 19
       - path:
           - actionContexts
           - procurement-supplier-mdm-slice:13
           - results
-        map: 14
+        map: 20
       - path:
           - actionContexts
           - procurement-supplier-mdm-slice:14
           - results
-        map: 15
+        map: 21
       - path:
           - actionContexts
           - procurement-supplier-mdm-slice:16
           - results
-        map: 16
+        map: 22
       - path:
           - actionContexts
           - procurement-supplier-mdm-slice:17
           - results
-        map: 17
+        map: 23
       - path:
           - actionContexts
           - procurement-supplier-mdm-slice:19
           - results
-        map: 18
+        map: 24
       - path:
           - actionContexts
           - procurement-supplier-mdm-slice:20
           - results
-        map: 19
+        map: 25
       - path:
           - actionContexts
           - procurement-supplier-mdm-slice:22
           - results
-        map: 20
+        map: 26
       - path:
           - actionContexts
           - procurement-supplier-mdm-slice:24
           - results
-        map: 21
+        map: 27
       - path:
           - actionContexts
           - procurement-supplier-mdm-slice:26
           - results
-        map: 22
+        map: 28
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:28
+          - results
+        map: 29
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:30
+          - results
+        map: 30
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:32
+          - results
+        map: 31
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:34
+          - results
+        map: 32
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:35
+          - results
+        map: 33
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:36
+          - results
+        map: 34
       - path:
           - actionContexts
           - procurement-supplier-mdm-slice:4
           - results
-        map: 23
+        map: 35
       - path:
           - actionContexts
           - procurement-supplier-mdm-slice:5
           - results
-        map: 24
+        map: 36
       - path:
           - actionContexts
           - procurement-supplier-mdm-slice:7
           - results
-        map: 25
+        map: 37
       - path:
           - actionContexts
           - procurement-supplier-mdm-slice:9
           - results
-        map: 26
+        map: 38
       - path:
           - outputs
-        map: 22
+        map: 34
       - path:
           - waits
           - "0"
           - results
-        map: 27
+        map: 39
       - path:
           - waits
           - "1"
           - results
-        map: 28
+        map: 40
       - path:
           - waits
           - "2"
           - results
-        map: 29
+        map: 41
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 42
+      - path:
+          - waits
+          - "4"
+          - results
+        map: 43
       - path:
           - evidenceWaits
           - "0"
           - results
-        map: 30
+        map: 44
       - path:
           - evidenceWaits
           - "1"
           - results
-        map: 31
+        map: 45
       - path:
           - evidenceWaits
           - "2"
           - results
-        map: 32
+        map: 46
       - path:
           - evidenceWaits
           - "3"
           - results
-        map: 33
+        map: 47
       - path:
           - evidenceWaits
           - "4"
           - results
-        map: 34
+        map: 48
       - path:
           - evidenceWaits
           - "5"
           - results
-        map: 35
+        map: 49
       - path:
           - evidenceWaits
           - "6"
           - results
-        map: 36
+        map: 50
       - path:
           - evidenceWaits
           - "7"
           - results
-        map: 37
-  storageHash: d3aa334e1a53ed4a146bf8c9c2fe154f2205a12929b0447f72f9d3e734c9c8c4
-check_epoch: 6
+        map: 51
+      - path:
+          - evidenceWaits
+          - "8"
+          - results
+        map: 52
+      - path:
+          - evidenceWaits
+          - "9"
+          - results
+        map: 53
+  storageHash: b7fd18cbc0ed85caa9a3de39464c39289e466945c1130fcfb70bac1a1ab244b1
+check_epoch: 10

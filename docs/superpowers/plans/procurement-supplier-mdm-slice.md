@@ -2,6 +2,7 @@
 change: procurement-supplier-mdm-slice
 design-doc: openspec/changes/procurement-supplier-mdm-slice/design.md
 base-ref: c395e4b603202c3567408c1843f8ed9b232ffa26
+archived-with: 2026-11-16-procurement-supplier-mdm-slice
 ---
 
 <!-- comet-task-authority: openspec/changes/procurement-supplier-mdm-slice/tasks.md -->
