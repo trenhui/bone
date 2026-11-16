@@ -30,7 +30,7 @@ async function seedSelfApprovalRecord() {
   const created = await api('POST', `/runtime/entities/${EXP}/records`, {
     claim_no: claimNo,
     title: 'UI 探针-挂起原因可诊断',
-    amount: 120,
+    amount: 126.8,
     expense_date: '2026-10-29',
     applicant: USER,
     remark: 'UI 探针：审批人=发起人本人',

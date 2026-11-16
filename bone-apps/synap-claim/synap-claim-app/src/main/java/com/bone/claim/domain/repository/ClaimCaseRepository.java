@@ -2,6 +2,7 @@ package com.bone.claim.domain.repository;
 
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.projection.ClaimHeadProjection;
+import com.bone.claim.domain.model.claim.projection.ClaimSearchHit;
 import com.bone.claim.domain.model.claim.projection.ClaimSettlementRef;
 import com.bone.claim.domain.model.claim.projection.ClaimTenantRef;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
@@ -177,4 +178,14 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
                 ClaimStatus.FINISHED.name(),
                 ClaimStatus.CLOSED_REJECTED.name()));
   }
+
+  /**
+   * 工作台跨键检索：报案号 / 保单号 / 发票代码 / 发票号 / 批次号，以及干系人遮蔽姓名 / 手机 / 假名化 ID。
+   *
+   * <p>联表查询必须同时满足三条：方法级 {@code @TenantScope(AUTO, column = "c.tenant_id")}、 模板内 {@code
+   * /*bone:tenant*}{@code /} 锚点、显式 {@code c.deleted = 0}。 少任一条都会让 SDK 启动期拒绝注册或运行期 fail-closed
+   * 抛错——这是「不静默跨租户」的结构保证。 结果只回最小字段，匹配到的 PII 值不出库；pattern 已在应用层做 LIKE 通配符转义。
+   */
+  @TenantScope(value = TenantScopeMode.AUTO, column = "c.tenant_id")
+  List<ClaimSearchHit> searchByKeyword(@Param("pattern") String pattern, @Param("limit") int limit);
 }

@@ -113,16 +113,16 @@ const REPLENISHMENTS = '/api/v1/replenishments';
 const SHIPMENTS = '/api/v1/shipments';
 
 export const channelApi = {
-  page: (params: { channelCode?: string; page: number; size: number }) =>
+  page: (params: { channelCode?: string; page: number; size: number }): Promise<ApiResponse<PageResult<ChannelSummary>>> =>
     api.get<never, ApiResponse<PageResult<ChannelSummary>>>(CHANNELS, { params }),
 
-  enable: (channelCode: string) =>
+  enable: (channelCode: string): Promise<ApiResponse<ChannelSummary>> =>
     api.post<never, ApiResponse<ChannelSummary>>(`${CHANNELS}/${channelCode}/enable`),
 
-  disable: (channelCode: string) =>
+  disable: (channelCode: string): Promise<ApiResponse<ChannelSummary>> =>
     api.post<never, ApiResponse<ChannelSummary>>(`${CHANNELS}/${channelCode}/disable`),
 
-  setOrderSync: (channelCode: string, enabled: boolean) =>
+  setOrderSync: (channelCode: string, enabled: boolean): Promise<ApiResponse<ChannelSummary>> =>
     api.post<never, ApiResponse<ChannelSummary>>(
       `${CHANNELS}/${channelCode}/order-sync`,
       null,
@@ -137,7 +137,7 @@ export const channelProductApi = {
     listingStatus?: string;
     page: number;
     size: number;
-  }) =>
+  }): Promise<ApiResponse<PageResult<ChannelProductSummary>>> =>
     api.get<never, ApiResponse<PageResult<ChannelProductSummary>>>(CHANNEL_PRODUCTS, {
       params,
     }),
@@ -147,13 +147,13 @@ export const channelProductApi = {
     productId: string;
     productName: string;
     listingPrice: number;
-  }) => api.post<never, ApiResponse<ChannelProductSummary>>(CHANNEL_PRODUCTS, data),
+  }): Promise<ApiResponse<ChannelProductSummary>> => api.post<never, ApiResponse<ChannelProductSummary>>(CHANNEL_PRODUCTS, data),
 
-  delist: (data: { channelCode: string; productId: string }) =>
+  delist: (data: { channelCode: string; productId: string }): Promise<ApiResponse<ChannelProductSummary>> =>
     api.post<never, ApiResponse<ChannelProductSummary>>(`${CHANNEL_PRODUCTS}/delist`, data),
 
   /** 广播库存到全部已上架渠道（多渠道共享实物库存，只同步一个渠道会超卖）。 */
-  syncInventory: (productId: string, stock: number) =>
+  syncInventory: (productId: string, stock: number): Promise<ApiResponse<ChannelProductSummary[]>> =>
     api.post<never, ApiResponse<ChannelProductSummary[]>>(
       `${CHANNEL_PRODUCTS}/sync-inventory`,
       null,
@@ -163,10 +163,10 @@ export const channelProductApi = {
 
 export const channelOrderApi = {
   /** 拉取渠道订单并落单（服务端按渠道原始订单号幂等）。 */
-  pull: (data: PullChannelOrderReq) =>
+  pull: (data: PullChannelOrderReq): Promise<ApiResponse<string>> =>
     api.post<never, ApiResponse<string>>(`${CHANNEL_ORDERS}/pull`, data),
 
-  ack: (channelCode: string, channelOrderNo: string) =>
+  ack: (channelCode: string, channelOrderNo: string): Promise<ApiResponse<boolean>> =>
     api.post<never, ApiResponse<boolean>>(
       `${CHANNEL_ORDERS}/${channelCode}/${channelOrderNo}/ack`,
     ),
@@ -178,32 +178,32 @@ export const inventoryApi = {
     lowStockOnly?: boolean;
     page: number;
     size: number;
-  }) => api.get<never, ApiResponse<PageResult<InventorySummary>>>(INVENTORIES, { params }),
+  }): Promise<ApiResponse<PageResult<InventorySummary>>> => api.get<never, ApiResponse<PageResult<InventorySummary>>>(INVENTORIES, { params }),
 
   receive: (data: {
     productId: string;
     productName?: string;
     warehouseCode?: string;
     quantity: number;
-  }) => api.post<never, ApiResponse<InventorySummary>>(`${INVENTORIES}/receive`, data),
+  }): Promise<ApiResponse<InventorySummary>> => api.post<never, ApiResponse<InventorySummary>>(`${INVENTORIES}/receive`, data),
 
-  deduct: (data: { productId: string; warehouseCode?: string; quantity: number }) =>
+  deduct: (data: { productId: string; warehouseCode?: string; quantity: number }): Promise<ApiResponse<InventorySummary>> =>
     api.post<never, ApiResponse<InventorySummary>>(`${INVENTORIES}/deduct`, data),
 
-  reserve: (data: { productId: string; warehouseCode?: string; quantity: number }) =>
+  reserve: (data: { productId: string; warehouseCode?: string; quantity: number }): Promise<ApiResponse<InventorySummary>> =>
     api.post<never, ApiResponse<InventorySummary>>(`${INVENTORIES}/reserve`, data),
 
-  confirm: (data: { productId: string; warehouseCode?: string; quantity: number }) =>
+  confirm: (data: { productId: string; warehouseCode?: string; quantity: number }): Promise<ApiResponse<InventorySummary>> =>
     api.post<never, ApiResponse<InventorySummary>>(`${INVENTORIES}/confirm`, data),
 
-  release: (data: { productId: string; warehouseCode?: string; quantity: number }) =>
+  release: (data: { productId: string; warehouseCode?: string; quantity: number }): Promise<ApiResponse<InventorySummary>> =>
     api.post<never, ApiResponse<InventorySummary>>(`${INVENTORIES}/release`, data),
 
   setSafetyStock: (data: {
     productId: string;
     warehouseCode?: string;
     quantity: number;
-  }) => api.post<never, ApiResponse<InventorySummary>>(`${INVENTORIES}/safety-stock`, data),
+  }): Promise<ApiResponse<InventorySummary>> => api.post<never, ApiResponse<InventorySummary>>(`${INVENTORIES}/safety-stock`, data),
 };
 
 /** 供应链补货（新场景 · 不改库存页） */
@@ -213,12 +213,12 @@ export const replenishmentApi = {
     status?: string;
     page: number;
     size: number;
-  }) =>
+  }): Promise<ApiResponse<PageResult<ReplenishmentOrderSummary>>> =>
     api.get<never, ApiResponse<PageResult<ReplenishmentOrderSummary>>>(REPLENISHMENTS, {
       params,
     }),
 
-  suggestions: (params?: { page?: number; size?: number }) =>
+  suggestions: (params?: { page?: number; size?: number }): Promise<ApiResponse<ReplenishmentSuggestion[]>> =>
     api.get<never, ApiResponse<ReplenishmentSuggestion[]>>(`${REPLENISHMENTS}/suggestions`, {
       params,
     }),
@@ -230,30 +230,30 @@ export const replenishmentApi = {
     quantity?: number;
     supplierCode?: string;
     remark?: string;
-  }) => api.post<never, ApiResponse<ReplenishmentOrderSummary>>(REPLENISHMENTS, data),
+  }): Promise<ApiResponse<ReplenishmentOrderSummary>> => api.post<never, ApiResponse<ReplenishmentOrderSummary>>(REPLENISHMENTS, data),
 
-  fromSuggestions: (data?: { supplierCode?: string }) =>
+  fromSuggestions: (data?: { supplierCode?: string }): Promise<ApiResponse<ReplenishmentOrderSummary[]>> =>
     api.post<never, ApiResponse<ReplenishmentOrderSummary[]>>(
       `${REPLENISHMENTS}/from-suggestions`,
       data ?? {},
     ),
 
-  submit: (id: string) =>
+  submit: (id: string): Promise<ApiResponse<ReplenishmentOrderSummary>> =>
     api.post<never, ApiResponse<ReplenishmentOrderSummary>>(
       `${REPLENISHMENTS}/${id}/submit`,
     ),
 
-  approve: (id: string) =>
+  approve: (id: string): Promise<ApiResponse<ReplenishmentOrderSummary>> =>
     api.post<never, ApiResponse<ReplenishmentOrderSummary>>(
       `${REPLENISHMENTS}/${id}/approve`,
     ),
 
-  receive: (id: string) =>
+  receive: (id: string): Promise<ApiResponse<ReplenishmentOrderSummary>> =>
     api.post<never, ApiResponse<ReplenishmentOrderSummary>>(
       `${REPLENISHMENTS}/${id}/receive`,
     ),
 
-  cancel: (id: string) =>
+  cancel: (id: string): Promise<ApiResponse<ReplenishmentOrderSummary>> =>
     api.post<never, ApiResponse<ReplenishmentOrderSummary>>(
       `${REPLENISHMENTS}/${id}/cancel`,
     ),
@@ -265,7 +265,7 @@ export const shipmentApi = {
     status?: string;
     page: number;
     size: number;
-  }) => api.get<never, ApiResponse<PageResult<ShipmentSummary>>>(SHIPMENTS, { params }),
+  }): Promise<ApiResponse<PageResult<ShipmentSummary>>> => api.get<never, ApiResponse<PageResult<ShipmentSummary>>>(SHIPMENTS, { params }),
 
   create: (data: {
     orderId: string;
@@ -273,20 +273,20 @@ export const shipmentApi = {
     receiverName?: string;
     receiverPhone?: string;
     receiverAddress?: string;
-  }) => api.post<never, ApiResponse<ShipmentSummary>>(SHIPMENTS, data),
+  }): Promise<ApiResponse<ShipmentSummary>> => api.post<never, ApiResponse<ShipmentSummary>>(SHIPMENTS, data),
 
-  ship: (shipmentId: string, data: { logisticsCompany?: string; trackingNo: string }) =>
+  ship: (shipmentId: string, data: { logisticsCompany?: string; trackingNo: string }): Promise<ApiResponse<ShipmentSummary>> =>
     api.post<never, ApiResponse<ShipmentSummary>>(`${SHIPMENTS}/${shipmentId}/ship`, data),
 
-  sign: (shipmentId: string) =>
+  sign: (shipmentId: string): Promise<ApiResponse<ShipmentSummary>> =>
     api.post<never, ApiResponse<ShipmentSummary>>(`${SHIPMENTS}/${shipmentId}/sign`),
 
-  syncTrace: (shipmentId: string) =>
+  syncTrace: (shipmentId: string): Promise<ApiResponse<ShipmentTrace[]>> =>
     api.post<never, ApiResponse<ShipmentTrace[]>>(
       `${SHIPMENTS}/${shipmentId}/traces/sync`,
     ),
 
-  traces: (shipmentId: string) =>
+  traces: (shipmentId: string): Promise<ApiResponse<ShipmentTrace[]>> =>
     api.get<never, ApiResponse<ShipmentTrace[]>>(`${SHIPMENTS}/${shipmentId}/traces`),
 };
 
@@ -302,11 +302,11 @@ const CHANNEL_BROADCASTS = '/api/v1/channel-broadcasts';
  * 混在一起会让「顺手改绑」变得容易发生，而这类错误要等对账差异出来才被发现。
  */
 export const channelBuyerApi = {
-  page: (params: { channelCode?: string; bound?: boolean; page: number; size: number }) =>
+  page: (params: { channelCode?: string; bound?: boolean; page: number; size: number }): Promise<ApiResponse<PageResult<ChannelBuyerSummary>>> =>
     api.get<never, ApiResponse<PageResult<ChannelBuyerSummary>>>(CHANNEL_BUYERS, { params }),
 
   /** 待绑定影子清单（按最近拉单时间倒序）：运营优先处理高频渠道买家。 */
-  shadowCandidates: (channelCode?: string, limit = 50) =>
+  shadowCandidates: (channelCode?: string, limit = 50): Promise<ApiResponse<ChannelBuyerSummary[]>> =>
     api.get<never, ApiResponse<ChannelBuyerSummary[]>>(CHANNEL_BUYERS + '/shadow-candidates', {
       params: { channelCode, limit },
     }),
@@ -316,7 +316,7 @@ export const channelBuyerApi = {
     channelBuyerId: string;
     customerId: string;
     customerName?: string;
-  }) => api.post<never, ApiResponse<ChannelBuyerSummary>>(CHANNEL_BUYERS + '/bind', null, { params: data }),
+  }): Promise<ApiResponse<ChannelBuyerSummary>> => api.post<never, ApiResponse<ChannelBuyerSummary>>(CHANNEL_BUYERS + '/bind', null, { params: data }),
 
   rebind: (data: {
     channelCode: string;
@@ -324,9 +324,9 @@ export const channelBuyerApi = {
     customerId: string;
     customerName?: string;
     reason: string;
-  }) => api.post<never, ApiResponse<ChannelBuyerSummary>>(CHANNEL_BUYERS + '/rebind', null, { params: data }),
+  }): Promise<ApiResponse<ChannelBuyerSummary>> => api.post<never, ApiResponse<ChannelBuyerSummary>>(CHANNEL_BUYERS + '/rebind', null, { params: data }),
 
-  unbind: (data: { channelCode: string; channelBuyerId: string }) =>
+  unbind: (data: { channelCode: string; channelBuyerId: string }): Promise<ApiResponse<ChannelBuyerSummary>> =>
     api.post<never, ApiResponse<ChannelBuyerSummary>>(CHANNEL_BUYERS + '/unbind', null, {
       params: data,
     }),
@@ -334,15 +334,15 @@ export const channelBuyerApi = {
 
 /** 库存广播任务（Outbox）运维 API。 */
 export const channelBroadcastApi = {
-  page: (params: { status?: string; page: number; size: number }) =>
+  page: (params: { status?: string; page: number; size: number }): Promise<ApiResponse<PageResult<BroadcastTaskSummary>>> =>
     api.get<never, ApiResponse<PageResult<BroadcastTaskSummary>>>(CHANNEL_BROADCASTS, {
       params,
     }),
 
   /** 人工重试：回队列并立即推进一轮中继。 */
-  retry: (taskId: string) =>
+  retry: (taskId: string): Promise<ApiResponse<BroadcastTaskSummary>> =>
     api.post<never, ApiResponse<BroadcastTaskSummary>>(`${CHANNEL_BROADCASTS}/${taskId}/retry`),
 
   /** 立即推进一轮中继（不等下一个调度周期）。 */
-  relayNow: () => api.post<never, ApiResponse<number[]>>(`${CHANNEL_BROADCASTS}/relay-now`),
+  relayNow: (): Promise<ApiResponse<number[]>> => api.post<never, ApiResponse<number[]>>(`${CHANNEL_BROADCASTS}/relay-now`),
 };

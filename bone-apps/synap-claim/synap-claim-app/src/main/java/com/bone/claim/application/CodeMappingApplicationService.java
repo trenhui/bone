@@ -217,6 +217,9 @@ public class CodeMappingApplicationService {
     if (command.reviewerId() != null) {
       created.markReviewed(command.reviewerId(), now);
     }
+    if (command.reasonCode() != null && !command.reasonCode().isBlank()) {
+      created.markReason(command.reasonCode());
+    }
     codeMappingRepository.save(created);
     return created;
   }
@@ -326,7 +329,8 @@ public class CodeMappingApplicationService {
                   null,
                   MappingSource.IMPORT,
                   versionNo,
-                  null));
+                  null,
+                  "IMPORT"));
       if (versionNo.equals(result.getVersionNo())) {
         created++;
       } else {
@@ -1029,7 +1033,40 @@ public class CodeMappingApplicationService {
       String disambiguationJson,
       MappingSource source,
       String versionNo,
-      Long reviewerId) {}
+      Long reviewerId,
+      /** 判定理由码：导入批次固定 IMPORT；单条发布缺省为空（停用理由走 {@code close}）。 */
+      String reasonCode) {
+
+    /** 兼容既有 12 参调用（单条发布 / 处置未命中）：理由码缺省为空，避免改动已验证的调用点。 */
+    public PublishCommand(
+        String insurerCode,
+        String domain,
+        String insurerItemCode,
+        String disambiguationKey,
+        String standardCode,
+        MappingType mappingType,
+        com.bone.claim.domain.model.mapping.MatchRule matchRule,
+        java.math.BigDecimal matchScore,
+        String disambiguationJson,
+        MappingSource source,
+        String versionNo,
+        Long reviewerId) {
+      this(
+          insurerCode,
+          domain,
+          insurerItemCode,
+          disambiguationKey,
+          standardCode,
+          mappingType,
+          matchRule,
+          matchScore,
+          disambiguationJson,
+          source,
+          versionNo,
+          reviewerId,
+          null);
+    }
+  }
 
   public record MappingView(
       String id,

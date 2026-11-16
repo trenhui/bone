@@ -36,9 +36,7 @@ vi.mock('antd', async () => {
   };
 });
 
-// eslint-disable-next-line import/first
 import StructurePanel from './StructurePanel';
-// eslint-disable-next-line import/first
 import { CONTROL_KIND_OPTIONS, CONTROL_KINDS, KIND_GROUPS } from './constants';
 
 function schemaOf(n: number): BoneUiSchema {

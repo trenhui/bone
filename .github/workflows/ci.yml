@@ -114,6 +114,11 @@ jobs:
       - name: Gate Liveness Check (blocking)
         run: /usr/bin/env python3 scripts/check-gate-liveness.py --strict
 
+      # 脚本治理守卫：注册表对账 + 编目 + 契约测试 + 环境体检，本地与 CI 同一条命令。
+      # 此前编目守卫只在 pre-commit 的 unittest discover 里被顺带发现，CI 不跑 scripts/tests。
+      - name: Scripts Registry & Catalog Guard (blocking)
+        run: bash scripts/ci/scripts-registry-guard.sh
+
       # procuraAI（2026-11-10 复诊 P0-③）：此前 tools/check_procura_alignment.py 与
       # check_procura_evalset.py 在 ci.yml / check.sh 均零引用，「本地 10/10」被误读成
       # ship-ready。显式逐条接 blocking，并对门禁自身做注入式负向反证（防判据假绿）。

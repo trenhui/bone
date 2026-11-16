@@ -105,6 +105,7 @@ def main() -> int:
                         {
                             "module": module_of(fp),
                             "controller": fn[:-5],
+                            "file": fp.replace(os.sep, "/"),
                             "http": verb,
                             "path": path,
                             "has_var": "{" in path,

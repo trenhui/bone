@@ -269,6 +269,57 @@ class CoverageOverrideMergeTest {
     verify(overrideRepository).save(draft);
   }
 
+  /**
+   * spec「与启停状态兼容」：PAUSE 保单发布覆盖后仍保持 PAUSE 不收案，且不因发布被悄悄改回 ACTIVE； 生效配置仍按合并结果裁决（合并层不读 configStatus）。
+   */
+  @Test
+  void publish_onPausedPolicy_doesNotChangeConfigStatusAndMergeStillApplies() {
+    when(tenantPort.currentTenantId()).thenReturn(TENANT);
+    ClaimCoverageOverride draft =
+        ClaimCoverageOverride.of(
+            null,
+            TENANT,
+            BIZ,
+            UUID_,
+            ClaimCoverageOverride.FIELD_LIMIT_HOSPITAL_CODES,
+            "snap",
+            "H003");
+    when(overrideRepository.findByBizAndCoverage(TENANT, BIZ, UUID_)).thenReturn(List.of(draft));
+    when(liabilityRepository.findActiveByUuid(UUID_)).thenReturn(standardLiability());
+    com.bone.claim.domain.model.policy.ClaimPolicy paused =
+        com.bone.claim.domain.model.policy.ClaimPolicy.open(
+            1L,
+            TENANT,
+            "POL-PAUSE",
+            "团险",
+            "永诚",
+            "北京",
+            "insure",
+            BIZ,
+            "OUTPATIENT",
+            "GROUP",
+            NOW,
+            NOW.plusSeconds(86400),
+            0,
+            "v1",
+            "[\"h1\"]",
+            NOW);
+    paused.pause("operator-1");
+    String statusBefore = paused.configStatus();
+    assertThat(paused.isConfigActive()).isFalse();
+
+    assertThat(writeService.publish(BIZ, UUID_)).isEqualTo(1);
+
+    assertThat(paused.configStatus()).isEqualTo(statusBefore);
+    assertThat(paused.isConfigActive()).isFalse();
+    when(overrideRepository.findActiveByBizAndCoverage(TENANT, BIZ, UUID_))
+        .thenReturn(List.of(draft));
+    when(feeRuleRepository.findByLiabilityUuid(TENANT, UUID_)).thenReturn(List.of());
+    EffectiveConfig cfg = viewService.effectiveConfig(BIZ, UUID_);
+    assertThat(cfg.limitHospitalCodes()).isEqualTo("H003");
+    verify(claimPolicyRepository, never()).countActiveByBizIdentity(anyLong(), anyString());
+  }
+
   @Test
   void upsert_unknownInsurer_rejected() {
     when(tenantPort.currentTenantId()).thenReturn(TENANT);

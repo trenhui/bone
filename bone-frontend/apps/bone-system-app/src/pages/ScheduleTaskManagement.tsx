@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Button, Space, Form, Input, Modal, message, Card, Switch, Tag, Pagination, Select, Drawer } from 'antd';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -21,7 +21,8 @@ const ScheduleTaskManagement: React.FC = () => {
   const [form] = Form.useForm();
   const [keyword, setKeyword] = useState('');
 
-  const fetchData = async (page = 1, pageSize = 20, kw = keyword) => {
+  // 分页/搜索共用同一份请求逻辑：loadPage 只认显式参数，避免隐式读取 keyword 让依赖数组失真
+  const loadPage = useCallback(async (page: number, pageSize: number, kw: string) => {
     setLoading(true);
     try {
       const res = await scheduleTaskApi.getScheduleTaskPage({ page: page, size: pageSize, keyword: kw.trim() || undefined });
@@ -34,11 +35,17 @@ const ScheduleTaskManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
+  const fetchData = useCallback(
+    (page = 1, pageSize = 20, kw = keyword) => loadPage(page, pageSize, kw),
+    [loadPage, keyword],
+  );
+
+  // 挂载时按空关键字拉一次；keyword 变化由搜索按钮/回车显式触发，不在此跟随
   useEffect(() => {
-    fetchData();
-  }, []);
+    void loadPage(1, 20, '');
+  }, [loadPage]);
 
   const openCreate = () => {
     setEditing(null);

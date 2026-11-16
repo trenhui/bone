@@ -178,6 +178,34 @@
    ]
   },
   {
+   "http": "POST",
+   "path": "/api/v1/masterdata/change-requests/{id}/submit",
+   "controller": "ChangeRequestController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ChangeRequestController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/change-requests/{id}/segments/{segment}/decide",
+   "controller": "ChangeRequestController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ChangeRequestController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/change-requests/{id}/apply",
+   "controller": "ChangeRequestController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ChangeRequestController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/change-requests/{id}",
+   "controller": "ChangeRequestController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ChangeRequestController.java",
+   "cases": []
+  },
+  {
    "http": "GET",
    "path": "/api/v1/masterdata/fields/{id}",
    "controller": "MasterDataFieldTopController",
@@ -407,6 +435,27 @@
    "path": "/api/v1/masterdata/quality-issues/open-count",
    "controller": "QualityIssueController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/QualityIssueController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/golden-records/merge",
+   "controller": "GoldenRecordController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/GoldenRecordController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/golden-records/rollback",
+   "controller": "GoldenRecordController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/GoldenRecordController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/golden-records/{partyId}",
+   "controller": "GoldenRecordController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/GoldenRecordController.java",
    "cases": []
   },
   {
@@ -1697,6 +1746,7 @@
    "cases": [
     "chains.py",
     "claim-full-chain-e2e.mjs",
+    "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -1708,6 +1758,7 @@
    "cases": [
     "chains.py",
     "claim-full-chain-e2e.mjs",
+    "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -1719,6 +1770,7 @@
    "cases": [
     "chains.py",
     "claim-full-chain-e2e.mjs",
+    "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -3729,9 +3781,7 @@
    "path": "/api/v1/claims/{id}/auto-approve",
    "controller": "ClaimCaseController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
-   "cases": [
-    "claim-full-chain-e2e.mjs"
-   ]
+   "cases": []
   },
   {
    "http": "POST",
@@ -3965,7 +4015,9 @@
    "path": "/api/v1/claim-config/policies/{policyNo}/detail",
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
-   "cases": []
+   "cases": [
+    "claim-full-chain-e2e.mjs"
+   ]
   },
   {
    "http": "POST",
@@ -4754,8 +4806,8 @@
   }
  ],
  "summary": {
-  "endpoints": 537,
+  "endpoints": 544,
   "covered": 243,
-  "uncovered": 294
+  "uncovered": 301
  }
 }

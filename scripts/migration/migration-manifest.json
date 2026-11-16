@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 123,
+  "executableCount": 124,
   "retired": [],
   "entries": [
     {
@@ -789,6 +789,12 @@
       "file": "0123_synap_claim_liability_expand.sql",
       "kind": "ddl",
       "summary": "M2 ① Expand：给 t_adj_liability 增加 1 个聚合列 liability_rule_json（JSON NULL），把责任要素从 4 维标量升级为 9 个键的可扩展表达（D5 已拍板单聚合列：九列方案在 G3 自设判据下自我否证——新增一类要素仍要 ADD COLUMN；且本仓实测零 JSON codec，「九列改动面更小」不成立）。本阶段只加列：不改旧列类型、不建 _rule 影子列、不做存量回填、不同时做 contract，故旧代码对新列完全无感 ⇒ 线上读写零行为变更，回滚只需 DROP 该列且无数据损失。列 nullable 无默认值：历史行恒为 NULL ⇒ 读侧按键回落旧标量列成为结构保证（A 类必需参数 fail-closed / B 类可选维度缺键不施加约束 / 未知键与未知版本拒，唯一真源见方案 §9.1.1 键分类表）；不给新键编造 0 默认值（「缺键=不施加约束」与「给 0」语义相反，等于凭空新增拒赔条件）。读侧切主在 ③ Dual-read、超集解锁在 ④，均不在本脚本。bone-init.sql 同批补列（防「新装 vs 升级」结构分叉）。终态断言 fail-closed：information_schema 强断言新列为 nullable json，且三个可映射旧标量列（pay_percent/liability_deduct/liability_limit）仍在——防后人把「加列」误写成「改列」，旧列一被动回滚窗口即消失；0118/0121 同款临时过程，不残留过程体。"
+    },
+    {
+      "order": 124,
+      "file": "0124_synap_claim_ai_feedback_event.sql",
+      "kind": "ddl",
+      "summary": "新增 t_claim_ai_feedback_event（AI 建议曝光→人工裁决的服务端 append-only 回流）：v2.0 设计里前端只发本地事件并明写「未落库」，本迁移把 L1 回流闭环补齐——曝光是采纳率的分母、裁决带 traceId + AI 参与四态 + ReasonType 四值，只有 AI_ASSISTED 且非 blind_label 场景可裁决；event_id 客户端 UUID 作租户内唯一幂等键，重放返回首次结果、同键不同载荷 409；表内不存姓名/证件/金额/决策结论值，端点不改案件状态、不写资金。选理赔域自建而非复用 bone-ai hitl_item：网关只转发 /api/v1/claims/**，/api/ai/v1/** 不通，且通用 HITL 没有曝光事实。bone-init.sql 托管区块同批并入（G39 覆盖纪律），MERGED_SOURCES 同批登记；终态断言 fail-closed：information_schema 强断言 12 个关键列 + uk_tenant_event 唯一键两列，临时过程用完即删，不残留过程体。"
     }
   ],
   "ordinalConflicts": [

@@ -98,6 +98,26 @@ export const FlowDesign: React.FC = () => {
     void fetchFlows();
   }, [fetchFlows]);
 
+  // 图实例只在挂载时创建一次，事件回调必须是稳定引用，否则 effect 依赖会随渲染抖动
+  const openNodeConfig = useCallback(
+    (node: Node) => {
+      const data = (node.getData() ?? {}) as {
+        id?: string;
+        type?: string;
+        config?: Record<string, unknown>;
+      };
+      setEditingNode(node);
+      nodeForm.setFieldsValue({
+        name: String(node.getAttrByPath('label/text') ?? ''),
+        type: data.type ?? 'HTTP',
+        connectorId: data.config?.connectorId ?? undefined,
+        configJson: data.config ? JSON.stringify(data.config, null, 2) : '{}',
+      });
+      setNodeConfigVisible(true);
+    },
+    [nodeForm],
+  );
+
   useEffect(() => {
     if (graphRef.current) {
       const newGraph = new Graph({
@@ -126,7 +146,7 @@ export const FlowDesign: React.FC = () => {
         newGraph.dispose();
       };
     }
-  }, []);
+  }, [openNodeConfig]);
 
   const handleAdd = () => {
     setIsEdit(false);
@@ -137,22 +157,6 @@ export const FlowDesign: React.FC = () => {
   };
 
   // ===== 节点配置面板 =====
-
-  const openNodeConfig = (node: Node) => {
-    const data = (node.getData() ?? {}) as {
-      id?: string;
-      type?: string;
-      config?: Record<string, unknown>;
-    };
-    setEditingNode(node);
-    nodeForm.setFieldsValue({
-      name: String(node.getAttrByPath('label/text') ?? ''),
-      type: data.type ?? 'HTTP',
-      connectorId: data.config?.connectorId ?? undefined,
-      configJson: data.config ? JSON.stringify(data.config, null, 2) : '{}',
-    });
-    setNodeConfigVisible(true);
-  };
 
   const saveNodeConfig = async () => {
     try {

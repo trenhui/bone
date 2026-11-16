@@ -128,7 +128,7 @@ procuraAI 为**采购域内的 AI 子能力**（**非独立可交付产品**；�
 
 ## 当前态证据
 
-> **当前态证据清单（第十九轮起唯一真源）**：`gateEvidenceManifest: {"checks": 10, "criteriaMax": "A10.28", "indexCount": 9, "positiveControls": 6, "probes": 146, "seedCaseCount": 27}`
+> **当前态证据清单（第十九轮起唯一真源）**：`gateEvidenceManifest: {"checks": 10, "criteriaMax": "A10.28", "indexCount": 10, "positiveControls": 6, "probes": 146, "seedCaseCount": 27}`
 >
 > 约定：以上各轮日志里的 `N/N` 数字均为**当时快照**，当前值一律以本行为准。本行由 A10.28 与 `--manifest` 的运行时真值逐字段比对（主判据数 / 反证数 / 正例数 / 判据上限 / 评测集例数 / 证据索引数）：写假、缺字段、真源扩容未同步、历史计数超过当前真值均转红；更新方式为 `--sync-manifest`（仅开发期显式调用，CI 不调用）。CI 日志由 `--self-test` 末尾的 `[MANIFEST]` 行留存机器可读证据。
 
@@ -136,4 +136,4 @@ procuraAI 为**采购域内的 AI 子能力**（**非独立可交付产品**；�
 
 ## 变更史
 
-20 轮执行台账与建议落点记录见 [CHANGELOG.md](./CHANGELOG.md)。本文件不承载过程记录，避免索引与变更史互相污染。
+26 轮执行台账与建议落点记录见 [CHANGELOG.md](./CHANGELOG.md)。本文件不承载过程记录，避免索引与变更史互相污染。

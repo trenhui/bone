@@ -33,6 +33,7 @@ import type {
   UpdateMasterDataRecordReq,
   ImportDuplicateStrategy,
 } from '../types';
+import type { RecordVersion } from '../types/governance';
 import { masterDataRecordApi, masterDataFieldApi, approvalApi, referenceApi } from '../services/api';
 import { normalizeTotal, resolveErrorMessage } from '@bone/shared-utils';
 import { useEntityScope } from '../context/EntityScopeContext';
@@ -102,7 +103,7 @@ const RecordManagement: React.FC = () => {
   const [rejectTarget, setRejectTarget] = useState<MasterDataRecord | null>(null);
   const [rejectComment, setRejectComment] = useState('');
   const [versionsOpen, setVersionsOpen] = useState(false);
-  const [versions, setVersions] = useState<Record<string, unknown>[]>([]);
+  const [versions, setVersions] = useState<RecordVersion[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(false);
 
   const fetchFields = useCallback(async (entityId: string) => {
@@ -116,7 +117,7 @@ const RecordManagement: React.FC = () => {
     } catch {
       message.error('获取字段列表失败');
     }
-  }, []);
+  }, [message]);
 
   const fetchRecords = useCallback(async () => {
     if (!selectedEntityId) return;
@@ -143,7 +144,7 @@ const RecordManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedEntityId, selectedStatus, keyword, onlyCurrent, page, pageSize]);
+  }, [selectedEntityId, selectedStatus, keyword, onlyCurrent, page, pageSize, message]);
 
   useEffect(() => {
     if (selectedEntityId) {
@@ -469,41 +470,41 @@ const RecordManagement: React.FC = () => {
           </Select>
         );
       } else {
-      switch (field.type) {
-      case 'STRING':
-      case 'TEXT':
-        formItem = field.type === 'TEXT' ? (
-          <TextArea rows={4} placeholder={`请输入${field.name}`} />
-        ) : (
-          <Input placeholder={`请输入${field.name}`} />
-        );
-        break;
-      case 'NUMBER':
+        switch (field.type) {
+        case 'STRING':
+        case 'TEXT':
+          formItem = field.type === 'TEXT' ? (
+            <TextArea rows={4} placeholder={`请输入${field.name}`} />
+          ) : (
+            <Input placeholder={`请输入${field.name}`} />
+          );
+          break;
+        case 'NUMBER':
         // 建模期声明的 [minValue, maxValue] 在这里落到输入控件，
         // 让"单价必须 > 0""在录入时就拦住，而不是等提交后吃一个 400。
-        formItem = (
-          <InputNumber
-            style={{ width: '100%' }}
-            placeholder={`请输入${field.name}`}
-            min={field.minValue}
-            max={field.maxValue}
-          />
-        );
-        break;
-      case 'DATE':
-        formItem = <Input type="date" placeholder={`请选择${field.name}`} />;
-        break;
-      case 'BOOLEAN':
-        formItem = (
-          <Select placeholder={`请选择${field.name}`}>
-            <Option value={true}>是</Option>
-            <Option value={false}>否</Option>
-          </Select>
-        );
-        break;
-      default:
-        formItem = <Input placeholder={`请输入${field.name}`} />;
-      }
+          formItem = (
+            <InputNumber
+              style={{ width: '100%' }}
+              placeholder={`请输入${field.name}`}
+              min={field.minValue}
+              max={field.maxValue}
+            />
+          );
+          break;
+        case 'DATE':
+          formItem = <Input type="date" placeholder={`请选择${field.name}`} />;
+          break;
+        case 'BOOLEAN':
+          formItem = (
+            <Select placeholder={`请选择${field.name}`}>
+              <Option value={true}>是</Option>
+              <Option value={false}>否</Option>
+            </Select>
+          );
+          break;
+        default:
+          formItem = <Input placeholder={`请输入${field.name}`} />;
+        }
       }
       return (
         <Form.Item

@@ -38,7 +38,6 @@ export function AuthButton({
   const allowed = anyOf && anyOf.length > 0 ? hasAny(anyOf) : has(code);
 
   if (allowed) {
-    // eslint-disable-next-line react/jsx-props-no-spreading
     return <Button {...rest} disabled={disabled} />;
   }
   if (mode === 'hide') {
@@ -46,7 +45,6 @@ export function AuthButton({
   }
   return (
     <Tooltip title={deniedHint ?? '当前角色未被授予该操作权限'}>
-      {/* eslint-disable-next-line react/jsx-props-no-spreading */}
       <Button {...rest} disabled />
     </Tooltip>
   );

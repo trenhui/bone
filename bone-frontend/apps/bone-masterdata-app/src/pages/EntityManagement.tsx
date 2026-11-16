@@ -85,7 +85,7 @@ const EntityManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, searchParams]);
+  }, [page, pageSize, searchParams, message]);
 
   useEffect(() => {
     void fetchEntities();

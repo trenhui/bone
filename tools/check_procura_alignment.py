@@ -1657,8 +1657,9 @@ def _a10_semantic_checks(ctx: Ctx) -> list[str]:
     # --- A10.27 外部诊断证据索引：结构 + 跟踪真值 + 本机新增登记 ---------------
     sec11 = reg_text.split("## 11.", 1)[1] if "## 11." in reg_text else ""
     ev_ids = [r[0] for r in EVIDENCE_ROW_RE.findall(sec11)]
-    if sorted(ev_ids) != [f"E-{i}" for i in range(1, 10)]:
-        msgs.append("A10.27 资产登记第 11 节证据索引行缺失 / 重复（须 E-1…E-9 逐行齐全）")
+    # 按编号数值排序：字符串排序会把 E-10 排在 E-2 前（E-1…E-9 时恰好掩盖，E-10 登记后暴露）。
+    if sorted(int(eid.split("-", 1)[1]) for eid in ev_ids) != list(range(1, 11)):
+        msgs.append("A10.27 资产登记第 11 节证据索引行缺失 / 重复（须 E-1…E-10 逐行齐全）")
     cnt = re.search(r"^\s*`?indexCount:\s*(\d+)`?\s*$", sec11, re.M)
     if not cnt or int(cnt.group(1)) != len(ev_ids):
         msgs.append("A10.27 证据索引 indexCount 与登记行数不一致")
@@ -3410,9 +3411,10 @@ def self_test() -> int:
         return _mutate(c, entries=en, extra=e)
 
     def m_ev_drop_row(c: Ctx) -> Ctx:
+        # 同时删 E-9 / E-10：一个探针守护「原有行」与「第二十六轮新增登记行」都不可缺失。
         e = dict(c.extra)
         e["资产登记"] = "\n".join(ln for ln in e["资产登记"].splitlines()
-                               if not ln.startswith("| E-9 |"))
+                               if not ln.startswith(("| E-9 |", "| E-10 |")))
         return _mutate(c, extra=e)
 
     def m_ev_fake_tracked(c: Ctx) -> Ctx:
@@ -3425,7 +3427,7 @@ def self_test() -> int:
     def m_ev_index_count(c: Ctx) -> Ctx:
         e = dict(c.extra)
         e["资产登记"] = e["资产登记"].replace(
-            "`indexCount: 9`\n\n| 编号", "`indexCount: 8`\n\n| 编号", 1)
+            "`indexCount: 10`\n\n| 编号", "`indexCount: 9`\n\n| 编号", 1)
         return _mutate(c, extra=e)
 
     def m_ev_new_report(c: Ctx) -> Ctx:
@@ -3649,7 +3651,7 @@ def self_test() -> int:
          "A10.26 ci.yml 出现 pull_request_target"),
         ("A10", "ci.yml 新增 @main 分支引用", m_ci_branch_added,
          "A10.26 ci.yml 分支引用债务只减不增"),
-        ("A10", "§11 删掉 E-9 证据索引行", m_ev_drop_row,
+        ("A10", "§11 删掉 E-9/E-10 证据索引行", m_ev_drop_row,
          "A10.27 资产登记第 11 节证据索引行缺失"),
         ("A10", "§11 伪造「已跟踪」", m_ev_fake_tracked,
          "A10.27 证据索引 E-1 伪造"),

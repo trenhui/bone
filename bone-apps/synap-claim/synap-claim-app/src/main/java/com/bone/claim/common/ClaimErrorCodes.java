@@ -281,4 +281,15 @@ public final class ClaimErrorCodes {
   /** 标注人与本案后督抽检质检人相同（盲标已被既有印象污染，不可作为独立判定）。 */
   public static final String SC_CLAIM_BLIND_LABEL_ANNOTATOR_CONFLICT =
       "SC_CLAIM_BLIND_LABEL_ANNOTATOR_CONFLICT";
+
+  // ===== 工作台 AI 回流 / 跨键检索 =====
+
+  /** AI 回流事件非法：未知字段 / 非 AI_ASSISTED 裁决 / 原因码缺失或越界 / 盲标禁区 / 字段白名单命中。 */
+  public static final String CLAIM_AI_FEEDBACK_INVALID = "SC_CLAIM_AI_FEEDBACK_INVALID";
+
+  /** eventId 重放但载荷不同：不得静默覆盖，也不得让同一事件产生第二条曝光或裁决。 */
+  public static final String CLAIM_AI_FEEDBACK_CONFLICT = "SC_CLAIM_AI_FEEDBACK_CONFLICT";
+
+  /** 跨键检索参数非法：关键词长度 / 危险字符 / limit 越界；显式拒绝，不静默裁剪。 */
+  public static final String CLAIM_SEARCH_KEYWORD_INVALID = "SC_CLAIM_SEARCH_KEYWORD_INVALID";
 }

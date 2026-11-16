@@ -618,6 +618,9 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_LIABILITY_NOT_FOUND` | 400 | 未找到有效责任配置（计划未配置或已失效） |
 | `SC_CLAIM_LIABILITY_INVALID_ARGUMENT` | 400 | 责任配置数值非法（比例/免赔/额度等不可解析，已中断写入） |
 | `SC_CLAIM_FLOW_CONFIG_INVALID` | 400 | 决策图流程配置非法（跳过节点不在白名单 / 配置 JSON 无法序列化），写入期拒绝 |
+| `SC_CLAIM_AI_FEEDBACK_INVALID` | 400 | AI 建议回流事件非法（未知字段 / 非 AI_ASSISTED 却裁决 / 原因码缺失或越界 / 盲标禁区 / modifiedFields 白名单命中）；AI 不碰钱的服务端闸门 |
+| `SC_CLAIM_AI_FEEDBACK_CONFLICT` | 409 | eventId 已落库但载荷不同，拒绝覆盖已存审计事实（幂等重放不成立） |
+| `SC_CLAIM_SEARCH_KEYWORD_INVALID` | 400 | 跨键检索参数非法（关键词长度 2..64 / 危险字符 / limit 1..20），护栏显式拒绝不做静默裁剪 |
 | `SC_CLAIM_ADJUST_NOT_FOUND` | 404 | 理算记录不存在 |
 | `SC_CLAIM_ADJUST_STATUS_INVALID` | 422 | 理算状态不允许作为出金依据（`UNFROZEN`/`ROLLBACKED`：记录存在但该版本已作废/待重算） |
 | `SC_CLAIM_ADJUST_EVIDENCE_NOT_LOCKED` | 422 | 证据未锁定即发起理算（请求合法，理算前置不成立；原登记 409 与代码不符，2026-11-02 校正） |

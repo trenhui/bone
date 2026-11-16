@@ -3,6 +3,7 @@ import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag
 import { PlusOutlined, RocketOutlined, TagOutlined } from '@ant-design/icons';
 import { Auth, AuthButton } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
+import type { DomainTemplate } from '../types/governance';
 import { domainTemplateApi } from '../services/api';
 
 const statusColor = (s: string) =>
@@ -10,11 +11,11 @@ const statusColor = (s: string) =>
 
 /** 域模板管理（G9 / UC-P1 P2 T1）：平台建模板、发版本；租户实例化。 */
 const TemplateManagement: React.FC = () => {
-  const [rows, setRows] = useState<any[]>([]);
+  const [rows, setRows] = useState<DomainTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [instantiateTpl, setInstantiateTpl] = useState<any | null>(null);
-  const [versionTpl, setVersionTpl] = useState<any | null>(null);
+  const [instantiateTpl, setInstantiateTpl] = useState<DomainTemplate | null>(null);
+  const [versionTpl, setVersionTpl] = useState<DomainTemplate | null>(null);
   const [createForm] = Form.useForm();
   const [instForm] = Form.useForm();
   const [verForm] = Form.useForm();
@@ -51,6 +52,7 @@ const TemplateManagement: React.FC = () => {
   };
 
   const handlePublishVersion = async () => {
+    if (!versionTpl) return;
     const v = await verForm.validateFields();
     await domainTemplateApi.publishVersion(versionTpl.id, v);
     message.success('版本已发布');
@@ -60,6 +62,7 @@ const TemplateManagement: React.FC = () => {
   };
 
   const handleInstantiate = async () => {
+    if (!instantiateTpl) return;
     const v = await instForm.validateFields();
     await domainTemplateApi.instantiate({ ...v, templateId: instantiateTpl.id, withFields: true });
     message.success('已从模板实例化主数据模型');
@@ -81,7 +84,7 @@ const TemplateManagement: React.FC = () => {
     {
       title: '操作',
       key: 'actions',
-      render: (_: unknown, r: any) => (
+      render: (_: unknown, r: DomainTemplate) => (
         <Space>
           <AuthButton code={BonePermissionCodes.MASTERDATA_TEMPLATES_WRITE} size="small" icon={<TagOutlined />} onClick={() => setVersionTpl(r)}>
             发布版本

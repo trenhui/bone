@@ -92,6 +92,9 @@ def collect_java_classes() -> set[str]:
     classes: set[str] = set()
     for path in ROOT.rglob("*.java"):
         parts = path.parts
+        # 跳过 git 工作树目录（.worktrees/），CI 无 worktree，此排除为 no-op。
+        if ".worktrees" in parts:
+            continue
         if any(part in SKIP_DIRS or part in ("target", "node_modules") for part in parts):
             continue
         classes.add(path.stem)

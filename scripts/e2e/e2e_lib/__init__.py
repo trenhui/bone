@@ -15,11 +15,35 @@
     runtime  业务侧（rec_create / child_replace / act / act_as / rec_status）
     fixtures 生产化测试数据（doc_no / amount / split 守恒 / person / customer 串链，
              同 seed 同数据；规范见 scripts/e2e/README.md §3）
+    scenarios 企业业务场景造数（订单→理赔 / 采购三单 / 租户 IAM / 主数据 overlay，
+             自带机器可校验不变量；先用 `./run.sh datagen list` 看能否直接复用）
     teardown 运行级残留自动回收（register / clean，执行体 cleanup-residue.py）
     mysql    第二证据源直查（query -> (stdout, stderr)）
 
 脚本位于 scripts/e2e/ 下，`sys.path[0]` 即脚本目录，直接 `import e2e_lib` 无需 bootstrap。
 """
-from . import config, fixtures, http, modeling, mysql, report, runtime, sign, teardown  # noqa: F401
+from . import (  # noqa: F401
+    config,
+    fixtures,
+    http,
+    modeling,
+    mysql,
+    report,
+    runtime,
+    scenarios,
+    sign,
+    teardown,
+)
 
-__all__ = ["config", "fixtures", "http", "modeling", "mysql", "report", "runtime", "sign", "teardown"]
+__all__ = [
+    "config",
+    "fixtures",
+    "http",
+    "modeling",
+    "mysql",
+    "report",
+    "runtime",
+    "scenarios",
+    "sign",
+    "teardown",
+]

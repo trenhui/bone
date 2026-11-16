@@ -107,6 +107,9 @@ MERGED_SOURCES: dict[str, str] = {
     # 建表迁移已提交、DDL 已并入 bone-init.sql 托管区块，但漏登记本清单 ⇒ sync 重建区块
     # 会抹掉它，--check 判「多表（init 有、活库无）」。归档只增不改，此处补齐。
     "t_claim_blind_label_task": "0122_synap_claim_blind_label_task.sql",
+    # 0124：AI 建议曝光 / 人工裁决回流（工作台 L1 闭环）。表已由迁移在活库建成，
+    # 托管区块按 MERGED_SOURCES 重建，未登记会把它抹掉并让 --check 判「多表」。
+    "t_claim_ai_feedback_event": "0124_synap_claim_ai_feedback_event.sql",
 }
 
 

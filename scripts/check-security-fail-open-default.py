@@ -152,6 +152,9 @@ def _iter_targets():
     seen = set()
     for pattern in SCAN_GLOBS:
         for path in sorted(REPO.glob(pattern)):
+            # 跳过 git 工作树目录（.worktrees/），CI 无 worktree，此排除为 no-op。
+            if ".worktrees" in path.parts:
+                continue
             if path in seen:
                 continue
             seen.add(path)

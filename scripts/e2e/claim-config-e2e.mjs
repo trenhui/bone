@@ -474,6 +474,10 @@ async function main() {
     limitHospitalCodes: 'H001,H002',
     catalogPolicy: 'MANDATORY',
     catalogCode: 'NATIONAL_2024',
+    // 后端 fail-closed 守卫（LiabilityConfigApplicationService#assertCatalogMandatoryConfirmed）：
+    // MANDATORY 会让目录未接入的整批案件退补件，必须显式承认该后果才能落库。
+    // 本用例是正向钉子；下文的负向用例证明「不带确认位确实会被拒」，两者成对才有判别力。
+    confirmCatalogMandatory: true,
     socialOnly: 0,
     waitingPeriod: 30,
   });
@@ -503,6 +507,25 @@ async function main() {
   check('按计划查责任列表 → 200 且含新建责任',
     liabList.status === 200 && rowsOf(liabList).some((r) => r.liabilityId === liabilityId),
     `实际 ${liabList.status} ${JSON.stringify(liabList.data).slice(0, 160)}`);
+
+  // 负向（与上面的 confirmCatalogMandatory 正向钉子成对）：不带确认位配 MANDATORY 必须被拒。
+  // 只跑正向会让「守卫被删掉」也照样全绿；错误消息还要点明后果与正确写法，便于运营自助排障。
+  const liabNoConfirm = await call('POST', `${P}/liabilities`, {
+    planId: planIds[PLANS[0].code],
+    coverageId: firstCoverageId,
+    liabilityCode: ds.doc_no('R-CAT-NEG'),
+    liabilityType: 'REIMBURSEMENT',
+    payPercent: '90',
+    catalogPolicy: 'MANDATORY',
+    catalogCode: 'NATIONAL_2024',
+  });
+  check('建责任（MANDATORY 未带确认位）→ 4xx（fail-closed 守卫）',
+    liabNoConfirm.status >= 400 && liabNoConfirm.status < 500,
+    `实际 ${liabNoConfirm.status} ${JSON.stringify(liabNoConfirm.data).slice(0, 200)}`);
+  const noConfirmMsg = String(liabNoConfirm.data?.message ?? '');
+  check('拒绝原因点明 confirmCatalogMandatory 与整批退件后果',
+    noConfirmMsg.includes('confirmCatalogMandatory') && noConfirmMsg.includes('CATALOG_UNRESOLVED'),
+    noConfirmMsg.slice(0, 200));
 
   // 负向：日限额无口径 ⇒ 写期自洽校验拦截（0094：把"配了不生效"拦在保存时）
   const badShape = await call('POST', `${P}/liabilities`, {

@@ -164,10 +164,10 @@ function removeStep(doc: FlowDoc, code: string): FlowDoc {
       .map((s) =>
         s.kind === 'condition'
           ? {
-              ...s,
-              branches: s.branches.map((b) => ({ ...b, body: filter(b.body) })),
-              defaultBranch: { ...s.defaultBranch, body: filter(s.defaultBranch.body) },
-            }
+            ...s,
+            branches: s.branches.map((b) => ({ ...b, body: filter(b.body) })),
+            defaultBranch: { ...s.defaultBranch, body: filter(s.defaultBranch.body) },
+          }
           : s,
       );
   return { ...doc, steps: filter(doc.steps) };
@@ -841,25 +841,25 @@ const WorkflowDesigner: React.FC = () => {
     (error: unknown, scene: string, onConflict?: () => void): boolean => {
       const failure = toWorkflowFailure(error);
       switch (failure.kind) {
-        case 'unauthenticated':
-        case 'forbidden':
-          message.error(`${scene}失败：无权限（${failure.message}）`);
-          break;
-        case 'conflict':
-          message.warning(`${scene}失败：${failure.message}`);
-          onConflict?.();
-          break;
-        case 'invalid':
-          if (failure.violations.length) setViolations(failure.violations);
-          message.error(
-            `${scene}失败：存在 ${failure.violations.length} 处违规（已在画布高亮），请修正后重试`,
-          );
-          break;
-        case 'network':
-          message.error(`${scene}失败：网络异常，请检查后端是否可达`);
-          break;
-        default:
-          message.error(`${scene}失败：${failure.message}`);
+      case 'unauthenticated':
+      case 'forbidden':
+        message.error(`${scene}失败：无权限（${failure.message}）`);
+        break;
+      case 'conflict':
+        message.warning(`${scene}失败：${failure.message}`);
+        onConflict?.();
+        break;
+      case 'invalid':
+        if (failure.violations.length) setViolations(failure.violations);
+        message.error(
+          `${scene}失败：存在 ${failure.violations.length} 处违规（已在画布高亮），请修正后重试`,
+        );
+        break;
+      case 'network':
+        message.error(`${scene}失败：网络异常，请检查后端是否可达`);
+        break;
+      default:
+        message.error(`${scene}失败：${failure.message}`);
       }
       return false;
     },
@@ -1274,15 +1274,18 @@ const WorkflowDesigner: React.FC = () => {
    * <p>保留「还活着」的节点的手工位置（用户拖过就别动他），新节点与结束节点按新结构重算——
    * 否则 END 会停在中途、新节点会与已有节点重叠。
    */
-  const rebuildLayout = (nextDoc: FlowDoc): Record<string, LayoutPoint> => {
-    const auto = computeDefaultLayout(nextDoc);
-    const next: Record<string, LayoutPoint> = {};
-    for (const [code, point] of Object.entries(auto)) {
-      // END 必须**永远**重算：它代表「最后一步之后」，结构一变它的旧坐标就落到了中途。
-      next[code] = code === 'END' ? point : layout[code] ?? point;
-    }
-    return next;
-  };
+  const rebuildLayout = useCallback(
+    (nextDoc: FlowDoc): Record<string, LayoutPoint> => {
+      const auto = computeDefaultLayout(nextDoc);
+      const next: Record<string, LayoutPoint> = {};
+      for (const [code, point] of Object.entries(auto)) {
+        // END 必须**永远**重算：它代表「最后一步之后」，结构一变它的旧坐标就落到了中途。
+        next[code] = code === 'END' ? point : layout[code] ?? point;
+      }
+      return next;
+    },
+    [layout],
+  );
 
   const onAdd = (kind: 'approve' | 'cc' | 'condition') => {
     if (!doc) return;
@@ -1304,11 +1307,14 @@ const WorkflowDesigner: React.FC = () => {
     });
   };
 
-  const onDelete = (code: string) => {
-    if (!doc) return;
-    const nextDoc = removeStep(doc, code);
-    applyDoc(nextDoc, { select: null, layout: rebuildLayout(nextDoc) });
-  };
+  const onDelete = useCallback(
+    (code: string) => {
+      if (!doc) return;
+      const nextDoc = removeStep(doc, code);
+      applyDoc(nextDoc, { select: null, layout: rebuildLayout(nextDoc) });
+    },
+    [doc, applyDoc, rebuildLayout],
+  );
 
   const onMouseDown = (e: React.MouseEvent, code: string) => {
     if (e.button !== 0) return;
@@ -1464,7 +1470,7 @@ const WorkflowDesigner: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [tplModal, canWrite, refreshList, reportFailure]);
+  }, [tplModal, canWrite, refreshList, reportFailure, resetHistory]);
 
   // ---- 导出 JSON（跨环境集成复用） ----
   const onExport = useCallback(() => {
@@ -1846,9 +1852,9 @@ const WorkflowDesigner: React.FC = () => {
                       { key: 'export', icon: <ExportOutlined />, label: '导出 JSON', disabled: !compiled },
                       ...(draftExists
                         ? [
-                            { type: 'divider' as const },
-                            { key: 'discard', icon: <DeleteOutlined />, label: '丢弃服务端草稿', danger: true },
-                          ]
+                          { type: 'divider' as const },
+                          { key: 'discard', icon: <DeleteOutlined />, label: '丢弃服务端草稿', danger: true },
+                        ]
                         : []),
                     ],
                     onClick: ({ key }) => {

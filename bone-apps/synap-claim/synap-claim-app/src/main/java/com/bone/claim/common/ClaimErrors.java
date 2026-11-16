@@ -79,7 +79,13 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.SC_CLAIM_BLIND_LABEL_PAYLOAD_FORBIDDEN, 422),
           Map.entry(ClaimErrorCodes.SC_CLAIM_BLIND_LABEL_ANNOTATOR_CONFLICT, 409),
           // 400：流程配置的跳过节点越白名单 / JSON 序列化失败，属调用方输入错，不得翻成 500 污染 SLI
-          Map.entry(ClaimErrorCodes.CLAIM_FLOW_CONFIG_INVALID, 400));
+          Map.entry(ClaimErrorCodes.CLAIM_FLOW_CONFIG_INVALID, 400),
+          // 400：AI 回流事件的非法值全属调用方输入错；500 会把「有人绕过闸门」误报成服务故障
+          Map.entry(ClaimErrorCodes.CLAIM_AI_FEEDBACK_INVALID, 400),
+          // 409：同一 eventId 携带不同载荷，幂等重放不成立
+          Map.entry(ClaimErrorCodes.CLAIM_AI_FEEDBACK_CONFLICT, 409),
+          // 400：检索护栏越界是调用方参数错，静默裁剪会让用户以为「已经搜完全库」
+          Map.entry(ClaimErrorCodes.CLAIM_SEARCH_KEYWORD_INVALID, 400));
 
   static {
     checkEveryCodeRegistered();

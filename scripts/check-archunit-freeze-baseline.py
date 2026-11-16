@@ -79,7 +79,9 @@ def find_modules_with_arch_tests() -> list[Path]:
     """含 *ArchitectureTest.java 的模块根（向上找到含 pom.xml 的目录）。"""
     roots: set[Path] = set()
     for test in REPO.rglob("*ArchitectureTest.java"):
-        if "node_modules" in test.parts or "/target/" in test.as_posix():
+        # 跳过 git worktree 工作目录（.worktrees/），它不在主仓库工作区内，
+        # 文件系统扫描不应把它当成待审源码。CI 无 worktree，此排除为 no-op。
+        if "node_modules" in test.parts or "/target/" in test.as_posix() or ".worktrees" in test.parts:
             continue
         for parent in [test.parent, *test.parent.parents]:
             if (parent / "pom.xml").is_file():

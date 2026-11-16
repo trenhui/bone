@@ -147,12 +147,60 @@ const MenuManagement: React.FC = () => {
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   useEffect(() => {
     const t = setTimeout(() => void load(keyword), 300);
     return () => clearTimeout(t);
   }, [keyword, load]);
+
+  // 树节点操作回调必须稳定：renderTree 的 memo 依赖它们，普通函数每次渲染换引用会让 memo 完全失效
+  const openCreate = useCallback((pid: string | null) => {
+    setEditing(null);
+    form.resetFields();
+    form.setFieldsValue({ parentId: pid && pid !== '0' ? pid : '0', type: 1, orderNo: 1 });
+    setDrawerOpen(true);
+  }, [form]);
+
+  const openEdit = useCallback((node: MenuNodeItem) => {
+    setEditing(node);
+    form.setFieldsValue({
+      name: node.name,
+      parentId: node.parentId && node.parentId !== '0' ? node.parentId : '0',
+      path: node.path,
+      icon: node.icon,
+      permission: node.permission,
+      orderNo: node.orderNo ?? 1,
+      type: node.type ?? 1,
+    });
+    setDrawerOpen(true);
+  }, [form]);
+
+  const remove = useCallback((node: MenuNodeItem) => {
+    const childCount = collectDescendantIds(node).length;
+    // 后端仅删除单节点不级联：有子项时前端拦截，避免产生孤儿数据
+    if (childCount > 0) {
+      modal.warning({
+        title: `无法删除「${node.name}」`,
+        content: `该菜单下还有 ${childCount} 个子项，请先删除子项后再操作。`,
+        okText: '知道了',
+      });
+      return;
+    }
+    modal.confirm({
+      title: `确认删除「${node.name}」？`,
+      content: '删除后将不可恢复。',
+      okText: '删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        await deleteMenu(node.id);
+        msg.success('菜单已删除');
+        if (selectedId === node.id) setSelectedId(null);
+        await load();
+      },
+    });
+  }, [modal, msg, selectedId, load]);
 
   const renderTree = useMemo<DataNode[]>(() => {
     const map = (list: MenuNodeItem[]): DataNode[] =>
@@ -213,7 +261,7 @@ const MenuManagement: React.FC = () => {
         children: m.children && m.children.length ? map(m.children) : undefined,
       }));
     return map(treeData);
-  }, [treeData]);
+  }, [treeData, openCreate, openEdit, remove]);
 
   const selectedNode = useMemo(
     () => (selectedId == null ? null : findPath(treeData, selectedId)?.pop() ?? null),
@@ -225,27 +273,6 @@ const MenuManagement: React.FC = () => {
   );
 
   const stats = useMemo(() => summarize(treeData), [treeData]);
-
-  const openCreate = (pid: string | null) => {
-    setEditing(null);
-    form.resetFields();
-    form.setFieldsValue({ parentId: pid && pid !== '0' ? pid : '0', type: 1, orderNo: 1 });
-    setDrawerOpen(true);
-  };
-
-  const openEdit = (node: MenuNodeItem) => {
-    setEditing(node);
-    form.setFieldsValue({
-      name: node.name,
-      parentId: node.parentId && node.parentId !== '0' ? node.parentId : '0',
-      path: node.path,
-      icon: node.icon,
-      permission: node.permission,
-      orderNo: node.orderNo ?? 1,
-      type: node.type ?? 1,
-    });
-    setDrawerOpen(true);
-  };
 
   const submit = async () => {
     setSubmitting(true);
@@ -272,32 +299,6 @@ const MenuManagement: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const remove = (node: MenuNodeItem) => {
-    const childCount = collectDescendantIds(node).length;
-    // 后端仅删除单节点不级联：有子项时前端拦截，避免产生孤儿数据
-    if (childCount > 0) {
-      modal.warning({
-        title: `无法删除「${node.name}」`,
-        content: `该菜单下还有 ${childCount} 个子项，请先删除子项后再操作。`,
-        okText: '知道了',
-      });
-      return;
-    }
-    modal.confirm({
-      title: `确认删除「${node.name}」？`,
-      content: '删除后将不可恢复。',
-      okText: '删除',
-      okButtonProps: { danger: true },
-      cancelText: '取消',
-      onOk: async () => {
-        await deleteMenu(node.id);
-        msg.success('菜单已删除');
-        if (selectedId === node.id) setSelectedId(null);
-        await load();
-      },
-    });
   };
 
   const parentTreeData = useMemo<DataNode[]>(() => {

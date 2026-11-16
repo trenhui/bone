@@ -43,6 +43,11 @@
 | `lib/gatekit/example_gate.py` | **新门禁模板**（复制改造，见 §9）；不是生产门禁 |
 | `bone.py` | **统一入口**：`list`（能力目录）/ `check`（库内判据结构化结果）/ `external`（库外判据，默认 dry-run）/ `data`（**造数唯一入口**，见 §9）/ `waivers`（豁免台账到期体检）/ **`verify`（一条命令跑完全部自检）** / `sync`（注册表对账 + 调用行形态守卫）/ `selftest` / `doctor` |
 | `check-feature-data-impact.py` | 后端功能/DDL/Entity 变更 → 造数资产与 E2E 用例同步义务（C1 清单 / C2 场景不变量 / C3 同步义务，见 `e2e/README.md` §3.4） |
+| `check-comet-plan.sh` | 四批 Build Plan 门禁执行器 liveness（存在 / 无 `/tmp` 回流 / 可加载）；`check.sh` 调用行带 `--check` 接入。plan 时效判据由 `comet-plan/pre-commit` 在提交时执行，判别力自测 `sh scripts/comet-plan/selftest.sh` 按需跑 |
+| `comet-plan/pre-commit` | scoped 钩子集成品：只对暂存的 plan 跑五道校验；从会话级临时目录迁移而来，引用入库路径 |
+| `comet-plan/verify-baseline.py` | plan frontmatter 指纹 vs 主树 HEAD 的 fail-fast 同源校验（剥离 GIT_* 防临时 index 误读） |
+| `comet-plan/verify.mjs` | plan ↔ tasks.md 的 canonical 映射校验，读暂存/HEAD 快照；Comet API 运行时解析不硬编码机器路径 |
+| `comet-plan/selftest.sh` | 上述基线判据的判别力自测（4 批 × 8 组变异），按需跑，输入由 git 动态生成不依赖临时残留 |
 | `lib/__init__.py` | 共享层包声明（供 `from lib import gate, registry`） |
 | `lib/gate.py` | gatekit 扩展层，**不是第二套框架**：git 文件枚举 / baseline 棘轮 / JUnit 与结构化结果；退出码与根定位委托 gatekit |
 | `lib/registry.py` | 注册表解析、生成、双向对账与库外门禁校验 |

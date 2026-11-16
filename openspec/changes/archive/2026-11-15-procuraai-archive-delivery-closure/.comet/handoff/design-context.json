@@ -1,0 +1,15 @@
+{
+  "change": "procuraai-archive-delivery-closure",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "6562caf3169d0367c7e486ba683d898b8ed8369ba7bc68d23a90585f4b1b88cd",
+  "files": [
+    { "path": "openspec/changes/procuraai-archive-delivery-closure/proposal.md", "sha256": "c9aeb998d6e9bb8b38407d2301ba3bc5f589e84f0604248262421ea196187570" },
+    { "path": "openspec/changes/procuraai-archive-delivery-closure/design.md", "sha256": "6a53ccf56f2d654fa1f3f5909b8ca79a4d947e4b9060f98028903dac6272530a" },
+    { "path": "openspec/changes/procuraai-archive-delivery-closure/tasks.md", "sha256": "8951978a00748338972bbcf9e484b4df51ff52c0d9d185d7eeffaf69af267830" },
+    { "path": "openspec/changes/procuraai-archive-delivery-closure/.openspec.yaml", "sha256": "54b731dee85ec8b6633678212e35762f6d059809d83ba1ccb7391c067830b377" }
+  ]
+}

@@ -1,0 +1,5 @@
+schema: spec-driven
+created: 2026-11-15
+# 本 change 只做 Comet 交付闭环与偏差登记，不涉及任何行为规格变更；
+# 按 OpenSpec 官方 skip_specs 语义跳过 specs 产物，归档时不写入 openspec/specs/。
+skip_specs: true

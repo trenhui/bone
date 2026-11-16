@@ -1,0 +1,131 @@
+{
+  "schema": "bone.external.v1",
+  "_comment": "库外判据能力目录。这些脚本不物理搬进 scripts/ —— 它们与同目录资产（docs.manifest.json / __dirname 下的 HTML / Vitest workspace）强耦合，搬迁会先破坏路径解析。做法是登记进统一能力目录并由 bone.py sync --check 机械校验：声明由 check.sh / ci.yml 调用的，必须真的出现在对应调用文本里；路径必须存在。disposition=register 表示保留原处；move_candidate 表示建议归位；consolidate_candidate 表示与库内判据职责重复、待合并。invokable=true 表示可由 `bone.py external --run` 直接调用（默认 dry-run）；false 表示只由同目录调度器托管。cwd 显式登记脚本对启动目录的假设（实测 check-contrast.py 用裸文件名读同目录 HTML）；migration_blocker 记录归位前必须先改的路径解析代码行。物理搬迁属 L3，需架构师审批后单独执行。",
+  "entries": [
+    {
+      "path": "tools/check_procura_alignment.py",
+      "entry": "python3 tools/check_procura_alignment.py",
+      "invokable": true,
+      "callers": ["scripts/check.sh", ".github/workflows/ci.yml"],
+      "domain": "procuraAI 文档族 A1-A10 对齐",
+      "disposition": "move_candidate",
+      "migration_blocker": "第 59 行 ROOT = Path(__file__).resolve().parents[1] 把仓库根写死为『脚本父目录的父目录』；搬进 scripts/ 后 parents[N] 语义变化，须改为 gatekit.repo_root() 或 --root 注入。",
+      "reason": "已被 pre-commit 与 CI 当判据调用，却位于 tools/ 且不在 check-gate-liveness 的 R4 扫描域内；属平台级门禁，应归位。"
+    },
+    {
+      "path": "doc/ai-product/procuraAI/scripts/check_procura_evalset.py",
+      "entry": "python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py",
+      "invokable": true,
+      "callers": ["scripts/check.sh", ".github/workflows/ci.yml"],
+      "domain": "AI 评测集治理",
+      "disposition": "move_candidate",
+      "migration_blocker": "第 54 行 HERE = os.path.dirname(os.path.abspath(__file__))，判据资产按 HERE 定位；搬迁后须改为 --root + 资产路径显式解析。",
+      "reason": "脚本自述复刻 scripts/check-claim-ai-evalset.py 的核心校验维度，与库内 [46/59] 判据同族；归位后可去重并纳入 R4。"
+    },
+    {
+      "path": "doc/ai-product/procuraAI/detailed-design/contracts/generate_asyncapi.py",
+      "entry": "python3 doc/ai-product/procuraAI/detailed-design/contracts/generate_asyncapi.py --check",
+      "invokable": true,
+      "callers": ["scripts/check.sh", ".github/workflows/ci.yml"],
+      "domain": "AsyncAPI 契约零漂移",
+      "disposition": "register",
+      "reason": "生成器本体须与契约工件同目录；只登记 --check 判据入口，避免『深埋文档树的生成器 = 门禁真源不可见』。"
+    },
+    {
+      "path": "doc/ai-product/synapClaim/tools/check_all.py",
+      "entry": "python3 doc/ai-product/synapClaim/tools/check_all.py",
+      "invokable": true,
+      "callers": ["other"],
+      "domain": "synapClaim 文档族 9+ 道机检统一入口",
+      "disposition": "register",
+      "reason": "全仓质量最高的局部注册表（GATES/EXTRA 双表 + 自动发现对账），有独立 workflow 与制度性不进 check.sh 的决策；保留原处，作为统一注册表的实现参考。"
+    },
+    {
+      "path": "doc/ai-product/synapClaim/tools/_check_xref.py",
+      "entry": "由 check_all.py 调度",
+      "invokable": false,
+      "callers": ["other"],
+      "domain": "跨文档 § 引用与交付清单对账",
+      "disposition": "register",
+      "reason": "与 docs.manifest.json / _manifest.py 同生命周期，由 check_all.py 双表托管。"
+    },
+    {
+      "path": "doc/ai-product/synapClaim/tools/_check_contract_drift.py",
+      "entry": "由 check_all.py 调度",
+      "invokable": false,
+      "callers": ["other"],
+      "domain": "规则 ID / 枚举 / 错误码集合漂移",
+      "disposition": "register",
+      "reason": "同上，文档族专用判据，不进提交门禁。"
+    },
+    {
+      "path": "doc/ai-product/synapClaim/tools/_check_ddl.py",
+      "entry": "由 check_all.py 调度",
+      "invokable": false,
+      "callers": ["other"],
+      "domain": "§9.5 DDL 可执行性",
+      "disposition": "register",
+      "reason": "查文档内 DDL 自洽，与库内 check-ddl-* 查真实迁移 SQL 是不同对象，不构成重复。"
+    },
+    {
+      "path": "doc/ai-product/synapClaim/tools/_check_numbers.py",
+      "entry": "由 check_all.py 调度",
+      "invokable": false,
+      "callers": ["other"],
+      "domain": "关键数值口径与禁用表述",
+      "disposition": "register",
+      "reason": "同上，文档族专用判据。"
+    },
+    {
+      "path": "doc/_check_diagnosis.py",
+      "entry": "python3 doc/_check_diagnosis.py",
+      "invokable": true,
+      "callers": ["manual"],
+      "domain": "诊断文档生命周期机检",
+      "disposition": "move_candidate",
+      "migration_blocker": "第 246 行 --root 默认值取 os.path.dirname(os.path.abspath(__file__))；搬迁后默认根变化，须改为 gatekit.repo_root() 并回归文档扫描范围。",
+      "reason": "纯文档机检、零自动化入口，仅靠文档里的人工命令；与 scripts/check-doc-code-symbols.py 同族，归位后可被 [42/59] 自测与 R4 覆盖。"
+    },
+    {
+      "path": "doc/design/lowcode/ui/ui-protocol/validate-demo-samples.js",
+      "entry": "node doc/design/lowcode/ui/ui-protocol/validate-demo-samples.js",
+      "invokable": true,
+      "callers": ["manual"],
+      "domain": "UI Schema 协议样板机校",
+      "disposition": "consolidate_candidate",
+      "migration_blocker": "第 29 行 const DIR = __dirname，HTML / JSON Schema 资产按 __dirname 定位；搬迁须改为 --root 注入并保留资产相对路径。",
+      "reason": "与 scripts/check-ui-schema-samples.py 同职责；后者登记为 unwired 待评审，库外却已实现。合并前须先统一路径解析。"
+    },
+    {
+      "path": "doc/design/lowcode/ui/ui-protocol/validate-designer-gates.js",
+      "entry": "node doc/design/lowcode/ui/ui-protocol/validate-designer-gates.js",
+      "invokable": true,
+      "callers": ["manual"],
+      "domain": "设计器三道门禁 + 运行时正负向探针",
+      "disposition": "consolidate_candidate",
+      "migration_blocker": "同族 node 脚本依赖 __dirname 找 designer HTML；合并前须先统一 --root 路径解析并核对三道门禁的判据清单。",
+      "reason": "与库内 UI Schema 族重复；且该目录 README 的文件清单表漏登记了同族脚本，需先补清单。"
+    },
+    {
+      "path": "doc/design/lowcode/ui/ui-protocol/validate-entity-binding.js",
+      "entry": "node doc/design/lowcode/ui/ui-protocol/validate-entity-binding.js",
+      "invokable": true,
+      "callers": ["manual"],
+      "domain": "实体目录绑定零漂移",
+      "disposition": "consolidate_candidate",
+      "migration_blocker": "同族 node 脚本依赖 __dirname 找实体目录 JSON；合并前须先统一 --root 路径解析。",
+      "reason": "同上，待与库内判据合并成单一族。"
+    },
+    {
+      "path": "doc/design/lowcode/ui/ui-protocol/check-contrast.py",
+      "entry": "python3 doc/design/lowcode/ui/ui-protocol/check-contrast.py",
+      "invokable": true,
+      "cwd": "doc/design/lowcode/ui/ui-protocol",
+      "callers": ["manual"],
+      "domain": "深浅主题对比度",
+      "disposition": "consolidate_candidate",
+      "migration_blocker": "第 65 行 src = open(PATH).read() 用裸文件名读同目录 HTML，强依赖启动 cwd；归位前须改为 Path(__file__).with_name(PATH)。当前由本条目的 cwd 字段兜底。",
+      "reason": "R4 扫描域只到 scripts/**/check-*.py，本脚本结构性不可见；须登记或归位。"
+    }
+  ]
+}

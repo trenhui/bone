@@ -1,0 +1,14 @@
+{
+  "change": "procuraai-ai-first-landing",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "f2dbee7a8911057eae809367aaebe4ee642745529ea4165a36be2e13d66ae646",
+  "files": [
+    { "path": "openspec/changes/procuraai-ai-first-landing/proposal.md", "sha256": "c3024f8f2adb0b3a169086a0e8fea3c526279295d2578556a0c3f0c0cfebeed7" },
+    { "path": "openspec/changes/procuraai-ai-first-landing/design.md", "sha256": "bba2b63b4f38b46c77990f09ac3f3f44d5fee54acd383118e55c3c73eaf9ce33" },
+    { "path": "openspec/changes/procuraai-ai-first-landing/tasks.md", "sha256": "12c94b90686dd3dcc7f3a4487cf1fb5aca78b76939f6ac2312e6484e31560402" }
+  ]
+}

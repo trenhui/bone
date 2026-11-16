@@ -229,6 +229,18 @@ export function SchemaRenderer({
   actionsDisabled,
   onError,
 }: SchemaRendererProps): ReactElement {
+  // Hook 必须无条件先执行：list 分支提前 return 会让 hook 调用顺序随 viewMode 变化
+  // 边界归一化：views.*.sections 的分区 code 引用 → 内联对象（单一规范形态，fail-fast 暴露非法 ref）
+  const normalized = useMemo(() => normalizeUiSchema(schema), [schema]);
+  const normSchema = normalized.schema;
+  // 告警移出 render 体（render 应纯函数）：开发期暴露畸形 schema，并上抛宿主处理
+  useEffect(() => {
+    if (normalized.errors.length) {
+      console.warn('[SchemaRenderer] schema 归一化告警:', normalized.errors);
+      onError?.(normalized.errors);
+    }
+  }, [normalized, onError]);
+
   if (viewMode === 'list') {
     const rows = Array.isArray(data) ? data : [];
     const cols = schema.views.list?.columns?.filter((c) => c.visible !== false) ?? [];
@@ -249,17 +261,6 @@ export function SchemaRenderer({
       />
     );
   }
-
-  // 边界归一化：views.*.sections 的分区 code 引用 → 内联对象（单一规范形态，fail-fast 暴露非法 ref）
-  const normalized = useMemo(() => normalizeUiSchema(schema), [schema]);
-  const normSchema = normalized.schema;
-  // 告警移出 render 体（render 应纯函数）：开发期暴露畸形 schema，并上抛宿主处理
-  useEffect(() => {
-    if (normalized.errors.length) {
-      console.warn('[SchemaRenderer] schema 归一化告警:', normalized.errors);
-      onError?.(normalized.errors);
-    }
-  }, [normalized, onError]);
 
   const view = viewMode === 'detail' ? normSchema.views.detail : normSchema.views.form;
   const sections = view?.sections ?? [];

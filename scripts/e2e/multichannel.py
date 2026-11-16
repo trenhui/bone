@@ -19,13 +19,31 @@ import sys
 import time
 import urllib.parse
 
-from e2e_lib import config, http, report
+from e2e_lib import config, fixtures as fx, http, report
 from e2e_lib.chain_runner import ChainCtx, judge, run_steps
 from e2e_lib.report import check
 
 PRODUCT = "900001"
 WAREHOUSE = "DEFAULT"
 CHANNELS = (("TAOBAO", "TB"), ("JD", "JD"), ("DOUYIN", "DY"), ("PDD", "PDD"))
+
+# 收货信息统一取自共享词表：禁「张三 / 测试地址」这类机器味数据（造数真实性门禁 R1/R5）。
+# 手机号是格式真实的假号（13x + 8 位随机），地址由词表城市 + 门牌号拼出，人读可核。
+_DEMO = fx.dataset("multichannel-demo")
+
+
+def _receiver():
+    return {
+        "receiverName": _DEMO.person(),
+        "receiverPhone": "1%d%09d" % (_DEMO.rng.randint(3, 9), _DEMO.rng.randint(0, 999999999)),
+        "receiverAddress": "%s市高新区科技大道%d号" % (_DEMO.city, _DEMO.rng.randint(1, 199)),
+    }
+
+
+RECEIVER_A = _receiver()
+RECEIVER_B = _receiver()
+ITEM_TITLE = _DEMO.sku()[0]      # 固定商品名：幂等/同单多步必须引用同一值
+BUYER_NICK = _DEMO.person()     # 固定买家昵称：同上
 
 
 def data_of(resp):
@@ -92,7 +110,7 @@ def _list_steps(ch, pfx):
     """一个渠道的上架步骤：商品上架 → ONLINE。"""
     return [
         {"method": "POST", "path": "/channel-products",
-         "body": {"channelCode": ch, "productId": PRODUCT, "productName": "联调测试商品",
+         "body": {"channelCode": ch, "productId": PRODUCT, "productName": ITEM_TITLE,
                   "listingPrice": 99.00},
          "checks": [{"name": f"{ch} 商品上架 → ONLINE", "kind": "cond",
                      "actual": lambda c, st, j: st == 200
@@ -107,9 +125,8 @@ def _pull_steps(ch, pfx):
     no = f"{pfx}E2E{abs(hash(ch)) % 100000}"
     payload = {
         "channelCode": ch, "channelOrderNo": no, "buyerNick": f"buyer_{ch.lower()}",
-        "payAmount": 198.00, "receiverName": "张三", "receiverPhone": "13800000000",
-        "receiverAddress": "测试地址",
-        "lines": [{"outerSkuId": pfx + PRODUCT, "title": "联调测试商品", "quantity": 1, "unitPrice": 99.00}],
+        "payAmount": 198.00, **RECEIVER_A,
+        "lines": [{"outerSkuId": pfx + PRODUCT, "title": ITEM_TITLE, "quantity": 1, "unitPrice": 99.00}],
     }
 
     def save(c, st, j):
@@ -215,7 +232,7 @@ def main() -> int:
         # ---------- 2. 库存 ----------
         "\n--- 2. 库存管理 ---",
         {"method": "POST", "path": "/inventories/receive",
-         "body": {"productId": PRODUCT, "productName": "联调测试商品",
+         "body": {"productId": PRODUCT, "productName": ITEM_TITLE,
                   "warehouseCode": WAREHOUSE, "quantity": 500},
          "checks": [{"name": "建库存/入库", "kind": "cond",
                      "actual": lambda c, st, j: st == 200
@@ -261,7 +278,7 @@ def main() -> int:
         # 幂等/状态机：重复上架 → 409 状态冲突
         {"method": "POST", "path": "/channel-products",
          "body": {"channelCode": "TAOBAO", "productId": PRODUCT,
-                  "productName": "联调测试商品", "listingPrice": 99.00},
+                  "productName": ITEM_TITLE, "listingPrice": 99.00},
          "checks": [{"name": "重复上架被拒（409 状态冲突）", "kind": "cond",
                      "actual": lambda c, st, j: st == 409,
                      "detail": lambda c, st, j: f"status={st}"}]},
@@ -295,9 +312,8 @@ def main() -> int:
          "body": lambda c: {"channelCode": "TAOBAO",
                             "channelOrderNo": f"MC-CANCEL-{int(time.time())}",
                             "buyerNick": "取消测试", "payAmount": 88.00,
-                            "receiverName": "李四", "receiverPhone": "13900000000",
-                            "receiverAddress": "取消单地址",
-                            "lines": [{"outerSkuId": PRODUCT, "title": "取消测试商品",
+                            **RECEIVER_B,
+                            "lines": [{"outerSkuId": PRODUCT, "title": ITEM_TITLE,
                                        "quantity": 1, "unitPrice": 88.00}]},
          "extract": {"cancelled_order_id": lambda c, st, j: data_of(j),
                      "taobao_order": lambda c, st, j: _taobao_order(c)},
@@ -312,8 +328,7 @@ def main() -> int:
                      "detail": lambda c, st, j: f"orderStatus={j}"}]},
         {"method": "POST", "path": "/shipments", "when": _has_taobao,
          "body": lambda c: {"orderId": _taobao_order(c), "channelCode": "TAOBAO",
-                            "receiverName": "张三", "receiverPhone": "13800000000",
-                            "receiverAddress": "测试地址"},
+                            **RECEIVER_A},
          "extract": {"sid": lambda c, st, j: (data_of(j) or {}).get("id")},
          "checks": [{"name": "创建发货单", "kind": "cond",
                      "actual": lambda c, st, j: st == 200
@@ -366,8 +381,7 @@ def main() -> int:
         # 于是已取消订单也能发货并签收——这是真实业务漏洞，不只是状态显示问题。
         {"method": "POST", "path": "/shipments", "when": _has_taobao,
          "body": lambda c: {"orderId": c.cancelled_order_id, "channelCode": "TAOBAO",
-                            "receiverName": "李四", "receiverPhone": "13900000000",
-                            "receiverAddress": "取消单地址"},
+                            **RECEIVER_B},
          "checks": [{"name": "已取消订单建发货单被拒（409 状态冲突）", "kind": "cond",
                      "actual": lambda c, st, j: st == 409,
                      "detail": lambda c, st, j: f"status={st}"}]},
