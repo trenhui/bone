@@ -4,17 +4,17 @@ workflow: full
 language: zh-CN
 phase: build
 context_compression: off
-build_mode: null
+build_mode: executing-plans
 build_pause: null
 subagent_dispatch: null
-tdd_mode: null
-review_mode: off
+tdd_mode: tdd
+review_mode: thorough
 isolation: worktree
 verify_mode: null
 auto_transition: true
 base_ref: 6f0ea427fdee36fad49994bf7854bf075e6a9a28
 design_doc: openspec/changes/synapclaim-ai-config-governance-api/design.md
-plan: null
+plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
 verify_result: pending
 verify_failures: 0
 verification_report: null
@@ -24,14 +24,14 @@ verified_at: null
 archive_confirmation: null
 archived: false
 bound_branch: comet/synapclaim-ai-config-governance-api
-direct_override: null
+direct_override: false
 handoff_context: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
 handoff_hash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
 classic_profile: null
 classic_migration: null
 run_checkpoint:
   schema: comet.workflow-run-checkpoint.v1
-  hash: 0057d99425170c2179573c1e89f86bd0abc5d7f30cd823a61bfcbb1598055c0a
+  hash: bf5322c0ac4882d61fd7d09420750a87c134392605d34bc02a04f6fc18f426ed
   run:
     protocolVersion: 1
     schemaVersion: 1
@@ -56,7 +56,7 @@ run_checkpoint:
       baseRef: 6f0ea427fdee36fad49994bf7854bf075e6a9a28
       boundBranch: comet/synapclaim-ai-config-governance-api
       branchStatus: pending
-      buildMode: null
+      buildMode: executing-plans
       buildPause: null
       checkEpoch: 2
       classicMigration: null
@@ -64,16 +64,16 @@ run_checkpoint:
       contextCompression: off
       createdAt: 2026-11-13
       designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
-      directOverride: null
+      directOverride: false
       handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
       handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
       isolation: worktree
       language: zh-CN
       phase: build
-      plan: null
-      reviewMode: off
+      plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+      reviewMode: thorough
       subagentDispatch: null
-      tddMode: null
+      tddMode: tdd
       verificationReport: null
       verifiedAt: null
       verifyFailures: 0
@@ -81,7 +81,7 @@ run_checkpoint:
       verifyResult: pending
       workflow: full
     status: running
-    sequence: 9
+    sequence: 13
     actions:
       - attempt: 3
         claim:
@@ -431,6 +431,14 @@ run_checkpoint:
         stepId: full.design.document
         type: invoke_skill
       - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-beda700199b80db84c5b18ca437a0604b54388245041ed1b7f4e755457410237
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
         id: synapclaim-ai-config-governance-api:9
         input:
           input:
@@ -537,6 +545,345 @@ run_checkpoint:
             full.open.revalidate:
               contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
         inputHash: 90b4c385993fd11b9dcb83d3bd0a0e1cc4f51c7b117d3d6ea8f127b37c7dd83b
+        outcome:
+          actionId: synapclaim-ai-config-governance-api:9
+          attempt: 1
+          claimToken: portable-beda700199b80db84c5b18ca437a0604b54388245041ed1b7f4e755457410237
+          inputHash: 90b4c385993fd11b9dcb83d3bd0a0e1cc4f51c7b117d3d6ea8f127b37c7dd83b
+          outcomeId: 9fa09e66-bb24-4772-a51d-a84d06192ba4
+          output:
+            boundBranch: comet/synapclaim-ai-config-governance-api
+            buildMode: executing-plans
+            directOverride: false
+            isolation: worktree
+            reviewMode: thorough
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3ddc3432f3b051610bd058d3f8ca62d991d43d2f50d45024d8f71a311951a689
+            outcomeId: 9fa09e66-bb24-4772-a51d-a84d06192ba4
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-ai-config-governance-api
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-8d0c9e49900def272f50a552fd9c9657cca52d0a553f4c769a3a9665b1a0832e
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-ai-config-governance-api:11
+        input:
+          input:
+            change: synapclaim-ai-config-governance-api
+            changeDir: openspec/changes/synapclaim-ai-config-governance-api
+            workspaceBaseline:
+              ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+          outputs:
+            full.build.configure:
+              boundBranch: comet/synapclaim-ai-config-governance-api
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.build.configure:
+                    boundBranch: comet/synapclaim-ai-config-governance-api
+                    buildMode: executing-plans
+                    directOverride: false
+                    isolation: worktree
+                    reviewMode: thorough
+                    subagentDispatch: null
+                    tddMode: tdd
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
+                    proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
+                      append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
+                      @TenantScope + /*bone:tenant*/ 锚点 + @Version 乐观锁，禁 FOR
+                      UPDATE；写 API 开关双闸门（服务端拒写 + 治理页读开关态渲染只读）；曝光/裁决回流复用并行会话在途
+                      0124_synap_claim_ai_feedback_event.sql 与
+                      AiFeedback*，不重复建表，租户内 event_id 唯一键，同键同载荷返回首次结果、同键异载荷 409
+                      且不覆盖首次事实，事件不含姓名/证件/金额；端点不改案件状态、不写资金。【比较】方案 B 前端/网关做棘轮、后端只
+                      CRUD：直连即可绕过放宽，服务端无审计与幂等事实，采纳率分母不可信，不采用；方案 C 新建
+                      t_ai_config_version 事件溯源：与 t_feature_toggle
+                      形成双真源触发「配了不生效」，且与 0124 重复造轮子，不采用。【关键取舍】不新增业务表，代价是配置历史只有
+                      append-only 审计记录、无完整版本快照回放。【风险与处理】① 并行会话占用
+                      ClaimErrorCodes/ClaimErrors/AiFeedback* → 等入库后精确路径复核、绝不
+                      git add 全量；② 迁移号追加末尾空位，脚本+清单+bone-init.sql 同批，已发迁移含注释不回改；③
+                      新增错误码四处齐（错误码类 + HTTP 状态映射 + 前端双语包 + 台账 §6）；④ 新增仓储方法同批 SQL
+                      模板，首行语句关键字、SELECT 列对齐实体、含租户锚点；⑤ 前端雪花 ID 一律 string；⑥
+                      开关/配置先找消费方，缺则 fail-closed；⑦
+                      变异验证「放宽阈值被拒」必须转红。【测试策略】单元（棘轮逐字段/边界/相等、开关双态、幂等载荷摘要比对）；集成（无权限与跨租户被拒、409
+                      不覆盖首次事实、启动期无 TemplateNotFoundException、读回新值）；负向（放宽阈值、关闭写
+                      API、盲标/非 AI_ASSISTED 裁决）；变异；运行期证据写
+                      docs/superpowers/reports/ 并带实测数值。【Spec
+                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
+                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                      Build；本阶段只出设计文档，不写实现代码。
+                    requirementsEvidence:
+                      contentHash: f366e5ba8fa5dc0416236541b2f6ec20593439e641f486f4f18e033b936323f6
+                      ref: openspec/changes/synapclaim-ai-config-governance-api
+                    sourceEvidence:
+                      contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
+                      ref: openspec/changes/synapclaim-ai-config-governance-api
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+            full.design.evidence:
+              contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
+              proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
+                append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
+                @TenantScope + /*bone:tenant*/ 锚点 + @Version 乐观锁，禁 FOR UPDATE；写
+                API 开关双闸门（服务端拒写 + 治理页读开关态渲染只读）；曝光/裁决回流复用并行会话在途
+                0124_synap_claim_ai_feedback_event.sql 与 AiFeedback*，不重复建表，租户内
+                event_id 唯一键，同键同载荷返回首次结果、同键异载荷 409
+                且不覆盖首次事实，事件不含姓名/证件/金额；端点不改案件状态、不写资金。【比较】方案 B 前端/网关做棘轮、后端只
+                CRUD：直连即可绕过放宽，服务端无审计与幂等事实，采纳率分母不可信，不采用；方案 C 新建
+                t_ai_config_version 事件溯源：与 t_feature_toggle 形成双真源触发「配了不生效」，且与
+                0124 重复造轮子，不采用。【关键取舍】不新增业务表，代价是配置历史只有 append-only
+                审计记录、无完整版本快照回放。【风险与处理】① 并行会话占用
+                ClaimErrorCodes/ClaimErrors/AiFeedback* → 等入库后精确路径复核、绝不 git add
+                全量；② 迁移号追加末尾空位，脚本+清单+bone-init.sql 同批，已发迁移含注释不回改；③ 新增错误码四处齐（错误码类
+                + HTTP 状态映射 + 前端双语包 + 台账 §6）；④ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT
+                列对齐实体、含租户锚点；⑤ 前端雪花 ID 一律 string；⑥ 开关/配置先找消费方，缺则 fail-closed；⑦
+                变异验证「放宽阈值被拒」必须转红。【测试策略】单元（棘轮逐字段/边界/相等、开关双态、幂等载荷摘要比对）；集成（无权限与跨租户被拒、409
+                不覆盖首次事实、启动期无 TemplateNotFoundException、读回新值）；负向（放宽阈值、关闭写
+                API、盲标/非 AI_ASSISTED 裁决）；变异；运行期证据写 docs/superpowers/reports/
+                并带实测数值。【Spec Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准
+                proposal/spec/tasks 与 v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: f366e5ba8fa5dc0416236541b2f6ec20593439e641f486f4f18e033b936323f6
+                ref: openspec/changes/synapclaim-ai-config-governance-api
+              sourceEvidence:
+                contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
+                ref: openspec/changes/synapclaim-ai-config-governance-api
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+                    ref: openspec/changes/synapclaim-ai-config-governance-api
+            full.open.evidence:
+              contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+              ref: openspec/changes/synapclaim-ai-config-governance-api
+            full.open.revalidate:
+              contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+        inputHash: d5e9d590d076d29204b69d76c239092f915b1f9bc10c28b6ba622085655e3a52
+        outcome:
+          actionId: synapclaim-ai-config-governance-api:11
+          attempt: 1
+          claimToken: portable-8d0c9e49900def272f50a552fd9c9657cca52d0a553f4c769a3a9665b1a0832e
+          inputHash: d5e9d590d076d29204b69d76c239092f915b1f9bc10c28b6ba622085655e3a52
+          outcomeId: 087018dd-8c3d-4675-8b13-8169a12a89d3
+          output:
+            designEvidence:
+              contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+            plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+            planEvidence:
+              contentHash: c4631e8ee2e11a439a0b5bf7bf2665fa71c211c88daa56783d47bc3fa82d52c1
+              ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+            taskRevision: 408098594af315f02d3584812a184a6a938129bb881bc2eaed264240a9b38806
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 6da17668b6e4d35120c8dad05eff9df93ca35251c06426eb5d3a4de3ba057f84
+            outcomeId: 087018dd-8c3d-4675-8b13-8169a12a89d3
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-ai-config-governance-api
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        id: synapclaim-ai-config-governance-api:13
+        input:
+          input:
+            change: synapclaim-ai-config-governance-api
+            changeDir: openspec/changes/synapclaim-ai-config-governance-api
+            workspaceBaseline:
+              ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+          outputs:
+            full.build.configure:
+              boundBranch: comet/synapclaim-ai-config-governance-api
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.build.configure:
+                    boundBranch: comet/synapclaim-ai-config-governance-api
+                    buildMode: executing-plans
+                    directOverride: false
+                    isolation: worktree
+                    reviewMode: thorough
+                    subagentDispatch: null
+                    tddMode: tdd
+            full.build.plan:
+              designEvidence:
+                contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              planEvidence:
+                contentHash: c4631e8ee2e11a439a0b5bf7bf2665fa71c211c88daa56783d47bc3fa82d52c1
+                ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              taskRevision: 408098594af315f02d3584812a184a6a938129bb881bc2eaed264240a9b38806
+            full.build.plan.evidence:
+              contentHash: c4631e8ee2e11a439a0b5bf7bf2665fa71c211c88daa56783d47bc3fa82d52c1
+              ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
+                    proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
+                      append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
+                      @TenantScope + /*bone:tenant*/ 锚点 + @Version 乐观锁，禁 FOR
+                      UPDATE；写 API 开关双闸门（服务端拒写 + 治理页读开关态渲染只读）；曝光/裁决回流复用并行会话在途
+                      0124_synap_claim_ai_feedback_event.sql 与
+                      AiFeedback*，不重复建表，租户内 event_id 唯一键，同键同载荷返回首次结果、同键异载荷 409
+                      且不覆盖首次事实，事件不含姓名/证件/金额；端点不改案件状态、不写资金。【比较】方案 B 前端/网关做棘轮、后端只
+                      CRUD：直连即可绕过放宽，服务端无审计与幂等事实，采纳率分母不可信，不采用；方案 C 新建
+                      t_ai_config_version 事件溯源：与 t_feature_toggle
+                      形成双真源触发「配了不生效」，且与 0124 重复造轮子，不采用。【关键取舍】不新增业务表，代价是配置历史只有
+                      append-only 审计记录、无完整版本快照回放。【风险与处理】① 并行会话占用
+                      ClaimErrorCodes/ClaimErrors/AiFeedback* → 等入库后精确路径复核、绝不
+                      git add 全量；② 迁移号追加末尾空位，脚本+清单+bone-init.sql 同批，已发迁移含注释不回改；③
+                      新增错误码四处齐（错误码类 + HTTP 状态映射 + 前端双语包 + 台账 §6）；④ 新增仓储方法同批 SQL
+                      模板，首行语句关键字、SELECT 列对齐实体、含租户锚点；⑤ 前端雪花 ID 一律 string；⑥
+                      开关/配置先找消费方，缺则 fail-closed；⑦
+                      变异验证「放宽阈值被拒」必须转红。【测试策略】单元（棘轮逐字段/边界/相等、开关双态、幂等载荷摘要比对）；集成（无权限与跨租户被拒、409
+                      不覆盖首次事实、启动期无 TemplateNotFoundException、读回新值）；负向（放宽阈值、关闭写
+                      API、盲标/非 AI_ASSISTED 裁决）；变异；运行期证据写
+                      docs/superpowers/reports/ 并带实测数值。【Spec
+                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
+                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                      Build；本阶段只出设计文档，不写实现代码。
+                    requirementsEvidence:
+                      contentHash: f366e5ba8fa5dc0416236541b2f6ec20593439e641f486f4f18e033b936323f6
+                      ref: openspec/changes/synapclaim-ai-config-governance-api
+                    sourceEvidence:
+                      contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
+                      ref: openspec/changes/synapclaim-ai-config-governance-api
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+            full.design.evidence:
+              contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
+              proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
+                append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
+                @TenantScope + /*bone:tenant*/ 锚点 + @Version 乐观锁，禁 FOR UPDATE；写
+                API 开关双闸门（服务端拒写 + 治理页读开关态渲染只读）；曝光/裁决回流复用并行会话在途
+                0124_synap_claim_ai_feedback_event.sql 与 AiFeedback*，不重复建表，租户内
+                event_id 唯一键，同键同载荷返回首次结果、同键异载荷 409
+                且不覆盖首次事实，事件不含姓名/证件/金额；端点不改案件状态、不写资金。【比较】方案 B 前端/网关做棘轮、后端只
+                CRUD：直连即可绕过放宽，服务端无审计与幂等事实，采纳率分母不可信，不采用；方案 C 新建
+                t_ai_config_version 事件溯源：与 t_feature_toggle 形成双真源触发「配了不生效」，且与
+                0124 重复造轮子，不采用。【关键取舍】不新增业务表，代价是配置历史只有 append-only
+                审计记录、无完整版本快照回放。【风险与处理】① 并行会话占用
+                ClaimErrorCodes/ClaimErrors/AiFeedback* → 等入库后精确路径复核、绝不 git add
+                全量；② 迁移号追加末尾空位，脚本+清单+bone-init.sql 同批，已发迁移含注释不回改；③ 新增错误码四处齐（错误码类
+                + HTTP 状态映射 + 前端双语包 + 台账 §6）；④ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT
+                列对齐实体、含租户锚点；⑤ 前端雪花 ID 一律 string；⑥ 开关/配置先找消费方，缺则 fail-closed；⑦
+                变异验证「放宽阈值被拒」必须转红。【测试策略】单元（棘轮逐字段/边界/相等、开关双态、幂等载荷摘要比对）；集成（无权限与跨租户被拒、409
+                不覆盖首次事实、启动期无 TemplateNotFoundException、读回新值）；负向（放宽阈值、关闭写
+                API、盲标/非 AI_ASSISTED 裁决）；变异；运行期证据写 docs/superpowers/reports/
+                并带实测数值。【Spec Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准
+                proposal/spec/tasks 与 v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: f366e5ba8fa5dc0416236541b2f6ec20593439e641f486f4f18e033b936323f6
+                ref: openspec/changes/synapclaim-ai-config-governance-api
+              sourceEvidence:
+                contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
+                ref: openspec/changes/synapclaim-ai-config-governance-api
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+                    ref: openspec/changes/synapclaim-ai-config-governance-api
+            full.open.evidence:
+              contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+              ref: openspec/changes/synapclaim-ai-config-governance-api
+            full.open.revalidate:
+              contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+        inputHash: 9ead3f2c0b767295d4654d9261310a0d55e7d816ba0701b3693c4e698a824510
         protocolVersion: 1
         receipts: []
         reconciliations: []
@@ -545,12 +892,318 @@ run_checkpoint:
         retry: manual
         runId: synapclaim-ai-config-governance-api
         status: pending
-        stepId: full.build.configure
+        stepId: full.build.execute
         type: invoke_skill
     actionContexts:
       synapclaim-ai-config-governance-api:1:
         results: {}
         sequence: 1
+      synapclaim-ai-config-governance-api:11:
+        results:
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: comet/synapclaim-ai-config-governance-api
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.build.configure:
+                    boundBranch: comet/synapclaim-ai-config-governance-api
+                    buildMode: executing-plans
+                    directOverride: false
+                    isolation: worktree
+                    reviewMode: thorough
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
+                    proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
+                      append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
+                      @TenantScope + /*bone:tenant*/ 锚点 + @Version 乐观锁，禁 FOR
+                      UPDATE；写 API 开关双闸门（服务端拒写 + 治理页读开关态渲染只读）；曝光/裁决回流复用并行会话在途
+                      0124_synap_claim_ai_feedback_event.sql 与
+                      AiFeedback*，不重复建表，租户内 event_id 唯一键，同键同载荷返回首次结果、同键异载荷 409
+                      且不覆盖首次事实，事件不含姓名/证件/金额；端点不改案件状态、不写资金。【比较】方案 B 前端/网关做棘轮、后端只
+                      CRUD：直连即可绕过放宽，服务端无审计与幂等事实，采纳率分母不可信，不采用；方案 C 新建
+                      t_ai_config_version 事件溯源：与 t_feature_toggle
+                      形成双真源触发「配了不生效」，且与 0124 重复造轮子，不采用。【关键取舍】不新增业务表，代价是配置历史只有
+                      append-only 审计记录、无完整版本快照回放。【风险与处理】① 并行会话占用
+                      ClaimErrorCodes/ClaimErrors/AiFeedback* → 等入库后精确路径复核、绝不
+                      git add 全量；② 迁移号追加末尾空位，脚本+清单+bone-init.sql 同批，已发迁移含注释不回改；③
+                      新增错误码四处齐（错误码类 + HTTP 状态映射 + 前端双语包 + 台账 §6）；④ 新增仓储方法同批 SQL
+                      模板，首行语句关键字、SELECT 列对齐实体、含租户锚点；⑤ 前端雪花 ID 一律 string；⑥
+                      开关/配置先找消费方，缺则 fail-closed；⑦
+                      变异验证「放宽阈值被拒」必须转红。【测试策略】单元（棘轮逐字段/边界/相等、开关双态、幂等载荷摘要比对）；集成（无权限与跨租户被拒、409
+                      不覆盖首次事实、启动期无 TemplateNotFoundException、读回新值）；负向（放宽阈值、关闭写
+                      API、盲标/非 AI_ASSISTED 裁决）；变异；运行期证据写
+                      docs/superpowers/reports/ 并带实测数值。【Spec
+                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
+                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                      Build；本阶段只出设计文档，不写实现代码。
+                    requirementsEvidence:
+                      contentHash: f366e5ba8fa5dc0416236541b2f6ec20593439e641f486f4f18e033b936323f6
+                      ref: openspec/changes/synapclaim-ai-config-governance-api
+                    sourceEvidence:
+                      contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
+                      ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
+              proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
+                append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
+                @TenantScope + /*bone:tenant*/ 锚点 + @Version 乐观锁，禁 FOR UPDATE；写
+                API 开关双闸门（服务端拒写 + 治理页读开关态渲染只读）；曝光/裁决回流复用并行会话在途
+                0124_synap_claim_ai_feedback_event.sql 与 AiFeedback*，不重复建表，租户内
+                event_id 唯一键，同键同载荷返回首次结果、同键异载荷 409
+                且不覆盖首次事实，事件不含姓名/证件/金额；端点不改案件状态、不写资金。【比较】方案 B 前端/网关做棘轮、后端只
+                CRUD：直连即可绕过放宽，服务端无审计与幂等事实，采纳率分母不可信，不采用；方案 C 新建
+                t_ai_config_version 事件溯源：与 t_feature_toggle 形成双真源触发「配了不生效」，且与
+                0124 重复造轮子，不采用。【关键取舍】不新增业务表，代价是配置历史只有 append-only
+                审计记录、无完整版本快照回放。【风险与处理】① 并行会话占用
+                ClaimErrorCodes/ClaimErrors/AiFeedback* → 等入库后精确路径复核、绝不 git add
+                全量；② 迁移号追加末尾空位，脚本+清单+bone-init.sql 同批，已发迁移含注释不回改；③ 新增错误码四处齐（错误码类
+                + HTTP 状态映射 + 前端双语包 + 台账 §6）；④ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT
+                列对齐实体、含租户锚点；⑤ 前端雪花 ID 一律 string；⑥ 开关/配置先找消费方，缺则 fail-closed；⑦
+                变异验证「放宽阈值被拒」必须转红。【测试策略】单元（棘轮逐字段/边界/相等、开关双态、幂等载荷摘要比对）；集成（无权限与跨租户被拒、409
+                不覆盖首次事实、启动期无 TemplateNotFoundException、读回新值）；负向（放宽阈值、关闭写
+                API、盲标/非 AI_ASSISTED 裁决）；变异；运行期证据写 docs/superpowers/reports/
+                并带实测数值。【Spec Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准
+                proposal/spec/tasks 与 v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: f366e5ba8fa5dc0416236541b2f6ec20593439e641f486f4f18e033b936323f6
+                ref: openspec/changes/synapclaim-ai-config-governance-api
+              sourceEvidence:
+                contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
+                ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+                    ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+              ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+        sequence: 11
+      synapclaim-ai-config-governance-api:13:
+        results:
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: comet/synapclaim-ai-config-governance-api
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.build.configure:
+                    boundBranch: comet/synapclaim-ai-config-governance-api
+                    buildMode: executing-plans
+                    directOverride: false
+                    isolation: worktree
+                    reviewMode: thorough
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.plan:
+            sequence: 11
+            value:
+              designEvidence:
+                contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              planEvidence:
+                contentHash: c4631e8ee2e11a439a0b5bf7bf2665fa71c211c88daa56783d47bc3fa82d52c1
+                ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              taskRevision: 408098594af315f02d3584812a184a6a938129bb881bc2eaed264240a9b38806
+          full.build.plan.evidence:
+            sequence: 12
+            value:
+              contentHash: c4631e8ee2e11a439a0b5bf7bf2665fa71c211c88daa56783d47bc3fa82d52c1
+              ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
+                    proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
+                      append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
+                      @TenantScope + /*bone:tenant*/ 锚点 + @Version 乐观锁，禁 FOR
+                      UPDATE；写 API 开关双闸门（服务端拒写 + 治理页读开关态渲染只读）；曝光/裁决回流复用并行会话在途
+                      0124_synap_claim_ai_feedback_event.sql 与
+                      AiFeedback*，不重复建表，租户内 event_id 唯一键，同键同载荷返回首次结果、同键异载荷 409
+                      且不覆盖首次事实，事件不含姓名/证件/金额；端点不改案件状态、不写资金。【比较】方案 B 前端/网关做棘轮、后端只
+                      CRUD：直连即可绕过放宽，服务端无审计与幂等事实，采纳率分母不可信，不采用；方案 C 新建
+                      t_ai_config_version 事件溯源：与 t_feature_toggle
+                      形成双真源触发「配了不生效」，且与 0124 重复造轮子，不采用。【关键取舍】不新增业务表，代价是配置历史只有
+                      append-only 审计记录、无完整版本快照回放。【风险与处理】① 并行会话占用
+                      ClaimErrorCodes/ClaimErrors/AiFeedback* → 等入库后精确路径复核、绝不
+                      git add 全量；② 迁移号追加末尾空位，脚本+清单+bone-init.sql 同批，已发迁移含注释不回改；③
+                      新增错误码四处齐（错误码类 + HTTP 状态映射 + 前端双语包 + 台账 §6）；④ 新增仓储方法同批 SQL
+                      模板，首行语句关键字、SELECT 列对齐实体、含租户锚点；⑤ 前端雪花 ID 一律 string；⑥
+                      开关/配置先找消费方，缺则 fail-closed；⑦
+                      变异验证「放宽阈值被拒」必须转红。【测试策略】单元（棘轮逐字段/边界/相等、开关双态、幂等载荷摘要比对）；集成（无权限与跨租户被拒、409
+                      不覆盖首次事实、启动期无 TemplateNotFoundException、读回新值）；负向（放宽阈值、关闭写
+                      API、盲标/非 AI_ASSISTED 裁决）；变异；运行期证据写
+                      docs/superpowers/reports/ 并带实测数值。【Spec
+                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
+                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                      Build；本阶段只出设计文档，不写实现代码。
+                    requirementsEvidence:
+                      contentHash: f366e5ba8fa5dc0416236541b2f6ec20593439e641f486f4f18e033b936323f6
+                      ref: openspec/changes/synapclaim-ai-config-governance-api
+                    sourceEvidence:
+                      contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
+                      ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
+              proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
+                append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
+                @TenantScope + /*bone:tenant*/ 锚点 + @Version 乐观锁，禁 FOR UPDATE；写
+                API 开关双闸门（服务端拒写 + 治理页读开关态渲染只读）；曝光/裁决回流复用并行会话在途
+                0124_synap_claim_ai_feedback_event.sql 与 AiFeedback*，不重复建表，租户内
+                event_id 唯一键，同键同载荷返回首次结果、同键异载荷 409
+                且不覆盖首次事实，事件不含姓名/证件/金额；端点不改案件状态、不写资金。【比较】方案 B 前端/网关做棘轮、后端只
+                CRUD：直连即可绕过放宽，服务端无审计与幂等事实，采纳率分母不可信，不采用；方案 C 新建
+                t_ai_config_version 事件溯源：与 t_feature_toggle 形成双真源触发「配了不生效」，且与
+                0124 重复造轮子，不采用。【关键取舍】不新增业务表，代价是配置历史只有 append-only
+                审计记录、无完整版本快照回放。【风险与处理】① 并行会话占用
+                ClaimErrorCodes/ClaimErrors/AiFeedback* → 等入库后精确路径复核、绝不 git add
+                全量；② 迁移号追加末尾空位，脚本+清单+bone-init.sql 同批，已发迁移含注释不回改；③ 新增错误码四处齐（错误码类
+                + HTTP 状态映射 + 前端双语包 + 台账 §6）；④ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT
+                列对齐实体、含租户锚点；⑤ 前端雪花 ID 一律 string；⑥ 开关/配置先找消费方，缺则 fail-closed；⑦
+                变异验证「放宽阈值被拒」必须转红。【测试策略】单元（棘轮逐字段/边界/相等、开关双态、幂等载荷摘要比对）；集成（无权限与跨租户被拒、409
+                不覆盖首次事实、启动期无 TemplateNotFoundException、读回新值）；负向（放宽阈值、关闭写
+                API、盲标/非 AI_ASSISTED 裁决）；变异；运行期证据写 docs/superpowers/reports/
+                并带实测数值。【Spec Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准
+                proposal/spec/tasks 与 v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: f366e5ba8fa5dc0416236541b2f6ec20593439e641f486f4f18e033b936323f6
+                ref: openspec/changes/synapclaim-ai-config-governance-api
+              sourceEvidence:
+                contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
+                ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+                    ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+              ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+        sequence: 13
       synapclaim-ai-config-governance-api:4:
         results:
           full.open:
@@ -980,6 +1633,157 @@ run_checkpoint:
           id: classic-design-2bb35a443b1350993afa81e3143cb8418bff414a6032500d18f1729d0b37feaa-approved
           choice: approved
           proposalHash: 2bb35a443b1350993afa81e3143cb8418bff414a6032500d18f1729d0b37feaa
+      - id: synapclaim-ai-config-governance-api:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-ai-config-governance-api
+            changeDir: openspec/changes/synapclaim-ai-config-governance-api
+            workspaceBaseline:
+              ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+          outputs:
+            full.build.configure:
+              boundBranch: comet/synapclaim-ai-config-governance-api
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: 8e883d48c2e1f2ff68957e6059ca42b1e8128e57d32d34874332501649af452e
+        choices:
+          - approved
+          - rejected
+        results:
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: comet/synapclaim-ai-config-governance-api
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
+                    proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
+                      append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
+                      @TenantScope + /*bone:tenant*/ 锚点 + @Version 乐观锁，禁 FOR
+                      UPDATE；写 API 开关双闸门（服务端拒写 + 治理页读开关态渲染只读）；曝光/裁决回流复用并行会话在途
+                      0124_synap_claim_ai_feedback_event.sql 与
+                      AiFeedback*，不重复建表，租户内 event_id 唯一键，同键同载荷返回首次结果、同键异载荷 409
+                      且不覆盖首次事实，事件不含姓名/证件/金额；端点不改案件状态、不写资金。【比较】方案 B 前端/网关做棘轮、后端只
+                      CRUD：直连即可绕过放宽，服务端无审计与幂等事实，采纳率分母不可信，不采用；方案 C 新建
+                      t_ai_config_version 事件溯源：与 t_feature_toggle
+                      形成双真源触发「配了不生效」，且与 0124 重复造轮子，不采用。【关键取舍】不新增业务表，代价是配置历史只有
+                      append-only 审计记录、无完整版本快照回放。【风险与处理】① 并行会话占用
+                      ClaimErrorCodes/ClaimErrors/AiFeedback* → 等入库后精确路径复核、绝不
+                      git add 全量；② 迁移号追加末尾空位，脚本+清单+bone-init.sql 同批，已发迁移含注释不回改；③
+                      新增错误码四处齐（错误码类 + HTTP 状态映射 + 前端双语包 + 台账 §6）；④ 新增仓储方法同批 SQL
+                      模板，首行语句关键字、SELECT 列对齐实体、含租户锚点；⑤ 前端雪花 ID 一律 string；⑥
+                      开关/配置先找消费方，缺则 fail-closed；⑦
+                      变异验证「放宽阈值被拒」必须转红。【测试策略】单元（棘轮逐字段/边界/相等、开关双态、幂等载荷摘要比对）；集成（无权限与跨租户被拒、409
+                      不覆盖首次事实、启动期无 TemplateNotFoundException、读回新值）；负向（放宽阈值、关闭写
+                      API、盲标/非 AI_ASSISTED 裁决）；变异；运行期证据写
+                      docs/superpowers/reports/ 并带实测数值。【Spec
+                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
+                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                      Build；本阶段只出设计文档，不写实现代码。
+                    requirementsEvidence:
+                      contentHash: f366e5ba8fa5dc0416236541b2f6ec20593439e641f486f4f18e033b936323f6
+                      ref: openspec/changes/synapclaim-ai-config-governance-api
+                    sourceEvidence:
+                      contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
+                      ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
+              proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
+                append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
+                @TenantScope + /*bone:tenant*/ 锚点 + @Version 乐观锁，禁 FOR UPDATE；写
+                API 开关双闸门（服务端拒写 + 治理页读开关态渲染只读）；曝光/裁决回流复用并行会话在途
+                0124_synap_claim_ai_feedback_event.sql 与 AiFeedback*，不重复建表，租户内
+                event_id 唯一键，同键同载荷返回首次结果、同键异载荷 409
+                且不覆盖首次事实，事件不含姓名/证件/金额；端点不改案件状态、不写资金。【比较】方案 B 前端/网关做棘轮、后端只
+                CRUD：直连即可绕过放宽，服务端无审计与幂等事实，采纳率分母不可信，不采用；方案 C 新建
+                t_ai_config_version 事件溯源：与 t_feature_toggle 形成双真源触发「配了不生效」，且与
+                0124 重复造轮子，不采用。【关键取舍】不新增业务表，代价是配置历史只有 append-only
+                审计记录、无完整版本快照回放。【风险与处理】① 并行会话占用
+                ClaimErrorCodes/ClaimErrors/AiFeedback* → 等入库后精确路径复核、绝不 git add
+                全量；② 迁移号追加末尾空位，脚本+清单+bone-init.sql 同批，已发迁移含注释不回改；③ 新增错误码四处齐（错误码类
+                + HTTP 状态映射 + 前端双语包 + 台账 §6）；④ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT
+                列对齐实体、含租户锚点；⑤ 前端雪花 ID 一律 string；⑥ 开关/配置先找消费方，缺则 fail-closed；⑦
+                变异验证「放宽阈值被拒」必须转红。【测试策略】单元（棘轮逐字段/边界/相等、开关双态、幂等载荷摘要比对）；集成（无权限与跨租户被拒、409
+                不覆盖首次事实、启动期无 TemplateNotFoundException、读回新值）；负向（放宽阈值、关闭写
+                API、盲标/非 AI_ASSISTED 裁决）；变异；运行期证据写 docs/superpowers/reports/
+                并带实测数值。【Spec Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准
+                proposal/spec/tasks 与 v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: f366e5ba8fa5dc0416236541b2f6ec20593439e641f486f4f18e033b936323f6
+                ref: openspec/changes/synapclaim-ai-config-governance-api
+              sourceEvidence:
+                contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
+                ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+                    ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+              ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+        decision:
+          id: 6a7af946-e796-421b-b31a-580770ee3c8b
+          choice: approved
+          proposalHash: 8e883d48c2e1f2ff68957e6059ca42b1e8128e57d32d34874332501649af452e
     evidenceWaits:
       - id: synapclaim-ai-config-governance-api:2
         stepId: full.open.evidence
@@ -1113,9 +1917,217 @@ run_checkpoint:
           ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
           contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
           submissionId: 17c1b02a-d96a-4022-851e-4cefec83b9f8
+      - id: synapclaim-ai-config-governance-api:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results:
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: comet/synapclaim-ai-config-governance-api
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.build.configure:
+                    boundBranch: comet/synapclaim-ai-config-governance-api
+                    buildMode: executing-plans
+                    directOverride: false
+                    isolation: worktree
+                    reviewMode: thorough
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.plan:
+            sequence: 11
+            value:
+              designEvidence:
+                contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              planEvidence:
+                contentHash: c4631e8ee2e11a439a0b5bf7bf2665fa71c211c88daa56783d47bc3fa82d52c1
+                ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              taskRevision: 408098594af315f02d3584812a184a6a938129bb881bc2eaed264240a9b38806
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
+                    proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
+                      append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
+                      @TenantScope + /*bone:tenant*/ 锚点 + @Version 乐观锁，禁 FOR
+                      UPDATE；写 API 开关双闸门（服务端拒写 + 治理页读开关态渲染只读）；曝光/裁决回流复用并行会话在途
+                      0124_synap_claim_ai_feedback_event.sql 与
+                      AiFeedback*，不重复建表，租户内 event_id 唯一键，同键同载荷返回首次结果、同键异载荷 409
+                      且不覆盖首次事实，事件不含姓名/证件/金额；端点不改案件状态、不写资金。【比较】方案 B 前端/网关做棘轮、后端只
+                      CRUD：直连即可绕过放宽，服务端无审计与幂等事实，采纳率分母不可信，不采用；方案 C 新建
+                      t_ai_config_version 事件溯源：与 t_feature_toggle
+                      形成双真源触发「配了不生效」，且与 0124 重复造轮子，不采用。【关键取舍】不新增业务表，代价是配置历史只有
+                      append-only 审计记录、无完整版本快照回放。【风险与处理】① 并行会话占用
+                      ClaimErrorCodes/ClaimErrors/AiFeedback* → 等入库后精确路径复核、绝不
+                      git add 全量；② 迁移号追加末尾空位，脚本+清单+bone-init.sql 同批，已发迁移含注释不回改；③
+                      新增错误码四处齐（错误码类 + HTTP 状态映射 + 前端双语包 + 台账 §6）；④ 新增仓储方法同批 SQL
+                      模板，首行语句关键字、SELECT 列对齐实体、含租户锚点；⑤ 前端雪花 ID 一律 string；⑥
+                      开关/配置先找消费方，缺则 fail-closed；⑦
+                      变异验证「放宽阈值被拒」必须转红。【测试策略】单元（棘轮逐字段/边界/相等、开关双态、幂等载荷摘要比对）；集成（无权限与跨租户被拒、409
+                      不覆盖首次事实、启动期无 TemplateNotFoundException、读回新值）；负向（放宽阈值、关闭写
+                      API、盲标/非 AI_ASSISTED 裁决）；变异；运行期证据写
+                      docs/superpowers/reports/ 并带实测数值。【Spec
+                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
+                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                      Build；本阶段只出设计文档，不写实现代码。
+                    requirementsEvidence:
+                      contentHash: f366e5ba8fa5dc0416236541b2f6ec20593439e641f486f4f18e033b936323f6
+                      ref: openspec/changes/synapclaim-ai-config-governance-api
+                    sourceEvidence:
+                      contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
+                      ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
+              proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
+                append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
+                @TenantScope + /*bone:tenant*/ 锚点 + @Version 乐观锁，禁 FOR UPDATE；写
+                API 开关双闸门（服务端拒写 + 治理页读开关态渲染只读）；曝光/裁决回流复用并行会话在途
+                0124_synap_claim_ai_feedback_event.sql 与 AiFeedback*，不重复建表，租户内
+                event_id 唯一键，同键同载荷返回首次结果、同键异载荷 409
+                且不覆盖首次事实，事件不含姓名/证件/金额；端点不改案件状态、不写资金。【比较】方案 B 前端/网关做棘轮、后端只
+                CRUD：直连即可绕过放宽，服务端无审计与幂等事实，采纳率分母不可信，不采用；方案 C 新建
+                t_ai_config_version 事件溯源：与 t_feature_toggle 形成双真源触发「配了不生效」，且与
+                0124 重复造轮子，不采用。【关键取舍】不新增业务表，代价是配置历史只有 append-only
+                审计记录、无完整版本快照回放。【风险与处理】① 并行会话占用
+                ClaimErrorCodes/ClaimErrors/AiFeedback* → 等入库后精确路径复核、绝不 git add
+                全量；② 迁移号追加末尾空位，脚本+清单+bone-init.sql 同批，已发迁移含注释不回改；③ 新增错误码四处齐（错误码类
+                + HTTP 状态映射 + 前端双语包 + 台账 §6）；④ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT
+                列对齐实体、含租户锚点；⑤ 前端雪花 ID 一律 string；⑥ 开关/配置先找消费方，缺则 fail-closed；⑦
+                变异验证「放宽阈值被拒」必须转红。【测试策略】单元（棘轮逐字段/边界/相等、开关双态、幂等载荷摘要比对）；集成（无权限与跨租户被拒、409
+                不覆盖首次事实、启动期无 TemplateNotFoundException、读回新值）；负向（放宽阈值、关闭写
+                API、盲标/非 AI_ASSISTED 裁决）；变异；运行期证据写 docs/superpowers/reports/
+                并带实测数值。【Spec Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准
+                proposal/spec/tasks 与 v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
+                Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: f366e5ba8fa5dc0416236541b2f6ec20593439e641f486f4f18e033b936323f6
+                ref: openspec/changes/synapclaim-ai-config-governance-api
+              sourceEvidence:
+                contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
+                ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-ai-config-governance-api
+                  changeDir: openspec/changes/synapclaim-ai-config-governance-api
+                  workspaceBaseline:
+                    ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+                    ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+              ref: openspec/changes/synapclaim-ai-config-governance-api
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
+        receipt:
+          ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+          contentHash: c4631e8ee2e11a439a0b5bf7bf2665fa71c211c88daa56783d47bc3fa82d52c1
+          submissionId: 833504ec-8f85-4f00-a00a-5a75cd1002aa
     ready: []
     joins: {}
     outputs:
+      full.build.configure:
+        sequence: 9
+        value:
+          boundBranch: comet/synapclaim-ai-config-governance-api
+          buildMode: executing-plans
+          directOverride: false
+          isolation: worktree
+          reviewMode: thorough
+          subagentDispatch: null
+          tddMode: tdd
+      full.build.confirm:
+        sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-ai-config-governance-api
+              changeDir: openspec/changes/synapclaim-ai-config-governance-api
+              workspaceBaseline:
+                ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+            outputs:
+              full.build.configure:
+                boundBranch: comet/synapclaim-ai-config-governance-api
+                buildMode: executing-plans
+                directOverride: false
+                isolation: worktree
+                reviewMode: thorough
+                subagentDispatch: null
+                tddMode: tdd
+      full.build.plan:
+        sequence: 11
+        value:
+          designEvidence:
+            contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+            ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+          plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+          planEvidence:
+            contentHash: c4631e8ee2e11a439a0b5bf7bf2665fa71c211c88daa56783d47bc3fa82d52c1
+            ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+          taskRevision: 408098594af315f02d3584812a184a6a938129bb881bc2eaed264240a9b38806
+      full.build.plan.evidence:
+        sequence: 12
+        value:
+          contentHash: c4631e8ee2e11a439a0b5bf7bf2665fa71c211c88daa56783d47bc3fa82d52c1
+          ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
       full.design.confirm:
         sequence: 6
         value:
@@ -1228,6 +2240,6 @@ run_checkpoint:
           contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
     children: []
     lineage: []
-  sourceRevision: 22
-  sourceHash: aedf1d58014b7cdf3a2311617a3c8d5b432bcbf8a96c85510981c0ce6353979d
+  sourceRevision: 28
+  sourceHash: efaddfebb6e8d29dfdfd9086a4f285731c0eea485f6a6e76d3820923922cb670
 check_epoch: 2
