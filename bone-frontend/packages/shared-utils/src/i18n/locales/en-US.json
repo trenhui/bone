@@ -290,7 +290,9 @@
     "SC_CLAIM_TASK_CONFLICT": "Task was already claimed by someone else, or an active task of the same type already exists for this claim. Please refresh.",
     "SC_CLAIM_CONFIG_RATCHET_VIOLATION": "Config tightening only: values looser than the current effective value are rejected",
     "SC_CLAIM_CONFIG_WRITE_DISABLED": "Config write is disabled or not configured; the page is read-only",
-    "SC_CLAIM_CONFIG_INVALID": "Invalid config request (unknown key, wrong type, or out of range)"
+    "SC_CLAIM_CONFIG_INVALID": "Invalid config request (unknown key, wrong type, or out of range)",
+    "SC_CLAIM_REREVIEW_NOT_FOUND": "Independent re-review task not found (or not visible in this tenant)",
+    "SC_CLAIM_REREVIEWER_CONFLICT": "The independent reviewer must not be the first reviewer, and must match the registered reviewer (segregation of duties)"
   },
   "enums": {
     "ORDER_STATUS": {

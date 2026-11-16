@@ -3993,6 +3993,33 @@
   },
   {
    "http": "GET",
+   "path": "/api/v1/claims/re-review/queue",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "synap-claim-independent-re-review-e2e.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/re-review/submit",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "synap-claim-independent-re-review-e2e.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/claims/{claimId}/re-review/complete",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "synap-claim-independent-re-review-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
    "path": "/api/v1/claim-ops/ai-provider-probe",
    "controller": "AiProviderProbeController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiProviderProbeController.java",
@@ -4534,8 +4561,8 @@
   }
  ],
  "summary": {
-  "endpoints": 549,
-  "covered": 227,
+  "endpoints": 552,
+  "covered": 230,
   "uncovered": 322
  }
 }

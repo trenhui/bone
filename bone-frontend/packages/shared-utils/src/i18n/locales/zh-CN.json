@@ -290,7 +290,9 @@
     "SC_CLAIM_TASK_CONFLICT": "任务已被他人领取或同案同类型已有在办任务，请刷新后重试",
     "SC_CLAIM_CONFIG_RATCHET_VIOLATION": "配置放宽被拒：只能提交与当前生效值相等或更严格的配置",
     "SC_CLAIM_CONFIG_WRITE_DISABLED": "配置写入已关闭或未配置，当前为只读",
-    "SC_CLAIM_CONFIG_INVALID": "配置请求非法（未知键、类型错误或越界值）"
+    "SC_CLAIM_CONFIG_INVALID": "配置请求非法（未知键、类型错误或越界值）",
+    "SC_CLAIM_REREVIEW_NOT_FOUND": "独立复审任务不存在或不属于当前租户",
+    "SC_CLAIM_REREVIEWER_CONFLICT": "独立复审人不得为初审人本人，也不能与登记的复审人不一致（职责分离）"
   },
   "enums": {
     "ORDER_STATUS": {

@@ -95,7 +95,10 @@ public final class ClaimErrors {
           // 403：写 API 开关关闭（含未配置 fail-closed），配置写请求一律拒绝
           Map.entry(ClaimErrorCodes.SC_CLAIM_CONFIG_WRITE_DISABLED, 403),
           // 400：配置请求非法（未知键/类型错误/越界），写入期拒绝而非静默忽略
-          Map.entry(ClaimErrorCodes.SC_CLAIM_CONFIG_INVALID, 400));
+          Map.entry(ClaimErrorCodes.SC_CLAIM_CONFIG_INVALID, 400),
+          // 独立复审：404 复审任务不存在/跨租户；409 同人不可自审（职责分离失效，须单列告警）
+          Map.entry(ClaimErrorCodes.SC_CLAIM_REREVIEW_NOT_FOUND, 404),
+          Map.entry(ClaimErrorCodes.SC_CLAIM_REREVIEWER_CONFLICT, 409));
 
   static {
     checkEveryCodeRegistered();

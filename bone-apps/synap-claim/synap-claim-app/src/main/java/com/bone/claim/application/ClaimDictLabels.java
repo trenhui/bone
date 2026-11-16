@@ -92,6 +92,7 @@ public final class ClaimDictLabels {
           Map.entry("claim:claims:read", "案件读"),
           Map.entry("claim:claims:write", "案件写"),
           Map.entry("claim:review:write", "复核写"),
+          Map.entry("claim:re-review:write", "独立复审写"),
           Map.entry("claim:decision:write", "核赔写"),
           Map.entry("claim:settlement:write", "结算写"),
           Map.entry("claim:appeal:write", "申诉写"),

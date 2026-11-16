@@ -10,6 +10,8 @@ import com.bone.claim.application.ClaimFeedbackApplicationService;
 import com.bone.claim.application.ClaimSearchApplicationService;
 import com.bone.claim.application.ClaimTaskApplicationService;
 import com.bone.claim.application.ClaimTaskApplicationService.MyTaskRow;
+import com.bone.claim.application.IndependentReReviewApplicationService;
+import com.bone.claim.application.IndependentReReviewApplicationService.ReReviewQueueRow;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
@@ -45,6 +47,7 @@ public class ClaimWorkbenchController {
   private final ClaimTaskApplicationService claimTaskApplicationService;
   private final AiConfigGovernanceService aiConfigGovernanceService;
   private final TenantPort tenantPort;
+  private final IndependentReReviewApplicationService independentReReviewApplicationService;
 
   @Operation(
       summary = "案件跨键检索",
@@ -142,6 +145,45 @@ public class ClaimWorkbenchController {
   public ApiResponse<java.util.List<MyTaskRow>> claimTasks(
       @PathVariable("claimId") String claimId) {
     return ApiResponse.success(claimTaskApplicationService.tasksOfClaim(parseTaskId(claimId)));
+  }
+
+  // ===================== 独立复审（批 3） =====================
+
+  @Operation(summary = "独立复审队列", description = "持权人视角，只出 43 状态案件；租户隔离由 SDK @TenantScope 注入。")
+  @PreAuthorize("hasAuthority('claim:re-review:write')")
+  @GetMapping("/re-review/queue")
+  public ApiResponse<PageResult<ReReviewQueueRow>> reReviewQueue(
+      @RequestParam(value = "reviewerId", required = false) String reviewerId,
+      @RequestParam(value = "page", defaultValue = "1") int page,
+      @RequestParam(value = "size", defaultValue = "20") int size) {
+    String operator = reviewerId == null ? CurrentOperator.requireId() : reviewerId;
+    return ApiResponse.success(independentReReviewApplicationService.queue(operator, page, size));
+  }
+
+  /** 提交独立复审请求体（复审人；批准结论）。 */
+  public record ReReviewSubmitReq(String reviewerId) {}
+
+  @Operation(summary = "提交独立复审", description = "42→43，记录独立复审人；同人不可自审，RE_REVIEW 关闭拒绝。")
+  @PreAuthorize("hasAuthority('claim:re-review:write')")
+  @PostMapping("/{claimId}/re-review/submit")
+  public ApiResponse<ReReviewQueueRow> submitReReview(
+      @PathVariable("claimId") String claimId, @RequestBody ReReviewSubmitReq req) {
+    return ApiResponse.success(
+        independentReReviewApplicationService.submitForReReview(
+            parseTaskId(claimId), req.reviewerId()));
+  }
+
+  /** 复审结论请求体（是否通过；结论人）。 */
+  public record ReReviewCompleteReq(boolean approved, String reviewerId) {}
+
+  @Operation(summary = "提交独立复审结论", description = "43→46 通过 / 43→45 驳回；结论人必须是登记的独立复审人。")
+  @PreAuthorize("hasAuthority('claim:re-review:write')")
+  @PutMapping("/{claimId}/re-review/complete")
+  public ApiResponse<ReReviewQueueRow> completeReReview(
+      @PathVariable("claimId") String claimId, @RequestBody ReReviewCompleteReq req) {
+    return ApiResponse.success(
+        independentReReviewApplicationService.completeReReview(
+            parseTaskId(claimId), req.approved(), req.reviewerId()));
   }
 
   /**

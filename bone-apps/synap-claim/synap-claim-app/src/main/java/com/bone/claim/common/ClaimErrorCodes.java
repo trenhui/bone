@@ -321,4 +321,23 @@ public final class ClaimErrorCodes {
 
   /** 配置请求非法：未知键 / 类型错误 / 越界值，写入期拒绝而不是静默忽略（配了不生效）。 */
   public static final String SC_CLAIM_CONFIG_INVALID = "SC_CLAIM_CONFIG_INVALID";
+
+  // ===== 独立复审（批 3） =====
+
+  /**
+   * 独立复审任务不存在（或跨租户按不存在处理，不泄露存在性）。
+   *
+   * <p>404 而非 409：复审队列按持权人 + 批 1 任务归属 + 租户隔离过滤，取不到即为「对本操作人不存在」， 与 {@link #SC_CLAIM_TASK_NOT_FOUND}
+   * 同一防枚举口径。
+   */
+  public static final String SC_CLAIM_REREVIEW_NOT_FOUND = "SC_CLAIM_REREVIEW_NOT_FOUND";
+
+  /**
+   * 独立复审人冲突：复审人与初审人为同一人（含空白/大小写绕过），或与登记的独立复审人不一致。
+   *
+   * <p><b>为什么必须单独给码而不是复用 {@link #CLAIM_REVIEWER_CONFLICT}</b>：双人复核冲突与独立复审冲突是两种不同的职责分离
+   * 违规——监控里前者是「复核人=初审人」，后者是「独立复审人=初审人」，混码会让「独立复审这道防线被绕过」消失在普通复核冲突里，
+   * 恰好掩盖职责分离失效这一内控风险。409：请求合法、状态正确，是「该操作人不满足职责分离」这一前提不成立。
+   */
+  public static final String SC_CLAIM_REREVIEWER_CONFLICT = "SC_CLAIM_REREVIEWER_CONFLICT";
 }

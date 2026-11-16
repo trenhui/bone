@@ -125,7 +125,8 @@
       ],
       "cases": [
         "scripts/e2e/claim-full-chain-e2e.mjs",
-        "scripts/e2e/claim-fee-category-e2e.mjs"
+        "scripts/e2e/claim-fee-category-e2e.mjs",
+        "scripts/e2e/synap-claim-independent-re-review-e2e.py"
       ]
     },
     "purchase-expense": {
@@ -267,6 +268,10 @@
         },
         {
           "path": "scripts/e2e/claim-fee-category-e2e.mjs",
+          "exists": true
+        },
+        {
+          "path": "scripts/e2e/synap-claim-independent-re-review-e2e.py",
           "exists": true
         }
       ],
