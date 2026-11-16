@@ -13,9 +13,19 @@ import type {
   InspectionDimension,
   InspectionResult,
   InspectionView,
+  SamplingConfig,
 } from './types';
 
 const reviewClient = createApiClient('/api/v1/review');
+
+export const inspectionHandoffApi = {
+  /** 当前租户生效的抽检比例（与后端 t_feature_toggle 读回值同源，不再硬编码 5%）。 */
+  samplingConfig(): Promise<ApiResponse<SamplingConfig>> {
+    return reviewClient.get<never, ApiResponse<SamplingConfig>>(
+      '/inspection-handoff/sampling-config',
+    );
+  },
+};
 
 export const inspectionApi = {
   /** #13 发起抽检（MANUAL）：案件须已终态；同案重复发起幂等返回原单。 */

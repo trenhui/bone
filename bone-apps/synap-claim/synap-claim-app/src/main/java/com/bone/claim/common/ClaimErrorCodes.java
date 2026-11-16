@@ -340,4 +340,25 @@ public final class ClaimErrorCodes {
    * 恰好掩盖职责分离失效这一内控风险。409：请求合法、状态正确，是「该操作人不满足职责分离」这一前提不成立。
    */
   public static final String SC_CLAIM_REREVIEWER_CONFLICT = "SC_CLAIM_REREVIEWER_CONFLICT";
+
+  // ===== 抽检处置与交接（批 4） =====
+
+  /**
+   * 冲正前置未满足：已支付案件打回前必须先完成冲正（退款回冲），拒绝且不改任何状态。
+   *
+   * <p>409 而非 400：请求合法、案件状态也允许打回，缺的是「资金已冲正」这一事实前提。资金路径无签核，
+   * 未冲正就打回会留出一个「账上已付、案件已打回重办」的缺口，故写入期硬拒绝、不事后补偿。
+   */
+  public static final String SC_CLAIM_REVERSAL_REQUIRED = "SC_CLAIM_REVERSAL_REQUIRED";
+
+  /**
+   * 代理冲突：同一被代理人存在重叠的生效代理，或代理区间非法（止不晚于起 / 空主体）。
+   *
+   * <p>409：同一时段至多一条生效代理是硬约束，第二条要么写入期事前查重被拒，要么并发下由生成列唯一键兜底拒绝。
+   */
+  public static final String SC_CLAIM_AGENT_CONFLICT = "SC_CLAIM_AGENT_CONFLICT";
+
+  /** 抽检处置入参非法：结论非 PASS/REJECT/BACK，或 BACK 未给打回原因。 */
+  public static final String SC_CLAIM_INSPECTION_ACTION_INVALID =
+      "SC_CLAIM_INSPECTION_ACTION_INVALID";
 }

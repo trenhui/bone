@@ -8,9 +8,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bone.claim.application.FeatureTenantToggleService;
 import com.bone.claim.application.InspectionApplicationService;
 import com.bone.claim.application.InspectionApplicationService.SampleOutcome;
 import com.bone.claim.domain.model.claim.projection.ClaimTenantRef;
+import com.bone.claim.domain.model.inspection.InspectionConfig;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.infrastructure.schedule.ScheduleLockService;
 import java.util.List;
@@ -32,6 +34,7 @@ class InspectionSamplingJobTest {
   @Mock private ClaimCaseRepository claimCaseRepository;
   @Mock private InspectionApplicationService inspectionApplicationService;
   @Mock private ScheduleLockService scheduleLockService;
+  @Mock private FeatureTenantToggleService featureTenantToggleService;
 
   private InspectionSamplingJob job;
 
@@ -39,9 +42,14 @@ class InspectionSamplingJobTest {
   void setUp() {
     job =
         new InspectionSamplingJob(
-            claimCaseRepository, inspectionApplicationService, scheduleLockService);
+            claimCaseRepository,
+            inspectionApplicationService,
+            scheduleLockService,
+            featureTenantToggleService);
     ReflectionTestUtils.setField(job, "batch", 100);
-    ReflectionTestUtils.setField(job, "samplingRatePercent", 5);
+    // 比例来自 t_feature_toggle（批4 4.1）；不同租户可配不同比例，测试钉住"按租户读"而非写死。
+    when(featureTenantToggleService.inspectionConfig(anyLong()))
+        .thenReturn(new InspectionConfig(5, java.util.Map.of()));
     when(inspectionApplicationService.sampleIfEligible(anyLong(), anyInt()))
         .thenReturn(SampleOutcome.NOT_SAMPLED);
   }
@@ -71,6 +79,24 @@ class InspectionSamplingJobTest {
 
     verify(inspectionApplicationService, times(1)).sampleIfEligible(eq(1L), anyInt());
     verify(inspectionApplicationService, times(1)).sampleIfEligible(eq(2L), anyInt());
+  }
+
+  @Test
+  @DisplayName("比例按租户配置读取并透传（批4 4.1：配置服务是真源，非@Value写死）")
+  void usesPerTenantConfiguredRate() {
+    when(claimCaseRepository.findFinishedForInspectionAllTenants(100))
+        .thenReturn(List.of(ref(1L, 7L), ref(2L, 8L)));
+    when(featureTenantToggleService.inspectionConfig(7L))
+        .thenReturn(new InspectionConfig(30, java.util.Map.of()));
+    when(featureTenantToggleService.inspectionConfig(8L))
+        .thenReturn(new InspectionConfig(80, java.util.Map.of()));
+
+    job.sampleDailyBody();
+
+    verify(inspectionApplicationService).sampleIfEligible(1L, 30);
+    verify(inspectionApplicationService).sampleIfEligible(2L, 80);
+    verify(featureTenantToggleService).inspectionConfig(7L);
+    verify(featureTenantToggleService).inspectionConfig(8L);
   }
 
   private static ClaimTenantRef ref(long claimId, long tenantId) {

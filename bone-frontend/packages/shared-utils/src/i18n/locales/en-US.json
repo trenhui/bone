@@ -292,7 +292,10 @@
     "SC_CLAIM_CONFIG_WRITE_DISABLED": "Config write is disabled or not configured; the page is read-only",
     "SC_CLAIM_CONFIG_INVALID": "Invalid config request (unknown key, wrong type, or out of range)",
     "SC_CLAIM_REREVIEW_NOT_FOUND": "Independent re-review task not found (or not visible in this tenant)",
-    "SC_CLAIM_REREVIEWER_CONFLICT": "The independent reviewer must not be the first reviewer, and must match the registered reviewer (segregation of duties)"
+    "SC_CLAIM_REREVIEWER_CONFLICT": "The independent reviewer must not be the first reviewer, and must match the registered reviewer (segregation of duties)",
+    "SC_CLAIM_REVERSAL_REQUIRED": "The claim is already paid; a reversal (refund) must be completed before sending it back, otherwise a paid-but-reworking gap remains",
+    "SC_CLAIM_AGENT_CONFLICT": "Agent conflict: the principal already has an active agent in this period, or the agency interval is invalid",
+    "SC_CLAIM_INSPECTION_ACTION_INVALID": "Invalid inspection decision: it must be PASS/REJECT/BACK, and BACK requires a reason"
   },
   "enums": {
     "ORDER_STATUS": {

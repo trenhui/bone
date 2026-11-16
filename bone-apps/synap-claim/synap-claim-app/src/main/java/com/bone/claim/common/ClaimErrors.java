@@ -98,7 +98,11 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.SC_CLAIM_CONFIG_INVALID, 400),
           // 独立复审：404 复审任务不存在/跨租户；409 同人不可自审（职责分离失效，须单列告警）
           Map.entry(ClaimErrorCodes.SC_CLAIM_REREVIEW_NOT_FOUND, 404),
-          Map.entry(ClaimErrorCodes.SC_CLAIM_REREVIEWER_CONFLICT, 409));
+          Map.entry(ClaimErrorCodes.SC_CLAIM_REREVIEWER_CONFLICT, 409),
+          // 批4：409 冲正前置未满足 / 代理区间冲突；400 抽检处置入参非法
+          Map.entry(ClaimErrorCodes.SC_CLAIM_REVERSAL_REQUIRED, 409),
+          Map.entry(ClaimErrorCodes.SC_CLAIM_AGENT_CONFLICT, 409),
+          Map.entry(ClaimErrorCodes.SC_CLAIM_INSPECTION_ACTION_INVALID, 400));
 
   static {
     checkEveryCodeRegistered();

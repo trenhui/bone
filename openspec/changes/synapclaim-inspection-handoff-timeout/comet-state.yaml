@@ -1,0 +1,2002 @@
+# comet-execution: managed-run
+change_id: 00b605f4-1b87-415e-865f-a9c260e07df8
+workflow: full
+language: zh-CN
+phase: verify
+context_compression: off
+build_mode: executing-plans
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: thorough
+isolation: worktree
+verify_mode: null
+auto_transition: true
+base_ref: 6f0ea427fdee36fad49994bf7854bf075e6a9a28
+design_doc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+plan: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
+verify_result: pending
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-16-synapclaim-inspection-handoff-timeout-verify.md
+branch_status: pending
+created_at: 2026-11-13
+verified_at: null
+archive_confirmation: null
+archived: false
+bound_branch: comet/synapclaim-inspection-handoff-timeout
+direct_override: false
+handoff_context: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+handoff_hash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: 06e7c3189fd3aa713b4976cdb344d7da1bfb867ba83c7217d7f20d23adb64809
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: synapclaim-inspection-handoff-timeout
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: 8c7f133989444a19b2e8e1af3a5671f279c8af507774fc5dac0a9f399c8eed2b
+    input:
+      change: synapclaim-inspection-handoff-timeout
+      changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+      workspaceBaseline:
+        ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+    state:
+      archiveConfirmation: null
+      archived: false
+      autoTransition: true
+      baseRef: 6f0ea427fdee36fad49994bf7854bf075e6a9a28
+      boundBranch: comet/synapclaim-inspection-handoff-timeout
+      branchStatus: pending
+      buildMode: executing-plans
+      buildPause: null
+      checkEpoch: 3
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-13
+      designDoc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+      directOverride: false
+      handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+      handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+      isolation: worktree
+      language: zh-CN
+      phase: verify
+      plan: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
+      reviewMode: thorough
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-16-synapclaim-inspection-handoff-timeout-verify.md
+      verifiedAt: null
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pending
+      workflow: full
+    status: running
+    sequence: 18
+    actions:
+      - attempt: 3
+        claim:
+          executorId: comet-classic-guard
+          token: portable-5ff7b425bcd2dbd56e151335b12979349b81dcb045a1a7fbe15538dc377877b2
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-inspection-handoff-timeout:1
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs: {}
+        inputHash: c8a2ebc421c641c6379995d77efb47d2030b6490c3545d1d0f6dbca761e20b48
+        outcome:
+          actionId: synapclaim-inspection-handoff-timeout:1
+          attempt: 3
+          claimToken: portable-5ff7b425bcd2dbd56e151335b12979349b81dcb045a1a7fbe15538dc377877b2
+          inputHash: c8a2ebc421c641c6379995d77efb47d2030b6490c3545d1d0f6dbca761e20b48
+          outcomeId: 799ff4c0-5696-43e4-b2ad-31b198cc6dd0
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: bf9dd2344178874a32fa1687ae02bf0d26fc5eebb74a2e8087a0ca8b66908878
+            outcomeId: 799ff4c0-5696-43e4-b2ad-31b198cc6dd0
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 取证：inspect 显示 synapclaim-inspection-handoff-timeout:1 attempt=1
+                status=running 且无 receipts/outcome；recovery.evidence.directory
+                映射到全局 Runtime 后不存在（exists=False）；guard --apply 被
+                CLASSIC_COMMAND_FAILED『has a running Action』阻断，未运行任何检查；guard
+                --json 的 checks 为静态产物预检。故核实该 attempt 原检查完全未执行，按 not-executed
+                重试（revision=3），由 guard 真实重跑 revalidate。
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: 取证：inspect 显示 synapclaim-inspection-handoff-timeout:1 attempt=2
+                status=running 且无 receipts/outcome；recovery.evidence.directory
+                映射到全局 Runtime 后不存在（exists=False）；guard --apply 被
+                CLASSIC_COMMAND_FAILED『has a running Action』阻断，未运行任何检查；guard
+                --json 的 checks 为静态产物预检。故核实该 attempt 原检查完全未执行，按 not-executed
+                重试（revision=6），由 guard 真实重跑 revalidate。
+            resolution: not-executed
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-36621ad77af4c224d60e6df849837c6f4f7c2338aa6c370acc6fb78efef034d1
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-inspection-handoff-timeout:4
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs: {}
+        inputHash: 4e39f795ddd11532d3b0032ed058905bfb5b2ea73c83fd8208ee75978202de7a
+        outcome:
+          actionId: synapclaim-inspection-handoff-timeout:4
+          attempt: 2
+          claimToken: portable-36621ad77af4c224d60e6df849837c6f4f7c2338aa6c370acc6fb78efef034d1
+          inputHash: 4e39f795ddd11532d3b0032ed058905bfb5b2ea73c83fd8208ee75978202de7a
+          outcomeId: synapclaim-inspection-handoff-timeout:4:2:executor-result
+          output:
+            contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 02e3ab9b0b5664a081ec653a1f34231bd5dd492335947a6d17365b72e6c807f2
+            outcomeId: synapclaim-inspection-handoff-timeout:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 取证：inspect(revision=12) 显示 synapclaim-inspection-handoff-timeout:4
+                status=running、receipts=0、outcome=null；recovery.record.status=missing，evidence
+                目录
+                .comet/runtime/classic-sdk-checks/befbedc82cf847fef19f54644bf5c1d702a003813d1472d08deb92d26a0db8ed
+                在全局 Runtime 中不存在；该步骤为 Open
+                产物静态预检/revalidate，不含外部副作用，原尝试未产生任何检查收据。据此核实原尝试完全未执行。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-b8628dc11d0324319a6c52272584a8e7ea887e0e9b046976d2821c843175439e
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-inspection-handoff-timeout:5
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs: {}
+        inputHash: 88db63680ddd31e98ccd692b2f5ba2b679372cd8810ed8eb34126ec5020cb572
+        outcome:
+          actionId: synapclaim-inspection-handoff-timeout:5
+          attempt: 2
+          claimToken: portable-b8628dc11d0324319a6c52272584a8e7ea887e0e9b046976d2821c843175439e
+          inputHash: 88db63680ddd31e98ccd692b2f5ba2b679372cd8810ed8eb34126ec5020cb572
+          outcomeId: 81f6045c-5bf1-48d2-9208-f83f97442780
+          output:
+            handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+            handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+            proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+              t_claim_task_transfer / t_claim_user_agent 三张 append-only
+              事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+              UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+              index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+              拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+              available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+              REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+              不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+              乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+              t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+              finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+              打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+              分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+              UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言 +
+              乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；② 实体
+              @Column 与 information_schema 逐列求差、末尾强断言 + SIGNAL（MESSAGE_TEXT ≤128
+              字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤
+              门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律 string；⑦
+              不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+              终态断言、启动期无
+              TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+              / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+              Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+              §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+            requirementsEvidence:
+              contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+            sourceEvidence:
+              contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 0c9eaa0e1d9170fd73d015203bc718a76e2be82bf33a6db3ccd563973095e038
+            outcomeId: 81f6045c-5bf1-48d2-9208-f83f97442780
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 取证：inspect(revision=17) 显示
+                synapclaim-inspection-handoff-timeout:5(full.design.handoff)
+                status=running、receipts=0、outcome=null；Run outputs 无任何 design
+                相关项，configuration.handoffContext=null，未生成 Design
+                Wait；recovery.record.status=missing，evidence 目录
+                classic-sdk-checks/befbedc82cf847fef19f54644bf5c1d702a003813d1472d08deb92d26a0db8ed
+                在全局 Runtime 中不存在；本次 comet state propose-design 连续因 Timed out
+                waiting for file lock 返回 exitCode=70，随后因 claimed Action unknown
+                被拒；官方 diagnoseRecoverableFileLock 取证三批主锁均为 status=stale、持有 PID
+                已退出、无 coordinator blocker。state check 另报 Design requirements
+                changed after the proposal，恢复后按官方 revise-design
+                重新对齐设计输入再重提，不把该提示当作已执行证据。据此核实该 claim 对应的原尝试完全未执行，未产生任何效果或收据。
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 3
+        claim:
+          executorId: comet-classic-state
+          token: portable-78cb914b92529900323080cda9b5bff2c09c84b88dbbf3c54cb51d0fd3b63b76
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-inspection-handoff-timeout:7
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs: {}
+        inputHash: a282d2d05cf155192a312f57b218ed61c7cfffff22da981ac2795fd51e7dfa6b
+        outcome:
+          actionId: synapclaim-inspection-handoff-timeout:7
+          attempt: 3
+          claimToken: portable-78cb914b92529900323080cda9b5bff2c09c84b88dbbf3c54cb51d0fd3b63b76
+          inputHash: a282d2d05cf155192a312f57b218ed61c7cfffff22da981ac2795fd51e7dfa6b
+          outcomeId: dbc45c04-840e-4efe-8da1-a36f2ff683f6
+          output:
+            designDoc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 69136721b5273b1b84a769600a2a584385504b272b6390d2d7b49ce59fae8c79
+            outcomeId: dbc45c04-840e-4efe-8da1-a36f2ff683f6
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 取证：inspect(revision=23) 显示 :7 full.design.document
+                status=running、receipts=0、outcome=null；Run outputs 无
+                full.design.document/evidence；recovery.record.status=missing，evidence
+                目录在全局 Runtime 中不存在；本次 complete-design 因 Timed out waiting for
+                file lock 返回 exitCode=70 未生成任何文档收据。官方
+                diagnoseRecoverableFileLock 取证主锁为 stale、持有 PID 已退出、无
+                blocker。据此核实原尝试完全未执行。
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: 取证：inspect(revision=26) 显示 :7 full.design.document
+                status=running、receipts=0、outcome=null；Run outputs 无
+                full.design.document/evidence；recovery.record.status=missing，evidence
+                目录在全局 Runtime 中不存在；本次 complete-design 因 Timed out waiting for
+                file lock 返回 exitCode=70 未生成任何文档收据。官方
+                diagnoseRecoverableFileLock 取证主锁为 stale、持有 PID 已退出、无
+                blocker。据此核实原尝试完全未执行。
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-b74ab50177fd1c8ad3b0a2b99bd277e7c0b25f52b09d33e7fa8c7dcf5aadcf43
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-inspection-handoff-timeout:9
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs: {}
+        inputHash: f2862ac852fc6d7fc514992f4b5d0e7242feb7737ca81f02ea320ab71a2c9a02
+        outcome:
+          actionId: synapclaim-inspection-handoff-timeout:9
+          attempt: 1
+          claimToken: portable-b74ab50177fd1c8ad3b0a2b99bd277e7c0b25f52b09d33e7fa8c7dcf5aadcf43
+          inputHash: f2862ac852fc6d7fc514992f4b5d0e7242feb7737ca81f02ea320ab71a2c9a02
+          outcomeId: 8172a135-c3ae-464d-9f9d-bc546cb20c9b
+          output:
+            boundBranch: comet/synapclaim-inspection-handoff-timeout
+            buildMode: executing-plans
+            directOverride: false
+            isolation: worktree
+            reviewMode: thorough
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: fdbb3783c6d949db6e1a7097082c4738e5bb3c7168924f3f6e93c435e6025d81
+            outcomeId: 8172a135-c3ae-464d-9f9d-bc546cb20c9b
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-41dc2fa5d90a691162bc340ad1f0b691290bb8d782b0a921921b0e2b79de7651
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-inspection-handoff-timeout:11
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs: {}
+        inputHash: 55ceda036191e240d423b6aba6d9f863d96696e7bd63961878d1353ba52636d0
+        outcome:
+          actionId: synapclaim-inspection-handoff-timeout:11
+          attempt: 1
+          claimToken: portable-41dc2fa5d90a691162bc340ad1f0b691290bb8d782b0a921921b0e2b79de7651
+          inputHash: 55ceda036191e240d423b6aba6d9f863d96696e7bd63961878d1353ba52636d0
+          outcomeId: 17209591-7e05-47ef-9053-d3d6512a24d7
+          output:
+            designEvidence:
+              contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+            plan: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
+            planEvidence:
+              contentHash: 714dcbaa600703adc10d7057a8f271a42c7630f34a591d0b50e8c1322330aa74
+              ref: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
+            taskRevision: ec229283b78e1c65b79152bf61031b4aeea370c8d238b0d4ac2cb06947b5576e
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1ac5aa63ae3322d0f1eb3fe2cf4559bff61b18bed886d8efa5f504cc78822b09
+            outcomeId: 17209591-7e05-47ef-9053-d3d6512a24d7
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-inspection-handoff-timeout:13/1
+          token: portable-154a4fc87cb0a09f71da7223c80d2cc6d08952d8da219598bab5392ffca6a185
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-inspection-handoff-timeout:13
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs: {}
+        inputHash: 95b03ad909d3f61d6970dc8c503dc2eabfb17a7b6dd72049cdb8c955bb69f2b3
+        outcome:
+          actionId: synapclaim-inspection-handoff-timeout:13
+          attempt: 1
+          claimToken: portable-154a4fc87cb0a09f71da7223c80d2cc6d08952d8da219598bab5392ffca6a185
+          inputHash: 95b03ad909d3f61d6970dc8c503dc2eabfb17a7b6dd72049cdb8c955bb69f2b3
+          outcomeId: 4249fb87-8583-4b39-95c2-c08dc79e9b55
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3e2e2066546060d34ba183d776351c36dd4eb5b53a695eaa528bfab4c5fdc2a8
+            outcomeId: 4249fb87-8583-4b39-95c2-c08dc79e9b55
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-918656148e532379561e413c7030da6ef032022ff398f71750da2a104cc10acf
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-inspection-handoff-timeout:14
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs: {}
+        inputHash: 10118440a4cb7a2603df5580e59274c081533decfbefaedc3316ccfc97082ff0
+        outcome:
+          actionId: synapclaim-inspection-handoff-timeout:14
+          attempt: 1
+          claimToken: portable-918656148e532379561e413c7030da6ef032022ff398f71750da2a104cc10acf
+          inputHash: 10118440a4cb7a2603df5580e59274c081533decfbefaedc3316ccfc97082ff0
+          outcomeId: 6d10d406-7771-40bb-a7cd-c2f5ca5932b8
+          output:
+            argv:
+              - ./scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 93fdfef027f3127a8c744975493a2ed2e4c60763d089b44d5ad95a0c77567c40
+            cwd: .
+            environment: 5c8a3b3f9ded7d21e4bf1ce6ef56500469c57722d1fdabdec059289a4198cc7d
+            exitCode: 0
+            inputAfter: e43dbc94b7d4d1d933faa0619c2d6adf8c6e9aeaddbf385af9806dc159e20faa
+            inputBefore: e43dbc94b7d4d1d933faa0619c2d6adf8c6e9aeaddbf385af9806dc159e20faa
+            manifestHash: 1fc27e94fa4d73b2e258f5630e6925b7cfd004e8bf799c3881e032fe44202e16
+            manifestRef: .comet/runtime/classic-sdk-checks/befbedc82cf847fef19f54644bf5c1d702a003813d1472d08deb92d26a0db8ed/0d674b3e-10ec-471e-802c-aeb26cb7910f.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/befbedc82cf847fef19f54644bf5c1d702a003813d1472d08deb92d26a0db8ed/b391efb0-4e2c-43a9-bd1e-2df146d0b5a3.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 898b4defbbba3a8b32bd9529574b0b70e857e0f7fff0b3f05fbfebf6887e3d0f
+            outcomeId: 6d10d406-7771-40bb-a7cd-c2f5ca5932b8
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-b66ae9f0e5449fd3d4d519d2a4879ae7c3b21ea0ebc27f0bc49e8bb3e8d550ed
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-inspection-handoff-timeout:16
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs: {}
+        inputHash: cd9eac6ef7c872441d073739416f3bfdcc8d5a256c3f3d3b0ff0877db9c18c09
+        outcome:
+          actionId: synapclaim-inspection-handoff-timeout:16
+          attempt: 1
+          claimToken: portable-b66ae9f0e5449fd3d4d519d2a4879ae7c3b21ea0ebc27f0bc49e8bb3e8d550ed
+          inputHash: cd9eac6ef7c872441d073739416f3bfdcc8d5a256c3f3d3b0ff0877db9c18c09
+          outcomeId: 1be5d1ad-a41b-450a-90fc-d0a83ece8df9
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-16-synapclaim-inspection-handoff-timeout-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1a22714f58a0cf299673ef53aa1f16dc7a90442a161ab880077126a0afcfa32e
+            outcomeId: 1be5d1ad-a41b-450a-90fc-d0a83ece8df9
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-dae470d4969f70c26de5059605a6db76afb6e8f465736f7f48099886ebc7e587
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-inspection-handoff-timeout:18
+        input:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs: {}
+        inputHash: 4125b31ac15b643ae223904cf3830936c565a293a60501d58d5af129a14cd977
+        protocolVersion: 1
+        reason: Portable recovery requires reconciliation of external execution
+        receipts: []
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-inspection-handoff-timeout
+        status: unknown
+        stepId: full.verify.check
+        type: call_tool
+    actionContexts:
+      synapclaim-inspection-handoff-timeout:1:
+        results: {}
+        sequence: 1
+      synapclaim-inspection-handoff-timeout:11:
+        results: {}
+        sequence: 11
+      synapclaim-inspection-handoff-timeout:13:
+        results: {}
+        sequence: 13
+      synapclaim-inspection-handoff-timeout:14:
+        results: {}
+        sequence: 14
+      synapclaim-inspection-handoff-timeout:16:
+        results: {}
+        sequence: 16
+      synapclaim-inspection-handoff-timeout:18:
+        results: {}
+        sequence: 18
+      synapclaim-inspection-handoff-timeout:4:
+        results: {}
+        sequence: 4
+      synapclaim-inspection-handoff-timeout:5:
+        results: {}
+        sequence: 5
+      synapclaim-inspection-handoff-timeout:7:
+        results: {}
+        sequence: 7
+      synapclaim-inspection-handoff-timeout:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: synapclaim-inspection-handoff-timeout:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+        proposalHash: dcdda6d9d1a1d5356eafd2d67cbde9ba4d8d60621b082ad334e14a0c979071a5
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+          choice: approved
+          proposalHash: dcdda6d9d1a1d5356eafd2d67cbde9ba4d8d60621b082ad334e14a0c979071a5
+      - id: synapclaim-inspection-handoff-timeout:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+              handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+              proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+                拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+                t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+                finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+                打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+                分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；②
+                实体 @Column 与 information_schema 逐列求差、末尾强断言 + SIGNAL（MESSAGE_TEXT
+                ≤128 字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤
+                门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律 string；⑦
+                不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                终态断言、启动期无
+                TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+              sourceEvidence:
+                contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+        proposalHash: 67c84ab6564473079a8bec0fb16cf26f9caff14dc9ee72ad1f9bdc7b4a191630
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-67c84ab6564473079a8bec0fb16cf26f9caff14dc9ee72ad1f9bdc7b4a191630-approved
+          choice: approved
+          proposalHash: 67c84ab6564473079a8bec0fb16cf26f9caff14dc9ee72ad1f9bdc7b4a191630
+      - id: synapclaim-inspection-handoff-timeout:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs:
+            full.build.configure:
+              boundBranch: comet/synapclaim-inspection-handoff-timeout
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: 4fef646d5fbda9f25de7c607a5049f45213a47a86b85d1280c5d9ab2e6479f6a
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: d7eed3e9-48fe-4bae-9bf2-1bfa6d16ad07
+          choice: approved
+          proposalHash: 4fef646d5fbda9f25de7c607a5049f45213a47a86b85d1280c5d9ab2e6479f6a
+    evidenceWaits:
+      - id: synapclaim-inspection-handoff-timeout:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+          submissionId: f79c7892-00aa-4b39-b175-2b7508b0da63
+      - id: synapclaim-inspection-handoff-timeout:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+          contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
+          submissionId: 70319c6c-02bc-4722-b80f-0f479f546de2
+      - id: synapclaim-inspection-handoff-timeout:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
+          contentHash: 714dcbaa600703adc10d7057a8f271a42c7630f34a591d0b50e8c1322330aa74
+          submissionId: a60c660b-e8b8-4c76-af14-0b155b635ab5
+      - id: synapclaim-inspection-handoff-timeout:15
+        stepId: full.build.check.evidence
+        sequence: 15
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/befbedc82cf847fef19f54644bf5c1d702a003813d1472d08deb92d26a0db8ed/b391efb0-4e2c-43a9-bd1e-2df146d0b5a3.log
+          contentHash: 93fdfef027f3127a8c744975493a2ed2e4c60763d089b44d5ad95a0c77567c40
+          submissionId: 8826876e-42d5-4f28-83ad-375d7f745a54
+      - id: synapclaim-inspection-handoff-timeout:17
+        stepId: full.verify.report.evidence
+        sequence: 17
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-16-synapclaim-inspection-handoff-timeout-verify.md
+          contentHash: 24666ba69f1e33fdf615472098f4dbf30b605e4ccef53c9636abc867100be20a
+          submissionId: 240c79b7-fdd8-4b07-bef8-f16f691fa555
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 46
+  sourceHash: 281b9669ac035374977e9cff1a56a7b789c13945fd6a92c2107994ffc9d92fff
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+              ref: openspec/changes/synapclaim-inspection-handoff-timeout
+      - contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+        ref: openspec/changes/synapclaim-inspection-handoff-timeout
+      - contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+              handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+              proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+                拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+                t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+                finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+                打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+                分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；②
+                实体 @Column 与 information_schema 逐列求差、末尾强断言 + SIGNAL（MESSAGE_TEXT
+                ≤128 字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤
+                门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律 string；⑦
+                不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                终态断言、启动期无
+                TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+              requirementsEvidence:
+                contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+              sourceEvidence:
+                contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+      - handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+        handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+        proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+          t_claim_task_transfer / t_claim_user_agent 三张 append-only
+          事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+          UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+          index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+          拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+          available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+          REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+          不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+          乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+          t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用 finditer
+          + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+          打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+          分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+          UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言 +
+          乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；② 实体
+          @Column 与 information_schema 逐列求差、末尾强断言 + SIGNAL（MESSAGE_TEXT ≤128
+          字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤ 门禁误报比漏报更致命
+          → 正向审计 + 互补变异；⑥ 前端 ID 一律 string；⑦
+          不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+          终态断言、启动期无
+          TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒 /
+          重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+          Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+          §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+        requirementsEvidence:
+          contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+          ref: openspec/changes/synapclaim-inspection-handoff-timeout
+        sourceEvidence:
+          contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+          ref: openspec/changes/synapclaim-inspection-handoff-timeout
+      - designDoc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+      - contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
+        ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+      - boundBranch: comet/synapclaim-inspection-handoff-timeout
+        buildMode: executing-plans
+        directOverride: false
+        isolation: worktree
+        reviewMode: thorough
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-inspection-handoff-timeout
+            changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+            workspaceBaseline:
+              ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+          outputs:
+            full.build.configure:
+              boundBranch: comet/synapclaim-inspection-handoff-timeout
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
+          ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+        plan: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
+        planEvidence:
+          contentHash: 714dcbaa600703adc10d7057a8f271a42c7630f34a591d0b50e8c1322330aa74
+          ref: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
+        taskRevision: ec229283b78e1c65b79152bf61031b4aeea370c8d238b0d4ac2cb06947b5576e
+      - contentHash: 714dcbaa600703adc10d7057a8f271a42c7630f34a591d0b50e8c1322330aa74
+        ref: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
+      - event: build-complete
+      - argv:
+          - ./scripts/check.sh
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 93fdfef027f3127a8c744975493a2ed2e4c60763d089b44d5ad95a0c77567c40
+        cwd: .
+        environment: 5c8a3b3f9ded7d21e4bf1ce6ef56500469c57722d1fdabdec059289a4198cc7d
+        exitCode: 0
+        inputAfter: e43dbc94b7d4d1d933faa0619c2d6adf8c6e9aeaddbf385af9806dc159e20faa
+        inputBefore: e43dbc94b7d4d1d933faa0619c2d6adf8c6e9aeaddbf385af9806dc159e20faa
+        manifestHash: 1fc27e94fa4d73b2e258f5630e6925b7cfd004e8bf799c3881e032fe44202e16
+        manifestRef: .comet/runtime/classic-sdk-checks/befbedc82cf847fef19f54644bf5c1d702a003813d1472d08deb92d26a0db8ed/0d674b3e-10ec-471e-802c-aeb26cb7910f.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/befbedc82cf847fef19f54644bf5c1d702a003813d1472d08deb92d26a0db8ed/b391efb0-4e2c-43a9-bd1e-2df146d0b5a3.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 93fdfef027f3127a8c744975493a2ed2e4c60763d089b44d5ad95a0c77567c40
+        ref: .comet/runtime/classic-sdk-checks/befbedc82cf847fef19f54644bf5c1d702a003813d1472d08deb92d26a0db8ed/b391efb0-4e2c-43a9-bd1e-2df146d0b5a3.log
+      - contentHash: 24666ba69f1e33fdf615472098f4dbf30b605e4ccef53c9636abc867100be20a
+        ref: docs/superpowers/reports/2026-11-16-synapclaim-inspection-handoff-timeout-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-16-synapclaim-inspection-handoff-timeout-verify.md
+      - sequence: 9
+        value:
+          boundBranch: comet/synapclaim-inspection-handoff-timeout
+          buildMode: executing-plans
+          directOverride: false
+          isolation: worktree
+          reviewMode: thorough
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-inspection-handoff-timeout
+              changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+              workspaceBaseline:
+                ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+            outputs:
+              full.build.configure:
+                boundBranch: comet/synapclaim-inspection-handoff-timeout
+                buildMode: executing-plans
+                directOverride: false
+                isolation: worktree
+                reviewMode: thorough
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-inspection-handoff-timeout
+              changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+              workspaceBaseline:
+                ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+                handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+                proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+                  t_claim_task_transfer / t_claim_user_agent 三张 append-only
+                  事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+                  UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+                  index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+                  拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+                  available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+                  REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+                  不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+                  乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+                  t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+                  finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+                  打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+                  分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+                  UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言
+                  + 乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；②
+                  实体 @Column 与 information_schema 逐列求差、末尾强断言 +
+                  SIGNAL（MESSAGE_TEXT ≤128 字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT
+                  列对齐、含租户锚点；④ 新错误码四处齐；⑤ 门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律
+                  string；⑦
+                  不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+                  终态断言、启动期无
+                  TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+                  / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+                  Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+                  §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+                requirementsEvidence:
+                  contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+                  ref: openspec/changes/synapclaim-inspection-handoff-timeout
+                sourceEvidence:
+                  contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+                  ref: openspec/changes/synapclaim-inspection-handoff-timeout
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+      - sequence: 8
+        value:
+          contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
+          ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+          handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
+          proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
+            t_claim_task_transfer / t_claim_user_agent 三张 append-only
+            事实表，不提供历史更新删除入口；代理区间唯一性用生成列 active_key=IF(区间生效,key,NULL) +
+            UNIQUE(tenant_id,active_key)（MySQL 无 partial unique
+            index），生成列不进实体，区间外不生效、重叠生效代理第二条被拒；打回写入期先查资金状态，已支付且无冲正事实 MUST
+            拒绝、不事后补偿，冲正后生成重办任务并留痕关联，资金流水保持 append-only 且三值口径
+            available=initial-claimed-frozen 不变，额度写用 REQUIRED 禁
+            REQUIRES_NEW；超时回池扫描复用既有 ScheduleLockService
+            不引入新调度框架，回池前置为任务仍处超时未领且归属未释放，配合 @Version
+            乐观锁保证重复扫描不产生第二条事实，监控计数按小时可观测，归属闸门与池级闸门不串联；抽检比例从全局 @Value 迁入
+            t_feature_toggle 并上屏，INSPECTION_ACTION 关闭时只登记不生效；DDL 文档一致性门禁用
+            finditer + 计数对账并先跑全仓正向审计，避免 package-info.java 类假红。【比较】方案 B
+            打回后异步补偿冲正：存在资金缺口窗口，违反 spec「MUST 先完成冲正」，不采用；方案 C 代理用应用层先查后写 +
+            分布式锁免生成列：并发双写窗口无法满足「同一时段至多一条生效代理」且项目禁 FOR
+            UPDATE，不采用。【关键取舍】多三张表与一次增量迁移换取可追溯事实与并发正确性；不引入新调度框架，代价是扫描幂等须由前置断言 +
+            乐观锁自证。【风险与处理】① 迁移号追加末尾空位、脚本+清单+bone-init.sql 同批、已发迁移含注释不回改；② 实体
+            @Column 与 information_schema 逐列求差、末尾强断言 + SIGNAL（MESSAGE_TEXT ≤128
+            字符）；③ 新增仓储方法同批 SQL 模板，首行语句关键字、SELECT 列对齐、含租户锚点；④ 新错误码四处齐；⑤
+            门禁误报比漏报更致命 → 正向审计 + 互补变异；⑥ 前端 ID 一律 string；⑦
+            不改资金三值口径与网关白名单。【测试策略】单元（区间外不生效、重叠代理被拒、扫描幂等、冲正闸门）；集成（information_schema
+            终态断言、启动期无
+            TemplateNotFoundException、历史转交更新被拒、资金流水含冲正事实、页面值=配置读回值）；变异（已支付未冲正被拒
+            / 重复扫描幂等两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+            Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+            §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+          requirementsEvidence:
+            contentHash: e84a221ad5eeb5995ba399ef7dec4518375495683f86ef63d222bbda8b61a29f
+            ref: openspec/changes/synapclaim-inspection-handoff-timeout
+          sourceEvidence:
+            contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
+            ref: openspec/changes/synapclaim-inspection-handoff-timeout
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-inspection-handoff-timeout
+              changeDir: openspec/changes/synapclaim-inspection-handoff-timeout
+              workspaceBaseline:
+                ref: dac83583-076b-431a-9758-cdfc35bf5e2f
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+                ref: openspec/changes/synapclaim-inspection-handoff-timeout
+      - sequence: 2
+        value:
+          contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+          ref: openspec/changes/synapclaim-inspection-handoff-timeout
+      - sequence: 4
+        value:
+          contentHash: 287f48a07762a4118cc533fa1f83eff0699d8ef4ee2c35eb732e48ee612543ee
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
+            ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+          plan: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
+          planEvidence:
+            contentHash: 714dcbaa600703adc10d7057a8f271a42c7630f34a591d0b50e8c1322330aa74
+            ref: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
+          taskRevision: ec229283b78e1c65b79152bf61031b4aeea370c8d238b0d4ac2cb06947b5576e
+      - sequence: 12
+        value:
+          contentHash: 714dcbaa600703adc10d7057a8f271a42c7630f34a591d0b50e8c1322330aa74
+          ref: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
+      - sequence: 13
+        value:
+          event: build-complete
+      - sequence: 14
+        value:
+          argv:
+            - ./scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 93fdfef027f3127a8c744975493a2ed2e4c60763d089b44d5ad95a0c77567c40
+          cwd: .
+          environment: 5c8a3b3f9ded7d21e4bf1ce6ef56500469c57722d1fdabdec059289a4198cc7d
+          exitCode: 0
+          inputAfter: e43dbc94b7d4d1d933faa0619c2d6adf8c6e9aeaddbf385af9806dc159e20faa
+          inputBefore: e43dbc94b7d4d1d933faa0619c2d6adf8c6e9aeaddbf385af9806dc159e20faa
+          manifestHash: 1fc27e94fa4d73b2e258f5630e6925b7cfd004e8bf799c3881e032fe44202e16
+          manifestRef: .comet/runtime/classic-sdk-checks/befbedc82cf847fef19f54644bf5c1d702a003813d1472d08deb92d26a0db8ed/0d674b3e-10ec-471e-802c-aeb26cb7910f.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/befbedc82cf847fef19f54644bf5c1d702a003813d1472d08deb92d26a0db8ed/b391efb0-4e2c-43a9-bd1e-2df146d0b5a3.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 15
+        value:
+          contentHash: 93fdfef027f3127a8c744975493a2ed2e4c60763d089b44d5ad95a0c77567c40
+          ref: .comet/runtime/classic-sdk-checks/befbedc82cf847fef19f54644bf5c1d702a003813d1472d08deb92d26a0db8ed/b391efb0-4e2c-43a9-bd1e-2df146d0b5a3.log
+      - sequence: 17
+        value:
+          contentHash: 24666ba69f1e33fdf615472098f4dbf30b605e4ccef53c9636abc867100be20a
+          ref: docs/superpowers/reports/2026-11-16-synapclaim-inspection-handoff-timeout-verify.md
+      - sequence: 16
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-16-synapclaim-inspection-handoff-timeout-verify.md
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 14
+        left: 32
+        right: 33
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 34
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 35
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 25
+        height: 5
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: null
+        right: 39
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: 40
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 41
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 42
+        height: 5
+      - key: full.build.configure
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 18
+        left: 44
+        right: 45
+        height: 2
+      - key: full.design.evidence
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 22
+        left: 47
+        right: 48
+        height: 2
+      - key: full.open.revalidate
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 25
+        left: null
+        right: 50
+        height: 2
+      - key: full.open.confirm
+        value: 24
+        left: 49
+        right: 51
+        height: 3
+      - key: full.design.document
+        value: 20
+        left: 46
+        right: 52
+        height: 4
+      - key: full.build.plan
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 28
+        left: 54
+        right: 55
+        height: 2
+      - key: full.build.confirm
+        value: 18
+        left: 44
+        right: 56
+        height: 3
+      - key: full.design.document
+        value: 20
+        left: 57
+        right: 52
+        height: 4
+      - key: full.build.execute
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 18
+        left: 44
+        right: 59
+        height: 2
+      - key: full.build.plan.evidence
+        value: 28
+        left: null
+        right: 55
+        height: 2
+      - key: full.build.plan
+        value: 27
+        left: 60
+        right: 61
+        height: 3
+      - key: full.design.document
+        value: 20
+        left: 62
+        right: 52
+        height: 4
+      - key: full.build.check
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 31
+        left: 64
+        right: 65
+        height: 2
+      - key: full.build.confirm
+        value: 18
+        left: 66
+        right: 59
+        height: 3
+      - key: full.build.plan
+        value: 27
+        left: 67
+        right: 61
+        height: 4
+      - key: full.design.document
+        value: 20
+        left: 68
+        right: 52
+        height: 5
+      - key: full.open.evidence
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 32
+        left: null
+        right: 71
+        height: 2
+      - key: full.open.revalidate
+        value: 26
+        left: 70
+        right: 72
+        height: 3
+      - key: full.open.confirm
+        value: 24
+        left: 49
+        right: 73
+        height: 4
+      - key: full.design.document
+        value: 20
+        left: 68
+        right: 74
+        height: 5
+      - key: full.open
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 24
+        left: 76
+        right: 77
+        height: 2
+      - key: full.open.revalidate
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 25
+        left: null
+        right: 79
+        height: 2
+      - key: full.open.confirm
+        value: 24
+        left: 76
+        right: 80
+        height: 3
+      - key: full.design.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 22
+        left: 82
+        right: 83
+        height: 2
+      - key: full.open.confirm
+        value: 24
+        left: 84
+        right: 80
+        height: 3
+      - key: full.design.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 20
+        left: 86
+        right: 87
+        height: 2
+      - key: full.design.handoff
+        value: 22
+        left: 88
+        right: 83
+        height: 3
+      - key: full.open.confirm
+        value: 24
+        left: 89
+        right: 80
+        height: 4
+      - key: full.open.evidence
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 23
+        left: null
+        right: 91
+        height: 2
+      - key: full.design.handoff
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 25
+        left: 94
+        right: 95
+        height: 2
+      - key: full.open
+        value: 23
+        left: 93
+        right: 96
+        height: 3
+      - key: full.build.configure
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 21
+        left: 99
+        right: 100
+        height: 2
+      - key: full.design.confirm
+        value: 19
+        left: 98
+        right: 101
+        height: 3
+      - key: full.open
+        value: 23
+        left: 102
+        right: 96
+        height: 4
+      - key: full.open
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 20
+        left: 105
+        right: 106
+        height: 2
+      - key: full.open.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 25
+        left: 108
+        right: 109
+        height: 2
+      - key: full.open
+        value: 23
+        left: 107
+        right: 110
+        height: 3
+      - key: full.build.configure
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 18
+        left: 112
+        right: 113
+        height: 2
+      - key: full.design.document
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 21
+        left: 115
+        right: 116
+        height: 2
+      - key: full.design.confirm
+        value: 19
+        left: 114
+        right: 117
+        height: 3
+      - key: full.open
+        value: 23
+        left: 118
+        right: 110
+        height: 4
+      - key: full.build.check
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 17
+        left: 120
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 27
+        left: 122
+        right: 123
+        height: 2
+      - key: full.build.confirm
+        value: 18
+        left: 121
+        right: 124
+        height: 3
+      - key: full.open
+        value: 23
+        left: 117
+        right: 110
+        height: 3
+      - key: full.design.confirm
+        value: 19
+        left: 125
+        right: 126
+        height: 4
+      - key: full.build.check
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 31
+        left: 128
+        right: 129
+        height: 2
+      - key: full.build.confirm
+        value: 18
+        left: 130
+        right: 124
+        height: 3
+      - key: full.verify.run
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 26
+        left: null
+        right: 132
+        height: 2
+      - key: full.open.evidence
+        value: 25
+        left: 108
+        right: 133
+        height: 3
+      - key: full.open
+        value: 23
+        left: 117
+        right: 134
+        height: 4
+      - key: full.design.confirm
+        value: 19
+        left: 131
+        right: 135
+        height: 5
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 37
+      - 43
+      - 53
+      - 58
+      - 63
+      - 69
+      - 75
+      - 78
+      - 81
+      - 85
+      - 90
+      - 92
+      - 97
+      - 103
+      - 104
+      - 111
+      - 119
+      - 127
+      - 136
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actionContexts
+          - synapclaim-inspection-handoff-timeout:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - synapclaim-inspection-handoff-timeout:11
+          - results
+        map: 10
+      - path:
+          - actionContexts
+          - synapclaim-inspection-handoff-timeout:13
+          - results
+        map: 11
+      - path:
+          - actionContexts
+          - synapclaim-inspection-handoff-timeout:14
+          - results
+        map: 12
+      - path:
+          - actionContexts
+          - synapclaim-inspection-handoff-timeout:16
+          - results
+        map: 13
+      - path:
+          - actionContexts
+          - synapclaim-inspection-handoff-timeout:18
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - synapclaim-inspection-handoff-timeout:4
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - synapclaim-inspection-handoff-timeout:5
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - synapclaim-inspection-handoff-timeout:7
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - synapclaim-inspection-handoff-timeout:9
+          - results
+        map: 18
+      - path:
+          - outputs
+        map: 14
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 19
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 20
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 21
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 22
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 23
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 24
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 25
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 26
+  storageHash: 2401eed7f17918e810887e024baa364518cff73b9bf59ed9c607be122317aedb
+check_epoch: 3

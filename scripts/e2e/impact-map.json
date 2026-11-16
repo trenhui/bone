@@ -4020,6 +4020,60 @@
   },
   {
    "http": "GET",
+   "path": "/api/v1/review/inspection-handoff/sampling-config",
+   "controller": "InspectionHandoffController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/InspectionHandoffController.java",
+   "cases": [
+    "synap-claim-inspection-handoff-e2e.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/review/inspection-handoff/claims/{claimId}/disposition",
+   "controller": "InspectionHandoffController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/InspectionHandoffController.java",
+   "cases": [
+    "synap-claim-inspection-handoff-e2e.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/review/inspection-handoff/agents",
+   "controller": "InspectionHandoffController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/InspectionHandoffController.java",
+   "cases": [
+    "synap-claim-inspection-handoff-e2e.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/review/inspection-handoff/agents/{principalId}/deactivate",
+   "controller": "InspectionHandoffController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/InspectionHandoffController.java",
+   "cases": [
+    "synap-claim-inspection-handoff-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/review/inspection-handoff/agents/effective",
+   "controller": "InspectionHandoffController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/InspectionHandoffController.java",
+   "cases": [
+    "synap-claim-inspection-handoff-e2e.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/review/inspection-handoff/tasks/{taskId}/transfer",
+   "controller": "InspectionHandoffController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/InspectionHandoffController.java",
+   "cases": [
+    "synap-claim-inspection-handoff-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
    "path": "/api/v1/claim-ops/ai-provider-probe",
    "controller": "AiProviderProbeController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiProviderProbeController.java",
@@ -4561,8 +4615,8 @@
   }
  ],
  "summary": {
-  "endpoints": 552,
-  "covered": 230,
+  "endpoints": 558,
+  "covered": 236,
   "uncovered": 322
  }
 }

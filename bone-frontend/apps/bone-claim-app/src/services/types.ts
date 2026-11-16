@@ -390,3 +390,9 @@ export interface ReviewTaskDecisionReq {
  * 业务组件解包后拿到 T，类型链路不断。
  */
 export type ApiResult<T> = ApiResponse<T>;
+
+/** 抽检比例上屏（批 4 任务 4.1）：当前生效比例 + 未生效配置说明。 */
+export interface SamplingConfig {
+  samplingRatePercent: number;
+  rejected: Record<string, string>;
+}

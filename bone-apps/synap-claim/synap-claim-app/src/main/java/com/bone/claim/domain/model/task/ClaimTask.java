@@ -202,6 +202,28 @@ public class ClaimTask extends TenantAggregateRoot<Long> {
     }
   }
 
+  /**
+   * 转交（批 4）：把任务处理人改为他人，状态保持不变。
+   *
+   * <p>转交是责任转移而非完成：状态保持（PROCESSING 仍 PROCESSING、ASSIGNED 仍 ASSIGNED），只换处理人与归属理由，
+   * 领取时间归零让新处理人的时效重新起算。真正的「谁转给谁、何时、何因」由 append-only 的 {@code ClaimTaskTransfer}
+   * 单独留痕——本方法只维护任务上的当前归属投影。
+   */
+  public void transferTo(String toAssigneeId, String reason, Instant now) {
+    if (toAssigneeId == null || toAssigneeId.isBlank()) {
+      throw new DomainException("转入人不能为空");
+    }
+    if (ClaimTaskStatus.DONE.name().equals(status)
+        || ClaimTaskStatus.CANCELLED.name().equals(status)) {
+      throw new DomainException("终态任务不可转交");
+    }
+    this.assigneeType = AssigneeType.USER.name();
+    this.assigneeId = toAssigneeId;
+    this.claimedAt = null;
+    this.assignReason = reason == null || reason.isBlank() ? "TRANSFER" : reason;
+    this.updatedAt = now;
+  }
+
   /** 完成（终态）。 */
   public void complete(Instant now) {
     if (ClaimTaskStatus.DONE.name().equals(status)) {
@@ -226,6 +248,28 @@ public class ClaimTask extends TenantAggregateRoot<Long> {
     this.status = ClaimTaskStatus.CANCELLED.name();
     this.finishedAt = now;
     this.updatedAt = now;
+  }
+
+  /**
+   * 超时回池（批 4）：仅「已指派但始终未领取」且已过时限的任务回到待领池。
+   *
+   * <p><b>前置闸门与幂等</b>：只有 {@code ASSIGNED} 且 {@code claimedAt == null} 才回池——一旦有人领取（{@code
+   * PROCESSING}） 就不动，否则会把正在办的任务抢回池造成双处理。已是 {@code PENDING_CLAIM} 或终态时返回 false（无变化），重复扫描不产生第二条事实；
+   * 并发由 {@code @Version} 乐观锁兜底，update 冲突由应用层映射为跳过。
+   *
+   * @return 本次是否真的发生回池（false 表示幂等跳过）
+   */
+  public boolean requeueIfExpired(Instant now) {
+    if (!ClaimTaskStatus.ASSIGNED.name().equals(status) || claimedAt != null) {
+      return false;
+    }
+    this.status = ClaimTaskStatus.PENDING_CLAIM.name();
+    this.assigneeId = null;
+    this.assigneeType = null;
+    this.assignReason = "TIMEOUT_REQUEUE";
+    this.claimedAt = null;
+    this.updatedAt = now;
+    return true;
   }
 
   /** 当前状态是否为生效态（与生成列口径同源）。 */
