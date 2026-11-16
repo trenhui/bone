@@ -292,4 +292,17 @@ public final class ClaimErrorCodes {
 
   /** 跨键检索参数非法：关键词长度 / 危险字符 / limit 越界；显式拒绝，不静默裁剪。 */
   public static final String CLAIM_SEARCH_KEYWORD_INVALID = "SC_CLAIM_SEARCH_KEYWORD_INVALID";
+
+  // ===== 任务分配工作台（批 1） =====
+
+  /** 任务不存在（含已逻辑删除 / 跨租户按不存在处理，不泄露存在性）。 */
+  public static final String SC_CLAIM_TASK_NOT_FOUND = "SC_CLAIM_TASK_NOT_FOUND";
+
+  /**
+   * 任务并发冲突：同一任务被两人同时领取（乐观锁失败）或同案同类型已存在生效任务（唯一键冲突）。
+   *
+   * <p><b>为什么必须单独一个码而不是复用 409 通用冲突</b>：这两种失败在监控里含义完全不同——
+   * 前者是"抢单撞车"（正常业务现象，计数即可），后者是"任务重复创建"（代码路径问题，需要告警）。 前端也要区分提示：「已被他人领取，请刷新」与「该案件已有在办任务」是两种不同的用户动作。
+   */
+  public static final String SC_CLAIM_TASK_CONFLICT = "SC_CLAIM_TASK_CONFLICT";
 }

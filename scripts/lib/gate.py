@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import xml.sax.saxutils as _sax
@@ -209,18 +210,46 @@ def repo_root(anchor: Optional[Union[str, Path]] = None, refresh: bool = False) 
     return _gk.repo_root()
 
 
+GIT_ENV_KEYS = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_COMMON_DIR",
+    "GIT_PREFIX",
+)
+
+
+def clean_git_env() -> Dict[str, str]:
+    """剥离继承来的 GIT_* 后的环境副本。
+
+    两处必须用：
+    1. 枚举文件（见 `git_files`）——否则 `root` 被忽略，扫的是"外面那个仓库"；
+    2. `git init <临时目录>` 建夹具——否则不是"在临时目录建仓库"，而是**重置外层仓库**，
+       夹具里根本没有 `.git`，后续读索引直接失败（本仓库历史上红过两次，都是只在裸环境验证）。
+    """
+    return {k: v for k, v in os.environ.items() if k not in GIT_ENV_KEYS}
+
+
 def git_files(root: Optional[Path] = None, include_untracked: bool = True) -> List[str]:
     """git 已知文件（tracked + 非忽略 untracked）的唯一枚举方式。
 
     用 `git ls-files` 而不是 `Path.rglob` / `os.walk`：后者会走进
     bone-frontend/node_modules（十万级文件，实测 321s vs 0.37s）。
+
+    <p><b>为什么要剥掉继承来的 GIT_* 环境变量</b>：`GIT_DIR` / `GIT_WORK_TREE` /
+    `GIT_INDEX_FILE` 的优先级高于 cwd，而 pre-commit 钩子（尤其 worktree 里）会把它们
+    传给子进程。带着它们跑时，`git ls-files` 会忽略传入的 `root` 去枚举"外面那个仓库"，
+    于是 `iter_files(tmp)` 返回的不是 tmp 的文件——根作用域静默失效，门禁扫错目录还自以为通过。
+    剥离后「cwd = 传入 root」是唯一事实来源。
     """
     base = root or repo_root()
     args = ["git", "ls-files", "-z", "--cached"]
     if include_untracked:
         args += ["--others", "--exclude-standard"]
     try:
-        probe = subprocess.run(args, cwd=str(base), capture_output=True, check=True)
+        probe = subprocess.run(
+            args, cwd=str(base), capture_output=True, check=True, env=clean_git_env()
+        )
     except (OSError, subprocess.CalledProcessError) as exc:
         raise InfraError("git ls-files 失败（不在 git 仓库？）: %s" % exc)
     return [p.decode("utf-8", "replace") for p in probe.stdout.split(b"\0") if p]

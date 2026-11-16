@@ -84,7 +84,13 @@ def _segments(path):
 
 
 def case_serves(case_path, endpoint_path):
-    """用例里出现的路径是否真的打到了这个端点（按段比较，变量段通配）。"""
+    """用例里出现的路径是否真的打到了这个端点（按段比较）。
+
+    <p><b>变量只配变量</b>：`{}` 不是万能通配，只与端点里的 `{}` 配对；字面段必须逐段相等。
+    早期版本写成「任一侧是 `{}` 就算命中」，于是用例里的 `/claims/{cid}/adjust/claim`
+    被记成覆盖了 `/claims/tasks/{taskId}/claim`——两条完全不同的接口，只因第二段是变量。
+    这类假阳性比漏报更糟：它让"没测过的端点"显示已覆盖，门禁据此放行。
+    """
     case_segs = _segments(case_path)
     ep_segs = _segments(endpoint_path)
     if not case_segs:
@@ -93,7 +99,7 @@ def case_serves(case_path, endpoint_path):
         if i >= len(ep_segs):
             return False
         ep = ep_segs[i]
-        if seg == "{}" or ep == "{}":
+        if seg == "{}" and ep == "{}":
             continue
         if seg != ep:
             return False

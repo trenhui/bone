@@ -285,7 +285,9 @@
     "SC_CLAIM_BIZ_IDENTITY_INVALID": "The referenced business entity does not exist, or has been deactivated/terminated",
     "SC_CLAIM_AI_FEEDBACK_INVALID": "Invalid AI feedback event (unknown field / disposition without real model involvement / missing or invalid reason code / blind-label zone / field whitelist violation)",
     "SC_CLAIM_AI_FEEDBACK_CONFLICT": "Same event id already stored with a different payload; refusing to overwrite the audit fact",
-    "SC_CLAIM_SEARCH_KEYWORD_INVALID": "Invalid claim search parameters (keyword length 2..64, unsafe chars, limit 1..20); guards reject explicitly instead of silently truncating"
+    "SC_CLAIM_SEARCH_KEYWORD_INVALID": "Invalid claim search parameters (keyword length 2..64, unsafe chars, limit 1..20); guards reject explicitly instead of silently truncating",
+    "SC_CLAIM_TASK_NOT_FOUND": "Task not found (or not visible in this tenant)",
+    "SC_CLAIM_TASK_CONFLICT": "Task was already claimed by someone else, or an active task of the same type already exists for this claim. Please refresh."
   },
   "enums": {
     "ORDER_STATUS": {

@@ -19,6 +19,7 @@ SCRIPTS = Path(__file__).resolve().parents[1]
 ROOT = SCRIPTS.parent
 sys.path.insert(0, str(SCRIPTS))
 
+from lib import gate  # noqa: E402
 from lib import waivers  # noqa: E402
 
 BONE = SCRIPTS / "bone.py"
@@ -119,7 +120,10 @@ class WaiversNegativeMutationTest(unittest.TestCase):
         """最关键的绕过路径：新建一份台账但不登记，必须判红。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            subprocess.run(["git", "init", "-q"], cwd=str(root), check=True)
+            # 剥离继承的 GIT_*：否则 `git init` 重置的是外层仓库，夹具里没有 .git，
+            # 后面 `waivers.verify` 读索引直接失败（本条在 pre-commit 里真红过）。
+            subprocess.run(["git", "init", "-q"], cwd=str(root), check=True,
+                           env=gate.clean_git_env())
             (root / "fake-baseline.json").write_text("[]", encoding="utf-8")
             (root / "another-allowlist.json").write_text("[]", encoding="utf-8")
             data = {

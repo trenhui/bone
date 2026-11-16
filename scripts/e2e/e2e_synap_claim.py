@@ -274,7 +274,11 @@ def setup_seed():
 def run_intake_and_decision(admin_tok, scn, expect_ai="MANUAL_REQUIRED"):
     """报案→分配→初审→证据→AI决策→初审完成→理算→转人工→领任务. 返回 (claim_id, adjust_total)."""
     # 报案
-    _, sub = call("POST", "/claims", token=admin_tok, json_body=submit_body(scn), expect=(201,))
+    # `Idempotency-Key` 是 ClaimCaseController 的必传头（缺失即 400，防重试重复建单）。
+    # 本用例长期没带它也没红——因为本地跑的是 2026-11-13 的旧 jar；用当前代码重建 jar 后
+    # 立刻被 pre-push 的真实 E2E 打出来（契约漂移，不是产品回归）。
+    _, sub = call("POST", "/claims", token=admin_tok, json_body=submit_body(scn), expect=(201,),
+                  extra={"Idempotency-Key": f"e2e-{int(time.time() * 1000)}-{os.getpid()}"})
     cid = sub["data"]["claimId"]
     claim_no = sub["data"]["claimNo"]
     print(f"  · 报案成功 claimId={cid} claimNo={claim_no}")

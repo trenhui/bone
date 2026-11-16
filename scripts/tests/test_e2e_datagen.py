@@ -34,7 +34,8 @@ class ScenarioTest(unittest.TestCase):
     def test_all_scenarios_registered(self):
         self.assertEqual(
             scenarios.names(),
-            ["claim-ai-feedback", "master-data", "procurement", "sales-claim", "tenant-iam"],
+            ["claim-ai-feedback", "claim-task-assignment", "master-data", "procurement",
+             "sales-claim", "tenant-iam"],
         )
 
     def test_same_seed_is_deterministic(self):
@@ -87,6 +88,36 @@ class ScenarioTest(unittest.TestCase):
         codes = {m["material_code"] for m in data["platform"]["materials"]}
         for overlay in data["tenant_overlay"]["material_overlays"]:
             self.assertIn(overlay["source_material_code"], codes)
+
+    def test_claim_task_assignment_boundaries_and_fallbacks(self):
+        """金额段左闭右开、金额未知不误派、停用规则不参与、三级回落可区分。
+
+        这四条是「归属是写入期事实」的地基：任一条退化都会把案件派给错的人，
+        而且事后从任务行上看不出错——所以必须由造数断言先钉住语义。
+        """
+        data = scenarios.build("claim-task-assignment", "assign")
+        expect = data["expect"]
+
+        # 左闭右开：恰好等于上界的金额必须落进下一段
+        self.assertEqual(expect["small_outpatient"]["ruleId"], 102)
+        self.assertEqual(expect["boundary_at_upper"]["ruleId"], 103)
+
+        # 金额未知：不得命中任何设了金额段的规则（只能走通配）
+        self.assertEqual(expect["amount_unknown"]["ruleId"], 101)
+        unknown_rule = next(r for r in data["rules"] if r["ruleId"] == 101)
+        self.assertIsNone(unknown_rule["amountMin"])
+        self.assertIsNone(unknown_rule["amountMax"])
+
+        # 停用规则优先级最高（1）却必须 0 命中
+        disabled = [r for r in data["rules"] if not r["enabled"]]
+        self.assertTrue(disabled, "样本里必须有一条停用规则，否则判不出「停用不参与」")
+        disabled_ids = {r["ruleId"] for r in disabled}
+        self.assertFalse(disabled_ids & {t["assignRuleId"] for t in data["tasks"]})
+
+        # 三级回落：没配规则 vs 配了但目标全不可用，处置方向不同，不得合并
+        self.assertEqual(expect["no_rule"], {"ruleId": None, "reason": "NO_RULE"})
+        self.assertEqual(expect["all_ineligible"],
+                         {"ruleId": None, "reason": "ALL_INELIGIBLE"})
 
 
 class DatagenCliTest(unittest.TestCase):

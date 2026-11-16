@@ -47,6 +47,21 @@ class PathMatchTest(unittest.TestCase):
     def test_unrelated_path_does_not_match(self):
         self.assertFalse(mod.case_serves("/api/v1/claims", "/api/v1/orders/{id}"))
 
+    def test_variable_segment_is_not_a_wildcard(self):
+        """变量只配变量：`{}` 不得吞掉端点里的**字面**段。
+
+        这是本轮被 pre-push 打出来的假阳性：用例里的「领取理算」
+        `/claims/{cid}/adjust/claim` 被记成覆盖了「自领任务」
+        `/claims/tasks/{taskId}/claim` —— 两条完全不同的接口，只因第二段是变量。
+        后果比漏报更糟：真正没测过的端点显示"已覆盖"，门禁据此放行。
+        """
+        self.assertFalse(mod.case_serves(
+            "/claims/{cid}/adjust/claim", "/api/v1/claims/tasks/{taskId}/claim"))
+        self.assertFalse(mod.case_serves("/apps/mine", "/api/v1/apps/{id}"))
+        # 两侧都是变量才算同一形状
+        self.assertTrue(mod.case_serves(
+            "/claims/{cid}/tasks", "/api/v1/claims/{claimId}/tasks"))
+
     def test_case_path_without_gateway_prefix_matches(self):
         """用例里 `config.BASE` 已含 `/api/v1`，写的是相对路径 `/claims/...`。
 
