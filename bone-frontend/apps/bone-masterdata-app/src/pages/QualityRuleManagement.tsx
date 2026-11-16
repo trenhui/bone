@@ -72,7 +72,7 @@ const QualityRuleManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedEntityId]);
+  }, [selectedEntityId, message]);
 
   const fetchQualityChecks = useCallback(async () => {
     try {
@@ -87,7 +87,7 @@ const QualityRuleManagement: React.FC = () => {
     } catch {
       message.error('获取质量检查历史失败');
     }
-  }, [selectedEntityId]);
+  }, [selectedEntityId, message]);
 
   useEffect(() => {
     if (selectedEntityId) {

@@ -25,8 +25,8 @@ function render(props?: QiankunProps) {
   root.render(
     <React.StrictMode>
       <AppAntdProvider>
-      <App />
-    </AppAntdProvider>
+        <App />
+      </AppAntdProvider>
     </React.StrictMode>,
   );
 }
@@ -34,7 +34,7 @@ function render(props?: QiankunProps) {
 renderWithQiankun({
   bootstrap() {},
   mount(props: QiankunProps) {
-  subscribeLocaleChange();
+    subscribeLocaleChange();
     const token = (props as { token?: string })?.token;
     if (token) {
       localStorage.setItem('token', token);
@@ -54,15 +54,15 @@ if (!qiankunWindow.__POWERED_BY_QIANKUN__) {
   render();
 }
 
-export async function bootstrap() {}
-export async function mount(props: QiankunProps) {
+export async function bootstrap(): Promise<void> {}
+export async function mount(props: QiankunProps): Promise<void> {
   const token = (props as { token?: string })?.token;
   if (token) {
     localStorage.setItem('token', token);
   }
   render(props);
 }
-export async function unmount() {
+export async function unmount(): Promise<void> {
   if (root) {
     root.unmount();
     root = null;

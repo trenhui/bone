@@ -54,6 +54,17 @@ IMPORT_RE = re.compile(
 def hits() -> list[str]:
     found: list[str] = []
     for path in REPO.glob("**/src/main/java/**/*.java"):
+        # 跳过 git worktree 工作目录（.worktrees/），它不在主仓库工作区内，
+        # 文件系统扫描不应把它当成待审源码。CI 无 worktree，此排除为 no-op。
+        # 必须按「相对 REPO 的路径」判断：用绝对路径的 parts 时，脚本自身在
+        # `.worktrees/<change>/` 内运行会把整个仓库连自己一起跳过（扫描 0 个文件，
+        # 判据恒绿），而 comet 每个批次都在 worktree 内执行。
+        try:
+            rel_for_wt = path.relative_to(REPO)
+        except ValueError:
+            continue
+        if ".worktrees" in rel_for_wt.parts:
+            continue
         rel = path.relative_to(REPO).as_posix()
         if rel.startswith(ALLOW_PREFIXES) or rel.startswith(DOC_SAMPLE_PREFIX):
             continue

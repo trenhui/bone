@@ -9,7 +9,7 @@ interface PerformanceMetric {
 
 interface PerformanceEntry {
   metric: PerformanceMetric;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 class PerformanceMonitor {
@@ -102,7 +102,7 @@ class PerformanceMonitor {
     });
   }
 
-  private addEntry(metric: PerformanceMetric, context?: Record<string, any>) {
+  private addEntry(metric: PerformanceMetric, context?: Record<string, unknown>) {
     const entry: PerformanceEntry = { metric, context };
     this.entries.push(entry);
     this.notifyListeners(entry);

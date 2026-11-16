@@ -51,6 +51,14 @@ def find_event_files():
     """返回所有集成事件实现类所在 .java 文件（integration/event 包或实现 IntegrationEnvelope）。"""
     hits = []
     for path in REPO.rglob("*.java"):
+        # 跳过 git 工作树目录（.worktrees/），CI 无 worktree，此排除为 no-op。
+        # 按「相对 REPO 的路径」判断，否则脚本在 worktree 内运行时全部被跳过。
+        try:
+            rel_for_wt = path.relative_to(REPO)
+        except ValueError:
+            continue
+        if ".worktrees" in rel_for_wt.parts:
+            continue
         try:
             text = path.read_text(encoding="utf-8")
         except Exception:
@@ -130,6 +138,14 @@ def scan_events():
 def scan_topics():
     topics = {}
     for path in REPO.rglob("*.java"):
+        # 跳过 git 工作树目录（.worktrees/），CI 无 worktree，此排除为 no-op。
+        # 按「相对 REPO 的路径」判断，否则脚本在 worktree 内运行时全部被跳过。
+        try:
+            rel_for_wt = path.relative_to(REPO)
+        except ValueError:
+            continue
+        if ".worktrees" in rel_for_wt.parts:
+            continue
         try:
             text = path.read_text(encoding="utf-8")
         except Exception:

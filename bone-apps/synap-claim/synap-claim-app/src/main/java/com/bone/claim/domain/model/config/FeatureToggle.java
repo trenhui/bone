@@ -26,6 +26,14 @@ public class FeatureToggle extends TenantAbstractEntity<Long> {
   public static final String FEATURE_AUTO_APPROVE = "AUTO_APPROVE";
 
   /**
+   * 任务自动分配特性键（批 1 灰度开关）。
+   *
+   * <p><b>关闭时的行为是「停写归属」而不是「不建任务」</b>：新任务仍以入池形态（{@code PENDING_CLAIM}，
+   * 无归属人）创建。若关闭时连任务都不建，关闭开关就等于把案件从待办里抹掉——那是数据丢失， 不是回滚。故开关只决定「是否执行规则求解」，不决定「任务是否存在」。
+   */
+  public static final String FEATURE_AUTO_ASSIGN = "AUTO_ASSIGN";
+
+  /**
    * 分诊阈值特性键（§8.3 配置外部化 / §11.4 阈值外置）。
    *
    * <p>{@code config_json} 支持的键见 {@code TriageLimits} 的 {@code CONFIG_*} 常量；缺键即用代码常量。

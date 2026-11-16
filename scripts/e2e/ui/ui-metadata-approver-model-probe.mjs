@@ -87,7 +87,7 @@ async function ensureCosignCase() {
     body: JSON.stringify({
       claim_no: claimNo,
       title: '会签审批人演示（>5000）',
-      amount: 8800,
+      amount: 8864.3,
       applicant: '系统管理员',
       expense_date: '2026-10-30',
     }),

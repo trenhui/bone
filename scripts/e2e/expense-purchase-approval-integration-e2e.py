@@ -151,7 +151,7 @@ def make_expense(title, amount, approver_id):
     })
 
 
-def make_purchase(amount=1200, budget=2000, tag=""):
+def make_purchase(amount=1236.4, budget=2060.0, tag=""):
     s, d = rec_create(PO, {
         "po_no": "PO-" + SUFFIX + tag,
         "title": "联调-采购订单审批",
@@ -338,7 +338,7 @@ if exp7:
 
 # ---------------------------------------------------------------- S8 退回指定节点（采购）
 section("S8 采购订单：退回指定节点 → 不落 REJECTED → 仍可审批通过")
-s, d, po2 = make_purchase(amount=800, budget=1500, tag="-R")
+s, d, po2 = make_purchase(amount=836.5, budget=1560.0, tag="-R")
 check("采购建单（退回场景）成功", po2 is not None, f"{s} {ecode(d)} {d.get('message')}")
 if po2:
     act_as(http.default().headers(), PO, po2, "submit")

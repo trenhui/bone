@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
+import com.bone.claim.application.PolicyDetailApplicationService.InsuredRosterRow;
 import com.bone.claim.application.PolicyDetailApplicationService.PolicyDetail;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
@@ -19,6 +20,7 @@ import com.bone.claim.domain.model.mapping.ClaimInsurer;
 import com.bone.claim.domain.model.mapping.MasterDataDomain;
 import com.bone.claim.domain.model.policy.ClaimPlan;
 import com.bone.claim.domain.model.policy.ClaimPolicy;
+import com.bone.claim.domain.model.quota.QuotaAccount;
 import com.bone.claim.domain.repository.ClaimCoverageRepository;
 import com.bone.claim.domain.repository.ClaimInsurerRepository;
 import com.bone.claim.domain.repository.ClaimPlanRepository;
@@ -30,6 +32,7 @@ import com.bone.claim.domain.repository.InsurerCodeItemRepository;
 import com.bone.claim.domain.repository.LiabilityFeeRuleRepository;
 import com.bone.claim.domain.repository.LiabilityRepository;
 import com.bone.claim.domain.repository.MappingMissRepository;
+import com.bone.claim.domain.repository.QuotaAccountRepository;
 import com.bone.claim.domain.repository.RefDiseaseRepository;
 import com.bone.claim.domain.repository.RefDrugRepository;
 import com.bone.claim.domain.repository.RefFeeCategoryRepository;
@@ -48,7 +51,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-/** 保单聚合详情（task 4）：主体健康度四域 + 计划→责任树 + 覆盖差异行；主体为空的存量保单不含健康度。 */
+/**
+ * 保单聚合详情（task 4）：主体健康度四域 + 计划→责任树 + 覆盖差异行 + 假名名单 + 额度池。
+ *
+ * <p>后两块是 spec {@code policy-detail-view/spec.md} 的 SHALL：名单以 {@code insured_snapshot}
+ * 为唯一真源，额度池按三值口径透传；坏掉的快照必须抛，不能被兜底成空名单。
+ */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class PolicyDetailViewTest {
@@ -64,6 +72,7 @@ class PolicyDetailViewTest {
   @Mock LiabilityRepository liabilityRepository;
   @Mock LiabilityFeeRuleRepository feeRuleRepository;
   @Mock CoverageOverrideRepository overrideRepository;
+  @Mock QuotaAccountRepository quotaAccountRepository;
   @Mock CodeMappingRepository codeMappingRepository;
   @Mock MappingMissRepository mappingMissRepository;
   @Mock StdCodeAliasRepository stdCodeAliasRepository;
@@ -81,6 +90,10 @@ class PolicyDetailViewTest {
   @InjectMocks PolicyDetailApplicationService service;
 
   private ClaimPolicy policy(String biz) {
+    return policyWithSnapshot(biz, "[\"h1\"]");
+  }
+
+  private ClaimPolicy policyWithSnapshot(String biz, String insuredSnapshot) {
     return ClaimPolicy.open(
         1L,
         TENANT,
@@ -96,7 +109,7 @@ class PolicyDetailViewTest {
         NOW.plusSeconds(86400),
         0,
         "v1",
-        "[\"h1\"]",
+        insuredSnapshot,
         NOW);
   }
 
@@ -129,6 +142,11 @@ class PolicyDetailViewTest {
         1,
         0,
         "ACTIVE");
+  }
+
+  private QuotaAccount account(long id, String hash, String initial) {
+    return QuotaAccount.open(
+        id, TENANT, hash, POLICY_NO, 5L, 2026, "PERSONAL", "", new BigDecimal(initial));
   }
 
   private void stubHealthBase() {
@@ -223,5 +241,59 @@ class PolicyDetailViewTest {
             ex ->
                 assertThat(((BizException) ex).getErrorCode())
                     .isEqualTo(ClaimErrorCodes.CLAIM_POLICY_NOT_FOUND));
+  }
+
+  @Test
+  void detail_includesPseudonymizedRosterAndQuotaAccounts() {
+    stubHealthBase();
+    when(claimPolicyRepository.findByPolicyNo(POLICY_NO)).thenReturn(policy(BIZ));
+    when(claimPlanRepository.findByPolicyNo(POLICY_NO)).thenReturn(List.of());
+    when(quotaAccountRepository.findAccountsByPolicyNo(POLICY_NO))
+        .thenReturn(List.of(account(101L, "h1", "1000")));
+
+    PolicyDetail detail = service.detail(POLICY_NO);
+
+    assertThat(detail.insuredRoster())
+        .extracting(InsuredRosterRow::insuredIdHash)
+        .containsExactly("h1");
+    assertThat(detail.insuredRoster().get(0).accountCount()).isEqualTo(1);
+    assertThat(detail.insuredRoster().get(0).quotaInitial()).isEqualByComparingTo("1000.00");
+    assertThat(detail.insuredRoster().get(0).available()).isEqualByComparingTo("1000.00");
+    assertThat(detail.quotaAccounts()).hasSize(1);
+    assertThat(detail.quotaAccounts().get(0).insuredIdHash()).isEqualTo("h1");
+    assertThat(detail.quotaAccounts().get(0).quotaInitial()).isEqualByComparingTo("1000.00");
+    assertThat(detail.quotaAccounts().get(0).available()).isEqualByComparingTo("1000.00");
+  }
+
+  /** 判别钉子：名单必须来自保单快照，不能拿额度账户反推，否则孤儿 hash 会混进承保名单。 */
+  @Test
+  void detail_rosterAuthoritativeFromSnapshot_notDerivedFromQuotaAccounts() {
+    stubHealthBase();
+    when(claimPolicyRepository.findByPolicyNo(POLICY_NO)).thenReturn(policy(BIZ));
+    when(claimPlanRepository.findByPolicyNo(POLICY_NO)).thenReturn(List.of());
+    when(quotaAccountRepository.findAccountsByPolicyNo(POLICY_NO))
+        .thenReturn(List.of(account(102L, "orphan-hash", "100")));
+
+    PolicyDetail detail = service.detail(POLICY_NO);
+
+    assertThat(detail.insuredRoster())
+        .extracting(InsuredRosterRow::insuredIdHash)
+        .containsExactly("h1");
+    assertThat(detail.insuredRoster().get(0).accountCount()).isZero();
+    assertThat(detail.quotaAccounts()).hasSize(1);
+    assertThat(detail.quotaAccounts().get(0).insuredIdHash()).isEqualTo("orphan-hash");
+  }
+
+  /** 坏快照不能兜底成「没承保任何人」——那样所有报案会被 403 拒收却查不出原因。 */
+  @Test
+  void detail_malformedInsuredSnapshot_failsLoudlyInsteadOfEmptyRoster() {
+    lenient().when(tenantPort.currentTenantId()).thenReturn(TENANT);
+    when(claimPolicyRepository.findByPolicyNo(POLICY_NO))
+        .thenReturn(policyWithSnapshot(BIZ, "not-a-json-array"));
+    when(quotaAccountRepository.findAccountsByPolicyNo(POLICY_NO)).thenReturn(List.of());
+
+    assertThatThrownBy(() -> service.detail(POLICY_NO))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("被保人清单格式非法");
   }
 }

@@ -4,6 +4,7 @@ import {
   App as AntApp,
   Button,
   Card,
+  Checkbox,
   Drawer,
   Form,
   Input,
@@ -165,6 +166,7 @@ const liabilityImportColumns: ImportColumn[] = [
   { key: 'limitDiagnosisCodes', label: '限定病种编码(分隔)', example: '' },
   { key: 'catalogPolicy', label: '目录准入策略', example: 'NONE' },
   { key: 'catalogCode', label: '目录编码', example: '' },
+  { key: 'confirmCatalogMandatory', label: '目录强制准入确认(1/0)', example: '0' },
   { key: 'socialOnly', label: '仅赔社保内(1/0)', example: '1' },
   { key: 'waitingPeriod', label: '等待期(天)', example: '0' },
   { key: 'status', label: '初始状态', example: 'DRAFT' },
@@ -188,6 +190,7 @@ function buildLiabilityRequest(row: Record<string, string>): CreateLiabilityReq 
     limitDiagnosisCodes: row.limitDiagnosisCodes?.trim() || undefined,
     catalogPolicy: row.catalogPolicy?.trim() || undefined,
     catalogCode: row.catalogCode?.trim() || undefined,
+    confirmCatalogMandatory: row.confirmCatalogMandatory?.trim() === '1' ? true : undefined,
     socialOnly: row.socialOnly ? Number(row.socialOnly) : undefined,
     waitingPeriod: row.waitingPeriod ? Number(row.waitingPeriod) : undefined,
     status: (row.status?.trim() || undefined) as ConfigStatus | undefined,
@@ -197,6 +200,13 @@ function buildLiabilityRequest(row: Record<string, string>): CreateLiabilityReq 
 function validateLiabilityRow(row: Record<string, string>): string | null {
   if (!row.liabilityCode?.trim()) return '责任编码不能为空';
   if (!row.planId?.trim()) return '计划ID不能为空（请先在本页选择计划，模板将自动带入）';
+  // 与后端 fail-closed 守卫同口径：批量导入同样不允许静默绕过 MANDATORY 确认。
+  if (
+    row.catalogPolicy?.trim().toUpperCase() === 'MANDATORY' &&
+    row.confirmCatalogMandatory?.trim() !== '1'
+  ) {
+    return '目录准入策略为 MANDATORY 时，confirmCatalogMandatory 必须填 1（未接入目录会让整批案件退补件）';
+  }
   return null;
 }
 
@@ -243,6 +253,16 @@ export function LiabilityConfigPage(): ReactElement {
    */
   const watchedLiabilityType = Form.useWatch('liabilityType', form) as LiabilityType | undefined;
   const manualOnly = !!watchedLiabilityType && watchedLiabilityType !== 'REIMBURSEMENT';
+  /**
+   * 目录准入 MANDATORY 的二次确认（与后端 assertCatalogMandatoryConfirmed 同口径）。
+   * 后端校验的是「合并后的生效策略」：编辑一条本就是 MANDATORY 的责任时，即使本次
+   * 只改赔付比例也必须重新确认，否则「不改策略」就成了绕过确认的后门。
+   * useWatch 在弹窗 Form 挂载前返回 undefined，故用 editTarget 的原值兜底。
+   */
+  const watchedCatalogPolicy = Form.useWatch('catalogPolicy', form) as string | undefined;
+  const catalogMandatory =
+    String(watchedCatalogPolicy ?? editTarget?.catalogPolicy ?? '').trim().toUpperCase() ===
+    'MANDATORY';
 
   // ===================== 基础目录库（0094）：库选择器数据源 =====================
 
@@ -778,6 +798,10 @@ export function LiabilityConfigPage(): ReactElement {
         limitDiagnosisCodes: codesText(values.limitDiagnosisCodes) || undefined,
         catalogPolicy: clean(values.catalogPolicy),
         catalogCode: codesText(values.catalogCode) || undefined,
+        // 后端按合并后的生效策略校验：编辑原本就是 MANDATORY 的责任时也要带，
+        // 否则「只改赔付比例、不动策略」就能绕过确认。每次保存都要重新显式勾选。
+        confirmCatalogMandatory:
+          catalogMandatory && values.confirmCatalogMandatory === true ? true : undefined,
         socialOnly:
           values.socialOnly === undefined || values.socialOnly === null
             ? undefined
@@ -1316,6 +1340,34 @@ export function LiabilityConfigPage(): ReactElement {
                 />
               </Form.Item>
             </Space>
+            {catalogMandatory && (
+              <>
+                <Alert
+                  type="warning"
+                  showIcon
+                  style={{ marginTop: 8 }}
+                  message="目录强制准入会改变全部案件的去向"
+                  description="目录数据未接入时，每条费用明细都取不到目录结论，会落 CATALOG_UNRESOLVED 转人工补件（整批退件）。请确认目录已接入并完成联调，再勾选下方确认项。"
+                />
+                <Form.Item
+                  name="confirmCatalogMandatory"
+                  valuePropName="checked"
+                  rules={[
+                    {
+                      validator: (_rule, value: boolean) =>
+                        value === true
+                          ? Promise.resolve()
+                          : Promise.reject(new Error('请先确认目录已接入，并知悉整批退件后果')),
+                    },
+                  ]}
+                  style={{ marginTop: 8, marginBottom: 0 }}
+                >
+                  <Checkbox>
+                    我已确认目录已接入，并知悉未接入时整批案件会转人工补件
+                  </Checkbox>
+                </Form.Item>
+              </>
+            )}
           </Card>
 
           <Card size="small" title="其他" style={{ marginBottom: 0 }}>

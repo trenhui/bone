@@ -469,10 +469,248 @@ def claim_ai_feedback(seed):
     return data
 
 
+# ============================================================ 场景 6：理赔作业任务与自动分配
+CLAIM_TASK_TYPES = ["INITIAL_REVIEW", "FIX_SUPPLEMENT", "SECOND_REVIEW", "INSPECTION"]
+CLAIM_TASK_ACTIVE = ["PENDING_CLAIM", "ASSIGNED", "PROCESSING"]
+CLAIM_ASSIGN_REASONS = ["RULE_MATCH", "NO_RULE", "ALL_INELIGIBLE", "BACKFILL"]
+CLAIM_TARGET_TYPES = ["USER", "DEPT", "ROLE"]
+
+
+def _rule_matches(rule, sample):
+    """规则匹配语义（与 `TaskAssigner` 同口径）：空维度=不限制，金额段左闭右开。"""
+    if rule["taskType"] not in ("*", sample["taskType"]):
+        return False
+    if rule["claimType"] and rule["claimType"] != sample["claimType"]:
+        return False
+    if rule["sourceChannel"] and rule["sourceChannel"] != sample["sourceChannel"]:
+        return False
+    lo, hi = rule["amountMin"], rule["amountMax"]
+    if lo is None and hi is None:
+        return True
+    if sample["claimAmount"] is None:
+        # 金额未知不命中任何设了金额段的规则：猜一个金额派单 = 把责任派错人。
+        return False
+    if lo is not None and sample["claimAmount"] < lo:
+        return False
+    return hi is None or sample["claimAmount"] < hi
+
+
+def _solve(rules, sample):
+    """按后端口径算**期望值**：跳过停用规则，priority 升序 + ruleId 升序取第一个可用目标。
+
+    这**不是第二套实现**，而是 E2E 的 oracle：数据文件自带每条样本的期望归属，
+    联调时与后端真实返回比对，不一致即缺陷（后端改排序或改边界语义会立刻暴露）。
+    三级回落与后端一致：无候选 → NO_RULE；有候选但目标全不可用 → ALL_INELIGIBLE。
+    """
+    candidates = [r for r in rules if r["enabled"] and _rule_matches(r, sample)]
+    candidates.sort(key=lambda r: (r["priority"], r["ruleId"]))
+    if not candidates:
+        return None, "NO_RULE"
+    for rule in candidates:
+        if rule["assigneeId"] not in sample["unavailable"]:
+            return rule["ruleId"], "RULE_MATCH"
+    return None, "ALL_INELIGIBLE"
+
+
+def claim_task_assignment(seed):
+    """作业任务与自动分配：一案多任务、规则命中写归属、无人可派入池不臆造归属。
+
+    覆盖判据（与 design.md Test Strategy 对齐）：金额段左闭右开、金额未知不命中限段规则、
+    停用规则不参与、通配任务类型可命中、三级回落可区分、同案同类型至多一条生效任务、
+    终态行不占唯一性（可重开）、求解结果与入参顺序无关。
+    """
+    ds = _dataset(seed)
+    id_user = "u-%04d" % ds.rng.randint(1000, 9999)
+    id_dept = "d-%04d" % ds.rng.randint(1000, 9999)
+    id_role = "r-%04d" % ds.rng.randint(1000, 9999)
+
+    rules = [
+        # 通配兜底：任何任务类型、门户渠道，优先级最低（数字最大）
+        {"ruleId": 101, "ruleName": "门户通配兜底", "taskType": "*", "claimType": None,
+         "amountMin": None, "amountMax": None, "sourceChannel": "PORTAL",
+         "priority": 50, "assigneeType": "USER", "assigneeId": id_user,
+         "assignDeptId": None, "enabled": True},
+        # 门诊小额 [0, 3000) 派到组
+        {"ruleId": 102, "ruleName": "门诊小额派到作业组", "taskType": "INITIAL_REVIEW",
+         "claimType": "OUTPATIENT", "amountMin": 0.0, "amountMax": 3000.0,
+         "sourceChannel": None, "priority": 30, "assigneeType": "DEPT",
+         "assigneeId": id_dept, "assignDeptId": id_dept, "enabled": True},
+        # 门诊大额 [3000, ∞) 派到角色
+        {"ruleId": 103, "ruleName": "门诊大额派到高技能角色", "taskType": "INITIAL_REVIEW",
+         "claimType": "OUTPATIENT", "amountMin": 3000.0, "amountMax": None,
+         "sourceChannel": None, "priority": 20, "assigneeType": "ROLE",
+         "assigneeId": id_role, "assignDeptId": None, "enabled": True},
+        # 停用规则：优先级最高（1），若未过滤会全场命中——用来证明停用真的不参与
+        {"ruleId": 104, "ruleName": "停用的大额直派规则", "taskType": "INITIAL_REVIEW",
+         "claimType": "OUTPATIENT", "amountMin": 0.0, "amountMax": None,
+         "sourceChannel": None, "priority": 1, "assigneeType": "DEPT",
+         "assigneeId": id_dept, "assignDeptId": None, "enabled": False},
+    ]
+
+    base_claim = 810000 + ds.rng.randint(1, 5000)
+    samples = [
+        # 小额：命中 102（103 的下界是 3000，2999.99 不达）
+        {"key": "small_outpatient", "claimId": base_claim, "taskType": "INITIAL_REVIEW",
+         "claimType": "OUTPATIENT", "sourceChannel": "PORTAL",
+         "claimAmount": round(2999.99, 2), "unavailable": []},
+        # 边界：恰好等于 102 的上界，左闭右开 ⇒ 落到 103 而不是 102
+        {"key": "boundary_at_upper", "claimId": base_claim + 1, "taskType": "INITIAL_REVIEW",
+         "claimType": "OUTPATIENT", "sourceChannel": "PORTAL",
+         "claimAmount": 3000.00, "unavailable": []},
+        # 通配：任务类型不是 INITIAL_REVIEW ⇒ 只有 101 能接
+        {"key": "wildcard_task_type", "claimId": base_claim + 2, "taskType": "SECOND_REVIEW",
+         "claimType": "OUTPATIENT", "sourceChannel": "PORTAL",
+         "claimAmount": ds.amount(lo=3200, hi=9500), "unavailable": []},
+        # 金额未知：102/103 都设了金额段 ⇒ 都不命中，只有不设段的 101 能接
+        {"key": "amount_unknown", "claimId": base_claim + 3, "taskType": "INITIAL_REVIEW",
+         "claimType": "OUTPATIENT", "sourceChannel": "PORTAL",
+         "claimAmount": None, "unavailable": []},
+        # 无规则：渠道 BATCH 且险种 DENTAL，101 的渠道/102-103 的险种都不满足
+        {"key": "no_rule", "claimId": base_claim + 4, "taskType": "INITIAL_REVIEW",
+         "claimType": "DENTAL", "sourceChannel": "BATCH",
+         "claimAmount": ds.amount(lo=600, hi=2500), "unavailable": []},
+        # 目标全不可用：唯一候选 101 的归属人请假/离职 ⇒ 入池，不改派别人
+        {"key": "all_ineligible", "claimId": base_claim + 5, "taskType": "FIX_SUPPLEMENT",
+         "claimType": "OUTPATIENT", "sourceChannel": "PORTAL",
+         "claimAmount": ds.amount(lo=800, hi=2800), "unavailable": [id_user]},
+    ]
+
+    expect = {}
+    tasks = []
+    for sample in samples:
+        rule_id, reason = _solve(rules, sample)
+        rule = next((r for r in rules if r["ruleId"] == rule_id), None)
+        expect[sample["key"]] = {"ruleId": rule_id, "reason": reason}
+        tasks.append(
+            {
+                "expect": sample["key"],
+                "claimId": sample["claimId"],
+                "taskType": sample["taskType"],
+                "claimType": sample["claimType"],
+                "sourceChannel": sample["sourceChannel"],
+                "claimAmount": sample["claimAmount"],
+                "status": "ASSIGNED" if rule else "PENDING_CLAIM",
+                "assigneeType": rule["assigneeType"] if rule else None,
+                "assigneeId": rule["assigneeId"] if rule else None,
+                "assignDeptId": rule["assignDeptId"] if rule else None,
+                "assignRuleId": rule_id,
+                "assignReason": reason,
+                "priority": rule["priority"] if rule else 100,
+            }
+        )
+
+    # 历史终态：与 small_outpatient 同案同类型，但已 DONE ⇒ 不占生效唯一性，允许重开
+    tasks.append(
+        {
+            "expect": "history_done_reopened",
+            "claimId": base_claim,
+            "taskType": "INITIAL_REVIEW",
+            "claimType": "OUTPATIENT",
+            "sourceChannel": "PORTAL",
+            "claimAmount": 2999.99,
+            "status": "DONE",
+            "assigneeType": "USER",
+            "assigneeId": id_user,
+            "assignDeptId": None,
+            "assignRuleId": 101,
+            "assignReason": "RULE_MATCH",
+            "priority": 50,
+        }
+    )
+
+    active = [t for t in tasks if t["status"] in CLAIM_TASK_ACTIVE]
+    active_keys = [(t["claimId"], t["taskType"]) for t in active]
+    by_claim = {}
+    for task in tasks:
+        by_claim.setdefault((task["claimId"], task["taskType"]), []).append(task["status"])
+    matched = [t for t in tasks if t["assignReason"] == "RULE_MATCH"]
+    pooled = [t for t in tasks if t["status"] == "PENDING_CLAIM"]
+    reasons = {t["assignReason"] for t in tasks}
+
+    def _solve_all(order):
+        return {(s["key"]): _solve(order, s) for s in samples}
+
+    baseline = _solve_all(rules)
+    shuffled_ok = all(
+        _solve_all(order) == baseline
+        for order in (list(reversed(rules)), rules[1:] + rules[:1], [rules[2], rules[0], rules[3], rules[1]])
+    )
+
+    data = {
+        "scenario": "claim-task-assignment",
+        "seed": str(seed),
+        "story": "一批赔案进作业台：规则命中写归属、边界与未知金额不误派、无人可派入池、"
+                 "目标不可用不改派、终态可重开",
+        "tenant_id": TENANT_GROUP,
+        "rules": rules,
+        "tasks": tasks,
+        "expect": expect,
+    }
+    data["invariants"] = _invariants(
+        [
+            ("同案同类型至多一条生效任务",
+             len(active_keys) == len(set(active_keys)),
+             "生效任务 %d 条 / 去重后 %d 条" % (len(active_keys), len(set(active_keys)))),
+            ("终态行不占唯一性（同案同类型可「一条终态 + 一条生效」）",
+             any(sorted(v) == ["ASSIGNED", "DONE"] for v in by_claim.values()),
+             "DONE 行不进入生效唯一键"),
+            ("入池任务不臆造归属",
+             all(t["assigneeId"] is None and t["assigneeType"] is None
+                 and t["assignReason"] in ("NO_RULE", "ALL_INELIGIBLE") for t in pooled),
+             "PENDING_CLAIM 必须无归属人且理由码可解释"),
+            ("命中任务必带规则与归属",
+             all(t["assignRuleId"] is not None and t["assigneeId"] is not None
+                 for t in matched),
+             "RULE_MATCH ⇒ 有 ruleId 且 assignee 非空"),
+            ("金额段合法（下限 < 上限）",
+             all(r["amountMin"] is None or r["amountMax"] is None
+                 or r["amountMin"] < r["amountMax"] for r in rules),
+             "左闭右开要求 min < max"),
+            ("金额段左闭右开（恰好等于上界不命中本段）",
+             expect["boundary_at_upper"]["ruleId"] == 103
+             and expect["small_outpatient"]["ruleId"] == 102,
+             "3000.00 应落 103（[3000,∞)）而非 102（[0,3000)）"),
+            ("金额未知不命中设了金额段的规则",
+             expect["amount_unknown"]["ruleId"] == 101,
+             "未知金额只能走不设金额段的通配规则"),
+            ("停用规则不参与求解",
+             all(t["assignRuleId"] != 104 for t in tasks),
+             "104 优先级最高（1）却 0 命中 ⇒ 停用生效"),
+            ("通配任务类型可命中",
+             any(r["taskType"] == "*" and t["assignRuleId"] == r["ruleId"] for r in rules for t in tasks),
+             "taskType='*' 的兜底规则可被非 INITIAL_REVIEW 命中"),
+            ("三类归属理由码均出现",
+             {"RULE_MATCH", "NO_RULE", "ALL_INELIGIBLE"} <= reasons,
+             "命中 / 没配规则 / 目标全不可用必须可区分"),
+            ("目标不可用不改派他人",
+             expect["all_ineligible"] == {"ruleId": None, "reason": "ALL_INELIGIBLE"},
+             "唯一候选不可用 ⇒ 入池，而不是跳到次优先规则"),
+            ("求解结论与规则入参顺序无关",
+             shuffled_ok,
+             "同一批规则打乱三种顺序，期望结论完全一致"),
+            ("目标类型均为受控取值",
+             all(r["assigneeType"] in CLAIM_TARGET_TYPES for r in rules),
+             "assigneeType ∈ %s" % (CLAIM_TARGET_TYPES,)),
+            ("任务类型均为受控取值",
+             all(t["taskType"] in CLAIM_TASK_TYPES for t in tasks),
+             "taskType ∈ %s" % (CLAIM_TASK_TYPES,)),
+            ("状态/理由码均为受控取值",
+             all(t["status"] in CLAIM_TASK_ACTIVE + ["DONE", "CANCELLED"] for t in tasks)
+             and reasons <= set(CLAIM_ASSIGN_REASONS),
+             "零幽灵状态（对齐代码枚举）"),
+        ]
+    )
+    return data
+
+
 SCENARIOS = {
     "claim-ai-feedback": {
         "builder": claim_ai_feedback,
         "desc": "理赔 AI 建议曝光 → 人工裁决回流：幂等键唯一、仅 AI_ASSISTED 可裁决、REJECT 必带原因码",
+    },
+    "claim-task-assignment": {
+        "builder": claim_task_assignment,
+        "desc": "理赔作业任务与自动分配：金额段左闭右开、未知金额不误派、无人可派入池、终态可重开",
     },
     "sales-claim": {
         "builder": sales_claim,

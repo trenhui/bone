@@ -235,6 +235,32 @@ async function main() {
     !topUp.err && !avail.err && Number(avail.row?.available) >= QUOTA_FLOOR,
     topUp.err || avail.err || `available=${avail.row?.available}`);
 
+  // ---------- 种子夹具整备（二）：责任限额账户 LIABILITY_CAP ----------
+  // 理算 remainingLimit = 配置责任限额 − (quota_claimed + quota_frozen)，与 quota_initial 无关
+  // （AdjustmentEngine#MutableQuotaPool line 1430-1434）；该账户是「年度责任限额」的唯一真源。
+  // E2E 不回收历史案件（A7 结算占额写入的 claimed/frozen 不回滚），多轮累积后
+  // claimed+frozen 逼近甚至等于配置责任限额 ⇒ remainingLimit 被钳成 0 ⇒ 理算 totalAmount=0
+  // （曾致分支 1/2 全链级联红：结算「金额必须大于 0」→ 审核 404 → 支付 404 → 结案 ADJUSTED）。
+  // PERSONAL 顶额（上一块）只救结算软/硬占用的「账户可用余额」，救不了「配置责任限额剩余」，
+  // 故此处单独把 LIABILITY_CAP 的 claimed/frozen 归零（幂等、只动 tenant 0 种子行），
+  // 使 remainingLimit 每轮回到配置限额水位，与 PERSONAL 顶额同属「种子夹具整备」范畴。
+  const CAP_LIMIT = 277574.08; // 与种子责任规则 LIAB-E2E-9001-0001 配置限额同口径（0073 seed）
+  const capReset = mysqlExec(
+    `UPDATE t_quota_account` +
+    ` SET quota_claimed = 0.00, quota_frozen = 0.00,` +
+    `     quota_initial = GREATEST(quota_initial, ${CAP_LIMIT}),` +
+    `     updated_at = CURRENT_TIMESTAMP(3)` +
+    ` WHERE insured_id_hash = '${POLICY.insuredIdHash}' AND policy_no = '${POLICY.policyNo}'` +
+    `   AND quota_year = YEAR(CURDATE()) AND quota_type = 'LIABILITY_CAP'` +
+    `   AND tenant_id = 0 AND deleted = 0`);
+  const capUsed = mysqlRow(
+    `SELECT ROUND(quota_claimed + quota_frozen, 2) AS used FROM t_quota_account` +
+    ` WHERE insured_id_hash = '${POLICY.insuredIdHash}' AND policy_no = '${POLICY.policyNo}'` +
+    `   AND quota_year = YEAR(CURDATE()) AND quota_type = 'LIABILITY_CAP' AND tenant_id = 0 AND deleted = 0`);
+  check(`运行前责任限额夹具整备（LIABILITY_CAP claimed/frozen 归零，remainingLimit 回到配置限额）`,
+    !capReset.err && !capUsed.err && Number(capUsed.row?.used) === 0,
+    capReset.err || capUsed.err || `used=${capUsed.row?.used}`);
+
   // ---------- 负向：失效保单 / 被保人不匹配 ----------
   console.log('\n--- 负向：报案前置校验 ---');
   {
@@ -282,7 +308,7 @@ async function main() {
     check('建结算单（软占额度）', [200, 201].includes(st.status) && Boolean(st.data?.data?.settlementNo), JSON.stringify(st.data?.data));
     const ap = await api('POST', `/claims/${c.claimId}/settlement/audit-pass`, undefined, { token: admin });
     check('结算审核（小额直接硬预占）', ap.status === 200 && ap.data?.data?.fundingStage === 'HARD_RESERVED', JSON.stringify(ap.data?.data?.fundingStage));
-    const pay = await api('POST', `/claims/${c.claimId}/settlement/pay`, undefined, { token: admin });
+    const pay = await api('POST', `/claims/${c.claimId}/settlement/pay`, undefined, { token: admin, headers: { 'Idempotency-Key': `pay-${c.claimId}` } });
     check('支付完成', pay.status === 200, `got ${pay.status}`);
     const detail = await api('GET', `/claims/${c.claimId}`, undefined, { token: admin });
     check('结案 FINISHED（支付完成自动结案 42→50）', detail.data?.data?.[0]?.status === 'FINISHED', JSON.stringify({ status: detail.data?.data?.[0]?.status, ext: detail.data?.data?.[0]?.externalStatus }));
@@ -325,7 +351,7 @@ async function main() {
     const rc = await api('POST', `/claims/${c.claimId}/settlement/review-confirm`, undefined, { token: reviewer2 });
     check('结算大额复核放行（REVIEW_FREEZE→HARD_RESERVED）', rc.status === 200 && rc.data?.data?.fundingStage === 'HARD_RESERVED',
       `got ${rc.status} ${JSON.stringify(rc.data?.data ?? rc.data)}`);
-    const pay = await api('POST', `/claims/${c.claimId}/settlement/pay`, undefined, { token: admin });
+    const pay = await api('POST', `/claims/${c.claimId}/settlement/pay`, undefined, { token: admin, headers: { 'Idempotency-Key': `pay-${c.claimId}` } });
     check('大额支付完成', pay.status === 200, `got ${pay.status} ${JSON.stringify(pay.data?.message ?? '')}`);
     const detail = await api('GET', `/claims/${c.claimId}`, undefined, { token: admin });
     check('大额案复核后结案', detail.data?.data?.[0]?.status === 'FINISHED', detail.data?.data?.[0]?.status);
@@ -397,26 +423,34 @@ async function main() {
     check('补件案回到初审中', d3.data?.data?.[0]?.status === 'PRE_EXAMINING', d3.data?.data?.[0]?.status);
   }
 
-  // ---------- 分支 6：决策图执行 + 轨迹回放 + 自动通过 ----------
+  // ---------- 分支 6：决策图执行 + 轨迹回放 + 自动通过消费 ----------
+  // 决策图执行（decision/execute）在初审中(11/13)触发：引擎收口初审(→12)并按决策结论统一「消费」——
+  // 结论 AUTO_APPROVE 且开关开/金额≤上限 ⇒ 直接结案 FINISHED（含建结算单），否则转人工 PENDING_ADJUST(41)。
+  // 因此「自动通过消费」由决策执行一次性完成，无需（也不能）再走手动 pre-exam/complete→adjust→auto-approve：
+  // 手动 auto-approve 要求状态=12，而决策执行已把案件推进过 12，调用必 400「已初审才能自动通过」。
   console.log('\n--- 分支 6：决策图（AI 编排 DAG）+ 轨迹回放 + 自动通过消费 ---');
   {
     const c = await submitClaim(admin, [{ itemName: '挂号费', category: 'SERVICE', quantity: 1, unitPrice: TOTAL6, amount: TOTAL6 }]);
     await registerAndLockEvidence(admin, c.claimId, ['invoice']);
     await api('POST', `/claims/${c.claimId}/allocate`, undefined, { token: admin });
     await api('POST', `/claims/${c.claimId}/pre-exam/start`, undefined, { token: admin, headers: { 'X-Automated': 'true' } });
-    const exe = await api('POST', `/claims/${c.claimId}/decision/execute`, {}, { token: admin });
-    check('决策图执行 200', exe.status === 200 && Boolean(exe.data?.data?.traceId), JSON.stringify(exe.data?.data));
-    const trace = await api('GET', `/claims/${c.claimId}/decision/trace?traceId=${exe.data?.data?.traceId ?? ''}`, undefined, { token: admin });
+    const exe = await api('POST', `/claims/${c.claimId}/decision/execute`, {}, { token: admin, headers: { 'Idempotency-Key': `dec-${c.claimId}` } });
+    const run = exe.data?.data ?? {};
+    check('决策图执行 200', exe.status === 200 && Boolean(run.traceId), JSON.stringify(run));
+    check('决策结论为受控值', ['AUTO_APPROVE', 'SUGGEST_REJECT', 'MANUAL_REQUIRED', 'NEED_MORE_EVIDENCE'].includes(run.decisionResult), `decisionResult=${run.decisionResult}`);
+    const trace = await api('GET', `/claims/${c.claimId}/decision/trace?traceId=${run.traceId ?? ''}`, undefined, { token: admin });
     check('轨迹回放节点 ≥1（证据→解析→核责→理算→决策）', trace.status === 200 && (trace.data?.data?.length ?? 0) >= 1, `nodes=${trace.data?.data?.length}`);
-    await api('POST', `/claims/${c.claimId}/pre-exam/complete`, undefined, { token: admin, headers: { 'X-Approved-Amount': String(APPROVED6) } });
-    await api('POST', `/claims/${c.claimId}/adjust`, undefined, { token: admin, headers: { 'Idempotency-Key': `adj-${c.claimId}` } });
-    const auto = await api('POST', `/claims/${c.claimId}/auto-approve`, undefined, { token: admin });
-    check('自动通过（12→50 或显式禁用原因）', auto.status === 200 && ['APPLIED', 'AUTO_APPROVE_DISABLED', 'CAP_EXCEEDED'].includes(auto.data?.data?.reason), JSON.stringify(auto.data?.data));
+    // 自动通过「消费」由决策执行完成：APPLIED=已结案建单；其余为受控跳过（开关关/超上限/已结案/非自动通过）
+    check('自动通过结论被消费（APPLIED 或受控跳过，非异常）',
+      ['APPLIED', 'AUTO_APPROVE_DISABLED', 'CAP_EXCEEDED', 'ALREADY_SETTLED', 'NOT_AUTO_APPROVE', 'ESCALATED_AFTER_SKIP'].includes(run.consumptionReason),
+      `consumptionReason=${run.consumptionReason} routingReason=${run.routingReason}`);
     const st = await api('GET', `/claims/${c.claimId}`, undefined, { token: admin });
     const finalStatus = st.data?.data?.[0]?.status;
-    check('终态自洽（APPLIED⇒FINISHED / DISABLED⇒42）',
-      (auto.data?.data?.reason === 'APPLIED') === (finalStatus === 'FINISHED') || finalStatus === 'ADJUSTED' || finalStatus === 'FINISHED',
-      `${auto.data?.data?.reason} / ${finalStatus}`);
+    // 落点自洽：API 回报 claimStatus 必须等于库内最终态；APPLIED 必须落在 FINISHED
+    check('决策执行落点自洽（APPLIED⇒FINISHED；其余⇒PENDING_ADJUST/EVIDENCE_SUBMITTING）',
+      finalStatus === run.claimStatus &&
+      ((run.consumptionReason === 'APPLIED') === (finalStatus === 'FINISHED')),
+      `consumption=${run.consumptionReason} claimStatus=${run.claimStatus} actual=${finalStatus}`);
   }
 
   // ---------- 分支 7：后督抽检（PASS + DIFF + 幂等） ----------
@@ -454,6 +488,47 @@ async function main() {
     check('待办分页可查（本会话新建案件入列）', page.status === 200 && Number(page.data?.data?.total) > 0, `total=${page.data?.data?.total}`);
     const statuses = new Set((page.data?.data?.records ?? []).map((r) => r.status));
     check('列表覆盖多个状态（链路产物）', statuses.size >= 3, [...statuses].join(','));
+  }
+
+  // ---------- 跨键检索投影契约（domain/model/claim/projection/ClaimSearchHit） ----------
+  // 与新增 ClaimSearchHit 同批：只回最小字段，matchedKey 是受控分类码
+  // （见 ClaimCaseRepository/searchByKeyword.sql 的 CASE），绝不回 PII 原始值列。
+  console.log('\n--- 跨键检索投影契约（ClaimSearchHit） ---');
+  {
+    const r = await api('GET', `/claims/search?keyword=${encodeURIComponent(POLICY.policyNo)}&limit=5`, undefined, { token: admin });
+    const hits = Array.isArray(r.data?.data) ? r.data.data : [];
+    const hit = hits.find((h) => h.policyNo === POLICY.policyNo) ?? hits[0];
+    check('检索投影: 保单号命中 >=1 条', r.status === 200 && hits.length >= 1,
+      `http=${r.status} hits=${hits.length}`);
+    const allowed = new Set(['claimId', 'claimNo', 'policyNo', 'status', 'stage', 'createdAt', 'matchedKey']);
+    check('检索投影: 字段集 ⊆ ClaimSearchHit 最小投影',
+      Boolean(hit) && Object.keys(hit).every((k) => allowed.has(k)),
+      JSON.stringify(Object.keys(hit ?? {})).slice(0, 160));
+    const piiKeys = ['name_masked', 'phone_masked', 'person_id_hash',
+      'nameMasked', 'phoneMasked', 'personIdHash'];
+    check('检索投影: 不回 PII 原始值',
+      Boolean(hit) && !piiKeys.some((k) => Object.prototype.hasOwnProperty.call(hit, k)),
+      JSON.stringify(hit ?? null).slice(0, 160));
+  }
+
+  // ---------- 保单详情聚合（policy-detail-view / PolicyDetailApplicationService） ----------
+  // 与本次 domain/model 变更同批同步的 E2E 用例：守住只读聚合的既有契约（summary / plans / 责任树），
+  // 防止新增聚合块时把旧结构改坏。本次新增的 insuredRoster（假名名单）与 quotaAccounts（额度池三值）
+  // 由 PolicyDetailViewTest 的 6 个单测钉死；运行中的 claim fat-jar 重载后，再由配置面用例补端到端断言——
+  // 这里不伪造「新字段已上线」的证据。
+  console.log('\n--- 保单详情聚合（policy-detail-view） ---');
+  {
+    const r = await api('GET', `/claim-config/policies/${POLICY.policyNo}/detail`, undefined, { token: admin });
+    const d = r.data?.data;
+    check('保单详情: 200 且 summary.policyNo 与种子保单一致',
+      r.status === 200 && d?.summary?.policyNo === POLICY.policyNo,
+      `http=${r.status} policyNo=${d?.summary?.policyNo}`);
+    check('保单详情: plans 为数组且每个计划的责任树完整',
+      Array.isArray(d?.plans) && d.plans.every((p) => Array.isArray(p.liabilities)),
+      JSON.stringify(d?.plans ?? null).slice(0, 160));
+    check('保单详情: 响应不含明文证件号（假名化契约）',
+      r.status === 200 && !/[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])\d{2}\d{3}[\dXx]/.test(JSON.stringify(d ?? {})),
+      JSON.stringify(d ?? null).slice(0, 160));
   }
 
   // ---------- 第二证据源：MySQL 落库对账（防「接口 200 但没落库」） ----------

@@ -1,21 +1,25 @@
 // 简单的本地事件总线实现
-export class SimpleEventBus {
-  private events: Record<string, Function[]> = {};
+// 处理器入参声明为 never：任何具体签名的回调都可赋给它（含微应用消息等结构化载荷），
+// 真正传入的值在 emit 处收窄，避免用 Function / any 这类无类型安全的写法。
+type EventHandler = (data: never) => void;
 
-  on(event: string, handler: Function) {
+export class SimpleEventBus {
+  private events: Record<string, EventHandler[]> = {};
+
+  on(event: string, handler: EventHandler): void {
     if (!this.events[event]) {
       this.events[event] = [];
     }
     this.events[event].push(handler);
   }
 
-  emit(event: string, data: any) {
+  emit(event: string, data: unknown): void {
     if (this.events[event]) {
-      this.events[event].forEach(handler => handler(data));
+      this.events[event].forEach(handler => handler(data as never));
     }
   }
 
-  off(event: string, handler?: Function) {
+  off(event: string, handler?: EventHandler): void {
     if (!this.events[event]) return;
     
     if (handler) {
@@ -41,7 +45,7 @@ export interface MicroAppMessage {
   target: string;
   to?: string; // 兼容to属性
   type: string;
-  payload?: any;
+  payload?: unknown;
   timestamp: number;
   requestId?: string;
   messageId?: string; // 兼容messageId属性

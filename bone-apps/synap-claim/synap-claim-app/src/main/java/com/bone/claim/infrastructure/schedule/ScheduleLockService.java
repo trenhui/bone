@@ -5,6 +5,7 @@ import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
@@ -43,6 +44,7 @@ public class ScheduleLockService {
   @Value("${bone.claim.schedule.instance-id:}")
   private String configuredInstanceId;
 
+  @Autowired
   public ScheduleLockService(ScheduleLockRepository repository) {
     this.repository = repository;
   }

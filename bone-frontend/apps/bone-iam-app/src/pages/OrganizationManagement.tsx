@@ -175,7 +175,7 @@ const OrganizationManagement: React.FC = () => {
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   // 搜索防抖
   useEffect(() => {
@@ -184,6 +184,52 @@ const OrganizationManagement: React.FC = () => {
   }, [keyword, load]);
 
   // 真正含 children 的树
+  // 树节点操作回调必须稳定：renderTree 的 memo 依赖它们，普通函数每次渲染换引用会让 memo 完全失效
+  const openCreate = useCallback((pid: string | null) => {
+    setEditing(null);
+    form.resetFields();
+    form.setFieldsValue({ parentId: pid && pid !== '0' ? pid : '0', status: 1, orderNo: 1 });
+    setDrawerOpen(true);
+  }, [form]);
+
+  const openEdit = useCallback((node: DeptNode) => {
+    setEditing(node);
+    form.setFieldsValue({
+      name: node.name,
+      parentId: node.parentId && node.parentId !== '0' ? node.parentId : '0',
+      leaderId: node.leaderId ?? undefined,
+      orderNo: node.orderNo ?? 1,
+      status: node.status ?? 1,
+    });
+    setDrawerOpen(true);
+  }, [form]);
+
+  const remove = useCallback((node: DeptNode) => {
+    const childCount = collectDescendantIds(node).length;
+    // 后端仅删除单节点不级联：有子节点时前端拦截，避免产生孤儿数据
+    if (childCount > 0) {
+      modal.warning({
+        title: `无法删除「${node.name}」`,
+        content: `该部门下还有 ${childCount} 个子部门，请先删除子部门后再操作。`,
+        okText: '知道了',
+      });
+      return;
+    }
+    modal.confirm({
+      title: `确认删除「${node.name}」？`,
+      content: '删除后将不可恢复。',
+      okText: '删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        await deleteDept(node.id);
+        msg.success('部门已删除');
+        if (selectedId === node.id) setSelectedId(null);
+        await load();
+      },
+    });
+  }, [modal, msg, selectedId, load]);
+
   const renderTree = useMemo<DataNode[]>(() => {
     const map = (list: DeptNode[]): DataNode[] =>
       list.map((d) => ({
@@ -236,7 +282,7 @@ const OrganizationManagement: React.FC = () => {
         children: d.children && d.children.length ? map(d.children) : undefined,
       }));
     return map(treeData);
-  }, [treeData]);
+  }, [treeData, openCreate, openEdit, remove]);
 
   const selectedNode = useMemo(
     () => (selectedId == null ? null : findPath(treeData, selectedId)?.pop() ?? null),
@@ -248,25 +294,6 @@ const OrganizationManagement: React.FC = () => {
   );
 
   const stats = useMemo(() => summarize(treeData), [treeData]);
-
-  const openCreate = (pid: string | null) => {
-    setEditing(null);
-    form.resetFields();
-    form.setFieldsValue({ parentId: pid && pid !== '0' ? pid : '0', status: 1, orderNo: 1 });
-    setDrawerOpen(true);
-  };
-
-  const openEdit = (node: DeptNode) => {
-    setEditing(node);
-    form.setFieldsValue({
-      name: node.name,
-      parentId: node.parentId && node.parentId !== '0' ? node.parentId : '0',
-      leaderId: node.leaderId ?? undefined,
-      orderNo: node.orderNo ?? 1,
-      status: node.status ?? 1,
-    });
-    setDrawerOpen(true);
-  };
 
   const submit = async () => {
     const values = await form.validateFields();
@@ -297,32 +324,6 @@ const OrganizationManagement: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const remove = (node: DeptNode) => {
-    const childCount = collectDescendantIds(node).length;
-    // 后端仅删除单节点不级联：有子节点时前端拦截，避免产生孤儿数据
-    if (childCount > 0) {
-      modal.warning({
-        title: `无法删除「${node.name}」`,
-        content: `该部门下还有 ${childCount} 个子部门，请先删除子部门后再操作。`,
-        okText: '知道了',
-      });
-      return;
-    }
-    modal.confirm({
-      title: `确认删除「${node.name}」？`,
-      content: '删除后将不可恢复。',
-      okText: '删除',
-      okButtonProps: { danger: true },
-      cancelText: '取消',
-      onOk: async () => {
-        await deleteDept(node.id);
-        msg.success('部门已删除');
-        if (selectedId === node.id) setSelectedId(null);
-        await load();
-      },
-    });
   };
 
   // TreeSelect 选项：编辑时禁用自身及其后代

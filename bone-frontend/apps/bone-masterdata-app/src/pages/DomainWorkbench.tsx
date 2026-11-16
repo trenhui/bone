@@ -31,7 +31,14 @@ import {
 import { Auth, AuthButton } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
 import { useNavigate } from 'react-router-dom';
-import type { QualityCheck } from '../types';
+import type { MasterDataField, QualityCheck } from '../types';
+import type {
+  StewardAssignment,
+  EntitySubscription,
+  QualityIssue,
+  ModelDrift,
+  DataFeedback,
+} from '../types/governance';
 import {
   dataQualityRuleApi,
   driftApi,
@@ -87,14 +94,14 @@ const DomainWorkbench: React.FC = () => {
 
   const [recordTotal, setRecordTotal] = useState(0);
   const [publishedTotal, setPublishedTotal] = useState(0);
-  const [fields, setFields] = useState<any[]>([]);
+  const [fields, setFields] = useState<MasterDataField[]>([]);
   const [checks, setChecks] = useState<QualityCheck[]>([]);
-  const [issues, setIssues] = useState<any[]>([]);
+  const [issues, setIssues] = useState<QualityIssue[]>([]);
   const [openIssues, setOpenIssues] = useState(0);
-  const [subs, setSubs] = useState<any[]>([]);
-  const [roles, setRoles] = useState<any[]>([]);
-  const [drifts, setDrifts] = useState<any[]>([]);
-  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [subs, setSubs] = useState<EntitySubscription[]>([]);
+  const [roles, setRoles] = useState<StewardAssignment[]>([]);
+  const [drifts, setDrifts] = useState<ModelDrift[]>([]);
+  const [feedbacks, setFeedbacks] = useState<DataFeedback[]>([]);
   const [roleOpen, setRoleOpen] = useState(false);
   const [roleForm] = Form.useForm();
 
@@ -128,7 +135,7 @@ const DomainWorkbench: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [message]);
 
   useEffect(() => {
     if (entityId) void loadDomain(entityId);
@@ -214,7 +221,7 @@ const DomainWorkbench: React.FC = () => {
     {
       title: '操作',
       key: 'act',
-      render: (_: unknown, r: any) => (
+      render: (_: unknown, r: StewardAssignment) => (
         /* Popconfirm 会对 children 做 cloneElement：用 <Auth> 包外层，不能把内部 Button 换成 AuthButton */
         <Auth code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}>
           <Popconfirm
@@ -248,7 +255,7 @@ const DomainWorkbench: React.FC = () => {
     {
       title: '操作',
       key: 'act',
-      render: (_: unknown, r: any) => (
+      render: (_: unknown, r: EntitySubscription) => (
         <Space>
           {r.status === 'PENDING' && (
             <AuthButton
@@ -273,15 +280,15 @@ const DomainWorkbench: React.FC = () => {
             <Auth code={BonePermissionCodes.MASTERDATA_SUBSCRIPTIONS_WRITE}>
               <Popconfirm
                 title="确认撤销订阅？"
-            onConfirm={async () => {
-              try {
-                await subscriptionApi.revoke(r.id);
-                message.success('已撤销');
-                if (entityId) void loadDomain(entityId);
-              } catch {
-                message.error('撤销订阅失败');
-              }
-            }}
+                onConfirm={async () => {
+                  try {
+                    await subscriptionApi.revoke(r.id);
+                    message.success('已撤销');
+                    if (entityId) void loadDomain(entityId);
+                  } catch {
+                    message.error('撤销订阅失败');
+                  }
+                }}
               >
                 <Button size="small" danger>撤销</Button>
               </Popconfirm>
@@ -332,7 +339,7 @@ const DomainWorkbench: React.FC = () => {
     {
       title: '操作',
       key: 'act',
-      render: (_: unknown, r: any) => (
+      render: (_: unknown, r: QualityIssue) => (
         <Space>
           {r.status === 'OPEN' && (
             <AuthButton
@@ -406,7 +413,7 @@ const DomainWorkbench: React.FC = () => {
     {
       title: '处置',
       key: 'act',
-      render: (_: unknown, r: any) =>
+      render: (_: unknown, r: ModelDrift) =>
         r.status === 'PENDING' ? (
           <Space>
             <AuthButton
@@ -451,7 +458,7 @@ const DomainWorkbench: React.FC = () => {
     {
       title: '处理',
       key: 'act',
-      render: (_: unknown, r: any) => (
+      render: (_: unknown, r: DataFeedback) => (
         <Space>
           {r.status === 'PENDING' && (
             <AuthButton

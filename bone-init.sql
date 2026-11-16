@@ -3768,6 +3768,62 @@ CREATE TABLE `t_adj_fee_type` (
   KEY `idx_parent` (`tenant_id`,`parent_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='费用类型字典(录入项/计算项)';
 
+-- ── t_claim_ai_feedback_event（建自 0124_synap_claim_ai_feedback_event.sql） ──
+DROP TABLE IF EXISTS `t_claim_ai_feedback_event`;
+CREATE TABLE `t_claim_ai_feedback_event` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `event_id` varchar(64) NOT NULL COMMENT '客户端事件UUID(幂等键,租户内唯一)',
+  `claim_id` bigint NOT NULL COMMENT '案件ID',
+  `event_type` varchar(16) NOT NULL COMMENT 'IMPRESSION/DISPOSITION',
+  `trace_id` varchar(128) NOT NULL DEFAULT '' COMMENT '决策轨迹ID',
+  `involvement` varchar(32) NOT NULL COMMENT 'AI参与四态，DISPOSITION仅允许AI_ASSISTED',
+  `disposition` varchar(16) DEFAULT NULL COMMENT 'ADOPT/REJECT/MODIFY',
+  `reason_type` varchar(32) DEFAULT NULL COMMENT 'ReasonType四值，REJECT/MODIFY必填',
+  `comment_text` varchar(200) DEFAULT NULL COMMENT '人工备注(不进结构化口径)',
+  `modified_fields_json` varchar(512) DEFAULT NULL COMMENT '被改字段名白名单JSON(不含值)',
+  `scene` varchar(32) NOT NULL DEFAULT 'case' COMMENT 'case/review，禁blind_label',
+  `actor_id` varchar(64) NOT NULL DEFAULT '' COMMENT '操作人(取认证主体,不接受客户端声明)',
+  `version` bigint NOT NULL DEFAULT '0' COMMENT 'SDK版本列',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '服务端接收时间(唯一时间真源)',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `deleted` tinyint NOT NULL DEFAULT '0' COMMENT '软删标记',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_event` (`tenant_id`,`event_id`),
+  KEY `idx_tenant_claim` (`tenant_id`,`claim_id`,`created_at`),
+  KEY `idx_tenant_type` (`tenant_id`,`event_type`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='AI建议曝光与人工裁决回流(append-only,不碰金额与决策)';
+
+-- ── t_claim_assign_rule（建自 0125_synap_claim_task.sql） ──
+DROP TABLE IF EXISTS `t_claim_assign_rule`;
+CREATE TABLE `t_claim_assign_rule` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `rule_name` varchar(64) NOT NULL COMMENT '规则名(运营可读)',
+  `task_type` varchar(32) NOT NULL COMMENT '适用任务类型;* 表示全部类型',
+  `claim_type` varchar(32) NOT NULL DEFAULT '' COMMENT '险种;空=不限制',
+  `source_channel` varchar(32) NOT NULL DEFAULT '' COMMENT '渠道;空=不限制',
+  `amount_min` decimal(12,2) DEFAULT NULL COMMENT '金额下限(含);NULL=不设下限',
+  `amount_max` decimal(12,2) DEFAULT NULL COMMENT '金额上限(不含);NULL=不设上限',
+  `assignee_type` varchar(16) NOT NULL COMMENT '目标类型 USER/DEPT/ROLE',
+  `assignee_id` varchar(64) NOT NULL COMMENT '目标ID;空串=规则未配置完整(不可命中)',
+  `assign_dept_id` varchar(64) DEFAULT NULL COMMENT '目标部门(部门池归属口径)',
+  `priority` int NOT NULL DEFAULT '100' COMMENT '求解优先级(升序优先;同值按id升序定序)',
+  `enabled` tinyint NOT NULL DEFAULT '1' COMMENT '是否启用',
+  `remark` varchar(200) DEFAULT NULL COMMENT '备注',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `version` bigint NOT NULL DEFAULT '0' COMMENT 'SDK版本列',
+  `deleted` tinyint NOT NULL DEFAULT '0' COMMENT '软删标记',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_rule_match` (`tenant_id`,`task_type`,`claim_type`,`source_channel`,`assignee_type`,`assignee_id`),
+  KEY `idx_tenant_match` (`tenant_id`,`enabled`,`task_type`,`priority`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='案件分配规则(固定求解顺序:priority升序+id升序)';
+
 -- ── t_claim_blind_label_task（建自 0122_synap_claim_blind_label_task.sql） ──
 DROP TABLE IF EXISTS `t_claim_blind_label_task`;
 CREATE TABLE `t_claim_blind_label_task` (
@@ -3969,6 +4025,43 @@ CREATE TABLE `t_claim_stakeholder` (
   KEY `idx_claim` (`claim_id`),
   KEY `idx_person` (`tenant_id`,`person_id_hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='赔案干系人(报案人/被保人/申请人/领款人)';
+
+-- ── t_claim_task（建自 0125_synap_claim_task.sql） ──
+DROP TABLE IF EXISTS `t_claim_task`;
+CREATE TABLE `t_claim_task` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `task_no` varchar(64) NOT NULL COMMENT '任务号(租户内唯一,外部引用键)',
+  `claim_id` bigint NOT NULL COMMENT '案件ID(一案多任务,非唯一)',
+  `task_type` varchar(32) NOT NULL COMMENT 'INITIAL_REVIEW/FIX_SUPPLEMENT/SECOND_REVIEW/INSPECTION',
+  `status` varchar(32) NOT NULL COMMENT 'PENDING_CLAIM/ASSIGNED/PROCESSING/DONE/CANCELLED',
+  `assignee_type` varchar(16) DEFAULT NULL COMMENT 'USER/DEPT/ROLE;NULL=入池未指派',
+  `assignee_id` varchar(64) DEFAULT NULL COMMENT '归属主体ID(USER=用户ID DEPT=部门ID ROLE=角色码)',
+  `assign_dept_id` varchar(64) DEFAULT NULL COMMENT '归属部门(部门池口径)',
+  `assign_rule_id` bigint DEFAULT NULL COMMENT '命中的分配规则ID(可审计:为什么是这个归属)',
+  `assign_reason` varchar(32) DEFAULT NULL COMMENT 'RULE_MATCH/NO_RULE/ALL_INELIGIBLE/BACKFILL',
+  `priority` int NOT NULL DEFAULT '0' COMMENT '优先级(数值越小越先处理)',
+  `claim_type` varchar(32) NOT NULL DEFAULT '' COMMENT '险种快照(规则匹配维度)',
+  `source_channel` varchar(32) NOT NULL DEFAULT '' COMMENT '渠道快照(规则匹配维度)',
+  `claim_amount` decimal(12,2) NOT NULL DEFAULT '0.00' COMMENT '申请金额快照(金额段匹配与审计)',
+  `assigned_at` datetime(3) DEFAULT NULL COMMENT '指派时间(入池任务为NULL)',
+  `claimed_at` datetime(3) DEFAULT NULL COMMENT '被领取时间',
+  `finished_at` datetime(3) DEFAULT NULL COMMENT '进入终态(DONE/CANCELLED)时间',
+  `due_at` datetime(3) DEFAULT NULL COMMENT '处理时限(批4超时回池用,本批只留位)',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '创建时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `version` bigint NOT NULL DEFAULT '0' COMMENT 'SDK版本列(乐观锁,并发自领互斥)',
+  `deleted` tinyint NOT NULL DEFAULT '0' COMMENT '软删标记',
+  `active_key` varchar(64) GENERATED ALWAYS AS (if(((`status` in (_utf8mb4'PENDING_CLAIM',_utf8mb4'ASSIGNED',_utf8mb4'PROCESSING')) and (`deleted` = 0)),concat(`claim_id`,_utf8mb4':',`task_type`),NULL)) VIRTUAL COMMENT '生效任务唯一键载体(终态为NULL,不占唯一性;生成列不进实体)',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_task_no` (`tenant_id`,`task_no`),
+  UNIQUE KEY `uk_tenant_active` (`tenant_id`,`active_key`),
+  KEY `idx_tenant_assignee_status` (`tenant_id`,`assignee_id`,`status`,`priority`,`created_at`),
+  KEY `idx_tenant_dept_status` (`tenant_id`,`assign_dept_id`,`status`,`created_at`),
+  KEY `idx_tenant_claim_type` (`tenant_id`,`claim_id`,`task_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='案件任务(一案多任务:独立领取/独立状态/归属事实可审计)';
 
 -- ── t_domain_event_outbox（建自 0072_synap_claim_missing_tables.sql） ──
 DROP TABLE IF EXISTS `t_domain_event_outbox`;
