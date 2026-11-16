@@ -17,7 +17,7 @@ design_doc: openspec/changes/synapclaim-independent-re-review/design.md
 plan: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
 verify_result: pending
 verify_failures: 0
-verification_report: null
+verification_report: docs/superpowers/reports/2026-11-16-synapclaim-independent-re-review-verify.md
 branch_status: pending
 created_at: 2026-11-13
 verified_at: null
@@ -30,8 +30,8 @@ handoff_hash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
 classic_profile: null
 classic_migration: null
 run_checkpoint:
-  schema: comet.workflow-run-checkpoint.v1
-  hash: a0d7e3965094f2c01b489c58495217218229832d562fd178c3125314df211945
+  schema: comet.workflow-run-checkpoint.v2
+  hash: 04f9c852f4fd50054cb137667b0d0f26a85c418dccb01c682a6999cbc560ab80
   run:
     protocolVersion: 1
     schemaVersion: 1
@@ -74,14 +74,14 @@ run_checkpoint:
       reviewMode: thorough
       subagentDispatch: null
       tddMode: tdd
-      verificationReport: null
+      verificationReport: docs/superpowers/reports/2026-11-16-synapclaim-independent-re-review-verify.md
       verifiedAt: null
       verifyFailures: 0
       verifyMode: null
       verifyResult: pending
       workflow: full
     status: running
-    sequence: 16
+    sequence: 18
     actions:
       - attempt: 1
         claim:
@@ -138,26 +138,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-independent-re-review
             workspaceBaseline:
               ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-          outputs:
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-            full.open.evidence:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
+          outputs: {}
         inputHash: 5ff12cf7346162571a31d16ccb6b9eeae971a85fc29840c0f49813ec508dc265
         outcome:
           actionId: synapclaim-independent-re-review:4
@@ -214,28 +195,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-independent-re-review
             workspaceBaseline:
               ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-          outputs:
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-            full.open.evidence:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-            full.open.revalidate:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+          outputs: {}
         inputHash: 285bbedc75f7107c0778a8e6ac778f90f7c0f022429d40eedf13951d0551b182
         outcome:
           actionId: synapclaim-independent-re-review:5
@@ -316,99 +276,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-independent-re-review
             workspaceBaseline:
               ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-          outputs:
-            full.design.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-            full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-            full.open.evidence:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-            full.open.revalidate:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+          outputs: {}
         inputHash: a41684e7e7365b2fe8c252d7dab678bbb416f644b7f1ed77a4a05569a1146e95
         outcome:
           actionId: synapclaim-independent-re-review:7
@@ -457,104 +325,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-independent-re-review
             workspaceBaseline:
               ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-          outputs:
-            full.design.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-            full.design.document:
-              designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-            full.design.evidence:
-              contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-              ref: openspec/changes/synapclaim-independent-re-review/design.md
-            full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-            full.open.evidence:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-            full.open.revalidate:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+          outputs: {}
         inputHash: 3686ca28d5d92aa9412643f97094a2279c760d8a416c4885c281fde7927e5b5d
         outcome:
           actionId: synapclaim-independent-re-review:9
@@ -599,129 +370,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-independent-re-review
             workspaceBaseline:
               ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-          outputs:
-            full.build.configure:
-              boundBranch: comet/synapclaim-independent-re-review
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-            full.build.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-independent-re-review
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-            full.design.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-            full.design.document:
-              designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-            full.design.evidence:
-              contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-              ref: openspec/changes/synapclaim-independent-re-review/design.md
-            full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-            full.open.evidence:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-            full.open.revalidate:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+          outputs: {}
         inputHash: 26d45e4911f55fc1320aa55d6aef4be35a7b82d3f2245aba20007df693b0defd
         outcome:
           actionId: synapclaim-independent-re-review:11
@@ -768,141 +417,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-independent-re-review
             workspaceBaseline:
               ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-          outputs:
-            full.build.configure:
-              boundBranch: comet/synapclaim-independent-re-review
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-            full.build.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-independent-re-review
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-            full.build.plan:
-              designEvidence:
-                contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-                ref: openspec/changes/synapclaim-independent-re-review/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              planEvidence:
-                contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              taskRevision: 1d30a4bf36105c8ad861182dab8dc0f5e16cab712c8a370237345550dea77b24
-            full.build.plan.evidence:
-              contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-              ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-            full.design.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-            full.design.document:
-              designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-            full.design.evidence:
-              contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-              ref: openspec/changes/synapclaim-independent-re-review/design.md
-            full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-            full.open.evidence:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-            full.open.revalidate:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+          outputs: {}
         inputHash: be0f362fc309daa2e56e57ad7f8f17623b740448f724eba2a014a652a96734ba
         outcome:
           actionId: synapclaim-independent-re-review:13
@@ -941,143 +456,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-independent-re-review
             workspaceBaseline:
               ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-          outputs:
-            full.build.configure:
-              boundBranch: comet/synapclaim-independent-re-review
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-            full.build.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-independent-re-review
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-            full.build.execute:
-              event: build-complete
-            full.build.plan:
-              designEvidence:
-                contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-                ref: openspec/changes/synapclaim-independent-re-review/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              planEvidence:
-                contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              taskRevision: 1d30a4bf36105c8ad861182dab8dc0f5e16cab712c8a370237345550dea77b24
-            full.build.plan.evidence:
-              contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-              ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-            full.design.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-            full.design.document:
-              designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-            full.design.evidence:
-              contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-              ref: openspec/changes/synapclaim-independent-re-review/design.md
-            full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-            full.open.evidence:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-            full.open.revalidate:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+          outputs: {}
         inputHash: 071d60f19d699fad24bd79b12a99cd5b23a6b0d43b2880ddf5f7675b1fc19ddd
         outcome:
           actionId: synapclaim-independent-re-review:14
@@ -1118,6 +497,14 @@ run_checkpoint:
         stepId: full.build.check
         type: call_tool
       - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-4f348cf7805f8435407f1977db2de437f1f4f5e510759d3624809465c0058cb8
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
         id: synapclaim-independent-re-review:16
         input:
           input:
@@ -1125,1124 +512,89 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-independent-re-review
             workspaceBaseline:
               ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-          outputs:
-            full.build.check:
-              argv:
-                - ./scripts/check.sh
-              changedDuringExecution: []
-              checkEpoch: 2
-              contentHash: 5d4720494473df9fcc5c6fec1c447ad9631a4af02f2faa69d525ec0cf0562440
-              cwd: .
-              environment: 80d1d3b27df8f5f363a80967c836d52cc2cfd1c63c5a1ea0abe97a24cdb0045a
-              exitCode: 0
-              inputAfter: e009e05ef514d77916283a4101432cc875dd41265f2e13adeded72d187165838
-              inputBefore: e009e05ef514d77916283a4101432cc875dd41265f2e13adeded72d187165838
-              manifestHash: 2496459b9964043a8dc2da2a365c6fd705a2b81fccc1de16ce58b5aab102aadf
-              manifestRef: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/a47ce432-a201-4428-b0be-8b4e0774fb75.manifest
-              receiptRef: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/3f1a0495-900f-4737-bda1-73aeede8a37e.log
-              reusable: false
-              reused: false
-              scope: build
-              tier: full
-              timeoutMs: 900000
-            full.build.check.evidence:
-              contentHash: 5d4720494473df9fcc5c6fec1c447ad9631a4af02f2faa69d525ec0cf0562440
-              ref: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/3f1a0495-900f-4737-bda1-73aeede8a37e.log
-            full.build.configure:
-              boundBranch: comet/synapclaim-independent-re-review
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-            full.build.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-independent-re-review
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-            full.build.execute:
-              event: build-complete
-            full.build.plan:
-              designEvidence:
-                contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-                ref: openspec/changes/synapclaim-independent-re-review/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              planEvidence:
-                contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              taskRevision: 1d30a4bf36105c8ad861182dab8dc0f5e16cab712c8a370237345550dea77b24
-            full.build.plan.evidence:
-              contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-              ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-            full.design.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-            full.design.document:
-              designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-            full.design.evidence:
-              contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-              ref: openspec/changes/synapclaim-independent-re-review/design.md
-            full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-            full.open.evidence:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-            full.open.revalidate:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+          outputs: {}
         inputHash: 08286cc221b06e4d2e71ebc8d621c034b655b1fbfba0e1d6c5b8a32b63330a60
+        outcome:
+          actionId: synapclaim-independent-re-review:16
+          attempt: 1
+          claimToken: portable-4f348cf7805f8435407f1977db2de437f1f4f5e510759d3624809465c0058cb8
+          inputHash: 08286cc221b06e4d2e71ebc8d621c034b655b1fbfba0e1d6c5b8a32b63330a60
+          outcomeId: 88ce974e-f393-44d5-b4e7-35c602e33160
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-16-synapclaim-independent-re-review-verify.md
+          status: succeeded
         protocolVersion: 1
-        receipts: []
+        receipts:
+          - hash: b4c16cd24a37517b2603c4ca7bbd3a915b246647e6dfdb221beaf6a3c5cdf078
+            outcomeId: 88ce974e-f393-44d5-b4e7-35c602e33160
         reconciliations: []
         ref: comet-verify
         requiredCapabilities: []
         retry: manual
         runId: synapclaim-independent-re-review
-        status: pending
+        status: succeeded
         stepId: full.verify.run
         type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-a826a5eeb20be3112ab8a38aeaa2aa8bf4c5bf3beb3c441069871aba7c286855
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-independent-re-review:18
+        input:
+          input:
+            change: synapclaim-independent-re-review
+            changeDir: openspec/changes/synapclaim-independent-re-review
+            workspaceBaseline:
+              ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
+          outputs: {}
+        inputHash: 0b8fa4b63ec72a00615b490faac730f1a1e3c7f45e962e02d7fe23b76cfaa179
+        protocolVersion: 1
+        reason: Portable recovery requires reconciliation of external execution
+        receipts: []
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-independent-re-review
+        status: unknown
+        stepId: full.verify.check
+        type: call_tool
     actionContexts:
       synapclaim-independent-re-review:1:
         results: {}
         sequence: 1
       synapclaim-independent-re-review:11:
-        results:
-          full.build.configure:
-            sequence: 9
-            value:
-              boundBranch: comet/synapclaim-independent-re-review
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.build.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-independent-re-review
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.evidence:
-            sequence: 8
-            value:
-              contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-              ref: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+        results: {}
         sequence: 11
       synapclaim-independent-re-review:13:
-        results:
-          full.build.configure:
-            sequence: 9
-            value:
-              boundBranch: comet/synapclaim-independent-re-review
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.build.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-independent-re-review
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-          full.build.plan:
-            sequence: 11
-            value:
-              designEvidence:
-                contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-                ref: openspec/changes/synapclaim-independent-re-review/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              planEvidence:
-                contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              taskRevision: 1d30a4bf36105c8ad861182dab8dc0f5e16cab712c8a370237345550dea77b24
-          full.build.plan.evidence:
-            sequence: 12
-            value:
-              contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-              ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.evidence:
-            sequence: 8
-            value:
-              contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-              ref: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+        results: {}
         sequence: 13
       synapclaim-independent-re-review:14:
-        results:
-          full.build.configure:
-            sequence: 9
-            value:
-              boundBranch: comet/synapclaim-independent-re-review
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.build.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-independent-re-review
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-          full.build.execute:
-            sequence: 13
-            value:
-              event: build-complete
-          full.build.plan:
-            sequence: 11
-            value:
-              designEvidence:
-                contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-                ref: openspec/changes/synapclaim-independent-re-review/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              planEvidence:
-                contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              taskRevision: 1d30a4bf36105c8ad861182dab8dc0f5e16cab712c8a370237345550dea77b24
-          full.build.plan.evidence:
-            sequence: 12
-            value:
-              contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-              ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.evidence:
-            sequence: 8
-            value:
-              contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-              ref: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+        results: {}
         sequence: 14
       synapclaim-independent-re-review:16:
-        results:
-          full.build.check:
-            sequence: 14
-            value:
-              argv:
-                - ./scripts/check.sh
-              changedDuringExecution: []
-              checkEpoch: 2
-              contentHash: 5d4720494473df9fcc5c6fec1c447ad9631a4af02f2faa69d525ec0cf0562440
-              cwd: .
-              environment: 80d1d3b27df8f5f363a80967c836d52cc2cfd1c63c5a1ea0abe97a24cdb0045a
-              exitCode: 0
-              inputAfter: e009e05ef514d77916283a4101432cc875dd41265f2e13adeded72d187165838
-              inputBefore: e009e05ef514d77916283a4101432cc875dd41265f2e13adeded72d187165838
-              manifestHash: 2496459b9964043a8dc2da2a365c6fd705a2b81fccc1de16ce58b5aab102aadf
-              manifestRef: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/a47ce432-a201-4428-b0be-8b4e0774fb75.manifest
-              receiptRef: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/3f1a0495-900f-4737-bda1-73aeede8a37e.log
-              reusable: false
-              reused: false
-              scope: build
-              tier: full
-              timeoutMs: 900000
-          full.build.check.evidence:
-            sequence: 15
-            value:
-              contentHash: 5d4720494473df9fcc5c6fec1c447ad9631a4af02f2faa69d525ec0cf0562440
-              ref: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/3f1a0495-900f-4737-bda1-73aeede8a37e.log
-          full.build.configure:
-            sequence: 9
-            value:
-              boundBranch: comet/synapclaim-independent-re-review
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.build.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-independent-re-review
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-          full.build.execute:
-            sequence: 13
-            value:
-              event: build-complete
-          full.build.plan:
-            sequence: 11
-            value:
-              designEvidence:
-                contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-                ref: openspec/changes/synapclaim-independent-re-review/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              planEvidence:
-                contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              taskRevision: 1d30a4bf36105c8ad861182dab8dc0f5e16cab712c8a370237345550dea77b24
-          full.build.plan.evidence:
-            sequence: 12
-            value:
-              contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-              ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.evidence:
-            sequence: 8
-            value:
-              contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-              ref: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+        results: {}
         sequence: 16
+      synapclaim-independent-re-review:18:
+        results: {}
+        sequence: 18
       synapclaim-independent-re-review:4:
-        results:
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
+        results: {}
         sequence: 4
       synapclaim-independent-re-review:5:
-        results:
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+        results: {}
         sequence: 5
       synapclaim-independent-re-review:7:
-        results:
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+        results: {}
         sequence: 7
       synapclaim-independent-re-review:9:
-        results:
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.evidence:
-            sequence: 8
-            value:
-              contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-              ref: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+        results: {}
         sequence: 9
     waits:
       - id: synapclaim-independent-re-review:3
@@ -2265,16 +617,7 @@ run_checkpoint:
         choices:
           - approved
           - rejected
-        results:
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
+        results: {}
         decision:
           id: classic-open-13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
           choice: approved
@@ -2323,67 +666,7 @@ run_checkpoint:
         choices:
           - approved
           - rejected
-        results:
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+        results: {}
         decision:
           id: classic-design-cf6d68c8e0995be81278fb86e06aea8ac7610ad94dfd7e5c5b3b25ea6ccea3ab-approved
           choice: approved
@@ -2411,130 +694,7 @@ run_checkpoint:
         choices:
           - approved
           - rejected
-        results:
-          full.build.configure:
-            sequence: 9
-            value:
-              boundBranch: comet/synapclaim-independent-re-review
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.evidence:
-            sequence: 8
-            value:
-              contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-              ref: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+        results: {}
         decision:
           id: classic-build-4f022fb633abaff8fab4753491a0eff01416fe362f96015a2587a87e469be61e-approved
           choice: approved
@@ -2545,11 +705,7 @@ run_checkpoint:
         sequence: 2
         kind: classic-open-artifacts
         status: resolved
-        results:
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
+        results: {}
         receipt:
           ref: openspec/changes/synapclaim-independent-re-review
           contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
@@ -2559,115 +715,7 @@ run_checkpoint:
         sequence: 8
         kind: classic-design-document
         status: resolved
-        results:
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+        results: {}
         receipt:
           ref: openspec/changes/synapclaim-independent-re-review/design.md
           contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
@@ -2677,160 +725,7 @@ run_checkpoint:
         sequence: 12
         kind: classic-build-plan
         status: resolved
-        results:
-          full.build.configure:
-            sequence: 9
-            value:
-              boundBranch: comet/synapclaim-independent-re-review
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.build.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-independent-re-review
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-          full.build.plan:
-            sequence: 11
-            value:
-              designEvidence:
-                contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-                ref: openspec/changes/synapclaim-independent-re-review/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              planEvidence:
-                contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              taskRevision: 1d30a4bf36105c8ad861182dab8dc0f5e16cab712c8a370237345550dea77b24
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.evidence:
-            sequence: 8
-            value:
-              contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-              ref: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-              handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-              proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
-                独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44
-                加「是否独立」标记位：违反 spec「MUST 并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C
-                前端队列按人过滤 + 后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 +
-                合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py
-                E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 → 白名单与字典同批；④ 并行会话占用
-                ClaimErrorCodes/ClaimErrors → 等入库；⑤ 新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
-                同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
-              requirementsEvidence:
-                contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                ref: openspec/changes/synapclaim-independent-re-review
-              sourceEvidence:
-                contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                ref: openspec/changes/synapclaim-independent-re-review
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+        results: {}
         receipt:
           ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
           contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
@@ -2840,133 +735,57 @@ run_checkpoint:
         sequence: 15
         kind: classic-build-check
         status: resolved
-        results:
-          full.build.check:
-            sequence: 14
-            value:
-              argv:
-                - ./scripts/check.sh
-              changedDuringExecution: []
-              checkEpoch: 2
-              contentHash: 5d4720494473df9fcc5c6fec1c447ad9631a4af02f2faa69d525ec0cf0562440
-              cwd: .
-              environment: 80d1d3b27df8f5f363a80967c836d52cc2cfd1c63c5a1ea0abe97a24cdb0045a
-              exitCode: 0
-              inputAfter: e009e05ef514d77916283a4101432cc875dd41265f2e13adeded72d187165838
-              inputBefore: e009e05ef514d77916283a4101432cc875dd41265f2e13adeded72d187165838
-              manifestHash: 2496459b9964043a8dc2da2a365c6fd705a2b81fccc1de16ce58b5aab102aadf
-              manifestRef: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/a47ce432-a201-4428-b0be-8b4e0774fb75.manifest
-              receiptRef: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/3f1a0495-900f-4737-bda1-73aeede8a37e.log
-              reusable: false
-              reused: false
-              scope: build
-              tier: full
-              timeoutMs: 900000
-          full.build.configure:
-            sequence: 9
-            value:
-              boundBranch: comet/synapclaim-independent-re-review
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.build.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-independent-re-review
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-          full.build.execute:
-            sequence: 13
-            value:
-              event: build-complete
-          full.build.plan:
-            sequence: 11
-            value:
-              designEvidence:
-                contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-                ref: openspec/changes/synapclaim-independent-re-review/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              planEvidence:
-                contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-              taskRevision: 1d30a4bf36105c8ad861182dab8dc0f5e16cab712c8a370237345550dea77b24
-          full.build.plan.evidence:
-            sequence: 12
-            value:
-              contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-              ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
-                    handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
-                    proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
-                      双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人
-                      != 独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
-                      claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 +
-                      status=43 过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT
-                      列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
-                      /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
-                      ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账
-                      §6），缺任一处门禁判红；RE_REVIEW 关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B
-                      复用 44 加「是否独立」标记位：违反 spec「MUST
-                      并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
-                      后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批
-                      1），代价是队列强依赖批 1 归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 →
-                      字典对账 + 合并写法变异判红；② 错误码四处不齐导致类加载即抛 → 同批交付 +
-                      _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体 404 无后端日志 →
-                      白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
-                      新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律
-                      string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
-                      映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44
-                      可用、启动期不抛）；变异（合并写法 / 同人自审两处判据必须转红）；运行期证据写
-                      docs/superpowers/reports/。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码。
-                    requirementsEvidence:
-                      contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
-                      ref: openspec/changes/synapclaim-independent-re-review
-                    sourceEvidence:
-                      contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
-                      ref: openspec/changes/synapclaim-independent-re-review
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.evidence:
-            sequence: 8
-            value:
-              contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-              ref: openspec/changes/synapclaim-independent-re-review/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/3f1a0495-900f-4737-bda1-73aeede8a37e.log
+          contentHash: 5d4720494473df9fcc5c6fec1c447ad9631a4af02f2faa69d525ec0cf0562440
+          submissionId: 36f785dc-8f97-4e58-a121-97891a4857f4
+      - id: synapclaim-independent-re-review:17
+        stepId: full.verify.report.evidence
+        sequence: 17
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-16-synapclaim-independent-re-review-verify.md
+          contentHash: 77d2cda634e1c9956a4dfe065328c87b5374a2b46f05c948fd0b0d9b0619cead
+          submissionId: cc39b835-14e3-4e27-a2f2-511b80008610
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 40
+  sourceHash: 0d2d454726ab0ef2323465d0382fbe2308e3358fefd9bdb64d1f0289c64e99c3
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-independent-re-review
+            changeDir: openspec/changes/synapclaim-independent-re-review
+            workspaceBaseline:
+              ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+              ref: openspec/changes/synapclaim-independent-re-review
+      - contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+        ref: openspec/changes/synapclaim-independent-re-review
+      - contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-independent-re-review
+            changeDir: openspec/changes/synapclaim-independent-re-review
+            workspaceBaseline:
+              ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
+          outputs:
+            full.design.handoff:
               handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
               handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
               proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
@@ -2995,70 +814,94 @@ run_checkpoint:
               sourceEvidence:
                 contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
                 ref: openspec/changes/synapclaim-independent-re-review
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-independent-re-review
-                  changeDir: openspec/changes/synapclaim-independent-re-review
-                  workspaceBaseline:
-                    ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-                    ref: openspec/changes/synapclaim-independent-re-review
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-              ref: openspec/changes/synapclaim-independent-re-review
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-        receipt:
-          ref: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/3f1a0495-900f-4737-bda1-73aeede8a37e.log
-          contentHash: 5d4720494473df9fcc5c6fec1c447ad9631a4af02f2faa69d525ec0cf0562440
-          submissionId: 36f785dc-8f97-4e58-a121-97891a4857f4
-    ready: []
-    joins: {}
-    outputs:
-      full.build.check:
-        sequence: 14
-        value:
-          argv:
-            - ./scripts/check.sh
-          changedDuringExecution: []
-          checkEpoch: 2
-          contentHash: 5d4720494473df9fcc5c6fec1c447ad9631a4af02f2faa69d525ec0cf0562440
-          cwd: .
-          environment: 80d1d3b27df8f5f363a80967c836d52cc2cfd1c63c5a1ea0abe97a24cdb0045a
-          exitCode: 0
-          inputAfter: e009e05ef514d77916283a4101432cc875dd41265f2e13adeded72d187165838
-          inputBefore: e009e05ef514d77916283a4101432cc875dd41265f2e13adeded72d187165838
-          manifestHash: 2496459b9964043a8dc2da2a365c6fd705a2b81fccc1de16ce58b5aab102aadf
-          manifestRef: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/a47ce432-a201-4428-b0be-8b4e0774fb75.manifest
-          receiptRef: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/3f1a0495-900f-4737-bda1-73aeede8a37e.log
-          reusable: false
-          reused: false
-          scope: build
-          tier: full
-          timeoutMs: 900000
-      full.build.check.evidence:
-        sequence: 15
-        value:
-          contentHash: 5d4720494473df9fcc5c6fec1c447ad9631a4af02f2faa69d525ec0cf0562440
-          ref: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/3f1a0495-900f-4737-bda1-73aeede8a37e.log
-      full.build.configure:
-        sequence: 9
+      - handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
+        handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
+        proposal: 批 3 技术方案候选（待用户确认）：【方案 A 推荐】43 待独立复审 / 46 终态与既有 44
+          双人复核并列登记，状态机只加新边不改旧边，字典对账用例钉死三者共存互不覆盖；职责分离放写侧领域服务硬断言（初审人 !=
+          独立复审人），命中即拒并返回可辨认错误码，不依赖 UI 隐藏且 RE_REVIEW 关闭时也不放宽；复审队列按
+          claim:re-review:write 权限 + 批 1 t_claim_task 归属 + 租户隔离 + status=43
+          过滤，SQL 模板含 /*bone:tenant*/ 锚点且 SELECT 列对齐实体；权限码在字典与网关前缀白名单同时登记，端点复用
+          /api/v1/claims/**；新增错误码四处齐（ClaimErrorCodes +
+          ClaimErrors.DEFAULT_HTTP_STATUS + 前端中英语言包 + 台账 §6），缺任一处门禁判红；RE_REVIEW
+          关闭后无 43/46 新流转，44 与初审行为不变。【比较】方案 B 复用 44 加「是否独立」标记位：违反 spec「MUST
+          并列、不得合并」，三状态无法并列查询且变异用例会判红，不采用；方案 C 前端队列按人过滤 +
+          后端只做权限校验：跨租户/越权案件可枚举、职责分离可被直连绕过，不采用。【关键取舍】不新建任务表（复用批 1），代价是队列强依赖批 1
+          归属字段已落地，两批必须按序开工。【风险与处理】① 状态字典与前端字典漂移 → 字典对账 + 合并写法变异判红；②
+          错误码四处不齐导致类加载即抛 → 同批交付 + _check_error_code_i18n.py E1-E5；③ 权限码未登记网关导致整体
+          404 无后端日志 → 白名单与字典同批；④ 并行会话占用 ClaimErrorCodes/ClaimErrors → 等入库；⑤
+          新增仓储方法同批 SQL 模板；⑥ 前端 ID 一律 string。【测试策略】单元（三状态并列、职责分离含开关关闭态、错误码 HTTP
+          映射）；集成（无权限写入被拒、跨租户不可见、队列只出 43、关闭开关零流量且 44 可用、启动期不抛）；变异（合并写法 /
+          同人自审两处判据必须转红）；运行期证据写 docs/superpowers/reports/。【Spec
+          Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+          §13.5。【开工约束】用户裁定等并行会话入库 + 全量门禁转绿后才进 Build；本阶段只出设计文档，不写实现代码。
+        requirementsEvidence:
+          contentHash: 0d08c7b8c50331d0eb2b4d69b0c3ca6bac0207fd9e9c4b290db1adb3ea921464
+          ref: openspec/changes/synapclaim-independent-re-review
+        sourceEvidence:
+          contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
+          ref: openspec/changes/synapclaim-independent-re-review
+      - designDoc: openspec/changes/synapclaim-independent-re-review/design.md
+      - contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
+        ref: openspec/changes/synapclaim-independent-re-review/design.md
+      - boundBranch: comet/synapclaim-independent-re-review
+        buildMode: executing-plans
+        directOverride: false
+        isolation: worktree
+        reviewMode: thorough
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-independent-re-review
+            changeDir: openspec/changes/synapclaim-independent-re-review
+            workspaceBaseline:
+              ref: 16fe6728-6026-4b82-be6d-3d8d40bb416c
+          outputs:
+            full.build.configure:
+              boundBranch: comet/synapclaim-independent-re-review
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
+          ref: openspec/changes/synapclaim-independent-re-review/design.md
+        plan: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
+        planEvidence:
+          contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
+          ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
+        taskRevision: 1d30a4bf36105c8ad861182dab8dc0f5e16cab712c8a370237345550dea77b24
+      - contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
+        ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
+      - event: build-complete
+      - argv:
+          - ./scripts/check.sh
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 5d4720494473df9fcc5c6fec1c447ad9631a4af02f2faa69d525ec0cf0562440
+        cwd: .
+        environment: 80d1d3b27df8f5f363a80967c836d52cc2cfd1c63c5a1ea0abe97a24cdb0045a
+        exitCode: 0
+        inputAfter: e009e05ef514d77916283a4101432cc875dd41265f2e13adeded72d187165838
+        inputBefore: e009e05ef514d77916283a4101432cc875dd41265f2e13adeded72d187165838
+        manifestHash: 2496459b9964043a8dc2da2a365c6fd705a2b81fccc1de16ce58b5aab102aadf
+        manifestRef: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/a47ce432-a201-4428-b0be-8b4e0774fb75.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/3f1a0495-900f-4737-bda1-73aeede8a37e.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 5d4720494473df9fcc5c6fec1c447ad9631a4af02f2faa69d525ec0cf0562440
+        ref: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/3f1a0495-900f-4737-bda1-73aeede8a37e.log
+      - contentHash: 77d2cda634e1c9956a4dfe065328c87b5374a2b46f05c948fd0b0d9b0619cead
+        ref: docs/superpowers/reports/2026-11-16-synapclaim-independent-re-review-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-16-synapclaim-independent-re-review-verify.md
+      - sequence: 9
         value:
           boundBranch: comet/synapclaim-independent-re-review
           buildMode: executing-plans
@@ -3067,8 +910,7 @@ run_checkpoint:
           reviewMode: thorough
           subagentDispatch: null
           tddMode: tdd
-      full.build.confirm:
-        sequence: 10
+      - sequence: 10
         value:
           choice: approved
           proposal:
@@ -3086,28 +928,7 @@ run_checkpoint:
                 reviewMode: thorough
                 subagentDispatch: null
                 tddMode: tdd
-      full.build.execute:
-        sequence: 13
-        value:
-          event: build-complete
-      full.build.plan:
-        sequence: 11
-        value:
-          designEvidence:
-            contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
-            ref: openspec/changes/synapclaim-independent-re-review/design.md
-          plan: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-          planEvidence:
-            contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-            ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-          taskRevision: 1d30a4bf36105c8ad861182dab8dc0f5e16cab712c8a370237345550dea77b24
-      full.build.plan.evidence:
-        sequence: 12
-        value:
-          contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
-          ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
-      full.design.confirm:
-        sequence: 6
+      - sequence: 6
         value:
           choice: approved
           proposal:
@@ -3147,17 +968,14 @@ run_checkpoint:
                 sourceEvidence:
                   contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
                   ref: openspec/changes/synapclaim-independent-re-review
-      full.design.document:
-        sequence: 7
+      - sequence: 7
         value:
           designDoc: openspec/changes/synapclaim-independent-re-review/design.md
-      full.design.evidence:
-        sequence: 8
+      - sequence: 8
         value:
           contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
           ref: openspec/changes/synapclaim-independent-re-review/design.md
-      full.design.handoff:
-        sequence: 5
+      - sequence: 5
         value:
           handoffContext: openspec/changes/synapclaim-independent-re-review/.comet/handoff/design-context.json
           handoffHash: 4f40d42d13a9b6678f2f9f87e448bdcc7d3b5a715651e60d1477bd6bbfa27565
@@ -3186,12 +1004,10 @@ run_checkpoint:
           sourceEvidence:
             contentHash: 75fecb49da341cdee524ea42bd1d7414896dc423f4c1cea1c3cf1750401ec01f
             ref: openspec/changes/synapclaim-independent-re-review
-      full.open:
-        sequence: 1
+      - sequence: 1
         value:
           event: open-complete
-      full.open.confirm:
-        sequence: 3
+      - sequence: 3
         value:
           choice: approved
           proposal:
@@ -3206,17 +1022,929 @@ run_checkpoint:
               full.open.evidence:
                 contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
                 ref: openspec/changes/synapclaim-independent-re-review
-      full.open.evidence:
-        sequence: 2
+      - sequence: 2
         value:
           contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
           ref: openspec/changes/synapclaim-independent-re-review
-      full.open.revalidate:
-        sequence: 4
+      - sequence: 4
         value:
           contentHash: 13e8033ce5f794d885c446d17d4f90a95519f600fb45c22ef9df52724a72cbbe
-    children: []
-    lineage: []
-  sourceRevision: 36
-  sourceHash: c769ee655387736f874c542a07b8c858d6e3c94f62e59c0cdf743195d2674168
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: e282b499751cefae6c7c576ca1a43939ffed73b39856f2e49edbd6a83359ce53
+            ref: openspec/changes/synapclaim-independent-re-review/design.md
+          plan: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
+          planEvidence:
+            contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
+            ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
+          taskRevision: 1d30a4bf36105c8ad861182dab8dc0f5e16cab712c8a370237345550dea77b24
+      - sequence: 12
+        value:
+          contentHash: 5a3f7a71a5cf9c6d97d2ba07b549204e4eec00118c94b7bc09d704ecc6cfb3b0
+          ref: docs/superpowers/plans/2026-11-15-synapclaim-independent-re-review.md
+      - sequence: 13
+        value:
+          event: build-complete
+      - sequence: 14
+        value:
+          argv:
+            - ./scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 5d4720494473df9fcc5c6fec1c447ad9631a4af02f2faa69d525ec0cf0562440
+          cwd: .
+          environment: 80d1d3b27df8f5f363a80967c836d52cc2cfd1c63c5a1ea0abe97a24cdb0045a
+          exitCode: 0
+          inputAfter: e009e05ef514d77916283a4101432cc875dd41265f2e13adeded72d187165838
+          inputBefore: e009e05ef514d77916283a4101432cc875dd41265f2e13adeded72d187165838
+          manifestHash: 2496459b9964043a8dc2da2a365c6fd705a2b81fccc1de16ce58b5aab102aadf
+          manifestRef: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/a47ce432-a201-4428-b0be-8b4e0774fb75.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/3f1a0495-900f-4737-bda1-73aeede8a37e.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 15
+        value:
+          contentHash: 5d4720494473df9fcc5c6fec1c447ad9631a4af02f2faa69d525ec0cf0562440
+          ref: .comet/runtime/classic-sdk-checks/37e8cd93b0229d00d55b95b11416043fe98a05446a1a3195d9167e06a8a8865d/3f1a0495-900f-4737-bda1-73aeede8a37e.log
+      - sequence: 17
+        value:
+          contentHash: 77d2cda634e1c9956a4dfe065328c87b5374a2b46f05c948fd0b0d9b0619cead
+          ref: docs/superpowers/reports/2026-11-16-synapclaim-independent-re-review-verify.md
+      - sequence: 16
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-16-synapclaim-independent-re-review-verify.md
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 14
+        left: 32
+        right: 33
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 34
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 35
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 25
+        height: 5
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: null
+        right: 39
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: 40
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 41
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 42
+        height: 5
+      - key: full.build.configure
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 18
+        left: 44
+        right: 45
+        height: 2
+      - key: full.design.evidence
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 22
+        left: 47
+        right: 48
+        height: 2
+      - key: full.open.revalidate
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 25
+        left: null
+        right: 50
+        height: 2
+      - key: full.open.confirm
+        value: 24
+        left: 49
+        right: 51
+        height: 3
+      - key: full.design.document
+        value: 20
+        left: 46
+        right: 52
+        height: 4
+      - key: full.build.plan
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 28
+        left: 54
+        right: 55
+        height: 2
+      - key: full.build.confirm
+        value: 18
+        left: 44
+        right: 56
+        height: 3
+      - key: full.design.document
+        value: 20
+        left: 57
+        right: 52
+        height: 4
+      - key: full.build.execute
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 18
+        left: 44
+        right: 59
+        height: 2
+      - key: full.build.plan.evidence
+        value: 28
+        left: null
+        right: 55
+        height: 2
+      - key: full.build.plan
+        value: 27
+        left: 60
+        right: 61
+        height: 3
+      - key: full.design.document
+        value: 20
+        left: 62
+        right: 52
+        height: 4
+      - key: full.build.check
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 31
+        left: 64
+        right: 65
+        height: 2
+      - key: full.build.confirm
+        value: 18
+        left: 66
+        right: 59
+        height: 3
+      - key: full.build.plan
+        value: 27
+        left: 67
+        right: 61
+        height: 4
+      - key: full.design.document
+        value: 20
+        left: 68
+        right: 52
+        height: 5
+      - key: full.open.evidence
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 32
+        left: null
+        right: 71
+        height: 2
+      - key: full.open.revalidate
+        value: 26
+        left: 70
+        right: 72
+        height: 3
+      - key: full.open.confirm
+        value: 24
+        left: 49
+        right: 73
+        height: 4
+      - key: full.design.document
+        value: 20
+        left: 68
+        right: 74
+        height: 5
+      - key: full.open
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 24
+        left: 76
+        right: 77
+        height: 2
+      - key: full.open.revalidate
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 25
+        left: null
+        right: 79
+        height: 2
+      - key: full.open.confirm
+        value: 24
+        left: 76
+        right: 80
+        height: 3
+      - key: full.design.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 22
+        left: 82
+        right: 83
+        height: 2
+      - key: full.open.confirm
+        value: 24
+        left: 84
+        right: 80
+        height: 3
+      - key: full.design.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 20
+        left: 86
+        right: 87
+        height: 2
+      - key: full.design.handoff
+        value: 22
+        left: 88
+        right: 83
+        height: 3
+      - key: full.open.confirm
+        value: 24
+        left: 89
+        right: 80
+        height: 4
+      - key: full.open.evidence
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 23
+        left: null
+        right: 91
+        height: 2
+      - key: full.design.handoff
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 25
+        left: 94
+        right: 95
+        height: 2
+      - key: full.open
+        value: 23
+        left: 93
+        right: 96
+        height: 3
+      - key: full.build.configure
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 21
+        left: 99
+        right: 100
+        height: 2
+      - key: full.design.confirm
+        value: 19
+        left: 98
+        right: 101
+        height: 3
+      - key: full.open
+        value: 23
+        left: 102
+        right: 96
+        height: 4
+      - key: full.open
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 20
+        left: 105
+        right: 106
+        height: 2
+      - key: full.open.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 25
+        left: 108
+        right: 109
+        height: 2
+      - key: full.open
+        value: 23
+        left: 107
+        right: 110
+        height: 3
+      - key: full.build.configure
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 18
+        left: 112
+        right: 113
+        height: 2
+      - key: full.design.document
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 21
+        left: 115
+        right: 116
+        height: 2
+      - key: full.design.confirm
+        value: 19
+        left: 114
+        right: 117
+        height: 3
+      - key: full.open
+        value: 23
+        left: 118
+        right: 110
+        height: 4
+      - key: full.build.check
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 17
+        left: 120
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 27
+        left: 122
+        right: 123
+        height: 2
+      - key: full.build.confirm
+        value: 18
+        left: 121
+        right: 124
+        height: 3
+      - key: full.open
+        value: 23
+        left: 117
+        right: 110
+        height: 3
+      - key: full.design.confirm
+        value: 19
+        left: 125
+        right: 126
+        height: 4
+      - key: full.build.check
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 31
+        left: 128
+        right: 129
+        height: 2
+      - key: full.build.confirm
+        value: 18
+        left: 130
+        right: 124
+        height: 3
+      - key: full.verify.run
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 26
+        left: null
+        right: 132
+        height: 2
+      - key: full.open.evidence
+        value: 25
+        left: 108
+        right: 133
+        height: 3
+      - key: full.open
+        value: 23
+        left: 117
+        right: 134
+        height: 4
+      - key: full.design.confirm
+        value: 19
+        left: 131
+        right: 135
+        height: 5
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 37
+      - 43
+      - 53
+      - 58
+      - 63
+      - 69
+      - 75
+      - 78
+      - 81
+      - 85
+      - 90
+      - 92
+      - 97
+      - 103
+      - 104
+      - 111
+      - 119
+      - 127
+      - 136
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actionContexts
+          - synapclaim-independent-re-review:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - synapclaim-independent-re-review:11
+          - results
+        map: 10
+      - path:
+          - actionContexts
+          - synapclaim-independent-re-review:13
+          - results
+        map: 11
+      - path:
+          - actionContexts
+          - synapclaim-independent-re-review:14
+          - results
+        map: 12
+      - path:
+          - actionContexts
+          - synapclaim-independent-re-review:16
+          - results
+        map: 13
+      - path:
+          - actionContexts
+          - synapclaim-independent-re-review:18
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - synapclaim-independent-re-review:4
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - synapclaim-independent-re-review:5
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - synapclaim-independent-re-review:7
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - synapclaim-independent-re-review:9
+          - results
+        map: 18
+      - path:
+          - outputs
+        map: 14
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 19
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 20
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 21
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 22
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 23
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 24
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 25
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 26
+  storageHash: 2ca211c3928d6843549caea058957a0a05fb271f6bfd56443c93fa1fdb37929d
 check_epoch: 3
