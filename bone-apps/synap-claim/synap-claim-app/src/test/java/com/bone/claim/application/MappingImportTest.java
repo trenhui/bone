@@ -140,6 +140,8 @@ class MappingImportTest {
               assertThat(m.getVersionNo()).isEqualTo(result.versionNo());
               assertThat(m.getMappingType()).isEqualTo(MappingType.EXACT.code());
               assertThat(m.getMatchRule()).isEqualTo(MatchRule.MANUAL.code());
+              // 2.3 导入留痕：理由码必须随批次落库，否则事后分不清「人工逐条发布」与「导入批次」
+              assertThat(m.getReasonCode()).isEqualTo("IMPORT");
             });
   }
 
@@ -251,6 +253,41 @@ class MappingImportTest {
     assertThat(result.status()).isEqualTo("IMPORTED");
     assertThat(result.createdCount()).isZero();
     assertThat(result.unchangedCount()).isEqualTo(1);
+  }
+
+  /** spec「超单批上限被拒」：2001 行必须在解析阶段整批拒绝，且不产生任何写入。 */
+  @Test
+  void import_exceedsMaxRows_rejectsWholeBatchWithoutWrite() {
+    stubBase();
+    // 行数写死 2001：不能用 MAX_ROWS+1，否则把阈值改大时测试会「水涨船高」而假绿
+    java.util.List<String[]> rows =
+        java.util.stream.IntStream.range(0, 2001)
+            .mapToObj(i -> new String[] {"CODE-" + i, "名称" + i, "H001"})
+            .toList();
+
+    ImportResultView result = service.importMappings("YCBX", "HOSPITAL", workbook(rows));
+
+    assertThat(result.status()).isEqualTo("REJECTED");
+    assertThat(result.errors()).hasSize(1);
+    assertThat(result.errors().get(0).reason()).contains("2000");
+    verify(codeMappingRepository, never()).save(any(CodeMapping.class));
+  }
+
+  /** 边界钉子：正好 2000 行必须放行（> 而非 >=），与上面的超限用例成对，防止把上限悄悄收紧。 */
+  @Test
+  void import_exactlyMaxRows_accepted() {
+    stubBase();
+    when(refHospitalRepository.findByHospitalCode(1L, "H001")).thenReturn(hospital("H001", "协和医院"));
+    java.util.List<String[]> rows =
+        java.util.stream.IntStream.range(0, MappingImportExcel.MAX_ROWS)
+            .mapToObj(i -> new String[] {"CODE-" + i, "名称" + i, "H001"})
+            .toList();
+
+    ImportResultView result = service.importMappings("YCBX", "HOSPITAL", workbook(rows));
+
+    assertThat(result.status()).isEqualTo("IMPORTED");
+    assertThat(result.totalRows()).isEqualTo(MappingImportExcel.MAX_ROWS);
+    assertThat(result.createdCount()).isEqualTo(MappingImportExcel.MAX_ROWS);
   }
 
   @Test

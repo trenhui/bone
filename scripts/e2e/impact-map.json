@@ -4015,7 +4015,9 @@
    "path": "/api/v1/claim-config/policies/{policyNo}/detail",
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
-   "cases": []
+   "cases": [
+    "claim-full-chain-e2e.mjs"
+   ]
   },
   {
    "http": "POST",
@@ -4805,7 +4807,7 @@
  ],
  "summary": {
   "endpoints": 544,
-  "covered": 242,
-  "uncovered": 302
+  "covered": 243,
+  "uncovered": 301
  }
 }

@@ -51,6 +51,8 @@ import {
   type CreatePolicyReq,
   type PolicyConfigStatus,
   type PolicyDetail,
+  type PolicyInsuredRosterRow,
+  type PolicyQuotaAccountRow,
   type PolicyView,
 } from '../services/claimConfigApi';
 
@@ -1084,6 +1086,133 @@ export function PolicyManagementPage(): ReactElement {
                           </Card>
                         ))}
                       </Space>
+                    )
+                  ) : (
+                    <Spin size="small" />
+                  ),
+                },
+                {
+                  key: 'insured',
+                  label: '适用名单',
+                  children: policyDetail ? (
+                    policyDetail.insuredRoster.length === 0 ? (
+                      <Typography.Text type="secondary">
+                        该保单尚未录入被保人清单（假名化 ID）。
+                      </Typography.Text>
+                    ) : (
+                      <>
+                        <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+                          名单来自保单快照，仅展示假名化 ID，不展示明文证件；额度为该被保人名下账户汇总。
+                        </Typography.Paragraph>
+                        <Table
+                          rowKey={(r: PolicyInsuredRosterRow) => r.insuredIdHash}
+                          size="small"
+                          pagination={false}
+                          dataSource={policyDetail.insuredRoster}
+                          columns={[
+                            { title: '假名化 ID', dataIndex: 'insuredIdHash', ellipsis: true },
+                            { title: '额度账户数', dataIndex: 'accountCount', width: 110 },
+                            {
+                              title: '总额度',
+                              dataIndex: 'quotaInitial',
+                              width: 110,
+                              render: (v: number) =>
+                                v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                            },
+                            {
+                              title: '已扣减',
+                              dataIndex: 'quotaClaimed',
+                              width: 110,
+                              render: (v: number) =>
+                                v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                            },
+                            {
+                              title: '已冻结',
+                              dataIndex: 'quotaFrozen',
+                              width: 110,
+                              render: (v: number) =>
+                                v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                            },
+                            {
+                              title: '可用',
+                              dataIndex: 'available',
+                              width: 110,
+                              render: (v: number) =>
+                                v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                            },
+                          ]}
+                        />
+                      </>
+                    )
+                  ) : (
+                    <Spin size="small" />
+                  ),
+                },
+                {
+                  key: 'quota',
+                  label: '额度池',
+                  children: policyDetail ? (
+                    policyDetail.quotaAccounts.length === 0 ? (
+                      <Typography.Text type="secondary">
+                        该保单暂无额度账户（被保人开户后才有额度池明细）。
+                      </Typography.Text>
+                    ) : (
+                      <Table
+                        rowKey={(r: PolicyQuotaAccountRow) =>
+                          `${r.insuredIdHash}:${r.planId}:${r.quotaYear}:${r.quotaType}:${r.liabilityUuid}`
+                        }
+                        size="small"
+                        pagination={false}
+                        dataSource={policyDetail.quotaAccounts}
+                        columns={[
+                          { title: '假名化 ID', dataIndex: 'insuredIdHash', ellipsis: true },
+                          { title: '计划 ID', dataIndex: 'planId', width: 130, ellipsis: true },
+                          { title: '额度年度', dataIndex: 'quotaYear', width: 90 },
+                          { title: '维度', dataIndex: 'quotaType', width: 130 },
+                          {
+                            title: '责任 UUID',
+                            dataIndex: 'liabilityUuid',
+                            width: 120,
+                            ellipsis: true,
+                            render: (v: string) => v || '—',
+                          },
+                          {
+                            title: '初始额度',
+                            dataIndex: 'quotaInitial',
+                            width: 110,
+                            render: (v: number) =>
+                              v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                          },
+                          {
+                            title: '已扣减',
+                            dataIndex: 'quotaClaimed',
+                            width: 110,
+                            render: (v: number) =>
+                              v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                          },
+                          {
+                            title: '已冻结',
+                            dataIndex: 'quotaFrozen',
+                            width: 110,
+                            render: (v: number) =>
+                              v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                          },
+                          {
+                            title: '可用',
+                            dataIndex: 'available',
+                            width: 110,
+                            render: (v: number) =>
+                              v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                          },
+                          {
+                            title: '减人状态',
+                            dataIndex: 'insuredState',
+                            width: 100,
+                            render: (v: number) =>
+                              v === 1 ? <Tag color="orange">已减人</Tag> : <Tag>正常</Tag>,
+                          },
+                        ]}
+                      />
                     )
                   ) : (
                     <Spin size="small" />

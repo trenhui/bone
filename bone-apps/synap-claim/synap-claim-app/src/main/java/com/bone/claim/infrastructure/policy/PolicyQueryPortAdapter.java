@@ -113,32 +113,6 @@ public class PolicyQueryPortAdapter implements PolicyQueryPort {
    * <p>清单为空 ⇒ 返回空列表（合法：保单可先建后录被保人，此时无人可报案）。
    */
   private static java.util.List<String> parseInsuredHashes(String insuredSnapshot) {
-    java.util.List<String> result = new java.util.ArrayList<>();
-    if (insuredSnapshot == null || insuredSnapshot.isBlank()) {
-      return result;
-    }
-    String trimmed = insuredSnapshot.trim();
-    if (trimmed.equals("[]")) {
-      return result;
-    }
-    if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) {
-      throw new IllegalStateException("被保人清单格式非法（应为 JSON 字符串数组）: " + trimmed);
-    }
-    String body = trimmed.substring(1, trimmed.length() - 1).trim();
-    if (body.isEmpty()) {
-      return result;
-    }
-    for (String token : body.split(",")) {
-      String item = token.trim();
-      if (item.isEmpty()) {
-        continue;
-      }
-      if (item.length() >= 2 && item.startsWith("\"") && item.endsWith("\"")) {
-        result.add(item.substring(1, item.length() - 1));
-      } else {
-        throw new IllegalStateException("被保人清单含非字符串元素: " + item);
-      }
-    }
-    return result;
+    return ClaimPolicy.parseInsuredHashes(insuredSnapshot);
   }
 }

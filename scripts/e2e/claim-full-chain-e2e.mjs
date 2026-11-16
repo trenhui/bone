@@ -511,6 +511,26 @@ async function main() {
       JSON.stringify(hit ?? null).slice(0, 160));
   }
 
+  // ---------- 保单详情聚合（policy-detail-view / PolicyDetailApplicationService） ----------
+  // 与本次 domain/model 变更同批同步的 E2E 用例：守住只读聚合的既有契约（summary / plans / 责任树），
+  // 防止新增聚合块时把旧结构改坏。本次新增的 insuredRoster（假名名单）与 quotaAccounts（额度池三值）
+  // 由 PolicyDetailViewTest 的 6 个单测钉死；运行中的 claim fat-jar 重载后，再由配置面用例补端到端断言——
+  // 这里不伪造「新字段已上线」的证据。
+  console.log('\n--- 保单详情聚合（policy-detail-view） ---');
+  {
+    const r = await api('GET', `/claim-config/policies/${POLICY.policyNo}/detail`, undefined, { token: admin });
+    const d = r.data?.data;
+    check('保单详情: 200 且 summary.policyNo 与种子保单一致',
+      r.status === 200 && d?.summary?.policyNo === POLICY.policyNo,
+      `http=${r.status} policyNo=${d?.summary?.policyNo}`);
+    check('保单详情: plans 为数组且每个计划的责任树完整',
+      Array.isArray(d?.plans) && d.plans.every((p) => Array.isArray(p.liabilities)),
+      JSON.stringify(d?.plans ?? null).slice(0, 160));
+    check('保单详情: 响应不含明文证件号（假名化契约）',
+      r.status === 200 && !/[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])\d{2}\d{3}[\dXx]/.test(JSON.stringify(d ?? {})),
+      JSON.stringify(d ?? null).slice(0, 160));
+  }
+
   // ---------- 第二证据源：MySQL 落库对账（防「接口 200 但没落库」） ----------
   console.log('\n--- 第二证据源：MySQL 落库对账 ---');
   {
