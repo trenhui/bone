@@ -174,3 +174,17 @@
 新增 3 码：`SC_CLAIM_REVERSAL_REQUIRED`(409) / `SC_CLAIM_AGENT_CONFLICT`(409) / `SC_CLAIM_INSPECTION_ACTION_INVALID`(400)，
 四处齐：`ClaimErrorCodes` 常量 + `ClaimErrors.DEFAULT_HTTP_STATUS` + 前端 zh-CN/en-US 语言包 + `doc/architecture/Bone-错误码登记.md` §6。
 - `check-i18n-sync` / `check-error-code-landing` / `check-error-code-duplication`：均 RC=0。
+
+## 8. Comet 流程诚实终态（Verify 收据死锁）
+
+- Build 已由 CLI 正式完成：13/13 `task-complete`、`complete-build` 成功；`comet check run ... build -- ./scripts/check.sh`
+  返回 `exitCode=0`，Run 推进到 `revision=42`（phase=verify）。
+- Verify 报告已提交，`full.verify.run` 收据 `status=succeeded`；随后 `comet guard ... verify --apply -- bash .../verify.sh`
+  真实执行了独立验证脚本，日志末尾为 `ALL CHECKS PASSED — synapclaim-inspection-handoff-timeout verify`。
+- 但 Guard 在写收据时被 Runtime 的 safe-delete 批量阈值拦截（`SAFE_DELETE_BULK_CONFIRM_REQUIRED`，RC=70）。
+  只读 `comet state check ... verify --recover` 与 `comet runtime dispatch inspect` 均确认：动作 `:18`
+  仍 `status=running`、`receipts=[]`、`outcome=null`，磁盘 check record 停在 `status=started`，
+  缺 exitCode / 输入快照 / 哈希等完整回执字段。
+- 因此 **不标记 unknown、不声明 not-executed、不伪造成功收据、不手改 `comet-state.yaml` / checkpoint**；
+  Comet Run 停在 `phase=verify`、`revision=46`、action `:18` 的诚实终态。代码与验证证据已通过 Git 交付，
+  但本 change 未进入 Archive；如需程序化归档须由 Original Executor 补回完整回执后按官方恢复流程处理。
