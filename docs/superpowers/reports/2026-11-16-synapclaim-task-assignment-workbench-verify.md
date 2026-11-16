@@ -264,6 +264,27 @@ CHECK_EXIT=0
 
 **关于日志里 7 处 `❌` 的诚实说明**：它们全部落在步骤 `[42/59]` 的**区间内**（第 1159–1235 行），是该步门禁单测的**负向探针**打印（`幽灵菜单 claim:phantom` 应判红、空清单应判红、`R6` 孤儿门禁应判红等），不是真实红点。判据以 `CHECK_EXIT=0` + 末行「✅ 本地自检通过！」为准，逐步骤的 `❌` 才是真红点——本轮无。
 
+### 7.5 第 8 个系统性缺陷：门禁在 pre-commit 里「越界扫描」
+
+手工跑 `scripts/check.sh` 全绿、`git commit` 却连续三次被挡，且**同一批单测两处结论不一致**。
+逐层剥开是同一个根因：`lib/gate.py::git_files` 用 `cwd=root` 跑 `git ls-files`，但继承了钩子
+导出的 `GIT_DIR`/`GIT_WORK_TREE`/`GIT_INDEX_FILE`——这些变量优先级高于 cwd，于是传入的 `root`
+被忽略，枚举的是"外面那个仓库"。
+
+| 层 | 症状 | 判据 |
+| --- | --- | --- |
+| 1 | `test_git_files_on_non_repo_raises_infra` 必红：临时目录里 `git ls-files` 本该失败 | 注入有效 `GIT_DIR` 后 `/tmp` 下 `git ls-files` 仍 exit 0（已取证） |
+| 2 | 剥离后反而红得更多（1 → 6）：夹具用未剥离的环境跑 `git init`，实际**重置了外层仓库**，夹具里没有 `.git` | `git ls-files` 在夹具里 exit 128 |
+| 3 | 影响面不止单测：`iter_files(tmp)` 会返回外层仓库的文件 ⇒ 任何按 root 作用域扫描的门禁都"扫错目录还自以为通过" | 与 §7.2 的 worktree 空扫描同族：一个扫描为空、一个越界扫描 |
+
+修复：新增共享 `gate.clean_git_env()`，`git_files` 与两处测试夹具统一使用；补回归钉子
+`test_git_files_ignores_inherited_git_env`（注入**有效** `GIT_DIR` 仍须抛 `InfraError`）。
+变异验证：改回 `env=None` ⇒ 该用例转红；还原 ⇒ 裸环境与钩子环境各 35 tests OK、全集 678 OK。
+
+> 至此本批共修 **8** 个门禁系统性问题：7 个 worktree 空扫描 + 1 个钩子环境越界扫描。
+> 而且它们都不是读代码发现的，是被"提交/推送"这两个真实动作逼出来的——这正是判据有生命力的样子。
+
+
 ---
 
 ## 8. 汇总
@@ -347,3 +368,40 @@ python3 scripts/e2e/synap-claim-task-workbench-e2e.py
 实测：`[12:46:55] claim listening on :8087 (http 200, 5s)`，随后 E2E `通过 17/17 项`、`E2E_RC=0`。
 重启前先确认 `unzip -l claim.jar | grep ClaimTaskApplicationService` 有命中——只看「服务起来了」会
 把旧 jar 当成新 jar（本次就是这么先发现 404 的）。
+
+### 9.4 pre-push 又打出一个假阳性：用例覆盖判定把变量当通配
+
+第一次推送到 GitHub 时被 pre-push 挡下。挡它的**不是**本批的新用例，而是既有
+`e2e_synap_claim.py` —— 而那个文件从头到尾没有调用过任何一个任务端点。
+
+根因在 `e2e/impact.py::case_serves`：早期写成「任一侧是 `{}` 就算命中」。于是用例里的
+「领取理算」`/claims/{cid}/adjust/claim` 被记成覆盖了「自领任务」
+`/claims/tasks/{taskId}/claim`——两条完全不同的接口，只因第二段是变量。同理
+`/apps/mine` 曾"覆盖" `/apps/{id}`。
+
+| 口径 | 覆盖端点 | 说明 |
+| --- | --- | --- |
+| 收窄前（`{} or {}`） | 246 / 547 | 至少 21 个是假阳性 |
+| 收窄后（`{}` 只配 `{}`） | 225 / 547 | 21 个端点**从来没有用例**这一事实被暴露出来 |
+
+这不是"覆盖变少了"，而是假阳性被清掉：假阳性比漏报更危险——它让门禁对**没测过的端点**放行。
+收窄后本轮改动的 3 个端点仍然全覆盖（新用例提供），`--print-case-files` 只剩
+`synap-claim-task-workbench-e2e.py`，推送随即通过（Gitee + GitHub 双远端 `dd00b3933..cdc55d393`）。
+
+补钉子 `test_variable_segment_is_not_a_wildcard`；变异验证：把规则改回 `or` ⇒ 该用例转红（RC=1）。
+
+### 9.5 顺带修掉的一处既有契约漂移（仍未全绿，如实登记）
+
+`ClaimCaseController.POST /claims` 要求 `Idempotency-Key`（缺失即 400），而
+`e2e_synap_claim.py` 报案时没带——本地一直没红，是因为跑的是 **2026-11-13 的旧 jar**；
+用当前代码重建 jar 后立刻 400。已补头。
+
+该用例**仍然红**，两处原因都与批 1 无关：
+
+1. `pre-exam/complete` 报「当前状态 PENDING_ADJUST(待核赔)」——dev 侧 `ffa83a98b`
+   （D1/D3/D4 架构收敛，2026-11-08，**早于本批**）后 AI 决策图会自动转人工，
+   用例的步骤顺序已过期；
+2. S2 需要 `mdapprover2/mdapprover3`，本 dev 库里这两个账号不存在。
+
+两条都属「既有契约漂移」，按 §7.3 的口径登记，不在本批改写——改写一条 800 行的存量用例
+会把批 1 的验证报告变成"顺手重构"，反而模糊了本批的判据边界。
