@@ -114,6 +114,11 @@ MERGED_SOURCES: dict[str, str] = {
     # 托管区块，未登记则 sync 重建区块时会被抹掉、--check 判「多表（init 有、活库无）」。
     "t_claim_task": "0125_synap_claim_task.sql",
     "t_claim_assign_rule": "0125_synap_claim_task.sql",
+    # 0126：抽检处置留痕 / 代理区间 / 任务转交（批 4）。同 0124/0125 款——建表迁移已在活库落地、
+    # DDL 已并入托管区块，未登记则 sync 重建时抹掉三表并让 --check 判「多表（init 有、活库无）」。
+    "t_claim_inspection_action": "0126_synap_claim_inspection_handoff.sql",
+    "t_claim_user_agent": "0126_synap_claim_inspection_handoff.sql",
+    "t_claim_task_transfer": "0126_synap_claim_inspection_handoff.sql",
 }
 
 

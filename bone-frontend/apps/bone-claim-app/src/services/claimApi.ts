@@ -27,7 +27,7 @@ export { evidenceApi, attachmentApi } from './evidence';
 export { settlementApi } from './settlement';
 export { quotaApi } from './quota';
 export { appealApi } from './appeal';
-export { inspectionApi } from './inspection';
+export { inspectionApi, inspectionHandoffApi } from './inspection';
 export { reviewTaskApi } from './reviewTask';
 
 // ===== 向后兼容：组装统一 claimApi 命名空间 =====

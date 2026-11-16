@@ -171,4 +171,33 @@ class FeatureTenantToggleServiceTest {
     assertThat(DecisionTriage.evaluate(in, service.triageLimits(TENANT).limits()).result())
         .isEqualTo(DecisionResult.AUTO_APPROVE);
   }
+
+  // ===== 批 4 · INSPECTION_ACTION fail-closed（4.3） =====
+
+  private FeatureToggle inspectionToggle(String state) {
+    return FeatureToggle.create(
+        TENANT, FeatureToggle.FEATURE_INSPECTION_ACTION, state, 100, "", null, Instant.now());
+  }
+
+  @Test
+  @DisplayName("4.3 INSPECTION_ACTION 未配置 ⇒ 关闭（fail-closed，不生成重办任务）")
+  void inspectionActionAbsentIsDisabled() {
+    when(repository.findByFeatureKey(TENANT, FeatureToggle.FEATURE_INSPECTION_ACTION))
+        .thenReturn(null);
+    assertThat(service.isInspectionActionEnabled(TENANT, true)).isFalse();
+  }
+
+  @Test
+  @DisplayName("4.3 INSPECTION_ACTION 显式 ENABLED ⇒ 开启")
+  void inspectionActionEnabledWhenOn() {
+    when(repository.findByFeatureKey(TENANT, FeatureToggle.FEATURE_INSPECTION_ACTION))
+        .thenReturn(inspectionToggle(FeatureToggle.STATE_ENABLED));
+    assertThat(service.isInspectionActionEnabled(TENANT, true)).isTrue();
+  }
+
+  @Test
+  @DisplayName("4.3 全局总开关关闭 ⇒ 一律关闭（最终裁决）")
+  void inspectionActionGlobalOffWins() {
+    assertThat(service.isInspectionActionEnabled(TENANT, false)).isFalse();
+  }
 }

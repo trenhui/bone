@@ -3,6 +3,7 @@ package com.bone.claim.application;
 import com.bone.claim.application.port.out.TriageLimitsPort;
 import com.bone.claim.domain.model.config.FeatureToggle;
 import com.bone.claim.domain.model.decision.TriageLimits;
+import com.bone.claim.domain.model.inspection.InspectionConfig;
 import com.bone.claim.domain.repository.FeatureToggleRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -134,5 +135,65 @@ public class FeatureTenantToggleService implements TriageLimitsPort {
           resolution.rejectionSummary());
     }
     return resolution;
+  }
+
+  /**
+   * 抽检比例（批 4 任务 4.1）：从 {@code INSPECTION_SAMPLING} 的 config_json 读，回落基线 5%。
+   *
+   * <p>与 triageLimits 同款 fail-closed：无记录/未开启/非法 JSON/越界一律回落 {@link InspectionConfig#defaults()}，并
+   * WARN 让"配了不生效"可见；绝不默认 0（不抽样）或 100（全量）。
+   */
+  public InspectionConfig inspectionConfig(long tenantId) {
+    if (featureToggleRepository == null) {
+      return InspectionConfig.defaults();
+    }
+    FeatureToggle toggle =
+        featureToggleRepository.findByFeatureKey(
+            tenantId, FeatureToggle.FEATURE_INSPECTION_SAMPLING);
+    if (toggle == null || !toggle.isOn(tenantId)) {
+      return InspectionConfig.defaults();
+    }
+    String raw = toggle.getConfigJson();
+    if (raw == null || raw.isBlank()) {
+      return InspectionConfig.defaults();
+    }
+    try {
+      Map<String, Object> parsed =
+          objectMapper.readValue(raw, new TypeReference<Map<String, Object>>() {});
+      InspectionConfig cfg = InspectionConfig.from(parsed);
+      if (!cfg.fullyApplied()) {
+        log.warn("[抽检配置] 部分配置未生效，已回落基线：tenantId={}, rejected={}", tenantId, cfg.rejected());
+      }
+      return cfg;
+    } catch (Exception e) {
+      log.warn(
+          "[抽检配置] config_json 解析失败，回落基线 {}%：tenantId={}, err={}",
+          InspectionConfig.DEFAULT_SAMPLING_RATE, tenantId, e.getMessage());
+      return new InspectionConfig(
+          InspectionConfig.DEFAULT_SAMPLING_RATE, Map.of(JSON_SENTINEL, "不是合法 JSON 对象；已回落基线"));
+    }
+  }
+
+  /**
+   * 抽检处置动作开关（批 4 任务 4.3）：关闭时只登记不流转。
+   *
+   * <p><b>fail-closed，不复用 {@link #isFeatureAllowed}</b>：后者在「无配置记录」时继承全局开启（适合 AI 能力灰度），
+   * 但处置动作会生成重办任务、推动案件回流，是一条影响资金与案件状态的路径——这类闸门必须「未显式开启即关闭」。 无记录 / 未 ENABLED / 状态非法一律 false（只登记），与
+   * triageLimits/inspectionConfig 的 fail-closed 同款。
+   */
+  public boolean isInspectionActionEnabled(long tenantId, boolean globalEnabled) {
+    if (!globalEnabled) {
+      return false;
+    }
+    if (featureToggleRepository == null) {
+      return false;
+    }
+    FeatureToggle toggle =
+        featureToggleRepository.findByFeatureKey(tenantId, FeatureToggle.FEATURE_INSPECTION_ACTION);
+    if (toggle == null) {
+      return false; // 未配置即关闭（fail-closed）
+    }
+    warnOnUnsupportedState(toggle, tenantId, FeatureToggle.FEATURE_INSPECTION_ACTION);
+    return toggle.isOn(tenantId);
   }
 }

@@ -3953,6 +3953,28 @@ CREATE TABLE `t_claim_inspection` (
   KEY `idx_tenant_status` (`tenant_id`,`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='后督抽检单(任务+结论同表)';
 
+-- ── t_claim_inspection_action（建自 0126_synap_claim_inspection_handoff.sql） ──
+DROP TABLE IF EXISTS `t_claim_inspection_action`;
+CREATE TABLE `t_claim_inspection_action` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `claim_id` bigint NOT NULL COMMENT '被抽检案件ID',
+  `task_id` bigint DEFAULT NULL COMMENT '关联的重办任务ID(打回且开关开时生成;只登记时NULL)',
+  `inspector_id` varchar(64) NOT NULL COMMENT '抽检人ID(取认证主体,不接受客户端声明)',
+  `decision` varchar(32) NOT NULL COMMENT 'PASS/REJECT/BACK(通过/驳回/打回重办)',
+  `back_reason` varchar(512) DEFAULT NULL COMMENT '打回原因(BACK时必填)',
+  `reversal_verified` tinyint NOT NULL DEFAULT '0' COMMENT '已支付打回的冲正前置是否已核验(1=已冲正;0=未冲正或非已支付)',
+  `feature_enabled` tinyint NOT NULL DEFAULT '1' COMMENT '处置时INSPECTION_ACTION开关态(0=只登记不流转;留痕自证)',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '处置时间(事实发生时点)',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_claim` (`tenant_id`,`claim_id`,`created_at`),
+  KEY `idx_tenant_inspector` (`tenant_id`,`inspector_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='抽检处置留痕(append-only事实:抽检人/结论/打回原因/关联任务,不可改写)';
+
 -- ── t_claim_review_record（建自 0101_synap_claim_phase1_record_tables.sql） ──
 DROP TABLE IF EXISTS `t_claim_review_record`;
 CREATE TABLE `t_claim_review_record` (
@@ -4062,6 +4084,49 @@ CREATE TABLE `t_claim_task` (
   KEY `idx_tenant_dept_status` (`tenant_id`,`assign_dept_id`,`status`,`created_at`),
   KEY `idx_tenant_claim_type` (`tenant_id`,`claim_id`,`task_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='案件任务(一案多任务:独立领取/独立状态/归属事实可审计)';
+
+-- ── t_claim_task_transfer（建自 0126_synap_claim_inspection_handoff.sql） ──
+DROP TABLE IF EXISTS `t_claim_task_transfer`;
+CREATE TABLE `t_claim_task_transfer` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `task_id` bigint NOT NULL COMMENT '被转交任务ID',
+  `claim_id` bigint NOT NULL COMMENT '案件ID(便于追溯)',
+  `from_assignee_id` varchar(64) DEFAULT NULL COMMENT '转出人ID(入池任务可为空)',
+  `to_assignee_id` varchar(64) NOT NULL COMMENT '转入人ID',
+  `reason` varchar(512) DEFAULT NULL COMMENT '转交原因',
+  `transferred_by` varchar(64) NOT NULL COMMENT '操作人ID(取认证主体)',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '转交时间(事实发生时点,不可改写)',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_task` (`tenant_id`,`task_id`,`created_at`),
+  KEY `idx_tenant_claim` (`tenant_id`,`claim_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='任务转交留痕(append-only事实:转出/转入/原因/时间,历史不可更新)';
+
+-- ── t_claim_user_agent（建自 0126_synap_claim_inspection_handoff.sql） ──
+DROP TABLE IF EXISTS `t_claim_user_agent`;
+CREATE TABLE `t_claim_user_agent` (
+  `id` bigint NOT NULL COMMENT '主键(分布式ID)',
+  `tenant_id` bigint NOT NULL COMMENT '租户',
+  `principal_id` varchar(64) NOT NULL COMMENT '被代理人ID(请假/缺席方)',
+  `agent_id` varchar(64) NOT NULL COMMENT '代理人ID',
+  `valid_from` datetime(3) NOT NULL COMMENT '生效起(含)',
+  `valid_to` datetime(3) DEFAULT NULL COMMENT '生效止(不含);NULL=长期有效',
+  `state` varchar(16) NOT NULL DEFAULT 'ACTIVE' COMMENT 'ACTIVE/INACTIVE(应用层按区间维护;生成列唯一性口径)',
+  `reason` varchar(200) DEFAULT NULL COMMENT '代理事由(可审计)',
+  `created_by` bigint DEFAULT NULL COMMENT '登记人ID',
+  `created_at` datetime(3) NOT NULL COMMENT '登记时间',
+  `updated_at` datetime(3) NOT NULL COMMENT '更新时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
+  `active_key` varchar(64) GENERATED ALWAYS AS (if((`state` = _utf8mb4'ACTIVE'),`principal_id`,NULL)) VIRTUAL COMMENT '生效代理唯一键载体(非ACTIVE为NULL不占唯一性;生成列不进实体)',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_active_agent` (`tenant_id`,`active_key`),
+  KEY `idx_tenant_principal` (`tenant_id`,`principal_id`,`valid_from`,`valid_to`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='代理区间(append-only事实:同一被代理人同一时段至多一条生效代理)';
 
 -- ── t_domain_event_outbox（建自 0072_synap_claim_missing_tables.sql） ──
 DROP TABLE IF EXISTS `t_domain_event_outbox`;

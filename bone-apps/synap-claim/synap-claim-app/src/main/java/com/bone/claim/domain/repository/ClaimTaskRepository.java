@@ -84,6 +84,18 @@ public interface ClaimTaskRepository extends Repository<ClaimTask, Long> {
   List<ClaimTask> findByClaimId(@Param("claimId") long claimId);
 
   /**
+   * 全租户扫描「已指派但始终未领取且已过时限」的任务（批 4 超时回池，定时 Job 专用）。
+   *
+   * <p>只扫 {@code ASSIGNED + claimed_at IS NULL + due_at < now}：正在办（PROCESSING）的不动，否则会把在办任务抢回池。 受
+   * {@code all_tenants_scan_only_by_schedule} 与 {@code
+   * schedule_only_calls_all_tenants_repository_methods} 双重约束， <b>仅 adapter.schedule 可调</b>；结果行的
+   * tenantId 由调用方显式 {@code runAs} 后再写。
+   */
+  @TenantScope(TenantScopeMode.ALL)
+  List<ClaimTask> findExpiredAssignedAllTenants(
+      @Param("before") java.sql.Timestamp before, @Param("limit") int limit);
+
+  /**
    * 部门池待领任务（无归属人 + 指定部门），按优先级与创建时间取前 N 条。
    *
    * <p>同样以 {@code id} 收尾排序：一次取前 N 条虽不翻页，但并列键会让「同一查询两次执行返回不同集合」， 领取侧按结果批量处理时会漏掉本该在前 N 里的行。

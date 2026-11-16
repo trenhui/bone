@@ -48,6 +48,22 @@ public class FeatureToggle extends TenantAbstractEntity<Long> {
    */
   public static final String FEATURE_RE_REVIEW = "RE_REVIEW";
 
+  /**
+   * 抽检比例特性键（批 4 任务 4.1：从全局 {@code @Value} 迁入 t_feature_toggle 并上屏）。
+   *
+   * <p>{@code config_json} 的键为 {@code samplingRatePercent}（0–100 整数百分比）；缺记录 / 未开启 / 非法值一律回落 代码基线
+   * 5，保证「配了不生效」不会静默改成 0（不抽样）或 100（全量），而是维持既有监管口径。
+   */
+  public static final String FEATURE_INSPECTION_SAMPLING = "INSPECTION_SAMPLING";
+
+  /**
+   * 抽检处置动作特性键（批 4 任务 4.3）。
+   *
+   * <p><b>关闭时只登记不流转</b>：处置留痕照写，但不生成重办任务、不改案件状态——与 {@code AUTO_ASSIGN} 关闭时 「停写归属但不抹掉任务」同款纪律。留痕行的
+   * feature_enabled 字段自证当时的开关态。
+   */
+  public static final String FEATURE_INSPECTION_ACTION = "INSPECTION_ACTION";
+
   public static final String STATE_ENABLED = "ENABLED";
   public static final String STATE_DISABLED = "DISABLED";
 

@@ -16,11 +16,13 @@ import {
 import { FileSearchOutlined, ReloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import {
   inspectionApi,
+  inspectionHandoffApi,
   type InspectionAction,
   type InspectionDiffType,
   type InspectionDimension,
   type InspectionResult,
   type InspectionView,
+  type SamplingConfig,
 } from '../services/claimApi';
 import { PageHeader } from '../components/PageHeader';
 import { CaseIdBar, CaseNotSelected } from '../components/CaseIdBar';
@@ -109,6 +111,7 @@ export function InspectionWorkbenchPage({ embeddedClaimId }: CasePageProps = {})
   const claimId = embeddedClaimId ?? urlClaimId;
   const [dimension, setDimension] = useState<InspectionDimension>('AMOUNT');
   const [inspection, setInspection] = useState<InspectionView | null>(null);
+  const [sampling, setSampling] = useState<SamplingConfig | null>(null);
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState(false);
   const [form] = Form.useForm<ConcludeFormValues>();
@@ -133,6 +136,23 @@ export function InspectionWorkbenchPage({ embeddedClaimId }: CasePageProps = {})
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void inspectionHandoffApi
+      .samplingConfig()
+      .then((resp) => {
+        if (!cancelled) {
+          setSampling(resp?.data ?? null);
+        }
+      })
+      .catch(() => {
+        // 配置读回失败不阻断页面：保留 null，文案回落代码基线提示（不误显示为某具体比例）
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const run = async (fn: () => Promise<unknown>, okMsg: string) => {
     setActing(true);
@@ -232,8 +252,18 @@ export function InspectionWorkbenchPage({ embeddedClaimId }: CasePageProps = {})
           <Alert
             type="info"
             showIcon
-            message="结案案件每日按分层比例（默认 5%）自动抽样；人工可对任一已终态案件发起抽检。抽检结论一经登记不可改写，需更正则另开一次抽检。"
+            message={`结案案件每日按分层比例（当前 ${sampling ? `${sampling.samplingRatePercent}%` : '加载中'}）自动抽样；人工可对任一已终态案件发起抽检。抽检结论一经登记不可改写，需更正则另开一次抽检。`}
           />
+          {sampling && Object.keys(sampling.rejected).length > 0 ? (
+            <Alert
+              type="warning"
+              showIcon
+              message="抽检比例配置部分未生效，已按基线处理"
+              description={Object.entries(sampling.rejected)
+                .map(([key, reason]) => `${key}: ${reason}`)
+                .join('；')}
+            />
+          ) : null}
 
           {!claimId ? (
             <CaseNotSelected hint="后督抽检按案件发起，输入案件ID后即可查询抽检单或发起抽检" />
