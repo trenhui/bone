@@ -69,7 +69,7 @@ def db_config_json():
 
 def pick_claim_id():
     rows = S.db_query(
-        "SELECT id FROM t_claim WHERE tenant_id = 0 AND deleted = 0 ORDER BY id LIMIT 1"
+        "SELECT id FROM t_claim_case WHERE tenant_id = 0 AND deleted = 0 ORDER BY id LIMIT 1"
     )
     return int(rows[0]["id"]) if rows else None
 
