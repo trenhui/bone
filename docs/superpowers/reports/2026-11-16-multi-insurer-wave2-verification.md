@@ -5,15 +5,15 @@
 
 ## 1. 结论
 
-W2 的实现、证据、流程收口、四方 SHA 四层 DoD 中，前三层已完成，第四层在提交后回填。
+W2 的实现、证据、流程收口、四方 SHA 四层 DoD **全部完成**；逐项交付回执见 §8。
 **15/15 任务已勾选**；核心结论是：**这 15 项在开工前没有一项「完全未实现」**——并行会话已完成主体实现（8 项完整、7 项部分），本轮工作是补缺口、补钉子、补证据、收口，而不是重写服务主体。
 
 | DoD 层 | 判据 | 结果 |
 |---|---|---|
 | 实现 | 15/15 勾选 | ✅ `tasks.md` 全勾 |
 | 证据 | 全模块单测 / 门禁 / 前端构建 / E2E / 变异验证 | ✅ 见 §5 |
-| 流程收口 | 归档 + 精确路径提交 + 双远端 | 提交后回填 |
-| 四方 SHA | HEAD = origin/dev = Gitee = GitHub | 提交后回填 |
+| 流程收口 | 归档 + 精确路径提交 + 双远端 | ✅ 见 §8 |
+| 四方 SHA | HEAD = origin/dev = Gitee = GitHub | ✅ 四方一致于 `12ccf41e7…`，见 §8 |
 
 ## 2. 纳管方式：为什么最终没走 `state select` / `state init`
 
@@ -84,7 +84,7 @@ W2 的实现、证据、流程收口、四方 SHA 四层 DoD 中，前三层已�
 | 配置面 E2E | `./scripts/e2e/run.sh claim-config-e2e.mjs` | **86/86** |
 | 全链路 E2E | `./scripts/e2e/run.sh node-api` | **41/41**（含工作台/AI 回流；小额直付、SoD、额度守恒等） |
 | 存量对齐 dry-run | `BONE_DB_PASSWORD=... python3 scripts/biz_identity_align_dry_run.py` | 见 §5.4 |
-| 全量门禁 | `./scripts/check.sh` | 见提交记录（pre-commit 亦会再跑一次） |
+| 全量门禁 | `./scripts/check.sh` | **59/59 RC=0**，末行「✅ 本地自检通过！」；实现批 pre-commit / pre-push、归档后各复跑一次 |
 
 ### 5.1 变异验证（判别力唯一证明）
 
@@ -139,3 +139,35 @@ distinct 存量取值 35 个；自动匹配 30 个；未匹配 5 个
 - 归档走 `comet classic openspec -- archive multi-insurer-biz-identity-catalog-mapping -y`（non-SDK adapter，WIP=1 静默窗口）；
 - 提交采用 `git commit -F <msgfile> --only -- <精确路径>`，不卷入并行会话在途的 `scripts/e2e/ui/probe-*.mjs`；
 - 推送后分别 `git ls-remote` 核对 Gitee / GitHub 与 `origin/dev` 四方 SHA。
+
+## 8. 交付回执（flow closure evidence）
+
+### 8.1 两批精确路径提交
+
+| 批次 | SHA | 路径范围 | 门禁 |
+|---|---|---|---|
+| 实现 | `b3dfac246` | 12 个实现/测试文件 + `tasks.md` + 本报告 + `claim-full-chain-e2e.mjs`（16 files，769 insertions / 57 deletions） | pre-commit `check.sh` 59/59 RC=0 |
+| 归档 | `12ccf41e7` | 8 个 OpenSpec 产物 100% 重命名至 `archive/2026-11-16-…` + 4 个主规范新增 | 归档后 `check.sh` 59/59 RC=0 |
+
+全程 `git commit -F <msgfile> --only -- <精确路径>`；并行会话在途的 `scripts/e2e/ui/probe-commerce.mjs` 与 `probe-metadata-loop.mjs` 始终保持未暂存、未提交。
+
+### 8.2 双远端核对（2026-11-16，CST）
+
+| 来源 | SHA |
+|---|---|
+| 本地 `HEAD` | `12ccf41e72d92a0a5f2cc46cf96f3d0e3ad268c3` |
+| `origin/dev` | `12ccf41e72d92a0a5f2cc46cf96f3d0e3ad268c3` |
+| Gitee `dev` | `12ccf41e72d92a0a5f2cc46cf96f3d0e3ad268c3` |
+| GitHub `dev` | `12ccf41e72d92a0a5f2cc46cf96f3d0e3ad268c3` |
+
+`git push origin HEAD:refs/heads/dev` 一次写入两个 push URL，Gitee 与 GitHub 均报 `e437e8ed0..12ccf41e7`。pre-push 影响分析：实现批命中 claim 域 8 个文件 / 3 个数据契约，同步资产 `scripts/e2e/claim-full-chain-e2e.mjs` 命中，造数资产同步与真实性判据均 0 违规；归档批 0 Java 变更、0 域命中。
+
+### 8.3 归档现场的取证与处置
+
+| 现场 | 事实 | 处置 |
+|---|---|---|
+| 首次归档被拒 | `Archive ... is already being created`；锁实际在 `openspec/changes/archive/.openspec-archive.lock`（不是仓库根），`pid=36217` 已死、mtime 2026-11-14 20:26，对应 change 已完整归档、无半成品 | 按 CLI 官方提示清理 stale claim 后重试，归档 RC=0 且锁被正常回收；该锁由 `.gitignore:360` 覆盖，未入库 |
+| `scripts/e2e/impact-map.json` 覆盖度变化 | 实现批 pre-commit 生成器把保单详情端点 `cases` 从 `[]` 补回 `["claim-full-chain-e2e.mjs"]`，`covered` 242→243 | 这是同批同步 E2E 资产带来的**正向修复**，不是倒退；`commit --only` 临时索引合并造成真实索引滞后一版（`MM`），已 `git add` 对齐，不另起提交 |
+| `openspec validate --strict`（不带 change 名） | 全仓扫描被环境 SIGTERM（exit 137）中断 | 非门禁判据；归档前对该 change 的 `validate --strict` 已通过，归档后的 `check.sh` 59/59 亦含 DDD 文档防漂移与 doc↔code sync lint |
+
+> 本回执提交自身的 SHA 不入文件（技术上无法自指）；§8.2 四方一致值即「实现 + 归档」交付完成时的终态快照。
