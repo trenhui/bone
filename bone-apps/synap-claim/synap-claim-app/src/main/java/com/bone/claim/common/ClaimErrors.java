@@ -89,7 +89,13 @@ public final class ClaimErrors {
           // 404：任务不存在（或跨租户按不存在处理，不泄露存在性）
           Map.entry(ClaimErrorCodes.SC_CLAIM_TASK_NOT_FOUND, 404),
           // 409：并发自领互斥——乐观锁或唯一键冲突，恰 1 成功、另 1 冲突。不是参数错，重试无用（要刷新列表）
-          Map.entry(ClaimErrorCodes.SC_CLAIM_TASK_CONFLICT, 409));
+          Map.entry(ClaimErrorCodes.SC_CLAIM_TASK_CONFLICT, 409),
+          // 400：配置放宽被拒——棘轮只允许相等或更严格，相对当前生效值判定
+          Map.entry(ClaimErrorCodes.SC_CLAIM_CONFIG_RATCHET_VIOLATION, 400),
+          // 403：写 API 开关关闭（含未配置 fail-closed），配置写请求一律拒绝
+          Map.entry(ClaimErrorCodes.SC_CLAIM_CONFIG_WRITE_DISABLED, 403),
+          // 400：配置请求非法（未知键/类型错误/越界），写入期拒绝而非静默忽略
+          Map.entry(ClaimErrorCodes.SC_CLAIM_CONFIG_INVALID, 400));
 
   static {
     checkEveryCodeRegistered();

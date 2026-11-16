@@ -305,4 +305,20 @@ public final class ClaimErrorCodes {
    * 前者是"抢单撞车"（正常业务现象，计数即可），后者是"任务重复创建"（代码路径问题，需要告警）。 前端也要区分提示：「已被他人领取，请刷新」与「该案件已有在办任务」是两种不同的用户动作。
    */
   public static final String SC_CLAIM_TASK_CONFLICT = "SC_CLAIM_TASK_CONFLICT";
+
+  // ===== AI 配置治理（批 2） =====
+
+  /**
+   * 配置放宽被拒：请求值比当前生效值更宽松。棘轮只允许相等或更严格，写入期拒绝且不改库。
+   *
+   * <p>注意与基线校验的区别：请求 9000 虽低于代码基线 10000，但若当前已收紧到 8000，仍是放宽，必须拒绝。
+   */
+  public static final String SC_CLAIM_CONFIG_RATCHET_VIOLATION =
+      "SC_CLAIM_CONFIG_RATCHET_VIOLATION";
+
+  /** 写 API 关闭或未配置：配置写请求一律拒绝，治理页回落只读（fail-closed，默认不可写）。 */
+  public static final String SC_CLAIM_CONFIG_WRITE_DISABLED = "SC_CLAIM_CONFIG_WRITE_DISABLED";
+
+  /** 配置请求非法：未知键 / 类型错误 / 越界值，写入期拒绝而不是静默忽略（配了不生效）。 */
+  public static final String SC_CLAIM_CONFIG_INVALID = "SC_CLAIM_CONFIG_INVALID";
 }

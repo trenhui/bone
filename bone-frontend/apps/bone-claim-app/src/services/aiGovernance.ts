@@ -1,6 +1,44 @@
 import { apiCall, createApiClient } from '@bone/shared-services';
 import type { ApiResponse } from '@bone/shared-types';
 
+/** 配置治理快照：当前生效阈值 + 写 API 开关态（方案 A 双闸门的数据源）。 */
+export interface AiConfigGovernance {
+  limits: {
+    autoAmountLimit: number;
+    aiManualThreshold: number;
+    aiReviewThreshold: number;
+    ocrManualThreshold: number;
+    dualReviewAmount: number;
+  };
+  writeEnabled: boolean;
+}
+
+/**
+ * 配置字段收紧方向：金额类「更低=更严格」，置信度类「更高=更严格」。
+ * 方向判反等于给棘轮开「先收紧再放宽」的后门，故抽成页面与测试共用的单一真源。
+ */
+export type TightenDirection = 'lower' | 'higher';
+
+export const CONFIG_LIMIT_DIRECTION: Record<keyof AiConfigGovernance['limits'], TightenDirection> = {
+  autoAmountLimit: 'lower',
+  dualReviewAmount: 'lower',
+  aiManualThreshold: 'higher',
+  aiReviewThreshold: 'higher',
+  ocrManualThreshold: 'higher',
+};
+
+/** candidate 相对 current 是否放宽；未提交（null/undefined/非有限数）不判放宽，交后端做合法性校验。 */
+export function isLoosened(
+  key: keyof AiConfigGovernance['limits'],
+  current: number,
+  candidate: number | null | undefined,
+): boolean {
+  if (candidate === null || candidate === undefined || !Number.isFinite(candidate)) return false;
+  return CONFIG_LIMIT_DIRECTION[key] === 'lower'
+    ? candidate > current
+    : candidate < current;
+}
+
 /** AI 治理只读契约：后端 5 个 `/api/v1/claim-ops` GET 端点。 */
 export interface AiCapabilityDeclaration {
   capabilityId: string;
@@ -331,6 +369,8 @@ export function governanceWindow(): { from: string; to: string } {
 }
 
 const opsClient = createApiClient('/api/v1/claim-ops');
+// 配置治理端点挂在网关已白名单的 /api/v1/claims 下，不新开 /api/ai/v1/**。
+const claimsClient = createApiClient('/api/v1/claims');
 
 export const aiGovernanceApi = {
   readiness(): Promise<ReadinessSnapshot> {
@@ -355,5 +395,18 @@ export const aiGovernanceApi = {
   /** 仅由用户显式点击触发；调用方不得放进默认加载或轮询。 */
   providerProbe(): Promise<ProviderProbeReport> {
     return apiCall(opsClient.get<never, ApiResponse<ProviderProbeReport>>('/ai-provider-probe'));
+  },
+
+  // ----- 配置治理（批 2）：读写同源，writeEnabled=false 时页面不得展示提交控件 -----
+
+  config(): Promise<AiConfigGovernance> {
+    return apiCall(
+      claimsClient.get<never, ApiResponse<AiConfigGovernance>>('/ai/config/governance'),
+    );
+  },
+  updateTriageLimits(payload: Partial<AiConfigGovernance['limits']>): Promise<void> {
+    return apiCall(
+      claimsClient.put<never, ApiResponse<void>>('/ai/config/triage-limits', payload),
+    );
   },
 };

@@ -3,11 +3,13 @@ import { describe, it, expect } from 'vitest';
 import {
   CALIBRATION_VERDICTS,
   ROLLOUT_STAGES,
+  CONFIG_LIMIT_DIRECTION,
   calibrationEvidenceMeta,
   capabilityStateMeta,
   drillMeta,
   gatesMeta,
   governanceWindow,
+  isLoosened,
   metricText,
   participationMeta,
   probeMeta,
@@ -292,5 +294,49 @@ describe('governanceWindow 是 UTC 日界单一真源', () => {
     const { from, to } = governanceWindow();
     expect(from).toMatch(/^\d{4}-\d{2}-\d{2}T00:00:00Z$/);
     expect(to).toMatch(/^\d{4}-\d{2}-\d{2}T00:00:00Z$/);
+  });
+});
+
+describe('CONFIG_LIMIT_DIRECTION 收紧方向真源（批 2）', () => {
+  it('5 字段方向与后端逐字段规则一致：金额更低更严，置信度更高更严', () => {
+    expect(CONFIG_LIMIT_DIRECTION).toEqual({
+      autoAmountLimit: 'lower',
+      dualReviewAmount: 'lower',
+      aiManualThreshold: 'higher',
+      aiReviewThreshold: 'higher',
+      ocrManualThreshold: 'higher',
+    });
+  });
+
+  it('金额放宽判红、收紧放行', () => {
+    expect(isLoosened('autoAmountLimit', 8000, 9000)).toBe(true);
+    expect(isLoosened('autoAmountLimit', 8000, 6000)).toBe(false);
+    expect(isLoosened('dualReviewAmount', 8000, 8001)).toBe(true);
+  });
+
+  it('置信度放宽判红、收紧放行', () => {
+    expect(isLoosened('aiManualThreshold', 0.7, 0.6)).toBe(true);
+    expect(isLoosened('aiManualThreshold', 0.7, 0.8)).toBe(false);
+    expect(isLoosened('ocrManualThreshold', 0.7, 0.69)).toBe(true);
+  });
+
+  it('相等不判放宽：原值允许提交', () => {
+    const keys = Object.keys(CONFIG_LIMIT_DIRECTION) as Array<keyof typeof CONFIG_LIMIT_DIRECTION>;
+    for (const key of keys) {
+      expect(isLoosened(key, 0.7, 0.7)).toBe(false);
+    }
+  });
+
+  it('未提交字段不判放宽，交后端做合法性校验', () => {
+    for (const v of [null, undefined, Number.NaN]) {
+      expect(isLoosened('aiReviewThreshold', 0.7, v)).toBe(false);
+    }
+  });
+
+  it('互补变异：同一数值变化在金额/置信度方向判定相反，证明方向判据有判别力', () => {
+    expect(isLoosened('autoAmountLimit', 0.7, 0.8)).toBe(true);   // 升高 = 放宽
+    expect(isLoosened('aiManualThreshold', 0.7, 0.8)).toBe(false); // 升高 = 收紧
+    expect(isLoosened('autoAmountLimit', 0.7, 0.6)).toBe(false);  // 降低 = 收紧
+    expect(isLoosened('aiManualThreshold', 0.7, 0.6)).toBe(true); // 降低 = 放宽
   });
 });

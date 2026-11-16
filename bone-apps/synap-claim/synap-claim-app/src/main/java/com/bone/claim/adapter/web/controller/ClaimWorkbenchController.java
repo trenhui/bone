@@ -1,13 +1,16 @@
 package com.bone.claim.adapter.web.controller;
 
 import com.bone.claim.adapter.web.dto.request.AiFeedbackEventReq;
+import com.bone.claim.adapter.web.dto.response.AiConfigGovernanceResp;
 import com.bone.claim.adapter.web.dto.response.AiFeedbackEventResp;
 import com.bone.claim.adapter.web.dto.response.AiFeedbackSummaryResp;
+import com.bone.claim.application.AiConfigGovernanceService;
 import com.bone.claim.application.AiFeedbackCommand;
 import com.bone.claim.application.ClaimFeedbackApplicationService;
 import com.bone.claim.application.ClaimSearchApplicationService;
 import com.bone.claim.application.ClaimTaskApplicationService;
 import com.bone.claim.application.ClaimTaskApplicationService.MyTaskRow;
+import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.projection.ClaimSearchHit;
@@ -17,11 +20,13 @@ import com.bone.core.security.auth.CurrentOperator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -38,6 +43,8 @@ public class ClaimWorkbenchController {
   private final ClaimSearchApplicationService claimSearchApplicationService;
   private final ClaimFeedbackApplicationService claimFeedbackApplicationService;
   private final ClaimTaskApplicationService claimTaskApplicationService;
+  private final AiConfigGovernanceService aiConfigGovernanceService;
+  private final TenantPort tenantPort;
 
   @Operation(
       summary = "案件跨键检索",
@@ -75,6 +82,31 @@ public class ClaimWorkbenchController {
   @GetMapping("/ai/feedback/summary")
   public ApiResponse<AiFeedbackSummaryResp> summary() {
     return ApiResponse.success(claimFeedbackApplicationService.summary());
+  }
+
+  @Operation(
+      summary = "AI 配置治理快照",
+      description =
+          "当前生效分诊阈值 + 写 API 开关态；治理页据此渲染只读或可编辑（双闸门的服务端数据源）。" + "开关未配置时 writeEnabled=false。")
+  @PreAuthorize("hasAuthority('claim:claims:read')")
+  @GetMapping("/ai/config/governance")
+  public ApiResponse<AiConfigGovernanceResp> configGovernance() {
+    long tenantId = tenantPort.currentTenantId();
+    return ApiResponse.success(
+        new AiConfigGovernanceResp(
+            aiConfigGovernanceService.currentLimits(tenantId),
+            aiConfigGovernanceService.isWriteEnabled(tenantId)));
+  }
+
+  @Operation(
+      summary = "受控写入 AI 分诊阈值",
+      description = "逐字段比较当前生效值，只允许相等或更严格；放宽 / 未知键 / 写开关关闭一律拒绝。" + "审计写 remark + 日志，零新增 DDL。")
+  @PreAuthorize("hasAuthority('claim:review:write')")
+  @PutMapping("/ai/config/triage-limits")
+  public ApiResponse<Void> updateTriageLimits(@RequestBody Map<String, Object> requested) {
+    long tenantId = tenantPort.currentTenantId();
+    aiConfigGovernanceService.updateTriageLimits(tenantId, CurrentOperator.requireId(), requested);
+    return ApiResponse.success(null);
   }
 
   @Operation(

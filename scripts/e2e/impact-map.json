@@ -3923,6 +3923,7 @@
    "controller": "ClaimWorkbenchController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
    "cases": [
+    "synap-claim-ai-config-governance-e2e.py",
     "synap-claim-workbench-feedback-e2e.mjs"
    ]
   },
@@ -3932,6 +3933,7 @@
    "controller": "ClaimWorkbenchController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
    "cases": [
+    "synap-claim-ai-config-governance-e2e.py",
     "synap-claim-workbench-feedback-e2e.mjs"
    ]
   },
@@ -3942,6 +3944,24 @@
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
    "cases": [
     "synap-claim-workbench-feedback-e2e.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/ai/config/governance",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "synap-claim-ai-config-governance-e2e.py"
+   ]
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/claims/ai/config/triage-limits",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "synap-claim-ai-config-governance-e2e.py"
    ]
   },
   {
@@ -4514,8 +4534,8 @@
   }
  ],
  "summary": {
-  "endpoints": 547,
-  "covered": 225,
+  "endpoints": 549,
+  "covered": 227,
   "uncovered": 322
  }
 }

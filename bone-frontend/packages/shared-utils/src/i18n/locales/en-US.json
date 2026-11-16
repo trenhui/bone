@@ -287,7 +287,10 @@
     "SC_CLAIM_AI_FEEDBACK_CONFLICT": "Same event id already stored with a different payload; refusing to overwrite the audit fact",
     "SC_CLAIM_SEARCH_KEYWORD_INVALID": "Invalid claim search parameters (keyword length 2..64, unsafe chars, limit 1..20); guards reject explicitly instead of silently truncating",
     "SC_CLAIM_TASK_NOT_FOUND": "Task not found (or not visible in this tenant)",
-    "SC_CLAIM_TASK_CONFLICT": "Task was already claimed by someone else, or an active task of the same type already exists for this claim. Please refresh."
+    "SC_CLAIM_TASK_CONFLICT": "Task was already claimed by someone else, or an active task of the same type already exists for this claim. Please refresh.",
+    "SC_CLAIM_CONFIG_RATCHET_VIOLATION": "Config tightening only: values looser than the current effective value are rejected",
+    "SC_CLAIM_CONFIG_WRITE_DISABLED": "Config write is disabled or not configured; the page is read-only",
+    "SC_CLAIM_CONFIG_INVALID": "Invalid config request (unknown key, wrong type, or out of range)"
   },
   "enums": {
     "ORDER_STATUS": {
