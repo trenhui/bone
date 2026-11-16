@@ -2,10 +2,10 @@
 change: synapclaim-independent-re-review
 design-doc: openspec/changes/synapclaim-independent-re-review/design.md
 base-ref: 08dd98997762db523696bd9dbfba0a456cf641a8
-baseline-head: 285827275
-baseline-manifest-order: 124
+baseline-head: 4d9579f2e
+baseline-manifest-order: 125
 baseline-gate: 59/59
-plan-revision: 3
+plan-revision: 4
 ---
 
 <!-- comet-task-authority: openspec/changes/synapclaim-independent-re-review/tasks.md -->
@@ -17,9 +17,9 @@ plan-revision: 3
 
 ## 1. 基线事实（2026-11-15 实证，校正 design 中的过时口径）
 
-- `dev` HEAD = `285827275`「归集并行会话在途资产并同批同步 E2E 投影契约」，主树 `git status --porcelain` = **0 在途**。`ClaimWorkbenchController` / `ClaimSearchApplicationService` / `AiFeedbackRules` 经 `git cat-file -e HEAD:<f>` 确认 IN HEAD。
+- `dev` HEAD = `4d9579f2e`「merge(synap-claim): 合并批1任务分配工作台进dev解锁批2/3/4依赖」（2026-11-16 合并批1并推送双远端，四方 SHA 一致），主树 `git status --porcelain` = **0 在途**。`ClaimWorkbenchController` / `ClaimSearchApplicationService` / `AiFeedbackRules` 及批1 `0125_synap_claim_task.sql` 经确认 IN HEAD。
 - `./scripts/check.sh` 实跑 13 分钟：`CHECK_EXIT=0`、`[59/59]`、末行「✅ 本地自检通过！」。日志中的 `[FAIL]` / `❌` 全部落在 `[42/59]` 种子校验**负向探针**内部，非步骤级红点 —— 判据看 exit 0 + 末行。
-- `scripts/migration/migration-manifest.json`：`entries=131` / `executableCount=124`，末尾 `order=124`（`0124_synap_claim_ai_feedback_event.sql` 已入库并登记）。⇒ **文件前缀 `0125_` 与 `order` 是两回事**（详见第 7 节并行分支迁移合并协议）：`order` 是 `1..N` 连续执行序号，只能取清单 `max(order)+1`，**禁止跳号 / 预留号段 / 四批各写同一个号**；脚本 + 清单 + `bone-init.sql` 同批入库；已发迁移（含注释）不回改（sha256 journal）。
+- `scripts/migration/migration-manifest.json`：`entries=132` / `executableCount=125`，末尾 `order=125`（`0124_synap_claim_ai_feedback_event.sql` + 批1 `0125_synap_claim_task.sql` 均已入库并登记）。⇒ **文件前缀 `0125_` 与 `order` 是两回事**（详见第 7 节并行分支迁移合并协议）：`order` 是 `1..N` 连续执行序号，只能取清单 `max(order)+1`，**禁止跳号 / 预留号段 / 四批各写同一个号**；脚本 + 清单 + `bone-init.sql` 同批入库；已发迁移（含注释）不回改（sha256 journal）。
 - `ClaimWorkbenchController` 挂 `/api/v1/claims/**`，已有 `GET /search`（keyword + limit 跨键检索，**无 total / 分页**）与 3 个 AI 回流端点，权限 `claim:claims:read` / `claim:review:write`。
 - `ClaimErrorCodes.java` / `ClaimErrors.java` 已被并行会话改动（新增 `CLAIM_AI_FEEDBACK_CONFLICT`→409、`CLAIM_SEARCH_KEYWORD_INVALID`→400），台账 `doc/architecture/Bone-错误码登记.md` §6 第 622/623 行已登记。⇒ 新增错误码须**基于 HEAD 追加**，且三处必齐（常量 + `DEFAULT_HTTP_STATUS` + 前端两语言包 + 台账 §6）。
 - `t_claim_review_record` 已存在（`0101_synap_claim_phase1_record_tables.sql` 建表，append-only，含 `uk_claim_role_reviewer`），勿重复建同义表。
