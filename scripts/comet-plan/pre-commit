@@ -1,0 +1,33 @@
+#!/bin/sh
+# Scoped verification for Comet Classic Build Plan (docs/superpowers/plans/*.md) only.
+# 校验对象一律为「暂存快照」(git show :<path>)，不读工作树，避免暂存旧版/工作树新版漏检。
+# 不跳过钩子、不用 --no-verify、不改仓库门禁脚本。
+set -eu
+cd "$(git rev-parse --show-toplevel)"
+files=$(git -c core.quotepath=false diff --cached --name-only --diff-filter=ACM)
+[ -n "$files" ] || { echo "[plan-verify] 暂存区为空，拒绝"; exit 1; }
+echo "[plan-verify] 1/5 暂存范围：仅允许 docs/superpowers/plans/*.md（含修改 M）"
+for f in $files; do
+  case "$f" in
+    docs/superpowers/plans/*.md) ;;
+    *) echo "[plan-verify] 拒绝：非 plan 路径 $f"; exit 1 ;;
+  esac
+done
+echo "[plan-verify]   PASS 范围（$(echo "$files" | wc -l | tr -d ' ') 个文件）"
+echo "[plan-verify] 2/5 SDK canonical plan 校验（authority + 全 task ID 引用 + 无第二份账本）"
+for f in $files; do
+  git show ":$f" | node "$(git rev-parse --show-toplevel)/scripts/comet-plan/verify.mjs" "$f" || exit 1
+done
+echo "[plan-verify] 3/5 基线漂移同源校验（frontmatter vs 主树 HEAD 清单）"
+for f in $files; do
+  git show ":$f" | python3 "$(git rev-parse --show-toplevel)/scripts/comet-plan/verify-baseline.py" "$f" || exit 1
+done
+echo "[plan-verify] 4/5 OpenSpec 规格校验（validate --strict）"
+for f in $files; do
+  c=$(basename "$f" .md | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//')
+  comet classic openspec -- validate "$c" --strict || { echo "[plan-verify] FAIL validate $c"; exit 1; }
+  echo "[plan-verify]   validate OK $c"
+done
+echo "[plan-verify] 5/5 空白与补丁格式"
+git diff --cached --check
+echo "[plan-verify] ✅ 五道门禁全部通过"

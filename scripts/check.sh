@@ -874,6 +874,15 @@ fi
 # blocking 步骤额外跑 --self-test 注入反证，本地只做快反馈（3 判据子集）。
 # 判据集合与可执行语义受门禁 A10.17 守护：CI / 本地一键入口 = 全集，本块 = 快反馈子集；
 # 注释掉本块命令 / 给 CI 步骤加 continue-on-error 或 if: 都会转红，不是口头约定。
+# G0-comet-plan（2026-11-16 用户批准 L3）：四批 Build Plan 的 scoped 门禁执行器从
+# /tmp 迁到 scripts/comet-plan/，此处接调用行且带 --check 保证不是「写了没人调」。
+# 只守执行器 liveness（存在 / 无 /tmp 回流 / 可加载）；plan 的 baseline-head 是时效
+# 判据，只能在 plan 提交时由 scoped pre-commit 校验，否则 dev 一前进全仓恒红。
+if ! bash scripts/check-comet-plan.sh --check > /dev/null; then
+  echo -e "${RED}❌ Comet 四批 plan 门禁执行器不可用（换机失效 / 路径回流 / 加载失败）${RESET}"
+  echo -e "${DIM}  复核：bash scripts/check-comet-plan.sh --check${RESET}"
+  exit_code=1
+fi
 if ! python3 tools/check_procura_alignment.py > /dev/null; then
   echo -e "${RED}❌ procuraAI 文档族对齐门禁失败（分期真源 / InvoiceMatched 全族字段 / 合规条款）${RESET}"
   echo -e "${DIM}  复核：python3 tools/check_procura_alignment.py${RESET}"
