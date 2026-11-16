@@ -59,6 +59,17 @@ bone:
       secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
       token-prefix: "Bearer "
       header-name: Authorization
+  # 采购供应商主数据切片（M01 supplier-mdm）能力开关。
+  # 默认 false ⇒ SupplierApplicationService 与 SupplierController 都不装配，不对外暴露「能调用但落不了库」的假能力。
+  # 打开前必须先提供以下端口的生产实现（本切片只有测试内存夹具），缺任一 bean 上下文即启动失败（fail-closed）：
+  #   出站仓储：SupplierRepositoryPort / VendorRepositoryPort / LegalEntityRepositoryPort
+  #   跨域事实：SupplierExitFactsPort（PO/合同/应付）、SupplierOnboardingFactsPort（变更请求批准）、
+  #             VendorGateFactsPort（开通五项 + 停用两项）、PaymentBlockReleaseReviewPort（人工复核留痕）
+  #   守卫裁决：SupplierExitGuard / SupplierOnboardingGuard / VendorActivationGuard
+  # EntityKeyMappingPort 与 CurrentUserPort 复用平台既有实现，不在上述清单内。
+  procurement:
+    supplier-mdm:
+      enabled: ${BONE_PROCUREMENT_SUPPLIER_MDM_ENABLED:false}
 
 masterdata:
   # 由 MasterDataProperties 绑定并在用例入口校验；kebab-case 对应其 camelCase 字段
