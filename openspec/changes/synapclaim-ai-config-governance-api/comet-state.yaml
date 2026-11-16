@@ -2,7 +2,7 @@
 change_id: 16c05966-80c0-406a-92a5-0e4c68322357
 workflow: full
 language: zh-CN
-phase: build
+phase: verify
 context_compression: off
 build_mode: executing-plans
 build_pause: null
@@ -31,7 +31,7 @@ classic_profile: null
 classic_migration: null
 run_checkpoint:
   schema: comet.workflow-run-checkpoint.v1
-  hash: 5249d84e336d6beb87073b84dae29a4cb63f48c919e325746247630627669b85
+  hash: e700748e60f956498e70ce5e3c60c26261e39eac4bb6919f1db2c82a4bbd9f1f
   run:
     protocolVersion: 1
     schemaVersion: 1
@@ -58,7 +58,7 @@ run_checkpoint:
       branchStatus: pending
       buildMode: executing-plans
       buildPause: null
-      checkEpoch: 2
+      checkEpoch: 3
       classicMigration: null
       classicProfile: null
       contextCompression: off
@@ -69,7 +69,7 @@ run_checkpoint:
       handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
       isolation: worktree
       language: zh-CN
-      phase: build
+      phase: verify
       plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
       reviewMode: thorough
       subagentDispatch: null
@@ -81,7 +81,7 @@ run_checkpoint:
       verifyResult: pending
       workflow: full
     status: running
-    sequence: 16
+    sequence: 19
     actions:
       - attempt: 3
         claim:
@@ -945,6 +945,15 @@ run_checkpoint:
         stepId: full.build.plan
         type: invoke_skill
       - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-ai-config-governance-api:16/1
+          token: portable-d6093f4101553d5682e1294672ca1fe999c6d398137bd9b5621b53eeab20d0dc
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
         id: synapclaim-ai-config-governance-api:16
         input:
           input:
@@ -966,15 +975,152 @@ run_checkpoint:
               contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
               ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
         inputHash: 755a235ed36fc050670a78864e23403d22d567a71fe016f3e9ce1385c0123dd6
+        outcome:
+          actionId: synapclaim-ai-config-governance-api:16
+          attempt: 1
+          claimToken: portable-d6093f4101553d5682e1294672ca1fe999c6d398137bd9b5621b53eeab20d0dc
+          inputHash: 755a235ed36fc050670a78864e23403d22d567a71fe016f3e9ce1385c0123dd6
+          outcomeId: bd233b69-5bcc-4a59-88c9-0bbf39bdcb66
+          output:
+            event: build-complete
+          status: succeeded
         protocolVersion: 1
-        receipts: []
+        receipts:
+          - hash: 01622ace26c4bcc58a45bef8c8413278c442ba866543a79091f084574dcf7421
+            outcomeId: bd233b69-5bcc-4a59-88c9-0bbf39bdcb66
         reconciliations: []
         ref: comet-build
         requiredCapabilities: []
         retry: manual
         runId: synapclaim-ai-config-governance-api
-        status: pending
+        status: succeeded
         stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-b514340df4b557d8abe4a558c781bf4a0c0d47e29fb2c02d10cec1f20d7e4b94
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-ai-config-governance-api:17
+        input:
+          input:
+            change: synapclaim-ai-config-governance-api
+            changeDir: openspec/changes/synapclaim-ai-config-governance-api
+            workspaceBaseline:
+              ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+          outputs:
+            full.build.execute:
+              event: build-complete
+            full.build.plan:
+              designEvidence:
+                contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              planEvidence:
+                contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
+                ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              taskRevision: 408098594af315f02d3584812a184a6a938129bb881bc2eaed264240a9b38806
+            full.build.plan.evidence:
+              contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
+              ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+        inputHash: 274c73bf92fe7719cef654e0980aeaa73c476601d3cfb8077b5dc951d2086ea1
+        outcome:
+          actionId: synapclaim-ai-config-governance-api:17
+          attempt: 1
+          claimToken: portable-b514340df4b557d8abe4a558c781bf4a0c0d47e29fb2c02d10cec1f20d7e4b94
+          inputHash: 274c73bf92fe7719cef654e0980aeaa73c476601d3cfb8077b5dc951d2086ea1
+          outcomeId: 1d7f0b03-5d22-4878-b737-ef412c49fc58
+          output:
+            argv:
+              - ./scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 2ab4e4a8c56540d51ab1babf6db49de4bb126b8ca84eb61f8c3ad2529faf8e66
+            cwd: .
+            environment: 073f1dfd37e2665e6d31016729cc8430b6211dbeebbd1b27a22ec6603cc673bf
+            exitCode: 0
+            inputAfter: 95fc114ea59bebcb5521bc3fd82519712cf3c37b0473d9aee3545a924008d641
+            inputBefore: 95fc114ea59bebcb5521bc3fd82519712cf3c37b0473d9aee3545a924008d641
+            manifestHash: cb08349ff33fc884d8023e616d411e89743a18b710ea3a3d2c9d0c86af5f3e2b
+            manifestRef: .comet/runtime/classic-sdk-checks/d9d05944f3e21379aca4178e469e3d84120c2338e13f7a49425ff12c04eeb1b5/00265d0b-e99a-4506-bc80-37cbb92e0ed0.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/d9d05944f3e21379aca4178e469e3d84120c2338e13f7a49425ff12c04eeb1b5/cc0e4214-4b0e-4756-9dd0-6a9cc7125cbe.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 600000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 6385c08c67118fd716149f59a571514a70d69efc678d20d65a29a3366b3540fd
+            outcomeId: 1d7f0b03-5d22-4878-b737-ef412c49fc58
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-ai-config-governance-api
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        id: synapclaim-ai-config-governance-api:19
+        input:
+          input:
+            change: synapclaim-ai-config-governance-api
+            changeDir: openspec/changes/synapclaim-ai-config-governance-api
+            workspaceBaseline:
+              ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
+          outputs:
+            full.build.check:
+              argv:
+                - ./scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: 2ab4e4a8c56540d51ab1babf6db49de4bb126b8ca84eb61f8c3ad2529faf8e66
+              cwd: .
+              environment: 073f1dfd37e2665e6d31016729cc8430b6211dbeebbd1b27a22ec6603cc673bf
+              exitCode: 0
+              inputAfter: 95fc114ea59bebcb5521bc3fd82519712cf3c37b0473d9aee3545a924008d641
+              inputBefore: 95fc114ea59bebcb5521bc3fd82519712cf3c37b0473d9aee3545a924008d641
+              manifestHash: cb08349ff33fc884d8023e616d411e89743a18b710ea3a3d2c9d0c86af5f3e2b
+              manifestRef: .comet/runtime/classic-sdk-checks/d9d05944f3e21379aca4178e469e3d84120c2338e13f7a49425ff12c04eeb1b5/00265d0b-e99a-4506-bc80-37cbb92e0ed0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/d9d05944f3e21379aca4178e469e3d84120c2338e13f7a49425ff12c04eeb1b5/cc0e4214-4b0e-4756-9dd0-6a9cc7125cbe.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 600000
+            full.build.check.evidence:
+              contentHash: 2ab4e4a8c56540d51ab1babf6db49de4bb126b8ca84eb61f8c3ad2529faf8e66
+              ref: .comet/runtime/classic-sdk-checks/d9d05944f3e21379aca4178e469e3d84120c2338e13f7a49425ff12c04eeb1b5/cc0e4214-4b0e-4756-9dd0-6a9cc7125cbe.log
+            full.build.execute:
+              event: build-complete
+            full.build.plan:
+              designEvidence:
+                contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              planEvidence:
+                contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
+                ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              taskRevision: 408098594af315f02d3584812a184a6a938129bb881bc2eaed264240a9b38806
+            full.build.plan.evidence:
+              contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
+              ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+        inputHash: 15cf7c2dedad821cc289732138a1735149f45ad1b7181ccd85ef0808b6cbb1af
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-ai-config-governance-api
+        status: pending
+        stepId: full.verify.run
         type: invoke_skill
     commands:
       - id: 13469ce589ccfaa438d283fe1fdaf36e4bf8208e5ede89673440fa16b3b4b197
@@ -1313,6 +1459,78 @@ run_checkpoint:
               contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
               ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
         sequence: 16
+      synapclaim-ai-config-governance-api:17:
+        results:
+          full.build.execute:
+            sequence: 16
+            value:
+              event: build-complete
+          full.build.plan:
+            sequence: 14
+            value:
+              designEvidence:
+                contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              planEvidence:
+                contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
+                ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              taskRevision: 408098594af315f02d3584812a184a6a938129bb881bc2eaed264240a9b38806
+          full.build.plan.evidence:
+            sequence: 15
+            value:
+              contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
+              ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+        sequence: 17
+      synapclaim-ai-config-governance-api:19:
+        results:
+          full.build.check:
+            sequence: 17
+            value:
+              argv:
+                - ./scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: 2ab4e4a8c56540d51ab1babf6db49de4bb126b8ca84eb61f8c3ad2529faf8e66
+              cwd: .
+              environment: 073f1dfd37e2665e6d31016729cc8430b6211dbeebbd1b27a22ec6603cc673bf
+              exitCode: 0
+              inputAfter: 95fc114ea59bebcb5521bc3fd82519712cf3c37b0473d9aee3545a924008d641
+              inputBefore: 95fc114ea59bebcb5521bc3fd82519712cf3c37b0473d9aee3545a924008d641
+              manifestHash: cb08349ff33fc884d8023e616d411e89743a18b710ea3a3d2c9d0c86af5f3e2b
+              manifestRef: .comet/runtime/classic-sdk-checks/d9d05944f3e21379aca4178e469e3d84120c2338e13f7a49425ff12c04eeb1b5/00265d0b-e99a-4506-bc80-37cbb92e0ed0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/d9d05944f3e21379aca4178e469e3d84120c2338e13f7a49425ff12c04eeb1b5/cc0e4214-4b0e-4756-9dd0-6a9cc7125cbe.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 600000
+          full.build.check.evidence:
+            sequence: 18
+            value:
+              contentHash: 2ab4e4a8c56540d51ab1babf6db49de4bb126b8ca84eb61f8c3ad2529faf8e66
+              ref: .comet/runtime/classic-sdk-checks/d9d05944f3e21379aca4178e469e3d84120c2338e13f7a49425ff12c04eeb1b5/cc0e4214-4b0e-4756-9dd0-6a9cc7125cbe.log
+          full.build.execute:
+            sequence: 16
+            value:
+              event: build-complete
+          full.build.plan:
+            sequence: 14
+            value:
+              designEvidence:
+                contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              planEvidence:
+                contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
+                ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              taskRevision: 408098594af315f02d3584812a184a6a938129bb881bc2eaed264240a9b38806
+          full.build.plan.evidence:
+            sequence: 15
+            value:
+              contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
+              ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+        sequence: 19
       synapclaim-ai-config-governance-api:4:
         results:
           full.open:
@@ -2210,9 +2428,86 @@ run_checkpoint:
           ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
           contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
           submissionId: 64c3ee52-4498-4a00-b1b4-09d901ed1a37
+      - id: synapclaim-ai-config-governance-api:18
+        stepId: full.build.check.evidence
+        sequence: 18
+        kind: classic-build-check
+        status: resolved
+        results:
+          full.build.check:
+            sequence: 17
+            value:
+              argv:
+                - ./scripts/check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: 2ab4e4a8c56540d51ab1babf6db49de4bb126b8ca84eb61f8c3ad2529faf8e66
+              cwd: .
+              environment: 073f1dfd37e2665e6d31016729cc8430b6211dbeebbd1b27a22ec6603cc673bf
+              exitCode: 0
+              inputAfter: 95fc114ea59bebcb5521bc3fd82519712cf3c37b0473d9aee3545a924008d641
+              inputBefore: 95fc114ea59bebcb5521bc3fd82519712cf3c37b0473d9aee3545a924008d641
+              manifestHash: cb08349ff33fc884d8023e616d411e89743a18b710ea3a3d2c9d0c86af5f3e2b
+              manifestRef: .comet/runtime/classic-sdk-checks/d9d05944f3e21379aca4178e469e3d84120c2338e13f7a49425ff12c04eeb1b5/00265d0b-e99a-4506-bc80-37cbb92e0ed0.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/d9d05944f3e21379aca4178e469e3d84120c2338e13f7a49425ff12c04eeb1b5/cc0e4214-4b0e-4756-9dd0-6a9cc7125cbe.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 600000
+          full.build.execute:
+            sequence: 16
+            value:
+              event: build-complete
+          full.build.plan:
+            sequence: 14
+            value:
+              designEvidence:
+                contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
+                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              planEvidence:
+                contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
+                ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+              taskRevision: 408098594af315f02d3584812a184a6a938129bb881bc2eaed264240a9b38806
+          full.build.plan.evidence:
+            sequence: 15
+            value:
+              contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
+              ref: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/d9d05944f3e21379aca4178e469e3d84120c2338e13f7a49425ff12c04eeb1b5/cc0e4214-4b0e-4756-9dd0-6a9cc7125cbe.log
+          contentHash: 2ab4e4a8c56540d51ab1babf6db49de4bb126b8ca84eb61f8c3ad2529faf8e66
+          submissionId: 286f1ab3-5e31-4e69-ab37-ccad3f79a576
     ready: []
     joins: {}
     outputs:
+      full.build.check:
+        sequence: 17
+        value:
+          argv:
+            - ./scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 2ab4e4a8c56540d51ab1babf6db49de4bb126b8ca84eb61f8c3ad2529faf8e66
+          cwd: .
+          environment: 073f1dfd37e2665e6d31016729cc8430b6211dbeebbd1b27a22ec6603cc673bf
+          exitCode: 0
+          inputAfter: 95fc114ea59bebcb5521bc3fd82519712cf3c37b0473d9aee3545a924008d641
+          inputBefore: 95fc114ea59bebcb5521bc3fd82519712cf3c37b0473d9aee3545a924008d641
+          manifestHash: cb08349ff33fc884d8023e616d411e89743a18b710ea3a3d2c9d0c86af5f3e2b
+          manifestRef: .comet/runtime/classic-sdk-checks/d9d05944f3e21379aca4178e469e3d84120c2338e13f7a49425ff12c04eeb1b5/00265d0b-e99a-4506-bc80-37cbb92e0ed0.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/d9d05944f3e21379aca4178e469e3d84120c2338e13f7a49425ff12c04eeb1b5/cc0e4214-4b0e-4756-9dd0-6a9cc7125cbe.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 600000
+      full.build.check.evidence:
+        sequence: 18
+        value:
+          contentHash: 2ab4e4a8c56540d51ab1babf6db49de4bb126b8ca84eb61f8c3ad2529faf8e66
+          ref: .comet/runtime/classic-sdk-checks/d9d05944f3e21379aca4178e469e3d84120c2338e13f7a49425ff12c04eeb1b5/cc0e4214-4b0e-4756-9dd0-6a9cc7125cbe.log
       full.build.configure:
         sequence: 9
         value:
@@ -2242,6 +2537,10 @@ run_checkpoint:
                 reviewMode: thorough
                 subagentDispatch: null
                 tddMode: tdd
+      full.build.execute:
+        sequence: 16
+        value:
+          event: build-complete
       full.build.plan:
         sequence: 14
         value:
@@ -2370,6 +2669,6 @@ run_checkpoint:
           contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
     children: []
     lineage: []
-  sourceRevision: 32
-  sourceHash: 41d2ef1bc5fd407e78519076d6796ce9dd971d3031bba9ed86bfb424dff4f3a5
-check_epoch: 2
+  sourceRevision: 37
+  sourceHash: b5a236ee53f926c0f65244421de1afe0a914e363280368915f9660f8eff17cb7
+check_epoch: 3
