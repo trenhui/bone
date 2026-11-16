@@ -2,10 +2,10 @@
 change: synapclaim-task-assignment-workbench
 design-doc: openspec/changes/synapclaim-task-assignment-workbench/design.md
 base-ref: 9e45e5abf3361a6c970ef370e5d957d81d97378f
-baseline-head: 285827275
+baseline-head: 712087550
 baseline-manifest-order: 124
 baseline-gate: 59/59
-plan-revision: 3
+plan-revision: 5
 ---
 
 <!-- comet-task-authority: openspec/changes/synapclaim-task-assignment-workbench/tasks.md -->
