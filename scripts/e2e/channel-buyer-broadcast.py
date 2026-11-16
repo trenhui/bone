@@ -18,12 +18,29 @@ from __future__ import annotations
 import argparse
 import urllib.parse
 
-from e2e_lib import config, http, report
+from e2e_lib import config, fixtures as fx, http, report
 from e2e_lib.http import ecode
 from e2e_lib.report import check
 
 PRODUCT = "900002"          # 与 multichannel.py 的 900001 隔离，避免互相干扰
 BUYER_ID = "E2E-BUYER-0001"
+
+# 收货信息统一取自共享词表（造数真实性门禁 R1/R5：禁「张三 / 某省某市某区」）
+_DEMO = fx.dataset("channel-buyer-demo")
+
+
+def _receiver():
+    return {
+        "receiverName": _DEMO.person(),
+        "receiverPhone": "1%d%09d" % (_DEMO.rng.randint(3, 9), _DEMO.rng.randint(0, 999999999)),
+        "receiverAddress": "%s市高新区科技大道%d号" % (_DEMO.city, _DEMO.rng.randint(1, 199)),
+    }
+
+
+RECEIVER_A = _receiver()
+RECEIVER_B = _receiver()
+ITEM_TITLE = _DEMO.sku()[0]      # 固定商品名：幂等/同单多步必须引用同一值
+BUYER_NICK = _DEMO.person()     # 固定买家昵称：同上
 
 
 def data_of(resp):
@@ -73,10 +90,10 @@ def main() -> int:
     st, j = http.call("POST", "/channel-orders/pull", {
         "channelCode": "TAOBAO",
         "channelOrderNo": "E2E-ORDER-0001",
-        "buyerNick": "E2E买家",
+        "buyerNick": BUYER_NICK,
         "buyerId": BUYER_ID,
-        "receiverName": "张三", "receiverPhone": "13800000000", "receiverAddress": "某省某市某区 1 号",
-        "lines": [{"outerSkuId": "TB" + PRODUCT, "title": "E2E商品", "quantity": 2, "unitPrice": 50.00}],
+        **RECEIVER_A,
+        "lines": [{"outerSkuId": "TB" + PRODUCT, "title": ITEM_TITLE, "quantity": 2, "unitPrice": 50.00}],
     })
     check("拉单（带 buyerId）落单成功", st == 200, f"status={st} body={str(j)[:200]}")
     first_order_id = (data_of(j) or "") if isinstance(data_of(j), str) else None
@@ -132,10 +149,10 @@ def main() -> int:
     st, j = http.call("POST", "/channel-orders/pull", {
         "channelCode": "TAOBAO",
         "channelOrderNo": "E2E-ORDER-0002",
-        "buyerNick": "E2E买家",
+        "buyerNick": BUYER_NICK,
         "buyerId": BUYER_ID,
-        "receiverName": "张三", "receiverPhone": "13800000000", "receiverAddress": "某省某市某区 1 号",
-        "lines": [{"outerSkuId": "TB" + PRODUCT, "title": "E2E商品", "quantity": 1, "unitPrice": 50.00}],
+        **RECEIVER_A,
+        "lines": [{"outerSkuId": "TB" + PRODUCT, "title": ITEM_TITLE, "quantity": 1, "unitPrice": 50.00}],
     })
     second_order_id = (data_of(j) or "") if isinstance(data_of(j), str) else None
     check("绑定后再拉单成功", st == 200, f"status={st} body={str(j)[:200]}")
@@ -144,10 +161,10 @@ def main() -> int:
     st, j = http.call("POST", "/channel-orders/pull", {
         "channelCode": "TAOBAO",
         "channelOrderNo": "E2E-ORDER-0002",
-        "buyerNick": "E2E买家",
+        "buyerNick": BUYER_NICK,
         "buyerId": BUYER_ID,
-        "receiverName": "张三", "receiverPhone": "13800000000", "receiverAddress": "某省某市某区 1 号",
-        "lines": [{"outerSkuId": "TB" + PRODUCT, "title": "E2E商品", "quantity": 1, "unitPrice": 50.00}],
+        **RECEIVER_A,
+        "lines": [{"outerSkuId": "TB" + PRODUCT, "title": ITEM_TITLE, "quantity": 1, "unitPrice": 50.00}],
     })
     again = (data_of(j) or "") if isinstance(data_of(j), str) else None
     check("同订单号重复推送幂等（返回同一订单ID）",
@@ -158,8 +175,8 @@ def main() -> int:
     st, j = http.call("POST", "/channel-orders/pull", {
         "channelCode": "TAOBAO",
         "channelOrderNo": "E2E-ORDER-0003",
-        "receiverName": "李四", "receiverPhone": "13900000000", "receiverAddress": "某省某市某区 2 号",
-        "lines": [{"outerSkuId": "TB" + PRODUCT, "title": "E2E商品", "quantity": 1, "unitPrice": 50.00}],
+        **RECEIVER_B,
+        "lines": [{"outerSkuId": "TB" + PRODUCT, "title": ITEM_TITLE, "quantity": 1, "unitPrice": 50.00}],
     })
     check("不带 buyerId 也能落单（客户维度未知，不拒绝建单）", st == 200, f"status={st} body={str(j)[:200]}")
 
@@ -176,20 +193,20 @@ def main() -> int:
 
     # B1：建库存（触发广播入队）
     st, j = http.call("POST", "/inventories/receive", {
-        "productId": PRODUCT, "productName": "E2E商品", "warehouseCode": "DEFAULT", "quantity": 300,
+        "productId": PRODUCT, "productName": ITEM_TITLE, "warehouseCode": "DEFAULT", "quantity": 300,
     })
     check("建库存成功", st == 200, f"status={st} body={str(j)[:200]}")
 
     # B2：上架到淘宝（只有 ONLINE 渠道才会被广播）
     st, j = http.call("POST", "/channel-products", {
-        "channelCode": "TAOBAO", "productId": PRODUCT, "productName": "E2E商品", "listingPrice": 88.00,
+        "channelCode": "TAOBAO", "productId": PRODUCT, "productName": ITEM_TITLE, "listingPrice": 88.00,
     })
     if st == 409:
         # 幂等：上一轮已上架，先下架再上
         http.call("POST", "/channel-products/delist",
                   {"channelCode": "TAOBAO", "productId": PRODUCT})
         st, j = http.call("POST", "/channel-products", {
-            "channelCode": "TAOBAO", "productId": PRODUCT, "productName": "E2E商品", "listingPrice": 88.00,
+            "channelCode": "TAOBAO", "productId": PRODUCT, "productName": ITEM_TITLE, "listingPrice": 88.00,
         })
     d = data_of(j) or {}
     check("淘宝上架成功（ONLINE）", st == 200 and d.get("listingStatus") == "ONLINE",
@@ -197,7 +214,7 @@ def main() -> int:
 
     # B3：库存变更 → 应产生待投递任务
     st, j = http.call("POST", "/inventories/receive", {
-        "productId": PRODUCT, "productName": "E2E商品", "warehouseCode": "DEFAULT", "quantity": 50,
+        "productId": PRODUCT, "productName": ITEM_TITLE, "warehouseCode": "DEFAULT", "quantity": 50,
     })
     check("二次入库成功（触发广播入队）", st == 200, f"status={st}")
 

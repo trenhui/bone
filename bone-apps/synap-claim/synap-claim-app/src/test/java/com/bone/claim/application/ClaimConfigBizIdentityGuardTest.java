@@ -131,6 +131,35 @@ class ClaimConfigBizIdentityGuardTest {
     verifyNoInteractions(claimInsurerRepository);
   }
 
+  /** 读取侧不强校验：存量空主体保单照常可读，且绝不触发主体仓储查询。 */
+  @Test
+  void getPolicy_withBlankBizIdentity_readableWithoutInsurerLookup() {
+    ClaimPolicy policy =
+        ClaimPolicy.open(
+            1L,
+            1L,
+            POLICY_NO,
+            "团险",
+            "ins",
+            "br",
+            "insure",
+            "",
+            "OUTPATIENT",
+            "GROUP",
+            T0,
+            T1,
+            0,
+            "v1",
+            "[\"h1\"]",
+            T0);
+    when(claimPolicyRepository.findByPolicyNo(POLICY_NO)).thenReturn(policy);
+
+    PolicyView view = service.getPolicy(POLICY_NO);
+
+    assertThat(view.bizIdentityCode()).isBlank();
+    verifyNoInteractions(claimInsurerRepository);
+  }
+
   @Test
   void createPolicy_withActiveInsurer_accepted() {
     stubLookup(insurerWithStatus(InsurerStatus.ACTIVE));

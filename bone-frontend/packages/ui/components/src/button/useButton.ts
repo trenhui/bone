@@ -5,7 +5,18 @@ interface UseButtonOptions extends React.ButtonHTMLAttributes<HTMLButtonElement>
   isFocusable?: boolean;
 }
 
-export function useButton(options: UseButtonOptions = {}) {
+export interface UseButtonResult {
+  buttonProps: React.ButtonHTMLAttributes<HTMLButtonElement>;
+  isDisabled: boolean;
+  isFocused: boolean;
+  isHovered: boolean;
+  isActive: boolean;
+  focus: () => void;
+  blur: () => void;
+  ref: React.RefObject<HTMLButtonElement>;
+}
+
+export function useButton(options: UseButtonOptions = {}): UseButtonResult {
   const { 
     disabled = false, 
     isFocusable = true,
@@ -45,35 +56,35 @@ export function useButton(options: UseButtonOptions = {}) {
     }
 
     switch (event.key) {
-      case 'Enter':
-      case ' ': {
-        event.preventDefault();
-        setIsActive(true);
+    case 'Enter':
+    case ' ': {
+      event.preventDefault();
+      setIsActive(true);
         
-        // 模拟点击行为
-        ref.current?.click();
+      // 模拟点击行为
+      ref.current?.click();
         
-        // 触发 onClick 事件
-        if (onClick) {
-          const mouseEvent = new MouseEvent('click', {
-            bubbles: true,
-            cancelable: true,
-            view: window
-          });
-          onClick(mouseEvent as any);
-        }
-        
-        // 重置激活状态
-        setTimeout(() => setIsActive(false), 200);
-        break;
+      // 触发 onClick 事件
+      if (onClick) {
+        const mouseEvent = new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          view: window
+        });
+        onClick(mouseEvent as unknown as React.MouseEvent<HTMLButtonElement>);
       }
-      case 'Escape':
-        if (isFocused) {
-          ref.current?.blur();
-        }
-        break;
-      default:
-        break;
+        
+      // 重置激活状态
+      setTimeout(() => setIsActive(false), 200);
+      break;
+    }
+    case 'Escape':
+      if (isFocused) {
+        ref.current?.blur();
+      }
+      break;
+    default:
+      break;
     }
 
     if (onKeyDown) {

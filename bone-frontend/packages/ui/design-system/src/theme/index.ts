@@ -15,7 +15,7 @@ export const getTheme = (theme: Theme): ThemeConfig => {
 };
 
 /** 应用主题：解析 system 后写入 CSS 变量并持久化偏好 */
-export const applyTheme = (theme: Theme) => {
+export const applyTheme = (theme: Theme): void => {
   const resolved = resolveThemeMode(theme);
   applyThemeCss(theme, resolved);
 };

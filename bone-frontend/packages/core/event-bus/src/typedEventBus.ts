@@ -23,7 +23,7 @@
  * ```
  */
 
-export class TypedEventBus<TEvents extends Record<string, any>> {
+export class TypedEventBus<TEvents extends Record<string, unknown>> {
   private handlers: { [K in keyof TEvents]?: Array<(data: TEvents[K]) => void> } = {};
 
   on<K extends keyof TEvents>(event: K, handler: (data: TEvents[K]) => void): () => void {
@@ -61,6 +61,6 @@ export class TypedEventBus<TEvents extends Record<string, any>> {
 }
 
 /** 创建类型安全的事件总线实例 */
-export function typedEventBus<TEvents extends Record<string, any>>(): TypedEventBus<TEvents> {
+export function typedEventBus<TEvents extends Record<string, unknown>>(): TypedEventBus<TEvents> {
   return new TypedEventBus<TEvents>();
 }

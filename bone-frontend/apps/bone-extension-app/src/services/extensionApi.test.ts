@@ -19,23 +19,23 @@ const {
   pushResponseHandler,
   throughInterceptors,
 } = vi.hoisted(() => {
-    const handlers: Array<(r: unknown) => unknown> = [];
-    const apply = (r: unknown) => handlers.reduce((acc, h) => h(acc), r);
-    return {
-      mockGet: vi.fn(),
-      mockPost: vi.fn(),
-      mockPut: vi.fn(),
-      mockDelete: vi.fn(),
-      applyResponseInterceptors: apply,
-      pushResponseHandler: (h: (r: unknown) => unknown) => {
-        handlers.push(h);
-      },
-      throughInterceptors:
+  const handlers: Array<(r: unknown) => unknown> = [];
+  const apply = (r: unknown) => handlers.reduce((acc, h) => h(acc), r);
+  return {
+    mockGet: vi.fn(),
+    mockPost: vi.fn(),
+    mockPut: vi.fn(),
+    mockDelete: vi.fn(),
+    applyResponseInterceptors: apply,
+    pushResponseHandler: (h: (r: unknown) => unknown) => {
+      handlers.push(h);
+    },
+    throughInterceptors:
         (fn: (...args: unknown[]) => unknown) =>
-        (...args: unknown[]) =>
-          Promise.resolve(fn(...args)).then(apply),
-    };
-  });
+          (...args: unknown[]) =>
+            Promise.resolve(fn(...args)).then(apply),
+  };
+});
 
 vi.mock('axios', () => ({
   default: {

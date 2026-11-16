@@ -347,6 +347,47 @@ public class ClaimPolicy extends TenantAggregateRoot<Long> {
     return configStatus;
   }
 
+  /**
+   * 解析 {@code insured_snapshot}（假名化 ID 的 JSON 字符串数组）为被保人清单。
+   *
+   * <p><b>唯一真源</b>：报案前置校验（{@code PolicyQueryPortAdapter}）与配置面保单详情 （{@code
+   * PolicyDetailApplicationService}）都调用本方法，避免两处各写一份解析器导致口径漂移。
+   *
+   * <p>刻意不引 JSON 库：清单格式由本仓自己写入（运营录入），结构固定为字符串数组；而一个「解析失败 ⇒ 空清单」的兜底会把「数据坏了」伪装成「该保单没承保任何人」，表现为所有报案被
+   * 403 拒收却看不出原因。故解析失败时抛出，让问题显性化。
+   *
+   * <p>清单为空 ⇒ 返回空列表（合法：保单可先建后录被保人，此时无人可报案）。
+   */
+  public static java.util.List<String> parseInsuredHashes(String insuredSnapshot) {
+    java.util.List<String> result = new java.util.ArrayList<>();
+    if (insuredSnapshot == null || insuredSnapshot.isBlank()) {
+      return result;
+    }
+    String trimmed = insuredSnapshot.trim();
+    if (trimmed.equals("[]")) {
+      return result;
+    }
+    if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) {
+      throw new IllegalStateException("被保人清单格式非法（应为 JSON 字符串数组）: " + trimmed);
+    }
+    String body = trimmed.substring(1, trimmed.length() - 1).trim();
+    if (body.isEmpty()) {
+      return result;
+    }
+    for (String token : body.split(",")) {
+      String item = token.trim();
+      if (item.isEmpty()) {
+        continue;
+      }
+      if (item.length() >= 2 && item.startsWith("\"") && item.endsWith("\"")) {
+        result.add(item.substring(1, item.length() - 1));
+      } else {
+        throw new IllegalStateException("被保人清单含非字符串元素: " + item);
+      }
+    }
+    return result;
+  }
+
   /** 规则是否处于启用态（仅 {@code ACTIVE} 为真——{@code PAUSE} 不接受新报案）。 */
   public boolean isConfigActive() {
     return CONFIG_ACTIVE.equals(configStatus);

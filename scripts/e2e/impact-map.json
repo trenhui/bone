@@ -178,6 +178,34 @@
    ]
   },
   {
+   "http": "POST",
+   "path": "/api/v1/masterdata/change-requests/{id}/submit",
+   "controller": "ChangeRequestController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ChangeRequestController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/change-requests/{id}/segments/{segment}/decide",
+   "controller": "ChangeRequestController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ChangeRequestController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/change-requests/{id}/apply",
+   "controller": "ChangeRequestController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ChangeRequestController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/change-requests/{id}",
+   "controller": "ChangeRequestController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ChangeRequestController.java",
+   "cases": []
+  },
+  {
    "http": "GET",
    "path": "/api/v1/masterdata/fields/{id}",
    "controller": "MasterDataFieldTopController",
@@ -410,6 +438,27 @@
    "cases": []
   },
   {
+   "http": "POST",
+   "path": "/api/v1/masterdata/golden-records/merge",
+   "controller": "GoldenRecordController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/GoldenRecordController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/golden-records/rollback",
+   "controller": "GoldenRecordController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/GoldenRecordController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/golden-records/{partyId}",
+   "controller": "GoldenRecordController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/GoldenRecordController.java",
+   "cases": []
+  },
+  {
    "http": "PUT",
    "path": "/api/v1/masterdata/data-standards/{id}",
    "controller": "DataStandardController",
@@ -636,9 +685,7 @@
    "path": "/api/v1/masterdata/reference-sets/values/{valueId}",
    "controller": "ReferenceDataController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/ReferenceDataController.java",
-   "cases": [
-    "chains.py"
-   ]
+   "cases": []
   },
   {
    "http": "POST",
@@ -733,9 +780,7 @@
    "path": "/api/v1/masterdata/records/{id}/reject",
    "controller": "MasterDataRecordTopController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
-   "cases": [
-    "chains.py"
-   ]
+   "cases": []
   },
   {
    "http": "GET",
@@ -751,9 +796,7 @@
    "path": "/api/v1/masterdata/records/{id}/archive",
    "controller": "MasterDataRecordTopController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
-   "cases": [
-    "chains.py"
-   ]
+   "cases": []
   },
   {
    "http": "POST",
@@ -767,9 +810,7 @@
    "path": "/api/v1/masterdata/records/export",
    "controller": "MasterDataRecordTopController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
-   "cases": [
-    "chains.py"
-   ]
+   "cases": []
   },
   {
    "http": "POST",
@@ -990,9 +1031,7 @@
    "path": "/api/v1/system/config/{id}/history",
    "controller": "ConfigController",
    "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConfigController.java",
-   "cases": [
-    "real-id-sweep.py"
-   ]
+   "cases": []
   },
   {
    "http": "GET",
@@ -1111,9 +1150,7 @@
    "path": "/api/v1/system/alert/rules/page",
    "controller": "AlertController",
    "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
-   "cases": [
-    "write_coverage.py"
-   ]
+   "cases": []
   },
   {
    "http": "POST",
@@ -1136,9 +1173,7 @@
    "path": "/api/v1/system/alert/events/{id}",
    "controller": "AlertController",
    "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/AlertController.java",
-   "cases": [
-    "write_coverage.py"
-   ]
+   "cases": []
   },
   {
    "http": "GET",
@@ -1193,8 +1228,7 @@
    "controller": "ScheduleTaskController",
    "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ScheduleTaskController.java",
    "cases": [
-    "real-id-sweep.py",
-    "write_coverage.py"
+    "real-id-sweep.py"
    ]
   },
   {
@@ -1203,8 +1237,7 @@
    "controller": "ScheduleTaskController",
    "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ScheduleTaskController.java",
    "cases": [
-    "real-id-sweep.py",
-    "write_coverage.py"
+    "real-id-sweep.py"
    ]
   },
   {
@@ -1229,8 +1262,7 @@
    "controller": "ScheduleTaskController",
    "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ScheduleTaskController.java",
    "cases": [
-    "real-id-sweep.py",
-    "write_coverage.py"
+    "real-id-sweep.py"
    ]
   },
   {
@@ -1255,7 +1287,6 @@
    "controller": "DictTypeController",
    "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictTypeController.java",
    "cases": [
-    "chains.py",
     "real-id-sweep.py",
     "write_coverage.py"
    ]
@@ -1266,7 +1297,6 @@
    "controller": "DictTypeController",
    "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictTypeController.java",
    "cases": [
-    "chains.py",
     "real-id-sweep.py",
     "write_coverage.py"
    ]
@@ -1277,7 +1307,6 @@
    "controller": "DictTypeController",
    "file": "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/DictTypeController.java",
    "cases": [
-    "chains.py",
     "real-id-sweep.py",
     "write_coverage.py"
    ]
@@ -1355,9 +1384,7 @@
    "path": "/api/v1/apps/mine",
    "controller": "AppController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AppController.java",
-   "cases": [
-    "app-to-data-full-chain-e2e.py"
-   ]
+   "cases": []
   },
   {
    "http": "GET",
@@ -1368,7 +1395,6 @@
     "api-sweep.py",
     "app-to-data-full-chain-e2e.py",
     "real-id-sweep.py",
-    "ui/micro-app-matrix-probe.mjs",
     "ui/ui-designer-probe.mjs",
     "write-sweep.py"
    ]
@@ -1382,7 +1408,6 @@
     "api-sweep.py",
     "app-to-data-full-chain-e2e.py",
     "real-id-sweep.py",
-    "ui/micro-app-matrix-probe.mjs",
     "ui/ui-designer-probe.mjs",
     "write-sweep.py"
    ]
@@ -1396,7 +1421,6 @@
     "api-sweep.py",
     "app-to-data-full-chain-e2e.py",
     "real-id-sweep.py",
-    "ui/micro-app-matrix-probe.mjs",
     "ui/ui-designer-probe.mjs",
     "write-sweep.py"
    ]
@@ -1435,6 +1459,7 @@
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuthController.java",
    "cases": [
     "e2e_synap_claim.py",
+    "synap-claim-task-workbench-e2e.py",
     "write_coverage.py"
    ]
   },
@@ -1474,11 +1499,7 @@
    "controller": "MenuController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MenuController.java",
    "cases": [
-    "ui/claim-single-nav-probe.mjs",
-    "ui/micro-app-matrix-probe.mjs",
-    "ui/ui-all-menu-regression.mjs",
-    "ui/ui-full-module-crud-probe.mjs",
-    "ui/ui-runtime-evidences-regression.mjs"
+    "ui/ui-full-module-crud-probe.mjs"
    ]
   },
   {
@@ -1487,11 +1508,7 @@
    "controller": "MenuController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MenuController.java",
    "cases": [
-    "ui/claim-single-nav-probe.mjs",
-    "ui/micro-app-matrix-probe.mjs",
-    "ui/ui-all-menu-regression.mjs",
-    "ui/ui-full-module-crud-probe.mjs",
-    "ui/ui-runtime-evidences-regression.mjs"
+    "ui/ui-full-module-crud-probe.mjs"
    ]
   },
   {
@@ -1512,8 +1529,7 @@
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MenuController.java",
    "cases": [
     "ui/claim-single-nav-probe.mjs",
-    "ui/micro-app-matrix-probe.mjs",
-    "ui/ui-full-module-crud-probe.mjs"
+    "ui/micro-app-matrix-probe.mjs"
    ]
   },
   {
@@ -1669,18 +1685,14 @@
    "path": "/api/v1/iam/accounts/import",
    "controller": "AccountController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
-   "cases": [
-    "write_coverage.py"
-   ]
+   "cases": []
   },
   {
    "http": "GET",
    "path": "/api/v1/iam/accounts/export",
    "controller": "AccountController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
-   "cases": [
-    "write_coverage.py"
-   ]
+   "cases": []
   },
   {
    "http": "GET",
@@ -1696,7 +1708,7 @@
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/DeptController.java",
    "cases": [
     "chains.py",
-    "claim-full-chain-e2e.mjs",
+    "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -1707,7 +1719,7 @@
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/DeptController.java",
    "cases": [
     "chains.py",
-    "claim-full-chain-e2e.mjs",
+    "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -1719,6 +1731,7 @@
    "cases": [
     "chains.py",
     "claim-full-chain-e2e.mjs",
+    "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -2296,13 +2309,7 @@
    "path": "/api/v1/metadata/entities/import-from-table",
    "controller": "MetaEntityCatalogController",
    "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
-   "cases": [
-    "app-to-data-full-chain-e2e.py",
-    "lowcode-closed-loop.cjs",
-    "seed_stable_purchase_order.py",
-    "two-scenario-full-chain-e2e.py",
-    "ui/ui-designer-probe.mjs"
-   ]
+   "cases": []
   },
   {
    "http": "POST",
@@ -2310,11 +2317,6 @@
    "controller": "MetaEntityCatalogController",
    "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
    "cases": [
-    "app-to-data-full-chain-e2e.py",
-    "lowcode-closed-loop.cjs",
-    "seed_stable_purchase_order.py",
-    "two-scenario-full-chain-e2e.py",
-    "ui/ui-designer-probe.mjs",
     "write_coverage.py"
    ]
   },
@@ -2324,11 +2326,6 @@
    "controller": "MetaEntityCatalogController",
    "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
    "cases": [
-    "app-to-data-full-chain-e2e.py",
-    "lowcode-closed-loop.cjs",
-    "seed_stable_purchase_order.py",
-    "two-scenario-full-chain-e2e.py",
-    "ui/ui-designer-probe.mjs",
     "write_coverage.py"
    ]
   },
@@ -2480,12 +2477,7 @@
    "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java",
    "cases": [
     "app-to-data-full-chain-e2e.py",
-    "expense-purchase-approval-integration-e2e.py",
-    "lowcode-closed-loop.cjs",
-    "two-scenario-full-chain-e2e.py",
-    "ui-schema-samples-e2e.py",
-    "ui/ui-approval-sendback-probe.mjs",
-    "ui/ui-org-routing-probe.mjs"
+    "two-scenario-full-chain-e2e.py"
    ]
   },
   {
@@ -2503,12 +2495,7 @@
    "path": "/api/v1/runtime/entities/{entityCode}/records/{id}/actions/{actionCode}",
    "controller": "RuntimeActionController",
    "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeActionController.java",
-   "cases": [
-    "lowcode-closed-loop.cjs",
-    "ui/ui-approval-sendback-probe.mjs",
-    "ui/ui-approval-suspend-reason-probe.mjs",
-    "ui/ui-org-routing-probe.mjs"
-   ]
+   "cases": []
   },
   {
    "http": "GET",
@@ -2685,31 +2672,7 @@
    "controller": "CodeTemplateController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeTemplateController.java",
    "cases": [
-    "api-sweep.py",
-    "app-to-data-full-chain-e2e.py",
-    "chains.py",
-    "channel-buyer-broadcast.py",
-    "claim-config-e2e.mjs",
-    "claim-fee-category-e2e.mjs",
-    "claim-full-chain-e2e.mjs",
-    "e2e_synap_claim.py",
-    "multichannel.py",
-    "mutate_quota_release.py",
-    "real-id-sweep.py",
-    "selftest.py",
-    "synap-claim-workbench-feedback-e2e.mjs",
-    "ui/claim-functional-probe.mjs",
-    "ui/claim-single-nav-probe.mjs",
-    "ui/claim-toast-hygiene-probe.mjs",
-    "ui/micro-app-matrix-probe.mjs",
-    "ui/probe-commerce.mjs",
-    "ui/probe-empty.mjs",
-    "ui/ui-app-to-data-probe.mjs",
-    "ui/ui-designer-probe.mjs",
-    "ui/ui-full-module-crud-probe.mjs",
-    "ui/ui-nine-module-deep-probe.mjs",
-    "write-sweep.py",
-    "write_coverage.py"
+    "ui/micro-app-matrix-probe.mjs"
    ]
   },
   {
@@ -2718,31 +2681,7 @@
    "controller": "CodeTemplateController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeTemplateController.java",
    "cases": [
-    "api-sweep.py",
-    "app-to-data-full-chain-e2e.py",
-    "chains.py",
-    "channel-buyer-broadcast.py",
-    "claim-config-e2e.mjs",
-    "claim-fee-category-e2e.mjs",
-    "claim-full-chain-e2e.mjs",
-    "e2e_synap_claim.py",
-    "multichannel.py",
-    "mutate_quota_release.py",
-    "real-id-sweep.py",
-    "selftest.py",
-    "synap-claim-workbench-feedback-e2e.mjs",
-    "ui/claim-functional-probe.mjs",
-    "ui/claim-single-nav-probe.mjs",
-    "ui/claim-toast-hygiene-probe.mjs",
-    "ui/micro-app-matrix-probe.mjs",
-    "ui/probe-commerce.mjs",
-    "ui/probe-empty.mjs",
-    "ui/ui-app-to-data-probe.mjs",
-    "ui/ui-designer-probe.mjs",
-    "ui/ui-full-module-crud-probe.mjs",
-    "ui/ui-nine-module-deep-probe.mjs",
-    "write-sweep.py",
-    "write_coverage.py"
+    "ui/micro-app-matrix-probe.mjs"
    ]
   },
   {
@@ -2751,31 +2690,7 @@
    "controller": "CodeTemplateController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeTemplateController.java",
    "cases": [
-    "api-sweep.py",
-    "app-to-data-full-chain-e2e.py",
-    "chains.py",
-    "channel-buyer-broadcast.py",
-    "claim-config-e2e.mjs",
-    "claim-fee-category-e2e.mjs",
-    "claim-full-chain-e2e.mjs",
-    "e2e_synap_claim.py",
-    "multichannel.py",
-    "mutate_quota_release.py",
-    "real-id-sweep.py",
-    "selftest.py",
-    "synap-claim-workbench-feedback-e2e.mjs",
-    "ui/claim-functional-probe.mjs",
-    "ui/claim-single-nav-probe.mjs",
-    "ui/claim-toast-hygiene-probe.mjs",
-    "ui/micro-app-matrix-probe.mjs",
-    "ui/probe-commerce.mjs",
-    "ui/probe-empty.mjs",
-    "ui/ui-app-to-data-probe.mjs",
-    "ui/ui-designer-probe.mjs",
-    "ui/ui-full-module-crud-probe.mjs",
-    "ui/ui-nine-module-deep-probe.mjs",
-    "write-sweep.py",
-    "write_coverage.py"
+    "ui/micro-app-matrix-probe.mjs"
    ]
   },
   {
@@ -2783,9 +2698,7 @@
    "path": "/{id}:publish",
    "controller": "CodeTemplateController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeTemplateController.java",
-   "cases": [
-    "ui/micro-app-matrix-probe.mjs"
-   ]
+   "cases": []
   },
   {
    "http": "PUT",
@@ -2793,31 +2706,7 @@
    "controller": "DataSourceController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
    "cases": [
-    "api-sweep.py",
-    "app-to-data-full-chain-e2e.py",
-    "chains.py",
-    "channel-buyer-broadcast.py",
-    "claim-config-e2e.mjs",
-    "claim-fee-category-e2e.mjs",
-    "claim-full-chain-e2e.mjs",
-    "e2e_synap_claim.py",
-    "multichannel.py",
-    "mutate_quota_release.py",
-    "real-id-sweep.py",
-    "selftest.py",
-    "synap-claim-workbench-feedback-e2e.mjs",
-    "ui/claim-functional-probe.mjs",
-    "ui/claim-single-nav-probe.mjs",
-    "ui/claim-toast-hygiene-probe.mjs",
-    "ui/micro-app-matrix-probe.mjs",
-    "ui/probe-commerce.mjs",
-    "ui/probe-empty.mjs",
-    "ui/ui-app-to-data-probe.mjs",
-    "ui/ui-designer-probe.mjs",
-    "ui/ui-full-module-crud-probe.mjs",
-    "ui/ui-nine-module-deep-probe.mjs",
-    "write-sweep.py",
-    "write_coverage.py"
+    "ui/micro-app-matrix-probe.mjs"
    ]
   },
   {
@@ -2826,31 +2715,7 @@
    "controller": "DataSourceController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
    "cases": [
-    "api-sweep.py",
-    "app-to-data-full-chain-e2e.py",
-    "chains.py",
-    "channel-buyer-broadcast.py",
-    "claim-config-e2e.mjs",
-    "claim-fee-category-e2e.mjs",
-    "claim-full-chain-e2e.mjs",
-    "e2e_synap_claim.py",
-    "multichannel.py",
-    "mutate_quota_release.py",
-    "real-id-sweep.py",
-    "selftest.py",
-    "synap-claim-workbench-feedback-e2e.mjs",
-    "ui/claim-functional-probe.mjs",
-    "ui/claim-single-nav-probe.mjs",
-    "ui/claim-toast-hygiene-probe.mjs",
-    "ui/micro-app-matrix-probe.mjs",
-    "ui/probe-commerce.mjs",
-    "ui/probe-empty.mjs",
-    "ui/ui-app-to-data-probe.mjs",
-    "ui/ui-designer-probe.mjs",
-    "ui/ui-full-module-crud-probe.mjs",
-    "ui/ui-nine-module-deep-probe.mjs",
-    "write-sweep.py",
-    "write_coverage.py"
+    "ui/micro-app-matrix-probe.mjs"
    ]
   },
   {
@@ -2858,81 +2723,35 @@
    "path": "/{id}/tables",
    "controller": "DataSourceController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
-   "cases": [
-    "app-to-data-full-chain-e2e.py",
-    "chains.py",
-    "channel-buyer-broadcast.py",
-    "channel_simulator.py",
-    "claim-full-chain-e2e.mjs",
-    "multichannel.py",
-    "selftest.py",
-    "synap-claim-workbench-feedback-e2e.mjs",
-    "ui/ui-full-module-crud-probe.mjs",
-    "ui/ui-nine-module-deep-probe.mjs"
-   ]
+   "cases": []
   },
   {
    "http": "GET",
    "path": "/{id}/synced-tables",
    "controller": "DataSourceController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
-   "cases": [
-    "app-to-data-full-chain-e2e.py",
-    "chains.py",
-    "channel-buyer-broadcast.py",
-    "channel_simulator.py",
-    "claim-full-chain-e2e.mjs",
-    "multichannel.py",
-    "selftest.py",
-    "synap-claim-workbench-feedback-e2e.mjs",
-    "ui/ui-full-module-crud-probe.mjs",
-    "ui/ui-nine-module-deep-probe.mjs"
-   ]
+   "cases": []
   },
   {
    "http": "POST",
    "path": "/{id}/tables:sync",
    "controller": "DataSourceController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
-   "cases": [
-    "app-to-data-full-chain-e2e.py",
-    "chains.py",
-    "channel-buyer-broadcast.py",
-    "channel_simulator.py",
-    "claim-full-chain-e2e.mjs",
-    "multichannel.py",
-    "selftest.py",
-    "synap-claim-workbench-feedback-e2e.mjs",
-    "ui/ui-full-module-crud-probe.mjs",
-    "ui/ui-nine-module-deep-probe.mjs"
-   ]
+   "cases": []
   },
   {
    "http": "POST",
    "path": "/{id}/tables:repair-columns",
    "controller": "DataSourceController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
-   "cases": [
-    "app-to-data-full-chain-e2e.py",
-    "chains.py",
-    "channel-buyer-broadcast.py",
-    "channel_simulator.py",
-    "claim-full-chain-e2e.mjs",
-    "multichannel.py",
-    "selftest.py",
-    "synap-claim-workbench-feedback-e2e.mjs",
-    "ui/ui-full-module-crud-probe.mjs",
-    "ui/ui-nine-module-deep-probe.mjs"
-   ]
+   "cases": []
   },
   {
    "http": "POST",
    "path": "/{id}:test-connection",
    "controller": "DataSourceController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
-   "cases": [
-    "ui/micro-app-matrix-probe.mjs"
-   ]
+   "cases": []
   },
   {
    "http": "GET",
@@ -2940,31 +2759,7 @@
    "controller": "DataSourceController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
    "cases": [
-    "api-sweep.py",
-    "app-to-data-full-chain-e2e.py",
-    "chains.py",
-    "channel-buyer-broadcast.py",
-    "claim-config-e2e.mjs",
-    "claim-fee-category-e2e.mjs",
-    "claim-full-chain-e2e.mjs",
-    "e2e_synap_claim.py",
-    "multichannel.py",
-    "mutate_quota_release.py",
-    "real-id-sweep.py",
-    "selftest.py",
-    "synap-claim-workbench-feedback-e2e.mjs",
-    "ui/claim-functional-probe.mjs",
-    "ui/claim-single-nav-probe.mjs",
-    "ui/claim-toast-hygiene-probe.mjs",
-    "ui/micro-app-matrix-probe.mjs",
-    "ui/probe-commerce.mjs",
-    "ui/probe-empty.mjs",
-    "ui/ui-app-to-data-probe.mjs",
-    "ui/ui-designer-probe.mjs",
-    "ui/ui-full-module-crud-probe.mjs",
-    "ui/ui-nine-module-deep-probe.mjs",
-    "write-sweep.py",
-    "write_coverage.py"
+    "ui/micro-app-matrix-probe.mjs"
    ]
   },
   {
@@ -2973,31 +2768,7 @@
    "controller": "CapabilityController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CapabilityController.java",
    "cases": [
-    "api-sweep.py",
-    "app-to-data-full-chain-e2e.py",
-    "chains.py",
-    "channel-buyer-broadcast.py",
-    "claim-config-e2e.mjs",
-    "claim-fee-category-e2e.mjs",
-    "claim-full-chain-e2e.mjs",
-    "e2e_synap_claim.py",
-    "multichannel.py",
-    "mutate_quota_release.py",
-    "real-id-sweep.py",
-    "selftest.py",
-    "synap-claim-workbench-feedback-e2e.mjs",
-    "ui/claim-functional-probe.mjs",
-    "ui/claim-single-nav-probe.mjs",
-    "ui/claim-toast-hygiene-probe.mjs",
-    "ui/micro-app-matrix-probe.mjs",
-    "ui/probe-commerce.mjs",
-    "ui/probe-empty.mjs",
-    "ui/ui-app-to-data-probe.mjs",
-    "ui/ui-designer-probe.mjs",
-    "ui/ui-full-module-crud-probe.mjs",
-    "ui/ui-nine-module-deep-probe.mjs",
-    "write-sweep.py",
-    "write_coverage.py"
+    "ui/micro-app-matrix-probe.mjs"
    ]
   },
   {
@@ -3005,9 +2776,7 @@
    "path": "/repair-entity-names",
    "controller": "StudioGeneratorAdminController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/StudioGeneratorAdminController.java",
-   "cases": [
-    "ui/micro-app-matrix-probe.mjs"
-   ]
+   "cases": []
   },
   {
    "http": "GET",
@@ -3015,31 +2784,7 @@
    "controller": "GeneratorOperationController",
    "file": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/GeneratorOperationController.java",
    "cases": [
-    "api-sweep.py",
-    "app-to-data-full-chain-e2e.py",
-    "chains.py",
-    "channel-buyer-broadcast.py",
-    "claim-config-e2e.mjs",
-    "claim-fee-category-e2e.mjs",
-    "claim-full-chain-e2e.mjs",
-    "e2e_synap_claim.py",
-    "multichannel.py",
-    "mutate_quota_release.py",
-    "real-id-sweep.py",
-    "selftest.py",
-    "synap-claim-workbench-feedback-e2e.mjs",
-    "ui/claim-functional-probe.mjs",
-    "ui/claim-single-nav-probe.mjs",
-    "ui/claim-toast-hygiene-probe.mjs",
-    "ui/micro-app-matrix-probe.mjs",
-    "ui/probe-commerce.mjs",
-    "ui/probe-empty.mjs",
-    "ui/ui-app-to-data-probe.mjs",
-    "ui/ui-designer-probe.mjs",
-    "ui/ui-full-module-crud-probe.mjs",
-    "ui/ui-nine-module-deep-probe.mjs",
-    "write-sweep.py",
-    "write_coverage.py"
+    "ui/micro-app-matrix-probe.mjs"
    ]
   },
   {
@@ -3283,7 +3028,6 @@
    "cases": [
     "api-sweep.py",
     "real-id-sweep.py",
-    "ui/micro-app-matrix-probe.mjs",
     "write-sweep.py"
    ]
   },
@@ -3596,7 +3340,6 @@
     "synap-claim-workbench-feedback-e2e.mjs",
     "ui/claim-functional-probe.mjs",
     "ui/claim-toast-hygiene-probe.mjs",
-    "ui/micro-app-matrix-probe.mjs",
     "write-sweep.py"
    ]
   },
@@ -3615,7 +3358,6 @@
     "synap-claim-workbench-feedback-e2e.mjs",
     "ui/claim-functional-probe.mjs",
     "ui/claim-toast-hygiene-probe.mjs",
-    "ui/micro-app-matrix-probe.mjs",
     "write-sweep.py"
    ]
   },
@@ -3632,10 +3374,8 @@
     "e2e_synap_claim.py",
     "real-id-sweep.py",
     "synap-claim-workbench-feedback-e2e.mjs",
-    "synap-claim-workbench-ui-smoke.mjs",
     "ui/claim-functional-probe.mjs",
     "ui/claim-toast-hygiene-probe.mjs",
-    "ui/micro-app-matrix-probe.mjs",
     "write-sweep.py"
    ]
   },
@@ -3729,9 +3469,7 @@
    "path": "/api/v1/claims/{id}/auto-approve",
    "controller": "ClaimCaseController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
-   "cases": [
-    "claim-full-chain-e2e.mjs"
-   ]
+   "cases": []
   },
   {
    "http": "POST",
@@ -3965,7 +3703,9 @@
    "path": "/api/v1/claim-config/policies/{policyNo}/detail",
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
-   "cases": []
+   "cases": [
+    "claim-full-chain-e2e.mjs"
+   ]
   },
   {
    "http": "POST",
@@ -4114,7 +3854,6 @@
    "cases": [
     "api-sweep.py",
     "real-id-sweep.py",
-    "ui/micro-app-matrix-probe.mjs",
     "write-sweep.py"
    ]
   },
@@ -4175,8 +3914,6 @@
    "controller": "ClaimWorkbenchController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
    "cases": [
-    "claim-full-chain-e2e.mjs",
-    "synap-claim-workbench-feedback-e2e.mjs",
     "synap-claim-workbench-ui-smoke.mjs"
    ]
   },
@@ -4205,6 +3942,33 @@
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
    "cases": [
     "synap-claim-workbench-feedback-e2e.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/tasks/my",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "synap-claim-task-workbench-e2e.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/tasks/{taskId}/claim",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "synap-claim-task-workbench-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/{claimId}/tasks",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "synap-claim-task-workbench-e2e.py"
    ]
   },
   {
@@ -4495,18 +4259,14 @@
    "path": "/api/v1/claim-config/liabilities/{liabilityId}/publish",
    "controller": "LiabilityConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/LiabilityConfigController.java",
-   "cases": [
-    "claim-fee-category-e2e.mjs"
-   ]
+   "cases": []
   },
   {
    "http": "POST",
    "path": "/api/v1/claim-config/liabilities/{liabilityId}/retire",
    "controller": "LiabilityConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/LiabilityConfigController.java",
-   "cases": [
-    "claim-fee-category-e2e.mjs"
-   ]
+   "cases": []
   },
   {
    "http": "GET",
@@ -4754,8 +4514,8 @@
   }
  ],
  "summary": {
-  "endpoints": 537,
-  "covered": 243,
-  "uncovered": 294
+  "endpoints": 547,
+  "covered": 225,
+  "uncovered": 322
  }
 }

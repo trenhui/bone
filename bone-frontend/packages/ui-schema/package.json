@@ -2,6 +2,9 @@
   "name": "@bone/ui-schema",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+  },
   "description": "BONE UI Schema 协议引擎与运行时渲染器（designer / runtime 共享单源）",
   "type": "module",
   "main": "./src/index.ts",

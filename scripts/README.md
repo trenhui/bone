@@ -43,6 +43,11 @@
 | `lib/gatekit/example_gate.py` | **新门禁模板**（复制改造，见 §9）；不是生产门禁 |
 | `bone.py` | **统一入口**：`list`（能力目录）/ `check`（库内判据结构化结果）/ `external`（库外判据，默认 dry-run）/ `data`（**造数唯一入口**，见 §9）/ `waivers`（豁免台账到期体检）/ **`verify`（一条命令跑完全部自检）** / `sync`（注册表对账 + 调用行形态守卫）/ `selftest` / `doctor` |
 | `check-feature-data-impact.py` | 后端功能/DDL/Entity 变更 → 造数资产与 E2E 用例同步义务（C1 清单 / C2 场景不变量 / C3 同步义务，见 `e2e/README.md` §3.4） |
+| `check-comet-plan.sh` | 四批 Build Plan 门禁执行器 liveness（存在 / 无 `/tmp` 回流 / 可加载）；`check.sh` 调用行带 `--check` 接入。plan 时效判据由 `comet-plan/pre-commit` 在提交时执行，判别力自测 `sh scripts/comet-plan/selftest.sh` 按需跑 |
+| `comet-plan/pre-commit` | scoped 钩子集成品：只对暂存的 plan 跑五道校验；从会话级临时目录迁移而来，引用入库路径 |
+| `comet-plan/verify-baseline.py` | plan frontmatter 指纹 vs 主树 HEAD 的 fail-fast 同源校验（剥离 GIT_* 防临时 index 误读） |
+| `comet-plan/verify.mjs` | plan ↔ tasks.md 的 canonical 映射校验，读暂存/HEAD 快照；Comet API 运行时解析不硬编码机器路径 |
+| `comet-plan/selftest.sh` | 上述基线判据的判别力自测（4 批 × 8 组变异），按需跑，输入由 git 动态生成不依赖临时残留 |
 | `lib/__init__.py` | 共享层包声明（供 `from lib import gate, registry`） |
 | `lib/gate.py` | gatekit 扩展层，**不是第二套框架**：git 文件枚举 / baseline 棘轮 / JUnit 与结构化结果；退出码与根定位委托 gatekit |
 | `lib/registry.py` | 注册表解析、生成、双向对账与库外门禁校验 |
@@ -206,9 +211,10 @@
 
 | 脚本 | 作用 |
 |---|---|
-| `migration/` | 有序迁移 SQL（131 个），每个必须登记 manifest |
+| `migration/` | 有序迁移 SQL（132 个文件 / 125 个可执行），每个必须登记 manifest |
 | `migrate.py` | 迁移执行器（按 manifest 顺序、记录 journal） |
 | `sync-init-from-live.py` | 从活库反向生成 `bone-init.sql`（禁止手工粘贴） |
+| `claim_task_owner_backfill.py` | 在途赔案初始任务归属回填（0125 配套）：默认 dry-run，`--apply` 才写；确定性主键 + `INSERT IGNORE` 幂等可重跑，多条候选即打印清单并中止 |
 | `seed/` | 种子数据；`seed/uat/` 拟真数据集（`gen.py` + `wordlist.json` 词表单源 + 生成产物） |
 | `seed-bootstrap.py` | 引导种子灌入（空库可用性实测配套） |
 | `seed-system-dicts.py` | 通过 API 注入系统管理场景字典数据 |
@@ -313,6 +319,7 @@
 | `frontend/check-frontend-id-types.py` / `frontend/fix-id-types.py` | 前端 ID 类型检查 / 修复 |
 | `ops/verify_comet_install.py` | Comet 安装校验 |
 | `ops/org-coverage-backfill.sql` | 组织覆盖回填 SQL |
+| `ops/claim_assign_gray_report.py` / `ops/claim-assign-gray-stats.sql` | `AUTO_ASSIGN` 灰度窗口报告（按小时命中率 + 回落计数；命中率低于阈值退出码 1，可直接接监控） |
 | `prompts/01-global-anchor.md` / `prompts/02-nightly-design-review.md` | AI 协作提示词锚点 |
 
 ---

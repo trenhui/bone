@@ -19,9 +19,12 @@ import { api, makeChecker } from './e2e_lib/client.cjs';
 
 const { check, report } = makeChecker();
 
-// 真实场景数据（claim-full-chain-e2e.mjs 落地，索引见 ClaimSearchHit）
-const CLAIM_ID = '776102367333449728';
-const CLAIM_NO = 'CL20261112776102367333449728';
+// 靶案件：默认沿用 claim-full-chain 落地的 E2E-POLICY-0001 案件；但 E2E-POLICY-0001 已累积数百案，
+// 检索 limit=5 只回最新 5 条，硬编码旧雪花 ID 会被挤出结果集 ⇒「命中本案件」假红。
+// 故 main() 起始按保单号实时解析一个「确实被索引、且必现于检索结果」的靶案件（CLAIM_ID/CLAIM_NO 动态赋值），
+// 既保住「检索→360→AI 回流」的闭环校验，又不再依赖易漂移的硬编码 ID。
+let CLAIM_ID = '776102367333449728';
+let CLAIM_NO = 'CL20261112776102367333449728';
 const POLICY_NO = 'E2E-POLICY-0001';
 const INSURED = 'e2e-insured-hash-0001';
 const ST = Date.now().toString(36); // 运行内唯一事件后缀
@@ -49,6 +52,15 @@ check('工作台: 审核任务计数 > 0', reviewTotal > 0, `total=${reviewTotal
   const s0 = sumBefore.data?.data ?? {};
 
   // ===== 2. 跨键检索（模拟工作台检索框） =====
+  // 先按保单号实时解析靶案件：保证 CLAIM_ID/CLAIM_NO 指向一个「已被索引、必现于检索结果」的真实案件，
+  // 避免硬编码旧 ID 被 limit=5 挤出结果集导致后续「命中本案件」假红。
+  const probe = await api('GET', `/claims/search?keyword=${encodeURIComponent(POLICY_NO)}&limit=5`);
+  const probeHits = probe.data?.data ?? [];
+  check('检索: 保单号落地靶案件（≥1 命中）', probeHits.length >= 1, `hits=${probeHits.length}`);
+  const target = probeHits[0] ?? {};
+  if (target.claimId != null) { CLAIM_ID = String(target.claimId); }
+  if (target.claimNo) { CLAIM_NO = String(target.claimNo); }
+
   const searches = [
     ['报案号', CLAIM_NO],
     ['保单号', POLICY_NO],

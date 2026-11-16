@@ -92,6 +92,15 @@ def collect_java_classes() -> set[str]:
     classes: set[str] = set()
     for path in ROOT.rglob("*.java"):
         parts = path.parts
+        # 跳过 git 工作树目录（.worktrees/），CI 无 worktree，此排除为 no-op。
+        # 必须按「相对 ROOT 的路径」判断：绝对路径在 worktree 内运行时每条都含
+        # `.worktrees`，会把整个仓库跳过 ⇒ 「仓库 Java 类 0 个」+ 全量文档误报漂移。
+        try:
+            rel_for_wt = path.relative_to(ROOT)
+        except ValueError:
+            continue
+        if ".worktrees" in rel_for_wt.parts:
+            continue
         if any(part in SKIP_DIRS or part in ("target", "node_modules") for part in parts):
             continue
         classes.add(path.stem)

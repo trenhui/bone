@@ -33,4 +33,9 @@ else
   [ "$nrc" -ne 0 ] && rc=1
 fi
 
+echo "== 造数真实性（R1–R5） =="
+if ! "$PY" "$DIR/check-data-realism.py"; then
+  rc=1
+fi
+
 exit $rc

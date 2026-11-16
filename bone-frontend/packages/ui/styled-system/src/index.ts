@@ -5,13 +5,16 @@ import {
   ThemingContext,
   Theme as EmotionTheme
 } from '@emotion/react';
-import { Interpolation, ObjectInterpolation, Property } from '@emotion/serialize';
+import { ObjectInterpolation, Property } from '@emotion/serialize';
+
+// 主题 token 的递归形态：叶子是字符串/数字，子树继续嵌套 token
+export type ThemeToken = string | number | { [key: string]: ThemeToken };
 
 // 主题类型定义
 export interface Theme extends EmotionTheme {
-  colors?: Record<string, any>;
-  typography?: Record<string, any>;
-  spacing?: Record<string, any>;
+  colors?: Record<string, ThemeToken>;
+  typography?: Record<string, ThemeToken>;
+  spacing?: Record<string, ThemeToken>;
   breakpoints?: Record<string, string>;
   zIndex?: Record<string, number>;
   borderRadius?: Record<string, string>;
@@ -21,30 +24,31 @@ export interface Theme extends EmotionTheme {
 // 变体配置类型
 export interface VariantsConfig<T extends string = string> {
   [key: string]: {
-    [K in T]?: Record<string, any>;
+    [K in T]?: ObjectInterpolation<Theme>;
   };
 }
 
 // 组件样式配置类型
-export interface ComponentStyleConfig<P = any> {
+export interface ComponentStyleConfig<P = object> {
   base?: ObjectInterpolation<Theme & P>;
   variants?: VariantsConfig;
   compoundVariants?: Array<{
-    [key: string]: any;
+    [key: string]: unknown;
     css: ObjectInterpolation<Theme & P>;
   }>;
   defaultVariants?: Record<string, string>;
 }
 
 // 处理token引用
-function processToken(value: any): any {
+function processToken(value: unknown): unknown {
   if (typeof value === 'string' && value.startsWith('token(') && value.endsWith(')')) {
     // 提取token路径，例如 token(colors.primary.500) -> colors.primary.500
     const tokenPath = value.slice(6, -1).trim();
     // 返回一个函数，该函数会在主题上下文中被调用
-    return (theme: Theme) => {
-      return tokenPath.split('.').reduce((obj: any, key: string) => {
-        return obj && obj[key] !== undefined ? obj[key] : value;
+    return (theme: Theme): unknown => {
+      return tokenPath.split('.').reduce<unknown>((obj, key: string) => {
+        const container = obj as Record<string, unknown> | null | undefined;
+        return container && container[key] !== undefined ? container[key] : value;
       }, theme);
     };
   }
@@ -52,9 +56,9 @@ function processToken(value: any): any {
 }
 
 // 递归处理样式对象中的token
-export function processStyleTokens(style: any): any {
+export function processStyleTokens(style: unknown): unknown {
   if (typeof style === 'object' && style !== null && !Array.isArray(style)) {
-    const processed: any = {};
+    const processed: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(style)) {
       // 跳过css属性的特殊处理
       if (key === 'css') {
@@ -70,18 +74,18 @@ export function processStyleTokens(style: any): any {
 
 // 创建styled组件
 interface CreateStyled extends ReturnType<typeof emotionCreateStyled> {
-  <P extends object = {}>(
+  <P extends object = object>(
     component: React.ElementType,
     options?: CreateStyledOptions
   ): StyledComponentFactory<P>;
 }
 
-type StyledComponentFactory<P extends object = {}> = {
-  <Props extends object = {}>(
+type StyledComponentFactory<P extends object = object> = {
+  <Props extends object = object>(
     style: ComponentStyleConfig<P & Props> | ObjectInterpolation<Theme & P & Props>
   ): React.ForwardRefExoticComponent<
     React.PropsWithoutRef<P & Props & { as?: React.ElementType }>
-    & React.RefAttributes<any>
+    & React.RefAttributes<unknown>
   >;
 };
 
@@ -104,8 +108,8 @@ export const createStyled = (options?: CreateStyledOptions): CreateStyled => {
 };
 
 // 处理组件样式配置
-function processComponentStyle(styleConfig: ComponentStyleConfig): ObjectInterpolation<any> {
-  const processed: ObjectInterpolation<any> = {};
+function processComponentStyle(styleConfig: ComponentStyleConfig): ObjectInterpolation<Theme> {
+  const processed: ObjectInterpolation<Theme> = {};
 
   // 处理基础样式
   if (styleConfig.base) {
@@ -199,7 +203,7 @@ export function useTheme<T extends Theme = Theme>(): T {
 }
 
 // 创建主题提供者
-export function createThemeProvider(theme: Theme) {
+export function createThemeProvider(theme: Theme): React.FC<{ children: React.ReactNode }> {
   const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     return React.createElement(ThemingContext.Provider, { value: theme }, children);
   };

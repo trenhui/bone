@@ -16,7 +16,7 @@ export const App: React.FC = () => {
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AppLayout>
           <Routes>
-          <Route path="/connectors" element={<ConnectorManagement />} />
+            <Route path="/connectors" element={<ConnectorManagement />} />
             <Route path="/flows" element={<FlowDesign />} />
             <Route path="/monitor" element={<FlowMonitor />} />
             <Route path="/" element={<ConnectorManagement />} />

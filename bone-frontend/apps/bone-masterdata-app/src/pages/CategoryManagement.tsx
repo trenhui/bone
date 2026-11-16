@@ -225,11 +225,11 @@ const CategoryManagement: React.FC = () => {
           initialValues={
             editing
               ? {
-                  code: editing.code,
-                  name: editing.name,
-                  description: editing.description,
-                  sortOrder: editing.sortOrder
-                }
+                code: editing.code,
+                name: editing.name,
+                description: editing.description,
+                sortOrder: editing.sortOrder
+              }
               : { sortOrder: 0 }
           }
         >

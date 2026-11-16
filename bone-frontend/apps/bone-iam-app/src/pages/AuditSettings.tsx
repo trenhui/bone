@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Card, Form, InputNumber, Switch, Select, Button, Divider, Typography, Space, Alert } from 'antd';
 import { App as AntdApp } from 'antd';
 import { SaveOutlined, InfoCircleOutlined } from '@ant-design/icons';
@@ -17,7 +17,7 @@ const AuditSettingsPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
 
   /** 加载审计设置 */
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.getAuditSettings();
@@ -29,11 +29,11 @@ const AuditSettingsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [form, messageApi]);
 
   useEffect(() => {
     void fetchSettings();
-  }, []);
+  }, [fetchSettings]);
 
   /** 保存审计设置 */
   const handleSave = async () => {

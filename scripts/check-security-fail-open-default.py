@@ -152,6 +152,14 @@ def _iter_targets():
     seen = set()
     for pattern in SCAN_GLOBS:
         for path in sorted(REPO.glob(pattern)):
+            # 跳过 git 工作树目录（.worktrees/），CI 无 worktree，此排除为 no-op。
+            # 按「相对 REPO 的路径」判断，否则脚本在 worktree 内运行时全部被跳过。
+            try:
+                rel_for_wt = path.relative_to(REPO)
+            except ValueError:
+                continue
+            if ".worktrees" in rel_for_wt.parts:
+                continue
             if path in seen:
                 continue
             seen.add(path)

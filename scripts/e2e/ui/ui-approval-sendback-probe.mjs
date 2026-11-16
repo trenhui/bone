@@ -47,7 +47,7 @@ async function seedSubmitted(approverId) {
   const created = await api('POST', `/runtime/entities/${EXP}/records`, {
     claim_no: CLAIM_NO,
     title: 'UI 探针-退回指定节点',
-    amount: 260,
+    amount: 263.5,
     expense_date: '2026-10-29',
     applicant: '系统管理员',
     cost_center: 'CC-RD-01',

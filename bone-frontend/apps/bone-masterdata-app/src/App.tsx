@@ -42,24 +42,24 @@ const AppContent: React.FC = () => {
             两者均为 v7 的向后兼容默认值，语义不变。 */}
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
-          {/* 主数据域视图 */}
-          <Route path="/workbench" element={<DomainWorkbench />} />
-          <Route path="/entities" element={<EntityManagement />} />
-          <Route path="/fields" element={<FieldManagement />} />
-          <Route path="/records" element={<RecordManagement />} />
-          {/* 治理 */}
-          <Route path="/rules" element={<QualityRuleManagement />} />
-          <Route path="/quality-results" element={<QualityResult />} />
-          <Route path="/quality-issues" element={<QualityIssueBoard />} />
-          <Route path="/categories" element={<CategoryManagement />} />
-          <Route path="/governance" element={<GovernanceBoard />} />
-          {/* 数据标准与血缘 */}
-          <Route path="/data-standards" element={<DataStandardManagement />} />
-          <Route path="/lineage" element={<DataLineage />} />
-          {/* 平台能力 */}
-          <Route path="/templates" element={<TemplateManagement />} />
-          <Route path="/reference-sets" element={<ReferenceDataManagement />} />
-          <Route path="/" element={<Navigate to="/workbench" replace />} />
+            {/* 主数据域视图 */}
+            <Route path="/workbench" element={<DomainWorkbench />} />
+            <Route path="/entities" element={<EntityManagement />} />
+            <Route path="/fields" element={<FieldManagement />} />
+            <Route path="/records" element={<RecordManagement />} />
+            {/* 治理 */}
+            <Route path="/rules" element={<QualityRuleManagement />} />
+            <Route path="/quality-results" element={<QualityResult />} />
+            <Route path="/quality-issues" element={<QualityIssueBoard />} />
+            <Route path="/categories" element={<CategoryManagement />} />
+            <Route path="/governance" element={<GovernanceBoard />} />
+            {/* 数据标准与血缘 */}
+            <Route path="/data-standards" element={<DataStandardManagement />} />
+            <Route path="/lineage" element={<DataLineage />} />
+            {/* 平台能力 */}
+            <Route path="/templates" element={<TemplateManagement />} />
+            <Route path="/reference-sets" element={<ReferenceDataManagement />} />
+            <Route path="/" element={<Navigate to="/workbench" replace />} />
           </Routes>
         </Router>
       </EntityScopeProvider>

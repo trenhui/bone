@@ -24,6 +24,7 @@ import { ReloadOutlined, NodeIndexOutlined, CheckCircleOutlined } from '@ant-des
 import {
   claimApi,
   reviewTaskApi,
+  normalizeTotal,
   REVIEW_THRESHOLD,
   type ClaimHeadProjection,
   type Decision,
@@ -103,6 +104,16 @@ export function ReviewWorkbenchPage(): ReactElement {
   /** 行级在途标记：只锁当前行，避免整表按钮变灰被误认为页面卡死。 */
   const [actingId, setActingId] = useState<string | null>(null);
   const [taskFilter, setTaskFilter] = useState<ReviewTaskStatus | undefined>(undefined);
+  /**
+   * 服务端分页状态（page / pageSize / total）。
+   *
+   * <p><b>为什么必须真分页</b>：此前固定取 `size: 50` 再由 antd 按 `pageSize: 20` 前端切片，
+   * 第 3 页起就是空白，而 `total` 仍显示全部——用户看到「共 N 条」却翻不到，属数据正确性缺陷而非体验问题
+   * （design §13.4 / D5：total 由服务端同一 COUNT(*) 口径产出，前端只传 page/size）。
+   */
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [total, setTotal] = useState(0);
   const [decisionTarget, setDecisionTarget] = useState<ClaimHeadProjection | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [decisionForm] = Form.useForm<{ decision: Decision; approvedAmount: number; comment: string; rejectType: string }>();
@@ -196,8 +207,10 @@ export function ReviewWorkbenchPage(): ReactElement {
     try {
       // 不传 status = 后端默认待办（40+41）。先前传 ['PENDING_ADJUST'] 只覆盖 40，
       // 领取后进入 41 的案件会整行消失，「通过/拒赔/补件」再无处可点。
-      const resp = await reviewTaskApi.tasks({ status: taskFilter, page: 1, size: 50 });
+      const resp = await reviewTaskApi.tasks({ status: taskFilter, page, size: pageSize });
       setRows(resp?.data?.records ?? []);
+      // total 取后端同源 COUNT(*)：前端不再用 rows.length 冒充总数（那会让「共 1 条」永远正确）。
+      setTotal(normalizeTotal(resp?.data?.total));
     } catch (err) {
       // 展示后端真实原因：createApiClient 已把 errorCode / message 挂到错误对象上，
       // 先前这里把它一律概括成「待办加载失败」，用户只能截图求助、无法自助判断。
@@ -205,6 +218,11 @@ export function ReviewWorkbenchPage(): ReactElement {
     } finally {
       setLoading(false);
     }
+  }, [taskFilter, page, pageSize]);
+
+  /** 切换任务维筛选回到第 1 页：否则从第 3 页切到只有 1 页数据的筛选条件会看到空表。 */
+  useEffect(() => {
+    setPage(1);
   }, [taskFilter]);
 
   useEffect(() => {
@@ -340,7 +358,23 @@ export function ReviewWorkbenchPage(): ReactElement {
           rowKey="claimId"
           loading={loading}
           dataSource={rows}
-          pagination={{ pageSize: 20 }}
+          pagination={{
+            // 服务端分页：current/pageSize 由本页状态驱动，total 用后端返回值。
+            // 禁止再写 `pagination={{ pageSize: 20 }}`（那是对已取回的 50 条做前端切片）。
+            current: page,
+            pageSize,
+            total,
+            showSizeChanger: true,
+            pageSizeOptions: ['20', '50', '100'],
+            showTotal: (t) => `共 ${t} 条`,
+            onChange: (nextPage, nextSize) => {
+              setPage(nextPage);
+              if (nextSize !== pageSize) {
+                setPageSize(nextSize);
+                setPage(1);
+              }
+            },
+          }}
           columns={[
             { title: '报案号', dataIndex: 'claimNo', width: 200 },
             { title: '保单号', dataIndex: 'policyNo', width: 140 },

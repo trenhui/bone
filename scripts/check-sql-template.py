@@ -53,6 +53,16 @@ def templates() -> list[Path]:
     """运行时 SQL 模板：*/src/main/resources/sql/**/*.sql，排除片段目录。"""
     out: list[Path] = []
     for p in REPO.rglob("*.sql"):
+        # 跳过 git 工作树目录（.worktrees/）：CI 无 worktree，此排除为 no-op。
+        # 判定必须用「相对 REPO 的路径」，不能用绝对路径的 parts——脚本自身就在
+        # `.worktrees/<change>/` 里跑时，绝对路径每一条都含 `.worktrees`，会把整个
+        # 仓库连自己一起跳过，判据恒报「扫描 0 个」（comet 每个批次都在 worktree 内执行）。
+        try:
+            rel = p.relative_to(REPO)
+        except ValueError:
+            continue
+        if ".worktrees" in rel.parts:
+            continue
         s = p.as_posix()
         if "/target/" in s or "/src/main/resources/" not in s:
             continue
