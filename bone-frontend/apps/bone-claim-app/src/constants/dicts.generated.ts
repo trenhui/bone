@@ -88,6 +88,7 @@ export const PERMISSION_DICT: Record<string, string> = {
   'claim:claims:read': '案件读',
   'claim:claims:write': '案件写',
   'claim:review:write': '复核写',
+  'claim:re-review:write': '独立复审写',
   'claim:decision:write': '核赔写',
   'claim:settlement:write': '结算写',
   'claim:appeal:write': '申诉写',

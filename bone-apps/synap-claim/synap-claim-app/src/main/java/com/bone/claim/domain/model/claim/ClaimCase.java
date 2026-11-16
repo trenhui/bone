@@ -547,6 +547,45 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
     transition(approved ? ClaimStatus.FINISHED : ClaimStatus.CLOSED_REJECTED, "REVIEW", reviewerId);
   }
 
+  // ===================== 独立复审（批3：43/46 与 44 并列） =====================
+
+  /**
+   * 进入独立复审待处理（42 → 43，批3 任务 1.1/3.2）。
+   *
+   * <p><b>同人不可自审</b>（任务 3.2）：独立复审人不得是初审人（{@code firstReviewerId}）。这是职责分离的硬约束——让初审人自己
+   * 「独立」复审等于没有复审。守卫对入参做 {@code trim}：{@code " reviewer-1 "} 与 {@code "reviewer-1"} 视为同一人，堵住空白绕过。
+   * 失败时状态不变（守卫在 {@code transition} 之前抛出）。
+   */
+  public void submitForIndependentReReview(String reviewerId) {
+    requireStatus(ClaimStatus.ADJUSTED, "已审核才能进入独立复审");
+    String normalized = reviewerId == null ? "" : reviewerId.trim();
+    if (normalized.isEmpty()) {
+      throw new DomainException("独立复审人不能为空");
+    }
+    if (normalized.equals(firstReviewerId == null ? "" : firstReviewerId.trim())) {
+      throw new DomainException("独立复审必须由非初审人执行（§11.10 职责分离·同人不可自审）");
+    }
+    this.secondReviewerId = normalized;
+    transition(ClaimStatus.RE_REVIEW_PENDING, "SUBMIT_RE_REVIEW", normalized);
+  }
+
+  /**
+   * 提交独立复审结论（43 → 46 通过 / 43 → 45 驳回，批3 任务 1.1）。
+   *
+   * <p>复审人必须是登记的独立复审人；通过后进入独立的 46 态，<b>不</b>回落到 44 双人复核或 50 结案——审计需区分两种复核来源。
+   */
+  public void completeIndependentReReview(boolean approved, String reviewerId) {
+    requireStatus(ClaimStatus.RE_REVIEW_PENDING, "独立复审待处理才能提交复审结论");
+    String normalized = reviewerId == null ? "" : reviewerId.trim();
+    if (!normalized.equals(secondReviewerId == null ? "" : secondReviewerId.trim())) {
+      throw new DomainException("复审人必须是登记的独立复审人");
+    }
+    transition(
+        approved ? ClaimStatus.RE_REVIEW_PASSED : ClaimStatus.CLOSED_REJECTED,
+        "RE_REVIEW",
+        normalized);
+  }
+
   /** 自动通过（12 → 50，不经人工审核态 40/41/42/44；仍经资金 Saga，见 §6.3）。 */
   public void autoApprove(String operatorId) {
     requireStatus(ClaimStatus.PRE_EXAMINED, "已初审才能自动通过");
@@ -782,7 +821,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
       case DRAFT, ACCEPTED, EVIDENCE_SUBMITTING -> ClaimStage.SIGNING;
       case PENDING_PRE_EXAM, PRE_EXAMINING, AUTO_PRE_EXAMINING, PRE_EXAMINED -> ClaimStage.PRE_EXAM;
       case PENDING_ADJUST, ADJUSTING, ADJUSTED -> ClaimStage.AUDITING;
-      case REVIEWING, APPEALING -> ClaimStage.REVIEWING;
+      case REVIEWING, RE_REVIEW_PENDING, RE_REVIEW_PASSED, APPEALING -> ClaimStage.REVIEWING;
       case FINISHED, CLOSED_REJECTED -> ClaimStage.FINISH;
     };
   }

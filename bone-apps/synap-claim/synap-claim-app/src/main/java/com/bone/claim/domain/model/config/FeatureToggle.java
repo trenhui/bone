@@ -40,6 +40,14 @@ public class FeatureToggle extends TenantAbstractEntity<Long> {
    */
   public static final String FEATURE_TRIAGE_LIMITS = "TRIAGE_LIMITS";
 
+  /**
+   * 独立复审特性键（批 3 灰度开关，任务 4.1）。
+   *
+   * <p><b>关闭时零流量</b>：不产生任何新的 43/46 状态流转，44 双人复核与初审行为不变。开关只决定「是否放行独立复审入口」，
+   * 不删除既有复审数据、不放宽职责分离（同人不可自审在任何开关态都硬拒绝，见 spec §职责分离）。
+   */
+  public static final String FEATURE_RE_REVIEW = "RE_REVIEW";
+
   public static final String STATE_ENABLED = "ENABLED";
   public static final String STATE_DISABLED = "DISABLED";
 

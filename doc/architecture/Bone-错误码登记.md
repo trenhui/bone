@@ -623,6 +623,8 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_SEARCH_KEYWORD_INVALID` | 400 | 跨键检索参数非法（关键词长度 2..64 / 危险字符 / limit 1..20），护栏显式拒绝不做静默裁剪 |
 | `SC_CLAIM_TASK_NOT_FOUND` | 404 | 任务不存在（含已逻辑删除 / 跨租户按不存在处理，不泄露存在性） |
 | `SC_CLAIM_TASK_CONFLICT` | 409 | 任务并发冲突：并发自领乐观锁失败（抢单撞车）或同案同类型已存在生效任务（唯一键冲突）；不重试、不静默改派 |
+| `SC_CLAIM_REREVIEW_NOT_FOUND` | 404 | 独立复审任务不存在（含跨租户按不存在处理，不泄露存在性） |
+| `SC_CLAIM_REREVIEWER_CONFLICT` | 409 | 独立复审人冲突：复审人=初审人（含空白绕过）或与登记复审人不一致；职责分离失效须单列告警，不复用复核冲突码 |
 | `SC_CLAIM_ADJUST_NOT_FOUND` | 404 | 理算记录不存在 |
 | `SC_CLAIM_ADJUST_STATUS_INVALID` | 422 | 理算状态不允许作为出金依据（`UNFROZEN`/`ROLLBACKED`：记录存在但该版本已作废/待重算） |
 | `SC_CLAIM_ADJUST_EVIDENCE_NOT_LOCKED` | 422 | 证据未锁定即发起理算（请求合法，理算前置不成立；原登记 409 与代码不符，2026-11-02 校正） |

@@ -89,7 +89,10 @@ public final class ClaimErrors {
           // 404：任务不存在（或跨租户按不存在处理，不泄露存在性）
           Map.entry(ClaimErrorCodes.SC_CLAIM_TASK_NOT_FOUND, 404),
           // 409：并发自领互斥——乐观锁或唯一键冲突，恰 1 成功、另 1 冲突。不是参数错，重试无用（要刷新列表）
-          Map.entry(ClaimErrorCodes.SC_CLAIM_TASK_CONFLICT, 409));
+          Map.entry(ClaimErrorCodes.SC_CLAIM_TASK_CONFLICT, 409),
+          // 独立复审：404 复审任务不存在/跨租户；409 同人不可自审（职责分离失效，须单列告警）
+          Map.entry(ClaimErrorCodes.SC_CLAIM_REREVIEW_NOT_FOUND, 404),
+          Map.entry(ClaimErrorCodes.SC_CLAIM_REREVIEWER_CONFLICT, 409));
 
   static {
     checkEveryCodeRegistered();

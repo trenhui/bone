@@ -22,6 +22,7 @@ export const PERMISSIONS = {
   CLAIMS_READ: 'claim:claims:read',
   CLAIMS_WRITE: 'claim:claims:write',
   REVIEW_WRITE: 'claim:review:write',
+  RE_REVIEW_WRITE: 'claim:re-review:write',
   DECISION_WRITE: 'claim:decision:write',
   SETTLEMENT_WRITE: 'claim:settlement:write',
   APPEAL_WRITE: 'claim:appeal:write',
