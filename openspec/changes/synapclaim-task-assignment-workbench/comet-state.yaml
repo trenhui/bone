@@ -2,7 +2,7 @@
 change_id: 0871e47f-f832-473d-97cd-a7b531162cb7
 workflow: full
 language: zh-CN
-phase: build
+phase: verify
 context_compression: off
 build_mode: executing-plans
 build_pause: null
@@ -17,7 +17,7 @@ design_doc: openspec/changes/synapclaim-task-assignment-workbench/design.md
 plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
 verify_result: pending
 verify_failures: 0
-verification_report: null
+verification_report: docs/superpowers/reports/2026-11-16-synapclaim-task-assignment-workbench-verify.md
 branch_status: pending
 created_at: 2026-11-13
 verified_at: null
@@ -30,8 +30,8 @@ handoff_hash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
 classic_profile: null
 classic_migration: null
 run_checkpoint:
-  schema: comet.workflow-run-checkpoint.v1
-  hash: 868cec90d569511b9ec8ba8524a4b14eaf0182f6c60f5aaee6527aa43da93ab4
+  schema: comet.workflow-run-checkpoint.v2
+  hash: 0d055d483f592916f1d88a781fe72a37877f8d3321b34ef8c2fe86a979381a50
   run:
     protocolVersion: 1
     schemaVersion: 1
@@ -58,7 +58,7 @@ run_checkpoint:
       branchStatus: pending
       buildMode: executing-plans
       buildPause: null
-      checkEpoch: 2
+      checkEpoch: 3
       classicMigration: null
       classicProfile: null
       contextCompression: off
@@ -69,19 +69,19 @@ run_checkpoint:
       handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
       isolation: worktree
       language: zh-CN
-      phase: build
+      phase: verify
       plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
       reviewMode: thorough
       subagentDispatch: null
       tddMode: tdd
-      verificationReport: null
+      verificationReport: docs/superpowers/reports/2026-11-16-synapclaim-task-assignment-workbench-verify.md
       verifiedAt: null
       verifyFailures: 0
       verifyMode: null
       verifyResult: pending
       workflow: full
-    status: running
-    sequence: 19
+    status: cancelled
+    sequence: 24
     actions:
       - attempt: 1
         claim:
@@ -138,26 +138,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-task-assignment-workbench
             workspaceBaseline:
               ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-          outputs:
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open.evidence:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
+          outputs: {}
         inputHash: a68e4996f565e0f52e9903ca32047452aa8ac6958d635b565d203a2d5a430852
         outcome:
           actionId: synapclaim-task-assignment-workbench:4
@@ -208,28 +189,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-task-assignment-workbench
             workspaceBaseline:
               ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-          outputs:
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open.evidence:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open.revalidate:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+          outputs: {}
         inputHash: 3751f696a15eef15762c08ecda8e03154b05c037be975852dd3a0f69084fce60
         outcome:
           actionId: synapclaim-task-assignment-workbench:5
@@ -313,113 +273,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-task-assignment-workbench
             workspaceBaseline:
               ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-          outputs:
-            full.design.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-                    handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-                    proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                      t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                      active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 +
-                      @Version 乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                      UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                      USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total
-                      用与列表同一过滤条件的 COUNT(*)，前端只传 page/size 并去掉固定 50
-                      条切片；AUTO_ASSIGN 开关关闭时分配器停写、任务表保留不读，旧 {claimId}
-                      兼容层保留。【比较】方案 B 规则引擎外置 + 查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4
-                      超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足
-                      spec「并发双领取恰 1 成功」，且项目禁 FOR
-                      UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                      可复用事实。【风险与处理】① 并行会话占用
-                      ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository
-                      → 等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                      追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③
-                      新表列与活库不一致致静默读空 → 实体 @Column 与 information_schema
-                      逐列求差、每个仓储方法同批 SQL 模板且 SELECT 列对齐、模板首行必须是语句关键字；④
-                      新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤ 前端雪花 ID 一律
-                      string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                      total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                      0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                      同源）；集成（information_schema 终态断言、启动期无
-                      TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                      total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                      成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                      执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-                    requirementsEvidence:
-                      contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-                    sourceEvidence:
-                      contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-              handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-              proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 + @Version
-                乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total 用与列表同一过滤条件的
-                COUNT(*)，前端只传 page/size 并去掉固定 50 条切片；AUTO_ASSIGN
-                开关关闭时分配器停写、任务表保留不读，旧 {claimId} 兼容层保留。【比较】方案 B 规则引擎外置 +
-                查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4 超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 +
-                分布式锁免生成列：并发双写窗口无法满足 spec「并发双领取恰 1 成功」，且项目禁 FOR
-                UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                可复用事实。【风险与处理】① 并行会话占用
-                ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository →
-                等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③ 新表列与活库不一致致静默读空 → 实体
-                @Column 与 information_schema 逐列求差、每个仓储方法同批 SQL 模板且 SELECT
-                列对齐、模板首行必须是语句关键字；④ 新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤
-                前端雪花 ID 一律 string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                同源）；集成（information_schema 终态断言、启动期无
-                TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-              requirementsEvidence:
-                contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-              sourceEvidence:
-                contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open.evidence:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open.revalidate:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+          outputs: {}
         inputHash: 573e6fb65a998eec1659e7e70a4e6870b35d75a1b944a6cd2a7db1bbc42fed5f
         outcome:
           actionId: synapclaim-task-assignment-workbench:7
@@ -458,118 +312,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-task-assignment-workbench
             workspaceBaseline:
               ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-          outputs:
-            full.design.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-                    handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-                    proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                      t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                      active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 +
-                      @Version 乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                      UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                      USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total
-                      用与列表同一过滤条件的 COUNT(*)，前端只传 page/size 并去掉固定 50
-                      条切片；AUTO_ASSIGN 开关关闭时分配器停写、任务表保留不读，旧 {claimId}
-                      兼容层保留。【比较】方案 B 规则引擎外置 + 查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4
-                      超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足
-                      spec「并发双领取恰 1 成功」，且项目禁 FOR
-                      UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                      可复用事实。【风险与处理】① 并行会话占用
-                      ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository
-                      → 等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                      追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③
-                      新表列与活库不一致致静默读空 → 实体 @Column 与 information_schema
-                      逐列求差、每个仓储方法同批 SQL 模板且 SELECT 列对齐、模板首行必须是语句关键字；④
-                      新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤ 前端雪花 ID 一律
-                      string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                      total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                      0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                      同源）；集成（information_schema 终态断言、启动期无
-                      TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                      total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                      成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                      执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-                    requirementsEvidence:
-                      contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-                    sourceEvidence:
-                      contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.design.document:
-              designDoc: openspec/changes/synapclaim-task-assignment-workbench/design.md
-            full.design.evidence:
-              contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-              ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-            full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-              handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-              proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 + @Version
-                乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total 用与列表同一过滤条件的
-                COUNT(*)，前端只传 page/size 并去掉固定 50 条切片；AUTO_ASSIGN
-                开关关闭时分配器停写、任务表保留不读，旧 {claimId} 兼容层保留。【比较】方案 B 规则引擎外置 +
-                查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4 超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 +
-                分布式锁免生成列：并发双写窗口无法满足 spec「并发双领取恰 1 成功」，且项目禁 FOR
-                UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                可复用事实。【风险与处理】① 并行会话占用
-                ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository →
-                等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③ 新表列与活库不一致致静默读空 → 实体
-                @Column 与 information_schema 逐列求差、每个仓储方法同批 SQL 模板且 SELECT
-                列对齐、模板首行必须是语句关键字；④ 新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤
-                前端雪花 ID 一律 string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                同源）；集成（information_schema 终态断言、启动期无
-                TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-              requirementsEvidence:
-                contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-              sourceEvidence:
-                contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open.evidence:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open.revalidate:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+          outputs: {}
         inputHash: 477b1072ef47788d1c947845f65aa8d78f0d994dee1a04f9c5f5161f67291a06
         outcome:
           actionId: synapclaim-task-assignment-workbench:9
@@ -614,143 +357,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-task-assignment-workbench
             workspaceBaseline:
               ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-          outputs:
-            full.build.configure:
-              boundBranch: comet/synapclaim-task-assignment-workbench
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-            full.build.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-task-assignment-workbench
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-            full.design.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-                    handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-                    proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                      t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                      active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 +
-                      @Version 乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                      UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                      USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total
-                      用与列表同一过滤条件的 COUNT(*)，前端只传 page/size 并去掉固定 50
-                      条切片；AUTO_ASSIGN 开关关闭时分配器停写、任务表保留不读，旧 {claimId}
-                      兼容层保留。【比较】方案 B 规则引擎外置 + 查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4
-                      超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足
-                      spec「并发双领取恰 1 成功」，且项目禁 FOR
-                      UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                      可复用事实。【风险与处理】① 并行会话占用
-                      ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository
-                      → 等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                      追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③
-                      新表列与活库不一致致静默读空 → 实体 @Column 与 information_schema
-                      逐列求差、每个仓储方法同批 SQL 模板且 SELECT 列对齐、模板首行必须是语句关键字；④
-                      新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤ 前端雪花 ID 一律
-                      string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                      total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                      0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                      同源）；集成（information_schema 终态断言、启动期无
-                      TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                      total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                      成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                      执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-                    requirementsEvidence:
-                      contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-                    sourceEvidence:
-                      contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.design.document:
-              designDoc: openspec/changes/synapclaim-task-assignment-workbench/design.md
-            full.design.evidence:
-              contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-              ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-            full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-              handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-              proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 + @Version
-                乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total 用与列表同一过滤条件的
-                COUNT(*)，前端只传 page/size 并去掉固定 50 条切片；AUTO_ASSIGN
-                开关关闭时分配器停写、任务表保留不读，旧 {claimId} 兼容层保留。【比较】方案 B 规则引擎外置 +
-                查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4 超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 +
-                分布式锁免生成列：并发双写窗口无法满足 spec「并发双领取恰 1 成功」，且项目禁 FOR
-                UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                可复用事实。【风险与处理】① 并行会话占用
-                ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository →
-                等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③ 新表列与活库不一致致静默读空 → 实体
-                @Column 与 information_schema 逐列求差、每个仓储方法同批 SQL 模板且 SELECT
-                列对齐、模板首行必须是语句关键字；④ 新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤
-                前端雪花 ID 一律 string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                同源）；集成（information_schema 终态断言、启动期无
-                TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-              requirementsEvidence:
-                contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-              sourceEvidence:
-                contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open.evidence:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open.revalidate:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+          outputs: {}
         inputHash: 04023ead22643a98e7d14417cd70ee4efdcbff690957a41ba9ce2ede5cfb61d7
         outcome:
           actionId: synapclaim-task-assignment-workbench:11
@@ -788,155 +395,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-task-assignment-workbench
             workspaceBaseline:
               ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-          outputs:
-            full.build.configure:
-              boundBranch: comet/synapclaim-task-assignment-workbench
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-            full.build.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-task-assignment-workbench
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-            full.build.plan:
-              designEvidence:
-                contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-                ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              planEvidence:
-                contentHash: e81df89e7c3f8c9b4f7aa6bbbb73e536a20817bffa960cc08378f20de28dbd01
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
-            full.build.plan.evidence:
-              contentHash: e81df89e7c3f8c9b4f7aa6bbbb73e536a20817bffa960cc08378f20de28dbd01
-              ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-            full.design.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-                    handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-                    proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                      t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                      active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 +
-                      @Version 乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                      UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                      USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total
-                      用与列表同一过滤条件的 COUNT(*)，前端只传 page/size 并去掉固定 50
-                      条切片；AUTO_ASSIGN 开关关闭时分配器停写、任务表保留不读，旧 {claimId}
-                      兼容层保留。【比较】方案 B 规则引擎外置 + 查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4
-                      超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足
-                      spec「并发双领取恰 1 成功」，且项目禁 FOR
-                      UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                      可复用事实。【风险与处理】① 并行会话占用
-                      ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository
-                      → 等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                      追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③
-                      新表列与活库不一致致静默读空 → 实体 @Column 与 information_schema
-                      逐列求差、每个仓储方法同批 SQL 模板且 SELECT 列对齐、模板首行必须是语句关键字；④
-                      新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤ 前端雪花 ID 一律
-                      string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                      total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                      0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                      同源）；集成（information_schema 终态断言、启动期无
-                      TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                      total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                      成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                      执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-                    requirementsEvidence:
-                      contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-                    sourceEvidence:
-                      contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.design.document:
-              designDoc: openspec/changes/synapclaim-task-assignment-workbench/design.md
-            full.design.evidence:
-              contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-              ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-            full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-              handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-              proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 + @Version
-                乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total 用与列表同一过滤条件的
-                COUNT(*)，前端只传 page/size 并去掉固定 50 条切片；AUTO_ASSIGN
-                开关关闭时分配器停写、任务表保留不读，旧 {claimId} 兼容层保留。【比较】方案 B 规则引擎外置 +
-                查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4 超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 +
-                分布式锁免生成列：并发双写窗口无法满足 spec「并发双领取恰 1 成功」，且项目禁 FOR
-                UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                可复用事实。【风险与处理】① 并行会话占用
-                ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository →
-                等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③ 新表列与活库不一致致静默读空 → 实体
-                @Column 与 information_schema 逐列求差、每个仓储方法同批 SQL 模板且 SELECT
-                列对齐、模板首行必须是语句关键字；④ 新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤
-                前端雪花 ID 一律 string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                同源）；集成（information_schema 终态断言、启动期无
-                TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-              requirementsEvidence:
-                contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-              sourceEvidence:
-                contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open.evidence:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
-            full.open.revalidate:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+          outputs: {}
         inputHash: 4fa9b6f7150036c4d9f3675dccd4144a129da091196b585aea3f5a5dce9fbac9
         protocolVersion: 1
         reason: 命令 revise-plan 已取代待执行 Action
@@ -1006,19 +465,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-task-assignment-workbench
             workspaceBaseline:
               ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-          outputs:
-            full.build.plan:
-              designEvidence:
-                contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-                ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              planEvidence:
-                contentHash: be8ac0a7f1b9acdad7353db88d058b62ebdd61b1f85ad13152b958baee78a77a
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
-            full.build.plan.evidence:
-              contentHash: be8ac0a7f1b9acdad7353db88d058b62ebdd61b1f85ad13152b958baee78a77a
-              ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+          outputs: {}
         inputHash: dd7b111941de4ed2ace57ff1aa99c2431177e0ba2203d5c788bd7ba05f3d0c43
         protocolVersion: 1
         reason: 命令 revise-plan 已取代待执行 Action
@@ -1081,6 +528,15 @@ run_checkpoint:
         stepId: full.build.plan
         type: invoke_skill
       - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-task-assignment-workbench:19/1
+          token: portable-74d2d3f61a237acc5b5e0de2227563ed62ef7d171aafc099f627afc6580f6ab5
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
         id: synapclaim-task-assignment-workbench:19
         input:
           input:
@@ -1088,30 +544,168 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-task-assignment-workbench
             workspaceBaseline:
               ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-          outputs:
-            full.build.plan:
-              designEvidence:
-                contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-                ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              planEvidence:
-                contentHash: 2208166c61615eb2c56524d01830887e3e244b3b9c164903532d075b764fb0e9
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
-            full.build.plan.evidence:
-              contentHash: 2208166c61615eb2c56524d01830887e3e244b3b9c164903532d075b764fb0e9
-              ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+          outputs: {}
         inputHash: 7c103efa467878c0fb50c90244cb8666d76eb1e00c892dc8c7764f4dca9f1852
+        outcome:
+          actionId: synapclaim-task-assignment-workbench:19
+          attempt: 1
+          claimToken: portable-74d2d3f61a237acc5b5e0de2227563ed62ef7d171aafc099f627afc6580f6ab5
+          inputHash: 7c103efa467878c0fb50c90244cb8666d76eb1e00c892dc8c7764f4dca9f1852
+          outcomeId: dc87ec02-a650-49c1-85c5-92bf366a63c2
+          output:
+            event: build-complete
+          status: succeeded
         protocolVersion: 1
-        receipts: []
+        receipts:
+          - hash: 70fa39f495f83d1dd3f430034db00c190bc96b320499ec3707c9fbb55703b09d
+            outcomeId: dc87ec02-a650-49c1-85c5-92bf366a63c2
         reconciliations: []
         ref: comet-build
         requiredCapabilities: []
         retry: manual
         runId: synapclaim-task-assignment-workbench
-        status: pending
+        status: succeeded
         stepId: full.build.execute
         type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-577de991d9b6517eab59682bf0beaf76e1b26c5615ad18f2ab13438a19bc1e26
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-task-assignment-workbench:20
+        input:
+          input:
+            change: synapclaim-task-assignment-workbench
+            changeDir: openspec/changes/synapclaim-task-assignment-workbench
+            workspaceBaseline:
+              ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
+          outputs: {}
+        inputHash: ca7d4d9e2208c25c8839e2641953998e013cc807d10523444e406c4435b6d1e1
+        outcome:
+          actionId: synapclaim-task-assignment-workbench:20
+          attempt: 1
+          claimToken: portable-577de991d9b6517eab59682bf0beaf76e1b26c5615ad18f2ab13438a19bc1e26
+          inputHash: ca7d4d9e2208c25c8839e2641953998e013cc807d10523444e406c4435b6d1e1
+          outcomeId: 309267b114ab0b28fead5f308399bcaecb8f4d07486cfcf6af80f698f3651f50
+          output:
+            argv:
+              - mvn
+              - compile
+              - -q
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+            cwd: .
+            environment: d91eee5fcb0b92a66494704d8e5f588b1087f0df892e4af611fa4667eeab2c19
+            exitCode: 0
+            inputAfter: a78f4266bd7a367047ed20b6424e53ee4988877f8cb29c4927693024000ffc44
+            inputBefore: a78f4266bd7a367047ed20b6424e53ee4988877f8cb29c4927693024000ffc44
+            manifestHash: 7fe0bab859d449e409afe0b87a09be4d5132257bd1632b19b2f2b9d313c1a464
+            manifestRef: .comet/runtime/classic-sdk-checks/a399de4dc61ca7adc8477efc601150b5c2f163b95f4dcd8e8bc1286521cbda51/27b3c409-0bba-4ea4-bffb-67f81315f9e1.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/a399de4dc61ca7adc8477efc601150b5c2f163b95f4dcd8e8bc1286521cbda51/e35bb652-11ba-4a52-9a49-80e4e4e32cfb.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 59b472c85f87c472d0f02d5f3d7190bcb4b3ffabf288703c1d03e050e9283f23
+            outcomeId: 309267b114ab0b28fead5f308399bcaecb8f4d07486cfcf6af80f698f3651f50
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-task-assignment-workbench
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-cfc44ee67673d0b783378f96d2a00115790984ca7dfd9ca27750e9d435c818c7
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-task-assignment-workbench:22
+        input:
+          input:
+            change: synapclaim-task-assignment-workbench
+            changeDir: openspec/changes/synapclaim-task-assignment-workbench
+            workspaceBaseline:
+              ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
+          outputs: {}
+        inputHash: 366d3d5a5010c9fbf3f6d27373fcb1a2ed3e07c2ef2c7e68c029f9cc7c6ce1e9
+        outcome:
+          actionId: synapclaim-task-assignment-workbench:22
+          attempt: 1
+          claimToken: portable-cfc44ee67673d0b783378f96d2a00115790984ca7dfd9ca27750e9d435c818c7
+          inputHash: 366d3d5a5010c9fbf3f6d27373fcb1a2ed3e07c2ef2c7e68c029f9cc7c6ce1e9
+          outcomeId: f35d8c65-6a54-4ca4-8130-32cf5a9cd887
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-16-synapclaim-task-assignment-workbench-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 2336d3f604f803e92f75a16b63ed033811d304eb996e14a706c2283afed45b68
+            outcomeId: f35d8c65-6a54-4ca4-8130-32cf5a9cd887
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-task-assignment-workbench
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        cancellation:
+          actionId: synapclaim-task-assignment-workbench:24
+          attempt: 1
+          claimToken: portable-b45b673556f45ef238dc84b156113c179a8d8c01afafe940ca10cb7d880eb692
+          evidence: 执行器 comet-classic-check 已停止，无存活子进程。动作
+            synapclaim-task-assignment-workbench:24 的检查命令为 bash
+            scripts/check.sh（cwd=.，timeout 900000）。回执
+            .comet/runtime/classic-sdk-checks/a399de4dc61ca7adc8477efc601150b5c2f163b95f4dcd8e8bc1286521cbda51/sdk-c6261f59df16d7f597c292e69b79d6206c106ebb61f1387f7b2a527bfba8665d.json
+            的 status=started，缺 exitCode / 输入快照 / 内容哈希，故本次不作成功声明；对应日志
+            e92afe2e-f6ad-4672-a19b-f5965c1613a1.log（140534 字节）虽显示 59
+            步全通过，也不作为通过证据。
+          inputHash: b6a0ab2c18b5f8db59c708e43268579b542ade09e80ff400ba922f54a5d532b5
+        claim:
+          executorId: comet-classic-check
+          token: portable-b45b673556f45ef238dc84b156113c179a8d8c01afafe940ca10cb7d880eb692
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-task-assignment-workbench:24
+        input:
+          input:
+            change: synapclaim-task-assignment-workbench
+            changeDir: openspec/changes/synapclaim-task-assignment-workbench
+            workspaceBaseline:
+              ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
+          outputs: {}
+        inputHash: b6a0ab2c18b5f8db59c708e43268579b542ade09e80ff400ba922f54a5d532b5
+        protocolVersion: 1
+        reason: 执行器在 check.sh 子进程结束后中断，回执未写全；主机已停止，无正在运行的子进程
+        receipts: []
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-task-assignment-workbench
+        status: cancelled
+        stepId: full.verify.check
+        type: call_tool
     commands:
       - id: a5d63f9cbdc43c0a26264d1c9caa547515957c3b08433581b0250c9b87ad3e4f
         name: revise-plan
@@ -1126,693 +720,43 @@ run_checkpoint:
         results: {}
         sequence: 1
       synapclaim-task-assignment-workbench:11:
-        results:
-          full.build.configure:
-            sequence: 9
-            value:
-              boundBranch: comet/synapclaim-task-assignment-workbench
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.build.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-task-assignment-workbench
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-                    handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-                    proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                      t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                      active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 +
-                      @Version 乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                      UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                      USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total
-                      用与列表同一过滤条件的 COUNT(*)，前端只传 page/size 并去掉固定 50
-                      条切片；AUTO_ASSIGN 开关关闭时分配器停写、任务表保留不读，旧 {claimId}
-                      兼容层保留。【比较】方案 B 规则引擎外置 + 查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4
-                      超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足
-                      spec「并发双领取恰 1 成功」，且项目禁 FOR
-                      UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                      可复用事实。【风险与处理】① 并行会话占用
-                      ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository
-                      → 等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                      追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③
-                      新表列与活库不一致致静默读空 → 实体 @Column 与 information_schema
-                      逐列求差、每个仓储方法同批 SQL 模板且 SELECT 列对齐、模板首行必须是语句关键字；④
-                      新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤ 前端雪花 ID 一律
-                      string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                      total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                      0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                      同源）；集成（information_schema 终态断言、启动期无
-                      TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                      total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                      成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                      执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-                    requirementsEvidence:
-                      contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-                    sourceEvidence:
-                      contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-task-assignment-workbench/design.md
-          full.design.evidence:
-            sequence: 8
-            value:
-              contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-              ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-              handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-              proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 + @Version
-                乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total 用与列表同一过滤条件的
-                COUNT(*)，前端只传 page/size 并去掉固定 50 条切片；AUTO_ASSIGN
-                开关关闭时分配器停写、任务表保留不读，旧 {claimId} 兼容层保留。【比较】方案 B 规则引擎外置 +
-                查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4 超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 +
-                分布式锁免生成列：并发双写窗口无法满足 spec「并发双领取恰 1 成功」，且项目禁 FOR
-                UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                可复用事实。【风险与处理】① 并行会话占用
-                ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository →
-                等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③ 新表列与活库不一致致静默读空 → 实体
-                @Column 与 information_schema 逐列求差、每个仓储方法同批 SQL 模板且 SELECT
-                列对齐、模板首行必须是语句关键字；④ 新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤
-                前端雪花 ID 一律 string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                同源）；集成（information_schema 终态断言、启动期无
-                TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-              requirementsEvidence:
-                contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-              sourceEvidence:
-                contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+        results: {}
         sequence: 11
       synapclaim-task-assignment-workbench:13:
-        results:
-          full.build.configure:
-            sequence: 9
-            value:
-              boundBranch: comet/synapclaim-task-assignment-workbench
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.build.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-task-assignment-workbench
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-          full.build.plan:
-            sequence: 11
-            value:
-              designEvidence:
-                contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-                ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              planEvidence:
-                contentHash: e81df89e7c3f8c9b4f7aa6bbbb73e536a20817bffa960cc08378f20de28dbd01
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
-          full.build.plan.evidence:
-            sequence: 12
-            value:
-              contentHash: e81df89e7c3f8c9b4f7aa6bbbb73e536a20817bffa960cc08378f20de28dbd01
-              ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-                    handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-                    proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                      t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                      active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 +
-                      @Version 乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                      UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                      USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total
-                      用与列表同一过滤条件的 COUNT(*)，前端只传 page/size 并去掉固定 50
-                      条切片；AUTO_ASSIGN 开关关闭时分配器停写、任务表保留不读，旧 {claimId}
-                      兼容层保留。【比较】方案 B 规则引擎外置 + 查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4
-                      超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足
-                      spec「并发双领取恰 1 成功」，且项目禁 FOR
-                      UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                      可复用事实。【风险与处理】① 并行会话占用
-                      ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository
-                      → 等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                      追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③
-                      新表列与活库不一致致静默读空 → 实体 @Column 与 information_schema
-                      逐列求差、每个仓储方法同批 SQL 模板且 SELECT 列对齐、模板首行必须是语句关键字；④
-                      新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤ 前端雪花 ID 一律
-                      string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                      total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                      0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                      同源）；集成（information_schema 终态断言、启动期无
-                      TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                      total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                      成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                      执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-                    requirementsEvidence:
-                      contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-                    sourceEvidence:
-                      contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-task-assignment-workbench/design.md
-          full.design.evidence:
-            sequence: 8
-            value:
-              contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-              ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-              handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-              proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 + @Version
-                乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total 用与列表同一过滤条件的
-                COUNT(*)，前端只传 page/size 并去掉固定 50 条切片；AUTO_ASSIGN
-                开关关闭时分配器停写、任务表保留不读，旧 {claimId} 兼容层保留。【比较】方案 B 规则引擎外置 +
-                查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4 超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 +
-                分布式锁免生成列：并发双写窗口无法满足 spec「并发双领取恰 1 成功」，且项目禁 FOR
-                UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                可复用事实。【风险与处理】① 并行会话占用
-                ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository →
-                等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③ 新表列与活库不一致致静默读空 → 实体
-                @Column 与 information_schema 逐列求差、每个仓储方法同批 SQL 模板且 SELECT
-                列对齐、模板首行必须是语句关键字；④ 新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤
-                前端雪花 ID 一律 string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                同源）；集成（information_schema 终态断言、启动期无
-                TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-              requirementsEvidence:
-                contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-              sourceEvidence:
-                contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+        results: {}
         sequence: 13
       synapclaim-task-assignment-workbench:14:
         results: {}
         sequence: 14
       synapclaim-task-assignment-workbench:16:
-        results:
-          full.build.plan:
-            sequence: 14
-            value:
-              designEvidence:
-                contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-                ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              planEvidence:
-                contentHash: be8ac0a7f1b9acdad7353db88d058b62ebdd61b1f85ad13152b958baee78a77a
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
-          full.build.plan.evidence:
-            sequence: 15
-            value:
-              contentHash: be8ac0a7f1b9acdad7353db88d058b62ebdd61b1f85ad13152b958baee78a77a
-              ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+        results: {}
         sequence: 16
       synapclaim-task-assignment-workbench:17:
         results: {}
         sequence: 17
       synapclaim-task-assignment-workbench:19:
-        results:
-          full.build.plan:
-            sequence: 17
-            value:
-              designEvidence:
-                contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-                ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              planEvidence:
-                contentHash: 2208166c61615eb2c56524d01830887e3e244b3b9c164903532d075b764fb0e9
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
-          full.build.plan.evidence:
-            sequence: 18
-            value:
-              contentHash: 2208166c61615eb2c56524d01830887e3e244b3b9c164903532d075b764fb0e9
-              ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+        results: {}
         sequence: 19
+      synapclaim-task-assignment-workbench:20:
+        results: {}
+        sequence: 20
+      synapclaim-task-assignment-workbench:22:
+        results: {}
+        sequence: 22
+      synapclaim-task-assignment-workbench:24:
+        results: {}
+        sequence: 24
       synapclaim-task-assignment-workbench:4:
-        results:
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
+        results: {}
         sequence: 4
       synapclaim-task-assignment-workbench:5:
-        results:
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+        results: {}
         sequence: 5
       synapclaim-task-assignment-workbench:7:
-        results:
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-                    handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-                    proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                      t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                      active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 +
-                      @Version 乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                      UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                      USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total
-                      用与列表同一过滤条件的 COUNT(*)，前端只传 page/size 并去掉固定 50
-                      条切片；AUTO_ASSIGN 开关关闭时分配器停写、任务表保留不读，旧 {claimId}
-                      兼容层保留。【比较】方案 B 规则引擎外置 + 查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4
-                      超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足
-                      spec「并发双领取恰 1 成功」，且项目禁 FOR
-                      UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                      可复用事实。【风险与处理】① 并行会话占用
-                      ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository
-                      → 等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                      追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③
-                      新表列与活库不一致致静默读空 → 实体 @Column 与 information_schema
-                      逐列求差、每个仓储方法同批 SQL 模板且 SELECT 列对齐、模板首行必须是语句关键字；④
-                      新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤ 前端雪花 ID 一律
-                      string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                      total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                      0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                      同源）；集成（information_schema 终态断言、启动期无
-                      TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                      total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                      成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                      执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-                    requirementsEvidence:
-                      contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-                    sourceEvidence:
-                      contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-              handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-              proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 + @Version
-                乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total 用与列表同一过滤条件的
-                COUNT(*)，前端只传 page/size 并去掉固定 50 条切片；AUTO_ASSIGN
-                开关关闭时分配器停写、任务表保留不读，旧 {claimId} 兼容层保留。【比较】方案 B 规则引擎外置 +
-                查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4 超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 +
-                分布式锁免生成列：并发双写窗口无法满足 spec「并发双领取恰 1 成功」，且项目禁 FOR
-                UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                可复用事实。【风险与处理】① 并行会话占用
-                ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository →
-                等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③ 新表列与活库不一致致静默读空 → 实体
-                @Column 与 information_schema 逐列求差、每个仓储方法同批 SQL 模板且 SELECT
-                列对齐、模板首行必须是语句关键字；④ 新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤
-                前端雪花 ID 一律 string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                同源）；集成（information_schema 终态断言、启动期无
-                TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-              requirementsEvidence:
-                contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-              sourceEvidence:
-                contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+        results: {}
         sequence: 7
       synapclaim-task-assignment-workbench:9:
-        results:
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-                    handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-                    proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                      t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                      active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 +
-                      @Version 乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                      UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                      USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total
-                      用与列表同一过滤条件的 COUNT(*)，前端只传 page/size 并去掉固定 50
-                      条切片；AUTO_ASSIGN 开关关闭时分配器停写、任务表保留不读，旧 {claimId}
-                      兼容层保留。【比较】方案 B 规则引擎外置 + 查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4
-                      超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足
-                      spec「并发双领取恰 1 成功」，且项目禁 FOR
-                      UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                      可复用事实。【风险与处理】① 并行会话占用
-                      ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository
-                      → 等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                      追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③
-                      新表列与活库不一致致静默读空 → 实体 @Column 与 information_schema
-                      逐列求差、每个仓储方法同批 SQL 模板且 SELECT 列对齐、模板首行必须是语句关键字；④
-                      新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤ 前端雪花 ID 一律
-                      string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                      total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                      0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                      同源）；集成（information_schema 终态断言、启动期无
-                      TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                      total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                      成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                      执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-                    requirementsEvidence:
-                      contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-                    sourceEvidence:
-                      contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-task-assignment-workbench/design.md
-          full.design.evidence:
-            sequence: 8
-            value:
-              contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-              ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-              handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-              proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 + @Version
-                乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total 用与列表同一过滤条件的
-                COUNT(*)，前端只传 page/size 并去掉固定 50 条切片；AUTO_ASSIGN
-                开关关闭时分配器停写、任务表保留不读，旧 {claimId} 兼容层保留。【比较】方案 B 规则引擎外置 +
-                查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4 超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 +
-                分布式锁免生成列：并发双写窗口无法满足 spec「并发双领取恰 1 成功」，且项目禁 FOR
-                UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                可复用事实。【风险与处理】① 并行会话占用
-                ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository →
-                等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③ 新表列与活库不一致致静默读空 → 实体
-                @Column 与 information_schema 逐列求差、每个仓储方法同批 SQL 模板且 SELECT
-                列对齐、模板首行必须是语句关键字；④ 新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤
-                前端雪花 ID 一律 string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                同源）；集成（information_schema 终态断言、启动期无
-                TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-              requirementsEvidence:
-                contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-              sourceEvidence:
-                contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+        results: {}
         sequence: 9
     waits:
       - id: synapclaim-task-assignment-workbench:3
@@ -1835,16 +779,7 @@ run_checkpoint:
         choices:
           - approved
           - rejected
-        results:
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
+        results: {}
         decision:
           id: classic-open-c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
           choice: approved
@@ -1901,75 +836,7 @@ run_checkpoint:
         choices:
           - approved
           - rejected
-        results:
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-              handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-              proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 + @Version
-                乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total 用与列表同一过滤条件的
-                COUNT(*)，前端只传 page/size 并去掉固定 50 条切片；AUTO_ASSIGN
-                开关关闭时分配器停写、任务表保留不读，旧 {claimId} 兼容层保留。【比较】方案 B 规则引擎外置 +
-                查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4 超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 +
-                分布式锁免生成列：并发双写窗口无法满足 spec「并发双领取恰 1 成功」，且项目禁 FOR
-                UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                可复用事实。【风险与处理】① 并行会话占用
-                ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository →
-                等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③ 新表列与活库不一致致静默读空 → 实体
-                @Column 与 information_schema 逐列求差、每个仓储方法同批 SQL 模板且 SELECT
-                列对齐、模板首行必须是语句关键字；④ 新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤
-                前端雪花 ID 一律 string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                同源）；集成（information_schema 终态断言、启动期无
-                TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-              requirementsEvidence:
-                contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-              sourceEvidence:
-                contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+        results: {}
         decision:
           id: classic-design-cf353fcd2f9cbc837a274fd5ec56dd9a8761570c74cec44068265e8a41790664-approved
           choice: approved
@@ -1997,144 +864,7 @@ run_checkpoint:
         choices:
           - approved
           - rejected
-        results:
-          full.build.configure:
-            sequence: 9
-            value:
-              boundBranch: comet/synapclaim-task-assignment-workbench
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-                    handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-                    proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                      t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                      active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 +
-                      @Version 乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                      UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                      USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total
-                      用与列表同一过滤条件的 COUNT(*)，前端只传 page/size 并去掉固定 50
-                      条切片；AUTO_ASSIGN 开关关闭时分配器停写、任务表保留不读，旧 {claimId}
-                      兼容层保留。【比较】方案 B 规则引擎外置 + 查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4
-                      超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足
-                      spec「并发双领取恰 1 成功」，且项目禁 FOR
-                      UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                      可复用事实。【风险与处理】① 并行会话占用
-                      ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository
-                      → 等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                      追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③
-                      新表列与活库不一致致静默读空 → 实体 @Column 与 information_schema
-                      逐列求差、每个仓储方法同批 SQL 模板且 SELECT 列对齐、模板首行必须是语句关键字；④
-                      新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤ 前端雪花 ID 一律
-                      string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                      total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                      0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                      同源）；集成（information_schema 终态断言、启动期无
-                      TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                      total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                      成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                      执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-                    requirementsEvidence:
-                      contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-                    sourceEvidence:
-                      contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-task-assignment-workbench/design.md
-          full.design.evidence:
-            sequence: 8
-            value:
-              contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-              ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-              handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-              proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 + @Version
-                乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total 用与列表同一过滤条件的
-                COUNT(*)，前端只传 page/size 并去掉固定 50 条切片；AUTO_ASSIGN
-                开关关闭时分配器停写、任务表保留不读，旧 {claimId} 兼容层保留。【比较】方案 B 规则引擎外置 +
-                查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4 超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 +
-                分布式锁免生成列：并发双写窗口无法满足 spec「并发双领取恰 1 成功」，且项目禁 FOR
-                UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                可复用事实。【风险与处理】① 并行会话占用
-                ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository →
-                等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③ 新表列与活库不一致致静默读空 → 实体
-                @Column 与 information_schema 逐列求差、每个仓储方法同批 SQL 模板且 SELECT
-                列对齐、模板首行必须是语句关键字；④ 新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤
-                前端雪花 ID 一律 string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                同源）；集成（information_schema 终态断言、启动期无
-                TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-              requirementsEvidence:
-                contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-              sourceEvidence:
-                contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+        results: {}
         decision:
           id: classic-build-acdb80db0324bf7e93810bade41d98a92820c03ad7c08a69a7e8458dd4191a66-approved
           choice: approved
@@ -2145,11 +875,7 @@ run_checkpoint:
         sequence: 2
         kind: classic-open-artifacts
         status: resolved
-        results:
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
+        results: {}
         receipt:
           ref: openspec/changes/synapclaim-task-assignment-workbench
           contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
@@ -2159,129 +885,7 @@ run_checkpoint:
         sequence: 8
         kind: classic-design-document
         status: resolved
-        results:
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-                    handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-                    proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                      t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                      active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 +
-                      @Version 乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                      UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                      USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total
-                      用与列表同一过滤条件的 COUNT(*)，前端只传 page/size 并去掉固定 50
-                      条切片；AUTO_ASSIGN 开关关闭时分配器停写、任务表保留不读，旧 {claimId}
-                      兼容层保留。【比较】方案 B 规则引擎外置 + 查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4
-                      超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足
-                      spec「并发双领取恰 1 成功」，且项目禁 FOR
-                      UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                      可复用事实。【风险与处理】① 并行会话占用
-                      ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository
-                      → 等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                      追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③
-                      新表列与活库不一致致静默读空 → 实体 @Column 与 information_schema
-                      逐列求差、每个仓储方法同批 SQL 模板且 SELECT 列对齐、模板首行必须是语句关键字；④
-                      新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤ 前端雪花 ID 一律
-                      string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                      total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                      0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                      同源）；集成（information_schema 终态断言、启动期无
-                      TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                      total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                      成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                      执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-                    requirementsEvidence:
-                      contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-                    sourceEvidence:
-                      contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-task-assignment-workbench/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
-              handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-              handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-              proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 + @Version
-                乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total 用与列表同一过滤条件的
-                COUNT(*)，前端只传 page/size 并去掉固定 50 条切片；AUTO_ASSIGN
-                开关关闭时分配器停写、任务表保留不读，旧 {claimId} 兼容层保留。【比较】方案 B 规则引擎外置 +
-                查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4 超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 +
-                分布式锁免生成列：并发双写窗口无法满足 spec「并发双领取恰 1 成功」，且项目禁 FOR
-                UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                可复用事实。【风险与处理】① 并行会话占用
-                ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository →
-                等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③ 新表列与活库不一致致静默读空 → 实体
-                @Column 与 information_schema 逐列求差、每个仓储方法同批 SQL 模板且 SELECT
-                列对齐、模板首行必须是语句关键字；④ 新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤
-                前端雪花 ID 一律 string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                同源）；集成（information_schema 终态断言、启动期无
-                TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
-                §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-              requirementsEvidence:
-                contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-              sourceEvidence:
-                contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+        results: {}
         receipt:
           ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
           contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
@@ -2291,109 +895,88 @@ run_checkpoint:
         sequence: 12
         kind: classic-build-plan
         status: resolved
-        results:
-          full.build.configure:
-            sequence: 9
-            value:
-              boundBranch: comet/synapclaim-task-assignment-workbench
-              buildMode: executing-plans
-              directOverride: false
-              isolation: worktree
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.build.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.build.configure:
-                    boundBranch: comet/synapclaim-task-assignment-workbench
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: worktree
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-          full.build.plan:
-            sequence: 11
-            value:
-              designEvidence:
-                contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-                ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              planEvidence:
-                contentHash: e81df89e7c3f8c9b4f7aa6bbbb73e536a20817bffa960cc08378f20de28dbd01
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
-          full.design.confirm:
-            sequence: 6
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
-                    handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
-                    proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
-                      t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id,
-                      active_key) 保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 +
-                      @Version 乐观锁，冲突映射 SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
-                      UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
-                      USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total
-                      用与列表同一过滤条件的 COUNT(*)，前端只传 page/size 并去掉固定 50
-                      条切片；AUTO_ASSIGN 开关关闭时分配器停写、任务表保留不读，旧 {claimId}
-                      兼容层保留。【比较】方案 B 规则引擎外置 + 查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4
-                      超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足
-                      spec「并发双领取恰 1 成功」，且项目禁 FOR
-                      UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
-                      可复用事实。【风险与处理】① 并行会话占用
-                      ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository
-                      → 等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 →
-                      追加末尾空位、脚本+清单+bone-init.sql 同批入库、已发迁移含注释不回改；③
-                      新表列与活库不一致致静默读空 → 实体 @Column 与 information_schema
-                      逐列求差、每个仓储方法同批 SQL 模板且 SELECT 列对齐、模板首行必须是语句关键字；④
-                      新增错误码四处同批（错误码类 + HTTP 状态 + 前端双语包 + 登记台账 §6）；⑤ 前端雪花 ID 一律
-                      string；⑥ 三条索引 EXPLAIN 均命中；⑦ 变异验证「前端固定切片」与「整表
-                      total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh exit
-                      0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
-                      同源）；集成（information_schema 终态断言、启动期无
-                      TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页
-                      total/逐页和/ID 去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1
-                      成功）；负向与变异；运行期证据写 docs/superpowers/reports/ 并带实测数值。【Spec
-                      Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与
-                      v2.3 §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
-                      Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
-                      执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
-                    requirementsEvidence:
-                      contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-                    sourceEvidence:
-                      contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
-                      ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.design.document:
-            sequence: 7
-            value:
-              designDoc: openspec/changes/synapclaim-task-assignment-workbench/design.md
-          full.design.evidence:
-            sequence: 8
-            value:
-              contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-              ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-          full.design.handoff:
-            sequence: 5
-            value:
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+          contentHash: e81df89e7c3f8c9b4f7aa6bbbb73e536a20817bffa960cc08378f20de28dbd01
+          submissionId: 86da8d88-0344-4c66-aa0b-2f5de754044a
+      - id: synapclaim-task-assignment-workbench:15
+        stepId: full.build.plan.evidence
+        sequence: 15
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+          contentHash: be8ac0a7f1b9acdad7353db88d058b62ebdd61b1f85ad13152b958baee78a77a
+          submissionId: 74ca677b-936e-4892-be63-d0b8ed3984ae
+      - id: synapclaim-task-assignment-workbench:18
+        stepId: full.build.plan.evidence
+        sequence: 18
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+          contentHash: 2208166c61615eb2c56524d01830887e3e244b3b9c164903532d075b764fb0e9
+          submissionId: aa577fa8-707e-4040-9cf2-478444965167
+      - id: synapclaim-task-assignment-workbench:21
+        stepId: full.build.check.evidence
+        sequence: 21
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/a399de4dc61ca7adc8477efc601150b5c2f163b95f4dcd8e8bc1286521cbda51/e35bb652-11ba-4a52-9a49-80e4e4e32cfb.log
+          contentHash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+          submissionId: 3eb4c3ca-401b-4e92-9939-9b2d7639288d
+      - id: synapclaim-task-assignment-workbench:23
+        stepId: full.verify.report.evidence
+        sequence: 23
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-16-synapclaim-task-assignment-workbench-verify.md
+          contentHash: 59dd89c70bf4755e9679d83c63ee5b688f1006c81046019b2ae3a9826b13a797
+          submissionId: daf97dd4-0420-46e7-b2e3-0c8eeaa8d50a
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+    reason: 执行器在 check.sh 子进程结束后中断，回执未写全；主机已停止，无正在运行的子进程
+  sourceRevision: 44
+  sourceHash: 9dfdf873b7d067cf2657c0b004edeaaaea30e66d2f3880a750ce79d24c3b7080
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-task-assignment-workbench
+            changeDir: openspec/changes/synapclaim-task-assignment-workbench
+            workspaceBaseline:
+              ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+              ref: openspec/changes/synapclaim-task-assignment-workbench
+      - contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+        ref: openspec/changes/synapclaim-task-assignment-workbench
+      - contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-task-assignment-workbench
+            changeDir: openspec/changes/synapclaim-task-assignment-workbench
+            workspaceBaseline:
+              ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
+          outputs:
+            full.design.handoff:
               handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
               handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
               proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
@@ -2430,86 +1013,124 @@ run_checkpoint:
               sourceEvidence:
                 contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
                 ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-task-assignment-workbench
-                  changeDir: openspec/changes/synapclaim-task-assignment-workbench
-                  workspaceBaseline:
-                    ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-                    ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-              ref: openspec/changes/synapclaim-task-assignment-workbench
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-        receipt:
-          ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+      - handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
+        handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
+        proposal: 批 1 技术方案候选（待用户确认）：【方案 A 推荐】expand 新增 t_claim_task /
+          t_claim_assign_rule；生成列 active_key + UNIQUE(tenant_id, active_key)
+          保证同案同类型至多一条生效任务、终态行返回 NULL 不占唯一性；并发领取用唯一键 + @Version 乐观锁，冲突映射
+          SC_CLAIM_TASK_CONFLICT，禁用 SELECT ... FOR
+          UPDATE；规则表按租户/险种/金额段/渠道/任务类型固定顺序与显式优先级求解（目标
+          USER|DEPT|ROLE），命中记录落库，写入期把归属落进任务行、查询期只读；服务端 total 用与列表同一过滤条件的
+          COUNT(*)，前端只传 page/size 并去掉固定 50 条切片；AUTO_ASSIGN 开关关闭时分配器停写、任务表保留不读，旧
+          {claimId} 兼容层保留。【比较】方案 B 规则引擎外置 + 查询期动态求解：归属随时刻漂移，破坏批 2 归因与批 4
+          超时回池，引入不可回退表达式面，不采用；方案 C 应用层先查后写 + 分布式锁免生成列：并发双写窗口无法满足 spec「并发双领取恰 1
+          成功」，且项目禁 FOR UPDATE，不采用。【关键取舍】多两张表与一次增量迁移，换取一案多任务、行级并发领取、可审计归属与批 2/3/4
+          可复用事实。【风险与处理】① 并行会话占用
+          ClaimWorkbenchController/ClaimSearch*/ClaimCaseRepository →
+          等其入库后开工、精确路径复核、绝不 git add 全量；② 迁移清单撞号 → 追加末尾空位、脚本+清单+bone-init.sql
+          同批入库、已发迁移含注释不回改；③ 新表列与活库不一致致静默读空 → 实体 @Column 与 information_schema
+          逐列求差、每个仓储方法同批 SQL 模板且 SELECT 列对齐、模板首行必须是语句关键字；④ 新增错误码四处同批（错误码类 + HTTP
+          状态 + 前端双语包 + 登记台账 §6）；⑤ 前端雪花 ID 一律 string；⑥ 三条索引 EXPLAIN 均命中；⑦
+          变异验证「前端固定切片」与「整表 total」两处判据必须转红；⑧ worktree 被全仓扫描误扫如实归因，不宣称全仓 check.sh
+          exit 0。【测试策略】单元（规则求解/候选全不可用/优先级/金额段边界、冲突映射、COUNT
+          同源）；集成（information_schema 终态断言、启动期无
+          TemplateNotFoundException、仓储读回写入值、跨租户探针返回空）；探针（137 条翻页 total/逐页和/ID
+          去重均为 137、1 万在办 100 次采样 P95<300ms、并发双领取恰 1 成功）；负向与变异；运行期证据写
+          docs/superpowers/reports/ 并带实测数值。【Spec
+          Patch】无：不新增能力、不改公开行为与验收，范围严格来自已批准 proposal/spec/tasks 与 v2.3
+          §13.5。【开工约束】用户裁定等并行会话在途改动入库 + 全量门禁转绿后才进
+          Build；本阶段只出设计文档，不写实现代码，确认后仍需另行确认 Build
+          执行配置（build_mode/tdd_mode/review_mode），不自动进入 Build。
+        requirementsEvidence:
+          contentHash: 1eab5624b1165490de01ccaa173a3edeec920e24c5f00440dcfefe073bfdfcab
+          ref: openspec/changes/synapclaim-task-assignment-workbench
+        sourceEvidence:
+          contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
+          ref: openspec/changes/synapclaim-task-assignment-workbench
+      - designDoc: openspec/changes/synapclaim-task-assignment-workbench/design.md
+      - contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
+        ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
+      - boundBranch: comet/synapclaim-task-assignment-workbench
+        buildMode: executing-plans
+        directOverride: false
+        isolation: worktree
+        reviewMode: thorough
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-task-assignment-workbench
+            changeDir: openspec/changes/synapclaim-task-assignment-workbench
+            workspaceBaseline:
+              ref: d733ab9b-db28-40e3-810f-a2e7c12b800b
+          outputs:
+            full.build.configure:
+              boundBranch: comet/synapclaim-task-assignment-workbench
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
+          ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
+        plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+        planEvidence:
           contentHash: e81df89e7c3f8c9b4f7aa6bbbb73e536a20817bffa960cc08378f20de28dbd01
-          submissionId: 86da8d88-0344-4c66-aa0b-2f5de754044a
-      - id: synapclaim-task-assignment-workbench:15
-        stepId: full.build.plan.evidence
-        sequence: 15
-        kind: classic-build-plan
-        status: resolved
-        results:
-          full.build.plan:
-            sequence: 14
-            value:
-              designEvidence:
-                contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-                ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              planEvidence:
-                contentHash: be8ac0a7f1b9acdad7353db88d058b62ebdd61b1f85ad13152b958baee78a77a
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
-        receipt:
           ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+        taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
+      - contentHash: e81df89e7c3f8c9b4f7aa6bbbb73e536a20817bffa960cc08378f20de28dbd01
+        ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+      - designEvidence:
+          contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
+          ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
+        plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+        planEvidence:
           contentHash: be8ac0a7f1b9acdad7353db88d058b62ebdd61b1f85ad13152b958baee78a77a
-          submissionId: 74ca677b-936e-4892-be63-d0b8ed3984ae
-      - id: synapclaim-task-assignment-workbench:18
-        stepId: full.build.plan.evidence
-        sequence: 18
-        kind: classic-build-plan
-        status: resolved
-        results:
-          full.build.plan:
-            sequence: 17
-            value:
-              designEvidence:
-                contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-                ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-              plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              planEvidence:
-                contentHash: 2208166c61615eb2c56524d01830887e3e244b3b9c164903532d075b764fb0e9
-                ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-              taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
-        receipt:
           ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+        taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
+      - contentHash: be8ac0a7f1b9acdad7353db88d058b62ebdd61b1f85ad13152b958baee78a77a
+        ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+      - designEvidence:
+          contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
+          ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
+        plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+        planEvidence:
           contentHash: 2208166c61615eb2c56524d01830887e3e244b3b9c164903532d075b764fb0e9
-          submissionId: aa577fa8-707e-4040-9cf2-478444965167
-    ready: []
-    joins: {}
-    outputs:
-      full.build.configure:
-        sequence: 9
+          ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+        taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
+      - contentHash: 2208166c61615eb2c56524d01830887e3e244b3b9c164903532d075b764fb0e9
+        ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+      - event: build-complete
+      - argv:
+          - mvn
+          - compile
+          - -q
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        cwd: .
+        environment: d91eee5fcb0b92a66494704d8e5f588b1087f0df892e4af611fa4667eeab2c19
+        exitCode: 0
+        inputAfter: a78f4266bd7a367047ed20b6424e53ee4988877f8cb29c4927693024000ffc44
+        inputBefore: a78f4266bd7a367047ed20b6424e53ee4988877f8cb29c4927693024000ffc44
+        manifestHash: 7fe0bab859d449e409afe0b87a09be4d5132257bd1632b19b2f2b9d313c1a464
+        manifestRef: .comet/runtime/classic-sdk-checks/a399de4dc61ca7adc8477efc601150b5c2f163b95f4dcd8e8bc1286521cbda51/27b3c409-0bba-4ea4-bffb-67f81315f9e1.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/a399de4dc61ca7adc8477efc601150b5c2f163b95f4dcd8e8bc1286521cbda51/e35bb652-11ba-4a52-9a49-80e4e4e32cfb.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        ref: .comet/runtime/classic-sdk-checks/a399de4dc61ca7adc8477efc601150b5c2f163b95f4dcd8e8bc1286521cbda51/e35bb652-11ba-4a52-9a49-80e4e4e32cfb.log
+      - contentHash: 59dd89c70bf4755e9679d83c63ee5b688f1006c81046019b2ae3a9826b13a797
+        ref: docs/superpowers/reports/2026-11-16-synapclaim-task-assignment-workbench-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-16-synapclaim-task-assignment-workbench-verify.md
+      - sequence: 9
         value:
           boundBranch: comet/synapclaim-task-assignment-workbench
           buildMode: executing-plans
@@ -2518,8 +1139,7 @@ run_checkpoint:
           reviewMode: thorough
           subagentDispatch: null
           tddMode: tdd
-      full.build.confirm:
-        sequence: 10
+      - sequence: 10
         value:
           choice: approved
           proposal:
@@ -2537,24 +1157,7 @@ run_checkpoint:
                 reviewMode: thorough
                 subagentDispatch: null
                 tddMode: tdd
-      full.build.plan:
-        sequence: 17
-        value:
-          designEvidence:
-            contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
-            ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-          plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-          planEvidence:
-            contentHash: 2208166c61615eb2c56524d01830887e3e244b3b9c164903532d075b764fb0e9
-            ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-          taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
-      full.build.plan.evidence:
-        sequence: 18
-        value:
-          contentHash: 2208166c61615eb2c56524d01830887e3e244b3b9c164903532d075b764fb0e9
-          ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
-      full.design.confirm:
-        sequence: 6
+      - sequence: 6
         value:
           choice: approved
           proposal:
@@ -2601,17 +1204,14 @@ run_checkpoint:
                 sourceEvidence:
                   contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
                   ref: openspec/changes/synapclaim-task-assignment-workbench
-      full.design.document:
-        sequence: 7
+      - sequence: 7
         value:
           designDoc: openspec/changes/synapclaim-task-assignment-workbench/design.md
-      full.design.evidence:
-        sequence: 8
+      - sequence: 8
         value:
           contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
           ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
-      full.design.handoff:
-        sequence: 5
+      - sequence: 5
         value:
           handoffContext: openspec/changes/synapclaim-task-assignment-workbench/.comet/handoff/design-context.json
           handoffHash: d3705270f538dc9e0bf21e1d99426b96efddb519713009f193234503b141230c
@@ -2648,12 +1248,10 @@ run_checkpoint:
           sourceEvidence:
             contentHash: 4af1296bf16c00f9aaf3457da5677f7f54b983795cfb164e7b637a0eaf3d3a05
             ref: openspec/changes/synapclaim-task-assignment-workbench
-      full.open:
-        sequence: 1
+      - sequence: 1
         value:
           event: open-complete
-      full.open.confirm:
-        sequence: 3
+      - sequence: 3
         value:
           choice: approved
           proposal:
@@ -2668,17 +1266,1040 @@ run_checkpoint:
               full.open.evidence:
                 contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
                 ref: openspec/changes/synapclaim-task-assignment-workbench
-      full.open.evidence:
-        sequence: 2
+      - sequence: 2
         value:
           contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
           ref: openspec/changes/synapclaim-task-assignment-workbench
-      full.open.revalidate:
-        sequence: 4
+      - sequence: 4
         value:
           contentHash: c86074c31950652d0fa78387a31692543c5c23a0c837b9afd0267564a9a57a59
-    children: []
-    lineage: []
-  sourceRevision: 33
-  sourceHash: 1845d8a50fe87a5996e81d306d3af8d3e4ada5797a45234a54278e6b007d8600
-check_epoch: 2
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
+            ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
+          plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+          planEvidence:
+            contentHash: e81df89e7c3f8c9b4f7aa6bbbb73e536a20817bffa960cc08378f20de28dbd01
+            ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+          taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
+      - sequence: 12
+        value:
+          contentHash: e81df89e7c3f8c9b4f7aa6bbbb73e536a20817bffa960cc08378f20de28dbd01
+          ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+      - sequence: 14
+        value:
+          designEvidence:
+            contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
+            ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
+          plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+          planEvidence:
+            contentHash: be8ac0a7f1b9acdad7353db88d058b62ebdd61b1f85ad13152b958baee78a77a
+            ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+          taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
+      - sequence: 15
+        value:
+          contentHash: be8ac0a7f1b9acdad7353db88d058b62ebdd61b1f85ad13152b958baee78a77a
+          ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+      - sequence: 17
+        value:
+          designEvidence:
+            contentHash: 2567780a3792975d745b70624041daffb74d5fcc53f27e65fcd5ed6575546edf
+            ref: openspec/changes/synapclaim-task-assignment-workbench/design.md
+          plan: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+          planEvidence:
+            contentHash: 2208166c61615eb2c56524d01830887e3e244b3b9c164903532d075b764fb0e9
+            ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+          taskRevision: fa1fca4763fa48cac214a53b5def43d516f6c2a364fa0a249b5778ca862a37cd
+      - sequence: 18
+        value:
+          contentHash: 2208166c61615eb2c56524d01830887e3e244b3b9c164903532d075b764fb0e9
+          ref: docs/superpowers/plans/2026-11-15-synapclaim-task-assignment-workbench.md
+      - sequence: 19
+        value:
+          event: build-complete
+      - sequence: 20
+        value:
+          argv:
+            - mvn
+            - compile
+            - -q
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+          cwd: .
+          environment: d91eee5fcb0b92a66494704d8e5f588b1087f0df892e4af611fa4667eeab2c19
+          exitCode: 0
+          inputAfter: a78f4266bd7a367047ed20b6424e53ee4988877f8cb29c4927693024000ffc44
+          inputBefore: a78f4266bd7a367047ed20b6424e53ee4988877f8cb29c4927693024000ffc44
+          manifestHash: 7fe0bab859d449e409afe0b87a09be4d5132257bd1632b19b2f2b9d313c1a464
+          manifestRef: .comet/runtime/classic-sdk-checks/a399de4dc61ca7adc8477efc601150b5c2f163b95f4dcd8e8bc1286521cbda51/27b3c409-0bba-4ea4-bffb-67f81315f9e1.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/a399de4dc61ca7adc8477efc601150b5c2f163b95f4dcd8e8bc1286521cbda51/e35bb652-11ba-4a52-9a49-80e4e4e32cfb.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 21
+        value:
+          contentHash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+          ref: .comet/runtime/classic-sdk-checks/a399de4dc61ca7adc8477efc601150b5c2f163b95f4dcd8e8bc1286521cbda51/e35bb652-11ba-4a52-9a49-80e4e4e32cfb.log
+      - sequence: 23
+        value:
+          contentHash: 59dd89c70bf4755e9679d83c63ee5b688f1006c81046019b2ae3a9826b13a797
+          ref: docs/superpowers/reports/2026-11-16-synapclaim-task-assignment-workbench-verify.md
+      - sequence: 22
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-16-synapclaim-task-assignment-workbench-verify.md
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.plan.evidence
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 12
+        left: null
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 14
+        left: null
+        right: 29
+        height: 2
+      - key: full.build.execute
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 14
+        left: 31
+        right: 29
+        height: 2
+      - key: full.build.check
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.build.execute
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 18
+        left: 33
+        right: 34
+        height: 2
+      - key: full.build.plan
+        value: 14
+        left: 35
+        right: 29
+        height: 3
+      - key: full.build.plan.evidence
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 19
+        left: 37
+        right: 38
+        height: 2
+      - key: full.build.plan
+        value: 14
+        left: 35
+        right: 39
+        height: 3
+      - key: full.build.configure
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 22
+        left: 41
+        right: 42
+        height: 2
+      - key: full.design.evidence
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 26
+        left: 44
+        right: 45
+        height: 2
+      - key: full.open.revalidate
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 29
+        left: null
+        right: 47
+        height: 2
+      - key: full.open.confirm
+        value: 28
+        left: 46
+        right: 48
+        height: 3
+      - key: full.design.document
+        value: 24
+        left: 43
+        right: 49
+        height: 4
+      - key: full.build.plan
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 32
+        left: 51
+        right: 52
+        height: 2
+      - key: full.build.confirm
+        value: 22
+        left: 41
+        right: 53
+        height: 3
+      - key: full.design.document
+        value: 24
+        left: 54
+        right: 49
+        height: 4
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: 56
+        height: 2
+      - key: full.build.plan.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 35
+        left: null
+        right: 58
+        height: 2
+      - key: full.build.execute
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 35
+        left: 60
+        right: 58
+        height: 2
+      - key: full.build.check
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.build.execute
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 39
+        left: 62
+        right: 63
+        height: 2
+      - key: full.build.plan
+        value: 35
+        left: 64
+        right: 58
+        height: 3
+      - key: full.build.plan.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 40
+        left: 66
+        right: 67
+        height: 2
+      - key: full.build.plan
+        value: 35
+        left: 64
+        right: 68
+        height: 3
+      - key: full.open
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 28
+        left: 70
+        right: 71
+        height: 2
+      - key: full.open.revalidate
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 29
+        left: null
+        right: 73
+        height: 2
+      - key: full.open.confirm
+        value: 28
+        left: 70
+        right: 74
+        height: 3
+      - key: full.design.confirm
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 26
+        left: 76
+        right: 77
+        height: 2
+      - key: full.open.confirm
+        value: 28
+        left: 78
+        right: 74
+        height: 3
+      - key: full.design.confirm
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 24
+        left: 80
+        right: 81
+        height: 2
+      - key: full.design.handoff
+        value: 26
+        left: 82
+        right: 77
+        height: 3
+      - key: full.open.confirm
+        value: 28
+        left: 83
+        right: 74
+        height: 4
+      - key: full.build.check
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 39
+        left: 85
+        right: 86
+        height: 2
+      - key: full.build.execute
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 23
+        left: 89
+        right: null
+        height: 2
+      - key: full.build.plan
+        value: 35
+        left: 88
+        right: 90
+        height: 3
+      - key: full.build.confirm
+        value: 22
+        left: 87
+        right: 91
+        height: 4
+      - key: full.design.handoff
+        value: 26
+        left: 81
+        right: 77
+        height: 2
+      - key: full.open.evidence
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 40
+        left: null
+        right: 95
+        height: 2
+      - key: full.open.revalidate
+        value: 30
+        left: 94
+        right: 96
+        height: 3
+      - key: full.open.confirm
+        value: 28
+        left: 93
+        right: 97
+        height: 4
+      - key: full.design.document
+        value: 24
+        left: 92
+        right: 98
+        height: 5
+      - key: full.open.evidence
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 27
+        left: null
+        right: 100
+        height: 2
+      - key: full.design.handoff
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 29
+        left: 103
+        right: 104
+        height: 2
+      - key: full.open
+        value: 27
+        left: 102
+        right: 105
+        height: 3
+      - key: full.build.configure
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 25
+        left: 108
+        right: 109
+        height: 2
+      - key: full.design.confirm
+        value: 23
+        left: 107
+        right: 110
+        height: 3
+      - key: full.open
+        value: 27
+        left: 111
+        right: 105
+        height: 4
+      - key: full.open
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 24
+        left: 114
+        right: 115
+        height: 2
+      - key: full.open.confirm
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 29
+        left: 117
+        right: 118
+        height: 2
+      - key: full.open
+        value: 27
+        left: 116
+        right: 119
+        height: 3
+      - key: full.build.configure
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 22
+        left: 121
+        right: 122
+        height: 2
+      - key: full.design.document
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 25
+        left: 124
+        right: 125
+        height: 2
+      - key: full.design.confirm
+        value: 23
+        left: 123
+        right: 126
+        height: 3
+      - key: full.open
+        value: 27
+        left: 127
+        right: 119
+        height: 4
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 35
+        left: null
+        right: 132
+        height: 2
+      - key: full.build.execute
+        value: 37
+        left: 131
+        right: 133
+        height: 3
+      - key: full.build.check.evidence
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 38
+        left: null
+        right: 135
+        height: 2
+      - key: full.build.plan
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 36
+        left: 137
+        right: 138
+        height: 2
+      - key: full.build.execute
+        value: 37
+        left: 136
+        right: 139
+        height: 3
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 28
+      - 30
+      - 32
+      - 36
+      - 40
+      - 50
+      - 55
+      - 57
+      - 59
+      - 61
+      - 65
+      - 69
+      - 72
+      - 75
+      - 79
+      - 84
+      - 99
+      - 101
+      - 106
+      - 112
+      - 113
+      - 120
+      - 128
+      - 129
+      - 130
+      - 134
+      - 140
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actionContexts
+          - synapclaim-task-assignment-workbench:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - synapclaim-task-assignment-workbench:11
+          - results
+        map: 12
+      - path:
+          - actionContexts
+          - synapclaim-task-assignment-workbench:13
+          - results
+        map: 13
+      - path:
+          - actionContexts
+          - synapclaim-task-assignment-workbench:14
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - synapclaim-task-assignment-workbench:16
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - synapclaim-task-assignment-workbench:17
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - synapclaim-task-assignment-workbench:19
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - synapclaim-task-assignment-workbench:20
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - synapclaim-task-assignment-workbench:22
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - synapclaim-task-assignment-workbench:24
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - synapclaim-task-assignment-workbench:4
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - synapclaim-task-assignment-workbench:5
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - synapclaim-task-assignment-workbench:7
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - synapclaim-task-assignment-workbench:9
+          - results
+        map: 22
+      - path:
+          - outputs
+        map: 23
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 24
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 25
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 26
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 27
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 28
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 29
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 30
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 31
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 32
+      - path:
+          - evidenceWaits
+          - "6"
+          - results
+        map: 33
+  storageHash: 882d26e28b4545c0e796dcf64e1e9657bf609d2d9098f9882f5f4a263f378a07
+check_epoch: 3
