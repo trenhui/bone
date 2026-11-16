@@ -12,6 +12,16 @@
 #
 # 必须显式传 --check 才作为门禁判据（report-only 不带 --check = 假绿）。
 set -euo pipefail
+
+# pre-commit 注入 GIT_DIR / GIT_INDEX_FILE / GIT_WORK_TREE（临时 index），
+# 会让下面的 `git rev-parse --show-toplevel` 报 fatal: must be run in a work tree。
+# 必须先剥离再解析仓库根（项目铁律：commit --only 走临时 index 时门禁须剥离 GIT_*）。
+if [ -n "${GIT_DIR:-}" ] || [ -n "${GIT_INDEX_FILE:-}" ] || [ -n "${GIT_WORK_TREE:-}" ]; then
+  exec env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_COMMON_DIR \
+    -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES \
+    -u GIT_PREFIX -u GIT_NAMESPACE "$0" "$@"
+fi
+
 ROOT=$(git -C "$(dirname -- "$0")/.." rev-parse --show-toplevel)
 STRICT=0
 [ "${1:-}" = "--check" ] && STRICT=1
