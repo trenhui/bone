@@ -1,0 +1,2972 @@
+# comet-execution: managed-run
+change_id: 72e0f8d7-c7d6-46cc-87ae-04683dcfaa3d
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: standard
+isolation: worktree
+verify_mode: null
+auto_transition: true
+base_ref: c395e4b603202c3567408c1843f8ed9b232ffa26
+design_doc: openspec/changes/procurement-supplier-mdm-slice/design.md
+plan: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-16-procurement-supplier-mdm-slice-verify-r2.md
+branch_status: pending
+created_at: 2026-11-15
+verified_at: 2026-11-16
+archive_confirmation: pending
+archived: false
+bound_branch: comet/procurement-supplier-mdm-slice
+direct_override: false
+handoff_context: openspec/changes/procurement-supplier-mdm-slice/.comet/handoff/design-context.json
+handoff_hash: e2ddd28ccc090b0c8683c281038ecbc1f4fd123c8d94403703c97f7c46e050b4
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: 6cca19f67bc08f3083264d0ea97bd0ffe2ef895f4509683ec4c3a98ebbafbb58
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: procurement-supplier-mdm-slice
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: dac84ea32c5d333a33cb6b1b12138d4b6a7e8476c712ec2616339a3709251f21
+    input:
+      change: procurement-supplier-mdm-slice
+      changeDir: openspec/changes/procurement-supplier-mdm-slice
+      workspaceBaseline:
+        ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+    state:
+      archiveConfirmation: pending
+      archived: false
+      autoTransition: true
+      baseRef: c395e4b603202c3567408c1843f8ed9b232ffa26
+      boundBranch: comet/procurement-supplier-mdm-slice
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 6
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-15
+      designDoc: openspec/changes/procurement-supplier-mdm-slice/design.md
+      directOverride: false
+      handoffContext: openspec/changes/procurement-supplier-mdm-slice/.comet/handoff/design-context.json
+      handoffHash: e2ddd28ccc090b0c8683c281038ecbc1f4fd123c8d94403703c97f7c46e050b4
+      isolation: worktree
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-16-procurement-supplier-mdm-slice-verify-r2.md
+      verifiedAt: 2026-11-16
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 26
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-e1339b4551179ca493c77a03429d55a28023057324af9a7f61a85dac26b2f38d
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:1
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: a90f70949ba98b7238f4bab52196d08028b8d314eb8218bc14fd2d1e95ff38b0
+        outcome:
+          actionId: procurement-supplier-mdm-slice:1
+          attempt: 1
+          claimToken: portable-e1339b4551179ca493c77a03429d55a28023057324af9a7f61a85dac26b2f38d
+          inputHash: a90f70949ba98b7238f4bab52196d08028b8d314eb8218bc14fd2d1e95ff38b0
+          outcomeId: d179da8e-f376-4d9d-baa7-52d706e6e877
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 627ffe42ae893cb50da744798c9eea66f761c4a8ab5ef438c85553a132612dd1
+            outcomeId: d179da8e-f376-4d9d-baa7-52d706e6e877
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-71cf43309bb007ebefb2416becac2563a50233cc3e2bb60985b2e4f64d6d3f13
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:4
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: 2ce171280176d650bef0bd91c1f22ee39df405d64df602f85bad5491d60c874f
+        outcome:
+          actionId: procurement-supplier-mdm-slice:4
+          attempt: 1
+          claimToken: portable-71cf43309bb007ebefb2416becac2563a50233cc3e2bb60985b2e4f64d6d3f13
+          inputHash: 2ce171280176d650bef0bd91c1f22ee39df405d64df602f85bad5491d60c874f
+          outcomeId: procurement-supplier-mdm-slice:4:recovered-revalidate
+          output:
+            contentHash: b2cdad25121f5d92905613716e50ceb83cd4cfba80922b8f9cf81aabc5a08d09
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4a890f15a00f3b623ba4f6810d5d4d0ccb953ee4ead5f93a2f4b447929b098e0
+            outcomeId: procurement-supplier-mdm-slice:4:recovered-revalidate
+        reconciliations: []
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-83482cfa2596df2985e098f701ee70dd66800ae3421630aa470d2373ec8781f3
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:5
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: bd3dc293b5c213d92a92d8b4c915670efb4b79448e7a501b2f7deb2b41978fd2
+        outcome:
+          actionId: procurement-supplier-mdm-slice:5
+          attempt: 1
+          claimToken: portable-83482cfa2596df2985e098f701ee70dd66800ae3421630aa470d2373ec8781f3
+          inputHash: bd3dc293b5c213d92a92d8b4c915670efb4b79448e7a501b2f7deb2b41978fd2
+          outcomeId: 401a4095-e3b9-400e-a360-ce4f6589f32f
+          output:
+            handoffContext: openspec/changes/procurement-supplier-mdm-slice/.comet/handoff/design-context.json
+            handoffHash: e2ddd28ccc090b0c8683c281038ecbc1f4fd123c8d94403703c97f7c46e050b4
+            proposal: |-
+              【方案】在 bone-masterdata 内以 DDD 分层落地采购域供应商主数据最小可验证切片：LegalEntity（身份载体）+ Supplier（合作资格）+ Vendor（交易与付款资格）双角色双状态机 + SupplyRelationship/SupplierItem（Purchasing Org data），复用既有 Golden Record 内核（GoldenRecordMerger / EntityKeyMappingRegistry）做合并与身份解析，域端口 + 内存适配，能力开关 bone.procurement.supplier-mdm.enabled 默认关闭。
+
+              D1 落地宿主：不新建 Maven 模块，在 com.bone.masterdata 下新增供应商域包。理由：Golden Record 内核在同进程可直调，新建模块引入跨模块依赖（L2）且同样绕不开 DDL 红线。
+              D2 角色语义严格对齐 LLD 真源（Design 阶段修正）：Supplier=合作资格（寻源/准入/绩效/风险/退出），Vendor=财务侧 Company Code data（银行/税务/付款条件/付款冻结）；依据 01-供应商主数据模块详细设计.md:22、采购领域架构设计方案.md:109,223。SupplyRelationship 为独立聚合根，Owner=采购。
+              D3 身份与合并：只调用既有内核，不新增任何 dedup/merge 服务（终局分工要求业务域不另建黄金记录）。
+              D4 持久化：SupplierRepositoryPort + 内存实现；生产 JDBC adapter 与 t_proc_* DDL 属 R-2 红线，不在本切片。
+              D5 双状态机均用「枚举 + Map<State, Map<Event, Transition>>」显式迁移表，守卫集中 domain，未列出即拒绝（fail-closed），非法迁移抛 DomainException 携带 current_state/attempted/allowed[]。
+                Supplier: PROSPECT → ONBOARDING → ACTIVE ⇄ SUSPENDED / CORRECTIVE → EXITED
+                Vendor: PENDING_VENDOR → ACTIVE_VENDOR ⇄ PAYMENT_BLOCKED → INACTIVE_VENDOR
+                禁止：EXITED→任意（终态不可回写）；INACTIVE_VENDOR→ACTIVE_VENDOR 须重走闸门；PENDING_VENDOR→ACTIVE_VENDOR 未经闸门一律拒绝。
+              D6 跨域 Guard 用可注入布尔断言端口 SupplierExitGuard / VendorActivationGuard，不写死 true、不伪造通过（否则 spec 的「退出前置校验」Scenario 变假绿）。
+              D7 PAYMENT_BLOCKED 的「本域不可自发放行」用命令来源校验：只接受声明为外部财务事件的来源，域内来源一律拒绝。
+
+              【关键取舍】内存适配换可运行闭环（不宣称生产落库能力）；跨域事实用端口换可负向注入（不宣称已接上游）；同进程复用内核换零依赖变更（接受耦合，物理拆模块时改显式依赖即可）。
+
+              【风险】内存适配≠生产持久化（R-2 前置）；跨域 Guard 可能被误读为已接上游；PAYMENT_BLOCKED 无 Finance 上游，只验证 fail-closed 语义；Design 阶段修正了 Open 时的角色语义（旧 spec 断言不得作验收依据）；能力默认关闭导致「看不见」（测试显式开启 + 负向探针验证关闭不注册端点）。
+
+              【Spec Patch 已落地，待本次批准绑定】P1 角色分离语义按 LLD 纠正（Supplier/Vendor 不得互为替代，各持互不覆盖状态机）；P2 原「供应商准入生命周期状态机」拆为 Supplier 状态机 + 新增 Vendor 交易与付款资格状态机两个 Requirement；P3 非法迁移/终态回写/未经闸门开通/退出前置校验全部落为可测 Scenario。tasks.md 同步为 15 项（1.1 双角色互不覆盖、1.2 SupplyRelationship 独立聚合、2.2 Supplier 机、2.3 Vendor 机、5.2 六类负向探针）。
+
+              【Non-Goals】不写 bone-init.sql / t_proc_* DDL；不实现 JDBC adapter；不做其余 8 个采购模块；不修改既有 Golden Record 内核；不接真实 Finance/PO/合同上游；不碰 CI 三入口与生产库/密钥/发布。
+            requirementsEvidence:
+              contentHash: 6468c2e1fd911e65fe882de27f8ea6063aad0d00086f2af552a8714ffd60e84b
+              ref: openspec/changes/procurement-supplier-mdm-slice
+            sourceEvidence:
+              contentHash: 297464686bea71d977b0c679ca8d5e7ba87f2fa990757965c363ce38fbc449de
+              ref: openspec/changes/procurement-supplier-mdm-slice
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 41b48a943ed960f7600266726ea334326ee539aafd30d0586d4a1cee7a16a4bc
+            outcomeId: 401a4095-e3b9-400e-a360-ce4f6589f32f
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-433c04c3a44742fb9b086b9d33356e3014ffa04eef287141f630f1731178dd06
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:7
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: ec5c24058762bac8c7fbf578170d1f3a7d0cae95dd901b70bf9916c0ab1fc365
+        outcome:
+          actionId: procurement-supplier-mdm-slice:7
+          attempt: 1
+          claimToken: portable-433c04c3a44742fb9b086b9d33356e3014ffa04eef287141f630f1731178dd06
+          inputHash: ec5c24058762bac8c7fbf578170d1f3a7d0cae95dd901b70bf9916c0ab1fc365
+          outcomeId: d82f5175-c37e-433e-85a0-069989a7ac16
+          output:
+            designDoc: openspec/changes/procurement-supplier-mdm-slice/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4acb251282d85e9088c9427bf2205475081cd0d06b7e3c2dbfa5f7d5f78e4fef
+            outcomeId: d82f5175-c37e-433e-85a0-069989a7ac16
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-5b1d801f60bb902fa62289bddafdfed763281d6f582236332b8ab90d4cad0cd4
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:9
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: c87800885e4e7dac0e50d7635986e85674254b5c5561bb9b3f45acaebea5f2f1
+        outcome:
+          actionId: procurement-supplier-mdm-slice:9
+          attempt: 1
+          claimToken: portable-5b1d801f60bb902fa62289bddafdfed763281d6f582236332b8ab90d4cad0cd4
+          inputHash: c87800885e4e7dac0e50d7635986e85674254b5c5561bb9b3f45acaebea5f2f1
+          outcomeId: 32a8d22a-d5a5-474b-a5f1-529d4acb9de4
+          output:
+            boundBranch: comet/procurement-supplier-mdm-slice
+            buildMode: autonomous
+            directOverride: false
+            isolation: worktree
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 89b4256d13fb371dd4bf0c9b1f7252c672695c1bcc1acc130e4e56903909840c
+            outcomeId: 32a8d22a-d5a5-474b-a5f1-529d4acb9de4
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-8743d8ed7d7855df74750052d3d9ce4bfe7173774d1369b073905bf29b03fc64
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:11
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: d9da080bf470d8a42e69425e2430c7179d66f067063634653a3f0169f2d3c28a
+        outcome:
+          actionId: procurement-supplier-mdm-slice:11
+          attempt: 1
+          claimToken: portable-8743d8ed7d7855df74750052d3d9ce4bfe7173774d1369b073905bf29b03fc64
+          inputHash: d9da080bf470d8a42e69425e2430c7179d66f067063634653a3f0169f2d3c28a
+          outcomeId: 4c97d8d9-dfd1-4085-8ed7-5c2cf3115f8a
+          output:
+            designEvidence:
+              contentHash: 1385fe6cb581fc8a758db72df333af23e6bbfc77216475ebae2c888f733efb1b
+              ref: openspec/changes/procurement-supplier-mdm-slice/design.md
+            plan: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+            planEvidence:
+              contentHash: 611fe18fbb604ad2e27c603f8529bc6b61f93735236152ea7026521fd1983b11
+              ref: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+            taskRevision: fb2544fccf93a9ba75ff83a5297a99d26b55581d6b1e3b3efff67c404e123009
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 6b739fd27e9ad70addae80a0ef7eb50f766c2291e34b843111f7dcbd4cd4a035
+            outcomeId: 4c97d8d9-dfd1-4085-8ed7-5c2cf3115f8a
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/procurement-supplier-mdm-slice:13/1
+          token: portable-455cdceafea2d70752d1ac1c9d48479b0543e5b2220a92552e7e20e7d0750540
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:13
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: 78ffdab5dec5e389f96d4e988a3a8244747da4ac267f3deaa9f626908f9017c9
+        outcome:
+          actionId: procurement-supplier-mdm-slice:13
+          attempt: 1
+          claimToken: portable-455cdceafea2d70752d1ac1c9d48479b0543e5b2220a92552e7e20e7d0750540
+          inputHash: 78ffdab5dec5e389f96d4e988a3a8244747da4ac267f3deaa9f626908f9017c9
+          outcomeId: 7dd4bf87-f620-4075-bcdf-fe05248736ba
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 206205df8d384daed943091392838407b58943f72f3611a71ca9ab42c3307d6a
+            outcomeId: 7dd4bf87-f620-4075-bcdf-fe05248736ba
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-70cf8263db166f7fcf7988bfd5c4e1abaffddcd97ed0c113f975f3553987a5a9
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:14
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: 0ba823c5ee73d8c9961be5d5b505066553336053fc69ae87981d47c62686c4ac
+        outcome:
+          actionId: procurement-supplier-mdm-slice:14
+          attempt: 1
+          claimToken: portable-70cf8263db166f7fcf7988bfd5c4e1abaffddcd97ed0c113f975f3553987a5a9
+          inputHash: 0ba823c5ee73d8c9961be5d5b505066553336053fc69ae87981d47c62686c4ac
+          outcomeId: 584f587a-27b6-4227-8a21-1f8e5c8d8e2f
+          output:
+            argv:
+              - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+              - -o
+              - -f
+              - bone-platform/bone-masterdata/pom.xml
+              - clean
+              - test
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 003f81beef6ef866c8b05a49e6465862f0198142a99f629a066f8ac4952fc124
+            cwd: .
+            environment: fea2f8c186eeb16b70fd09306aadc8800e542e855d6d4724a4635a9a9465bf13
+            exitCode: 0
+            inputAfter: 3b878088dc49b3ffe9ec6b5c7ae1aebbfae44aaf65b3dcbed54bb5ac1a49fa8e
+            inputBefore: 3b878088dc49b3ffe9ec6b5c7ae1aebbfae44aaf65b3dcbed54bb5ac1a49fa8e
+            manifestHash: 324963881e75c69f2ee0088ba7f290bbb1d8fe5147b5ea132621a3bbb043323c
+            manifestRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/c1fcd088-74e6-4d91-a68c-14c7b50ccbbb.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/a5c8530f-7bf5-407c-8321-a158eadeb897.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: b3a1d01ac77b9fe27f9bffb88183326c38425912d94b5476f29add782ef3f7ce
+            outcomeId: 584f587a-27b6-4227-8a21-1f8e5c8d8e2f
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-625abcf51145e413cc2df4fc1344fc835954358bf41cc5fe19725ad819cb26fa
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:16
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: 44a83713e310c6dcd3e8e51f59b7ddad457eec65021d3f6bdb62e2127fc689b0
+        outcome:
+          actionId: procurement-supplier-mdm-slice:16
+          attempt: 1
+          claimToken: portable-625abcf51145e413cc2df4fc1344fc835954358bf41cc5fe19725ad819cb26fa
+          inputHash: 44a83713e310c6dcd3e8e51f59b7ddad457eec65021d3f6bdb62e2127fc689b0
+          outcomeId: 1d38cfec-8a25-48c3-a266-8b028f2e0854
+          output:
+            event: verify-fail
+            reason: 独立审查 3 CRITICAL + 8 IMPORTANT：闸门事实由 HTTP 请求体自报（C-01）；退出前置
+              openVendorCount 自报且退出未关 Vendor（C-02）；onboarding_approved 需要 ≥1
+              ACTIVE_VENDOR 与全段批准却标 UNGUARDED 且测试断言伪造
+              basis（C-03）；候选源记录租户校验未实现（I-03）；payment_block_raised
+              无来源校验（I-04）；解除付款冻结无人工复核留痕（I-05）；LegalEntity
+              死代码（I-07）；退出守卫设计/实现不一致（I-08）
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: d2f9418c42400fd9a339d7360131eef59070c7b0940929490df0ee11dac6d990
+            outcomeId: 1d38cfec-8a25-48c3-a266-8b028f2e0854
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-54a478baf044199da51779edafa0bc5028cbd10fec73ac2a0ae8575a5f9bd985
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:17
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: 94c8f75d9c7c0c62b194df745ca19d7fc1dd4ba4e6ff32f962ed7ea793f3f135
+        outcome:
+          actionId: procurement-supplier-mdm-slice:17
+          attempt: 1
+          claimToken: portable-54a478baf044199da51779edafa0bc5028cbd10fec73ac2a0ae8575a5f9bd985
+          inputHash: 94c8f75d9c7c0c62b194df745ca19d7fc1dd4ba4e6ff32f962ed7ea793f3f135
+          outcomeId: 73ba3238-dba2-4716-a07a-b9dae721918e
+          output:
+            designEvidence:
+              contentHash: 1385fe6cb581fc8a758db72df333af23e6bbfc77216475ebae2c888f733efb1b
+              ref: openspec/changes/procurement-supplier-mdm-slice/design.md
+            plan: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+            planEvidence:
+              contentHash: 611fe18fbb604ad2e27c603f8529bc6b61f93735236152ea7026521fd1983b11
+              ref: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+            taskRevision: fb2544fccf93a9ba75ff83a5297a99d26b55581d6b1e3b3efff67c404e123009
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 0d750c7dbf859d5e3a54b71bf5daa76ed5451344bb7dfc417c39012291ec77a6
+            outcomeId: 73ba3238-dba2-4716-a07a-b9dae721918e
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/procurement-supplier-mdm-slice:19/1
+          token: portable-90d6f2468159af85fea8cfc0b98e7e5a94c7dad609dc735b5689ed39ccd92063
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:19
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: 94c8f75d9c7c0c62b194df745ca19d7fc1dd4ba4e6ff32f962ed7ea793f3f135
+        outcome:
+          actionId: procurement-supplier-mdm-slice:19
+          attempt: 1
+          claimToken: portable-90d6f2468159af85fea8cfc0b98e7e5a94c7dad609dc735b5689ed39ccd92063
+          inputHash: 94c8f75d9c7c0c62b194df745ca19d7fc1dd4ba4e6ff32f962ed7ea793f3f135
+          outcomeId: dd808420-3030-456d-821b-cfa7cbb0954e
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3575d545d2d13a2210d9c1fa19755c0bae3448a411a5c0b290029805bbb74b95
+            outcomeId: dd808420-3030-456d-821b-cfa7cbb0954e
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-6a6859599da4f09ad0ba8a2244efb480906c47ebe3c84148a94894aca3a59cb0
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:20
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: 94c8f75d9c7c0c62b194df745ca19d7fc1dd4ba4e6ff32f962ed7ea793f3f135
+        outcome:
+          actionId: procurement-supplier-mdm-slice:20
+          attempt: 1
+          claimToken: portable-6a6859599da4f09ad0ba8a2244efb480906c47ebe3c84148a94894aca3a59cb0
+          inputHash: 94c8f75d9c7c0c62b194df745ca19d7fc1dd4ba4e6ff32f962ed7ea793f3f135
+          outcomeId: 35b25ec9-e63c-4bbf-be7c-8132c591ac02
+          output:
+            argv:
+              - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+              - -o
+              - -f
+              - pom.xml
+              - clean
+              - test
+            changedDuringExecution: []
+            checkEpoch: 4
+            contentHash: 78000fa4131d09e71c6ba82e5d9e2db9f1c3d60d96b1f7983cbb9e4976c2c6f5
+            cwd: bone-platform/bone-masterdata
+            environment: 2ef8cdeb615ac412f4bbb510ad744b426845fafb900a458ddb0bab23e82d65e7
+            exitCode: 0
+            inputAfter: f1af7345cdf0b0614002b066ba7734cc231d9e1058066d3d14ccca6cddea0aea
+            inputBefore: f1af7345cdf0b0614002b066ba7734cc231d9e1058066d3d14ccca6cddea0aea
+            manifestHash: 6834bec7738953b623bc238f64243351327a19db392230c986e2385da884022b
+            manifestRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/8943af03-c8c9-423d-b205-ea0f067464ab.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/4e243e29-cbe6-4759-acad-a9d7e14d79d5.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 8762a8c8abe5d36bc97361e4462942774017e5ff0f60699ac788cdc2228fcbbc
+            outcomeId: 35b25ec9-e63c-4bbf-be7c-8132c591ac02
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-a16641813206afcd3a08d47aab4ecc6f9cb4013e2543ce621f745e6e0d69077b
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:22
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: e78455642e66793a13df503dbab7d7347f0e3972ddf4cae904cf764894fa320d
+        outcome:
+          actionId: procurement-supplier-mdm-slice:22
+          attempt: 1
+          claimToken: portable-a16641813206afcd3a08d47aab4ecc6f9cb4013e2543ce621f745e6e0d69077b
+          inputHash: e78455642e66793a13df503dbab7d7347f0e3972ddf4cae904cf764894fa320d
+          outcomeId: 50510630-ae24-49eb-b82e-496645c7122d
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-16-procurement-supplier-mdm-slice-verify-r2.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 620952140cfd5468eb00f384ec75b63a638982e7e7f408277ba59fd0e474f0af
+            outcomeId: 50510630-ae24-49eb-b82e-496645c7122d
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-08a0085ec8450b1aafb21fee39f4d4738dfce3c5409eaad60a732dbd8f6e9e57
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-supplier-mdm-slice:24
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: c20958b46e028f2fa21e4c74305918429b5885cfd4b24f5caab77c23f45be1b7
+        outcome:
+          actionId: procurement-supplier-mdm-slice:24
+          attempt: 2
+          claimToken: portable-08a0085ec8450b1aafb21fee39f4d4738dfce3c5409eaad60a732dbd8f6e9e57
+          inputHash: c20958b46e028f2fa21e4c74305918429b5885cfd4b24f5caab77c23f45be1b7
+          outcomeId: f104e521-cb02-4deb-a8d8-67711b820a36
+          output:
+            argv:
+              - mvn
+              - -o
+              - -f
+              - bone-platform/bone-masterdata/pom.xml
+              - clean
+              - test
+            changedDuringExecution: []
+            checkEpoch: 5
+            contentHash: ad70bea82d96680f4f66bd8918316b3a346db650e9975ca909ea7b3a4b099d7f
+            cwd: .
+            deliveryInputs:
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/SupplierController.java: git:d5c023a13ae143a2d5677c932101568e100839ac
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/SupplierApplicationService.java: git:6161d8224e3edc510c88723129115988969323eb
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/command/RegisterSupplierCommand.java: git:4371ea4e639555a503cb50c945259f573792dab0
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/command/TransitionSupplierCommand.java: git:a2e0f7ab00edf1f708e8bd45f88f744f8effe41f
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/command/TransitionVendorCommand.java: git:0ed798dba375e44d702bc0ad77d24f3d94518674
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/query/dto/SupplierRegistrationResultDTO.java: git:cd90b32a6dfcf748b146a8b68296e49f81df9cf7
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/query/dto/SupplierStateDTO.java: git:b67ff262a09c6206ae9d8372460511c7da788571
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/query/dto/SupplierTransitionResultDTO.java: git:1768c9f7929d8ab504a6b97d0a83edceb6e4a839
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/query/qry/SupplierPageQuery.java: git:b7c889c25077d0349fd83d1c66de8a7290999284
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/LegalEntityRepositoryPort.java: git:b5f01ed7fc355d289c1abf00693fa172679f62e4
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/PaymentBlockReleaseReviewPort.java: git:ed01f294f2feae8d0e5efd8c5631e53066aa2e52
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierExitFactsPort.java: git:58848fef1460ec3a0e83b15d107acf6610fc2b2c
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierExitGuard.java: git:25995f93f7903b0766de491874f1e8e9c08658f6
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierOnboardingFactsPort.java: git:2faea1de256833eabc5515bde219fe6ffb6e60e5
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierOnboardingGuard.java: git:20461551d682c556aa141dbdfcc18d24d2abd5ee
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierRepositoryPort.java: git:eddb503a383733d56cc2ba4c0b2f6f35095d2921
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/VendorActivationGuard.java: git:ee7e5d4a819190d304ab380f0399b6bbafc5f704
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/VendorGateFactsPort.java: git:8ea0e6df9bf3262f8136906edc94781f8e7e65f4
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/VendorRepositoryPort.java: git:656633da51b8e36d5c3ecb0603fe59af5d3f6696
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/GuardVerdict.java: git:605a7e8c5b526c7e575efcf3d1ce74825c9be626
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/LegalEntity.java: git:d06521612b8624ae849ea8bb37b776ae6347a69c
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/ResolvedSupplierIdentity.java: git:8220d1ebf3dff48f22a35634ca90cfe3f41b8585
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/Supplier.java: git:2f220056015d8b985b49cd1c634948beface9365
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierEvent.java: git:c9e30cacaabbb9394c54bc608a3751b8557d7515
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierExitContext.java: git:476e06c7053d65df5bf32a3279e47ea3bdcd9e1d
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierExitFacts.java: git:e565d9061d73fa4d89d6a7d86d3d478b9bd07e55
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierIdentityResolver.java: git:0ba963d2f059b3001fcd34b276165e9b3648a684
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierItem.java: git:f780d1efb0220fd9cdf869b0f0a8eb88bc8c4aa5
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierLifecycle.java: git:40ad971adacc78517bcf18ca44dd9eb07f8bb755
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierOnboardingContext.java: git:4cb5bd4c9dbb3aa1f27da8219cb739601741def0
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierState.java: git:1e9e3499ebb50a7b224d183b3179de7fb67c7562
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierStateChange.java: git:08c3127580e948759b3e8bcbcf731b8de2a6f0f9
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierTransition.java: git:a404c5fcd681a454b1a1cc86db08681b87214909
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplyRelationship.java: git:c5f5a3704136db9f491242b68f81ac6818e92bbd
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/TransitionCommandSource.java: git:5f3474a7b901b12ff2d774f1c62b009edb9a9251
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/Vendor.java: git:1420b97b09d9ce577d3d09bc368132f3ba3e074e
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorActivationContext.java: git:7dd95e0da5596129348ab0501d2a3244e956952c
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorDeactivationContext.java: git:cc52e5b4eef4ca392ce560d9a736f2accdbbb093
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorEvent.java: git:52d5aaa8b6adc7082b46ab800359b28452c952d1
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorLifecycle.java: git:3123bdea22a77f089fc9477155ea365dd0f712b6
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorState.java: git:5e5dcd0009b6cbcd04e715e8b6b65b3ff672d678
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorStateChange.java: git:54e9b54ae2ba582b5cbe7b1294c010e934feca7a
+              bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorTransition.java: git:b4e4782f700290b70865b5ef138d5cfaf69fa914
+              bone-platform/bone-masterdata/src/main/resources/application.yml: git:db12c382578568636259e94b597ab2d72c6ec087
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/adapter/web/controller/SupplierControllerContractTest.java: git:9f604ee8347ed0877a9e344e3a26d0d8f45803c3
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/application/SupplierApplicationServiceTest.java: git:29d1e664bad917e54fbec98b22eacf3b73a9b4e4
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/application/SupplierMergeAssemblyTest.java: git:8ce841913f942d188fe346ce13526caba71ef9bc
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/goldenrecord/GoldenRecordLineageInvariantTest.java: git:f023f5d9e6f63d0ec9fa954d3f4544dc647a62e4
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/LegalEntityTest.java: git:8f6428daa97f541c6dc8338dc064dd61f9bc9a6c
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/SupplierGuardContextsTest.java: git:365e2940cbf1846f8125e7bf17a5f004390906f5
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/SupplierIdentityResolverTest.java: git:ee38f89b1f2ede8ba22ba1c9a24409e78d2fa34e
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/SupplierLifecycleTest.java: git:ef338024cd228e066668b2731fed37852208240e
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/SupplyRelationshipTest.java: git:fac4b673273bab55be84ec61cb32d9b5a208b30e
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/VendorLifecycleTest.java: git:4fca0f6e1f13409f10b3e2d6be57ebd008b9482d
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/e2e/SupplierCapabilityEnabledTest.java: git:9b91db5e968090e463b36d97ee77dcb68f6b092a
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/e2e/SupplierCapabilityGateTest.java: git:2ece8fd667e078efba46ca25cfecf31e5dbe26f9
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/e2e/SupplierCapabilityRouteAbsenceTest.java: git:e4a91132117f7e804cad13ab1150ba2c243acfc3
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/e2e/SupplierHttpIntegrationTest.java: git:6b8cd4c917134b168fbe639cdfd0986382382ebe
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemoryLegalEntityRepositoryPort.java: git:b73fc2a9629d7289db66b8f579452f6767660d61
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemoryPaymentBlockReleaseReview.java: git:9d842d3a6663abfac1d8948b9716b49c3ef61836
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemorySupplierExitFacts.java: git:cd1e6665ad641c1831e479f1bf6e551f7bf14d0e
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemorySupplierOnboardingFacts.java: git:d82cafae67c8c780a3fbe0f2a4aa6d8f8eed8cf0
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemorySupplierRepositoryPort.java: git:62e617dd23153b12de279ec34fee842f48affe96
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemoryVendorGateFacts.java: git:7fbbba6ee6cbd620de2c01285b798d942d787c0c
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemoryVendorRepositoryPort.java: git:846b18679823e513db8f0229d9baf9b1c8324899
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/SupplierHttpTestConfiguration.java: git:073fb5c317b259aa2f6a2055ccbdea051d7b7999
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/SupplierPortContractTest.java: git:4de435402f7c64da47418952f3ffbee4198503e0
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/TestSupplierExitGuard.java: git:848ad0d19deb1c21cedd371f858144b0cdd32b5b
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/TestSupplierOnboardingGuard.java: git:1a0a08df6970307900bcfea1eeb8f97d70a551cd
+              bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/TestVendorActivationGuard.java: git:2858ed29a36a954ea64523ce2da006e48316dc5e
+            environment: f41429415a6ee36cd235204ada374e462a55d30e8ab7551941bf23460da87881
+            exitCode: 0
+            inputAfter: 00683b74914ca503df862b57af8dd4416183d9443c2cdab50f516211aa726b95
+            inputBefore: 00683b74914ca503df862b57af8dd4416183d9443c2cdab50f516211aa726b95
+            manifestHash: d304a073d13fbfbb044846ac636bb82bea59ad1c2036da159f7a6d84679aa577
+            manifestRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/0815e5d0-bcb0-4296-936d-50f3609d0cac.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/ee8345cc-9beb-43ea-8b3c-60caf2511249.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: d39087d9e3f6f93f6e956676c3f88395eeb9c82ec8d31233f95849014445bb1a
+            outcomeId: f104e521-cb02-4deb-a8d8-67711b820a36
+        reconciliations:
+          - attempt: 1
+            evidence: "口径说明（必读）：本字段取 not-executed 字面量表示「本次 attempt
+              不产出可信结局，需重放」，不代表命令物理上未执行。事实经过：mvn -o -f
+              bone-platform/bone-masterdata/pom.xml clean test 确已执行完毕（日志
+              classic-sdk-checks/ab3374…/86dc5048-….log 末行 BUILD SUCCESS，Tests
+              run: 346, Failures: 0, Errors: 0, Skipped: 0，Finished at
+              2026-11-16T12:15:53+08:00），但父进程在写入收据前被环境批量删除守卫拦截（SAFE_DELETE_BULK\
+              _CONFIRM_REQUIRED, count=50/threshold=50/scope=turn），以 exitCode=70
+              退出，收据 sdk-1017f9d5….json 停留在 status=started，无法补交可信 outcome。原执行器
+              comet-classic-check（claim token
+              1f727b0f-8b7d-48df-ba43-99b4cf94fc9f）已不存在，进程树已停止（pgrep 复核无残留
+              mvn/surefire）。故放弃 attempt 1，重放同一条确定性命令以取得完整收据。"
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        id: procurement-supplier-mdm-slice:26
+        input:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs: {}
+        inputHash: 538f92beae4e5f688a985a39ef9d8e638bf9e477ffe5310ccdbf63f8fe92ddf6
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-supplier-mdm-slice
+        status: pending
+        stepId: full.archive.prepare
+        type: invoke_skill
+    actionContexts:
+      procurement-supplier-mdm-slice:1:
+        results: {}
+        sequence: 1
+      procurement-supplier-mdm-slice:11:
+        results: {}
+        sequence: 11
+      procurement-supplier-mdm-slice:13:
+        results: {}
+        sequence: 13
+      procurement-supplier-mdm-slice:14:
+        results: {}
+        sequence: 14
+      procurement-supplier-mdm-slice:16:
+        results: {}
+        sequence: 16
+      procurement-supplier-mdm-slice:17:
+        results: {}
+        sequence: 17
+      procurement-supplier-mdm-slice:19:
+        results: {}
+        sequence: 19
+      procurement-supplier-mdm-slice:20:
+        results: {}
+        sequence: 20
+      procurement-supplier-mdm-slice:22:
+        results: {}
+        sequence: 22
+      procurement-supplier-mdm-slice:24:
+        results: {}
+        sequence: 24
+      procurement-supplier-mdm-slice:26:
+        results: {}
+        sequence: 26
+      procurement-supplier-mdm-slice:4:
+        results: {}
+        sequence: 4
+      procurement-supplier-mdm-slice:5:
+        results: {}
+        sequence: 5
+      procurement-supplier-mdm-slice:7:
+        results: {}
+        sequence: 7
+      procurement-supplier-mdm-slice:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: procurement-supplier-mdm-slice:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: b2cdad25121f5d92905613716e50ceb83cd4cfba80922b8f9cf81aabc5a08d09
+              ref: openspec/changes/procurement-supplier-mdm-slice
+        proposalHash: 07dd4585718cc10b2c9ea2a95716326ca90d7f86a6245a521515a384a3c1cac9
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-b2cdad25121f5d92905613716e50ceb83cd4cfba80922b8f9cf81aabc5a08d09
+          choice: approved
+          proposalHash: 07dd4585718cc10b2c9ea2a95716326ca90d7f86a6245a521515a384a3c1cac9
+      - id: procurement-supplier-mdm-slice:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procurement-supplier-mdm-slice/.comet/handoff/design-context.json
+              handoffHash: e2ddd28ccc090b0c8683c281038ecbc1f4fd123c8d94403703c97f7c46e050b4
+              proposal: |-
+                【方案】在 bone-masterdata 内以 DDD 分层落地采购域供应商主数据最小可验证切片：LegalEntity（身份载体）+ Supplier（合作资格）+ Vendor（交易与付款资格）双角色双状态机 + SupplyRelationship/SupplierItem（Purchasing Org data），复用既有 Golden Record 内核（GoldenRecordMerger / EntityKeyMappingRegistry）做合并与身份解析，域端口 + 内存适配，能力开关 bone.procurement.supplier-mdm.enabled 默认关闭。
+
+                D1 落地宿主：不新建 Maven 模块，在 com.bone.masterdata 下新增供应商域包。理由：Golden Record 内核在同进程可直调，新建模块引入跨模块依赖（L2）且同样绕不开 DDL 红线。
+                D2 角色语义严格对齐 LLD 真源（Design 阶段修正）：Supplier=合作资格（寻源/准入/绩效/风险/退出），Vendor=财务侧 Company Code data（银行/税务/付款条件/付款冻结）；依据 01-供应商主数据模块详细设计.md:22、采购领域架构设计方案.md:109,223。SupplyRelationship 为独立聚合根，Owner=采购。
+                D3 身份与合并：只调用既有内核，不新增任何 dedup/merge 服务（终局分工要求业务域不另建黄金记录）。
+                D4 持久化：SupplierRepositoryPort + 内存实现；生产 JDBC adapter 与 t_proc_* DDL 属 R-2 红线，不在本切片。
+                D5 双状态机均用「枚举 + Map<State, Map<Event, Transition>>」显式迁移表，守卫集中 domain，未列出即拒绝（fail-closed），非法迁移抛 DomainException 携带 current_state/attempted/allowed[]。
+                  Supplier: PROSPECT → ONBOARDING → ACTIVE ⇄ SUSPENDED / CORRECTIVE → EXITED
+                  Vendor: PENDING_VENDOR → ACTIVE_VENDOR ⇄ PAYMENT_BLOCKED → INACTIVE_VENDOR
+                  禁止：EXITED→任意（终态不可回写）；INACTIVE_VENDOR→ACTIVE_VENDOR 须重走闸门；PENDING_VENDOR→ACTIVE_VENDOR 未经闸门一律拒绝。
+                D6 跨域 Guard 用可注入布尔断言端口 SupplierExitGuard / VendorActivationGuard，不写死 true、不伪造通过（否则 spec 的「退出前置校验」Scenario 变假绿）。
+                D7 PAYMENT_BLOCKED 的「本域不可自发放行」用命令来源校验：只接受声明为外部财务事件的来源，域内来源一律拒绝。
+
+                【关键取舍】内存适配换可运行闭环（不宣称生产落库能力）；跨域事实用端口换可负向注入（不宣称已接上游）；同进程复用内核换零依赖变更（接受耦合，物理拆模块时改显式依赖即可）。
+
+                【风险】内存适配≠生产持久化（R-2 前置）；跨域 Guard 可能被误读为已接上游；PAYMENT_BLOCKED 无 Finance 上游，只验证 fail-closed 语义；Design 阶段修正了 Open 时的角色语义（旧 spec 断言不得作验收依据）；能力默认关闭导致「看不见」（测试显式开启 + 负向探针验证关闭不注册端点）。
+
+                【Spec Patch 已落地，待本次批准绑定】P1 角色分离语义按 LLD 纠正（Supplier/Vendor 不得互为替代，各持互不覆盖状态机）；P2 原「供应商准入生命周期状态机」拆为 Supplier 状态机 + 新增 Vendor 交易与付款资格状态机两个 Requirement；P3 非法迁移/终态回写/未经闸门开通/退出前置校验全部落为可测 Scenario。tasks.md 同步为 15 项（1.1 双角色互不覆盖、1.2 SupplyRelationship 独立聚合、2.2 Supplier 机、2.3 Vendor 机、5.2 六类负向探针）。
+
+                【Non-Goals】不写 bone-init.sql / t_proc_* DDL；不实现 JDBC adapter；不做其余 8 个采购模块；不修改既有 Golden Record 内核；不接真实 Finance/PO/合同上游；不碰 CI 三入口与生产库/密钥/发布。
+              requirementsEvidence:
+                contentHash: 6468c2e1fd911e65fe882de27f8ea6063aad0d00086f2af552a8714ffd60e84b
+                ref: openspec/changes/procurement-supplier-mdm-slice
+              sourceEvidence:
+                contentHash: 297464686bea71d977b0c679ca8d5e7ba87f2fa990757965c363ce38fbc449de
+                ref: openspec/changes/procurement-supplier-mdm-slice
+        proposalHash: 1b6202054b572e49d4e3103148e6b2ccd320cbd0a59d119b1ab08d402657b130
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-1b6202054b572e49d4e3103148e6b2ccd320cbd0a59d119b1ab08d402657b130-approved
+          choice: approved
+          proposalHash: 1b6202054b572e49d4e3103148e6b2ccd320cbd0a59d119b1ab08d402657b130
+      - id: procurement-supplier-mdm-slice:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs:
+            full.build.configure:
+              boundBranch: comet/procurement-supplier-mdm-slice
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: b58013ba15af1f1856a8c48dc71608e830c831741e3d34871259198dc095cb60
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: 978e4290-d3b5-4ec8-970b-50f2bc915f81
+          choice: approved
+          proposalHash: b58013ba15af1f1856a8c48dc71608e830c831741e3d34871259198dc095cb60
+    evidenceWaits:
+      - id: procurement-supplier-mdm-slice:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procurement-supplier-mdm-slice
+          contentHash: b2cdad25121f5d92905613716e50ceb83cd4cfba80922b8f9cf81aabc5a08d09
+          submissionId: 242076c1-3445-425b-bfbb-bcc0c5f12d3f
+      - id: procurement-supplier-mdm-slice:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procurement-supplier-mdm-slice/design.md
+          contentHash: 1385fe6cb581fc8a758db72df333af23e6bbfc77216475ebae2c888f733efb1b
+          submissionId: e3bd90a0-4a25-4319-a4de-e062a66acc91
+      - id: procurement-supplier-mdm-slice:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+          contentHash: 611fe18fbb604ad2e27c603f8529bc6b61f93735236152ea7026521fd1983b11
+          submissionId: 2a62ea0d-e253-44d0-ae72-8ae8eae8c95c
+      - id: procurement-supplier-mdm-slice:15
+        stepId: full.build.check.evidence
+        sequence: 15
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/a5c8530f-7bf5-407c-8321-a158eadeb897.log
+          contentHash: 003f81beef6ef866c8b05a49e6465862f0198142a99f629a066f8ac4952fc124
+          submissionId: 02c6be1f-d070-4c87-ad79-eb6e03258c02
+      - id: procurement-supplier-mdm-slice:18
+        stepId: full.build.plan.evidence
+        sequence: 18
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+          contentHash: 611fe18fbb604ad2e27c603f8529bc6b61f93735236152ea7026521fd1983b11
+          submissionId: 60a90698-3ce8-462d-95d3-9892714ee71e
+      - id: procurement-supplier-mdm-slice:21
+        stepId: full.build.check.evidence
+        sequence: 21
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/4e243e29-cbe6-4759-acad-a9d7e14d79d5.log
+          contentHash: 78000fa4131d09e71c6ba82e5d9e2db9f1c3d60d96b1f7983cbb9e4976c2c6f5
+          submissionId: a99156ae-ec8e-4fc2-bd88-928f29b86547
+      - id: procurement-supplier-mdm-slice:23
+        stepId: full.verify.report.evidence
+        sequence: 23
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-16-procurement-supplier-mdm-slice-verify-r2.md
+          contentHash: df12197ac911ca40f6a0dc192017ca6a6dc282f18e4ad883202ff32ac0a36173
+          submissionId: d1620abf-c8b5-4bb5-918e-f693c57f5dd0
+      - id: procurement-supplier-mdm-slice:25
+        stepId: full.verify.check.evidence
+        sequence: 25
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/ee8345cc-9beb-43ea-8b3c-60caf2511249.log
+          contentHash: ad70bea82d96680f4f66bd8918316b3a346db650e9975ca909ea7b3a4b099d7f
+          submissionId: d3353e15-d63f-496e-a1a5-0595ae26c87a
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 43
+  sourceHash: 5f019f6cb216db42a649adaf51e3c22d2d3eca6170ecb28366f7fc235e37faaf
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: b2cdad25121f5d92905613716e50ceb83cd4cfba80922b8f9cf81aabc5a08d09
+              ref: openspec/changes/procurement-supplier-mdm-slice
+      - contentHash: b2cdad25121f5d92905613716e50ceb83cd4cfba80922b8f9cf81aabc5a08d09
+        ref: openspec/changes/procurement-supplier-mdm-slice
+      - contentHash: b2cdad25121f5d92905613716e50ceb83cd4cfba80922b8f9cf81aabc5a08d09
+      - choice: approved
+        proposal:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procurement-supplier-mdm-slice/.comet/handoff/design-context.json
+              handoffHash: e2ddd28ccc090b0c8683c281038ecbc1f4fd123c8d94403703c97f7c46e050b4
+              proposal: |-
+                【方案】在 bone-masterdata 内以 DDD 分层落地采购域供应商主数据最小可验证切片：LegalEntity（身份载体）+ Supplier（合作资格）+ Vendor（交易与付款资格）双角色双状态机 + SupplyRelationship/SupplierItem（Purchasing Org data），复用既有 Golden Record 内核（GoldenRecordMerger / EntityKeyMappingRegistry）做合并与身份解析，域端口 + 内存适配，能力开关 bone.procurement.supplier-mdm.enabled 默认关闭。
+
+                D1 落地宿主：不新建 Maven 模块，在 com.bone.masterdata 下新增供应商域包。理由：Golden Record 内核在同进程可直调，新建模块引入跨模块依赖（L2）且同样绕不开 DDL 红线。
+                D2 角色语义严格对齐 LLD 真源（Design 阶段修正）：Supplier=合作资格（寻源/准入/绩效/风险/退出），Vendor=财务侧 Company Code data（银行/税务/付款条件/付款冻结）；依据 01-供应商主数据模块详细设计.md:22、采购领域架构设计方案.md:109,223。SupplyRelationship 为独立聚合根，Owner=采购。
+                D3 身份与合并：只调用既有内核，不新增任何 dedup/merge 服务（终局分工要求业务域不另建黄金记录）。
+                D4 持久化：SupplierRepositoryPort + 内存实现；生产 JDBC adapter 与 t_proc_* DDL 属 R-2 红线，不在本切片。
+                D5 双状态机均用「枚举 + Map<State, Map<Event, Transition>>」显式迁移表，守卫集中 domain，未列出即拒绝（fail-closed），非法迁移抛 DomainException 携带 current_state/attempted/allowed[]。
+                  Supplier: PROSPECT → ONBOARDING → ACTIVE ⇄ SUSPENDED / CORRECTIVE → EXITED
+                  Vendor: PENDING_VENDOR → ACTIVE_VENDOR ⇄ PAYMENT_BLOCKED → INACTIVE_VENDOR
+                  禁止：EXITED→任意（终态不可回写）；INACTIVE_VENDOR→ACTIVE_VENDOR 须重走闸门；PENDING_VENDOR→ACTIVE_VENDOR 未经闸门一律拒绝。
+                D6 跨域 Guard 用可注入布尔断言端口 SupplierExitGuard / VendorActivationGuard，不写死 true、不伪造通过（否则 spec 的「退出前置校验」Scenario 变假绿）。
+                D7 PAYMENT_BLOCKED 的「本域不可自发放行」用命令来源校验：只接受声明为外部财务事件的来源，域内来源一律拒绝。
+
+                【关键取舍】内存适配换可运行闭环（不宣称生产落库能力）；跨域事实用端口换可负向注入（不宣称已接上游）；同进程复用内核换零依赖变更（接受耦合，物理拆模块时改显式依赖即可）。
+
+                【风险】内存适配≠生产持久化（R-2 前置）；跨域 Guard 可能被误读为已接上游；PAYMENT_BLOCKED 无 Finance 上游，只验证 fail-closed 语义；Design 阶段修正了 Open 时的角色语义（旧 spec 断言不得作验收依据）；能力默认关闭导致「看不见」（测试显式开启 + 负向探针验证关闭不注册端点）。
+
+                【Spec Patch 已落地，待本次批准绑定】P1 角色分离语义按 LLD 纠正（Supplier/Vendor 不得互为替代，各持互不覆盖状态机）；P2 原「供应商准入生命周期状态机」拆为 Supplier 状态机 + 新增 Vendor 交易与付款资格状态机两个 Requirement；P3 非法迁移/终态回写/未经闸门开通/退出前置校验全部落为可测 Scenario。tasks.md 同步为 15 项（1.1 双角色互不覆盖、1.2 SupplyRelationship 独立聚合、2.2 Supplier 机、2.3 Vendor 机、5.2 六类负向探针）。
+
+                【Non-Goals】不写 bone-init.sql / t_proc_* DDL；不实现 JDBC adapter；不做其余 8 个采购模块；不修改既有 Golden Record 内核；不接真实 Finance/PO/合同上游；不碰 CI 三入口与生产库/密钥/发布。
+              requirementsEvidence:
+                contentHash: 6468c2e1fd911e65fe882de27f8ea6063aad0d00086f2af552a8714ffd60e84b
+                ref: openspec/changes/procurement-supplier-mdm-slice
+              sourceEvidence:
+                contentHash: 297464686bea71d977b0c679ca8d5e7ba87f2fa990757965c363ce38fbc449de
+                ref: openspec/changes/procurement-supplier-mdm-slice
+      - handoffContext: openspec/changes/procurement-supplier-mdm-slice/.comet/handoff/design-context.json
+        handoffHash: e2ddd28ccc090b0c8683c281038ecbc1f4fd123c8d94403703c97f7c46e050b4
+        proposal: |-
+          【方案】在 bone-masterdata 内以 DDD 分层落地采购域供应商主数据最小可验证切片：LegalEntity（身份载体）+ Supplier（合作资格）+ Vendor（交易与付款资格）双角色双状态机 + SupplyRelationship/SupplierItem（Purchasing Org data），复用既有 Golden Record 内核（GoldenRecordMerger / EntityKeyMappingRegistry）做合并与身份解析，域端口 + 内存适配，能力开关 bone.procurement.supplier-mdm.enabled 默认关闭。
+
+          D1 落地宿主：不新建 Maven 模块，在 com.bone.masterdata 下新增供应商域包。理由：Golden Record 内核在同进程可直调，新建模块引入跨模块依赖（L2）且同样绕不开 DDL 红线。
+          D2 角色语义严格对齐 LLD 真源（Design 阶段修正）：Supplier=合作资格（寻源/准入/绩效/风险/退出），Vendor=财务侧 Company Code data（银行/税务/付款条件/付款冻结）；依据 01-供应商主数据模块详细设计.md:22、采购领域架构设计方案.md:109,223。SupplyRelationship 为独立聚合根，Owner=采购。
+          D3 身份与合并：只调用既有内核，不新增任何 dedup/merge 服务（终局分工要求业务域不另建黄金记录）。
+          D4 持久化：SupplierRepositoryPort + 内存实现；生产 JDBC adapter 与 t_proc_* DDL 属 R-2 红线，不在本切片。
+          D5 双状态机均用「枚举 + Map<State, Map<Event, Transition>>」显式迁移表，守卫集中 domain，未列出即拒绝（fail-closed），非法迁移抛 DomainException 携带 current_state/attempted/allowed[]。
+            Supplier: PROSPECT → ONBOARDING → ACTIVE ⇄ SUSPENDED / CORRECTIVE → EXITED
+            Vendor: PENDING_VENDOR → ACTIVE_VENDOR ⇄ PAYMENT_BLOCKED → INACTIVE_VENDOR
+            禁止：EXITED→任意（终态不可回写）；INACTIVE_VENDOR→ACTIVE_VENDOR 须重走闸门；PENDING_VENDOR→ACTIVE_VENDOR 未经闸门一律拒绝。
+          D6 跨域 Guard 用可注入布尔断言端口 SupplierExitGuard / VendorActivationGuard，不写死 true、不伪造通过（否则 spec 的「退出前置校验」Scenario 变假绿）。
+          D7 PAYMENT_BLOCKED 的「本域不可自发放行」用命令来源校验：只接受声明为外部财务事件的来源，域内来源一律拒绝。
+
+          【关键取舍】内存适配换可运行闭环（不宣称生产落库能力）；跨域事实用端口换可负向注入（不宣称已接上游）；同进程复用内核换零依赖变更（接受耦合，物理拆模块时改显式依赖即可）。
+
+          【风险】内存适配≠生产持久化（R-2 前置）；跨域 Guard 可能被误读为已接上游；PAYMENT_BLOCKED 无 Finance 上游，只验证 fail-closed 语义；Design 阶段修正了 Open 时的角色语义（旧 spec 断言不得作验收依据）；能力默认关闭导致「看不见」（测试显式开启 + 负向探针验证关闭不注册端点）。
+
+          【Spec Patch 已落地，待本次批准绑定】P1 角色分离语义按 LLD 纠正（Supplier/Vendor 不得互为替代，各持互不覆盖状态机）；P2 原「供应商准入生命周期状态机」拆为 Supplier 状态机 + 新增 Vendor 交易与付款资格状态机两个 Requirement；P3 非法迁移/终态回写/未经闸门开通/退出前置校验全部落为可测 Scenario。tasks.md 同步为 15 项（1.1 双角色互不覆盖、1.2 SupplyRelationship 独立聚合、2.2 Supplier 机、2.3 Vendor 机、5.2 六类负向探针）。
+
+          【Non-Goals】不写 bone-init.sql / t_proc_* DDL；不实现 JDBC adapter；不做其余 8 个采购模块；不修改既有 Golden Record 内核；不接真实 Finance/PO/合同上游；不碰 CI 三入口与生产库/密钥/发布。
+        requirementsEvidence:
+          contentHash: 6468c2e1fd911e65fe882de27f8ea6063aad0d00086f2af552a8714ffd60e84b
+          ref: openspec/changes/procurement-supplier-mdm-slice
+        sourceEvidence:
+          contentHash: 297464686bea71d977b0c679ca8d5e7ba87f2fa990757965c363ce38fbc449de
+          ref: openspec/changes/procurement-supplier-mdm-slice
+      - designDoc: openspec/changes/procurement-supplier-mdm-slice/design.md
+      - contentHash: 1385fe6cb581fc8a758db72df333af23e6bbfc77216475ebae2c888f733efb1b
+        ref: openspec/changes/procurement-supplier-mdm-slice/design.md
+      - boundBranch: comet/procurement-supplier-mdm-slice
+        buildMode: autonomous
+        directOverride: false
+        isolation: worktree
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: procurement-supplier-mdm-slice
+            changeDir: openspec/changes/procurement-supplier-mdm-slice
+            workspaceBaseline:
+              ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+          outputs:
+            full.build.configure:
+              boundBranch: comet/procurement-supplier-mdm-slice
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 1385fe6cb581fc8a758db72df333af23e6bbfc77216475ebae2c888f733efb1b
+          ref: openspec/changes/procurement-supplier-mdm-slice/design.md
+        plan: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+        planEvidence:
+          contentHash: 611fe18fbb604ad2e27c603f8529bc6b61f93735236152ea7026521fd1983b11
+          ref: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+        taskRevision: fb2544fccf93a9ba75ff83a5297a99d26b55581d6b1e3b3efff67c404e123009
+      - contentHash: 611fe18fbb604ad2e27c603f8529bc6b61f93735236152ea7026521fd1983b11
+        ref: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+      - event: build-complete
+      - argv:
+          - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+          - -o
+          - -f
+          - bone-platform/bone-masterdata/pom.xml
+          - clean
+          - test
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 003f81beef6ef866c8b05a49e6465862f0198142a99f629a066f8ac4952fc124
+        cwd: .
+        environment: fea2f8c186eeb16b70fd09306aadc8800e542e855d6d4724a4635a9a9465bf13
+        exitCode: 0
+        inputAfter: 3b878088dc49b3ffe9ec6b5c7ae1aebbfae44aaf65b3dcbed54bb5ac1a49fa8e
+        inputBefore: 3b878088dc49b3ffe9ec6b5c7ae1aebbfae44aaf65b3dcbed54bb5ac1a49fa8e
+        manifestHash: 324963881e75c69f2ee0088ba7f290bbb1d8fe5147b5ea132621a3bbb043323c
+        manifestRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/c1fcd088-74e6-4d91-a68c-14c7b50ccbbb.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/a5c8530f-7bf5-407c-8321-a158eadeb897.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 003f81beef6ef866c8b05a49e6465862f0198142a99f629a066f8ac4952fc124
+        ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/a5c8530f-7bf5-407c-8321-a158eadeb897.log
+      - event: verify-fail
+        reason: 独立审查 3 CRITICAL + 8 IMPORTANT：闸门事实由 HTTP 请求体自报（C-01）；退出前置
+          openVendorCount 自报且退出未关 Vendor（C-02）；onboarding_approved 需要 ≥1
+          ACTIVE_VENDOR 与全段批准却标 UNGUARDED 且测试断言伪造
+          basis（C-03）；候选源记录租户校验未实现（I-03）；payment_block_raised
+          无来源校验（I-04）；解除付款冻结无人工复核留痕（I-05）；LegalEntity
+          死代码（I-07）；退出守卫设计/实现不一致（I-08）
+      - argv:
+          - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+          - -o
+          - -f
+          - pom.xml
+          - clean
+          - test
+        changedDuringExecution: []
+        checkEpoch: 4
+        contentHash: 78000fa4131d09e71c6ba82e5d9e2db9f1c3d60d96b1f7983cbb9e4976c2c6f5
+        cwd: bone-platform/bone-masterdata
+        environment: 2ef8cdeb615ac412f4bbb510ad744b426845fafb900a458ddb0bab23e82d65e7
+        exitCode: 0
+        inputAfter: f1af7345cdf0b0614002b066ba7734cc231d9e1058066d3d14ccca6cddea0aea
+        inputBefore: f1af7345cdf0b0614002b066ba7734cc231d9e1058066d3d14ccca6cddea0aea
+        manifestHash: 6834bec7738953b623bc238f64243351327a19db392230c986e2385da884022b
+        manifestRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/8943af03-c8c9-423d-b205-ea0f067464ab.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/4e243e29-cbe6-4759-acad-a9d7e14d79d5.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 78000fa4131d09e71c6ba82e5d9e2db9f1c3d60d96b1f7983cbb9e4976c2c6f5
+        ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/4e243e29-cbe6-4759-acad-a9d7e14d79d5.log
+      - contentHash: df12197ac911ca40f6a0dc192017ca6a6dc282f18e4ad883202ff32ac0a36173
+        ref: docs/superpowers/reports/2026-11-16-procurement-supplier-mdm-slice-verify-r2.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-16-procurement-supplier-mdm-slice-verify-r2.md
+      - argv:
+          - mvn
+          - -o
+          - -f
+          - bone-platform/bone-masterdata/pom.xml
+          - clean
+          - test
+        changedDuringExecution: []
+        checkEpoch: 5
+        contentHash: ad70bea82d96680f4f66bd8918316b3a346db650e9975ca909ea7b3a4b099d7f
+        cwd: .
+        deliveryInputs:
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/SupplierController.java: git:d5c023a13ae143a2d5677c932101568e100839ac
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/SupplierApplicationService.java: git:6161d8224e3edc510c88723129115988969323eb
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/command/RegisterSupplierCommand.java: git:4371ea4e639555a503cb50c945259f573792dab0
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/command/TransitionSupplierCommand.java: git:a2e0f7ab00edf1f708e8bd45f88f744f8effe41f
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/command/TransitionVendorCommand.java: git:0ed798dba375e44d702bc0ad77d24f3d94518674
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/query/dto/SupplierRegistrationResultDTO.java: git:cd90b32a6dfcf748b146a8b68296e49f81df9cf7
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/query/dto/SupplierStateDTO.java: git:b67ff262a09c6206ae9d8372460511c7da788571
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/query/dto/SupplierTransitionResultDTO.java: git:1768c9f7929d8ab504a6b97d0a83edceb6e4a839
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/query/qry/SupplierPageQuery.java: git:b7c889c25077d0349fd83d1c66de8a7290999284
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/LegalEntityRepositoryPort.java: git:b5f01ed7fc355d289c1abf00693fa172679f62e4
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/PaymentBlockReleaseReviewPort.java: git:ed01f294f2feae8d0e5efd8c5631e53066aa2e52
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierExitFactsPort.java: git:58848fef1460ec3a0e83b15d107acf6610fc2b2c
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierExitGuard.java: git:25995f93f7903b0766de491874f1e8e9c08658f6
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierOnboardingFactsPort.java: git:2faea1de256833eabc5515bde219fe6ffb6e60e5
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierOnboardingGuard.java: git:20461551d682c556aa141dbdfcc18d24d2abd5ee
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierRepositoryPort.java: git:eddb503a383733d56cc2ba4c0b2f6f35095d2921
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/VendorActivationGuard.java: git:ee7e5d4a819190d304ab380f0399b6bbafc5f704
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/VendorGateFactsPort.java: git:8ea0e6df9bf3262f8136906edc94781f8e7e65f4
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/VendorRepositoryPort.java: git:656633da51b8e36d5c3ecb0603fe59af5d3f6696
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/GuardVerdict.java: git:605a7e8c5b526c7e575efcf3d1ce74825c9be626
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/LegalEntity.java: git:d06521612b8624ae849ea8bb37b776ae6347a69c
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/ResolvedSupplierIdentity.java: git:8220d1ebf3dff48f22a35634ca90cfe3f41b8585
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/Supplier.java: git:2f220056015d8b985b49cd1c634948beface9365
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierEvent.java: git:c9e30cacaabbb9394c54bc608a3751b8557d7515
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierExitContext.java: git:476e06c7053d65df5bf32a3279e47ea3bdcd9e1d
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierExitFacts.java: git:e565d9061d73fa4d89d6a7d86d3d478b9bd07e55
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierIdentityResolver.java: git:0ba963d2f059b3001fcd34b276165e9b3648a684
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierItem.java: git:f780d1efb0220fd9cdf869b0f0a8eb88bc8c4aa5
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierLifecycle.java: git:40ad971adacc78517bcf18ca44dd9eb07f8bb755
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierOnboardingContext.java: git:4cb5bd4c9dbb3aa1f27da8219cb739601741def0
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierState.java: git:1e9e3499ebb50a7b224d183b3179de7fb67c7562
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierStateChange.java: git:08c3127580e948759b3e8bcbcf731b8de2a6f0f9
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierTransition.java: git:a404c5fcd681a454b1a1cc86db08681b87214909
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplyRelationship.java: git:c5f5a3704136db9f491242b68f81ac6818e92bbd
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/TransitionCommandSource.java: git:5f3474a7b901b12ff2d774f1c62b009edb9a9251
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/Vendor.java: git:1420b97b09d9ce577d3d09bc368132f3ba3e074e
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorActivationContext.java: git:7dd95e0da5596129348ab0501d2a3244e956952c
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorDeactivationContext.java: git:cc52e5b4eef4ca392ce560d9a736f2accdbbb093
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorEvent.java: git:52d5aaa8b6adc7082b46ab800359b28452c952d1
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorLifecycle.java: git:3123bdea22a77f089fc9477155ea365dd0f712b6
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorState.java: git:5e5dcd0009b6cbcd04e715e8b6b65b3ff672d678
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorStateChange.java: git:54e9b54ae2ba582b5cbe7b1294c010e934feca7a
+          bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorTransition.java: git:b4e4782f700290b70865b5ef138d5cfaf69fa914
+          bone-platform/bone-masterdata/src/main/resources/application.yml: git:db12c382578568636259e94b597ab2d72c6ec087
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/adapter/web/controller/SupplierControllerContractTest.java: git:9f604ee8347ed0877a9e344e3a26d0d8f45803c3
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/application/SupplierApplicationServiceTest.java: git:29d1e664bad917e54fbec98b22eacf3b73a9b4e4
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/application/SupplierMergeAssemblyTest.java: git:8ce841913f942d188fe346ce13526caba71ef9bc
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/goldenrecord/GoldenRecordLineageInvariantTest.java: git:f023f5d9e6f63d0ec9fa954d3f4544dc647a62e4
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/LegalEntityTest.java: git:8f6428daa97f541c6dc8338dc064dd61f9bc9a6c
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/SupplierGuardContextsTest.java: git:365e2940cbf1846f8125e7bf17a5f004390906f5
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/SupplierIdentityResolverTest.java: git:ee38f89b1f2ede8ba22ba1c9a24409e78d2fa34e
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/SupplierLifecycleTest.java: git:ef338024cd228e066668b2731fed37852208240e
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/SupplyRelationshipTest.java: git:fac4b673273bab55be84ec61cb32d9b5a208b30e
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/VendorLifecycleTest.java: git:4fca0f6e1f13409f10b3e2d6be57ebd008b9482d
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/e2e/SupplierCapabilityEnabledTest.java: git:9b91db5e968090e463b36d97ee77dcb68f6b092a
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/e2e/SupplierCapabilityGateTest.java: git:2ece8fd667e078efba46ca25cfecf31e5dbe26f9
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/e2e/SupplierCapabilityRouteAbsenceTest.java: git:e4a91132117f7e804cad13ab1150ba2c243acfc3
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/e2e/SupplierHttpIntegrationTest.java: git:6b8cd4c917134b168fbe639cdfd0986382382ebe
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemoryLegalEntityRepositoryPort.java: git:b73fc2a9629d7289db66b8f579452f6767660d61
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemoryPaymentBlockReleaseReview.java: git:9d842d3a6663abfac1d8948b9716b49c3ef61836
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemorySupplierExitFacts.java: git:cd1e6665ad641c1831e479f1bf6e551f7bf14d0e
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemorySupplierOnboardingFacts.java: git:d82cafae67c8c780a3fbe0f2a4aa6d8f8eed8cf0
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemorySupplierRepositoryPort.java: git:62e617dd23153b12de279ec34fee842f48affe96
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemoryVendorGateFacts.java: git:7fbbba6ee6cbd620de2c01285b798d942d787c0c
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemoryVendorRepositoryPort.java: git:846b18679823e513db8f0229d9baf9b1c8324899
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/SupplierHttpTestConfiguration.java: git:073fb5c317b259aa2f6a2055ccbdea051d7b7999
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/SupplierPortContractTest.java: git:4de435402f7c64da47418952f3ffbee4198503e0
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/TestSupplierExitGuard.java: git:848ad0d19deb1c21cedd371f858144b0cdd32b5b
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/TestSupplierOnboardingGuard.java: git:1a0a08df6970307900bcfea1eeb8f97d70a551cd
+          bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/TestVendorActivationGuard.java: git:2858ed29a36a954ea64523ce2da006e48316dc5e
+        environment: f41429415a6ee36cd235204ada374e462a55d30e8ab7551941bf23460da87881
+        exitCode: 0
+        inputAfter: 00683b74914ca503df862b57af8dd4416183d9443c2cdab50f516211aa726b95
+        inputBefore: 00683b74914ca503df862b57af8dd4416183d9443c2cdab50f516211aa726b95
+        manifestHash: d304a073d13fbfbb044846ac636bb82bea59ad1c2036da159f7a6d84679aa577
+        manifestRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/0815e5d0-bcb0-4296-936d-50f3609d0cac.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/ee8345cc-9beb-43ea-8b3c-60caf2511249.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: ad70bea82d96680f4f66bd8918316b3a346db650e9975ca909ea7b3a4b099d7f
+        ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/ee8345cc-9beb-43ea-8b3c-60caf2511249.log
+      - sequence: 9
+        value:
+          boundBranch: comet/procurement-supplier-mdm-slice
+          buildMode: autonomous
+          directOverride: false
+          isolation: worktree
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procurement-supplier-mdm-slice
+              changeDir: openspec/changes/procurement-supplier-mdm-slice
+              workspaceBaseline:
+                ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+            outputs:
+              full.build.configure:
+                boundBranch: comet/procurement-supplier-mdm-slice
+                buildMode: autonomous
+                directOverride: false
+                isolation: worktree
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procurement-supplier-mdm-slice
+              changeDir: openspec/changes/procurement-supplier-mdm-slice
+              workspaceBaseline:
+                ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/procurement-supplier-mdm-slice/.comet/handoff/design-context.json
+                handoffHash: e2ddd28ccc090b0c8683c281038ecbc1f4fd123c8d94403703c97f7c46e050b4
+                proposal: |-
+                  【方案】在 bone-masterdata 内以 DDD 分层落地采购域供应商主数据最小可验证切片：LegalEntity（身份载体）+ Supplier（合作资格）+ Vendor（交易与付款资格）双角色双状态机 + SupplyRelationship/SupplierItem（Purchasing Org data），复用既有 Golden Record 内核（GoldenRecordMerger / EntityKeyMappingRegistry）做合并与身份解析，域端口 + 内存适配，能力开关 bone.procurement.supplier-mdm.enabled 默认关闭。
+
+                  D1 落地宿主：不新建 Maven 模块，在 com.bone.masterdata 下新增供应商域包。理由：Golden Record 内核在同进程可直调，新建模块引入跨模块依赖（L2）且同样绕不开 DDL 红线。
+                  D2 角色语义严格对齐 LLD 真源（Design 阶段修正）：Supplier=合作资格（寻源/准入/绩效/风险/退出），Vendor=财务侧 Company Code data（银行/税务/付款条件/付款冻结）；依据 01-供应商主数据模块详细设计.md:22、采购领域架构设计方案.md:109,223。SupplyRelationship 为独立聚合根，Owner=采购。
+                  D3 身份与合并：只调用既有内核，不新增任何 dedup/merge 服务（终局分工要求业务域不另建黄金记录）。
+                  D4 持久化：SupplierRepositoryPort + 内存实现；生产 JDBC adapter 与 t_proc_* DDL 属 R-2 红线，不在本切片。
+                  D5 双状态机均用「枚举 + Map<State, Map<Event, Transition>>」显式迁移表，守卫集中 domain，未列出即拒绝（fail-closed），非法迁移抛 DomainException 携带 current_state/attempted/allowed[]。
+                    Supplier: PROSPECT → ONBOARDING → ACTIVE ⇄ SUSPENDED / CORRECTIVE → EXITED
+                    Vendor: PENDING_VENDOR → ACTIVE_VENDOR ⇄ PAYMENT_BLOCKED → INACTIVE_VENDOR
+                    禁止：EXITED→任意（终态不可回写）；INACTIVE_VENDOR→ACTIVE_VENDOR 须重走闸门；PENDING_VENDOR→ACTIVE_VENDOR 未经闸门一律拒绝。
+                  D6 跨域 Guard 用可注入布尔断言端口 SupplierExitGuard / VendorActivationGuard，不写死 true、不伪造通过（否则 spec 的「退出前置校验」Scenario 变假绿）。
+                  D7 PAYMENT_BLOCKED 的「本域不可自发放行」用命令来源校验：只接受声明为外部财务事件的来源，域内来源一律拒绝。
+
+                  【关键取舍】内存适配换可运行闭环（不宣称生产落库能力）；跨域事实用端口换可负向注入（不宣称已接上游）；同进程复用内核换零依赖变更（接受耦合，物理拆模块时改显式依赖即可）。
+
+                  【风险】内存适配≠生产持久化（R-2 前置）；跨域 Guard 可能被误读为已接上游；PAYMENT_BLOCKED 无 Finance 上游，只验证 fail-closed 语义；Design 阶段修正了 Open 时的角色语义（旧 spec 断言不得作验收依据）；能力默认关闭导致「看不见」（测试显式开启 + 负向探针验证关闭不注册端点）。
+
+                  【Spec Patch 已落地，待本次批准绑定】P1 角色分离语义按 LLD 纠正（Supplier/Vendor 不得互为替代，各持互不覆盖状态机）；P2 原「供应商准入生命周期状态机」拆为 Supplier 状态机 + 新增 Vendor 交易与付款资格状态机两个 Requirement；P3 非法迁移/终态回写/未经闸门开通/退出前置校验全部落为可测 Scenario。tasks.md 同步为 15 项（1.1 双角色互不覆盖、1.2 SupplyRelationship 独立聚合、2.2 Supplier 机、2.3 Vendor 机、5.2 六类负向探针）。
+
+                  【Non-Goals】不写 bone-init.sql / t_proc_* DDL；不实现 JDBC adapter；不做其余 8 个采购模块；不修改既有 Golden Record 内核；不接真实 Finance/PO/合同上游；不碰 CI 三入口与生产库/密钥/发布。
+                requirementsEvidence:
+                  contentHash: 6468c2e1fd911e65fe882de27f8ea6063aad0d00086f2af552a8714ffd60e84b
+                  ref: openspec/changes/procurement-supplier-mdm-slice
+                sourceEvidence:
+                  contentHash: 297464686bea71d977b0c679ca8d5e7ba87f2fa990757965c363ce38fbc449de
+                  ref: openspec/changes/procurement-supplier-mdm-slice
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/procurement-supplier-mdm-slice/design.md
+      - sequence: 8
+        value:
+          contentHash: 1385fe6cb581fc8a758db72df333af23e6bbfc77216475ebae2c888f733efb1b
+          ref: openspec/changes/procurement-supplier-mdm-slice/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/procurement-supplier-mdm-slice/.comet/handoff/design-context.json
+          handoffHash: e2ddd28ccc090b0c8683c281038ecbc1f4fd123c8d94403703c97f7c46e050b4
+          proposal: |-
+            【方案】在 bone-masterdata 内以 DDD 分层落地采购域供应商主数据最小可验证切片：LegalEntity（身份载体）+ Supplier（合作资格）+ Vendor（交易与付款资格）双角色双状态机 + SupplyRelationship/SupplierItem（Purchasing Org data），复用既有 Golden Record 内核（GoldenRecordMerger / EntityKeyMappingRegistry）做合并与身份解析，域端口 + 内存适配，能力开关 bone.procurement.supplier-mdm.enabled 默认关闭。
+
+            D1 落地宿主：不新建 Maven 模块，在 com.bone.masterdata 下新增供应商域包。理由：Golden Record 内核在同进程可直调，新建模块引入跨模块依赖（L2）且同样绕不开 DDL 红线。
+            D2 角色语义严格对齐 LLD 真源（Design 阶段修正）：Supplier=合作资格（寻源/准入/绩效/风险/退出），Vendor=财务侧 Company Code data（银行/税务/付款条件/付款冻结）；依据 01-供应商主数据模块详细设计.md:22、采购领域架构设计方案.md:109,223。SupplyRelationship 为独立聚合根，Owner=采购。
+            D3 身份与合并：只调用既有内核，不新增任何 dedup/merge 服务（终局分工要求业务域不另建黄金记录）。
+            D4 持久化：SupplierRepositoryPort + 内存实现；生产 JDBC adapter 与 t_proc_* DDL 属 R-2 红线，不在本切片。
+            D5 双状态机均用「枚举 + Map<State, Map<Event, Transition>>」显式迁移表，守卫集中 domain，未列出即拒绝（fail-closed），非法迁移抛 DomainException 携带 current_state/attempted/allowed[]。
+              Supplier: PROSPECT → ONBOARDING → ACTIVE ⇄ SUSPENDED / CORRECTIVE → EXITED
+              Vendor: PENDING_VENDOR → ACTIVE_VENDOR ⇄ PAYMENT_BLOCKED → INACTIVE_VENDOR
+              禁止：EXITED→任意（终态不可回写）；INACTIVE_VENDOR→ACTIVE_VENDOR 须重走闸门；PENDING_VENDOR→ACTIVE_VENDOR 未经闸门一律拒绝。
+            D6 跨域 Guard 用可注入布尔断言端口 SupplierExitGuard / VendorActivationGuard，不写死 true、不伪造通过（否则 spec 的「退出前置校验」Scenario 变假绿）。
+            D7 PAYMENT_BLOCKED 的「本域不可自发放行」用命令来源校验：只接受声明为外部财务事件的来源，域内来源一律拒绝。
+
+            【关键取舍】内存适配换可运行闭环（不宣称生产落库能力）；跨域事实用端口换可负向注入（不宣称已接上游）；同进程复用内核换零依赖变更（接受耦合，物理拆模块时改显式依赖即可）。
+
+            【风险】内存适配≠生产持久化（R-2 前置）；跨域 Guard 可能被误读为已接上游；PAYMENT_BLOCKED 无 Finance 上游，只验证 fail-closed 语义；Design 阶段修正了 Open 时的角色语义（旧 spec 断言不得作验收依据）；能力默认关闭导致「看不见」（测试显式开启 + 负向探针验证关闭不注册端点）。
+
+            【Spec Patch 已落地，待本次批准绑定】P1 角色分离语义按 LLD 纠正（Supplier/Vendor 不得互为替代，各持互不覆盖状态机）；P2 原「供应商准入生命周期状态机」拆为 Supplier 状态机 + 新增 Vendor 交易与付款资格状态机两个 Requirement；P3 非法迁移/终态回写/未经闸门开通/退出前置校验全部落为可测 Scenario。tasks.md 同步为 15 项（1.1 双角色互不覆盖、1.2 SupplyRelationship 独立聚合、2.2 Supplier 机、2.3 Vendor 机、5.2 六类负向探针）。
+
+            【Non-Goals】不写 bone-init.sql / t_proc_* DDL；不实现 JDBC adapter；不做其余 8 个采购模块；不修改既有 Golden Record 内核；不接真实 Finance/PO/合同上游；不碰 CI 三入口与生产库/密钥/发布。
+          requirementsEvidence:
+            contentHash: 6468c2e1fd911e65fe882de27f8ea6063aad0d00086f2af552a8714ffd60e84b
+            ref: openspec/changes/procurement-supplier-mdm-slice
+          sourceEvidence:
+            contentHash: 297464686bea71d977b0c679ca8d5e7ba87f2fa990757965c363ce38fbc449de
+            ref: openspec/changes/procurement-supplier-mdm-slice
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procurement-supplier-mdm-slice
+              changeDir: openspec/changes/procurement-supplier-mdm-slice
+              workspaceBaseline:
+                ref: 9872e244-56c8-462b-93a5-a7e5006166a7
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: b2cdad25121f5d92905613716e50ceb83cd4cfba80922b8f9cf81aabc5a08d09
+                ref: openspec/changes/procurement-supplier-mdm-slice
+      - sequence: 2
+        value:
+          contentHash: b2cdad25121f5d92905613716e50ceb83cd4cfba80922b8f9cf81aabc5a08d09
+          ref: openspec/changes/procurement-supplier-mdm-slice
+      - sequence: 4
+        value:
+          contentHash: b2cdad25121f5d92905613716e50ceb83cd4cfba80922b8f9cf81aabc5a08d09
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 1385fe6cb581fc8a758db72df333af23e6bbfc77216475ebae2c888f733efb1b
+            ref: openspec/changes/procurement-supplier-mdm-slice/design.md
+          plan: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+          planEvidence:
+            contentHash: 611fe18fbb604ad2e27c603f8529bc6b61f93735236152ea7026521fd1983b11
+            ref: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+          taskRevision: fb2544fccf93a9ba75ff83a5297a99d26b55581d6b1e3b3efff67c404e123009
+      - sequence: 12
+        value:
+          contentHash: 611fe18fbb604ad2e27c603f8529bc6b61f93735236152ea7026521fd1983b11
+          ref: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+      - sequence: 13
+        value:
+          event: build-complete
+      - sequence: 14
+        value:
+          argv:
+            - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+            - -o
+            - -f
+            - bone-platform/bone-masterdata/pom.xml
+            - clean
+            - test
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 003f81beef6ef866c8b05a49e6465862f0198142a99f629a066f8ac4952fc124
+          cwd: .
+          environment: fea2f8c186eeb16b70fd09306aadc8800e542e855d6d4724a4635a9a9465bf13
+          exitCode: 0
+          inputAfter: 3b878088dc49b3ffe9ec6b5c7ae1aebbfae44aaf65b3dcbed54bb5ac1a49fa8e
+          inputBefore: 3b878088dc49b3ffe9ec6b5c7ae1aebbfae44aaf65b3dcbed54bb5ac1a49fa8e
+          manifestHash: 324963881e75c69f2ee0088ba7f290bbb1d8fe5147b5ea132621a3bbb043323c
+          manifestRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/c1fcd088-74e6-4d91-a68c-14c7b50ccbbb.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/a5c8530f-7bf5-407c-8321-a158eadeb897.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 15
+        value:
+          contentHash: 003f81beef6ef866c8b05a49e6465862f0198142a99f629a066f8ac4952fc124
+          ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/a5c8530f-7bf5-407c-8321-a158eadeb897.log
+      - sequence: 16
+        value:
+          event: verify-fail
+          reason: 独立审查 3 CRITICAL + 8 IMPORTANT：闸门事实由 HTTP 请求体自报（C-01）；退出前置
+            openVendorCount 自报且退出未关 Vendor（C-02）；onboarding_approved 需要 ≥1
+            ACTIVE_VENDOR 与全段批准却标 UNGUARDED 且测试断言伪造
+            basis（C-03）；候选源记录租户校验未实现（I-03）；payment_block_raised
+            无来源校验（I-04）；解除付款冻结无人工复核留痕（I-05）；LegalEntity
+            死代码（I-07）；退出守卫设计/实现不一致（I-08）
+      - sequence: 17
+        value:
+          designEvidence:
+            contentHash: 1385fe6cb581fc8a758db72df333af23e6bbfc77216475ebae2c888f733efb1b
+            ref: openspec/changes/procurement-supplier-mdm-slice/design.md
+          plan: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+          planEvidence:
+            contentHash: 611fe18fbb604ad2e27c603f8529bc6b61f93735236152ea7026521fd1983b11
+            ref: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+          taskRevision: fb2544fccf93a9ba75ff83a5297a99d26b55581d6b1e3b3efff67c404e123009
+      - sequence: 18
+        value:
+          contentHash: 611fe18fbb604ad2e27c603f8529bc6b61f93735236152ea7026521fd1983b11
+          ref: docs/superpowers/plans/procurement-supplier-mdm-slice.md
+      - sequence: 19
+        value:
+          event: build-complete
+      - sequence: 20
+        value:
+          argv:
+            - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+            - -o
+            - -f
+            - pom.xml
+            - clean
+            - test
+          changedDuringExecution: []
+          checkEpoch: 4
+          contentHash: 78000fa4131d09e71c6ba82e5d9e2db9f1c3d60d96b1f7983cbb9e4976c2c6f5
+          cwd: bone-platform/bone-masterdata
+          environment: 2ef8cdeb615ac412f4bbb510ad744b426845fafb900a458ddb0bab23e82d65e7
+          exitCode: 0
+          inputAfter: f1af7345cdf0b0614002b066ba7734cc231d9e1058066d3d14ccca6cddea0aea
+          inputBefore: f1af7345cdf0b0614002b066ba7734cc231d9e1058066d3d14ccca6cddea0aea
+          manifestHash: 6834bec7738953b623bc238f64243351327a19db392230c986e2385da884022b
+          manifestRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/8943af03-c8c9-423d-b205-ea0f067464ab.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/4e243e29-cbe6-4759-acad-a9d7e14d79d5.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 21
+        value:
+          contentHash: 78000fa4131d09e71c6ba82e5d9e2db9f1c3d60d96b1f7983cbb9e4976c2c6f5
+          ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/4e243e29-cbe6-4759-acad-a9d7e14d79d5.log
+      - sequence: 23
+        value:
+          contentHash: df12197ac911ca40f6a0dc192017ca6a6dc282f18e4ad883202ff32ac0a36173
+          ref: docs/superpowers/reports/2026-11-16-procurement-supplier-mdm-slice-verify-r2.md
+      - sequence: 22
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-16-procurement-supplier-mdm-slice-verify-r2.md
+      - sequence: 24
+        value:
+          argv:
+            - mvn
+            - -o
+            - -f
+            - bone-platform/bone-masterdata/pom.xml
+            - clean
+            - test
+          changedDuringExecution: []
+          checkEpoch: 5
+          contentHash: ad70bea82d96680f4f66bd8918316b3a346db650e9975ca909ea7b3a4b099d7f
+          cwd: .
+          deliveryInputs:
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/SupplierController.java: git:d5c023a13ae143a2d5677c932101568e100839ac
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/SupplierApplicationService.java: git:6161d8224e3edc510c88723129115988969323eb
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/command/RegisterSupplierCommand.java: git:4371ea4e639555a503cb50c945259f573792dab0
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/command/TransitionSupplierCommand.java: git:a2e0f7ab00edf1f708e8bd45f88f744f8effe41f
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/command/TransitionVendorCommand.java: git:0ed798dba375e44d702bc0ad77d24f3d94518674
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/query/dto/SupplierRegistrationResultDTO.java: git:cd90b32a6dfcf748b146a8b68296e49f81df9cf7
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/query/dto/SupplierStateDTO.java: git:b67ff262a09c6206ae9d8372460511c7da788571
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/query/dto/SupplierTransitionResultDTO.java: git:1768c9f7929d8ab504a6b97d0a83edceb6e4a839
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/query/qry/SupplierPageQuery.java: git:b7c889c25077d0349fd83d1c66de8a7290999284
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/LegalEntityRepositoryPort.java: git:b5f01ed7fc355d289c1abf00693fa172679f62e4
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/PaymentBlockReleaseReviewPort.java: git:ed01f294f2feae8d0e5efd8c5631e53066aa2e52
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierExitFactsPort.java: git:58848fef1460ec3a0e83b15d107acf6610fc2b2c
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierExitGuard.java: git:25995f93f7903b0766de491874f1e8e9c08658f6
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierOnboardingFactsPort.java: git:2faea1de256833eabc5515bde219fe6ffb6e60e5
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierOnboardingGuard.java: git:20461551d682c556aa141dbdfcc18d24d2abd5ee
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/SupplierRepositoryPort.java: git:eddb503a383733d56cc2ba4c0b2f6f35095d2921
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/VendorActivationGuard.java: git:ee7e5d4a819190d304ab380f0399b6bbafc5f704
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/VendorGateFactsPort.java: git:8ea0e6df9bf3262f8136906edc94781f8e7e65f4
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/gateway/VendorRepositoryPort.java: git:656633da51b8e36d5c3ecb0603fe59af5d3f6696
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/GuardVerdict.java: git:605a7e8c5b526c7e575efcf3d1ce74825c9be626
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/LegalEntity.java: git:d06521612b8624ae849ea8bb37b776ae6347a69c
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/ResolvedSupplierIdentity.java: git:8220d1ebf3dff48f22a35634ca90cfe3f41b8585
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/Supplier.java: git:2f220056015d8b985b49cd1c634948beface9365
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierEvent.java: git:c9e30cacaabbb9394c54bc608a3751b8557d7515
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierExitContext.java: git:476e06c7053d65df5bf32a3279e47ea3bdcd9e1d
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierExitFacts.java: git:e565d9061d73fa4d89d6a7d86d3d478b9bd07e55
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierIdentityResolver.java: git:0ba963d2f059b3001fcd34b276165e9b3648a684
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierItem.java: git:f780d1efb0220fd9cdf869b0f0a8eb88bc8c4aa5
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierLifecycle.java: git:40ad971adacc78517bcf18ca44dd9eb07f8bb755
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierOnboardingContext.java: git:4cb5bd4c9dbb3aa1f27da8219cb739601741def0
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierState.java: git:1e9e3499ebb50a7b224d183b3179de7fb67c7562
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierStateChange.java: git:08c3127580e948759b3e8bcbcf731b8de2a6f0f9
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplierTransition.java: git:a404c5fcd681a454b1a1cc86db08681b87214909
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/SupplyRelationship.java: git:c5f5a3704136db9f491242b68f81ac6818e92bbd
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/TransitionCommandSource.java: git:5f3474a7b901b12ff2d774f1c62b009edb9a9251
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/Vendor.java: git:1420b97b09d9ce577d3d09bc368132f3ba3e074e
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorActivationContext.java: git:7dd95e0da5596129348ab0501d2a3244e956952c
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorDeactivationContext.java: git:cc52e5b4eef4ca392ce560d9a736f2accdbbb093
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorEvent.java: git:52d5aaa8b6adc7082b46ab800359b28452c952d1
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorLifecycle.java: git:3123bdea22a77f089fc9477155ea365dd0f712b6
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorState.java: git:5e5dcd0009b6cbcd04e715e8b6b65b3ff672d678
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorStateChange.java: git:54e9b54ae2ba582b5cbe7b1294c010e934feca7a
+            bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/supplier/VendorTransition.java: git:b4e4782f700290b70865b5ef138d5cfaf69fa914
+            bone-platform/bone-masterdata/src/main/resources/application.yml: git:db12c382578568636259e94b597ab2d72c6ec087
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/adapter/web/controller/SupplierControllerContractTest.java: git:9f604ee8347ed0877a9e344e3a26d0d8f45803c3
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/application/SupplierApplicationServiceTest.java: git:29d1e664bad917e54fbec98b22eacf3b73a9b4e4
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/application/SupplierMergeAssemblyTest.java: git:8ce841913f942d188fe346ce13526caba71ef9bc
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/goldenrecord/GoldenRecordLineageInvariantTest.java: git:f023f5d9e6f63d0ec9fa954d3f4544dc647a62e4
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/LegalEntityTest.java: git:8f6428daa97f541c6dc8338dc064dd61f9bc9a6c
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/SupplierGuardContextsTest.java: git:365e2940cbf1846f8125e7bf17a5f004390906f5
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/SupplierIdentityResolverTest.java: git:ee38f89b1f2ede8ba22ba1c9a24409e78d2fa34e
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/SupplierLifecycleTest.java: git:ef338024cd228e066668b2731fed37852208240e
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/SupplyRelationshipTest.java: git:fac4b673273bab55be84ec61cb32d9b5a208b30e
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/domain/model/supplier/VendorLifecycleTest.java: git:4fca0f6e1f13409f10b3e2d6be57ebd008b9482d
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/e2e/SupplierCapabilityEnabledTest.java: git:9b91db5e968090e463b36d97ee77dcb68f6b092a
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/e2e/SupplierCapabilityGateTest.java: git:2ece8fd667e078efba46ca25cfecf31e5dbe26f9
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/e2e/SupplierCapabilityRouteAbsenceTest.java: git:e4a91132117f7e804cad13ab1150ba2c243acfc3
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/e2e/SupplierHttpIntegrationTest.java: git:6b8cd4c917134b168fbe639cdfd0986382382ebe
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemoryLegalEntityRepositoryPort.java: git:b73fc2a9629d7289db66b8f579452f6767660d61
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemoryPaymentBlockReleaseReview.java: git:9d842d3a6663abfac1d8948b9716b49c3ef61836
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemorySupplierExitFacts.java: git:cd1e6665ad641c1831e479f1bf6e551f7bf14d0e
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemorySupplierOnboardingFacts.java: git:d82cafae67c8c780a3fbe0f2a4aa6d8f8eed8cf0
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemorySupplierRepositoryPort.java: git:62e617dd23153b12de279ec34fee842f48affe96
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemoryVendorGateFacts.java: git:7fbbba6ee6cbd620de2c01285b798d942d787c0c
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/InMemoryVendorRepositoryPort.java: git:846b18679823e513db8f0229d9baf9b1c8324899
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/SupplierHttpTestConfiguration.java: git:073fb5c317b259aa2f6a2055ccbdea051d7b7999
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/SupplierPortContractTest.java: git:4de435402f7c64da47418952f3ffbee4198503e0
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/TestSupplierExitGuard.java: git:848ad0d19deb1c21cedd371f858144b0cdd32b5b
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/TestSupplierOnboardingGuard.java: git:1a0a08df6970307900bcfea1eeb8f97d70a551cd
+            bone-platform/bone-masterdata/src/test/java/com/bone/masterdata/testsupport/supplier/TestVendorActivationGuard.java: git:2858ed29a36a954ea64523ce2da006e48316dc5e
+          environment: f41429415a6ee36cd235204ada374e462a55d30e8ab7551941bf23460da87881
+          exitCode: 0
+          inputAfter: 00683b74914ca503df862b57af8dd4416183d9443c2cdab50f516211aa726b95
+          inputBefore: 00683b74914ca503df862b57af8dd4416183d9443c2cdab50f516211aa726b95
+          manifestHash: d304a073d13fbfbb044846ac636bb82bea59ad1c2036da159f7a6d84679aa577
+          manifestRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/0815e5d0-bcb0-4296-936d-50f3609d0cac.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/ee8345cc-9beb-43ea-8b3c-60caf2511249.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 25
+        value:
+          contentHash: ad70bea82d96680f4f66bd8918316b3a346db650e9975ca909ea7b3a4b099d7f
+          ref: .comet/runtime/classic-sdk-checks/ab3374891ea69c586b50a35108e4db5f90775fe3367be912dd4011821929cd8c/ee8345cc-9beb-43ea-8b3c-60caf2511249.log
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 14
+        left: 32
+        right: 33
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 34
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 35
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 25
+        height: 5
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: 39
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 40
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 41
+        height: 5
+      - key: full.build.check
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 17
+        left: 43
+        right: 33
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 44
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 45
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 46
+        right: 41
+        height: 5
+      - key: full.verify.report.evidence
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 19
+        left: 48
+        right: null
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: 49
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 50
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 46
+        right: 51
+        height: 5
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 18
+        left: 54
+        right: 55
+        height: 2
+      - key: full.verify.check
+        value: 20
+        left: 53
+        right: 56
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 57
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 46
+        right: 58
+        height: 5
+      - key: full.build.configure
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 23
+        left: 60
+        right: 61
+        height: 2
+      - key: full.design.evidence
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 27
+        left: 63
+        right: 64
+        height: 2
+      - key: full.open.revalidate
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 30
+        left: null
+        right: 66
+        height: 2
+      - key: full.open.confirm
+        value: 29
+        left: 65
+        right: 67
+        height: 3
+      - key: full.design.document
+        value: 25
+        left: 62
+        right: 68
+        height: 4
+      - key: full.build.plan
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 33
+        left: 70
+        right: 71
+        height: 2
+      - key: full.build.confirm
+        value: 23
+        left: 60
+        right: 72
+        height: 3
+      - key: full.design.document
+        value: 25
+        left: 73
+        right: 68
+        height: 4
+      - key: full.build.execute
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 23
+        left: 60
+        right: 75
+        height: 2
+      - key: full.build.plan.evidence
+        value: 33
+        left: null
+        right: 71
+        height: 2
+      - key: full.build.plan
+        value: 32
+        left: 76
+        right: 77
+        height: 3
+      - key: full.design.document
+        value: 25
+        left: 78
+        right: 68
+        height: 4
+      - key: full.build.check
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 36
+        left: 80
+        right: 81
+        height: 2
+      - key: full.build.confirm
+        value: 23
+        left: 82
+        right: 75
+        height: 3
+      - key: full.build.plan
+        value: 32
+        left: 83
+        right: 77
+        height: 4
+      - key: full.design.document
+        value: 25
+        left: 84
+        right: 68
+        height: 5
+      - key: full.open.evidence
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 31
+        left: 86
+        right: 87
+        height: 2
+      - key: full.open.confirm
+        value: 29
+        left: 65
+        right: 88
+        height: 3
+      - key: full.design.document
+        value: 25
+        left: 84
+        right: 89
+        height: 5
+      - key: full.build.plan.evidence
+        value: 39
+        left: null
+        right: 71
+        height: 2
+      - key: full.build.plan
+        value: 38
+        left: 83
+        right: 91
+        height: 4
+      - key: full.design.document
+        value: 25
+        left: 92
+        right: 89
+        height: 5
+      - key: full.build.execute
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 23
+        left: 82
+        right: 94
+        height: 3
+      - key: full.build.plan
+        value: 38
+        left: 95
+        right: 91
+        height: 4
+      - key: full.design.document
+        value: 25
+        left: 96
+        right: 89
+        height: 5
+      - key: full.build.check
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 42
+        left: 98
+        right: 81
+        height: 2
+      - key: full.build.confirm
+        value: 23
+        left: 99
+        right: 94
+        height: 3
+      - key: full.build.plan
+        value: 38
+        left: 100
+        right: 91
+        height: 4
+      - key: full.design.document
+        value: 25
+        left: 101
+        right: 89
+        height: 5
+      - key: full.verify.report.evidence
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 44
+        left: 103
+        right: null
+        height: 2
+      - key: full.open.revalidate
+        value: 31
+        left: 86
+        right: 104
+        height: 3
+      - key: full.open.confirm
+        value: 29
+        left: 65
+        right: 105
+        height: 4
+      - key: full.design.document
+        value: 25
+        left: 101
+        right: 106
+        height: 5
+      - key: full.open.revalidate
+        value: 31
+        left: 86
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 43
+        left: 109
+        right: 110
+        height: 2
+      - key: full.verify.check
+        value: 45
+        left: 108
+        right: 111
+        height: 3
+      - key: full.open.confirm
+        value: 29
+        left: 65
+        right: 112
+        height: 4
+      - key: full.design.document
+        value: 25
+        left: 101
+        right: 113
+        height: 5
+      - key: full.open
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 29
+        left: 115
+        right: 116
+        height: 2
+      - key: full.open.revalidate
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 30
+        left: null
+        right: 118
+        height: 2
+      - key: full.open.confirm
+        value: 29
+        left: 115
+        right: 119
+        height: 3
+      - key: full.design.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 27
+        left: 121
+        right: 122
+        height: 2
+      - key: full.open.confirm
+        value: 29
+        left: 123
+        right: 119
+        height: 3
+      - key: full.design.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 25
+        left: 125
+        right: 126
+        height: 2
+      - key: full.design.handoff
+        value: 27
+        left: 127
+        right: 122
+        height: 3
+      - key: full.open.confirm
+        value: 29
+        left: 128
+        right: 119
+        height: 4
+      - key: full.open.evidence
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 28
+        left: null
+        right: 130
+        height: 2
+      - key: full.design.handoff
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 30
+        left: 133
+        right: 134
+        height: 2
+      - key: full.open
+        value: 28
+        left: 132
+        right: 135
+        height: 3
+      - key: full.build.configure
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 26
+        left: 138
+        right: 139
+        height: 2
+      - key: full.design.confirm
+        value: 24
+        left: 137
+        right: 140
+        height: 3
+      - key: full.open
+        value: 28
+        left: 141
+        right: 135
+        height: 4
+      - key: full.open
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 25
+        left: 144
+        right: 145
+        height: 2
+      - key: full.open.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 30
+        left: 147
+        right: 148
+        height: 2
+      - key: full.open
+        value: 28
+        left: 146
+        right: 149
+        height: 3
+      - key: full.build.configure
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 23
+        left: 151
+        right: 152
+        height: 2
+      - key: full.design.document
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 26
+        left: 154
+        right: 155
+        height: 2
+      - key: full.design.confirm
+        value: 24
+        left: 153
+        right: 156
+        height: 3
+      - key: full.open
+        value: 28
+        left: 157
+        right: 149
+        height: 4
+      - key: full.build.check
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 22
+        left: 159
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 32
+        left: 161
+        right: 162
+        height: 2
+      - key: full.build.confirm
+        value: 23
+        left: 160
+        right: 163
+        height: 3
+      - key: full.open
+        value: 28
+        left: 156
+        right: 149
+        height: 3
+      - key: full.design.confirm
+        value: 24
+        left: 164
+        right: 165
+        height: 4
+      - key: full.build.check
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 36
+        left: 167
+        right: 168
+        height: 2
+      - key: full.build.plan
+        value: 38
+        left: 161
+        right: 162
+        height: 2
+      - key: full.build.confirm
+        value: 23
+        left: 169
+        right: 170
+        height: 3
+      - key: full.verify.run
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 31
+        left: null
+        right: 172
+        height: 2
+      - key: full.open.evidence
+        value: 30
+        left: 147
+        right: 173
+        height: 3
+      - key: full.open
+        value: 28
+        left: 156
+        right: 174
+        height: 4
+      - key: full.design.confirm
+        value: 24
+        left: 171
+        right: 175
+        height: 5
+      - key: full.build.check
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 36
+        left: 177
+        right: 168
+        height: 2
+      - key: full.build.execute
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 38
+        left: 179
+        right: 180
+        height: 2
+      - key: full.build.confirm
+        value: 23
+        left: 178
+        right: 181
+        height: 3
+      - key: full.design.confirm
+        value: 24
+        left: 182
+        right: 175
+        height: 5
+      - key: full.build.check.evidence
+        value: 42
+        left: 177
+        right: 168
+        height: 2
+      - key: full.build.confirm
+        value: 23
+        left: 184
+        right: 181
+        height: 3
+      - key: full.verify.run
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 31
+        left: null
+        right: 186
+        height: 2
+      - key: full.open.evidence
+        value: 30
+        left: 147
+        right: 187
+        height: 3
+      - key: full.open
+        value: 28
+        left: 156
+        right: 188
+        height: 4
+      - key: full.design.confirm
+        value: 24
+        left: 185
+        right: 189
+        height: 5
+      - key: full.open.revalidate
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 30
+        left: 147
+        right: 191
+        height: 2
+      - key: full.verify.report.evidence
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 44
+        left: 193
+        right: null
+        height: 2
+      - key: full.verify.check
+        value: 45
+        left: 192
+        right: 194
+        height: 3
+      - key: full.open
+        value: 28
+        left: 156
+        right: 195
+        height: 4
+      - key: full.design.confirm
+        value: 24
+        left: 185
+        right: 196
+        height: 5
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 37
+      - 42
+      - 47
+      - 52
+      - 59
+      - 69
+      - 74
+      - 79
+      - 85
+      - 90
+      - 93
+      - 97
+      - 102
+      - 107
+      - 114
+      - 117
+      - 120
+      - 124
+      - 129
+      - 131
+      - 136
+      - 142
+      - 143
+      - 150
+      - 158
+      - 166
+      - 176
+      - 183
+      - 190
+      - 197
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "14"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:11
+          - results
+        map: 13
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:13
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:14
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:16
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:17
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:19
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:20
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:22
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:24
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:26
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:4
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:5
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:7
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - procurement-supplier-mdm-slice:9
+          - results
+        map: 26
+      - path:
+          - outputs
+        map: 22
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 27
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 28
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 29
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 30
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 31
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 32
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 33
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 34
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 35
+      - path:
+          - evidenceWaits
+          - "6"
+          - results
+        map: 36
+      - path:
+          - evidenceWaits
+          - "7"
+          - results
+        map: 37
+  storageHash: d3aa334e1a53ed4a146bf8c9c2fe154f2205a12929b0447f72f9d3e734c9c8c4
+check_epoch: 6
