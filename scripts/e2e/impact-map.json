@@ -1484,6 +1484,7 @@
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuthController.java",
    "cases": [
     "e2e_synap_claim.py",
+    "synap-claim-task-workbench-e2e.py",
     "write_coverage.py"
    ]
   },
@@ -3743,7 +3744,8 @@
    "cases": [
     "claim-fee-category-e2e.mjs",
     "claim-full-chain-e2e.mjs",
-    "e2e_synap_claim.py"
+    "e2e_synap_claim.py",
+    "synap-claim-task-workbench-e2e.py"
    ]
   },
   {
@@ -4257,6 +4259,36 @@
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
    "cases": [
     "synap-claim-workbench-feedback-e2e.mjs"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/tasks/my",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "synap-claim-task-workbench-e2e.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/tasks/{taskId}/claim",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "claim-fee-category-e2e.mjs",
+    "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
+    "synap-claim-task-workbench-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/{claimId}/tasks",
+   "controller": "ClaimWorkbenchController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java",
+   "cases": [
+    "synap-claim-task-workbench-e2e.py"
    ]
   },
   {
@@ -4806,8 +4838,8 @@
   }
  ],
  "summary": {
-  "endpoints": 544,
-  "covered": 243,
+  "endpoints": 547,
+  "covered": 246,
   "uncovered": 301
  }
 }

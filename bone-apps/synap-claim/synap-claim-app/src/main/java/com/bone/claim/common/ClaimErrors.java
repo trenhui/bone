@@ -85,7 +85,11 @@ public final class ClaimErrors {
           // 409：同一 eventId 携带不同载荷，幂等重放不成立
           Map.entry(ClaimErrorCodes.CLAIM_AI_FEEDBACK_CONFLICT, 409),
           // 400：检索护栏越界是调用方参数错，静默裁剪会让用户以为「已经搜完全库」
-          Map.entry(ClaimErrorCodes.CLAIM_SEARCH_KEYWORD_INVALID, 400));
+          Map.entry(ClaimErrorCodes.CLAIM_SEARCH_KEYWORD_INVALID, 400),
+          // 404：任务不存在（或跨租户按不存在处理，不泄露存在性）
+          Map.entry(ClaimErrorCodes.SC_CLAIM_TASK_NOT_FOUND, 404),
+          // 409：并发自领互斥——乐观锁或唯一键冲突，恰 1 成功、另 1 冲突。不是参数错，重试无用（要刷新列表）
+          Map.entry(ClaimErrorCodes.SC_CLAIM_TASK_CONFLICT, 409));
 
   static {
     checkEveryCodeRegistered();

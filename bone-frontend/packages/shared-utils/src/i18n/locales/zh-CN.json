@@ -285,7 +285,9 @@
     "SC_CLAIM_BIZ_IDENTITY_INVALID": "引用的业务主体不存在，或已停用/终止",
     "SC_CLAIM_AI_FEEDBACK_INVALID": "AI 建议回流事件非法（未知字段 / 非真实模型参与却裁决 / 原因码缺失或越界 / 盲标禁区 / 字段白名单命中）",
     "SC_CLAIM_AI_FEEDBACK_CONFLICT": "同一事件 ID 已落库但载荷不同，拒绝覆盖审计事实（幂等重放不成立）",
-    "SC_CLAIM_SEARCH_KEYWORD_INVALID": "跨键检索参数非法（关键词长度 2..64、危险字符、limit 1..20），护栏显式拒绝而非静默裁剪"
+    "SC_CLAIM_SEARCH_KEYWORD_INVALID": "跨键检索参数非法（关键词长度 2..64、危险字符、limit 1..20），护栏显式拒绝而非静默裁剪",
+    "SC_CLAIM_TASK_NOT_FOUND": "任务不存在或不属于当前租户",
+    "SC_CLAIM_TASK_CONFLICT": "任务已被他人领取或同案同类型已有在办任务，请刷新后重试"
   },
   "enums": {
     "ORDER_STATUS": {

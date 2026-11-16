@@ -211,9 +211,10 @@
 
 | 脚本 | 作用 |
 |---|---|
-| `migration/` | 有序迁移 SQL（131 个），每个必须登记 manifest |
+| `migration/` | 有序迁移 SQL（132 个文件 / 125 个可执行），每个必须登记 manifest |
 | `migrate.py` | 迁移执行器（按 manifest 顺序、记录 journal） |
 | `sync-init-from-live.py` | 从活库反向生成 `bone-init.sql`（禁止手工粘贴） |
+| `claim_task_owner_backfill.py` | 在途赔案初始任务归属回填（0125 配套）：默认 dry-run，`--apply` 才写；确定性主键 + `INSERT IGNORE` 幂等可重跑，多条候选即打印清单并中止 |
 | `seed/` | 种子数据；`seed/uat/` 拟真数据集（`gen.py` + `wordlist.json` 词表单源 + 生成产物） |
 | `seed-bootstrap.py` | 引导种子灌入（空库可用性实测配套） |
 | `seed-system-dicts.py` | 通过 API 注入系统管理场景字典数据 |
@@ -318,6 +319,7 @@
 | `frontend/check-frontend-id-types.py` / `frontend/fix-id-types.py` | 前端 ID 类型检查 / 修复 |
 | `ops/verify_comet_install.py` | Comet 安装校验 |
 | `ops/org-coverage-backfill.sql` | 组织覆盖回填 SQL |
+| `ops/claim_assign_gray_report.py` / `ops/claim-assign-gray-stats.sql` | `AUTO_ASSIGN` 灰度窗口报告（按小时命中率 + 回落计数；命中率低于阈值退出码 1，可直接接监控） |
 | `prompts/01-global-anchor.md` / `prompts/02-nightly-design-review.md` | AI 协作提示词锚点 |
 
 ---

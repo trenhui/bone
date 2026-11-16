@@ -6,8 +6,14 @@ import com.bone.claim.adapter.web.dto.response.AiFeedbackSummaryResp;
 import com.bone.claim.application.AiFeedbackCommand;
 import com.bone.claim.application.ClaimFeedbackApplicationService;
 import com.bone.claim.application.ClaimSearchApplicationService;
+import com.bone.claim.application.ClaimTaskApplicationService;
+import com.bone.claim.application.ClaimTaskApplicationService.MyTaskRow;
+import com.bone.claim.common.ClaimErrorCodes;
+import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.projection.ClaimSearchHit;
 import com.bone.core.model.ApiResponse;
+import com.bone.core.model.PageResult;
+import com.bone.core.security.auth.CurrentOperator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -31,6 +37,7 @@ public class ClaimWorkbenchController {
 
   private final ClaimSearchApplicationService claimSearchApplicationService;
   private final ClaimFeedbackApplicationService claimFeedbackApplicationService;
+  private final ClaimTaskApplicationService claimTaskApplicationService;
 
   @Operation(
       summary = "案件跨键检索",
@@ -68,6 +75,55 @@ public class ClaimWorkbenchController {
   @GetMapping("/ai/feedback/summary")
   public ApiResponse<AiFeedbackSummaryResp> summary() {
     return ApiResponse.success(claimFeedbackApplicationService.summary());
+  }
+
+  @Operation(
+      summary = "我的待办（任务维分页）",
+      description =
+          "按 assignee=当前登录人 + 可选 status 过滤；返回字段最小化（不含租户/版本/规则ID）；"
+              + "total 与列表同源 COUNT(*)，前端只传 page/size。")
+  @PreAuthorize("hasAuthority('claim:claims:read')")
+  @GetMapping("/tasks/my")
+  public ApiResponse<PageResult<MyTaskRow>> myTasks(
+      @RequestParam(value = "status", required = false) String status,
+      @RequestParam(value = "page", defaultValue = "1") int page,
+      @RequestParam(value = "size", defaultValue = "20") int size) {
+    return ApiResponse.success(
+        claimTaskApplicationService.myTasks(CurrentOperator.requireId(), status, page, size));
+  }
+
+  @Operation(
+      summary = "自领任务",
+      description =
+          "乐观锁 + 生成列唯一键保证并发恰 1 成功；冲突返回 409 SC_CLAIM_TASK_CONFLICT（不重试、不静默改派）。"
+              + "领取人取认证主体，请求体不接受客户端声明的 operatorId。")
+  @PreAuthorize("hasAuthority('claim:review:write')")
+  @PostMapping("/tasks/{taskId}/claim")
+  public ApiResponse<MyTaskRow> claimTask(@PathVariable("taskId") String taskId) {
+    return ApiResponse.success(
+        claimTaskApplicationService.claim(parseTaskId(taskId), CurrentOperator.requireId()));
+  }
+
+  @Operation(summary = "某案任务列表", description = "含终态，按创建时间正序；案件 360 视图用。")
+  @PreAuthorize("hasAuthority('claim:claims:read')")
+  @GetMapping("/{claimId}/tasks")
+  public ApiResponse<java.util.List<MyTaskRow>> claimTasks(
+      @PathVariable("claimId") String claimId) {
+    return ApiResponse.success(claimTaskApplicationService.tasksOfClaim(parseTaskId(claimId)));
+  }
+
+  /**
+   * 路径里的雪花 ID 一律按 String 接收再转 long。
+   *
+   * <p><b>为什么不直接 {@code @PathVariable long}</b>：前端 JS 的 number 只有 53 位精度，63 位雪花 ID 必须
+   * 以字符串传输；这里按字符串接再显式解析，非法值给 404 语义（「任务不存在」）而不是 500 或 400 细节泄露。
+   */
+  private static long parseTaskId(String raw) {
+    try {
+      return Long.parseLong(raw);
+    } catch (NumberFormatException e) {
+      throw ClaimErrors.of(ClaimErrorCodes.SC_CLAIM_TASK_NOT_FOUND, raw);
+    }
   }
 
   private static AiFeedbackCommand toCommand(AiFeedbackEventReq r) {

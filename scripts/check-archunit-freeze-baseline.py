@@ -81,7 +81,15 @@ def find_modules_with_arch_tests() -> list[Path]:
     for test in REPO.rglob("*ArchitectureTest.java"):
         # 跳过 git worktree 工作目录（.worktrees/），它不在主仓库工作区内，
         # 文件系统扫描不应把它当成待审源码。CI 无 worktree，此排除为 no-op。
-        if "node_modules" in test.parts or "/target/" in test.as_posix() or ".worktrees" in test.parts:
+        # 判定用「相对 REPO 的路径」——绝对路径在 worktree 内运行时每条都含
+        # `.worktrees`，会把整个仓库（含本 worktree 自己）跳过。
+        if "node_modules" in test.parts or "/target/" in test.as_posix():
+            continue
+        try:
+            rel_for_wt = test.relative_to(REPO)
+        except ValueError:
+            continue
+        if ".worktrees" in rel_for_wt.parts:
             continue
         for parent in [test.parent, *test.parent.parents]:
             if (parent / "pom.xml").is_file():

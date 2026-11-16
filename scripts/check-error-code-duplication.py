@@ -53,7 +53,12 @@ def scan() -> dict[str, list[str]]:
     for path in sorted(ROOT.rglob("*ErrorCodes.java")):
         # 跳过 git worktree 工作目录（.worktrees/），它不在主仓库工作区内，
         # 文件系统扫描不应把它当成待审源码。CI 无 worktree，此排除为 no-op。
-        if ".worktrees" in path.parts:
+        # 按「相对 ROOT 的路径」判断，否则脚本在 worktree 内运行时全部被跳过。
+        try:
+            rel_for_wt = path.relative_to(ROOT)
+        except ValueError:
+            continue
+        if ".worktrees" in rel_for_wt.parts:
             continue
         rel = path.relative_to(ROOT).as_posix()
         if "/target/" in rel:

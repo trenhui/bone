@@ -8,12 +8,14 @@
 """
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from unittest import mock
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS))
@@ -60,6 +62,24 @@ class RepoAndFilesTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(gate.InfraError):
                 gate.git_files(Path(tmp))
+
+    def test_git_files_ignores_inherited_git_env(self):
+        """继承来的 GIT_DIR/GIT_WORK_TREE 不得让 `git_files(tmp)` 越界枚举外层仓库。
+
+        这条判据是被 pre-commit 钩子打出来的：钩子里 git 会把这些变量传给子进程，
+        而不剥离时 `git ls-files` 会忽略 cwd 去扫「外面那个仓库」——于是
+        `iter_files(tmp)` 返回的不是 tmp 的文件，门禁"扫错目录还自以为通过"。
+        这里显式把变量指向**本仓库**（有效路径）来复现：修好之前它不会抛 InfraError。
+        """
+        repo = SCRIPTS.parent
+        common = subprocess.run(
+            ["git", "rev-parse", "--git-common-dir"], cwd=str(repo),
+            capture_output=True, text=True, check=True).stdout.strip()
+        injected = {"GIT_DIR": str((repo / common).resolve()), "GIT_WORK_TREE": str(repo)}
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.dict(os.environ, injected):
+                with self.assertRaises(gate.InfraError):
+                    gate.git_files(Path(tmp))
 
 
 class ReportTest(unittest.TestCase):
@@ -137,7 +157,10 @@ class RunGateContractTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
         (self.root / "scripts").mkdir()
-        subprocess.run(["git", "init", "-q"], cwd=str(self.root), check=True)
+        # 必须剥离继承的 GIT_*：pre-commit 会导出 GIT_DIR/临时索引，带着它们跑
+        # `git init` 不是"在夹具里建仓库"，而是重置外层仓库 ⇒ 夹具没有 .git 后全套用例连带红。
+        subprocess.run(["git", "init", "-q"], cwd=str(self.root), check=True,
+                       env=gate.clean_git_env())
         script = self.root / "mini_gate.py"
         script.write_text(MINI_GATE.format(scripts=str(SCRIPTS)), encoding="utf-8")
         self.script = script
