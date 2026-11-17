@@ -85,7 +85,7 @@ BEGIN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = '0100 校验失败：采购目录/叶子数量不匹配或叶子未挂父节点';
     END IF;
-    SELECT v_group AS groups, v_leaves AS leaves, v_orphan AS orphans;
+    SELECT v_group AS group_cnt, v_leaves AS leaf_cnt, v_orphan AS orphan_cnt;
 END$$
 DELIMITER ;
 CALL sp_verify_0100();
