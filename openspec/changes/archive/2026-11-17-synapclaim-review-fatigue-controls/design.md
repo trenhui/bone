@@ -2,6 +2,8 @@
 comet_change: synapclaim-review-fatigue-controls
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-11-17-synapclaim-review-fatigue-controls
+status: final
 ---
 
 # Design: synapclaim-review-fatigue-controls

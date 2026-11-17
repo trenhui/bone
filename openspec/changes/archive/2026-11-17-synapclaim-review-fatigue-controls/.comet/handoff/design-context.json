@@ -1,0 +1,16 @@
+{
+  "change": "synapclaim-review-fatigue-controls",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "cbf8a76de2110d4133da063c95a63471914ad6ecb35d8dec5a2c1398c815babc",
+  "files": [
+    { "path": "openspec/changes/synapclaim-review-fatigue-controls/proposal.md", "sha256": "7707228e7c2ed26eab2d89b8f16594a6087a9dd31ea82c34c0bc34fa7afd574b" },
+    { "path": "openspec/changes/synapclaim-review-fatigue-controls/design.md", "sha256": "b346689f1a3c5e79bb5fdec85da02555b76323907165900d19fb7539d5890528" },
+    { "path": "openspec/changes/synapclaim-review-fatigue-controls/tasks.md", "sha256": "d0f5959f349828df85474a3c060ca1789261dbc3f0f10b1fa1931f46ecf2271b" },
+    { "path": "openspec/changes/synapclaim-review-fatigue-controls/.openspec.yaml", "sha256": "b75d296d3b54880b00a14fd17257d690f593cd5d3db17201d597c19528a9f905" },
+    { "path": "openspec/changes/synapclaim-review-fatigue-controls/specs/claim/review-fatigue/spec.md", "sha256": "6abcf0b6566d49c753dd37fb0b7addbf721801501b391f78e69655e0c0a6aede" }
+  ]
+}

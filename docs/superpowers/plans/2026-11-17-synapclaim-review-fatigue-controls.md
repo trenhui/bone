@@ -5,6 +5,7 @@ base-ref: 7dcae54d0ca37bb1191707c543d122467e229d26
 baseline-head: 7dcae54d0
 baseline-gate: 59/59
 plan-revision: 1
+archived-with: 2026-11-17-synapclaim-review-fatigue-controls
 ---
 
 <!-- comet-task-authority: openspec/changes/synapclaim-review-fatigue-controls/tasks.md -->
