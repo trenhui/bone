@@ -267,3 +267,48 @@ SDK 只提供这一个字面量，而其说明写明「已经执行或仍不明�
 
 - 运行时存储共 49 个文件 / 4.1 MB，其中 `*.tmp` / `*.choosing` / `*.removed` 仅 14 个 —— 50 次删除是本轮累计（含锁竞争 churn），与本切片产物无关。
 - `comet doctor .` 与本变更相关的告警只有「worktree 未执行 project assets」与 hook runtime 缺失，均与代码无关。
+
+---
+
+## 11 归档后补跑全仓门禁（A-5）与剩余项处置
+
+> 本节为归档完成后（Run revision 65 / status=completed）的追加记录，不改 §1–§10 的任何验证结论。
+
+### 11.1 A-5：全仓 `check.sh` 补跑结果
+
+报告 §7 曾把「全仓 check.sh 未跑」记为偏差 A-5。本轮补跑，结论如下。
+
+**方法**：check.sh 是基于 `git diff --cached` 的 pre-commit 门禁，干净树上跑会大量跳过。为让它真实检查本切片的 69 个 java 变更，采用隔离方式：把 HEAD 指针临时 `git reset --soft` 到 base `c395e4b60`（工作树内容不变，69 个 java 变更全部进入 index），跑完用 `trap` 无条件恢复 HEAD 与熔断计数。
+
+| 项 | 结果 |
+|---|---|
+| 运行范围 | `[1/59]`～`[59/59]` 全部执行，正确识别 `bone-platform/bone-masterdata` 为变更模块 |
+| 本切片直接相关门禁 | `[1/59] Spotless` ✅、`[3/59] ArchUnit` ✅、`[52/59] application 层白名单` ✅、`[59/59] DDD doc↔code 同步` ✅ 全绿 |
+| 脚本整体 exit | `1`（有失败项，逐条甄别如下） |
+| 恢复验证 | `HEAD=190cad738`、`staged=0`、`fail_count=3`（与运行前一致），工作树未被门禁改写 |
+
+**失败项甄别（均为假红，与本切片无关）**：
+
+| 失败 check | 根因 | 证据 |
+|---|---|---|
+| `[8/59] i18n 同步` 报「代码常量 0」 | 本 worktree 位于主仓库 `.worktrees/` 内，而 check.sh 调用的 `check-i18n-sync.py` 的 `SKIP` 集合含 `.worktrees`，递归扫描时跳过了自身 ⇒ 扫到 0 常量 | 用旧版脚本（SKIP 不含 `.worktrees`）在同一 worktree 跑：`exit=0`、代码常量 391；主仓库 dev（正常路径、同 HEAD）跑：`exit=0`、代码常量 391 |
+| 种子新鲜度（`iam_menu` 活库 300 ≠ 种子 288） | 依赖本机 MySQL 活库实际行数，属环境数据漂移 | 主仓库正常路径跑 `check-iam-runtime-baseline.py` 相关自洽检查 `exit=0`；`seed-bootstrap.py` 为生成脚本，其 `--verify` 比的是活库 |
+| `test_gatekit 未定义 self_test()`、bone-cli / verify contract 单测 | 全仓门禁自查与 CLI 测试，非本切片文件 | 本切片未改任何 `scripts/` 或 `bone-cli` 文件（`git diff c395e4b60 HEAD` 无 `scripts/` 变更） |
+
+**结论**：A-5 从「未跑」更新为「已补跑；本切片相关项全绿，整体 exit=1 源于 worktree 路径假红与活库数据漂移」。不修改任何门禁脚本或判据集合（红线）。
+
+### 11.2 剩余任务判定表（为什么只有 A-5 被优化）
+
+§7 的 10 项偏差与 §9 的 4 项上线前置中，逐项判定「合理 × 可执行 × 不触红线」：
+
+| 项 | 判定 | 依据 |
+|---|---|---|
+| A-2 生产 JDBC adapter | **不做**（R-2 红线） | design D1/D4：不建 Maven 模块、不改根 pom、不写 DDL |
+| A-8 身份唯一索引 | **不做**（R-2 红线） | 需 `t_proc_legal_entity` 唯一索引，属 DDL，design 明确归 owner |
+| A-4 真实 Finance/PO/合同上游 | **不做**（环境/红线） | 无上游系统；跨域 adapter 属 R-2 外 |
+| A-6 `EXTERNAL_FINANCE` 防伪 | **不做**（契约） | spec:81-83 / design D7 明定「来源声明」为契约，防伪需财务签名 |
+| A-1 / A-3 / A-7 / A-10 | **不做**（契约/内核/权衡） | 分别触 Golden Record 内核、需改 spec 契约、已在 §7 论证保留 |
+| A-9 留痕时间可伪造 | **不做**（已裁决） | 复审 IMPORTANT-3 已在 §8.1 由用户拍板转偏差，「彻底解法属后续切片」；现在改等于推翻已批准裁决并重开已归档 change |
+| **A-5 全仓 check.sh** | **已补跑** | 见 11.1 |
+
+未做的是**尊重红线与已批准裁决**，不是遗漏。任何一项若要启动，都需用户明确解除对应约束后另开 change。
