@@ -1,0 +1,16 @@
+{
+  "change": "synapclaim-risk-fraud-dimensions",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b",
+  "files": [
+    { "path": "openspec/changes/synapclaim-risk-fraud-dimensions/proposal.md", "sha256": "c6574eba92a45d0d77c4f8c78990fbf32e9e70f6404596e7b52b0749c003729b" },
+    { "path": "openspec/changes/synapclaim-risk-fraud-dimensions/design.md", "sha256": "de48574cbdf1a3afff3a5fc4651ef96da61ff1ec5b97b70c13508f100ec1fb8b" },
+    { "path": "openspec/changes/synapclaim-risk-fraud-dimensions/tasks.md", "sha256": "57e8b949fea04da0425f578010cec8e8dbb1517e3aa17385860705cd18185447" },
+    { "path": "openspec/changes/synapclaim-risk-fraud-dimensions/.openspec.yaml", "sha256": "9b4b840064a33a6866a0ebc375b496fbdc2387a324f6c8fb4f21b270218c0d37" },
+    { "path": "openspec/changes/synapclaim-risk-fraud-dimensions/specs/claim/rule-engine/spec.md", "sha256": "cd9572f698bc08e1f9311fe5be9eca25a2a3737a5041bff85f1ae3140ac3f841" }
+  ]
+}

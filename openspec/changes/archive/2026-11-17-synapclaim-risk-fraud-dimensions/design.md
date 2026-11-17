@@ -2,6 +2,8 @@
 comet_change: synapclaim-risk-fraud-dimensions
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-11-17-synapclaim-risk-fraud-dimensions
+status: final
 ---
 
 # Design: synapclaim-risk-fraud-dimensions

@@ -5,6 +5,7 @@ base-ref: 34a61d51ca2a1d0bcb48df37d804f7190279de70
 baseline-head: 34a61d51c
 baseline-gate: 59/59
 plan-revision: 1
+archived-with: 2026-11-17-synapclaim-risk-fraud-dimensions
 ---
 
 <!-- comet-task-authority: openspec/changes/synapclaim-risk-fraud-dimensions/tasks.md -->
