@@ -2,7 +2,7 @@
 change_id: aa6c7913-79a9-4bca-8b11-2340875c3e1d
 workflow: full
 language: zh-CN
-phase: build
+phase: verify
 context_compression: off
 build_mode: executing-plans
 build_pause: null
@@ -16,8 +16,8 @@ base_ref: 754d85a2486a9818878aa7f245e1b4b908d5d35b
 design_doc: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
 plan: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
 verify_result: pending
-verify_failures: 0
-verification_report: null
+verify_failures: 1
+verification_report: docs/superpowers/reports/2026-11-17-synapclaim-risk-fraud-dimensions-verify.md
 branch_status: pending
 created_at: 2026-11-06
 verified_at: null
@@ -30,8 +30,8 @@ handoff_hash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
 classic_profile: null
 classic_migration: null
 run_checkpoint:
-  schema: comet.workflow-run-checkpoint.v1
-  hash: 3e424645246fdc54a8584d992197974348c42c8014e1fb37e10b2c451841ad62
+  schema: comet.workflow-run-checkpoint.v2
+  hash: b4d40e8676604656429533886274cc35914718deeb367ec4cd7b5c4d3d9f8d5e
   run:
     protocolVersion: 1
     schemaVersion: 1
@@ -58,7 +58,7 @@ run_checkpoint:
       branchStatus: pending
       buildMode: executing-plans
       buildPause: null
-      checkEpoch: 2
+      checkEpoch: 5
       classicMigration: null
       classicProfile: null
       contextCompression: off
@@ -69,19 +69,19 @@ run_checkpoint:
       handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
       isolation: current
       language: zh-CN
-      phase: build
+      phase: verify
       plan: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
       reviewMode: thorough
       subagentDispatch: null
       tddMode: tdd
-      verificationReport: null
+      verificationReport: docs/superpowers/reports/2026-11-17-synapclaim-risk-fraud-dimensions-verify.md
       verifiedAt: null
-      verifyFailures: 0
+      verifyFailures: 1
       verifyMode: null
       verifyResult: pending
       workflow: full
     status: running
-    sequence: 17
+    sequence: 30
     actions:
       - attempt: 1
         claim:
@@ -138,26 +138,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
             workspaceBaseline:
               ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-          outputs:
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.evidence:
-              contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
+          outputs: {}
         inputHash: 72e747da46483e9106f060b9af458ced3c0849a8c7bbdf7e50d2803cc2ee3639
         outcome:
           actionId: synapclaim-risk-fraud-dimensions:4
@@ -206,28 +187,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
             workspaceBaseline:
               ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-          outputs:
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.evidence:
-              contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.revalidate:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+          outputs: {}
         inputHash: 554283023169854fa594e16632dbfadd24b713ee1992b116797aa1be80b250b1
         outcome:
           actionId: synapclaim-risk-fraud-dimensions:5
@@ -266,28 +226,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
             workspaceBaseline:
               ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-          outputs:
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.evidence:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.revalidate:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+          outputs: {}
         inputHash: aec6fa899fe6a0d801a32d4c825aceedf3d2b922d7f8f1cc04a25c0c847d3fc6
         outcome:
           actionId: synapclaim-risk-fraud-dimensions:8
@@ -333,28 +272,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
             workspaceBaseline:
               ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-          outputs:
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.evidence:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.revalidate:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+          outputs: {}
         inputHash: aec6fa899fe6a0d801a32d4c825aceedf3d2b922d7f8f1cc04a25c0c847d3fc6
         outcome:
           actionId: synapclaim-risk-fraud-dimensions:9
@@ -424,90 +342,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
             workspaceBaseline:
               ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-          outputs:
-            full.design.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-                    handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-                    proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                      求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                      Design：`findByInsuredIdHash`
-                      取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                      facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                      R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                      `insured_id_hash` 与 createdAt，零
-                      DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                      L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                      保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                      不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                      不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地
-                      4 新命中/未命中用例 + 2 既有补桩；门禁 `check.sh`
-                      59/59、全量单测与变异证据在提交/verify 阶段复核。【Spec Patch】无：不新增
-                      capability，不改变公开验收，仅扩展 `claim/rule-engine` 的富化变量与规则资产。若方案
-                      A 获批，Build 配置建议沿用前四批：`executing-plans / tdd / thorough /
-                      subagent_dispatch=null`，隔离方式沿用当前绑定的
-                      dev（isolation=current）。
-                    requirementsEvidence:
-                      contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-                    sourceEvidence:
-                      contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-              handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-              proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                Design：`findByInsuredIdHash`
-                取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                `insured_id_hash` 与 createdAt，零
-                DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地 4
-                新命中/未命中用例 + 2 既有补桩；门禁 `check.sh` 59/59、全量单测与变异证据在提交/verify
-                阶段复核。【Spec Patch】无：不新增 capability，不改变公开验收，仅扩展
-                `claim/rule-engine` 的富化变量与规则资产。若方案 A 获批，Build
-                配置建议沿用前四批：`executing-plans / tdd / thorough /
-                subagent_dispatch=null`，隔离方式沿用当前绑定的 dev（isolation=current）。
-              requirementsEvidence:
-                contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-              sourceEvidence:
-                contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.evidence:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.revalidate:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+          outputs: {}
         inputHash: ba56157cdc4bfec19b206d12526ab50ef25a361dd1c1809b7ebee0fab06f5475
         outcome:
           actionId: synapclaim-risk-fraud-dimensions:11
@@ -546,95 +381,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
             workspaceBaseline:
               ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-          outputs:
-            full.design.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-                    handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-                    proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                      求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                      Design：`findByInsuredIdHash`
-                      取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                      facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                      R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                      `insured_id_hash` 与 createdAt，零
-                      DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                      L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                      保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                      不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                      不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地
-                      4 新命中/未命中用例 + 2 既有补桩；门禁 `check.sh`
-                      59/59、全量单测与变异证据在提交/verify 阶段复核。【Spec Patch】无：不新增
-                      capability，不改变公开验收，仅扩展 `claim/rule-engine` 的富化变量与规则资产。若方案
-                      A 获批，Build 配置建议沿用前四批：`executing-plans / tdd / thorough /
-                      subagent_dispatch=null`，隔离方式沿用当前绑定的
-                      dev（isolation=current）。
-                    requirementsEvidence:
-                      contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-                    sourceEvidence:
-                      contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.design.document:
-              designDoc: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-            full.design.evidence:
-              contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-            full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-              handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-              proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                Design：`findByInsuredIdHash`
-                取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                `insured_id_hash` 与 createdAt，零
-                DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地 4
-                新命中/未命中用例 + 2 既有补桩；门禁 `check.sh` 59/59、全量单测与变异证据在提交/verify
-                阶段复核。【Spec Patch】无：不新增 capability，不改变公开验收，仅扩展
-                `claim/rule-engine` 的富化变量与规则资产。若方案 A 获批，Build
-                配置建议沿用前四批：`executing-plans / tdd / thorough /
-                subagent_dispatch=null`，隔离方式沿用当前绑定的 dev（isolation=current）。
-              requirementsEvidence:
-                contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-              sourceEvidence:
-                contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.evidence:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.revalidate:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+          outputs: {}
         inputHash: 545dcd1af8e173d490570c55884db166dcada4e55e795d7df41d401143f5f327
         outcome:
           actionId: synapclaim-risk-fraud-dimensions:13
@@ -679,120 +426,7 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
             workspaceBaseline:
               ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-          outputs:
-            full.build.configure:
-              boundBranch: dev
-              buildMode: executing-plans
-              directOverride: false
-              isolation: current
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-            full.build.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.build.configure:
-                    boundBranch: dev
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: current
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-            full.design.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-                    handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-                    proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                      求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                      Design：`findByInsuredIdHash`
-                      取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                      facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                      R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                      `insured_id_hash` 与 createdAt，零
-                      DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                      L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                      保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                      不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                      不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地
-                      4 新命中/未命中用例 + 2 既有补桩；门禁 `check.sh`
-                      59/59、全量单测与变异证据在提交/verify 阶段复核。【Spec Patch】无：不新增
-                      capability，不改变公开验收，仅扩展 `claim/rule-engine` 的富化变量与规则资产。若方案
-                      A 获批，Build 配置建议沿用前四批：`executing-plans / tdd / thorough /
-                      subagent_dispatch=null`，隔离方式沿用当前绑定的
-                      dev（isolation=current）。
-                    requirementsEvidence:
-                      contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-                    sourceEvidence:
-                      contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.design.document:
-              designDoc: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-            full.design.evidence:
-              contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-            full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-              handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-              proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                Design：`findByInsuredIdHash`
-                取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                `insured_id_hash` 与 createdAt，零
-                DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地 4
-                新命中/未命中用例 + 2 既有补桩；门禁 `check.sh` 59/59、全量单测与变异证据在提交/verify
-                阶段复核。【Spec Patch】无：不新增 capability，不改变公开验收，仅扩展
-                `claim/rule-engine` 的富化变量与规则资产。若方案 A 获批，Build
-                配置建议沿用前四批：`executing-plans / tdd / thorough /
-                subagent_dispatch=null`，隔离方式沿用当前绑定的 dev（isolation=current）。
-              requirementsEvidence:
-                contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-              sourceEvidence:
-                contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.evidence:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.revalidate:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+          outputs: {}
         inputHash: d993a42a6bb2fc6bf7f24846b85fab1a51b48a992c80f7dff3ace576fec0c9de
         outcome:
           actionId: synapclaim-risk-fraud-dimensions:15
@@ -823,6 +457,15 @@ run_checkpoint:
         stepId: full.build.plan
         type: invoke_skill
       - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-risk-fraud-dimensions:17/1
+          token: portable-6bd6d3b25cf1b99077a6ff9a2e4d3487bc1e4b98a1dcb8a2b4a42887767f7cc1
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
         id: synapclaim-risk-fraud-dimensions:17
         input:
           input:
@@ -830,763 +473,461 @@ run_checkpoint:
             changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
             workspaceBaseline:
               ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-          outputs:
-            full.build.configure:
-              boundBranch: dev
-              buildMode: executing-plans
-              directOverride: false
-              isolation: current
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-            full.build.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.build.configure:
-                    boundBranch: dev
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: current
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-            full.build.plan:
-              designEvidence:
-                contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-              plan: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
-              planEvidence:
-                contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
-                ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
-              taskRevision: 57e8b949fea04da0425f578010cec8e8dbb1517e3aa17385860705cd18185447
-            full.build.plan.evidence:
-              contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
-              ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
-            full.design.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-                    handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-                    proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                      求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                      Design：`findByInsuredIdHash`
-                      取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                      facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                      R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                      `insured_id_hash` 与 createdAt，零
-                      DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                      L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                      保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                      不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                      不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地
-                      4 新命中/未命中用例 + 2 既有补桩；门禁 `check.sh`
-                      59/59、全量单测与变异证据在提交/verify 阶段复核。【Spec Patch】无：不新增
-                      capability，不改变公开验收，仅扩展 `claim/rule-engine` 的富化变量与规则资产。若方案
-                      A 获批，Build 配置建议沿用前四批：`executing-plans / tdd / thorough /
-                      subagent_dispatch=null`，隔离方式沿用当前绑定的
-                      dev（isolation=current）。
-                    requirementsEvidence:
-                      contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-                    sourceEvidence:
-                      contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.design.document:
-              designDoc: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-            full.design.evidence:
-              contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-            full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-              handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-              proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                Design：`findByInsuredIdHash`
-                取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                `insured_id_hash` 与 createdAt，零
-                DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地 4
-                新命中/未命中用例 + 2 既有补桩；门禁 `check.sh` 59/59、全量单测与变异证据在提交/verify
-                阶段复核。【Spec Patch】无：不新增 capability，不改变公开验收，仅扩展
-                `claim/rule-engine` 的富化变量与规则资产。若方案 A 获批，Build
-                配置建议沿用前四批：`executing-plans / tdd / thorough /
-                subagent_dispatch=null`，隔离方式沿用当前绑定的 dev（isolation=current）。
-              requirementsEvidence:
-                contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-              sourceEvidence:
-                contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open:
-              event: open-complete
-            full.open.confirm:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.evidence:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-            full.open.revalidate:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+          outputs: {}
         inputHash: 0af137340b706fe5f03a9aca7f8600e01d74045a0c29cc91518d0833740e8926
+        outcome:
+          actionId: synapclaim-risk-fraud-dimensions:17
+          attempt: 1
+          claimToken: portable-6bd6d3b25cf1b99077a6ff9a2e4d3487bc1e4b98a1dcb8a2b4a42887767f7cc1
+          inputHash: 0af137340b706fe5f03a9aca7f8600e01d74045a0c29cc91518d0833740e8926
+          outcomeId: 13d830da-11bb-45a9-b3f9-d33e376ae89e
+          output:
+            event: build-complete
+          status: succeeded
         protocolVersion: 1
-        receipts: []
+        receipts:
+          - hash: 26dd10aac4d1e232cf3abb6592d34f492f6b015a9ba03df8033df9b19bfea9f9
+            outcomeId: 13d830da-11bb-45a9-b3f9-d33e376ae89e
         reconciliations: []
         ref: comet-build
         requiredCapabilities: []
         retry: manual
         runId: synapclaim-risk-fraud-dimensions
-        status: pending
+        status: succeeded
         stepId: full.build.execute
         type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-c02476a69afd177423e8f4f74b97aaaf8b174a84413166557b48fc1b1cc9c1d1
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-risk-fraud-dimensions:18
+        input:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs: {}
+        inputHash: 4afa142e219aca9f2e0ddc637b33e789c76d00bdac4d511bbe6d84aa07162316
+        outcome:
+          actionId: synapclaim-risk-fraud-dimensions:18
+          attempt: 2
+          claimToken: portable-c02476a69afd177423e8f4f74b97aaaf8b174a84413166557b48fc1b1cc9c1d1
+          inputHash: 4afa142e219aca9f2e0ddc637b33e789c76d00bdac4d511bbe6d84aa07162316
+          outcomeId: 33edeb45-2a83-4c73-b968-e2e7f239ab09
+          output:
+            argv:
+              - ./scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: b124c37d265f4eb646e89b51f2166e18252b45604db5774a84b11dadb9752263
+            cwd: .worktrees/_dev-merge-tmp
+            environment: 91659d9de69d481977e596282e98dcd600b70acc554bb99440bfc2dbad666193
+            exitCode: 0
+            inputAfter: 7a74824e705768ab1358d6e32b40d064bb9b17cef569f70a0aa4dc1205baec8d
+            inputBefore: 7a74824e705768ab1358d6e32b40d064bb9b17cef569f70a0aa4dc1205baec8d
+            manifestHash: 6ec8a65de9c79d76e99cc748eaeca30293fbfdb3bf412bfed28475e96cc872aa
+            manifestRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/4eca640f-8605-4da8-9a4d-dd800b196e68.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/f1177ec3-3f10-43fe-8bd6-dbed2157c262.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1a52a1185f2d6322ffee63945e1383ad85eaba117eb9b5677ebab0aa9f46d979
+            outcomeId: 33edeb45-2a83-4c73-b968-e2e7f239ab09
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: comet check run build 在输入快照阶段即因根 .pw-browsers
+                下的符号链接失败（CLASSIC_COMMAND_FAILED，exitCode=70）；未派发
+                ./scripts/check.sh
+                子进程，record.status=missing、receiptRef/manifestRef=null、outcome=null。已在
+                .comet/check-policy.json 为精确 argv/cwd 声明 files 以排除该链接；原尝试完全未执行。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-risk-fraud-dimensions
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-68109300db0b581623fb0fb6a9344bf5caefb5624ba288edba060adc7c981e1e
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-risk-fraud-dimensions:20
+        input:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs: {}
+        inputHash: d2b90b3234afe933396fdfacb2539eeb9af237db1f554ea082e27f77f743f75b
+        outcome:
+          actionId: synapclaim-risk-fraud-dimensions:20
+          attempt: 1
+          claimToken: portable-68109300db0b581623fb0fb6a9344bf5caefb5624ba288edba060adc7c981e1e
+          inputHash: d2b90b3234afe933396fdfacb2539eeb9af237db1f554ea082e27f77f743f75b
+          outcomeId: 6425cc01-efec-495e-b05c-0a1a5e1e30d8
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-17-synapclaim-risk-fraud-dimensions-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: b4788dc4ae69a934235ac193aa706ecbbe1592e28e560b89bcb610a0e5a78d33
+            outcomeId: 6425cc01-efec-495e-b05c-0a1a5e1e30d8
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-risk-fraud-dimensions
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-906b4b8d528df6c07147ae348662fc771ff9118823a7082b043d9c4ef635be76
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-risk-fraud-dimensions:22
+        input:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs: {}
+        inputHash: 2c651fad30bac005cbf4caa321f6f356d2b86a37a491d018dd1bded0acb7560c
+        outcome:
+          actionId: synapclaim-risk-fraud-dimensions:22
+          attempt: 2
+          claimToken: portable-906b4b8d528df6c07147ae348662fc771ff9118823a7082b043d9c4ef635be76
+          inputHash: 2c651fad30bac005cbf4caa321f6f356d2b86a37a491d018dd1bded0acb7560c
+          outcomeId: 2569e543-cb8a-496b-b0f5-5f3540eb967b
+          output:
+            argv:
+              - bash
+              - openspec/changes/synapclaim-risk-fraud-dimensions/verify.sh
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: fa4a1d49732d5b442fd3ea74b83a1e2c26b6ce0d08a76d172f2cb8c0172e3628
+            cwd: .
+            deliveryInputs: {}
+            environment: 86b327992f20f9280b4f46736a77f209a2af20a0659fe86c5b36144c1c28a3e9
+            exitCode: 1
+            inputAfter: 7e5448c9a1bd4e5f8aeed0d84e6d7dbd2ebb020de3176ca654600cea9ab51ff4
+            inputBefore: 7e5448c9a1bd4e5f8aeed0d84e6d7dbd2ebb020de3176ca654600cea9ab51ff4
+            manifestHash: 9b9a7c6ed9a2622723f4e03caf7dab0ea324c7deaaac1e63b78cec9dc5393b4d
+            manifestRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/5f8ac098-f6ed-443c-8409-6538a23ea8d2.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/4d214110-b05d-4046-9568-a4ea683a7a8c.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: failed
+        protocolVersion: 1
+        receipts:
+          - hash: c70005c2a2cd63c4882ccfe4a4e42671f8dc951818d93a9886fde69bd788f29e
+            outcomeId: 2569e543-cb8a-496b-b0f5-5f3540eb967b
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 只读复核证明原尝试完全未执行：① comet runtime dispatch inspect 显示 :22 receipts=[]、无
+                full.verify.check 产物，记录仅 status=started；② Guard 调用返回
+                RC=1，stdout/stderr 仅 1 行 CLASSIC_COMMAND_FAILED/Classic SDK has
+                a running Action，grep [1/6]..[6/6] 与 ALL CHECKS PASSED 命中 0，说明
+                verify.sh 未被派发；③ 同一脚本随后在同一工作区独立预跑 6/6 全绿，证明命令可执行且未产生隐藏副作用。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-risk-fraud-dimensions
+        status: failed
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-96db3976524dd5a332ef1d94762808035a0849a1d51aaa7224745c276ef7c662
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-risk-fraud-dimensions:23
+        input:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs: {}
+        inputHash: 8f3b8458bb9f9db355db5f7b26b98952156e4719e349ddb7cb9931f1472796a2
+        outcome:
+          actionId: synapclaim-risk-fraud-dimensions:23
+          attempt: 1
+          claimToken: portable-96db3976524dd5a332ef1d94762808035a0849a1d51aaa7224745c276ef7c662
+          inputHash: 8f3b8458bb9f9db355db5f7b26b98952156e4719e349ddb7cb9931f1472796a2
+          outcomeId: 89c707bd-ab73-4336-8240-3e80cdc8683b
+          output:
+            designEvidence:
+              contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
+              ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
+            plan: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
+            planEvidence:
+              contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
+              ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
+            taskRevision: 57e8b949fea04da0425f578010cec8e8dbb1517e3aa17385860705cd18185447
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3aa325510329583a04f959ae7d44cafb93e5bbeee2e760115f4a32ae4dd08fe2
+            outcomeId: 89c707bd-ab73-4336-8240-3e80cdc8683b
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-risk-fraud-dimensions
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-risk-fraud-dimensions:25/1
+          token: portable-f656ff9f01bf1278f4752cc38ff1f930f0723fd59459d5ff08316361efb9097a
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-risk-fraud-dimensions:25
+        input:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs: {}
+        inputHash: 8f3b8458bb9f9db355db5f7b26b98952156e4719e349ddb7cb9931f1472796a2
+        outcome:
+          actionId: synapclaim-risk-fraud-dimensions:25
+          attempt: 1
+          claimToken: portable-f656ff9f01bf1278f4752cc38ff1f930f0723fd59459d5ff08316361efb9097a
+          inputHash: 8f3b8458bb9f9db355db5f7b26b98952156e4719e349ddb7cb9931f1472796a2
+          outcomeId: 267bdcae-4369-4a78-9564-872da5e19f6a
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 0c36458b7336dce07c424cdb666153ce3098e936aa9786aaefd61b0ba00d447b
+            outcomeId: 267bdcae-4369-4a78-9564-872da5e19f6a
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-risk-fraud-dimensions
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-32d34e0b914eee364aa4cdcf8a599d5632768f861384a7d1dfb9aefa5f31b8cd
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-risk-fraud-dimensions:26
+        input:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs: {}
+        inputHash: 8f3b8458bb9f9db355db5f7b26b98952156e4719e349ddb7cb9931f1472796a2
+        outcome:
+          actionId: synapclaim-risk-fraud-dimensions:26
+          attempt: 1
+          claimToken: portable-32d34e0b914eee364aa4cdcf8a599d5632768f861384a7d1dfb9aefa5f31b8cd
+          inputHash: 8f3b8458bb9f9db355db5f7b26b98952156e4719e349ddb7cb9931f1472796a2
+          outcomeId: 6c5eb0c8-1b2b-4b7b-9ea0-11a4d612dc23
+          output:
+            argv:
+              - ./scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 4
+            contentHash: f6620d4ebea7dedf33836374c529a7b5f04aa56a044add0babbb390b7df30e69
+            cwd: .worktrees/_dev-merge-tmp
+            environment: 91659d9de69d481977e596282e98dcd600b70acc554bb99440bfc2dbad666193
+            exitCode: 0
+            inputAfter: 845c2657cfe42cedbee2bc98ac05cd15827ee66c1af421f96cf1048d5a47043e
+            inputBefore: 845c2657cfe42cedbee2bc98ac05cd15827ee66c1af421f96cf1048d5a47043e
+            manifestHash: a57c3838935c214b75f94302a1ebc7f48f3de232bafeaac8d8a81991f24852e6
+            manifestRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/9adbeae8-2ed3-4add-9cf1-dec4e26d53d6.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/5e7c9810-2923-482d-868f-fd4b0a2cb18d.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 06d688e3ef924ed7aed3c822986f909855a8f8c9bb445f3d1b8c9fe28afda967
+            outcomeId: 6c5eb0c8-1b2b-4b7b-9ea0-11a4d612dc23
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-risk-fraud-dimensions
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-20fc6498a15e82d1d8b3f579e21774fb0451fe6f017bd013fe5043a4b08e67c6
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-risk-fraud-dimensions:28
+        input:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs: {}
+        inputHash: 6b967c9ac684182f2fe94b1fe71e2a918b8716d5b592f5a9aa00aaf8fb27e593
+        outcome:
+          actionId: synapclaim-risk-fraud-dimensions:28
+          attempt: 1
+          claimToken: portable-20fc6498a15e82d1d8b3f579e21774fb0451fe6f017bd013fe5043a4b08e67c6
+          inputHash: 6b967c9ac684182f2fe94b1fe71e2a918b8716d5b592f5a9aa00aaf8fb27e593
+          outcomeId: ed6cfd53-bab6-4030-a4b3-c6653a833a1b
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-17-synapclaim-risk-fraud-dimensions-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 6209b5b1521236000f5e06ecdae12a8986d7e8db5e580bfa952e399fbdfb747c
+            outcomeId: ed6cfd53-bab6-4030-a4b3-c6653a833a1b
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-risk-fraud-dimensions
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-4c826fc53d3da950033e376bf3ec166a16fc125f8b1e154a6ec215551dfe4063
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-risk-fraud-dimensions:30
+        input:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs: {}
+        inputHash: 31d1ce9536048ea92e7fe5d1e5a642ca49487fb743c017aa7ce08657afd50b98
+        protocolVersion: 1
+        reason: Portable recovery requires reconciliation of external execution
+        receipts: []
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-risk-fraud-dimensions
+        status: unknown
+        stepId: full.verify.check
+        type: call_tool
     actionContexts:
       synapclaim-risk-fraud-dimensions:1:
         results: {}
         sequence: 1
       synapclaim-risk-fraud-dimensions:11:
-        results:
-          full.design.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-                    handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-                    proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                      求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                      Design：`findByInsuredIdHash`
-                      取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                      facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                      R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                      `insured_id_hash` 与 createdAt，零
-                      DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                      L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                      保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                      不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                      不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地
-                      4 新命中/未命中用例 + 2 既有补桩；门禁 `check.sh`
-                      59/59、全量单测与变异证据在提交/verify 阶段复核。【Spec Patch】无：不新增
-                      capability，不改变公开验收，仅扩展 `claim/rule-engine` 的富化变量与规则资产。若方案
-                      A 获批，Build 配置建议沿用前四批：`executing-plans / tdd / thorough /
-                      subagent_dispatch=null`，隔离方式沿用当前绑定的
-                      dev（isolation=current）。
-                    requirementsEvidence:
-                      contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-                    sourceEvidence:
-                      contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.design.handoff:
-            sequence: 9
-            value:
-              handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-              handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-              proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                Design：`findByInsuredIdHash`
-                取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                `insured_id_hash` 与 createdAt，零
-                DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地 4
-                新命中/未命中用例 + 2 既有补桩；门禁 `check.sh` 59/59、全量单测与变异证据在提交/verify
-                阶段复核。【Spec Patch】无：不新增 capability，不改变公开验收，仅扩展
-                `claim/rule-engine` 的富化变量与规则资产。若方案 A 获批，Build
-                配置建议沿用前四批：`executing-plans / tdd / thorough /
-                subagent_dispatch=null`，隔离方式沿用当前绑定的 dev（isolation=current）。
-              requirementsEvidence:
-                contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-              sourceEvidence:
-                contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open:
-            sequence: 5
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 7
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.evidence:
-            sequence: 6
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.revalidate:
-            sequence: 8
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+        results: {}
         sequence: 11
       synapclaim-risk-fraud-dimensions:13:
-        results:
-          full.design.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-                    handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-                    proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                      求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                      Design：`findByInsuredIdHash`
-                      取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                      facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                      R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                      `insured_id_hash` 与 createdAt，零
-                      DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                      L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                      保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                      不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                      不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地
-                      4 新命中/未命中用例 + 2 既有补桩；门禁 `check.sh`
-                      59/59、全量单测与变异证据在提交/verify 阶段复核。【Spec Patch】无：不新增
-                      capability，不改变公开验收，仅扩展 `claim/rule-engine` 的富化变量与规则资产。若方案
-                      A 获批，Build 配置建议沿用前四批：`executing-plans / tdd / thorough /
-                      subagent_dispatch=null`，隔离方式沿用当前绑定的
-                      dev（isolation=current）。
-                    requirementsEvidence:
-                      contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-                    sourceEvidence:
-                      contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.design.document:
-            sequence: 11
-            value:
-              designDoc: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-          full.design.evidence:
-            sequence: 12
-            value:
-              contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-          full.design.handoff:
-            sequence: 9
-            value:
-              handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-              handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-              proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                Design：`findByInsuredIdHash`
-                取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                `insured_id_hash` 与 createdAt，零
-                DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地 4
-                新命中/未命中用例 + 2 既有补桩；门禁 `check.sh` 59/59、全量单测与变异证据在提交/verify
-                阶段复核。【Spec Patch】无：不新增 capability，不改变公开验收，仅扩展
-                `claim/rule-engine` 的富化变量与规则资产。若方案 A 获批，Build
-                配置建议沿用前四批：`executing-plans / tdd / thorough /
-                subagent_dispatch=null`，隔离方式沿用当前绑定的 dev（isolation=current）。
-              requirementsEvidence:
-                contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-              sourceEvidence:
-                contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open:
-            sequence: 5
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 7
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.evidence:
-            sequence: 6
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.revalidate:
-            sequence: 8
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+        results: {}
         sequence: 13
       synapclaim-risk-fraud-dimensions:15:
-        results:
-          full.build.configure:
-            sequence: 13
-            value:
-              boundBranch: dev
-              buildMode: executing-plans
-              directOverride: false
-              isolation: current
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.build.confirm:
-            sequence: 14
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.build.configure:
-                    boundBranch: dev
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: current
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-          full.design.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-                    handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-                    proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                      求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                      Design：`findByInsuredIdHash`
-                      取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                      facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                      R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                      `insured_id_hash` 与 createdAt，零
-                      DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                      L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                      保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                      不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                      不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地
-                      4 新命中/未命中用例 + 2 既有补桩；门禁 `check.sh`
-                      59/59、全量单测与变异证据在提交/verify 阶段复核。【Spec Patch】无：不新增
-                      capability，不改变公开验收，仅扩展 `claim/rule-engine` 的富化变量与规则资产。若方案
-                      A 获批，Build 配置建议沿用前四批：`executing-plans / tdd / thorough /
-                      subagent_dispatch=null`，隔离方式沿用当前绑定的
-                      dev（isolation=current）。
-                    requirementsEvidence:
-                      contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-                    sourceEvidence:
-                      contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.design.document:
-            sequence: 11
-            value:
-              designDoc: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-          full.design.evidence:
-            sequence: 12
-            value:
-              contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-          full.design.handoff:
-            sequence: 9
-            value:
-              handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-              handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-              proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                Design：`findByInsuredIdHash`
-                取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                `insured_id_hash` 与 createdAt，零
-                DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地 4
-                新命中/未命中用例 + 2 既有补桩；门禁 `check.sh` 59/59、全量单测与变异证据在提交/verify
-                阶段复核。【Spec Patch】无：不新增 capability，不改变公开验收，仅扩展
-                `claim/rule-engine` 的富化变量与规则资产。若方案 A 获批，Build
-                配置建议沿用前四批：`executing-plans / tdd / thorough /
-                subagent_dispatch=null`，隔离方式沿用当前绑定的 dev（isolation=current）。
-              requirementsEvidence:
-                contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-              sourceEvidence:
-                contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open:
-            sequence: 5
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 7
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.evidence:
-            sequence: 6
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.revalidate:
-            sequence: 8
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+        results: {}
         sequence: 15
       synapclaim-risk-fraud-dimensions:17:
-        results:
-          full.build.configure:
-            sequence: 13
-            value:
-              boundBranch: dev
-              buildMode: executing-plans
-              directOverride: false
-              isolation: current
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.build.confirm:
-            sequence: 14
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.build.configure:
-                    boundBranch: dev
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: current
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-          full.build.plan:
-            sequence: 15
-            value:
-              designEvidence:
-                contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-              plan: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
-              planEvidence:
-                contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
-                ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
-              taskRevision: 57e8b949fea04da0425f578010cec8e8dbb1517e3aa17385860705cd18185447
-          full.build.plan.evidence:
-            sequence: 16
-            value:
-              contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
-              ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
-          full.design.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-                    handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-                    proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                      求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                      Design：`findByInsuredIdHash`
-                      取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                      facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                      R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                      `insured_id_hash` 与 createdAt，零
-                      DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                      L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                      保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                      不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                      不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地
-                      4 新命中/未命中用例 + 2 既有补桩；门禁 `check.sh`
-                      59/59、全量单测与变异证据在提交/verify 阶段复核。【Spec Patch】无：不新增
-                      capability，不改变公开验收，仅扩展 `claim/rule-engine` 的富化变量与规则资产。若方案
-                      A 获批，Build 配置建议沿用前四批：`executing-plans / tdd / thorough /
-                      subagent_dispatch=null`，隔离方式沿用当前绑定的
-                      dev（isolation=current）。
-                    requirementsEvidence:
-                      contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-                    sourceEvidence:
-                      contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.design.document:
-            sequence: 11
-            value:
-              designDoc: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-          full.design.evidence:
-            sequence: 12
-            value:
-              contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-          full.design.handoff:
-            sequence: 9
-            value:
-              handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-              handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-              proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                Design：`findByInsuredIdHash`
-                取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                `insured_id_hash` 与 createdAt，零
-                DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地 4
-                新命中/未命中用例 + 2 既有补桩；门禁 `check.sh` 59/59、全量单测与变异证据在提交/verify
-                阶段复核。【Spec Patch】无：不新增 capability，不改变公开验收，仅扩展
-                `claim/rule-engine` 的富化变量与规则资产。若方案 A 获批，Build
-                配置建议沿用前四批：`executing-plans / tdd / thorough /
-                subagent_dispatch=null`，隔离方式沿用当前绑定的 dev（isolation=current）。
-              requirementsEvidence:
-                contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-              sourceEvidence:
-                contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open:
-            sequence: 5
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 7
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.evidence:
-            sequence: 6
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.revalidate:
-            sequence: 8
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+        results: {}
         sequence: 17
+      synapclaim-risk-fraud-dimensions:18:
+        results: {}
+        sequence: 18
+      synapclaim-risk-fraud-dimensions:20:
+        results: {}
+        sequence: 20
+      synapclaim-risk-fraud-dimensions:22:
+        results: {}
+        sequence: 22
+      synapclaim-risk-fraud-dimensions:23:
+        results: {}
+        sequence: 23
+      synapclaim-risk-fraud-dimensions:25:
+        results: {}
+        sequence: 25
+      synapclaim-risk-fraud-dimensions:26:
+        results: {}
+        sequence: 26
+      synapclaim-risk-fraud-dimensions:28:
+        results: {}
+        sequence: 28
+      synapclaim-risk-fraud-dimensions:30:
+        results: {}
+        sequence: 30
       synapclaim-risk-fraud-dimensions:4:
-        results:
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
+        results: {}
         sequence: 4
       synapclaim-risk-fraud-dimensions:5:
-        results:
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+        results: {}
         sequence: 5
       synapclaim-risk-fraud-dimensions:8:
-        results:
-          full.open:
-            sequence: 5
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 7
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.evidence:
-            sequence: 6
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+        results: {}
         sequence: 8
       synapclaim-risk-fraud-dimensions:9:
-        results:
-          full.open:
-            sequence: 5
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 7
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.evidence:
-            sequence: 6
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.revalidate:
-            sequence: 8
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+        results: {}
         sequence: 9
     waits:
       - id: synapclaim-risk-fraud-dimensions:3
@@ -1609,16 +950,7 @@ run_checkpoint:
         choices:
           - approved
           - rejected
-        results:
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
+        results: {}
         decision:
           id: classic-open-d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
           choice: approved
@@ -1643,36 +975,7 @@ run_checkpoint:
         choices:
           - approved
           - rejected
-        results:
-          full.open:
-            sequence: 5
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.evidence:
-            sequence: 6
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+        results: {}
         decision:
           id: classic-open-2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
           choice: approved
@@ -1718,64 +1021,7 @@ run_checkpoint:
         choices:
           - approved
           - rejected
-        results:
-          full.design.handoff:
-            sequence: 9
-            value:
-              handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-              handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-              proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                Design：`findByInsuredIdHash`
-                取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                `insured_id_hash` 与 createdAt，零
-                DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地 4
-                新命中/未命中用例 + 2 既有补桩；门禁 `check.sh` 59/59、全量单测与变异证据在提交/verify
-                阶段复核。【Spec Patch】无：不新增 capability，不改变公开验收，仅扩展
-                `claim/rule-engine` 的富化变量与规则资产。若方案 A 获批，Build
-                配置建议沿用前四批：`executing-plans / tdd / thorough /
-                subagent_dispatch=null`，隔离方式沿用当前绑定的 dev（isolation=current）。
-              requirementsEvidence:
-                contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-              sourceEvidence:
-                contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open:
-            sequence: 5
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 7
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.evidence:
-            sequence: 6
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.revalidate:
-            sequence: 8
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+        results: {}
         decision:
           id: classic-design-4439240927b5425952ecd4374466ed2da7ba042058e1c8ef5a52a5b985d99e16-approved
           choice: approved
@@ -1803,121 +1049,7 @@ run_checkpoint:
         choices:
           - approved
           - rejected
-        results:
-          full.build.configure:
-            sequence: 13
-            value:
-              boundBranch: dev
-              buildMode: executing-plans
-              directOverride: false
-              isolation: current
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.design.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-                    handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-                    proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                      求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                      Design：`findByInsuredIdHash`
-                      取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                      facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                      R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                      `insured_id_hash` 与 createdAt，零
-                      DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                      L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                      保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                      不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                      不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地
-                      4 新命中/未命中用例 + 2 既有补桩；门禁 `check.sh`
-                      59/59、全量单测与变异证据在提交/verify 阶段复核。【Spec Patch】无：不新增
-                      capability，不改变公开验收，仅扩展 `claim/rule-engine` 的富化变量与规则资产。若方案
-                      A 获批，Build 配置建议沿用前四批：`executing-plans / tdd / thorough /
-                      subagent_dispatch=null`，隔离方式沿用当前绑定的
-                      dev（isolation=current）。
-                    requirementsEvidence:
-                      contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-                    sourceEvidence:
-                      contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.design.document:
-            sequence: 11
-            value:
-              designDoc: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-          full.design.evidence:
-            sequence: 12
-            value:
-              contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-          full.design.handoff:
-            sequence: 9
-            value:
-              handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-              handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-              proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                Design：`findByInsuredIdHash`
-                取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                `insured_id_hash` 与 createdAt，零
-                DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地 4
-                新命中/未命中用例 + 2 既有补桩；门禁 `check.sh` 59/59、全量单测与变异证据在提交/verify
-                阶段复核。【Spec Patch】无：不新增 capability，不改变公开验收，仅扩展
-                `claim/rule-engine` 的富化变量与规则资产。若方案 A 获批，Build
-                配置建议沿用前四批：`executing-plans / tdd / thorough /
-                subagent_dispatch=null`，隔离方式沿用当前绑定的 dev（isolation=current）。
-              requirementsEvidence:
-                contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-              sourceEvidence:
-                contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open:
-            sequence: 5
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 7
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.evidence:
-            sequence: 6
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.revalidate:
-            sequence: 8
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+        results: {}
         decision:
           id: 4ad6e498-4a22-453d-8893-717b00cd460c
           choice: approved
@@ -1928,11 +1060,7 @@ run_checkpoint:
         sequence: 2
         kind: classic-open-artifacts
         status: resolved
-        results:
-          full.open:
-            sequence: 1
-            value:
-              event: open-complete
+        results: {}
         receipt:
           ref: openspec/changes/synapclaim-risk-fraud-dimensions
           contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
@@ -1942,36 +1070,7 @@ run_checkpoint:
         sequence: 6
         kind: classic-open-artifacts
         status: resolved
-        results:
-          full.open:
-            sequence: 5
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 3
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.evidence:
-            sequence: 2
-            value:
-              contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.revalidate:
-            sequence: 4
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+        results: {}
         receipt:
           ref: openspec/changes/synapclaim-risk-fraud-dimensions
           contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
@@ -1981,106 +1080,7 @@ run_checkpoint:
         sequence: 12
         kind: classic-design-document
         status: resolved
-        results:
-          full.design.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-                    handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-                    proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                      求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                      Design：`findByInsuredIdHash`
-                      取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                      facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                      R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                      `insured_id_hash` 与 createdAt，零
-                      DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                      L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                      保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                      不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                      不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地
-                      4 新命中/未命中用例 + 2 既有补桩；门禁 `check.sh`
-                      59/59、全量单测与变异证据在提交/verify 阶段复核。【Spec Patch】无：不新增
-                      capability，不改变公开验收，仅扩展 `claim/rule-engine` 的富化变量与规则资产。若方案
-                      A 获批，Build 配置建议沿用前四批：`executing-plans / tdd / thorough /
-                      subagent_dispatch=null`，隔离方式沿用当前绑定的
-                      dev（isolation=current）。
-                    requirementsEvidence:
-                      contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-                    sourceEvidence:
-                      contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.design.document:
-            sequence: 11
-            value:
-              designDoc: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-          full.design.handoff:
-            sequence: 9
-            value:
-              handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-              handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-              proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                Design：`findByInsuredIdHash`
-                取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                `insured_id_hash` 与 createdAt，零
-                DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地 4
-                新命中/未命中用例 + 2 既有补桩；门禁 `check.sh` 59/59、全量单测与变异证据在提交/verify
-                阶段复核。【Spec Patch】无：不新增 capability，不改变公开验收，仅扩展
-                `claim/rule-engine` 的富化变量与规则资产。若方案 A 获批，Build
-                配置建议沿用前四批：`executing-plans / tdd / thorough /
-                subagent_dispatch=null`，隔离方式沿用当前绑定的 dev（isolation=current）。
-              requirementsEvidence:
-                contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-              sourceEvidence:
-                contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open:
-            sequence: 5
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 7
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.evidence:
-            sequence: 6
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.revalidate:
-            sequence: 8
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+        results: {}
         receipt:
           ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
           contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
@@ -2090,97 +1090,112 @@ run_checkpoint:
         sequence: 16
         kind: classic-build-plan
         status: resolved
-        results:
-          full.build.configure:
-            sequence: 13
-            value:
-              boundBranch: dev
-              buildMode: executing-plans
-              directOverride: false
-              isolation: current
-              reviewMode: thorough
-              subagentDispatch: null
-              tddMode: tdd
-          full.build.confirm:
-            sequence: 14
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.build.configure:
-                    boundBranch: dev
-                    buildMode: executing-plans
-                    directOverride: false
-                    isolation: current
-                    reviewMode: thorough
-                    subagentDispatch: null
-                    tddMode: tdd
-          full.build.plan:
-            sequence: 15
-            value:
-              designEvidence:
-                contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
-                ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-              plan: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
-              planEvidence:
-                contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
-                ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
-              taskRevision: 57e8b949fea04da0425f578010cec8e8dbb1517e3aa17385860705cd18185447
-          full.design.confirm:
-            sequence: 10
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
-                    handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
-                    proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
-                      求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
-                      Design：`findByInsuredIdHash`
-                      取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入
-                      facts，规则集 v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
-                      R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有
-                      `insured_id_hash` 与 createdAt，零
-                      DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
-                      L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump
-                      保证回放可区分；6 项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
-                      不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
-                      不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地
-                      4 新命中/未命中用例 + 2 既有补桩；门禁 `check.sh`
-                      59/59、全量单测与变异证据在提交/verify 阶段复核。【Spec Patch】无：不新增
-                      capability，不改变公开验收，仅扩展 `claim/rule-engine` 的富化变量与规则资产。若方案
-                      A 获批，Build 配置建议沿用前四批：`executing-plans / tdd / thorough /
-                      subagent_dispatch=null`，隔离方式沿用当前绑定的
-                      dev（isolation=current）。
-                    requirementsEvidence:
-                      contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-                    sourceEvidence:
-                      contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
-                      ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.design.document:
-            sequence: 11
-            value:
-              designDoc: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-          full.design.evidence:
-            sequence: 12
-            value:
-              contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-          full.design.handoff:
-            sequence: 9
-            value:
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
+          contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
+          submissionId: 276fae9c-b3ee-4c19-9c39-74b2326227fb
+      - id: synapclaim-risk-fraud-dimensions:19
+        stepId: full.build.check.evidence
+        sequence: 19
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/f1177ec3-3f10-43fe-8bd6-dbed2157c262.log
+          contentHash: b124c37d265f4eb646e89b51f2166e18252b45604db5774a84b11dadb9752263
+          submissionId: f7c15416-2330-43e8-9d82-55555cc2fc98
+      - id: synapclaim-risk-fraud-dimensions:21
+        stepId: full.verify.report.evidence
+        sequence: 21
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-17-synapclaim-risk-fraud-dimensions-verify.md
+          contentHash: fdd30336bfb67c487bbed687d26b0c6208fb3199340ff7ae64330ef27b06cea9
+          submissionId: 91dd2175-2905-426c-89f8-b12f7dc1fa1a
+      - id: synapclaim-risk-fraud-dimensions:24
+        stepId: full.build.plan.evidence
+        sequence: 24
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
+          contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
+          submissionId: fc6ab7a7-a2a1-4297-91d0-73bb22337dc5
+      - id: synapclaim-risk-fraud-dimensions:27
+        stepId: full.build.check.evidence
+        sequence: 27
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/5e7c9810-2923-482d-868f-fd4b0a2cb18d.log
+          contentHash: f6620d4ebea7dedf33836374c529a7b5f04aa56a044add0babbb390b7df30e69
+          submissionId: 5c036431-5309-45ce-90c3-7d1006094d4c
+      - id: synapclaim-risk-fraud-dimensions:29
+        stepId: full.verify.report.evidence
+        sequence: 29
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-17-synapclaim-risk-fraud-dimensions-verify.md
+          contentHash: 33a84fd8acf64121b5acb66387f4334f9f926e1d18f4de436cb74fca4a4d9bdb
+          submissionId: 634498bd-cc25-4487-a2a5-893fd2fdd8b6
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 62
+  sourceHash: 808db05b5072d1c57644caad746144c40b18950b4a64a6126a89c6ead3ba2d0c
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
+              ref: openspec/changes/synapclaim-risk-fraud-dimensions
+      - contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
+        ref: openspec/changes/synapclaim-risk-fraud-dimensions
+      - contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+              ref: openspec/changes/synapclaim-risk-fraud-dimensions
+      - contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+        ref: openspec/changes/synapclaim-risk-fraud-dimensions
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs:
+            full.design.handoff:
               handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
               handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
               proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
@@ -2206,89 +1221,133 @@ run_checkpoint:
               sourceEvidence:
                 contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
                 ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open:
-            sequence: 5
-            value:
-              event: open-complete
-          full.open.confirm:
-            sequence: 7
-            value:
-              choice: approved
-              proposal:
-                input:
-                  change: synapclaim-risk-fraud-dimensions
-                  changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-                  workspaceBaseline:
-                    ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-                outputs:
-                  full.open:
-                    event: open-complete
-                  full.open.evidence:
-                    contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-                    ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.evidence:
-            sequence: 6
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-              ref: openspec/changes/synapclaim-risk-fraud-dimensions
-          full.open.revalidate:
-            sequence: 8
-            value:
-              contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-        receipt:
-          ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
-          contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
-          submissionId: 276fae9c-b3ee-4c19-9c39-74b2326227fb
-    ready: []
-    joins: {}
-    outputs:
-      full.build.configure:
-        sequence: 13
-        value:
-          boundBranch: dev
-          buildMode: executing-plans
-          directOverride: false
-          isolation: current
-          reviewMode: thorough
-          subagentDispatch: null
-          tddMode: tdd
-      full.build.confirm:
-        sequence: 14
-        value:
-          choice: approved
-          proposal:
-            input:
-              change: synapclaim-risk-fraud-dimensions
-              changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
-              workspaceBaseline:
-                ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
-            outputs:
-              full.build.configure:
-                boundBranch: dev
-                buildMode: executing-plans
-                directOverride: false
-                isolation: current
-                reviewMode: thorough
-                subagentDispatch: null
-                tddMode: tdd
-      full.build.plan:
-        sequence: 15
-        value:
-          designEvidence:
-            contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
-            ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-          plan: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
-          planEvidence:
-            contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
-            ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
-          taskRevision: 57e8b949fea04da0425f578010cec8e8dbb1517e3aa17385860705cd18185447
-      full.build.plan.evidence:
-        sequence: 16
-        value:
+      - handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
+        handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
+        proposal: 批 5 技术方案候选（待用户确认）：【方案 A 推荐】不推倒重来，沿用已落地的「只读上下文 → 仓储富化 → QLExpress
+          求值」三段式架构，把 2026-11-07 已提交（320573ffa）的两条真实数据驱动风控维度正式纳入
+          Design：`findByInsuredIdHash`
+          取同租户同被保人历史案件，`priorClaimCount`/`recentClaims90d` 排除本案后注入 facts，规则集
+          v3→v4 新增 R-FRAUD-22（重复索赔，risk=true，priority 27）与
+          R-ANOM-03（近90天高频，risk=false，priority 54）。关键取舍：只接库内已有 `insured_id_hash`
+          与 createdAt，零 DDL、零新配置；黑名单比对、诊疗-费用合理性、社会关系网络需外部数据源，如实登记 gap，不伪造、不宣称
+          L3。风险与处理：排除本案自身防止 100% 误报；异常 best-effort 降级不阻断主链路；版本 bump 保证回放可区分；6
+          项单测 + 双向变异已实跑，M1/M2 各按预期转红并恢复绿。【方案 B
+          不采用】另起图计算/外部黑名单服务：依赖外部数据与新基础设施，当前不可证伪且违反本轮零 DDL 边界。【方案 C
+          不采用】把两条规则硬编码进领域聚合：破坏规则资产化与可回放口径，且 AI/规则不得碰钱（F1）。【测试策略】已落地 4 新命中/未命中用例
+          + 2 既有补桩；门禁 `check.sh` 59/59、全量单测与变异证据在提交/verify 阶段复核。【Spec
+          Patch】无：不新增 capability，不改变公开验收，仅扩展 `claim/rule-engine` 的富化变量与规则资产。若方案
+          A 获批，Build 配置建议沿用前四批：`executing-plans / tdd / thorough /
+          subagent_dispatch=null`，隔离方式沿用当前绑定的 dev（isolation=current）。
+        requirementsEvidence:
+          contentHash: 8627624252d6074295113801ead681e4f6d3170042e7bfd4cf08d18970f77786
+          ref: openspec/changes/synapclaim-risk-fraud-dimensions
+        sourceEvidence:
+          contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
+          ref: openspec/changes/synapclaim-risk-fraud-dimensions
+      - designDoc: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
+      - contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
+        ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
+      - boundBranch: dev
+        buildMode: executing-plans
+        directOverride: false
+        isolation: current
+        reviewMode: thorough
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-risk-fraud-dimensions
+            changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+            workspaceBaseline:
+              ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: executing-plans
+              directOverride: false
+              isolation: current
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
+          ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
+        plan: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
+        planEvidence:
           contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
           ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
-      full.design.confirm:
-        sequence: 10
+        taskRevision: 57e8b949fea04da0425f578010cec8e8dbb1517e3aa17385860705cd18185447
+      - contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
+        ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
+      - event: build-complete
+      - argv:
+          - ./scripts/check.sh
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: b124c37d265f4eb646e89b51f2166e18252b45604db5774a84b11dadb9752263
+        cwd: .worktrees/_dev-merge-tmp
+        environment: 91659d9de69d481977e596282e98dcd600b70acc554bb99440bfc2dbad666193
+        exitCode: 0
+        inputAfter: 7a74824e705768ab1358d6e32b40d064bb9b17cef569f70a0aa4dc1205baec8d
+        inputBefore: 7a74824e705768ab1358d6e32b40d064bb9b17cef569f70a0aa4dc1205baec8d
+        manifestHash: 6ec8a65de9c79d76e99cc748eaeca30293fbfdb3bf412bfed28475e96cc872aa
+        manifestRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/4eca640f-8605-4da8-9a4d-dd800b196e68.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/f1177ec3-3f10-43fe-8bd6-dbed2157c262.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: b124c37d265f4eb646e89b51f2166e18252b45604db5774a84b11dadb9752263
+        ref: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/f1177ec3-3f10-43fe-8bd6-dbed2157c262.log
+      - contentHash: fdd30336bfb67c487bbed687d26b0c6208fb3199340ff7ae64330ef27b06cea9
+        ref: docs/superpowers/reports/2026-11-17-synapclaim-risk-fraud-dimensions-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-17-synapclaim-risk-fraud-dimensions-verify.md
+      - argv:
+          - bash
+          - openspec/changes/synapclaim-risk-fraud-dimensions/verify.sh
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: fa4a1d49732d5b442fd3ea74b83a1e2c26b6ce0d08a76d172f2cb8c0172e3628
+        cwd: .
+        deliveryInputs: {}
+        environment: 86b327992f20f9280b4f46736a77f209a2af20a0659fe86c5b36144c1c28a3e9
+        exitCode: 1
+        inputAfter: 7e5448c9a1bd4e5f8aeed0d84e6d7dbd2ebb020de3176ca654600cea9ab51ff4
+        inputBefore: 7e5448c9a1bd4e5f8aeed0d84e6d7dbd2ebb020de3176ca654600cea9ab51ff4
+        manifestHash: 9b9a7c6ed9a2622723f4e03caf7dab0ea324c7deaaac1e63b78cec9dc5393b4d
+        manifestRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/5f8ac098-f6ed-443c-8409-6538a23ea8d2.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/4d214110-b05d-4046-9568-a4ea683a7a8c.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - argv:
+          - ./scripts/check.sh
+        changedDuringExecution: []
+        checkEpoch: 4
+        contentHash: f6620d4ebea7dedf33836374c529a7b5f04aa56a044add0babbb390b7df30e69
+        cwd: .worktrees/_dev-merge-tmp
+        environment: 91659d9de69d481977e596282e98dcd600b70acc554bb99440bfc2dbad666193
+        exitCode: 0
+        inputAfter: 845c2657cfe42cedbee2bc98ac05cd15827ee66c1af421f96cf1048d5a47043e
+        inputBefore: 845c2657cfe42cedbee2bc98ac05cd15827ee66c1af421f96cf1048d5a47043e
+        manifestHash: a57c3838935c214b75f94302a1ebc7f48f3de232bafeaac8d8a81991f24852e6
+        manifestRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/9adbeae8-2ed3-4add-9cf1-dec4e26d53d6.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/5e7c9810-2923-482d-868f-fd4b0a2cb18d.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: f6620d4ebea7dedf33836374c529a7b5f04aa56a044add0babbb390b7df30e69
+        ref: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/5e7c9810-2923-482d-868f-fd4b0a2cb18d.log
+      - contentHash: 33a84fd8acf64121b5acb66387f4334f9f926e1d18f4de436cb74fca4a4d9bdb
+        ref: docs/superpowers/reports/2026-11-17-synapclaim-risk-fraud-dimensions-verify.md
+      - sequence: 10
         value:
           choice: approved
           proposal:
@@ -2324,17 +1383,7 @@ run_checkpoint:
                 sourceEvidence:
                   contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
                   ref: openspec/changes/synapclaim-risk-fraud-dimensions
-      full.design.document:
-        sequence: 11
-        value:
-          designDoc: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-      full.design.evidence:
-        sequence: 12
-        value:
-          contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
-          ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
-      full.design.handoff:
-        sequence: 9
+      - sequence: 9
         value:
           handoffContext: openspec/changes/synapclaim-risk-fraud-dimensions/.comet/handoff/design-context.json
           handoffHash: 748c3455e96b411647c759a6718c64aa199879f78e98f6316526fbf347cd2a3b
@@ -2361,12 +1410,10 @@ run_checkpoint:
           sourceEvidence:
             contentHash: 5573ada528289edda5b192b5e71973630558edfc6ddaadf778a0ae768e1123ed
             ref: openspec/changes/synapclaim-risk-fraud-dimensions
-      full.open:
-        sequence: 5
+      - sequence: 5
         value:
           event: open-complete
-      full.open.confirm:
-        sequence: 7
+      - sequence: 7
         value:
           choice: approved
           proposal:
@@ -2381,17 +1428,1557 @@ run_checkpoint:
               full.open.evidence:
                 contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
                 ref: openspec/changes/synapclaim-risk-fraud-dimensions
-      full.open.evidence:
-        sequence: 6
+      - sequence: 6
         value:
           contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
           ref: openspec/changes/synapclaim-risk-fraud-dimensions
-      full.open.revalidate:
-        sequence: 8
+      - sequence: 8
         value:
           contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
-    children: []
-    lineage: []
-  sourceRevision: 34
-  sourceHash: d7d7f6dab7c961eb9617927d4b9f7ec864372c1be2300c6bc068123e8ee725af
-check_epoch: 2
+      - sequence: 11
+        value:
+          designDoc: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
+      - sequence: 12
+        value:
+          contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
+          ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
+      - sequence: 13
+        value:
+          boundBranch: dev
+          buildMode: executing-plans
+          directOverride: false
+          isolation: current
+          reviewMode: thorough
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 14
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-risk-fraud-dimensions
+              changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+              workspaceBaseline:
+                ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: executing-plans
+                directOverride: false
+                isolation: current
+                reviewMode: thorough
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 15
+        value:
+          designEvidence:
+            contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
+            ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
+          plan: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
+          planEvidence:
+            contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
+            ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
+          taskRevision: 57e8b949fea04da0425f578010cec8e8dbb1517e3aa17385860705cd18185447
+      - sequence: 16
+        value:
+          contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
+          ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
+      - sequence: 17
+        value:
+          event: build-complete
+      - sequence: 18
+        value:
+          argv:
+            - ./scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: b124c37d265f4eb646e89b51f2166e18252b45604db5774a84b11dadb9752263
+          cwd: .worktrees/_dev-merge-tmp
+          environment: 91659d9de69d481977e596282e98dcd600b70acc554bb99440bfc2dbad666193
+          exitCode: 0
+          inputAfter: 7a74824e705768ab1358d6e32b40d064bb9b17cef569f70a0aa4dc1205baec8d
+          inputBefore: 7a74824e705768ab1358d6e32b40d064bb9b17cef569f70a0aa4dc1205baec8d
+          manifestHash: 6ec8a65de9c79d76e99cc748eaeca30293fbfdb3bf412bfed28475e96cc872aa
+          manifestRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/4eca640f-8605-4da8-9a4d-dd800b196e68.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/f1177ec3-3f10-43fe-8bd6-dbed2157c262.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 19
+        value:
+          contentHash: b124c37d265f4eb646e89b51f2166e18252b45604db5774a84b11dadb9752263
+          ref: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/f1177ec3-3f10-43fe-8bd6-dbed2157c262.log
+      - sequence: 21
+        value:
+          contentHash: fdd30336bfb67c487bbed687d26b0c6208fb3199340ff7ae64330ef27b06cea9
+          ref: docs/superpowers/reports/2026-11-17-synapclaim-risk-fraud-dimensions-verify.md
+      - sequence: 20
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-17-synapclaim-risk-fraud-dimensions-verify.md
+      - sequence: 22
+        value:
+          argv:
+            - bash
+            - openspec/changes/synapclaim-risk-fraud-dimensions/verify.sh
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: fa4a1d49732d5b442fd3ea74b83a1e2c26b6ce0d08a76d172f2cb8c0172e3628
+          cwd: .
+          deliveryInputs: {}
+          environment: 86b327992f20f9280b4f46736a77f209a2af20a0659fe86c5b36144c1c28a3e9
+          exitCode: 1
+          inputAfter: 7e5448c9a1bd4e5f8aeed0d84e6d7dbd2ebb020de3176ca654600cea9ab51ff4
+          inputBefore: 7e5448c9a1bd4e5f8aeed0d84e6d7dbd2ebb020de3176ca654600cea9ab51ff4
+          manifestHash: 9b9a7c6ed9a2622723f4e03caf7dab0ea324c7deaaac1e63b78cec9dc5393b4d
+          manifestRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/5f8ac098-f6ed-443c-8409-6538a23ea8d2.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/4d214110-b05d-4046-9568-a4ea683a7a8c.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 23
+        value:
+          designEvidence:
+            contentHash: 3829a770182b6a1952adf654848dc69c0235a53e2d5ca507fa65d36d890f49f7
+            ref: openspec/changes/synapclaim-risk-fraud-dimensions/design.md
+          plan: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
+          planEvidence:
+            contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
+            ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
+          taskRevision: 57e8b949fea04da0425f578010cec8e8dbb1517e3aa17385860705cd18185447
+      - sequence: 24
+        value:
+          contentHash: 235e1a6ebf6a98011b183d9b2b7f62f9e83cfb93bce115d85e9650280511a478
+          ref: docs/superpowers/plans/2026-11-17-synapclaim-risk-fraud-dimensions.md
+      - sequence: 25
+        value:
+          event: build-complete
+      - sequence: 26
+        value:
+          argv:
+            - ./scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 4
+          contentHash: f6620d4ebea7dedf33836374c529a7b5f04aa56a044add0babbb390b7df30e69
+          cwd: .worktrees/_dev-merge-tmp
+          environment: 91659d9de69d481977e596282e98dcd600b70acc554bb99440bfc2dbad666193
+          exitCode: 0
+          inputAfter: 845c2657cfe42cedbee2bc98ac05cd15827ee66c1af421f96cf1048d5a47043e
+          inputBefore: 845c2657cfe42cedbee2bc98ac05cd15827ee66c1af421f96cf1048d5a47043e
+          manifestHash: a57c3838935c214b75f94302a1ebc7f48f3de232bafeaac8d8a81991f24852e6
+          manifestRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/9adbeae8-2ed3-4add-9cf1-dec4e26d53d6.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/5e7c9810-2923-482d-868f-fd4b0a2cb18d.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 27
+        value:
+          contentHash: f6620d4ebea7dedf33836374c529a7b5f04aa56a044add0babbb390b7df30e69
+          ref: .comet/runtime/classic-sdk-checks/7ffbdb06748845f6a7d3ce40b39deb29d5f4d0b9fddb2a7fae3b72e74591efa5/5e7c9810-2923-482d-868f-fd4b0a2cb18d.log
+      - sequence: 29
+        value:
+          contentHash: 33a84fd8acf64121b5acb66387f4334f9f926e1d18f4de436cb74fca4a4d9bdb
+          ref: docs/superpowers/reports/2026-11-17-synapclaim-risk-fraud-dimensions-verify.md
+      - sequence: 28
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-17-synapclaim-risk-fraud-dimensions-verify.md
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-risk-fraud-dimensions
+              changeDir: openspec/changes/synapclaim-risk-fraud-dimensions
+              workspaceBaseline:
+                ref: 70930c04-7714-41ec-bddc-3ea945b3c1b0
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
+                ref: openspec/changes/synapclaim-risk-fraud-dimensions
+      - sequence: 2
+        value:
+          contentHash: d9d53e9c4d404c65b0fc412d3ff2d37e832d098f74d84aa27f783660058e6667
+          ref: openspec/changes/synapclaim-risk-fraud-dimensions
+      - sequence: 4
+        value:
+          contentHash: 2a5a8225b7af14671bbb9c257c4d0632ff8e33c48eedbcf96d09ace0d3320dd8
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.open.evidence
+        value: 5
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 4
+        left: 0
+        right: 6
+        height: 3
+      - key: full.design.confirm
+        value: 6
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 7
+        left: 8
+        right: 9
+        height: 2
+      - key: full.open.confirm
+        value: 4
+        left: 10
+        right: 6
+        height: 3
+      - key: full.design.confirm
+        value: 6
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 9
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 8
+        left: 12
+        right: 13
+        height: 2
+      - key: full.design.handoff
+        value: 7
+        left: 14
+        right: 9
+        height: 3
+      - key: full.open.confirm
+        value: 4
+        left: 15
+        right: 6
+        height: 4
+      - key: full.build.configure
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 6
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 11
+        left: 17
+        right: 18
+        height: 2
+      - key: full.design.handoff
+        value: 7
+        left: 13
+        right: 9
+        height: 2
+      - key: full.design.document
+        value: 8
+        left: 19
+        right: 20
+        height: 3
+      - key: full.open.confirm
+        value: 4
+        left: 21
+        right: 6
+        height: 4
+      - key: full.build.plan
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 6
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 13
+        left: 23
+        right: 24
+        height: 2
+      - key: full.build.confirm
+        value: 11
+        left: 17
+        right: 25
+        height: 3
+      - key: full.open.confirm
+        value: 4
+        left: 20
+        right: 6
+        height: 3
+      - key: full.design.document
+        value: 8
+        left: 26
+        right: 27
+        height: 4
+      - key: full.build.execute
+        value: 14
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 11
+        left: 17
+        right: 29
+        height: 2
+      - key: full.build.plan.evidence
+        value: 13
+        left: null
+        right: 24
+        height: 2
+      - key: full.build.plan
+        value: 12
+        left: 30
+        right: 31
+        height: 3
+      - key: full.design.document
+        value: 8
+        left: 32
+        right: 27
+        height: 4
+      - key: full.build.check
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 16
+        left: 34
+        right: 35
+        height: 2
+      - key: full.build.confirm
+        value: 11
+        left: 36
+        right: 29
+        height: 3
+      - key: full.build.plan
+        value: 12
+        left: 37
+        right: 31
+        height: 4
+      - key: full.design.document
+        value: 8
+        left: 38
+        right: 27
+        height: 5
+      - key: full.open.evidence
+        value: 5
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 17
+        left: null
+        right: 41
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 40
+        right: 42
+        height: 3
+      - key: full.open.confirm
+        value: 4
+        left: 20
+        right: 43
+        height: 4
+      - key: full.design.document
+        value: 8
+        left: 38
+        right: 44
+        height: 5
+      - key: full.verify.check
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 17
+        left: 46
+        right: 41
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 40
+        right: 47
+        height: 3
+      - key: full.open.confirm
+        value: 4
+        left: 20
+        right: 48
+        height: 4
+      - key: full.design.document
+        value: 8
+        left: 38
+        right: 49
+        height: 5
+      - key: full.build.check
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 21
+        left: 51
+        right: 35
+        height: 2
+      - key: full.build.confirm
+        value: 11
+        left: 52
+        right: 29
+        height: 3
+      - key: full.build.plan
+        value: 12
+        left: 53
+        right: 31
+        height: 4
+      - key: full.design.document
+        value: 8
+        left: 54
+        right: 49
+        height: 5
+      - key: full.verify.report.evidence
+        value: 22
+        left: 46
+        right: 41
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 40
+        right: 56
+        height: 3
+      - key: full.open.confirm
+        value: 4
+        left: 20
+        right: 57
+        height: 4
+      - key: full.design.document
+        value: 8
+        left: 54
+        right: 58
+        height: 5
+      - key: full.design.confirm
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 24
+        left: 60
+        right: 61
+        height: 2
+      - key: full.open.revalidate
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 27
+        left: null
+        right: 63
+        height: 2
+      - key: full.open.confirm
+        value: 26
+        left: 62
+        right: 64
+        height: 3
+      - key: full.design.confirm
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 29
+        left: 66
+        right: 67
+        height: 2
+      - key: full.design.handoff
+        value: 24
+        left: 68
+        right: 61
+        height: 3
+      - key: full.open.confirm
+        value: 26
+        left: 69
+        right: 64
+        height: 4
+      - key: full.build.configure
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 32
+        left: 71
+        right: 72
+        height: 2
+      - key: full.design.handoff
+        value: 24
+        left: 67
+        right: 61
+        height: 2
+      - key: full.design.document
+        value: 29
+        left: 73
+        right: 74
+        height: 3
+      - key: full.open.confirm
+        value: 26
+        left: 75
+        right: 64
+        height: 4
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: 77
+        right: 78
+        height: 2
+      - key: full.build.confirm
+        value: 32
+        left: 71
+        right: 79
+        height: 3
+      - key: full.open.confirm
+        value: 26
+        left: 74
+        right: 64
+        height: 3
+      - key: full.design.document
+        value: 29
+        left: 80
+        right: 81
+        height: 4
+      - key: full.build.execute
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 32
+        left: 71
+        right: 83
+        height: 2
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: 78
+        height: 2
+      - key: full.build.plan
+        value: 33
+        left: 84
+        right: 85
+        height: 3
+      - key: full.design.document
+        value: 29
+        left: 86
+        right: 81
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: 88
+        right: 89
+        height: 2
+      - key: full.build.confirm
+        value: 32
+        left: 90
+        right: 83
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 91
+        right: 85
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 92
+        right: 81
+        height: 5
+      - key: full.open.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: null
+        right: 95
+        height: 2
+      - key: full.open.revalidate
+        value: 28
+        left: 94
+        right: 96
+        height: 3
+      - key: full.open.confirm
+        value: 26
+        left: 74
+        right: 97
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 92
+        right: 98
+        height: 5
+      - key: full.verify.check
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: 100
+        right: 95
+        height: 2
+      - key: full.open.revalidate
+        value: 28
+        left: 94
+        right: 101
+        height: 3
+      - key: full.open.confirm
+        value: 26
+        left: 74
+        right: 102
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 92
+        right: 103
+        height: 5
+      - key: full.build.plan.evidence
+        value: 42
+        left: null
+        right: 78
+        height: 2
+      - key: full.build.plan
+        value: 41
+        left: 91
+        right: 105
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 106
+        right: 103
+        height: 5
+      - key: full.build.execute
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 32
+        left: 90
+        right: 108
+        height: 3
+      - key: full.build.plan
+        value: 41
+        left: 109
+        right: 105
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 110
+        right: 103
+        height: 5
+      - key: full.build.check
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 45
+        left: 112
+        right: 89
+        height: 2
+      - key: full.build.confirm
+        value: 32
+        left: 113
+        right: 108
+        height: 3
+      - key: full.build.plan
+        value: 41
+        left: 114
+        right: 105
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 115
+        right: 103
+        height: 5
+      - key: full.verify.run
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 46
+        left: 100
+        right: 117
+        height: 2
+      - key: full.open.revalidate
+        value: 28
+        left: 94
+        right: 118
+        height: 3
+      - key: full.open.confirm
+        value: 26
+        left: 74
+        right: 119
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 115
+        right: 120
+        height: 5
+      - key: full.open
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 49
+        left: 122
+        right: 123
+        height: 2
+      - key: full.open.revalidate
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 50
+        left: null
+        right: 125
+        height: 2
+      - key: full.open.confirm
+        value: 49
+        left: 122
+        right: 126
+        height: 3
+      - key: full.open
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 27
+        left: null
+        right: 125
+        height: 2
+      - key: full.open.confirm
+        value: 26
+        left: 128
+        right: 129
+        height: 3
+      - key: full.open.revalidate
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 27
+        left: null
+        right: 131
+        height: 2
+      - key: full.open.confirm
+        value: 26
+        left: 128
+        right: 132
+        height: 3
+      - key: full.open.evidence
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 48
+        left: null
+        right: 134
+        height: 2
+      - key: full.open
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 27
+        left: null
+        right: 137
+        height: 2
+      - key: full.open.confirm
+        value: 49
+        left: 136
+        right: 138
+        height: 3
+      - key: full.design.handoff
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 25
+        left: 140
+        right: null
+        height: 2
+      - key: full.open.revalidate
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 27
+        left: null
+        right: 142
+        height: 2
+      - key: full.open.confirm
+        value: 26
+        left: 141
+        right: 143
+        height: 3
+      - key: full.build.configure
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 23
+        left: 145
+        right: null
+        height: 2
+      - key: full.design.evidence
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 24
+        left: 147
+        right: 148
+        height: 2
+      - key: full.design.document
+        value: 29
+        left: 146
+        right: 149
+        height: 3
+      - key: full.open.confirm
+        value: 26
+        left: 150
+        right: 143
+        height: 4
+      - key: full.open
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 50
+        left: null
+        right: 154
+        height: 2
+      - key: full.open.confirm
+        value: 49
+        left: 153
+        right: 155
+        height: 3
+      - key: full.design.confirm
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 25
+        left: 158
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 29
+        left: 157
+        right: 159
+        height: 3
+      - key: full.open.revalidate
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 27
+        left: null
+        right: 161
+        height: 2
+      - key: full.open.confirm
+        value: 26
+        left: 160
+        right: 162
+        height: 4
+      - key: full.build.configure
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 23
+        left: 165
+        right: null
+        height: 2
+      - key: full.build.confirm
+        value: 32
+        left: 164
+        right: 166
+        height: 3
+      - key: full.design.evidence
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 24
+        left: 168
+        right: 169
+        height: 2
+      - key: full.open.confirm
+        value: 26
+        left: 170
+        right: 162
+        height: 3
+      - key: full.design.document
+        value: 29
+        left: 167
+        right: 171
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 31
+        left: 173
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 23
+        left: 176
+        right: null
+        height: 2
+      - key: full.build.plan
+        value: 33
+        left: 175
+        right: 177
+        height: 3
+      - key: full.build.confirm
+        value: 32
+        left: 174
+        right: 178
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 179
+        right: 171
+        height: 5
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: 181
+        right: 182
+        height: 2
+      - key: full.build.confirm
+        value: 32
+        left: 183
+        right: 178
+        height: 4
+      - key: full.open.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 28
+        left: 185
+        right: 186
+        height: 2
+      - key: full.open.confirm
+        value: 26
+        left: 170
+        right: 187
+        height: 3
+      - key: full.design.document
+        value: 29
+        left: 184
+        right: 188
+        height: 5
+      - key: full.build.plan
+        value: 41
+        left: 175
+        right: 177
+        height: 3
+      - key: full.build.confirm
+        value: 32
+        left: 183
+        right: 190
+        height: 4
+      - key: full.verify.check
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: 192
+        right: 193
+        height: 2
+      - key: full.open.revalidate
+        value: 28
+        left: 185
+        right: 194
+        height: 3
+      - key: full.open.confirm
+        value: 26
+        left: 170
+        right: 195
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 191
+        right: 196
+        height: 5
+      - key: full.build.check
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: 198
+        right: 182
+        height: 2
+      - key: full.build.execute
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 23
+        left: 201
+        right: null
+        height: 2
+      - key: full.build.plan
+        value: 41
+        left: 200
+        right: 202
+        height: 3
+      - key: full.build.confirm
+        value: 32
+        left: 199
+        right: 203
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 204
+        right: 196
+        height: 5
+      - key: full.build.check.evidence
+        value: 45
+        left: 198
+        right: 182
+        height: 2
+      - key: full.build.confirm
+        value: 32
+        left: 206
+        right: 203
+        height: 4
+      - key: full.verify.run
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: 192
+        right: 208
+        height: 2
+      - key: full.open.revalidate
+        value: 28
+        left: 185
+        right: 209
+        height: 3
+      - key: full.open.confirm
+        value: 26
+        left: 170
+        right: 210
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 207
+        right: 211
+        height: 5
+    maps:
+      - null
+      - 2
+      - 5
+      - 7
+      - 11
+      - 16
+      - 22
+      - 28
+      - 33
+      - 39
+      - 45
+      - 50
+      - 55
+      - 59
+      - 65
+      - 70
+      - 76
+      - 82
+      - 87
+      - 93
+      - 99
+      - 104
+      - 107
+      - 111
+      - 116
+      - 121
+      - 124
+      - 127
+      - 130
+      - 133
+      - 135
+      - 139
+      - 144
+      - 151
+      - 152
+      - 156
+      - 163
+      - 172
+      - 180
+      - 189
+      - 197
+      - 205
+      - 212
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "14"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "15"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "16"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:11
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:13
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:15
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:17
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:18
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:20
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:22
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:23
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:25
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:26
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:28
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:30
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:4
+          - results
+        map: 26
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:5
+          - results
+        map: 27
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:8
+          - results
+        map: 28
+      - path:
+          - actionContexts
+          - synapclaim-risk-fraud-dimensions:9
+          - results
+        map: 29
+      - path:
+          - outputs
+        map: 25
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 30
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 31
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 32
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 33
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 34
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 35
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 36
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 37
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 38
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 39
+      - path:
+          - evidenceWaits
+          - "6"
+          - results
+        map: 40
+      - path:
+          - evidenceWaits
+          - "7"
+          - results
+        map: 41
+      - path:
+          - evidenceWaits
+          - "8"
+          - results
+        map: 42
+  storageHash: 56dfaf0ac57a9a174cd200d2b8f93fda6fbf829fd1102a8bdd23763ed6a1de2f
+check_epoch: 5
