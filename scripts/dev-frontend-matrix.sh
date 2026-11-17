@@ -36,6 +36,7 @@ APPS=(
   bone-generator-app
   bone-commerce-app
   bone-claim-app
+  bone-procurement-app
 )
 
 # 从 app 自己的 vite.config.ts 读端口（唯一真源），读不到则跳过并报错。

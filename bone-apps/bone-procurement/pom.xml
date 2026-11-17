@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.bone</groupId>
+        <artifactId>bone-parent</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../../bone-parent/pom.xml</relativePath>
+    </parent>
+
+    <groupId>com.bone.procurement</groupId>
+    <artifactId>bone-procurement</artifactId>
+    <packaging>pom</packaging>
+    <name>bone-procurement</name>
+    <description>采购平台父聚合（procuraAI §4.2 / §8.1）：单应用多模块，按上下文平级扩展。</description>
+
+    <modules>
+        <module>bone-procurement-transaction</module>
+        <module>bone-procurement-app</module>
+    </modules>
+</project>

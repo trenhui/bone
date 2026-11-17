@@ -11,7 +11,6 @@ import {
   FileDoneOutlined,
   DatabaseOutlined,
   FieldTimeOutlined,
-  ShopOutlined
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -53,12 +52,6 @@ const menuGroups: MenuGroup[] = [
     items: [
       { key: 'template', label: '域模板', icon: <ClusterOutlined />, path: '/templates' },
       { key: 'reference', label: '参考数据', icon: <DatabaseOutlined />, path: '/reference-sets' }
-    ]
-  },
-  {
-    groupLabel: '采购治理',
-    items: [
-      { key: 'suppliers', label: '供应商治理', icon: <ShopOutlined />, path: '/suppliers' }
     ]
   }
 ];

@@ -21,5 +21,6 @@
         <module>bone-app-expense</module>
         <module>bone-app-purchase</module>
         <module>synap-claim</module>
+        <module>bone-procurement</module>
     </modules>
 </project>

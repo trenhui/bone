@@ -1,0 +1,33 @@
+server:
+  port: ${BONE_PROCUREMENT_PORT:8090}
+  max-http-request-header-size: 16KB
+
+spring:
+  application:
+    name: bone-procurement
+  datasource:
+    url: jdbc:mysql://${BONE_DB_HOST:localhost}:${BONE_DB_PORT:3306}/${BONE_DB_NAME:bone}?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
+    username: ${BONE_DB_USERNAME:root}
+    password: ${BONE_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      mode: never
+  jackson:
+    time-zone: UTC
+
+metadata:
+  sdk:
+    appcode: bone-procurement
+    deploymentMode: EMBEDDED
+
+bone:
+  procurement:
+    transaction:
+      enabled: ${BONE_PROCUREMENT_TRANSACTION_ENABLED:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

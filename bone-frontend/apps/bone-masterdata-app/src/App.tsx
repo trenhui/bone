@@ -15,7 +15,6 @@ import ReferenceDataManagement from './pages/ReferenceDataManagement';
 import DataStandardManagement from './pages/DataStandardManagement';
 import DataLineage from './pages/DataLineage';
 import DomainWorkbench from './pages/DomainWorkbench';
-import SupplierManagement from './pages/SupplierManagement';
 
 type MessageApi = ReturnType<typeof AntdApp.useApp>['message'];
 
@@ -60,8 +59,6 @@ const AppContent: React.FC = () => {
             {/* 平台能力 */}
             <Route path="/templates" element={<TemplateManagement />} />
             <Route path="/reference-sets" element={<ReferenceDataManagement />} />
-            {/* 采购治理 */}
-            <Route path="/suppliers" element={<SupplierManagement />} />
             <Route path="/" element={<Navigate to="/workbench" replace />} />
           </Routes>
         </Router>

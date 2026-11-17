@@ -78,8 +78,8 @@
   <text class="nm" x="470" y="279">commerce</text><text class="pt" x="624" y="279" text-anchor="end" fill="#0369A1">:3012</text>
   <rect class="card" x="652" y="258" width="184" height="32" rx="8"/>
   <text class="nm" x="666" y="279">claim</text><text class="pt" x="820" y="279" text-anchor="end" fill="#0369A1">:3013</text>
-  <rect class="dash" x="848" y="258" width="184" height="32" rx="8"/>
-  <text class="ds" x="940" y="279" text-anchor="middle">其余领域按需新增</text>
+  <rect class="card" x="848" y="258" width="184" height="32" rx="8"/>
+  <text class="nm" x="862" y="279">procurement</text><text class="pt" x="1016" y="279" text-anchor="end" fill="#0369A1">:3014</text>
 
   <line x1="540" y1="300" x2="540" y2="318" stroke="#94A3B8" stroke-width="2" marker-end="url(#tp-arrow)"/>
 
@@ -139,9 +139,10 @@
   <rect x="564" y="574" width="56" height="20" rx="6" fill="#DCFCE7"/><text class="pt" x="572" y="588" fill="#047857">:8087</text>
   <text class="ds" x="628" y="588">智能理赔域</text>
 
-  <rect class="dash" x="790" y="542" width="226" height="68" rx="11"/>
-  <text class="ds" x="806" y="566">notification / workflow</text>
-  <text class="ds" x="806" y="586">无独立进程 · 随宿主装配</text>
+  <rect class="card" x="790" y="542" width="226" height="68" rx="11"/>
+  <text class="nm" x="806" y="564">procurement</text>
+  <rect x="806" y="574" width="56" height="20" rx="6" fill="#DCFCE7"/><text class="pt" x="814" y="588" fill="#047857">:8090</text>
+  <text class="ds" x="870" y="588">采购交易域</text>
 
   <line x1="540" y1="622" x2="540" y2="640" stroke="#94A3B8" stroke-width="2" marker-end="url(#tp-arrow)"/>
 
