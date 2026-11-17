@@ -1,3 +1,9 @@
+---
+comet_change: synapclaim-risk-fraud-dimensions
+role: technical-design
+canonical_spec: openspec
+---
+
 # Design: synapclaim-risk-fraud-dimensions
 
 ## 架构决策
