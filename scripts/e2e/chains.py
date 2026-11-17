@@ -826,7 +826,11 @@ def gate():
                     found.add(p)
     missing = []
     # 已知的内部 RPC 面：服务间调用，故意不暴露到网关南北向入口
-    internal_rpc = {"/api/rpc/orders"}
+    # /api/v1/internal：synap-claim §10.2 契约明确定义的「内部接口」（编排层/运维工具调用的
+    #   试算/重算/回归/决策触发/对账查询），非端侧业务面；ClaimInternalOpsController 类注释
+    #   亦标注「非端侧业务面」。属内部治理面，不应登记进网关南北向入口（登记反而扩大攻击面）。
+    #   移除判据：若该前缀被前端/外部系统调用而需要经网关暴露，则必须改走登记而非留在本表。
+    internal_rpc = {"/api/rpc/orders", "/api/v1/internal"}
     # 无南北向入口的模块：Controller 存在，但所属模块**不具备可独立监听的 HTTP 入口**，
     # 因此「登记进 bone-gateway」在当前架构下无对象可指（登记即制造 503 死路由）。
     # 每一条都必须写明确证依据，并给出「何时该从本表移除」的判据——否则就是放水。
