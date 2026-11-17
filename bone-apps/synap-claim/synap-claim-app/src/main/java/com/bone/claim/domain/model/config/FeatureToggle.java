@@ -64,6 +64,13 @@ public class FeatureToggle extends TenantAbstractEntity<Long> {
    */
   public static final String FEATURE_INSPECTION_ACTION = "INSPECTION_ACTION";
 
+  /**
+   * 审核疲劳防控特性键（config_json 由 {@code ReviewFatigueConfig} 唯一解析）。
+   *
+   * <p>无记录 / 未开启 / 非法配置一律回落基线，不会把「查不到」当成「不受限」。
+   */
+  public static final String FEATURE_REVIEW_FATIGUE_GUARD = "REVIEW_FATIGUE_GUARD";
+
   public static final String STATE_ENABLED = "ENABLED";
   public static final String STATE_DISABLED = "DISABLED";
 

@@ -127,7 +127,8 @@
         "scripts/e2e/claim-full-chain-e2e.mjs",
         "scripts/e2e/claim-fee-category-e2e.mjs",
         "scripts/e2e/synap-claim-independent-re-review-e2e.py",
-        "scripts/e2e/synap-claim-inspection-handoff-e2e.py"
+        "scripts/e2e/synap-claim-inspection-handoff-e2e.py",
+        "scripts/e2e/synap-claim-review-fatigue-e2e.py"
       ]
     },
     "purchase-expense": {
@@ -277,6 +278,10 @@
         },
         {
           "path": "scripts/e2e/synap-claim-inspection-handoff-e2e.py",
+          "exists": true
+        },
+        {
+          "path": "scripts/e2e/synap-claim-review-fatigue-e2e.py",
           "exists": true
         }
       ],

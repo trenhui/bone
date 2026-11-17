@@ -18,6 +18,7 @@ import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.config.FeatureToggle;
+import com.bone.claim.domain.model.config.ReviewFatigueConfig;
 import com.bone.claim.domain.model.task.AssignReason;
 import com.bone.claim.domain.model.task.AssigneeType;
 import com.bone.claim.domain.model.task.ClaimAssignRule;
@@ -35,6 +36,7 @@ import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -92,6 +94,10 @@ class ClaimTaskApplicationServiceTest {
     lenient()
         .when(taskRepository.findActiveByClaimAndType(anyLong(), anyString()))
         .thenReturn(null);
+    // 疲劳闸门默认基线：既有用例的分配行为不因新闸门改变（正向钉子）。
+    lenient()
+        .when(toggleService.reviewFatigueConfig(TENANT))
+        .thenReturn(ReviewFatigueConfig.defaults());
   }
 
   private static ClaimAssignRule rule(long id, String assigneeId) {
@@ -257,6 +263,66 @@ class ClaimTaskApplicationServiceTest {
     // 两处实参一旦漂移（例如 count 少一个过滤条件），架构门禁的 paging-same-source 判据会先判红。
     verify(taskRepository).findMyTasks(eq(TENANT), eq("u-9"), isNull(), anyInt(), anyInt());
     verify(taskRepository, times(1)).countMyTasks(eq(TENANT), eq("u-9"), isNull());
+  }
+
+  // ===== 审核疲劳：超量候选不可用 / 异常 fail-closed =====
+
+  private void assignableRule() {
+    when(toggleService.isFeatureAllowed(TENANT, true, FeatureToggle.FEATURE_AUTO_ASSIGN))
+        .thenReturn(true);
+    when(ruleRepository.findCandidateRules(TaskType.INITIAL_REVIEW.name()))
+        .thenReturn(List.of(rule(7L, "u-7")));
+    when(eligibility.isEligible(AssigneeType.USER, "u-7")).thenReturn(true);
+  }
+
+  private static ReviewFatigueConfig fatigueMax(int max) {
+    return new ReviewFatigueConfig(max, 120, 30, 10000L, Map.of());
+  }
+
+  @Test
+  @DisplayName("超量复核人不被选中：达到上限即入池，收单不失败")
+  void openForClaim_fatigueOverLimit_poolsTask() {
+    assignableRule();
+    when(toggleService.reviewFatigueConfig(TENANT)).thenReturn(fatigueMax(1));
+    when(taskRepository.countFinishedTodayByAssignee(eq(TENANT), eq("u-7"), any(Instant.class)))
+        .thenReturn(1L);
+
+    service.openForClaim(CLAIM_ID, TaskType.INITIAL_REVIEW);
+
+    ClaimTask saved = capturedTask();
+    assertThat(saved.getStatus()).isEqualTo(ClaimTaskStatus.PENDING_CLAIM.name());
+    assertThat(saved.getAssigneeId()).isNull();
+    assertThat(saved.getAssignReason()).isEqualTo(AssignReason.ALL_INELIGIBLE.name());
+  }
+
+  @Test
+  @DisplayName("计数异常：候选按不可用入池，异常不外溢到收单链")
+  void openForClaim_fatigueCountFailure_poolsTask() {
+    assignableRule();
+    when(toggleService.reviewFatigueConfig(TENANT)).thenReturn(fatigueMax(1));
+    when(taskRepository.countFinishedTodayByAssignee(eq(TENANT), eq("u-7"), any(Instant.class)))
+        .thenThrow(new IllegalStateException("DB down"));
+
+    service.openForClaim(CLAIM_ID, TaskType.INITIAL_REVIEW);
+
+    ClaimTask saved = capturedTask();
+    assertThat(saved.getStatus()).isEqualTo(ClaimTaskStatus.PENDING_CLAIM.name());
+    assertThat(saved.getAssignReason()).isEqualTo(AssignReason.ALL_INELIGIBLE.name());
+  }
+
+  @Test
+  @DisplayName("未超量：既有规则命中行为逐位不变")
+  void openForClaim_belowFatigueLimit_stillAssigns() {
+    assignableRule();
+    when(toggleService.reviewFatigueConfig(TENANT)).thenReturn(fatigueMax(2));
+    when(taskRepository.countFinishedTodayByAssignee(eq(TENANT), eq("u-7"), any(Instant.class)))
+        .thenReturn(1L);
+
+    service.openForClaim(CLAIM_ID, TaskType.INITIAL_REVIEW);
+
+    ClaimTask saved = capturedTask();
+    assertThat(saved.getStatus()).isEqualTo(ClaimTaskStatus.ASSIGNED.name());
+    assertThat(saved.getAssigneeId()).isEqualTo("u-7");
   }
 
   private static ClaimTask poolTask() {

@@ -6,6 +6,7 @@ import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.common.PageBounds;
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.config.FeatureToggle;
+import com.bone.claim.domain.model.config.ReviewFatigueConfig;
 import com.bone.claim.domain.model.task.AssignReason;
 import com.bone.claim.domain.model.task.AssignmentDecision;
 import com.bone.claim.domain.model.task.ClaimAssignRule;
@@ -17,6 +18,7 @@ import com.bone.claim.domain.port.out.AssigneeEligibilityPort;
 import com.bone.claim.domain.repository.ClaimAssignRuleRepository;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.ClaimTaskRepository;
+import com.bone.claim.domain.service.FatigueAwareEligibilityPort;
 import com.bone.claim.domain.service.TaskAssigner;
 import com.bone.core.exception.DomainException;
 import com.bone.core.model.PageResult;
@@ -203,7 +205,38 @@ public class ClaimTaskApplicationService {
     }
     List<ClaimAssignRule> rules =
         claimAssignRuleRepository.findCandidateRules(ctx.taskType().name());
-    return TaskAssigner.decide(ctx, rules, assigneeEligibilityPort);
+    ReviewFatigueConfig config = featureTenantToggleService.reviewFatigueConfig(tenantId);
+    if (config == null) {
+      config = ReviewFatigueConfig.defaults();
+    }
+    Instant dayStart = utcDayStart(Instant.now());
+    AssigneeEligibilityPort guarded =
+        new FatigueAwareEligibilityPort(
+            assigneeEligibilityPort,
+            config,
+            assigneeId -> {
+              try {
+                return claimTaskRepository.countFinishedTodayByAssignee(
+                    tenantId, assigneeId, dayStart);
+              } catch (RuntimeException e) {
+                // 计数不可用 ⇒ 候选不可用。绝不外溢异常把收单链拖挂，也不把未知状态当可用。
+                log.warn(
+                    "[FATIGUE_GUARD] 完成量取数失败，候选按不可用处理：tenantId={}, assigneeId={}, err={}",
+                    tenantId,
+                    assigneeId,
+                    e.getMessage());
+                return -1L;
+              }
+            });
+    return TaskAssigner.decide(ctx, rules, guarded);
+  }
+
+  /** UTC 当日零点（与仓储/评估端点同一口径，避免按服务器时区漂移出「两班次」）。 */
+  static Instant utcDayStart(Instant now) {
+    return now.atZone(java.time.ZoneOffset.UTC)
+        .toLocalDate()
+        .atStartOfDay(java.time.ZoneOffset.UTC)
+        .toInstant();
   }
 
   private static MyTaskRow toRow(ClaimTask t) {

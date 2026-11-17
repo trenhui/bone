@@ -2,6 +2,7 @@ package com.bone.claim.application;
 
 import com.bone.claim.application.port.out.TriageLimitsPort;
 import com.bone.claim.domain.model.config.FeatureToggle;
+import com.bone.claim.domain.model.config.ReviewFatigueConfig;
 import com.bone.claim.domain.model.decision.TriageLimits;
 import com.bone.claim.domain.model.inspection.InspectionConfig;
 import com.bone.claim.domain.repository.FeatureToggleRepository;
@@ -195,5 +196,45 @@ public class FeatureTenantToggleService implements TriageLimitsPort {
     }
     warnOnUnsupportedState(toggle, tenantId, FeatureToggle.FEATURE_INSPECTION_ACTION);
     return toggle.isOn(tenantId);
+  }
+
+  /**
+   * 审核疲劳防控参数（无记录 / 关闭 / 非法 JSON 一律回落代码基线）。
+   *
+   * <p>不复用 {@link #isFeatureAllowed}：后者在「无记录」时继承全局开启；而这里是真实约束分配准入的闸门， 必须由 {@code
+   * REVIEW_FATIGUE_GUARD} 显式开启才生效。解析委托给 {@link ReviewFatigueConfig#from}， 拒绝项由评估结果上屏，避免「配了不生效」无人知晓。
+   */
+  public ReviewFatigueConfig reviewFatigueConfig(long tenantId) {
+    if (featureToggleRepository == null) {
+      return ReviewFatigueConfig.defaults();
+    }
+    FeatureToggle toggle =
+        featureToggleRepository.findByFeatureKey(
+            tenantId, FeatureToggle.FEATURE_REVIEW_FATIGUE_GUARD);
+    if (toggle == null || !toggle.isOn(tenantId)) {
+      return ReviewFatigueConfig.defaults();
+    }
+    warnOnUnsupportedState(toggle, tenantId, FeatureToggle.FEATURE_REVIEW_FATIGUE_GUARD);
+    String raw = toggle.getConfigJson();
+    if (raw == null || raw.isBlank()) {
+      return ReviewFatigueConfig.defaults();
+    }
+    try {
+      Map<String, Object> parsed =
+          objectMapper.readValue(raw, new TypeReference<Map<String, Object>>() {});
+      ReviewFatigueConfig cfg = ReviewFatigueConfig.from(parsed);
+      if (!cfg.fullyApplied()) {
+        log.warn("[审核疲劳配置] 部分配置未生效，已回落基线：tenantId={}, rejected={}", tenantId, cfg.rejected());
+      }
+      return cfg;
+    } catch (Exception e) {
+      log.warn("[审核疲劳配置] config_json 解析失败，回落基线：tenantId={}, err={}", tenantId, e.getMessage());
+      return new ReviewFatigueConfig(
+          ReviewFatigueConfig.DEFAULT_MAX_PER_SHIFT,
+          ReviewFatigueConfig.DEFAULT_REST_PROMPT_MINUTES,
+          ReviewFatigueConfig.DEFAULT_SHIFT_END_EXCLUSION_MINUTES,
+          ReviewFatigueConfig.DEFAULT_SENSITIVE_AMOUNT_YUAN,
+          Map.of(JSON_SENTINEL, "不是合法的 JSON 对象（" + e.getMessage() + "）；已回落代码基线"));
+    }
   }
 }

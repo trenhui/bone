@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import com.bone.claim.domain.model.config.FeatureToggle;
+import com.bone.claim.domain.model.config.ReviewFatigueConfig;
 import com.bone.claim.domain.model.decision.DecisionResult;
 import com.bone.claim.domain.model.decision.DecisionTriage;
 import com.bone.claim.domain.model.decision.TriageLimits;
@@ -199,5 +200,66 @@ class FeatureTenantToggleServiceTest {
   @DisplayName("4.3 全局总开关关闭 ⇒ 一律关闭（最终裁决）")
   void inspectionActionGlobalOffWins() {
     assertThat(service.isInspectionActionEnabled(TENANT, false)).isFalse();
+  }
+
+  // ===== 审核疲劳防控 · 配置消费 fail-closed =====
+
+  private FeatureToggle fatigueToggle(String state, String configJson) {
+    return FeatureToggle.create(
+        TENANT,
+        FeatureToggle.FEATURE_REVIEW_FATIGUE_GUARD,
+        state,
+        100,
+        "",
+        configJson,
+        Instant.now());
+  }
+
+  @Test
+  @DisplayName("审核疲劳：无记录 / 关闭均回落基线")
+  void fatigueAbsentOrDisabledUsesDefaults() {
+    when(repository.findByFeatureKey(TENANT, FeatureToggle.FEATURE_REVIEW_FATIGUE_GUARD))
+        .thenReturn(null);
+    assertThat(service.reviewFatigueConfig(TENANT)).isEqualTo(ReviewFatigueConfig.defaults());
+
+    when(repository.findByFeatureKey(TENANT, FeatureToggle.FEATURE_REVIEW_FATIGUE_GUARD))
+        .thenReturn(fatigueToggle(FeatureToggle.STATE_DISABLED, "{\"maxPerShift\":1}"));
+    assertThat(service.reviewFatigueConfig(TENANT)).isEqualTo(ReviewFatigueConfig.defaults());
+  }
+
+  @Test
+  @DisplayName("审核疲劳：合法配置生效")
+  void fatigueValidConfigApplies() {
+    when(repository.findByFeatureKey(TENANT, FeatureToggle.FEATURE_REVIEW_FATIGUE_GUARD))
+        .thenReturn(
+            fatigueToggle(
+                FeatureToggle.STATE_ENABLED,
+                "{\"maxPerShift\":5,\"restPromptMinutes\":90,"
+                    + "\"shiftEndExclusionMinutes\":45,\"sensitiveAmountYuan\":20000}"));
+    ReviewFatigueConfig cfg = service.reviewFatigueConfig(TENANT);
+    assertThat(cfg.maxPerShift()).isEqualTo(5);
+    assertThat(cfg.restPromptMinutes()).isEqualTo(90);
+    assertThat(cfg.fullyApplied()).isTrue();
+  }
+
+  @Test
+  @DisplayName("审核疲劳：非法 JSON 不抛异常，回落基线且登记 $json")
+  void fatigueBrokenJsonFallsBack() {
+    when(repository.findByFeatureKey(TENANT, FeatureToggle.FEATURE_REVIEW_FATIGUE_GUARD))
+        .thenReturn(fatigueToggle(FeatureToggle.STATE_ENABLED, "{oops"));
+    ReviewFatigueConfig cfg = service.reviewFatigueConfig(TENANT);
+    assertThat(cfg.maxPerShift()).isEqualTo(ReviewFatigueConfig.DEFAULT_MAX_PER_SHIFT);
+    assertThat(cfg.restPromptMinutes()).isEqualTo(ReviewFatigueConfig.DEFAULT_REST_PROMPT_MINUTES);
+    assertThat(cfg.rejected()).containsKey(FeatureTenantToggleService.JSON_SENTINEL);
+  }
+
+  @Test
+  @DisplayName("审核疲劳：越界字段按字段回落并登记，不静默生效")
+  void fatigueInvalidFieldRejected() {
+    when(repository.findByFeatureKey(TENANT, FeatureToggle.FEATURE_REVIEW_FATIGUE_GUARD))
+        .thenReturn(fatigueToggle(FeatureToggle.STATE_ENABLED, "{\"maxPerShift\":0}"));
+    ReviewFatigueConfig cfg = service.reviewFatigueConfig(TENANT);
+    assertThat(cfg.maxPerShift()).isEqualTo(ReviewFatigueConfig.DEFAULT_MAX_PER_SHIFT);
+    assertThat(cfg.rejected()).containsKey("maxPerShift");
   }
 }

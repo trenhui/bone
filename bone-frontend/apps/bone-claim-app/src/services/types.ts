@@ -391,6 +391,22 @@ export interface ReviewTaskDecisionReq {
  */
 export type ApiResult<T> = ApiResponse<T>;
 
+/** 审核疲劳评估：只读 soft prompt，不阻断人工终审。 */
+export interface ReviewFatigueConfig {
+  maxPerShift: number;
+  restPromptMinutes: number;
+  shiftEndExclusionMinutes: number;
+  sensitiveAmountYuan: number;
+  rejected: Record<string, string>;
+}
+
+export interface ReviewFatigueEvaluation {
+  overloaded: boolean;
+  restPrompt: boolean;
+  sensitiveEligible: boolean;
+  config: ReviewFatigueConfig;
+}
+
 /** 抽检比例上屏（批 4 任务 4.1）：当前生效比例 + 未生效配置说明。 */
 export interface SamplingConfig {
   samplingRatePercent: number;

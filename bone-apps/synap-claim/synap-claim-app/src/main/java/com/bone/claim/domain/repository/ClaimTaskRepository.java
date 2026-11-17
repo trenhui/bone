@@ -7,6 +7,7 @@ import com.bone.metadata.sdk.domain.annotation.Param;
 import com.bone.metadata.sdk.domain.annotation.TenantScope;
 import com.bone.metadata.sdk.domain.annotation.TenantScopeMode;
 import com.bone.metadata.sdk.query.criteria.Criteria;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -67,6 +68,25 @@ public interface ClaimTaskRepository extends Repository<ClaimTask, Long> {
   /** 我的待办总数（与 {@link #findMyTasks} 同源：同一 {@link #myTaskCriteria}）。 */
   default long countMyTasks(Long tenantId, String assigneeId, String status) {
     return countByCriteria(myTaskCriteria(tenantId, assigneeId, status));
+  }
+
+  /**
+   * 某复核人当日完成量（审核疲劳闸门唯一事实源）。
+   *
+   * <p>只认库内 {@code finished_at} 事实：显式带租户、assignee、{@code DONE} 与 UTC 当日零点下界；
+   * <b>不接受客户端声明的完成数</b>，也不新增 SQL 模板 / 迁移——列已存在。入参不全时返回 0， 调用方仍需通过形态判定拒绝空
+   * assignee，绝不把「查不到」当成「可用」的事实。
+   */
+  default long countFinishedTodayByAssignee(Long tenantId, String assigneeId, Instant dayStart) {
+    if (tenantId == null || assigneeId == null || assigneeId.isBlank() || dayStart == null) {
+      return 0L;
+    }
+    return countByCriteria(
+        Criteria.<ClaimTask>create()
+            .eq(ClaimTask::getTenantId, tenantId)
+            .eq(ClaimTask::getAssigneeId, assigneeId)
+            .eq(ClaimTask::getStatus, ClaimTaskStatus.DONE.name())
+            .gte(ClaimTask::getFinishedAt, dayStart));
   }
 
   /**

@@ -1,0 +1,2198 @@
+# comet-execution: managed-run
+change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+workflow: full
+language: zh-CN
+phase: verify
+context_compression: off
+build_mode: executing-plans
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: thorough
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+design_doc: openspec/changes/synapclaim-review-fatigue-controls/design.md
+plan: docs/superpowers/plans/2026-11-17-synapclaim-review-fatigue-controls.md
+verify_result: pending
+verify_failures: 0
+verification_report: null
+branch_status: pending
+created_at: 2026-11-17
+verified_at: null
+archive_confirmation: null
+archived: false
+bound_branch: dev
+check_epoch: 3
+direct_override: false
+handoff_context: openspec/changes/synapclaim-review-fatigue-controls/.comet/handoff/design-context.json
+handoff_hash: cbf8a76de2110d4133da063c95a63471914ad6ecb35d8dec5a2c1398c815babc
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: e07b84acc9f9f352e9cf054ea81178512f87bcffd0242cb762f7e339159ec042
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: synapclaim-review-fatigue-controls
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: e9067434fd07e8b70a57bf8a04aabb8106fcd9d7b192bb504d2c0614d71cda32
+    input:
+      change: synapclaim-review-fatigue-controls
+      changeDir: openspec/changes/synapclaim-review-fatigue-controls
+      recoverySource: |
+        # comet-execution: managed-run
+        change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+        workflow: full
+        language: zh-CN
+        phase: open
+        context_compression: off
+        build_mode: null
+        build_pause: null
+        subagent_dispatch: null
+        tdd_mode: null
+        review_mode: off
+        isolation: current
+        verify_mode: null
+        auto_transition: true
+        base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+        design_doc: null
+        plan: null
+        verify_result: pending
+        verify_failures: 0
+        verification_report: null
+        branch_status: pending
+        created_at: 2026-11-17
+        verified_at: null
+        archive_confirmation: null
+        archived: false
+        bound_branch: dev
+      recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+    state:
+      archiveConfirmation: null
+      archived: false
+      autoTransition: true
+      baseRef: 7dcae54d0ca37bb1191707c543d122467e229d26
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: executing-plans
+      buildPause: null
+      checkEpoch: 3
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-17
+      designDoc: openspec/changes/synapclaim-review-fatigue-controls/design.md
+      directOverride: false
+      handoffContext: openspec/changes/synapclaim-review-fatigue-controls/.comet/handoff/design-context.json
+      handoffHash: cbf8a76de2110d4133da063c95a63471914ad6ecb35d8dec5a2c1398c815babc
+      isolation: current
+      language: zh-CN
+      phase: verify
+      plan: docs/superpowers/plans/2026-11-17-synapclaim-review-fatigue-controls.md
+      reviewMode: thorough
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: null
+      verifiedAt: null
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pending
+      workflow: full
+    status: running
+    sequence: 16
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-68e0c3580d38943a91f2a96ba5dd3dc6076a22c8493036591760b9c34b3d6966
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-review-fatigue-controls:1
+        input:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs: {}
+        inputHash: f6a54a15a23beaf5bd0dee3e160dc1e63b612075e16c22c34d13733e16e3106d
+        outcome:
+          actionId: synapclaim-review-fatigue-controls:1
+          attempt: 1
+          claimToken: portable-68e0c3580d38943a91f2a96ba5dd3dc6076a22c8493036591760b9c34b3d6966
+          inputHash: f6a54a15a23beaf5bd0dee3e160dc1e63b612075e16c22c34d13733e16e3106d
+          outcomeId: 22e19116-273d-469b-8c03-0b578c41e38c
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: cbf670f49f99f57370c85003e0f842d83b43b5ae9b3697364e3194bf158e34f2
+            outcomeId: 22e19116-273d-469b-8c03-0b578c41e38c
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-review-fatigue-controls
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-dc5bc5cb41f7e146e256a95743ac8ef05fd35634401c2392a2759182d376f4b8
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-review-fatigue-controls:4
+        input:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs: {}
+        inputHash: 30a39d0a2a43f781fc32e94af4eb3df6f19b1cffb635c8e16291ed6887bc9773
+        outcome:
+          actionId: synapclaim-review-fatigue-controls:4
+          attempt: 2
+          claimToken: portable-dc5bc5cb41f7e146e256a95743ac8ef05fd35634401c2392a2759182d376f4b8
+          inputHash: 30a39d0a2a43f781fc32e94af4eb3df6f19b1cffb635c8e16291ed6887bc9773
+          outcomeId: synapclaim-review-fatigue-controls:4:2:executor-result
+          output:
+            contentHash: 84849c3dd27520e173d927711f132cecabc3a87808b412bfb69306201db7be9d
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4ba95bd63b14ac31b919f1e94dc46e4456ee930fcc3219535b86f7f7689211c9
+            outcomeId: synapclaim-review-fatigue-controls:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 只读恢复检查显示 full.open.revalidate :4 的
+                command=null、record.status=missing、receiptRef=null、manifestRef=null，且
+                Guard 调用在创建该动作后即以 CLASSIC_COMMAND_FAILED/BLOCKED 退出，没有任何
+                revalidate 执行产物；原尝试完全未执行。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-review-fatigue-controls
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-52e9e50885ed0fb1a79c04ee97eea6beb8082feb474b430add2853a4e5b48d28
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-review-fatigue-controls:5
+        input:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs: {}
+        inputHash: f0654e313e9d5561631ec0c60fc12014061068da3ffbbf7960536c2499a5735b
+        outcome:
+          actionId: synapclaim-review-fatigue-controls:5
+          attempt: 2
+          claimToken: portable-52e9e50885ed0fb1a79c04ee97eea6beb8082feb474b430add2853a4e5b48d28
+          inputHash: f0654e313e9d5561631ec0c60fc12014061068da3ffbbf7960536c2499a5735b
+          outcomeId: d68e42b5-1d25-4d8b-93a9-801817aece9d
+          output:
+            handoffContext: openspec/changes/synapclaim-review-fatigue-controls/.comet/handoff/design-context.json
+            handoffHash: cbf8a76de2110d4133da063c95a63471914ad6ecb35d8dec5a2c1398c815babc
+            proposal: 【方案 A 推荐】沿用既有「domain 纯判据 + application 取数/读配置 + adapter 形态准入」三段式：新增
+              ReviewFatigueConfig 作为 REVIEW_FATIGUE_GUARD.config_json
+              唯一解析真源（maxPerShift=120、restPromptMinutes=120、shiftEndExclusionMinutes=30、sensitiveAmountYuan=10000，越界/非法/未知键回落基线并登记
+              rejected）；Application 按
+              tenant+assignee+status=DONE+finished_at>=UTC 当日零点统计完成量，达到上限的 USER
+              候选由 FatigueAwareEligibilityPort 判不可用，TaskAssigner 既有
+              ALL_INELIGIBLE→入池回落形成超量自动转派；新增只读 GET
+              /review/fatigue-guard/evaluation
+              返回超量/休息提示/敏感案件资格，不写库、不改案件状态。关键取舍：零 DDL、不新增 SQL
+              模板、不碰金额/拒赔/支付；班末硬排除因缺可信服务端班次事实源只做 soft prompt，如实登记
+              gap，不宣称已实现；主管抽检不再重复实现（前批已落地）。测试策略：配置解析正/反向、当日计数口径、超量回落入池、计数异常
+              fail-closed、端点契约与前端 typecheck；定向单测 + synap-claim-app 全量 + check.sh
+              59/59。【方案 B 不采用】新建独立疲劳服务/表：需新 DDL 与跨服务一致性，当前不可证伪且超出零 DDL 边界。【方案 C
+              不采用】只做前端静态文案：属于“配了不生效”，无法回池转派，违反联调证据要求。【Spec Patch】新增
+              claim/review-fatigue capability（soft prompt 评估），修改
+              claim/task-assignment 的候选准入判据；不改变资金/拒赔公开验收。
+            requirementsEvidence:
+              contentHash: 6991249a2392176ed842d28ecf2e688952d72a10b51119cc6b6a797168a9e816
+              ref: openspec/changes/synapclaim-review-fatigue-controls
+            sourceEvidence:
+              contentHash: 21fb7a6959f1f6d85a294cc6ac690b8c6d0c2c01626ad069eebfcca53f1c45b6
+              ref: openspec/changes/synapclaim-review-fatigue-controls
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 00572a933ebb6ecf555283ae9b904719e7143834ef7135e9a3d0e85a0731e917
+            outcomeId: d68e42b5-1d25-4d8b-93a9-801817aece9d
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: propose-design 在写 Runtime 锁时超时，尚未产生 proposal record 或 handoff；只读恢复显示
+                command=null、record.status=missing、receiptRef=null、manifestRef=null，原尝试完全未执行。
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-review-fatigue-controls
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-ed72e2a46eecb3e7bc44556dd82ef33aa373053d3dfb8c801a8e960713775a7e
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-review-fatigue-controls:7
+        input:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs: {}
+        inputHash: f1fbc9edd14ffa5932406bf53721297ad100b815d4157015407de496e408af2c
+        outcome:
+          actionId: synapclaim-review-fatigue-controls:7
+          attempt: 1
+          claimToken: portable-ed72e2a46eecb3e7bc44556dd82ef33aa373053d3dfb8c801a8e960713775a7e
+          inputHash: f1fbc9edd14ffa5932406bf53721297ad100b815d4157015407de496e408af2c
+          outcomeId: cf1e8a95-bf73-407f-b3b9-b56997a4a94d
+          output:
+            designDoc: openspec/changes/synapclaim-review-fatigue-controls/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c9d03b3613173ab15ea0090b6bcae4121bed48cf4a833c91a165b106c218e341
+            outcomeId: cf1e8a95-bf73-407f-b3b9-b56997a4a94d
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-review-fatigue-controls
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-3ac631862a3ceed09178d4ebc71f5807a99af4504ed39c53c5e8649fe1ff5a9f
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-review-fatigue-controls:9
+        input:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs: {}
+        inputHash: d07cbff091d4a272c7a52c05fb250a5efb97d7dc1cf49e203f0645dd36119729
+        outcome:
+          actionId: synapclaim-review-fatigue-controls:9
+          attempt: 1
+          claimToken: portable-3ac631862a3ceed09178d4ebc71f5807a99af4504ed39c53c5e8649fe1ff5a9f
+          inputHash: d07cbff091d4a272c7a52c05fb250a5efb97d7dc1cf49e203f0645dd36119729
+          outcomeId: d8c05f64-a38d-4487-b50c-dfb9d77116b4
+          output:
+            boundBranch: dev
+            buildMode: executing-plans
+            directOverride: false
+            isolation: current
+            reviewMode: thorough
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: e0d8faea4ffb725ae09d6a1996f76ad0081eafff08c8d3a2c9833ee85da98dd0
+            outcomeId: d8c05f64-a38d-4487-b50c-dfb9d77116b4
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-review-fatigue-controls
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-b2b864a80abdf6c0942e8236bb7306f8092e3eb86052237a25a18de9d5607080
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-review-fatigue-controls:11
+        input:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs: {}
+        inputHash: 9206cd3d5453e7622dae51b586363cd80077ff57bf96ba31067712bb046eea86
+        outcome:
+          actionId: synapclaim-review-fatigue-controls:11
+          attempt: 1
+          claimToken: portable-b2b864a80abdf6c0942e8236bb7306f8092e3eb86052237a25a18de9d5607080
+          inputHash: 9206cd3d5453e7622dae51b586363cd80077ff57bf96ba31067712bb046eea86
+          outcomeId: 69079b26-bb79-458a-a092-7fc6f03f75a0
+          output:
+            designEvidence:
+              contentHash: b346689f1a3c5e79bb5fdec85da02555b76323907165900d19fb7539d5890528
+              ref: openspec/changes/synapclaim-review-fatigue-controls/design.md
+            plan: docs/superpowers/plans/2026-11-17-synapclaim-review-fatigue-controls.md
+            planEvidence:
+              contentHash: 73e8efaa3451bf8210af52e984ed5a938f14cb27594af24ac12d38a5b6bc3200
+              ref: docs/superpowers/plans/2026-11-17-synapclaim-review-fatigue-controls.md
+            taskRevision: d0f5959f349828df85474a3c060ca1789261dbc3f0f10b1fa1931f46ecf2271b
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 93701d6511d45858aa09e21125979545635b8fa0e11b6d60ab8d0ecf4d4e6850
+            outcomeId: 69079b26-bb79-458a-a092-7fc6f03f75a0
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-review-fatigue-controls
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-review-fatigue-controls:13/1
+          token: portable-58819521b3ee6789dc0d319e25da97f0daf05699efae5bfc0c09d6f9f077c650
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-review-fatigue-controls:13
+        input:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs: {}
+        inputHash: b94a4ae464367a8b9af05a9510acf3290ea0655b93cea9ef9378d6fd8e838f6f
+        outcome:
+          actionId: synapclaim-review-fatigue-controls:13
+          attempt: 1
+          claimToken: portable-58819521b3ee6789dc0d319e25da97f0daf05699efae5bfc0c09d6f9f077c650
+          inputHash: b94a4ae464367a8b9af05a9510acf3290ea0655b93cea9ef9378d6fd8e838f6f
+          outcomeId: 4bbe6403-35a0-495e-a511-f8fc33029092
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 41f71139df98b4968ac3dc2782a62ed1c155abb60723a7fee931c6059bebbb59
+            outcomeId: 4bbe6403-35a0-495e-a511-f8fc33029092
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-review-fatigue-controls
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-a8a7648925bc8f260b6bb077b31d8e87e474d6d806b1211cdef0a243a2dca893
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-review-fatigue-controls:14
+        input:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs: {}
+        inputHash: 5e75830110b6bf045e566a0721eb8d825041e03ce5846e425e4461d9bc0c25c4
+        outcome:
+          actionId: synapclaim-review-fatigue-controls:14
+          attempt: 2
+          claimToken: portable-a8a7648925bc8f260b6bb077b31d8e87e474d6d806b1211cdef0a243a2dca893
+          inputHash: 5e75830110b6bf045e566a0721eb8d825041e03ce5846e425e4461d9bc0c25c4
+          outcomeId: 227df886-a24b-47cb-a4d4-1bb2d961ef06
+          output:
+            argv:
+              - ./scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 0c99aad88a917daf712cf624e8bc36e733c3899cb87f7d55fb756cca4518d6b1
+            cwd: .worktrees/_dev-merge-tmp
+            environment: 91659d9de69d481977e596282e98dcd600b70acc554bb99440bfc2dbad666193
+            exitCode: 0
+            inputAfter: 5889bd197d6553f6448f789a9b58c1d72cbcc6f2816807f9a5e1681f102e9922
+            inputBefore: 5889bd197d6553f6448f789a9b58c1d72cbcc6f2816807f9a5e1681f102e9922
+            manifestHash: 450e531b394afe1ccff8fae96a0e5a246a4795cdae6c0cffc07afcca069a5a90
+            manifestRef: .comet/runtime/classic-sdk-checks/3bed1b9453b8ab04d28a8f69c5cff7ca71c8a3e1c85f462e96ed237e34b769af/0c6c6fc4-af6e-48c8-941b-91d6a4b2a6da.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/3bed1b9453b8ab04d28a8f69c5cff7ca71c8a3e1c85f462e96ed237e34b769af/55ac5bff-ceed-4fa4-9b69-fcf646cdf06a.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 97621819c2d337e8f1a41d5587e1daa908504fa390db246ee169bf034831228a
+            outcomeId: 227df886-a24b-47cb-a4d4-1bb2d961ef06
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: "首次 comet check run 在 Runtime 输入校验阶段直接返回 RC=70 与错误 'Check input is a
+                symbolic link:
+                .worktrees/_dev-merge-tmp/bone-frontend/node_modules'，未派发子进程；co\
+                met state check build --recover 显示
+                command=null、record.status=missing、receipts=[]、evidence.receipt\
+                Ref=null，证明原尝试完全未执行。已删除该符号链接，消除根因后重新执行真实 check.sh。"
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-review-fatigue-controls
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        id: synapclaim-review-fatigue-controls:16
+        input:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs: {}
+        inputHash: 89ca15aa20270cfa010ae108a36ae6048ecb3b328c7d1450adb6d19b474cf6a0
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-review-fatigue-controls
+        status: pending
+        stepId: full.verify.run
+        type: invoke_skill
+    actionContexts:
+      synapclaim-review-fatigue-controls:1:
+        results: {}
+        sequence: 1
+      synapclaim-review-fatigue-controls:11:
+        results: {}
+        sequence: 11
+      synapclaim-review-fatigue-controls:13:
+        results: {}
+        sequence: 13
+      synapclaim-review-fatigue-controls:14:
+        results: {}
+        sequence: 14
+      synapclaim-review-fatigue-controls:16:
+        results: {}
+        sequence: 16
+      synapclaim-review-fatigue-controls:4:
+        results: {}
+        sequence: 4
+      synapclaim-review-fatigue-controls:5:
+        results: {}
+        sequence: 5
+      synapclaim-review-fatigue-controls:7:
+        results: {}
+        sequence: 7
+      synapclaim-review-fatigue-controls:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: synapclaim-review-fatigue-controls:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 84849c3dd27520e173d927711f132cecabc3a87808b412bfb69306201db7be9d
+              ref: openspec/changes/synapclaim-review-fatigue-controls
+        proposalHash: ef0bc6feb2e9cafb0584f548529b57845539af32a717187b6f2618cc1cc2b9e2
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-84849c3dd27520e173d927711f132cecabc3a87808b412bfb69306201db7be9d
+          choice: approved
+          proposalHash: ef0bc6feb2e9cafb0584f548529b57845539af32a717187b6f2618cc1cc2b9e2
+      - id: synapclaim-review-fatigue-controls:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-review-fatigue-controls/.comet/handoff/design-context.json
+              handoffHash: cbf8a76de2110d4133da063c95a63471914ad6ecb35d8dec5a2c1398c815babc
+              proposal: 【方案 A 推荐】沿用既有「domain 纯判据 + application 取数/读配置 + adapter 形态准入」三段式：新增
+                ReviewFatigueConfig 作为 REVIEW_FATIGUE_GUARD.config_json
+                唯一解析真源（maxPerShift=120、restPromptMinutes=120、shiftEndExclusionMinutes=30、sensitiveAmountYuan=10000，越界/非法/未知键回落基线并登记
+                rejected）；Application 按
+                tenant+assignee+status=DONE+finished_at>=UTC 当日零点统计完成量，达到上限的
+                USER 候选由 FatigueAwareEligibilityPort 判不可用，TaskAssigner 既有
+                ALL_INELIGIBLE→入池回落形成超量自动转派；新增只读 GET
+                /review/fatigue-guard/evaluation
+                返回超量/休息提示/敏感案件资格，不写库、不改案件状态。关键取舍：零 DDL、不新增 SQL
+                模板、不碰金额/拒赔/支付；班末硬排除因缺可信服务端班次事实源只做 soft prompt，如实登记
+                gap，不宣称已实现；主管抽检不再重复实现（前批已落地）。测试策略：配置解析正/反向、当日计数口径、超量回落入池、计数异常
+                fail-closed、端点契约与前端 typecheck；定向单测 + synap-claim-app 全量 +
+                check.sh 59/59。【方案 B 不采用】新建独立疲劳服务/表：需新 DDL 与跨服务一致性，当前不可证伪且超出零
+                DDL 边界。【方案 C 不采用】只做前端静态文案：属于“配了不生效”，无法回池转派，违反联调证据要求。【Spec
+                Patch】新增 claim/review-fatigue capability（soft prompt 评估），修改
+                claim/task-assignment 的候选准入判据；不改变资金/拒赔公开验收。
+              requirementsEvidence:
+                contentHash: 6991249a2392176ed842d28ecf2e688952d72a10b51119cc6b6a797168a9e816
+                ref: openspec/changes/synapclaim-review-fatigue-controls
+              sourceEvidence:
+                contentHash: 21fb7a6959f1f6d85a294cc6ac690b8c6d0c2c01626ad069eebfcca53f1c45b6
+                ref: openspec/changes/synapclaim-review-fatigue-controls
+        proposalHash: ceb78ed082d081e5225118128cde80fd38ea322345953bfd67b37ef62e2f768c
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-ceb78ed082d081e5225118128cde80fd38ea322345953bfd67b37ef62e2f768c-approved
+          choice: approved
+          proposalHash: ceb78ed082d081e5225118128cde80fd38ea322345953bfd67b37ef62e2f768c
+      - id: synapclaim-review-fatigue-controls:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: executing-plans
+              directOverride: false
+              isolation: current
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: e65b61188c45f28855be879ab922e6faca8d3cf013c31e138f45ac673db1a5b5
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: 39a76309-831b-4799-a7c9-87d27f547bd2
+          choice: approved
+          proposalHash: e65b61188c45f28855be879ab922e6faca8d3cf013c31e138f45ac673db1a5b5
+    evidenceWaits:
+      - id: synapclaim-review-fatigue-controls:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/synapclaim-review-fatigue-controls
+          contentHash: 84849c3dd27520e173d927711f132cecabc3a87808b412bfb69306201db7be9d
+          submissionId: b53750b7-81c8-4ee2-9c7c-f663e015fb68
+      - id: synapclaim-review-fatigue-controls:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/synapclaim-review-fatigue-controls/design.md
+          contentHash: b346689f1a3c5e79bb5fdec85da02555b76323907165900d19fb7539d5890528
+          submissionId: 921b60bc-96f6-4cb7-b6ee-488d6e743204
+      - id: synapclaim-review-fatigue-controls:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-17-synapclaim-review-fatigue-controls.md
+          contentHash: 73e8efaa3451bf8210af52e984ed5a938f14cb27594af24ac12d38a5b6bc3200
+          submissionId: 1cbd8ca9-e51b-4939-ab4c-2768a3dc9788
+      - id: synapclaim-review-fatigue-controls:15
+        stepId: full.build.check.evidence
+        sequence: 15
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/3bed1b9453b8ab04d28a8f69c5cff7ca71c8a3e1c85f462e96ed237e34b769af/55ac5bff-ceed-4fa4-9b69-fcf646cdf06a.log
+          contentHash: 0c99aad88a917daf712cf624e8bc36e733c3899cb87f7d55fb756cca4518d6b1
+          submissionId: 0a542214-29b3-4dd9-83a2-2ab5d0ccae83
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 34
+  sourceHash: ea25aa5f85f135acf42b3aa0db0df7c1f3cc8f04223f93d49f2620a203536370
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 84849c3dd27520e173d927711f132cecabc3a87808b412bfb69306201db7be9d
+              ref: openspec/changes/synapclaim-review-fatigue-controls
+      - contentHash: 84849c3dd27520e173d927711f132cecabc3a87808b412bfb69306201db7be9d
+        ref: openspec/changes/synapclaim-review-fatigue-controls
+      - contentHash: 84849c3dd27520e173d927711f132cecabc3a87808b412bfb69306201db7be9d
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-review-fatigue-controls/.comet/handoff/design-context.json
+              handoffHash: cbf8a76de2110d4133da063c95a63471914ad6ecb35d8dec5a2c1398c815babc
+              proposal: 【方案 A 推荐】沿用既有「domain 纯判据 + application 取数/读配置 + adapter 形态准入」三段式：新增
+                ReviewFatigueConfig 作为 REVIEW_FATIGUE_GUARD.config_json
+                唯一解析真源（maxPerShift=120、restPromptMinutes=120、shiftEndExclusionMinutes=30、sensitiveAmountYuan=10000，越界/非法/未知键回落基线并登记
+                rejected）；Application 按
+                tenant+assignee+status=DONE+finished_at>=UTC 当日零点统计完成量，达到上限的
+                USER 候选由 FatigueAwareEligibilityPort 判不可用，TaskAssigner 既有
+                ALL_INELIGIBLE→入池回落形成超量自动转派；新增只读 GET
+                /review/fatigue-guard/evaluation
+                返回超量/休息提示/敏感案件资格，不写库、不改案件状态。关键取舍：零 DDL、不新增 SQL
+                模板、不碰金额/拒赔/支付；班末硬排除因缺可信服务端班次事实源只做 soft prompt，如实登记
+                gap，不宣称已实现；主管抽检不再重复实现（前批已落地）。测试策略：配置解析正/反向、当日计数口径、超量回落入池、计数异常
+                fail-closed、端点契约与前端 typecheck；定向单测 + synap-claim-app 全量 +
+                check.sh 59/59。【方案 B 不采用】新建独立疲劳服务/表：需新 DDL 与跨服务一致性，当前不可证伪且超出零
+                DDL 边界。【方案 C 不采用】只做前端静态文案：属于“配了不生效”，无法回池转派，违反联调证据要求。【Spec
+                Patch】新增 claim/review-fatigue capability（soft prompt 评估），修改
+                claim/task-assignment 的候选准入判据；不改变资金/拒赔公开验收。
+              requirementsEvidence:
+                contentHash: 6991249a2392176ed842d28ecf2e688952d72a10b51119cc6b6a797168a9e816
+                ref: openspec/changes/synapclaim-review-fatigue-controls
+              sourceEvidence:
+                contentHash: 21fb7a6959f1f6d85a294cc6ac690b8c6d0c2c01626ad069eebfcca53f1c45b6
+                ref: openspec/changes/synapclaim-review-fatigue-controls
+      - handoffContext: openspec/changes/synapclaim-review-fatigue-controls/.comet/handoff/design-context.json
+        handoffHash: cbf8a76de2110d4133da063c95a63471914ad6ecb35d8dec5a2c1398c815babc
+        proposal: 【方案 A 推荐】沿用既有「domain 纯判据 + application 取数/读配置 + adapter 形态准入」三段式：新增
+          ReviewFatigueConfig 作为 REVIEW_FATIGUE_GUARD.config_json
+          唯一解析真源（maxPerShift=120、restPromptMinutes=120、shiftEndExclusionMinutes=30、sensitiveAmountYuan=10000，越界/非法/未知键回落基线并登记
+          rejected）；Application 按 tenant+assignee+status=DONE+finished_at>=UTC
+          当日零点统计完成量，达到上限的 USER 候选由 FatigueAwareEligibilityPort 判不可用，TaskAssigner
+          既有 ALL_INELIGIBLE→入池回落形成超量自动转派；新增只读 GET
+          /review/fatigue-guard/evaluation 返回超量/休息提示/敏感案件资格，不写库、不改案件状态。关键取舍：零
+          DDL、不新增 SQL 模板、不碰金额/拒赔/支付；班末硬排除因缺可信服务端班次事实源只做 soft prompt，如实登记
+          gap，不宣称已实现；主管抽检不再重复实现（前批已落地）。测试策略：配置解析正/反向、当日计数口径、超量回落入池、计数异常
+          fail-closed、端点契约与前端 typecheck；定向单测 + synap-claim-app 全量 + check.sh
+          59/59。【方案 B 不采用】新建独立疲劳服务/表：需新 DDL 与跨服务一致性，当前不可证伪且超出零 DDL 边界。【方案 C
+          不采用】只做前端静态文案：属于“配了不生效”，无法回池转派，违反联调证据要求。【Spec Patch】新增
+          claim/review-fatigue capability（soft prompt 评估），修改
+          claim/task-assignment 的候选准入判据；不改变资金/拒赔公开验收。
+        requirementsEvidence:
+          contentHash: 6991249a2392176ed842d28ecf2e688952d72a10b51119cc6b6a797168a9e816
+          ref: openspec/changes/synapclaim-review-fatigue-controls
+        sourceEvidence:
+          contentHash: 21fb7a6959f1f6d85a294cc6ac690b8c6d0c2c01626ad069eebfcca53f1c45b6
+          ref: openspec/changes/synapclaim-review-fatigue-controls
+      - designDoc: openspec/changes/synapclaim-review-fatigue-controls/design.md
+      - contentHash: b346689f1a3c5e79bb5fdec85da02555b76323907165900d19fb7539d5890528
+        ref: openspec/changes/synapclaim-review-fatigue-controls/design.md
+      - boundBranch: dev
+        buildMode: executing-plans
+        directOverride: false
+        isolation: current
+        reviewMode: thorough
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: synapclaim-review-fatigue-controls
+            changeDir: openspec/changes/synapclaim-review-fatigue-controls
+            recoverySource: |
+              # comet-execution: managed-run
+              change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+              workflow: full
+              language: zh-CN
+              phase: open
+              context_compression: off
+              build_mode: null
+              build_pause: null
+              subagent_dispatch: null
+              tdd_mode: null
+              review_mode: off
+              isolation: current
+              verify_mode: null
+              auto_transition: true
+              base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+              design_doc: null
+              plan: null
+              verify_result: pending
+              verify_failures: 0
+              verification_report: null
+              branch_status: pending
+              created_at: 2026-11-17
+              verified_at: null
+              archive_confirmation: null
+              archived: false
+              bound_branch: dev
+            recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: executing-plans
+              directOverride: false
+              isolation: current
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: b346689f1a3c5e79bb5fdec85da02555b76323907165900d19fb7539d5890528
+          ref: openspec/changes/synapclaim-review-fatigue-controls/design.md
+        plan: docs/superpowers/plans/2026-11-17-synapclaim-review-fatigue-controls.md
+        planEvidence:
+          contentHash: 73e8efaa3451bf8210af52e984ed5a938f14cb27594af24ac12d38a5b6bc3200
+          ref: docs/superpowers/plans/2026-11-17-synapclaim-review-fatigue-controls.md
+        taskRevision: d0f5959f349828df85474a3c060ca1789261dbc3f0f10b1fa1931f46ecf2271b
+      - contentHash: 73e8efaa3451bf8210af52e984ed5a938f14cb27594af24ac12d38a5b6bc3200
+        ref: docs/superpowers/plans/2026-11-17-synapclaim-review-fatigue-controls.md
+      - event: build-complete
+      - argv:
+          - ./scripts/check.sh
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 0c99aad88a917daf712cf624e8bc36e733c3899cb87f7d55fb756cca4518d6b1
+        cwd: .worktrees/_dev-merge-tmp
+        environment: 91659d9de69d481977e596282e98dcd600b70acc554bb99440bfc2dbad666193
+        exitCode: 0
+        inputAfter: 5889bd197d6553f6448f789a9b58c1d72cbcc6f2816807f9a5e1681f102e9922
+        inputBefore: 5889bd197d6553f6448f789a9b58c1d72cbcc6f2816807f9a5e1681f102e9922
+        manifestHash: 450e531b394afe1ccff8fae96a0e5a246a4795cdae6c0cffc07afcca069a5a90
+        manifestRef: .comet/runtime/classic-sdk-checks/3bed1b9453b8ab04d28a8f69c5cff7ca71c8a3e1c85f462e96ed237e34b769af/0c6c6fc4-af6e-48c8-941b-91d6a4b2a6da.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/3bed1b9453b8ab04d28a8f69c5cff7ca71c8a3e1c85f462e96ed237e34b769af/55ac5bff-ceed-4fa4-9b69-fcf646cdf06a.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 0c99aad88a917daf712cf624e8bc36e733c3899cb87f7d55fb756cca4518d6b1
+        ref: .comet/runtime/classic-sdk-checks/3bed1b9453b8ab04d28a8f69c5cff7ca71c8a3e1c85f462e96ed237e34b769af/55ac5bff-ceed-4fa4-9b69-fcf646cdf06a.log
+      - sequence: 9
+        value:
+          boundBranch: dev
+          buildMode: executing-plans
+          directOverride: false
+          isolation: current
+          reviewMode: thorough
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-review-fatigue-controls
+              changeDir: openspec/changes/synapclaim-review-fatigue-controls
+              recoverySource: |
+                # comet-execution: managed-run
+                change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+                workflow: full
+                language: zh-CN
+                phase: open
+                context_compression: off
+                build_mode: null
+                build_pause: null
+                subagent_dispatch: null
+                tdd_mode: null
+                review_mode: off
+                isolation: current
+                verify_mode: null
+                auto_transition: true
+                base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+                design_doc: null
+                plan: null
+                verify_result: pending
+                verify_failures: 0
+                verification_report: null
+                branch_status: pending
+                created_at: 2026-11-17
+                verified_at: null
+                archive_confirmation: null
+                archived: false
+                bound_branch: dev
+              recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: executing-plans
+                directOverride: false
+                isolation: current
+                reviewMode: thorough
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-review-fatigue-controls
+              changeDir: openspec/changes/synapclaim-review-fatigue-controls
+              recoverySource: |
+                # comet-execution: managed-run
+                change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+                workflow: full
+                language: zh-CN
+                phase: open
+                context_compression: off
+                build_mode: null
+                build_pause: null
+                subagent_dispatch: null
+                tdd_mode: null
+                review_mode: off
+                isolation: current
+                verify_mode: null
+                auto_transition: true
+                base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+                design_doc: null
+                plan: null
+                verify_result: pending
+                verify_failures: 0
+                verification_report: null
+                branch_status: pending
+                created_at: 2026-11-17
+                verified_at: null
+                archive_confirmation: null
+                archived: false
+                bound_branch: dev
+              recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/synapclaim-review-fatigue-controls/.comet/handoff/design-context.json
+                handoffHash: cbf8a76de2110d4133da063c95a63471914ad6ecb35d8dec5a2c1398c815babc
+                proposal: 【方案 A 推荐】沿用既有「domain 纯判据 + application 取数/读配置 + adapter 形态准入」三段式：新增
+                  ReviewFatigueConfig 作为 REVIEW_FATIGUE_GUARD.config_json
+                  唯一解析真源（maxPerShift=120、restPromptMinutes=120、shiftEndExclusionMinutes=30、sensitiveAmountYuan=10000，越界/非法/未知键回落基线并登记
+                  rejected）；Application 按
+                  tenant+assignee+status=DONE+finished_at>=UTC 当日零点统计完成量，达到上限的
+                  USER 候选由 FatigueAwareEligibilityPort 判不可用，TaskAssigner 既有
+                  ALL_INELIGIBLE→入池回落形成超量自动转派；新增只读 GET
+                  /review/fatigue-guard/evaluation
+                  返回超量/休息提示/敏感案件资格，不写库、不改案件状态。关键取舍：零 DDL、不新增 SQL
+                  模板、不碰金额/拒赔/支付；班末硬排除因缺可信服务端班次事实源只做 soft prompt，如实登记
+                  gap，不宣称已实现；主管抽检不再重复实现（前批已落地）。测试策略：配置解析正/反向、当日计数口径、超量回落入池、计数异常
+                  fail-closed、端点契约与前端 typecheck；定向单测 + synap-claim-app 全量 +
+                  check.sh 59/59。【方案 B 不采用】新建独立疲劳服务/表：需新 DDL 与跨服务一致性，当前不可证伪且超出零
+                  DDL 边界。【方案 C 不采用】只做前端静态文案：属于“配了不生效”，无法回池转派，违反联调证据要求。【Spec
+                  Patch】新增 claim/review-fatigue capability（soft prompt 评估），修改
+                  claim/task-assignment 的候选准入判据；不改变资金/拒赔公开验收。
+                requirementsEvidence:
+                  contentHash: 6991249a2392176ed842d28ecf2e688952d72a10b51119cc6b6a797168a9e816
+                  ref: openspec/changes/synapclaim-review-fatigue-controls
+                sourceEvidence:
+                  contentHash: 21fb7a6959f1f6d85a294cc6ac690b8c6d0c2c01626ad069eebfcca53f1c45b6
+                  ref: openspec/changes/synapclaim-review-fatigue-controls
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/synapclaim-review-fatigue-controls/design.md
+      - sequence: 8
+        value:
+          contentHash: b346689f1a3c5e79bb5fdec85da02555b76323907165900d19fb7539d5890528
+          ref: openspec/changes/synapclaim-review-fatigue-controls/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/synapclaim-review-fatigue-controls/.comet/handoff/design-context.json
+          handoffHash: cbf8a76de2110d4133da063c95a63471914ad6ecb35d8dec5a2c1398c815babc
+          proposal: 【方案 A 推荐】沿用既有「domain 纯判据 + application 取数/读配置 + adapter 形态准入」三段式：新增
+            ReviewFatigueConfig 作为 REVIEW_FATIGUE_GUARD.config_json
+            唯一解析真源（maxPerShift=120、restPromptMinutes=120、shiftEndExclusionMinutes=30、sensitiveAmountYuan=10000，越界/非法/未知键回落基线并登记
+            rejected）；Application 按 tenant+assignee+status=DONE+finished_at>=UTC
+            当日零点统计完成量，达到上限的 USER 候选由 FatigueAwareEligibilityPort
+            判不可用，TaskAssigner 既有 ALL_INELIGIBLE→入池回落形成超量自动转派；新增只读 GET
+            /review/fatigue-guard/evaluation 返回超量/休息提示/敏感案件资格，不写库、不改案件状态。关键取舍：零
+            DDL、不新增 SQL 模板、不碰金额/拒赔/支付；班末硬排除因缺可信服务端班次事实源只做 soft prompt，如实登记
+            gap，不宣称已实现；主管抽检不再重复实现（前批已落地）。测试策略：配置解析正/反向、当日计数口径、超量回落入池、计数异常
+            fail-closed、端点契约与前端 typecheck；定向单测 + synap-claim-app 全量 + check.sh
+            59/59。【方案 B 不采用】新建独立疲劳服务/表：需新 DDL 与跨服务一致性，当前不可证伪且超出零 DDL 边界。【方案 C
+            不采用】只做前端静态文案：属于“配了不生效”，无法回池转派，违反联调证据要求。【Spec Patch】新增
+            claim/review-fatigue capability（soft prompt 评估），修改
+            claim/task-assignment 的候选准入判据；不改变资金/拒赔公开验收。
+          requirementsEvidence:
+            contentHash: 6991249a2392176ed842d28ecf2e688952d72a10b51119cc6b6a797168a9e816
+            ref: openspec/changes/synapclaim-review-fatigue-controls
+          sourceEvidence:
+            contentHash: 21fb7a6959f1f6d85a294cc6ac690b8c6d0c2c01626ad069eebfcca53f1c45b6
+            ref: openspec/changes/synapclaim-review-fatigue-controls
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-review-fatigue-controls
+              changeDir: openspec/changes/synapclaim-review-fatigue-controls
+              recoverySource: |
+                # comet-execution: managed-run
+                change_id: 1805c907-fa73-4d66-90e3-43c1840aa667
+                workflow: full
+                language: zh-CN
+                phase: open
+                context_compression: off
+                build_mode: null
+                build_pause: null
+                subagent_dispatch: null
+                tdd_mode: null
+                review_mode: off
+                isolation: current
+                verify_mode: null
+                auto_transition: true
+                base_ref: 7dcae54d0ca37bb1191707c543d122467e229d26
+                design_doc: null
+                plan: null
+                verify_result: pending
+                verify_failures: 0
+                verification_report: null
+                branch_status: pending
+                created_at: 2026-11-17
+                verified_at: null
+                archive_confirmation: null
+                archived: false
+                bound_branch: dev
+              recoverySourceHash: 6dc2bd4ee9a950c4480bdd7a1a111dd3702da6ce2d52698cb8bd7c3e9fe6e218
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 84849c3dd27520e173d927711f132cecabc3a87808b412bfb69306201db7be9d
+                ref: openspec/changes/synapclaim-review-fatigue-controls
+      - sequence: 2
+        value:
+          contentHash: 84849c3dd27520e173d927711f132cecabc3a87808b412bfb69306201db7be9d
+          ref: openspec/changes/synapclaim-review-fatigue-controls
+      - sequence: 4
+        value:
+          contentHash: 84849c3dd27520e173d927711f132cecabc3a87808b412bfb69306201db7be9d
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: b346689f1a3c5e79bb5fdec85da02555b76323907165900d19fb7539d5890528
+            ref: openspec/changes/synapclaim-review-fatigue-controls/design.md
+          plan: docs/superpowers/plans/2026-11-17-synapclaim-review-fatigue-controls.md
+          planEvidence:
+            contentHash: 73e8efaa3451bf8210af52e984ed5a938f14cb27594af24ac12d38a5b6bc3200
+            ref: docs/superpowers/plans/2026-11-17-synapclaim-review-fatigue-controls.md
+          taskRevision: d0f5959f349828df85474a3c060ca1789261dbc3f0f10b1fa1931f46ecf2271b
+      - sequence: 12
+        value:
+          contentHash: 73e8efaa3451bf8210af52e984ed5a938f14cb27594af24ac12d38a5b6bc3200
+          ref: docs/superpowers/plans/2026-11-17-synapclaim-review-fatigue-controls.md
+      - sequence: 13
+        value:
+          event: build-complete
+      - sequence: 14
+        value:
+          argv:
+            - ./scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 0c99aad88a917daf712cf624e8bc36e733c3899cb87f7d55fb756cca4518d6b1
+          cwd: .worktrees/_dev-merge-tmp
+          environment: 91659d9de69d481977e596282e98dcd600b70acc554bb99440bfc2dbad666193
+          exitCode: 0
+          inputAfter: 5889bd197d6553f6448f789a9b58c1d72cbcc6f2816807f9a5e1681f102e9922
+          inputBefore: 5889bd197d6553f6448f789a9b58c1d72cbcc6f2816807f9a5e1681f102e9922
+          manifestHash: 450e531b394afe1ccff8fae96a0e5a246a4795cdae6c0cffc07afcca069a5a90
+          manifestRef: .comet/runtime/classic-sdk-checks/3bed1b9453b8ab04d28a8f69c5cff7ca71c8a3e1c85f462e96ed237e34b769af/0c6c6fc4-af6e-48c8-941b-91d6a4b2a6da.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/3bed1b9453b8ab04d28a8f69c5cff7ca71c8a3e1c85f462e96ed237e34b769af/55ac5bff-ceed-4fa4-9b69-fcf646cdf06a.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 15
+        value:
+          contentHash: 0c99aad88a917daf712cf624e8bc36e733c3899cb87f7d55fb756cca4518d6b1
+          ref: .comet/runtime/classic-sdk-checks/3bed1b9453b8ab04d28a8f69c5cff7ca71c8a3e1c85f462e96ed237e34b769af/55ac5bff-ceed-4fa4-9b69-fcf646cdf06a.log
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 14
+        left: 32
+        right: 33
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 34
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 35
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 25
+        height: 5
+      - key: full.build.configure
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 16
+        left: 38
+        right: 39
+        height: 2
+      - key: full.design.evidence
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 20
+        left: 41
+        right: 42
+        height: 2
+      - key: full.open.revalidate
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 23
+        left: null
+        right: 44
+        height: 2
+      - key: full.open.confirm
+        value: 22
+        left: 43
+        right: 45
+        height: 3
+      - key: full.design.document
+        value: 18
+        left: 40
+        right: 46
+        height: 4
+      - key: full.build.plan
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 26
+        left: 48
+        right: 49
+        height: 2
+      - key: full.build.confirm
+        value: 16
+        left: 38
+        right: 50
+        height: 3
+      - key: full.design.document
+        value: 18
+        left: 51
+        right: 46
+        height: 4
+      - key: full.build.execute
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 16
+        left: 38
+        right: 53
+        height: 2
+      - key: full.build.plan.evidence
+        value: 26
+        left: null
+        right: 49
+        height: 2
+      - key: full.build.plan
+        value: 25
+        left: 54
+        right: 55
+        height: 3
+      - key: full.design.document
+        value: 18
+        left: 56
+        right: 46
+        height: 4
+      - key: full.build.check
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 29
+        left: 58
+        right: 59
+        height: 2
+      - key: full.build.confirm
+        value: 16
+        left: 60
+        right: 53
+        height: 3
+      - key: full.build.plan
+        value: 25
+        left: 61
+        right: 55
+        height: 4
+      - key: full.design.document
+        value: 18
+        left: 62
+        right: 46
+        height: 5
+      - key: full.open
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 22
+        left: 64
+        right: 65
+        height: 2
+      - key: full.open.revalidate
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 23
+        left: null
+        right: 67
+        height: 2
+      - key: full.open.confirm
+        value: 22
+        left: 64
+        right: 68
+        height: 3
+      - key: full.design.confirm
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 20
+        left: 70
+        right: 71
+        height: 2
+      - key: full.open.confirm
+        value: 22
+        left: 72
+        right: 68
+        height: 3
+      - key: full.design.confirm
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 18
+        left: 74
+        right: 75
+        height: 2
+      - key: full.design.handoff
+        value: 20
+        left: 76
+        right: 71
+        height: 3
+      - key: full.open.confirm
+        value: 22
+        left: 77
+        right: 68
+        height: 4
+      - key: full.open.evidence
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 21
+        left: null
+        right: 79
+        height: 2
+      - key: full.design.handoff
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 23
+        left: 82
+        right: 83
+        height: 2
+      - key: full.open
+        value: 21
+        left: 81
+        right: 84
+        height: 3
+      - key: full.build.configure
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 19
+        left: 87
+        right: 88
+        height: 2
+      - key: full.design.confirm
+        value: 17
+        left: 86
+        right: 89
+        height: 3
+      - key: full.open
+        value: 21
+        left: 90
+        right: 84
+        height: 4
+      - key: full.open
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 18
+        left: 93
+        right: 94
+        height: 2
+      - key: full.open.confirm
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 23
+        left: 96
+        right: 97
+        height: 2
+      - key: full.open
+        value: 21
+        left: 95
+        right: 98
+        height: 3
+      - key: full.build.configure
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 16
+        left: 100
+        right: 101
+        height: 2
+      - key: full.design.document
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 19
+        left: 103
+        right: 104
+        height: 2
+      - key: full.design.confirm
+        value: 17
+        left: 102
+        right: 105
+        height: 3
+      - key: full.open
+        value: 21
+        left: 106
+        right: 98
+        height: 4
+      - key: full.build.check
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 15
+        left: 108
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 25
+        left: 110
+        right: 111
+        height: 2
+      - key: full.build.confirm
+        value: 16
+        left: 109
+        right: 112
+        height: 3
+      - key: full.open
+        value: 21
+        left: 105
+        right: 98
+        height: 3
+      - key: full.design.confirm
+        value: 17
+        left: 113
+        right: 114
+        height: 4
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 37
+      - 47
+      - 52
+      - 57
+      - 63
+      - 66
+      - 69
+      - 73
+      - 78
+      - 80
+      - 85
+      - 91
+      - 92
+      - 99
+      - 107
+      - 115
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actionContexts
+          - synapclaim-review-fatigue-controls:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - synapclaim-review-fatigue-controls:11
+          - results
+        map: 9
+      - path:
+          - actionContexts
+          - synapclaim-review-fatigue-controls:13
+          - results
+        map: 10
+      - path:
+          - actionContexts
+          - synapclaim-review-fatigue-controls:14
+          - results
+        map: 11
+      - path:
+          - actionContexts
+          - synapclaim-review-fatigue-controls:16
+          - results
+        map: 12
+      - path:
+          - actionContexts
+          - synapclaim-review-fatigue-controls:4
+          - results
+        map: 13
+      - path:
+          - actionContexts
+          - synapclaim-review-fatigue-controls:5
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - synapclaim-review-fatigue-controls:7
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - synapclaim-review-fatigue-controls:9
+          - results
+        map: 16
+      - path:
+          - outputs
+        map: 12
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 17
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 18
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 19
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 20
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 21
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 22
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 23
+  storageHash: a884ff4210eada468559ac824c3c2c1974b19106f2956d4b08425d6b538e58d1

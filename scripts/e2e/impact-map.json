@@ -3865,6 +3865,15 @@
    "cases": []
   },
   {
+   "http": "GET",
+   "path": "/api/v1/review/fatigue-guard/evaluation",
+   "controller": "ReviewFatigueGuardController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReviewFatigueGuardController.java",
+   "cases": [
+    "synap-claim-review-fatigue-e2e.py"
+   ]
+  },
+  {
    "http": "POST",
    "path": "/api/v1/internal/adjust/preview",
    "controller": "ClaimInternalOpsController",
@@ -4615,8 +4624,8 @@
   }
  ],
  "summary": {
-  "endpoints": 558,
-  "covered": 236,
+  "endpoints": 559,
+  "covered": 237,
   "uncovered": 322
  }
 }

@@ -41,6 +41,8 @@ import { rejectReasonGroups } from '../services/rejectReason';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { AuthButton } from '@bone/ui';
 import { PERMISSIONS } from '../constants/permissions';
+import { reviewFatigueApi, sessionContinuousMinutes } from '../services/reviewFatigue';
+import type { ReviewFatigueEvaluation } from '../services/types';
 
 /**
  * 核赔工作台 · 待办审核页（synapClaim 一期）。
@@ -117,6 +119,14 @@ export function ReviewWorkbenchPage(): ReactElement {
   const [decisionTarget, setDecisionTarget] = useState<ClaimHeadProjection | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [decisionForm] = Form.useForm<{ decision: Decision; approvedAmount: number; comment: string; rejectType: string }>();
+
+  /**
+   * 审核疲劳评估（只读 soft prompt）。
+   *
+   * <p>连续时长取本机会话的近似值；服务端不持有班次事实，班末分钟不传。
+   * 评估失败一律回落 null（不提示），绝不阻断待办加载或人工终审。
+   */
+  const [fatigue, setFatigue] = useState<ReviewFatigueEvaluation | null>(null);
 
   /**
    * 复核结论（44→50/45）。
@@ -229,6 +239,22 @@ export function ReviewWorkbenchPage(): ReactElement {
     void load();
   }, [load]);
 
+  // 疲劳评估与待办加载互不连坐：评估失败只隐藏提示，不清空已取到的待办。
+  useEffect(() => {
+    let cancelled = false;
+    reviewFatigueApi
+      .evaluation({ continuousMinutes: sessionContinuousMinutes() })
+      .then((resp) => {
+        if (!cancelled) setFatigue(resp?.data ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setFatigue(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [load]);
+
   const onDecision = async () => {
     if (!decisionTarget) return;
     const values = await decisionForm.validateFields();
@@ -335,6 +361,45 @@ export function ReviewWorkbenchPage(): ReactElement {
         style={{ marginBottom: 16 }}
         message="AI 仅出建议，资金与责任结论以确定性规则为准；拒赔须填五要素（事实认定+条款依据+证据位置+申诉渠道+法定时限）。"
       />
+
+      {fatigue && (fatigue.overloaded || fatigue.restPrompt || !fatigue.sensitiveEligible) && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="审核疲劳提示（仅提示，不阻断提交）"
+          description={
+            <Space direction="vertical" size={2}>
+              {fatigue.overloaded && (
+                <span>
+                  您当日完成量已达单班上限（{fatigue.config.maxPerShift} 单），新任务将优先回池转派给其他复核人。
+                </span>
+              )}
+              {fatigue.restPrompt && (
+                <span>
+                  本机会话连续审核已达提示阈值（{fatigue.config.restPromptMinutes} 分钟），建议短暂休息。
+                </span>
+              )}
+              {!fatigue.sensitiveEligible && (
+                <span>临近班末且有大额案件，请确认有充足时间复核；本提示不改变派单与终审。</span>
+              )}
+              <span>不清空队列、不禁用提交、不替代人工终审。</span>
+            </Space>
+          }
+        />
+      )}
+
+      {fatigue && Object.keys(fatigue.config.rejected ?? {}).length > 0 && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="审核疲劳配置部分未生效，已按基线处理"
+          description={Object.entries(fatigue.config.rejected)
+            .map(([key, reason]) => `${key}：${reason}`)
+            .join('；')}
+        />
+      )}
 
       <Card
         size="small"
