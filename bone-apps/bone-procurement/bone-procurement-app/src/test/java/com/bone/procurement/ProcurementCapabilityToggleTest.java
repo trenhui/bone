@@ -2,6 +2,7 @@ package com.bone.procurement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.bone.procurement.fulfillment.adapter.web.controller.FulfillmentController;
 import com.bone.procurement.transaction.adapter.web.controller.PurchaseOrderController;
 import com.bone.procurement.transaction.adapter.web.controller.RequisitionController;
 import java.io.IOException;
@@ -17,7 +18,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 class ProcurementCapabilityToggleTest {
 
   @Test
-  void 两个控制器都受能力开关守护() {
+  void 交易控制器都受能力开关守护() {
     for (Class<?> c : new Class<?>[] {RequisitionController.class, PurchaseOrderController.class}) {
       ConditionalOnProperty p = c.getAnnotation(ConditionalOnProperty.class);
       assertThat(p).as(c.getSimpleName() + " 缺 @ConditionalOnProperty").isNotNull();
@@ -28,9 +29,20 @@ class ProcurementCapabilityToggleTest {
   }
 
   @Test
-  void 默认关闭能力开关() throws IOException {
+  void 履约控制器受独立能力开关守护() {
+    ConditionalOnProperty p =
+        FulfillmentController.class.getAnnotation(ConditionalOnProperty.class);
+    assertThat(p).as("FulfillmentController 缺 @ConditionalOnProperty").isNotNull();
+    assertThat(p.prefix()).isEqualTo("bone.procurement.fulfillment");
+    assertThat(p.name()).containsExactly("enabled");
+    assertThat(p.havingValue()).isEqualTo("true");
+  }
+
+  @Test
+  void 默认关闭交易与履约能力开关() throws IOException {
     Path yml = Path.of("src/main/resources/application.yml");
-    assertThat(Files.readString(yml))
-        .contains("enabled: ${BONE_PROCUREMENT_TRANSACTION_ENABLED:false}");
+    String content = Files.readString(yml);
+    assertThat(content).contains("enabled: ${BONE_PROCUREMENT_TRANSACTION_ENABLED:false}");
+    assertThat(content).contains("enabled: ${BONE_PROCUREMENT_FULFILLMENT_ENABLED:false}");
   }
 }

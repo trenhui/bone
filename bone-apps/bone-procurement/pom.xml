@@ -19,6 +19,7 @@
 
     <modules>
         <module>bone-procurement-transaction</module>
+        <module>bone-procurement-fulfillment</module>
         <module>bone-procurement-app</module>
     </modules>
 </project>

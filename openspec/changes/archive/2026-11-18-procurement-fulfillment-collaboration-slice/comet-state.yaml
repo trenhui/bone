@@ -1,0 +1,3767 @@
+# comet-execution: managed-run
+change_id: 5c41b8ff-50a0-413b-acb5-dd19c5eed55e
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: thorough
+isolation: worktree
+verify_mode: null
+auto_transition: true
+base_ref: 27e1948df1a6e17f5bda35c660daed63e66777d1
+design_doc: openspec/changes/archive/2026-11-18-procurement-fulfillment-collaboration-slice/design.md
+plan: docs/superpowers/plans/procurement-fulfillment-collaboration-slice.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/procurement-fulfillment-collaboration-slice-verify-2026-11-18.md
+branch_status: pending
+created_at: 2026-11-17
+verified_at: 2026-11-18
+archive_confirmation: confirmed
+archived: true
+bound_branch: comet/procurement-fulfillment-collaboration-slice
+direct_override: false
+handoff_context: openspec/changes/archive/2026-11-18-procurement-fulfillment-collaboration-slice/.comet/handoff/design-context.json
+handoff_hash: 2d9acc078aaf4e05ae6b16c1322a29e503494790c8bbb5fad40e6692e423c291
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: 1dc3650d22613da5d57acfbdf1735792a0392eaa67ca0efd24e982abebc4b37d
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: procurement-fulfillment-collaboration-slice
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    definitionHashes:
+      '["comet-classic-full","1"]': 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    initialStateHash: 45ee7a20c3319a6cf19d1534ba13a1db2c7b01bbceeb379eb1c99b4b7262d823
+    input:
+      change: procurement-fulfillment-collaboration-slice
+      changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+      workspaceBaseline:
+        ref: e38cc895-a431-4581-880d-e503a497dc5d
+    state:
+      archiveConfirmation: confirmed
+      archived: true
+      autoTransition: true
+      baseRef: 27e1948df1a6e17f5bda35c660daed63e66777d1
+      boundBranch: comet/procurement-fulfillment-collaboration-slice
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 7
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-17
+      designDoc: openspec/changes/archive/2026-11-18-procurement-fulfillment-collaboration-slice/design.md
+      directOverride: false
+      handoffContext: openspec/changes/archive/2026-11-18-procurement-fulfillment-collaboration-slice/.comet/handoff/design-context.json
+      handoffHash: 2d9acc078aaf4e05ae6b16c1322a29e503494790c8bbb5fad40e6692e423c291
+      isolation: worktree
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/procurement-fulfillment-collaboration-slice.md
+      reviewMode: thorough
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/procurement-fulfillment-collaboration-slice-verify-2026-11-18.md
+      verifiedAt: 2026-11-18
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 32
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-3c2471c9febcd0754357a5fb093c26e711dda8b515b537b9d5e43f975ee5ef3d
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:1
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: cd5b081a0c6bf2b9f070184996356c21080fe8b1552ad002e75dc4050bd8db6a
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:1
+          attempt: 1
+          claimToken: portable-3c2471c9febcd0754357a5fb093c26e711dda8b515b537b9d5e43f975ee5ef3d
+          inputHash: cd5b081a0c6bf2b9f070184996356c21080fe8b1552ad002e75dc4050bd8db6a
+          outcomeId: 2025d059-b581-44d0-b76d-0e6df67bdf7e
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 44b8c670a919ccd0149482c24da069628acdd45601cffcb7f03638c8f2d19585
+            outcomeId: 2025d059-b581-44d0-b76d-0e6df67bdf7e
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-0ea35cb583f0405143402317f2710b21fcc11c15a43816497aa63b0ea247cb37
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:4
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: 8fb16449a91206c2c31faa56147f40e7d8c3333e35bf8e1ead17d9697846b5ea
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:4
+          attempt: 2
+          claimToken: portable-0ea35cb583f0405143402317f2710b21fcc11c15a43816497aa63b0ea247cb37
+          inputHash: 8fb16449a91206c2c31faa56147f40e7d8c3333e35bf8e1ead17d9697846b5ea
+          outcomeId: procurement-fulfillment-collaboration-slice:4:2:executor-result
+          output:
+            contentHash: 5c1063eba7c7c45ed04f3df97d252f8a7d529f5c3cbc5ec3dc23fae2ee01010c
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 7e5b9d8c6d585bf79a23d11462707356f12c8b5a7a61d6cd3ba75db27fb4e095
+            outcomeId: procurement-fulfillment-collaboration-slice:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 只读 inspect（operation=inspect, revision=6）确认 Action
+                procurement-fulfillment-collaboration-slice:4
+                (full.open.revalidate) 的
+                receipts=[]、reconciliations=[]、outcome=null，状态 running 仅因 claim
+                被领取；原执行器 comet-classic-open-revalidate 因 workflow learning
+                超时被取消，未产生任何执行记录或证据文件（record.status=missing, receiptRef=null,
+                manifestRef=null）。产物内容哈希 5c1063eb... 自预检起未变。故该尝试完全未执行，可安全
+                not-executed 重试。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-7ccbb166724525a20a092dc59f4f54b1d1d256c8c66ce6bd4eb40c2b34a30409
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:5
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: a5ce928dd2d8fa365d6a0a28bdc38c4fcf01ff3df1f794da315d7a448300f7b9
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:5
+          attempt: 1
+          claimToken: portable-7ccbb166724525a20a092dc59f4f54b1d1d256c8c66ce6bd4eb40c2b34a30409
+          inputHash: a5ce928dd2d8fa365d6a0a28bdc38c4fcf01ff3df1f794da315d7a448300f7b9
+          outcomeId: 493a5561-963d-4608-95eb-696d0df51fd9
+          output:
+            handoffContext: openspec/changes/procurement-fulfillment-collaboration-slice/.comet/handoff/design-context.json
+            handoffHash: 2d9acc078aaf4e05ae6b16c1322a29e503494790c8bbb5fad40e6692e423c291
+            proposal: 技术方案（基于已确认的 LLD 05 卷 v0.3 与 Open 产物，代码勘探已完成）：① 新增
+              bone-procurement-fulfillment DDD 模块，由 bone-procurement-app 统一装配；经
+              PoQueryPort 只读依赖 transaction，经
+              InventoryAclPort/FinanceAclPort/ToleranceConfigPort 承接跨上下文（默认
+              fail-closed、运行期不触发真实上游）。② 关键取舍 D1：现有 PoStatus 对 SENT
+              及履约保留态故意注册空迁移表（注释写明避免提前实现 05 语义），本轮仅受控解锁唯一一条 SENT→ACKNOWLEDGED 作为
+              ASN 可信上游，其余保留态继续 fail-closed，用 PoStatusTest
+              增补断言守住只允许这一条；备选『履约独立确认态』因与 PO 状态双真源被否决。③ D3 跨上下文用端口+fail-closed
+              桩（沿袭上轮 VendorQueryPortAdapter 范式），不引 MQ/Outbox（PA-08），Finance
+              不可用时发票保持 MATCH_PENDING、不推断通过。④ D4 金额/数量遵循 LLD §14
+              类型基线，容差按供应商/品类配置、禁止硬编码，TDS=ΣIT1±SAC 逐行舍入。⑤ D5
+              权限复用内部采购角色+供应商维度过滤（外部账号属二期 L23），越权 403+零数据；D6 前端在现有
+              bone-procurement-app 加履约页与 /transactions/fulfillment 路由，不改 shell
+              注册；D7 错误码 31501-31506 + 409 invalid_transition。⑥ 风险：LLD
+              openapi.yaml 端点为 /api/v1/portal/*（BFF），本轮内部实现
+              /api/v1/procurement/*，如实登记为路径偏差、不谎称契约覆盖，措辞避开 A10.16 黑名单。⑦ Spec
+              Patch：无（行为需求以 5 份 delta spec 为准，design.md 不新增规格）。完整技术设计见
+              design.md（已补 SDK frontmatter）。
+            requirementsEvidence:
+              contentHash: fc760ebd302aa60da7ffe8032f318b05e9675a431fc6c762a6498a6e9bdc99e4
+              ref: openspec/changes/procurement-fulfillment-collaboration-slice
+            sourceEvidence:
+              contentHash: 48e63c0373f047d384f8fb09a4fd482c60a31f7a6bbcfbaa45ea09a907eefea9
+              ref: openspec/changes/procurement-fulfillment-collaboration-slice
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f496e25b3335562119ebe42277aadfe4f42717e44cd8f6266ef6183f54df8feb
+            outcomeId: 493a5561-963d-4608-95eb-696d0df51fd9
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-65cf4596d260d3e1da77bc868d57ac72f02ab40117dc135ce0c9e8900433a42c
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:7
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: 38a7a7d756c9bb6a33a5c91ec5734bda62c2211f176d2ed0f4445428160d203f
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:7
+          attempt: 1
+          claimToken: portable-65cf4596d260d3e1da77bc868d57ac72f02ab40117dc135ce0c9e8900433a42c
+          inputHash: 38a7a7d756c9bb6a33a5c91ec5734bda62c2211f176d2ed0f4445428160d203f
+          outcomeId: 2dca0ef2-5766-469a-be46-7e3a0503f299
+          output:
+            designDoc: openspec/changes/procurement-fulfillment-collaboration-slice/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 031fb847e2f01496e0dd06d3b6cde1628ff95577920eb7cebbd8f37dec881c53
+            outcomeId: 2dca0ef2-5766-469a-be46-7e3a0503f299
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-84238fbed270d1bdba07d7d4140bec7fc8d4457b6d236de3ff37cb4828a53a13
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:9
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: 038e925866a60042cab2468f4aacead42ef7b00bd5d9da78f93e7bf02a5dfdf5
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:9
+          attempt: 1
+          claimToken: portable-84238fbed270d1bdba07d7d4140bec7fc8d4457b6d236de3ff37cb4828a53a13
+          inputHash: 038e925866a60042cab2468f4aacead42ef7b00bd5d9da78f93e7bf02a5dfdf5
+          outcomeId: 359e76fc-33be-42ed-9a50-990e7ced7a0b
+          output:
+            boundBranch: comet/procurement-fulfillment-collaboration-slice
+            buildMode: autonomous
+            directOverride: false
+            isolation: worktree
+            reviewMode: thorough
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 14ef7fff2fc9d32b61959a2c1b3eccd2915f14197f165893c063816b84074b54
+            outcomeId: 359e76fc-33be-42ed-9a50-990e7ced7a0b
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-4ecbdf57d776b05f4b0e805b5a77262db2288c065553850a921278eef64803b7
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:11
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: bc104ae84aaf7fa4ebbea7b8f0e7e449b15effd0f31c5ee33b9a0c01e3b8a358
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:11
+          attempt: 1
+          claimToken: portable-4ecbdf57d776b05f4b0e805b5a77262db2288c065553850a921278eef64803b7
+          inputHash: bc104ae84aaf7fa4ebbea7b8f0e7e449b15effd0f31c5ee33b9a0c01e3b8a358
+          outcomeId: 11e6e278-3b57-4222-8d86-dcdfd1444d03
+          output:
+            designEvidence:
+              contentHash: 28ffdc848cf401bef70f99c0e1102da0635b4d7c0fff2a7acf32dd170305bf04
+              ref: openspec/changes/procurement-fulfillment-collaboration-slice/design.md
+            plan: docs/superpowers/plans/procurement-fulfillment-collaboration-slice.md
+            planEvidence:
+              contentHash: bcb68d9d1a45be293039f2e652c28578a6f9676a2c84953f1a500dcb1ec45dc6
+              ref: docs/superpowers/plans/procurement-fulfillment-collaboration-slice.md
+            taskRevision: a999989928073a60c8ea71051ce96408a47c0043aab48d3fd1a3d5110840798e
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: cc64df44d01bd5be113bd5e9bb3ca672cd06dcefda02d44f2291818088501bce
+            outcomeId: 11e6e278-3b57-4222-8d86-dcdfd1444d03
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/procurement-fulfillment-collaboration-slice:13/1
+          token: portable-af8264a6b6619b98362378530824e11844be3b733e510b982bc8c2a8e1492b21
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:13
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: c6a4257d80ea77c66f2f76c9c38675eda5553e9ce6efc0eb043e294dff7aab8f
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:13
+          attempt: 1
+          claimToken: portable-af8264a6b6619b98362378530824e11844be3b733e510b982bc8c2a8e1492b21
+          inputHash: c6a4257d80ea77c66f2f76c9c38675eda5553e9ce6efc0eb043e294dff7aab8f
+          outcomeId: 20472055-e8e4-4ed4-82eb-dc3b845f0242
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: e2adab169206aec5dfa52cbd0585459c38db1cba9e621e929ef36bbbf9d80deb
+            outcomeId: 20472055-e8e4-4ed4-82eb-dc3b845f0242
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 3
+        claim:
+          executorId: comet-classic-check
+          token: portable-802bdfe513e3c032d0d4cdfd1cddb0f8e913bfa59dc25d1fa01bffcbd1967de1
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:14
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: 4ce10150be6df04b7cbe2ee7f1196ebdf6afc8fc2e61b95c20dd0fffec4723b6
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:14
+          attempt: 3
+          claimToken: portable-802bdfe513e3c032d0d4cdfd1cddb0f8e913bfa59dc25d1fa01bffcbd1967de1
+          inputHash: 4ce10150be6df04b7cbe2ee7f1196ebdf6afc8fc2e61b95c20dd0fffec4723b6
+          outcomeId: e93d740f-ad70-4207-8dda-99f163a04ef1
+          output:
+            argv:
+              - timeout
+              - "600"
+              - bash
+              - outputs/comet-build-check.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 45a01a339b65e61f1877c4ac027b1e8564cd8ead264c42139885e148b08d5400
+            cwd: .
+            environment: 207126c93e5be35880682cd233d920a14ea62ab25afa151f051778ba9533a113
+            exitCode: 1
+            inputAfter: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+            inputBefore: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+            manifestHash: 0c14982b0686ad1de5eb659b34119887b5b5d417d533b5cc516d032093852fc5
+            manifestRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/658d715d-42db-4b6b-868d-559046d70068.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/89b70188-6ba8-472b-91ca-b9dce7090c97.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: failed
+        protocolVersion: 1
+        receipts:
+          - hash: 85c5862c32a83b660dc5b6094d10169f793da335879d68b6f57283220c434ff5
+            outcomeId: e93d740f-ad70-4207-8dda-99f163a04ef1
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: "首次 check run 在输入校验阶段即被拒绝（Check input is a symbolic link:
+                bone-frontend/node_modules），classic-check
+                子进程从未启动，无任何命令执行或副作用；属实未执行。已恢复工作树供重新检查。"
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: 第二次 check run 同样在输入校验阶段被符号链接拒绝，classic-check 子进程未启动、无副作用；现已永久移除
+                bone-frontend/node_modules 符号链接，工作树干净，属实未执行。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: failed
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/procurement-fulfillment-collaboration-slice:15/1
+          token: portable-8a1e2f3be2b009360d5161273c4bf16c344f5bede2ed58e7e27ecf20acef4820
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:15
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: e2539e6e8ce2e9207aec2c6cd53d19bad84f78e2338dc9b37adac14d9fd91d00
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:15
+          attempt: 1
+          claimToken: portable-8a1e2f3be2b009360d5161273c4bf16c344f5bede2ed58e7e27ecf20acef4820
+          inputHash: e2539e6e8ce2e9207aec2c6cd53d19bad84f78e2338dc9b37adac14d9fd91d00
+          outcomeId: 16b06c1f-f41e-4857-a963-33d447f73379
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 5bb4966e58c58413b72d1bbed38c4efd221f2abefcb457748217ce6ba8718e81
+            outcomeId: 16b06c1f-f41e-4857-a963-33d447f73379
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-23eb0189052b0cefe0dcc07f7b0dfa7b61c4aef2445d8ac710af8f8297963ba8
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:16
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: e2539e6e8ce2e9207aec2c6cd53d19bad84f78e2338dc9b37adac14d9fd91d00
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:16
+          attempt: 1
+          claimToken: portable-23eb0189052b0cefe0dcc07f7b0dfa7b61c4aef2445d8ac710af8f8297963ba8
+          inputHash: e2539e6e8ce2e9207aec2c6cd53d19bad84f78e2338dc9b37adac14d9fd91d00
+          outcomeId: dc3dfd8c-dbe7-4d59-bc45-3a50bfe6ed68
+          output:
+            argv:
+              - bash
+              - outputs/comet-build-check.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: da02d81fd188fbd5e8e148e3c7817583ee2387ef8a72050323e62413b9da0af7
+            cwd: .
+            environment: 5884f5b0ee90d825a3a2427effe860a215e09889e9a268d64dc7a3c67320e070
+            exitCode: 0
+            inputAfter: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+            inputBefore: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+            manifestHash: 0c14982b0686ad1de5eb659b34119887b5b5d417d533b5cc516d032093852fc5
+            manifestRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/4e4896af-7b00-489f-928a-50cf5bf7e0fa.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/d95e2f01-7a54-443d-966c-32fa7c828606.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 41936c99487b3249fa96b29c18beb83835834fbc9cadca3ff842abdf5739d142
+            outcomeId: dc3dfd8c-dbe7-4d59-bc45-3a50bfe6ed68
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-e71cb0fe30d54c28f1ec285ab943fd3f0631248445c9acbf76f2018075e2be36
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:18
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: 60a7cd378580b81591495787a069fa0eadc81f64b882148b55ae41c34dc2cd61
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:18
+          attempt: 1
+          claimToken: portable-e71cb0fe30d54c28f1ec285ab943fd3f0631248445c9acbf76f2018075e2be36
+          inputHash: 60a7cd378580b81591495787a069fa0eadc81f64b882148b55ae41c34dc2cd61
+          outcomeId: 5604fe66-c566-468b-957f-f350f7c2c6f2
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/procurement-fulfillment-collaboration-slice-verify-2026-11-18.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: b738acbacb3221bd124f5a742a06fadbde2197c1e89e5abf088a883245c44881
+            outcomeId: 5604fe66-c566-468b-957f-f350f7c2c6f2
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-8a985a2d5b92bd2efacb56fc5219adff24f026b60b9fcfdc2bff97055837fbf5
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:20
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: 9a9be34e8d13bd05e8c9fe1bcbbb336026c19c9f25f25e2a972c071d6ff93a99
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:20
+          attempt: 1
+          claimToken: portable-8a985a2d5b92bd2efacb56fc5219adff24f026b60b9fcfdc2bff97055837fbf5
+          inputHash: 9a9be34e8d13bd05e8c9fe1bcbbb336026c19c9f25f25e2a972c071d6ff93a99
+          outcomeId: 210f7765-f5db-4bd3-8ae5-bd272259ea29
+          output:
+            argv:
+              - bash
+              - outputs/comet-verify-check.sh
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: 5f713300315f03e63d563ce7533e96c1439fabd70fbd16bc55467ee8577cd8a9
+            cwd: .
+            deliveryInputs:
+              bone-apps/bone-procurement/bone-procurement-app/pom.xml: git:e5546c68a57abdbefaf3b953525e100539f1e953
+              bone-apps/bone-procurement/bone-procurement-app/src/main/java/com/bone/procurement/ProcurementApplication.java: git:b6d625eb0fb56d30c978aa29c9b1deddbe7df1b4
+              bone-apps/bone-procurement/bone-procurement-app/src/main/resources/application.yml: git:bb61af5db36dd58a1a1fc0f6bff52c1c178ce475
+              bone-apps/bone-procurement/bone-procurement-app/src/test/java/com/bone/procurement/ProcurementCapabilityToggleTest.java: git:ac7eec059a845b31e0672752fdf9189634a96a5a
+              bone-apps/bone-procurement/bone-procurement-fulfillment/pom.xml: git:d71d92b2607ac108672fd98f37c16edcead17b80
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/FulfillmentExceptionHandler.java: git:428b99bd3016141090d7c9767456197e72722c79
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/controller/FulfillmentController.java: git:a4c10f8b77251ef9c52c6e7c9142d074f08051ab
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/AsnApplicationService.java: git:884ff91ab3ed0d9eb7c07fb5b4a461e630c36579
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/FulfillmentQueryService.java: git:5baeb1bbf932e2ae71c14e67c47ec9f271645c0d
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/InvoiceSubmissionApplicationService.java: git:f9d4057071d0c63197d3b733d3c02c1c891dc74f
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/IrExceptionService.java: git:62c46820dbaae4500138641786b383c4450ca9b5
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/PoAckApplicationService.java: git:fbd82f43296eb14b48ad01aa89019076b2edc07c
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/AckCommand.java: git:a971466182d3749fd139c60c6d4bf00d0059ac3c
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/AsnCommand.java: git:a2283dffda03419f215f33062eec1751727e999b
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/InvoiceCommand.java: git:08ccb1d308f64ae0f4836527a69755a8b6d411e8
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/FulfillmentErrorCodes.java: git:14d3103e669e34c842f13b06e1ae5e9969b34465
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/FulfillmentErrors.java: git:3a5f254d6f3d035543fba9b75f30f354d67e61d7
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/ack/PoAcknowledgement.java: git:83a6c1a48780e7c09f081531a201705ae65c8b4a
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/Asn.java: git:bbb1da941e877c53271ee66a85a73b5e49732e76
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/AsnLine.java: git:798a5ec3f18381e56281464f6bf50f6536caddfb
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/AsnStatus.java: git:bec9e82f2d1302ba2044246cb952a8a56716e68a
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/exception/IrException.java: git:cd1b1af286574f2b3458640893e8d233635b428e
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/exception/IrExceptionStatus.java: git:205819e448868b1b1fffb7d5f1532707daf5b447
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/invoice/InvoiceStatus.java: git:ccc6e0b44c122f69859242477d0b284e25e19d24
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/invoice/InvoiceSubmission.java: git:5dede6cc11e061259a6bbc008a3790455d6538fa
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/FinanceAclPort.java: git:db7b3c794c35d02c75726bd99c2ac37b7c211b6c
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/InventoryAclPort.java: git:16a1ef738b7ef85534a63084dbf8e1b8e9bd8c54
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/PoQueryPort.java: git:a135db60f95e9f3ef97bef6768f7e4ca5fe47860
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/ToleranceConfigPort.java: git:908849277b9da2d36143e75d30dc2cbece5d8f2e
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/VendorIdentityPort.java: git:badd0a517f7b2f87c33150080c5ab4a4f5612779
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/AsnLineRepository.java: git:7daf78894b90e004a83b2e556e465c293eda2f50
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/AsnRepository.java: git:57c2cd033478bff1b69b22fd5a510cc0d691b8d1
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/InvoiceSubmissionRepository.java: git:45fe3516ee1e68927a4c54d494b0339337685fae
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/IrExceptionRepository.java: git:0ebb01f2c5a4d62cbc3bfff9d42a95a2b54685be
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/PoAcknowledgementRepository.java: git:329305c81b771631c6c438cf88b5d3ba196409e1
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/FailClosedAclAdapters.java: git:70e6ab403636b66df3b8d894d09cf82f8c5b2650
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/PoQueryPortAdapter.java: git:e32351ccd19f4be33e4a1885fe996ec7dadbdb71
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/SecurityVendorIdentityAdapter.java: git:ef4d5b0e02c9e1a0b1f0911f112035f04b70f1a1
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/ArchitectureTest.java: git:e2799c00d4ced32797f9b78c1b98113b86fcf29d
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/FulfillmentDdlCoverageTest.java: git:6fd936762d170a1430aa3cec386969b23e78799c
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/AsnApplicationServiceTest.java: git:b6ca0e1fde641e3bca4f9b8a159040158fdf2970
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/InvoiceSubmissionApplicationServiceTest.java: git:d54ee9e4b66958cd8a1974d3bf058da99ea2b003
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/IrExceptionServiceTest.java: git:4aefbd739d233689163acfd975236345de2c8c7f
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/PoAckApplicationServiceTest.java: git:9fb8dbb0f9c561755b53755adeab42fc9815e82d
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/domain/model/FulfillmentStatusMachineTest.java: git:7226b5f9da5e9e33c9fb23a7956d40e392cf220a
+              bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/domain/model/po/PoEvent.java: git:a382c268589d12b4c05ee3860ab36a13f90263b9
+              bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/domain/model/po/PoStatus.java: git:9352a393ecc63993088cc68d492445fd94b65340
+              bone-apps/bone-procurement/bone-procurement-transaction/src/test/java/com/bone/procurement/transaction/domain/model/po/PoStatusTest.java: git:61b798aa5bce0f97792b58be0d808752dabf6963
+              bone-apps/bone-procurement/pom.xml: git:054d4158ef5e61d3377ec4c4d2d4f6e5673e4ac6
+              bone-frontend/apps/bone-procurement-app/src/App.tsx: git:177b1c9cfd08f2902c95f2f877d0f70e618f1c1b
+              bone-frontend/apps/bone-procurement-app/src/pages/FulfillmentConsole.test.tsx: git:5279b5b5b76d6492f45fa0c3e41de4ed74413d57
+              bone-frontend/apps/bone-procurement-app/src/pages/FulfillmentConsole.tsx: git:9fa1ba2ffe342f1483cc2c119d048f60e604875d
+              bone-frontend/apps/bone-procurement-app/src/pages/fulfillmentView.test.ts: git:f85d52fefefaa6e11736110af5e833536ae9ab29
+              bone-frontend/apps/bone-procurement-app/src/pages/fulfillmentView.ts: git:64c300ed96bcbbad62dce3de6bbd6f325e1dfbad
+              bone-frontend/apps/bone-procurement-app/src/services/fulfillmentApi.test.ts: git:cf3f96fa57634ba5f4b11660282e15388870b973
+              bone-frontend/apps/bone-procurement-app/src/services/fulfillmentApi.ts: git:0406192c116e609c9c1ff849bbcc283180a9eeb5
+              bone-frontend/apps/bone-procurement-app/src/types/fulfillment.ts: git:4dd9b6092a95533cb8253581aea66d79a08c7a00
+              bone-init.sql: git:6aaf21d58173dc89879a8b8d7c1dabbd2a93552e
+              scripts/migration/0101_seed_procurement_fulfillment_permissions.sql: git:bc524235decb7aa51bf05c85a29071dce65903f2
+              scripts/migration/0102_seed_procurement_fulfillment_menus.sql: git:75eb281622692e5d2507226b06bf94d929a82ced
+            environment: d08e5a87b893350c4c4b0762531331c0e31460cd23d4f22ce9d7c707da897264
+            exitCode: 0
+            inputAfter: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+            inputBefore: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+            manifestHash: 0c14982b0686ad1de5eb659b34119887b5b5d417d533b5cc516d032093852fc5
+            manifestRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/0437d48d-c6fe-4e0a-bbcf-5d7d9bf1643e.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/54b6d1a7-a32d-42f8-83f1-a115d6f383e4.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 76c539f42633919b748858c23564c6b3fc51cb4946a15ec8f4f3657863e8639e
+            outcomeId: 210f7765-f5db-4bd3-8ae5-bd272259ea29
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-5917039bdb5d1df1f5c8ab9539d3234da0933c5893ec42dc941cd135f38af3f2
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:22
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: 6202225fddf4ad6013879249f6fa67e3cb8a7a2e7dd129ecb8d834ec41f171e2
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:22
+          attempt: 1
+          claimToken: portable-5917039bdb5d1df1f5c8ab9539d3234da0933c5893ec42dc941cd135f38af3f2
+          inputHash: 6202225fddf4ad6013879249f6fa67e3cb8a7a2e7dd129ecb8d834ec41f171e2
+          outcomeId: 244f1d0a-807f-47b7-8a76-fbd52dcb2fd8
+          output:
+            summary: 采购履约核心协同闭环已交付：新增 bone-procurement-fulfillment DDD 模块（PO 确认/ASN/自助开票/IR
+              例外四能力+5 张表+6 端点），前端 bone-procurement-app 增履约协同页四视图；30/30 tasks
+              完成；后端 101 例/前端 77 例全绿；G32/G37/G40/G41+procura 全绿；997→MATCHED
+              变异测试证明非假绿；迁移 SQL 幂等验证通过（修复号段冲突）；真实浏览器降级态 E2E 通过。偏差已登记：LLD portal/*
+              与内部 procurement/* 路径偏差、浏览器仅降级态（环境前置未满足）。
+            targetBranch: comet/procurement-fulfillment-collaboration-slice
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 0552b5c567bf350f719ded3eff698c0ff3a4c7ac91d23cd0b730240a257c7490
+            outcomeId: 244f1d0a-807f-47b7-8a76-fbd52dcb2fd8
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-c2a947b7bc71ea9f8c6c5880905029bb76c5355b8a5f3d6b62562410b04cbca1
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:24
+        input:
+          activation:
+            expectedRevision: 45
+            fromPhase: archive
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: 1263b3029dfdf54032a1f7ffcabd691b7315bd5ed6c069c607309002abc9e9e0
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:24
+          attempt: 1
+          claimToken: portable-c2a947b7bc71ea9f8c6c5880905029bb76c5355b8a5f3d6b62562410b04cbca1
+          inputHash: 1263b3029dfdf54032a1f7ffcabd691b7315bd5ed6c069c607309002abc9e9e0
+          outcomeId: f93697ce-77ff-44f7-a5e2-d75ef34ac8a5
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/procurement-fulfillment-collaboration-slice-verify-2026-11-18.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 9e5b5639ff6782e9e0f14bde22f0a8ec185bf4612f67ebd072bf053e272ee713
+            outcomeId: f93697ce-77ff-44f7-a5e2-d75ef34ac8a5
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-f8dad97b21cc5f570d6a0b27a1fbbe71f8d886c5673f592ed3f8e883af3c2822
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:26
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: f2316b3d06d0eef7dd0e16ae928d00c5aa2373ef15a3a1ff7708f9627713dff6
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:26
+          attempt: 2
+          claimToken: portable-f8dad97b21cc5f570d6a0b27a1fbbe71f8d886c5673f592ed3f8e883af3c2822
+          inputHash: f2316b3d06d0eef7dd0e16ae928d00c5aa2373ef15a3a1ff7708f9627713dff6
+          outcomeId: 63ba5622-bdc7-4c34-be4f-536380df764a
+          output:
+            argv:
+              - bash
+              - outputs/comet-verify-check.sh
+            changedDuringExecution: []
+            checkEpoch: 4
+            contentHash: 5f713300315f03e63d563ce7533e96c1439fabd70fbd16bc55467ee8577cd8a9
+            cwd: .
+            deliveryInputs:
+              bone-apps/bone-procurement/bone-procurement-app/pom.xml: git:e5546c68a57abdbefaf3b953525e100539f1e953
+              bone-apps/bone-procurement/bone-procurement-app/src/main/java/com/bone/procurement/ProcurementApplication.java: git:b6d625eb0fb56d30c978aa29c9b1deddbe7df1b4
+              bone-apps/bone-procurement/bone-procurement-app/src/main/resources/application.yml: git:bb61af5db36dd58a1a1fc0f6bff52c1c178ce475
+              bone-apps/bone-procurement/bone-procurement-app/src/test/java/com/bone/procurement/ProcurementCapabilityToggleTest.java: git:ac7eec059a845b31e0672752fdf9189634a96a5a
+              bone-apps/bone-procurement/bone-procurement-fulfillment/pom.xml: git:d71d92b2607ac108672fd98f37c16edcead17b80
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/FulfillmentExceptionHandler.java: git:428b99bd3016141090d7c9767456197e72722c79
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/controller/FulfillmentController.java: git:a4c10f8b77251ef9c52c6e7c9142d074f08051ab
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/AsnApplicationService.java: git:884ff91ab3ed0d9eb7c07fb5b4a461e630c36579
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/FulfillmentQueryService.java: git:5baeb1bbf932e2ae71c14e67c47ec9f271645c0d
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/InvoiceSubmissionApplicationService.java: git:f9d4057071d0c63197d3b733d3c02c1c891dc74f
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/IrExceptionService.java: git:62c46820dbaae4500138641786b383c4450ca9b5
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/PoAckApplicationService.java: git:fbd82f43296eb14b48ad01aa89019076b2edc07c
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/AckCommand.java: git:a971466182d3749fd139c60c6d4bf00d0059ac3c
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/AsnCommand.java: git:a2283dffda03419f215f33062eec1751727e999b
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/InvoiceCommand.java: git:08ccb1d308f64ae0f4836527a69755a8b6d411e8
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/FulfillmentErrorCodes.java: git:14d3103e669e34c842f13b06e1ae5e9969b34465
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/FulfillmentErrors.java: git:3a5f254d6f3d035543fba9b75f30f354d67e61d7
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/ack/PoAcknowledgement.java: git:83a6c1a48780e7c09f081531a201705ae65c8b4a
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/Asn.java: git:bbb1da941e877c53271ee66a85a73b5e49732e76
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/AsnLine.java: git:798a5ec3f18381e56281464f6bf50f6536caddfb
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/AsnStatus.java: git:bec9e82f2d1302ba2044246cb952a8a56716e68a
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/exception/IrException.java: git:cd1b1af286574f2b3458640893e8d233635b428e
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/exception/IrExceptionStatus.java: git:205819e448868b1b1fffb7d5f1532707daf5b447
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/invoice/InvoiceStatus.java: git:ccc6e0b44c122f69859242477d0b284e25e19d24
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/invoice/InvoiceSubmission.java: git:5dede6cc11e061259a6bbc008a3790455d6538fa
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/FinanceAclPort.java: git:db7b3c794c35d02c75726bd99c2ac37b7c211b6c
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/InventoryAclPort.java: git:16a1ef738b7ef85534a63084dbf8e1b8e9bd8c54
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/PoQueryPort.java: git:a135db60f95e9f3ef97bef6768f7e4ca5fe47860
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/ToleranceConfigPort.java: git:908849277b9da2d36143e75d30dc2cbece5d8f2e
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/VendorIdentityPort.java: git:badd0a517f7b2f87c33150080c5ab4a4f5612779
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/AsnLineRepository.java: git:7daf78894b90e004a83b2e556e465c293eda2f50
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/AsnRepository.java: git:57c2cd033478bff1b69b22fd5a510cc0d691b8d1
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/InvoiceSubmissionRepository.java: git:45fe3516ee1e68927a4c54d494b0339337685fae
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/IrExceptionRepository.java: git:0ebb01f2c5a4d62cbc3bfff9d42a95a2b54685be
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/PoAcknowledgementRepository.java: git:329305c81b771631c6c438cf88b5d3ba196409e1
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/FailClosedAclAdapters.java: git:70e6ab403636b66df3b8d894d09cf82f8c5b2650
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/PoQueryPortAdapter.java: git:e32351ccd19f4be33e4a1885fe996ec7dadbdb71
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/SecurityVendorIdentityAdapter.java: git:ef4d5b0e02c9e1a0b1f0911f112035f04b70f1a1
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/ArchitectureTest.java: git:e2799c00d4ced32797f9b78c1b98113b86fcf29d
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/FulfillmentDdlCoverageTest.java: git:6fd936762d170a1430aa3cec386969b23e78799c
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/AsnApplicationServiceTest.java: git:b6ca0e1fde641e3bca4f9b8a159040158fdf2970
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/InvoiceSubmissionApplicationServiceTest.java: git:d54ee9e4b66958cd8a1974d3bf058da99ea2b003
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/IrExceptionServiceTest.java: git:4aefbd739d233689163acfd975236345de2c8c7f
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/PoAckApplicationServiceTest.java: git:9fb8dbb0f9c561755b53755adeab42fc9815e82d
+              bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/domain/model/FulfillmentStatusMachineTest.java: git:7226b5f9da5e9e33c9fb23a7956d40e392cf220a
+              bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/domain/model/po/PoEvent.java: git:a382c268589d12b4c05ee3860ab36a13f90263b9
+              bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/domain/model/po/PoStatus.java: git:9352a393ecc63993088cc68d492445fd94b65340
+              bone-apps/bone-procurement/bone-procurement-transaction/src/test/java/com/bone/procurement/transaction/domain/model/po/PoStatusTest.java: git:61b798aa5bce0f97792b58be0d808752dabf6963
+              bone-apps/bone-procurement/pom.xml: git:054d4158ef5e61d3377ec4c4d2d4f6e5673e4ac6
+              bone-frontend/apps/bone-procurement-app/src/App.tsx: git:177b1c9cfd08f2902c95f2f877d0f70e618f1c1b
+              bone-frontend/apps/bone-procurement-app/src/pages/FulfillmentConsole.test.tsx: git:5279b5b5b76d6492f45fa0c3e41de4ed74413d57
+              bone-frontend/apps/bone-procurement-app/src/pages/FulfillmentConsole.tsx: git:9fa1ba2ffe342f1483cc2c119d048f60e604875d
+              bone-frontend/apps/bone-procurement-app/src/pages/fulfillmentView.test.ts: git:f85d52fefefaa6e11736110af5e833536ae9ab29
+              bone-frontend/apps/bone-procurement-app/src/pages/fulfillmentView.ts: git:64c300ed96bcbbad62dce3de6bbd6f325e1dfbad
+              bone-frontend/apps/bone-procurement-app/src/services/fulfillmentApi.test.ts: git:cf3f96fa57634ba5f4b11660282e15388870b973
+              bone-frontend/apps/bone-procurement-app/src/services/fulfillmentApi.ts: git:0406192c116e609c9c1ff849bbcc283180a9eeb5
+              bone-frontend/apps/bone-procurement-app/src/types/fulfillment.ts: git:4dd9b6092a95533cb8253581aea66d79a08c7a00
+              bone-init.sql: git:6aaf21d58173dc89879a8b8d7c1dabbd2a93552e
+              scripts/migration/0101_seed_procurement_fulfillment_permissions.sql: git:bc524235decb7aa51bf05c85a29071dce65903f2
+              scripts/migration/0102_seed_procurement_fulfillment_menus.sql: git:75eb281622692e5d2507226b06bf94d929a82ced
+            environment: d08e5a87b893350c4c4b0762531331c0e31460cd23d4f22ce9d7c707da897264
+            exitCode: 0
+            inputAfter: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+            inputBefore: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+            manifestHash: 0c14982b0686ad1de5eb659b34119887b5b5d417d533b5cc516d032093852fc5
+            manifestRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/dab30ff1-1ee6-4320-9c6d-cf2eaf479cea.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/47e733b4-1235-4931-976b-bfc3c12683bc.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 58897b303f8cc0afa58fb7a6c7f2558bd6ebe0027dc8e71559aefc598670051a
+            outcomeId: 63ba5622-bdc7-4c34-be4f-536380df764a
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: guard apply 因并发 running 冲突终止，本次 verify check 子进程未启动、无副作用；已
+                mark-unknown，属实未执行，重试。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-cdbbf2e92f7a4ac75066cc8288ed1f682df14e3da3c2993c1ebfa691b3932c06
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:28
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: d781d0180894bfe0492ac57c05cc0c5848a8fe00310bc72e5aa9665cbb61ab38
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:28
+          attempt: 1
+          claimToken: portable-cdbbf2e92f7a4ac75066cc8288ed1f682df14e3da3c2993c1ebfa691b3932c06
+          inputHash: d781d0180894bfe0492ac57c05cc0c5848a8fe00310bc72e5aa9665cbb61ab38
+          outcomeId: 1e493513-e83c-45d8-b457-0014798518c0
+          output:
+            remote: origin
+            summary: 采购履约核心协同闭环已交付：新增 bone-procurement-fulfillment DDD 模块（PO 确认/ASN/自助开票/IR
+              例外四能力+5 张表+6 端点），前端 bone-procurement-app 增履约协同页四视图；30/30 tasks
+              完成；后端 101 例/前端 77 例全绿；G32/G37/G40/G41+procura 全绿；997→MATCHED
+              变异测试证明非假绿；迁移 SQL 幂等验证通过（修复号段冲突）；真实浏览器降级态 E2E 通过。偏差已登记：LLD portal/*
+              与内部 procurement/* 路径偏差、浏览器仅降级态（环境前置未满足）。
+            targetBranch: comet/procurement-fulfillment-collaboration-slice
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3b1a2247fa6916418bae79ecaf85f2dfbd184fc29375794d571589d4389b9eb2
+            outcomeId: 1e493513-e83c-45d8-b457-0014798518c0
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-6f0ce00d38136a559363539652cafb874a6cc52102a4af7c4ae722c963b115ce
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:30
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: 0fd1037ee507b489df03687244ecaba0886c5a5fe7b2202f617e1c0ac269e99e
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:30
+          attempt: 1
+          claimToken: portable-6f0ce00d38136a559363539652cafb874a6cc52102a4af7c4ae722c963b115ce
+          inputHash: 0fd1037ee507b489df03687244ecaba0886c5a5fe7b2202f617e1c0ac269e99e
+          outcomeId: 2c897c60-b6eb-4c11-b73d-b52eb438c6c2
+          output:
+            baseCommit: 27e1948df1a6e17f5bda35c660daed63e66777d1
+            deliveryAction: push
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: comet/procurement-fulfillment-collaboration-slice
+            verifiedBranch: comet/procurement-fulfillment-collaboration-slice
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 0a0bf8ef3d01f5c300ca7da630502127a1edf9880f72898bf1cc218241f2af23
+            outcomeId: 2c897c60-b6eb-4c11-b73d-b52eb438c6c2
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-7efc2fbfea87ffb2c88a10fc936f5a542e7bc1ed6ca2cb7aadcc4563b16e3224
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-fulfillment-collaboration-slice:31
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: 739efe9fb5d3f7105facd4392f4327fb562a540ad709ab4fcac31a50fb796ca6
+        outcome:
+          actionId: procurement-fulfillment-collaboration-slice:31
+          artifacts:
+            - sha256: 8e106db72b05a7f44c4c76284588da5433cba053cebb24b99512fbf790098501
+              uri: openspec/changes/archive/2026-11-18-procurement-fulfillment-collaboration-slice/.comet/archive-manifest.json
+          attempt: 1
+          claimToken: portable-7efc2fbfea87ffb2c88a10fc936f5a542e7bc1ed6ca2cb7aadcc4563b16e3224
+          inputHash: 739efe9fb5d3f7105facd4392f4327fb562a540ad709ab4fcac31a50fb796ca6
+          outcomeId: procurement-fulfillment-collaboration-slice:31:1:recovered:62
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-18-procurement-fulfillment-collaboration-slice
+          status: succeeded
+        protocolVersion: 1
+        reason: 原执行器中断，正在核对本次执行结果
+        receipts:
+          - hash: 47f1f4e1897cc9382993cd7512da410d9ee11d7447d774d1adda8b57160df1f1
+            outcomeId: procurement-fulfillment-collaboration-slice:31:1:recovered:62
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: succeeded
+        stepId: full.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: procurement-fulfillment-collaboration-slice:32
+        input:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs: {}
+        inputHash: e0766c9dd75e9e1107716ca2495d36fe61e8c62a5f24de16ae31e01b1994d38a
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-fulfillment-collaboration-slice
+        status: pending
+        stepId: full.archive.deliver
+        type: invoke_skill
+    commands:
+      - id: 01d240a34fa7080d901cad2bcfd94ba35731f4a7371022d6b7d77b618309da70
+        name: reopen-verification
+        inputHash: 3c1216d223dc3783fe16ad191d4503500b5b9a927fc523e2da55c67a316dbdb8
+        actionId: procurement-fulfillment-collaboration-slice:24
+    actionContexts:
+      procurement-fulfillment-collaboration-slice:1:
+        results: {}
+        sequence: 1
+      procurement-fulfillment-collaboration-slice:11:
+        results: {}
+        sequence: 11
+      procurement-fulfillment-collaboration-slice:13:
+        results: {}
+        sequence: 13
+      procurement-fulfillment-collaboration-slice:14:
+        results: {}
+        sequence: 14
+      procurement-fulfillment-collaboration-slice:15:
+        results: {}
+        sequence: 15
+      procurement-fulfillment-collaboration-slice:16:
+        results: {}
+        sequence: 16
+      procurement-fulfillment-collaboration-slice:18:
+        results: {}
+        sequence: 18
+      procurement-fulfillment-collaboration-slice:20:
+        results: {}
+        sequence: 20
+      procurement-fulfillment-collaboration-slice:22:
+        results: {}
+        sequence: 22
+      procurement-fulfillment-collaboration-slice:24:
+        results: {}
+        sequence: 24
+      procurement-fulfillment-collaboration-slice:26:
+        results: {}
+        sequence: 26
+      procurement-fulfillment-collaboration-slice:28:
+        results: {}
+        sequence: 28
+      procurement-fulfillment-collaboration-slice:30:
+        results: {}
+        sequence: 30
+      procurement-fulfillment-collaboration-slice:31:
+        results: {}
+        sequence: 31
+      procurement-fulfillment-collaboration-slice:32:
+        results: {}
+        sequence: 32
+      procurement-fulfillment-collaboration-slice:4:
+        results: {}
+        sequence: 4
+      procurement-fulfillment-collaboration-slice:5:
+        results: {}
+        sequence: 5
+      procurement-fulfillment-collaboration-slice:7:
+        results: {}
+        sequence: 7
+      procurement-fulfillment-collaboration-slice:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: procurement-fulfillment-collaboration-slice:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 5c1063eba7c7c45ed04f3df97d252f8a7d529f5c3cbc5ec3dc23fae2ee01010c
+              ref: openspec/changes/procurement-fulfillment-collaboration-slice
+        proposalHash: 711e358879aba02d511fc8b4164060e8893486a3d5c4dd5c2b5004c99b3a9126
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-5c1063eba7c7c45ed04f3df97d252f8a7d529f5c3cbc5ec3dc23fae2ee01010c
+          choice: approved
+          proposalHash: 711e358879aba02d511fc8b4164060e8893486a3d5c4dd5c2b5004c99b3a9126
+      - id: procurement-fulfillment-collaboration-slice:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procurement-fulfillment-collaboration-slice/.comet/handoff/design-context.json
+              handoffHash: 2d9acc078aaf4e05ae6b16c1322a29e503494790c8bbb5fad40e6692e423c291
+              proposal: 技术方案（基于已确认的 LLD 05 卷 v0.3 与 Open 产物，代码勘探已完成）：① 新增
+                bone-procurement-fulfillment DDD 模块，由 bone-procurement-app
+                统一装配；经 PoQueryPort 只读依赖 transaction，经
+                InventoryAclPort/FinanceAclPort/ToleranceConfigPort 承接跨上下文（默认
+                fail-closed、运行期不触发真实上游）。② 关键取舍 D1：现有 PoStatus 对 SENT
+                及履约保留态故意注册空迁移表（注释写明避免提前实现 05 语义），本轮仅受控解锁唯一一条 SENT→ACKNOWLEDGED
+                作为 ASN 可信上游，其余保留态继续 fail-closed，用 PoStatusTest
+                增补断言守住只允许这一条；备选『履约独立确认态』因与 PO 状态双真源被否决。③ D3 跨上下文用端口+fail-closed
+                桩（沿袭上轮 VendorQueryPortAdapter 范式），不引 MQ/Outbox（PA-08），Finance
+                不可用时发票保持 MATCH_PENDING、不推断通过。④ D4 金额/数量遵循 LLD §14
+                类型基线，容差按供应商/品类配置、禁止硬编码，TDS=ΣIT1±SAC 逐行舍入。⑤ D5
+                权限复用内部采购角色+供应商维度过滤（外部账号属二期 L23），越权 403+零数据；D6 前端在现有
+                bone-procurement-app 加履约页与 /transactions/fulfillment 路由，不改 shell
+                注册；D7 错误码 31501-31506 + 409 invalid_transition。⑥ 风险：LLD
+                openapi.yaml 端点为 /api/v1/portal/*（BFF），本轮内部实现
+                /api/v1/procurement/*，如实登记为路径偏差、不谎称契约覆盖，措辞避开 A10.16 黑名单。⑦ Spec
+                Patch：无（行为需求以 5 份 delta spec 为准，design.md 不新增规格）。完整技术设计见
+                design.md（已补 SDK frontmatter）。
+              requirementsEvidence:
+                contentHash: fc760ebd302aa60da7ffe8032f318b05e9675a431fc6c762a6498a6e9bdc99e4
+                ref: openspec/changes/procurement-fulfillment-collaboration-slice
+              sourceEvidence:
+                contentHash: 48e63c0373f047d384f8fb09a4fd482c60a31f7a6bbcfbaa45ea09a907eefea9
+                ref: openspec/changes/procurement-fulfillment-collaboration-slice
+        proposalHash: b05fa46817a919b78f6e348c777c28ac5c338a4e427a8f5dccfff93b8d31140a
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-b05fa46817a919b78f6e348c777c28ac5c338a4e427a8f5dccfff93b8d31140a-approved
+          choice: approved
+          proposalHash: b05fa46817a919b78f6e348c777c28ac5c338a4e427a8f5dccfff93b8d31140a
+      - id: procurement-fulfillment-collaboration-slice:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs:
+            full.build.configure:
+              boundBranch: comet/procurement-fulfillment-collaboration-slice
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: 0b32669ceb8acecb86672faf51312c2cbfbff1810c11505b32d3f0269b3ede59
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-build-0b32669ceb8acecb86672faf51312c2cbfbff1810c11505b32d3f0269b3ede59-approved
+          choice: approved
+          proposalHash: 0b32669ceb8acecb86672faf51312c2cbfbff1810c11505b32d3f0269b3ede59
+      - id: procurement-fulfillment-collaboration-slice:23
+        stepId: full.archive.confirm
+        sequence: 23
+        status: cancelled
+        proposal:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs:
+            full.archive.prepare:
+              summary: 采购履约核心协同闭环已交付：新增 bone-procurement-fulfillment DDD 模块（PO 确认/ASN/自助开票/IR
+                例外四能力+5 张表+6 端点），前端 bone-procurement-app 增履约协同页四视图；30/30 tasks
+                完成；后端 101 例/前端 77 例全绿；G32/G37/G40/G41+procura 全绿；997→MATCHED
+                变异测试证明非假绿；迁移 SQL 幂等验证通过（修复号段冲突）；真实浏览器降级态 E2E 通过。偏差已登记：LLD
+                portal/* 与内部 procurement/* 路径偏差、浏览器仅降级态（环境前置未满足）。
+              targetBranch: comet/procurement-fulfillment-collaboration-slice
+        proposalHash: 55df5311b68fbc6ae0f55819d8e3766f68e5acb0f5ec14c04a50dcb010c0e421
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+      - id: procurement-fulfillment-collaboration-slice:29
+        stepId: full.archive.confirm
+        sequence: 29
+        status: resolved
+        proposal:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: 采购履约核心协同闭环已交付：新增 bone-procurement-fulfillment DDD 模块（PO 确认/ASN/自助开票/IR
+                例外四能力+5 张表+6 端点），前端 bone-procurement-app 增履约协同页四视图；30/30 tasks
+                完成；后端 101 例/前端 77 例全绿；G32/G37/G40/G41+procura 全绿；997→MATCHED
+                变异测试证明非假绿；迁移 SQL 幂等验证通过（修复号段冲突）；真实浏览器降级态 E2E 通过。偏差已登记：LLD
+                portal/* 与内部 procurement/* 路径偏差、浏览器仅降级态（环境前置未满足）。
+              targetBranch: comet/procurement-fulfillment-collaboration-slice
+        proposalHash: 28656b91c6b553f57d7ad668ff9fa6527fb06418467a5247b8f9f5dbce662b62
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-28656b91c6b553f57d7ad668ff9fa6527fb06418467a5247b8f9f5dbce662b62-push
+          choice: push
+          proposalHash: 28656b91c6b553f57d7ad668ff9fa6527fb06418467a5247b8f9f5dbce662b62
+    evidenceWaits:
+      - id: procurement-fulfillment-collaboration-slice:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procurement-fulfillment-collaboration-slice
+          contentHash: 5c1063eba7c7c45ed04f3df97d252f8a7d529f5c3cbc5ec3dc23fae2ee01010c
+          submissionId: 343b6b41-a3c4-498b-bed4-30d7c71b66ae
+      - id: procurement-fulfillment-collaboration-slice:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procurement-fulfillment-collaboration-slice/design.md
+          contentHash: 28ffdc848cf401bef70f99c0e1102da0635b4d7c0fff2a7acf32dd170305bf04
+          submissionId: abe075b2-4877-4841-bbf7-943b760a241e
+      - id: procurement-fulfillment-collaboration-slice:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/procurement-fulfillment-collaboration-slice.md
+          contentHash: bcb68d9d1a45be293039f2e652c28578a6f9676a2c84953f1a500dcb1ec45dc6
+          submissionId: f288b226-3e2e-41e7-b36b-343ffed5e634
+      - id: procurement-fulfillment-collaboration-slice:17
+        stepId: full.build.check.evidence
+        sequence: 17
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/d95e2f01-7a54-443d-966c-32fa7c828606.log
+          contentHash: da02d81fd188fbd5e8e148e3c7817583ee2387ef8a72050323e62413b9da0af7
+          submissionId: bd65008b-7e23-455d-9a01-2f9c552dcd8b
+      - id: procurement-fulfillment-collaboration-slice:19
+        stepId: full.verify.report.evidence
+        sequence: 19
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/procurement-fulfillment-collaboration-slice-verify-2026-11-18.md
+          contentHash: ae586bbe20ebc87361540860beddb6971ea8d5895a360c7b64b2e0e26a1daf8a
+          submissionId: e7b6141e-3c67-4f38-b824-ed95019b20cb
+      - id: procurement-fulfillment-collaboration-slice:21
+        stepId: full.verify.check.evidence
+        sequence: 21
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/54b6d1a7-a32d-42f8-83f1-a115d6f383e4.log
+          contentHash: 5f713300315f03e63d563ce7533e96c1439fabd70fbd16bc55467ee8577cd8a9
+          submissionId: 352afbe2-8d08-499f-a1ea-6cee8ec8e8e0
+      - id: procurement-fulfillment-collaboration-slice:25
+        stepId: full.verify.report.evidence
+        sequence: 25
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/procurement-fulfillment-collaboration-slice-verify-2026-11-18.md
+          contentHash: ae586bbe20ebc87361540860beddb6971ea8d5895a360c7b64b2e0e26a1daf8a
+          submissionId: d5f93fa7-11c8-4cbf-9f65-492c31dd81a8
+      - id: procurement-fulfillment-collaboration-slice:27
+        stepId: full.verify.check.evidence
+        sequence: 27
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/47e733b4-1235-4931-976b-bfc3c12683bc.log
+          contentHash: 5f713300315f03e63d563ce7533e96c1439fabd70fbd16bc55467ee8577cd8a9
+          submissionId: 1e510ffc-1372-4a25-8d24-d5fc3305fe8a
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 63
+  sourceHash: 3f3ac30383594f4aa12b2cc775e210089971ba19b338dd29c7733096c508be06
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 5c1063eba7c7c45ed04f3df97d252f8a7d529f5c3cbc5ec3dc23fae2ee01010c
+              ref: openspec/changes/procurement-fulfillment-collaboration-slice
+      - contentHash: 5c1063eba7c7c45ed04f3df97d252f8a7d529f5c3cbc5ec3dc23fae2ee01010c
+        ref: openspec/changes/procurement-fulfillment-collaboration-slice
+      - contentHash: 5c1063eba7c7c45ed04f3df97d252f8a7d529f5c3cbc5ec3dc23fae2ee01010c
+      - choice: approved
+        proposal:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procurement-fulfillment-collaboration-slice/.comet/handoff/design-context.json
+              handoffHash: 2d9acc078aaf4e05ae6b16c1322a29e503494790c8bbb5fad40e6692e423c291
+              proposal: 技术方案（基于已确认的 LLD 05 卷 v0.3 与 Open 产物，代码勘探已完成）：① 新增
+                bone-procurement-fulfillment DDD 模块，由 bone-procurement-app
+                统一装配；经 PoQueryPort 只读依赖 transaction，经
+                InventoryAclPort/FinanceAclPort/ToleranceConfigPort 承接跨上下文（默认
+                fail-closed、运行期不触发真实上游）。② 关键取舍 D1：现有 PoStatus 对 SENT
+                及履约保留态故意注册空迁移表（注释写明避免提前实现 05 语义），本轮仅受控解锁唯一一条 SENT→ACKNOWLEDGED
+                作为 ASN 可信上游，其余保留态继续 fail-closed，用 PoStatusTest
+                增补断言守住只允许这一条；备选『履约独立确认态』因与 PO 状态双真源被否决。③ D3 跨上下文用端口+fail-closed
+                桩（沿袭上轮 VendorQueryPortAdapter 范式），不引 MQ/Outbox（PA-08），Finance
+                不可用时发票保持 MATCH_PENDING、不推断通过。④ D4 金额/数量遵循 LLD §14
+                类型基线，容差按供应商/品类配置、禁止硬编码，TDS=ΣIT1±SAC 逐行舍入。⑤ D5
+                权限复用内部采购角色+供应商维度过滤（外部账号属二期 L23），越权 403+零数据；D6 前端在现有
+                bone-procurement-app 加履约页与 /transactions/fulfillment 路由，不改 shell
+                注册；D7 错误码 31501-31506 + 409 invalid_transition。⑥ 风险：LLD
+                openapi.yaml 端点为 /api/v1/portal/*（BFF），本轮内部实现
+                /api/v1/procurement/*，如实登记为路径偏差、不谎称契约覆盖，措辞避开 A10.16 黑名单。⑦ Spec
+                Patch：无（行为需求以 5 份 delta spec 为准，design.md 不新增规格）。完整技术设计见
+                design.md（已补 SDK frontmatter）。
+              requirementsEvidence:
+                contentHash: fc760ebd302aa60da7ffe8032f318b05e9675a431fc6c762a6498a6e9bdc99e4
+                ref: openspec/changes/procurement-fulfillment-collaboration-slice
+              sourceEvidence:
+                contentHash: 48e63c0373f047d384f8fb09a4fd482c60a31f7a6bbcfbaa45ea09a907eefea9
+                ref: openspec/changes/procurement-fulfillment-collaboration-slice
+      - handoffContext: openspec/changes/procurement-fulfillment-collaboration-slice/.comet/handoff/design-context.json
+        handoffHash: 2d9acc078aaf4e05ae6b16c1322a29e503494790c8bbb5fad40e6692e423c291
+        proposal: 技术方案（基于已确认的 LLD 05 卷 v0.3 与 Open 产物，代码勘探已完成）：① 新增
+          bone-procurement-fulfillment DDD 模块，由 bone-procurement-app 统一装配；经
+          PoQueryPort 只读依赖 transaction，经
+          InventoryAclPort/FinanceAclPort/ToleranceConfigPort 承接跨上下文（默认
+          fail-closed、运行期不触发真实上游）。② 关键取舍 D1：现有 PoStatus 对 SENT
+          及履约保留态故意注册空迁移表（注释写明避免提前实现 05 语义），本轮仅受控解锁唯一一条 SENT→ACKNOWLEDGED 作为 ASN
+          可信上游，其余保留态继续 fail-closed，用 PoStatusTest 增补断言守住只允许这一条；备选『履约独立确认态』因与 PO
+          状态双真源被否决。③ D3 跨上下文用端口+fail-closed 桩（沿袭上轮 VendorQueryPortAdapter 范式），不引
+          MQ/Outbox（PA-08），Finance 不可用时发票保持 MATCH_PENDING、不推断通过。④ D4 金额/数量遵循 LLD
+          §14 类型基线，容差按供应商/品类配置、禁止硬编码，TDS=ΣIT1±SAC 逐行舍入。⑤ D5
+          权限复用内部采购角色+供应商维度过滤（外部账号属二期 L23），越权 403+零数据；D6 前端在现有
+          bone-procurement-app 加履约页与 /transactions/fulfillment 路由，不改 shell 注册；D7
+          错误码 31501-31506 + 409 invalid_transition。⑥ 风险：LLD openapi.yaml 端点为
+          /api/v1/portal/*（BFF），本轮内部实现
+          /api/v1/procurement/*，如实登记为路径偏差、不谎称契约覆盖，措辞避开 A10.16 黑名单。⑦ Spec
+          Patch：无（行为需求以 5 份 delta spec 为准，design.md 不新增规格）。完整技术设计见 design.md（已补
+          SDK frontmatter）。
+        requirementsEvidence:
+          contentHash: fc760ebd302aa60da7ffe8032f318b05e9675a431fc6c762a6498a6e9bdc99e4
+          ref: openspec/changes/procurement-fulfillment-collaboration-slice
+        sourceEvidence:
+          contentHash: 48e63c0373f047d384f8fb09a4fd482c60a31f7a6bbcfbaa45ea09a907eefea9
+          ref: openspec/changes/procurement-fulfillment-collaboration-slice
+      - designDoc: openspec/changes/procurement-fulfillment-collaboration-slice/design.md
+      - contentHash: 28ffdc848cf401bef70f99c0e1102da0635b4d7c0fff2a7acf32dd170305bf04
+        ref: openspec/changes/procurement-fulfillment-collaboration-slice/design.md
+      - boundBranch: comet/procurement-fulfillment-collaboration-slice
+        buildMode: autonomous
+        directOverride: false
+        isolation: worktree
+        reviewMode: thorough
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs:
+            full.build.configure:
+              boundBranch: comet/procurement-fulfillment-collaboration-slice
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 28ffdc848cf401bef70f99c0e1102da0635b4d7c0fff2a7acf32dd170305bf04
+          ref: openspec/changes/procurement-fulfillment-collaboration-slice/design.md
+        plan: docs/superpowers/plans/procurement-fulfillment-collaboration-slice.md
+        planEvidence:
+          contentHash: bcb68d9d1a45be293039f2e652c28578a6f9676a2c84953f1a500dcb1ec45dc6
+          ref: docs/superpowers/plans/procurement-fulfillment-collaboration-slice.md
+        taskRevision: a999989928073a60c8ea71051ce96408a47c0043aab48d3fd1a3d5110840798e
+      - contentHash: bcb68d9d1a45be293039f2e652c28578a6f9676a2c84953f1a500dcb1ec45dc6
+        ref: docs/superpowers/plans/procurement-fulfillment-collaboration-slice.md
+      - event: build-complete
+      - argv:
+          - timeout
+          - "600"
+          - bash
+          - outputs/comet-build-check.sh
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 45a01a339b65e61f1877c4ac027b1e8564cd8ead264c42139885e148b08d5400
+        cwd: .
+        environment: 207126c93e5be35880682cd233d920a14ea62ab25afa151f051778ba9533a113
+        exitCode: 1
+        inputAfter: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+        inputBefore: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+        manifestHash: 0c14982b0686ad1de5eb659b34119887b5b5d417d533b5cc516d032093852fc5
+        manifestRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/658d715d-42db-4b6b-868d-559046d70068.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/89b70188-6ba8-472b-91ca-b9dce7090c97.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - argv:
+          - bash
+          - outputs/comet-build-check.sh
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: da02d81fd188fbd5e8e148e3c7817583ee2387ef8a72050323e62413b9da0af7
+        cwd: .
+        environment: 5884f5b0ee90d825a3a2427effe860a215e09889e9a268d64dc7a3c67320e070
+        exitCode: 0
+        inputAfter: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+        inputBefore: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+        manifestHash: 0c14982b0686ad1de5eb659b34119887b5b5d417d533b5cc516d032093852fc5
+        manifestRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/4e4896af-7b00-489f-928a-50cf5bf7e0fa.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/d95e2f01-7a54-443d-966c-32fa7c828606.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: da02d81fd188fbd5e8e148e3c7817583ee2387ef8a72050323e62413b9da0af7
+        ref: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/d95e2f01-7a54-443d-966c-32fa7c828606.log
+      - contentHash: ae586bbe20ebc87361540860beddb6971ea8d5895a360c7b64b2e0e26a1daf8a
+        ref: docs/superpowers/reports/procurement-fulfillment-collaboration-slice-verify-2026-11-18.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/procurement-fulfillment-collaboration-slice-verify-2026-11-18.md
+      - argv:
+          - bash
+          - outputs/comet-verify-check.sh
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: 5f713300315f03e63d563ce7533e96c1439fabd70fbd16bc55467ee8577cd8a9
+        cwd: .
+        deliveryInputs:
+          bone-apps/bone-procurement/bone-procurement-app/pom.xml: git:e5546c68a57abdbefaf3b953525e100539f1e953
+          bone-apps/bone-procurement/bone-procurement-app/src/main/java/com/bone/procurement/ProcurementApplication.java: git:b6d625eb0fb56d30c978aa29c9b1deddbe7df1b4
+          bone-apps/bone-procurement/bone-procurement-app/src/main/resources/application.yml: git:bb61af5db36dd58a1a1fc0f6bff52c1c178ce475
+          bone-apps/bone-procurement/bone-procurement-app/src/test/java/com/bone/procurement/ProcurementCapabilityToggleTest.java: git:ac7eec059a845b31e0672752fdf9189634a96a5a
+          bone-apps/bone-procurement/bone-procurement-fulfillment/pom.xml: git:d71d92b2607ac108672fd98f37c16edcead17b80
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/FulfillmentExceptionHandler.java: git:428b99bd3016141090d7c9767456197e72722c79
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/controller/FulfillmentController.java: git:a4c10f8b77251ef9c52c6e7c9142d074f08051ab
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/AsnApplicationService.java: git:884ff91ab3ed0d9eb7c07fb5b4a461e630c36579
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/FulfillmentQueryService.java: git:5baeb1bbf932e2ae71c14e67c47ec9f271645c0d
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/InvoiceSubmissionApplicationService.java: git:f9d4057071d0c63197d3b733d3c02c1c891dc74f
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/IrExceptionService.java: git:62c46820dbaae4500138641786b383c4450ca9b5
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/PoAckApplicationService.java: git:fbd82f43296eb14b48ad01aa89019076b2edc07c
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/AckCommand.java: git:a971466182d3749fd139c60c6d4bf00d0059ac3c
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/AsnCommand.java: git:a2283dffda03419f215f33062eec1751727e999b
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/InvoiceCommand.java: git:08ccb1d308f64ae0f4836527a69755a8b6d411e8
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/FulfillmentErrorCodes.java: git:14d3103e669e34c842f13b06e1ae5e9969b34465
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/FulfillmentErrors.java: git:3a5f254d6f3d035543fba9b75f30f354d67e61d7
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/ack/PoAcknowledgement.java: git:83a6c1a48780e7c09f081531a201705ae65c8b4a
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/Asn.java: git:bbb1da941e877c53271ee66a85a73b5e49732e76
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/AsnLine.java: git:798a5ec3f18381e56281464f6bf50f6536caddfb
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/AsnStatus.java: git:bec9e82f2d1302ba2044246cb952a8a56716e68a
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/exception/IrException.java: git:cd1b1af286574f2b3458640893e8d233635b428e
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/exception/IrExceptionStatus.java: git:205819e448868b1b1fffb7d5f1532707daf5b447
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/invoice/InvoiceStatus.java: git:ccc6e0b44c122f69859242477d0b284e25e19d24
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/invoice/InvoiceSubmission.java: git:5dede6cc11e061259a6bbc008a3790455d6538fa
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/FinanceAclPort.java: git:db7b3c794c35d02c75726bd99c2ac37b7c211b6c
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/InventoryAclPort.java: git:16a1ef738b7ef85534a63084dbf8e1b8e9bd8c54
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/PoQueryPort.java: git:a135db60f95e9f3ef97bef6768f7e4ca5fe47860
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/ToleranceConfigPort.java: git:908849277b9da2d36143e75d30dc2cbece5d8f2e
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/VendorIdentityPort.java: git:badd0a517f7b2f87c33150080c5ab4a4f5612779
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/AsnLineRepository.java: git:7daf78894b90e004a83b2e556e465c293eda2f50
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/AsnRepository.java: git:57c2cd033478bff1b69b22fd5a510cc0d691b8d1
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/InvoiceSubmissionRepository.java: git:45fe3516ee1e68927a4c54d494b0339337685fae
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/IrExceptionRepository.java: git:0ebb01f2c5a4d62cbc3bfff9d42a95a2b54685be
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/PoAcknowledgementRepository.java: git:329305c81b771631c6c438cf88b5d3ba196409e1
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/FailClosedAclAdapters.java: git:70e6ab403636b66df3b8d894d09cf82f8c5b2650
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/PoQueryPortAdapter.java: git:e32351ccd19f4be33e4a1885fe996ec7dadbdb71
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/SecurityVendorIdentityAdapter.java: git:ef4d5b0e02c9e1a0b1f0911f112035f04b70f1a1
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/ArchitectureTest.java: git:e2799c00d4ced32797f9b78c1b98113b86fcf29d
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/FulfillmentDdlCoverageTest.java: git:6fd936762d170a1430aa3cec386969b23e78799c
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/AsnApplicationServiceTest.java: git:b6ca0e1fde641e3bca4f9b8a159040158fdf2970
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/InvoiceSubmissionApplicationServiceTest.java: git:d54ee9e4b66958cd8a1974d3bf058da99ea2b003
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/IrExceptionServiceTest.java: git:4aefbd739d233689163acfd975236345de2c8c7f
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/PoAckApplicationServiceTest.java: git:9fb8dbb0f9c561755b53755adeab42fc9815e82d
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/domain/model/FulfillmentStatusMachineTest.java: git:7226b5f9da5e9e33c9fb23a7956d40e392cf220a
+          bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/domain/model/po/PoEvent.java: git:a382c268589d12b4c05ee3860ab36a13f90263b9
+          bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/domain/model/po/PoStatus.java: git:9352a393ecc63993088cc68d492445fd94b65340
+          bone-apps/bone-procurement/bone-procurement-transaction/src/test/java/com/bone/procurement/transaction/domain/model/po/PoStatusTest.java: git:61b798aa5bce0f97792b58be0d808752dabf6963
+          bone-apps/bone-procurement/pom.xml: git:054d4158ef5e61d3377ec4c4d2d4f6e5673e4ac6
+          bone-frontend/apps/bone-procurement-app/src/App.tsx: git:177b1c9cfd08f2902c95f2f877d0f70e618f1c1b
+          bone-frontend/apps/bone-procurement-app/src/pages/FulfillmentConsole.test.tsx: git:5279b5b5b76d6492f45fa0c3e41de4ed74413d57
+          bone-frontend/apps/bone-procurement-app/src/pages/FulfillmentConsole.tsx: git:9fa1ba2ffe342f1483cc2c119d048f60e604875d
+          bone-frontend/apps/bone-procurement-app/src/pages/fulfillmentView.test.ts: git:f85d52fefefaa6e11736110af5e833536ae9ab29
+          bone-frontend/apps/bone-procurement-app/src/pages/fulfillmentView.ts: git:64c300ed96bcbbad62dce3de6bbd6f325e1dfbad
+          bone-frontend/apps/bone-procurement-app/src/services/fulfillmentApi.test.ts: git:cf3f96fa57634ba5f4b11660282e15388870b973
+          bone-frontend/apps/bone-procurement-app/src/services/fulfillmentApi.ts: git:0406192c116e609c9c1ff849bbcc283180a9eeb5
+          bone-frontend/apps/bone-procurement-app/src/types/fulfillment.ts: git:4dd9b6092a95533cb8253581aea66d79a08c7a00
+          bone-init.sql: git:6aaf21d58173dc89879a8b8d7c1dabbd2a93552e
+          scripts/migration/0101_seed_procurement_fulfillment_permissions.sql: git:bc524235decb7aa51bf05c85a29071dce65903f2
+          scripts/migration/0102_seed_procurement_fulfillment_menus.sql: git:75eb281622692e5d2507226b06bf94d929a82ced
+        environment: d08e5a87b893350c4c4b0762531331c0e31460cd23d4f22ce9d7c707da897264
+        exitCode: 0
+        inputAfter: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+        inputBefore: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+        manifestHash: 0c14982b0686ad1de5eb659b34119887b5b5d417d533b5cc516d032093852fc5
+        manifestRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/0437d48d-c6fe-4e0a-bbcf-5d7d9bf1643e.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/54b6d1a7-a32d-42f8-83f1-a115d6f383e4.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 5f713300315f03e63d563ce7533e96c1439fabd70fbd16bc55467ee8577cd8a9
+        ref: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/54b6d1a7-a32d-42f8-83f1-a115d6f383e4.log
+      - argv:
+          - bash
+          - outputs/comet-verify-check.sh
+        changedDuringExecution: []
+        checkEpoch: 4
+        contentHash: 5f713300315f03e63d563ce7533e96c1439fabd70fbd16bc55467ee8577cd8a9
+        cwd: .
+        deliveryInputs:
+          bone-apps/bone-procurement/bone-procurement-app/pom.xml: git:e5546c68a57abdbefaf3b953525e100539f1e953
+          bone-apps/bone-procurement/bone-procurement-app/src/main/java/com/bone/procurement/ProcurementApplication.java: git:b6d625eb0fb56d30c978aa29c9b1deddbe7df1b4
+          bone-apps/bone-procurement/bone-procurement-app/src/main/resources/application.yml: git:bb61af5db36dd58a1a1fc0f6bff52c1c178ce475
+          bone-apps/bone-procurement/bone-procurement-app/src/test/java/com/bone/procurement/ProcurementCapabilityToggleTest.java: git:ac7eec059a845b31e0672752fdf9189634a96a5a
+          bone-apps/bone-procurement/bone-procurement-fulfillment/pom.xml: git:d71d92b2607ac108672fd98f37c16edcead17b80
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/FulfillmentExceptionHandler.java: git:428b99bd3016141090d7c9767456197e72722c79
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/controller/FulfillmentController.java: git:a4c10f8b77251ef9c52c6e7c9142d074f08051ab
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/AsnApplicationService.java: git:884ff91ab3ed0d9eb7c07fb5b4a461e630c36579
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/FulfillmentQueryService.java: git:5baeb1bbf932e2ae71c14e67c47ec9f271645c0d
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/InvoiceSubmissionApplicationService.java: git:f9d4057071d0c63197d3b733d3c02c1c891dc74f
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/IrExceptionService.java: git:62c46820dbaae4500138641786b383c4450ca9b5
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/PoAckApplicationService.java: git:fbd82f43296eb14b48ad01aa89019076b2edc07c
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/AckCommand.java: git:a971466182d3749fd139c60c6d4bf00d0059ac3c
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/AsnCommand.java: git:a2283dffda03419f215f33062eec1751727e999b
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/InvoiceCommand.java: git:08ccb1d308f64ae0f4836527a69755a8b6d411e8
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/FulfillmentErrorCodes.java: git:14d3103e669e34c842f13b06e1ae5e9969b34465
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/FulfillmentErrors.java: git:3a5f254d6f3d035543fba9b75f30f354d67e61d7
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/ack/PoAcknowledgement.java: git:83a6c1a48780e7c09f081531a201705ae65c8b4a
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/Asn.java: git:bbb1da941e877c53271ee66a85a73b5e49732e76
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/AsnLine.java: git:798a5ec3f18381e56281464f6bf50f6536caddfb
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/AsnStatus.java: git:bec9e82f2d1302ba2044246cb952a8a56716e68a
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/exception/IrException.java: git:cd1b1af286574f2b3458640893e8d233635b428e
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/exception/IrExceptionStatus.java: git:205819e448868b1b1fffb7d5f1532707daf5b447
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/invoice/InvoiceStatus.java: git:ccc6e0b44c122f69859242477d0b284e25e19d24
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/invoice/InvoiceSubmission.java: git:5dede6cc11e061259a6bbc008a3790455d6538fa
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/FinanceAclPort.java: git:db7b3c794c35d02c75726bd99c2ac37b7c211b6c
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/InventoryAclPort.java: git:16a1ef738b7ef85534a63084dbf8e1b8e9bd8c54
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/PoQueryPort.java: git:a135db60f95e9f3ef97bef6768f7e4ca5fe47860
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/ToleranceConfigPort.java: git:908849277b9da2d36143e75d30dc2cbece5d8f2e
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/VendorIdentityPort.java: git:badd0a517f7b2f87c33150080c5ab4a4f5612779
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/AsnLineRepository.java: git:7daf78894b90e004a83b2e556e465c293eda2f50
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/AsnRepository.java: git:57c2cd033478bff1b69b22fd5a510cc0d691b8d1
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/InvoiceSubmissionRepository.java: git:45fe3516ee1e68927a4c54d494b0339337685fae
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/IrExceptionRepository.java: git:0ebb01f2c5a4d62cbc3bfff9d42a95a2b54685be
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/PoAcknowledgementRepository.java: git:329305c81b771631c6c438cf88b5d3ba196409e1
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/FailClosedAclAdapters.java: git:70e6ab403636b66df3b8d894d09cf82f8c5b2650
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/PoQueryPortAdapter.java: git:e32351ccd19f4be33e4a1885fe996ec7dadbdb71
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/SecurityVendorIdentityAdapter.java: git:ef4d5b0e02c9e1a0b1f0911f112035f04b70f1a1
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/ArchitectureTest.java: git:e2799c00d4ced32797f9b78c1b98113b86fcf29d
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/FulfillmentDdlCoverageTest.java: git:6fd936762d170a1430aa3cec386969b23e78799c
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/AsnApplicationServiceTest.java: git:b6ca0e1fde641e3bca4f9b8a159040158fdf2970
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/InvoiceSubmissionApplicationServiceTest.java: git:d54ee9e4b66958cd8a1974d3bf058da99ea2b003
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/IrExceptionServiceTest.java: git:4aefbd739d233689163acfd975236345de2c8c7f
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/PoAckApplicationServiceTest.java: git:9fb8dbb0f9c561755b53755adeab42fc9815e82d
+          bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/domain/model/FulfillmentStatusMachineTest.java: git:7226b5f9da5e9e33c9fb23a7956d40e392cf220a
+          bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/domain/model/po/PoEvent.java: git:a382c268589d12b4c05ee3860ab36a13f90263b9
+          bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/domain/model/po/PoStatus.java: git:9352a393ecc63993088cc68d492445fd94b65340
+          bone-apps/bone-procurement/bone-procurement-transaction/src/test/java/com/bone/procurement/transaction/domain/model/po/PoStatusTest.java: git:61b798aa5bce0f97792b58be0d808752dabf6963
+          bone-apps/bone-procurement/pom.xml: git:054d4158ef5e61d3377ec4c4d2d4f6e5673e4ac6
+          bone-frontend/apps/bone-procurement-app/src/App.tsx: git:177b1c9cfd08f2902c95f2f877d0f70e618f1c1b
+          bone-frontend/apps/bone-procurement-app/src/pages/FulfillmentConsole.test.tsx: git:5279b5b5b76d6492f45fa0c3e41de4ed74413d57
+          bone-frontend/apps/bone-procurement-app/src/pages/FulfillmentConsole.tsx: git:9fa1ba2ffe342f1483cc2c119d048f60e604875d
+          bone-frontend/apps/bone-procurement-app/src/pages/fulfillmentView.test.ts: git:f85d52fefefaa6e11736110af5e833536ae9ab29
+          bone-frontend/apps/bone-procurement-app/src/pages/fulfillmentView.ts: git:64c300ed96bcbbad62dce3de6bbd6f325e1dfbad
+          bone-frontend/apps/bone-procurement-app/src/services/fulfillmentApi.test.ts: git:cf3f96fa57634ba5f4b11660282e15388870b973
+          bone-frontend/apps/bone-procurement-app/src/services/fulfillmentApi.ts: git:0406192c116e609c9c1ff849bbcc283180a9eeb5
+          bone-frontend/apps/bone-procurement-app/src/types/fulfillment.ts: git:4dd9b6092a95533cb8253581aea66d79a08c7a00
+          bone-init.sql: git:6aaf21d58173dc89879a8b8d7c1dabbd2a93552e
+          scripts/migration/0101_seed_procurement_fulfillment_permissions.sql: git:bc524235decb7aa51bf05c85a29071dce65903f2
+          scripts/migration/0102_seed_procurement_fulfillment_menus.sql: git:75eb281622692e5d2507226b06bf94d929a82ced
+        environment: d08e5a87b893350c4c4b0762531331c0e31460cd23d4f22ce9d7c707da897264
+        exitCode: 0
+        inputAfter: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+        inputBefore: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+        manifestHash: 0c14982b0686ad1de5eb659b34119887b5b5d417d533b5cc516d032093852fc5
+        manifestRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/dab30ff1-1ee6-4320-9c6d-cf2eaf479cea.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/47e733b4-1235-4931-976b-bfc3c12683bc.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 5f713300315f03e63d563ce7533e96c1439fabd70fbd16bc55467ee8577cd8a9
+        ref: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/47e733b4-1235-4931-976b-bfc3c12683bc.log
+      - choice: push
+        proposal:
+          input:
+            change: procurement-fulfillment-collaboration-slice
+            changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+            workspaceBaseline:
+              ref: e38cc895-a431-4581-880d-e503a497dc5d
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: 采购履约核心协同闭环已交付：新增 bone-procurement-fulfillment DDD 模块（PO 确认/ASN/自助开票/IR
+                例外四能力+5 张表+6 端点），前端 bone-procurement-app 增履约协同页四视图；30/30 tasks
+                完成；后端 101 例/前端 77 例全绿；G32/G37/G40/G41+procura 全绿；997→MATCHED
+                变异测试证明非假绿；迁移 SQL 幂等验证通过（修复号段冲突）；真实浏览器降级态 E2E 通过。偏差已登记：LLD
+                portal/* 与内部 procurement/* 路径偏差、浏览器仅降级态（环境前置未满足）。
+              targetBranch: comet/procurement-fulfillment-collaboration-slice
+      - remote: origin
+        summary: 采购履约核心协同闭环已交付：新增 bone-procurement-fulfillment DDD 模块（PO 确认/ASN/自助开票/IR
+          例外四能力+5 张表+6 端点），前端 bone-procurement-app 增履约协同页四视图；30/30 tasks 完成；后端
+          101 例/前端 77 例全绿；G32/G37/G40/G41+procura 全绿；997→MATCHED 变异测试证明非假绿；迁移
+          SQL 幂等验证通过（修复号段冲突）；真实浏览器降级态 E2E 通过。偏差已登记：LLD portal/* 与内部
+          procurement/* 路径偏差、浏览器仅降级态（环境前置未满足）。
+        targetBranch: comet/procurement-fulfillment-collaboration-slice
+      - baseCommit: 27e1948df1a6e17f5bda35c660daed63e66777d1
+        deliveryAction: push
+        remote: origin
+        remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+        targetBranch: comet/procurement-fulfillment-collaboration-slice
+        verifiedBranch: comet/procurement-fulfillment-collaboration-slice
+      - archiveDirectory: openspec/changes/archive/2026-11-18-procurement-fulfillment-collaboration-slice
+      - sequence: 9
+        value:
+          boundBranch: comet/procurement-fulfillment-collaboration-slice
+          buildMode: autonomous
+          directOverride: false
+          isolation: worktree
+          reviewMode: thorough
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procurement-fulfillment-collaboration-slice
+              changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+              workspaceBaseline:
+                ref: e38cc895-a431-4581-880d-e503a497dc5d
+            outputs:
+              full.build.configure:
+                boundBranch: comet/procurement-fulfillment-collaboration-slice
+                buildMode: autonomous
+                directOverride: false
+                isolation: worktree
+                reviewMode: thorough
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procurement-fulfillment-collaboration-slice
+              changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+              workspaceBaseline:
+                ref: e38cc895-a431-4581-880d-e503a497dc5d
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/procurement-fulfillment-collaboration-slice/.comet/handoff/design-context.json
+                handoffHash: 2d9acc078aaf4e05ae6b16c1322a29e503494790c8bbb5fad40e6692e423c291
+                proposal: 技术方案（基于已确认的 LLD 05 卷 v0.3 与 Open 产物，代码勘探已完成）：① 新增
+                  bone-procurement-fulfillment DDD 模块，由 bone-procurement-app
+                  统一装配；经 PoQueryPort 只读依赖 transaction，经
+                  InventoryAclPort/FinanceAclPort/ToleranceConfigPort 承接跨上下文（默认
+                  fail-closed、运行期不触发真实上游）。② 关键取舍 D1：现有 PoStatus 对 SENT
+                  及履约保留态故意注册空迁移表（注释写明避免提前实现 05 语义），本轮仅受控解锁唯一一条 SENT→ACKNOWLEDGED
+                  作为 ASN 可信上游，其余保留态继续 fail-closed，用 PoStatusTest
+                  增补断言守住只允许这一条；备选『履约独立确认态』因与 PO 状态双真源被否决。③ D3
+                  跨上下文用端口+fail-closed 桩（沿袭上轮 VendorQueryPortAdapter 范式），不引
+                  MQ/Outbox（PA-08），Finance 不可用时发票保持 MATCH_PENDING、不推断通过。④ D4
+                  金额/数量遵循 LLD §14 类型基线，容差按供应商/品类配置、禁止硬编码，TDS=ΣIT1±SAC 逐行舍入。⑤ D5
+                  权限复用内部采购角色+供应商维度过滤（外部账号属二期 L23），越权 403+零数据；D6 前端在现有
+                  bone-procurement-app 加履约页与 /transactions/fulfillment 路由，不改
+                  shell 注册；D7 错误码 31501-31506 + 409 invalid_transition。⑥ 风险：LLD
+                  openapi.yaml 端点为 /api/v1/portal/*（BFF），本轮内部实现
+                  /api/v1/procurement/*，如实登记为路径偏差、不谎称契约覆盖，措辞避开 A10.16 黑名单。⑦ Spec
+                  Patch：无（行为需求以 5 份 delta spec 为准，design.md 不新增规格）。完整技术设计见
+                  design.md（已补 SDK frontmatter）。
+                requirementsEvidence:
+                  contentHash: fc760ebd302aa60da7ffe8032f318b05e9675a431fc6c762a6498a6e9bdc99e4
+                  ref: openspec/changes/procurement-fulfillment-collaboration-slice
+                sourceEvidence:
+                  contentHash: 48e63c0373f047d384f8fb09a4fd482c60a31f7a6bbcfbaa45ea09a907eefea9
+                  ref: openspec/changes/procurement-fulfillment-collaboration-slice
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/procurement-fulfillment-collaboration-slice/design.md
+      - sequence: 8
+        value:
+          contentHash: 28ffdc848cf401bef70f99c0e1102da0635b4d7c0fff2a7acf32dd170305bf04
+          ref: openspec/changes/procurement-fulfillment-collaboration-slice/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/procurement-fulfillment-collaboration-slice/.comet/handoff/design-context.json
+          handoffHash: 2d9acc078aaf4e05ae6b16c1322a29e503494790c8bbb5fad40e6692e423c291
+          proposal: 技术方案（基于已确认的 LLD 05 卷 v0.3 与 Open 产物，代码勘探已完成）：① 新增
+            bone-procurement-fulfillment DDD 模块，由 bone-procurement-app 统一装配；经
+            PoQueryPort 只读依赖 transaction，经
+            InventoryAclPort/FinanceAclPort/ToleranceConfigPort 承接跨上下文（默认
+            fail-closed、运行期不触发真实上游）。② 关键取舍 D1：现有 PoStatus 对 SENT
+            及履约保留态故意注册空迁移表（注释写明避免提前实现 05 语义），本轮仅受控解锁唯一一条 SENT→ACKNOWLEDGED 作为
+            ASN 可信上游，其余保留态继续 fail-closed，用 PoStatusTest
+            增补断言守住只允许这一条；备选『履约独立确认态』因与 PO 状态双真源被否决。③ D3 跨上下文用端口+fail-closed
+            桩（沿袭上轮 VendorQueryPortAdapter 范式），不引 MQ/Outbox（PA-08），Finance
+            不可用时发票保持 MATCH_PENDING、不推断通过。④ D4 金额/数量遵循 LLD §14
+            类型基线，容差按供应商/品类配置、禁止硬编码，TDS=ΣIT1±SAC 逐行舍入。⑤ D5
+            权限复用内部采购角色+供应商维度过滤（外部账号属二期 L23），越权 403+零数据；D6 前端在现有
+            bone-procurement-app 加履约页与 /transactions/fulfillment 路由，不改 shell
+            注册；D7 错误码 31501-31506 + 409 invalid_transition。⑥ 风险：LLD openapi.yaml
+            端点为 /api/v1/portal/*（BFF），本轮内部实现
+            /api/v1/procurement/*，如实登记为路径偏差、不谎称契约覆盖，措辞避开 A10.16 黑名单。⑦ Spec
+            Patch：无（行为需求以 5 份 delta spec 为准，design.md 不新增规格）。完整技术设计见
+            design.md（已补 SDK frontmatter）。
+          requirementsEvidence:
+            contentHash: fc760ebd302aa60da7ffe8032f318b05e9675a431fc6c762a6498a6e9bdc99e4
+            ref: openspec/changes/procurement-fulfillment-collaboration-slice
+          sourceEvidence:
+            contentHash: 48e63c0373f047d384f8fb09a4fd482c60a31f7a6bbcfbaa45ea09a907eefea9
+            ref: openspec/changes/procurement-fulfillment-collaboration-slice
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procurement-fulfillment-collaboration-slice
+              changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+              workspaceBaseline:
+                ref: e38cc895-a431-4581-880d-e503a497dc5d
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 5c1063eba7c7c45ed04f3df97d252f8a7d529f5c3cbc5ec3dc23fae2ee01010c
+                ref: openspec/changes/procurement-fulfillment-collaboration-slice
+      - sequence: 2
+        value:
+          contentHash: 5c1063eba7c7c45ed04f3df97d252f8a7d529f5c3cbc5ec3dc23fae2ee01010c
+          ref: openspec/changes/procurement-fulfillment-collaboration-slice
+      - sequence: 4
+        value:
+          contentHash: 5c1063eba7c7c45ed04f3df97d252f8a7d529f5c3cbc5ec3dc23fae2ee01010c
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 28ffdc848cf401bef70f99c0e1102da0635b4d7c0fff2a7acf32dd170305bf04
+            ref: openspec/changes/procurement-fulfillment-collaboration-slice/design.md
+          plan: docs/superpowers/plans/procurement-fulfillment-collaboration-slice.md
+          planEvidence:
+            contentHash: bcb68d9d1a45be293039f2e652c28578a6f9676a2c84953f1a500dcb1ec45dc6
+            ref: docs/superpowers/plans/procurement-fulfillment-collaboration-slice.md
+          taskRevision: a999989928073a60c8ea71051ce96408a47c0043aab48d3fd1a3d5110840798e
+      - sequence: 12
+        value:
+          contentHash: bcb68d9d1a45be293039f2e652c28578a6f9676a2c84953f1a500dcb1ec45dc6
+          ref: docs/superpowers/plans/procurement-fulfillment-collaboration-slice.md
+      - sequence: 13
+        value:
+          event: build-complete
+      - sequence: 14
+        value:
+          argv:
+            - timeout
+            - "600"
+            - bash
+            - outputs/comet-build-check.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 45a01a339b65e61f1877c4ac027b1e8564cd8ead264c42139885e148b08d5400
+          cwd: .
+          environment: 207126c93e5be35880682cd233d920a14ea62ab25afa151f051778ba9533a113
+          exitCode: 1
+          inputAfter: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+          inputBefore: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+          manifestHash: 0c14982b0686ad1de5eb659b34119887b5b5d417d533b5cc516d032093852fc5
+          manifestRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/658d715d-42db-4b6b-868d-559046d70068.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/89b70188-6ba8-472b-91ca-b9dce7090c97.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 15
+        value:
+          event: build-complete
+      - sequence: 16
+        value:
+          argv:
+            - bash
+            - outputs/comet-build-check.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: da02d81fd188fbd5e8e148e3c7817583ee2387ef8a72050323e62413b9da0af7
+          cwd: .
+          environment: 5884f5b0ee90d825a3a2427effe860a215e09889e9a268d64dc7a3c67320e070
+          exitCode: 0
+          inputAfter: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+          inputBefore: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+          manifestHash: 0c14982b0686ad1de5eb659b34119887b5b5d417d533b5cc516d032093852fc5
+          manifestRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/4e4896af-7b00-489f-928a-50cf5bf7e0fa.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/d95e2f01-7a54-443d-966c-32fa7c828606.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 17
+        value:
+          contentHash: da02d81fd188fbd5e8e148e3c7817583ee2387ef8a72050323e62413b9da0af7
+          ref: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/d95e2f01-7a54-443d-966c-32fa7c828606.log
+      - sequence: 19
+        value:
+          contentHash: ae586bbe20ebc87361540860beddb6971ea8d5895a360c7b64b2e0e26a1daf8a
+          ref: docs/superpowers/reports/procurement-fulfillment-collaboration-slice-verify-2026-11-18.md
+      - sequence: 18
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/procurement-fulfillment-collaboration-slice-verify-2026-11-18.md
+      - sequence: 20
+        value:
+          argv:
+            - bash
+            - outputs/comet-verify-check.sh
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: 5f713300315f03e63d563ce7533e96c1439fabd70fbd16bc55467ee8577cd8a9
+          cwd: .
+          deliveryInputs:
+            bone-apps/bone-procurement/bone-procurement-app/pom.xml: git:e5546c68a57abdbefaf3b953525e100539f1e953
+            bone-apps/bone-procurement/bone-procurement-app/src/main/java/com/bone/procurement/ProcurementApplication.java: git:b6d625eb0fb56d30c978aa29c9b1deddbe7df1b4
+            bone-apps/bone-procurement/bone-procurement-app/src/main/resources/application.yml: git:bb61af5db36dd58a1a1fc0f6bff52c1c178ce475
+            bone-apps/bone-procurement/bone-procurement-app/src/test/java/com/bone/procurement/ProcurementCapabilityToggleTest.java: git:ac7eec059a845b31e0672752fdf9189634a96a5a
+            bone-apps/bone-procurement/bone-procurement-fulfillment/pom.xml: git:d71d92b2607ac108672fd98f37c16edcead17b80
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/FulfillmentExceptionHandler.java: git:428b99bd3016141090d7c9767456197e72722c79
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/controller/FulfillmentController.java: git:a4c10f8b77251ef9c52c6e7c9142d074f08051ab
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/AsnApplicationService.java: git:884ff91ab3ed0d9eb7c07fb5b4a461e630c36579
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/FulfillmentQueryService.java: git:5baeb1bbf932e2ae71c14e67c47ec9f271645c0d
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/InvoiceSubmissionApplicationService.java: git:f9d4057071d0c63197d3b733d3c02c1c891dc74f
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/IrExceptionService.java: git:62c46820dbaae4500138641786b383c4450ca9b5
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/PoAckApplicationService.java: git:fbd82f43296eb14b48ad01aa89019076b2edc07c
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/AckCommand.java: git:a971466182d3749fd139c60c6d4bf00d0059ac3c
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/AsnCommand.java: git:a2283dffda03419f215f33062eec1751727e999b
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/InvoiceCommand.java: git:08ccb1d308f64ae0f4836527a69755a8b6d411e8
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/FulfillmentErrorCodes.java: git:14d3103e669e34c842f13b06e1ae5e9969b34465
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/FulfillmentErrors.java: git:3a5f254d6f3d035543fba9b75f30f354d67e61d7
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/ack/PoAcknowledgement.java: git:83a6c1a48780e7c09f081531a201705ae65c8b4a
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/Asn.java: git:bbb1da941e877c53271ee66a85a73b5e49732e76
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/AsnLine.java: git:798a5ec3f18381e56281464f6bf50f6536caddfb
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/AsnStatus.java: git:bec9e82f2d1302ba2044246cb952a8a56716e68a
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/exception/IrException.java: git:cd1b1af286574f2b3458640893e8d233635b428e
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/exception/IrExceptionStatus.java: git:205819e448868b1b1fffb7d5f1532707daf5b447
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/invoice/InvoiceStatus.java: git:ccc6e0b44c122f69859242477d0b284e25e19d24
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/invoice/InvoiceSubmission.java: git:5dede6cc11e061259a6bbc008a3790455d6538fa
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/FinanceAclPort.java: git:db7b3c794c35d02c75726bd99c2ac37b7c211b6c
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/InventoryAclPort.java: git:16a1ef738b7ef85534a63084dbf8e1b8e9bd8c54
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/PoQueryPort.java: git:a135db60f95e9f3ef97bef6768f7e4ca5fe47860
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/ToleranceConfigPort.java: git:908849277b9da2d36143e75d30dc2cbece5d8f2e
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/VendorIdentityPort.java: git:badd0a517f7b2f87c33150080c5ab4a4f5612779
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/AsnLineRepository.java: git:7daf78894b90e004a83b2e556e465c293eda2f50
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/AsnRepository.java: git:57c2cd033478bff1b69b22fd5a510cc0d691b8d1
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/InvoiceSubmissionRepository.java: git:45fe3516ee1e68927a4c54d494b0339337685fae
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/IrExceptionRepository.java: git:0ebb01f2c5a4d62cbc3bfff9d42a95a2b54685be
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/PoAcknowledgementRepository.java: git:329305c81b771631c6c438cf88b5d3ba196409e1
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/FailClosedAclAdapters.java: git:70e6ab403636b66df3b8d894d09cf82f8c5b2650
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/PoQueryPortAdapter.java: git:e32351ccd19f4be33e4a1885fe996ec7dadbdb71
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/SecurityVendorIdentityAdapter.java: git:ef4d5b0e02c9e1a0b1f0911f112035f04b70f1a1
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/ArchitectureTest.java: git:e2799c00d4ced32797f9b78c1b98113b86fcf29d
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/FulfillmentDdlCoverageTest.java: git:6fd936762d170a1430aa3cec386969b23e78799c
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/AsnApplicationServiceTest.java: git:b6ca0e1fde641e3bca4f9b8a159040158fdf2970
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/InvoiceSubmissionApplicationServiceTest.java: git:d54ee9e4b66958cd8a1974d3bf058da99ea2b003
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/IrExceptionServiceTest.java: git:4aefbd739d233689163acfd975236345de2c8c7f
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/PoAckApplicationServiceTest.java: git:9fb8dbb0f9c561755b53755adeab42fc9815e82d
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/domain/model/FulfillmentStatusMachineTest.java: git:7226b5f9da5e9e33c9fb23a7956d40e392cf220a
+            bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/domain/model/po/PoEvent.java: git:a382c268589d12b4c05ee3860ab36a13f90263b9
+            bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/domain/model/po/PoStatus.java: git:9352a393ecc63993088cc68d492445fd94b65340
+            bone-apps/bone-procurement/bone-procurement-transaction/src/test/java/com/bone/procurement/transaction/domain/model/po/PoStatusTest.java: git:61b798aa5bce0f97792b58be0d808752dabf6963
+            bone-apps/bone-procurement/pom.xml: git:054d4158ef5e61d3377ec4c4d2d4f6e5673e4ac6
+            bone-frontend/apps/bone-procurement-app/src/App.tsx: git:177b1c9cfd08f2902c95f2f877d0f70e618f1c1b
+            bone-frontend/apps/bone-procurement-app/src/pages/FulfillmentConsole.test.tsx: git:5279b5b5b76d6492f45fa0c3e41de4ed74413d57
+            bone-frontend/apps/bone-procurement-app/src/pages/FulfillmentConsole.tsx: git:9fa1ba2ffe342f1483cc2c119d048f60e604875d
+            bone-frontend/apps/bone-procurement-app/src/pages/fulfillmentView.test.ts: git:f85d52fefefaa6e11736110af5e833536ae9ab29
+            bone-frontend/apps/bone-procurement-app/src/pages/fulfillmentView.ts: git:64c300ed96bcbbad62dce3de6bbd6f325e1dfbad
+            bone-frontend/apps/bone-procurement-app/src/services/fulfillmentApi.test.ts: git:cf3f96fa57634ba5f4b11660282e15388870b973
+            bone-frontend/apps/bone-procurement-app/src/services/fulfillmentApi.ts: git:0406192c116e609c9c1ff849bbcc283180a9eeb5
+            bone-frontend/apps/bone-procurement-app/src/types/fulfillment.ts: git:4dd9b6092a95533cb8253581aea66d79a08c7a00
+            bone-init.sql: git:6aaf21d58173dc89879a8b8d7c1dabbd2a93552e
+            scripts/migration/0101_seed_procurement_fulfillment_permissions.sql: git:bc524235decb7aa51bf05c85a29071dce65903f2
+            scripts/migration/0102_seed_procurement_fulfillment_menus.sql: git:75eb281622692e5d2507226b06bf94d929a82ced
+          environment: d08e5a87b893350c4c4b0762531331c0e31460cd23d4f22ce9d7c707da897264
+          exitCode: 0
+          inputAfter: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+          inputBefore: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+          manifestHash: 0c14982b0686ad1de5eb659b34119887b5b5d417d533b5cc516d032093852fc5
+          manifestRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/0437d48d-c6fe-4e0a-bbcf-5d7d9bf1643e.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/54b6d1a7-a32d-42f8-83f1-a115d6f383e4.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 21
+        value:
+          contentHash: 5f713300315f03e63d563ce7533e96c1439fabd70fbd16bc55467ee8577cd8a9
+          ref: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/54b6d1a7-a32d-42f8-83f1-a115d6f383e4.log
+      - sequence: 25
+        value:
+          contentHash: ae586bbe20ebc87361540860beddb6971ea8d5895a360c7b64b2e0e26a1daf8a
+          ref: docs/superpowers/reports/procurement-fulfillment-collaboration-slice-verify-2026-11-18.md
+      - sequence: 24
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/procurement-fulfillment-collaboration-slice-verify-2026-11-18.md
+      - sequence: 26
+        value:
+          argv:
+            - bash
+            - outputs/comet-verify-check.sh
+          changedDuringExecution: []
+          checkEpoch: 4
+          contentHash: 5f713300315f03e63d563ce7533e96c1439fabd70fbd16bc55467ee8577cd8a9
+          cwd: .
+          deliveryInputs:
+            bone-apps/bone-procurement/bone-procurement-app/pom.xml: git:e5546c68a57abdbefaf3b953525e100539f1e953
+            bone-apps/bone-procurement/bone-procurement-app/src/main/java/com/bone/procurement/ProcurementApplication.java: git:b6d625eb0fb56d30c978aa29c9b1deddbe7df1b4
+            bone-apps/bone-procurement/bone-procurement-app/src/main/resources/application.yml: git:bb61af5db36dd58a1a1fc0f6bff52c1c178ce475
+            bone-apps/bone-procurement/bone-procurement-app/src/test/java/com/bone/procurement/ProcurementCapabilityToggleTest.java: git:ac7eec059a845b31e0672752fdf9189634a96a5a
+            bone-apps/bone-procurement/bone-procurement-fulfillment/pom.xml: git:d71d92b2607ac108672fd98f37c16edcead17b80
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/FulfillmentExceptionHandler.java: git:428b99bd3016141090d7c9767456197e72722c79
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/controller/FulfillmentController.java: git:a4c10f8b77251ef9c52c6e7c9142d074f08051ab
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/AsnApplicationService.java: git:884ff91ab3ed0d9eb7c07fb5b4a461e630c36579
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/FulfillmentQueryService.java: git:5baeb1bbf932e2ae71c14e67c47ec9f271645c0d
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/InvoiceSubmissionApplicationService.java: git:f9d4057071d0c63197d3b733d3c02c1c891dc74f
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/IrExceptionService.java: git:62c46820dbaae4500138641786b383c4450ca9b5
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/PoAckApplicationService.java: git:fbd82f43296eb14b48ad01aa89019076b2edc07c
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/AckCommand.java: git:a971466182d3749fd139c60c6d4bf00d0059ac3c
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/AsnCommand.java: git:a2283dffda03419f215f33062eec1751727e999b
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/application/command/InvoiceCommand.java: git:08ccb1d308f64ae0f4836527a69755a8b6d411e8
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/FulfillmentErrorCodes.java: git:14d3103e669e34c842f13b06e1ae5e9969b34465
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/FulfillmentErrors.java: git:3a5f254d6f3d035543fba9b75f30f354d67e61d7
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/ack/PoAcknowledgement.java: git:83a6c1a48780e7c09f081531a201705ae65c8b4a
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/Asn.java: git:bbb1da941e877c53271ee66a85a73b5e49732e76
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/AsnLine.java: git:798a5ec3f18381e56281464f6bf50f6536caddfb
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/asn/AsnStatus.java: git:bec9e82f2d1302ba2044246cb952a8a56716e68a
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/exception/IrException.java: git:cd1b1af286574f2b3458640893e8d233635b428e
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/exception/IrExceptionStatus.java: git:205819e448868b1b1fffb7d5f1532707daf5b447
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/invoice/InvoiceStatus.java: git:ccc6e0b44c122f69859242477d0b284e25e19d24
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/model/invoice/InvoiceSubmission.java: git:5dede6cc11e061259a6bbc008a3790455d6538fa
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/FinanceAclPort.java: git:db7b3c794c35d02c75726bd99c2ac37b7c211b6c
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/InventoryAclPort.java: git:16a1ef738b7ef85534a63084dbf8e1b8e9bd8c54
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/PoQueryPort.java: git:a135db60f95e9f3ef97bef6768f7e4ca5fe47860
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/ToleranceConfigPort.java: git:908849277b9da2d36143e75d30dc2cbece5d8f2e
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/port/VendorIdentityPort.java: git:badd0a517f7b2f87c33150080c5ab4a4f5612779
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/AsnLineRepository.java: git:7daf78894b90e004a83b2e556e465c293eda2f50
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/AsnRepository.java: git:57c2cd033478bff1b69b22fd5a510cc0d691b8d1
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/InvoiceSubmissionRepository.java: git:45fe3516ee1e68927a4c54d494b0339337685fae
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/IrExceptionRepository.java: git:0ebb01f2c5a4d62cbc3bfff9d42a95a2b54685be
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/domain/repository/PoAcknowledgementRepository.java: git:329305c81b771631c6c438cf88b5d3ba196409e1
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/FailClosedAclAdapters.java: git:70e6ab403636b66df3b8d894d09cf82f8c5b2650
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/PoQueryPortAdapter.java: git:e32351ccd19f4be33e4a1885fe996ec7dadbdb71
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/infrastructure/SecurityVendorIdentityAdapter.java: git:ef4d5b0e02c9e1a0b1f0911f112035f04b70f1a1
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/ArchitectureTest.java: git:e2799c00d4ced32797f9b78c1b98113b86fcf29d
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/FulfillmentDdlCoverageTest.java: git:6fd936762d170a1430aa3cec386969b23e78799c
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/AsnApplicationServiceTest.java: git:b6ca0e1fde641e3bca4f9b8a159040158fdf2970
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/InvoiceSubmissionApplicationServiceTest.java: git:d54ee9e4b66958cd8a1974d3bf058da99ea2b003
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/IrExceptionServiceTest.java: git:4aefbd739d233689163acfd975236345de2c8c7f
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/application/PoAckApplicationServiceTest.java: git:9fb8dbb0f9c561755b53755adeab42fc9815e82d
+            bone-apps/bone-procurement/bone-procurement-fulfillment/src/test/java/com/bone/procurement/fulfillment/domain/model/FulfillmentStatusMachineTest.java: git:7226b5f9da5e9e33c9fb23a7956d40e392cf220a
+            bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/domain/model/po/PoEvent.java: git:a382c268589d12b4c05ee3860ab36a13f90263b9
+            bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/domain/model/po/PoStatus.java: git:9352a393ecc63993088cc68d492445fd94b65340
+            bone-apps/bone-procurement/bone-procurement-transaction/src/test/java/com/bone/procurement/transaction/domain/model/po/PoStatusTest.java: git:61b798aa5bce0f97792b58be0d808752dabf6963
+            bone-apps/bone-procurement/pom.xml: git:054d4158ef5e61d3377ec4c4d2d4f6e5673e4ac6
+            bone-frontend/apps/bone-procurement-app/src/App.tsx: git:177b1c9cfd08f2902c95f2f877d0f70e618f1c1b
+            bone-frontend/apps/bone-procurement-app/src/pages/FulfillmentConsole.test.tsx: git:5279b5b5b76d6492f45fa0c3e41de4ed74413d57
+            bone-frontend/apps/bone-procurement-app/src/pages/FulfillmentConsole.tsx: git:9fa1ba2ffe342f1483cc2c119d048f60e604875d
+            bone-frontend/apps/bone-procurement-app/src/pages/fulfillmentView.test.ts: git:f85d52fefefaa6e11736110af5e833536ae9ab29
+            bone-frontend/apps/bone-procurement-app/src/pages/fulfillmentView.ts: git:64c300ed96bcbbad62dce3de6bbd6f325e1dfbad
+            bone-frontend/apps/bone-procurement-app/src/services/fulfillmentApi.test.ts: git:cf3f96fa57634ba5f4b11660282e15388870b973
+            bone-frontend/apps/bone-procurement-app/src/services/fulfillmentApi.ts: git:0406192c116e609c9c1ff849bbcc283180a9eeb5
+            bone-frontend/apps/bone-procurement-app/src/types/fulfillment.ts: git:4dd9b6092a95533cb8253581aea66d79a08c7a00
+            bone-init.sql: git:6aaf21d58173dc89879a8b8d7c1dabbd2a93552e
+            scripts/migration/0101_seed_procurement_fulfillment_permissions.sql: git:bc524235decb7aa51bf05c85a29071dce65903f2
+            scripts/migration/0102_seed_procurement_fulfillment_menus.sql: git:75eb281622692e5d2507226b06bf94d929a82ced
+          environment: d08e5a87b893350c4c4b0762531331c0e31460cd23d4f22ce9d7c707da897264
+          exitCode: 0
+          inputAfter: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+          inputBefore: 412e24fb75b4a7e733fc69eca8ca615543685e0ebdcf96657dfb8626d7db89ab
+          manifestHash: 0c14982b0686ad1de5eb659b34119887b5b5d417d533b5cc516d032093852fc5
+          manifestRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/dab30ff1-1ee6-4320-9c6d-cf2eaf479cea.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/47e733b4-1235-4931-976b-bfc3c12683bc.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 27
+        value:
+          contentHash: 5f713300315f03e63d563ce7533e96c1439fabd70fbd16bc55467ee8577cd8a9
+          ref: .comet/runtime/classic-sdk-checks/510dce40bc4654124ebdea29511ba6c18f133e54be86868cf1cb5313fc783783/47e733b4-1235-4931-976b-bfc3c12683bc.log
+      - sequence: 29
+        value:
+          choice: push
+          proposal:
+            input:
+              change: procurement-fulfillment-collaboration-slice
+              changeDir: openspec/changes/procurement-fulfillment-collaboration-slice
+              workspaceBaseline:
+                ref: e38cc895-a431-4581-880d-e503a497dc5d
+            outputs:
+              full.archive.prepare:
+                remote: origin
+                summary: 采购履约核心协同闭环已交付：新增 bone-procurement-fulfillment DDD 模块（PO 确认/ASN/自助开票/IR
+                  例外四能力+5 张表+6 端点），前端 bone-procurement-app 增履约协同页四视图；30/30 tasks
+                  完成；后端 101 例/前端 77 例全绿；G32/G37/G40/G41+procura 全绿；997→MATCHED
+                  变异测试证明非假绿；迁移 SQL 幂等验证通过（修复号段冲突）；真实浏览器降级态 E2E 通过。偏差已登记：LLD
+                  portal/* 与内部 procurement/* 路径偏差、浏览器仅降级态（环境前置未满足）。
+                targetBranch: comet/procurement-fulfillment-collaboration-slice
+      - sequence: 28
+        value:
+          remote: origin
+          summary: 采购履约核心协同闭环已交付：新增 bone-procurement-fulfillment DDD 模块（PO 确认/ASN/自助开票/IR
+            例外四能力+5 张表+6 端点），前端 bone-procurement-app 增履约协同页四视图；30/30 tasks 完成；后端
+            101 例/前端 77 例全绿；G32/G37/G40/G41+procura 全绿；997→MATCHED 变异测试证明非假绿；迁移
+            SQL 幂等验证通过（修复号段冲突）；真实浏览器降级态 E2E 通过。偏差已登记：LLD portal/* 与内部
+            procurement/* 路径偏差、浏览器仅降级态（环境前置未满足）。
+          targetBranch: comet/procurement-fulfillment-collaboration-slice
+      - sequence: 30
+        value:
+          baseCommit: 27e1948df1a6e17f5bda35c660daed63e66777d1
+          deliveryAction: push
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: comet/procurement-fulfillment-collaboration-slice
+          verifiedBranch: comet/procurement-fulfillment-collaboration-slice
+      - sequence: 31
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-18-procurement-fulfillment-collaboration-slice
+      - sequence: 22
+        value:
+          summary: 采购履约核心协同闭环已交付：新增 bone-procurement-fulfillment DDD 模块（PO 确认/ASN/自助开票/IR
+            例外四能力+5 张表+6 端点），前端 bone-procurement-app 增履约协同页四视图；30/30 tasks 完成；后端
+            101 例/前端 77 例全绿；G32/G37/G40/G41+procura 全绿；997→MATCHED 变异测试证明非假绿；迁移
+            SQL 幂等验证通过（修复号段冲突）；真实浏览器降级态 E2E 通过。偏差已登记：LLD portal/* 与内部
+            procurement/* 路径偏差、浏览器仅降级态（环境前置未满足）。
+          targetBranch: comet/procurement-fulfillment-collaboration-slice
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: 32
+        right: null
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 33
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 34
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 35
+        right: 25
+        height: 5
+      - key: full.build.check
+        value: 14
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 15
+        left: 37
+        right: 38
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 39
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 40
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 41
+        right: 25
+        height: 5
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 16
+        left: null
+        right: 44
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 43
+        right: 45
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 46
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 41
+        right: 47
+        height: 5
+      - key: full.open.revalidate
+        value: 3
+        left: 43
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 16
+        left: 50
+        right: 44
+        height: 2
+      - key: full.verify.check
+        value: 18
+        left: 49
+        right: 51
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 52
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 41
+        right: 53
+        height: 5
+      - key: full.verify.run
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 16
+        left: null
+        right: 55
+        height: 2
+      - key: full.verify.check.evidence
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 20
+        left: null
+        right: 57
+        height: 2
+      - key: full.verify.report.evidence
+        value: 16
+        left: 58
+        right: 55
+        height: 3
+      - key: full.archive.prepare
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 22
+        left: null
+        right: 60
+        height: 2
+      - key: full.verify.report.evidence
+        value: 16
+        left: 57
+        right: 55
+        height: 2
+      - key: full.verify.check
+        value: 20
+        left: 61
+        right: 62
+        height: 3
+      - key: full.archive.confirm
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 24
+        left: 64
+        right: 65
+        height: 2
+      - key: full.verify.check
+        value: 20
+        left: 66
+        right: 62
+        height: 3
+      - key: full.archive.execute
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 22
+        left: null
+        right: 68
+        height: 2
+      - key: full.archive.preflight
+        value: 24
+        left: 69
+        right: 65
+        height: 3
+      - key: full.verify.check
+        value: 20
+        left: 70
+        right: 62
+        height: 4
+      - key: full.build.configure
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 27
+        left: 72
+        right: 73
+        height: 2
+      - key: full.design.evidence
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 31
+        left: 75
+        right: 76
+        height: 2
+      - key: full.open.revalidate
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 34
+        left: null
+        right: 78
+        height: 2
+      - key: full.open.confirm
+        value: 33
+        left: 77
+        right: 79
+        height: 3
+      - key: full.design.document
+        value: 29
+        left: 74
+        right: 80
+        height: 4
+      - key: full.build.plan
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 37
+        left: 82
+        right: 83
+        height: 2
+      - key: full.build.confirm
+        value: 27
+        left: 72
+        right: 84
+        height: 3
+      - key: full.design.document
+        value: 29
+        left: 85
+        right: 80
+        height: 4
+      - key: full.build.execute
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 27
+        left: 72
+        right: 87
+        height: 2
+      - key: full.build.plan.evidence
+        value: 37
+        left: null
+        right: 83
+        height: 2
+      - key: full.build.plan
+        value: 36
+        left: 88
+        right: 89
+        height: 3
+      - key: full.design.document
+        value: 29
+        left: 90
+        right: 80
+        height: 4
+      - key: full.build.check
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 26
+        left: 92
+        right: null
+        height: 2
+      - key: full.build.confirm
+        value: 27
+        left: 93
+        right: 87
+        height: 3
+      - key: full.build.plan
+        value: 36
+        left: 94
+        right: 89
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 95
+        right: 80
+        height: 5
+      - key: full.build.execute
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 27
+        left: 93
+        right: 97
+        height: 3
+      - key: full.build.plan
+        value: 36
+        left: 98
+        right: 89
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 99
+        right: 80
+        height: 5
+      - key: full.build.check
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 42
+        left: 101
+        right: 102
+        height: 2
+      - key: full.build.confirm
+        value: 27
+        left: 103
+        right: 97
+        height: 3
+      - key: full.build.plan
+        value: 36
+        left: 104
+        right: 89
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 105
+        right: 80
+        height: 5
+      - key: full.open.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 43
+        left: null
+        right: 108
+        height: 2
+      - key: full.open.revalidate
+        value: 35
+        left: 107
+        right: 109
+        height: 3
+      - key: full.open.confirm
+        value: 33
+        left: 77
+        right: 110
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 105
+        right: 111
+        height: 5
+      - key: full.open.revalidate
+        value: 35
+        left: 107
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 43
+        left: 114
+        right: 108
+        height: 2
+      - key: full.verify.check
+        value: 45
+        left: 113
+        right: 115
+        height: 3
+      - key: full.open.confirm
+        value: 33
+        left: 77
+        right: 116
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 105
+        right: 117
+        height: 5
+      - key: full.verify.run
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 47
+        left: null
+        right: 119
+        height: 2
+      - key: full.verify.check.evidence
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 49
+        left: null
+        right: 121
+        height: 2
+      - key: full.verify.report.evidence
+        value: 47
+        left: 122
+        right: 119
+        height: 3
+      - key: full.archive.prepare
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 51
+        left: null
+        right: 124
+        height: 2
+      - key: full.verify.report.evidence
+        value: 47
+        left: 121
+        right: 119
+        height: 2
+      - key: full.verify.check
+        value: 49
+        left: 125
+        right: 126
+        height: 3
+      - key: full.archive.confirm
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 53
+        left: 128
+        right: 129
+        height: 2
+      - key: full.verify.check
+        value: 49
+        left: 130
+        right: 126
+        height: 3
+      - key: full.archive.execute
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 51
+        left: null
+        right: 132
+        height: 2
+      - key: full.archive.preflight
+        value: 53
+        left: 133
+        right: 129
+        height: 3
+      - key: full.verify.check
+        value: 49
+        left: 134
+        right: 126
+        height: 4
+      - key: full.open
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 33
+        left: 136
+        right: 137
+        height: 2
+      - key: full.open.revalidate
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 34
+        left: null
+        right: 139
+        height: 2
+      - key: full.open.confirm
+        value: 33
+        left: 136
+        right: 140
+        height: 3
+      - key: full.design.confirm
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 31
+        left: 142
+        right: 143
+        height: 2
+      - key: full.open.confirm
+        value: 33
+        left: 144
+        right: 140
+        height: 3
+      - key: full.design.confirm
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 29
+        left: 146
+        right: 147
+        height: 2
+      - key: full.design.handoff
+        value: 31
+        left: 148
+        right: 143
+        height: 3
+      - key: full.open.confirm
+        value: 33
+        left: 149
+        right: 140
+        height: 4
+      - key: full.archive.confirm
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 53
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 54
+        left: 151
+        right: 152
+        height: 2
+      - key: full.build.check
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 42
+        left: 154
+        right: 155
+        height: 2
+      - key: full.archive.prepare
+        value: 52
+        left: 153
+        right: 156
+        height: 3
+      - key: full.build.execute
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 28
+        left: 159
+        right: null
+        height: 2
+      - key: full.build.plan
+        value: 36
+        left: 158
+        right: 160
+        height: 3
+      - key: full.build.confirm
+        value: 27
+        left: 157
+        right: 161
+        height: 4
+      - key: full.design.handoff
+        value: 31
+        left: 147
+        right: 143
+        height: 2
+      - key: full.open.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 35
+        left: 164
+        right: 165
+        height: 2
+      - key: full.verify.run
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 47
+        left: null
+        right: 167
+        height: 2
+      - key: full.verify.check.evidence
+        value: 50
+        left: 166
+        right: 168
+        height: 3
+      - key: full.open.confirm
+        value: 33
+        left: 163
+        right: 169
+        height: 4
+      - key: full.design.document
+        value: 29
+        left: 162
+        right: 170
+        height: 5
+      - key: full.open.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 32
+        left: null
+        right: 172
+        height: 2
+      - key: full.design.handoff
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 34
+        left: 175
+        right: 176
+        height: 2
+      - key: full.open
+        value: 32
+        left: 174
+        right: 177
+        height: 3
+      - key: full.build.configure
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 30
+        left: 180
+        right: 181
+        height: 2
+      - key: full.design.confirm
+        value: 28
+        left: 179
+        right: 182
+        height: 3
+      - key: full.open
+        value: 32
+        left: 183
+        right: 177
+        height: 4
+      - key: full.archive.prepare
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 41
+        left: 185
+        right: 186
+        height: 2
+      - key: full.build.confirm
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 36
+        left: null
+        right: 189
+        height: 2
+      - key: full.build.execute
+        value: 40
+        left: 188
+        right: 190
+        height: 3
+      - key: full.build.configure
+        value: 26
+        left: 187
+        right: 191
+        height: 4
+      - key: full.open.revalidate
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 34
+        left: 175
+        right: 193
+        height: 2
+      - key: full.verify.check.evidence
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 43
+        left: 195
+        right: 196
+        height: 2
+      - key: full.verify.check
+        value: 45
+        left: 194
+        right: 197
+        height: 3
+      - key: full.open
+        value: 32
+        left: 182
+        right: 198
+        height: 4
+      - key: full.design.confirm
+        value: 28
+        left: 192
+        right: 199
+        height: 5
+      - key: full.archive.prepare
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check.evidence
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 47
+        left: 202
+        right: 203
+        height: 2
+      - key: full.verify.check
+        value: 49
+        left: 201
+        right: 204
+        height: 3
+      - key: full.open
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 29
+        left: 207
+        right: 208
+        height: 2
+      - key: full.open.confirm
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 34
+        left: 210
+        right: 211
+        height: 2
+      - key: full.open
+        value: 32
+        left: 209
+        right: 212
+        height: 3
+      - key: full.build.configure
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 27
+        left: 214
+        right: 215
+        height: 2
+      - key: full.design.document
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 30
+        left: 217
+        right: 218
+        height: 2
+      - key: full.design.confirm
+        value: 28
+        left: 216
+        right: 219
+        height: 3
+      - key: full.open
+        value: 32
+        left: 220
+        right: 212
+        height: 4
+      - key: full.build.check
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 26
+        left: 222
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 36
+        left: 224
+        right: 225
+        height: 2
+      - key: full.build.confirm
+        value: 27
+        left: 223
+        right: 226
+        height: 3
+      - key: full.open
+        value: 32
+        left: 219
+        right: 212
+        height: 3
+      - key: full.design.confirm
+        value: 28
+        left: 227
+        right: 228
+        height: 4
+      - key: full.build.check
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 42
+        left: 230
+        right: 231
+        height: 2
+      - key: full.build.confirm
+        value: 27
+        left: 232
+        right: 226
+        height: 3
+      - key: full.verify.run
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 35
+        left: null
+        right: 234
+        height: 2
+      - key: full.open.evidence
+        value: 34
+        left: 210
+        right: 235
+        height: 3
+      - key: full.open
+        value: 32
+        left: 219
+        right: 236
+        height: 4
+      - key: full.design.confirm
+        value: 28
+        left: 233
+        right: 237
+        height: 5
+      - key: full.open.revalidate
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 34
+        left: 210
+        right: 239
+        height: 2
+      - key: full.verify.report.evidence
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 44
+        left: 241
+        right: null
+        height: 2
+      - key: full.verify.check
+        value: 45
+        left: 240
+        right: 242
+        height: 3
+      - key: full.open
+        value: 32
+        left: 219
+        right: 243
+        height: 4
+      - key: full.design.confirm
+        value: 28
+        left: 233
+        right: 244
+        height: 5
+      - key: full.verify.run
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 47
+        left: 247
+        right: 248
+        height: 2
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 36
+      - 42
+      - 48
+      - 54
+      - 56
+      - 59
+      - 63
+      - 67
+      - 71
+      - 81
+      - 86
+      - 91
+      - 96
+      - 100
+      - 106
+      - 112
+      - 118
+      - 120
+      - 123
+      - 127
+      - 131
+      - 135
+      - 138
+      - 141
+      - 145
+      - 150
+      - 171
+      - 173
+      - 178
+      - 184
+      - 200
+      - 205
+      - 206
+      - 213
+      - 221
+      - 229
+      - 238
+      - 245
+      - 246
+      - 249
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "14"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "15"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actions
+          - "16"
+          - input
+          - outputs
+        map: 14
+      - path:
+          - actions
+          - "17"
+          - input
+          - outputs
+        map: 15
+      - path:
+          - actions
+          - "18"
+          - input
+          - outputs
+        map: 16
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:11
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:13
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:14
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:15
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:16
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:18
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:20
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:22
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:24
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:26
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:28
+          - results
+        map: 26
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:30
+          - results
+        map: 27
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:31
+          - results
+        map: 28
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:32
+          - results
+        map: 29
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:4
+          - results
+        map: 30
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:5
+          - results
+        map: 31
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:7
+          - results
+        map: 32
+      - path:
+          - actionContexts
+          - procurement-fulfillment-collaboration-slice:9
+          - results
+        map: 33
+      - path:
+          - outputs
+        map: 34
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 35
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 36
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 37
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 38
+      - path:
+          - waits
+          - "4"
+          - results
+        map: 39
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 40
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 41
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 42
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 43
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 44
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 45
+      - path:
+          - evidenceWaits
+          - "6"
+          - results
+        map: 46
+      - path:
+          - evidenceWaits
+          - "7"
+          - results
+        map: 47
+  storageHash: 9ef11eb187095f991d8252231eef1ecd4c2e8f308b9850f45702a44384cac1f9
+check_epoch: 7

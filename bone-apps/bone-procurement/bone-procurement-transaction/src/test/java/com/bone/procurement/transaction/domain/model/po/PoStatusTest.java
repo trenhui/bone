@@ -31,10 +31,23 @@ class PoStatusTest {
   }
 
   @Test
-  void 履约保留状态本期无推进入口() {
+  void SENT仅允许ACKNOWLEDGE一条受控迁移() {
+    // 履约切片受控解锁 SENT→ACKNOWLEDGED，作为 ASN 的可信上游
+    assertThat(PoStatus.canTransition(PoStatus.SENT, PoEvent.ACKNOWLEDGE)).isTrue();
+    assertThat(PoStatus.transition(PoStatus.SENT, PoEvent.ACKNOWLEDGE))
+        .isEqualTo(PoStatus.ACKNOWLEDGED);
+    assertThat(PoStatus.allowedEvents(PoStatus.SENT)).containsExactly(PoEvent.ACKNOWLEDGE);
+    // SENT 不得被其他事件推进
+    assertThat(PoStatus.canTransition(PoStatus.SENT, PoEvent.SUBMIT)).isFalse();
+    assertThat(PoStatus.canTransition(PoStatus.SENT, PoEvent.SEND)).isFalse();
+  }
+
+  @Test
+  void 履约保留状态仍无推进入口() {
+    // ACKNOWLEDGED 及后续收货态仍 fail-closed，避免提前实现 05 履约语义
     for (PoStatus s :
         new PoStatus[] {
-          PoStatus.SENT, PoStatus.ACKNOWLEDGED, PoStatus.PARTIAL_RECEIVED, PoStatus.FULLY_RECEIVED
+          PoStatus.ACKNOWLEDGED, PoStatus.PARTIAL_RECEIVED, PoStatus.FULLY_RECEIVED, PoStatus.CLOSED
         }) {
       assertThat(PoStatus.allowedEvents(s)).isEmpty();
     }

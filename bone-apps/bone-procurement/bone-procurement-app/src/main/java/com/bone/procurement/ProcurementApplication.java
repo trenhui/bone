@@ -13,7 +13,11 @@ import org.springframework.context.annotation.Import;
  * <p>装配口径对齐 ClaimApplication：@EnableSqlRepositories 生成 metadata-sdk 仓储实现， @Import 元数据与 SQL 仓储自动配置。
  */
 @SpringBootApplication(scanBasePackages = {"com.bone.procurement", "com.bone.core.security.jwt"})
-@EnableSqlRepositories(basePackages = {"com.bone.procurement.transaction.domain.repository"})
+@EnableSqlRepositories(
+    basePackages = {
+      "com.bone.procurement.transaction.domain.repository",
+      "com.bone.procurement.fulfillment.domain.repository"
+    })
 @Import({MetadataAutoConfiguration.class, SqlRepositoryAutoConfiguration.class})
 public class ProcurementApplication {
 
