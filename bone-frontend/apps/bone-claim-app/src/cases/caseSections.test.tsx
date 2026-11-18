@@ -22,6 +22,7 @@ vi.mock('../services/claimApi', () => ({
   inspectionApi: {
     latest: vi.fn(() => ok(null)), open: vi.fn(), claim: vi.fn(), conclude: vi.fn(),
   },
+  inspectionHandoffApi: { samplingConfig: vi.fn(() => ok(null)) },
 }));
 vi.mock('@bone/ui', () => ({
   // 让授权按钮在测试里全部可见，负向断言才有判别力（隐藏不等于不存在）。

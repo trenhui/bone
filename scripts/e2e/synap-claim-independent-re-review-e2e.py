@@ -55,8 +55,17 @@ TOGGLE_SQL_RESTORE = (
 
 
 def claim_status(cid):
-    rows = S.db_query("SELECT status, second_reviewer_id FROM t_claim_case WHERE id=%s", (cid,))
+    rows = S.db_query(
+        "SELECT status, first_reviewer_id, second_reviewer_id FROM t_claim_case WHERE id=%s", (cid,)
+    )
     return rows[0] if rows else {}
+
+
+def error_code_of(body):
+    """错误码可能位于响应顶层或 data 内（problem+json）；兼容两种层级取值。"""
+    if not isinstance(body, dict):
+        return None
+    return body.get("errorCode") or (body.get("data") or {}).get("errorCode")
 
 
 def ensure_review_permission():
@@ -127,12 +136,17 @@ def main():
 
         reviewer = "e2e-independent-reviewer"
 
-        # R2 同人不可自审：初审人 admin 提交，被拒且状态不变
+        # R2 同人不可自审：用库内真实的初审人 ID 提交，被拒且状态不变。
+        # 注意 reviewerId 口径：领域守卫拿 first_reviewer_id（CurrentOperator.requireId() 的
+        # 字符串，如 '1'）严格比对，故这里必须取库内真值；传用户名 'admin' 比对不等会误放行。
+        first_reviewer = (before.get("first_reviewer_id") or "").strip()
+        assert first_reviewer, f"前置案件应有初审人 ID，实际 {before}"
         code, body = S.call("POST", f"/claims/{cid}/re-review/submit", token=token,
-                            json_body={"reviewerId": "admin"}, expect=(200, 409))
-        err = (body.get("errorCode") if isinstance(body, dict) else None)
+                            json_body={"reviewerId": first_reviewer}, expect=(200, 409))
+        err = error_code_of(body)
         ok_r2 = code == 409 and err == ERR_CONFLICT and claim_status(cid).get("status") == "ADJUSTED"
-        S.record("R2 同人不可自审 409 可辨认码且状态不变", ok_r2, f"http={code} errorCode={err}")
+        S.record("R2 同人不可自审 409 可辨认码且状态不变", ok_r2,
+                 f"http={code} errorCode={err} firstReviewer={first_reviewer}")
         results.append(ok_r2)
 
         # R1 提交独立复审：42 → 43
@@ -158,7 +172,7 @@ def main():
         # R5 非登记人提交结论被拒且状态不变（仍 43）
         code, body = S.call("PUT", f"/claims/{cid}/re-review/complete", token=token,
                             json_body={"approved": True, "reviewerId": "someone-else"}, expect=(200, 409))
-        err = (body.get("errorCode") if isinstance(body, dict) else None)
+        err = error_code_of(body)
         ok_r5 = code == 409 and claim_status(cid).get("status") == "RE_REVIEW_PENDING"
         S.record("R5 非登记人结论被拒且状态不变", ok_r5, f"http={code} errorCode={err}")
         results.append(ok_r5)
