@@ -1604,8 +1604,10 @@
    "controller": "RoleController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
    "cases": [
+    "chains.py",
     "claim-full-chain-e2e.mjs",
     "synap-claim-independent-re-review-e2e.py",
+    "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -1615,8 +1617,10 @@
    "controller": "RoleController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
    "cases": [
+    "chains.py",
     "claim-full-chain-e2e.mjs",
     "synap-claim-independent-re-review-e2e.py",
+    "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -1626,8 +1630,10 @@
    "controller": "RoleController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
    "cases": [
+    "chains.py",
     "claim-full-chain-e2e.mjs",
     "synap-claim-independent-re-review-e2e.py",
+    "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -1637,7 +1643,9 @@
    "controller": "RoleController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
    "cases": [
+    "chains.py",
     "claim-full-chain-e2e.mjs",
+    "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -1647,7 +1655,9 @@
    "controller": "RoleController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
    "cases": [
+    "chains.py",
     "claim-full-chain-e2e.mjs",
+    "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -1987,8 +1997,10 @@
    "controller": "PermissionController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/PermissionController.java",
    "cases": [
+    "chains.py",
     "claim-full-chain-e2e.mjs",
-    "synap-claim-independent-re-review-e2e.py"
+    "synap-claim-independent-re-review-e2e.py",
+    "two-scenario-full-chain-e2e.py"
    ]
   },
   {
@@ -1997,8 +2009,10 @@
    "controller": "PermissionController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/PermissionController.java",
    "cases": [
+    "chains.py",
     "claim-full-chain-e2e.mjs",
-    "synap-claim-independent-re-review-e2e.py"
+    "synap-claim-independent-re-review-e2e.py",
+    "two-scenario-full-chain-e2e.py"
    ]
   },
   {
@@ -2007,8 +2021,10 @@
    "controller": "PermissionController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/PermissionController.java",
    "cases": [
+    "chains.py",
     "claim-full-chain-e2e.mjs",
-    "synap-claim-independent-re-review-e2e.py"
+    "synap-claim-independent-re-review-e2e.py",
+    "two-scenario-full-chain-e2e.py"
    ]
   },
   {

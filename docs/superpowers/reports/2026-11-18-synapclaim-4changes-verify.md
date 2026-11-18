@@ -107,3 +107,33 @@ currency: current
 - 本报告 `docs/superpowers/reports/2026-11-18-synapclaim-4changes-verify.md`
 
 提交：以上 4 个文件按项目规范以 `git commit --only -- <paths>` 圈定提交（共享树，不裹挟并行会话在途改动）。活库权限补回（SUPER_ADMIN +12 claim 权限绑定）是环境数据恢复，不入库。Comet 状态机因跨分支失效未推进，见 §5。
+
+## 8. 后续收口（2026-11-19）：SoD 加固落地 + 前后端联调全绿
+
+用户裁定：**接受 Git 代码 + 真机 E2E 报告为终态**，不再手工修复 Comet Runtime checkpoint（深度损坏且绑定分支已删，见 §5）。本节记录 §6 第 1/2 项经裁定「收紧」后的真实落地与复验。
+
+### 8.1 产品代码：独立复审三端点统一持权人视角
+
+- `ClaimWorkbenchController` 的 `reReviewQueue` / `submitReReview` / `completeReReview` 一律取 `CurrentOperator.requireId()`；`reviewerId` 查询参数与请求体字段仅为 API 兼容保留，**服务端不采信**，与 `ReviewTaskController` 的既定范式一致。这同时闭合 §6 第 1 项（submit/complete 自报复审人可绕过自审守卫）与第 2 项（队列可查他人待复审）。
+- 新增 `ClaimWorkbenchControllerSoDTest` 4 例：submit / complete 取验签操作人、queue 忽略伪造 reviewerId、DTO 字段仍兼容。`mvn -o -pl bone-apps/synap-claim/synap-claim-app -am -Dtest=ClaimWorkbenchControllerSoDTest test` 实跑 `tests=4, failures=0, errors=0`。
+- 部署态：用含加固的源码重建 `.run-jars/claim.jar`（旧构建备份 `/tmp/claim.jar.bak-1117`），8087 重启判据为 `Started ... in` + health UP。
+
+### 8.2 真机 E2E 复验（服务栈全在跑，非 mock）
+
+| 脚本 | 结果 | 关键证据 |
+|---|---|---|
+| `synap-claim-task-workbench-e2e.py` | ✅ 17/17 | 并发领取仅 1 成功、伪造租户头越租户 0 行 |
+| `synap-claim-ai-config-governance-e2e.py` | ✅ 5/5 | 放宽金额被拒后库内 `config_json` 未改写 |
+| `synap-claim-inspection-handoff-e2e.py` | ✅ 8/8 | E1–E8 all=True，留痕不可改写 |
+| `synap-claim-independent-re-review-e2e.py` | ✅ 5/5 | R2 自报他人 reviewerId 仍 409；R1/R3/R5 登记的复审人取 token 数字 ID；R4 status=46 |
+| `bone-frontend/e2e/synap-claim-e2e.cjs` | ✅ 39/39 | 子应用渲染 + 深链卡片 + 治理端点 + 同窗口对账 + 0 个 5xx |
+
+主链路此前 37/39 的两条失败是**测试断言老化**，不是链路故障：`/claim/review` 已重定向到默认落点「我的工作台」（角色聚合首页），AI 治理入口由 button 改为 antd Card。断言按现行 UI 更新为 4 个只有子应用才渲染的主体标记 + 入口卡片计数，并真实点击 `.ant-card-head-title`「AI 治理」进入 hidden 路由；保留负向自检（治理标记不被工作台文本命中、旧宽松正则会被 shell 菜单骗过），没有直接改 hash 绕过 UI。
+
+### 8.3 本次改动文件
+
+- `bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchController.java`（SoD 加固）
+- `bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/adapter/web/controller/ClaimWorkbenchControllerSoDTest.java`（新增 4 例）
+- `scripts/e2e/synap-claim-independent-re-review-e2e.py`（SoD 契约夹具：第二操作员 token、伪造 reviewerId）
+- `bone-frontend/e2e/synap-claim-e2e.cjs`（2 条断言对齐现行工作台 UI）
+- 本报告 `docs/superpowers/reports/2026-11-18-synapclaim-4changes-verify.md`

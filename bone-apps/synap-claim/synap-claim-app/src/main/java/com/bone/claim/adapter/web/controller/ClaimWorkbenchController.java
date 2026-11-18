@@ -156,11 +156,13 @@ public class ClaimWorkbenchController {
       @RequestParam(value = "reviewerId", required = false) String reviewerId,
       @RequestParam(value = "page", defaultValue = "1") int page,
       @RequestParam(value = "size", defaultValue = "20") int size) {
-    String operator = reviewerId == null ? CurrentOperator.requireId() : reviewerId;
-    return ApiResponse.success(independentReReviewApplicationService.queue(operator, page, size));
+    // SoD：持权人视角一律取已验签操作人；客户端 reviewerId 参数仅为契约兼容而保留，绝不采信，
+    // 否则持权人可传他人 reviewerId 查看别人的待复审队列（设计 §5 方案 C「按人过滤不可被直连绕过」）。
+    return ApiResponse.success(
+        independentReReviewApplicationService.queue(CurrentOperator.requireId(), page, size));
   }
 
-  /** 提交独立复审请求体（复审人；批准结论）。 */
+  /** 提交独立复审请求体。{@code reviewerId} 仅作契约兼容而保留，服务端不采信（见下方 SoD 说明）。 */
   public record ReReviewSubmitReq(String reviewerId) {}
 
   @Operation(summary = "提交独立复审", description = "42→43，记录独立复审人；同人不可自审，RE_REVIEW 关闭拒绝。")
@@ -168,12 +170,14 @@ public class ClaimWorkbenchController {
   @PostMapping("/{claimId}/re-review/submit")
   public ApiResponse<ReReviewQueueRow> submitReReview(
       @PathVariable("claimId") String claimId, @RequestBody ReReviewSubmitReq req) {
+    // SoD：复审人取已验签操作人，不采信请求体自报的 reviewerId——否则初审人可自报他人绕过
+    // 「复核人 ≠ 第一审核人」守卫（范式见 ReviewTaskController.decision）。
     return ApiResponse.success(
         independentReReviewApplicationService.submitForReReview(
-            parseTaskId(claimId), req.reviewerId()));
+            parseTaskId(claimId), CurrentOperator.requireId()));
   }
 
-  /** 复审结论请求体（是否通过；结论人）。 */
+  /** 复审结论请求体（是否通过；结论人）。{@code reviewerId} 仅作契约兼容而保留，服务端不采信。 */
   public record ReReviewCompleteReq(boolean approved, String reviewerId) {}
 
   @Operation(summary = "提交独立复审结论", description = "43→46 通过 / 43→45 驳回；结论人必须是登记的独立复审人。")
@@ -181,9 +185,10 @@ public class ClaimWorkbenchController {
   @PutMapping("/{claimId}/re-review/complete")
   public ApiResponse<ReReviewQueueRow> completeReReview(
       @PathVariable("claimId") String claimId, @RequestBody ReReviewCompleteReq req) {
+    // SoD：结论人取已验签操作人，不采信请求体自报的 reviewerId；领域层再校验其等于登记的复审人。
     return ApiResponse.success(
         independentReReviewApplicationService.completeReReview(
-            parseTaskId(claimId), req.approved(), req.reviewerId()));
+            parseTaskId(claimId), req.approved(), CurrentOperator.requireId()));
   }
 
   /**

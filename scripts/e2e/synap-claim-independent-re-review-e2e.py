@@ -8,12 +8,16 @@
   POST /api/v1/claims/{claimId}/re-review/submit   提交独立复审（42→43）
   PUT  /api/v1/claims/{claimId}/re-review/complete 提交复审结论（43→46 通过 / 43→45 驳回）
 
+SoD 契约（2026-11-18 加固）：submit/complete/queue 的复审人一律取**已验签 token 的操作者**，
+请求体 reviewerId 与查询参数 reviewerId 仅为 API 兼容而保留、服务端不采信（范式见 ReviewTaskController）。
+因此初审人 admin 做决策后，复审动作必须换第二操作员 claim_reviewer2 登录执行。
+
 判定一律「接口状态 + 直查 MySQL 第二证据源」，避免「接口 200 但没落库 / 状态没变」假绿。
-  R1 提交成功       POST submit → DB status=43, second_reviewer_id=登记值，state 落 name
-  R2 同人不可自审   初审人提交 → 409 SC_CLAIM_REREVIEWER_CONFLICT，DB 状态不变（仍是 42）
-  R3 队列只出 43     GET queue 返回行在 DB 内 status 全为 43，且 second_reviewer_id=持权人
-  R4 复审结论       PUT complete(approved) → DB status=46，独立于 44/50
-  R5 结论人须登记   非登记人提交结论 → 409，DB 状态不变（仍 43）
+  R1 提交成功       reviewer2 token 提交 → DB status=43, second_reviewer_id=reviewer2 数字 ID（非自报值）
+  R2 同人不可自审   admin token 提交（自报他人 ID 也无效）→ 409，DB 状态不变（仍是 42）
+  R3 持权人视角     reviewer2 token 查队列（伪造 reviewerId 被忽略）→ 只出 43 且含本案
+  R4 复审结论       reviewer2 token complete(approved) → DB status=46，独立于 44/50
+  R5 结论人须登记   admin token 提交结论（自报登记人 ID 也无效）→ 409，DB 状态不变（仍 43）
 （跨租户不可见由应用服务单测钉住：queue 把当前 tenantId 传给仓储过滤，E2E 不重复造第二租户账号。）
 
 前置：网关 8888 / claim 8087（须为含本端点的重建 fat-jar）/ iam 8081 在线；admin/123456；MySQL 可直连。
@@ -109,6 +113,10 @@ def main():
     # 权限补种会改 scopes：必须在 main 登录前完成，再重新登录拿含新码的 token。
     ensure_review_permission()
     token = S.login(*S.ADMIN)
+    # SoD 加固后：submit/complete/queue 的复审人一律取已验签 token 的操作者，不再采信请求体/参数里的
+    # reviewerId。故复审动作必须用第二操作员（claim_reviewer2，≠ 初审人 admin）登录执行；请求体里的
+    # reviewerId 字段保留仅为 API 兼容，值随意（服务端忽略）。
+    reviewer_token = S.login(*S.REVIEWER)
 
     results = []
     try:
@@ -134,52 +142,57 @@ def main():
         before = claim_status(cid)
         assert before.get("status") == "ADJUSTED", f"前置应为 42 ADJUSTED，实际 {before}"
 
-        reviewer = "e2e-independent-reviewer"
-
-        # R2 同人不可自审：用库内真实的初审人 ID 提交，被拒且状态不变。
-        # 注意 reviewerId 口径：领域守卫拿 first_reviewer_id（CurrentOperator.requireId() 的
-        # 字符串，如 '1'）严格比对，故这里必须取库内真值；传用户名 'admin' 比对不等会误放行。
         first_reviewer = (before.get("first_reviewer_id") or "").strip()
         assert first_reviewer, f"前置案件应有初审人 ID，实际 {before}"
+
+        # R2 同人不可自审（SoD）：初审人 admin 用**自己的 token**提交，服务端复审人取 admin 的 ID
+        # （= firstReviewerId）→ 守卫拒绝 409。特意传一个他人 reviewerId，证明服务端不采信请求体自报值。
         code, body = S.call("POST", f"/claims/{cid}/re-review/submit", token=token,
-                            json_body={"reviewerId": first_reviewer}, expect=(200, 409))
+                            json_body={"reviewerId": "spoofed-other-reviewer"}, expect=(200, 409))
         err = error_code_of(body)
         ok_r2 = code == 409 and err == ERR_CONFLICT and claim_status(cid).get("status") == "ADJUSTED"
-        S.record("R2 同人不可自审 409 可辨认码且状态不变", ok_r2,
+        S.record("R2 同人不可自审（自报他人 reviewerId 也不采信）", ok_r2,
                  f"http={code} errorCode={err} firstReviewer={first_reviewer}")
         results.append(ok_r2)
 
-        # R1 提交独立复审：42 → 43
-        code, body = S.call("POST", f"/claims/{cid}/re-review/submit", token=token,
-                            json_body={"reviewerId": reviewer}, expect=(200,))
+        # R1 提交独立复审：第二操作员（非初审人）用自己的 token 提交，服务端登记其为复审人（数字 ID）。
+        # 42 → 43。
+        code, body = S.call("POST", f"/claims/{cid}/re-review/submit", token=reviewer_token,
+                            json_body={"reviewerId": "ignored-client-value"}, expect=(200,))
         after = claim_status(cid)
-        ok_r1 = after.get("status") == "RE_REVIEW_PENDING" and after.get("second_reviewer_id") == reviewer
-        S.record("R1 提交后 DB status=43 且复审人已登记", ok_r1,
-                 f"http={code} status={after.get('status')} reviewer={after.get('second_reviewer_id')}")
+        registered = (after.get("second_reviewer_id") or "").strip()
+        # 复审人应为第二操作员账号 ID（数字），不是请求体里的 ignored-client-value，也不是初审人。
+        ok_r1 = (after.get("status") == "RE_REVIEW_PENDING"
+                 and registered != "ignored-client-value"
+                 and registered != first_reviewer and registered != "")
+        S.record("R1 提交后 DB status=43 且复审人取 token 操作者（非自报值）", ok_r1,
+                 f"http={code} status={after.get('status')} registeredReviewer={registered}")
         results.append(ok_r1)
 
-        # R3 队列只出 43 状态案件且按持权人过滤
-        code, body = S.call("GET", f"/claims/re-review/queue?reviewerId={reviewer}&page=1&size=20",
-                            token=token, expect=(200,))
+        # R3 队列持权人视角：第二操作员（复审人）查自己的队列。特意传伪造 reviewerId=admin，
+        # 验证服务端忽略参数、按 token 操作者过滤——否则会返回 admin 视角的空/他人队列。
+        code, body = S.call("GET", f"/claims/re-review/queue?reviewerId=admin&page=1&size=20",
+                            token=reviewer_token, expect=(200,))
         rows = body.get("data", {}).get("records", []) if isinstance(body, dict) else []
         db_statuses = [claim_status(int(r["claimId"])).get("status") for r in rows if str(r.get("claimId", "")).isdigit()]
         ok_r3 = all(s == "RE_REVIEW_PENDING" for s in db_statuses) and any(
             str(r.get("claimId")) == str(cid) for r in rows)
-        S.record("R3 复审队列只出 43 状态案件且含本案", ok_r3,
+        S.record("R3 持权人视角：伪造 reviewerId 被忽略，队列仍按 token 操作者过滤且含本案", ok_r3,
                  f"http={code} rows={len(rows)} dbStatuses={db_statuses}")
         results.append(ok_r3)
 
-        # R5 非登记人提交结论被拒且状态不变（仍 43）
+        # R5 非登记人提交结论被拒且状态不变（仍 43）：用初审人 admin 的 token 提交结论，
+        # 服务端取 admin ID ≠ 登记的复审人（reviewer2）→ 拒绝。自报 reviewerId 无效。
         code, body = S.call("PUT", f"/claims/{cid}/re-review/complete", token=token,
-                            json_body={"approved": True, "reviewerId": "someone-else"}, expect=(200, 409))
+                            json_body={"approved": True, "reviewerId": registered}, expect=(200, 409))
         err = error_code_of(body)
         ok_r5 = code == 409 and claim_status(cid).get("status") == "RE_REVIEW_PENDING"
-        S.record("R5 非登记人结论被拒且状态不变", ok_r5, f"http={code} errorCode={err}")
+        S.record("R5 非登记人结论被拒且状态不变（自报登记人 ID 也无效）", ok_r5, f"http={code} errorCode={err}")
         results.append(ok_r5)
 
-        # R4 独立复审通过：43 → 46（独立于 44/50）
-        code, body = S.call("PUT", f"/claims/{cid}/re-review/complete", token=token,
-                            json_body={"approved": True, "reviewerId": reviewer}, expect=(200,))
+        # R4 独立复审通过：登记的复审人（reviewer2）用自己 token 提交结论，43 → 46（独立于 44/50）
+        code, body = S.call("PUT", f"/claims/{cid}/re-review/complete", token=reviewer_token,
+                            json_body={"approved": True, "reviewerId": "ignored-client-value"}, expect=(200,))
         ok_r4 = claim_status(cid).get("status") == "RE_REVIEW_PASSED"
         S.record("R4 复审通过后 DB status=46 独立于 44/50", ok_r4,
                  f"http={code} status={claim_status(cid).get('status')}")

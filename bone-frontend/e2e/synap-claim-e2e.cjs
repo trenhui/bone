@@ -13,8 +13,8 @@
  *   A. API 链路（全部经网关 8888，真实 JWT、真实 DB）：登录 / 赔案列表 / AI 就绪清单 /
  *      运行期健康度 / 校准报表，外加负向探针（无 token 401、超 31 天窗口 400、
  *      minSamples=1 不得绕过治理下限产出阈值建议）。
- *   B. 浏览器 UI（Playwright Chromium）：shell 登录 → qiankun 挂载理赔子应用 → 核赔工作台
- *      真实渲染 → hidden 路由 /ai-governance 五个治理区块渲染 → 防假绿文本断言
+ *   B. 浏览器 UI（Playwright Chromium）：shell 登录 → qiankun 挂载理赔子应用 → 我的工作台
+ *      （默认落点）真实渲染 → 点击治理入口卡片进入 hidden 路由 /ai-governance → 五个治理区块渲染 → 防假绿文本断言
  *      （未达标 / 模型未参与 / 影子模式）→ 参与率与同窗口 API 独立对账 → 截图。
  *   C. 循环收敛对账：静态 L3 就绪度复核器 vs 运行期 AI 就绪清单，任一端单独翻绿即判红。
  *
@@ -277,26 +277,34 @@ function check(name, condition, detail) {
     const viewportText = await page.locator('#subapp-viewport').innerText();
     result.ui.url = page.url();
     result.ui.viewportExcerpt = viewportText.replace(/\s+/g, ' ').slice(0, 260);
-    const markers = ['核赔工作台', '报案号', '待领取', '决策图'];
+    // 2026-11-19：默认落点已由「核赔工作台」改为「我的工作台」（角色聚合首页，hidden 路由
+    // isDefault）。断言跟着现行 UI 走，但仍取 4 个只有子应用才会渲染的主体标记，避免把
+    // shell 菜单/空容器误判为渲染成功。
+    const markers = ['我的工作台', '画像来源：', '跨键检索已接入后端', '为什么我看到这些卡片？'];
     const hits = markers.filter((k) => viewportText.includes(k));
+    const entryCards = await page.locator('#subapp-viewport .ant-card-head-title').count();
     result.ui.markersHit = hits;
-    check('qiankun 子应用容器真实渲染核赔工作台（4 个主体标记命中 >=3）',
-      hits.length >= 3, `url=${result.ui.url} hits=${hits.join('/')} excerpt=${result.ui.viewportExcerpt.slice(0, 90)}`);
+    result.ui.entryCards = entryCards;
+    check('qiankun 子应用容器真实渲染我的工作台（4 个主体标记命中 >=3 且有入口卡片）',
+      hits.length >= 3 && entryCards >= 10,
+      `url=${result.ui.url} hits=${hits.join('/')} entryCards=${entryCards} excerpt=${result.ui.viewportExcerpt.slice(0, 90)}`);
     await page.screenshot({ path: path.join(OUT, 'claims-e2e-claim.png'), fullPage: false });
 
-    // hidden 路由 /ai-governance 的可达性必须由业务页面深链按钮保证：
-    // 真实点击核赔工作台的「AI 治理」，而不是绕过 UI 直接改 location.hash。
-    const govNavButton = page.locator('#subapp-viewport button', { hasText: 'AI 治理' }).first();
-    const govNavExists = await govNavButton.count() > 0;
-    if (govNavExists) await govNavButton.click();
+    // hidden 路由 /ai-governance 的可达性必须由业务页面深链入口保证：
+    // 真实点击「我的工作台」治理分区的「AI 治理」卡片（antd Card 的 onClick），
+    // 而不是绕过 UI 直接改 location.hash。旧断言找 button，已随工作台改版失效。
+    const govNavEntry = page.locator('#subapp-viewport .ant-card-head-title', { hasText: /^AI 治理$/ }).first();
+    const govNavExists = await govNavEntry.count() > 0;
+    if (govNavExists) await govNavEntry.click();
     await page.waitForTimeout(4000);
     result.ui.aiGovernanceDeepLink = {
-      buttonFound: govNavExists,
+      entryFound: govNavExists,
+      entryType: 'workbench-card',
       urlAfterClick: page.url(),
     };
-    check('业务页面深链按钮可点击进入 hidden 路由 /ai-governance',
+    check('业务页面深链卡片可点击进入 hidden 路由 /ai-governance',
       govNavExists && page.url().includes('#/ai-governance'),
-      `buttonFound=${govNavExists} url=${page.url()}`);
+      `entryFound=${govNavExists} url=${page.url()}`);
     // 负向自检：仅靠改 hash 也能到达（回退路径），但不得把「未点击」误判为深链可用。
     if (!govNavExists) {
       await page.evaluate(() => { window.location.hash = '#/ai-governance'; });
@@ -424,7 +432,7 @@ function check(name, condition, detail) {
       !govText.includes('数据不可用'),
       `endpointErrors=${(govText.match(/数据不可用/g) || []).length}`);
 
-    check('负向自检：治理页标记不会被核赔工作台文本命中（判据有判别力）',
+    check('负向自检：治理页标记不会被我的工作台文本命中（判据有判别力）',
       govMarkers.filter((k) => viewportText.includes(k)).length < 5,
       `reviewHits=${govMarkers.filter((k) => viewportText.includes(k)).join('/') || 'none'}`);
 
