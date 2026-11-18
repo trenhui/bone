@@ -227,6 +227,34 @@
    "cases": []
   },
   {
+   "http": "POST",
+   "path": "/api/v1/masterdata/suppliers/registrations",
+   "controller": "SupplierController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/SupplierController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/suppliers/{partyId}/supplier-transitions",
+   "controller": "SupplierController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/SupplierController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/masterdata/suppliers/{partyId}/vendor-transitions",
+   "controller": "SupplierController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/SupplierController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/masterdata/suppliers/{partyId}",
+   "controller": "SupplierController",
+   "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/SupplierController.java",
+   "cases": []
+  },
+  {
    "http": "PUT",
    "path": "/api/v1/masterdata/templates/{id}",
    "controller": "DomainTemplateController",
@@ -299,6 +327,7 @@
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataFieldController.java",
    "cases": [
     "chains.py",
+    "seed-commerce-fixtures.py",
     "ui/ui-full-module-crud-probe.mjs"
    ]
   },
@@ -309,6 +338,7 @@
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataFieldController.java",
    "cases": [
     "chains.py",
+    "seed-commerce-fixtures.py",
     "ui/ui-full-module-crud-probe.mjs"
    ]
   },
@@ -319,6 +349,7 @@
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
    "cases": [
     "chains.py",
+    "seed-commerce-fixtures.py",
     "ui/ui-full-module-crud-probe.mjs",
     "write_coverage.py"
    ]
@@ -328,7 +359,9 @@
    "path": "/api/v1/masterdata/entities/{id}/publish",
    "controller": "MasterDataEntityController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
-   "cases": []
+   "cases": [
+    "seed-commerce-fixtures.py"
+   ]
   },
   {
    "http": "POST",
@@ -365,6 +398,7 @@
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
    "cases": [
     "chains.py",
+    "seed-commerce-fixtures.py",
     "ui/ui-full-module-crud-probe.mjs",
     "write_coverage.py"
    ]
@@ -376,6 +410,7 @@
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
    "cases": [
     "chains.py",
+    "seed-commerce-fixtures.py",
     "ui/ui-full-module-crud-probe.mjs",
     "write_coverage.py"
    ]
@@ -709,7 +744,8 @@
    "controller": "MasterDataRecordTopController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
-    "chains.py"
+    "chains.py",
+    "seed-commerce-fixtures.py"
    ]
   },
   {
@@ -718,7 +754,8 @@
    "controller": "MasterDataRecordTopController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
-    "chains.py"
+    "chains.py",
+    "seed-commerce-fixtures.py"
    ]
   },
   {
@@ -727,7 +764,8 @@
    "controller": "MasterDataRecordTopController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
-    "chains.py"
+    "chains.py",
+    "seed-commerce-fixtures.py"
    ]
   },
   {
@@ -736,7 +774,8 @@
    "controller": "MasterDataRecordTopController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
-    "chains.py"
+    "chains.py",
+    "seed-commerce-fixtures.py"
    ]
   },
   {
@@ -745,7 +784,8 @@
    "controller": "MasterDataRecordTopController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
-    "chains.py"
+    "chains.py",
+    "seed-commerce-fixtures.py"
    ]
   },
   {
@@ -754,7 +794,8 @@
    "controller": "MasterDataRecordTopController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
-    "chains.py"
+    "chains.py",
+    "seed-commerce-fixtures.py"
    ]
   },
   {
@@ -763,7 +804,8 @@
    "controller": "MasterDataRecordTopController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
-    "chains.py"
+    "chains.py",
+    "seed-commerce-fixtures.py"
    ]
   },
   {
@@ -772,7 +814,8 @@
    "controller": "MasterDataRecordTopController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
-    "chains.py"
+    "chains.py",
+    "seed-commerce-fixtures.py"
    ]
   },
   {
@@ -803,7 +846,9 @@
    "path": "/api/v1/masterdata/records",
    "controller": "MasterDataRecordTopController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
-   "cases": []
+   "cases": [
+    "seed-commerce-fixtures.py"
+   ]
   },
   {
    "http": "GET",
@@ -1560,6 +1605,7 @@
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
    "cases": [
     "claim-full-chain-e2e.mjs",
+    "synap-claim-independent-re-review-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -1570,6 +1616,7 @@
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
    "cases": [
     "claim-full-chain-e2e.mjs",
+    "synap-claim-independent-re-review-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -1580,6 +1627,7 @@
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
    "cases": [
     "claim-full-chain-e2e.mjs",
+    "synap-claim-independent-re-review-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
   },
@@ -1611,6 +1659,7 @@
    "cases": [
     "chains.py",
     "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
     "expense-purchase-approval-integration-e2e.py",
     "two-scenario-full-chain-e2e.py",
     "ui/ui-approval-sendback-probe.mjs",
@@ -1626,6 +1675,7 @@
    "cases": [
     "chains.py",
     "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
     "expense-purchase-approval-integration-e2e.py",
     "two-scenario-full-chain-e2e.py",
     "ui/ui-approval-sendback-probe.mjs",
@@ -1666,6 +1716,7 @@
    "cases": [
     "chains.py",
     "claim-full-chain-e2e.mjs",
+    "e2e_synap_claim.py",
     "expense-purchase-approval-integration-e2e.py",
     "two-scenario-full-chain-e2e.py",
     "ui/ui-approval-sendback-probe.mjs",
@@ -1936,7 +1987,8 @@
    "controller": "PermissionController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/PermissionController.java",
    "cases": [
-    "claim-full-chain-e2e.mjs"
+    "claim-full-chain-e2e.mjs",
+    "synap-claim-independent-re-review-e2e.py"
    ]
   },
   {
@@ -1945,7 +1997,8 @@
    "controller": "PermissionController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/PermissionController.java",
    "cases": [
-    "claim-full-chain-e2e.mjs"
+    "claim-full-chain-e2e.mjs",
+    "synap-claim-independent-re-review-e2e.py"
    ]
   },
   {
@@ -1954,7 +2007,8 @@
    "controller": "PermissionController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/PermissionController.java",
    "cases": [
-    "claim-full-chain-e2e.mjs"
+    "claim-full-chain-e2e.mjs",
+    "synap-claim-independent-re-review-e2e.py"
    ]
   },
   {
@@ -3835,8 +3889,7 @@
    "controller": "DecisionController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/DecisionController.java",
    "cases": [
-    "claim-full-chain-e2e.mjs",
-    "e2e_synap_claim.py"
+    "claim-full-chain-e2e.mjs"
    ]
   },
   {
@@ -4407,6 +4460,55 @@
   },
   {
    "http": "POST",
+   "path": "/api/v1/procurement/purchase-orders",
+   "controller": "PurchaseOrderController",
+   "file": "bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/adapter/web/controller/PurchaseOrderController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/purchase-orders",
+   "controller": "PurchaseOrderController",
+   "file": "bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/adapter/web/controller/PurchaseOrderController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/purchase-orders/{no}/submit",
+   "controller": "PurchaseOrderController",
+   "file": "bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/adapter/web/controller/PurchaseOrderController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/purchase-orders/{no}/send",
+   "controller": "PurchaseOrderController",
+   "file": "bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/adapter/web/controller/PurchaseOrderController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/purchase-orders/{no}",
+   "controller": "PurchaseOrderController",
+   "file": "bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/adapter/web/controller/PurchaseOrderController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/requisitions",
+   "controller": "RequisitionController",
+   "file": "bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/adapter/web/controller/RequisitionController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/requisitions/{no}/convert",
+   "controller": "RequisitionController",
+   "file": "bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/adapter/web/controller/RequisitionController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
    "path": "/api/ai/v1/claim",
    "controller": "ClaimController",
    "file": "bone-ai/bone-ai-server/src/main/java/com/bone/aiserver/web/ClaimController.java",
@@ -4624,8 +4726,8 @@
   }
  ],
  "summary": {
-  "endpoints": 559,
-  "covered": 237,
-  "uncovered": 322
+  "endpoints": 570,
+  "covered": 239,
+  "uncovered": 331
  }
 }

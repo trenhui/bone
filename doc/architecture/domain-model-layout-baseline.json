@@ -25,6 +25,11 @@
       "module": "bone-apps/synap-claim/synap-claim-app",
       "path": "domain/port",
       "reason": "出站端口（OutboxPort.dispatch + OutboxRecord），由 infrastructure/event/SpringOutboxDispatcher 实现。领域层只声明「把一条发件箱记录投递出去」这一能力，不关心介质（一期进程内事件总线、二期 MQ），因此不属 infrastructure；包名沿用六边形惯例 port/out，按 ADR-0036 R3 登记为模块自有领域端口子包"
+    },
+    {
+      "module": "bone-apps/bone-procurement/bone-procurement-transaction",
+      "path": "domain/port",
+      "reason": "供应商交易资格查询端口（VendorQueryPort.findSnapshot + VendorSnapshot），由 infrastructure/VendorQueryPortAdapter 实现（反射调用 bone-masterdata 的 SupplierApplicationService，因后者为 fat-jar 无法编译期依赖）。领域层只声明「查询供应商交易资格快照」这一能力且内含 fail-closed 领域规则，不关心介质与上游形态；包名沿用六边形惯例 port，按 ADR-0036 R3 登记为模块自有领域端口子包"
     }
   ]
 }
