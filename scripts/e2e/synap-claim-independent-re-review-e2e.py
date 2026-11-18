@@ -59,7 +59,46 @@ def claim_status(cid):
     return rows[0] if rows else {}
 
 
+def ensure_review_permission():
+    """幂等: 确保 claim:re-review:write 存在且绑到 SUPER_ADMIN/CLAIM_REVIEWER。
+
+    批 3 端点 @PreAuthorize 要这个码，但 live 库 seed 里漏了它（10_bootstrap_seed.sql 有
+    9153006，联调库未灌）⇒ 所有人调用全 403，功能虽实现却不可达。用真实 IAM API 补种
+    （不直连改库），任何环境按「缺则建、建后绑角色」自愈。已存在则不动。
+    注意: 换机/清库后首个 token 的 scopes 可能已缓存旧值，补种后重新登录拿新 token。
+    """
+    code = "claim:re-review:write"
+    tok = S.login(*S.ADMIN)
+    _, listing = S.call("GET", "/iam/permissions?page=1&size=500", token=tok, expect=(200,))
+    perms = (listing.get("data") or {}).get("records") or []
+    perm = next((p for p in perms if p.get("code") == code), None)
+    if perm is None:
+        _, created = S.call("POST", "/iam/permissions", token=tok, expect=(200,), json_body={
+            "code": code, "name": "理赔-独立复审写", "description": "独立复审写端点；职责分离分权",
+            "resourceType": "claim", "resourcePath": "re-review", "action": "write",
+            "type": "OPERATION", "sortOrder": 810})
+        p_id = created.get("data")
+        print(f"  · IAM 补种权限 {code} id={p_id}")
+    else:
+        p_id = perm.get("id")
+    _, roles = S.call("GET", "/iam/roles?page=1&size=100", token=tok, expect=(200,))
+    rlist = (roles.get("data") or {}).get("records") or []
+    for role_code in ("SUPER_ADMIN", "CLAIM_REVIEWER"):
+        role = next((r for r in rlist if r.get("code") == role_code), None)
+        if not role:
+            continue
+        _, bound = S.call("GET", f"/iam/roles/{role['id']}/permissions", token=tok, expect=(200,))
+        have = {p.get("id") for p in (bound.get("data") or [])}
+        if p_id not in have:
+            S.call("POST", f"/iam/roles/{role['id']}/permissions", token=tok, expect=(200,),
+                   json_body={"permissionIds": [p_id, *have]})
+            print(f"  · 角色 {role_code} 已授权 {code}")
+    return p_id
+
+
 def main():
+    # 权限补种会改 scopes：必须在 main 登录前完成，再重新登录拿含新码的 token。
+    ensure_review_permission()
     token = S.login(*S.ADMIN)
 
     results = []
@@ -67,8 +106,21 @@ def main():
         # 打开 RE_REVIEW 开关（用分布式 ID 占位，ON DUPLICATE 保证幂等）
         S.db_exec(TOGGLE_SQL_ON, (int(S.time.time() * 1000) % 10**15, TENANT))
 
-        # 造一条 42 态案件（初审人 = admin）
-        cid, total = S.run_intake_and_decision(token, S.scenario_small())
+        # 造一条 42 态案件（初审人 = admin）。
+        # 不能传 S.scenario_small() 的返回值——那是「跑完整 S1 场景后的 claimId(int)」，
+        # 不是场景字典；旧版把 int 当 scn 传进 run_intake_and_decision 会炸。这里自己造场景。
+        scn = {
+            "policyNo": "E2E-POLICY-0001", "planId": 9001,
+            "insuredIdHash": "e2e-insured-hash-0001",
+            "hospitalCode": "HOSP_BJ_001", "diagnosisCode": "J18.9",
+            "invoiceCode": "011001900", "invoiceNo": "RR" + str(int(S.time.time()))[-6:],
+            "invoiceDate": "2026-10-20", "batchNo": "BATCH-RR",
+            "items": [{"itemName": "挂号费", "itemCode": "A001", "category": "SERVICE",
+                       "quantity": 1, "unitPrice": 50, "amount": 50, "department": "门诊"}],
+            "invoice_total": 50,
+        }
+        S.setup_seed()
+        cid, total = S.run_intake_and_decision(token, scn)
         S.decide_approved(token, cid, total)
         before = claim_status(cid)
         assert before.get("status") == "ADJUSTED", f"前置应为 42 ADJUSTED，实际 {before}"

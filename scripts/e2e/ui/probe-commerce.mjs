@@ -166,6 +166,9 @@ const modalOpen = async (page) =>
   const page = await (await browser.newContext({ viewport: { width: 1680, height: 1000 } })).newPage();
   const errors = [], failed = [];
   let cur = '';
+  // waitMsg 的返回在多个 try 分节间复用；必须在函数作用域声明一次，
+  // 否则只有首个分节里的 `let m =` 可见，后续 `m =` 触发 ReferenceError(m is not defined)。
+  let m;
   page.on('pageerror', e => errors.push({ cur, kind: 'pageerror', text: String(e.message).slice(0, 200) }));
   page.on('console', m => { if (m.type() === 'error') errors.push({ cur, kind: 'console', text: m.text().slice(0, 200) }); });
   page.on('response', r => { if (r.status() >= 400) failed.push({ cur, url: r.url().replace(BASE, '').slice(0, 120), status: r.status() }); });
@@ -211,7 +214,7 @@ const modalOpen = async (page) =>
   await fill(page, '内部商品ID', '900001');
   await page.waitForTimeout(500);
   await submitModal(page, '拉取并落单');
-  let m = await waitMsg(page, 15000);
+  m = await waitMsg(page, 15000);
   ok('拉取并落单成功', !!m && !m.error, m ? m.text : 'no message');
   await clearMsg(page);
   await page.screenshot({ path: `${OUT}/02-pull.png` });

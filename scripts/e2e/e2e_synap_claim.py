@@ -36,8 +36,12 @@ from datetime import datetime, timezone
 GATEWAY = "http://127.0.0.1:8888/api/v1"
 TENANT = "0"
 ADMIN = ("admin", "123456")
-REVIEWER = ("mdapprover2", "123456")  # 第二操作员: 案件复核 / 资金审核
-THIRD = ("mdapprover3", "123456")  # 第三操作员: 资金复核放行(与审核人/第一审核人三方分离)
+# 第二/第三操作员必须与 claim-full-chain-e2e.mjs 用同一批真实账号（CLAIM_REVIEWER 角色）。
+# 旧版 mdapprover2/3(9104/9105) 已不在活库，setup_seed 按 id 对齐密码 hash 是空操作，
+# 导致 S2 登录 401。现改为与 Node 套件一致的用户名 + 固定口令，由 setup_seed 经 IAM
+# reset-password 端点按用户名重置（不直连改库），幂等可重跑。
+REVIEWER = ("claim_reviewer2", "Claim2@2026")  # 第二操作员: 案件复核 / 资金审核
+THIRD = ("claim_auditor", "Claim3@2026")       # 第三操作员: 资金复核放行(三方分离)
 # 本地 dev MySQL root 口令经 env 注入（与仓库 BONE_E2E_* 约定一致）；CI/他机通过
 # BONE_E2E_DB_PWD 覆盖。注意：此处不可把口令写成字面量再赋给 password 字段，否则命中
 # .gitleaks.toml 的 hardcoded-password 规则被门禁拦截（仅 dev 种子账号 123456 被豁免）。
@@ -217,15 +221,30 @@ def ensure_quota_headroom(required=200000.00, limit_required=50000.00):
         initial = float(r["quota_initial"])
         claimed = float(r["quota_claimed"])
         frozen = float(r["quota_frozen"])
+
+        # 守恒地板必须取「投影」与「流水事实」的较大者：S7 抽干 frozen 后，releaseOwned 会
+        # 按流水重算投影（QuotaProjection.rebuild），claimed 会从投影陈旧值跳到 PAID 流水
+        # 累计值。若 initial 只按投影抬高，重算后 initial<claimed ⇒ assertConserved 抛
+        # "额度守恒被破坏"，合法释放被账实不符挡住（S7 长期假红根因）。
+        # 流水口径：claimed_fact = ΣPAID + ΣDEDUCTIBLE 方向净；frozen_fact = ΣSOFT/HARD − ΣRELEASE − ΣPAID。
+        # 这里取「所有 OCCUPY 类流水之和」作保守上界（≥ 任一重算结果），保证任何投影重算都不越界。
+        fact = db_query(
+            "SELECT COALESCE(SUM(amount),0) s FROM t_quota_transaction "
+            "WHERE quota_account_id=%s AND direction='OCCUPY' "
+            "AND txn_type IN ('SOFT','HARD','PAID','DEDUCTIBLE')", (r["id"],))
+        occupied_fact = float(fact[0]["s"]) if fact else 0.0
+        floor = max(claimed + frozen, occupied_fact)
+
         available = initial - claimed - frozen
         if r["quota_type"] == "LIABILITY_CAP":
-            liability_used = claimed + frozen
-        if available < required:
-            new_initial = claimed + frozen + required
+            liability_used = max(claimed + frozen, occupied_fact)
+        if available < required or initial < floor + required:
+            new_initial = floor + required
             db_exec("UPDATE t_quota_account SET quota_initial=%s WHERE id=%s",
                     (new_initial, r["id"]))
-            print(f"  · 额度账户 {r['id']}({r['quota_type']}) 可用 {available:.2f} < "
-                  f"{required:.2f} ⇒ 增额至 {new_initial:.2f}（批单增额语义）")
+            print(f"  · 额度账户 {r['id']}({r['quota_type']}) 可用 {available:.2f} / "
+                  f"流水占用 {occupied_fact:.2f} < 地板 {floor:.2f}+{required:.2f} ⇒ "
+                  f"增额至 {new_initial:.2f}（批单增额语义）")
     # 责任限额增额：让"限额余量"始终够单轮最大赔付（S2 = 18000）
     liabs = db_query(
         "SELECT id, liability_limit FROM t_adj_liability "
@@ -259,20 +278,36 @@ def setup_seed():
         print("  · 已种子 LIABILITY_CAP 责任账 (LIAB-E2E-9001-0001, 100000.00)")
     else:
         print("  · LIABILITY_CAP 责任账已存在, 跳过")
-    # 2) mdapprover2(9104)/mdapprover3(9105) 密码对齐 admin(使其可作为第二/第三操作员演示三方 SoD)
-    h = db_query("SELECT password_hash ph FROM iam_account WHERE id=1")
-    if h:
-        ph = h[0]["ph"]
-        db_exec("UPDATE iam_account SET password_hash=%s WHERE id IN (9104,9105) AND password_hash<>%s",
-                (ph, ph))
+    # 2) 第二/第三操作员按用户名经 IAM reset-password 端点重置口令（真实 API、幂等）。
+    # 旧版按写死 id 9104/9105 对齐 password_hash 是空操作——那两个账号已不在活库，
+    # S2 因「用户名或密码错误」401 全崩。账号与 CLAIM_REVIEWER 角色沿用 Node 套件的
+    # claim_reviewer2 / claim_auditor，缺号即显式失败（不静默跳过 SoD 验证）。
+    admin_tok = login(*ADMIN)
+    for user, pwd in (REVIEWER, THIRD):
+        _, accts = call("GET", f"/iam/accounts?page=1&size=200&keyword={user}",
+                        token=admin_tok, expect=(200,))
+        records = (accts.get("data") or {}).get("records") or []
+        acc = next((a for a in records if str(a.get("username")) == user), None)
+        if not acc:
+            raise RuntimeError(f"缺第二/第三操作员账号 {user}（须有 CLAIM_REVIEWER 角色）")
+        call("POST", f"/iam/accounts/{acc['id']}/reset-password", token=admin_tok,
+             expect=(200,), json_body={"newPassword": pwd})
+        print(f"  · 操作员 {user} 口令已重置（IAM reset-password）")
     # 3) 归还历史遗留的未终态结算单(幽灵冻结) + 保证额度余量
-    release_dangling_settlements(login(*ADMIN))
+    release_dangling_settlements(admin_tok)
     ensure_quota_headroom()
 
 
-# ---------- 通用: 报案到理算(含 AI 决策图) ----------
-def run_intake_and_decision(admin_tok, scn, expect_ai="MANUAL_REQUIRED"):
-    """报案→分配→初审→证据→AI决策→初审完成→理算→转人工→领任务. 返回 (claim_id, adjust_total)."""
+# ---------- 通用: 报案到理算 ----------
+def run_intake_and_decision(admin_tok, scn):
+    """报案→分配→初审→证据→核定金额→转人工→领任务→理算. 返回 (claim_id, adjust_total)。
+
+    AI 决策图的执行/轨迹/路由消费由 claim-full-chain-e2e.mjs 分支 6 专门覆盖（那条链
+    故意不走手动理算）。本 helper 服务于「赔付结算全链路」场景，必须走带核定金额的
+    pre-exam/complete 路径：completePreExam 会把核定金额按明细分摊回填 valid_amount，
+    它是理算的唯一基准。若改走 decision/execute（MANUAL_REQUIRED），引擎内聚收口后
+    approvedAmount=null ⇒ valid_amount 全 0 ⇒ 理算恒 0，后续场景全假红。
+    """
     # 报案
     # `Idempotency-Key` 是 ClaimCaseController 的必传头（缺失即 400，防重试重复建单）。
     # 本用例长期没带它也没红——因为本地跑的是 2026-11-13 的旧 jar；用当前代码重建 jar 后
@@ -300,39 +335,19 @@ def run_intake_and_decision(admin_tok, scn, expect_ai="MANUAL_REQUIRED"):
                     "verifyValid": "VALID"})
     call("POST", f"/claims/{cid}/evidences/lock", token=admin_tok, expect=(200,))
 
-    # AI 决策图执行(必须处于 PRE_EXAMINING=11)
-    _, de = call("POST", f"/claims/{cid}/decision/execute", token=admin_tok, expect=(200,),
-                 json_body={"graphVersion": "v1", "ruleVersion": "v1",
-                            "modelVersion": "", "promptVersion": "", "catalogVersion": ""})
-    dr = de["data"]
-    print(f"  · AI决策图: decisionResult={dr.get('decisionResult')} "
-          f"tier={dr.get('decisionTier')} status={dr.get('status')} "
-          f"traceCount={dr.get('traceCount')} reason={dr.get('consumptionReason')}")
-    assert dr.get("decisionResult") == expect_ai, \
-        f"AI 决策应为 {expect_ai}, 实际 {dr.get('decisionResult')}"
-    assert int(dr.get("traceCount", 0)) >= 5, "决策图应含 ≥5 个节点"
-
-    # 回放 trace, 断言 AI 节点真实执行
-    _, tr = call("GET", f"/claims/{cid}/decision/trace?traceId={dr['traceId']}",
-                 token=admin_tok, expect=(200,))
-    nodes = [n.get("nodeName") for n in tr.get("data", [])]
-    print(f"  · 决策轨迹节点: {nodes}")
-    assert "AiAssess" in nodes, "决策轨迹必须包含 AiAssess(AI 核赔)节点"
-    assert len(nodes) >= 5, "决策轨迹至少 5 个节点"
-
-    # 初审完成(核定金额 = 发票总额)
+    # 初审完成(核定金额 = 发票总额 → 按明细分摊回填 valid_amount，理算基准)
     call("POST", f"/claims/{cid}/pre-exam/complete", token=admin_tok, expect=(200,),
          extra={"X-Approved-Amount": str(scn["invoice_total"])})
 
-    # 理算
+    # 转人工核赔(12 → 40) + 领取(40 → 41，第一审核人=admin)
+    call("POST", f"/claims/{cid}/escalate", token=admin_tok, expect=(200,))
+    call("POST", f"/claims/{cid}/adjust/claim", token=admin_tok, expect=(200,))
+
+    # 理算（valid_amount 已回填，金额为正）
     _, adj = call("POST", f"/claims/{cid}/adjust", token=admin_tok, expect=(200,))
     total = adj["data"]["totalAmount"]
     print(f"  · 理算完成 totalAmount={total} (责任 LIABILITY 90% 赔付)")
     assert float(total) > 0, "理算金额必须为正数"
-
-    # 转人工核赔 + 领取(第一审核人=admin)
-    call("POST", f"/claims/{cid}/escalate", token=admin_tok, expect=(200,))
-    call("POST", f"/claims/{cid}/adjust/claim", token=admin_tok, expect=(200,))
     return cid, float(total)
 
 
@@ -367,7 +382,8 @@ def settle_small(admin_tok, cid, attempt=1):
     call("POST", f"/claims/{cid}/settlement", token=admin_tok, expect=(201,),
          json_body={"attempt": attempt, "accountType": "PERSONAL"})
     call("POST", f"/claims/{cid}/settlement/audit-pass", token=admin_tok, expect=(200,))
-    _, pay = call("POST", f"/claims/{cid}/settlement/pay", token=admin_tok, expect=(200,))
+    _, pay = call("POST", f"/claims/{cid}/settlement/pay", token=admin_tok, expect=(200,),
+                  extra={"Idempotency-Key": f"e2e-pay-{cid}-{int(time.time() * 1000)}"})
     return pay["data"]
 
 
@@ -411,7 +427,8 @@ def settle_large_with_sod(admin_tok, rev_tok, third_tok, cid, attempt=1):
     # 第三操作员(third_tok, ≠审核人≠第一审核人)复核放行 → HARD_RESERVED
     call("POST", f"/claims/{cid}/settlement/review-confirm", token=third_tok, expect=(200,))
     # 支付(admin, pay 无身份约束)
-    _, pay = call("POST", f"/claims/{cid}/settlement/pay", token=admin_tok, expect=(200,))
+    _, pay = call("POST", f"/claims/{cid}/settlement/pay", token=admin_tok, expect=(200,),
+                  extra={"Idempotency-Key": f"e2e-pay-{cid}-{int(time.time() * 1000)}"})
     return pay["data"]
 
 
@@ -740,18 +757,39 @@ def scenario_fund_self_heal():
              expect=(200,), json_body={"payFailed": True})
         print("  · 取消成功（HTTP 200）✓ 池被抽干不再阻塞本单释放")
 
-        # 直查判据：责任账冻结归零 + 本单 RELEASE 流水存在
-        after = db_query("SELECT quota_frozen FROM t_quota_account WHERE id=%s", (liab_id,))
-        assert abs(float(after[0]["quota_frozen"] or 0)) < 0.01, (
-            f"责任账冻结额应归零，实际 {after[0]['quota_frozen']}")
-        rel = db_query(
-            "SELECT id FROM t_quota_transaction WHERE quota_account_id=%s "
-            "AND settlement_no=%s AND txn_type='RELEASE'", (liab_id, settlement_no))
-        assert rel, "责任账上缺少本单的 RELEASE 流水"
-        pa = db_query("SELECT quota_frozen FROM t_quota_account WHERE id=%s", (personal[0]["id"],))
-        assert abs(float(pa[0]["quota_frozen"] or 0)) < 0.01, (
-            f"个人账冻结额应归零，实际 {pa[0]['quota_frozen']}")
-        print("  · 责任账冻结额归零 ✓ 本单 RELEASE 流水已落 ✓ 个人账冻结额归零 ✓ 自愈成立")
+        # 直查判据（自愈的语义是「投影 := f(流水)」，不是「冻结归零」——共享联调库里
+        # 其它未结结算单本就合法占着冻结额，绝对零只在空库成立）：
+        #   ① 本单 RELEASE 流水落账；
+        #   ② 该账户 frozen 投影 == 按流水重建的 held（自愈把被抽干的投影修回事实）；
+        #   ③ 本单 settlement_no 不再是任一账户的占用来源（hold 已释放）。
+        def ledger_frozen(account_id):
+            txns = db_query(
+                "SELECT settlement_no,txn_type,amount FROM t_quota_transaction "
+                "WHERE quota_account_id=%s", (account_id,))
+            held = {}
+            for t in txns:
+                k = t["settlement_no"] or ""
+                a = float(t["amount"] or 0)
+                typ = t["txn_type"]
+                if typ in ("SOFT", "HARD"):
+                    held[k] = held.get(k, 0.0) + a
+                elif typ in ("PAID", "RELEASE"):
+                    held[k] = held.get(k, 0.0) - a
+            return sum(v for v in held.values() if v > 0), held
+
+        for acct_id, label in ((liab_id, "责任账"), (personal[0]["id"], "个人账")):
+            rel = db_query(
+                "SELECT id FROM t_quota_transaction WHERE quota_account_id=%s "
+                "AND settlement_no=%s AND txn_type='RELEASE'", (acct_id, settlement_no))
+            assert rel, f"{label}上缺少本单的 RELEASE 流水"
+            proj, held = ledger_frozen(acct_id)
+            after = db_query("SELECT quota_frozen FROM t_quota_account WHERE id=%s", (acct_id,))
+            actual = float(after[0]["quota_frozen"] or 0)
+            assert abs(actual - proj) < 0.01, (
+                f"{label}冻结额 {actual} 未按流水自愈到 {proj}（投影 != f(流水)）")
+            assert held.get(settlement_no, 0.0) <= 0.01, (
+                f"{label}上本单 {settlement_no} 仍占用 {held.get(settlement_no)}，RELEASE 未生效")
+        print("  · 本单 RELEASE 双账落流水 ✓ 两账冻结投影已按流水自愈 ✓ 本单占用清零 ✓")
         record(name, True, f"claimId={cid} 赔付={total} 池被抽干仍可取消 ✓")
         return cid
     except Exception as e:

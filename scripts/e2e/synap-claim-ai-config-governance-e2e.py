@@ -13,9 +13,11 @@ AI 配置治理 E2E（批 2 · 受控写 / 棘轮 / 写开关 / 盲标拒绝）
 
 不变量（每条都带反证，不只看状态码）：
   C1 快照 5 字段齐全，writeEnabled 是布尔（不得把未配置压成字符串）
-  C2 放宽金额被拒：400 + SC_CLAIM_CONFIG_RATCHET_VIOLATION
-     （相对「当前生效值」，而非代码基线——否则先收紧再放宽的后门测不出来）
-  C3 放宽被拒后库内 config_json 逐字未变（第二证据源）
+  C2 放宽金额被拒：写开关关闭时 403 + SC_CLAIM_CONFIG_WRITE_DISABLED；
+     写开关打开时 400 + SC_CLAIM_CONFIG_RATCHET_VIOLATION（相对「当前生效值」，
+     而非代码基线——否则先收紧再放宽的后门测不出来）。两道闸门按部署态择一生效，
+     不能假设 ratchet 一定先于写开关命中（dev 默认 writeEnabled=false）。
+  C3 无论被哪道闸门拒绝，库内 config_json 逐字未变（第二证据源）
   C4 盲标场景 scene=blind_label 不得产生 AI 裁决回流
 
 骨架纪律（来自 e2e 模板，勿删）：
@@ -97,15 +99,23 @@ def main():
     if st != 200 or not has5:
         return 0
 
-    # C2/C3：相对当前生效值放宽金额必须被拒，且库内逐字未变
+    # C2/C3：相对当前生效值放宽金额必须被拒，且库内逐字未变。
+    # 两道闸门有先后：写开关关闭时先撞 WRITE_DISABLED(403)，打开后才轮到 ratchet(400)。
+    # 断言按快照里的 writeEnabled 择一，不能把「开关关着」误判成 ratchet 失效。
     before = db_config_json()
     cur = float(limits["autoAmountLimit"])
     st2, body2 = http.call("PUT", API_LIMITS, {"autoAmountLimit": cur + 1})
     err2 = error_code(body2)
     after = db_config_json()
-    check("放宽金额被拒 400 + RATCHET_VIOLATION",
-          st2 == 400 and err2 == "SC_CLAIM_CONFIG_RATCHET_VIOLATION",
-          f"status={st2} errorCode={err2} body={str(body2)[:160]}")
+    write_enabled = data.get("writeEnabled") is True
+    if write_enabled:
+        ok2 = st2 == 400 and err2 == "SC_CLAIM_CONFIG_RATCHET_VIOLATION"
+        want2 = "400 + SC_CLAIM_CONFIG_RATCHET_VIOLATION（写开关已开）"
+    else:
+        ok2 = st2 == 403 and err2 == "SC_CLAIM_CONFIG_WRITE_DISABLED"
+        want2 = "403 + SC_CLAIM_CONFIG_WRITE_DISABLED（写开关关闭，先于 ratchet 命中）"
+    check("放宽金额被拒（按写开关态命中正确闸门）", ok2,
+          f"期望={want2} status={st2} errorCode={err2} body={str(body2)[:160]}")
     check("放宽被拒后库内 config_json 未改写", before == after,
           f"before={before} after={after}")
 
