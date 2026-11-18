@@ -1,4 +1,107 @@
 {
-  "_comment": "前端 ID 字段类型的例外登记（只可收缩）。exemptions 中每条须写明「为什么该字段确实是数值序号而非标识符」，不能按目录整体豁免。从本表移除一个条目后，若该字段又声明为 number，门禁即失败。规则依据：后端全平台 Long → JSON string（MetadataAutoConfiguration.boneLongToStringCustomizer），雪花 ID 超 JS Number 上限 2^53，以 number 返回会被静默截断且无任何 JS 报错。2026-10-03 建立时为空：HEAD 里的 330 处已全部修正为 string（11 个包 / 44 个文件），残留 0。",
-  "exemptions": []
+  "_comment": "前端 ID 字段类型的例外登记（只可收缩）。exemptions 中每条须写明「为什么该字段确实是数值序号而非标识符」，不能按目录整体豁免。从本表移除一个条目后，若该字段又声明为 number，门禁即失败。规则依据：后端全平台 Long → JSON string（MetadataAutoConfiguration.boneLongToStringCustomizer），雪花 ID 超 JS Number 上限 2^53。 2026-11-18 采购供应商治理切片合流登记 17 条：均为前端上报入参（后端 @RequestParam/record Long 接收），非后端下发 ID；响应 DTO 侧 ID 仍为 string 未豁免。",
+  "exemptions": [
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/services/purchaseApi.ts",
+      "field": "tenantId",
+      "line": 35,
+      "reason": "采购交易 API 请求入参 tenantId：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/services/purchaseApi.ts",
+      "field": "orgId",
+      "line": 36,
+      "reason": "采购交易 API 请求入参 orgId：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/services/purchaseApi.ts",
+      "field": "requesterId",
+      "line": 37,
+      "reason": "采购交易 API 请求入参 requesterId：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/services/purchaseApi.ts",
+      "field": "tenantId",
+      "line": 45,
+      "reason": "采购交易 API 请求入参 tenantId：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/services/purchaseApi.ts",
+      "field": "legalEntityId",
+      "line": 45,
+      "reason": "采购交易 API 请求入参 legalEntityId：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/services/purchaseApi.ts",
+      "field": "tenantId",
+      "line": 52,
+      "reason": "采购交易 API 请求入参 tenantId：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/services/purchaseApi.ts",
+      "field": "tenantId",
+      "line": 57,
+      "reason": "采购交易 API 请求入参 tenantId：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/services/purchaseApi.ts",
+      "field": "tenantId",
+      "line": 62,
+      "reason": "采购交易 API 请求入参 tenantId：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/services/purchaseApi.ts",
+      "field": "tenantId",
+      "line": 69,
+      "reason": "采购交易 API 请求入参 tenantId：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/services/supplierApi.ts",
+      "field": "tenantId",
+      "line": 54,
+      "reason": "供应商治理 API 请求入参/命令约束 tenantId（withTenant 泛型边界）：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/services/supplierApi.ts",
+      "field": "tenantId",
+      "line": 68,
+      "reason": "供应商治理 API 请求入参/命令约束 tenantId（withTenant 泛型边界）：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/services/supplierApi.ts",
+      "field": "tenantId",
+      "line": 74,
+      "reason": "供应商治理 API 请求入参/命令约束 tenantId（withTenant 泛型边界）：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/types/purchase.ts",
+      "field": "tenantId",
+      "line": 49,
+      "reason": "采购 CreatePurchaseOrderPayload 请求体 tenantId：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/types/purchase.ts",
+      "field": "orgId",
+      "line": 50,
+      "reason": "采购 CreatePurchaseOrderPayload 请求体 orgId：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/types/purchase.ts",
+      "field": "legalEntityId",
+      "line": 52,
+      "reason": "采购 CreatePurchaseOrderPayload 请求体 legalEntityId：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/types/supplier.ts",
+      "field": "tenantId",
+      "line": 65,
+      "reason": "供应商 RegisterSupplierCommand/SourceRecordSpec 请求体 tenantId：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-procurement-app/src/types/supplier.ts",
+      "field": "tenantId",
+      "line": 75,
+      "reason": "供应商 RegisterSupplierCommand/SourceRecordSpec 请求体 tenantId：请求入参（前端上报）：后端以 @RequestParam Long / record Long 接收，前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（PurchaseOrderDTO/RequisitionDTO）的 id/tenantId 均为 string，未被豁免。"
+    }
+  ]
 }

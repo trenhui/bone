@@ -31,6 +31,7 @@ APP_TOKEN_TO_DIR = {
     "extension": "bone-extension-app",
     "generator": "bone-generator-app",
     "system": "bone-system-app",
+    "procurement": "bone-procurement-app",
 }
 # 已知「待移除 / 兼容遗留」的死链 hash：由 0027_menu_metadata_ia.sql 软删（已落库执行），
 # 但 0024 种子里仍保留（种子不改，见融合方案「不改 0024」），故在此允许并报警告，而非永久红。

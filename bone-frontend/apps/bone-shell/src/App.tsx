@@ -259,6 +259,9 @@ const MICRO_APP_ROUTE_PREFIXES = [
   // 此前漏登记 ⇒ isKnownMenuPath 把 /claim#/* 菜单（含其顶级分组）整组静默滤掉——
   // 后端菜单种下发、接口可见，侧边栏却永远不出现（「这里没有的菜单 = 平台不可达」的隐性一跳）。
   '/claim',
+  // 采购平台（bone-procurement-app，activeRule=/procurement，2026-11-17）。
+  // 与 claim 同理：漏登记会让「采购」整组菜单被静默滤掉。
+  '/procurement',
 ] as const;
 
 /** path 形态为 `pathname` 或 `pathname#/hash`（微应用内是 HashRouter）。 */
@@ -725,6 +728,14 @@ function AppContent({
         activeRule: '/generator',
         props: globalContext,
       },
+      {
+        // 采购平台（交易 PR/PO + 供应商治理），端口 3014
+        name: 'bone-procurement-app',
+        entry: import.meta.env.VITE_PROCUREMENT_APP_ENTRY || '//localhost:3014',
+        container: '#subapp-viewport',
+        activeRule: '/procurement',
+        props: globalContext,
+      },
     ];
 
     registerMicroApps(microApps);
@@ -979,7 +990,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
   // 用于控制常驻容器的显隐——见 microAppViewport 处的竞态修复说明。
   const MICRO_APP_BASES = [
     '/iam', '/metadata', '/masterdata', '/commerce', '/integration',
-    '/system', '/extension', '/generator', '/claim',
+    '/system', '/extension', '/generator', '/claim', '/procurement',
   ];
   const isMicroAppPath = MICRO_APP_BASES.some(
     (base) => location.pathname === base || location.pathname.startsWith(`${base}/`),
@@ -1404,6 +1415,9 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
             <Route path="/claim/*" element={null} />
             <Route path="/extension/*" element={null} />
             <Route path="/generator/*" element={null} />
+            {/* 采购平台（bone-procurement-app，2026-11-17）：缺此路由 /procurement/*
+                命中 `*` 被静默送回首页（与 claim 同类事故）。 */}
+            <Route path="/procurement/*" element={null} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Content>

@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 126,
+  "executableCount": 128,
   "retired": [],
   "entries": [
     {
@@ -807,6 +807,18 @@
       "file": "0126_synap_claim_inspection_handoff.sql",
       "kind": "ddl",
       "summary": "新建三张append-only事实表:t_claim_inspection_action(抽检处置留痕:抽检人/结论/打回原因/关联重办任务)、t_claim_user_agent(代理区间)、t_claim_task_transfer(转交留痕)。代理生效唯一键用显式state列+生成列active_key=IF(state=ACTIVE,principal_id,NULL)+UNIQUE(tenant_id,active_key),因为MySQL生成列禁止NOW()等非确定性函数,不能直接判断\"区间生效\";区间外不生效由查询侧valid_from/valid_to双判断,区间重叠第二条由事前查询+唯一键兜底(并发恰1成功)。三表无UPDATE/DELETE入口(事实不可改写)。due_at/version复用0125的t_claim_task做超时回池(幂等UPDATE+乐观锁,复用ScheduleLockService)。bone-init.sql同批补三张建表块(G39新装vs升级一致)。终态information_schema强断言三表关键列/4业务索引/代理生效唯一键/生成列均存在,message_text<=128字符,临时过程用完即删。"
+    },
+    {
+      "order": 127,
+      "file": "0099_seed_procurement_permissions.sql",
+      "kind": "dml",
+      "summary": "采购交易 6 个 HTTP 端点权限码登记并绑定超管（role 1）：requisition:write / purchase-order:read|write / transaction:read|write。ID 段 920000000000000001-006（权限）+ 920000000000000101-106（role_permission），sort_order 760-810；INSERT 带 NOT EXISTS 幂等。与 0099_synap_claim_flow_config_feature_toggle 同号段但只写 iam_permission/iam_role_permission，触及表无交集。"
+    },
+    {
+      "order": 128,
+      "file": "0100_seed_procurement_menus.sql",
+      "kind": "mixed",
+      "summary": "播种「采购」顶级菜单与两叶子（交易控制台 /procurement#/transactions、供应商治理 /procurement#/suppliers），依赖 0099_seed_procurement_permissions。含临时表 DDL + 菜单/权限 INSERT：ID 段 9200000000000002xx，按 (tenant_id,name,path) 幂等，目标租户 0 + 全租户 UNION（0064 范式）；与 0100_synap_claim_calculation_version_chain 同号段但触及 iam_menu 与 t_claim_* 无交集。"
     }
   ],
   "ordinalConflicts": [
@@ -893,8 +905,124 @@
       ],
       "independentChanges": true,
       "verdict": "并行双线各自占用 0102 号段：seed_claim_mapping_menus（映射菜单/权限种子）与 synap_claim_item_dual_code（收单双码回填列）互不触碰对方对象；order 按 M4 词典序排列（seed < synap），无依赖冲突。"
+    },
+    {
+      "ordinal": "0099",
+      "files": [
+        "0099_seed_procurement_permissions.sql",
+        "0099_synap_claim_flow_config_feature_toggle.sql"
+      ],
+      "independentChanges": true,
+      "verdict": "并行双线各占 0099 号段：seed_procurement_permissions 只写 iam_permission/iam_role_permission，flow_config_feature_toggle 触及 t_feature_toggle；触及表无交集，order 127 在 105 之后。"
+    },
+    {
+      "ordinal": "0100",
+      "files": [
+        "0100_seed_procurement_menus.sql",
+        "0100_synap_claim_calculation_version_chain.sql"
+      ],
+      "independentChanges": true,
+      "verdict": "并行双线各占 0100 号段：seed_procurement_menus 只写 iam_menu/iam_permission，calculation_version_chain 触及 t_claim_*；触及表无交集，order 128 在 106 之后。"
     }
   ],
   "appliesTo": "store-incremental",
-  "scopeNote": "本清单定义的是**存量环境**的增量应用顺序，不是「新库初始化脚本」：bone-init.sql 是当前全量结构的入口。把 84 个脚本对空库跑一遍必然失败（2026-10-30 实测 65 成功 / 19 失败），失败项多为 Duplicate column（对象早已并入基线，如 0002 的 app_id）或脚本自带 SIGNAL 校验发现目标状态不满足（如 0078 要求理赔菜单按租户×10 全覆盖）。**但「新环境只灌 init 就够」目前不成立**：2026-10-30 实测 init 121 张表、dev 库 183 张，其中 25 张是迁移脚本建的结构表（wf_* 工作流 8 张、t_claim_* 与 t_reconciliation_* 理赔 6 张、meta_* 运行时 6 张等），取 6 张关键表双证：init 命中 0、dev 命中 6。即新环境灌完 init，工作流引擎与理赔轨迹直接缺表，且缺表不报错（0072 记的正是同一种事故）。31 项缺口已登记在 init-coverage-baseline.json，由 check-migration-init-coverage.py（G39）把守：只可收缩，新迁移建表未并入全量直接判红。补齐全量属 L3 结构变更，待单独评审。"
+  "scopeNote": "本清单定义的是**存量环境**的增量应用顺序，不是「新库初始化脚本」：bone-init.sql 是当前全量结构的入口。把 84 个脚本对空库跑一遍必然失败（2026-10-30 实测 65 成功 / 19 失败），失败项多为 Duplicate column（对象早已并入基线，如 0002 的 app_id）或脚本自带 SIGNAL 校验发现目标状态不满足（如 0078 要求理赔菜单按租户×10 全覆盖）。**但「新环境只灌 init 就够」目前不成立**：2026-10-30 实测 init 121 张表、dev 库 183 张，其中 25 张是迁移脚本建的结构表（wf_* 工作流 8 张、t_claim_* 与 t_reconciliation_* 理赔 6 张、meta_* 运行时 6 张等），取 6 张关键表双证：init 命中 0、dev 命中 6。即新环境灌完 init，工作流引擎与理赔轨迹直接缺表，且缺表不报错（0072 记的正是同一种事故）。31 项缺口已登记在 init-coverage-baseline.json，由 check-migration-init-coverage.py（G39）把守：只可收缩，新迁移建表未并入全量直接判红。补齐全量属 L3 结构变更，待单独评审。",
+  "outOfLexOrder": [
+    {
+      "file": "0099_synap_claim_flow_config_feature_toggle.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0100_synap_claim_calculation_version_chain.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0101_synap_claim_feature_toggle_config_payload.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0101_synap_claim_phase1_record_tables.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0102_seed_claim_mapping_menus.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0102_synap_claim_item_dual_code.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0103_synap_claim_flow_config_unique_active.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0110_fix_meta_entity_ui_schema_audit_columns.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0111_seed_claim_mapping_dispose_permission.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0112_synap_claim_coverage_override.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0115_synap_claim_stp_manual_review.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0116_assert_claim_case_item_absent.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0117_synap_claim_policy_insurer_no.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0118_synap_claim_shared_limit.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0119_synap_claim_policy_insurer_no_index.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0120_synap_claim_mapping_tables.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0121_synap_claim_decision_confidence_source.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0122_synap_claim_blind_label_task.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0123_synap_claim_liability_expand.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0124_synap_claim_ai_feedback_event.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0125_synap_claim_task.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0126_synap_claim_inspection_handoff.sql",
+      "reason": "采购种子脚本（0099/0100 前缀）合流后登记入清单，其 order 追加在末尾；本条 order 未改动，词典序相对位移由新增条目前置引起，属并行合流的既有顺序，保持原 order 不改以保护已应用环境。"
+    },
+    {
+      "file": "0099_seed_procurement_permissions.sql",
+      "reason": "采购种子脚本在切片归档后补登记：order 按『新增只能追加末尾』取 127/128 以不破坏已应用环境顺序；文件名沿用原 0099/0100 号段（与同号 synap_claim 迁移触及表无交集，见 ordinalConflicts），故词典序位置早于 order 位置。"
+    },
+    {
+      "file": "0100_seed_procurement_menus.sql",
+      "reason": "采购种子脚本在切片归档后补登记：order 按『新增只能追加末尾』取 127/128 以不破坏已应用环境顺序；文件名沿用原 0099/0100 号段（与同号 synap_claim 迁移触及表无交集，见 ordinalConflicts），故词典序位置早于 order 位置。"
+    }
+  ]
 }

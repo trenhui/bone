@@ -4487,3 +4487,109 @@ CREATE TABLE `wf_task` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='审批任务（办理人在节点进入时一次性解析并冻结）';
 
 -- <<< END managed: migration-merged
+
+-- ── 采购交易（procurement-transaction-pr-po-slice，2026-11-17 首次引入 t_proc_*） ──
+-- 金额 DECIMAL(19,4) + currency CHAR(3)，数量 DECIMAL(19,6)，禁用 float/double。
+-- 审计四列 DATETIME(3) UTC + tenant_id + deleted + version 齐全（DDL ↔ @Column 对账测试守护）。
+DROP TABLE IF EXISTS `t_proc_requisition`;
+CREATE TABLE `t_proc_requisition` (
+  `id`                  BIGINT          NOT NULL COMMENT '请购单主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `pr_no`               VARCHAR(64)     NOT NULL COMMENT '请购单号 PR-{yyyy}-{6位}',
+  `org_id`              BIGINT          NOT NULL COMMENT '组织ID',
+  `requester_id`        BIGINT          NOT NULL COMMENT '请购人ID',
+  `status`              VARCHAR(32)     NOT NULL COMMENT '状态：DRAFT/SUBMITTED/APPROVED/CONVERTED/CANCELLED',
+  `total_amount`        DECIMAL(19,4)   NOT NULL COMMENT '请购总额（分位与行合计一致）',
+  `currency`            CHAR(3)         NOT NULL COMMENT '币种 ISO-4217',
+  `budget_ref`          VARCHAR(128)    DEFAULT NULL COMMENT '预算引用（占位，L19 待决，不做真实占用）',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_requisition_no` (`tenant_id`,`pr_no`),
+  KEY `idx_proc_requisition_org_status` (`tenant_id`,`org_id`,`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='请购单主表（采购交易 PR+PO 切片）';
+
+DROP TABLE IF EXISTS `t_proc_po`;
+CREATE TABLE `t_proc_po` (
+  `id`                  BIGINT          NOT NULL COMMENT '采购订单主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `po_no`               VARCHAR(64)     NOT NULL COMMENT '订单号 PO-{yyyy}-{6位}',
+  `pr_no`               VARCHAR(64)     DEFAULT NULL COMMENT '来源请购单号（直接建单为 NULL）',
+  `org_id`              BIGINT          NOT NULL COMMENT '采购组织ID',
+  `vendor_party_id`     VARCHAR(64)     NOT NULL COMMENT '供应商 partyId（经 VendorQueryPort 校验）',
+  `legal_entity_id`     BIGINT          NOT NULL COMMENT '采购方法人实体ID（跨法人隔离比对）',
+  `status`              VARCHAR(32)     NOT NULL COMMENT '状态：DRAFT/SUBMITTED/APPROVED/SENT/CANCELLED/ACKNOWLEDGED/PARTIAL_RECEIVED/FULLY_RECEIVED/CLOSED',
+  `po_amount`           DECIMAL(19,4)   NOT NULL COMMENT '订单总额 = Σ line_amount（强一致不变量）',
+  `currency`            CHAR(3)         NOT NULL COMMENT '币种 ISO-4217',
+  `tax_amount`          DECIMAL(19,4)   NOT NULL DEFAULT 0 COMMENT '税额合计',
+  `fx_rate`             DECIMAL(19,8)   DEFAULT NULL COMMENT '汇率（下达时冻结；本币为 NULL）',
+  `fx_as_of`            DATETIME(3)     DEFAULT NULL COMMENT '汇率取数时点 UTC',
+  `fx_source`           VARCHAR(64)     DEFAULT NULL COMMENT '汇率来源（本期占位）',
+  `tax_code_version`    VARCHAR(64)     DEFAULT NULL COMMENT '税码版本（快照哈希输入）',
+  `budget_ref`          VARCHAR(128)    DEFAULT NULL COMMENT '预算引用（占位，L19 待决）',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本（快照 po_version 取此值）',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_po_no` (`tenant_id`,`po_no`),
+  KEY `idx_proc_po_vendor_status` (`tenant_id`,`vendor_party_id`,`status`),
+  KEY `idx_proc_po_org_status` (`tenant_id`,`org_id`,`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='采购订单主表（主表仅按单号唯一，不带 po_version）';
+
+DROP TABLE IF EXISTS `t_proc_po_line`;
+CREATE TABLE `t_proc_po_line` (
+  `id`                  BIGINT          NOT NULL COMMENT '订单行主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `po_id`               BIGINT          NOT NULL COMMENT '订单主表ID',
+  `line_no`             INT             NOT NULL COMMENT '行号（单内唯一，从 1 起）',
+  `item_id`             VARCHAR(64)     NOT NULL COMMENT '物料ID',
+  `item_name`           VARCHAR(256)    DEFAULT NULL COMMENT '物料名称（冗余展示，非 PII）',
+  `quantity`            DECIMAL(19,6)   NOT NULL COMMENT '数量',
+  `unit`                VARCHAR(16)     DEFAULT NULL COMMENT '计量单位',
+  `net_price`           DECIMAL(19,4)   NOT NULL COMMENT '净价（本期直接取订单行输入，不经条件引擎）',
+  `tax_rate`            DECIMAL(19,6)   NOT NULL DEFAULT 0 COMMENT '税率',
+  `line_amount`         DECIMAL(19,4)   NOT NULL COMMENT '行金额 = round(net_price × quantity × (1 + tax_rate), 4)，逐行舍入',
+  `currency`            CHAR(3)         NOT NULL COMMENT '币种 ISO-4217',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_po_line` (`tenant_id`,`po_id`,`line_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='采购订单行（逐行快照，先舍入再汇总）';
+
+DROP TABLE IF EXISTS `t_proc_price_snapshot`;
+CREATE TABLE `t_proc_price_snapshot` (
+  `id`                  BIGINT          NOT NULL COMMENT '快照主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `po_no`               VARCHAR(64)     NOT NULL COMMENT '订单号',
+  `po_version`          INT             NOT NULL COMMENT '下达时 t_proc_po.version 的值（非独立业务修订列）',
+  `lines_json`          TEXT            NOT NULL COMMENT '逐行净价结果 JSON（itemId/qty/netPrice/lineAmount）',
+  `tax_amount`          DECIMAL(19,4)   NOT NULL COMMENT '税额合计',
+  `currency`            CHAR(3)         NOT NULL COMMENT '币种 ISO-4217',
+  `fx_rate`             DECIMAL(19,8)   DEFAULT NULL COMMENT '汇率',
+  `fx_as_of`            DATETIME(3)     DEFAULT NULL COMMENT '汇率取数时点 UTC',
+  `fx_source`           VARCHAR(64)     DEFAULT NULL COMMENT '汇率来源',
+  `rounding_mode`       VARCHAR(32)     NOT NULL DEFAULT 'HALF_UP' COMMENT '舍入口径',
+  `tax_code_version`    VARCHAR(64)     DEFAULT NULL COMMENT '税码版本',
+  `computed_hash`       VARCHAR(64)     NOT NULL COMMENT 'SHA-256 规范化哈希（可复现断言）',
+  `computed_at`         DATETIME(3)     NOT NULL COMMENT '计算时点 UTC',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_price_snapshot` (`tenant_id`,`po_no`,`po_version`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='价格快照（只追加不可变，无 update/delete 入口）';
+

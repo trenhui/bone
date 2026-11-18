@@ -35,6 +35,7 @@ APPS=(
   "bone-extension-app:3008"
   "bone-generator-app:3009"
   "bone-commerce-app:3012"
+  "bone-procurement-app:3014"
 )
 
 # 等待某端口自己返回 HTTP（任何非 000 都算起来了：Vite 首屏 200，登录态下 302 也算）

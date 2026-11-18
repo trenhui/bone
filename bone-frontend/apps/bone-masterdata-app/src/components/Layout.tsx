@@ -10,7 +10,7 @@ import {
   CrownOutlined,
   FileDoneOutlined,
   DatabaseOutlined,
-  FieldTimeOutlined
+  FieldTimeOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
