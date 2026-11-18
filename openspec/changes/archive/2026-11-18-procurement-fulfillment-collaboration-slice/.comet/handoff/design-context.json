@@ -1,0 +1,20 @@
+{
+  "change": "procurement-fulfillment-collaboration-slice",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "2d9acc078aaf4e05ae6b16c1322a29e503494790c8bbb5fad40e6692e423c291",
+  "files": [
+    { "path": "openspec/changes/procurement-fulfillment-collaboration-slice/proposal.md", "sha256": "60c50172c62db24b58d65113b1c8c5ed7113b7ced62967613980f05926eaac87" },
+    { "path": "openspec/changes/procurement-fulfillment-collaboration-slice/design.md", "sha256": "28ffdc848cf401bef70f99c0e1102da0635b4d7c0fff2a7acf32dd170305bf04" },
+    { "path": "openspec/changes/procurement-fulfillment-collaboration-slice/tasks.md", "sha256": "a999989928073a60c8ea71051ce96408a47c0043aab48d3fd1a3d5110840798e" },
+    { "path": "openspec/changes/procurement-fulfillment-collaboration-slice/.openspec.yaml", "sha256": "b75d296d3b54880b00a14fd17257d690f593cd5d3db17201d597c19528a9f905" },
+    { "path": "openspec/changes/procurement-fulfillment-collaboration-slice/specs/procurement/asn/spec.md", "sha256": "6b7cf7aec105e77334ed2d4a53468a795058642b1ad5bdb52f57f5c5afd704dd" },
+    { "path": "openspec/changes/procurement-fulfillment-collaboration-slice/specs/procurement/fulfillment-console/spec.md", "sha256": "10617bba6f6e8e67148fa21fd847c7f094bd692a384abd49e4480ee83cd1eb3f" },
+    { "path": "openspec/changes/procurement-fulfillment-collaboration-slice/specs/procurement/invoice-submission/spec.md", "sha256": "a00fcff53ba299b98b1a0ebcd28dd090e34a1a27d86899ef0b3e2ec00e443e3d" },
+    { "path": "openspec/changes/procurement-fulfillment-collaboration-slice/specs/procurement/ir-exception/spec.md", "sha256": "8f27b3581a48537ae9db6b01f549b4665a579d2f05b082dd3a19101e746dd71a" },
+    { "path": "openspec/changes/procurement-fulfillment-collaboration-slice/specs/procurement/po-acknowledgement/spec.md", "sha256": "1947b5437c1d96ce938889055b3e634efae0aa50194f5427611a27e9554e8dfc" }
+  ]
+}
