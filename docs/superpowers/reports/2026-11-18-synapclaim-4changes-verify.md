@@ -20,7 +20,7 @@ currency: current
 | 前端 bone-claim-app 测试 | ✅ 137/137（修复 mock 后） |
 | E2E 影响门禁 / lint | ✅ 通过；inspection 用真实交付范围 6/6 端点覆盖 |
 | 真机端到端 E2E（经网关+MySQL） | ✅ **4 个脚本全绿**：inspection 8/8、ai-config 5/5、workbench 17/17、re-review 5/5（补回活库 admin claim 权限 + 修 R2 夹具后） |
-| 真机 E2E 新发现 | ⚠️ reviewerId 口径不一致（前端/用例传用户名，领域守卫按数字 ID 比对）→ 独立复审自审守卫在真机可被绕过；作为高优先级契约隐患登记，见 §6 |
+| 真机 E2E 新发现 | ⚠️ 独立复审 submit/complete 端点 `reviewerId` 由客户端自报（领域守卫按数字 ID 比对）——API 契约潜在加固点。前端未接入该端点，无"前端已能绕过"的现成缺陷；已更正初稿误判，见 §6 |
 | Comet 状态推进（verify→archive） | 🔴 被阻塞：4 个 change 绑定分支已删除，checkpoint 与 state 不匹配 |
 
 ## 1. 验证方法与判据
@@ -93,7 +93,9 @@ currency: current
 
 ## 6. 待用户裁定项（未在本次擅改产品代码）
 
-1. **【高优先级·新发现】reviewerId 标识口径不一致，独立复审自审守卫（职责分离 SoD）在真机可绕过**：领域守卫按 `firstReviewerId`（`CurrentOperator.requireId()` 的数字 ID，如 `'1'`）比对调用方传的 `reviewerId`；但前端 `claimConfigApi.ts` 定义 `reviewerId?: string` 且按字符串标识（用户名）传值。二者口径不同 ⇒ 前端若传用户名，`'1' != 'admin'` 守卫放行，同人可自审。本次仅修正 E2E 夹具用真值触发守卫，**未改产品代码**（改口径涉及端点契约 + 前端 + 存量数据 + 单测，属独立变更）。建议裁定统一口径（如 submit 服务端强制取 `CurrentOperator.requireId()`，忽略客户端 reviewerId；或全链路统一为数字 ID），并补一条"前端实际传值 → 守卫生效"的真机用例。
+1. **【API 契约风险·需裁定】独立复审 submit/complete 端点的 `reviewerId` 由客户端自报**：领域守卫按 `firstReviewerId`（`CurrentOperator.requireId()` 的数字 ID，如 `'1'`）严格比对 `reviewerId`；端点却从 `@RequestBody` 取客户端传值，未取已验签 token 的操作者。风险在于：调用方若传用户名形态（如 `'admin'`），`'1' != 'admin'` 守卫放行，自审可能绕过。设计文档《独立复审阶段设计》§4 的校验①语义是"当前用户具备权限"，项目内 `ReconciliationDiffController` 等端点的既定范式是"操作人取自已验签 token，不接受请求体自报"。
+   - **更正（2026-11-18 复核）**：初稿曾称"前端 `claimConfigApi.ts` 传用户名导致绕过"——**该论断有误**。全局核查确认：① 前端**未接入** re-review submit/complete 端点（0 处调用）；② `claimConfigApi.ts:1252` 的 `reviewerId?: string` 属于 `PublishMappingReq`（映射发布复核），与独立复审无关。故**不存在"前端已能绕过"的现成缺陷**，这是 API 契约层的潜在加固点。真机 R2 传 `'admin'` 放行是 E2E 夹具用了错误标识形态，已修（见 §2 缺陷 3）。
+   - **本次处置**：未改产品代码（收紧端点契约会影响 API 兼容性 + 需补契约测试 + 产品语义确认，属独立变更）。建议裁定是否把 submit/complete 的 reviewerId 改为服务端取 `CurrentOperator.requireId()`，与 `ReconciliationDiffController` 范式一致；若保留客户端传值，则需在 API 契约中明确"reviewerId 须为操作者数字 ID"并补一条"用户名形态被拒"的负向用例。
 2. `synapclaim-independent-re-review` 报告 §6：`reReviewQueue` 端点把 `reviewerId` 作为可选 `@RequestParam`，持权人可查他人待复审队列，偏离设计 §5 方案 C 的"持权人视角"语义。是否收紧为一律取 `CurrentOperator`，需产品/架构裁定后走独立变更。
 3. 全仓 `npm run test` 另有 3 例 `bone-extension-app` 的 `deletePlugin` 失败（异常类型断言），与本批零交集，属并行会话基线项。
 
