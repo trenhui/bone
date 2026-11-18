@@ -4460,6 +4460,48 @@
   },
   {
    "http": "POST",
+   "path": "/api/v1/procurement/purchase-orders/{no}/ack",
+   "controller": "FulfillmentController",
+   "file": "bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/controller/FulfillmentController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/asns",
+   "controller": "FulfillmentController",
+   "file": "bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/controller/FulfillmentController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/invoices",
+   "controller": "FulfillmentController",
+   "file": "bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/controller/FulfillmentController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/ir-exceptions/{no}/supplement",
+   "controller": "FulfillmentController",
+   "file": "bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/controller/FulfillmentController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/purchase-orders/{no}/fulfillment",
+   "controller": "FulfillmentController",
+   "file": "bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/controller/FulfillmentController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ir-exceptions",
+   "controller": "FulfillmentController",
+   "file": "bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/controller/FulfillmentController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
    "path": "/api/v1/procurement/purchase-orders",
    "controller": "PurchaseOrderController",
    "file": "bone-apps/bone-procurement/bone-procurement-transaction/src/main/java/com/bone/procurement/transaction/adapter/web/controller/PurchaseOrderController.java",
@@ -4726,8 +4768,8 @@
   }
  ],
  "summary": {
-  "endpoints": 570,
+  "endpoints": 576,
   "covered": 239,
-  "uncovered": 331
+  "uncovered": 337
  }
 }

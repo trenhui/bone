@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 128,
+  "executableCount": 130,
   "retired": [],
   "entries": [
     {
@@ -819,6 +819,18 @@
       "file": "0100_seed_procurement_menus.sql",
       "kind": "mixed",
       "summary": "播种「采购」顶级菜单与两叶子（交易控制台 /procurement#/transactions、供应商治理 /procurement#/suppliers），依赖 0099_seed_procurement_permissions。含临时表 DDL + 菜单/权限 INSERT：ID 段 9200000000000002xx，按 (tenant_id,name,path) 幂等，目标租户 0 + 全租户 UNION（0064 范式）；与 0100_synap_claim_calculation_version_chain 同号段但触及 iam_menu 与 t_claim_* 无交集。"
+    },
+    {
+      "file": "0101_seed_procurement_fulfillment_permissions.sql",
+      "kind": "dml",
+      "order": 129,
+      "summary": "采购履约 2 个端点权限码登记并绑定超管（role 1）：procurement:fulfillment:read|write。ID 段 920000000000000007-008（权限）+ 920000000000000107-108（role_permission），sort_order 820-821；INSERT ... WHERE NOT EXISTS 幂等。与 0101_synap_claim_feature_toggle_config_payload / 0101_synap_claim_phase1_record_tables 同序号但只触及 iam_permission/iam_role_permission，触及表无交集。"
+    },
+    {
+      "file": "0102_seed_procurement_fulfillment_menus.sql",
+      "kind": "mixed",
+      "order": 130,
+      "summary": "在既有「采购」目录下新增叶子「履约协同」→ /procurement#/fulfillment，依赖 0101。含临时表 DDL + 菜单/权限 INSERT，ID 段 9200000000000004xx（403 起，避开 0100 的 2xx/3xx），按 (tenant_id,name,path) 幂等；校验过程用 v_group/v_leaf/v_orphan 别名避开 MySQL 8 保留字。与 0102_seed_claim_mapping_menus / 0102_synap_claim_item_dual_code 同序号但只触及 iam_menu，触及表无交集。"
     }
   ],
   "ordinalConflicts": [
@@ -891,8 +903,9 @@
     {
       "ordinal": "0101",
       "files": [
-        "0101_synap_claim_phase1_record_tables.sql",
-        "0101_synap_claim_feature_toggle_config_payload.sql"
+        "0101_seed_procurement_fulfillment_permissions.sql",
+        "0101_synap_claim_feature_toggle_config_payload.sql",
+        "0101_synap_claim_phase1_record_tables.sql"
       ],
       "independentChanges": true,
       "verdict": "并行双线各自占用 0101 号段：feature_toggle_config_payload（t_feature_toggle 补 config_json 承载列，order 107）与 phase1_record_tables（补建 §9.5 四张记录/字典表，order 108）互不触碰对方对象；order 按 M4 词典序排列（f < p），两者作用于不同表，无依赖冲突。"
@@ -901,6 +914,7 @@
       "ordinal": "0102",
       "files": [
         "0102_seed_claim_mapping_menus.sql",
+        "0102_seed_procurement_fulfillment_menus.sql",
         "0102_synap_claim_item_dual_code.sql"
       ],
       "independentChanges": true,
@@ -1023,6 +1037,14 @@
     {
       "file": "0100_seed_procurement_menus.sql",
       "reason": "采购种子脚本在切片归档后补登记：order 按『新增只能追加末尾』取 127/128 以不破坏已应用环境顺序；文件名沿用原 0099/0100 号段（与同号 synap_claim 迁移触及表无交集，见 ordinalConflicts），故词典序位置早于 order 位置。"
+    },
+    {
+      "file": "0101_seed_procurement_fulfillment_permissions.sql",
+      "reason": "采购履约种子脚本在切片归档后补登记：order 按「新增只能追加末尾」取 129/130 以不破坏已应用环境顺序；文件名沿用原 0101/0102 号段（与同号 synap_claim 迁移触及表无交集，见 ordinalConflicts），故词典序位置早于 order 位置。"
+    },
+    {
+      "file": "0102_seed_procurement_fulfillment_menus.sql",
+      "reason": "采购履约种子脚本在切片归档后补登记：order 按「新增只能追加末尾」取 129/130 以不破坏已应用环境顺序；文件名沿用原 0101/0102 号段（与同号 synap_claim 迁移触及表无交集，见 ordinalConflicts），故词典序位置早于 order 位置。"
     }
   ]
 }

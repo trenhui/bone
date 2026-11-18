@@ -25,6 +25,8 @@ bone:
   procurement:
     transaction:
       enabled: ${BONE_PROCUREMENT_TRANSACTION_ENABLED:false}
+    fulfillment:
+      enabled: ${BONE_PROCUREMENT_FULFILLMENT_ENABLED:false}
 
 management:
   endpoints:

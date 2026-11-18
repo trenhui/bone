@@ -4593,3 +4593,114 @@ CREATE TABLE `t_proc_price_snapshot` (
   UNIQUE KEY `uk_proc_price_snapshot` (`tenant_id`,`po_no`,`po_version`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='价格快照（只追加不可变，无 update/delete 入口）';
 
+-- ── 采购履约（procurement-fulfillment-collaboration-slice，2026-11-17 首次引入；LLD 05 卷 §4） ──
+DROP TABLE IF EXISTS `t_proc_po_ack`;
+CREATE TABLE `t_proc_po_ack` (
+  `id`                  BIGINT          NOT NULL COMMENT 'PO确认主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `po_no`               VARCHAR(64)     NOT NULL COMMENT '订单号',
+  `po_version`          INT             NOT NULL COMMENT '确认时 PO 版本（幂等键）',
+  `vendor_party_id`     VARCHAR(64)     NOT NULL COMMENT '确认供应商 partyId（身份绑定）',
+  `ack_type`            VARCHAR(16)     NOT NULL COMMENT 'FULL/PARTIAL/REJECT',
+  `ack_lines_json`      TEXT            DEFAULT NULL COMMENT '行级确认结果 JSON',
+  `ack_at`              DATETIME(3)     NOT NULL COMMENT '确认时点 UTC',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_po_ack` (`tenant_id`,`po_no`,`po_version`,`vendor_party_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='PO行级确认（855类比；po_no+po_version+vendor 幂等）';
+
+DROP TABLE IF EXISTS `t_proc_asn`;
+CREATE TABLE `t_proc_asn` (
+  `id`                  BIGINT          NOT NULL COMMENT 'ASN主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `asn_no`              VARCHAR(64)     NOT NULL COMMENT '发货通知号（业务唯一键）',
+  `po_no`               VARCHAR(64)     NOT NULL COMMENT '订单号（引用已确认PO）',
+  `vendor_party_id`     VARCHAR(64)     NOT NULL COMMENT '供应商 partyId',
+  `ship_date`           DATE            DEFAULT NULL COMMENT '发货日期',
+  `carrier`             VARCHAR(64)     DEFAULT NULL COMMENT '承运商',
+  `tracking_no`         VARCHAR(128)    DEFAULT NULL COMMENT '物流追踪号',
+  `sscc_json`           TEXT            DEFAULT NULL COMMENT 'SSCC-18 包装标识 JSON',
+  `status`              VARCHAR(32)     NOT NULL COMMENT 'CREATED/TRANSMITTED/RECEIVING_MATCHED/RECONCILED/CANCELLED',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_asn` (`tenant_id`,`asn_no`),
+  KEY `idx_proc_asn_po` (`tenant_id`,`po_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='发货通知（856类比；asn_no 唯一，按 po_no 保序）';
+
+DROP TABLE IF EXISTS `t_proc_asn_line`;
+CREATE TABLE `t_proc_asn_line` (
+  `id`                  BIGINT          NOT NULL COMMENT 'ASN行主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `asn_id`              BIGINT          NOT NULL COMMENT 'ASN主键',
+  `line_no`             INT             NOT NULL COMMENT '行号（单内唯一，从 1 起）',
+  `po_line_no`          INT             NOT NULL COMMENT '引用 PO 行号',
+  `item_id`             VARCHAR(64)     NOT NULL COMMENT '物料ID',
+  `qty`                 DECIMAL(19,6)   NOT NULL COMMENT '发货数量',
+  `uom`                 VARCHAR(16)     DEFAULT NULL COMMENT '计量单位',
+  `pack_ref`            VARCHAR(64)     DEFAULT NULL COMMENT '包装层级引用（SSCC）',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_asn_line` (`tenant_id`,`asn_id`,`line_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='发货通知行（随 ASN 根，数量 DECIMAL(19,6)）';
+
+DROP TABLE IF EXISTS `t_proc_invoice_submission`;
+CREATE TABLE `t_proc_invoice_submission` (
+  `id`                  BIGINT          NOT NULL COMMENT '发票提交主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `invoice_no`          VARCHAR(64)     NOT NULL COMMENT '发票号',
+  `vendor_party_id`     VARCHAR(64)     NOT NULL COMMENT '供应商 partyId（去重键组成）',
+  `po_no`               VARCHAR(64)     DEFAULT NULL COMMENT '引用订单号',
+  `amount`              DECIMAL(19,4)   NOT NULL COMMENT '发票金额（TDS）',
+  `tax`                 DECIMAL(19,4)   NOT NULL DEFAULT 0 COMMENT '税额',
+  `currency`            CHAR(3)         NOT NULL COMMENT '币种 ISO-4217',
+  `lines_json`          TEXT            DEFAULT NULL COMMENT '行项目 JSON（逐行金额，TDS=ΣIT1±SAC）',
+  `status`              VARCHAR(32)     NOT NULL COMMENT 'DRAFT/SUBMITTED/MATCH_PENDING/MATCHED/BLOCKED/REJECTED',
+  `submitted_at`        DATETIME(3)     DEFAULT NULL COMMENT '提交时点 UTC',
+  `finance_event_id`    VARCHAR(64)     DEFAULT NULL COMMENT 'Finance 匹配回写事件ID（只回写标识，非空即已回写）',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_invoice_dedup` (`tenant_id`,`invoice_no`,`vendor_party_id`),
+  KEY `idx_proc_invoice_po_status` (`tenant_id`,`po_no`,`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='供应商自助开票（810类比；只提交不裁决，金额 DECIMAL(19,4)）';
+
+DROP TABLE IF EXISTS `t_proc_ir_exception`;
+CREATE TABLE `t_proc_ir_exception` (
+  `id`                  BIGINT          NOT NULL COMMENT '发票例外主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `exception_no`        VARCHAR(64)     NOT NULL COMMENT '例外单号（业务唯一键）',
+  `invoice_no`          VARCHAR(64)     NOT NULL COMMENT '关联发票号',
+  `exception_code`      VARCHAR(64)     NOT NULL COMMENT '例外码（同发票内幂等键）',
+  `match_status`        VARCHAR(32)     DEFAULT NULL COMMENT 'Finance 回传匹配状态 MATCHED/EXCEPTION/REVIEW',
+  `status`              VARCHAR(32)     NOT NULL COMMENT 'OPEN/SUPPLEMENTED/UNDER_REVIEW/RESOLVED/REJECTED',
+  `supplement_ref`      VARCHAR(256)    DEFAULT NULL COMMENT '补料引用（不放行）',
+  `finance_event_id`    VARCHAR(64)     DEFAULT NULL COMMENT 'Finance 回写事件ID（RESOLVED 唯一来源）',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_ir_exception_no` (`tenant_id`,`exception_no`),
+  UNIQUE KEY `uk_proc_ir_exception_dedup` (`tenant_id`,`invoice_no`,`exception_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='发票例外台账（状态只由 Finance 事件回写，采购域无放行入口）';

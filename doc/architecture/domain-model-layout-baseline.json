@@ -30,6 +30,11 @@
       "module": "bone-apps/bone-procurement/bone-procurement-transaction",
       "path": "domain/port",
       "reason": "供应商交易资格查询端口（VendorQueryPort.findSnapshot + VendorSnapshot），由 infrastructure/VendorQueryPortAdapter 实现（反射调用 bone-masterdata 的 SupplierApplicationService，因后者为 fat-jar 无法编译期依赖）。领域层只声明「查询供应商交易资格快照」这一能力且内含 fail-closed 领域规则，不关心介质与上游形态；包名沿用六边形惯例 port，按 ADR-0036 R3 登记为模块自有领域端口子包"
+    },
+    {
+      "module": "bone-apps/bone-procurement/bone-procurement-fulfillment",
+      "path": "domain/port",
+      "reason": "采购履约出站端口（FinanceAclPort / InventoryAclPort / PoQueryPort / ToleranceConfigPort / VendorIdentityPort），由 infrastructure/FailClosedAclAdapters / PoQueryPortAdapter / SecurityVendorIdentityAdapter 实现。领域层只声明能力且内含 fail-closed 领域规则，不关心上游介质与形态（跨上下文 ACL 桩）；包名沿用六边形惯例 port，按 ADR-0036 R3 登记为模块自有领域端口子包。"
     }
   ]
 }

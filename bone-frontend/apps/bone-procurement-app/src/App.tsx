@@ -3,6 +3,7 @@ import { App as AntdApp } from 'antd';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import SupplierManagement from './pages/SupplierManagement';
 import PurchaseConsole from './pages/PurchaseConsole';
+import FulfillmentConsole from './pages/FulfillmentConsole';
 
 type MessageApi = ReturnType<typeof AntdApp.useApp>['message'];
 
@@ -24,6 +25,8 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/transactions" element={<PurchaseConsole />} />
           <Route path="/suppliers" element={<SupplierManagement />} />
+          <Route path="/fulfillment" element={<FulfillmentConsole />} />
+          <Route path="/transactions/fulfillment" element={<Navigate to="/fulfillment" replace />} />
           <Route path="/" element={<Navigate to="/transactions" replace />} />
         </Routes>
       </Router>
