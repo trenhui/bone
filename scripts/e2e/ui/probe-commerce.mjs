@@ -181,6 +181,17 @@ const modalOpen = async (page) =>
   // ---------- 0. 侧边栏真实菜单清单（唯一真源，静态 grep 不可信） ----------
   await page.goto(`${BASE}/commerce`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(3500);
+  // commerce 是两级菜单：交易子项挂在「交易管理」SubMenu 下，未展开时不在 DOM
+  // （ant-menu-item 只有「首页仪表盘」）。断言菜单前先展开父节点再读，
+  // 与 gotoMenu 同口径，避免把「折叠态」误判为「菜单缺失」（2026-11-18 联调实测假红）。
+  const tradeSub = page.locator('.ant-menu-submenu').filter({ hasText: /^交易管理/ }).first();
+  if (await tradeSub.count()) {
+    const exp = await tradeSub.locator('.ant-menu-submenu-title').first().getAttribute('aria-expanded');
+    if (exp !== 'true') {
+      try { await tradeSub.locator('.ant-menu-submenu-title').first().click({ timeout: 5000 }); } catch (e) {}
+      await page.waitForTimeout(1200);
+    }
+  }
   const sidebar = await page.evaluate(() => {
     const subs = [...document.querySelectorAll('.ant-menu-submenu-title')].map(e => e.innerText.trim());
     const items = [...document.querySelectorAll('.ant-menu-item')].map(e => e.innerText.trim());

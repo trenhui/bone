@@ -185,6 +185,15 @@ spring:
           uri: ${BONE_CLAIM_URI:http://localhost:8087}
           predicates:
             - Path=/api/v1/claim-ops/**
+        # 采购履约域：bone-procurement（:8090，2026-11-18 补齐路由登记）。
+        # FulfillmentController#/api/v1/procurement（PO 确认/ASN/开票/IR 例外，设计见
+        # doc/ai-product/procuraAI/detailed-design/05）。网关按前缀白名单转发，缺此路由时
+        # 该前缀整体 404 且不产生后端日志（请求没进上游 DispatcherServlet）；chains.py G 项
+        # 「用户面 Controller 路径已登记网关」据此判红。uri 走 env 覆盖，默认本机 :8090。
+        - id: bone-procurement
+          uri: ${BONE_PROCUREMENT_URI:http://localhost:8090}
+          predicates:
+            - Path=/api/v1/procurement/**
 
 # 网关统一鉴权（JWT 密钥与 bone-iam 等签发模块共享）
 bone:

@@ -869,10 +869,66 @@ def gate():
     check("G", "无孤儿路由（登记但无实现）", [], dead, "" if not dead else "疑似死路由")
 
 
+def ensure_md_approve_permissions(admin_tok):
+    """幂等确保 e2esub/e2eapp 能走通主数据 submit/approve（夹具自包含）。
+
+    背景：SUPER_ADMIN(role 1) 在 claim 切片后被收窄为纯 claim 权限集，e2esub/e2eapp
+    只挂该角色 ⇒ masterdata:records:write/approve 缺失 ⇒ C1/C2 的 submit/approve 全 403。
+    这里用真实 IAM API 自建一个固定 code 的角色并授予三项主数据权限，再并集挂给两个账号；
+    不修改 SUPER_ADMIN seed（共享树、并行会话共用），不动产品代码。已就绪则零写入。
+    """
+    perm_codes = ("masterdata:records:read", "masterdata:records:write", "masterdata:records:approve")
+    s, d = http("GET", "/api/v1/iam/permissions?page=1&size=1000", token=admin_tok)
+    perms = ((d.get("data") or {}).get("records") or (d.get("data") or {}).get("content") or [])
+    pids = []
+    for code in perm_codes:
+        p = next((x for x in perms if x.get("code") == code), None)
+        if p:
+            pids.append(p["id"])
+    if len(pids) != len(perm_codes):
+        print(f"  [warn] 主数据权限码不齐（{pids}），跳过授权自愈")
+        return
+    s, d = http("GET", "/api/v1/iam/roles?page=1&size=200", token=admin_tok)
+    roles = ((d.get("data") or {}).get("records") or (d.get("data") or {}).get("content") or [])
+    role = next((r for r in roles if r.get("code") == "E2E_MD_APPROVER"), None)
+    if not role:
+        s, d = http("POST", "/api/v1/iam/roles", {
+            "name": "E2E 主数据审批", "code": "E2E_MD_APPROVER",
+            "description": "chains.py E2E 主数据 submit/approve 授权（夹具自建）", "tenantId": 0,
+        }, token=admin_tok)
+        rid = d.get("data") if s == 200 else None
+        if rid:
+            role = {"id": rid}
+    if not role or not role.get("id"):
+        print("  [warn] 未能确定 E2E_MD_APPROVER 角色 id，跳过授权自愈")
+        return
+    rid = role["id"]
+    s, d = http("GET", f"/api/v1/iam/roles/{rid}/permissions", token=admin_tok)
+    have = {x.get("id") for x in (d.get("data") or [])} if s == 200 else set()
+    if set(pids) - have:
+        http("POST", f"/api/v1/iam/roles/{rid}/permissions",
+             {"permissionIds": sorted(have | set(pids))}, token=admin_tok)
+    for user in ("e2esub", "e2eapp"):
+        s, d = http("GET", "/api/v1/iam/accounts?page=1&size=1000", token=admin_tok)
+        accts = ((d.get("data") or {}).get("records") or (d.get("data") or {}).get("content") or [])
+        acct = next((a for a in accts if a.get("username") == user), None)
+        if not acct:
+            continue
+        s, d = http("GET", f"/api/v1/iam/accounts/{acct['id']}", token=admin_tok)
+        cur = {r if not isinstance(r, dict) else r.get("id")
+               for r in ((d.get("data") or {}).get("roleIds") or [])}
+        if rid not in cur:
+            http("PUT", f"/api/v1/iam/accounts/{acct['id']}",
+                 {"roleIds": sorted(cur | {rid})}, token=admin_tok)
+    print("  · 主数据审批权限已就绪（E2E_MD_APPROVER → e2esub/e2eapp）")
+
+
 def main():
     args = sys.argv[1:] or ["all"]
     tok = login(*ADMIN)
     print(f"已登录 admin（网关 {GW}）")
+    # 夹具自愈：补种主数据 submit/approve 权限（改 scopes ⇒ 必须在下面登录 sub/app 前完成）
+    ensure_md_approve_permissions(tok)
     sub_tok = app_tok = None
     for pair_name in (("e2esub", "E2ePass@2026"),):
         try:

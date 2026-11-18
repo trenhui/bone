@@ -267,6 +267,133 @@ ensure_purchase_org()
 teardown.register(SUFFIX, on_clean=_restore_admin_dept)
 
 
+# ---- 采购 escape 动作的动态细码授权（夹具自包含，适配 RuntimeAccessGuard §4.6）----
+# 后端已把「带 handler 的 submit/approve/reject/pay」升级为 escape 动作：RuntimeAccessGuard#canInvoke
+# 对 escape 只认「动作级细码」runtime:{entityCode}:{actionCode}，实体级/通配写均不覆盖（资金授权面）。
+# 本脚本的采购实体 code 带运行级动态后缀（purchase_order_chain_<suffix>），细码无法在 seed 里预置，
+# 故必须在造数阶段用真实 IAM API 幂等补种本次实体的 approve/reject 细码并授予审批账号。
+# 11-17 全绿时这些动作还是非 escape（is_escape=0，通配写即可），后端升级后首次真正生效 ⇒ 夹具须自愈。
+# 参考同仓库 synap-claim-independent-re-review-e2e.py#ensure_review_permission 的成熟模式。
+_PO_GRANT_ROLE_CODE = "E2E_PO_APPROVER"
+_PO_GRANT_ROLE_NAME = "E2E 采购审批人"
+_PO_GRANT_PERM_IDS = []   # 本次新建的权限码 id（供 teardown 回收）
+_PO_GRANT_ROLE_ID = None  # 本次使用的授权角色 id
+
+
+def _grant_purchase_escape_permissions(po_code):
+    """为审批账号补齐 po_code 的 escape 动作细码（approve/reject），返回是否全部就绪。
+
+    幂等：权限码按 code 查重、角色按 code 查重、授权按「追加不覆盖」、账号角色按「并集」。
+    补种会改 scopes ⇒ 调用后必须重新登录审批账号刷新 APPROVER_HDR（本函数不碰 token）。
+    """
+    global APPROVER_HDR, _PO_GRANT_PERM_IDS, _PO_GRANT_ROLE_ID
+    wanted = [f"runtime:{po_code}:approve", f"runtime:{po_code}:reject"]
+    # 1) 权限码：缺则建（code 唯一，重名复用）
+    s, d = call("GET", "/iam/permissions?page=1&size=1000")
+    perms = ((d.get("data") or {}).get("records")
+             or (d.get("data") or {}).get("content") or [])
+    perm_ids = []
+    for code in wanted:
+        perm = next((p for p in perms if p.get("code") == code), None)
+        if perm:
+            perm_ids.append(perm["id"])
+            continue
+        action = code.rsplit(":", 1)[-1]
+        s, d = call("POST", "/iam/permissions", {
+            "code": code, "name": code, "description": "PO E2E 逃逸动作细码（夹具动态补种）",
+            "resourceType": "runtime", "resourcePath": po_code, "action": action,
+            "type": "OPERATION", "sortOrder": 900,
+        })
+        if s == 200 and d.get("data"):
+            pid = d["data"]
+            perm_ids.append(pid)
+            _PO_GRANT_PERM_IDS.append(pid)
+            note(f"采购授权：补种权限码 {code} id={pid}")
+        else:
+            note(f"[warn] 补种权限码失败 {code}: {s} {str(d)[:120]}")
+    if len(perm_ids) != len(wanted):
+        return False
+
+    # 入口写码：escape 动作除动作细码外，@PreAuthorize("hasAnyAuthority(...,'runtime:*:write',...)")
+    # 仍要求主体先进「运行时写域」。种子权限 runtime:*:write(9102) 复用到专用角色（不清空、不回收）。
+    wildcard = next((p for p in perms if p.get("code") == "runtime:*:write"), None)
+    if wildcard:
+        perm_ids.append(wildcard["id"])
+    else:
+        note("[warn] 未找到 runtime:*:write 入口权限码，审批可能在 @PreAuthorize 入口被拦")
+
+    # 2) 专用角色：缺则建
+    s, d = call("GET", "/iam/roles?page=1&size=200")
+    roles = ((d.get("data") or {}).get("records")
+             or (d.get("data") or {}).get("content") or [])
+    role = next((r for r in roles if r.get("code") == _PO_GRANT_ROLE_CODE), None)
+    if not role:
+        s, d = call("POST", "/iam/roles", {
+            "name": _PO_GRANT_ROLE_NAME, "code": _PO_GRANT_ROLE_CODE,
+            "description": "采购订单 E2E 逃逸动作授权（夹具自建）", "tenantId": 0,
+        })
+        # POST 返回 data 是角色 id（字符串，与部门/权限码一致），非 dict
+        new_id = d.get("data") if s == 200 else None
+        if new_id:
+            role = {"id": new_id}
+            note(f"采购授权：新建角色 {_PO_GRANT_ROLE_CODE} id={new_id}")
+    if not role or not role.get("id"):
+        note("[warn] 采购授权：未能确定角色 id")
+        return False
+    role_id = role["id"]
+    _PO_GRANT_ROLE_ID = role_id
+
+    # 3) 角色授权：追加本次细码（assignPermissions 全量替换 ⇒ 先读已有并合并）
+    s, d = call("GET", f"/iam/roles/{role_id}/permissions")
+    have = {p.get("id") for p in (d.get("data") or [])} if s == 200 else set()
+    merged = sorted(have | set(perm_ids))
+    if set(perm_ids) - have:
+        s, d = call("POST", f"/iam/roles/{role_id}/permissions", {"permissionIds": merged})
+        if s != 200:
+            note(f"[warn] 角色授权失败: {s} {str(d)[:120]}")
+            return False
+
+    # 4) 账号挂角色：并集追加（不覆盖 role 1/3 及既有 operator 角色）
+    s, d = call("GET", "/iam/accounts?page=1&size=1000")
+    accts = ((d.get("data") or {}).get("records")
+             or (d.get("data") or {}).get("content") or [])
+    appr = next((a for a in accts if a.get("username") == APPROVER_USER), None)
+    if not appr:
+        note("[warn] 采购授权：未找到审批账号")
+        return False
+    cur_roles = set()
+    s2, d2 = call("GET", f"/iam/accounts/{appr['id']}")
+    if s2 == 200:
+        cur_roles = {r.get("id") if isinstance(r, dict) else r
+                     for r in ((d2.get("data") or {}).get("roleIds") or [])}
+    if not cur_roles:
+        cur_roles = {1, 3}
+    if role_id not in cur_roles:
+        s, d = call("PUT", f"/iam/accounts/{appr['id']}",
+                    {"roleIds": sorted(cur_roles | {role_id})})
+        if s != 200:
+            note(f"[warn] 审批账号挂角色失败: {s} {str(d)[:120]}")
+            return False
+
+    # 5) 重新登录审批账号，刷新 scopes（含新细码）与 header
+    tok = login_as(APPROVER_USER, APPROVER_PWD)
+    if tok:
+        APPROVER_HDR = session_headers(tok)
+    return bool(tok)
+
+
+def _revoke_purchase_grants():
+    """回收本次动态补种的权限码（角色保留为空壳供复用；账号角色保留，下次覆盖式授权即可）。"""
+    for pid in _PO_GRANT_PERM_IDS:
+        try:
+            call("DELETE", f"/iam/permissions/{pid}")
+        except Exception as e:
+            note(f"[warn] 回收权限码 {pid} 失败: {e}")
+
+
+teardown.register(SUFFIX, on_clean=_revoke_purchase_grants)
+
+
 # ---- 运行级残留 teardown ----
 # 本次运行会在库里留下：带 <SUFFIX> 的动态物理表 + meta_entity 定义及子表 + 工作流行。
 # 审批账号 e2e_po_appr2 刻意【持久化、不删除】：其 id 必须跨运行稳定，否则引擎对 admin 的
@@ -772,6 +899,11 @@ check("采购：validate 零 ERROR", s == 200 and not errs,
       "; ".join(str(i.get("code")) for i in errs[:5]))
 s, d = publish(po_id)
 check("采购：publish 放行", s == 200, f"{s} {ecode(d)} {d.get('message')}")
+
+# escape 动作细码授权（夹具自包含）：审批人必须持有 runtime:{PO}:approve/reject 才能过 §4.6 门禁
+_granted = _grant_purchase_escape_permissions(PO)
+check("采购授权：审批账号取得 escape 动作细码（approve/reject）", _granted,
+      "动态细码补种失败，approve/reject 将被 COMMON_FORBIDDEN 拦截")
 
 # ---------------- 业务侧：建单 → 行项目 → 预算/合计/三单闸门 → 审批 → 收货 → 付款 ----------------
 # 生产仿真数据：供应商取数据集 supplier（编码+名称同源串链），主表/行项目/断言共用同一批变量
