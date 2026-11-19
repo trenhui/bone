@@ -19,6 +19,7 @@ import { resolveErrorMessage } from '@bone/shared-utils';
 import type { ColumnsType } from 'antd/es/table';
 import { PERMISSIONS } from '../constants/permissions';
 import { useNavigate } from 'react-router-dom';
+import { useClaimQuery } from '../hooks/useClaimQuery';
 import { PageHeader } from '../components/PageHeader';
 import { toTotal } from '../services/claimConfigApi';
 import {
@@ -116,9 +117,9 @@ export function LibraryPage(): ReactElement {
 
   const [activeKey, setActiveKey] = useState<LibraryKey>('hospitals');
   const navigate = useNavigate();
-  const [keyword, setKeyword] = useState('');
-  const [page, setPage] = useState(1);
-  const [size, setSize] = useState(20);
+  // 查询状态进 URL（统一查询基座）：筛选可分享、可前进后退，跨页恢复不丢。
+  const { query, setKeyword, setPage, setSize } = useClaimQuery();
+  const { keyword, page, size } = query;
   const [rows, setRows] = useState<LibraryRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -310,10 +311,7 @@ export function LibraryPage(): ReactElement {
                     allowClear
                     placeholder="编码 / 名称"
                     style={{ width: 240 }}
-                    onSearch={(v) => {
-                      setPage(1);
-                      setKeyword(v.trim());
-                    }}
+                    onSearch={(v) => setKeyword(v.trim())}
                   />
                   <Button
                     icon={<ReloadOutlined />}
