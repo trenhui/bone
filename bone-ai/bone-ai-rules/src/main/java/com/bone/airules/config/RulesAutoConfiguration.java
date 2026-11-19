@@ -3,12 +3,19 @@ package com.bone.airules.config;
 import com.bone.airules.application.RuleApplicationService;
 import com.bone.airules.application.RuleQueryApplicationService;
 import com.bone.airules.domain.gateway.RuleEngine;
+import com.bone.airules.domain.gateway.RulePackageVerifier;
+import com.bone.airules.domain.gateway.RulePublishAuditSink;
 import com.bone.airules.domain.repository.RuleAssetRepository;
 import com.bone.airules.domain.repository.RuleAssetVersionRepository;
+import com.bone.airules.domain.service.RuleLoadCircuitBreaker;
+import com.bone.airules.domain.service.RulePublishGuard;
+import com.bone.airules.infrastructure.audit.LoggingRulePublishAuditSink;
 import com.bone.airules.infrastructure.engine.QlExpressRuleEngine;
+import com.bone.airules.infrastructure.security.RsaRulePackageVerifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
@@ -54,5 +61,55 @@ public class RulesAutoConfiguration {
   public RuleQueryApplicationService ruleQueryService(
       RuleAssetRepository repository, RuleAssetVersionRepository versionRepository) {
     return new RuleQueryApplicationService(repository, versionRepository);
+  }
+
+  // ---- G12 规则发布安全门：双签名验签 + 双角色 + 发布审计 + 加载熔断 ----
+  // 全部由 bone.ai.rules.security.verify-enabled 精确控制，缺省 false ⇒ 一行都不装配，
+  // 现有上下文行为逐字不变（能力就绪但未激活）。启用也不改 RuleApplicationService 构造，
+  // 守卫以独立 Bean 暴露，由接入方在发布链路显式调用 guard(...) 才生效，不碰资金权威源。
+
+  @Bean
+  @ConditionalOnProperty(
+      prefix = "bone.ai.rules.security",
+      name = "verify-enabled",
+      havingValue = "true",
+      matchIfMissing = false)
+  @ConditionalOnMissingBean
+  public RulePackageVerifier rulePackageVerifier() {
+    return new RsaRulePackageVerifier();
+  }
+
+  @Bean
+  @ConditionalOnProperty(
+      prefix = "bone.ai.rules.security",
+      name = "verify-enabled",
+      havingValue = "true",
+      matchIfMissing = false)
+  @ConditionalOnMissingBean
+  public RulePublishAuditSink rulePublishAuditSink() {
+    return new LoggingRulePublishAuditSink();
+  }
+
+  @Bean
+  @ConditionalOnProperty(
+      prefix = "bone.ai.rules.security",
+      name = "verify-enabled",
+      havingValue = "true",
+      matchIfMissing = false)
+  @ConditionalOnMissingBean
+  public RuleLoadCircuitBreaker ruleLoadCircuitBreaker() {
+    return new RuleLoadCircuitBreaker();
+  }
+
+  @Bean
+  @ConditionalOnProperty(
+      prefix = "bone.ai.rules.security",
+      name = "verify-enabled",
+      havingValue = "true",
+      matchIfMissing = false)
+  @ConditionalOnMissingBean
+  public RulePublishGuard rulePublishGuard(
+      RulePackageVerifier verifier, RulePublishAuditSink auditSink) {
+    return new RulePublishGuard(verifier, auditSink);
   }
 }
