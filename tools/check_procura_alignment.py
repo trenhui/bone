@@ -492,6 +492,15 @@ EXTRA_OPENAPI_ENDPOINTS = frozenset({
     ("get", "/procurement/contract-reviews/{reviewId}"),
     ("get", "/procurement/contract-reviews/{reviewId}/disclosure"),
     ("post", "/procurement/contract-reviews/{reviewId}/override"),
+    # procuraAI 决策治理（批次1）：源码先行、已登记进 openapi.yaml，六卷 §6 待对齐后移除本组豁免。
+    ("post", "/procurement/ai-governance/capabilities"),
+    ("get", "/procurement/ai-governance/capabilities"),
+    ("get", "/procurement/ai-governance/capabilities/{code}"),
+    ("post", "/procurement/ai-governance/capabilities/{code}/state"),
+    ("post", "/procurement/ai-governance/capabilities/{code}/decide"),
+    ("get", "/procurement/ai-governance/capabilities/{code}/trace"),
+    ("get", "/procurement/ai-governance/capabilities/{code}/overrides"),
+    ("post", "/procurement/ai-governance/human-decisions"),
 })
 LLD_ENDPOINT_ROW_RE = re.compile(
     r"^\|\s*`(GET|POST|PUT|PATCH|DELETE)`\s*\|\s*`(/(?:api/v1/)?[^`]+)`", re.M)
