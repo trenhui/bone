@@ -1,6 +1,6 @@
 ---
 change: synapclaim-inspection-handoff-timeout
-design-doc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+design-doc: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/design.md
 base-ref: ceded7b69333cb6c0b1dd5ca2cea2d0c9b16bc1f
 baseline-head: f329228ad
 baseline-manifest-order: 125
@@ -8,7 +8,7 @@ baseline-gate: 59/59
 plan-revision: 4
 ---
 
-<!-- comet-task-authority: openspec/changes/synapclaim-inspection-handoff-timeout/tasks.md -->
+<!-- comet-task-authority: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/tasks.md -->
 
 # Build Plan — 批 4 · 抽检与交接超时（实施口径唯一真源，2026-11-15）
 

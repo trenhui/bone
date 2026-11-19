@@ -1,6 +1,6 @@
 ---
 change: synapclaim-ai-config-governance-api
-design-doc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+design-doc: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
 base-ref: f115be62ac45698cdcd5f0ed0d7f8c630640341f
 baseline-head: 4d9579f2e
 baseline-manifest-order: 125
@@ -8,7 +8,7 @@ baseline-gate: 59/59
 plan-revision: 4
 ---
 
-<!-- comet-task-authority: openspec/changes/synapclaim-ai-config-governance-api/tasks.md -->
+<!-- comet-task-authority: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/tasks.md -->
 
 # Build Plan — 批 2 · AI 配置治理 API（实施口径唯一真源，2026-11-15）
 

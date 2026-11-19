@@ -1,3 +1,4 @@
+# 2026-11-19 物理归档（用户授权）：Comet Runtime checkpoint 深度损坏，state restore / guard 全被拒，无 verify receipt；未伪造回执，真实交付证据见 docs/superpowers/reports/2026-11-18-synapclaim-4changes-verify.md §8。
 # comet-execution: managed-run
 change_id: 16c05966-80c0-406a-92a5-0e4c68322357
 workflow: full
@@ -13,7 +14,7 @@ isolation: worktree
 verify_mode: null
 auto_transition: true
 base_ref: 6f0ea427fdee36fad49994bf7854bf075e6a9a28
-design_doc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+design_doc: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
 plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
 verify_result: pending
 verify_failures: 0
@@ -22,10 +23,10 @@ branch_status: pending
 created_at: 2026-11-13
 verified_at: null
 archive_confirmation: null
-archived: false
+archived: true
 bound_branch: comet/synapclaim-ai-config-governance-api
 direct_override: false
-handoff_context: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+handoff_context: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
 handoff_hash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
 classic_profile: null
 classic_migration: null
@@ -63,9 +64,9 @@ run_checkpoint:
       classicProfile: null
       contextCompression: off
       createdAt: 2026-11-13
-      designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+      designDoc: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
       directOverride: false
-      handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+      handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
       handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
       isolation: worktree
       language: zh-CN
@@ -246,7 +247,7 @@ run_checkpoint:
           inputHash: a4f6022f0952daafcb44c595790973ee6a89aab8657b43255b11578af33046f9
           outcomeId: c15f51dc-f224-412d-95d9-3ef99fbf93dc
           output:
-            handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+            handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
             handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
             proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
               append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -326,7 +327,7 @@ run_checkpoint:
                     ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
                 outputs:
                   full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
                     handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
                     proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                       append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -358,7 +359,7 @@ run_checkpoint:
                       contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
                       ref: openspec/changes/synapclaim-ai-config-governance-api
             full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
               handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
               proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                 append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -416,7 +417,7 @@ run_checkpoint:
           inputHash: 1ac2a69ed4459a6d164f97882e831929c036368c5ff55a4bc2529506f8297d66
           outcomeId: f8ff1fc1-5dcf-4ba8-9b94-18560227cec1
           output:
-            designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+            designDoc: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
           status: succeeded
         protocolVersion: 1
         receipts:
@@ -457,7 +458,7 @@ run_checkpoint:
                     ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
                 outputs:
                   full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
                     handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
                     proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                       append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -489,12 +490,12 @@ run_checkpoint:
                       contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
                       ref: openspec/changes/synapclaim-ai-config-governance-api
             full.design.document:
-              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              designDoc: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
             full.design.evidence:
               contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
             full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
               handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
               proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                 append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -624,7 +625,7 @@ run_checkpoint:
                     ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
                 outputs:
                   full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
                     handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
                     proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                       append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -656,12 +657,12 @@ run_checkpoint:
                       contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
                       ref: openspec/changes/synapclaim-ai-config-governance-api
             full.design.document:
-              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              designDoc: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
             full.design.evidence:
               contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
             full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
               handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
               proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                 append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -721,7 +722,7 @@ run_checkpoint:
           output:
             designEvidence:
               contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
             plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
             planEvidence:
               contentHash: c4631e8ee2e11a439a0b5bf7bf2665fa71c211c88daa56783d47bc3fa82d52c1
@@ -777,7 +778,7 @@ run_checkpoint:
             full.build.plan:
               designEvidence:
                 contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+                ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
               plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
               planEvidence:
                 contentHash: c4631e8ee2e11a439a0b5bf7bf2665fa71c211c88daa56783d47bc3fa82d52c1
@@ -796,7 +797,7 @@ run_checkpoint:
                     ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
                 outputs:
                   full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
                     handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
                     proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                       append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -828,12 +829,12 @@ run_checkpoint:
                       contentHash: c377340866ec4946cb123e86f872f641fe5b9f2a425e3e77c5baf5048e88618b
                       ref: openspec/changes/synapclaim-ai-config-governance-api
             full.design.document:
-              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              designDoc: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
             full.design.evidence:
               contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
             full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
               handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
               proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                 append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -925,7 +926,7 @@ run_checkpoint:
           output:
             designEvidence:
               contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
             plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
             planEvidence:
               contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
@@ -965,7 +966,7 @@ run_checkpoint:
             full.build.plan:
               designEvidence:
                 contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+                ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
               plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
               planEvidence:
                 contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
@@ -1018,7 +1019,7 @@ run_checkpoint:
             full.build.plan:
               designEvidence:
                 contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+                ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
               plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
               planEvidence:
                 contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
@@ -1110,7 +1111,7 @@ run_checkpoint:
             full.build.plan:
               designEvidence:
                 contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+                ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
               plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
               planEvidence:
                 contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
@@ -1186,7 +1187,7 @@ run_checkpoint:
             full.build.plan:
               designEvidence:
                 contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+                ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
               plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
               planEvidence:
                 contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
@@ -1265,7 +1266,7 @@ run_checkpoint:
                     ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
                 outputs:
                   full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
                     handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
                     proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                       append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -1299,16 +1300,16 @@ run_checkpoint:
           full.design.document:
             sequence: 7
             value:
-              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              designDoc: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
           full.design.evidence:
             sequence: 8
             value:
               contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
           full.design.handoff:
             sequence: 5
             value:
-              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
               handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
               proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                 append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -1403,7 +1404,7 @@ run_checkpoint:
             value:
               designEvidence:
                 contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+                ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
               plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
               planEvidence:
                 contentHash: c4631e8ee2e11a439a0b5bf7bf2665fa71c211c88daa56783d47bc3fa82d52c1
@@ -1426,7 +1427,7 @@ run_checkpoint:
                     ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
                 outputs:
                   full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
                     handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
                     proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                       append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -1460,16 +1461,16 @@ run_checkpoint:
           full.design.document:
             sequence: 7
             value:
-              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              designDoc: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
           full.design.evidence:
             sequence: 8
             value:
               contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
           full.design.handoff:
             sequence: 5
             value:
-              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
               handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
               proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                 append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -1538,7 +1539,7 @@ run_checkpoint:
             value:
               designEvidence:
                 contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+                ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
               plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
               planEvidence:
                 contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
@@ -1561,7 +1562,7 @@ run_checkpoint:
             value:
               designEvidence:
                 contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+                ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
               plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
               planEvidence:
                 contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
@@ -1610,7 +1611,7 @@ run_checkpoint:
             value:
               designEvidence:
                 contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+                ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
               plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
               planEvidence:
                 contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
@@ -1659,7 +1660,7 @@ run_checkpoint:
             value:
               designEvidence:
                 contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+                ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
               plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
               planEvidence:
                 contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
@@ -1755,7 +1756,7 @@ run_checkpoint:
                     ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
                 outputs:
                   full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
                     handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
                     proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                       append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -1789,7 +1790,7 @@ run_checkpoint:
           full.design.handoff:
             sequence: 5
             value:
-              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
               handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
               proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                 append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -1862,7 +1863,7 @@ run_checkpoint:
                     ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
                 outputs:
                   full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
                     handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
                     proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                       append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -1896,16 +1897,16 @@ run_checkpoint:
           full.design.document:
             sequence: 7
             value:
-              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              designDoc: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
           full.design.evidence:
             sequence: 8
             value:
               contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
           full.design.handoff:
             sequence: 5
             value:
-              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
               handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
               proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                 append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -2011,7 +2012,7 @@ run_checkpoint:
               ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
           outputs:
             full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
               handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
               proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                 append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -2048,7 +2049,7 @@ run_checkpoint:
           full.design.handoff:
             sequence: 5
             value:
-              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
               handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
               proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                 append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -2156,7 +2157,7 @@ run_checkpoint:
                     ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
                 outputs:
                   full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
                     handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
                     proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                       append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -2190,16 +2191,16 @@ run_checkpoint:
           full.design.document:
             sequence: 7
             value:
-              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              designDoc: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
           full.design.evidence:
             sequence: 8
             value:
               contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
           full.design.handoff:
             sequence: 5
             value:
-              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
               handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
               proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                 append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -2294,7 +2295,7 @@ run_checkpoint:
                     ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
                 outputs:
                   full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
                     handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
                     proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                       append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -2328,11 +2329,11 @@ run_checkpoint:
           full.design.document:
             sequence: 7
             value:
-              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              designDoc: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
           full.design.handoff:
             sequence: 5
             value:
-              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
               handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
               proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                 append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -2391,7 +2392,7 @@ run_checkpoint:
             value:
               contentHash: 1e5c00a9c432d6570c7f4fa88390f12503bddaebbd2d59bb41b1587c661293ec
         receipt:
-          ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+          ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
           contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
           submissionId: 17c1b02a-d96a-4022-851e-4cefec83b9f8
       - id: synapclaim-ai-config-governance-api:12
@@ -2434,7 +2435,7 @@ run_checkpoint:
             value:
               designEvidence:
                 contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+                ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
               plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
               planEvidence:
                 contentHash: c4631e8ee2e11a439a0b5bf7bf2665fa71c211c88daa56783d47bc3fa82d52c1
@@ -2452,7 +2453,7 @@ run_checkpoint:
                     ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
                 outputs:
                   full.design.handoff:
-                    handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                    handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
                     handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
                     proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                       append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -2486,16 +2487,16 @@ run_checkpoint:
           full.design.document:
             sequence: 7
             value:
-              designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              designDoc: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
           full.design.evidence:
             sequence: 8
             value:
               contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-              ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+              ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
           full.design.handoff:
             sequence: 5
             value:
-              handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
               handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
               proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                 append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -2568,7 +2569,7 @@ run_checkpoint:
             value:
               designEvidence:
                 contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+                ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
               plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
               planEvidence:
                 contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
@@ -2614,7 +2615,7 @@ run_checkpoint:
             value:
               designEvidence:
                 contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+                ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
               plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
               planEvidence:
                 contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
@@ -2670,7 +2671,7 @@ run_checkpoint:
             value:
               designEvidence:
                 contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-                ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+                ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
               plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
               planEvidence:
                 contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
@@ -2757,7 +2758,7 @@ run_checkpoint:
         value:
           designEvidence:
             contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-            ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+            ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
           plan: docs/superpowers/plans/2026-11-15-synapclaim-ai-config-governance-api.md
           planEvidence:
             contentHash: 5cbd7417037f1f30738e3550bfbeed17bdced2adfdcab976ad6d9dd01638a709
@@ -2780,7 +2781,7 @@ run_checkpoint:
                 ref: 5a319d4c-bb41-4fe3-8df0-e183bb9e76af
             outputs:
               full.design.handoff:
-                handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+                handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
                 handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
                 proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
                   append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK
@@ -2813,16 +2814,16 @@ run_checkpoint:
       full.design.document:
         sequence: 7
         value:
-          designDoc: openspec/changes/synapclaim-ai-config-governance-api/design.md
+          designDoc: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
       full.design.evidence:
         sequence: 8
         value:
           contentHash: 4d3539e9c0650ac49eb868d13a0c77d7183ceeae207fa60771cad208753197d6
-          ref: openspec/changes/synapclaim-ai-config-governance-api/design.md
+          ref: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/design.md
       full.design.handoff:
         sequence: 5
         value:
-          handoffContext: openspec/changes/synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
+          handoffContext: openspec/changes/archive/2026-11-19-synapclaim-ai-config-governance-api/.comet/handoff/design-context.json
           handoffHash: 547a4639d2f7ada16a007d387c9833a19ffc25b79ac0a92f056bbd8ced65970d
           proposal: 批 2 技术方案候选（待用户确认）：【方案 A 推荐】服务端只收紧棘轮：逐字段比较当前生效值，只接受相等或更严格，写入期拒绝放宽并留
             append-only 审计；写端点挂 /api/v1/claims/**，@PreAuthorize + SDK

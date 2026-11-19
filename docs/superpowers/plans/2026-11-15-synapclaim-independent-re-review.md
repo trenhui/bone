@@ -1,6 +1,6 @@
 ---
 change: synapclaim-independent-re-review
-design-doc: openspec/changes/synapclaim-independent-re-review/design.md
+design-doc: openspec/changes/archive/2026-11-19-synapclaim-independent-re-review/design.md
 base-ref: 08dd98997762db523696bd9dbfba0a456cf641a8
 baseline-head: 4d9579f2e
 baseline-manifest-order: 125
@@ -8,7 +8,7 @@ baseline-gate: 59/59
 plan-revision: 4
 ---
 
-<!-- comet-task-authority: openspec/changes/synapclaim-independent-re-review/tasks.md -->
+<!-- comet-task-authority: openspec/changes/archive/2026-11-19-synapclaim-independent-re-review/tasks.md -->
 
 # Build Plan — 批 3 · 独立复审（实施口径唯一真源，2026-11-15）
 

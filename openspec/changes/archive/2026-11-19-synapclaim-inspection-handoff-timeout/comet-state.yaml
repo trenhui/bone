@@ -1,3 +1,4 @@
+# 2026-11-19 物理归档（用户授权）：Comet Runtime checkpoint 深度损坏，state restore / guard 全被拒，无 verify receipt；未伪造回执，真实交付证据见 docs/superpowers/reports/2026-11-18-synapclaim-4changes-verify.md §8。
 # comet-execution: managed-run
 change_id: 00b605f4-1b87-415e-865f-a9c260e07df8
 workflow: full
@@ -13,7 +14,7 @@ isolation: worktree
 verify_mode: null
 auto_transition: true
 base_ref: 6f0ea427fdee36fad49994bf7854bf075e6a9a28
-design_doc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+design_doc: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/design.md
 plan: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
 verify_result: pending
 verify_failures: 0
@@ -22,10 +23,10 @@ branch_status: pending
 created_at: 2026-11-13
 verified_at: null
 archive_confirmation: null
-archived: false
+archived: true
 bound_branch: comet/synapclaim-inspection-handoff-timeout
 direct_override: false
-handoff_context: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+handoff_context: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
 handoff_hash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
 classic_profile: null
 classic_migration: null
@@ -63,9 +64,9 @@ run_checkpoint:
       classicProfile: null
       contextCompression: off
       createdAt: 2026-11-13
-      designDoc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+      designDoc: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/design.md
       directOverride: false
-      handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+      handoffContext: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
       handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
       isolation: worktree
       language: zh-CN
@@ -213,7 +214,7 @@ run_checkpoint:
           inputHash: 88db63680ddd31e98ccd692b2f5ba2b679372cd8810ed8eb34126ec5020cb572
           outcomeId: 81f6045c-5bf1-48d2-9208-f83f97442780
           output:
-            handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+            handoffContext: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
             handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
             proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
               t_claim_task_transfer / t_claim_user_agent 三张 append-only
@@ -299,7 +300,7 @@ run_checkpoint:
           inputHash: a282d2d05cf155192a312f57b218ed61c7cfffff22da981ac2795fd51e7dfa6b
           outcomeId: dbc45c04-840e-4efe-8da1-a36f2ff683f6
           output:
-            designDoc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+            designDoc: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/design.md
           status: succeeded
         protocolVersion: 1
         receipts:
@@ -405,7 +406,7 @@ run_checkpoint:
           output:
             designEvidence:
               contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
-              ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+              ref: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/design.md
             plan: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
             planEvidence:
               contentHash: 714dcbaa600703adc10d7057a8f271a42c7630f34a591d0b50e8c1322330aa74
@@ -658,7 +659,7 @@ run_checkpoint:
               ref: dac83583-076b-431a-9758-cdfc35bf5e2f
           outputs:
             full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
               handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
               proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
                 t_claim_task_transfer / t_claim_user_agent 三张 append-only
@@ -746,7 +747,7 @@ run_checkpoint:
         status: resolved
         results: {}
         receipt:
-          ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+          ref: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/design.md
           contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
           submissionId: 70319c6c-02bc-4722-b80f-0f479f546de2
       - id: synapclaim-inspection-handoff-timeout:12
@@ -815,7 +816,7 @@ run_checkpoint:
               ref: dac83583-076b-431a-9758-cdfc35bf5e2f
           outputs:
             full.design.handoff:
-              handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+              handoffContext: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
               handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
               proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
                 t_claim_task_transfer / t_claim_user_agent 三张 append-only
@@ -848,7 +849,7 @@ run_checkpoint:
               sourceEvidence:
                 contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
                 ref: openspec/changes/synapclaim-inspection-handoff-timeout
-      - handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+      - handoffContext: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
         handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
         proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
           t_claim_task_transfer / t_claim_user_agent 三张 append-only
@@ -881,9 +882,9 @@ run_checkpoint:
         sourceEvidence:
           contentHash: 2f35f00b212ea5e8f67c3990390970e8a5f963c8c2aa315dfed1b0bb805f40c9
           ref: openspec/changes/synapclaim-inspection-handoff-timeout
-      - designDoc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+      - designDoc: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/design.md
       - contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
-        ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+        ref: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/design.md
       - boundBranch: comet/synapclaim-inspection-handoff-timeout
         buildMode: executing-plans
         directOverride: false
@@ -909,7 +910,7 @@ run_checkpoint:
               tddMode: tdd
       - designEvidence:
           contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
-          ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+          ref: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/design.md
         plan: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
         planEvidence:
           contentHash: 714dcbaa600703adc10d7057a8f271a42c7630f34a591d0b50e8c1322330aa74
@@ -980,7 +981,7 @@ run_checkpoint:
                 ref: dac83583-076b-431a-9758-cdfc35bf5e2f
             outputs:
               full.design.handoff:
-                handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+                handoffContext: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
                 handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
                 proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
                   t_claim_task_transfer / t_claim_user_agent 三张 append-only
@@ -1016,14 +1017,14 @@ run_checkpoint:
                   ref: openspec/changes/synapclaim-inspection-handoff-timeout
       - sequence: 7
         value:
-          designDoc: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+          designDoc: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/design.md
       - sequence: 8
         value:
           contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
-          ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+          ref: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/design.md
       - sequence: 5
         value:
-          handoffContext: openspec/changes/synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
+          handoffContext: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/.comet/handoff/design-context.json
           handoffHash: dc4872d49ae45435800b426b6b3b669ba3bdcd2809f4315371ea656dee59a03b
           proposal: 批 4 技术方案候选（待用户确认）：【方案 A 推荐】新增 t_claim_inspection_action /
             t_claim_task_transfer / t_claim_user_agent 三张 append-only
@@ -1085,7 +1086,7 @@ run_checkpoint:
         value:
           designEvidence:
             contentHash: 6ef7a2a9ea6fcd4852b74771e3c70a2b9bc3c71c0be6cf38ed4c8c10d9f1aa6d
-            ref: openspec/changes/synapclaim-inspection-handoff-timeout/design.md
+            ref: openspec/changes/archive/2026-11-19-synapclaim-inspection-handoff-timeout/design.md
           plan: docs/superpowers/plans/2026-11-15-synapclaim-inspection-handoff-timeout.md
           planEvidence:
             contentHash: 714dcbaa600703adc10d7057a8f271a42c7630f34a591d0b50e8c1322330aa74
