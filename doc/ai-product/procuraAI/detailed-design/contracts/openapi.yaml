@@ -39,6 +39,8 @@ tags:
     description: 05 卷 履约协同 / 门户 / 对账
   - name: ops
     description: 06 卷 编排 / 事件运维 / 平台接入
+  - name: ai-governance
+    description: procuraAI 决策治理（批次1）：能力三态 fail-closed / 具名责任人 / 人工终决 / override 回流
 
 security:
   - bearerAuth: []
@@ -190,6 +192,97 @@ paths:
       operationId: overrideContractReview
       summary: '人工推翻终决并留痕（walking skeleton 以进程内发布-消费闭环替代真实 MQ，生产 listener 属 L3）'
       security: [{ bearerAuth: [procurement:contract:review:write] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  # --- procuraAI 决策治理（批次1，源码先行端点；LLD §6 尚未登记，见 A10.9 白名单）---
+  # 能力开关 bone.procurement.ai-governance.enabled=true 时才注册；默认关闭 fail-closed。
+  /procurement/ai-governance/capabilities:
+    post:
+      tags: [ai-governance]
+      operationId: registerAiCapability
+      summary: '登记 AI 能力（初始 UNKNOWN 不放行，需具名责任人显式启用）'
+      security: [{ bearerAuth: [procurement:ai-governance:write] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    get:
+      tags: [ai-governance]
+      operationId: listAiCapabilities
+      summary: '能力清单（三态 + 具名责任人 + 是否放行推理）'
+      security: [{ bearerAuth: [procurement:ai-governance:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ai-governance/capabilities/{code}:
+    parameters:
+      - name: 'code'
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [ai-governance]
+      operationId: getAiCapability
+      summary: '查询单个能力登记态'
+      security: [{ bearerAuth: [procurement:ai-governance:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ai-governance/capabilities/{code}/state:
+    parameters:
+      - name: 'code'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [ai-governance]
+      operationId: changeAiCapabilityState
+      summary: '一键启用/停用/降级/标记不可判定（操作人取登录态，不接受自报）'
+      security: [{ bearerAuth: [procurement:ai-governance:write] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ai-governance/capabilities/{code}/decide:
+    parameters:
+      - name: 'code'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [ai-governance]
+      operationId: decideAiCapability
+      summary: '准入裁决（fail-closed：未登记/停用/降级/不可判定一律拒绝，放行也仅辅助）'
+      security: [{ bearerAuth: [procurement:ai-governance:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ai-governance/capabilities/{code}/trace:
+    parameters:
+      - name: 'code'
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [ai-governance]
+      operationId: getAiCapabilityTrace
+      summary: '治理追溯链（登记/启用/停用/降级/终决/推翻全留痕）'
+      security: [{ bearerAuth: [procurement:ai-governance:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ai-governance/capabilities/{code}/overrides:
+    parameters:
+      - name: 'code'
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [ai-governance]
+      operationId: countAiCapabilityOverrides
+      summary: 'override 回流计数（drift 告警与评测扩样输入）'
+      security: [{ bearerAuth: [procurement:ai-governance:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ai-governance/human-decisions:
+    post:
+      tags: [ai-governance]
+      operationId: recordHumanFinalDecision
+      summary: '人工终决 + override 回流（复核人取登录态；AI 结论与终决分存、不回传 output 原文）'
+      security: [{ bearerAuth: [procurement:ai-governance:write] }]
       responses:
         '200': { $ref: '#/components/responses/Ok' }
   /procurement/purchase-orders:
