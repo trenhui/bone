@@ -4,6 +4,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import SupplierManagement from './pages/SupplierManagement';
 import PurchaseConsole from './pages/PurchaseConsole';
 import FulfillmentConsole from './pages/FulfillmentConsole';
+import ContractReviewDisclosure from './pages/ContractReviewDisclosure';
 
 type MessageApi = ReturnType<typeof AntdApp.useApp>['message'];
 
@@ -27,6 +28,7 @@ const AppContent: React.FC = () => {
           <Route path="/suppliers" element={<SupplierManagement />} />
           <Route path="/fulfillment" element={<FulfillmentConsole />} />
           <Route path="/transactions/fulfillment" element={<Navigate to="/fulfillment" replace />} />
+          <Route path="/contract-review" element={<ContractReviewDisclosure />} />
           <Route path="/" element={<Navigate to="/transactions" replace />} />
         </Routes>
       </Router>
