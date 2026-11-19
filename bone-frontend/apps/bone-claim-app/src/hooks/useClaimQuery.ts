@@ -32,6 +32,8 @@ export interface ClaimQueryController {
   setSize: (size: number) => void;
   /** 清空本 hook 管理的全部查询参数，保留其它参数（claimId / tab 等）。 */
   reset: () => void;
+  /** 整体应用一段查询串（保存视图回灌）；同样保留外部参数。 */
+  applyQueryString: (queryString: string) => void;
 }
 
 const KEYWORD = 'q';
@@ -139,5 +141,19 @@ export function useClaimQuery(): ClaimQueryController {
     });
   }, [patch]);
 
-  return { query, setKeyword, setFilter, setPage, setSize, reset };
+  const applyQueryString = useCallback(
+    (queryString: string) => {
+      patch((next) => {
+        // 先清掉旧查询参数，再灌入视图的查询串，避免两个视图叠加出幽灵筛选。
+        for (const key of [...next.keys()]) if (isManagedKey(key)) next.delete(key);
+        const incoming = new URLSearchParams(queryString.replace(/^\?/, ''));
+        incoming.forEach((value, key) => {
+          if (isManagedKey(key) && value) next.set(key, value);
+        });
+      });
+    },
+    [patch],
+  );
+
+  return { query, setKeyword, setFilter, setPage, setSize, reset, applyQueryString };
 }

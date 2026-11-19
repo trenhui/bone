@@ -91,6 +91,19 @@ describe('useClaimQuery · 查询状态与 URL 双向同步', () => {
     expect(result.current.search).toContain('page=4');
   });
 
+  it('applyQueryString 整体回灌视图，清掉旧筛选且不叠加、保留外部参数', () => {
+    const { result } = renderHook(
+      () => ({ q: useClaimQuery(), search: useCurrentSearch() }),
+      { wrapper: wrapper('/quota?q=OLD&f_status=43&claimId=5') },
+    );
+    act(() => result.current.q.applyQueryString('?q=NEW&page=2&f_risk=HIGH'));
+    expect(result.current.q.query).toEqual({
+      keyword: 'NEW', page: 2, size: 20, filters: { risk: 'HIGH' },
+    });
+    expect(result.current.search).not.toContain('f_status');
+    expect(result.current.search).toContain('claimId=5');
+  });
+
   it('与 useClaimIdParam 共存：两个 hook 的 URL 参数互不清除', () => {
     const { result } = renderHook(
       () => ({ q: useClaimQuery(), id: useClaimIdParam(), search: useCurrentSearch() }),

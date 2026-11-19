@@ -13,13 +13,15 @@ import {
   Tag,
   Tabs,
 } from 'antd';
-import { EditOutlined, LinkOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { EditOutlined, LinkOutlined, PlusOutlined } from '@ant-design/icons';
 import { AuthButton } from '@bone/ui';
 import { resolveErrorMessage } from '@bone/shared-utils';
 import type { ColumnsType } from 'antd/es/table';
 import { PERMISSIONS } from '../constants/permissions';
 import { useNavigate } from 'react-router-dom';
 import { useClaimQuery } from '../hooks/useClaimQuery';
+import { useSavedViews } from '../hooks/useSavedViews';
+import { ClaimQueryBar } from '../components/ClaimQueryBar';
 import { PageHeader } from '../components/PageHeader';
 import { toTotal } from '../services/claimConfigApi';
 import {
@@ -118,8 +120,9 @@ export function LibraryPage(): ReactElement {
   const [activeKey, setActiveKey] = useState<LibraryKey>('hospitals');
   const navigate = useNavigate();
   // 查询状态进 URL（统一查询基座）：筛选可分享、可前进后退，跨页恢复不丢。
-  const { query, setKeyword, setPage, setSize } = useClaimQuery();
+  const { query, setKeyword, setPage, setSize, applyQueryString } = useClaimQuery();
   const { keyword, page, size } = query;
+  const savedViews = useSavedViews();
   const [rows, setRows] = useState<LibraryRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -306,36 +309,40 @@ export function LibraryPage(): ReactElement {
             label: tab.label,
             children: (
               <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                <Space wrap>
-                  <Input.Search
-                    allowClear
-                    placeholder="编码 / 名称"
-                    style={{ width: 240 }}
-                    onSearch={(v) => setKeyword(v.trim())}
-                  />
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={() => void load(activeKey, keyword, page, size)}
-                  >
-                    刷新
-                  </Button>
-                  <AuthButton
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    code={PERMISSIONS.POLICY_WRITE}
-                    onClick={openCreate}
-                  >
-                    新建
-                  </AuthButton>
-                  <Button
-                    icon={<LinkOutlined />}
-                    onClick={() =>
-                      navigate(`/claim/mappings?domain=${DOMAIN_BY_KEY[activeKey]}`)
-                    }
-                  >
-                    配置跨保司映射
-                  </Button>
-                </Space>
+                <ClaimQueryBar
+                  keyword={keyword}
+                  onKeyword={setKeyword}
+                  onRefresh={() => void load(activeKey, keyword, page, size)}
+                  placeholder="编码 / 名称"
+                  views={savedViews.views}
+                  onApplyView={(view) => applyQueryString(view.queryString)}
+                  onSaveView={(name) => savedViews.save(name, new URLSearchParams({
+                    ...(keyword ? { q: keyword } : {}),
+                    ...(page > 1 ? { page: String(page) } : {}),
+                  }).toString())}
+                  onRemoveView={savedViews.remove}
+                  onTogglePin={savedViews.togglePin}
+                  actions={
+                    <>
+                      <AuthButton
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        code={PERMISSIONS.POLICY_WRITE}
+                        onClick={openCreate}
+                      >
+                        新建
+                      </AuthButton>
+                      <Button
+                        icon={<LinkOutlined />}
+                        onClick={() =>
+                          navigate(`/claim/mappings?domain=${DOMAIN_BY_KEY[activeKey]}`)
+                        }
+                      >
+                        配置跨保司映射
+                      </Button>
+                    </>
+                  }
+                />
                 <Table<LibraryRow>
                   rowKey="id"
                   size="small"
