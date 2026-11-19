@@ -501,6 +501,13 @@ EXTRA_OPENAPI_ENDPOINTS = frozenset({
     ("get", "/procurement/ai-governance/capabilities/{code}/trace"),
     ("get", "/procurement/ai-governance/capabilities/{code}/overrides"),
     ("post", "/procurement/ai-governance/human-decisions"),
+    # procuraAI 安全治理（批次3）：F3 kill switch / F4 双标识 / G15 公平，六卷 §6 待对齐后移除。
+    ("get", "/procurement/ai-governance/safety/kill-switch"),
+    ("post", "/procurement/ai-governance/safety/kill-switch/engage"),
+    ("post", "/procurement/ai-governance/safety/kill-switch/disengage"),
+    ("get", "/procurement/ai-governance/safety/kill-switch/drill-status"),
+    ("post", "/procurement/ai-governance/safety/content-labels/check"),
+    ("post", "/procurement/ai-governance/safety/fairness/evaluate"),
 })
 LLD_ENDPOINT_ROW_RE = re.compile(
     r"^\|\s*`(GET|POST|PUT|PATCH|DELETE)`\s*\|\s*`(/(?:api/v1/)?[^`]+)`", re.M)

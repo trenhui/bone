@@ -285,6 +285,56 @@ paths:
       security: [{ bearerAuth: [procurement:ai-governance:write] }]
       responses:
         '200': { $ref: '#/components/responses/Ok' }
+
+  # --- procuraAI 安全治理（批次3）：F3 kill switch / F4 双标识 / G15 公平 ---
+  /procurement/ai-governance/safety/kill-switch:
+    get:
+      tags: [ai-governance]
+      operationId: getGlobalKillSwitch
+      summary: '全域 kill switch 当前快照（缺省 STANDBY 不放行 AI，读库即时生效）'
+      security: [{ bearerAuth: [procurement:ai-governance:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ai-governance/safety/kill-switch/engage:
+    post:
+      tags: [ai-governance]
+      operationId: engageGlobalKillSwitch
+      summary: '一键全域停用 AI（操作人取登录态；状态与演练编号入审计）'
+      security: [{ bearerAuth: [procurement:ai-governance:write] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ai-governance/safety/kill-switch/disengage:
+    post:
+      tags: [ai-governance]
+      operationId: disengageGlobalKillSwitch
+      summary: '显式解除全域停用（仅 ENGAGED 可恢复）'
+      security: [{ bearerAuth: [procurement:ai-governance:write] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ai-governance/safety/kill-switch/drill-status:
+    get:
+      tags: [ai-governance]
+      operationId: getKillSwitchDrillStatus
+      summary: '停机演练：各能力 AI 路径是否仍激活（验证无残留自动结论）'
+      security: [{ bearerAuth: [procurement:ai-governance:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ai-governance/safety/content-labels/check:
+    post:
+      tags: [ai-governance]
+      operationId: checkContentLabels
+      summary: '生成内容双标识出域校验（LABEL-01：缺显式或隐式元数据即阻断出域）'
+      security: [{ bearerAuth: [procurement:ai-governance:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ai-governance/safety/fairness/evaluate:
+    post:
+      tags: [ai-governance]
+      operationId: evaluateFairness
+      summary: 'G15 公平确定性裁决（FAIR-01 所有制偏见阻断晋升 / FAIR-02 地域偏好转人工）'
+      security: [{ bearerAuth: [procurement:ai-governance:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
   /procurement/purchase-orders:
     post:
       tags: [transaction]
