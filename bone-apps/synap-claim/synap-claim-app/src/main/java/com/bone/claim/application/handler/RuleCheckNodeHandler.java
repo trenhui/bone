@@ -96,6 +96,10 @@ public class RuleCheckNodeHandler implements DecisionNodeHandler {
     out.put("ruleAvailable", ruleAvailable);
     out.put("visualAvailable", visualAvailable);
     out.put("graphAvailable", graphAvailable);
+    // 图路真实命中时，把团伙标识带进决策轨迹（append-only 审计）：核赔员/回放据此区分
+    // "查出了问题"并定位到同一团伙的其他赔案。仅 available && hit 时非空，避免桩的 null 被误读为已筛查无团伙。
+    out.put("graphHit", graphAvailable && gr.hit());
+    out.put("graphClusterId", graphAvailable && gr.hit() ? gr.clusterId() : null);
     // 规则未真实执行时，禁止把默认值当结论：显式标注原因，供审计/核赔员识别"该结论未经核责"
     out.put("ruleUnavailableReason", ruleAvailable ? "" : "RULE_ENGINE_STUB");
     out.put(

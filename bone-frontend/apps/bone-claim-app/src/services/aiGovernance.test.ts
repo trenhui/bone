@@ -24,6 +24,7 @@ const probeReport = (over: Partial<ProviderProbeReport> = {}): ProviderProbeRepo
   verdict: 'NOT_CONFIGURED', configured: false, reachable: false,
   model: null, provenance: null, latencyMs: 0, reason: null,
   action: '设置 BONE_AI_GATEWAY_BASE_URL 后重启', note: '只证明可达，不证明准确',
+  promptTokens: 0, completionTokens: 0, requestId: null,
   ...over,
 });
 

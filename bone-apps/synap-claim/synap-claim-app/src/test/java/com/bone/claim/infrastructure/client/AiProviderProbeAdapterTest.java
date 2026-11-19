@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.config.LlmGatewayProperties;
 import com.bone.ai.gateway.domain.LlmResponse;
+import com.bone.ai.gateway.domain.LlmUsage;
 import com.bone.claim.application.port.out.AiProviderProbePort.ProviderProbe;
 import com.bone.claim.domain.model.decision.AiDegradationReason;
 import java.net.SocketTimeoutException;
@@ -62,18 +63,43 @@ class AiProviderProbeAdapterTest {
   }
 
   @Test
-  @DisplayName("符合 JSON 契约：reachable=true + 上游模型标识")
+  @DisplayName("符合 JSON 契约：reachable=true + 上游模型标识 + 真实计费证据下传")
   void reachableWithProviderModel() {
     configure();
     when(gateway.invoke(any()))
-        .thenReturn(new LlmResponse("{\"ok\":true}", "deepseek-chat", "stop", null));
+        .thenReturn(
+            new LlmResponse(
+                "{\"ok\":true}",
+                "deepseek-flash",
+                "stop",
+                new LlmUsage(65, 6, 71),
+                "chatcmpl-9f2a7c1d"));
 
     ProviderProbe probe = adapter.probe();
 
     assertThat(probe.configured()).isTrue();
     assertThat(probe.reachable()).isTrue();
-    assertThat(probe.model()).isEqualTo("deepseek-chat");
+    assertThat(probe.model()).isEqualTo("deepseek-flash");
     assertThat(probe.reason()).isNull();
+    // 同一次调用的计费凭据必须原样下传：E2E 靠它证明「模型真的上场」，缺一项即 fail-closed。
+    assertThat(probe.promptTokens()).isEqualTo(65);
+    assertThat(probe.completionTokens()).isEqualTo(6);
+    assertThat(probe.requestId()).isEqualTo("chatcmpl-9f2a7c1d");
+  }
+
+  @Test
+  @DisplayName("替身/缓存无证据：token 与 requestId 显式置 0/null，绝不伪造上场证明")
+  void noEvidenceIsExplicitlyEmpty() {
+    configure();
+    // 4 参兼容构造 = 历史替身/缓存对象，没有 requestId 与 usage。
+    when(gateway.invoke(any())).thenReturn(new LlmResponse("{\"ok\":true}", "m", "stop", null));
+
+    ProviderProbe probe = adapter.probe();
+
+    assertThat(probe.reachable()).isTrue();
+    assertThat(probe.promptTokens()).isZero();
+    assertThat(probe.completionTokens()).isZero();
+    assertThat(probe.requestId()).isNull();
   }
 
   @Test

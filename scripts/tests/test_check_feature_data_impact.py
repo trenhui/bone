@@ -56,6 +56,10 @@ class SyncObligationTest(unittest.TestCase):
     def setUp(self):
         self.mod = _module()
         self.data = _data()
+        # 负向探针须用「无 ack 基线」：真实 registry 会随业务合法登记 ack（如纯代码变更的
+        # 例外），若探针读真实 acks，「无同步应违规」断言会被合法 ack 抹成绿，门禁失去判别力。
+        # 需要 ack 的用例各自显式构造（test_valid_ack_* / test_ack_without_* 均覆盖本字段）。
+        self.data["acks"] = []
 
     def test_data_contract_change_without_asset_sync_is_violation(self):
         details, problems = self.mod.evaluate(ROOT, self.data, [CLAIM_ENTITY], TODAY)
@@ -125,11 +129,21 @@ class SyncObligationTest(unittest.TestCase):
 
 
 class CliContractTest(unittest.TestCase):
+    @staticmethod
+    def _clean_registry(tmp: str) -> str:
+        """注入无 ack 的临时 registry，避免真实 ack 抹掉负向探针的违规断言。"""
+        doc = _data()
+        doc["acks"] = []
+        reg = Path(tmp) / "data-assets.json"
+        reg.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+        return str(reg)
+
     def test_strict_blocks_unsynced_data_contract_change(self):
         with tempfile.TemporaryDirectory() as tmp:
             changed = Path(tmp) / "changed.txt"
             changed.write_text(CLAIM_ENTITY + "\n", encoding="utf-8")
-            p = _cli("--staged", "--strict", "--json", "--changed-file", str(changed))
+            p = _cli("--staged", "--strict", "--json", "--registry", self._clean_registry(tmp),
+                     "--changed-file", str(changed))
             self.assertEqual(p.returncode, 1, p.stdout + p.stderr)
             d = json.loads(p.stdout)
             self.assertFalse(d["ok"])
@@ -139,7 +153,8 @@ class CliContractTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             changed = Path(tmp) / "changed.txt"
             changed.write_text(CLAIM_ENTITY + "\n", encoding="utf-8")
-            p = _cli("--staged", "--json", "--changed-file", str(changed))
+            p = _cli("--staged", "--json", "--registry", self._clean_registry(tmp),
+                     "--changed-file", str(changed))
             self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
             d = json.loads(p.stdout)
             self.assertFalse(d["ok"])

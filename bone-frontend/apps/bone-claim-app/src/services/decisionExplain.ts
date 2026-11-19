@@ -130,9 +130,15 @@ function explainRuleCheck(o: Record<string, unknown>): ExplainFact[] {
   if (o.graphAvailable !== undefined) {
     facts.push(
       isTrue(o.graphAvailable)
-        ? { label: '图计算 E2', value: '已执行', tone: 'good' }
-        : { label: '图计算 E2', value: '未集成', tone: 'muted' },
+        ? { label: '图筛查', value: '已执行', tone: 'good' }
+        : { label: '图筛查', value: '未执行', tone: 'muted' },
     );
+  }
+  // 本地图算法命中时带出团伙标识（后端 RuleCheckNodeHandler#graphClusterId，仅 available&&hit 非空）。
+  // 让核赔员/审计区分「没查」与「查到同一团伙的关联案」，并诚实标注这是本地筛查而非 E2 平台图库结论。
+  const clusterId = typeof o.graphClusterId === 'string' ? o.graphClusterId : '';
+  if (clusterId) {
+    facts.push({ label: '图筛查团伙', value: `${clusterId}（本地筛查）`, tone: 'bad' });
   }
   return facts;
 }

@@ -28,7 +28,8 @@ class OpenAiCompatibleClientTest {
             seenUrl = url;
             seenHeaders.putAll(headers);
             seenBody = body;
-            return "{\"model\":\"gpt-4o-mini\",\"choices\":[{\"message\":{\"content\":\"你好\"},"
+            return "{\"id\":\"chatcmpl-9f2a7c1d\",\"model\":\"gpt-4o-mini\","
+                + "\"choices\":[{\"message\":{\"content\":\"你好\"},"
                 + "\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":3,"
                 + "\"completion_tokens\":2,\"total_tokens\":5}}";
           },
@@ -53,6 +54,23 @@ class OpenAiCompatibleClientTest {
     assertThat(resp.usage().promptTokens()).isEqualTo(3);
     assertThat(resp.usage().completionTokens()).isEqualTo(2);
     assertThat(resp.usage().totalTokens()).isEqualTo(5);
+    // provider 原始 id 必须透传：它是上层「模型真的上场」证据链的源头，缺了整条链就断。
+    assertThat(resp.requestId()).isEqualTo("chatcmpl-9f2a7c1d");
+  }
+
+  @Test
+  void chat_leaves_requestId_null_when_provider_omits_it() {
+    OpenAiCompatibleClient noId =
+        new OpenAiCompatibleClient(
+            (u, h, b) -> "{\"choices\":[{\"message\":{\"content\":\"x\"}}]}",
+            "https://api.example.com/v1/",
+            () -> "sk-test",
+            "m");
+
+    LlmResponse resp = noId.chat(LlmRequest.of("m", List.of(LlmMessage.user("u"))));
+
+    // 没有 id 就显式 null，绝不生成一个假的 requestId 冒充真实调用。
+    assertThat(resp.requestId()).isNull();
   }
 
   @Test

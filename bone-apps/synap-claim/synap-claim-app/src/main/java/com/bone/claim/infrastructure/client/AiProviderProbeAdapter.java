@@ -78,7 +78,19 @@ public class AiProviderProbeAdapter implements AiProviderProbePort {
       return new ProviderProbe(
           true, false, null, latencyMs, AiDegradationReason.MOCK_NOT_ALLOWED.name());
     }
-    return new ProviderProbe(true, true, resolvedModel(response), latencyMs, null);
+    // 同一次真实调用的计费证据随探活响应下发：token 与 requestId 都来自 provider 原始响应，
+    // 缺则 0/null（替身/缓存对象），绝不手写常量伪造「上场证明」。
+    int promptTokens = response.usage() == null ? 0 : response.usage().promptTokens();
+    int completionTokens = response.usage() == null ? 0 : response.usage().completionTokens();
+    return new ProviderProbe(
+        true,
+        true,
+        resolvedModel(response),
+        latencyMs,
+        null,
+        promptTokens,
+        completionTokens,
+        response.requestId());
   }
 
   private boolean configured() {

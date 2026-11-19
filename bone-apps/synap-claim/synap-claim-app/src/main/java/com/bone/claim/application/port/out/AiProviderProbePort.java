@@ -34,5 +34,19 @@ public interface AiProviderProbePort {
    *     name）； 成功或未配置时为 {@code null}
    */
   record ProviderProbe(
-      boolean configured, boolean reachable, String model, long latencyMs, String reason) {}
+      boolean configured,
+      boolean reachable,
+      String model,
+      long latencyMs,
+      String reason,
+      int promptTokens,
+      int completionTokens,
+      String requestId) {
+
+    /** 兼容构造器：失败分支与历史测试夹具没有 provider 证据字段，显式置 0/null 而非伪造。 */
+    public ProviderProbe(
+        boolean configured, boolean reachable, String model, long latencyMs, String reason) {
+      this(configured, reachable, model, latencyMs, reason, 0, 0, null);
+    }
+  }
 }

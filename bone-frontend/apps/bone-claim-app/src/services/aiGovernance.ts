@@ -144,6 +144,10 @@ export interface ProviderProbeReport {
   reason: string | null;
   action: string | null;
   note: string | null;
+  // 同一次真实 provider 调用的计费/审计证据（未取到时为 0/null，绝不伪造）
+  promptTokens: number;
+  completionTokens: number;
+  requestId: string | null;
 }
 
 export interface CalibrationBucket {

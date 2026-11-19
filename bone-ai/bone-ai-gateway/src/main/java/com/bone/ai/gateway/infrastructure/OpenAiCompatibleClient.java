@@ -209,7 +209,9 @@ public class OpenAiCompatibleClient implements LlmClient {
             usage.path("prompt_tokens").asInt(0),
             usage.path("completion_tokens").asInt(0),
             usage.path("total_tokens").asInt(0));
-    return new LlmResponse(content, model, finish, u);
+    // provider 原始 id 是同一次调用的凭据；透传给上层证据链，缺失时显式 null 而非伪造。
+    String requestId = root.path("id").asText(null);
+    return new LlmResponse(content, model, finish, u, requestId);
   }
 
   private static String trimTrailingSlash(String url) {

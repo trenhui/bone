@@ -53,7 +53,10 @@ public class AiProviderProbeApplicationService {
         probe.latencyMs(),
         probe.reason(),
         actionOf(verdict),
-        SCOPE_NOTE);
+        SCOPE_NOTE,
+        probe.promptTokens(),
+        probe.completionTokens(),
+        probe.requestId());
   }
 
   /** 判词派生：未配置 > 通 > 受控原因码。原因码缺失却不可达属实现违约，按网关异常兜底，绝不给出空判词。 */
@@ -123,5 +126,8 @@ public class AiProviderProbeApplicationService {
       long latencyMs,
       String reason,
       String action,
-      String note) {}
+      String note,
+      int promptTokens,
+      int completionTokens,
+      String requestId) {}
 }

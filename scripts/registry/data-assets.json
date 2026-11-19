@@ -223,7 +223,14 @@
       "cases": []
     }
   },
-  "acks": [],
+  "acks": [
+    {
+      "domain": "claim",
+      "owner": "synap-claim-team",
+      "reason": "本地图反欺诈适配器/探活证据透传/决策轨迹输出字段均为纯代码逻辑变更，无 DDL/Entity/迁移/OpenAPI 数据契约变更，不改任何造数结构；图筛查判别力由 LocalGraphFraudPortAdapterTest(10 例含变异验证)覆盖，前后端字段契约由 decisionExplain.test.ts(4 例)覆盖。infrastructure/** 命中系 glob 宽泛匹配，非真实数据契约变更。",
+      "expires": "2027-02-17"
+    }
+  ],
   "coverage": {
     "claim": {
       "scenario": "sales-claim",
