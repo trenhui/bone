@@ -143,6 +143,55 @@ paths:
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       responses:
         '202': { $ref: '#/components/responses/Accepted' }
+
+  # --- procuraAI 合同智能审查 walking skeleton（源码先行端点；LLD §6 尚未登记，见 A10.9 白名单）---
+  /procurement/contract-reviews:
+    post:
+      tags: [contract]
+      operationId: submitContractReview
+      summary: '发起合同 AI 审查（walking skeleton：文档由 sourceRef 定位，不接收合同原文全文；AI 结论仅建议）'
+      security: [{ bearerAuth: [procurement:contract:review:write] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/contract-reviews/{reviewId}:
+    parameters:
+      - name: 'reviewId'
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [contract]
+      operationId: getContractReviewReport
+      summary: '查询审查报告（三态能力码 + 快照引用；不回传 output 原文，禁 PII）'
+      security: [{ bearerAuth: [procurement:contract:review:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/contract-reviews/{reviewId}/disclosure:
+    parameters:
+      - name: 'reviewId'
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [contract]
+      operationId: getContractReviewDisclosure
+      summary: 'AI 参与披露（AVAILABLE/UNAVAILABLE/UNKNOWN 原样返回，未知态显示无法确认）'
+      security: [{ bearerAuth: [procurement:contract:review:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/contract-reviews/{reviewId}/override:
+    parameters:
+      - name: 'reviewId'
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [contract]
+      operationId: overrideContractReview
+      summary: '人工推翻终决并留痕（walking skeleton 以进程内发布-消费闭环替代真实 MQ，生产 listener 属 L3）'
+      security: [{ bearerAuth: [procurement:contract:review:write] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
   /procurement/purchase-orders:
     post:
       tags: [transaction]
@@ -878,8 +927,8 @@ x-endpoint-adjudication:
     cross-domain-readonly-projections: 3
     additional-readonly-list-projections: 2
     a10_9_external-whitelist-size: 5
-    openapi-paths: 56
-    openapi-operations: 59
+    openapi-paths: 60
+    openapi-operations: 63
 
 x-retry-policy:
   description: 4xx（除 429）不重试；5xx 与 429 在同 Idempotency-Key 下退避重试；429 遵 Retry-After（§17.3）
