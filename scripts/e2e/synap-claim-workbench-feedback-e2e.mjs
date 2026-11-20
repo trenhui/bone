@@ -93,7 +93,17 @@ check('工作台: 审核任务计数 > 0', reviewTotal > 0, `total=${reviewTotal
   const disc = await api('GET', `/claims/${CLAIM_ID}/decision/disclosure`);
   check('AI卡: decision/disclosure 200', disc.status === 200, `http=${disc.status}`);
   const exec = await api('GET', `/review/tasks/${CLAIM_ID}/execution`);
-  check('AI卡: review/tasks/.../execution 200', exec.status === 200, `http=${exec.status}`);
+  // 靶案件是按「检索必命中」动态选取的最新案件，可能尚未走到决策阶段；后端对无决策
+  // 执行记录的案件按契约返回 404 + SC_CLAIM_DECISION_NOT_FOUND（不是路由缺失）。断言
+  // 覆盖端点与业务错误码两态，既不放过真 404，也不把「新造案件还没决策」当成缺陷。
+  const noDecision =
+    exec.status === 404 &&
+    (exec.data?.data?.errorCode ?? exec.data?.errorCode) === 'SC_CLAIM_DECISION_NOT_FOUND';
+  check(
+    'AI卡: review/tasks/.../execution 契约正确（有决策 200 / 无决策明确 404）',
+    exec.status === 200 || noDecision,
+    `http=${exec.status}${noDecision ? ' errorCode=SC_CLAIM_DECISION_NOT_FOUND' : ''}`,
+  );
 
   // ===== 5. AI 回流：曝光 + 裁决（正向） =====
   const impression = await record({
