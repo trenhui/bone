@@ -48,7 +48,7 @@ updated-on: 2026-11-20
 | D-03 | P-RFC-1 实名署名 + ≥1 真实跨域接入 PR（O5） | 跨域交付 | `Accepted + 外部依赖` | 平台 RFC §5.1 署名 + 可点开的 PR 链接 | 未指派 |
 | D-04 | ATAM 质量属性最终优先级（O6） | 评审决策 | `Accepted + 外部依赖` | 排序会纪要 + 签字；当前仅 H/M 工程预排序 | 未指派 |
 | D-05 | 跨域 ACL 交付 F-A（C-D） | 代码交付 | `Accepted + 外部依赖` | INBOUND 事件由「接口预留」转「运行期可触发」的源码证据 | 未指派 |
-| D-06 | 存量 `PurchaseOrderPayHandler` 硬隔离开关（F-E） | 代码交付 | `Accepted + 外部依赖` | 存量模块出现 `procura.purchase-pay-handler.enabled=false` 且启动期 fail-closed | 未指派 |
+| D-06 | 存量 `PurchaseOrderPayHandler` 硬隔离开关（F-E） | 代码交付 | `Landed`（2026-11-20） | 已落地：装配层 fail-closed 硬隔离（缺省即禁用）；证据 `bone-app-purchase/boot/PaymentIsolationProperties.java`（开关默认 false）、`PayHandlerConditionalRegistration.java`（`@ConditionalOnProperty` 单点注册）、`PurchaseComponentScanConfiguration.java`（REGEX 排除）、`LegacyPaymentIsolationReporter.java`（启动期日志）、`PurchaseApplicationAutoConfigurationWiringTest.java`（双态断言）；模块 25 例测试全绿（存量 `PurchaseOrderPayHandlerTest` 4 例未改）。Comet change `procurement-legacy-payment-hard-isolation` | 未指派（用户 2026-11-20 明确授权本轮落地，未伪造 owner 签署） |
 | D-07 | G1–G16 AI 原生能力逐项立项 | 立项 / 评测 | `Proposed` | 逐项立项 + 通过评测集 + owner 排期；当前 Proposal 不实现 | 未指派 |
 | D-08 | 法源射程 ADR 法务结论 | 合规决策 | `Proposed` | 法务书面结论；未出具前六条红线仅为设计约束；**裁决范围须含**主体适用性与场景射程、**以及 `D3-v2 §3.1` C-2 按客户属性叠加算法备案 / 安全评估材料包的适用条件**（2026-11-14 补注）；结论出具前 `法源射程分层与自治边界-ADR.md` 档 B 保持 `DesignOnly` 不可执行 | 未指派 |
 | D-09 | D3-v2 契约冻结 / `t_proc_` DDL 落库 | 设计态边界 | `Proposed` | 冻结评审 + 迁移脚本；**当前禁止写 `bone-init.sql`** | 未指派 |
@@ -63,6 +63,8 @@ updated-on: 2026-11-20
 | D-18 | 自动结案 / 自动放款 / AI 授标红线确认 | 合规决策 | `Accepted + 外部依赖` | 资产登记第 5 节 + R2 + ADR-06 撤销链已定「一律禁止」；批次4 源码中 `awardByHuman` / `approveByHuman` 已强制具名操作人，红线在工程侧已落地，最终以法务书面结论（D-08）收口 | 未指派 |
 
 > 开口项状态**只在本表维护**，不要回写 CHANGELOG 的历史轮次；状态变更须注明日期与依据。D-11/D-12/D-13 涉及 `.github/workflows/ci.yml` 与主门禁脚本号段，属 L3，执行前须架构评审；**D-14 为 2026-11-14 业界校准登记**（见 `AI接入判定与AI原生内核补充设计.md §7`），本轮只登记设计、未改 A·B·C 清单、未新增能力码；新增内容不在 CI 三入口判据集合内（A10.17 判据集合与门禁常量均未改）。
+
+> **D-06 状态变更（2026-11-20）**：由 `Accepted + 外部依赖` 转 `Landed`。依据为 Comet change `procurement-legacy-payment-hard-isolation`：在存量 `bone-app-purchase` 装配层落地 fail-closed 硬隔离（开关默认 false + 条件注册 + 启动期日志 + 双态装配测试），25 例模块测试全绿且存量付款处理器 4 例守卫测试未改。用户 2026-11-20 明确授权本轮落地，owner 签署未伪造；未改 CI 三入口判据集合、未动 DDL、未回写 CHANGELOG 历史快照。
 
 > **D-14 一次裁决所需最小输入（2026-11-14 补齐）**：① X1–X4 字段级契约草案已由 `AI接入判定 §8` 给出，裁决时须逐字段确认或驳回，并指定契约冻结的 owner 与版本戳；② A·B·C 重排需先交 `D3-v2 §1.1` 能力码登记（N1 / G10）、三者 evalset 专属负向用例、蓝图 §7 登记总表修订、`总体 §12.3` W-AI 独立行估工，以及 F1–F4 验收证据；③ M4 另需 G15 公平护栏与 T3 三方会签验收，且三者一律 `ADVISORY_ONLY`、禁授标 / 禁准入定性；④ 若把 §8 反证规格纳入 CI 三入口判据集合，须按 D-11 四入口一致流程同步 `FULL_GATE_KEYS`、门禁常量与注入自检探针（L3）。**在 ①②③④ 任一未闭合前，D-14 保持 `Proposed`、A·B·C 现行清单不改。**
 
