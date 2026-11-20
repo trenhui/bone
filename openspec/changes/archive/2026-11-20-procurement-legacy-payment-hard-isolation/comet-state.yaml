@@ -1,0 +1,3365 @@
+# comet-execution: managed-run
+change_id: b94d3692-9f41-402b-b68e-1fddda1f17a7
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: standard
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: 2f70dbfb595aa5dc4aa6ad76df6e8c57dc9f4eb1
+design_doc: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+plan: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-20-procurement-legacy-payment-hard-isolation-verify.md
+branch_status: pending
+created_at: 2026-11-20
+verified_at: 2026-11-20
+archive_confirmation: confirmed
+archived: false
+bound_branch: dev
+direct_override: false
+handoff_context: openspec/changes/procurement-legacy-payment-hard-isolation/.comet/handoff/design-context.json
+handoff_hash: bf3ee0156ca498e20bdd9a2a6cdae2aac81d2fb0699cd669d7f6eb70e1016860
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: ceaf52321e4e521492ebccbcf7ba2ad76b86311c797bbd2ca070ae6a945446de
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: procurement-legacy-payment-hard-isolation
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    definitionHashes:
+      '["comet-classic-full","1"]': 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    initialStateHash: ec2209f7877d59169097d9f9b0a7d50049d7d34179756db99db6a6ec28ef22ea
+    input:
+      change: procurement-legacy-payment-hard-isolation
+      changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+      workspaceBaseline:
+        ref: eb434c38-eacc-4448-88fe-71d85b107187
+    state:
+      archiveConfirmation: confirmed
+      archived: false
+      autoTransition: true
+      baseRef: 2f70dbfb595aa5dc4aa6ad76df6e8c57dc9f4eb1
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 6
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-20
+      designDoc: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+      directOverride: false
+      handoffContext: openspec/changes/procurement-legacy-payment-hard-isolation/.comet/handoff/design-context.json
+      handoffHash: bf3ee0156ca498e20bdd9a2a6cdae2aac81d2fb0699cd669d7f6eb70e1016860
+      isolation: current
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-20-procurement-legacy-payment-hard-isolation-verify.md
+      verifiedAt: 2026-11-20
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 32
+    actions:
+      - attempt: 2
+        claim:
+          executorId: comet-classic-guard
+          token: portable-f20810bf33bf19c3cb26706acf872a266cf8d5bb342c53b0262b8434396e4476
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:1
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: 2aceb5600ce8302b4dfb736764700f3ec152ce17ac4dc7168b2434e5096006dc
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:1
+          attempt: 2
+          claimToken: portable-f20810bf33bf19c3cb26706acf872a266cf8d5bb342c53b0262b8434396e4476
+          inputHash: 2aceb5600ce8302b4dfb736764700f3ec152ce17ac4dc7168b2434e5096006dc
+          outcomeId: eb228647-c9fa-4e61-87c8-ef364014a4cd
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 82521650d3e5126ca5058952ede9c1c2e2d0aba705bfbf041de718230b8345b5
+            outcomeId: eb228647-c9fa-4e61-87c8-ef364014a4cd
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: Runtime inspect 显示该 invoke_skill Action 的 completion
+                收据从未提交（receipts=[]、status 由 running 转 unknown）；Open 的 OpenSpec
+                产物已由本会话生成并通过 validate，但 Action 层面的完成动作未执行，claim 因 guard
+                预览竞态失效。原执行者已停止。
+            resolution: not-executed
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-91f930b3ab8b349fb618e354968cc796122b57bc33a4952cabdf9e1a0f46a1ec
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:4
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: 8730ab5af2a62a847dc9041d592a99e2ae84062b4b66fb865d9dcafef9f7d8c2
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:4
+          attempt: 2
+          claimToken: portable-91f930b3ab8b349fb618e354968cc796122b57bc33a4952cabdf9e1a0f46a1ec
+          inputHash: 8730ab5af2a62a847dc9041d592a99e2ae84062b4b66fb865d9dcafef9f7d8c2
+          outcomeId: procurement-legacy-payment-hard-isolation:4:2:executor-result
+          output:
+            contentHash: 807c51b39a1249cc913f1ac896ade19fc12fecf9a1775fd2debef7756ed39074
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c90d26fc8ef8ac735f58fab3d8591d38474467dbc5a8eb2ae2b3bd2f9961abf6
+            outcomeId: procurement-legacy-payment-hard-isolation:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: revalidate 由跨沙箱 guard --apply 触发，claim 所属 preview 进程已结束且 completion
+                未提交；本会话为原执行者已停止，Open 产物未变。复位后在同一无沙箱环境重新提交守卫。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-0f5119d0737295eb994d2bf189a331b9c8dcadec1c7608d0d364c25c1c006554
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:5
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: aceeeb514b8da068b96181b1bbc2b0e7162ff0ee81037cc588aecff854a93bb9
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:5
+          attempt: 1
+          claimToken: portable-0f5119d0737295eb994d2bf189a331b9c8dcadec1c7608d0d364c25c1c006554
+          inputHash: aceeeb514b8da068b96181b1bbc2b0e7162ff0ee81037cc588aecff854a93bb9
+          outcomeId: f63beede-7d55-43d5-a97d-8c61cf9d427d
+          output:
+            handoffContext: openspec/changes/procurement-legacy-payment-hard-isolation/.comet/handoff/design-context.json
+            handoffHash: 863437bde8a95726d587c23c4b0021e13037d51893ae59a085e5f9842d777606
+            proposal: D-06 存量付款硬隔离工程落地：在 bone-app-purchase 装配层加护栏（不改存量付款逻辑）。核心决策：D1 用
+              @ConditionalOnProperty(name=procura.purchase-pay-handler.enabled,
+              havingValue=true, matchIfMissing=false) + 组件扫描 REGEX 排除该
+              bean，实现缺省即禁用的 fail-closed，否决了改存量类注解和 execute
+              内判断两案（触碰'退役前不得删改存量类'红线或非真正装配隔离）；D2 新增始终注册的
+              LegacyPaymentIsolationReporter 输出启动期禁用/启用日志作可观察证据；D3
+              ApplicationContextRunner 双态装配测试（缺省/关闭 doesNotHaveBean、显式 true
+              hasSingleBean）并保留既有参数守卫用例证明业务逻辑未改写；D4 新建
+              procurement/legacy-payment-hard-isolation capability spec + 决策寄存器
+              D-06 更新为 Landed（附 file:line，不伪造 owner）。无 Spec Patch（Open 已建 delta
+              spec）；无 Open Questions；范围严格排除其余 17 项 owner backlog、CI
+              三入口判据、DDL。风险：默认行为变更由显式 true 可回滚、REGEX 排除精度由双态测试锁定、配置前缀已全仓检索无占用。
+            requirementsEvidence:
+              contentHash: 6e82c40625ebae20afa63f64257203d443abbc21b5fe8622d67a6ca31db06643
+              ref: openspec/changes/procurement-legacy-payment-hard-isolation
+            sourceEvidence:
+              contentHash: c0a0174d0335a571ac3a40e40bf829cdb8c1c2a22d194146045e4bd67fe75fe9
+              ref: openspec/changes/procurement-legacy-payment-hard-isolation
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1e7422dabfffcf3e5c0fa3baace048c0ac85f2408f6dea43cb8775b9f94cec82
+            outcomeId: f63beede-7d55-43d5-a97d-8c61cf9d427d
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-d879d7f68fb5424467c87f741a3e7a5db3f653c7ec7237ee99a5f2b1377332b0
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:7
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: bff655c57452e5b7673598ee0334017e0148dddb3c6e97de7dc0f08ad2e15180
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:7
+          attempt: 1
+          claimToken: portable-d879d7f68fb5424467c87f741a3e7a5db3f653c7ec7237ee99a5f2b1377332b0
+          inputHash: bff655c57452e5b7673598ee0334017e0148dddb3c6e97de7dc0f08ad2e15180
+          outcomeId: 89a97342-aaed-4687-8394-bb8524ab330f
+          output:
+            designDoc: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: cdaf20997a83edfd48cdb9551fee432786032ccfd39ba7431f753cda768cdc7c
+            outcomeId: 89a97342-aaed-4687-8394-bb8524ab330f
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-15052afda02a4ae741cd4e66682f1973963e2e902f7ea290e16448ea6c3143bc
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:9
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: 0630e49f763a55582be11d618e1727efc245858d17a1de7de021a8dc304eb1f8
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:9
+          attempt: 1
+          claimToken: portable-15052afda02a4ae741cd4e66682f1973963e2e902f7ea290e16448ea6c3143bc
+          inputHash: 0630e49f763a55582be11d618e1727efc245858d17a1de7de021a8dc304eb1f8
+          outcomeId: 2f115b9b-e58f-4b58-b2e8-18fcebcc0fdc
+          output:
+            boundBranch: dev
+            buildMode: autonomous
+            directOverride: false
+            isolation: current
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: dc9ca55efd8fe813d375f4b3512eb97b5fb0d689e54d37a911ea012c8b29cd81
+            outcomeId: 2f115b9b-e58f-4b58-b2e8-18fcebcc0fdc
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-a18f8dd2fff14cf8f641a02710d7004a6cbb976f046a5b3d1a8ebd5e04a9d8f8
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:11
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: e472a93e8d3b221a91c93aff82299052ef840b56e3b79e7413229234299bb30a
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:11
+          attempt: 1
+          claimToken: portable-a18f8dd2fff14cf8f641a02710d7004a6cbb976f046a5b3d1a8ebd5e04a9d8f8
+          inputHash: e472a93e8d3b221a91c93aff82299052ef840b56e3b79e7413229234299bb30a
+          outcomeId: 7a6400f9-fe16-4196-8cd4-9731037eeff5
+          output:
+            designEvidence:
+              contentHash: bd99466f01c948905df1046c66586d1a45ae26f427fe929cb6a40b2cc2e9f9cd
+              ref: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+            plan: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+            planEvidence:
+              contentHash: a391593ccf1f2c5a7ad59129e3e7296d700769cc7850ecc0e0821320ce7f4d98
+              ref: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+            taskRevision: 07ee409b8269b5efde86cd007679852e07aca82f46e11a286b4f107e1f6f7a68
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: a1493a261a9716e4d0788ddd5dc7fa10bec069a58d72f38143ce277fd167686c
+            outcomeId: 7a6400f9-fe16-4196-8cd4-9731037eeff5
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        id: procurement-legacy-payment-hard-isolation:13
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: 79998c2dcac5cac4660045c37d77c4b95f78c2b92e8bf25956693562fe0dda1e
+        protocolVersion: 1
+        reason: 命令 revise-design 已取代待执行 Action
+        receipts: []
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: cancelled
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-6eadee8060735842e7c87f2dca52df15b7fb0bc053cd1d99ec6d5ab79d99cc51
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:14
+        input:
+          activation:
+            expectedRevision: 25
+            fromPhase: build
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: 0b638a92f331982b0698868362ce486348ce753bf06a3d567fec5873693b616e
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:14
+          attempt: 1
+          claimToken: portable-6eadee8060735842e7c87f2dca52df15b7fb0bc053cd1d99ec6d5ab79d99cc51
+          inputHash: 0b638a92f331982b0698868362ce486348ce753bf06a3d567fec5873693b616e
+          outcomeId: 894e438a-e86b-4261-b3b2-6d0acdceee97
+          output:
+            handoffContext: openspec/changes/procurement-legacy-payment-hard-isolation/.comet/handoff/design-context.json
+            handoffHash: bf3ee0156ca498e20bdd9a2a6cdae2aac81d2fb0699cd669d7f6eb70e1016860
+            proposal: D-06 方案复核修订（仅文档措辞澄清，不改变 D1-D4 决策、范围、验收）：D1 澄清'唯一注册入口'限定于
+              bone-app-purchase 业务副本，记录平台副本 @ConditionalOnMissingClass
+              的既有组合根让位设计；D2 启动日志守卫由 @Component 更正为 @Bean，并补
+              hasSingleBean(Reporter) 装配断言防假绿。方案实质、边界、风险不变，用户'都推进'授权仍覆盖。
+            requirementsEvidence:
+              contentHash: 6e82c40625ebae20afa63f64257203d443abbc21b5fe8622d67a6ca31db06643
+              ref: openspec/changes/procurement-legacy-payment-hard-isolation
+            sourceEvidence:
+              contentHash: acee55199e31cb2ae9adfc491d251cc53d16c5eabf8e1498345fa4e944a74979
+              ref: openspec/changes/procurement-legacy-payment-hard-isolation
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 141c8029a2af965b9580d8531d6f7d9a3603d72e0962aee0164ecee44ef82274
+            outcomeId: 894e438a-e86b-4261-b3b2-6d0acdceee97
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-ae450d99dc942037d08ae6231b8b2615c736e9b2a5d5c39a46bce4eeffc7b31b
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:16
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: bff12c1398bc427dffa7b4869f2cd71ecd68774df2d73a8f078097cf04f03dac
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:16
+          attempt: 1
+          claimToken: portable-ae450d99dc942037d08ae6231b8b2615c736e9b2a5d5c39a46bce4eeffc7b31b
+          inputHash: bff12c1398bc427dffa7b4869f2cd71ecd68774df2d73a8f078097cf04f03dac
+          outcomeId: 078cf2f5-d077-4d1b-9114-c188097dca38
+          output:
+            designDoc: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c5cb43676299a69d624d51fde4c3acc2d6e688221e2eae2a22f46ead43b023e1
+            outcomeId: 078cf2f5-d077-4d1b-9114-c188097dca38
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-fb8e7a8aa44a6f847416cfabc828288e856f14e4d6b6785e8a07d2ca0a1f4306
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:18
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: 079b541cbc50d559e8df15c38e77888bed3def44380797059c6f32d3e5dc3111
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:18
+          attempt: 1
+          claimToken: portable-fb8e7a8aa44a6f847416cfabc828288e856f14e4d6b6785e8a07d2ca0a1f4306
+          inputHash: 079b541cbc50d559e8df15c38e77888bed3def44380797059c6f32d3e5dc3111
+          outcomeId: 2fcf9d23-8267-417f-bc11-eb6de0363e05
+          output:
+            designEvidence:
+              contentHash: f4b18872fba011b10c3e0c1dedbc72aac7ff7344b92a95406310c564c69f99a1
+              ref: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+            plan: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+            planEvidence:
+              contentHash: a391593ccf1f2c5a7ad59129e3e7296d700769cc7850ecc0e0821320ce7f4d98
+              ref: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+            taskRevision: 07ee409b8269b5efde86cd007679852e07aca82f46e11a286b4f107e1f6f7a68
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4544cbb96bde5594c4490e868422a6de3e70ccd8215c5d15ab8da245cf58a8ec
+            outcomeId: 2fcf9d23-8267-417f-bc11-eb6de0363e05
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          sessionId: main-session-procuraai-d06
+          token: portable-f6ff67f392e5a7ff2b3bb344c443ec07206020712eab1ba43d5cbd489a29249b
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:20
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: db0b4bbf29487b98c8c4b653b19d5851224091be98aa7980a261d3279e33831e
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:20
+          attempt: 2
+          claimToken: portable-f6ff67f392e5a7ff2b3bb344c443ec07206020712eab1ba43d5cbd489a29249b
+          inputHash: db0b4bbf29487b98c8c4b653b19d5851224091be98aa7980a261d3279e33831e
+          outcomeId: cb6cee99-bfcb-4919-adf2-a01debb1634a
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 27722b43cde0928944abfb7d323fca776776830f30ee01fb67cf6d9556c1200a
+            outcomeId: cb6cee99-bfcb-4919-adf2-a01debb1634a
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: Build execute 是确认实现完成的记账 Action；complete-build 领取后 completion
+                未落账（receipts 空、状态转 unknown），实现已实际完成且 25 例测试全绿、9/9
+                任务已勾选。本会话为原执行者已停止，复位后重新提交记账。
+            resolution: not-executed
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-b5b37e5d53a57e84332af94f64caba0c32125af68de643a1d0883f5734d67c55
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:21
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: 068919f3a96b60944ba8d8a5820327a0d50d704597a8b2c7c2d9c4df3ed1876c
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:21
+          attempt: 1
+          claimToken: portable-b5b37e5d53a57e84332af94f64caba0c32125af68de643a1d0883f5734d67c55
+          inputHash: 068919f3a96b60944ba8d8a5820327a0d50d704597a8b2c7c2d9c4df3ed1876c
+          outcomeId: 777746fd-93a1-4d94-b791-f0eb7109219a
+          output:
+            argv:
+              - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+              - -o
+              - -f
+              - /Users/renhui.trh/code/bone/bone-apps/bone-app-purchase/pom.xml
+              - clean
+              - test
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: 3234e884a2e7808c0285dc717b7046db1d5401163eb1548b36077df3c5f7e9ba
+            cwd: .
+            environment: 904f7e7f3f0f545bf9d659d1eb28e34858664618b3e79b3de6b75b84226787e6
+            exitCode: 1
+            inputAfter: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+            inputBefore: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+            manifestHash: 0cc83fe2664d22e52de705a2df27061dca057a0db7b5ed185c35c0e2efc54122
+            manifestRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/0d32428c-1409-4505-a08c-02fd6bc36f41.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/bdc8f087-95c0-4a81-af95-248db5927df2.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: failed
+        protocolVersion: 1
+        receipts:
+          - hash: 7e46f3245301cbd4fbda88feb7be15929cf9bcf368d8829101df54b05b6a6083
+            outcomeId: 777746fd-93a1-4d94-b791-f0eb7109219a
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: failed
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: main-session-procuraai-d06
+          token: portable-8a9174233d070072bf4dc76634d23293bf7f2aa684534bad8e4a6ceefacf5e7a
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:22
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: 3fb4aea30df037b931279561d576564acd7786c3a6e778008e7f5da937ea8f08
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:22
+          attempt: 1
+          claimToken: portable-8a9174233d070072bf4dc76634d23293bf7f2aa684534bad8e4a6ceefacf5e7a
+          inputHash: 3fb4aea30df037b931279561d576564acd7786c3a6e778008e7f5da937ea8f08
+          outcomeId: dc3eff64-1f9a-413d-9c29-71aeda7911fd
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: d11bccf404d003f3ac1f3f746a4f5f99986575b6c682991cd50faade3f3d60ff
+            outcomeId: dc3eff64-1f9a-413d-9c29-71aeda7911fd
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-cf6899af5f58726c1121e049c6ee110b7714a8e9a083a933c90c9148e00ef3f0
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:23
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: 3fb4aea30df037b931279561d576564acd7786c3a6e778008e7f5da937ea8f08
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:23
+          attempt: 1
+          claimToken: portable-cf6899af5f58726c1121e049c6ee110b7714a8e9a083a933c90c9148e00ef3f0
+          inputHash: 3fb4aea30df037b931279561d576564acd7786c3a6e778008e7f5da937ea8f08
+          outcomeId: c7b9a322-0898-48a2-9965-00b33f132da9
+          output:
+            argv:
+              - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+              - -o
+              - -f
+              - /Users/renhui.trh/code/bone/bone-apps/bone-app-purchase/pom.xml
+              - clean
+              - test
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: 4499a2d0c0ef97528077ab93bb868634e7658c79062079a2fd7d6a091c2050d2
+            cwd: .
+            environment: 904f7e7f3f0f545bf9d659d1eb28e34858664618b3e79b3de6b75b84226787e6
+            exitCode: 0
+            inputAfter: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+            inputBefore: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+            manifestHash: 0cc83fe2664d22e52de705a2df27061dca057a0db7b5ed185c35c0e2efc54122
+            manifestRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/3fbdba70-8e1b-4572-8f73-68b0d4f7cf57.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/2b12e736-2d36-4e82-b85c-a0d7afdd988e.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3b76e1dabe15cdc36768449f0ee0a8708db67bb9a7488d53bec70a6e944df4a4
+            outcomeId: c7b9a322-0898-48a2-9965-00b33f132da9
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-4dc309f2e74cd03bbad83bd3e4400b949aff38ff3ad3b975c5f4b6ab1be4d1ee
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:25
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: 2ff0db05fcbc3357c6d32024cb8547ae885e9c40d91bbbb6d40e47ccaea85081
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:25
+          attempt: 1
+          claimToken: portable-4dc309f2e74cd03bbad83bd3e4400b949aff38ff3ad3b975c5f4b6ab1be4d1ee
+          inputHash: 2ff0db05fcbc3357c6d32024cb8547ae885e9c40d91bbbb6d40e47ccaea85081
+          outcomeId: 52b11fb6-1c2a-4ae5-a658-3b0ae51f50e7
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-20-procurement-legacy-payment-hard-isolation-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: a3b6324aea63359a941c8d975bae68ec0295009b33cd025aaa5c65d55fc9bb92
+            outcomeId: 52b11fb6-1c2a-4ae5-a658-3b0ae51f50e7
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-9e10b12f8a1777d1874cc1ffeac66a559e8da9cc6de6c9c33ff9cd73eae53a1f
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:27
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: b113f23c8e184fdf069129cdf58ab6cac923475f059f50dd05b473489944e74f
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:27
+          attempt: 2
+          claimToken: portable-9e10b12f8a1777d1874cc1ffeac66a559e8da9cc6de6c9c33ff9cd73eae53a1f
+          inputHash: b113f23c8e184fdf069129cdf58ab6cac923475f059f50dd05b473489944e74f
+          outcomeId: b46a9345-15d5-4f09-973f-e78cc18a83ea
+          output:
+            argv:
+              - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+              - -o
+              - -f
+              - /Users/renhui.trh/code/bone/bone-apps/bone-app-purchase/pom.xml
+              - clean
+              - test
+            changedDuringExecution: []
+            checkEpoch: 4
+            contentHash: 30fa9467c0780823eaed0e823fc5db799b29c243c71589f6f2f4343528442da2
+            cwd: .
+            deliveryInputs:
+              bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/LegacyPaymentIsolationReporter.java: git:d02d8ff394be7bcd53f017bedd4b27349fae895e
+              bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PayHandlerConditionalRegistration.java: git:f6114b3af04e0964b9671ca75f2c8679e54e93fd
+              bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PaymentIsolationProperties.java: git:49666fd3ddf5b0624c7712bedb2e85f45e570257
+              bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PurchaseApplicationAutoConfiguration.java: git:e566a55a8a67789f5f5fac8f2b1369106750b1f3
+              bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PurchaseComponentScanConfiguration.java: git:cb94ee6fe56e88785902ff4adf121f92ee0eb203
+              bone-apps/bone-app-purchase/src/test/java/com/bone/app/purchase/boot/LegacyPaymentIsolationReporterTest.java: git:7d648ba2c9abb48160a4e99c1146d5030eb6a62c
+              bone-apps/bone-app-purchase/src/test/java/com/bone/app/purchase/boot/PaymentIsolationPropertiesTest.java: git:a98be7c023cd256cd3e2c1fc9b30932fe0f2d9b3
+              bone-apps/bone-app-purchase/src/test/java/com/bone/app/purchase/boot/PurchaseApplicationAutoConfigurationWiringTest.java: git:665018d09f28d2873a09c2b176ebf4b699786610
+              doc/ai-product/procuraAI/decisions/DECISION-REGISTER.md: git:a0e4fa4ff2de1d08305db91d7e1cf4d3c9a1af40
+            environment: 904f7e7f3f0f545bf9d659d1eb28e34858664618b3e79b3de6b75b84226787e6
+            exitCode: 0
+            inputAfter: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+            inputBefore: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+            manifestHash: 0cc83fe2664d22e52de705a2df27061dca057a0db7b5ed185c35c0e2efc54122
+            manifestRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/008f3d1f-9985-4faa-b38b-cafa6bbd6c1c.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/acb30898-516a-4b23-845c-f69b392135ad.log
+            reusable: true
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 77b8c28f9ea35db076db8ea651777cf3eb6f18381b52af0142b320f1ea135317
+            outcomeId: b46a9345-15d5-4f09-973f-e78cc18a83ea
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: verify.check 由 guard 领取后 completion 未落账（receipts 空、状态转
+                unknown）；本会话为原执行者已停止，验证报告已写入 reports 目录、11
+                项门禁全绿。复位后在同一无沙箱环境重新提交检查。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-6ece68cb9e8f3b5a40555afc12b9ae8a769785622ca6f9f694ea29020fded65d
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:29
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: 5c6186f30a468c9efae638722f6b1487a4db0419b439a739dc28e30db1a50bf3
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:29
+          attempt: 1
+          claimToken: portable-6ece68cb9e8f3b5a40555afc12b9ae8a769785622ca6f9f694ea29020fded65d
+          inputHash: 5c6186f30a468c9efae638722f6b1487a4db0419b439a739dc28e30db1a50bf3
+          outcomeId: 7f1a2f79-f52c-472c-91f0-1f4fa38f76a2
+          output:
+            summary: D-06 存量采购付款硬隔离工程落地：bone-app-purchase 装配层 fail-closed 开关（缺省禁用）+ 启动日志 +
+              双态测试 + 决策寄存器 Landed；25 例测试全绿、11 项门禁全绿、独立审查无阻断。仅本 change 文件，无无关改动。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: fe1a5e79de9475575c580e25ab351e4efcf360eb6717323ea5f10a9df16e0388
+            outcomeId: 7f1a2f79-f52c-472c-91f0-1f4fa38f76a2
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-dcad26f7e27c48610cc020ce7f605a3adc6dfe224a09049d76175ab82da1cd25
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:31
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: 0c7aeb7917e9690624ccdf680c05980a062d7d9ab9532c141924f9eaf8f03cac
+        outcome:
+          actionId: procurement-legacy-payment-hard-isolation:31
+          attempt: 1
+          claimToken: portable-dcad26f7e27c48610cc020ce7f605a3adc6dfe224a09049d76175ab82da1cd25
+          inputHash: 0c7aeb7917e9690624ccdf680c05980a062d7d9ab9532c141924f9eaf8f03cac
+          outcomeId: 42df5dd6-ffa9-41ed-b486-3dd20605e74a
+          output:
+            baseCommit: 2f70dbfb595aa5dc4aa6ad76df6e8c57dc9f4eb1
+            deliveryAction: local
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 770e9d0aab790fe51e97c17d1562d32b52f90660cededc7d4df6542eaaca1d53
+            outcomeId: 42df5dd6-ffa9-41ed-b486-3dd20605e74a
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-21d647204242a77c47f21dc1cfb535cada5d71e62788792a3517e2e0a7d64155
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procurement-legacy-payment-hard-isolation:32
+        input:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs: {}
+        inputHash: 33d65842a68ed5bfd3bab3bddadeb200c6b675006a15105e336acd3e36aa975d
+        protocolVersion: 1
+        reason: archive guard 已实际完成 OpenSpec 归档（change 目录已移入 archive/2026-11-20-...），但
+          completion 收据因 claim 竞态未落账；本会话为原执行者已停止，进入 repair-archive 恢复
+        receipts: []
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procurement-legacy-payment-hard-isolation
+        status: unknown
+        stepId: full.archive.execute
+        type: call_tool
+    commands:
+      - id: df0f793132c784de8298c9cef521daee57ca8d87d56ac6df0ec57bc9fcb60340
+        name: revise-design
+        inputHash: 8f343d7bdaf8ac06fbc80123104be70b9827668f8cd4582653a4cf6bcf577337
+        actionId: procurement-legacy-payment-hard-isolation:14
+    actionContexts:
+      procurement-legacy-payment-hard-isolation:1:
+        results: {}
+        sequence: 1
+      procurement-legacy-payment-hard-isolation:11:
+        results: {}
+        sequence: 11
+      procurement-legacy-payment-hard-isolation:13:
+        results: {}
+        sequence: 13
+      procurement-legacy-payment-hard-isolation:14:
+        results: {}
+        sequence: 14
+      procurement-legacy-payment-hard-isolation:16:
+        results: {}
+        sequence: 16
+      procurement-legacy-payment-hard-isolation:18:
+        results: {}
+        sequence: 18
+      procurement-legacy-payment-hard-isolation:20:
+        results: {}
+        sequence: 20
+      procurement-legacy-payment-hard-isolation:21:
+        results: {}
+        sequence: 21
+      procurement-legacy-payment-hard-isolation:22:
+        results: {}
+        sequence: 22
+      procurement-legacy-payment-hard-isolation:23:
+        results: {}
+        sequence: 23
+      procurement-legacy-payment-hard-isolation:25:
+        results: {}
+        sequence: 25
+      procurement-legacy-payment-hard-isolation:27:
+        results: {}
+        sequence: 27
+      procurement-legacy-payment-hard-isolation:29:
+        results: {}
+        sequence: 29
+      procurement-legacy-payment-hard-isolation:31:
+        results: {}
+        sequence: 31
+      procurement-legacy-payment-hard-isolation:32:
+        results: {}
+        sequence: 32
+      procurement-legacy-payment-hard-isolation:4:
+        results: {}
+        sequence: 4
+      procurement-legacy-payment-hard-isolation:5:
+        results: {}
+        sequence: 5
+      procurement-legacy-payment-hard-isolation:7:
+        results: {}
+        sequence: 7
+      procurement-legacy-payment-hard-isolation:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: procurement-legacy-payment-hard-isolation:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 807c51b39a1249cc913f1ac896ade19fc12fecf9a1775fd2debef7756ed39074
+              ref: openspec/changes/procurement-legacy-payment-hard-isolation
+        proposalHash: 79d58d96ad30b509959a5d516406fc20e753c37b407fbac7cf335413816c9d95
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-807c51b39a1249cc913f1ac896ade19fc12fecf9a1775fd2debef7756ed39074
+          choice: approved
+          proposalHash: 79d58d96ad30b509959a5d516406fc20e753c37b407fbac7cf335413816c9d95
+      - id: procurement-legacy-payment-hard-isolation:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procurement-legacy-payment-hard-isolation/.comet/handoff/design-context.json
+              handoffHash: 863437bde8a95726d587c23c4b0021e13037d51893ae59a085e5f9842d777606
+              proposal: D-06 存量付款硬隔离工程落地：在 bone-app-purchase 装配层加护栏（不改存量付款逻辑）。核心决策：D1 用
+                @ConditionalOnProperty(name=procura.purchase-pay-handler.enabled,
+                havingValue=true, matchIfMissing=false) + 组件扫描 REGEX 排除该
+                bean，实现缺省即禁用的 fail-closed，否决了改存量类注解和 execute
+                内判断两案（触碰'退役前不得删改存量类'红线或非真正装配隔离）；D2 新增始终注册的
+                LegacyPaymentIsolationReporter 输出启动期禁用/启用日志作可观察证据；D3
+                ApplicationContextRunner 双态装配测试（缺省/关闭 doesNotHaveBean、显式 true
+                hasSingleBean）并保留既有参数守卫用例证明业务逻辑未改写；D4 新建
+                procurement/legacy-payment-hard-isolation capability spec +
+                决策寄存器 D-06 更新为 Landed（附 file:line，不伪造 owner）。无 Spec Patch（Open
+                已建 delta spec）；无 Open Questions；范围严格排除其余 17 项 owner backlog、CI
+                三入口判据、DDL。风险：默认行为变更由显式 true 可回滚、REGEX 排除精度由双态测试锁定、配置前缀已全仓检索无占用。
+              requirementsEvidence:
+                contentHash: 6e82c40625ebae20afa63f64257203d443abbc21b5fe8622d67a6ca31db06643
+                ref: openspec/changes/procurement-legacy-payment-hard-isolation
+              sourceEvidence:
+                contentHash: c0a0174d0335a571ac3a40e40bf829cdb8c1c2a22d194146045e4bd67fe75fe9
+                ref: openspec/changes/procurement-legacy-payment-hard-isolation
+        proposalHash: f3d130882ac2d05dd850909cf6ab41b212e5e8acea699d530cf8c2e2bbcebaee
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-f3d130882ac2d05dd850909cf6ab41b212e5e8acea699d530cf8c2e2bbcebaee-approved
+          choice: approved
+          proposalHash: f3d130882ac2d05dd850909cf6ab41b212e5e8acea699d530cf8c2e2bbcebaee
+      - id: procurement-legacy-payment-hard-isolation:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: 4cd2228b8525ba2574bc96dbbe4867740fcc4501183265b0faa1d4052b7c57eb
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: b51bea1f-1503-4512-9bf3-95dc8358c4a4
+          choice: approved
+          proposalHash: 4cd2228b8525ba2574bc96dbbe4867740fcc4501183265b0faa1d4052b7c57eb
+      - id: procurement-legacy-payment-hard-isolation:15
+        stepId: full.design.confirm
+        sequence: 15
+        status: resolved
+        proposal:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procurement-legacy-payment-hard-isolation/.comet/handoff/design-context.json
+              handoffHash: bf3ee0156ca498e20bdd9a2a6cdae2aac81d2fb0699cd669d7f6eb70e1016860
+              proposal: D-06 方案复核修订（仅文档措辞澄清，不改变 D1-D4 决策、范围、验收）：D1 澄清'唯一注册入口'限定于
+                bone-app-purchase 业务副本，记录平台副本 @ConditionalOnMissingClass
+                的既有组合根让位设计；D2 启动日志守卫由 @Component 更正为 @Bean，并补
+                hasSingleBean(Reporter) 装配断言防假绿。方案实质、边界、风险不变，用户'都推进'授权仍覆盖。
+              requirementsEvidence:
+                contentHash: 6e82c40625ebae20afa63f64257203d443abbc21b5fe8622d67a6ca31db06643
+                ref: openspec/changes/procurement-legacy-payment-hard-isolation
+              sourceEvidence:
+                contentHash: acee55199e31cb2ae9adfc491d251cc53d16c5eabf8e1498345fa4e944a74979
+                ref: openspec/changes/procurement-legacy-payment-hard-isolation
+        proposalHash: db58a59b38e1cc254874b8e9801835f995c88488ddc074b51993e8cc3f20f9aa
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-db58a59b38e1cc254874b8e9801835f995c88488ddc074b51993e8cc3f20f9aa-approved
+          choice: approved
+          proposalHash: db58a59b38e1cc254874b8e9801835f995c88488ddc074b51993e8cc3f20f9aa
+      - id: procurement-legacy-payment-hard-isolation:30
+        stepId: full.archive.confirm
+        sequence: 30
+        status: resolved
+        proposal:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs:
+            full.archive.prepare:
+              summary: D-06 存量采购付款硬隔离工程落地：bone-app-purchase 装配层 fail-closed 开关（缺省禁用）+ 启动日志 +
+                双态测试 + 决策寄存器 Landed；25 例测试全绿、11 项门禁全绿、独立审查无阻断。仅本 change
+                文件，无无关改动。
+              targetBranch: dev
+        proposalHash: eb0806100af37f1ee07d0d85e0aa004c4af19f4861592aac995e3ce996decd81
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-eb0806100af37f1ee07d0d85e0aa004c4af19f4861592aac995e3ce996decd81-local
+          choice: local
+          proposalHash: eb0806100af37f1ee07d0d85e0aa004c4af19f4861592aac995e3ce996decd81
+    evidenceWaits:
+      - id: procurement-legacy-payment-hard-isolation:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procurement-legacy-payment-hard-isolation
+          contentHash: 807c51b39a1249cc913f1ac896ade19fc12fecf9a1775fd2debef7756ed39074
+          submissionId: 8dcd8d21-83dd-4103-b0a2-40cfb8bfa3c5
+      - id: procurement-legacy-payment-hard-isolation:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+          contentHash: bd99466f01c948905df1046c66586d1a45ae26f427fe929cb6a40b2cc2e9f9cd
+          submissionId: 52b1c7af-4087-4a44-bdc7-4f59344775a2
+      - id: procurement-legacy-payment-hard-isolation:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+          contentHash: a391593ccf1f2c5a7ad59129e3e7296d700769cc7850ecc0e0821320ce7f4d98
+          submissionId: e9e2d9ed-5620-4e61-9d31-22da6f924e95
+      - id: procurement-legacy-payment-hard-isolation:17
+        stepId: full.design.evidence
+        sequence: 17
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+          contentHash: f4b18872fba011b10c3e0c1dedbc72aac7ff7344b92a95406310c564c69f99a1
+          submissionId: 3c62528c-8971-479d-9ec4-8fc64bafc943
+      - id: procurement-legacy-payment-hard-isolation:19
+        stepId: full.build.plan.evidence
+        sequence: 19
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+          contentHash: a391593ccf1f2c5a7ad59129e3e7296d700769cc7850ecc0e0821320ce7f4d98
+          submissionId: ff6e1252-f5ef-489c-893c-53870c20777f
+      - id: procurement-legacy-payment-hard-isolation:24
+        stepId: full.build.check.evidence
+        sequence: 24
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/2b12e736-2d36-4e82-b85c-a0d7afdd988e.log
+          contentHash: 4499a2d0c0ef97528077ab93bb868634e7658c79062079a2fd7d6a091c2050d2
+          submissionId: 3bafcf44-49c1-4b61-a6e6-48ed5ce0d6d0
+      - id: procurement-legacy-payment-hard-isolation:26
+        stepId: full.verify.report.evidence
+        sequence: 26
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-20-procurement-legacy-payment-hard-isolation-verify.md
+          contentHash: 3af83b3934adf9599a057b0dea22152b211fbc49665446a7a2fd4e37a7a0c05d
+          submissionId: 5a5d3359-ef19-41c8-9b4e-4d50ca3489b2
+      - id: procurement-legacy-payment-hard-isolation:28
+        stepId: full.verify.check.evidence
+        sequence: 28
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/acb30898-516a-4b23-845c-f69b392135ad.log
+          contentHash: 30fa9467c0780823eaed0e823fc5db799b29c243c71589f6f2f4343528442da2
+          submissionId: b01ad354-3987-46c5-b839-7991d7a72296
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 63
+  sourceHash: 22fbd4b4cbdb585f13e14246bdc4ef4c413a9ce60edee06a7c817fb91e32b7ee
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 807c51b39a1249cc913f1ac896ade19fc12fecf9a1775fd2debef7756ed39074
+              ref: openspec/changes/procurement-legacy-payment-hard-isolation
+      - contentHash: 807c51b39a1249cc913f1ac896ade19fc12fecf9a1775fd2debef7756ed39074
+        ref: openspec/changes/procurement-legacy-payment-hard-isolation
+      - contentHash: 807c51b39a1249cc913f1ac896ade19fc12fecf9a1775fd2debef7756ed39074
+      - choice: approved
+        proposal:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procurement-legacy-payment-hard-isolation/.comet/handoff/design-context.json
+              handoffHash: 863437bde8a95726d587c23c4b0021e13037d51893ae59a085e5f9842d777606
+              proposal: D-06 存量付款硬隔离工程落地：在 bone-app-purchase 装配层加护栏（不改存量付款逻辑）。核心决策：D1 用
+                @ConditionalOnProperty(name=procura.purchase-pay-handler.enabled,
+                havingValue=true, matchIfMissing=false) + 组件扫描 REGEX 排除该
+                bean，实现缺省即禁用的 fail-closed，否决了改存量类注解和 execute
+                内判断两案（触碰'退役前不得删改存量类'红线或非真正装配隔离）；D2 新增始终注册的
+                LegacyPaymentIsolationReporter 输出启动期禁用/启用日志作可观察证据；D3
+                ApplicationContextRunner 双态装配测试（缺省/关闭 doesNotHaveBean、显式 true
+                hasSingleBean）并保留既有参数守卫用例证明业务逻辑未改写；D4 新建
+                procurement/legacy-payment-hard-isolation capability spec +
+                决策寄存器 D-06 更新为 Landed（附 file:line，不伪造 owner）。无 Spec Patch（Open
+                已建 delta spec）；无 Open Questions；范围严格排除其余 17 项 owner backlog、CI
+                三入口判据、DDL。风险：默认行为变更由显式 true 可回滚、REGEX 排除精度由双态测试锁定、配置前缀已全仓检索无占用。
+              requirementsEvidence:
+                contentHash: 6e82c40625ebae20afa63f64257203d443abbc21b5fe8622d67a6ca31db06643
+                ref: openspec/changes/procurement-legacy-payment-hard-isolation
+              sourceEvidence:
+                contentHash: c0a0174d0335a571ac3a40e40bf829cdb8c1c2a22d194146045e4bd67fe75fe9
+                ref: openspec/changes/procurement-legacy-payment-hard-isolation
+      - handoffContext: openspec/changes/procurement-legacy-payment-hard-isolation/.comet/handoff/design-context.json
+        handoffHash: 863437bde8a95726d587c23c4b0021e13037d51893ae59a085e5f9842d777606
+        proposal: D-06 存量付款硬隔离工程落地：在 bone-app-purchase 装配层加护栏（不改存量付款逻辑）。核心决策：D1 用
+          @ConditionalOnProperty(name=procura.purchase-pay-handler.enabled,
+          havingValue=true, matchIfMissing=false) + 组件扫描 REGEX 排除该 bean，实现缺省即禁用的
+          fail-closed，否决了改存量类注解和 execute 内判断两案（触碰'退役前不得删改存量类'红线或非真正装配隔离）；D2
+          新增始终注册的 LegacyPaymentIsolationReporter 输出启动期禁用/启用日志作可观察证据；D3
+          ApplicationContextRunner 双态装配测试（缺省/关闭 doesNotHaveBean、显式 true
+          hasSingleBean）并保留既有参数守卫用例证明业务逻辑未改写；D4 新建
+          procurement/legacy-payment-hard-isolation capability spec + 决策寄存器 D-06
+          更新为 Landed（附 file:line，不伪造 owner）。无 Spec Patch（Open 已建 delta spec）；无
+          Open Questions；范围严格排除其余 17 项 owner backlog、CI 三入口判据、DDL。风险：默认行为变更由显式
+          true 可回滚、REGEX 排除精度由双态测试锁定、配置前缀已全仓检索无占用。
+        requirementsEvidence:
+          contentHash: 6e82c40625ebae20afa63f64257203d443abbc21b5fe8622d67a6ca31db06643
+          ref: openspec/changes/procurement-legacy-payment-hard-isolation
+        sourceEvidence:
+          contentHash: c0a0174d0335a571ac3a40e40bf829cdb8c1c2a22d194146045e4bd67fe75fe9
+          ref: openspec/changes/procurement-legacy-payment-hard-isolation
+      - designDoc: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+      - contentHash: bd99466f01c948905df1046c66586d1a45ae26f427fe929cb6a40b2cc2e9f9cd
+        ref: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+      - boundBranch: dev
+        buildMode: autonomous
+        directOverride: false
+        isolation: current
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: bd99466f01c948905df1046c66586d1a45ae26f427fe929cb6a40b2cc2e9f9cd
+          ref: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+        plan: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+        planEvidence:
+          contentHash: a391593ccf1f2c5a7ad59129e3e7296d700769cc7850ecc0e0821320ce7f4d98
+          ref: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+        taskRevision: 07ee409b8269b5efde86cd007679852e07aca82f46e11a286b4f107e1f6f7a68
+      - contentHash: a391593ccf1f2c5a7ad59129e3e7296d700769cc7850ecc0e0821320ce7f4d98
+        ref: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+      - choice: approved
+        proposal:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procurement-legacy-payment-hard-isolation/.comet/handoff/design-context.json
+              handoffHash: bf3ee0156ca498e20bdd9a2a6cdae2aac81d2fb0699cd669d7f6eb70e1016860
+              proposal: D-06 方案复核修订（仅文档措辞澄清，不改变 D1-D4 决策、范围、验收）：D1 澄清'唯一注册入口'限定于
+                bone-app-purchase 业务副本，记录平台副本 @ConditionalOnMissingClass
+                的既有组合根让位设计；D2 启动日志守卫由 @Component 更正为 @Bean，并补
+                hasSingleBean(Reporter) 装配断言防假绿。方案实质、边界、风险不变，用户'都推进'授权仍覆盖。
+              requirementsEvidence:
+                contentHash: 6e82c40625ebae20afa63f64257203d443abbc21b5fe8622d67a6ca31db06643
+                ref: openspec/changes/procurement-legacy-payment-hard-isolation
+              sourceEvidence:
+                contentHash: acee55199e31cb2ae9adfc491d251cc53d16c5eabf8e1498345fa4e944a74979
+                ref: openspec/changes/procurement-legacy-payment-hard-isolation
+      - handoffContext: openspec/changes/procurement-legacy-payment-hard-isolation/.comet/handoff/design-context.json
+        handoffHash: bf3ee0156ca498e20bdd9a2a6cdae2aac81d2fb0699cd669d7f6eb70e1016860
+        proposal: D-06 方案复核修订（仅文档措辞澄清，不改变 D1-D4 决策、范围、验收）：D1 澄清'唯一注册入口'限定于
+          bone-app-purchase 业务副本，记录平台副本 @ConditionalOnMissingClass 的既有组合根让位设计；D2
+          启动日志守卫由 @Component 更正为 @Bean，并补 hasSingleBean(Reporter)
+          装配断言防假绿。方案实质、边界、风险不变，用户'都推进'授权仍覆盖。
+        requirementsEvidence:
+          contentHash: 6e82c40625ebae20afa63f64257203d443abbc21b5fe8622d67a6ca31db06643
+          ref: openspec/changes/procurement-legacy-payment-hard-isolation
+        sourceEvidence:
+          contentHash: acee55199e31cb2ae9adfc491d251cc53d16c5eabf8e1498345fa4e944a74979
+          ref: openspec/changes/procurement-legacy-payment-hard-isolation
+      - contentHash: f4b18872fba011b10c3e0c1dedbc72aac7ff7344b92a95406310c564c69f99a1
+        ref: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+      - designEvidence:
+          contentHash: f4b18872fba011b10c3e0c1dedbc72aac7ff7344b92a95406310c564c69f99a1
+          ref: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+        plan: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+        planEvidence:
+          contentHash: a391593ccf1f2c5a7ad59129e3e7296d700769cc7850ecc0e0821320ce7f4d98
+          ref: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+        taskRevision: 07ee409b8269b5efde86cd007679852e07aca82f46e11a286b4f107e1f6f7a68
+      - event: build-complete
+      - argv:
+          - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+          - -o
+          - -f
+          - /Users/renhui.trh/code/bone/bone-apps/bone-app-purchase/pom.xml
+          - clean
+          - test
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: 3234e884a2e7808c0285dc717b7046db1d5401163eb1548b36077df3c5f7e9ba
+        cwd: .
+        environment: 904f7e7f3f0f545bf9d659d1eb28e34858664618b3e79b3de6b75b84226787e6
+        exitCode: 1
+        inputAfter: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+        inputBefore: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+        manifestHash: 0cc83fe2664d22e52de705a2df27061dca057a0db7b5ed185c35c0e2efc54122
+        manifestRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/0d32428c-1409-4505-a08c-02fd6bc36f41.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/bdc8f087-95c0-4a81-af95-248db5927df2.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - argv:
+          - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+          - -o
+          - -f
+          - /Users/renhui.trh/code/bone/bone-apps/bone-app-purchase/pom.xml
+          - clean
+          - test
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: 4499a2d0c0ef97528077ab93bb868634e7658c79062079a2fd7d6a091c2050d2
+        cwd: .
+        environment: 904f7e7f3f0f545bf9d659d1eb28e34858664618b3e79b3de6b75b84226787e6
+        exitCode: 0
+        inputAfter: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+        inputBefore: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+        manifestHash: 0cc83fe2664d22e52de705a2df27061dca057a0db7b5ed185c35c0e2efc54122
+        manifestRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/3fbdba70-8e1b-4572-8f73-68b0d4f7cf57.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/2b12e736-2d36-4e82-b85c-a0d7afdd988e.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 4499a2d0c0ef97528077ab93bb868634e7658c79062079a2fd7d6a091c2050d2
+        ref: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/2b12e736-2d36-4e82-b85c-a0d7afdd988e.log
+      - contentHash: 3af83b3934adf9599a057b0dea22152b211fbc49665446a7a2fd4e37a7a0c05d
+        ref: docs/superpowers/reports/2026-11-20-procurement-legacy-payment-hard-isolation-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-20-procurement-legacy-payment-hard-isolation-verify.md
+      - argv:
+          - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+          - -o
+          - -f
+          - /Users/renhui.trh/code/bone/bone-apps/bone-app-purchase/pom.xml
+          - clean
+          - test
+        changedDuringExecution: []
+        checkEpoch: 4
+        contentHash: 30fa9467c0780823eaed0e823fc5db799b29c243c71589f6f2f4343528442da2
+        cwd: .
+        deliveryInputs:
+          bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/LegacyPaymentIsolationReporter.java: git:d02d8ff394be7bcd53f017bedd4b27349fae895e
+          bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PayHandlerConditionalRegistration.java: git:f6114b3af04e0964b9671ca75f2c8679e54e93fd
+          bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PaymentIsolationProperties.java: git:49666fd3ddf5b0624c7712bedb2e85f45e570257
+          bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PurchaseApplicationAutoConfiguration.java: git:e566a55a8a67789f5f5fac8f2b1369106750b1f3
+          bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PurchaseComponentScanConfiguration.java: git:cb94ee6fe56e88785902ff4adf121f92ee0eb203
+          bone-apps/bone-app-purchase/src/test/java/com/bone/app/purchase/boot/LegacyPaymentIsolationReporterTest.java: git:7d648ba2c9abb48160a4e99c1146d5030eb6a62c
+          bone-apps/bone-app-purchase/src/test/java/com/bone/app/purchase/boot/PaymentIsolationPropertiesTest.java: git:a98be7c023cd256cd3e2c1fc9b30932fe0f2d9b3
+          bone-apps/bone-app-purchase/src/test/java/com/bone/app/purchase/boot/PurchaseApplicationAutoConfigurationWiringTest.java: git:665018d09f28d2873a09c2b176ebf4b699786610
+          doc/ai-product/procuraAI/decisions/DECISION-REGISTER.md: git:a0e4fa4ff2de1d08305db91d7e1cf4d3c9a1af40
+        environment: 904f7e7f3f0f545bf9d659d1eb28e34858664618b3e79b3de6b75b84226787e6
+        exitCode: 0
+        inputAfter: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+        inputBefore: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+        manifestHash: 0cc83fe2664d22e52de705a2df27061dca057a0db7b5ed185c35c0e2efc54122
+        manifestRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/008f3d1f-9985-4faa-b38b-cafa6bbd6c1c.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/acb30898-516a-4b23-845c-f69b392135ad.log
+        reusable: true
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 30fa9467c0780823eaed0e823fc5db799b29c243c71589f6f2f4343528442da2
+        ref: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/acb30898-516a-4b23-845c-f69b392135ad.log
+      - choice: local
+        proposal:
+          input:
+            change: procurement-legacy-payment-hard-isolation
+            changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+            workspaceBaseline:
+              ref: eb434c38-eacc-4448-88fe-71d85b107187
+          outputs:
+            full.archive.prepare:
+              summary: D-06 存量采购付款硬隔离工程落地：bone-app-purchase 装配层 fail-closed 开关（缺省禁用）+ 启动日志 +
+                双态测试 + 决策寄存器 Landed；25 例测试全绿、11 项门禁全绿、独立审查无阻断。仅本 change
+                文件，无无关改动。
+              targetBranch: dev
+      - summary: D-06 存量采购付款硬隔离工程落地：bone-app-purchase 装配层 fail-closed 开关（缺省禁用）+ 启动日志 +
+          双态测试 + 决策寄存器 Landed；25 例测试全绿、11 项门禁全绿、独立审查无阻断。仅本 change 文件，无无关改动。
+        targetBranch: dev
+      - baseCommit: 2f70dbfb595aa5dc4aa6ad76df6e8c57dc9f4eb1
+        deliveryAction: local
+        targetBranch: dev
+        verifiedBranch: dev
+      - sequence: 9
+        value:
+          boundBranch: dev
+          buildMode: autonomous
+          directOverride: false
+          isolation: current
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procurement-legacy-payment-hard-isolation
+              changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+              workspaceBaseline:
+                ref: eb434c38-eacc-4448-88fe-71d85b107187
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: autonomous
+                directOverride: false
+                isolation: current
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procurement-legacy-payment-hard-isolation
+              changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+              workspaceBaseline:
+                ref: eb434c38-eacc-4448-88fe-71d85b107187
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/procurement-legacy-payment-hard-isolation/.comet/handoff/design-context.json
+                handoffHash: 863437bde8a95726d587c23c4b0021e13037d51893ae59a085e5f9842d777606
+                proposal: D-06 存量付款硬隔离工程落地：在 bone-app-purchase 装配层加护栏（不改存量付款逻辑）。核心决策：D1 用
+                  @ConditionalOnProperty(name=procura.purchase-pay-handler.enabled,
+                  havingValue=true, matchIfMissing=false) + 组件扫描 REGEX 排除该
+                  bean，实现缺省即禁用的 fail-closed，否决了改存量类注解和 execute
+                  内判断两案（触碰'退役前不得删改存量类'红线或非真正装配隔离）；D2 新增始终注册的
+                  LegacyPaymentIsolationReporter 输出启动期禁用/启用日志作可观察证据；D3
+                  ApplicationContextRunner 双态装配测试（缺省/关闭 doesNotHaveBean、显式 true
+                  hasSingleBean）并保留既有参数守卫用例证明业务逻辑未改写；D4 新建
+                  procurement/legacy-payment-hard-isolation capability spec +
+                  决策寄存器 D-06 更新为 Landed（附 file:line，不伪造 owner）。无 Spec Patch（Open
+                  已建 delta spec）；无 Open Questions；范围严格排除其余 17 项 owner backlog、CI
+                  三入口判据、DDL。风险：默认行为变更由显式 true 可回滚、REGEX
+                  排除精度由双态测试锁定、配置前缀已全仓检索无占用。
+                requirementsEvidence:
+                  contentHash: 6e82c40625ebae20afa63f64257203d443abbc21b5fe8622d67a6ca31db06643
+                  ref: openspec/changes/procurement-legacy-payment-hard-isolation
+                sourceEvidence:
+                  contentHash: c0a0174d0335a571ac3a40e40bf829cdb8c1c2a22d194146045e4bd67fe75fe9
+                  ref: openspec/changes/procurement-legacy-payment-hard-isolation
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+      - sequence: 8
+        value:
+          contentHash: bd99466f01c948905df1046c66586d1a45ae26f427fe929cb6a40b2cc2e9f9cd
+          ref: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/procurement-legacy-payment-hard-isolation/.comet/handoff/design-context.json
+          handoffHash: 863437bde8a95726d587c23c4b0021e13037d51893ae59a085e5f9842d777606
+          proposal: D-06 存量付款硬隔离工程落地：在 bone-app-purchase 装配层加护栏（不改存量付款逻辑）。核心决策：D1 用
+            @ConditionalOnProperty(name=procura.purchase-pay-handler.enabled,
+            havingValue=true, matchIfMissing=false) + 组件扫描 REGEX 排除该
+            bean，实现缺省即禁用的 fail-closed，否决了改存量类注解和 execute
+            内判断两案（触碰'退役前不得删改存量类'红线或非真正装配隔离）；D2 新增始终注册的
+            LegacyPaymentIsolationReporter 输出启动期禁用/启用日志作可观察证据；D3
+            ApplicationContextRunner 双态装配测试（缺省/关闭 doesNotHaveBean、显式 true
+            hasSingleBean）并保留既有参数守卫用例证明业务逻辑未改写；D4 新建
+            procurement/legacy-payment-hard-isolation capability spec + 决策寄存器
+            D-06 更新为 Landed（附 file:line，不伪造 owner）。无 Spec Patch（Open 已建 delta
+            spec）；无 Open Questions；范围严格排除其余 17 项 owner backlog、CI
+            三入口判据、DDL。风险：默认行为变更由显式 true 可回滚、REGEX 排除精度由双态测试锁定、配置前缀已全仓检索无占用。
+          requirementsEvidence:
+            contentHash: 6e82c40625ebae20afa63f64257203d443abbc21b5fe8622d67a6ca31db06643
+            ref: openspec/changes/procurement-legacy-payment-hard-isolation
+          sourceEvidence:
+            contentHash: c0a0174d0335a571ac3a40e40bf829cdb8c1c2a22d194146045e4bd67fe75fe9
+            ref: openspec/changes/procurement-legacy-payment-hard-isolation
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procurement-legacy-payment-hard-isolation
+              changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+              workspaceBaseline:
+                ref: eb434c38-eacc-4448-88fe-71d85b107187
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 807c51b39a1249cc913f1ac896ade19fc12fecf9a1775fd2debef7756ed39074
+                ref: openspec/changes/procurement-legacy-payment-hard-isolation
+      - sequence: 2
+        value:
+          contentHash: 807c51b39a1249cc913f1ac896ade19fc12fecf9a1775fd2debef7756ed39074
+          ref: openspec/changes/procurement-legacy-payment-hard-isolation
+      - sequence: 4
+        value:
+          contentHash: 807c51b39a1249cc913f1ac896ade19fc12fecf9a1775fd2debef7756ed39074
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: bd99466f01c948905df1046c66586d1a45ae26f427fe929cb6a40b2cc2e9f9cd
+            ref: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+          plan: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+          planEvidence:
+            contentHash: a391593ccf1f2c5a7ad59129e3e7296d700769cc7850ecc0e0821320ce7f4d98
+            ref: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+          taskRevision: 07ee409b8269b5efde86cd007679852e07aca82f46e11a286b4f107e1f6f7a68
+      - sequence: 12
+        value:
+          contentHash: a391593ccf1f2c5a7ad59129e3e7296d700769cc7850ecc0e0821320ce7f4d98
+          ref: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+      - sequence: 15
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procurement-legacy-payment-hard-isolation
+              changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+              workspaceBaseline:
+                ref: eb434c38-eacc-4448-88fe-71d85b107187
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/procurement-legacy-payment-hard-isolation/.comet/handoff/design-context.json
+                handoffHash: bf3ee0156ca498e20bdd9a2a6cdae2aac81d2fb0699cd669d7f6eb70e1016860
+                proposal: D-06 方案复核修订（仅文档措辞澄清，不改变 D1-D4 决策、范围、验收）：D1 澄清'唯一注册入口'限定于
+                  bone-app-purchase 业务副本，记录平台副本 @ConditionalOnMissingClass
+                  的既有组合根让位设计；D2 启动日志守卫由 @Component 更正为 @Bean，并补
+                  hasSingleBean(Reporter) 装配断言防假绿。方案实质、边界、风险不变，用户'都推进'授权仍覆盖。
+                requirementsEvidence:
+                  contentHash: 6e82c40625ebae20afa63f64257203d443abbc21b5fe8622d67a6ca31db06643
+                  ref: openspec/changes/procurement-legacy-payment-hard-isolation
+                sourceEvidence:
+                  contentHash: acee55199e31cb2ae9adfc491d251cc53d16c5eabf8e1498345fa4e944a74979
+                  ref: openspec/changes/procurement-legacy-payment-hard-isolation
+      - sequence: 14
+        value:
+          handoffContext: openspec/changes/procurement-legacy-payment-hard-isolation/.comet/handoff/design-context.json
+          handoffHash: bf3ee0156ca498e20bdd9a2a6cdae2aac81d2fb0699cd669d7f6eb70e1016860
+          proposal: D-06 方案复核修订（仅文档措辞澄清，不改变 D1-D4 决策、范围、验收）：D1 澄清'唯一注册入口'限定于
+            bone-app-purchase 业务副本，记录平台副本 @ConditionalOnMissingClass
+            的既有组合根让位设计；D2 启动日志守卫由 @Component 更正为 @Bean，并补
+            hasSingleBean(Reporter) 装配断言防假绿。方案实质、边界、风险不变，用户'都推进'授权仍覆盖。
+          requirementsEvidence:
+            contentHash: 6e82c40625ebae20afa63f64257203d443abbc21b5fe8622d67a6ca31db06643
+            ref: openspec/changes/procurement-legacy-payment-hard-isolation
+          sourceEvidence:
+            contentHash: acee55199e31cb2ae9adfc491d251cc53d16c5eabf8e1498345fa4e944a74979
+            ref: openspec/changes/procurement-legacy-payment-hard-isolation
+      - sequence: 16
+        value:
+          designDoc: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+      - sequence: 17
+        value:
+          contentHash: f4b18872fba011b10c3e0c1dedbc72aac7ff7344b92a95406310c564c69f99a1
+          ref: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+      - sequence: 18
+        value:
+          designEvidence:
+            contentHash: f4b18872fba011b10c3e0c1dedbc72aac7ff7344b92a95406310c564c69f99a1
+            ref: openspec/changes/procurement-legacy-payment-hard-isolation/design.md
+          plan: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+          planEvidence:
+            contentHash: a391593ccf1f2c5a7ad59129e3e7296d700769cc7850ecc0e0821320ce7f4d98
+            ref: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+          taskRevision: 07ee409b8269b5efde86cd007679852e07aca82f46e11a286b4f107e1f6f7a68
+      - sequence: 19
+        value:
+          contentHash: a391593ccf1f2c5a7ad59129e3e7296d700769cc7850ecc0e0821320ce7f4d98
+          ref: docs/superpowers/plans/2026-11-20-procurement-legacy-payment-hard-isolation.md
+      - sequence: 20
+        value:
+          event: build-complete
+      - sequence: 21
+        value:
+          argv:
+            - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+            - -o
+            - -f
+            - /Users/renhui.trh/code/bone/bone-apps/bone-app-purchase/pom.xml
+            - clean
+            - test
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: 3234e884a2e7808c0285dc717b7046db1d5401163eb1548b36077df3c5f7e9ba
+          cwd: .
+          environment: 904f7e7f3f0f545bf9d659d1eb28e34858664618b3e79b3de6b75b84226787e6
+          exitCode: 1
+          inputAfter: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+          inputBefore: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+          manifestHash: 0cc83fe2664d22e52de705a2df27061dca057a0db7b5ed185c35c0e2efc54122
+          manifestRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/0d32428c-1409-4505-a08c-02fd6bc36f41.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/bdc8f087-95c0-4a81-af95-248db5927df2.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 22
+        value:
+          event: build-complete
+      - sequence: 23
+        value:
+          argv:
+            - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+            - -o
+            - -f
+            - /Users/renhui.trh/code/bone/bone-apps/bone-app-purchase/pom.xml
+            - clean
+            - test
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: 4499a2d0c0ef97528077ab93bb868634e7658c79062079a2fd7d6a091c2050d2
+          cwd: .
+          environment: 904f7e7f3f0f545bf9d659d1eb28e34858664618b3e79b3de6b75b84226787e6
+          exitCode: 0
+          inputAfter: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+          inputBefore: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+          manifestHash: 0cc83fe2664d22e52de705a2df27061dca057a0db7b5ed185c35c0e2efc54122
+          manifestRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/3fbdba70-8e1b-4572-8f73-68b0d4f7cf57.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/2b12e736-2d36-4e82-b85c-a0d7afdd988e.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 24
+        value:
+          contentHash: 4499a2d0c0ef97528077ab93bb868634e7658c79062079a2fd7d6a091c2050d2
+          ref: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/2b12e736-2d36-4e82-b85c-a0d7afdd988e.log
+      - sequence: 26
+        value:
+          contentHash: 3af83b3934adf9599a057b0dea22152b211fbc49665446a7a2fd4e37a7a0c05d
+          ref: docs/superpowers/reports/2026-11-20-procurement-legacy-payment-hard-isolation-verify.md
+      - sequence: 25
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-20-procurement-legacy-payment-hard-isolation-verify.md
+      - sequence: 27
+        value:
+          argv:
+            - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+            - -o
+            - -f
+            - /Users/renhui.trh/code/bone/bone-apps/bone-app-purchase/pom.xml
+            - clean
+            - test
+          changedDuringExecution: []
+          checkEpoch: 4
+          contentHash: 30fa9467c0780823eaed0e823fc5db799b29c243c71589f6f2f4343528442da2
+          cwd: .
+          deliveryInputs:
+            bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/LegacyPaymentIsolationReporter.java: git:d02d8ff394be7bcd53f017bedd4b27349fae895e
+            bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PayHandlerConditionalRegistration.java: git:f6114b3af04e0964b9671ca75f2c8679e54e93fd
+            bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PaymentIsolationProperties.java: git:49666fd3ddf5b0624c7712bedb2e85f45e570257
+            bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PurchaseApplicationAutoConfiguration.java: git:e566a55a8a67789f5f5fac8f2b1369106750b1f3
+            bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PurchaseComponentScanConfiguration.java: git:cb94ee6fe56e88785902ff4adf121f92ee0eb203
+            bone-apps/bone-app-purchase/src/test/java/com/bone/app/purchase/boot/LegacyPaymentIsolationReporterTest.java: git:7d648ba2c9abb48160a4e99c1146d5030eb6a62c
+            bone-apps/bone-app-purchase/src/test/java/com/bone/app/purchase/boot/PaymentIsolationPropertiesTest.java: git:a98be7c023cd256cd3e2c1fc9b30932fe0f2d9b3
+            bone-apps/bone-app-purchase/src/test/java/com/bone/app/purchase/boot/PurchaseApplicationAutoConfigurationWiringTest.java: git:665018d09f28d2873a09c2b176ebf4b699786610
+            doc/ai-product/procuraAI/decisions/DECISION-REGISTER.md: git:a0e4fa4ff2de1d08305db91d7e1cf4d3c9a1af40
+          environment: 904f7e7f3f0f545bf9d659d1eb28e34858664618b3e79b3de6b75b84226787e6
+          exitCode: 0
+          inputAfter: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+          inputBefore: b6a20d0eed72f3f87c563995ebc4ee974b14df6dd942f6c26cc81127aecba8db
+          manifestHash: 0cc83fe2664d22e52de705a2df27061dca057a0db7b5ed185c35c0e2efc54122
+          manifestRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/008f3d1f-9985-4faa-b38b-cafa6bbd6c1c.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/acb30898-516a-4b23-845c-f69b392135ad.log
+          reusable: true
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 28
+        value:
+          contentHash: 30fa9467c0780823eaed0e823fc5db799b29c243c71589f6f2f4343528442da2
+          ref: .comet/runtime/classic-sdk-checks/ea60a1462bac19625180f446b2307bc5c9b7e7866ebdb7cc584aa5038f9457c2/acb30898-516a-4b23-845c-f69b392135ad.log
+      - sequence: 30
+        value:
+          choice: local
+          proposal:
+            input:
+              change: procurement-legacy-payment-hard-isolation
+              changeDir: openspec/changes/procurement-legacy-payment-hard-isolation
+              workspaceBaseline:
+                ref: eb434c38-eacc-4448-88fe-71d85b107187
+            outputs:
+              full.archive.prepare:
+                summary: D-06 存量采购付款硬隔离工程落地：bone-app-purchase 装配层 fail-closed 开关（缺省禁用）+ 启动日志 +
+                  双态测试 + 决策寄存器 Landed；25 例测试全绿、11 项门禁全绿、独立审查无阻断。仅本 change
+                  文件，无无关改动。
+                targetBranch: dev
+      - sequence: 29
+        value:
+          summary: D-06 存量采购付款硬隔离工程落地：bone-app-purchase 装配层 fail-closed 开关（缺省禁用）+ 启动日志 +
+            双态测试 + 决策寄存器 Landed；25 例测试全绿、11 项门禁全绿、独立审查无阻断。仅本 change 文件，无无关改动。
+          targetBranch: dev
+      - sequence: 31
+        value:
+          baseCommit: 2f70dbfb595aa5dc4aa6ad76df6e8c57dc9f4eb1
+          deliveryAction: local
+          targetBranch: dev
+          verifiedBranch: dev
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.design.handoff
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 12
+        left: null
+        right: 27
+        height: 2
+      - key: full.design.confirm
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 14
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 13
+        left: 30
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 29
+        right: 31
+        height: 3
+      - key: full.build.plan
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 33
+        right: 34
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 35
+        right: 31
+        height: 3
+      - key: full.build.execute
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 15
+        left: 37
+        right: null
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: 38
+        right: 34
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 39
+        right: 31
+        height: 4
+      - key: full.build.check
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.build.execute
+        value: 16
+        left: 41
+        right: 42
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: 43
+        right: 34
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 44
+        right: 31
+        height: 4
+      - key: full.build.check.evidence
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 18
+        left: null
+        right: 46
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: 42
+        right: 34
+        height: 2
+      - key: full.build.execute
+        value: 16
+        left: 47
+        right: 48
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 49
+        right: 31
+        height: 4
+      - key: full.verify.run
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 20
+        left: null
+        right: 51
+        height: 2
+      - key: full.design.handoff
+        value: 13
+        left: 30
+        right: 52
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 49
+        right: 53
+        height: 4
+      - key: full.design.handoff
+        value: 13
+        left: 30
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 20
+        left: 56
+        right: 51
+        height: 2
+      - key: full.verify.check
+        value: 22
+        left: 55
+        right: 57
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 49
+        right: 58
+        height: 4
+      - key: full.archive.prepare
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 24
+        left: null
+        right: 60
+        height: 2
+      - key: full.build.check
+        value: 18
+        left: 61
+        right: 46
+        height: 3
+      - key: full.build.execute
+        value: 16
+        left: 62
+        right: 48
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 63
+        right: 58
+        height: 5
+      - key: full.archive.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 26
+        left: 65
+        right: 66
+        height: 2
+      - key: full.build.check
+        value: 18
+        left: 67
+        right: 46
+        height: 3
+      - key: full.build.execute
+        value: 16
+        left: 68
+        right: 48
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 69
+        right: 58
+        height: 5
+      - key: full.build.configure
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 28
+        left: 71
+        right: 72
+        height: 2
+      - key: full.design.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: 74
+        right: 75
+        height: 2
+      - key: full.open.revalidate
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: 77
+        height: 2
+      - key: full.open.confirm
+        value: 34
+        left: 76
+        right: 78
+        height: 3
+      - key: full.design.document
+        value: 30
+        left: 73
+        right: 79
+        height: 4
+      - key: full.build.plan
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 38
+        left: 81
+        right: 82
+        height: 2
+      - key: full.build.confirm
+        value: 28
+        left: 71
+        right: 83
+        height: 3
+      - key: full.design.document
+        value: 30
+        left: 84
+        right: 79
+        height: 4
+      - key: full.design.handoff
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 39
+        left: null
+        right: 86
+        height: 2
+      - key: full.design.confirm
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 40
+        left: 89
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 41
+        left: 88
+        right: 90
+        height: 3
+      - key: full.build.plan
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 44
+        left: 92
+        right: 93
+        height: 2
+      - key: full.design.document
+        value: 41
+        left: 94
+        right: 90
+        height: 3
+      - key: full.build.execute
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 43
+        left: 96
+        right: null
+        height: 2
+      - key: full.build.plan.evidence
+        value: 44
+        left: 97
+        right: 93
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 98
+        right: 90
+        height: 4
+      - key: full.build.check
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.execute
+        value: 45
+        left: 100
+        right: 101
+        height: 2
+      - key: full.build.plan.evidence
+        value: 44
+        left: 102
+        right: 93
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 103
+        right: 90
+        height: 4
+      - key: full.build.execute
+        value: 47
+        left: 100
+        right: 101
+        height: 2
+      - key: full.build.plan.evidence
+        value: 44
+        left: 105
+        right: 93
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 106
+        right: 90
+        height: 4
+      - key: full.build.check.evidence
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 48
+        left: null
+        right: 108
+        height: 2
+      - key: full.build.plan.evidence
+        value: 44
+        left: 101
+        right: 93
+        height: 2
+      - key: full.build.execute
+        value: 47
+        left: 109
+        right: 110
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 111
+        right: 90
+        height: 4
+      - key: full.verify.run
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 50
+        left: null
+        right: 113
+        height: 2
+      - key: full.design.handoff
+        value: 40
+        left: 89
+        right: 114
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 111
+        right: 115
+        height: 4
+      - key: full.design.handoff
+        value: 40
+        left: 89
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 53
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 50
+        left: 118
+        right: 113
+        height: 2
+      - key: full.verify.check
+        value: 52
+        left: 117
+        right: 119
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 111
+        right: 120
+        height: 4
+      - key: full.archive.prepare
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 54
+        left: null
+        right: 122
+        height: 2
+      - key: full.build.check
+        value: 48
+        left: 123
+        right: 108
+        height: 3
+      - key: full.build.execute
+        value: 47
+        left: 124
+        right: 110
+        height: 4
+      - key: full.design.document
+        value: 41
+        left: 125
+        right: 120
+        height: 5
+      - key: full.archive.confirm
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 56
+        left: 127
+        right: 128
+        height: 2
+      - key: full.build.check
+        value: 48
+        left: 129
+        right: 108
+        height: 3
+      - key: full.build.execute
+        value: 47
+        left: 130
+        right: 110
+        height: 4
+      - key: full.design.document
+        value: 41
+        left: 131
+        right: 120
+        height: 5
+      - key: full.open
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 34
+        left: 133
+        right: 134
+        height: 2
+      - key: full.open.revalidate
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: 136
+        height: 2
+      - key: full.open.confirm
+        value: 34
+        left: 133
+        right: 137
+        height: 3
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: 139
+        right: 140
+        height: 2
+      - key: full.open.confirm
+        value: 34
+        left: 141
+        right: 137
+        height: 3
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 30
+        left: 143
+        right: 144
+        height: 2
+      - key: full.design.handoff
+        value: 32
+        left: 145
+        right: 140
+        height: 3
+      - key: full.open.confirm
+        value: 34
+        left: 146
+        right: 137
+        height: 4
+      - key: full.archive.confirm
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 56
+        left: 148
+        right: 149
+        height: 2
+      - key: full.build.check.evidence
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 27
+        left: 151
+        right: 152
+        height: 2
+      - key: full.build.plan
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 44
+        left: 154
+        right: 155
+        height: 2
+      - key: full.build.execute
+        value: 47
+        left: 153
+        right: 156
+        height: 3
+      - key: full.build.check
+        value: 48
+        left: 150
+        right: 157
+        height: 4
+      - key: full.design.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 40
+        left: 159
+        right: 140
+        height: 2
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 36
+        left: 161
+        right: 162
+        height: 2
+      - key: full.verify.run
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 50
+        left: null
+        right: 164
+        height: 2
+      - key: full.verify.check.evidence
+        value: 53
+        left: 163
+        right: 165
+        height: 3
+      - key: full.open.confirm
+        value: 34
+        left: 160
+        right: 166
+        height: 4
+      - key: full.design.document
+        value: 41
+        left: 158
+        right: 167
+        height: 5
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 33
+        left: null
+        right: 169
+        height: 2
+      - key: full.design.handoff
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: 172
+        right: 173
+        height: 2
+      - key: full.open
+        value: 33
+        left: 171
+        right: 174
+        height: 3
+      - key: full.build.configure
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 31
+        left: 177
+        right: 178
+        height: 2
+      - key: full.design.confirm
+        value: 29
+        left: 176
+        right: 179
+        height: 3
+      - key: full.open
+        value: 33
+        left: 180
+        right: 174
+        height: 4
+      - key: full.design.handoff
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 48
+        left: 183
+        right: 184
+        height: 2
+      - key: full.build.plan
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 44
+        left: 186
+        right: 187
+        height: 2
+      - key: full.build.execute
+        value: 47
+        left: 185
+        right: 188
+        height: 3
+      - key: full.design.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 40
+        left: 190
+        right: 191
+        height: 2
+      - key: full.verify.run
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 50
+        left: null
+        right: 193
+        height: 2
+      - key: full.verify.check.evidence
+        value: 53
+        left: 192
+        right: 194
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 189
+        right: 195
+        height: 4
+      - key: full.open
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 30
+        left: 198
+        right: 199
+        height: 2
+      - key: full.open.confirm
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: 201
+        right: 202
+        height: 2
+      - key: full.open
+        value: 33
+        left: 200
+        right: 203
+        height: 3
+      - key: full.build.configure
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 28
+        left: 205
+        right: 206
+        height: 2
+      - key: full.design.document
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 31
+        left: 208
+        right: 209
+        height: 2
+      - key: full.design.confirm
+        value: 29
+        left: 207
+        right: 210
+        height: 3
+      - key: full.open
+        value: 33
+        left: 211
+        right: 203
+        height: 4
+      - key: full.design.confirm
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 41
+        left: 213
+        right: 214
+        height: 2
+      - key: full.build.plan
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 39
+        left: 216
+        right: null
+        height: 2
+      - key: full.design.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 40
+        left: 218
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 41
+        left: 217
+        right: 219
+        height: 3
+      - key: full.build.execute
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 48
+        left: null
+        right: 221
+        height: 2
+      - key: full.build.plan.evidence
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 39
+        left: 223
+        right: null
+        height: 2
+      - key: full.build.plan
+        value: 43
+        left: 222
+        right: 224
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 225
+        right: 219
+        height: 4
+      - key: full.build.check
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.build.execute
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 49
+        left: 227
+        right: 228
+        height: 2
+      - key: full.build.plan
+        value: 43
+        left: 229
+        right: 224
+        height: 3
+      - key: full.verify.run
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 40
+        left: 218
+        right: 231
+        height: 2
+      - key: full.design.document
+        value: 41
+        left: 230
+        right: 232
+        height: 4
+      - key: full.verify.check
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 50
+        left: 234
+        right: 235
+        height: 2
+      - key: full.design.handoff
+        value: 40
+        left: 218
+        right: 236
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 230
+        right: 237
+        height: 4
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 28
+      - 32
+      - 36
+      - 40
+      - 45
+      - 50
+      - 54
+      - 59
+      - 64
+      - 70
+      - 80
+      - 85
+      - 87
+      - 91
+      - 95
+      - 99
+      - 104
+      - 107
+      - 112
+      - 116
+      - 121
+      - 126
+      - 132
+      - 135
+      - 138
+      - 142
+      - 147
+      - 168
+      - 170
+      - 175
+      - 181
+      - 182
+      - 196
+      - 197
+      - 204
+      - 212
+      - 215
+      - 220
+      - 226
+      - 233
+      - 238
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "14"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "15"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actions
+          - "16"
+          - input
+          - outputs
+        map: 14
+      - path:
+          - actions
+          - "17"
+          - input
+          - outputs
+        map: 15
+      - path:
+          - actions
+          - "18"
+          - input
+          - outputs
+        map: 16
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:11
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:13
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:14
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:16
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:18
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:20
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:21
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:22
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:23
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:25
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:27
+          - results
+        map: 26
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:29
+          - results
+        map: 27
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:31
+          - results
+        map: 28
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:32
+          - results
+        map: 29
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:4
+          - results
+        map: 30
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:5
+          - results
+        map: 31
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:7
+          - results
+        map: 32
+      - path:
+          - actionContexts
+          - procurement-legacy-payment-hard-isolation:9
+          - results
+        map: 33
+      - path:
+          - outputs
+        map: 34
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 35
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 36
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 37
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 38
+      - path:
+          - waits
+          - "4"
+          - results
+        map: 39
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 40
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 41
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 42
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 43
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 44
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 45
+      - path:
+          - evidenceWaits
+          - "6"
+          - results
+        map: 46
+      - path:
+          - evidenceWaits
+          - "7"
+          - results
+        map: 47
+  storageHash: e66d73fb812df986d39589d837dfbe47d7e23a9017f1e2091f6e40786450e84b
+check_epoch: 6
