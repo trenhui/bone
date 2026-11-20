@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 134,
+  "executableCount": 135,
   "retired": [],
   "entries": [
     {
@@ -855,6 +855,12 @@
       "file": "0130_seed_procurement_business_modules_permissions.sql",
       "kind": "dml",
       "summary": "procuraAI 业务模块骨架批次4：寻源/准入/风险绩效 7 个端点权限码（950 号段）登记并绑定超管；只登记访问边界，不打开自动授标/自动授信。"
+    },
+    {
+      "order": 135,
+      "file": "0131_seed_procurement_ai_advisory_permissions.sql",
+      "kind": "dml",
+      "summary": "procuraAI 业务 AI 建议骨架批次5：procurement:ai-advisory:read 权限码（960 号段）登记并绑定超管；AI 仅建议、人工终决。"
     }
   ],
   "ordinalConflicts": [

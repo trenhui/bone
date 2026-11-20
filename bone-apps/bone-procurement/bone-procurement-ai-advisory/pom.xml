@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.bone.procurement</groupId>
+        <artifactId>bone-procurement</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <artifactId>bone-procurement-ai-advisory</artifactId>
+    <name>bone-procurement-ai-advisory</name>
+    <description>procuraAI 业务 AI 建议骨架（批次5 纯工程）：三态 fail-closed + 双标识披露 + rules_only 降级 + kill switch 总闸。不接真实模型、不声明效果达标，效果与契约冻结属 owner（D-15/D-16/D-17）。</description>
+    <dependencies>
+        <dependency><groupId>com.bone.procurement</groupId><artifactId>bone-procurement-ai-governance</artifactId><version>${project.version}</version></dependency>
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency>
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId></dependency>
+        <dependency><groupId>com.bone</groupId><artifactId>bone-core</artifactId></dependency>
+        <dependency><groupId>com.bone</groupId><artifactId>bone-web</artifactId></dependency>
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>com.tngtech.archunit</groupId><artifactId>archunit-junit5</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>com.bone</groupId><artifactId>bone-architecture-test</artifactId><scope>test</scope></dependency>
+    </dependencies>
+</project>

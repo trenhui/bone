@@ -2,7 +2,7 @@
 status: Active
 layer: decision
 truth-for: 建议 → 决策四态登记与开口项索引（导航投影，不参与业务裁决）
-updated-on: 2026-11-12
+updated-on: 2026-11-20
 ---
 
 # procuraAI 决策登记（建议 → 决策状态机）
@@ -57,6 +57,10 @@ updated-on: 2026-11-12
 | D-12 | 旧 POC 族物理迁 `archive/`、三张登记表收敛、唯一删除候选处置 | 治理 / L3 | `Proposed` | 同步 `LEGACY_DOCS` 显式清单与 A10 锚点；补「旧文档少一份即转红」探针 | 未指派 |
 | D-13 | CI 软件供应链基线加固（第十八轮只登记现状） | 安全 / L3 | `Proposed` | `permissions` 最小化 + action pin + OpenSSF Scorecard 复核 | 未指派 |
 | D-14 | AI 原生运行时契约层 X1–X4 冻结 + A·B·C 分级重排 | 立项 / 契约 / 合规 | `Proposed` | ① X2 执行层 + X3 审计可解释三合一契约为放开任何自治档的硬前置，须与 SOX / GDPR Art.22 / EU AI Act 逐项对齐并出字段级 schema；② Intake（N1）/ 品类分类（G10）/ 辅助评标（M4）提前与 G1/G3/G7/G8 异常预警子类拆档，须先补齐 `D3-v2 §1.1` 能力码 + evalset 专属负向 + 蓝图 §7 登记总表 + `总体 §12.3` W-AI 估工，且 F1–F4 验收；③ 重排后一律 `ADVISORY_ONLY`、禁授标 / 禁准入定性，M4 挂 G15 公平护栏与 T3 三方会签；④ 新增门禁判据须按 D-11 四入口一致流程（含注入必红反证）另行立项 | 未指派 |
+| D-15 | AI 评测集 27→200 扩容与转正（批次2 转 backlog） | 数据 / 评测 | `Proposed` | 双人标注 + Kappa≥0.8 + 模型选型与通过线冻结，`check_procura_evalset.py` 的 `status=seededDraft` / `scalePlan.status=notStarted` 须由 owner 裁决后改；当前不得伪造 200 例或改门禁下界 | 未指派 |
+| D-16 | D3-v2 AI 子能力契约冻结（M1/M5/M7/G10 等 8 码） | 契约 / 设计态 | `Proposed` | owner 冻结评审：`ProcurementAiOrchestrationPort` 方法签名 / DTO / 端点登记 + `D3-v2 §1.1` 八码契约；冻结前工程只做三态 fail-closed / 披露 / rules_only 降级骨架，不接真实模型、不声明效果达标 | 未指派 |
+| D-17 | 业务 AI 真模型接入与效果达标声明 | 模型 / 评测 | `Proposed` | 依赖 D-15（评测转正）+ D-16（契约冻结）+ D-10（漂移闭环）；接入后仍须 `ADVISORY_ONLY`、AI 仅建议、人工终决，禁自动授标 / 自动准入定性 | 未指派 |
+| D-18 | 自动结案 / 自动放款 / AI 授标红线确认 | 合规决策 | `Accepted + 外部依赖` | 资产登记第 5 节 + R2 + ADR-06 撤销链已定「一律禁止」；批次4 源码中 `awardByHuman` / `approveByHuman` 已强制具名操作人，红线在工程侧已落地，最终以法务书面结论（D-08）收口 | 未指派 |
 
 > 开口项状态**只在本表维护**，不要回写 CHANGELOG 的历史轮次；状态变更须注明日期与依据。D-11/D-12/D-13 涉及 `.github/workflows/ci.yml` 与主门禁脚本号段，属 L3，执行前须架构评审；**D-14 为 2026-11-14 业界校准登记**（见 `AI接入判定与AI原生内核补充设计.md §7`），本轮只登记设计、未改 A·B·C 清单、未新增能力码；新增内容不在 CI 三入口判据集合内（A10.17 判据集合与门禁常量均未改）。
 

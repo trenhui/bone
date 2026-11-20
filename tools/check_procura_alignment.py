@@ -508,6 +508,9 @@ EXTRA_OPENAPI_ENDPOINTS = frozenset({
     ("get", "/procurement/ai-governance/safety/kill-switch/drill-status"),
     ("post", "/procurement/ai-governance/safety/content-labels/check"),
     ("post", "/procurement/ai-governance/safety/fairness/evaluate"),
+    # procuraAI 业务 AI 建议骨架（批次5 纯工程）：源码先行、已登记 openapi.yaml，六卷 §6 待 owner 对齐后移除本组豁免。
+    ("get", "/procurement/ai-advisory/capabilities"),
+    ("get", "/procurement/ai-advisory/capabilities/{code}/advice"),
 })
 LLD_ENDPOINT_ROW_RE = re.compile(
     r"^\|\s*`(GET|POST|PUT|PATCH|DELETE)`\s*\|\s*`(/(?:api/v1/)?[^`]+)`", re.M)

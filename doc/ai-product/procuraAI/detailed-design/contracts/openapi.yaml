@@ -41,6 +41,8 @@ tags:
     description: 06 卷 编排 / 事件运维 / 平台接入
   - name: ai-governance
     description: procuraAI 决策治理（批次1）：能力三态 fail-closed / 具名责任人 / 人工终决 / override 回流
+  - name: ai-advisory
+    description: procuraAI 业务 AI 建议骨架（批次5 纯工程）：三态 fail-closed / 双标识披露 / rules_only 降级；不接真实模型、不声明效果达标
 
 security:
   - bearerAuth: []
@@ -335,6 +337,28 @@ paths:
       security: [{ bearerAuth: [procurement:ai-governance:read] }]
       responses:
         '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ai-advisory/capabilities:
+    get:
+      tags: [ai-advisory]
+      operationId: listAdvisoryCapabilities
+      summary: '业务 AI 能力清单（D3-v2 §1.1 八码登记；不接模型、不声明效果）'
+      security: [{ bearerAuth: [procurement:ai-advisory:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /procurement/ai-advisory/capabilities/{code}/advice:
+    parameters:
+      - name: 'code'
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [ai-advisory]
+      operationId: getAdvisoryAdvice
+      summary: '建议态裁决（三态 fail-closed + 双标识 + rules_only 降级；AI 仅建议人工终决）'
+      security: [{ bearerAuth: [procurement:ai-advisory:read] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
   /procurement/purchase-orders:
     post:
       tags: [transaction]

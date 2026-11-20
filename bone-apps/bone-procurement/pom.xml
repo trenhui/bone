@@ -25,6 +25,7 @@
         <module>bone-procurement-sourcing</module>
         <module>bone-procurement-qualification</module>
         <module>bone-procurement-risk</module>
+        <module>bone-procurement-ai-advisory</module>
         <module>bone-procurement-app</module>
     </modules>
 </project>
