@@ -2,7 +2,7 @@ package com.bone.procurement.governance.infrastructure;
 
 import com.bone.procurement.governance.application.ConditionalOnAiGovernanceEnabled;
 import com.bone.procurement.governance.domain.gateway.GovernanceTracePort;
-import com.bone.procurement.governance.domain.model.GovernanceTraceEntry;
+import com.bone.procurement.governance.domain.model.capability.GovernanceTraceEntry;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.springframework.stereotype.Component;

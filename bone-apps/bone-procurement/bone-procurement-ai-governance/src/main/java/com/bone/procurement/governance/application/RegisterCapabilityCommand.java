@@ -1,6 +1,6 @@
 package com.bone.procurement.governance.application;
 
-import com.bone.procurement.governance.domain.model.OwnerRef;
+import com.bone.procurement.governance.domain.model.capability.OwnerRef;
 
 /** 登记能力命令。 */
 public record RegisterCapabilityCommand(

@@ -2,11 +2,11 @@ package com.bone.procurement.contract.domain.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.bone.procurement.contract.domain.model.ParsedClause;
-import com.bone.procurement.contract.domain.model.ParsedContract;
-import com.bone.procurement.contract.domain.model.ReviewRequest;
-import com.bone.procurement.contract.domain.model.ReviewSuggestion;
-import com.bone.procurement.contract.domain.model.ReviewTraceEntry;
+import com.bone.procurement.contract.domain.model.review.ParsedClause;
+import com.bone.procurement.contract.domain.model.review.ParsedContract;
+import com.bone.procurement.contract.domain.model.review.ReviewRequest;
+import com.bone.procurement.contract.domain.model.review.ReviewSuggestion;
+import com.bone.procurement.contract.domain.model.review.ReviewTraceEntry;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;

@@ -1,7 +1,7 @@
 package com.bone.procurement.contract.application;
 
-import com.bone.procurement.contract.domain.model.AiParticipation;
-import com.bone.procurement.contract.domain.model.ContractReview;
+import com.bone.procurement.contract.domain.model.review.AiParticipation;
+import com.bone.procurement.contract.domain.model.review.ContractReview;
 import org.springframework.stereotype.Service;
 
 /** 只读披露服务：把 AI 参与态映射为前端字段；未知态原样返回、文案「无法确认」。 */

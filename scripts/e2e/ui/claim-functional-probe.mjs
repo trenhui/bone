@@ -137,10 +137,9 @@ try {
   await page.locator('.ant-picker').first().click();
   await page.keyboard.type('2026-10-20');
   await page.keyboard.press('Enter');
-  // 明细行初始为空（form 级 initialValues items:[] 覆盖 List initialValue），人工先点「添加明细」
-  await page.getByRole('button', { name: '添加明细' }).click();
-  await page.waitForTimeout(400);
-  await page.getByPlaceholder('诊查费').fill('UI 探针-门诊诊查费');
+  // 表单 initialValues 已带一行 items:[{}]（见 ClaimSubmitPage.tsx）；此处不能再点「添加明细」，
+  // 否则多出的空行会因 itemName/amount 必填校验把提交挡在前端，接口根本不会被调用。
+  await page.getByPlaceholder('诊查费').first().fill('UI 探针-门诊诊查费');
   const amountInput = page.locator('#subapp-viewport .ant-input-number').nth(1);
   await amountInput.click();
   await page.keyboard.type('120');
@@ -181,14 +180,23 @@ try {
     const tmp = path.join(os.tmpdir(), `claim-ui-probe-${Date.now()}.pdf`);
     fs.writeFileSync(tmp, `%PDF-1.4 claim-ui-probe ${Date.now()}\n`);
     await page.locator('#subapp-viewport input[type="file"]').first().setInputFiles(tmp);
-    const upMsg = await waitMessage(/已登记/);
-    check('[材料上传] 附件上传并登记成功', Boolean(upMsg), upMsg ?? '未捕获已登记提示');
+    // 哈希 + multipart 直传 + 登记是串行的，低配环境下 8s 容易误判；失败时把页面实际提示带出来。
+    const upMsg = await waitMessage(/已登记/, 20000);
+    const upMsgs = await page.locator('.ant-message-notice-content').allInnerTexts().catch(() => []);
+    check('[材料上传] 附件上传并登记成功', Boolean(upMsg), upMsg ?? `message=${upMsgs.join(' | ')}`);
     await page.waitForTimeout(1000);
 
     const lockBtn = page.getByRole('button', { name: /锁定证据集/ });
-    await lockBtn.click();
-    const lockMsg = await waitMessage(/证据集已锁定/);
-    check('[材料上传] 证据集锁定成功（理算前置）', Boolean(lockMsg), lockMsg ?? '未捕获锁定提示');
+    if (!(await lockBtn.isEnabled())) {
+      check('[材料上传] 证据集锁定成功（理算前置）', false, '锁定按钮不可用（材料未登记成功）');
+    } else {
+      await lockBtn.click();
+      // 锁定是 Popconfirm 二次确认动作，必须点「确认锁定」才会真正提交。
+      await page.getByRole('button', { name: '确认锁定' }).click();
+      const lockMsg = await waitMessage(/证据集已锁定/);
+      const lockMsgs = await page.locator('.ant-message-notice-content').allInnerTexts().catch(() => []);
+      check('[材料上传] 证据集锁定成功（理算前置）', Boolean(lockMsg), lockMsg ?? `message=${lockMsgs.join(' | ')}`);
+    }
 
     const lockedTags = await page.locator('#subapp-viewport .ant-table-tbody').innerText();
     check('[材料上传] 列表出现已锁定标记', /已锁定|锁定/.test(lockedTags), lockedTags.slice(0, 80));

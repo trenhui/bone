@@ -3,7 +3,7 @@ package com.bone.procurement.transaction.infrastructure;
 import com.bone.procurement.transaction.domain.port.VendorQueryPort;
 import java.lang.reflect.Method;
 import java.util.Optional;
-import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 /**
@@ -19,15 +19,23 @@ import org.springframework.stereotype.Component;
 @Component
 public class VendorQueryPortAdapter implements VendorQueryPort {
 
-  private final ObjectProvider<Object> supplierService;
+  private static final String SUPPLIER_SERVICE_BEAN = "supplierApplicationService";
 
-  public VendorQueryPortAdapter(ObjectProvider<Object> supplierService) {
-    this.supplierService = supplierService;
+  private final ApplicationContext applicationContext;
+
+  public VendorQueryPortAdapter(ApplicationContext applicationContext) {
+    this.applicationContext = applicationContext;
   }
 
   @Override
   public Optional<VendorSnapshot> findSnapshot(Long tenantId, String partyId) {
-    Object service = supplierService.getIfAvailable();
+    // 按 bean 名取，而不是 ObjectProvider<Object> 按类型取：后者在宿主装配多个 bean 时会因
+    // NoUniqueBeanDefinitionException 直接 500（2026-11-20 联调实测）。跨 jar 不可编译期 import，
+    // 故仍用反射调用；bean 不存在即 fail-closed 返回 empty。
+    Object service =
+        applicationContext.containsBean(SUPPLIER_SERVICE_BEAN)
+            ? applicationContext.getBean(SUPPLIER_SERVICE_BEAN)
+            : null;
     if (service == null || tenantId == null || partyId == null || partyId.isBlank()) {
       return Optional.empty();
     }

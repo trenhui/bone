@@ -1,6 +1,6 @@
 package com.bone.procurement.governance.application;
 
-import com.bone.procurement.governance.domain.model.HumanFinalDecision;
+import com.bone.procurement.governance.domain.model.capability.HumanFinalDecision;
 
 /** 人工终决只读投影：不含 AI output 原文（PII 禁入）。 */
 public record HumanDecisionView(

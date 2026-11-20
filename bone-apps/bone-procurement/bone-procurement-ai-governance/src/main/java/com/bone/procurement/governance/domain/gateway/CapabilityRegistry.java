@@ -1,7 +1,7 @@
 package com.bone.procurement.governance.domain.gateway;
 
-import com.bone.procurement.governance.domain.model.AiCapability;
-import com.bone.procurement.governance.domain.model.CapabilityCode;
+import com.bone.procurement.governance.domain.model.capability.AiCapability;
+import com.bone.procurement.governance.domain.model.capability.CapabilityCode;
 import java.util.List;
 import java.util.Optional;
 

@@ -162,11 +162,17 @@ BEGIN
             SET MESSAGE_TEXT = '0126 assert failed: active_key generated column missing';
     END IF;
 
-    SELECT COUNT(DISTINCT index_name) INTO v_idx
-      FROM information_schema.statistics
-     WHERE table_schema = DATABASE()
-       AND ((table_name = 't_claim_inspection_action' AND index_name IN ('idx_tenant_claim','idx_tenant_inspector'))
-         OR (table_name = 't_claim_task_transfer' AND index_name IN ('idx_tenant_task','idx_tenant_claim')));
+    -- 同名索引可合法存在于多张表（idx_tenant_claim 在 inspection_action 与 task_transfer 各一份），
+    -- 故按 (table_name, index_name) 组合去重；只读 DISTINCT index_name 会把 4 个索引误算成 3 个，
+    -- 使本迁移在索引齐全的环境里恒红（2026-11-20 联调实测踩中）。
+    SELECT COUNT(*) INTO v_idx
+      FROM (
+        SELECT DISTINCT table_name, index_name
+          FROM information_schema.statistics
+         WHERE table_schema = DATABASE()
+           AND ((table_name = 't_claim_inspection_action' AND index_name IN ('idx_tenant_claim','idx_tenant_inspector'))
+             OR (table_name = 't_claim_task_transfer' AND index_name IN ('idx_tenant_task','idx_tenant_claim')))
+      ) AS idx_pairs;
     IF v_idx <> 4 THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = '0126 assert failed: 4 business indexes missing';

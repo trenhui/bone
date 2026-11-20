@@ -1,10 +1,10 @@
 package com.bone.procurement.qualification.infrastructure;
 
 import com.bone.procurement.qualification.domain.gateway.QualificationRepository;
-import com.bone.procurement.qualification.domain.model.Onboarding;
-import com.bone.procurement.qualification.domain.model.OnboardingStatus;
-import com.bone.procurement.qualification.domain.model.Qualification;
-import com.bone.procurement.qualification.domain.model.VerifyStatus;
+import com.bone.procurement.qualification.domain.model.qualification.Onboarding;
+import com.bone.procurement.qualification.domain.model.qualification.OnboardingStatus;
+import com.bone.procurement.qualification.domain.model.qualification.Qualification;
+import com.bone.procurement.qualification.domain.model.qualification.VerifyStatus;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;

@@ -3,13 +3,13 @@ package com.bone.procurement.governance.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.bone.procurement.governance.domain.exception.CapabilityNotFoundException;
 import com.bone.procurement.governance.domain.gateway.CapabilityRegistry;
 import com.bone.procurement.governance.domain.gateway.GovernanceActorPort;
 import com.bone.procurement.governance.domain.gateway.GovernanceTracePort;
 import com.bone.procurement.governance.domain.gateway.HumanDecisionLedger;
-import com.bone.procurement.governance.domain.model.GovernanceDecision;
-import com.bone.procurement.governance.domain.model.GovernanceTraceEntry;
+import com.bone.procurement.governance.domain.model.capability.CapabilityNotFoundException;
+import com.bone.procurement.governance.domain.model.capability.GovernanceDecision;
+import com.bone.procurement.governance.domain.model.capability.GovernanceTraceEntry;
 import com.bone.procurement.governance.infrastructure.InMemoryCapabilityRegistry;
 import com.bone.procurement.governance.infrastructure.InMemoryGovernanceTracePort;
 import com.bone.procurement.governance.infrastructure.InMemoryHumanDecisionLedger;

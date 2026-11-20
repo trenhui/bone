@@ -23,11 +23,15 @@ const WRITE_TARGETS = [
   { app: 'system', route: '#/dict', add: '新建', name: 'system-dict' },
   { app: 'integration', route: '#/connectors', add: '新建连接器', name: 'integ-connectors' },
   { app: 'integration', route: '#/flows', add: '新建流程', name: 'integ-flows' },
-  { app: 'metadata', route: '#/entities', add: '新建实体', name: 'md-entities' },
+  // 2026-11-20 联调校正：运行时按钮实为「新建业务对象」（原写「新建实体」导致 SKIP 假阴性）
+  { app: 'metadata', route: '#/entities', add: '新建业务对象', name: 'md-entities' },
   { app: 'masterdata', route: '#/entities', add: '创建模型', name: 'mdata-entities' },
   { app: 'generator', route: '#/datasources', add: '新增数据源', name: 'gen-datasources' },
   { app: 'extension', route: '#/points', add: '新建扩展点', name: 'ext-points' },
   { app: 'commerce', route: '#/orders', add: '新建订单', name: 'commerce-orders' },
+  // 采购平台：按钮名沿用各页面真实文案（不是笼统的「新增」）
+  { app: 'procurement', route: '#/transactions', add: '新建采购订单', name: 'procurement-transactions' },
+  { app: 'procurement', route: '#/suppliers', add: '登记供应商', name: 'procurement-suppliers' },
 ];
 
 (async () => {

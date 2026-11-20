@@ -2,7 +2,7 @@ package com.bone.procurement.qualification.application;
 
 import com.bone.core.annotation.NoDomainEvent;
 import com.bone.procurement.qualification.domain.gateway.QualificationRepository;
-import com.bone.procurement.qualification.domain.model.Qualification;
+import com.bone.procurement.qualification.domain.model.qualification.Qualification;
 import java.util.Date;
 import java.util.List;
 import org.springframework.stereotype.Service;

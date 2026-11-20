@@ -1,6 +1,6 @@
 package com.bone.procurement.contract.domain.gateway;
 
-import com.bone.procurement.contract.domain.model.ContractReview;
+import com.bone.procurement.contract.domain.model.review.ContractReview;
 import java.util.Optional;
 
 /** 审查聚合持久化端口（walking skeleton 用受控内存实现，生产持久化端口就绪前不注册生产 bean）。 */

@@ -1,15 +1,15 @@
 package com.bone.procurement.governance.application;
 
-import com.bone.procurement.governance.domain.exception.CapabilityNotFoundException;
 import com.bone.procurement.governance.domain.gateway.CapabilityRegistry;
 import com.bone.procurement.governance.domain.gateway.GovernanceActorPort;
 import com.bone.procurement.governance.domain.gateway.GovernanceTracePort;
 import com.bone.procurement.governance.domain.gateway.HumanDecisionLedger;
-import com.bone.procurement.governance.domain.model.AiCapability;
-import com.bone.procurement.governance.domain.model.CapabilityCode;
-import com.bone.procurement.governance.domain.model.GovernanceDecision;
-import com.bone.procurement.governance.domain.model.GovernanceTraceEntry;
-import com.bone.procurement.governance.domain.model.HumanFinalDecision;
+import com.bone.procurement.governance.domain.model.capability.AiCapability;
+import com.bone.procurement.governance.domain.model.capability.CapabilityCode;
+import com.bone.procurement.governance.domain.model.capability.CapabilityNotFoundException;
+import com.bone.procurement.governance.domain.model.capability.GovernanceDecision;
+import com.bone.procurement.governance.domain.model.capability.GovernanceTraceEntry;
+import com.bone.procurement.governance.domain.model.capability.HumanFinalDecision;
 import com.bone.procurement.governance.domain.service.CapabilityGovernancePolicy;
 import java.time.Instant;
 import java.util.List;

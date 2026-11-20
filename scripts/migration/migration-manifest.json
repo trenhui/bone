@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 135,
+  "executableCount": 136,
   "retired": [],
   "entries": [
     {
@@ -861,6 +861,12 @@
       "file": "0131_seed_procurement_ai_advisory_permissions.sql",
       "kind": "dml",
       "summary": "procuraAI 业务 AI 建议骨架批次5：procurement:ai-advisory:read 权限码（960 号段）登记并绑定超管；AI 仅建议、人工终决。"
+    },
+    {
+      "order": 136,
+      "file": "0132_seed_procurement_transaction_tables.sql",
+      "kind": "ddl",
+      "summary": "补建 bone-init.sql 已定义但 baseline 库缺失的 15 张 t_proc_* 采购表（DDL 取自基线，仅加 IF NOT EXISTS）。"
     }
   ],
   "ordinalConflicts": [

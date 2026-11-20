@@ -6,8 +6,9 @@
 --
 -- 前置：0099（6 个交易权限码）+ 0100（采购目录与 2 个叶子）+ 0101（2 个履约权限码）。
 -- 图标 ShoppingOutlined 在 shell MENU_ICON_MAP 白名单内。
--- 号段：9200000000000004xx（0100 已占用 2xx 与 3xx，其中 3xx 的 301-303 为
---   「采购/交易控制台/供应商治理」；本脚本用 4xx 起，403 起）；幂等按 (tenant_id,name,path)。
+-- 号段：920000000000900xxx（独立高位段）。0100 按租户序号递增占用 201/301/401/…，
+--   4xx 已被第 3 个租户的「供应商治理」使用，原 403 号段会撞主键（2026-11-20 联调实测）；
+--   幂等按 (tenant_id,name,path)。
 -- 别名：校验过程用 v_group/v_leaf/v_orphan，避开 MySQL 8 保留字（groups/leaves 等）。
 -- 执行：mysql --default-character-set=utf8mb4 -h <host> -u <user> -p bone < 0102_seed_procurement_fulfillment_menus.sql
 -- ============================================================
@@ -22,7 +23,7 @@ SELECT 0, 0 UNION ALL
 SELECT ROW_NUMBER() OVER (ORDER BY id), id FROM iam_tenant WHERE deleted = 0 AND id <> 0;
 
 INSERT INTO iam_menu (id, tenant_id, name, parent_id, path, icon, order_no, permission, type, created_by, updated_by)
-SELECT 920000000000000400 + (t.idx * 100) + 3, t.tenant_id, '履约协同',
+SELECT 920000000000900000 + (t.idx * 100) + 3, t.tenant_id, '履约协同',
        (SELECT p.id FROM iam_menu p WHERE p.tenant_id = t.tenant_id AND p.name = '采购'
           AND p.path IS NULL AND p.type = 0 AND p.deleted = 0),
        '/procurement#/fulfillment', 'ShoppingOutlined', 3, 'procurement:fulfillment:read', 1, NULL, NULL

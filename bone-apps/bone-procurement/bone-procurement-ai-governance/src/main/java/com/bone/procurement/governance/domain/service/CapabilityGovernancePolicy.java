@@ -1,9 +1,9 @@
 package com.bone.procurement.governance.domain.service;
 
-import com.bone.procurement.governance.domain.model.AiCapability;
-import com.bone.procurement.governance.domain.model.CapabilityCode;
-import com.bone.procurement.governance.domain.model.CapabilityState;
-import com.bone.procurement.governance.domain.model.GovernanceDecision;
+import com.bone.procurement.governance.domain.model.capability.AiCapability;
+import com.bone.procurement.governance.domain.model.capability.CapabilityCode;
+import com.bone.procurement.governance.domain.model.capability.CapabilityState;
+import com.bone.procurement.governance.domain.model.capability.GovernanceDecision;
 
 /**
  * 能力准入裁决策略（纯领域、无 IO）：把能力登记状态翻译成 fail-closed 裁决。

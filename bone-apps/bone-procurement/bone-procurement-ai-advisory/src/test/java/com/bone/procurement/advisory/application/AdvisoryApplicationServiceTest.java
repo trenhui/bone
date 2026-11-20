@@ -4,13 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.bone.procurement.advisory.domain.model.AdvisoryResponse;
-import com.bone.procurement.advisory.domain.model.AiAvailability;
+import com.bone.procurement.advisory.domain.model.advisory.AdvisoryResponse;
+import com.bone.procurement.advisory.domain.model.advisory.AiAvailability;
 import com.bone.procurement.governance.application.AiGovernanceApplicationService;
 import com.bone.procurement.governance.application.SafetyApplicationService;
-import com.bone.procurement.governance.domain.model.CapabilityCode;
-import com.bone.procurement.governance.domain.model.CapabilityState;
-import com.bone.procurement.governance.domain.model.GovernanceDecision;
+import com.bone.procurement.governance.domain.model.capability.CapabilityCode;
+import com.bone.procurement.governance.domain.model.capability.CapabilityState;
+import com.bone.procurement.governance.domain.model.capability.GovernanceDecision;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

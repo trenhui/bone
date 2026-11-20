@@ -1,11 +1,11 @@
 package com.bone.procurement.advisory.application;
 
-import com.bone.procurement.advisory.domain.model.AdvisoryCapability;
-import com.bone.procurement.advisory.domain.model.AdvisoryResponse;
-import com.bone.procurement.advisory.domain.model.AiAvailability;
+import com.bone.procurement.advisory.domain.model.advisory.AdvisoryCapability;
+import com.bone.procurement.advisory.domain.model.advisory.AdvisoryResponse;
+import com.bone.procurement.advisory.domain.model.advisory.AiAvailability;
 import com.bone.procurement.governance.application.AiGovernanceApplicationService;
 import com.bone.procurement.governance.application.SafetyApplicationService;
-import com.bone.procurement.governance.domain.model.GovernanceDecision;
+import com.bone.procurement.governance.domain.model.capability.GovernanceDecision;
 import java.time.Instant;
 import org.springframework.stereotype.Service;
 

@@ -1,7 +1,7 @@
 package com.bone.procurement.qualification.domain.gateway;
 
-import com.bone.procurement.qualification.domain.model.Onboarding;
-import com.bone.procurement.qualification.domain.model.Qualification;
+import com.bone.procurement.qualification.domain.model.qualification.Onboarding;
+import com.bone.procurement.qualification.domain.model.qualification.Qualification;
 import java.util.List;
 import java.util.Optional;
 

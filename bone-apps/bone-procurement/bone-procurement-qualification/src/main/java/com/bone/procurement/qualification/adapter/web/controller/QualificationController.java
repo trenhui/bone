@@ -3,7 +3,7 @@ package com.bone.procurement.qualification.adapter.web.controller;
 import com.bone.core.model.ApiResponse;
 import com.bone.procurement.qualification.application.OnboardingApplicationService;
 import com.bone.procurement.qualification.application.QualificationApplicationService;
-import com.bone.procurement.qualification.domain.model.Qualification;
+import com.bone.procurement.qualification.domain.model.qualification.Qualification;
 import jakarta.validation.Valid;
 import java.util.Date;
 import java.util.List;

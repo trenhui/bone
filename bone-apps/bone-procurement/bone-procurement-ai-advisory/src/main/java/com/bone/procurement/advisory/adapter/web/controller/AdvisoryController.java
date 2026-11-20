@@ -2,7 +2,7 @@ package com.bone.procurement.advisory.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.procurement.advisory.application.AdvisoryApplicationService;
-import com.bone.procurement.advisory.domain.model.AdvisoryResponse;
+import com.bone.procurement.advisory.domain.model.advisory.AdvisoryResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,8 +25,8 @@ public class AdvisoryController {
   public ApiResponse<String[]> listCapabilities() {
     return ApiResponse.success(
         java.util.Arrays.stream(
-                com.bone.procurement.advisory.domain.model.AdvisoryCapability.values())
-            .map(com.bone.procurement.advisory.domain.model.AdvisoryCapability::codeValue)
+                com.bone.procurement.advisory.domain.model.advisory.AdvisoryCapability.values())
+            .map(com.bone.procurement.advisory.domain.model.advisory.AdvisoryCapability::codeValue)
             .toArray(String[]::new));
   }
 

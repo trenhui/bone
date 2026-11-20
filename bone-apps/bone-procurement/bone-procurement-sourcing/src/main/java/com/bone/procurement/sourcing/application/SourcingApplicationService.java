@@ -2,8 +2,8 @@ package com.bone.procurement.sourcing.application;
 
 import com.bone.core.annotation.NoDomainEvent;
 import com.bone.procurement.sourcing.domain.gateway.SourcingProjectRepository;
-import com.bone.procurement.sourcing.domain.model.Rfx;
-import com.bone.procurement.sourcing.domain.model.SourcingProject;
+import com.bone.procurement.sourcing.domain.model.sourcing.Rfx;
+import com.bone.procurement.sourcing.domain.model.sourcing.SourcingProject;
 import java.math.BigDecimal;
 import java.util.Date;
 import org.springframework.stereotype.Service;

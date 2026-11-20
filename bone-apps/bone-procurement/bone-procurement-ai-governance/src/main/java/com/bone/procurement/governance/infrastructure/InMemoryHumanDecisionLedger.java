@@ -2,8 +2,8 @@ package com.bone.procurement.governance.infrastructure;
 
 import com.bone.procurement.governance.application.ConditionalOnAiGovernanceEnabled;
 import com.bone.procurement.governance.domain.gateway.HumanDecisionLedger;
-import com.bone.procurement.governance.domain.model.CapabilityCode;
-import com.bone.procurement.governance.domain.model.HumanFinalDecision;
+import com.bone.procurement.governance.domain.model.capability.CapabilityCode;
+import com.bone.procurement.governance.domain.model.capability.HumanFinalDecision;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;

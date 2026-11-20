@@ -12,6 +12,7 @@
 import {
   UI_BASE as BASE,
   SHOT_DIR,
+  CHROME,
   loadPlaywright,
   makeChecker,
   api,
@@ -47,7 +48,9 @@ if (process.env.BONE_REGRESSION_NEGCTL === '1') {
 }
 console.log(`菜单真源：共 ${menus.length} 个可导航菜单\n`);
 
-const browser = await chromium.launch({ headless: true });
+const launchOpts = { headless: true };
+if (CHROME) launchOpts.executablePath = CHROME;
+const browser = await chromium.launch(launchOpts);
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 page.setDefaultTimeout(20000);
 let consoleErrors = [];

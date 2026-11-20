@@ -2,7 +2,7 @@ package com.bone.procurement.contract.infrastructure;
 
 import com.bone.procurement.contract.application.ConditionalOnContractAiReviewEnabled;
 import com.bone.procurement.contract.domain.gateway.ContractReviewStore;
-import com.bone.procurement.contract.domain.model.ContractReview;
+import com.bone.procurement.contract.domain.model.review.ContractReview;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;

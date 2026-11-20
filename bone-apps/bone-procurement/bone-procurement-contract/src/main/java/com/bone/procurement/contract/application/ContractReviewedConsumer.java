@@ -1,10 +1,10 @@
 package com.bone.procurement.contract.application;
 
 import com.bone.procurement.contract.domain.gateway.ReviewTracePort;
-import com.bone.procurement.contract.domain.model.AiParticipation;
-import com.bone.procurement.contract.domain.model.ContractReviewedEvent;
-import com.bone.procurement.contract.domain.model.ReviewTraceEntry;
-import com.bone.procurement.contract.domain.model.RiskLevel;
+import com.bone.procurement.contract.domain.model.review.AiParticipation;
+import com.bone.procurement.contract.domain.model.review.ContractReviewedEvent;
+import com.bone.procurement.contract.domain.model.review.ReviewTraceEntry;
+import com.bone.procurement.contract.domain.model.review.RiskLevel;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;

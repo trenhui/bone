@@ -2,11 +2,11 @@ package com.bone.procurement.governance.domain.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.bone.procurement.governance.domain.model.AiCapability;
-import com.bone.procurement.governance.domain.model.CapabilityCode;
-import com.bone.procurement.governance.domain.model.CapabilityState;
-import com.bone.procurement.governance.domain.model.GovernanceDecision;
-import com.bone.procurement.governance.domain.model.OwnerRef;
+import com.bone.procurement.governance.domain.model.capability.AiCapability;
+import com.bone.procurement.governance.domain.model.capability.CapabilityCode;
+import com.bone.procurement.governance.domain.model.capability.CapabilityState;
+import com.bone.procurement.governance.domain.model.capability.GovernanceDecision;
+import com.bone.procurement.governance.domain.model.capability.OwnerRef;
 import org.junit.jupiter.api.Test;
 
 /** 准入裁决 fail-closed 单测：五种状态逐一裁决，确保不可判定态不被压成可用。 */

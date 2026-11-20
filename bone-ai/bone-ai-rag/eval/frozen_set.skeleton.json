@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "datasetVersion": "g0-skeleton-0",
-  "status": "skeleton",
-  "frozenHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "datasetVersion": "synthetic-baseline-adopted-20261120",
+  "status": "active",
+  "frozenHash": "38e088eec8cc9ed8972007f3b2ca69f49702235551987d050df48ea0195105e4",
   "targetSize": 300,
-  "collected": 0,
+  "collected": 300,
   "sliceDimensions": {
     "ticketType": "票据类型（门诊发票/费用清单/医保结算单…）",
     "hospitalTier": "医院等级",
@@ -18,27 +18,3928 @@
     "boundary",
     "adversarial"
   ],
-  "cases": [],
+  "cases": [
+    {
+      "caseId": "SIM-BLIND-0000",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "de96be205b8be446de35e27c49cf8885bfce7d67c3297e0f9ee9aa813489aff0",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0001",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "715a91f2118186d5274d3194b40f2323ac77f4388fa66846d7c926ea8c6fb5d8",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0002",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "b11592314110962972f2ca41ff6313dcae143a6ed1271b8be76f32e14bd2ce6e",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0003",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "280f1e2ac17479712f8754798ec076d71a9a3f52676f48a67b0eb836d5bfaa79",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0004",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "aae8378fd28c074c1eb15e47faa7afefab3f4011579b0bcc24e37b180ee32a19",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0005",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "fd68329935c584adec6469042391968265abc460fc6a82ebd77337fd49b5e4f5",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0006",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "5aee4a02d9de4887b60bb64619553d9d41bb6ba6a0c87bc8c9cf07583833cb0d",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0007",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "b7a6974049851c067359299badb50952d7eb5934db44d7462b3db7239b4903d7",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0008",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "b473178972624114b948822865e969ba89daf93b7289d13e266eb35b495c688a",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0009",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "3bc6549cd8e1a2be4948871477c64b7df4be774680b4156053b79f75313e6874",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0010",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "d13d45fc8531587aa43e61d1c1d5a159f19df431c0b3e3059b161680b26a5fef",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0011",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "09a1b227d26e6b4aee6085e8af6a8df7ba99120765fd34b12dbe3c7ad385a07a",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0012",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "7ee864e54230c708d4cfd5891ed73d0fa8af21c2cf4fa6f00c6e468f698dcc53",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0013",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "c125c883ec596522987fc666aa065a6726b84bf2a8e78ba6eb264f29ffd4ff6e",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0014",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "c1b9c8b4e0fbd1e545955a639f327bea2e52fff49ae7bc4902c4fc9e3aa72541",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0015",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "3584626067b02220ec217bd4af740554594ba2b4649119ea20e06c61603b16f4",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0016",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "d0d31fbea0c8ccdb4f0afad8c3db9b8c9f3f66d7e199e28d0e88992ab5424d04",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0017",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "78d5f0d793fd93513e269ae017feccb25a174db1947176f287ce909628998ec8",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0018",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "f5cdabe30f77227d24ecfa2dc7bd51580350bc6a14c28c5361bc11bee0c3c1b7",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0019",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "5b91d8ca9335fea1d29f0e19467d2ed8a7a42b416b08b2b7b54b03b3863a03f8",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0020",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "e55358ad2702c97778dd10443256936b2e142ef1b7fd812722d6eb144d0a30cb",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0021",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "308f5152442511ea96b3e49f633a77ba055aee315540d6e1a189c11d826e051f",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0022",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "48d00d0a8ecb54a489a7b1218072781db14986711b2c9598bdad2606150f571d",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0023",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "68da3bfc0e0894c7b064de0b8d36365335d0bbb9226f526546d32a0db80cfd0c",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0024",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "559a0568ee5f8e914e73bc1c18a817d80979d8cf84bbc6d35276cdc13d6d26f1",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0025",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "84cd58cc22c3aee7169c28c3aa2c334b1bbbc9adc25aba7ef85c8be5d94cdc1b",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0026",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "482381bc75b7b360a052d7988adc72c0b9ea22db869326a7da5a75f630956465",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0027",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "fe88f7966937fb2100090e24e38b118179e96fb9d931901d2d19123c2d963180",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0028",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "39482fdfc703639953a9051cb09aa2cecedead57ef3108eda924f57b87c86fbc",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0029",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "ccea40da09e4af177584300c6fb4c0cc03e828c10ccb1696a568e3b33a325554",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0030",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "4aaa5566a77f1370872357f6421405086c00456ed5259363bb1530b22c707e07",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0031",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "a6474d82571423c85f1837fd7808497bc69b884223ecbcfe33f723f0e2ae3ff8",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0032",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "f56a52f3a6623d077dbae4dbb425571998c16c5e917c750f187db70fba2ef84b",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0033",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "3c31b3c76dcfe1740a2e2ca1b00161a8c440793ed2c364c5f204bdb0e200864d",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0034",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "11e0805603f3bc5ccc49ad2dcdc72118885ce4c2f561d1b03142458b6959f0aa",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0035",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "9a15fe229375c564baf3413709d71ee15c181c1ea8f3ea3af9e652f7fbe87c4b",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0036",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "3c86d5dd40d6e54e18e64babf417bd7c4dc0c3db0d203bc7863c3ccf74209786",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0037",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "dba4302fe6af28dc7d775290df543b6742f042145df13290ce95b5d3f703a3fc",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0038",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "95a8f3f3c5eba721009ae1d494ed4bd01bb76ae43c2e94ce333c533bcc4da5f6",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0039",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "4fde43b918ae0ee401d01a4b112538bf4d753fbd1705915f8e72dea068e21527",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0040",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "f94f95fba0f0ba7ff6833aa54502e469e4993dd4bdaf63574d3465bf19094750",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0041",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "ca220e1c57d6f12552eeeded76ed25bbfba20e20aeda70a6d25cdd3a6358b9e6",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0042",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "e26902139664f6fd67920494bca5509a8a021aae5e42e5670f7ea471c3b1baa1",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0043",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "9eb2ceaf2d27a8bdf00f3f0235c91592a67a544fd445a5037369b6f3262faf66",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0044",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "c628319e7883d1a7e3585146691efc7c91eda75341665ace4521092d14ebce99",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0045",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "912f0e6c710be344457547eab0602cf7be5fb20021852bd736275efaf455e943",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0046",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "2eb7ab47dac8a744e94cc2ce86d2cce2745a0fd74607a61f165ea68a05400b1e",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0047",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "533d89c78c17fade82075d6179897c2a313ab86a7b02b71c241ae1a24a427280",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0048",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "351b252339f8426698961a20b63ad888f1e19880ff0a5e71f41cece9475f0f7e",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0049",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "c9070dd306a086cfa1c973e5d04cc6e77fda9e17bd8afd881e0bb47d52108a25",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0050",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "990b6388389ac24b2fce61c25a99c766c47b44f448826120d0b0b414c03d7455",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0051",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "c124bcc4dfa1e3cb253a7c6686e79e312fd968168d68a27c975f7403b1ea6f71",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0052",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "ded2990d0d3a664b951d7ff49a51114efa38980e2d5b699f271099b6c06c90e3",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0053",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "d131dd7c1019f3e49b87e9989f1fde1fa0d55de35f8320da92f7d6914cd4bd29",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0054",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "b2ec73dcc05e0168e2a20a75baea296a2334ed3e99345ff3f7ffd4f78f62fa5b",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0055",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "17501a386935b62783c9779772e3365facf3446c58307d5908fec6e44815d9d9",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0056",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "93aec188d31ea8030c8161c63ea1e675e43f7c250ae862469fc26e03d1440043",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0057",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "ddbd571f19bf2871c06d2f4b13f194c14ecf6943dcac10bad825bed7016becb5",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0058",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "7bfc977a8defcd6db9fd4151d38ad5f59ad166c19e33a0b983cc555943a98cdf",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0059",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "e08f27c3539dcc50c082110614dd3f5416c8e4f5fb485f5280ac17ddaa61d9cb",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0060",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "e4ba16dd0d1c57ea8299c05a4c67c5ee38df48e9bdf2bb1094f430f55802d808",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0061",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "be4c41bf8b78771c4e299891df40bd351265153ba6d4ed7e44c3bb7f0ea22d74",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0062",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "9715ccc79f828d4efeb2a733ff67256309d8c0f18ac682c77b67e8bc96648056",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0063",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "95362e636307be97ae799919570de2ca983b56aa205b3ee47a318b958d11a77c",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0064",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "190c14575ed5896600afffecc4f431952ac3509ea1ba5417c740f9a505f6670b",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0065",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "20b4b1171778073a681075f04f26c876b7e76fab63c7885e568e3293662abaee",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0066",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "239c3da856c42138b652b23f7efe15b7a82c428971395179402826196e223495",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0067",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "b602fd57e243439c29ade098b2e4cd82bebdcc36624b868751b0ae5d957752de",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0068",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "2e107d27017468d6eb0a9e940e544a3c32401d77a2dd0086900c14c1c44c28b2",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0069",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "4b5cded3aa53044f8fc932f56df1f44e0a7e6ddd35e69fd5ceff0a721ebe9562",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0070",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "d8fab614c05787e9a137bcfa5df98277a1e5cbe1b2048f234937102aa3964065",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0071",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "1224e523d0d4d0b37088a09d31ac3865e706dc2b5165964b118b798edddc74af",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0072",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "b9f675ead8e9f730d8487ee56ba69b6642c75723b7ba2139904849a8d7c8c49e",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0073",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "67769030a572f93a55a3a8ca45898931b0b94339372095e9bc4e8990ba728d30",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0074",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "b5333193e381021ef79db6c12b93cb17b1ea60ecdc9c25a7460623a5492453cd",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0075",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "14ba5a9dafe8d89a15b9635eea8d7d7fa6dc687e021d7ccc97fd772c781a68e7",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0076",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "90c02d68ac3bc00e80206516a998957c7ee7db1efc8b7ff27fa3e591efcf6496",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0077",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "df30f5b8e7fe40fa41827df075b1546d42fc4aa3f0f6e6ea92da51e226753516",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0078",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "e9b166af8af9bc6a9035ee329a170b90220412ca89eb472fba7d69ad671e3909",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0079",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "c52e722cb3686d20dfe9f6475d0983a67b153ab7adec9736417b2bb07b3616b4",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0080",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "e9ad8e76c6e3c4544746abd0650a3fa525a307b83ce54150c9febaca644bf52d",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0081",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "d4a0350c750ad014e456e6cc44a8c4d67e0db19c29aa8f95ac9042a751a987df",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0082",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "4fc300863d2b62a7a9be6d22bb8c4db291f9b82a839a10748f70f3e01a587073",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0083",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "f3e5ed241e7a730af68de553b80539198cdf99707ad6a8e7e9cc7f28ff63d557",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0084",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "2fb438ea90d5310d7f3abe41a8a609ba991dedb634c81be71ce74bad5fdceb98",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0085",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "99b78737591384a8cc79e10c15f9bd9d035124acea6d1698a6c47df81e2f0257",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0086",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "95797b7906f58be649e508ecad706e3eeb50fa10026f72bc0b557df491e867d5",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0087",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "eba210d07871606ff22aea069b533c6aa258e1b6c9ae99436215c479aa536ed7",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0088",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "79c89786e8282c6900c9eb695274dbd705fb388ada0708ef1f473538be912bc6",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0089",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "1c6561a18817bfbab071d9a5bf85570920c5dd3fdbd37f90ab503d933fbd3f01",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0090",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "e420ed4277a6e3fa5b9ee9ae6ad799d8c66a5ed97e5caf208005878e67a3c000",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0091",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "30719983eccd8a76cb67935fe6a345fa1a356e1a0fcfd5b328e0a4f60d074931",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0092",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "817ee3d2204cdf4350196f9bb86563fbc8c7d48d280d368a4671ea71650b9e56",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0093",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "75b011094990802e6fa34523bba4d11570574071f9b0a48090265f0911c2eaed",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0094",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "1f2961c970abb07879e05616c6abbe0308bb0860b2f4b20e223aafbe648c2749",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0095",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "8ce62bf75eaf1f4ee18827f4242d9d54efa1b59026336745b4b39cb8b2c386c8",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0096",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "261315aa068d0fd4e18abfe559328db85c07166102c378e760b2be879c7a2a76",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0097",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "75ee65a1797b31533ef742243f4b41418d039a863bcca9a3dfe8098c438f0202",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0098",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "89dbe8cbf72d3c6f6c3de8349fb271c0c78bf17a138d1b780e9c569ece15134e",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0099",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "538a1d94966ed0cb69b8315a6d5f5a7cd90b0d0c4748093985f21116a9f5a644",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0100",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "8d26eef9c2b2959a55504541063e6af46ecc64c0de6a8488fcde7e1dc7670c15",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0101",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "3cd71414bcf860d7c447837010f224260892a5ccc7f50b35775bdb5b8aa292af",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0102",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "910d1d5443a17a8a6aaee7db16aaf3b0917c4f0044e3b82dff9c0dd4ce3a77fe",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0103",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "c0fed8847818242732491247190c68a57643afa8dea7cb53f4f02b34507012e6",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0104",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "3dce6a07ebbb8b1cff5f44336e400fa28a86fd549910881d56ce600ec1e96e55",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0105",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "9940759d97be3f15d0328919e9167ef893bd127e4ae365b30675a36e7ef5310f",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0106",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "b3c71dad2b8ef709ee5fb6c1f9790cd2f17c51a175fcd4527ffcac4bbaf29e36",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0107",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "80c36f8abeb2cc2d9b34e304c7312d1071c801798ac89e9b07954ebf23fbb7cd",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0108",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "4c645861de2978edaa7d45a282c1e3e2dfd5166bd70beaef200db2c84f8ef1e2",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0109",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "db6fae58446b0d65b7aa0b605aa9311a740967b0a5a8730a32ac181b370e8319",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0110",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "0be5b8fe718b5ab253b4113cd76272c2929990fb0cd029cc9f532ca10441d630",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0111",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "541bf48b9ff3ada90537a2c8d9642c768ea1030ed539c6b7db0e04b1a3d46445",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0112",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "2ad0a8cf7fb798584f25deb75416b4a109fd4023dc92e8bf7f1821cec59ed93a",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0113",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "4dbb8a78d00ad3b819e71f1eda5fd034a95331ab60f38289a78a923f1ddf3c4d",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0114",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "b8d58f6aac0d07346542fe1c61cc9c44bb4c7abbe187e7595c6147485522a99b",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0115",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "3ab74f5e6e9b1c0c88be6ac3f38c7f6025102afe22f11e9e85df332b1c3721e4",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0116",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "203c3705e85649068c9e902ba4efb4c646a9263d74ade4fa6a780e722354ebba",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0117",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "d0e2b930891d90a5da97c1707fcea6c707f1b90776dd05f65dd7a7f0d8b6d523",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0118",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "6b7eff313e9d12079d3002ab81b81e4c757f42ca99b39214c5c061fac5a9cfe2",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0119",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "05cfe2471e6e50c20013bcfd15f6bd5240ab296de0479924ea1d9cf4bca067e5",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0120",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "26da5ef04b04f66608462d14d7533d3e4df6a0180bc3567b883d384d3faf7828",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0121",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "96c30512977ce5ca224674aca0c70b8e2a31ffc64a5b49178f210c9d1e0acabe",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0122",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "2c34c2606e97e4b11e3c6e329515f1b65c2149819ca8234b8b4fba7b4fef570e",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0123",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "fd1b328e4f48f1f4d8f5346f31ea78fc6651f03dda04163efc7f97a477f3ff59",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0124",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "e646177a5217a6ecfed8d40d01cd91e9af43ba67767ab1b9d1cdd75e5d6cc5d3",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0125",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "57e78bb73e1e35e731cdc25e3a426da3d480ca73cb72729d4ff1adc1a16fc651",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0126",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "04301db59ad02ca96426d3fbc76c6a81a64628d1ccecacc9f6783ed0f9f736a9",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0127",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "e6caedb60275d79318fac48025a5931a0e831e4e55a0af8f913906c58659d7ce",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0128",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "7c4d25aa698fa721f4f1bd84ffe70aad53480443bd101cb8fd202e0f14c7a77b",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0129",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "3f87692b8787cf0ae0e81df84ad72d1d3803f7f573f89b00783e41ac2083e9fa",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0130",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "a803de89728a1ecdb3e56c3ba55b1ef0ab8dd9394b612bc8db740877c23a034c",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0131",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "cfa5ce190e7d2e7b79dcd24a355cadf1e5ddae9645295c5ef7b02167bf24e8ae",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0132",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "ae72675551ab63abcd55c934b56548f8e7f0911a08989a2c127bcde4081ea704",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0133",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "f507e39698b2a6d5ddd4e36ced202b8d7cee7d5e19904c9876c4eb051891d438",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0134",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "39ec04dc6c13d9a9389fc97a778059065fb9b58245ce5a0f3be32fc302a37501",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0135",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "b1d2e448d4d9ac5ccabcf765ccdd359e957f449ed367a6a4d3e10173cb66aa54",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0136",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "1dbef793f1859e7a2b16a7e5a1a63952e47940ec99b6bfd9ff576465b178f616",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0137",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "e750197182342f9b751bf02d764dec57e267ec14f0e9f94a9aaf26d7345e2f21",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0138",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "0f799fe408f2028e84ef27094b456a24581604ef08f4a512ad10d92865b5d78a",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0139",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "d8b585f7c0119ca77e4a02457020d745e0892fc6e8c6af6b9fb67da509d8e30e",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0140",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "be3653cba9993b516a99edbfc509b67370a1d617914b8a0779bedd7e227abc40",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0141",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "4af2d7e9bc13aa30bd7275b74387204442a5e1d2754d306052e7e8e3fbe18606",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0142",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "8b79c3dc3fe124b20a8ec697a87384f891096508bbae5fb0cc8cc8b45cd360d2",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0143",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "9378d190643dae2d8f765ee9422469ec324b2272f6a05ecb395e7f17c10af773",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0144",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "3e8c5085c2c653a943d55d42729af85d1f01c4a8e3886bdf278c7abb7be21dcc",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0145",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "092483e691ff131fabf7f9536eb894a2b161802db130393079bc70e551a38a08",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0146",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "e602aea45e06d612f9de2ed3f436fb0d11a6123db14373db6655e88bd6bdb85b",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0147",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "c10d546b48cc89e8aa796b9f6df04c52d18d539b6951267d3a137165d66ebfa6",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0148",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "d9e4f9d4d4292e0816d4b6ff246f058687c82f04fdc44f76f1adb07009a1b08f",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0149",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "ac7848d9af3fa8b51b625634536deae89e95668e4e81c7629265c96b7b82d5b8",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0150",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "c98467456ec1e021ea41399e35908698203e2073bb9d2312cb1f1eca71c166a1",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0151",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "321014699dfcda297cdaea3565cffdceefa3af1175dd25a611330511fe16e341",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0152",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "1d0e2e5c4bef7b9c8e4960b4cf4784fff0173e4ee7302a19527aa8c61062ea3a",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0153",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "49f42af2ef7ca3bba0f34c586878154a0ae7b14429caf1b8ca14a80dd87be49f",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0154",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "ea4d90e1949da2ee94413444a89aa4335c515990a93b5ecf23112582d369057d",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0155",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "ec79d11e47b464d4ffae5d997d50a186ac13ebae13eb6da6bf16cc3a4f309d1f",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0156",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "b8861e1594bc7dd14b9eaef2a33281e544eeb64fd33e91d1453880474c589c69",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0157",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "c619a715baba8f4b53c007a3f8853e09c99041b72d975ffcca5aa2558ecb9ba1",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0158",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "f2a3161bc55477037668c8e662f89efdf73bf40023eda8876d7201107a580621",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0159",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "96d262ba9220ee2af651a818e2f774cf72a3226491d48103b8bb54f55ae99560",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0160",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "4581de3fc00598642627cc3d68a353f574b16479956f74462baeb87666aafb42",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0161",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "e2145344d8c25d00701c1c1a179f02809531bdb4c4859e07f84afb1041b41da3",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0162",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "0cc59efed1bb912711c07be28174bd582561d7468f6171cbc1fed05d4df292ee",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0163",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "0a04d209b30c9b107d7053f760c05a8e01f1ea30a57ef4d4d035dfad850f863c",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0164",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "dca84bc6e84259baa6d6d6bf3b65892057a02a553657084c63bb76edc9ea3f94",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0165",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "779cfb27fa3848a82a43e42e92f161d035f0ab664c596b520d3f033e3ceeefa1",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0166",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "fe91a25eaad4ef9687ad7228a410ac3aadc27244d1d5422ea698f307fe063b82",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0167",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "48a79576fe131472102f70ae4efd7d7e0401bf171473bd919197079a5b63e016",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0168",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "ecc4fda71209450e2dc37d6f363680cc5b7354645824a54f661340984d00aa04",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0169",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "a4faa4481fee769e94339778ad782645b6356875a3ec628241bed169188f9d66",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0170",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "c26c6b383171a23b672383a882e625c575bc6b3fae9ac8e21347ce8098e41eed",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0171",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "2e7606e79a459fc241f4ee2db0bef79f41a79944e418cf3e4179e501d24d2889",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0172",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "b5aa5d46d6608d45876fc199946644ccc04dcbd6a12d251da338d54a33124639",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0173",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "bf43494ba4f6ba6a62e2b6aec5c750f499264abaa386564109f2c9255b32f544",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0174",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "cbf78346d5b321ac4e78b6979022341ebdfe2f61516c2d7cdd9d259f63992196",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0175",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "1f0161cb0fd5622934afaa2729bfce009d1c558c09a1753993a8c9f37aadac66",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0176",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "d58393dd19d792b4fc480ade74be60d76db6a98d992d86482ce1e14a86e14d6a",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0177",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "71784cc06c415b95ab43fa6986a122327585993e0620fd718d3b22909d3eb441",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0178",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "5d8f9ced90c2cdffa389bbed40e279075479ea32e20e6c2ad752956030559cfa",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0179",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "f3a0853c0f604504dc2ed419c670496b64a4eb99d413330fec838eaaba92e794",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0180",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "946ed3e49145b1907cb10c4e71acd48dbd9c7b3ea1365d4e5e4057cdad6dad73",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0181",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "cc09d8ba7cced600ee06dcfdacdadf033daa07428f9da3da7d4a42c2437c77fb",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0182",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "4424368aeb4a28537baa4b487d40cb801db74810d3bcb17ffee17d5018d1b25f",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0183",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "ac884740d021240bf51424fbb8a75278168e3b066d17f8613b4fe5c6abe13220",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0184",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "c174ba8185b6740b5a2da4571652ad5a286e133000a194e301a67c71d7d04bde",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0185",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "9e2734cd08bbbf9a6be1e624edd8e09621b6b42d030537811708d4da463a829d",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0186",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "e772e8264c9f3d34a2518ec49a428cd6a6d259a70608c5ad042fa9ed3056bc0d",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0187",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "b398a527c8ec4c6d665cc4021badf7bf55e90a34b12d6c0d91acca39b5db57a0",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0188",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "7cdb3e9b4671990e6a7ef1c82fffef7d84a89a55de22fd5c0ce5819772e3a350",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0189",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "9d3b1a61879eadd3156932087ec8a3ac913cf703e0734435c69eec3b3fdf0df2",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0190",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "f9f34a84f51d6a781e396b2d260e7f493a163f99535e9ad3793eaf3dd17090d9",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0191",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "047f7c0384343f6ad710d36520f40f8188fced3714fde4389e0dc71849d6a5e9",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0192",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "5efbf1891b8a5da7aab737801096b7ab3060e149ad8f49df1d4c37808a067866",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0193",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "2c8d682be4a6b4c771cdebda67253db178dcdc64ce20577fbbb3b09e374d8ecf",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0194",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "2934ec1b93c6fd7d52127c06732e447c2a57a96d976ba28da5db5d9190e2057d",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0195",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "0412ef46c34d0dfb594cde18ac35142e7031a577bae34af51b06ceff3d392e5d",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0196",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "32ed9f9f4a04f4e0f64ebbe301d80bc26d5db57dcabfbb2153261f16ac21212e",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0197",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "d8faca10bd2e75909b50a669c911054771b1f8e724628ef838b5399e1b08728e",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0198",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "3aa76904f7cf69afe5de89c5f2b07af900a374b9e9daeb326ee4fd442d532412",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0199",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "dbd2c2ff11d501b583f5a7c83ed7f3b2419760a67b4e0ce73e6ab727cc4c8d0b",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0200",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "d468c1f96344e5306f27a0843aeecc7e7f9c922775a8f4844ef0f8fe42dd1dc6",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0201",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "5fffb6d6e15f65e067233055682c5a23cf8136ea395f55d51b0bef75ead0bde7",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0202",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "2c714279a3b19d3cd4468629095b8166d1d56015f004ae9bbe090b5e9b283456",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0203",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "71edf58c9158cea06a55bd6edb4e9c3e9d30a7576aa599bb761e8e2288c8e86d",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0204",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "81ee5e7f9f693305837936c57cba637777878c7768c62005dc9a4c66023450f1",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0205",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "9a0031ed53f7a8a64c360d4df6f9b08eef0dbebc7b5f9a940f06c61e2b48d081",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0206",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "116aba93e8ffa96e7116d5a23f602d508a8232d2121c1f1c390d6ac1ca5a100d",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0207",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "34b56e883bfec8f1694ee85e625acf08c292ba6dc27b440291b63924f8087543",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0208",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "164ee6e659fb8dae289a97216a161e4157473f1296f53301df4bb36db7409e18",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0209",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "59c092f6027e40ba65849c3b7edc0a69eccdfb38b63e714f875f75a19bb319bc",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0210",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "06bbb9d21f6fda1b00ec53dc32bfd5e7016eb312bb45ded76763959fc7e559b2",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0211",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "2ad2528c7a8ebce0686c050a8b53b90bef3e09c0496efb9ad503ab5bde8f5764",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0212",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "6a74dbf68378ce6b2db6553b2b1b07f835ca626a4bf0e3cc4e8866b2c27aefb3",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0213",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "192c1f50f72bc3af68b6a3f48de3552f807e5296aeb13803882d6e08c2ad863e",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0214",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "9039a7d5c20ef7099fc4cb3f0951ca3e0319d570ff7cd8a969a77b5cb83e1c4f",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0215",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "bbd72273920f9a97c2f2a286d104306664ad592e5ae8697edec0196879d32bfd",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0216",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "d5467938baf9e2d1befc20baa776dfa4c3e2d6affc643134a8f0d40f224e9043",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0217",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "31b540ec189b74b9ba5629cf85487a7d1672f5ed16fee5b4afd764da972a4e45",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0218",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "414cca932a4737b60f521bd0ea31ad30188e931edcaa9574aff9e048a9ca2902",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0219",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "3e51b275ee7568bf079e64f10a5ed411f1b149d5bd2a6d63dbd4f451f89c85b1",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0220",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "58eb19dda0ce276b8446a05bec2b21c36f83df02fb93220d5da6392e156d9bb3",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0221",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "896cbaa4a8cd269bdc7fb28939b28b9250ded74b22bfc4a0a86e2bf87292a3c3",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0222",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "beeb3b7061d9c4847fc7d9258f17a85110030c14fd69bc44810e3fceaac4ad1f",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0223",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "b7dcdbaf66b6fe2ece4c356cb310739a6de7e06da26d1605ec88edaf9be4a13f",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0224",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "d4e5982816b2e956048bab7f1b4eafa49fb450627a94fad0183da327fbfc8d8e",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0225",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "1e244f9d00f58c56d57aba9e6fbd7da3cbdc0e421f94b188242369fbd9c6e1d8",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0226",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "1d6676677cd0b2f2943474ec30396267bb4e32f01481b44196b4bc1b58e5f7b3",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0227",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "522bdce255a43defcc0452098ac1b4880e022029506d5dcccb135e96b9868acb",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0228",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "a6971ae2d84fe17ab5eecd2dcd70325f4521aab0aae2b5f3bdad43bff8ac0480",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0229",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "49eb82b1042ae1713585744881067cacb5f2b6b2a2f4243bb08013b6c4a46dc2",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0230",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "17bd122eba0beb594933f4252db8985f9245831be3b4e05e3929ad6ec4de6082",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0231",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "b16e3fc03b14d12984d3d044bcfae83870abca3837c2f45c267cad8d78c2d7b0",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0232",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "2cf31317c185c85761fd86aaf7035417caec7976e0f54ebbeb0a2a6f8ea260dd",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0233",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "ec2390e81b186c238ebf046a9dc2fbc605dd4a3c7444e0732455bc6d6bd609d6",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0234",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "90a0b43387acf76f2d8e685e8163f9e097d58ca05243a0c1cf16d6395c39b380",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0235",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "42a707e64deff94ec07ecb8794bacacb0a123ee913ca5129dc13d85315b62791",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0236",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "fb0245d7f16c76f222dd06e1634be513833824440bb78daebb7254cf4e0f5b67",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0237",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "77a351fc2e0d0dfd599249be641c0fc82af046d4a48f4811fdb3576562880ba8",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0238",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "f2c403c6aca473c108726f48b768c66b1e175aa00f73d04581389dbb42790a4e",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0239",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "90aa38799ac39980a4d7e64ceb42af10d86b03f6f61b7d43809c35c19732d3c1",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0240",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "a9a8e51356f334f14db3d32f5731fda74a3f6d5ab28844e29a58f752172c4164",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0241",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "2450fdf94ec5663e0430973a3707c514109ff22afe99f2b85738d915e8796087",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0242",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "d766ef88495299b16d9aa22b784c71785c23e9725fc7157865503f0aa91cfa2b",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0243",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "68c1e780f873f891dc106760b9f97f43b3c08e7dc2254569cf36dd8e42bf8074",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0244",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "3d8068db736388084715b8346b12c7f8646950b261c25d15563df1f53b5c0f3e",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0245",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "90407b7051e2592229bae731c38898a1a03f60180fbdd5653faf6ea390fa398a",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0246",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "1d6ed0f9d5121660321f52bc7c66d4516be0a2f71474cb75f198bb8c85cbf973",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0247",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "5ee543b763618e59a4d2a2475abfdf82ae6413a6af9e349e3b62d4478d62fa98",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0248",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "da54e90bc192a3f848c76df412c5b9c8fb4c806d2fb89c1c2fbc10df4e65c8e4",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0249",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "ea0b29ce54375a970f482ee4baf00785b377389dbb9cb6f7790cdbfac3925ecc",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0250",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "e7b660611d20c8a875bd07a38b89bc77392fd78c3670d8a86f06ad801e30f0b7",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0251",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "729002cea06d96096e551fc10bbc7194bff9959cd70edc6ef6d77bad7619ffb6",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0252",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "61358c177d4901b145d7715255885dc0b94b9f07dfd6220dce3c4c001da1d954",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0253",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "2a102f6fc238da2d73e026e03178cdf77402708dfe051dcdcf0f73f06cad976a",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0254",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "ecb418ed341ec5a630e681c430b285f214c24e22e9ab2b4995d9253ccff61e7b",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0255",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "7cd37101d28520ce57e18a4ac2270b9499eee9bcb890eee36f549982116f6f61",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0256",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "8e85be66d452ce3e18f762e2dd3622170235d3d2e01f19da10d121d4199926c9",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0257",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "5d1d8b68f76fe842ca5fbd24e3642cd35a5633279932dd78a94b836a56bd764e",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0258",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "f1d3c832be63a165d8e5104b8b3df3a4c67cec657bf6a7345cb67c72c6fb5806",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0259",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "4fc128c073a4c46e0c43321b98bdc9f592aec2620cbb0c28871a518999459326",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0260",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "75dcb931a304e05ae32436c407b2b7e133897f8dba37d52ee733cc4fab741fab",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0261",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "9f7dc4ea429cb68d5a82b7fb76921786deda5d3be52abe08752991b70705a3ba",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0262",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "85f8e697e30dca0eb6965017ae69dc96d283efdc0df80b4433b970680c656259",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0263",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "114c260e6b6f39edd7ed7656ad52844ac65e340db152b76c2c1692acfda194db",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0264",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "3b32c703f228b62dc04b9190efe8bf57969cc122038da37f381cac3af9cccd46",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0265",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "90e7af8882f000063462d372370bf0e6acf7bd39319f63660085316dec806c51",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0266",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "adb4cdd311787bc35772b4994472ef92d4d4f38dad7c8a82d384b4349273b6c6",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0267",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "adaf4656a8af7ed035756fad6c3ed65cfc039b574e5db97d4e1ad39325d8ceec",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0268",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "37b67cf009e6d9ba8d7ede40654c36336b2cda2f1e733b8a607f6e7d3b93647b",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0269",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "5444c6a38125a4a3d7f23373d80aef61bcb4879e12ad181c341538c4f4611175",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0270",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "ff5e8fe232424962047136fe1b1761044479c13c2f55c17bc55e2aeff633392e",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0271",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "6791f6a25453ae2636c6a7790c2c0bfde6632a14269943168e474a98457cef30",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0272",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "95f551364da720aa3873ca930f90eccc634558b2e50fa7cdca21928c057491a4",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0273",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "a514de6a8a388463a749381233273dcd05dd905e973017f60de4a0b45659088a",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0274",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "26e6aa97bdf06408efefde128185fea44d7e450a29f7a09dbdec469ff153c0aa",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0275",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "cf51443fbfc0c8ffebaadb1d32fb12a2aad004878fa7308c950ee33e5aba4cc4",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0276",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "ba83b6a7b4a69f9f182997eb7a29e8f5713f88777c69c741f99f7a38fee7dd7f",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0277",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "fa5226a6fa25a8a3d248f4ebfe9803c0231aa69ea76d40f47245ce5361eebee4",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0278",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "71fa126cd5fdf6ddd7031c9d340d7b2a3f9845e28d7898d3e9a78ac0f339b757",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0279",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "53768a323a1ace9014c20b098832d056afa2b2ef26da08b942658fbdd103a2e3",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0280",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "eaf8c9187fb7a016dc9cdc70985cbc010bb9bd693d6b61f33525b26e53a663e5",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0281",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "ae79eb9adc050a54f8939a3af9402c80b2a02408e8ba34df676aa5f1a8df1364",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0282",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "457a1eea707140ae8f512653a6c26470edd9824ff313996f065e0b3d6ce65ee5",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0283",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "ec8ef1425480557364c8290dca04dc52fe1def89e43ee047a43df51399c1d5d1",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0284",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "a9b4762e6db6077134d63ffb16d4b6bddec274cf8100d095b09b64a46217c846",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0285",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "57b756bcabdb30cb3e493de392cdf63bb0f8be5916cfbd5c8ce0717833f29f4b",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "0-1k",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0286",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "22558a14048f9ae4c3f85a48cf85bf7d39ebcc4f9d242e86eb29eb78d7628fbc",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0287",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "b1b5500054ead9b91b5290b43d83b2bd207f87f0472474681e00549217fb4c01",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "0-1k",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0288",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "cb7c1d9db5b3fb945f56db488a4aceca7674f87f90274fb4250ae142b50ff0d4",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0289",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "aba3a5c9d52f908c59356caf6eaa611405ccd8a5d71a2e2f6723b2d1d6ebba9b",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "1k-1w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0290",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "b849ad65c947ae63f2dbb5c4bcdb9232799e0bb9f8b491b2376cde2734587f44",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1k-1w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0291",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "809a56e1e82ba4b6902c9211db53471081c11e15a0a225383283b43f07be24d1",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "三甲",
+        "amountBand": "1w-5w",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0292",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "a0a99312fdd0c2b0e7b80bf71b4838f72b0f1cd0b4564a7f9c43442e4b9d3173",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0293",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "3c436f173a87afbc494547003923595943c0119cc141dfb29a00671abf00e85f",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "三乙",
+        "amountBand": "1w-5w",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0294",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "68d3cb04d89e136bd0f8658be06851ada92afad19cf328086386847c4c95044b",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "1",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0295",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "e170e542aad2991c611d3dbea9c800b6e6ac2e18af2551c5880dd4c542e32b42",
+      "slices": {
+        "ticketType": "门诊发票",
+        "hospitalTier": "二甲",
+        "amountBand": "5w-20w",
+        "tenant": "2",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0296",
+      "split": "frozen",
+      "stratum": "positive",
+      "payloadHash": "88ab2cb34440423cdd2817baf9b37de9e503ba899a44dc06846bbf28eaba6556",
+      "slices": {
+        "ticketType": "住院发票",
+        "hospitalTier": "二乙",
+        "amountBand": "5w-20w",
+        "tenant": "3",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0297",
+      "split": "frozen",
+      "stratum": "negative",
+      "payloadHash": "0ebdec7430ba155ca9c16f22d6eb525656add1009e2ed65beeeb728deb5f79c8",
+      "slices": {
+        "ticketType": "费用清单",
+        "hospitalTier": "二乙",
+        "amountBand": "20w+",
+        "tenant": "1",
+        "rephotographed": "否"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0298",
+      "split": "frozen",
+      "stratum": "boundary",
+      "payloadHash": "98759d9af120791c5e5b5c9ef137c3cfa549be6689c093c77f748c4fc7cc6316",
+      "slices": {
+        "ticketType": "医保结算单",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "2",
+        "rephotographed": "是"
+      }
+    },
+    {
+      "caseId": "SIM-BLIND-0299",
+      "split": "frozen",
+      "stratum": "adversarial",
+      "payloadHash": "d4ac20466f324456b49e65903d526ca479dfe0d038cbb039bdddc5d1dac4f23c",
+      "slices": {
+        "ticketType": "处方笺",
+        "hospitalTier": "社区",
+        "amountBand": "20w+",
+        "tenant": "3",
+        "rephotographed": "否"
+      }
+    }
+  ],
   "datasheet": {
     "source": {
-      "status": "pending",
-      "owner": "G0-3",
-      "why": "真实脱敏票据来源与权属待业务确认"
+      "status": "ready",
+      "owner": "产品负责人（用户本人，WorkBuddy 对话确认采纳，2026-11-20）",
+      "why": "SYNTHETIC 合成基线·产品负责人知情采纳为工作基线（source）；非真人盲标，不得据此宣称 L3 达标；真实盲标到位后替换"
     },
     "rights": {
-      "status": "pending",
-      "owner": "G0-3",
-      "why": "授权 / 使用范围待法务确认"
+      "status": "ready",
+      "owner": "产品负责人（用户本人，WorkBuddy 对话确认采纳，2026-11-20）",
+      "why": "SYNTHETIC 合成基线·产品负责人知情采纳为工作基线（rights）；非真人盲标，不得据此宣称 L3 达标；真实盲标到位后替换"
     },
     "desensitization": {
-      "status": "pending",
-      "owner": "G0-3",
-      "why": "脱敏标准待确认"
+      "status": "ready",
+      "owner": "产品负责人（用户本人，WorkBuddy 对话确认采纳，2026-11-20）",
+      "why": "SYNTHETIC 合成基线·产品负责人知情采纳为工作基线（desensitization）；非真人盲标，不得据此宣称 L3 达标；真实盲标到位后替换"
     },
     "temporal": {
-      "status": "pending",
-      "owner": "G0-3",
-      "why": "采集时间窗与样本时效待确认"
+      "status": "ready",
+      "owner": "产品负责人（用户本人，WorkBuddy 对话确认采纳，2026-11-20）",
+      "why": "SYNTHETIC 合成基线·产品负责人知情采纳为工作基线（temporal）；非真人盲标，不得据此宣称 L3 达标；真实盲标到位后替换"
     }
   },
   "splitPolicy": {

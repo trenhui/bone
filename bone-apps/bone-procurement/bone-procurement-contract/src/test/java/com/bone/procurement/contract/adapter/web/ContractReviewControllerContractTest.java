@@ -14,8 +14,8 @@ import com.bone.procurement.contract.application.ContractReviewApplicationServic
 import com.bone.procurement.contract.application.HumanOverrideInput;
 import com.bone.procurement.contract.application.ReviewReport;
 import com.bone.procurement.contract.application.SubmitReviewCommand;
-import com.bone.procurement.contract.domain.model.AiParticipation;
-import com.bone.procurement.contract.domain.model.RiskLevel;
+import com.bone.procurement.contract.domain.model.review.AiParticipation;
+import com.bone.procurement.contract.domain.model.review.RiskLevel;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;

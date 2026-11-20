@@ -1,9 +1,9 @@
 package com.bone.procurement.contract.domain.service;
 
-import com.bone.procurement.contract.domain.model.AiParticipation;
-import com.bone.procurement.contract.domain.model.ContractReview;
-import com.bone.procurement.contract.domain.model.ContractReviewedEvent;
-import com.bone.procurement.contract.domain.model.RiskItem;
+import com.bone.procurement.contract.domain.model.review.AiParticipation;
+import com.bone.procurement.contract.domain.model.review.ContractReview;
+import com.bone.procurement.contract.domain.model.review.ContractReviewedEvent;
+import com.bone.procurement.contract.domain.model.review.RiskItem;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

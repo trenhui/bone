@@ -1,7 +1,7 @@
 package com.bone.procurement.sourcing.domain.gateway;
 
-import com.bone.procurement.sourcing.domain.model.Rfx;
-import com.bone.procurement.sourcing.domain.model.SourcingProject;
+import com.bone.procurement.sourcing.domain.model.sourcing.Rfx;
+import com.bone.procurement.sourcing.domain.model.sourcing.SourcingProject;
 import java.util.Optional;
 
 /** 寻源仓储端口（只声明白名单方法：save / findByProjectNo / findRfxByNo）。 */

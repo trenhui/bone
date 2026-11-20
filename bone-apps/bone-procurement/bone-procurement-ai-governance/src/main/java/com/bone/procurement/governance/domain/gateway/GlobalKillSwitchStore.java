@@ -1,6 +1,6 @@
 package com.bone.procurement.governance.domain.gateway;
 
-import com.bone.procurement.governance.domain.model.GlobalKillSwitch;
+import com.bone.procurement.governance.domain.model.capability.GlobalKillSwitch;
 
 /** 全域 kill switch 仓储端口：读库即时生效，无缓存（每次裁决读最新快照）。 */
 public interface GlobalKillSwitchStore {

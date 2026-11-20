@@ -1,6 +1,6 @@
 package com.bone.procurement.governance.application;
 
-import com.bone.procurement.governance.domain.model.GlobalKillSwitch;
+import com.bone.procurement.governance.domain.model.capability.GlobalKillSwitch;
 
 /** kill switch 只读投影。 */
 public record KillSwitchView(

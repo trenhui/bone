@@ -2,11 +2,11 @@ package com.bone.procurement.contract.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.bone.procurement.contract.domain.model.AiParticipation;
-import com.bone.procurement.contract.domain.model.ContractReview;
-import com.bone.procurement.contract.domain.model.HumanOverride;
-import com.bone.procurement.contract.domain.model.ReviewSuggestion;
-import com.bone.procurement.contract.domain.model.RiskLevel;
+import com.bone.procurement.contract.domain.model.review.AiParticipation;
+import com.bone.procurement.contract.domain.model.review.ContractReview;
+import com.bone.procurement.contract.domain.model.review.HumanOverride;
+import com.bone.procurement.contract.domain.model.review.ReviewSuggestion;
+import com.bone.procurement.contract.domain.model.review.RiskLevel;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

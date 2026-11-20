@@ -1,7 +1,7 @@
 {
   "version": 1,
   "shrinkOnly": true,
-  "note": "文档类名漂移检查的白名单。docLevel 为整篇豁免；symbols 为符号级豁免，只可收缩。reason=handler-era-naming 的条目属待修订项：模块详设应用层仍用 Handler 命名，代码已按 ADR-0028 收敛为 ApplicationService，应按模块统一修订后删除登记。｜2026-10-03 新增三类 reason：review-snapshot（带时间戳的夜间复核报告快照）、tobe-named（模块详设的目标态类名，实现未落地）、workflow-sample（流程方案文档的示例类名）与 false-positive（Spring 通用词误报）。与既有 handler-era-naming 同理：改文档会丢失这些文档的时间/目标态信息。｜2026-10-30 收缩：删除 6 条指向已不存在的《ClaimSphere 智能理赔平台设计方案.md》的符号级豁免与 1 条已无处出现的 VersionController；同时脚本新增 [path]/[absent] 两类失效判据（豁免指向的文档不存在 / 文档已不再出现该符号），存量失效即判红。｜2026-11-09 追加：procuraAI 一期规划态详细设计（10 篇）合并引入的 36 个 To-Be 示意类名，按符号级 tobe-named 登记；刻意不用 docLevel 整篇豁免，保证未来新增漂移仍被拦截，类名落地后由 [symbol] 判据强制收缩。｜2026-11-18 收缩：删除 7 条采购 tobe-named 符号级豁免（PurchaseOrderApplicationService / PurchaseOrderController / PurchaseOrderRepository / RequisitionApplicationService / RequisitionController / SupplierApplicationService / SupplierController）——采购供应商治理切片合入后这 7 个类已在代码真实落地，[symbol] 判据判定豁免多余，按 shrinkOnly 删除。",
+  "note": "文档类名漂移检查的白名单。docLevel 为整篇豁免；symbols 为符号级豁免，只可收缩。reason=handler-era-naming 的条目属待修订项：模块详设应用层仍用 Handler 命名，代码已按 ADR-0028 收敛为 ApplicationService，应按模块统一修订后删除登记。｜2026-10-03 新增三类 reason：review-snapshot（带时间戳的夜间复核报告快照）、tobe-named（模块详设的目标态类名，实现未落地）、workflow-sample（流程方案文档的示例类名）与 false-positive（Spring 通用词误报）。与既有 handler-era-naming 同理：改文档会丢失这些文档的时间/目标态信息。｜2026-10-30 收缩：删除 6 条指向已不存在的《ClaimSphere 智能理赔平台设计方案.md》的符号级豁免与 1 条已无处出现的 VersionController；同时脚本新增 [path]/[absent] 两类失效判据（豁免指向的文档不存在 / 文档已不再出现该符号），存量失效即判红。｜2026-11-09 追加：procuraAI 一期规划态详细设计（10 篇）合并引入的 36 个 To-Be 示意类名，按符号级 tobe-named 登记；刻意不用 docLevel 整篇豁免，保证未来新增漂移仍被拦截，类名落地后由 [symbol] 判据强制收缩。｜2026-11-18 收缩：删除 7 条采购 tobe-named 符号级豁免（PurchaseOrderApplicationService / PurchaseOrderController / PurchaseOrderRepository / RequisitionApplicationService / RequisitionController / SupplierApplicationService / SupplierController）——采购供应商治理切片合入后这 7 个类已在代码真实落地，[symbol] 判据判定豁免多余，按 shrinkOnly 删除。｜2026-11-20 收缩：删除 4 条已失效 tobe-named 符号豁免（OnboardingApplicationService / QualificationApplicationService / QualificationController / SourcingController），对应采购模块类已真实落地，[symbol] 判据判定豁免多余。",
   "docLevel": [
     {
       "doc": "design/modules/1. 控制台与仪表盘模块详细设计方案.md",
@@ -914,14 +914,6 @@
       "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
     },
     {
-      "symbol": "OnboardingApplicationService",
-      "docs": [
-        "doc/ai-product/procuraAI/detailed-design/02-寻源与准入模块详细设计.md"
-      ],
-      "reason": "tobe-named",
-      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
-    },
-    {
       "symbol": "OnboardingController",
       "docs": [
         "doc/ai-product/procuraAI/detailed-design/02-寻源与准入模块详细设计.md"
@@ -962,33 +954,9 @@
       "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
     },
     {
-      "symbol": "QualificationApplicationService",
-      "docs": [
-        "doc/ai-product/procuraAI/detailed-design/02-寻源与准入模块详细设计.md"
-      ],
-      "reason": "tobe-named",
-      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
-    },
-    {
-      "symbol": "QualificationController",
-      "docs": [
-        "doc/ai-product/procuraAI/detailed-design/02-寻源与准入模块详细设计.md"
-      ],
-      "reason": "tobe-named",
-      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
-    },
-    {
       "symbol": "RiskAlertController",
       "docs": [
         "doc/ai-product/procuraAI/detailed-design/03-合同风险绩效与AI模块详细设计.md"
-      ],
-      "reason": "tobe-named",
-      "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"
-    },
-    {
-      "symbol": "SourcingController",
-      "docs": [
-        "doc/ai-product/procuraAI/detailed-design/02-寻源与准入模块详细设计.md"
       ],
       "reason": "tobe-named",
       "note": "procuraAI 一期详细设计为 To-Be 规划态，该类名是示意名、代码尚未实现（2026-11-09 合并引入）；实现落地或文档改写后按 shrinkOnly 删除本条目"

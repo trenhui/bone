@@ -2,7 +2,7 @@ package com.bone.procurement.governance.infrastructure;
 
 import com.bone.procurement.governance.application.ConditionalOnAiGovernanceEnabled;
 import com.bone.procurement.governance.domain.gateway.GlobalKillSwitchStore;
-import com.bone.procurement.governance.domain.model.GlobalKillSwitch;
+import com.bone.procurement.governance.domain.model.capability.GlobalKillSwitch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.stereotype.Component;
 

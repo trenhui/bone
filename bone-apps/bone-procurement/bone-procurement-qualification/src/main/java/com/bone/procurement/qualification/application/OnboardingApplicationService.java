@@ -2,7 +2,7 @@ package com.bone.procurement.qualification.application;
 
 import com.bone.core.annotation.NoDomainEvent;
 import com.bone.procurement.qualification.domain.gateway.QualificationRepository;
-import com.bone.procurement.qualification.domain.model.Onboarding;
+import com.bone.procurement.qualification.domain.model.qualification.Onboarding;
 import java.math.BigDecimal;
 import org.springframework.stereotype.Service;
 

@@ -5,8 +5,8 @@ import com.bone.procurement.governance.application.AiGovernanceApplicationServic
 import com.bone.procurement.governance.application.CapabilityView;
 import com.bone.procurement.governance.application.ConditionalOnAiGovernanceEnabled;
 import com.bone.procurement.governance.application.HumanDecisionView;
-import com.bone.procurement.governance.domain.model.GovernanceDecision;
-import com.bone.procurement.governance.domain.model.GovernanceTraceEntry;
+import com.bone.procurement.governance.domain.model.capability.GovernanceDecision;
+import com.bone.procurement.governance.domain.model.capability.GovernanceTraceEntry;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;

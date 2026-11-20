@@ -2,10 +2,10 @@ package com.bone.procurement.contract.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.bone.procurement.contract.domain.model.AiParticipation;
-import com.bone.procurement.contract.domain.model.ContractReviewedEvent;
-import com.bone.procurement.contract.domain.model.ReviewTraceEntry;
-import com.bone.procurement.contract.domain.model.RiskLevel;
+import com.bone.procurement.contract.domain.model.review.AiParticipation;
+import com.bone.procurement.contract.domain.model.review.ContractReviewedEvent;
+import com.bone.procurement.contract.domain.model.review.ReviewTraceEntry;
+import com.bone.procurement.contract.domain.model.review.RiskLevel;
 import com.bone.procurement.contract.infrastructure.InMemoryReviewTraceAdapter;
 import java.util.List;
 import org.junit.jupiter.api.Test;

@@ -22,6 +22,10 @@ metadata:
     deploymentMode: EMBEDDED
 
 bone:
+  iam:
+    jwt:
+      # 与 IAM / bone-claim 同款：本地验签密钥必须与签发方一致
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
   procurement:
     transaction:
       enabled: ${BONE_PROCUREMENT_TRANSACTION_ENABLED:false}

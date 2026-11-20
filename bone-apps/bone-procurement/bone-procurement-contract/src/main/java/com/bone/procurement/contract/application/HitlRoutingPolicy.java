@@ -1,6 +1,6 @@
 package com.bone.procurement.contract.application;
 
-import com.bone.procurement.contract.domain.model.RiskLevel;
+import com.bone.procurement.contract.domain.model.review.RiskLevel;
 import java.util.EnumSet;
 import java.util.Set;
 

@@ -9,11 +9,11 @@ import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
 import com.bone.procurement.contract.application.HitlRoutingPolicy;
-import com.bone.procurement.contract.domain.model.AiParticipation;
-import com.bone.procurement.contract.domain.model.ParsedClause;
-import com.bone.procurement.contract.domain.model.ReviewRequest;
-import com.bone.procurement.contract.domain.model.ReviewSuggestion;
-import com.bone.procurement.contract.domain.model.RiskLevel;
+import com.bone.procurement.contract.domain.model.review.AiParticipation;
+import com.bone.procurement.contract.domain.model.review.ParsedClause;
+import com.bone.procurement.contract.domain.model.review.ReviewRequest;
+import com.bone.procurement.contract.domain.model.review.ReviewSuggestion;
+import com.bone.procurement.contract.domain.model.review.RiskLevel;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

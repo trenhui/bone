@@ -4476,6 +4476,195 @@
   },
   {
    "http": "POST",
+   "path": "/api/v1/procurement/qualifications",
+   "controller": "QualificationController",
+   "file": "bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/qualifications/expiring",
+   "controller": "QualificationController",
+   "file": "bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/onboardings/{no}/approve",
+   "controller": "QualificationController",
+   "file": "bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/risk-alerts",
+   "controller": "RiskController",
+   "file": "bone-apps/bone-procurement/bone-procurement-risk/src/main/java/com/bone/procurement/risk/adapter/web/controller/RiskController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/performance-scores",
+   "controller": "RiskController",
+   "file": "bone-apps/bone-procurement/bone-procurement-risk/src/main/java/com/bone/procurement/risk/adapter/web/controller/RiskController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-advisory/capabilities",
+   "controller": "AdvisoryController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-advisory/src/main/java/com/bone/procurement/advisory/adapter/web/controller/AdvisoryController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-advisory/capabilities/{code}/advice",
+   "controller": "AdvisoryController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-advisory/src/main/java/com/bone/procurement/advisory/adapter/web/controller/AdvisoryController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/contract-reviews",
+   "controller": "ContractReviewController",
+   "file": "bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/adapter/web/controller/ContractReviewController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/contract-reviews/{reviewId}",
+   "controller": "ContractReviewController",
+   "file": "bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/adapter/web/controller/ContractReviewController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/contract-reviews/{reviewId}/disclosure",
+   "controller": "ContractReviewController",
+   "file": "bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/adapter/web/controller/ContractReviewController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/contract-reviews/{reviewId}/override",
+   "controller": "ContractReviewController",
+   "file": "bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/adapter/web/controller/ContractReviewController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/ai-governance/capabilities",
+   "controller": "AiGovernanceController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-governance/capabilities",
+   "controller": "AiGovernanceController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-governance/capabilities/{code}",
+   "controller": "AiGovernanceController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/ai-governance/capabilities/{code}/state",
+   "controller": "AiGovernanceController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/ai-governance/capabilities/{code}/decide",
+   "controller": "AiGovernanceController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-governance/capabilities/{code}/trace",
+   "controller": "AiGovernanceController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-governance/capabilities/{code}/overrides",
+   "controller": "AiGovernanceController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/ai-governance/human-decisions",
+   "controller": "AiGovernanceController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-governance/safety/kill-switch",
+   "controller": "SafetyController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/SafetyController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/ai-governance/safety/kill-switch/engage",
+   "controller": "SafetyController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/SafetyController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/ai-governance/safety/kill-switch/disengage",
+   "controller": "SafetyController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/SafetyController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-governance/safety/kill-switch/drill-status",
+   "controller": "SafetyController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/SafetyController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/ai-governance/safety/content-labels/check",
+   "controller": "SafetyController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/SafetyController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/ai-governance/safety/fairness/evaluate",
+   "controller": "SafetyController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/SafetyController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/sourcing-projects",
+   "controller": "SourcingController",
+   "file": "bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/adapter/web/controller/SourcingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/rfx/{rfxNo}/publish",
+   "controller": "SourcingController",
+   "file": "bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/adapter/web/controller/SourcingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
    "path": "/api/v1/procurement/purchase-orders/{no}/ack",
    "controller": "FulfillmentController",
    "file": "bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/controller/FulfillmentController.java",
@@ -4784,8 +4973,8 @@
   }
  ],
  "summary": {
-  "endpoints": 576,
+  "endpoints": 603,
   "covered": 239,
-  "uncovered": 337
+  "uncovered": 364
  }
 }

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "BASELINE_WIRED",
+    "FROZEN_EVALSET_ACTIVE"
+  ],
+  "signer": "产品负责人（用户本人，WorkBuddy 对话确认采纳，2026-11-20）",
+  "provenance": "SYNTHETIC",
+  "datasetVersion": "synthetic-baseline-adopted-20261120",
+  "declaredAt": "2026-11-20",
+  "authorization": "用户在 WorkBuddy 对话中回复「2」，明确授权修改证据门禁测试语义，以合成基线作为工作基线解锁两条门禁；真实盲标到位后替换真源。",
+  "statement": "知情采纳 SYNTHETIC 合成工作基线；数据非真人盲标，不得据此对外宣称 L3 达标；真实盲标到位后须替换真源并撤销本授权。",
+  "revocation": "真实盲标写入真源后，将本文件 scope 置空或删除；测试随即回到未授权态的两条 BLOCKED 基线断言。"
+}

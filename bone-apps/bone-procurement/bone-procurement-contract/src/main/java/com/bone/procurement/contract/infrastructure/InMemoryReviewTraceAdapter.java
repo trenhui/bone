@@ -2,7 +2,7 @@ package com.bone.procurement.contract.infrastructure;
 
 import com.bone.procurement.contract.application.ConditionalOnContractAiReviewEnabled;
 import com.bone.procurement.contract.domain.gateway.ReviewTracePort;
-import com.bone.procurement.contract.domain.model.ReviewTraceEntry;
+import com.bone.procurement.contract.domain.model.review.ReviewTraceEntry;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.springframework.stereotype.Component;

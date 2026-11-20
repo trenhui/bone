@@ -2,8 +2,8 @@ package com.bone.procurement.risk.application;
 
 import com.bone.core.annotation.NoDomainEvent;
 import com.bone.procurement.risk.domain.gateway.RiskAlertRepository;
-import com.bone.procurement.risk.domain.model.PerformanceScore;
-import com.bone.procurement.risk.domain.model.RiskAlert;
+import com.bone.procurement.risk.domain.model.risk.PerformanceScore;
+import com.bone.procurement.risk.domain.model.risk.RiskAlert;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;

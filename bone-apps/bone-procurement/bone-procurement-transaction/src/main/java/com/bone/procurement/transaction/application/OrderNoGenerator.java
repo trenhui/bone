@@ -4,6 +4,7 @@ import com.bone.procurement.transaction.domain.repository.PurchaseOrderRepositor
 import com.bone.procurement.transaction.domain.repository.RequisitionRepository;
 import java.time.Year;
 import java.util.function.IntSupplier;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -20,7 +21,8 @@ public class OrderNoGenerator {
   private final PurchaseOrderRepository purchaseOrderRepository;
   private final IntSupplier year;
 
-  /** 生产装配：当前年份。 */
+  /** 生产装配：当前年份。显式标注注入点，避免两个构造器并存时 Spring 退回寻找无参构造。 */
+  @Autowired
   public OrderNoGenerator(
       RequisitionRepository requisitionRepository,
       PurchaseOrderRepository purchaseOrderRepository) {

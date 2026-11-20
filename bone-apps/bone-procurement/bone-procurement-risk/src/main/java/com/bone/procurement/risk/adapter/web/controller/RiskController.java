@@ -2,7 +2,7 @@ package com.bone.procurement.risk.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.procurement.risk.application.RiskApplicationService;
-import com.bone.procurement.risk.domain.model.PerformanceScore;
+import com.bone.procurement.risk.domain.model.risk.PerformanceScore;
 import jakarta.validation.Valid;
 import java.util.Date;
 import java.util.List;

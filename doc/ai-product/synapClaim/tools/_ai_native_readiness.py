@@ -665,10 +665,18 @@ def self_test(f: dict) -> bool:
     被写成 L2。故命令行自检也须覆盖档位，不能只靠 pre-commit 单测。
     """
     base = {g["id"]: g["status"] for g in evaluate(f)}
-    probes: list[tuple[str, str, dict, str]] = []
+    probes: list[tuple[str, str, dict, str, dict]] = []
 
-    def add(label: str, gid: str, mutated: dict, expect: str = "flip") -> None:
-        probes.append((label, gid, mutated, expect))
+    def add(label: str, gid: str, mutated: dict, expect: str = "flip",
+            base_facts: dict | None = None) -> None:
+        """base_facts：探针自己的起点真源，默认用当前真源。
+
+        证据驱动判据的探针必须显式锚定「未采纳基线」：采纳合成基线后当前真源
+        已绿，若仍以当前真源为起点，flip_to_satisfied 会因起点已绿而失效、
+        stay 会因起点已绿而误红。锚定后同一探针在任何采纳状态下都测同一性质。
+        """
+        probes.append((label, gid, mutated, expect,
+                       base_facts if base_facts is not None else f))
 
     add("删门禁 --check 接线", "EVAL_GATES_WIRED",
         dict(f, check_sh=f["check_sh"].replace("--check", "")))
@@ -738,22 +746,39 @@ def self_test(f: dict) -> bool:
              e2e_runtime=dict(rt_ok, probeEvidence=dict(good_evidence, requestId="unknown"))),
         "stay")
 
+    # 证据类探针的「未采纳基线」：显式锚定起点，与真源当前采纳状态解耦。
+    # 采纳合成基线后当前 f 已绿；若探针仍以 f 为起点，翻转探针会失效、保持
+    # 探针会误红。锚定后同一探针在未采纳/已采纳两态都测同一判据性质。
+    f_unadopted = dict(
+        f,
+        baseline_all_wired=False,
+        baseline_evidence_ok=False,
+        baseline_top_status="skeleton",
+        frozen_verified=False,
+        frozen_status="skeleton",
+    )
+
     # 基线：只刷 status 不得翻绿，须真实采集证据 + 顶层非 skeleton。
     add("基线合规正例（wired+provenance+confirmed）", "BASELINE_WIRED",
-        dict(f, baseline_all_wired=True, baseline_evidence_ok=True,
-             baseline_top_status="confirmed"), "flip_to_satisfied")
+        dict(f_unadopted, baseline_all_wired=True, baseline_evidence_ok=True,
+             baseline_top_status="confirmed"), "flip_to_satisfied", f_unadopted)
     add("只把 6 项 status 改 wired（顶层仍 skeleton）", "BASELINE_WIRED",
-        dict(f, baseline_all_wired=True), "stay")
+        dict(f_unadopted, baseline_all_wired=True), "stay", f_unadopted)
     add("改 status+顶层但无 provenance", "BASELINE_WIRED",
-        dict(f, baseline_all_wired=True, baseline_top_status="confirmed"), "stay")
+        dict(f_unadopted, baseline_all_wired=True, baseline_top_status="confirmed"),
+        "stay", f_unadopted)
 
     # 冻结集：塞任意 hash 不得翻绿，须真实引擎 verify_manifest 通过。
     add("冻结集合规正例（引擎验证通过）", "FROZEN_EVALSET_ACTIVE",
-        dict(f, frozen_verified=True, frozen_status="active"), "flip_to_satisfied")
+        dict(f_unadopted, frozen_verified=True, frozen_status="active"),
+        "flip_to_satisfied", f_unadopted)
     add("只给 evalset 塞任意 payloadHash + active", "FROZEN_EVALSET_ACTIVE",
-        dict(f, evalset=dict(f["evalset"], status="active", payloadHash="aaa")), "stay")
+        dict(f_unadopted,
+             evalset=dict(f["evalset"], status="active", payloadHash="aaa")),
+        "stay", f_unadopted)
     add("只给 evalset 塞 64hex 但冻结集仍 skeleton", "FROZEN_EVALSET_ACTIVE",
-        dict(f, evalset=dict(f["evalset"], payloadHash="0" * 64)), "stay")
+        dict(f_unadopted, evalset=dict(f["evalset"], payloadHash="0" * 64)),
+        "stay", f_unadopted)
 
     # Go-Live：批量改 currency 不得翻绿；登记集合与磁盘必须双向一致。
     # 判据已从 len(booklets) < 13 的硬编码计数改为双向比对，故必须同时钉住
@@ -814,9 +839,9 @@ def self_test(f: dict) -> bool:
         dict(f, drill_controller_present=False))
 
     ok = True
-    for label, gid, mutated, expect in probes:
+    for label, gid, mutated, expect, base_facts in probes:
         now = {g["id"]: g["status"] for g in evaluate(mutated)}[gid]
-        before = base[gid]
+        before = {g["id"]: g["status"] for g in evaluate(base_facts)}[gid]
         if expect == "stay":
             passed = now == before
             detail = f"须保持 {before}"
