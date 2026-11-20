@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 130,
+  "executableCount": 134,
   "retired": [],
   "entries": [
     {
@@ -831,6 +831,30 @@
       "kind": "mixed",
       "order": 130,
       "summary": "在既有「采购」目录下新增叶子「履约协同」→ /procurement#/fulfillment，依赖 0101。含临时表 DDL + 菜单/权限 INSERT，ID 段 9200000000000004xx（403 起，避开 0100 的 2xx/3xx），按 (tenant_id,name,path) 幂等；校验过程用 v_group/v_leaf/v_orphan 别名避开 MySQL 8 保留字。与 0102_seed_claim_mapping_menus / 0102_synap_claim_item_dual_code 同序号但只触及 iam_menu，触及表无交集。"
+    },
+    {
+      "order": 131,
+      "file": "0127_seed_procurement_contract_review_permissions.sql",
+      "kind": "dml",
+      "summary": "合同 AI 审查 walking skeleton 的权限码种子（930 号段）：procurement:contract:review:read|write 登记并绑定超管；补登记以修复 M1 既存红项。"
+    },
+    {
+      "order": 132,
+      "file": "0128_seed_procurement_contract_review_menu.sql",
+      "kind": "mixed",
+      "summary": "合同审查披露菜单种子：临时表建后即删（终态无结构表）+ 菜单 INSERT；补登记以修复 M1 既存红项。"
+    },
+    {
+      "order": 133,
+      "file": "0129_seed_procurement_ai_governance_permissions.sql",
+      "kind": "dml",
+      "summary": "AI 决策治理权限码种子（940 号段）：procurement:ai-governance:read|write 登记并绑定超管；补登记以修复 M1 既存红项。"
+    },
+    {
+      "order": 134,
+      "file": "0130_seed_procurement_business_modules_permissions.sql",
+      "kind": "dml",
+      "summary": "procuraAI 业务模块骨架批次4：寻源/准入/风险绩效 7 个端点权限码（950 号段）登记并绑定超管；只登记访问边界，不打开自动授标/自动授信。"
     }
   ],
   "ordinalConflicts": [

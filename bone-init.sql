@@ -4704,3 +4704,152 @@ CREATE TABLE `t_proc_ir_exception` (
   UNIQUE KEY `uk_proc_ir_exception_no` (`tenant_id`,`exception_no`),
   UNIQUE KEY `uk_proc_ir_exception_dedup` (`tenant_id`,`invoice_no`,`exception_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='发票例外台账（状态只由 Finance 事件回写，采购域无放行入口）';
+
+
+-- ============================================================
+-- 采购业务模块骨架（procuraAI 批次4）：寻源 / 准入 / 风险绩效 6 张核心表
+-- 业务列真源：detailed-design/02-寻源与准入模块详细设计.md §4、
+--             detailed-design/03-合同风险绩效与AI模块详细设计.md §4
+-- init-only（与既有 9 张 t_proc_* 表一致，不建增量迁移脚本）；
+-- 必备列（id/tenant_id/created_by/updated_by/created_at/updated_at/deleted/version）齐全。
+-- 合规：证照号/背调结论为 PII，只存脱敏与引用，AI 入参不传原文（监管 §24）。
+-- ============================================================
+
+DROP TABLE IF EXISTS `t_proc_sourcing_project`;
+CREATE TABLE `t_proc_sourcing_project` (
+  `id`                  BIGINT          NOT NULL COMMENT '寻源项目主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `project_no`          VARCHAR(64)     NOT NULL COMMENT '项目编号（业务唯一键）',
+  `category_id`         VARCHAR(64)     NOT NULL COMMENT '品类ID',
+  `budget_amount`       DECIMAL(19,4)   NOT NULL COMMENT '预算金额（TDS）',
+  `currency`            CHAR(3)         NOT NULL COMMENT '币种 ISO-4217',
+  `strategy`            VARCHAR(32)     NOT NULL COMMENT '寻源策略 SINGLE/COMPETITIVE/AUCTION',
+  `status`              VARCHAR(32)     NOT NULL COMMENT 'DRAFT/PUBLISHED/BIDDING_CLOSED/AWARDED/CLOSED/CANCELLED',
+  `owner_id`            VARCHAR(64)     DEFAULT NULL COMMENT '项目负责人',
+  `window_start`        DATETIME(3)     DEFAULT NULL COMMENT '寻源窗口起 UTC',
+  `window_end`          DATETIME(3)     DEFAULT NULL COMMENT '寻源窗口止 UTC（截止后禁止收标）',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本（PUBLISHED 后关键字段冻结 CAS）',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_sourcing_project_no` (`tenant_id`,`project_no`),
+  KEY `idx_proc_sourcing_project_cat_status` (`tenant_id`,`category_id`,`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='寻源项目头（关键字段 PUBLISHED 后冻结，@Version CAS）';
+
+DROP TABLE IF EXISTS `t_proc_rfx`;
+CREATE TABLE `t_proc_rfx` (
+  `id`                  BIGINT          NOT NULL COMMENT 'RFx 主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `project_id`          BIGINT          NOT NULL COMMENT '所属寻源项目ID',
+  `rfx_no`              VARCHAR(64)     NOT NULL COMMENT 'RFx 编号（业务唯一键）',
+  `rfx_type`            VARCHAR(16)     NOT NULL COMMENT 'RFI/RFP/RFQ',
+  `publish_at`          DATETIME(3)     DEFAULT NULL COMMENT '发布时间 UTC',
+  `due_at`              DATETIME(3)     NOT NULL COMMENT '截止时间 UTC（到期后写报 31201）',
+  `status`              VARCHAR(32)     NOT NULL COMMENT 'DRAFT/PUBLISHED/CLOSED/CANCELLED',
+  `sealed`              TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '密封标志：开标前报价不可读（含管理员）',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_rfx_no` (`tenant_id`,`rfx_no`),
+  KEY `idx_proc_rfx_project_due` (`tenant_id`,`project_id`,`due_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='RFx 头（截止时间单调；密封报价不在本表，投标切片后续落库）';
+
+DROP TABLE IF EXISTS `t_proc_qualification`;
+CREATE TABLE `t_proc_qualification` (
+  `id`                  BIGINT          NOT NULL COMMENT '证照主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `supplier_id`         VARCHAR(64)     NOT NULL COMMENT '供应商 partyId',
+  `cert_type`           VARCHAR(64)     NOT NULL COMMENT '证照类型',
+  `cert_no`             VARCHAR(256)    NOT NULL COMMENT '证照号（加密/脱敏存储，PII 禁入 AI 入参）',
+  `issued_at`           DATETIME(3)     DEFAULT NULL COMMENT '发证日 UTC',
+  `expires_at`          DATETIME(3)     DEFAULT NULL COMMENT '到期日 UTC（到期巡检；EXPIRED 不得作准入依据）',
+  `verify_status`       VARCHAR(32)     NOT NULL COMMENT 'PENDING/VERIFIED/REJECTED/EXPIRED',
+  `attachment_ref`      VARCHAR(256)    DEFAULT NULL COMMENT '附件引用（不放行原文）',
+  `ocr_result_json`     TEXT            DEFAULT NULL COMMENT 'OCR 结构化结果（须人工复核才生效）',
+  `reviewed_by`         VARCHAR(64)     DEFAULT NULL COMMENT '人工复核人（具名，OCR 不得自证）',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_qualification_dedup` (`tenant_id`,`supplier_id`,`cert_type`,`cert_no`),
+  KEY `idx_proc_qualification_expires` (`tenant_id`,`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='供应商证照（到期巡检；OCR 结论须人工复核才生效）';
+
+DROP TABLE IF EXISTS `t_proc_onboarding`;
+CREATE TABLE `t_proc_onboarding` (
+  `id`                  BIGINT          NOT NULL COMMENT '准入单主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `supplier_id`         VARCHAR(64)     NOT NULL COMMENT '供应商 partyId',
+  `onboarding_no`       VARCHAR(64)     NOT NULL COMMENT '准入单号（业务唯一键）',
+  `background_ref`      VARCHAR(256)    DEFAULT NULL COMMENT '背调报告引用（只存引用与哈希，不回传 PII 原文）',
+  `score`               DECIMAL(9,4)    DEFAULT NULL COMMENT '准入评分（AI 仅建议，终决必须人工）',
+  `status`              VARCHAR(32)     NOT NULL COMMENT 'DRAFT/IN_REVIEW/APPROVED/REJECTED',
+  `workflow_instance_id` VARCHAR(64)    DEFAULT NULL COMMENT 'WF 流程实例ID（状态由 WF 回写）',
+  `approved_by`         VARCHAR(64)     DEFAULT NULL COMMENT '人工终决人（具名；AI 不得置 APPROVED）',
+  `in_review_key`       VARCHAR(64)     GENERATED ALWAYS AS (IF(`status` = 'IN_REVIEW', `supplier_id`, NULL)) STORED COMMENT 'IN_REVIEW 条件唯一键（生成列实现部分唯一，防并发重复准入）',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_onboarding_no` (`tenant_id`,`onboarding_no`),
+  UNIQUE KEY `uk_proc_onboarding_in_review` (`tenant_id`,`in_review_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='供应商准入单（一个供应商同时仅一个 IN_REVIEW；APPROVED 必须人工终决）';
+
+DROP TABLE IF EXISTS `t_proc_risk_alert`;
+CREATE TABLE `t_proc_risk_alert` (
+  `id`                  BIGINT          NOT NULL COMMENT '风险预警主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `supplier_id`         VARCHAR(64)     NOT NULL COMMENT '供应商 partyId',
+  `source`              VARCHAR(64)     NOT NULL COMMENT '预警来源（外部征信/履约/合规/AI 建议）',
+  `source_ref`          VARCHAR(128)    NOT NULL COMMENT '来源事件引用（与 source 组成幂等键）',
+  `severity`            VARCHAR(32)     NOT NULL COMMENT 'HIGH/MEDIUM/LOW/UNKNOWN（UNKNOWN fail-closed 转人工）',
+  `alert_type`          VARCHAR(64)     NOT NULL COMMENT '预警类型',
+  `status`              VARCHAR(32)     NOT NULL COMMENT 'OPEN/ACKNOWLEDGED/RESOLVED/DISMISSED',
+  `evidence_ref`        VARCHAR(256)    DEFAULT NULL COMMENT '证据引用（不回传 PII 原文）',
+  `detected_at`         DATETIME(3)     DEFAULT NULL COMMENT '检出时点 UTC',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_risk_alert_dedup` (`tenant_id`,`supplier_id`,`source`,`source_ref`),
+  KEY `idx_proc_risk_alert_status` (`tenant_id`,`status`,`detected_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='风险预警台账（来源幂等；AI 仅辅助登记，不自动裁决供应商）';
+
+DROP TABLE IF EXISTS `t_proc_performance_score`;
+CREATE TABLE `t_proc_performance_score` (
+  `id`                  BIGINT          NOT NULL COMMENT '绩效评分主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `supplier_id`         VARCHAR(64)     NOT NULL COMMENT '供应商 partyId',
+  `period`              VARCHAR(32)     NOT NULL COMMENT '评分周期 YYYY-MM 或 YYYY-Qn',
+  `delivery_score`      DECIMAL(9,4)    DEFAULT NULL COMMENT '交付得分',
+  `quality_score`       DECIMAL(9,4)    DEFAULT NULL COMMENT '质量得分',
+  `cost_score`          DECIMAL(9,4)    DEFAULT NULL COMMENT '成本得分',
+  `compliance_score`    DECIMAL(9,4)    DEFAULT NULL COMMENT '合规得分',
+  `total_score`         DECIMAL(9,4)    DEFAULT NULL COMMENT '综合得分（权重规则由 owner 冻结，当前不自动授信）',
+  `evidence_ref`        VARCHAR(256)    DEFAULT NULL COMMENT '证据引用（可复核）',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本（只追加修正版本）',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_performance_score_dedup` (`tenant_id`,`supplier_id`,`period`),
+  KEY `idx_proc_performance_score_period` (`tenant_id`,`period`,`total_score`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='供应商绩效评分（只读投影；权重与自动授信属 owner 红线，未开放）';

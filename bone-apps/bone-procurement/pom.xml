@@ -22,6 +22,9 @@
         <module>bone-procurement-fulfillment</module>
         <module>bone-procurement-contract</module>
         <module>bone-procurement-ai-governance</module>
+        <module>bone-procurement-sourcing</module>
+        <module>bone-procurement-qualification</module>
+        <module>bone-procurement-risk</module>
         <module>bone-procurement-app</module>
     </modules>
 </project>
