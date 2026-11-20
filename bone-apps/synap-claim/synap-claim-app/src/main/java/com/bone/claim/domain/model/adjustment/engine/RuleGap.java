@@ -49,6 +49,13 @@ public final class RuleGap extends RuntimeException {
     DAILY_LIMIT_WINDOW_STALE(Group.CONFIG_INVALID),
     /** 等待期内出险，不进理算（V1 §4.1 前置校验）。 */
     WAITING_PERIOD_NOT_MET(Group.PRECONDITION_NOT_MET),
+    /**
+     * 适用限定出现<b>当前不可达维度</b>（区域/医保/药品/诊疗）：本仓库无事实列或由目录准入承载，无法在此判定。
+     *
+     * <p>显式拒绝而非静默忽略：配置岗填了"限某区域"却按无限制全额赔付，即"配了不生效"的最坏形态。 解锁前置＝补事实列/目录端口 + 判定码 + 文档口径（与 {@code
+     * surfaceIsFrozenToTwoDimensions} 钉子同源）。
+     */
+    LIMITED_CONDITION_DIMENSION_UNSUPPORTED(Group.CAPABILITY_UNDEFINED),
     /** 适用限定（医院/病种白黑名单）经比对<b>确定不符</b>：前置校验即退，属"该责任不适用"。 */
     LIMITED_CONDITION_NOT_MET(Group.PRECONDITION_NOT_MET),
     /**

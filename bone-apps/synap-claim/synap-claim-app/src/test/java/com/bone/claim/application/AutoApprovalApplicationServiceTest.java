@@ -68,6 +68,9 @@ class AutoApprovalApplicationServiceTest {
             aiRolloutApplicationService);
     ReflectionTestUtils.setField(service, "enabled", true);
     ReflectionTestUtils.setField(service, "maxAmount", new BigDecimal("1000"));
+    // 3.1 fail-fast 基座：默认注入一个已配置的真实 provider 地址，代表"配置齐备"的常态。
+    // 负向用例（base-url 缺失）单独把它置空，验证自动放款前置闸不进入资金路径。
+    ReflectionTestUtils.setField(service, "aiGatewayBaseUrl", "https://api.deepseek.com/v1");
     // 租户级三态开关默认放行：本类测的是「全局开关 + 单笔上限」这两道闸，
     // 租户开关关闭的场景由开关服务自身的用例覆盖（FeatureTenantToggleServiceTest）。
     when(featureTenantToggleService.isFeatureAllowed(anyLong(), anyBoolean(), anyString()))
@@ -99,6 +102,21 @@ class AutoApprovalApplicationServiceTest {
 
     assertThat(outcome.applied()).isFalse();
     assertThat(outcome.reason()).isEqualTo("AUTO_APPROVE_TOGGLE_OFF");
+    verify(claimCaseApplicationService, never()).autoApprove(anyLong(), anyString());
+    verify(settlementApplicationService, never()).create(anyLong(), anyInt(), any(), anyString());
+  }
+
+  @Test
+  @DisplayName("3.1 base-url 缺失 → AI_GATEWAY_BASE_URL_MISSING fail-fast，不进入自动放款路径（桩不冒充模型）")
+  void failsFastWhenProviderUnconfigured() {
+    ReflectionTestUtils.setField(service, "aiGatewayBaseUrl", "");
+    DecisionExecution auto = execution("AUTO_APPROVE");
+    when(decisionExecutionApplicationService.findLatest(CLAIM)).thenReturn(auto);
+
+    AutoApprovalApplicationService.AutoApprovalOutcome outcome = service.applyAutoDecision(CLAIM);
+
+    assertThat(outcome.applied()).isFalse();
+    assertThat(outcome.reason()).isEqualTo("AI_GATEWAY_BASE_URL_MISSING");
     verify(claimCaseApplicationService, never()).autoApprove(anyLong(), anyString());
     verify(settlementApplicationService, never()).create(anyLong(), anyInt(), any(), anyString());
   }

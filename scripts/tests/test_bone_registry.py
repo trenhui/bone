@@ -46,8 +46,8 @@ class RegistryShapeTest(unittest.TestCase):
     def test_self_test_variants_are_recorded(self):
         data = registry.load(REG)
         self.assertEqual(
-            sum(len(c["self_tests"]) for c in data["checks"]), 2,
-            "check-synapclaim-architecture / module-boundaries 各有一次 --self-test 调用",
+            sum(len(c["self_tests"]) for c in data["checks"]), 3,
+            "check-synapclaim-architecture / module-boundaries / check-engineering-evidence 各有一次 --self-test 调用",
         )
 
     def test_build_is_deterministic(self):

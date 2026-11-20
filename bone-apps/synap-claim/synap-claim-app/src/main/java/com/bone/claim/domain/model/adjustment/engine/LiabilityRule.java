@@ -445,6 +445,35 @@ public record LiabilityRule(
       return new LimitedConditions(Mode.NONE, Set.of(), Set.of());
     }
 
+    /** 当前有本地事实列、可在本记录内确定性判定的适用限定维度（记录组件名）。白名单钉死，新增维度必须显式审核。 */
+    private static final Set<String> REACHABLE_DIMENSIONS =
+        Set.of("hospitalCodes", "diagnosisCodes");
+
+    /**
+     * 不可达维度显式拒绝（工程证据底座 2.1）：配置写入期枚举限定维度组件，任何不在 {@link #REACHABLE_DIMENSIONS}
+     * 白名单内的维度立即以稳定原因码拒绝——不静默忽略、不按"无限制"继续理算、不触发任何金额计算。
+     *
+     * <p><b>为什么是白名单而非黑名单</b>：V1 声明六维，仅医院/病种有本地事实列（{@code t_claim_case} 编码）；
+     * 区域/医保本仓库无事实来源，药品/诊疗由目录准入承载。若用黑名单列出这四类，将来新增第五类不可达维度会绕过守卫。
+     *
+     * @param dimensionNames 本次配置声明的限定维度组件名（如 {@code hospitalCodes}）
+     * @throws RuleGap 出现任何不可达维度时 fail-closed
+     */
+    public static void requireReachableDimensions(java.util.Collection<String> dimensionNames) {
+      if (dimensionNames == null) {
+        return;
+      }
+      for (String name : dimensionNames) {
+        if (name == null || !REACHABLE_DIMENSIONS.contains(name)) {
+          throw RuleGap.of(
+              RuleGap.Code.LIMITED_CONDITION_DIMENSION_UNSUPPORTED,
+              "适用限定维度「%s」当前不可达：本仓库无本地事实列或依赖外部目录，无法判定；"
+                  + "禁止静默忽略或按无限制全额赔付。解锁前置：补事实列/目录端口 + 判定码 + 文档口径。",
+              name);
+        }
+      }
+    }
+
     /**
      * 由责任配置装配。
      *
@@ -937,6 +966,14 @@ public record LiabilityRule(
    * <p>与 {@link #validate()} 共用同一段实现，不允许两处各写一份：配置面放行了、理算再拒的"两套判据"会让运营 看着保存成功的配置却永远赔不出钱。
    */
   public void validateConfigShape() {
+    // 2.1 维度可达性守卫：枚举 LimitedConditions 的限定维度组件（排除 mode 控制位），逐一校验是否在可达白名单。
+    // 当前组件只有 hospitalCodes/diagnosisCodes，全部通过——既有配置零行为变更；若有人新增 regionCodes 等维度，
+    // 写入期立刻以 LIMITED_CONDITION_DIMENSION_UNSUPPORTED 显式拒绝，杜绝"配了不生效"的静默第三态。
+    LimitedConditions.requireReachableDimensions(
+        java.util.Arrays.stream(LimitedConditions.class.getRecordComponents())
+            .map(java.lang.reflect.RecordComponent::getName)
+            .filter(name -> !"mode".equals(name))
+            .toList());
     if (limits.hasDailyLimit() && limits.dailyBasis() == DailyBasis.NONE) {
       throw RuleGap.of(
           RuleGap.Code.INVALID_INPUT,

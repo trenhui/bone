@@ -56,6 +56,14 @@ public class AutoApprovalApplicationService {
   @Value("${bone.claim.auto-approve.max-amount:1000}")
   private BigDecimal maxAmount;
 
+  /**
+   * AI 网关 base-url（fail-fast 前置闸）：自动放款是资金动作，若连真实 provider 都没配置，说明整条 AI 认知链
+   * 只能是本地桩；此时不得进入自动出金路径。以字符串配置读取而非引用网关模块内部类，避免 application 层反向依赖 infrastructure。口径与 {@code
+   * AiProviderProbeAdapter#configured()} 一致：空串即未配置。
+   */
+  @Value("${bone.ai.gateway.base-url:}")
+  private String aiGatewayBaseUrl;
+
   /** 部署态清单只读访问器：能力就绪度快照需要读取开关状态，不提供 setter，避免旁路签核打开自动放款。 */
   public boolean isAutoApproveEnabled() {
     return enabled;
@@ -82,6 +90,11 @@ public class AutoApprovalApplicationService {
     // 这里也修掉一处「注释与实现相反」：方法注释写「判定顺序即先便宜后昂贵」，实现却把最便宜的开关放在第 5 位。
     if (!enabled) {
       return AutoApprovalOutcome.skipped("AUTO_APPROVE_TOGGLE_OFF");
+    }
+    // 3.1 资金前置闸：开关即使被打开，只要没有真实 provider（base-url 空），整条 AI 认知链只能是本地桩，
+    // 桩执行不冒充模型参与——不得进入自动放款。放在最便宜的开关之后、任何查询之前，保持 fail-closed 且不碰聚合。
+    if (aiGatewayBaseUrl == null || aiGatewayBaseUrl.isBlank()) {
+      return AutoApprovalOutcome.skipped("AI_GATEWAY_BASE_URL_MISSING");
     }
     var execution = decisionExecutionApplicationService.findLatest(claimId);
     if (execution == null) {

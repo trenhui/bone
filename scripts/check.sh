@@ -893,6 +893,21 @@ if ! python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py > /dev/nu
   echo -e "${DIM}  复核：python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py${RESET}"
   exit_code=1
 fi
+
+# 2026-11-20 新增（synapclaim-engineering-evidence-baseline 4.1）。工程证据底座接线门禁：
+# provider fail-fast（base-url 缺失不自动放款）/ 不可达维度显式拒绝（配了不读的静默第三态）/
+# 稳定原因码 / 证据视图只读边界。先跑 --self-test（4 负向探针）证明判据能变红，再跑 --check 主判据；
+# 沿用 G0 无编号做法避免改动 59 步计数。12 项成熟度判据不放宽——本门禁只查源码接线。
+if ! python3 scripts/check-engineering-evidence.py --self-test > /dev/null; then
+  echo -e "${RED}❌ 工程证据门禁负向探针失效（判据可能恒绿，绿灯不可信）${RESET}"
+  echo -e "${DIM}  复核：python3 scripts/check-engineering-evidence.py --self-test${RESET}"
+  exit_code=1
+fi
+if ! python3 scripts/check-engineering-evidence.py --check > /dev/null; then
+  echo -e "${RED}❌ 工程证据底座接线缺失（fail-fast / 维度拒绝 / 稳定码 / 只读边界）${RESET}"
+  echo -e "${DIM}  复核：python3 scripts/check-engineering-evidence.py --check${RESET}"
+  exit_code=1
+fi
 if ! python3 doc/ai-product/procuraAI/detailed-design/contracts/generate_asyncapi.py --check > /dev/null; then
   echo -e "${RED}❌ procuraAI AsyncAPI 与附录 B 注册表漂移（须重跑生成器）${RESET}"
   echo -e "${DIM}  复核：python3 doc/ai-product/procuraAI/detailed-design/contracts/generate_asyncapi.py --check${RESET}"

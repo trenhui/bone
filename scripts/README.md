@@ -34,6 +34,7 @@
 | `ci-local.sh` | 本地复现 CI（含 JaCoCo / Gitleaks 等重步骤） |
 | `check-readme-facts.sh` | README 事实反漂移：端口表 ↔ `application.yml`、看板 done 项 ↔ README 措辞 |
 | `check-gate-liveness.py` | 孤儿门禁检测（G47）：`check-*.py` 必须出现在活入口的**调用行**上；豁免只可收缩 |
+| `check-engineering-evidence.py` | 工程证据底座接线门禁：provider fail-fast / 不可达维度显式拒绝 / 稳定原因码 / 证据只读边界 / 无 provider 负向钉子；`--check` 主判据 + `--self-test` 负向探针 |
 | `gate-liveness-allowlist.json` | 上面这道门禁的豁免清单（唯一真源）；`unwired` / `partial_wire` 两类，理由与 owner 必填 |
 | `ci/` | 补充 CI 判据与各域一致性采集（见 §1.1） |
 | `ci/scripts-registry-guard.sh` | CI 单行守卫：只调 `bone.py verify --format json`（本地与 CI 同一条命令）；接入 `.github/workflows/ci.yml` 属 L3，待架构师审批 |

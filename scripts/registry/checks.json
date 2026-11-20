@@ -2,8 +2,8 @@
   "schema": "bone.registry.v1",
   "source": "scripts/check.sh",
   "counts": {
-    "checks": 61,
-    "groups": 40
+    "checks": 62,
+    "groups": 41
   },
   "groups": [
     "application",
@@ -21,6 +21,7 @@
     "deterministic",
     "doc",
     "domain",
+    "engineering",
     "error",
     "eval",
     "feature",
@@ -842,6 +843,25 @@
         "python3",
         "scripts/ci/check-ddd-doc-code-sync.py",
         "--strict"
+      ]
+    },
+    {
+      "id": "check-engineering-evidence",
+      "path": "scripts/check-engineering-evidence.py",
+      "group": "engineering",
+      "args": [
+        "--check"
+      ],
+      "self_tests": [
+        [
+          "--self-test"
+        ]
+      ],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-engineering-evidence.py",
+        "--check"
       ]
     }
   ]

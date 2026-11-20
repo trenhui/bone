@@ -3916,6 +3916,15 @@
    "cases": []
   },
   {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/engineering-evidence",
+   "controller": "EngineeringEvidenceController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/EngineeringEvidenceController.java",
+   "cases": [
+    "synapclaim-engineering-evidence-e2e.py"
+   ]
+  },
+  {
    "http": "POST",
    "path": "/review",
    "controller": "AppealController",
@@ -4973,8 +4982,8 @@
   }
  ],
  "summary": {
-  "endpoints": 603,
-  "covered": 239,
+  "endpoints": 604,
+  "covered": 240,
   "uncovered": 364
  }
 }
