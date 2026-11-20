@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><title>变更说明 · D-06 存量采购付款逃逸处理器硬隔离：把文档约束落成代码层 fail-closed 开关，缺省即禁用，杜绝低代码 Runtime 动作绕过付款裁决直接触发付款。</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --page: #fafbfc;
+  --ink: #202a35;
+  --muted: #566575;
+  --line: #dbe2e8;
+  --accent: #245b85;
+  --highlight: #edf3f7;
+  --hover: #e9eef3;
+  --code-bg: #edf0f4;
+  --code-ink: #263443;
+  --success: #236d4f;
+  --failure: #a83131;
+  --text: 15px;
+  --small: 13px;
+  --label: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #181d23;
+    --ink: #e4eaf0;
+    --muted: #a4b1be;
+    --line: #35404b;
+    --accent: #94c6ec;
+    --highlight: #222e39;
+    --hover: #27323d;
+    --code-bg: #10161d;
+    --code-ink: #e0e8f0;
+    --success: #8ed8b5;
+    --failure: #ffb0a8;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: var(--text)/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1040px; margin: auto; padding: 32px 32px 48px; }
+.eyebrow { color: var(--accent); font-size: var(--label); font-weight: 500; letter-spacing: .08em; }
+h1 { margin: 8px 0 12px; max-width: 32em; font-size: 28px; font-weight: 500; line-height: 1.4; letter-spacing: -.02em; overflow-wrap: anywhere; }
+h2 { margin: 0; font-size: 18px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+h3 { margin: 0 0 4px; color: var(--muted); font-size: var(--label); font-weight: 500; }
+p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+strong { font-weight: 500; }
+.meta { margin-bottom: 24px; color: var(--muted); font-size: var(--small); overflow-wrap: anywhere; }
+.meta p + p { margin-top: 2px; }
+article { padding: 20px 0 12px; border-top: 1px solid var(--line); }
+article header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+.number { color: var(--muted); font: var(--label)/1.5 ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.comparison { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.comparison section { min-width: 0; padding: 12px; }
+.after { background: var(--highlight); border-radius: 4px; }
+.after h3 { color: var(--accent); }
+.reason { margin-top: 12px; font-size: var(--small); color: var(--muted); }
+.reason strong { margin-right: 8px; color: var(--ink); }
+summary { min-height: 44px; padding: 10px 4px; cursor: pointer; font-size: var(--small); font-weight: 500; border-radius: 4px; }
+summary:hover { background: var(--hover); }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.count, .tag { color: var(--muted); font-size: var(--label); font-weight: 400; }
+.count { margin-left: 4px; font-variant-numeric: tabular-nums; }
+.file { min-width: 0; padding: 0 0 16px; scroll-margin-top: 20px; }
+.file:target { outline: 2px solid var(--accent); outline-offset: 4px; }
+.file-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.file-heading code { min-width: 0; font-size: var(--small); overflow-wrap: anywhere; }
+.tag { white-space: nowrap; }
+pre { margin: 8px 0 0; padding: 12px 16px; overflow: auto; background: var(--code-bg); color: var(--code-ink); border-radius: 4px; font: var(--small)/1.65 ui-monospace, Consolas, monospace; tab-size: 2; }
+footer { margin-top: 12px; padding-top: 20px; border-top: 1px solid var(--line); }
+footer h2 { margin-bottom: 8px; }
+.check { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.status { padding-top: 2px; font-size: var(--label); font-weight: 500; }
+.passed { color: var(--success); }
+.failed { color: var(--failure); }
+.not-run, .unknown { color: var(--muted); }
+.check p { margin-top: 2px; color: var(--muted); font-size: var(--small); }
+.more { border-top: 1px solid var(--line); }
+.more > summary { padding-block: 12px; }
+.diagram { margin: 0; padding: 20px 0; border-top: 1px solid var(--line); }
+.diagram figcaption { margin-bottom: 12px; font-size: 18px; font-weight: 500; overflow-wrap: anywhere; }
+.diagram-svg { display: block; max-width: 100%; height: auto; margin: auto; overflow: visible; font: 13px system-ui, -apple-system, "Segoe UI", sans-serif; }
+.diagram-svg text { fill: var(--ink); }
+.diagram-edge { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.diagram-svg marker path { fill: var(--muted); }
+.diagram-edge-label { fill: var(--page); }
+.diagram-svg .diagram-edge-text { fill: var(--muted); font-size: 12px; }
+.diagram-node rect { fill: var(--page); stroke: var(--line); stroke-width: 1.5; }
+.diagram-node.modified rect { fill: var(--highlight); stroke: var(--accent); }
+.diagram-node.added rect { stroke: var(--success); }
+.diagram-node.deleted rect { stroke: var(--failure); stroke-dasharray: 4 3; }
+.diagram-svg .diagram-kind { fill: var(--muted); font-size: 11px; }
+.diagram-node[href] { cursor: pointer; }
+.diagram-node[href]:hover rect, .diagram-node[href]:focus-visible rect { stroke: var(--accent); stroke-width: 2.5; }
+.diagram-node[href]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.diagram-hint { margin-top: 12px; color: var(--muted); font-size: var(--small); text-align: center; }
+.diagram-comparison { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 16px; }
+.diagram-comparison > section { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 4px; }
+.diagram-comparison > section > h3 { margin-bottom: 12px; }
+.diagram-compact { display: none; }
+@media (max-width: 999px) {
+  .diagram-wide { display: none; }
+  .diagram-compact { display: block; }
+}
+@media (max-width: 640px) {
+  main { padding: 24px 16px 32px; }
+  h1 { font-size: 24px; }
+  .meta { margin-bottom: 20px; }
+  article { padding-top: 16px; }
+  article header { gap: 8px; }
+  .comparison { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .check { grid-template-columns: 60px minmax(0, 1fr); gap: 8px; }
+  pre { padding: 12px; }
+  .diagram-comparison { grid-template-columns: minmax(0,1fr); }
+  .diagram-comparison > section { padding: 12px 0; border: 0; }
+}
+</style></head><body><main><div class="eyebrow">COMET / 变更说明</div><h1>D-06 存量采购付款逃逸处理器硬隔离：把文档约束落成代码层 fail-closed 开关，缺省即禁用，杜绝低代码 Runtime 动作绕过付款裁决直接触发付款。</h1><div class="meta"><p>比较范围 · HEAD 2f70dbfb5 与本次工作区差异；仅 bone-app-purchase 装配层 + 测试 + 决策寄存器 D-06 状态；未改存量付款业务逻辑、CI 判据、DDL。</p><p>生成时间 · 2026-11-20T03:51:12.800Z</p></div><figure class="diagram"><figcaption>付款动作解析路径（D-06 前后）</figcaption><div class="diagram-wide"><svg class="diagram-svg" width="729" height="212" viewBox="0 0 729 212" role="group" aria-labelledby="walkthrough-diagram-0-wide-title walkthrough-diagram-0-wide-description"><title id="walkthrough-diagram-0-wide-title">付款动作解析路径（D-06 前后）</title><desc id="walkthrough-diagram-0-wide-description">低代码付款动作调用 → 按名解析 purchaseOrderPayHandler; 按名解析 purchaseOrderPayHandler → 开关=true?; 开关=true? → 处理器（仅演示占位） (显式开启); 开关=true? → bean 缺失 → RUNTIME_ACTION_NOT_FOUND (缺省/关闭)</desc><defs><marker id="walkthrough-diagram-0-wide-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z"/></marker></defs><path class="diagram-edge" d="M 132 106 C 169.5 106, 169.5 106, 204 106" marker-end="url(#walkthrough-diagram-0-wide-arrow)"/><path class="diagram-edge" d="M 327 106 C 364.5 106, 364.5 106, 399 106" marker-end="url(#walkthrough-diagram-0-wide-arrow)"/><path class="diagram-edge" d="M 522 106 C 559.5 106, 559.5 51, 594 51" marker-end="url(#walkthrough-diagram-0-wide-arrow)"/><rect class="diagram-edge-label" x="529.5" y="67.5" width="60" height="22"/><text class="diagram-edge-text" x="559.5" y="82.5" text-anchor="middle"><tspan x="559.5" dy="0">显式开启</tspan></text><path class="diagram-edge" d="M 522 106 C 559.5 106, 559.5 161, 594 161" marker-end="url(#walkthrough-diagram-0-wide-arrow)"/><rect class="diagram-edge-label" x="526" y="122.5" width="67" height="22"/><text class="diagram-edge-text" x="559.5" y="137.5" text-anchor="middle"><tspan x="559.5" dy="0">缺省/关闭</tspan></text><g class="diagram-node "><rect x="12" y="67" width="120" height="78" rx="5"/><text class="" x="72" y="101" text-anchor="middle"><tspan x="72" dy="0">低代码付款动作</tspan><tspan x="72" dy="18">调用</tspan></text></g><g class="diagram-node "><rect x="207" y="67" width="120" height="78" rx="5"/><text class="" x="267" y="92" text-anchor="middle"><tspan x="267" dy="0">按名解析</tspan><tspan x="267" dy="18">purchaseOrder</tspan><tspan x="267" dy="18">PayHandler</tspan></text></g><a class="diagram-node added" href="#walkthrough-file-0-1" aria-label="开关=true? · bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PayHandlerConditionalRegistration.java:18"><rect x="402" y="67" width="120" height="78" rx="5"/><text class="diagram-kind" x="462" y="84" text-anchor="middle"><tspan x="462" dy="0">新增</tspan></text><text class="" x="462" y="102" text-anchor="middle"><tspan x="462" dy="0">开关=true?</tspan></text></a><g class="diagram-node "><rect x="597" y="12" width="120" height="78" rx="5"/><text class="" x="657" y="46" text-anchor="middle"><tspan x="657" dy="0">处理器（仅演示</tspan><tspan x="657" dy="18">占位）</tspan></text></g><g class="diagram-node "><rect x="597" y="122" width="120" height="78" rx="5"/><text class="" x="657" y="147" text-anchor="middle"><tspan x="657" dy="0">bean 缺失 →</tspan><tspan x="657" dy="18">RUNTIME_ACTIO</tspan><tspan x="657" dy="18">N_NOT_FOUND</tspan></text></g></svg></div><div class="diagram-compact"><svg class="diagram-svg" width="272" height="444" viewBox="0 0 272 444" role="group" aria-labelledby="walkthrough-diagram-0-compact-title walkthrough-diagram-0-compact-description"><title id="walkthrough-diagram-0-compact-title">付款动作解析路径（D-06 前后）</title><desc id="walkthrough-diagram-0-compact-description">低代码付款动作调用 → 按名解析 purchaseOrderPayHandler; 按名解析 purchaseOrderPayHandler → 开关=true?; 开关=true? → 处理器（仅演示占位） (显式开启); 开关=true? → bean 缺失 → RUNTIME_ACTION_NOT_FOUND (缺省/关闭)</desc><defs><marker id="walkthrough-diagram-0-compact-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z"/></marker></defs><path class="diagram-edge" d="M 136 90 C 136 108, 136 108, 136 123" marker-end="url(#walkthrough-diagram-0-compact-arrow)"/><path class="diagram-edge" d="M 136 204 C 136 222, 136 222, 136 237" marker-end="url(#walkthrough-diagram-0-compact-arrow)"/><path class="diagram-edge" d="M 136 318 C 136 336, 68 336, 68 351" marker-end="url(#walkthrough-diagram-0-compact-arrow)"/><rect class="diagram-edge-label" x="72" y="325" width="60" height="22"/><text class="diagram-edge-text" x="102" y="340" text-anchor="middle"><tspan x="102" dy="0">显式开启</tspan></text><path class="diagram-edge" d="M 136 318 C 136 336, 204 336, 204 351" marker-end="url(#walkthrough-diagram-0-compact-arrow)"/><rect class="diagram-edge-label" x="136.5" y="325" width="67" height="22"/><text class="diagram-edge-text" x="170" y="340" text-anchor="middle"><tspan x="170" dy="0">缺省/关闭</tspan></text><g class="diagram-node "><rect x="80" y="12" width="112" height="78" rx="5"/><text class="" x="136" y="46" text-anchor="middle"><tspan x="136" dy="0">低代码付款动</tspan><tspan x="136" dy="18">作调用</tspan></text></g><g class="diagram-node "><rect x="80" y="126" width="112" height="78" rx="5"/><text class="" x="136" y="151" text-anchor="middle"><tspan x="136" dy="0">按名解析</tspan><tspan x="136" dy="18">purchaseOrde</tspan><tspan x="136" dy="18">rPayHandler</tspan></text></g><a class="diagram-node added" href="#walkthrough-file-0-1" aria-label="开关=true? · bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PayHandlerConditionalRegistration.java:18"><rect x="80" y="240" width="112" height="78" rx="5"/><text class="diagram-kind" x="136" y="257" text-anchor="middle"><tspan x="136" dy="0">新增</tspan></text><text class="" x="136" y="275" text-anchor="middle"><tspan x="136" dy="0">开关=true?</tspan></text></a><g class="diagram-node "><rect x="12" y="354" width="112" height="78" rx="5"/><text class="" x="68" y="388" text-anchor="middle"><tspan x="68" dy="0">处理器（仅演</tspan><tspan x="68" dy="18">示占位）</tspan></text></g><g class="diagram-node "><rect x="148" y="354" width="112" height="78" rx="5"/><text class="" x="204" y="379" text-anchor="middle"><tspan x="204" dy="0">bean 缺失 →</tspan><tspan x="204" dy="18">RUNTIME_ACTI</tspan><tspan x="204" dy="18">ON_NOT_FOUND</tspan></text></g></svg></div><p class="diagram-hint">点击带链接的节点查看相关代码。</p></figure><article><header><span class="number">01</span><h2>缺省即禁用的装配开关</h2></header><div class="comparison"><section><h3>原来</h3><p>PurchaseOrderPayHandler 由 @Service + 组件扫描无条件注册，低代码动作可直接触发付款处理器。</p></section><section class="after"><h3>现在</h3><p>新增 procura.purchase-pay-handler.enabled（默认 false）；条件装配仅在显式 true 时注册该 bean，缺省/关闭/未配置均不注册。</p></section></div><p class="reason"><strong>原因</strong> 落实 PA-04 采购域不作付款许可裁决、生产以 PaymentRequested 事件为准的 fail-closed 红线。</p><details><summary>查看文件和关键代码 <span class="count">3</span></summary><div class="file" id="walkthrough-file-0-0"><div class="file-heading"><span class="tag">新增</span><code>bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PaymentIsolationProperties.java:12</code></div><pre><code>@ConfigurationProperties(prefix=&quot;procura.purchase-pay-handler&quot;) / private boolean enabled = false</code></pre></div><div class="file" id="walkthrough-file-0-1"><div class="file-heading"><span class="tag">新增</span><code>bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PayHandlerConditionalRegistration.java:18</code></div><pre><code>@ConditionalOnProperty(name=&quot;procura.purchase-pay-handler.enabled&quot;, havingValue=&quot;true&quot;, matchIfMissing=false)</code></pre></div><div class="file" id="walkthrough-file-0-2"><div class="file-heading"><span class="tag">修改</span><code>bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PurchaseComponentScanConfiguration.java:21</code></div><pre><code>新增 REGEX 排除 com.bone.app.purchase.PurchaseOrderPayHandler，使其不再被扫描重复注册</code></pre></div></details></article><article><header><span class="number">02</span><h2>启动期可观察证据</h2></header><div class="comparison"><section><h3>原来</h3><p>无隔离状态日志，缺省是否禁用不可从启动过程观察。</p></section><section class="after"><h3>现在</h3><p>始终注册的 LegacyPaymentIsolationReporter 按开关输出禁用/启用日志；装配测试锁定其在装配链上。</p></section></div><p class="reason"><strong>原因</strong> 让 fail-closed 状态可审计、可诊断，防日志测试假绿。</p><details><summary>查看文件和关键代码 <span class="count">2</span></summary><div class="file" id="walkthrough-file-1-0"><div class="file-heading"><span class="tag">新增</span><code>bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/LegacyPaymentIsolationReporter.java:20</code></div><pre><code>@PostConstruct report()：禁用态含硬隔离/PaymentRequested，启用态含仅演示/禁止生产出金</code></pre></div><div class="file" id="walkthrough-file-1-1"><div class="file-heading"><span class="tag">修改</span><code>bone-apps/bone-app-purchase/src/main/java/com/bone/app/purchase/boot/PurchaseApplicationAutoConfiguration.java:25</code></div><pre><code>@Bean legacyPaymentIsolationReporter(...) + @EnableConfigurationProperties(PaymentIsolationProperties.class)</code></pre></div></details></article><article><header><span class="number">03</span><h2>双态装配测试与决策落地</h2></header><div class="comparison"><section><h3>原来</h3><p>装配测试断言 hasSingleBean（无条件注册）；决策寄存器 D-06 为 Accepted + 外部依赖。</p></section><section class="after"><h3>现在</h3><p>三态断言（缺省/关闭 doesNotHaveBean、显式 true hasSingleBean）+ Reporter 断言；D-06 更新为 Landed 附 file:line。</p></section></div><p class="reason"><strong>原因</strong> 锁定回归判别力，如实登记落地证据而不伪造 owner。</p><details><summary>查看文件和关键代码 <span class="count">2</span></summary><div class="file" id="walkthrough-file-2-0"><div class="file-heading"><span class="tag">修改</span><code>bone-apps/bone-app-purchase/src/test/java/com/bone/app/purchase/boot/PurchaseApplicationAutoConfigurationWiringTest.java:24</code></div><pre><code>doesNotHaveBean(缺省/关闭) / hasSingleBean(true) / hasSingleBean(Reporter)</code></pre></div><div class="file" id="walkthrough-file-2-1"><div class="file-heading"><span class="tag">修改</span><code>doc/ai-product/procuraAI/decisions/DECISION-REGISTER.md:51</code></div><pre><code>D-06 Accepted+外部依赖 → Landed（2026-11-20），附实现 file:line 与授权说明</code></pre></div></details></article><footer><h2>实际验证</h2><div class="check"><span class="status passed">通过</span><div><strong>Builder 自检</strong><p>mvn -o -f bone-app-purchase/pom.xml clean test：25 例全绿，存量 PurchaseOrderPayHandlerTest 4 例未改；spotless check 通过</p></div></div><div class="check"><span class="status passed">通过</span><div><strong>Runtime 检查</strong><p>comet guard build --apply：ALL CHECKS PASSED — phase=verify（全量 clean test 收据）</p></div></div><div class="check"><span class="status passed">通过</span><div><strong>独立验收</strong><p>独立审查：无 CRITICAL；IMPORTANT（平台副本措辞）已由 design 澄清；SUGGESTION（Reporter 装配断言、@Bean 措辞）已修</p></div></div><div class="check"><span class="status passed">通过</span><div><strong>文档/门禁回归</strong><p>align 10/10 + self-test 146/146 + manifest、asyncapi 29 事件、evalset PASS + self-test 69/69、frontmatter 7/7、DDL 三项、SQL 两项均绿</p></div></div></footer></main><template id="walkthrough-data">eyJzdW1tYXJ5IjoiRC0wNiDlrZjph4/ph4fotK3ku5jmrL7pgIPpgLjlpITnkIblmajnoazpmpTnprvvvJrmiormlofmoaPnuqbmnZ/okL3miJDku6PnoIHlsYIgZmFpbC1jbG9zZWQg5byA5YWz77yM57y655yB5Y2z56aB55So77yM5p2c57ud5L2O5Luj56CBIFJ1bnRpbWUg5Yqo5L2c57uV6L+H5LuY5qy+6KOB5Yaz55u05o6l6Kem5Y+R5LuY5qy+44CCIiwic2NvcGUiOiJIRUFEIDJmNzBkYmZiNSDkuI7mnKzmrKHlt6XkvZzljLrlt67lvILvvJvku4UgYm9uZS1hcHAtcHVyY2hhc2Ug6KOF6YWN5bGCICsg5rWL6K+VICsg5Yaz562W5a+E5a2Y5ZmoIEQtMDYg54q25oCB77yb5pyq5pS55a2Y6YeP5LuY5qy+5Lia5Yqh6YC76L6R44CBQ0kg5Yik5o2u44CBRERM44CCIiwiY2hhbmdlcyI6W3sidGl0bGUiOiLnvLrnnIHljbPnpoHnlKjnmoToo4XphY3lvIDlhbMiLCJiZWZvcmUiOiJQdXJjaGFzZU9yZGVyUGF5SGFuZGxlciDnlLEgQFNlcnZpY2UgKyDnu4Tku7bmiavmj4/ml6DmnaHku7bms6jlhozvvIzkvY7ku6PnoIHliqjkvZzlj6/nm7TmjqXop6blj5Hku5jmrL7lpITnkIblmajjgIIiLCJhZnRlciI6IuaWsOWiniBwcm9jdXJhLnB1cmNoYXNlLXBheS1oYW5kbGVyLmVuYWJsZWTvvIjpu5jorqQgZmFsc2XvvInvvJvmnaHku7boo4XphY3ku4XlnKjmmL7lvI8gdHJ1ZSDml7bms6jlhozor6UgYmVhbu+8jOe8uuecgS/lhbPpl60v5pyq6YWN572u5Z2H5LiN5rOo5YaM44CCIiwicmVhc29uIjoi6JC95a6eIFBBLTA0IOmHh+i0reWfn+S4jeS9nOS7mOasvuiuuOWPr+ijgeWGs+OAgeeUn+S6p+S7pSBQYXltZW50UmVxdWVzdGVkIOS6i+S7tuS4uuWHhueahCBmYWlsLWNsb3NlZCDnuqLnur/jgIIiLCJmaWxlcyI6W3sicGF0aCI6ImJvbmUtYXBwcy9ib25lLWFwcC1wdXJjaGFzZS9zcmMvbWFpbi9qYXZhL2NvbS9ib25lL2FwcC9wdXJjaGFzZS9ib290L1BheW1lbnRJc29sYXRpb25Qcm9wZXJ0aWVzLmphdmE6MTIiLCJraW5kIjoiYWRkZWQiLCJjb2RlIjoiQENvbmZpZ3VyYXRpb25Qcm9wZXJ0aWVzKHByZWZpeD1cInByb2N1cmEucHVyY2hhc2UtcGF5LWhhbmRsZXJcIikgLyBwcml2YXRlIGJvb2xlYW4gZW5hYmxlZCA9IGZhbHNlIn0seyJwYXRoIjoiYm9uZS1hcHBzL2JvbmUtYXBwLXB1cmNoYXNlL3NyYy9tYWluL2phdmEvY29tL2JvbmUvYXBwL3B1cmNoYXNlL2Jvb3QvUGF5SGFuZGxlckNvbmRpdGlvbmFsUmVnaXN0cmF0aW9uLmphdmE6MTgiLCJraW5kIjoiYWRkZWQiLCJjb2RlIjoiQENvbmRpdGlvbmFsT25Qcm9wZXJ0eShuYW1lPVwicHJvY3VyYS5wdXJjaGFzZS1wYXktaGFuZGxlci5lbmFibGVkXCIsIGhhdmluZ1ZhbHVlPVwidHJ1ZVwiLCBtYXRjaElmTWlzc2luZz1mYWxzZSkifSx7InBhdGgiOiJib25lLWFwcHMvYm9uZS1hcHAtcHVyY2hhc2Uvc3JjL21haW4vamF2YS9jb20vYm9uZS9hcHAvcHVyY2hhc2UvYm9vdC9QdXJjaGFzZUNvbXBvbmVudFNjYW5Db25maWd1cmF0aW9uLmphdmE6MjEiLCJraW5kIjoibW9kaWZpZWQiLCJjb2RlIjoi5paw5aKeIFJFR0VYIOaOkumZpCBjb20uYm9uZS5hcHAucHVyY2hhc2UuUHVyY2hhc2VPcmRlclBheUhhbmRsZXLvvIzkvb/lhbbkuI3lho3ooqvmiavmj4/ph43lpI3ms6jlhowifV19LHsidGl0bGUiOiLlkK/liqjmnJ/lj6/op4Llr5/or4Hmja4iLCJiZWZvcmUiOiLml6DpmpTnprvnirbmgIHml6Xlv5fvvIznvLrnnIHmmK/lkKbnpoHnlKjkuI3lj6/ku47lkK/liqjov4fnqIvop4Llr5/jgIIiLCJhZnRlciI6IuWni+e7iOazqOWGjOeahCBMZWdhY3lQYXltZW50SXNvbGF0aW9uUmVwb3J0ZXIg5oyJ5byA5YWz6L6T5Ye656aB55SoL+WQr+eUqOaXpeW/l++8m+ijhemFjea1i+ivlemUgeWumuWFtuWcqOijhemFjemTvuS4iuOAgiIsInJlYXNvbiI6IuiuqSBmYWlsLWNsb3NlZCDnirbmgIHlj6/lrqHorqHjgIHlj6/or4rmlq3vvIzpmLLml6Xlv5fmtYvor5XlgYfnu7/jgIIiLCJmaWxlcyI6W3sicGF0aCI6ImJvbmUtYXBwcy9ib25lLWFwcC1wdXJjaGFzZS9zcmMvbWFpbi9qYXZhL2NvbS9ib25lL2FwcC9wdXJjaGFzZS9ib290L0xlZ2FjeVBheW1lbnRJc29sYXRpb25SZXBvcnRlci5qYXZhOjIwIiwia2luZCI6ImFkZGVkIiwiY29kZSI6IkBQb3N0Q29uc3RydWN0IHJlcG9ydCgp77ya56aB55So5oCB5ZCr56Gs6ZqU56a7L1BheW1lbnRSZXF1ZXN0ZWTvvIzlkK/nlKjmgIHlkKvku4XmvJTnpLov56aB5q2i55Sf5Lqn5Ye66YeRIn0seyJwYXRoIjoiYm9uZS1hcHBzL2JvbmUtYXBwLXB1cmNoYXNlL3NyYy9tYWluL2phdmEvY29tL2JvbmUvYXBwL3B1cmNoYXNlL2Jvb3QvUHVyY2hhc2VBcHBsaWNhdGlvbkF1dG9Db25maWd1cmF0aW9uLmphdmE6MjUiLCJraW5kIjoibW9kaWZpZWQiLCJjb2RlIjoiQEJlYW4gbGVnYWN5UGF5bWVudElzb2xhdGlvblJlcG9ydGVyKC4uLikgKyBARW5hYmxlQ29uZmlndXJhdGlvblByb3BlcnRpZXMoUGF5bWVudElzb2xhdGlvblByb3BlcnRpZXMuY2xhc3MpIn1dfSx7InRpdGxlIjoi5Y+M5oCB6KOF6YWN5rWL6K+V5LiO5Yaz562W6JC95ZywIiwiYmVmb3JlIjoi6KOF6YWN5rWL6K+V5pat6KiAIGhhc1NpbmdsZUJlYW7vvIjml6DmnaHku7bms6jlhozvvInvvJvlhrPnrZblr4TlrZjlmaggRC0wNiDkuLogQWNjZXB0ZWQgKyDlpJbpg6jkvp3otZbjgIIiLCJhZnRlciI6IuS4ieaAgeaWreiogO+8iOe8uuecgS/lhbPpl60gZG9lc05vdEhhdmVCZWFu44CB5pi+5byPIHRydWUgaGFzU2luZ2xlQmVhbu+8iSsgUmVwb3J0ZXIg5pat6KiA77ybRC0wNiDmm7TmlrDkuLogTGFuZGVkIOmZhCBmaWxlOmxpbmXjgIIiLCJyZWFzb24iOiLplIHlrprlm57lvZLliKTliKvlipvvvIzlpoLlrp7nmbvorrDokL3lnLDor4Hmja7ogIzkuI3kvKrpgKAgb3duZXLjgIIiLCJmaWxlcyI6W3sicGF0aCI6ImJvbmUtYXBwcy9ib25lLWFwcC1wdXJjaGFzZS9zcmMvdGVzdC9qYXZhL2NvbS9ib25lL2FwcC9wdXJjaGFzZS9ib290L1B1cmNoYXNlQXBwbGljYXRpb25BdXRvQ29uZmlndXJhdGlvbldpcmluZ1Rlc3QuamF2YToyNCIsImtpbmQiOiJtb2RpZmllZCIsImNvZGUiOiJkb2VzTm90SGF2ZUJlYW4o57y655yBL+WFs+mXrSkgLyBoYXNTaW5nbGVCZWFuKHRydWUpIC8gaGFzU2luZ2xlQmVhbihSZXBvcnRlcikifSx7InBhdGgiOiJkb2MvYWktcHJvZHVjdC9wcm9jdXJhQUkvZGVjaXNpb25zL0RFQ0lTSU9OLVJFR0lTVEVSLm1kOjUxIiwia2luZCI6Im1vZGlmaWVkIiwiY29kZSI6IkQtMDYgQWNjZXB0ZWQr5aSW6YOo5L6d6LWWIOKGkiBMYW5kZWTvvIgyMDI2LTExLTIw77yJ77yM6ZmE5a6e546wIGZpbGU6bGluZSDkuI7mjojmnYPor7TmmI4ifV19XSwidmVyaWZpY2F0aW9uIjpbeyJsYWJlbCI6IkJ1aWxkZXIg6Ieq5qOAIiwic3RhdHVzIjoicGFzc2VkIiwiZGV0YWlsIjoibXZuIC1vIC1mIGJvbmUtYXBwLXB1cmNoYXNlL3BvbS54bWwgY2xlYW4gdGVzdO+8mjI1IOS+i+WFqOe7v++8jOWtmOmHjyBQdXJjaGFzZU9yZGVyUGF5SGFuZGxlclRlc3QgNCDkvovmnKrmlLnvvJtzcG90bGVzcyBjaGVjayDpgJrov4cifSx7ImxhYmVsIjoiUnVudGltZSDmo4Dmn6UiLCJzdGF0dXMiOiJwYXNzZWQiLCJkZXRhaWwiOiJjb21ldCBndWFyZCBidWlsZCAtLWFwcGx577yaQUxMIENIRUNLUyBQQVNTRUQg4oCUIHBoYXNlPXZlcmlmee+8iOWFqOmHjyBjbGVhbiB0ZXN0IOaUtuaNru+8iSJ9LHsibGFiZWwiOiLni6znq4vpqozmlLYiLCJzdGF0dXMiOiJwYXNzZWQiLCJkZXRhaWwiOiLni6znq4vlrqHmn6XvvJrml6AgQ1JJVElDQUzvvJtJTVBPUlRBTlTvvIjlubPlj7Dlia/mnKzmjqrovp7vvInlt7LnlLEgZGVzaWduIOa+hOa4he+8m1NVR0dFU1RJT07vvIhSZXBvcnRlciDoo4XphY3mlq3oqIDjgIFAQmVhbiDmjqrovp7vvInlt7Lkv64ifSx7ImxhYmVsIjoi5paH5qGjL+mXqOemgeWbnuW9kiIsInN0YXR1cyI6InBhc3NlZCIsImRldGFpbCI6ImFsaWduIDEwLzEwICsgc2VsZi10ZXN0IDE0Ni8xNDYgKyBtYW5pZmVzdOOAgWFzeW5jYXBpIDI5IOS6i+S7tuOAgWV2YWxzZXQgUEFTUyArIHNlbGYtdGVzdCA2OS82OeOAgWZyb250bWF0dGVyIDcvN+OAgURETCDkuInpobnjgIFTUUwg5Lik6aG55Z2H57u/In1dLCJkaWFncmFtcyI6W3sidHlwZSI6ImZsb3ciLCJ0aXRsZSI6IuS7mOasvuWKqOS9nOino+aekOi3r+W+hO+8iEQtMDYg5YmN5ZCO77yJIiwibm9kZXMiOlt7ImlkIjoiYWN0aW9uIiwibGFiZWwiOiLkvY7ku6PnoIHku5jmrL7liqjkvZzosIPnlKgifSx7ImlkIjoicmVzb2x2ZSIsImxhYmVsIjoi5oyJ5ZCN6Kej5p6QIHB1cmNoYXNlT3JkZXJQYXlIYW5kbGVyIn0seyJpZCI6ImdhdGUiLCJsYWJlbCI6IuW8gOWFsz10cnVlPyIsImZpbGUiOiJib25lLWFwcHMvYm9uZS1hcHAtcHVyY2hhc2Uvc3JjL21haW4vamF2YS9jb20vYm9uZS9hcHAvcHVyY2hhc2UvYm9vdC9QYXlIYW5kbGVyQ29uZGl0aW9uYWxSZWdpc3RyYXRpb24uamF2YToxOCIsImtpbmQiOiJhZGRlZCJ9LHsiaWQiOiJoYW5kbGVyIiwibGFiZWwiOiLlpITnkIblmajvvIjku4XmvJTnpLrljaDkvY3vvIkifSx7ImlkIjoiZGVueSIsImxhYmVsIjoiYmVhbiDnvLrlpLEg4oaSIFJVTlRJTUVfQUNUSU9OX05PVF9GT1VORCJ9XSwiZWRnZXMiOlt7ImZyb20iOiJhY3Rpb24iLCJ0byI6InJlc29sdmUifSx7ImZyb20iOiJyZXNvbHZlIiwidG8iOiJnYXRlIn0seyJmcm9tIjoiZ2F0ZSIsInRvIjoiaGFuZGxlciIsImxhYmVsIjoi5pi+5byP5byA5ZCvIn0seyJmcm9tIjoiZ2F0ZSIsInRvIjoiZGVueSIsImxhYmVsIjoi57y655yBL+WFs+mXrSJ9XX1dfQ==</template></body></html>

@@ -5,11 +5,11 @@
 ``status: Active`` 改成 ``status: Deprecated``，主门禁仍 rc=0 —— frontmatter
 当时只是人/AI 可读标注，没有机器语义守护。本脚本闭合该边界。
 
-**重要边界（勿误读为 CI 已接入）**：本命令**不在** A10.17 守护的三入口判据集合
-（ci.yml / scripts/check.sh / check-procura-ci.sh）内。A10.17 以 FULL_GATE_KEYS
-严格比对判据集合，擅自把本命令加进任一入口会立刻转红；接入 CI 需同步改三入口
-+ 门禁常量 + 自检探针，属 L3 架构评审。因此本判据是「本地 / AI 手动调用」的
-补充守护，由 AGENTS.md 列为必跑项。
+**接入状态（D-11，2026-11-20 L3 授权）**：本命令已作为 `frontmatterGate`（主判据）
+与 `frontmatterProbe`（--self-test 注入反证）接入 A10.17 守护的三入口判据集合
+（ci.yml / scripts/check.sh / check-procura-ci.sh）；主判据进 CI 与 check.sh G0
+快反馈子集，注入反证进 CI 与本地一键入口全集。任一口径删改均触发 A10.17 转红。
+本脚本自带正例对照 + 六组注入必红反证，防「一律 FAIL」假安全。
 
 用法：
     python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py

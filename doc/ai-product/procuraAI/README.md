@@ -100,7 +100,7 @@ updated-on: 2026-11-12
 | [contracts/asyncapi.yaml](./detailed-design/contracts/asyncapi.yaml) | AsyncAPI 3.0：附录 B 全量 29 事件的 channel + payload 视图 | A8 注册表 ↔ 工件零漂移 |
 | [contracts/generate_asyncapi.py](./detailed-design/contracts/generate_asyncapi.py) | 从附录 B 单一真源生成 AsyncAPI；`--check` 零漂移 | A8 子进程校验退出码 |
 | [assets/procuraAI-关键链路时序.svg](./assets/procuraAI-关键链路时序.svg) | §21.5 三条 sequence 与故障分支 | A3 SVG 可解析 / A8 各卷 §2·§9 引用 |
-| [tools/check_procura_alignment.py](../../../tools/check_procura_alignment.py) | **A1–A10** + `--self-test` 全量注入式负向反证（条数以脚本输出为准） | 全套 + 自检双绿（**已接 ci.yml 四条 ProcuraAI* blocking + check.sh G0，D6 已闭合**；见 [一期边界与机制触发条件.md](./一期边界与机制触发条件.md) §5） |
+| [tools/check_procura_alignment.py](../../../tools/check_procura_alignment.py) | **A1–A10** + `--self-test` 全量注入式负向反证（条数以脚本输出为准） | 全套 + 自检双绿（**已接 ci.yml 六条 ProcuraAI* blocking + check.sh G0，D6 已闭合、D-11 frontmatter 已接入**；见 [一期边界与机制触发条件.md](./一期边界与机制触发条件.md) §5） |
 | [AI接入判定与AI原生内核补充设计.md](./AI接入判定与AI原生内核补充设计.md)（v0.3 / Proposal） | AI 接入四条件判定 / A·B·C 分级清单 / 统一端口裁决 / AI 原生内核 N1–N8 | **A10.19**（真源存在 + 四条件 + 三档 + N1–N8 + 红线不稀释） |
 | [法源射程分层与自治边界-ADR.md](./法源射程分层与自治边界-ADR.md)（v0.3 / Proposal，待法务结论） | 法源射程两档治理 + 六条不可稀释红线 + 升级审批 | **A10.19**（两档 + 红线 + 三处真源引用） |
 | [开发基线与开发就绪清单.md](./开发基线与开发就绪清单.md)（v1.0 / 生效） | 开发基线声明（LLD 六卷 + D3-v2 + 契约工件为唯一开发基线）+ Sprint 0 六项就绪检查清单（R-1~R-6 全 ✓ 才可启动编码）+ 开发阶段 P1 必备文档（D-1~D-5）+ 业界对标补强方向（C-1~C-4，待 F1–F4 验收后评审，不新增 Gx 卡片） | 人工核对清单（未注册机器门禁；登记入资产表 §3.1，依据业界诊断报告第五章） |
@@ -128,7 +128,7 @@ procuraAI 为**采购域内的 AI 子能力**（**非独立可交付产品**；�
 
 ## 当前态证据
 
-> **当前态证据清单（第十九轮起唯一真源）**：`gateEvidenceManifest: {"checks": 10, "criteriaMax": "A10.28", "indexCount": 10, "positiveControls": 6, "probes": 146, "seedCaseCount": 27}`
+> **当前态证据清单（第十九轮起唯一真源）**：`gateEvidenceManifest: {"checks": 10, "criteriaMax": "A10.28", "indexCount": 10, "positiveControls": 6, "probes": 151, "seedCaseCount": 27}`
 >
 > 约定：以上各轮日志里的 `N/N` 数字均为**当时快照**，当前值一律以本行为准。本行由 A10.28 与 `--manifest` 的运行时真值逐字段比对（主判据数 / 反证数 / 正例数 / 判据上限 / 评测集例数 / 证据索引数）：写假、缺字段、真源扩容未同步、历史计数超过当前真值均转红；更新方式为 `--sync-manifest`（仅开发期显式调用，CI 不调用）。CI 日志由 `--self-test` 末尾的 `[MANIFEST]` 行留存机器可读证据。
 

@@ -23,6 +23,12 @@ env:
   JAVA_VERSION: '21'
   NODE_VERSION: '18'
 
+# D-13（2026-11-20，L3 授权）CIS-1 最小权限：顶层默认 contents: read，
+# 需要写权限的 job 显式提权（见 docker-build 的 security-events: write），
+# 避免 SARIF 上传 403。GitHub tokens 遵循「顶层默认 + job 级覆盖」语义。
+permissions:
+  contents: read
+
 jobs:
   backend-quality:
     name: Backend Quality Check
@@ -136,10 +142,18 @@ jobs:
       # A10.17 守护：CI / check.sh G0 / check-procura-ci.sh 三处判据集合受控一致，
       # 防止「本地全绿但 CI 少一条」的静默漂移；且解析 run: 可执行命令，拦截
       # continue-on-error / if: 条件跳过 / 注释 run / --self-test 子串冒充 docGate。
-      # CI 与本地一键入口跑全集（5 判据），
-      # check.sh G0 跑快反馈子集（3 判据，不含注入式 --self-test）。
+      # CI 与本地一键入口跑全集（7 判据，含 D-11 frontmatter 主判据+注入反证），
+      # check.sh G0 跑快反馈子集（4 判据，不含注入式 --self-test）。
       - name: ProcuraAI AsyncAPI Zero-Drift Gate (blocking)
         run: /usr/bin/env python3 doc/ai-product/procuraAI/detailed-design/contracts/generate_asyncapi.py --check
+
+      # D-11（2026-11-20，L3 授权）：frontmatter 语义守护接入 CI。此前仅本地补充判据，
+      # 改 status / 删 banner 主门禁全绿；接入后与三入口判据集合受 A10.17 一致守护。
+      - name: ProcuraAI Frontmatter SSOT Gate (blocking)
+        run: /usr/bin/env python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py
+
+      - name: ProcuraAI Frontmatter Negative Probes (blocking)
+        run: /usr/bin/env python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py --self-test
 
       # 以下 6 项此前**只存在于 scripts/ci-check.sh 里，而该脚本在全仓零调用者**
       # （2026-10-04 实测：命中全是脚本自身 docstring 与 gate-state.json 的描述文本，
@@ -571,6 +585,10 @@ jobs:
   docker-build:
     name: Docker Build & Scan
     runs-on: ubuntu-latest
+    # CIS-1 job 级最小提权：仅本 job 的 codeql upload-sarif 需 security-events: write。
+    permissions:
+      contents: read
+      security-events: write
     needs: [backend-quality, frontend-quality]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     strategy:
