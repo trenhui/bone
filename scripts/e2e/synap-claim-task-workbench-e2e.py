@@ -31,6 +31,7 @@ import importlib.util
 import os
 import sys
 import threading
+from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -44,6 +45,19 @@ def _load_sibling(name):
 
 
 S = _load_sibling("e2e_synap_claim")
+
+
+def created_at_key(value):
+  """createdAt 是 ISO-8601 Instant：整秒输出 `...03Z`，带毫秒输出 `...03.316Z`。
+
+  直接按字符串比字典序会在同一秒上误判——`'Z'`(90) > `'.'`(46)，把更晚的 `.316Z`
+  当成更早的，于是全序断言假红。统一解析为带时区的 datetime 再比较，与后端
+  `ORDER BY priority, created_at, id` 的时间序口径一致。
+  """
+  try:
+    return datetime.fromisoformat((value or "").replace("Z", "+00:00"))
+  except (TypeError, ValueError):
+    return datetime.min.replace(tzinfo=timezone.utc)
 
 # 端点模板集中在此：既避免散落的裸字符串，也让「改了路径忘改用例」暴露成一处 diff。
 API_MY_TASKS = "/claims/tasks/my"
@@ -159,7 +173,7 @@ def check_my_tasks(tok, operator_id):
         pages += 1
         for r in rs:
             seen.append(r["taskId"])
-            key = (int(r.get("priority") or 0), r.get("createdAt") or "")
+            key = (int(r.get("priority") or 0), created_at_key(r.get("createdAt")))
             if prev is not None and key < prev:
                 order_ok = False
             prev = key

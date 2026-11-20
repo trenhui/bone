@@ -75,11 +75,16 @@ def parse_frontmatter(text):
 
 
 def load():
-    """相对路径 -> 全文；排除隐藏目录（.workbuddy 等）。"""
+    """相对路径 -> 全文；排除隐藏目录（.workbuddy 等）与依赖目录（node_modules）。
+
+    node_modules 是 npm 依赖安装产物（已 gitignore），其中第三方 README/LICENSE
+    不受本族 frontmatter 规范约束；不排除会把本地装过依赖的机器判红，而干净
+    checkout 却恒绿——门禁结果不该取决于开发者本地是否跑过 npm install。
+    """
     out = {}
     for p in sorted(BASE.rglob("*.md")):
         parts = p.relative_to(BASE).parts
-        if any(part.startswith(".") for part in parts):
+        if any(part.startswith(".") or part == "node_modules" for part in parts):
             continue
         out[p.relative_to(BASE).as_posix()] = p.read_text(encoding="utf-8")
     return out
