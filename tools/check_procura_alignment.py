@@ -281,23 +281,26 @@ CI_STATE_ANCHORS = (
     ("texts", "卷06", "D6 已裁决"),
 )
 # A10.17：三入口判据集合（Docs-as-Code 单一真源纪律）。
-# CI 与本地一键入口 = 全集（5 判据）；check.sh G0 = 快反馈子集（3 判据，不含 --self-test）。
+# CI 与本地一键入口 = 全集（7 判据）；check.sh G0 = 快反馈子集（4 判据，不含 --self-test）。
+# D-11（2026-11-20，L3 授权）：frontmatter 语义守护由本地补充判据接入三入口，
+# 新增 frontmatterGate（主判据）/ frontmatterProbe（--self-test 注入反证）两 key。
 ENTRY_FILES = {
     "ci.yml": ROOT / ".github" / "workflows" / "ci.yml",
     "check.sh": ROOT / "scripts" / "check.sh",
     "check-procura-ci.sh": BASE / "scripts" / "check-procura-ci.sh",
 }
-GATE_KEYS = ("docGate", "docProbe", "evalGate", "evalProbe", "asyncapiCheck")
+GATE_KEYS = ("docGate", "docProbe", "evalGate", "evalProbe", "asyncapiCheck",
+             "frontmatterGate", "frontmatterProbe")
 FULL_GATE_KEYS = frozenset(GATE_KEYS)
-FAST_GATE_KEYS = frozenset(("docGate", "evalGate", "asyncapiCheck"))
-CI_PROCURA_STEP_MIN = 4
+FAST_GATE_KEYS = frozenset(("docGate", "evalGate", "asyncapiCheck", "frontmatterGate"))
+CI_PROCURA_STEP_MIN = 6
 CI_STEP_HEAD_RE = re.compile(r"^\s*-\s+name:\s*ProcuraAI[^\n]*\(blocking\)\s*$")
 # A10.17 第十三轮加固（2026-11-12）：判据「可执行」不能只看命令集合，还要看 run 正文的
 # **shell 语义**。实测：run: | 多行块内 `set +e` + `exit 0` 在 GHA 默认 shell
 # `bash -e -o pipefail` 下把真实转红的主门禁压成 rc=0，而判据集合仍完整 ⇒ 假绿；
 # 原有四类拦截（continue-on-error / if: / 注释 run / 子串冒充）全在 YAML 键层，够不到。
 GATE_CMD_RE = re.compile(
-    r"check_procura_alignment\.py|check_procura_evalset\.py|generate_asyncapi\.py")
+    r"check_procura_alignment\.py|check_procura_evalset\.py|generate_asyncapi\.py|check_procura_frontmatter\.py")
 SHELL_SWALLOW_RULES = (
     (re.compile(r"\bset\s+\+(?:e|eo|eu|euo)\b"), "set +e 关闭 errexit"),
     (re.compile(r"\bset\s+\+o\s+(?:errexit|pipefail)\b"), "set +o 关闭 errexit/pipefail"),
@@ -418,6 +421,8 @@ def _cmd_key(path: str, flags: frozenset[str]) -> str | None:
         return "evalProbe" if "--self-test" in flags else ("evalGate" if not flags else None)
     if path.endswith("generate_asyncapi.py"):
         return "asyncapiCheck" if "--check" in flags else None
+    if path.endswith("check_procura_frontmatter.py"):
+        return "frontmatterProbe" if "--self-test" in flags else ("frontmatterGate" if not flags else None)
     return None
 
 
@@ -2771,6 +2776,14 @@ def self_test() -> int:
         t["总纲"] = t["总纲"] + "\n> 注入探针：参见 采购AI-智能风险审查与合同智能处理-PRD.md。\n"
         return _mutate(c, texts=t)
 
+    def m_legacy_file_dropped(c: Ctx) -> Ctx:
+        """D-12 负向：模拟一份旧族文档从磁盘消失（legacy 少一份 + extra_missing 标记），
+        须命中 A6「判据语料不完整 / extra_missing」转红（旧族作为反向守护语料必须在场）。"""
+        lg = dict(c.legacy)
+        dropped = sorted(lg)[0]
+        lg.pop(dropped)
+        return _mutate(c, legacy=lg, extra_missing=[f"legacy:{dropped}"] + list(c.extra_missing))
+
     def m_a10_svg_banned(c: Ctx) -> Ctx:
         s = dict(c.svgs)
         k = "procuraAI-技术架构.svg"
@@ -3181,6 +3194,24 @@ def self_test() -> int:
             "generate_asyncapi.py --check", "generate_asyncapi.py", 1)
         return _mutate(c, entries=en)
 
+    def m_ci_drop_frontmatter(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"].replace(
+            "check_procura_frontmatter.py", "check_procura_frontmatter_X.py", 1)
+        return _mutate(c, entries=en)
+
+    def m_local_drop_frontmatter(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["check-procura-ci.sh"] = en["check-procura-ci.sh"].replace(
+            "check_procura_frontmatter.py", "check_procura_frontmatter_X.py", 1)
+        return _mutate(c, entries=en)
+
+    def m_checksh_drop_frontmatter(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["check.sh"] = en["check.sh"].replace(
+            "check_procura_frontmatter.py", "check_procura_frontmatter_X.py", 1)
+        return _mutate(c, entries=en)
+
     def m_checksh_drop_eval(c: Ctx) -> Ctx:
         en = dict(c.entries)
         en["check.sh"] = en["check.sh"].replace("scripts/check_procura_evalset.py",
@@ -3408,7 +3439,9 @@ def self_test() -> int:
 
     def m_cis_fake_current(c: Ctx) -> Ctx:
         e = dict(c.extra)
-        e["资产登记"] = e["资产登记"].replace("`permissions: 0`", "`permissions: 3`", 1)
+        # D-13 后基线 permissions=2；注入一个不符真源的假数字（9）须转红。
+        e["资产登记"] = e["资产登记"].replace(
+            "| `permissions: 2` | workflow 级", "| `permissions: 9` | workflow 级", 1)
         return _mutate(c, extra=e)
 
     def m_cis_fake_status(c: Ctx) -> Ctx:
@@ -3427,12 +3460,20 @@ def self_test() -> int:
         en["ci.yml"] = en["ci.yml"] + "\n      - uses: probe/unpinned-action@main\n"
         return _mutate(c, entries=en)
 
-    def m_cis_supply_fixed_ok(c: Ctx) -> Ctx:
-        # 正例：owner 真实加固 ci.yml 并同步登记 → 判据须放行（证明数字不写死）
+    def m_ci_drop_permissions(c: Ctx) -> Ctx:
+        # D-13 负向：删掉顶层 permissions 块 → 计数 2→1，与文档登记 2 不符须转红。
         en = dict(c.entries)
-        en["ci.yml"] = "permissions:\n  contents: read\n" + en["ci.yml"]
+        en["ci.yml"] = re.sub(r"\npermissions:\n  contents: read\n", "\n", en["ci.yml"], count=1)
+        return _mutate(c, entries=en)
+
+    def m_cis_supply_fixed_ok(c: Ctx) -> Ctx:
+        # 正例：owner 进一步加固 ci.yml（多一个 job 级 permissions）并同步登记 → 判据须放行，
+        # 证明 A10.26 数字由真源动态裁决而非写死。D-13 后基线 permissions=2，这里 +1→3 并同步文档。
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"] + "\n  probe-perms:\n    permissions:\n      contents: read\n"
         e = dict(c.extra)
-        e["资产登记"] = e["资产登记"].replace("`permissions: 0`", "`permissions: 1`", 1)
+        e["资产登记"] = e["资产登记"].replace(
+            "| `permissions: 2` | workflow 级", "| `permissions: 3` | workflow 级", 1)
         return _mutate(c, entries=en, extra=e)
 
     def m_ev_drop_row(c: Ctx) -> Ctx:
@@ -3534,6 +3575,7 @@ def self_test() -> int:
         ("A4", "注入脱离否定语境的废弃决策表述", m_a4, "废弃表述脱离否定语境"),
         ("A5", "删除平台实证锚点 publishFrom", m_a5, "缺平台实证锚点"),
         ("A6", "删除一份真源文档（空集合 / 缺文件）", m_a6, "文档集合不完整"),
+        ("A6", "旧族文档少一份（D-12 反向守护语料缺失）", m_legacy_file_dropped, "资产集合不完整"),
         ("A7", "删除一卷 §5 状态机章节", m_a7_section, "缺 LLD 章节"),
         ("A7", "总纲模块覆盖矩阵删掉一个模块", m_a7_coverage, "模块覆盖矩阵缺"),
         ("A8", "附录 B 注册表删掉一条事件（零漂移 + 下界）", m_a8_registry, "注册表条目"),
@@ -3613,6 +3655,9 @@ def self_test() -> int:
         ("A10", "ci.yml 去掉 generate_asyncapi.py --check（CI 判据漂移）", m_ci_drop_check, "A10.17"),
         ("A10", "本地一键入口去掉 --check（判据集合漂移）", m_local_drop_check, "A10.17"),
         ("A10", "check.sh G0 删掉评测集判据（快反馈子集被破坏）", m_checksh_drop_eval, "A10.17"),
+        ("A10", "ci.yml 删掉 frontmatterGate 判据（D-11 接入被回退）", m_ci_drop_frontmatter, "A10.17"),
+        ("A10", "本地一键入口删掉 frontmatter 判据（D-11 接入被回退）", m_local_drop_frontmatter, "A10.17"),
+        ("A10", "check.sh G0 删掉 frontmatterGate 判据（D-11 快反馈被回退）", m_checksh_drop_frontmatter, "A10.17"),
         ("A10", "C-4 可验收动作清空（合规清单退化成条款）", m_compliance_empty_action, "A10.18"),
         ("A10", "F1 Owner 列清空（地基层缺责任人）", m_foundation_empty_owner, "A10.18"),
         ("A10", "F1 验收判据列删掉（表格结构退化）", m_foundation_drop_column, "A10.18"),
@@ -3676,6 +3721,8 @@ def self_test() -> int:
          "A10.26 ci.yml 出现 pull_request_target"),
         ("A10", "ci.yml 新增 @main 分支引用", m_ci_branch_added,
          "A10.26 ci.yml 分支引用债务只减不增"),
+        ("A10", "ci.yml 删掉顶层 permissions 块（D-13 加固被回退）", m_ci_drop_permissions,
+         "A10.26 供应链基线 `permissions` 登记"),
         ("A10", "§11 删掉 E-9/E-10 证据索引行", m_ev_drop_row,
          "A10.27 资产登记第 11 节证据索引行缺失"),
         ("A10", "§11 伪造「已跟踪」", m_ev_fake_tracked,

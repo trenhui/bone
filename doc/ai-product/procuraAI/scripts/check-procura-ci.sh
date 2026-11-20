@@ -2,10 +2,10 @@
 # Procura 文档族 + AI 评测集治理门禁「本地一键入口」。
 #
 # 状态（2026-11-10 复诊 P0-③ / D6 已闭合）：
-#   - 真正的 ship-ready 判据是 .github/workflows/ci.yml 的四条 ProcuraAI* (blocking) 步骤，
+#   - 真正的 ship-ready 判据是 .github/workflows/ci.yml 的六条 ProcuraAI* (blocking) 步骤，
 #     以及 scripts/check.sh 的 G0-procura 快反馈块；本脚本**不再是 CI 的调用入口**。
-#   - 本脚本保留给本地开发 / 评审前自查，跑 5 判据全集（含注入式负向反证）；
-#     ci.yml 四条 ProcuraAI* (blocking) 覆盖同一全集，check.sh G0 跑 3 判据快反馈子集。
+#   - 本脚本保留给本地开发 / 评审前自查，跑 7 判据全集（含注入式负向反证，D-11 后含 frontmatter）；
+#     ci.yml 六条 ProcuraAI* (blocking) 覆盖同一全集，check.sh G0 跑 4 判据快反馈子集。
 #   - 三处判据集合与**可执行语义**由门禁 A10.17 守护：解析 blocking step 的 run: 命令，
 #     拦截 continue-on-error / if: 条件跳过 / 注释 run / 子串冒充，以及 run 正文
 #     shell 层吞错（set +e / exit 0 / || true / ; exit 0 / trap ERR）——任一处删改 → A10 转红。
@@ -35,4 +35,10 @@ python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py
 echo "[procura-gate] AI 评测集注入式负向反证"
 python3 doc/ai-product/procuraAI/scripts/check_procura_evalset.py --self-test
 
-echo "[procura-gate] 本地全绿；CI blocking 结果以 ci.yml 四条 ProcuraAI* 步骤为准（CI 绿 ≠ 可上线）"
+echo "[procura-gate] doc frontmatter 语义守护（四态 / 旧族 banner / 真源不得标废）"
+python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py
+
+echo "[procura-gate] doc frontmatter 注入式负向反证"
+python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py --self-test
+
+echo "[procura-gate] 本地全绿；CI blocking 结果以 ci.yml 六条 ProcuraAI* 步骤为准（CI 绿 ≠ 可上线）"

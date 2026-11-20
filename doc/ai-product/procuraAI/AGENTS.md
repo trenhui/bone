@@ -63,7 +63,7 @@ python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py
 python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py --self-test
 ```
 
-以上均在仓库根执行。**前 7 条**是 A10.17 锁死的三入口判据全集（一键脚本覆盖同一全集，是本地评审前的权威入口）；**后 2 条**是本族 frontmatter 语义守护，属**本地补充判据、未纳入 CI 三入口判据集合**——A10.17 以 `FULL_GATE_KEYS` 严格比对判据集合，擅自加进任一入口会立刻转红，接入 CI 需同步改 `ci.yml` / `check.sh` / 一键脚本 / 门禁常量与自检探针（L3，见 `decisions/DECISION-REGISTER.md` D-11）。改 frontmatter 或旧族 banner 后必须跑最后两条。注意：`| tail` 会吞掉退出码；中文路径 git 操作须带 `-c core.quotePath=false`。
+以上均在仓库根执行。**前 7 条**是 A10.17 锁死的三入口判据全集（一键脚本覆盖同一全集，是本地评审前的权威入口）；**后 2 条**是本族 frontmatter 语义守护（`frontmatterGate` 主判据 / `frontmatterProbe` 注入反证），D-11（2026-11-20 L3 授权）已接入三入口：主判据进 `ci.yml` 与 `check.sh` G0 快反馈，注入反证进 `ci.yml` 与一键脚本全集。A10.17 以 `FULL_GATE_KEYS`（7 key）/ `FAST_GATE_KEYS`（4 key）严格比对，任一口径删改即转红（见 `decisions/DECISION-REGISTER.md` D-11）。改 frontmatter 或旧族 banner 后必须跑最后两条。注意：`| tail` 会吞掉退出码；中文路径 git 操作须带 `-c core.quotePath=false`。
 
 ## 4. 禁止修改 / 须先审批
 
@@ -76,7 +76,7 @@ python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py --self-tes
 ## 5. 文档状态与变更史
 
 - 四态（资产登记 §2）：`真源 Active` / `受限引用 Restricted` / `历史归档 Archived` / `作废 Deprecated`。**状态是文档级**；单条款撤销见资产登记 §5。
-- 每份 md 头部的 YAML frontmatter 是状态的**机器可读投影**，由 `scripts/check_procura_frontmatter.py` 做本地语义守护（四态合法 / 旧族 banner / 真源不得标废）；主门禁 A10 **尚未**守护 frontmatter，接入 CI 见 D-11。（`status` / `layer` / `truth-for` / `supersedes`）；与资产登记 §3 冲突时仍以资产登记为准。
+- 每份 md 头部的 YAML frontmatter 是状态的**机器可读投影**，由 `scripts/check_procura_frontmatter.py` 做语义守护（四态合法 / 旧族 banner / 真源不得标废）；D-11（2026-11-20 L3 授权）已将主判据与注入反证接入 A10.17 三入口判据集合，主门禁现守护 frontmatter。（`status` / `layer` / `truth-for` / `supersedes`）；与资产登记 §3 冲突时仍以资产登记为准。
 - 历轮执行台账在 `CHANGELOG.md`，其中 `N/N` 全部是**当时快照**。当前态唯一真源是 `README.md` 的 `gateEvidenceManifest` 行（由 `--manifest` 推导、`--sync-manifest` 同步）。
 - 外部诊断报告 9 份在 `outputs/procuraAI-*.md`，未纳入 git 跟踪；索引见资产登记 §11，跨机器 clone 后可能不存在。
 

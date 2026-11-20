@@ -898,6 +898,11 @@ if ! python3 doc/ai-product/procuraAI/detailed-design/contracts/generate_asyncap
   echo -e "${DIM}  复核：python3 doc/ai-product/procuraAI/detailed-design/contracts/generate_asyncapi.py --check${RESET}"
   exit_code=1
 fi
+if ! python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py > /dev/null; then
+  echo -e "${RED}❌ procuraAI frontmatter 语义守护失败（四态 / 旧族 banner / 真源不得标废）${RESET}"
+  echo -e "${DIM}  复核：python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py${RESET}"
+  exit_code=1
+fi
 
 # 结果处理 + 熔断计数
 if [ "$exit_code" -ne 0 ]; then
