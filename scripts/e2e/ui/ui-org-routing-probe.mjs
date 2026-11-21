@@ -49,7 +49,9 @@ async function waitFor(fn, timeoutMs = 15000, step = 500) {
 }
 
 async function accountIdByUsername(username) {
-  const r = await api('GET', `/iam/accounts?username=${encodeURIComponent(username)}&page=1&size=10`);
+  // 后端 AccountPageQuery 的查询参数是 keyword（无 username 字段）；用错参数会被静默忽略，
+  // 退回第 1 页全量账号——账号数增长后目标账号跌出首页即得到 null（假阴性前置失败）。
+  const r = await api('GET', `/iam/accounts?keyword=${encodeURIComponent(username)}&page=1&size=10`);
   const recs = r.data?.data?.records || [];
   const hit = recs.find((x) => x.username === username);
   return hit ? String(hit.id) : null;
@@ -153,6 +155,18 @@ async function seedSubmitted() {
       await shot(ap, 'ui-org-routing-accounts-diag');
       throw new Error('账号表格未渲染');
     }
+
+    // E2E 账号可能不在第 1 页（账号数增长 + 页大小 10）。用页面搜索框先收敛到目标账号，
+    // 避免把「分页数据漂移」误判成「部门/主管列未渲染」。搜索框有 300ms 防抖 + 重新拉列表。
+    const searchBox = ap.getByPlaceholder('搜索用户名、邮箱或姓名');
+    await searchBox.fill(INITIATOR);
+    await ap
+      .waitForFunction(
+        (u) => Array.from(document.querySelectorAll('.ant-table-row')).some((r) => r.innerText.includes(u)),
+        INITIATOR,
+        { timeout: 20000 },
+      )
+      .catch(() => {}); // 未命中也继续，由下面的 check 给出明确失败
 
     const table = await ap.evaluate(() => ({
       heads: Array.from(document.querySelectorAll('.ant-table-thead th')).map((x) => x.innerText.trim()),
