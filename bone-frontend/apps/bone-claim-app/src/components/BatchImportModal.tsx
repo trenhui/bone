@@ -15,6 +15,7 @@ import {
 import { DownloadOutlined, UploadOutlined } from '@ant-design/icons';
 import { resolveErrorMessage } from '@bone/shared-utils';
 import type { ApiResponse } from '@bone/shared-types';
+import { ImportErrorDrawer, type ImportRowError } from './ImportErrorDrawer';
 
 /**
  * 通用 CSV 批量导入弹窗（配置面）。
@@ -56,6 +57,13 @@ export interface BatchImportModalProps<TReq = Record<string, unknown>> {
   createOne: (req: TReq) => Promise<ApiResponse<unknown>>;
   /** 全部导入完成后的回调（通常用于刷新列表）。 */
   onSuccess?: () => void;
+  /**
+   * 服务端逐行错误回执（仅 mapping 导入会传）；不传则不显示「查看逐行错误」入口。
+   * 本组件仍是通用 CSV 导入器，validateRow/createOne 逻辑不受影响。
+   */
+  importErrors?: ImportRowError[];
+  /** 导入批次号（与 importErrors 配套展示）。 */
+  batchNo?: string;
 }
 
 interface ParsedRow {
@@ -131,11 +139,14 @@ export function BatchImportModal<TReq = Record<string, unknown>>(
     validateRow,
     createOne,
     onSuccess,
+    importErrors,
+    batchNo,
   } = props;
   const { message } = AntApp.useApp();
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [importing, setImporting] = useState(false);
   const [done, setDone] = useState(0);
+  const [errorDrawerOpen, setErrorDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -327,6 +338,11 @@ export function BatchImportModal<TReq = Record<string, unknown>>(
           {finished && (
             <Button onClick={downloadResult}>下载结果</Button>
           )}
+          {importErrors && importErrors.length > 0 && (
+            <Button onClick={() => setErrorDrawerOpen(true)}>
+              查看逐行错误（{importErrors.length}）
+            </Button>
+          )}
         </Space>
         {importing && (
           <Progress percent={rows.length ? Math.round((done / rows.length) * 100) : 0} />
@@ -348,6 +364,12 @@ export function BatchImportModal<TReq = Record<string, unknown>>(
             scroll={{ y: 320 }}
           />
         )}
+        <ImportErrorDrawer
+          open={errorDrawerOpen}
+          onClose={() => setErrorDrawerOpen(false)}
+          batchNo={batchNo}
+          errors={importErrors ?? []}
+        />
       </Space>
     </Modal>
   );

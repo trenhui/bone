@@ -1,0 +1,285 @@
+# comet-execution: managed-run
+change_id: e99987fe-cbb0-4cb1-9c8d-7168ed1b3b5f
+workflow: full
+language: zh-CN
+phase: open
+context_compression: off
+build_mode: null
+build_pause: null
+subagent_dispatch: null
+tdd_mode: null
+review_mode: off
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: a0f6db537875a8148ebcf2bb7a752e178fcb0d28
+design_doc: null
+plan: null
+verify_result: pending
+verify_failures: 0
+verification_report: null
+branch_status: pending
+created_at: 2026-11-21
+verified_at: null
+archive_confirmation: null
+archived: false
+bound_branch: dev
+direct_override: null
+handoff_context: null
+handoff_hash: null
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v1
+  hash: 65efdc2d35f0be539b8d1371b6f39457e30ae401819ad6486ed65b23bcff017c
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: claim-demo-industry-practices
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: 5599d3f61ed0ec9621ebeb85558ee30d7dbc076b39a507fc598b7779aaa2288c
+    input:
+      change: claim-demo-industry-practices
+      changeDir: openspec/changes/claim-demo-industry-practices
+      workspaceBaseline:
+        ref: ccf0f3be-ddd3-4f7b-96fe-ff8f5c4252f6
+    state:
+      archiveConfirmation: null
+      archived: false
+      autoTransition: true
+      baseRef: a0f6db537875a8148ebcf2bb7a752e178fcb0d28
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: null
+      buildPause: null
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-21
+      designDoc: null
+      directOverride: null
+      handoffContext: null
+      handoffHash: null
+      isolation: current
+      language: zh-CN
+      phase: open
+      plan: null
+      reviewMode: off
+      subagentDispatch: null
+      tddMode: null
+      verificationReport: null
+      verifiedAt: null
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pending
+      workflow: full
+    status: running
+    sequence: 4
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-2c5a07b4e69395b7be6aa217f3945ac059ddf8f639f634d518b51ff9b6236b58
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-demo-industry-practices:1
+        input:
+          input:
+            change: claim-demo-industry-practices
+            changeDir: openspec/changes/claim-demo-industry-practices
+            workspaceBaseline:
+              ref: ccf0f3be-ddd3-4f7b-96fe-ff8f5c4252f6
+          outputs: {}
+        inputHash: 9ab0c5a188380994f29c15b1ae102d91df8ebe78606a7d3bfa5bb528e572eeed
+        outcome:
+          actionId: claim-demo-industry-practices:1
+          attempt: 1
+          claimToken: portable-2c5a07b4e69395b7be6aa217f3945ac059ddf8f639f634d518b51ff9b6236b58
+          inputHash: 9ab0c5a188380994f29c15b1ae102d91df8ebe78606a7d3bfa5bb528e572eeed
+          outcomeId: 018b35fe-076b-42b1-a539-fbd9a78cffc7
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 7d6c0a36728f37b3ac4974dd2afc73b25f510b44b0adc3c80496cdc66a7dead7
+            outcomeId: 018b35fe-076b-42b1-a539-fbd9a78cffc7
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-demo-industry-practices
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-aae9775a24ca310c93cb82135f36657940ce2ce59991c5e4c669a4f1e3a2a4b7
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-demo-industry-practices:4
+        input:
+          input:
+            change: claim-demo-industry-practices
+            changeDir: openspec/changes/claim-demo-industry-practices
+            workspaceBaseline:
+              ref: ccf0f3be-ddd3-4f7b-96fe-ff8f5c4252f6
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-demo-industry-practices
+                  changeDir: openspec/changes/claim-demo-industry-practices
+                  workspaceBaseline:
+                    ref: ccf0f3be-ddd3-4f7b-96fe-ff8f5c4252f6
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: edc604dd60ee015ae10921e3a3c36ee192f671225693c962f84ee6bd687aec13
+                    ref: openspec/changes/claim-demo-industry-practices
+            full.open.evidence:
+              contentHash: edc604dd60ee015ae10921e3a3c36ee192f671225693c962f84ee6bd687aec13
+              ref: openspec/changes/claim-demo-industry-practices
+        inputHash: d25660c471306ea5a1fa60e4c87e2d1223ae669efcc6ef5f03098742c70b8bf0
+        protocolVersion: 1
+        reason: Portable recovery requires reconciliation of external execution
+        receipts: []
+        reconciliations: []
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-demo-industry-practices
+        status: unknown
+        stepId: full.open.revalidate
+        type: call_tool
+    actionContexts:
+      claim-demo-industry-practices:1:
+        results: {}
+        sequence: 1
+      claim-demo-industry-practices:4:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-demo-industry-practices
+                  changeDir: openspec/changes/claim-demo-industry-practices
+                  workspaceBaseline:
+                    ref: ccf0f3be-ddd3-4f7b-96fe-ff8f5c4252f6
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: edc604dd60ee015ae10921e3a3c36ee192f671225693c962f84ee6bd687aec13
+                    ref: openspec/changes/claim-demo-industry-practices
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: edc604dd60ee015ae10921e3a3c36ee192f671225693c962f84ee6bd687aec13
+              ref: openspec/changes/claim-demo-industry-practices
+        sequence: 4
+    waits:
+      - id: claim-demo-industry-practices:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: claim-demo-industry-practices
+            changeDir: openspec/changes/claim-demo-industry-practices
+            workspaceBaseline:
+              ref: ccf0f3be-ddd3-4f7b-96fe-ff8f5c4252f6
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: edc604dd60ee015ae10921e3a3c36ee192f671225693c962f84ee6bd687aec13
+              ref: openspec/changes/claim-demo-industry-practices
+        proposalHash: f3dcd39c7715eba935d05acd2608d1bfceea759d54fc99aa1e3bd76a28b22758
+        choices:
+          - approved
+          - rejected
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: edc604dd60ee015ae10921e3a3c36ee192f671225693c962f84ee6bd687aec13
+              ref: openspec/changes/claim-demo-industry-practices
+        decision:
+          id: classic-open-edc604dd60ee015ae10921e3a3c36ee192f671225693c962f84ee6bd687aec13
+          choice: approved
+          proposalHash: f3dcd39c7715eba935d05acd2608d1bfceea759d54fc99aa1e3bd76a28b22758
+    evidenceWaits:
+      - id: claim-demo-industry-practices:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+        receipt:
+          ref: openspec/changes/claim-demo-industry-practices
+          contentHash: edc604dd60ee015ae10921e3a3c36ee192f671225693c962f84ee6bd687aec13
+          submissionId: 52d50ebe-7983-47f8-a219-ddddc4fbcb27
+    ready: []
+    joins: {}
+    outputs:
+      full.open:
+        sequence: 1
+        value:
+          event: open-complete
+      full.open.confirm:
+        sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-demo-industry-practices
+              changeDir: openspec/changes/claim-demo-industry-practices
+              workspaceBaseline:
+                ref: ccf0f3be-ddd3-4f7b-96fe-ff8f5c4252f6
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: edc604dd60ee015ae10921e3a3c36ee192f671225693c962f84ee6bd687aec13
+                ref: openspec/changes/claim-demo-industry-practices
+      full.open.evidence:
+        sequence: 2
+        value:
+          contentHash: edc604dd60ee015ae10921e3a3c36ee192f671225693c962f84ee6bd687aec13
+          ref: openspec/changes/claim-demo-industry-practices
+    children: []
+    lineage: []
+  sourceRevision: 6
+  sourceHash: 2c168b3d6e0da16dee244514b387a52be2c2a4a4ece0d93e027e6b2b2c0fe839

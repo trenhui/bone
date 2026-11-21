@@ -25,7 +25,7 @@ import { attachmentApi, evidenceApi, type EvidenceResp } from '../services/claim
 import { PageHeader } from '../components/PageHeader';
 import { CaseIdBar, CaseNotSelected } from '../components/CaseIdBar';
 import { useClaimIdParam } from '../hooks/useClaimIdParam';
-import { resolveErrorMessage } from '@bone/shared-utils';
+import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { AuthButton } from '@bone/ui';
 import { PERMISSIONS } from '../constants/permissions';
 
@@ -62,6 +62,37 @@ const OCR_STATUS: Record<string, { color: string; label: string }> = {
   MANUAL: { color: 'orange', label: '人工补录' },
   FAILED: { color: 'red', label: '解析失败' },
 };
+
+/** 影像清晰度三态（与后端 ImageClarity 对齐；非 CLEAR 在锁定时 fail-closed 阻断入理算）。 */
+const CLEAR_TYPE: Record<string, { color: string; label: string }> = {
+  CLEAR: { color: 'green', label: '清晰' },
+  UNCLEAR: { color: 'red', label: '不清晰' },
+  INCOMPLETE: { color: 'orange', label: '不完整' },
+};
+const CLEAR_TYPE_OPTIONS = [
+  { value: 'CLEAR', label: '清晰' },
+  { value: 'UNCLEAR', label: '不清晰' },
+  { value: 'INCOMPLETE', label: '不完整' },
+];
+const clearTypeMeta = (v?: string) =>
+  v ? (CLEAR_TYPE[v] ?? { color: 'default', label: v }) : { color: 'default', label: '未标注' };
+
+/**
+ * 从 ProblemDetail 里取后端 detail（如不清晰证据 ID + 补传/标注引导）。
+ *
+ * 锁定失败的 SC_CLAIM_EVIDENCE_UNCLEAR_BLOCKS_LOCK 若走通用 resolveErrorMessage，
+ * 就只剩一句码表译文，用户看不到该补传哪几张，故单独按码取 detail。
+ */
+function problemDetail(err: unknown): string {
+  const e = err as {
+    response?: { data?: { data?: { detail?: unknown } } };
+    displayMessage?: unknown;
+  } | null;
+  const detail = e?.response?.data?.data?.detail;
+  if (typeof detail === 'string' && detail.trim()) return detail.trim();
+  const top = e?.displayMessage;
+  return typeof top === 'string' && top.trim() ? top.trim() : '';
+}
 
 const docTypeLabel = (v?: string): string => DOC_TYPES.find((d) => d.value === v)?.label ?? v ?? '-';
 const ocrStatus = (v?: string) =>
@@ -140,6 +171,15 @@ const columns: TableColumnsType<EvidenceResp> = [
     render: (v?: string) => v ?? '-',
   },
   {
+    title: '清晰度',
+    dataIndex: 'clearType',
+    key: 'clearType',
+    render: (v?: string) => {
+      const c = clearTypeMeta(v);
+      return <Tag color={c.color}>{c.label}</Tag>;
+    },
+  },
+  {
     title: '已锁定',
     dataIndex: 'locked',
     key: 'locked',
@@ -166,6 +206,11 @@ export function EvidenceUploadPage({ embeddedClaimId }: CasePageProps = {}): Rea
   const [rows, setRows] = useState<EvidenceResp[]>([]);
   const [loading, setLoading] = useState(false);
   const [locking, setLocking] = useState(false);
+  /** 表格勾选的影像（批量标注清晰度；单张即长度为 1 的 items）。 */
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  /** 操作区待应用的清晰度值。 */
+  const [clearTypeDraft, setClearTypeDraft] = useState('CLEAR');
+  const [applyingClear, setApplyingClear] = useState(false);
   /** 在途文件：key = 文件名+大小+最后修改时间（同一文件重选不会被当成同一任务） */
   const [jobs, setJobs] = useState<Record<string, UploadJob>>({});
   /** 卸载后不再 setState（上传/哈希是长任务，用户可能中途切页） */
@@ -245,6 +290,22 @@ export function EvidenceUploadPage({ embeddedClaimId }: CasePageProps = {}): Rea
     return false; // 阻止 antd 默认上传，由我们控制 fileRef + 内容哈希 + 登记
   };
 
+  const onApplyClearType = async () => {
+    if (!claimId || selectedRowKeys.length === 0) return;
+    setApplyingClear(true);
+    try {
+      const items = selectedRowKeys.map((evidenceId) => ({ evidenceId, clearType: clearTypeDraft }));
+      const updated = await evidenceApi.updateClearType(claimId, items);
+      message.success(`已标注 ${updated?.data ?? items.length} 份影像为「${clearTypeMeta(clearTypeDraft).label}」`);
+      setSelectedRowKeys([]);
+      await load();
+    } catch (err) {
+      message.error(resolveErrorMessage(err, '清晰度标注失败'));
+    } finally {
+      if (mounted.current) setApplyingClear(false);
+    }
+  };
+
   const onLock = async () => {
     setLocking(true);
     try {
@@ -252,7 +313,12 @@ export function EvidenceUploadPage({ embeddedClaimId }: CasePageProps = {}): Rea
       message.success('证据集已锁定（理算前置）');
       await load();
     } catch (err) {
-      message.error(resolveErrorMessage(err, '锁定失败'));
+      if (resolveErrorCode(err) === 'SC_CLAIM_EVIDENCE_UNCLEAR_BLOCKS_LOCK') {
+        // 后端 detail 带不清晰证据 ID 与补传/标注引导，不能被通用码表文案吞掉
+        message.error(problemDetail(err) || resolveErrorMessage(err, '锁定失败'));
+      } else {
+        message.error(resolveErrorMessage(err, '锁定失败'));
+      }
     } finally {
       if (mounted.current) setLocking(false);
     }
@@ -330,6 +396,30 @@ export function EvidenceUploadPage({ embeddedClaimId }: CasePageProps = {}): Rea
               </Typography.Text>
             </Space>
 
+            <Space wrap align="center">
+              <Typography.Text type="secondary">
+                已选 {selectedRowKeys.length} 份影像
+              </Typography.Text>
+              <Select
+                value={clearTypeDraft}
+                onChange={setClearTypeDraft}
+                options={CLEAR_TYPE_OPTIONS}
+                style={{ width: 140 }}
+                placeholder="设置清晰度"
+                aria-label="清晰度标注"
+              />
+              <Button
+                disabled={selectedRowKeys.length === 0 || applyingClear}
+                loading={applyingClear}
+                onClick={() => void onApplyClearType()}
+              >
+                应用
+              </Button>
+              <Typography.Text type="secondary">
+                不清晰/不完整影像会阻断证据集锁定，请补传或改标为清晰。
+              </Typography.Text>
+            </Space>
+
             {jobList.length > 0 && (
               <Card type="inner" title={<Space><FileSearchOutlined />正在处理（{jobList.length}）</Space>} size="small">
                 <Space direction="vertical" style={{ width: '100%' }}>
@@ -364,6 +454,10 @@ export function EvidenceUploadPage({ embeddedClaimId }: CasePageProps = {}): Rea
               loading={loading}
               size="small"
               pagination={false}
+              rowSelection={{
+                selectedRowKeys,
+                onChange: (keys) => setSelectedRowKeys(keys.map(String)),
+              }}
               locale={{ emptyText: '该案件暂无已登记材料' }}
             />
           </Space>

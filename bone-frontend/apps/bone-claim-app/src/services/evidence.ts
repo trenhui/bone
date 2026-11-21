@@ -33,6 +33,21 @@ export const evidenceApi = {
   lock(claimId: string): Promise<ApiResponse<number>> {
     return client.post<never, ApiResponse<number>>(`/${claimId}/evidences/lock`);
   },
+  /**
+   * 批量标注影像清晰度（CLEAR/UNCLEAR/INCOMPLETE）。
+   *
+   * 与 lock/markParsed 同走 claim 前缀的 client；请求体是 items 数组，
+   * 单张标注也由调用方包成一项。返回实际更新条数（小整数，number 无损）。
+   */
+  updateClearType(
+    claimId: string,
+    items: { evidenceId: string; clearType: string }[],
+  ): Promise<ApiResponse<number>> {
+    return client.post<{ items: { evidenceId: string; clearType: string }[] }, ApiResponse<number>>(
+      `/${claimId}/evidences/clarity`,
+      { items },
+    );
+  },
   /** 回填解析结果（OCR/LLM 回调或人工补录）。 */
   markParsed(
     claimId: string,

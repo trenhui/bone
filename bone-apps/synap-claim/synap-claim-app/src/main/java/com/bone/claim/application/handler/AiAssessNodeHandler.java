@@ -1,6 +1,8 @@
 package com.bone.claim.application.handler;
 
 import com.bone.claim.application.port.out.AiGatewayPort;
+import com.bone.claim.application.port.out.AiGatewayPort.EvidenceLocator;
+import com.bone.claim.application.port.out.AiGatewayPort.Fact;
 import com.bone.claim.application.port.out.AiGatewayUnavailableException;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.application.port.out.DecisionNodeHandler;
@@ -10,6 +12,7 @@ import com.bone.claim.domain.model.decision.DecisionGraph;
 import com.bone.claim.domain.model.decision.DecisionNodeStatus;
 import com.bone.claim.domain.model.decision.KnowledgeBasis;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +46,13 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
 
   /** 轨迹键：模型给出但无材料出处的定位条数（幻觉计量，运行期健康度按此聚合）。 */
   static final String KEY_UNVERIFIABLE_LOCATORS = "aiUnverifiableLocators";
+
+  /**
+   * 轨迹键：结构化证据定位（{@code evidenceRef + pageNo + lineNo}），供前端渲染"发票号 X → 影像第 N 页"。
+   *
+   * <p>trace 表 append-only：本键是 JSON 输出扩展，不加列、不回填历史行。
+   */
+  static final String KEY_EVIDENCE_LOCATORS = "evidenceLocators";
 
   private final ClaimContextPort claimContextPort;
   private final AiGatewayPort aiGatewayPort;
@@ -96,6 +106,8 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
       // v1.2：降级路径也输出同一套认知层键（空值），保证决策轨迹 schema 稳定，读侧不必判空分支
       putCognitiveEmpty(out);
       putCapability(out, knowledgeAvailable, k.basis());
+      // 降级 = 模型没跑，不存在"编造定位"，此处恒空。键必须出现：读侧按 schema 稳定取数。
+      out.put(KEY_EVIDENCE_LOCATORS, List.of());
       // 降级 = 模型没跑，不存在"编造定位"，此处恒 0。但键必须出现：读侧按 schema 稳定取数，
       // 用"键缺失"表达 0 会让「老数据没这字段」与「模型零编造」混为一谈。
       out.put(KEY_UNVERIFIABLE_LOCATORS, 0);
@@ -117,7 +129,10 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
     out.put("aiAvailable", true);
     // v1.2 AI 原生：结构化认知随节点输出进入 claim_decision_trace —— 核赔员可解释材料 +
     // 独立盲标与评测集的候选样本源。只做留痕与展示，不参与金额、不改变 rejectSuggested 与分诊
+    // Fact record 自带 pageNo/lineNo，序列化后 aiFacts 即含页码/行号，不另造平行结构。
     out.put("aiFacts", a == null ? List.of() : a.facts());
+    // P0-B：结构化定位列表。无坐标时为空——不编造默认页，幻觉计量仍只看 unverifiableLocators。
+    out.put(KEY_EVIDENCE_LOCATORS, locatorsOf(a == null ? List.of() : a.facts()));
     out.put("aiEvidenceRefs", a == null ? List.of() : a.evidenceRefs());
     out.put("aiClauseRefs", a == null ? List.of() : a.clauseRefs());
     out.put("aiDiscrepancies", a == null ? List.of() : a.discrepancies());
@@ -138,6 +153,21 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
     out.put("aiEvidenceRefs", List.of());
     out.put("aiClauseRefs", List.of());
     out.put("aiDiscrepancies", List.of());
+  }
+
+  /**
+   * 从 AI 事实投影证据定位：只有材料侧真实带页码才产出 locator，行号可缺省。
+   *
+   * <p>"无坐标"不是异常，而是如实输出空列表；绝不把 text@offset 之类文本定位伪装成影像页。
+   */
+  static List<EvidenceLocator> locatorsOf(List<Fact> facts) {
+    List<EvidenceLocator> locators = new ArrayList<>();
+    for (Fact fact : facts) {
+      if (fact.pageNo() != null) {
+        locators.add(new EvidenceLocator(fact.evidenceRef(), fact.pageNo(), fact.lineNo()));
+      }
+    }
+    return List.copyOf(locators);
   }
 
   /**

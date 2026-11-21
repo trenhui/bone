@@ -56,7 +56,7 @@ public final class AiDecisionDisclosure {
   /** §22 / 金发 8 号：高风险业务人工最终决策，AI 输出仅作辅助。 */
   public static final String HUMAN_FINAL_DECISION = "最终理赔决定由具备权限的人工核赔人员作出并复核；AI 输出不参与金额计算、不改变资金状态。";
 
-  /** PIPL 第 24 条 + PRD §业务规则（48h 申诉、五要素告知）。受控码，前端字典翻译，禁自由文本外溢。 */
+  /** PIPL 第 24 条 + PRD §业务规则（申诉窗口以对客告知口径为准、五要素告知）。受控码，前端字典翻译，禁自由文本外溢。 */
   public static final List<String> RIGHTS =
       List.of("REQUEST_HUMAN_REVIEW", "APPEAL_WITHIN_48H", "EXPLANATION_OF_DECISION");
 

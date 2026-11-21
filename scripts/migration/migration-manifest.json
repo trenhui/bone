@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 136,
+  "executableCount": 139,
   "retired": [],
   "entries": [
     {
@@ -867,6 +867,24 @@
       "file": "0132_seed_procurement_transaction_tables.sql",
       "kind": "ddl",
       "summary": "补建 bone-init.sql 已定义但 baseline 库缺失的 15 张 t_proc_* 采购表（DDL 取自基线，仅加 IF NOT EXISTS）。"
+    },
+    {
+      "order": 137,
+      "file": "0133_synap_claim_evidence_clear_type.sql",
+      "kind": "ddl",
+      "summary": "t_claim_evidence 增加 clear_type 列(CLEAR/UNCLEAR/INCOMPLETE 清晰度三态): 让影像能否入理算成为库内事实; 锁定端点在锁定前显式校验非CLEAR抛SC_CLAIM_EVIDENCE_UNCLEAR_BLOCKS_LOCK fail-closed; bone-init.sql 同批补列; 终态information_schema断言"
+    },
+    {
+      "order": 138,
+      "file": "0134_synap_claim_coverage_override_origin.sql",
+      "kind": "ddl",
+      "summary": "t_claim_coverage_override 增加 origin(INHERIT/EXCLUSIVE/MODIFIED 三态)+last_sync_version 列: 让通用/专属/专属·改成为库内事实并支持同步默认不启用/可回退追溯; bone-init.sql 同批补列; 终态information_schema断言"
+    },
+    {
+      "order": 139,
+      "file": "0135_synap_claim_factor_matrix.sql",
+      "kind": "ddl",
+      "summary": "新建 t_claim_factor_matrix 表(理算责任因子矩阵,版本化,按row_key/col_key合并保留已填值): 移植原理赔valueList范式支撑三层责任矩阵配置; 必备列tenant_id/审计/deleted/version齐全; bone-init.sql 同批并入; 终态information_schema断言"
     }
   ],
   "ordinalConflicts": [

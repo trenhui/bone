@@ -324,7 +324,13 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
       }
       // 一律取材料侧的 code / value / evidenceRef：轨迹里出现的必须是"材料里确有的那一条"，
       // 而不是模型改写后的版本——否则展示面与材料会悄悄分叉。
-      facts.add(new Fact(material.code(), material.value(), material.evidenceRef()));
+      facts.add(
+          new Fact(
+              material.code(),
+              material.value(),
+              material.evidenceRef(),
+              material.pageNo(),
+              material.lineNo()));
     }
     return List.copyOf(facts);
   }

@@ -10,7 +10,9 @@ import {
   Form,
   Input,
   InputNumber,
+  List,
   Modal,
+  Popconfirm,
   Select,
   Space,
   Statistic,
@@ -34,13 +36,23 @@ import {
 } from '../services/claimApi';
 import { PageHeader } from '../components/PageHeader';
 import { AiDisclosureCard } from '../components/AiDisclosureCard';
-import { explainNode, toneColor, type ExplainFact } from '../services/decisionExplain';
+import {
+  evidenceLocatorsOf,
+  explainNode,
+  toneColor,
+  type ExplainFact,
+} from '../services/decisionExplain';
 import { claimStatusMeta } from '../services/claimStatus';
 import { consumptionReasonMeta } from '../services/decisionConsumption';
 import { rejectReasonGroups } from '../services/rejectReason';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
-import { AuthButton } from '@bone/ui';
+import { Auth, AuthButton } from '@bone/ui';
 import { PERMISSIONS } from '../constants/permissions';
+import {
+  MAX_BATCH_DECISION,
+  type BatchDecisionItem,
+  type BatchDecisionResp,
+} from '../services/reviewTask';
 import { reviewFatigueApi, sessionContinuousMinutes } from '../services/reviewFatigue';
 import type { ReviewFatigueEvaluation } from '../services/types';
 
@@ -116,6 +128,9 @@ export function ReviewWorkbenchPage(): ReactElement {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [total, setTotal] = useState(0);
+  /** 批量处置选择：rowKey 即 claimId；后端整批上限 20，前端同步收口。 */
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [batching, setBatching] = useState(false);
   const [decisionTarget, setDecisionTarget] = useState<ClaimHeadProjection | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [decisionForm] = Form.useForm<{ decision: Decision; approvedAmount: number; comment: string; rejectType: string }>();
@@ -300,6 +315,87 @@ export function ReviewWorkbenchPage(): ReactElement {
     });
   };
 
+  /** 批量请求出口：成功/失败数用 message 汇总，业务失败体按 code 交调用方逐条展示。 */
+  const callBatch = async (items: BatchDecisionItem[]) => {
+    const resp = await reviewTaskApi.batchDecide(items);
+    if (resp?.code !== 200) {
+      message.error({ content: resp?.message || '批量决策失败', key: MSG_KEY_ACTION });
+      return null;
+    }
+    const failed = resp.data?.failed ?? [];
+    const succeeded = resp.data?.succeeded?.length ?? 0;
+    message.success({ content: `成功 ${succeeded} / 失败 ${failed.length}`, key: MSG_KEY_ACTION });
+    return { succeeded, failed };
+  };
+
+  function showBatchFailures(failed: BatchDecisionResp['failed'], decision: Decision) {
+    Modal.warning({
+      title: `${failed.length} 单未处置（保留选中，可重试）`,
+      content: (
+        <List
+          size="small"
+          dataSource={failed}
+          renderItem={(f) => (
+            <List.Item
+              actions={[
+                <Button key="retry" size="small" type="link"
+                  onClick={() => void retryFailed(String(f.claimId), decision)}>
+                  重试
+                </Button>,
+              ]}
+            >
+              <Typography.Text>{String(f.claimId)} · {f.code} · {f.message}</Typography.Text>
+            </List.Item>
+          )}
+        />
+      ),
+    });
+  }
+
+  async function runBatch(decision: Decision) {
+    const ids = selectedRowKeys.map(String);
+    if (ids.length === 0) return;
+    if (ids.length > MAX_BATCH_DECISION) {
+      message.warning(`单次批量最多 ${MAX_BATCH_DECISION} 单，请减少选择后重试`);
+      return;
+    }
+    setBatching(true);
+    try {
+      const outcome = await callBatch(ids.map((claimId) => ({ claimId, decision })));
+      if (!outcome) return;
+      if (outcome.failed.length > 0) {
+        // 失败项保留选中并列出 claimId + code，可直接重试；成功项从选择中移除。
+        setSelectedRowKeys(outcome.failed.map((f) => String(f.claimId)));
+        showBatchFailures(outcome.failed, decision);
+      } else {
+        setSelectedRowKeys([]);
+      }
+      void load();
+    } catch (err) {
+      message.error({ content: resolveErrorMessage(err, '批量决策失败'), key: MSG_KEY_ACTION });
+    } finally {
+      setBatching(false);
+    }
+  }
+
+  async function retryFailed(claimId: string, decision: Decision) {
+    setBatching(true);
+    try {
+      const outcome = await callBatch([{ claimId, decision }]);
+      if (!outcome) return;
+      if (outcome.failed.length === 0) {
+        setSelectedRowKeys((prev) => prev.filter((key) => key !== claimId));
+        void load();
+      } else {
+        showBatchFailures(outcome.failed, decision);
+      }
+    } catch (err) {
+      message.error({ content: resolveErrorMessage(err, '重试失败'), key: MSG_KEY_ACTION });
+    } finally {
+      setBatching(false);
+    }
+  }
+
   /**
    * 行内轻动作（领取 / 发起复核）的统一执行：行级 loading + 后端真实原因上屏。
    *
@@ -401,6 +497,56 @@ export function ReviewWorkbenchPage(): ReactElement {
         />
       )}
 
+      {selectedRowKeys.length > 0 && (
+        <Card size="small" style={{ marginBottom: 16 }}>
+          <Space wrap>
+            <Typography.Text strong>已选 {selectedRowKeys.length} 单</Typography.Text>
+            <Typography.Text type="secondary">单次上限 {MAX_BATCH_DECISION} 单</Typography.Text>
+            <Auth code={PERMISSIONS.REVIEW_WRITE}>
+              <Space wrap>
+                <Popconfirm
+                  title={`批量通过 ${selectedRowKeys.length} 单？`}
+                  description="逐案写入通过决策；不满足前置状态的案件会进入失败列表供重试。"
+                  okText="确认"
+                  cancelText="取消"
+                  onConfirm={() => void runBatch('APPROVED')}
+                >
+                  <Button
+                    type="primary"
+                    loading={batching}
+                    disabled={selectedRowKeys.length > MAX_BATCH_DECISION}
+                  >
+                    批量通过
+                  </Button>
+                </Popconfirm>
+                <Popconfirm
+                  title={`批量拒赔 ${selectedRowKeys.length} 单？`}
+                  description="拒赔必填受控原因码与五要素；不满足的案件进入失败列表，不会中断整批。"
+                  okText="确认"
+                  okButtonProps={{ danger: true }}
+                  cancelText="取消"
+                  onConfirm={() => void runBatch('REJECTED')}
+                >
+                  <Button
+                    danger
+                    loading={batching}
+                    disabled={selectedRowKeys.length > MAX_BATCH_DECISION}
+                  >
+                    批量拒赔
+                  </Button>
+                </Popconfirm>
+              </Space>
+            </Auth>
+            <Button size="small" disabled={batching} onClick={() => setSelectedRowKeys([])}>
+              清空选择
+            </Button>
+            {fatigue && (
+              <Typography.Text type="warning">审核疲劳提示仍仅提示，不阻断批量处置</Typography.Text>
+            )}
+          </Space>
+        </Card>
+      )}
+
       <Card
         size="small"
         extra={
@@ -423,6 +569,10 @@ export function ReviewWorkbenchPage(): ReactElement {
           rowKey="claimId"
           loading={loading}
           dataSource={rows}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (keys) => setSelectedRowKeys(keys.map(String)),
+          }}
           pagination={{
             // 服务端分页：current/pageSize 由本页状态驱动，total 用后端返回值。
             // 禁止再写 `pagination={{ pageSize: 20 }}`（那是对已取回的 50 条做前端切片）。
@@ -626,7 +776,7 @@ export function ReviewWorkbenchPage(): ReactElement {
                     label="拒赔五要素（事实认定+条款依据+证据位置+申诉渠道+法定时限）"
                     rules={[{ required: true, message: '拒赔必填五要素' }]}
                   >
-                    <Input.TextArea rows={4} placeholder="事实认定：…；条款依据：…；证据位置：…；申诉渠道：…；法定时限：…" />
+                    <Input.TextArea rows={4} placeholder="事实认定：…；条款依据：…；证据位置：发票号X#p1#l3，多个用逗号分隔；申诉渠道：…；法定时限：…" />
                   </Form.Item>
                   <Form.Item
                     name="rejectType"
@@ -769,6 +919,40 @@ export function ReviewWorkbenchPage(): ReactElement {
                         ))}
                       </div>
                     ) : null;
+                  })()}
+                  {(() => {
+                    // 页码级证据锚点：只渲染材料真实带出的坐标（无坐标时 evidenceLocatorsOf 为空，不编造默认页）。
+                    // 点击走项目既有 ?claimId= 深链约定，selectedId 带入后端证据引用用于定位影像页。
+                    const locators = evidenceLocatorsOf(n.output);
+                    if (locators.length === 0 || !traceTarget) return null;
+                    return (
+                      <div style={{ marginTop: 6 }}>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          证据锚点
+                        </Typography.Text>
+                        <List
+                          size="small"
+                          dataSource={locators}
+                          renderItem={(loc) => (
+                            <List.Item style={{ padding: '2px 0', border: 'none' }}>
+                              <Tag
+                                color="blue"
+                                style={{ cursor: 'pointer', marginInlineEnd: 0 }}
+                                onClick={() =>
+                                  navigate(
+                                    `/evidence?claimId=${encodeURIComponent(traceTarget.claimId)}` +
+                                    `&selectedId=${encodeURIComponent(loc.evidenceRef)}`,
+                                  )
+                                }
+                              >
+                                {loc.label} → 影像第{loc.pageNo}页
+                                {loc.lineNo === null ? '' : `（第${loc.lineNo}行）`}
+                              </Tag>
+                            </List.Item>
+                          )}
+                        />
+                      </div>
+                    );
                   })()}
                   {n.output && (
                     <details style={{ marginTop: 6 }}>

@@ -24,8 +24,26 @@ public interface AiGatewayPort {
     return AiCapabilityDeclaration.unknown("C5_LLM");
   }
 
-  /** AI 从材料抽取的单条结构化事实（受控码 + 值 + 证据定位；值仅用于展示与留痕，不参与判定）。 */
-  record Fact(String code, String value, String evidenceRef) {}
+  /**
+   * AI 从材料抽取的单条结构化事实（受控码 + 值 + 证据定位；值仅用于展示与留痕，不参与判定）。
+   *
+   * <p>{@code pageNo}/{@code lineNo} 是<b>可选</b>的影像坐标：材料解析没给出坐标时保持 {@code null}，
+   * 绝不填默认页（默认页会让"没定位"伪装成"定位到第 1 页"）。
+   */
+  record Fact(String code, String value, String evidenceRef, Integer pageNo, Integer lineNo) {
+
+    /** 兼容：无坐标的事实（存量材料 / 文本层解析结果）。 */
+    public Fact(String code, String value, String evidenceRef) {
+      this(code, value, evidenceRef, null, null);
+    }
+  }
+
+  /**
+   * 结构化证据定位：把"发票号 X → 影像第 N 页"表达成可渲染的契约，随 trace output JSON 落库。
+   *
+   * <p>只有材料侧真实带出 {@code pageNo} 才生成 locator；{@code lineNo} 可缺省。无坐标时列表为空—— 空列表是事实陈述，不是缺陷；凭空造页是幻觉。
+   */
+  record EvidenceLocator(String evidenceRef, Integer pageNo, Integer lineNo) {}
 
   /**
    * AI 评估结果。

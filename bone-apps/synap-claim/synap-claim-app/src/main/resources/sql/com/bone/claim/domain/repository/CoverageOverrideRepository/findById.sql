@@ -6,6 +6,8 @@ SELECT
        standard_value,
        override_value,
        status,
+       origin,
+       last_sync_version,
        version,
        tenant_id,
        created_at,

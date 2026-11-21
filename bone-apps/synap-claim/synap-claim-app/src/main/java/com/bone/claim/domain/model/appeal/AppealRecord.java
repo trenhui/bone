@@ -15,23 +15,30 @@ import lombok.NoArgsConstructor;
 /**
  * 申诉记录聚合（A8，多租户）。
  *
- * <p>拒赔生效（{@code CLOSED_REJECTED}）或结案（{@code FINISHED}）后 48h 内受理（§6.6 / §7.6，监管《保险法》第 23/24 条 + PRD
- * §8.5 「拒赔不是终点」R-MAN-04）。只追加：{@code SUBMITTED → DECIDED}，复议结论维持（回 {@code CLOSED_REJECTED}）
- * 或推翻重启审核（回 {@code ADJUSTING}）。48h 时限起算点取自案件进入终态的 {@code closedAt}（由 {@code ClaimCase} 在终态跃迁时记录）。
+ * <p>拒赔生效（{@code CLOSED_REJECTED}）或结案（{@code FINISHED}）后 <b>14 个自然日</b>内受理（§6.6 / §7.6，监管《保险法》第
+ * 23/24 条 + PRD §8.5 「拒赔不是终点」R-MAN-04）。只追加：{@code SUBMITTED → DECIDED}，复议结论维持（回 {@code
+ * CLOSED_REJECTED}） 或推翻重启审核（回 {@code ADJUSTING}）。时限起算点取自案件进入终态的 {@code closedAt}（由 {@code
+ * ClaimCase} 在终态跃迁时记录）。
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Table("appeal_record")
 public class AppealRecord extends TenantAggregateRoot<Long> {
 
-  /** 申诉受理法定时限：结案/拒赔生效后 48h（§6.6）。 */
-  private static final Duration APPEAL_WINDOW = Duration.ofHours(48);
+  /**
+   * 申诉受理时限：结案/拒赔生效后 14 个自然日。
+   *
+   * <p><b>为何是 14 天</b>：系统内三套口径并存——旧后端硬编码 48h、拒赔通知书对客告知"签收后 10 个工作日"、复核表单提示"30 日"。客户第 3 天申诉却按 48h
+   * 拒绝是可被投诉的真实缺陷。10 个工作日跨周末约等于 14 个自然日，取 14 天可保守覆盖对客承诺； 表单的"30 日"由前端文案另行统一，后端不无限期放宽，14 天是与"10
+   * 工作日"最接近且有界的统一口径。 起算点仍是 {@code case_closed_at}，不加新列、不改 DDL。
+   */
+  private static final Duration APPEAL_WINDOW = Duration.ofDays(14);
 
   /**
-   * 是否仍在 48h 受理窗口内。
+   * 是否仍在 14 天受理窗口内。
    *
    * <p>应用层用它在<b>抛异常之前</b>把"窗口已关闭"翻译成带业务码的 {@code SC_CLAIM_APPEAL_EXPIRED}。 时限判定只写在领域层这一处：应用层若自己再写一遍
-   * {@code Duration.ofHours(48)}，改法定时限时 就会一半新一半旧，且两处判定必然在某天分叉。
+   * {@code Duration.ofDays(14)}，改时限时就会一半新一半旧，且两处判定必然在某天分叉。
    *
    * @param caseClosedAt 案件进入终态的时间；{@code null} 表示时间点缺失（无法判断，返回 {@code false}， 由调用方按"缺数据"而非"超时"处理）
    */
@@ -66,7 +73,7 @@ public class AppealRecord extends TenantAggregateRoot<Long> {
   @Column(name = "submitted_at", nullable = false)
   private Instant submittedAt;
 
-  /** 案件进入终态时间（48h 起算点）。 */
+  /** 案件进入终态时间（14 天受理窗口起算点）。 */
   @Column(name = "case_closed_at", nullable = false)
   private Instant caseClosedAt;
 
@@ -133,7 +140,7 @@ public class AppealRecord extends TenantAggregateRoot<Long> {
       throw new DomainException("案件终态时间缺失，无法计算申诉时限");
     }
     if (!withinAppealWindow(caseClosedAt)) {
-      throw new DomainException("申诉已超 48h 时限（§6.6），不可受理");
+      throw new DomainException("申诉已超 14 个自然日受理时限（对客告知：签收后 10 个工作日），不可受理");
     }
     return new AppealRecord(
         id, tenantId, appealNo, claimId, claimNo, originalStatus, submittedBy, caseClosedAt);

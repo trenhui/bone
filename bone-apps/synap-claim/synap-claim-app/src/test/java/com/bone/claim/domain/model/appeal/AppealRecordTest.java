@@ -9,7 +9,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/** A8 申诉单测：48h 时限 + 终态前提 + 复议终态。 */
+/** A8 申诉单测：14 天受理时限 + 终态前提 + 复议终态。 */
 class AppealRecordTest {
 
   private static final long TENANT = 7L;
@@ -18,8 +18,12 @@ class AppealRecordTest {
     return Instant.now().minus(Duration.ofHours(h));
   }
 
+  private static Instant daysAgo(int d) {
+    return Instant.now().minus(Duration.ofDays(d));
+  }
+
   @Test
-  @DisplayName("结案(FINISHED)后 48h 内发起申诉 → SUBMITTED，原终态存枚举名")
+  @DisplayName("结案(FINISHED)后 14 天内发起申诉 → SUBMITTED，原终态存枚举名")
   void submitFromFinished() {
     AppealRecord appeal =
         AppealRecord.submit(1L, TENANT, "AP7-1", 100L, "CL1", "FINISHED", "user", hoursAgo(1));
@@ -48,14 +52,14 @@ class AppealRecordTest {
   }
 
   @Test
-  @DisplayName("超 48h 时限 → 拒（§6.6）")
+  @DisplayName("超 14 天受理时限（对客告知 10 个工作日）→ 拒")
   void submitTimeoutRejected() {
     assertThatThrownBy(
             () ->
-                AppealRecord.submit(
-                    1L, TENANT, "AP7-3", 100L, "CL1", "FINISHED", "u", hoursAgo(49)))
+                AppealRecord.submit(1L, TENANT, "AP7-3", 100L, "CL1", "FINISHED", "u", daysAgo(15)))
         .isInstanceOf(DomainException.class)
-        .hasMessageContaining("48h");
+        .hasMessageContaining("14 个自然日")
+        .hasMessageContaining("10 个工作日");
   }
 
   @Test

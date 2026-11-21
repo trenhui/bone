@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * A8 申诉应用服务（48h 复议编排）。
+ * A8 申诉应用服务（14 天受理窗口复议编排）。
  *
  * <p>每个写方法只持久化 {@code AppealRecord} 一个聚合（CORE-06）；案件状态流转（45/50 → 60 → 41/45） 经 {@link
  * ClaimCaseApplicationService} 在同一事务内推进——该流转只改 {@code ClaimCase} 一个聚合， 不构成"一事务多聚合写"（CORE-06
@@ -33,7 +33,7 @@ public class AppealApplicationService {
   public record AppealResult(
       String appealNo, Long claimId, String originalStatus, String status, String reviewResult) {}
 
-  /** 发起申诉（受理）：案件须已终态且未超 48h；幂等——同一受理中申诉重复提交返回首次。 */
+  /** 发起申诉（受理）：案件须已终态且未超 14 天；幂等——同一受理中申诉重复提交返回首次。 */
   @Transactional
   public AppealResult submit(long claimId, String submittedBy, String reason) {
     long tenantId = tenantPort.currentTenantId();
@@ -47,12 +47,16 @@ public class AppealApplicationService {
     if (!claim.finished()) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_STATUS_CONFLICT, claimId);
     }
-    // 超 48h 窗口先在这里翻译成业务码：域层 AppealRecord#submit 仍会再判一次（不变量不外包），
+    // 超 14 天窗口先在这里翻译成业务码：域层 AppealRecord#submit 仍会再判一次（不变量不外包），
     // 但域层抛的是 DomainException ⇒ 全局 handler 落成 400 + COMMON_VALIDATION_FAILED，
-    // 前端只能显示「参数校验失败：申诉已超 48h 时限（§6.6），不可受理」——把内部分节号泄露给柜面，
-    // 且与真正的参数错同码。closedAt 为 null 时不在本处报错：那是「数据缺失」，交给域层给出精确原因。
+    // 前端只能显示「参数校验失败：申诉已超 14 个自然日受理时限…」——把内部分节号泄露给柜面，
+    // 且与真正的参数错同码。detail 必须同时给出对客口径（签收后 10 个工作日），
+    // 否则客户拿通知书来申诉时仍会看到与告知冲突的提示。closedAt 为 null 时不在本处报错：
+    // 那是「数据缺失」，交给域层给出精确原因。
     if (claim.closedAt() != null && !AppealRecord.withinAppealWindow(claim.closedAt())) {
-      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_APPEAL_EXPIRED, claim.getClaimNo());
+      throw ClaimErrors.of(
+          ClaimErrorCodes.CLAIM_APPEAL_EXPIRED,
+          claim.getClaimNo() + "：申诉时限已过；对客告知为签收后 10 个工作日（系统按 14 个自然日受理），自案件终态起算");
     }
     // 进入申诉前的终态，存枚举名（与 t_claim_case.status 同口径，见 ClaimStatus 类注释）
     String originalStatus = claim.status().name();

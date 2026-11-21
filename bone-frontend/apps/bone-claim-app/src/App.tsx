@@ -1,7 +1,11 @@
+import { Suspense } from 'react';
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { App as AntdApp, Layout, Menu, Tag, Typography } from 'antd';
+import { App as AntdApp, Button, Layout, Menu, Result, Spin, Tag, Typography } from 'antd';
+import { Auth } from '@bone/ui';
 import { CLAIM_DEFAULT_PATH, CLAIM_ROUTES } from './routes';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { CommandPalette } from './components/CommandPalette';
+import { PERMISSIONS } from './constants/permissions';
 import './App.css';
 
 /**
@@ -17,12 +21,60 @@ import './App.css';
  *   这条导航**不是产品导航**，不承载权限与可见性，故显式标注「独立调试」，
  *   且数据源同为 {@link CLAIM_ROUTES} —— 路由与名称仍然只有一份真源。
  */
+/** hidden 路由不是"无需权限"，而是"不进导航但仍需授权"：对齐后端 @PreAuthorize。 */
+const HIDDEN_ROUTE_REQUIRED: Record<string, string> = {
+  '/ai-governance': PERMISSIONS.CLAIMS_READ,
+  // 运营看板消费 GET /api/v1/claims/analytics/summary，后端 @PreAuthorize('claim:claims:read')。
+  '/analytics': PERMISSIONS.CLAIMS_READ,
+  '/blind-labels': PERMISSIONS.INSPECTION_WRITE,
+};
+
+function RouteDenied(): JSX.Element {
+  const navigate = useNavigate();
+  return (
+    <Result
+      status="403"
+      title="无访问权限"
+      subTitle="该入口为受控治理页面，当前角色未被授权。前端只做入口收敛，接口仍由后端强制鉴权。"
+      extra={<Button type="primary" onClick={() => navigate(CLAIM_DEFAULT_PATH)}>返回工作台</Button>}
+    />
+  );
+}
+
+/**
+ * 路由级 chunk 加载兜底。
+ *
+ * <p>页面已按路由 `lazy` 拆分（见 routes.tsx），首屏只下载工作台 + 外壳。这里只占内容区，
+ * 不遮挡 DevNav：用户切换菜单时仍能看到自己点到了哪里，而不是整页白屏。
+ * 不加 `tip` 文字，避免 antd v5「Spin tip 仅 nest/fullscreen 有效」的运行时告警。
+ */
+function RouteLoading(): JSX.Element {
+  return (
+    <div style={{ padding: 48, textAlign: 'center' }} role="status" aria-live="polite">
+      <Spin size="large" />
+      <div style={{ marginTop: 12 }}>
+        <Typography.Text type="secondary">页面加载中…</Typography.Text>
+      </div>
+    </div>
+  );
+}
+
 function ClaimRoutes(): JSX.Element {
   return (
     <Routes>
-      {CLAIM_ROUTES.map((r) => (
-        <Route key={r.path} path={r.path} element={r.element} />
-      ))}
+      {CLAIM_ROUTES.map((r) => {
+        const required = HIDDEN_ROUTE_REQUIRED[r.path];
+        const element = required
+          ? <Auth code={required} fallback={<RouteDenied />}>{r.element}</Auth>
+          : r.element;
+        return (
+          <Route
+            key={r.path}
+            path={r.path}
+            element={<Suspense fallback={<RouteLoading />}>{element}</Suspense>}
+          />
+        );
+      })}
       <Route path="/" element={<Navigate to={CLAIM_DEFAULT_PATH} replace />} />
       {/* 未知 hash 回到默认落点，而不是空白：深链失效时用户仍有可操作界面 */}
       <Route path="*" element={<Navigate to={CLAIM_DEFAULT_PATH} replace />} />
@@ -86,6 +138,8 @@ export const App: React.FC<AppProps> = ({ embedded = false }) => {
           此前误用 BrowserRouter 会去读 pathname=/claim 而忽略 #/review，
           导致内部 <Routes> 永远匹配不到业务页面 ⇒ 内容区空白。 */}
       <HashRouter future={{ v7_relativeSplatPath: true }}>
+        {/* 全局命令面板（⌘/Ctrl+K）只在根布局挂一次；必须在 Router 内使用 useNavigate。 */}
+        <CommandPalette />
         <ErrorBoundary>
           {embedded ? (
             <ClaimRoutes />

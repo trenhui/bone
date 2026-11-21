@@ -1,5 +1,6 @@
 package com.bone.claim.application;
 
+import com.bone.claim.application.port.out.AiAutoApproveGatePort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.ClaimCase;
@@ -9,7 +10,9 @@ import com.bone.claim.domain.model.settlement.SettlementOrder;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,6 +60,16 @@ public class AutoApprovalApplicationService {
   private BigDecimal maxAmount;
 
   /**
+   * P2-2 自动通过前置守门（默认实现读 readiness 快照）。
+   *
+   * <p>{@code @Lazy} 是必须的：readiness 服务本身要读本类的 {@link #isAutoApproveEnabled()}， 直接构造注入会形成 Spring
+   * Boot 3 默认禁止的循环依赖。惰性代理把"查询视图"与"资金动作"解环，判定仍来自同一份快照。
+   */
+  @Autowired(required = false)
+  @Lazy
+  private AiAutoApproveGatePort aiAutoApproveGate;
+
+  /**
    * AI 网关 base-url（fail-fast 前置闸）：自动放款是资金动作，若连真实 provider 都没配置，说明整条 AI 认知链
    * 只能是本地桩；此时不得进入自动出金路径。以字符串配置读取而非引用网关模块内部类，避免 application 层反向依赖 infrastructure。口径与 {@code
    * AiProviderProbeAdapter#configured()} 一致：空串即未配置。
@@ -85,6 +98,15 @@ public class AutoApprovalApplicationService {
    */
   @Transactional
   public AutoApprovalOutcome applyAutoDecision(long claimId) {
+    // P2-2 前置守门：readiness 从"展示"变"拦截"。blocker 非空（含发布开关未开）⇒ fail-closed 抛业务码，
+    // 绝不因治理视图"看起来绿"就进入资金路径；先于一切查询与聚合触碰，保持跳过分支零副作用。
+    if (aiAutoApproveGate != null) {
+      AiAutoApproveGatePort.Verdict verdict = aiAutoApproveGate.guard(claimId);
+      if (verdict.wouldBlock()) {
+        log.warn("[自动放款] AI 就绪闸门拦截: claimId={}, blockers={}", claimId, verdict.blockers());
+        throw ClaimErrors.of(ClaimErrorCodes.SC_CLAIM_AI_GATE_BLOCKED, verdict.detail());
+      }
+    }
     // 全局总开关不依赖任何查询，必须最先判：关闭态是常态（默认 false，策略未签核），
     // 若排在查执行记录、查案件之后，每个案件都要多打两次 SQL 才得出「本来就不该做」的结论。
     // 这里也修掉一处「注释与实现相反」：方法注释写「判定顺序即先便宜后昂贵」，实现却把最便宜的开关放在第 5 位。

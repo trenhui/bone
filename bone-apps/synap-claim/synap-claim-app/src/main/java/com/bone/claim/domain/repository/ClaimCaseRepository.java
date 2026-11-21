@@ -1,6 +1,7 @@
 package com.bone.claim.domain.repository;
 
 import com.bone.claim.domain.model.claim.ClaimCase;
+import com.bone.claim.domain.model.claim.projection.CaseDurationProjection;
 import com.bone.claim.domain.model.claim.projection.ClaimHeadProjection;
 import com.bone.claim.domain.model.claim.projection.ClaimSearchHit;
 import com.bone.claim.domain.model.claim.projection.ClaimSettlementRef;
@@ -102,6 +103,27 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
    */
   @TenantScope(TenantScopeMode.AUTO)
   List<ClaimSettlementRef> findFinishedBetween(
+      @Param("from") java.sql.Timestamp from, @Param("to") java.sql.Timestamp to);
+
+  /**
+   * 时间窗内进入复核态的案件数（复核率分子）：{@code second_reviewer_id} 非空且状态落在三态复核区间。
+   *
+   * <p>状态列存枚举 <b>name</b>（见 {@link ClaimStatus} 注释），SQL 里必须写 {@code 'REVIEWING'} 这类名字而不是数字码。 租户隔离由
+   * {@code @TenantScope(AUTO)} + 模板 {@code /*bone:tenant*}{@code /} 锚点双重落实。
+   */
+  @TenantScope(TenantScopeMode.AUTO)
+  long countReviewedInWindow(
+      @Param("from") java.sql.Timestamp from, @Param("to") java.sql.Timestamp to);
+
+  /**
+   * 时间窗内已结案案件的单案时长（毫秒），供应用层排序算 P50/P90。
+   *
+   * <p>只取 {@code closed_at} 非空且落窗的终态案件——计算时长必须用「进终态的时间戳」而不是 {@code
+   * updated_at}（后者任何修改都会跳）。分位数在应用层算，仓储不承载统计口径。返回领域投影 （而非裸 {@code List<Long>}）以满足仓储返回类型白名单：元素须住在
+   * domain 层。
+   */
+  @TenantScope(TenantScopeMode.AUTO)
+  List<CaseDurationProjection> caseDurationsInWindow(
       @Param("from") java.sql.Timestamp from, @Param("to") java.sql.Timestamp to);
 
   /** 按报案号查（对外检索键）。 */

@@ -28,7 +28,7 @@ export const AI_INVOLVEMENT_DICT: Record<string, string> = {
 
 export const AI_RIGHTS_DICT: Record<string, string> = {
   'REQUEST_HUMAN_REVIEW': '要求人工复核',
-  'APPEAL_WITHIN_48H': '48 小时内申诉',
+  'APPEAL_WITHIN_48H': '14 日内申诉（对客告知签收后 10 个工作日内）',
   'EXPLANATION_OF_DECISION': '要求说明决定依据'
 };
 

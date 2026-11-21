@@ -6,6 +6,7 @@ import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.evidence.Evidence;
 import com.bone.claim.domain.model.evidence.valueobject.DocType;
+import com.bone.claim.domain.model.evidence.valueobject.ImageClarity;
 import com.bone.claim.domain.model.evidence.valueobject.OcrStatus;
 import com.bone.claim.domain.repository.EvidenceRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
@@ -34,6 +35,11 @@ public class EvidenceApplicationService {
   /** 登记材料入参。 */
   public record RegisterEvidence(
       long claimId, DocType docType, String fileRef, String contentHash, String verifyValid) {}
+
+  /** 批量清晰度标注命令（P0-A）。 */
+  public record UpdateClarity(List<Item> items) {
+    public record Item(long evidenceId, ImageClarity clearType) {}
+  }
 
   /** 解析结果（供工作台展示与解析成功率埋点；{@code reason} 为受控码）。 */
   public record ParseOutcome(
@@ -170,6 +176,20 @@ public class EvidenceApplicationService {
     domainEventPublisher.publishFrom(evidence);
   }
 
+  /** 批量标注影像清晰度（P0-A）：逐条加载 → 聚合内改态 → 保存 → 发事件。 */
+  @Transactional
+  public int updateClarity(UpdateClarity command) {
+    int updated = 0;
+    for (UpdateClarity.Item item : command.items()) {
+      Evidence evidence = load(item.evidenceId());
+      evidence.markClarity(item.clearType(), java.time.Instant.now());
+      evidenceRepository.save(evidence);
+      domainEventPublisher.publishFrom(evidence);
+      updated++;
+    }
+    return updated;
+  }
+
   /** 人工补录。 */
   @Transactional
   public void fillManually(long evidenceId, String extractedJson, String operatorId) {
@@ -183,12 +203,25 @@ public class EvidenceApplicationService {
    * 锁定案件证据集（理算前置）。
    *
    * <p>逐份锁定并为每份发 {@code EvidenceLockedEvent}（聚合内发），事件数为案件证据份数—— 消费方按 {@code claimId} 聚合即可，无需单条处理。
+   *
+   * <p><b>P0-A 写入期兜底</b>：锁定前逐份读 {@code clear_type}，只要有一份非 CLEAR（含未知受控码，{@link
+   * ImageClarity#fromCode} fail-closed 归 INCOMPLETE）就整批拒绝，携带不清晰证据 ID 明细返回 422——
+   * 不让「看图不清却已锁定出金」发生。校验在任何 {@code save}/{@code publish} 之前，拒绝时不留半锁定状态。
    */
   @Transactional
   public int lockAll(long claimId, String operatorId) {
     List<Evidence> evidences = evidenceRepository.findByClaimId(claimId);
     if (evidences.isEmpty()) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_EVIDENCE_NOT_FOUND, claimId);
+    }
+    List<Long> blockedIds =
+        evidences.stream()
+            .filter(e -> ImageClarity.fromCode(e.getClearType()) != ImageClarity.CLEAR)
+            .map(Evidence::getId)
+            .toList();
+    if (!blockedIds.isEmpty()) {
+      throw ClaimErrors.of(
+          ClaimErrorCodes.SC_CLAIM_EVIDENCE_UNCLEAR_BLOCKS_LOCK, "存在不清晰/不完整影像，证据ID: " + blockedIds);
     }
     for (Evidence evidence : evidences) {
       evidence.lock(operatorId, evidences.size());

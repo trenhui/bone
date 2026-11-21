@@ -54,7 +54,8 @@ public class CoverageOverrideApplicationService {
       String effectiveValue,
       String source,
       Long overrideId,
-      String overrideStatus) { // STANDARD / OVERRIDE
+      String overrideStatus,
+      String origin) { // source: STANDARD / OVERRIDE；origin: INHERIT / EXCLUSIVE / MODIFIED
   }
 
   public record AffectedPoliciesView(String bizIdentityCode, long affectedCount) {}
@@ -118,6 +119,49 @@ public class CoverageOverrideApplicationService {
     ClaimCoverageOverride row = requireRow(overrideId);
     row.disable(Instant.now());
     overrideRepository.save(row);
+  }
+
+  /**
+   * 同步标准字段：把该责任当前标准维度中<strong>尚未有覆盖行</strong>的字段落为专属覆盖行。
+   *
+   * <p>语义（0134 迁移）：{@code origin=EXCLUSIVE}、{@code status=DISABLED}——同步默认不启用，已有专属行一律跳过不受覆盖； 同步版本记入
+   * {@code last_sync_version} 供追溯。字段来源与预览一致：名单两维 + 当前费用规则。
+   */
+  @Transactional
+  public int syncStandardFields(String bizIdentityCode, String coverageUuid) {
+    long tenantId = tenantPort.currentTenantId();
+    List<String> fields = new ArrayList<>();
+    fields.add(ClaimCoverageOverride.FIELD_LIMIT_HOSPITAL_CODES);
+    fields.add(ClaimCoverageOverride.FIELD_LIMIT_DIAGNOSIS_CODES);
+    for (LiabilityFeeRule rule : liveFeeRules(tenantId, coverageUuid)) {
+      fields.add(ClaimCoverageOverride.FEE_RULE_PREFIX + rule.getFeeCode());
+    }
+    String syncVersion = syncVersion(tenantId, coverageUuid);
+    Instant now = Instant.now();
+    int added = 0;
+    for (String field : fields) {
+      if (overrideRepository.findRow(tenantId, bizIdentityCode, coverageUuid, field) != null) {
+        continue; // 已有专属覆盖不受同步覆盖
+      }
+      String standard = liveStandardValue(tenantId, coverageUuid, field);
+      ClaimCoverageOverride row =
+          ClaimCoverageOverride.of(
+              null, tenantId, bizIdentityCode, coverageUuid, field, standard, standard);
+      row.applySync(syncVersion, now);
+      overrideRepository.save(row);
+      added++;
+    }
+    return added;
+  }
+
+  private String syncVersion(Long tenantId, String coverageUuid) {
+    AdjLiability liability = liabilityRepository.findActiveByUuid(coverageUuid);
+    if (liability == null
+        || liability.getLiabilityVersion() == null
+        || liability.getLiabilityVersion().isBlank()) {
+      return "SYNC";
+    }
+    return liability.getLiabilityVersion();
   }
 
   // ===================== 预览 / 发布 / 受影响保单 =====================
@@ -203,7 +247,7 @@ public class CoverageOverrideApplicationService {
     ClaimCoverageOverride o =
         overrideRepository.findRow(tenantId, bizIdentityCode, coverageUuid, field);
     if (o == null) {
-      return new MergePreviewRow(field, standard, "", standard, "STANDARD", null, null);
+      return new MergePreviewRow(field, standard, "", standard, "STANDARD", null, null, null);
     }
     return toPreviewRow(o, standard);
   }
@@ -217,7 +261,8 @@ public class CoverageOverrideApplicationService {
         active ? o.getOverrideValue() : liveStandard,
         active ? "OVERRIDE" : "STANDARD",
         o.getId(),
-        o.getStatus());
+        o.getStatus(),
+        o.getOrigin());
   }
 
   private MergePreviewRow ghostStandardRow(ClaimCoverageOverride o) {
@@ -229,7 +274,8 @@ public class CoverageOverrideApplicationService {
         active ? o.getOverrideValue() : o.getStandardValue(),
         active ? "OVERRIDE" : "STANDARD",
         o.getId(),
-        o.getStatus());
+        o.getStatus(),
+        o.getOrigin());
   }
 
   /** 实时标准值：名单维度取 ACTIVE 责任版本；费用规则维度取该责任当前规则行（无规则 = 空对象）。 */

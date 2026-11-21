@@ -554,7 +554,7 @@ export function MappingPage(): ReactElement {
       }
       const data = res.data;
       if (data.failedCount > 0) {
-        message.error(`导入被整批拒绝：${data.errors?.[0]?.message ?? '存在非法行'}`);
+        message.error(`导入被整批拒绝：${data.errors?.[0]?.reason ?? '存在非法行'}`);
         return;
       }
       setImportResult(data);

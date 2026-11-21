@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Button, Card, Descriptions, InputNumber, Space, Spin, Table, Tag, Typography, message } from 'antd';
+import { Alert, Button, Card, Descriptions, Input, InputNumber, List, Space, Spin, Table, Tag, Typography, message } from 'antd';
 import { ReloadOutlined, ApiOutlined, SaveOutlined } from '@ant-design/icons';
-import { resolveErrorCode } from '@bone/shared-utils';
+import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
 import {
   aiGovernanceApi,
@@ -23,6 +23,7 @@ import {
   type AiConfigGovernance,
   type AiRuntimeHealth,
   type GovernanceTone,
+  type GuardCheckResp,
   type ProviderProbeReport,
   type ReadinessSnapshot,
   type RolloutDrillReport,
@@ -261,6 +262,92 @@ function ConfigPanel({
   );
 }
 
+/**
+ * 逐案守门预演：wouldBlock / blockers / scopeNote 全部取后端原文，前端不自行推断，
+ * 也不把 scopeNote 改写成「部署门禁通过即可放款」。真实自动通过入口已后端 fail-closed。
+ */
+function GuardCheckPanel(): ReactElement {
+  const [claimId, setClaimId] = useState('');
+  const [result, setResult] = useState<GuardCheckResp | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [running, setRunning] = useState(false);
+
+  const run = async () => {
+    const id = claimId.trim();
+    if (!id) return;
+    setRunning(true);
+    setError(null);
+    setResult(null);
+    try {
+      const resp = await aiGovernanceApi.guardCheck(id);
+      if (resp?.code !== 200) {
+        setError(resp?.message || '后端拒绝了守门预演请求');
+        return;
+      }
+      setResult(resp?.data ?? null);
+    } catch (err) {
+      setError(resolveErrorMessage(err, '守门预演失败'));
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <Card title="逐案守门预演">
+      <Space wrap>
+        <Input
+          aria-label="预演案件 ID"
+          placeholder="输入 claimId"
+          value={claimId}
+          onChange={(e) => setClaimId(e.target.value)}
+          onPressEnter={() => void run()}
+          style={{ width: 260 }}
+        />
+        <Button type="primary" loading={running} disabled={!claimId.trim()} onClick={() => void run()}>
+          预演守门
+        </Button>
+      </Space>
+      <Typography.Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+        此处为预演，真实自动通过入口已 fail-closed 拦截（blocker 非空转人工）；本面板不改变任何案件状态。
+      </Typography.Text>
+      {error && (
+        <Alert type="error" showIcon style={{ marginTop: 12 }} message="预演失败" description={error} />
+      )}
+      {result && (
+        <div style={{ marginTop: 12 }}>
+          <Space wrap>
+            <Typography.Text strong>判定：</Typography.Text>
+            <Tag color={result.wouldBlock ? 'red' : 'green'}>
+              {result.wouldBlock ? '拦截' : '通过'}
+            </Tag>
+          </Space>
+          <div style={{ marginTop: 8 }}>
+            <Typography.Text strong>阻断项（{result.blockers?.length ?? 0}）：</Typography.Text>
+            {result.blockers?.length ? (
+              <List
+                size="small"
+                dataSource={result.blockers}
+                renderItem={(blocker) => (
+                  <List.Item style={{ padding: '2px 0' }}>{blocker}</List.Item>
+                )}
+              />
+            ) : (
+              <Typography.Text type="secondary" style={{ display: 'block' }}>无阻断项</Typography.Text>
+            )}
+          </div>
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginTop: 12 }}
+            message="范围说明（后端原文，原样上屏）"
+            description={result.scopeNote}
+          />
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export function AiGovernancePage(): ReactElement {
   const navigate = useNavigate();
   const [state, setState] = useState<GovernanceState>(INITIAL);
@@ -377,6 +464,8 @@ export function AiGovernancePage(): ReactElement {
             );
           }}
         </Section>
+
+        <GuardCheckPanel />
 
         <Section title="运行期模型参与" load={state.runtime}>
           {(raw: never) => {

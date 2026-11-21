@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { lazy, type ReactElement } from 'react';
 import {
   AuditOutlined,
   CalculatorOutlined,
@@ -16,28 +16,42 @@ import {
   TagsOutlined,
   DatabaseOutlined,
   LinkOutlined,
+  DashboardOutlined,
 } from '@ant-design/icons';
-import { ClaimSubmitPage } from './pages/ClaimSubmitPage';
-import { ReviewWorkbenchPage } from './pages/ReviewWorkbenchPage';
-import { PreExamWorkbenchPage } from './pages/PreExamWorkbenchPage';
-import { ClaimProgressPage } from './pages/ClaimProgressPage';
-import { AdjustmentAttributionPage } from './pages/AdjustmentAttributionPage';
-import { EvidenceUploadPage } from './pages/EvidenceUploadPage';
-import { FundWorkbenchPage } from './pages/FundWorkbenchPage';
-import { AppealPage } from './pages/AppealPage';
-import { SuspendPage } from './pages/SuspendPage';
-import { InspectionWorkbenchPage } from './pages/InspectionWorkbenchPage';
-import { PolicyManagementPage } from './pages/PolicyManagementPage';
-import { PlanConfigPage } from './pages/PlanConfigPage';
-import { QuotaConfigPage } from './pages/QuotaConfigPage';
-import { LiabilityConfigPage } from './pages/LiabilityConfigPage';
-import { LibraryPage } from './pages/LibraryPage';
-import { InsurerManagementPage } from './pages/InsurerManagementPage';
-import { MappingPage } from './pages/MappingPage';
-import { AiGovernancePage } from './pages/AiGovernancePage';
-import { BlindLabelWorkbenchPage } from './pages/BlindLabelWorkbenchPage';
-import { WorkbenchPage } from './pages/WorkbenchPage';
-import { Case360Page } from './pages/Case360Page';
+
+/**
+ * 路由级代码分割：每个页面独立 chunk，首屏只加载工作台 + 外壳。
+ *
+ * <p>此前 21 个页面全部静态导入，生产包是单个 1.8MB chunk（gzip 594KB）——登录后要先下载
+ * 「核赔、额度、目录库、AI 治理、盲标」等全部页面代码才能看到工作台。改为 `lazy` 后，
+ * 按作业动线访问才下载对应页面；`Suspense` 兜底在 {@link App} 的 `ClaimRoutes` 内，
+ * DevNav 不受影响（不会整页闪白）。
+ *
+ * <p>注意：页面必须保持**具名导出**（`export function XxxPage`），此处用 `.then` 映射为 default；
+ * 不要为此改成 default 导出，否则会与全仓其他页面写法分叉。
+ */
+const ClaimSubmitPage = lazy(() => import('./pages/ClaimSubmitPage').then((m) => ({ default: m.ClaimSubmitPage })));
+const ReviewWorkbenchPage = lazy(() => import('./pages/ReviewWorkbenchPage').then((m) => ({ default: m.ReviewWorkbenchPage })));
+const PreExamWorkbenchPage = lazy(() => import('./pages/PreExamWorkbenchPage').then((m) => ({ default: m.PreExamWorkbenchPage })));
+const ClaimProgressPage = lazy(() => import('./pages/ClaimProgressPage').then((m) => ({ default: m.ClaimProgressPage })));
+const AdjustmentAttributionPage = lazy(() => import('./pages/AdjustmentAttributionPage').then((m) => ({ default: m.AdjustmentAttributionPage })));
+const EvidenceUploadPage = lazy(() => import('./pages/EvidenceUploadPage').then((m) => ({ default: m.EvidenceUploadPage })));
+const FundWorkbenchPage = lazy(() => import('./pages/FundWorkbenchPage').then((m) => ({ default: m.FundWorkbenchPage })));
+const AppealPage = lazy(() => import('./pages/AppealPage').then((m) => ({ default: m.AppealPage })));
+const SuspendPage = lazy(() => import('./pages/SuspendPage').then((m) => ({ default: m.SuspendPage })));
+const InspectionWorkbenchPage = lazy(() => import('./pages/InspectionWorkbenchPage').then((m) => ({ default: m.InspectionWorkbenchPage })));
+const PolicyManagementPage = lazy(() => import('./pages/PolicyManagementPage').then((m) => ({ default: m.PolicyManagementPage })));
+const PlanConfigPage = lazy(() => import('./pages/PlanConfigPage').then((m) => ({ default: m.PlanConfigPage })));
+const QuotaConfigPage = lazy(() => import('./pages/QuotaConfigPage').then((m) => ({ default: m.QuotaConfigPage })));
+const LiabilityConfigPage = lazy(() => import('./pages/LiabilityConfigPage').then((m) => ({ default: m.LiabilityConfigPage })));
+const LibraryPage = lazy(() => import('./pages/LibraryPage').then((m) => ({ default: m.LibraryPage })));
+const InsurerManagementPage = lazy(() => import('./pages/InsurerManagementPage').then((m) => ({ default: m.InsurerManagementPage })));
+const MappingPage = lazy(() => import('./pages/MappingPage').then((m) => ({ default: m.MappingPage })));
+const AiGovernancePage = lazy(() => import('./pages/AiGovernancePage').then((m) => ({ default: m.AiGovernancePage })));
+const AnalyticsDashboardPage = lazy(() => import('./pages/AnalyticsDashboardPage').then((m) => ({ default: m.AnalyticsDashboardPage })));
+const BlindLabelWorkbenchPage = lazy(() => import('./pages/BlindLabelWorkbenchPage').then((m) => ({ default: m.BlindLabelWorkbenchPage })));
+const WorkbenchPage = lazy(() => import('./pages/WorkbenchPage').then((m) => ({ default: m.WorkbenchPage })));
+const Case360Page = lazy(() => import('./pages/Case360Page').then((m) => ({ default: m.Case360Page })));
 
 /**
  * 智能理赔 · 路由与页面名的**唯一真源**（单导航架构的前端侧锚点）。
@@ -132,6 +146,8 @@ export const CLAIM_ROUTES: ClaimRoute[] = [
   { path: '/insurers', name: '承保主体', icon: <SafetyCertificateOutlined />, element: <InsurerManagementPage /> },
   { path: '/mappings', name: '主数据映射', icon: <LinkOutlined />, element: <MappingPage /> },
   { path: '/ai-governance', name: 'AI 治理', icon: <SafetyCertificateOutlined />, element: <AiGovernancePage />, hidden: true },
+  // 运营分析看板：消费既有 GET /analytics/summary，hidden 路由从工作台治理空间深链进入（不占 IAM 菜单）。
+  { path: '/analytics', name: '运营分析看板', icon: <DashboardOutlined />, element: <AnalyticsDashboardPage />, hidden: true },
   // 盲标工作台：防反馈环金标准闸门的标注面，hidden 路由，从核赔工作台「盲标」深链进入（同 /ai-governance 形态）。
   { path: '/blind-labels', name: '盲标工作台', icon: <FormOutlined />, element: <BlindLabelWorkbenchPage />, hidden: true },
   // My Home：登录后默认落点。hidden 且 isDefault —— 不占菜单，但空 hash / 未知 hash 都落到这里。

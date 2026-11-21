@@ -664,6 +664,8 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_REVERSAL_REQUIRED` | 409 | 已支付案件打回前必须先完成冲正（退款回冲）：请求合法、案件状态也允许打回，缺的是「资金已冲正」这一事实前提；无签核资金路径不允许留「账上已付、案件打回重办」缺口，写入期硬拒、不事后补偿 |
 | `SC_CLAIM_AGENT_CONFLICT` | 409 | 代理区间冲突：同一被代理人同一时段已有生效代理，或代理区间非法（止不晚于起/主体为空）；同款 t_claim_task 生成列唯一键口径，事前查重+唯一键兜底恰一条 ACTIVE |
 | `SC_CLAIM_INSPECTION_ACTION_INVALID` | 400 | 抽检处置入参非法：结论非 PASS/REJECT/BACK，或打回（BACK）未填原因；请求内容不合法故 400，写入期拒绝而非静默登记 |
+| `SC_CLAIM_EVIDENCE_UNCLEAR_BLOCKS_LOCK` | 422 | 证据集含不清晰/不完整影像，阻断锁定进入理算：请求合法、案件状态允许，缺的是「所有影像可入理算」事实前提；写入期硬拒避免「看图不清却已锁定出金」，明细（哪几张 UNCLEAR/INCOMPLETE）随 detail 返回供前端定位 |
+| `SC_CLAIM_AI_GATE_BLOCKED` | 422 | AI 能力就绪闸门未通过，自动通过被守门拦截转人工：请求合法，是部署态闸门/写开关前提不成立；fail-closed 绝不因展示层绿放行资金，blocker 明细随 detail 返回 |
 
 ---
 

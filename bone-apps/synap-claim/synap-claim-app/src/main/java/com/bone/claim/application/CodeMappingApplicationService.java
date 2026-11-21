@@ -43,8 +43,12 @@ import com.bone.core.exception.DomainException;
 import com.bone.core.util.DistributedIdGenerator;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -238,11 +242,27 @@ public class CodeMappingApplicationService {
 
   // ===================== 批量导入 =====================
 
-  public record ImportRowError(int rowNo, String reason) {}
+  /**
+   * 单行错误定位。
+   *
+   * <p><b>为什么要把 field/rawRow 一并回传</b>：只给一句中文 reason，前端只能把整张表染红，用户得逐列猜哪格填错。 {@code field}
+   * 精确指向出错列（{@code insurerItemCode} / {@code standardCode}），{@code rawRow} 是 Excel
+   * 原始单元格值，前端据此高亮单元格并回显原内容——「第 6 行标准码填错」比「导入失败」才是可操作的反馈。
+   */
+  public record ImportRowError(int rowNo, String field, String reason, Map<String, String> rawRow) {
+
+    /** 兼容既有调用：文件级错误（解析失败 / 空文件）无字段与原始行可定位。 */
+    public ImportRowError(int rowNo, String reason) {
+      this(rowNo, null, reason, Map.of());
+    }
+  }
 
   /**
    * 导入结果：REJECTED 时 errors 非空且<b>未写入任何行</b>；IDEMPOTENT_DUPLICATE 表示同内容文件
    * 重复上传（指纹命中既有批次），返回首次批次统计，不产生新行。
+   *
+   * <p>{@code batchNo} 是本次导入的批次号（{@code BATCH + yyyyMMdd + 内容序号}），由内容指纹派生——同文件
+   * 重传批次号不变，便于客服按批次号定位问题行，也避免每次上传都换号导致同一批错误对不上号。
    */
   public record ImportResultView(
       String status, // IMPORTED / IDEMPOTENT_DUPLICATE / REJECTED
@@ -250,7 +270,8 @@ public class CodeMappingApplicationService {
       int createdCount,
       int unchangedCount,
       String versionNo,
-      List<ImportRowError> errors) {}
+      List<ImportRowError> errors,
+      String batchNo) {}
 
   /**
    * Excel 批量导入映射：模板下载 → 上传 → 整批校验 → 全部合法才发布。
@@ -272,42 +293,60 @@ public class CodeMappingApplicationService {
       rows = MappingImportExcel.parse(insurerCode, d.code(), fileBytes);
     } catch (BizException e) {
       return new ImportResultView(
-          "REJECTED", 0, 0, 0, null, List.of(new ImportRowError(0, e.getMessage())));
+          "REJECTED", 0, 0, 0, null, List.of(new ImportRowError(0, e.getMessage())), batchNo(null));
     }
     if (rows.isEmpty()) {
       return new ImportResultView(
-          "REJECTED", 0, 0, 0, null, List.of(new ImportRowError(0, "文件无有效数据行")));
+          "REJECTED", 0, 0, 0, null, List.of(new ImportRowError(0, "文件无有效数据行")), batchNo(null));
     }
+
+    // 批次号与指纹同源于内容：校验失败也要给批次号，否则错误行无法按批次回查。
+    String versionNo = MappingImportExcel.fingerprint(insurerCode, d.code(), rows);
+    String batch = batchNo(versionNo);
 
     // ---- 整批校验：所有行合法才进入写入 ----
     List<ImportRowError> errors = new ArrayList<>();
     java.util.Set<String> seenKeys = new java.util.HashSet<>();
     for (MappingImportExcel.ImportRow row : rows) {
-      if (row.insurerItemCode().isBlank() || row.standardCode().isBlank()) {
-        errors.add(new ImportRowError(row.rowNo(), "保司码值与标准码均不能为空"));
+      Map<String, String> rawRow = rawRow(row);
+      if (row.insurerItemCode().isBlank()) {
+        errors.add(new ImportRowError(row.rowNo(), "insurerItemCode", "保司码值不能为空", rawRow));
+        continue;
+      }
+      if (row.standardCode().isBlank()) {
+        errors.add(new ImportRowError(row.rowNo(), "standardCode", "标准码不能为空", rawRow));
         continue;
       }
       String key = row.insurerItemCode();
       if (!seenKeys.add(key)) {
-        errors.add(new ImportRowError(row.rowNo(), "保司码值在文件内重复: " + key));
+        errors.add(
+            new ImportRowError(row.rowNo(), "insurerItemCode", "保司码值在文件内重复: " + key, rawRow));
         continue;
       }
       try {
         assertStandardCodeExists(tenantId, d, row.standardCode());
       } catch (DomainException e) {
-        errors.add(new ImportRowError(row.rowNo(), "标准码不存在于目录: " + row.standardCode()));
+        errors.add(
+            new ImportRowError(
+                row.rowNo(), "standardCode", "标准码不存在于目录: " + row.standardCode(), rawRow));
       }
     }
     if (!errors.isEmpty()) {
-      return new ImportResultView("REJECTED", rows.size(), 0, 0, null, List.copyOf(errors));
+      return new ImportResultView(
+          "REJECTED", rows.size(), 0, 0, versionNo, List.copyOf(errors), batch);
     }
 
     // ---- 指纹幂等：内容完全相同的文件重传，返回首次批次统计 ----
-    String versionNo = MappingImportExcel.fingerprint(insurerCode, d.code(), rows);
     List<CodeMapping> existingBatch = codeMappingRepository.findByRelease(tenantId, versionNo);
     if (!existingBatch.isEmpty()) {
       return new ImportResultView(
-          "IDEMPOTENT_DUPLICATE", rows.size(), 0, existingBatch.size(), versionNo, List.of());
+          "IDEMPOTENT_DUPLICATE",
+          rows.size(),
+          0,
+          existingBatch.size(),
+          versionNo,
+          List.of(),
+          batch);
     }
 
     // ---- 发布（复用单条发布内核：同码幂等、异码回放链） ----
@@ -337,7 +376,27 @@ public class CodeMappingApplicationService {
         unchanged++;
       }
     }
-    return new ImportResultView("IMPORTED", rows.size(), created, unchanged, versionNo, List.of());
+    return new ImportResultView(
+        "IMPORTED", rows.size(), created, unchanged, versionNo, List.of(), batch);
+  }
+
+  /** Excel 三列原值：前端据此高亮出错单元格并回显原内容（不丢列信息）。 */
+  private static Map<String, String> rawRow(MappingImportExcel.ImportRow row) {
+    Map<String, String> raw = new LinkedHashMap<>();
+    raw.put("insurerItemCode", row.insurerItemCode());
+    raw.put("insurerItemName", row.insurerItemName());
+    raw.put("standardCode", row.standardCode());
+    return Map.copyOf(raw);
+  }
+
+  /**
+   * 批次号 = {@code BATCH + yyyyMMdd + 内容序号}。序号由指纹派生（对 1_000_000 取模）而非进程内自增：
+   * 同内容重传必得同批次号，跨重启也不变；文件级错误（解析失败）拿不到指纹时退化为全 0 序号。
+   */
+  private static String batchNo(String versionNo) {
+    String day = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+    int seq = versionNo == null ? 0 : Math.floorMod(versionNo.hashCode(), 1_000_000);
+    return "BATCH" + day + String.format("%06d", seq);
   }
 
   /** 下载导入模板（列头 + 示例行）。 */

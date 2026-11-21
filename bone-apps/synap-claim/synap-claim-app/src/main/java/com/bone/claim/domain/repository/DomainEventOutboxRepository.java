@@ -31,6 +31,16 @@ public interface DomainEventOutboxRepository extends Repository<DomainEventOutbo
   List<DomainEventOutbox> findStuckDispatchingOutboxAllTenants(
       @Param("before") Timestamp before, @Param("limit") int limit);
 
+  /**
+   * 时间窗内按状态统计发件箱条数（推送成功率分子/分母）。
+   *
+   * <p><b>为什么不能复用 {@code *AllTenants} 扫描方法</b>：那是调度线程的全租户运维入口，本方法在租户上下文里给运营大盘取数， 必须是
+   * {@code @TenantScope(AUTO)}——否则运营看到的会是「全平台推送量」而不是本租户的量，跨租户数据直接串味。
+   */
+  @TenantScope(TenantScopeMode.AUTO)
+  long countByStatusInWindow(
+      @Param("from") Timestamp from, @Param("to") Timestamp to, @Param("status") String status);
+
   /** 按主键加载（应用层在 {@code runAs} 上下文内调用，租户隔离由上下文 + AUTO 作用域落实）。 */
   default DomainEventOutbox load(Long tenantId, Long id) {
     return findById(id);

@@ -1490,15 +1490,26 @@ export interface AffectedPoliciesView {
   affectedCount: number;
 }
 
+/** 单行错误定位（后端 CodeMappingApplicationService.ImportRowError；field/rawRow 可能为空）。 */
+export interface MappingImportRowError {
+  rowNo: number;
+  field: string;
+  /** 真机契约字段名是 reason，不是 message。 */
+  reason: string;
+  rawRow: Record<string, string>;
+}
+
 /** Excel 导入结果（幂等：重复文件返回上次结果，created=0）。 */
 export interface MappingImportResult {
   totalRows: number;
   createdCount: number;
   unchangedCount: number;
   failedCount: number;
-  /** 批次号（导入指纹，复用发布批次 version_no 承载）。 */
+  /** 版本 No（历史字段，保留兼容）。 */
   versionNo: string;
-  errors: { rowNo: number; message: string }[];
+  /** 本次导入批次号（BATCH+yyyyMMdd+内容序号），同内容重传不变。 */
+  batchNo?: string;
+  errors: MappingImportRowError[];
 }
 
 export const coverageOverrideApi = {

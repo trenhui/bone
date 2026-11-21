@@ -2,6 +2,7 @@ package com.bone.claim.domain.model.evidence;
 
 import com.bone.claim.domain.model.evidence.event.EvidenceLockedEvent;
 import com.bone.claim.domain.model.evidence.valueobject.DocType;
+import com.bone.claim.domain.model.evidence.valueobject.ImageClarity;
 import com.bone.claim.domain.model.evidence.valueobject.OcrStatus;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
@@ -55,6 +56,14 @@ public class Evidence extends TenantAggregateRoot<Long> {
   @Column(name = "verify_valid", nullable = false)
   private String verifyValid;
 
+  /**
+   * 影像清晰度三态（P0-A，0133 DDL）。列 NOT NULL DEFAULT 'CLEAR'，登记时显式落 CLEAR 与 DDL 默认一致。
+   *
+   * <p>锁定前由应用服务按本列 fail-closed 检查，非 CLEAR 阻断入理算。
+   */
+  @Column(name = "clear_type", nullable = false)
+  private String clearType;
+
   /** 解析结果（字段 + 置信度 + 证据坐标，JSON）。 */
   @Column(name = "extracted_json")
   private String extractedJson;
@@ -95,6 +104,9 @@ public class Evidence extends TenantAggregateRoot<Long> {
     this.contentHash = contentHash;
     this.ocrStatus = OcrStatus.PENDING.name();
     this.verifyValid = verifyValid;
+    // 列 NOT NULL DEFAULT 'CLEAR'（0133 DDL）：登记即未标注，按 DDL 默认落 CLEAR；
+    // 留 null 会让 INSERT 带上 NULL 触发约束 400（与 extracted_json 同一类坑）。
+    this.clearType = ImageClarity.CLEAR.name();
     // 解析结果列是 NOT NULL DEFAULT ''（见 0058 DDL）：登记时尚未解析，必须显式落 ''。
     // 留 null 会让 SDK 的 insert 带上 NULL，DB 直接 400「数据违反完整性约束」——
     // 表现是「材料一上传就失败」，但错误文案与根因（少初始化一个字段）毫不相干。
@@ -211,6 +223,21 @@ public class Evidence extends TenantAggregateRoot<Long> {
     }
     this.verifyValid = verifyValid;
     this.updatedAt = Instant.now();
+  }
+
+  /**
+   * 标注影像清晰度三态（P0-A）。
+   *
+   * <p>与 {@link #markParsed}、{@link #markVerified} 同受锁定约束：锁定后证据集不可改（§4.3 不变量），
+   * 否则「已锁定出金」与「事后改判清晰」可以拼出一条无留痕的放行路径。{@code now} 由调用方注入以便测试钉住时间。
+   */
+  public void markClarity(ImageClarity clarity, Instant now) {
+    requireUnlocked("证据已锁定，禁止改清晰度");
+    if (clarity == null) {
+      throw new DomainException("影像清晰度不能为空");
+    }
+    this.clearType = clarity.name();
+    this.updatedAt = now;
   }
 
   /** 验真是否可用于快赔（PASS 方可，其余转人工，R-FRAUD-06 从严）。 */

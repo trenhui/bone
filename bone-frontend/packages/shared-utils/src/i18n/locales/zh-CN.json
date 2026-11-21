@@ -295,7 +295,9 @@
     "SC_CLAIM_REREVIEWER_CONFLICT": "独立复审人不得为初审人本人，也不能与登记的复审人不一致（职责分离）",
     "SC_CLAIM_REVERSAL_REQUIRED": "案件已支付，打回前必须先完成冲正（退款回冲），否则会留下已付款却在重办的缺口",
     "SC_CLAIM_AGENT_CONFLICT": "代理区间冲突：同一被代理人在该时段已有生效代理，或代理区间非法",
-    "SC_CLAIM_INSPECTION_ACTION_INVALID": "抽检处置非法：结论须为通过/驳回/打回，且打回必须填写原因"
+    "SC_CLAIM_INSPECTION_ACTION_INVALID": "抽检处置非法：结论须为通过/驳回/打回，且打回必须填写原因",
+    "SC_CLAIM_EVIDENCE_UNCLEAR_BLOCKS_LOCK": "证据集含不清晰或不完整影像，不能锁定进入理算：请先补传或标注为清晰后再锁定",
+    "SC_CLAIM_AI_GATE_BLOCKED": "AI 能力就绪闸门未通过，自动通过已被拦截转人工复核（fail-closed，不因展示绿就放行资金）"
   },
   "enums": {
     "ORDER_STATUS": {

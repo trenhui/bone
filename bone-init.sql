@@ -2830,6 +2830,7 @@ CREATE TABLE t_claim_evidence (
   ocr_status      VARCHAR(16)   NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/PARSING/DONE/FAILED/MANUAL',
   ocr_confidence  DECIMAL(6,4)  DEFAULT NULL COMMENT '解析置信度(<0.7 转人工补录)',
   verify_valid    VARCHAR(16)   NOT NULL DEFAULT 'UNKNOWN' COMMENT '票面验真(UNKNOWN/PASS/FAIL/UNVERIFIABLE)',
+  clear_type      VARCHAR(16)   NOT NULL DEFAULT 'CLEAR' COMMENT '清晰度受控码(CLEAR/UNCLEAR/INCOMPLETE); 非CLEAR锁定证据集被阻断',
   extracted_json  VARCHAR(4000) NOT NULL DEFAULT '' COMMENT '解析结果(字段+置信度+证据坐标)',
   locked          TINYINT       NOT NULL DEFAULT 0 COMMENT '0未锁定/1已锁定(锁定后不可改)',
   locked_at       DATETIME(3)   DEFAULT NULL COMMENT '锁定时间',
@@ -3539,6 +3540,8 @@ CREATE TABLE t_claim_coverage_override (
   standard_value    TEXT          NOT NULL COMMENT '创建/发布时的标准值快照（留痕；合并永远取实时标准）',
   override_value    TEXT          NOT NULL COMMENT '覆盖值（名单=分隔串；费用规则=JSON）',
   status            VARCHAR(16)   NOT NULL DEFAULT 'DISABLED' COMMENT 'DISABLED(未生效)/ACTIVE(已发布)',
+  origin            VARCHAR(16)   NOT NULL DEFAULT 'EXCLUSIVE' COMMENT '覆盖三态(INHERIT通用继承/EXCLUSIVE专属覆盖/MODIFIED专属·改)',
+  last_sync_version VARCHAR(32)   DEFAULT NULL COMMENT '最近同步标准版本号(可回退追溯锚点)',
   created_by        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '创建人',
   created_at        TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   updated_by        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '更新人',
@@ -4853,3 +4856,26 @@ CREATE TABLE `t_proc_performance_score` (
   UNIQUE KEY `uk_proc_performance_score_dedup` (`tenant_id`,`supplier_id`,`period`),
   KEY `idx_proc_performance_score_period` (`tenant_id`,`period`,`total_score`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='供应商绩效评分（只读投影；权重与自动授信属 owner 红线，未开放）';
+
+
+-- 理算责任因子矩阵（版本化，按 row_key/col_key 合并保留已填值；迁移 0135 同批）
+CREATE TABLE IF NOT EXISTS t_claim_factor_matrix (
+  id              BIGINT        NOT NULL COMMENT '主键(分布式ID)',
+  tenant_id       BIGINT        NOT NULL COMMENT '租户ID',
+  liability_id    BIGINT        NOT NULL COMMENT '责任ID(t_adj_liability.id)',
+  liability_uuid  VARCHAR(64)   NOT NULL COMMENT '责任UUID(各版本共享)',
+  dimension_set   VARCHAR(128)  NOT NULL COMMENT '因子有序组合码(HOSPITAL_LEVEL|MEDICAL_INSURANCE)',
+  row_key         VARCHAR(512)  NOT NULL COMMENT '行键(HOSPITAL_LEVEL=一级;MEDICAL_INSURANCE=社保)',
+  col_key         VARCHAR(128)  NOT NULL DEFAULT 'DEFAULT' COMMENT '列值(单列矩阵=DEFAULT)',
+  cell_value      DECIMAL(12,4) NOT NULL COMMENT '格值(赔付比例/免赔/限额)',
+  version         INT           NOT NULL DEFAULT 1 COMMENT '矩阵版本号(已发布不可改)',
+  status          VARCHAR(16)   NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT/PUBLISHED',
+  created_by      VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+  created_at      TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_by      VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '更新人',
+  updated_at      TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  deleted         TINYINT       NOT NULL DEFAULT 0 COMMENT 'SDK软删标记',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_factor_matrix_cell (tenant_id, liability_id, dimension_set, row_key, col_key, version),
+  KEY idx_factor_matrix_lookup (tenant_id, liability_uuid, dimension_set, version)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '理算责任因子矩阵(版本化,按row_key/col_key合并保留已填值)';

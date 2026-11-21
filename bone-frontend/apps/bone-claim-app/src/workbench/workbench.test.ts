@@ -37,7 +37,7 @@ describe('工作台画像（能力画像，非角色码）', () => {
   it('卡片 id 唯一，且全量卡片落在 Fiori ≤25 配额内', () => {
     expect(new Set(CARDS.map((c) => c.id)).size).toBe(CARDS.length);
     expect(CARDS.length).toBeLessThanOrEqual(FIORI_QUOTA.maxCardsPerPage);
-    expect(CARDS.length).toBe(20);
+    expect(CARDS.length).toBe(21);
   });
 
   it('全权限画像的每个 Section 都不超 7 张卡，配额护栏通过', () => {

@@ -2,13 +2,16 @@ package com.bone.claim.adapter.web.controller;
 
 import com.bone.claim.application.AiCapabilityReadinessService;
 import com.bone.claim.application.AiCapabilityReadinessService.ReadinessSnapshot;
+import com.bone.claim.application.port.out.AiAutoApproveGatePort.Verdict;
 import com.bone.core.model.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -28,6 +31,9 @@ public class AiCapabilityReadinessController {
 
   private final AiCapabilityReadinessService aiCapabilityReadinessService;
 
+  /** 只读预演：不触发能力业务方法、不改状态，仅回答"此刻自动通过会不会被守门拦下"。 */
+  public record GuardCheckResp(boolean wouldBlock, List<String> blockers, String scopeNote) {}
+
   @Operation(
       summary = "AI 能力清单与自动化就绪度（只读）",
       description =
@@ -36,5 +42,17 @@ public class AiCapabilityReadinessController {
   @GetMapping("/ai-readiness")
   public ApiResponse<ReadinessSnapshot> readiness() {
     return ApiResponse.success(aiCapabilityReadinessService.snapshot());
+  }
+
+  @Operation(
+      summary = "AI 守门只读预演（不执行自动通过）",
+      description =
+          "按与自动通过前置守门完全相同的 readiness 快照回答 wouldBlock；" + "wouldBlock=false 也不构成放款许可，运行期证据仍见决策轨迹。")
+  @PreAuthorize("hasAuthority('claim:claims:read')")
+  @GetMapping("/ai-readiness/guard-check")
+  public ApiResponse<GuardCheckResp> guardCheck(@RequestParam long claimId) {
+    Verdict verdict = aiCapabilityReadinessService.guard(claimId);
+    return ApiResponse.success(
+        new GuardCheckResp(verdict.wouldBlock(), verdict.blockers(), verdict.scopeNote()));
   }
 }

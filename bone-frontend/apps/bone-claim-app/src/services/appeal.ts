@@ -9,7 +9,7 @@ import type { AppealResult, AppealReviewResult } from './types';
 const client = createApiClient('/api/v1/claims');
 
 export const appealApi = {
-  /** 发起申诉（受理）：须已终态且未超 48h；幂等。 */
+  /** 发起申诉（受理）：须已终态且未超申诉窗口（14 自然日）；幂等。 */
   submit(claimId: string, req: { reason: string }): Promise<ApiResponse<AppealResult>> {
     return client.post<{ reason: string }, ApiResponse<AppealResult>>(`/${claimId}/appeal`, req);
   },

@@ -361,4 +361,20 @@ public final class ClaimErrorCodes {
   /** 抽检处置入参非法：结论非 PASS/REJECT/BACK，或 BACK 未给打回原因。 */
   public static final String SC_CLAIM_INSPECTION_ACTION_INVALID =
       "SC_CLAIM_INSPECTION_ACTION_INVALID";
+
+  /**
+   * 证据集含不清晰/不完整影像，阻断锁定（不能进入理算）。
+   *
+   * <p>422 而非 409：请求合法、案件状态也允许，缺的是「所有影像均可入理算」这一事实前提； 与 SC_CLAIM_ADJUST_EVIDENCE_NOT_LOCKED
+   * 同族写入期硬拒，避免「看图不清却已锁定出金」。 明细（哪几张 UNCLEAR/INCOMPLETE）随 detail 返回，便于前端定位补传。
+   */
+  public static final String SC_CLAIM_EVIDENCE_UNCLEAR_BLOCKS_LOCK =
+      "SC_CLAIM_EVIDENCE_UNCLEAR_BLOCKS_LOCK";
+
+  /**
+   * AI 能力就绪闸门未通过，自动通过（AUTO_APPROVE）被守门拦截转人工。
+   *
+   * <p>422 而非 409：请求合法，是「AI 部署态闸门/写开关」这一前提不成立； fail-closed，绝不因为展示层绿就放行资金。blocker 明细随 detail 返回。
+   */
+  public static final String SC_CLAIM_AI_GATE_BLOCKED = "SC_CLAIM_AI_GATE_BLOCKED";
 }

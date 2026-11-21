@@ -25,7 +25,7 @@ import { PERMISSIONS } from '../constants/permissions';
 /**
  * 申诉复议页（A8）。
  *
- * - 结案/拒赔生效后 48h 内可发起申诉（幂等）；
+ * - 结案/拒赔生效后 14 日内（对客告知签收后 10 个工作日内）可发起申诉（幂等）；
  * - 复议结论：UPHELD 维持（→45）/ REOPEN 推翻重启审核（→41）。
  * 读走 `appealApi.latest`（controller），写走同 controller（自带 @PreAuthorize + 幂等）。
  *
@@ -34,7 +34,8 @@ import { PERMISSIONS } from '../constants/permissions';
  *   <li>原代码按 `SC_CLAIM_APPEAL_EXPIRED` / `SC_CLAIM_APPEAL_CONFLICT` 分支，<b>两个码在
  *       `ClaimErrorCodes` 里都不存在</b>（后端只抛 `SC_CLAIM_STATUS_CONFLICT` 与
  *       `SC_CLAIM_APPEAL_NOT_FOUND`）⇒ 两条分支恒不命中，全部落「操作失败」。
- *       现按真实码分支；48h 超时由后端补上 `SC_CLAIM_APPEAL_EXPIRED`（422）后可精确提示。</li>
+ *       现按真实码分支；申诉窗口统一为结案/拒赔生效后 14 日内（对客告知签收后 10 个工作日内），
+ *       超时由后端补上 `SC_CLAIM_APPEAL_EXPIRED`（422）后可精确提示。</li>
  *   <li>`originalStatus` 原样上屏（`CLOSED_REJECTED`），业务看不懂；改用状态字典取中文。</li>
  *   <li>占位 `?? '1'` 已去掉：未选案件不发请求，改渲染空态。</li>
  * </ul>
@@ -161,7 +162,7 @@ export function AppealPage({ embeddedClaimId }: CasePageProps = {}): ReactElemen
             <Alert
               type="info"
               showIcon
-              message="申诉须在结案/拒赔生效后 48h 内发起；复议维持则维持原结论，推翻则重启审核。"
+              message="申诉须在结案/拒赔生效后 14 日内（对客告知签收后 10 个工作日内）发起；复议维持则维持原结论，推翻则重启审核。"
             />
 
             {appeal ? (
@@ -196,7 +197,7 @@ export function AppealPage({ embeddedClaimId }: CasePageProps = {}): ReactElemen
                   />
                   <Popconfirm
                     title="确认发起申诉？"
-                    description="案件将进入申诉中状态，48h 窗口内仅可受理一次。"
+                    description="案件将进入申诉中状态，结案/拒赔生效后 14 日内（对客告知签收后 10 个工作日内）仅可受理一次。"
                     okText="确认发起"
                     cancelText="取消"
                     onConfirm={() => void onSubmit()}

@@ -74,6 +74,15 @@ public class CoverageOverrideController {
         HttpStatus.OK.value(), overrideService.publish(bizIdentityCode, coverageUuid));
   }
 
+  @Operation(summary = "同步标准新增字段为专属覆盖行（origin=EXCLUSIVE/status=DISABLED；已有专属不受覆盖）")
+  @PreAuthorize("hasAuthority('claim:policy:write')")
+  @PostMapping("/sync")
+  public ApiResponse<Integer> sync(
+      @RequestParam String bizIdentityCode, @RequestParam String coverageUuid) {
+    return ApiResponse.success(
+        HttpStatus.OK.value(), overrideService.syncStandardFields(bizIdentityCode, coverageUuid));
+  }
+
   @Operation(summary = "停用单条覆盖项（回落标准）")
   @PreAuthorize("hasAuthority('claim:policy:write')")
   @PostMapping("/{id}/disable")

@@ -4,9 +4,11 @@ import com.bone.claim.application.AutoApprovalApplicationService.AutoApprovalOut
 import com.bone.claim.application.DecisionGraphExecutor.DecisionExecutionResult;
 import com.bone.claim.application.DecisionGraphExecutor.DecisionVersions;
 import com.bone.claim.application.IndemnityApplicationService.AdjustmentResult;
+import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
 import com.bone.claim.domain.model.decision.DecisionResult;
+import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -96,7 +98,18 @@ public class DecisionRunApplicationService {
       } else if (autoAmount != null && !autoAmount.usable()) {
         routing = escalate(claimId, autoAmount.rejectReason());
       } else {
-        AutoApprovalOutcome outcome = autoApprovalApplicationService.applyAutoDecision(claimId);
+        AutoApprovalOutcome outcome;
+        try {
+          outcome = autoApprovalApplicationService.applyAutoDecision(claimId);
+        } catch (BizException ex) {
+          // P2-2 守门拦截：错误照实上抛（fail-closed，调用方拿得到 SC_CLAIM_AI_GATE_BLOCKED），
+          // 同时把案件真正推进人工队列——否则案件会停在「已初审」等一个不会来的自动动作。
+          if (ClaimErrorCodes.SC_CLAIM_AI_GATE_BLOCKED.equals(ex.getErrorCode())) {
+            log.warn("[决策执行] AI 就绪闸门拦截自动通过，转人工: claimId={}, detail={}", claimId, ex.getMessage());
+            escalate(claimId, "AI_GATE_BLOCKED");
+          }
+          throw ex;
+        }
         consumptionReason = outcome.reason();
         if (!outcome.applied()) {
           log.info("[决策执行] 自动通过结论未消费: claimId={}, reason={}", claimId, outcome.reason());

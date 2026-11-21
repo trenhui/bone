@@ -70,7 +70,7 @@ export interface WorkbenchCard {
   aiPushed?: boolean;
 }
 
-/** 全部卡片（20 张，落在 Fiori ≤25 apps/page 配额内）。 */
+/** 全部卡片（21 张，落在 Fiori ≤25 apps/page 配额内）。 */
 export const CARDS: readonly WorkbenchCard[] = [
   // ---- 作业 Work（7）----
   { id: 'todo-review', label: '待我审核', description: '领取并按队列逐案核赔；拒赔与资金动作不可批量', space: 'work', path: '/review', requiresAny: [PERMISSIONS.DECISION_WRITE], guarded: true, metric: 'reviewTasks' },
@@ -96,6 +96,8 @@ export const CARDS: readonly WorkbenchCard[] = [
   { id: 'ai-governance', label: 'AI 治理', description: '校准 / provider / 漂移 / 模型卡', space: 'govern', path: '/ai-governance', personaAllow: ['admin', 'reviewer', 'inspection', 'operator'], metric: 'none' },
   { id: 'blind-labels', label: '盲标工作台', description: '金标准标注；**禁区**：不展示 aiSuggestion，防反馈环污染', space: 'govern', path: '/blind-labels', personaAllow: ['admin', 'reviewer', 'inspection'], metric: 'none' },
   { id: 'ai-disposition', label: '建议采纳回流', description: '曝光 → 采纳 / 驳回 / 修改漏斗；驳回必填受控原因码', space: 'govern', path: '/workbench?panel=ai', personaAllow: ['admin', 'reviewer', 'inspection', 'operator'], metric: 'none' },
+  // 运营分析看板：消费既有 GET /analytics/summary（后端 G0 度量出口，前端此前未接）。影子率≠出金率。
+  { id: 'operations-analytics', label: '运营分析看板', description: '决策终态分布 / AI 降级 / 影子自动化率（≠出金率）；政策窗口最多 31 天', space: 'govern', path: '/analytics', requiresAny: [PERMISSIONS.CLAIMS_READ], personaAllow: ['admin', 'reviewer', 'inspection', 'operator'], metric: 'none' },
 ];
 
 export type PersonaId =

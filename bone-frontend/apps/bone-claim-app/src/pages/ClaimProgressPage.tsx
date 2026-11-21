@@ -164,7 +164,7 @@ export function ClaimProgressPage(): ReactElement {
                 showIcon
                 style={{ marginTop: 16 }}
                 message="本次理赔未通过核赔"
-                description="如对结论有异议，可在收到通知后 48 小时内发起申诉（拒赔通知书中含申诉渠道与法定时限）。"
+                description="如对结论有异议，可在收到通知后 14 日内发起申诉（对客告知签收后 10 个工作日内）（拒赔通知书中含申诉渠道与法定时限）。"
               />
             )}
           </Card>

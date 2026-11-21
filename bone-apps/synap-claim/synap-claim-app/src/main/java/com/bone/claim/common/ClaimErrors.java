@@ -102,7 +102,11 @@ public final class ClaimErrors {
           // 批4：409 冲正前置未满足 / 代理区间冲突；400 抽检处置入参非法
           Map.entry(ClaimErrorCodes.SC_CLAIM_REVERSAL_REQUIRED, 409),
           Map.entry(ClaimErrorCodes.SC_CLAIM_AGENT_CONFLICT, 409),
-          Map.entry(ClaimErrorCodes.SC_CLAIM_INSPECTION_ACTION_INVALID, 400));
+          Map.entry(ClaimErrorCodes.SC_CLAIM_INSPECTION_ACTION_INVALID, 400),
+          // 422：影像不清晰是「缺可入理算的事实前提」，不是状态冲突；写入期硬拒，避免看图不清就锁定出金
+          Map.entry(ClaimErrorCodes.SC_CLAIM_EVIDENCE_UNCLEAR_BLOCKS_LOCK, 422),
+          // 422：AI 闸门未过是「部署态前提不成立」，fail-closed 转人工，绝不因展示绿放行资金
+          Map.entry(ClaimErrorCodes.SC_CLAIM_AI_GATE_BLOCKED, 422));
 
   static {
     checkEveryCodeRegistered();

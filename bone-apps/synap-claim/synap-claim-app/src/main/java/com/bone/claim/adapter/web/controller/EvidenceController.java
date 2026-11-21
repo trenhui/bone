@@ -4,6 +4,7 @@ import com.bone.claim.adapter.web.assembler.EvidenceAssembler;
 import com.bone.claim.adapter.web.dto.response.EvidenceResp;
 import com.bone.claim.application.EvidenceApplicationService;
 import com.bone.claim.domain.model.evidence.valueobject.DocType;
+import com.bone.claim.domain.model.evidence.valueobject.ImageClarity;
 import com.bone.claim.domain.model.evidence.valueobject.OcrStatus;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.security.auth.CurrentOperator;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +54,17 @@ public class EvidenceController {
   /** 解析回填请求（OCR/LLM 回调或人工补录）。 */
   public record ParseResultReq(
       OcrStatus ocrStatus, BigDecimal ocrConfidence, String extractedJson, String verifyValid) {}
+
+  /**
+   * 批量标注影像清晰度（P0-A）。
+   *
+   * <p>不接客户端声明的 operator id：留痕需要操作人时一律由服务端 {@code CurrentOperator.requireId()} 取。
+   */
+  public record UpdateClarityReq(@NotNull(message = "明细不能为空") List<@Valid Item> items) {
+    public record Item(
+        @NotNull(message = "证据ID不能为空") Long evidenceId,
+        @NotNull(message = "清晰度不能为空") ImageClarity clearType) {}
+  }
 
   @Operation(summary = "登记材料", description = "登记已上传至附件服务的材料；同内容哈希重复登记返回 409")
   @ApiResponses({
@@ -123,6 +136,26 @@ public class EvidenceController {
         request.extractedJson(),
         request.verifyValid());
     return ApiResponse.success();
+  }
+
+  @Operation(
+      summary = "批量标注影像清晰度",
+      description = "三态 CLEAR/UNCLEAR/INCOMPLETE；非 CLEAR 的影像会在锁定时 fail-closed 阻断入理算")
+  @PreAuthorize("hasAuthority('claim:claims:write')")
+  @PostMapping("/clarity")
+  public ApiResponse<Integer> updateClarity(
+      @Parameter(description = "案件ID") @PathVariable long claimId,
+      @Valid @RequestBody UpdateClarityReq request) {
+    List<EvidenceApplicationService.UpdateClarity.Item> items =
+        request.items().stream()
+            .map(
+                item ->
+                    new EvidenceApplicationService.UpdateClarity.Item(
+                        item.evidenceId(), item.clearType()))
+            .toList();
+    return ApiResponse.success(
+        evidenceApplicationService.updateClarity(
+            new EvidenceApplicationService.UpdateClarity(items)));
   }
 
   @Operation(summary = "锁定证据集", description = "理算前置（§4.3）：锁定后材料不可改，保证理算可复算")

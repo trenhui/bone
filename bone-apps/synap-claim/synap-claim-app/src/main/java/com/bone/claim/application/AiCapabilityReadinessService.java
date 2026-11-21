@@ -1,5 +1,6 @@
 package com.bone.claim.application;
 
+import com.bone.claim.application.port.out.AiAutoApproveGatePort;
 import com.bone.claim.application.port.out.AiCapabilityDeclaration;
 import com.bone.claim.application.port.out.AiGatewayPort;
 import com.bone.claim.application.port.out.GraphFraudPort;
@@ -33,7 +34,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class AiCapabilityReadinessService {
+public class AiCapabilityReadinessService implements AiAutoApproveGatePort {
 
   /** 风险等级：§16 明确「承保理赔」属高风险 AI 应用，清单整体按 HIGH 登记。 */
   public static final String RISK_TIER_HIGH = "HIGH";
@@ -94,6 +95,18 @@ public class AiCapabilityReadinessService {
         List.copyOf(blockers),
         blockers.isEmpty(),
         SCOPE_NOTE);
+  }
+
+  /**
+   * P2-2：同一份 readiness 快照既供治理查询，也供自动通过前置守门（防止"展示绿"与"放行判定"两套口径）。
+   *
+   * <p>查询服务本身仍不写库、不触发能力业务方法；真正的 fail-closed 由消费方在 AUTO_APPROVE 前依据本结论抛错转人工。 claimId
+   * 暂不参与判定：部署态闸门与案件无关，逐案运行期证据见决策轨迹（见 {@link #SCOPE_NOTE}）。
+   */
+  @Override
+  public Verdict guard(long claimId) {
+    ReadinessSnapshot snapshot = snapshot();
+    return Verdict.of(snapshot.blockers(), snapshot.scopeNote());
   }
 
   /**

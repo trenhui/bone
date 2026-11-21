@@ -68,7 +68,7 @@ describe('rightLabel 权利字典', () => {
       'REQUEST_HUMAN_REVIEW',
     ]);
     expect(rightLabel('REQUEST_HUMAN_REVIEW')).toBe('要求人工复核');
-    expect(rightLabel('APPEAL_WITHIN_48H')).toBe('48 小时内申诉');
+    expect(rightLabel('APPEAL_WITHIN_48H')).toContain('14 日内申诉');
   });
 
   it('负向探针：未知权利码显示原始码，不静默丢弃', () => {

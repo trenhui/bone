@@ -217,6 +217,8 @@ export interface EvidenceResp {
   ocrConfidence?: number;
   verifyValid?: string;
   locked?: boolean;
+  /** 影像清晰度三态（后端 ImageClarity）；缺省视为未标注，锁定 fail-closed 时按非 CLEAR 处理。 */
+  clearType?: 'CLEAR' | 'UNCLEAR' | 'INCOMPLETE';
 }
 
 export interface RegisterEvidenceReq {

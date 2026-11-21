@@ -26,7 +26,7 @@ public final class ClaimDictLabels {
   public static final Map<String, String> AI_RIGHTS =
       Map.ofEntries(
           Map.entry("REQUEST_HUMAN_REVIEW", "要求人工复核"),
-          Map.entry("APPEAL_WITHIN_48H", "48 小时内申诉"),
+          Map.entry("APPEAL_WITHIN_48H", "14 日内申诉（对客告知签收后 10 个工作日内）"),
           Map.entry("EXPLANATION_OF_DECISION", "要求说明决定依据"));
 
   /** 自动放款消费结果标签（AutoApprovalOutcome.reason）。 */

@@ -19,8 +19,24 @@ public final class EvidenceFieldReader {
 
   private EvidenceFieldReader() {}
 
-  /** 单条解析字段：值可能为空串（调用方自行决定是否跳过）。 */
-  public record ParsedField(String code, String value, String evidenceRef) {}
+  /** 单条解析字段：值可能为空串（调用方自行决定是否跳过）；页码/行号可缺省。 */
+  public record ParsedField(
+      String code, String value, String evidenceRef, Integer pageNo, Integer lineNo) {
+
+    /** 兼容：无坐标的解析字段（既有调用点与外部回填 JSON）。 */
+    public ParsedField(String code, String value, String evidenceRef) {
+      this(code, value, evidenceRef, null, null);
+    }
+  }
+
+  /** 只认正整数坐标；缺失 / 非数字 / 0 一律按"无坐标"处理，不编造定位。 */
+  private static Integer positiveInt(JsonNode node) {
+    if (node == null || !node.isValueNode() || !node.canConvertToInt()) {
+      return null;
+    }
+    int value = node.asInt();
+    return value > 0 ? value : null;
+  }
 
   /**
    * 读取感知层显式声明的「字段级必填齐备」标记。
@@ -68,7 +84,9 @@ public final class EvidenceFieldReader {
           new ParsedField(
               field.path("code").asText(""),
               field.path("value").asText(""),
-              field.path("evidenceRef").asText("")));
+              field.path("evidenceRef").asText(""),
+              positiveInt(field.get("pageNo")),
+              positiveInt(field.get("lineNo"))));
     }
     return List.copyOf(parsed);
   }

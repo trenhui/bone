@@ -13,7 +13,10 @@ import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.projection.ClaimHeadProjection;
 import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
+import com.bone.claim.domain.model.claim.valueobject.Decision;
 import com.bone.claim.domain.model.decision.DecisionExecution;
+import com.bone.core.exception.BizException;
+import com.bone.core.idempotency.IdempotencyService;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.core.security.auth.CurrentOperator;
@@ -22,7 +25,13 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,8 +61,31 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ReviewTaskController {
 
+  private static final int MAX_BATCH_DECISION = 20;
+  private static final String BATCH_DECISION_PATH = "/api/v1/review/tasks/batch-decision";
+
   private final ClaimCaseApplicationService claimCaseApplicationService;
   private final DecisionExecutionApplicationService decisionExecutionApplicationService;
+  private final IdempotencyService idempotencyService;
+
+  /**
+   * 批量决策请求：{@code idempotencyKey} 是整批的客户端幂等键，逐条派生稳定子键（见 {@link
+   * #stableClaimActionKey}），重放同一批不会重复决策任何一案。
+   */
+  public record BatchDecisionReq(
+      @NotEmpty(message = "items 不能为空") List<BatchDecisionItem> items,
+      @NotBlank(message = "idempotencyKey 不能为空") String idempotencyKey) {}
+
+  public record BatchDecisionItem(
+      long claimId,
+      @NotNull(message = "decision 不能为空") Decision decision,
+      String rejectType,
+      BigDecimal approvedAmount) {}
+
+  /** 部分成功响应：succeeded 是成功的案件 ID，failed 逐条带稳定业务码，不中断整批。 */
+  public record BatchDecisionResp(List<Long> succeeded, List<BatchDecisionFailure> failed) {}
+
+  public record BatchDecisionFailure(long claimId, String code, String message) {}
 
   @Operation(
       summary = "待办列表",
@@ -94,6 +126,98 @@ public class ReviewTaskController {
         ReviewDecisionAssembler.requireRejectType(request),
         request.approvedAmount());
     return ApiResponse.success();
+  }
+
+  /**
+   * 批量审核决策（显式部分成功）。
+   *
+   * <p><b>为什么不复用单条端点的事务边界</b>：逐条调用 {@link ClaimCaseApplicationService#decide}（自身
+   * {@code @Transactional}），每条独立提交——一条状态冲突只进 {@code failed}，不把前面已成功的决策回滚成「整批失败」。 对调用方而言，幂等重放
+   * 必须得到同一结果，故每条用「批次键 + 案件 ID + 动作」派生的稳定子键走幂等快照：成功才记快照，失败留空让客户端改状态后可重试。
+   */
+  @Operation(
+      summary = "批量审核决策",
+      description =
+          "逐条独立事务；部分成功语义——成功的进 succeeded，状态冲突等失败项进 failed（带稳定业务码），不中断整批。"
+              + "单批上限 20 单，超出 409；同 idempotencyKey 重放不重复决策。")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "部分成功结果（succeeded / failed）"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "409",
+        description = "SC_CLAIM_TASK_CONFLICT: 超过 20 单/批")
+  })
+  @PreAuthorize("hasAuthority('claim:review:write')")
+  @PostMapping("/batch-decision")
+  public ApiResponse<BatchDecisionResp> batchDecision(
+      @Valid @RequestBody BatchDecisionReq request) {
+    List<BatchDecisionItem> items = request.items();
+    if (items == null || items.size() > MAX_BATCH_DECISION) {
+      throw ClaimErrors.of(
+          ClaimErrorCodes.SC_CLAIM_TASK_CONFLICT,
+          "批量决策上限 " + MAX_BATCH_DECISION + " 单，当前 " + (items == null ? 0 : items.size()) + " 单");
+    }
+
+    String operatorId = CurrentOperator.requireId();
+    List<Long> succeeded = new ArrayList<>();
+    List<BatchDecisionFailure> failed = new ArrayList<>();
+    for (BatchDecisionItem item : items) {
+      String scopeKey =
+          idempotencyService.buildScopeKey(
+              stableClaimActionKey(request.idempotencyKey(), item.claimId(), "review-decide"),
+              operatorId,
+              "POST",
+              BATCH_DECISION_PATH);
+      Optional<IdempotencyService.ReplayedResponse> replayed =
+          idempotencyService.replay(scopeKey, item);
+      if (replayed.isPresent()) {
+        succeeded.add(item.claimId());
+        continue;
+      }
+      try {
+        ReviewDecisionReq single =
+            new ReviewDecisionReq(
+                item.decision(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                item.rejectType(),
+                item.approvedAmount());
+        claimCaseApplicationService.decide(
+            item.claimId(),
+            item.decision(),
+            operatorId,
+            ReviewDecisionAssembler.composeComment(single),
+            ReviewDecisionAssembler.requireRejectType(single),
+            item.approvedAmount());
+        idempotencyService.remember(
+            scopeKey,
+            item,
+            new IdempotencyService.ReplayedResponse(
+                200, null, ApiResponse.success(item.claimId())));
+        succeeded.add(item.claimId());
+      } catch (RuntimeException e) {
+        failed.add(new BatchDecisionFailure(item.claimId(), errorCodeOf(e), e.getMessage()));
+      }
+    }
+    return ApiResponse.success(new BatchDecisionResp(List.copyOf(succeeded), List.copyOf(failed)));
+  }
+
+  /** 每案幂等子键 = 批次键:案件ID:动作；同批次重放派生同一组键，不同案件互不冲突。 */
+  public static String stableClaimActionKey(
+      String batchIdempotencyKey, long claimId, String action) {
+    return batchIdempotencyKey + ":" + claimId + ":" + action;
+  }
+
+  /** 有稳定业务码就用它，域层状态冲突（无码）统一落 CLAIM_STATUS_CONFLICT，前端可分支提示。 */
+  private static String errorCodeOf(RuntimeException e) {
+    if (e instanceof BizException biz && biz.getErrorCode() != null) {
+      return biz.getErrorCode();
+    }
+    return ClaimErrorCodes.CLAIM_STATUS_CONFLICT;
   }
 
   @Operation(

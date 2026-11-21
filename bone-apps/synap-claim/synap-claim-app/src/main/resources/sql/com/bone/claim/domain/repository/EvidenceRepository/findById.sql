@@ -7,6 +7,7 @@ SELECT
        ocr_status,
        ocr_confidence,
        verify_valid,
+       clear_type,
        extracted_json,
        locked,
        locked_at,

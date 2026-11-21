@@ -56,6 +56,13 @@ export interface ReadinessSnapshot {
   scopeNote: string;
 }
 
+/** 逐案守门预演结果：wouldBlock 完全由后端按该案事实判定，前端不自行推断。 */
+export interface GuardCheckResp {
+  wouldBlock: boolean;
+  blockers: string[];
+  scopeNote: string;
+}
+
 export interface AiRuntimeHealth {
   windowFrom: string;
   windowTo: string;
@@ -379,6 +386,17 @@ const claimsClient = createApiClient('/api/v1/claims');
 export const aiGovernanceApi = {
   readiness(): Promise<ReadinessSnapshot> {
     return apiCall(opsClient.get<never, ApiResponse<ReadinessSnapshot>>('/ai-readiness'));
+  },
+  /**
+   * 逐案守门预演（GET /api/v1/claim-ops/ai-readiness/guard-check?claimId=）。
+   *
+   * 与 readiness 同前缀；这里保留完整 ApiResponse，由调用方按 code 判定，避免 apiCall 解包后
+   * 丢掉业务失败语义。真实自动通过入口已由后端 fail-closed 拦截，本端点只用于预演。
+   */
+  guardCheck(claimId: string): Promise<ApiResponse<GuardCheckResp>> {
+    return opsClient.get<never, ApiResponse<GuardCheckResp>>('/ai-readiness/guard-check', {
+      params: { claimId },
+    });
   },
   runtimeHealth(from: string, to: string): Promise<AiRuntimeHealth> {
     return apiCall(opsClient.get<never, ApiResponse<AiRuntimeHealth>>(

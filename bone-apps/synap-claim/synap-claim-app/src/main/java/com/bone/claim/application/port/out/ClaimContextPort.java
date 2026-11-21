@@ -65,6 +65,20 @@ public interface ClaimContextPort {
    * @param code 受控字段码（感知层产出，如 {@code invoice_no} / {@code diagnosis_code}）
    * @param value 字段值（已按 {@code EvidenceFactPolicy} 截断；不含被禁止出域的字段）
    * @param evidenceRef 原文定位（如 {@code text@67:8}）—— 模型引用事实时必须原样照抄它， 系统据此校验「模型说的事实在材料里确实存在」
+   * @param pageNo 影像页码（可选；材料解析未给坐标时为 {@code null}，绝不填默认页）
+   * @param lineNo 影像行号（可选）
    */
-  record EvidenceFact(String docType, String code, String value, String evidenceRef) {}
+  record EvidenceFact(
+      String docType,
+      String code,
+      String value,
+      String evidenceRef,
+      Integer pageNo,
+      Integer lineNo) {
+
+    /** 兼容：无坐标的材料事实（文本层解析 / 人工补录 / 既有测试桩）。 */
+    public EvidenceFact(String docType, String code, String value, String evidenceRef) {
+      this(docType, code, value, evidenceRef, null, null);
+    }
+  }
 }

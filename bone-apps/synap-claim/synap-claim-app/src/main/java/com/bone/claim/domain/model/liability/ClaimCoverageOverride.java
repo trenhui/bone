@@ -1,5 +1,6 @@
 package com.bone.claim.domain.model.liability;
 
+import com.bone.claim.domain.model.liability.valueobject.MatrixOrigin;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
@@ -25,6 +26,12 @@ public class ClaimCoverageOverride extends TenantAggregateRoot<Long> {
   public static final String STATUS_DISABLED = "DISABLED";
   public static final String STATUS_ACTIVE = "ACTIVE";
 
+  /** 覆盖来源三态受控码，统一取自 {@link MatrixOrigin}（见 0134 迁移）。 */
+  public static final String ORIGIN_INHERIT = MatrixOrigin.INHERIT.name();
+
+  public static final String ORIGIN_EXCLUSIVE = MatrixOrigin.EXCLUSIVE.name();
+  public static final String ORIGIN_MODIFIED = MatrixOrigin.MODIFIED.name();
+
   public static final String FIELD_LIMIT_HOSPITAL_CODES = "LIMIT_HOSPITAL_CODES";
   public static final String FIELD_LIMIT_DIAGNOSIS_CODES = "LIMIT_DIAGNOSIS_CODES";
   public static final String FEE_RULE_PREFIX = "FEE_RULE.";
@@ -48,6 +55,14 @@ public class ClaimCoverageOverride extends TenantAggregateRoot<Long> {
 
   @Column(name = "status")
   private String status = STATUS_DISABLED;
+
+  /** 来源三态：存量行默认专属（与 DDL DEFAULT 'EXCLUSIVE' 对齐）。 */
+  @Column(name = "origin")
+  private String origin = ORIGIN_EXCLUSIVE;
+
+  /** 最近一次同步标准字段的版本号锚点（NULL=未同步过）。 */
+  @Column(name = "last_sync_version")
+  private String lastSyncVersion;
 
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
@@ -112,6 +127,28 @@ public class ClaimCoverageOverride extends TenantAggregateRoot<Long> {
   }
 
   public void disable(Instant now) {
+    this.status = STATUS_DISABLED;
+    this.updatedAt = now;
+  }
+
+  /** 人工改过标准值 → 专属·改；标准后续升级不再覆盖此行。 */
+  public void markModified(Instant now) {
+    this.origin = MatrixOrigin.MODIFIED.name();
+    this.updatedAt = now;
+  }
+
+  /** 受控码读侧访问器（避免外层直接比对魔法字符串）。 */
+  public MatrixOrigin originCode() {
+    return MatrixOrigin.ofName(this.origin);
+  }
+
+  /**
+   * 同步标准字段留痕：记录同步版本，状态保持 DISABLED（同步默认不启用，已有专属行不受覆盖）。
+   *
+   * <p>不触碰 {@code override_value}；是否生效仍由显式 publish 决定，避免「同步」把草稿直接推上线。
+   */
+  public void applySync(String version, Instant now) {
+    this.lastSyncVersion = version == null || version.isBlank() ? null : version.trim();
     this.status = STATUS_DISABLED;
     this.updatedAt = now;
   }

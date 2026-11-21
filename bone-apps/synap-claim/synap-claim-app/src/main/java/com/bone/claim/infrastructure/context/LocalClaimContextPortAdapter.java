@@ -98,7 +98,13 @@ public class LocalClaimContextPortAdapter implements ClaimContextPort {
           continue;
         }
         facts.add(
-            new EvidenceFact(evidence.getDocType(), field.code(), value, field.evidenceRef()));
+            new EvidenceFact(
+                evidence.getDocType(),
+                field.code(),
+                value,
+                field.evidenceRef(),
+                field.pageNo(),
+                field.lineNo()));
       }
     }
     return List.copyOf(facts);

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bone.claim.application.CodeMappingApplicationService.ImportRowError;
 import com.bone.claim.application.CodeMappingApplicationService.MappingView;
 import com.bone.claim.application.CodeMappingApplicationService.MissView;
 import com.bone.claim.application.CodeMappingApplicationService.PublishCommand;
@@ -37,8 +38,14 @@ import com.bone.claim.domain.repository.RefHospitalRepository;
 import com.bone.claim.domain.repository.StdCodeAliasRepository;
 import com.bone.claim.domain.repository.StdCodeSplitRepository;
 import com.bone.core.exception.DomainException;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -331,6 +338,58 @@ class CodeMappingApplicationServiceTest {
 
     assertThat(view.status()).isEqualTo("RESOLVED");
     assertThat(view.standardCode()).isEqualTo("STD-NEW");
+  }
+
+  // ===================== 导入逐行错误定位（P1-3） =====================
+
+  @Test
+  @DisplayName("导入逐行定位：字段非法/文件内重复/引用不存在 → rowNo 精确、field 到列、rawRow 回显原值、batchNo 非空")
+  void importErrorsAreLocatable() {
+    // 第 6 行 standardCode 空；第 14 行保司码与第 2 行重复；第 27 行标准码目录不存在
+    when(refHospitalRepository.findByHospitalCode(TENANT, "GHOST-999")).thenReturn(null);
+
+    var result = service.importMappings(INSURER, "HOSPITAL", locatableErrorWorkbook());
+
+    assertThat(result.status()).isEqualTo("REJECTED");
+    assertThat(result.batchNo()).isNotBlank().startsWith("BATCH");
+    assertThat(result.errors()).extracting(ImportRowError::rowNo).containsExactly(6, 14, 27);
+    assertThat(result.errors())
+        .extracting(ImportRowError::field)
+        .containsExactly("standardCode", "insurerItemCode", "standardCode");
+    ImportRowError blank = result.errors().get(0);
+    assertThat(blank.rawRow())
+        .containsEntry("insurerItemCode", "BAD-ROW")
+        .containsEntry("insurerItemName", "医院B")
+        .containsEntry("standardCode", "");
+    assertThat(result.errors().get(1).rawRow()).containsEntry("insurerItemCode", "DUP-KEY");
+    assertThat(result.errors().get(2).rawRow()).containsEntry("standardCode", "GHOST-999");
+  }
+
+  /** 造一张只有三行数据的 Excel：行号 2/6/14/27（rowNo = Excel 行号 + 1），其余行为空被解析跳过。 */
+  private static byte[] locatableErrorWorkbook() {
+    try (XSSFWorkbook workbook = new XSSFWorkbook();
+        ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+      Sheet sheet = workbook.createSheet("映射导入");
+      Row header = sheet.createRow(0);
+      header.createCell(0).setCellValue("保司码值");
+      header.createCell(1).setCellValue("保司名称");
+      header.createCell(2).setCellValue("标准码");
+      putRow(sheet, 1, "DUP-KEY", "医院A", "STD-1");
+      putRow(sheet, 5, "BAD-ROW", "医院B", "");
+      putRow(sheet, 13, "DUP-KEY", "医院C", "STD-2");
+      putRow(sheet, 26, "GHOST-ROW", "医院D", "GHOST-999");
+      workbook.write(out);
+      return out.toByteArray();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private static void putRow(Sheet sheet, int excelRowIndex, String code, String name, String std) {
+    Row row = sheet.createRow(excelRowIndex);
+    row.createCell(0).setCellValue(code);
+    row.createCell(1).setCellValue(name);
+    row.createCell(2).setCellValue(std);
   }
 
   @Test
