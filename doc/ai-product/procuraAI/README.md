@@ -128,11 +128,11 @@ procuraAI 为**采购域内的 AI 子能力**（**非独立可交付产品**；�
 
 ## 当前态证据
 
-> **当前态证据清单（第十九轮起唯一真源）**：`gateEvidenceManifest: {"checks": 10, "criteriaMax": "A10.28", "indexCount": 10, "positiveControls": 6, "probes": 151, "seedCaseCount": 27}`
+> **当前态证据清单（第十九轮起唯一真源）**：`gateEvidenceManifest: {"checks": 10, "criteriaMax": "A10.29", "indexCount": 10, "positiveControls": 6, "probes": 154, "seedCaseCount": 27}`
 >
 > 约定：以上各轮日志里的 `N/N` 数字均为**当时快照**，当前值一律以本行为准。本行由 A10.28 与 `--manifest` 的运行时真值逐字段比对（主判据数 / 反证数 / 正例数 / 判据上限 / 评测集例数 / 证据索引数）：写假、缺字段、真源扩容未同步、历史计数超过当前真值均转红；更新方式为 `--sync-manifest`（仅开发期显式调用，CI 不调用）。CI 日志由 `--self-test` 末尾的 `[MANIFEST]` 行留存机器可读证据。
 
-> 当前值：主门禁 **10/10**、`--self-test` **146/146**、正例 6；评测集当前 **27 例 seed**（真源 `eval/ai-decision-evalset.json`，A10.25 守护）。历史轮次 `N/N` 见 CHANGELOG，均为当时快照。
+> 当前值：主门禁 **10/10**、`--self-test` **154/154**、正例 6；评测集当前 **27 例 seed**（真源 `eval/ai-decision-evalset.json`，A10.25 守护）。A10.29 生产化加固门禁 `tools/check_procura_persistence.py` 已在 CI / `check.sh` G0 / 本地一键三入口登记。历史轮次 `N/N` 见 CHANGELOG，均为当时快照。
 
 ## 变更史
 

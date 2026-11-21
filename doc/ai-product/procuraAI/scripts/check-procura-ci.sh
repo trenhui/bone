@@ -41,4 +41,10 @@ python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py
 echo "[procura-gate] doc frontmatter 注入式负向反证"
 python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py --self-test
 
-echo "[procura-gate] 本地全绿；CI blocking 结果以 ci.yml 六条 ProcuraAI* 步骤为准（CI 绿 ≠ 可上线）"
+echo "[procura-gate] 生产化加固门禁（6 表 / 双唯一键 / 9 端口持久化实现）"
+python3 tools/check_procura_persistence.py
+
+echo "[procura-gate] 生产化加固注入式负向反证"
+python3 tools/check_procura_persistence.py --self-test
+
+echo "[procura-gate] 本地全绿；CI blocking 结果以 ci.yml 八条 ProcuraAI* 步骤为准（CI 绿 ≠ 可上线）"

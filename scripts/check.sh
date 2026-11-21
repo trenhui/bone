@@ -918,6 +918,11 @@ if ! python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py > /de
   echo -e "${DIM}  复核：python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py${RESET}"
   exit_code=1
 fi
+if ! python3 tools/check_procura_persistence.py > /dev/null; then
+  echo -e "${RED}❌ procuraAI 生产化加固门禁失败（6 表 / 双唯一键 / 9 端口持久化实现）${RESET}"
+  echo -e "${DIM}  复核：python3 tools/check_procura_persistence.py${RESET}"
+  exit_code=1
+fi
 
 # 结果处理 + 熔断计数
 if [ "$exit_code" -ne 0 ]; then

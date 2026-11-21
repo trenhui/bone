@@ -284,23 +284,24 @@ CI_STATE_ANCHORS = (
 # CI 与本地一键入口 = 全集（7 判据）；check.sh G0 = 快反馈子集（4 判据，不含 --self-test）。
 # D-11（2026-11-20，L3 授权）：frontmatter 语义守护由本地补充判据接入三入口，
 # 新增 frontmatterGate（主判据）/ frontmatterProbe（--self-test 注入反证）两 key。
+# A10.29（2026-11-20，生产化加固）：新增 persistenceGate / persistenceProbe 两 key。
 ENTRY_FILES = {
     "ci.yml": ROOT / ".github" / "workflows" / "ci.yml",
     "check.sh": ROOT / "scripts" / "check.sh",
     "check-procura-ci.sh": BASE / "scripts" / "check-procura-ci.sh",
 }
 GATE_KEYS = ("docGate", "docProbe", "evalGate", "evalProbe", "asyncapiCheck",
-             "frontmatterGate", "frontmatterProbe")
+             "frontmatterGate", "frontmatterProbe", "persistenceGate", "persistenceProbe")
 FULL_GATE_KEYS = frozenset(GATE_KEYS)
-FAST_GATE_KEYS = frozenset(("docGate", "evalGate", "asyncapiCheck", "frontmatterGate"))
-CI_PROCURA_STEP_MIN = 6
+FAST_GATE_KEYS = frozenset(("docGate", "evalGate", "asyncapiCheck", "frontmatterGate", "persistenceGate"))
+CI_PROCURA_STEP_MIN = 8
 CI_STEP_HEAD_RE = re.compile(r"^\s*-\s+name:\s*ProcuraAI[^\n]*\(blocking\)\s*$")
 # A10.17 第十三轮加固（2026-11-12）：判据「可执行」不能只看命令集合，还要看 run 正文的
 # **shell 语义**。实测：run: | 多行块内 `set +e` + `exit 0` 在 GHA 默认 shell
 # `bash -e -o pipefail` 下把真实转红的主门禁压成 rc=0，而判据集合仍完整 ⇒ 假绿；
 # 原有四类拦截（continue-on-error / if: / 注释 run / 子串冒充）全在 YAML 键层，够不到。
 GATE_CMD_RE = re.compile(
-    r"check_procura_alignment\.py|check_procura_evalset\.py|generate_asyncapi\.py|check_procura_frontmatter\.py")
+    r"check_procura_alignment\.py|check_procura_evalset\.py|generate_asyncapi\.py|check_procura_frontmatter\.py|check_procura_persistence\.py")
 SHELL_SWALLOW_RULES = (
     (re.compile(r"\bset\s+\+(?:e|eo|eu|euo)\b"), "set +e 关闭 errexit"),
     (re.compile(r"\bset\s+\+o\s+(?:errexit|pipefail)\b"), "set +o 关闭 errexit/pipefail"),
@@ -423,6 +424,8 @@ def _cmd_key(path: str, flags: frozenset[str]) -> str | None:
         return "asyncapiCheck" if "--check" in flags else None
     if path.endswith("check_procura_frontmatter.py"):
         return "frontmatterProbe" if "--self-test" in flags else ("frontmatterGate" if not flags else None)
+    if path.endswith("check_procura_persistence.py"):
+        return "persistenceProbe" if "--self-test" in flags else ("persistenceGate" if not flags else None)
     return None
 
 
@@ -3212,6 +3215,24 @@ def self_test() -> int:
             "check_procura_frontmatter.py", "check_procura_frontmatter_X.py", 1)
         return _mutate(c, entries=en)
 
+    def m_ci_drop_persistence(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"].replace(
+            "check_procura_persistence.py", "check_procura_persistence_X.py", 1)
+        return _mutate(c, entries=en)
+
+    def m_local_drop_persistence(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["check-procura-ci.sh"] = en["check-procura-ci.sh"].replace(
+            "check_procura_persistence.py", "check_procura_persistence_X.py", 1)
+        return _mutate(c, entries=en)
+
+    def m_checksh_drop_persistence(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["check.sh"] = en["check.sh"].replace(
+            "check_procura_persistence.py", "check_procura_persistence_X.py", 1)
+        return _mutate(c, entries=en)
+
     def m_checksh_drop_eval(c: Ctx) -> Ctx:
         en = dict(c.entries)
         en["check.sh"] = en["check.sh"].replace("scripts/check_procura_evalset.py",
@@ -3543,8 +3564,8 @@ def self_test() -> int:
     def m_manifest_stale_criteria(c: Ctx) -> Ctx:
         # 校验字段不止 probes：判据上限回退同样须转红
         x = dict(c.texts)
-        x["README"] = x["README"].replace('"criteriaMax": "A10.28"',
-                                          '"criteriaMax": "A10.27"', 1)
+        x["README"] = re.sub(r'"criteriaMax": "A10\.\d+"',
+                             '"criteriaMax": "A10.27"', x["README"], count=1)
         return _mutate(c, texts=x)
 
     def m_manifest_history_ok(c: Ctx) -> Ctx:
@@ -3658,6 +3679,9 @@ def self_test() -> int:
         ("A10", "ci.yml 删掉 frontmatterGate 判据（D-11 接入被回退）", m_ci_drop_frontmatter, "A10.17"),
         ("A10", "本地一键入口删掉 frontmatter 判据（D-11 接入被回退）", m_local_drop_frontmatter, "A10.17"),
         ("A10", "check.sh G0 删掉 frontmatterGate 判据（D-11 快反馈被回退）", m_checksh_drop_frontmatter, "A10.17"),
+        ("A10", "ci.yml 删掉 persistenceGate 判据（加固门禁被回退）", m_ci_drop_persistence, "A10.17"),
+        ("A10", "本地一键入口删掉 persistence 判据（加固门禁被回退）", m_local_drop_persistence, "A10.17"),
+        ("A10", "check.sh G0 删掉 persistenceGate 判据（加固快反馈被回退）", m_checksh_drop_persistence, "A10.17"),
         ("A10", "C-4 可验收动作清空（合规清单退化成条款）", m_compliance_empty_action, "A10.18"),
         ("A10", "F1 Owner 列清空（地基层缺责任人）", m_foundation_empty_owner, "A10.18"),
         ("A10", "F1 验收判据列删掉（表格结构退化）", m_foundation_drop_column, "A10.18"),

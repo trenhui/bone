@@ -4857,6 +4857,7 @@ CREATE TABLE `t_proc_performance_score` (
   KEY `idx_proc_performance_score_period` (`tenant_id`,`period`,`total_score`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='供应商绩效评分（只读投影；权重与自动授信属 owner 红线，未开放）';
 
+<<<<<<< HEAD
 
 -- 理算责任因子矩阵（版本化，按 row_key/col_key 合并保留已填值；迁移 0135 同批）
 CREATE TABLE IF NOT EXISTS t_claim_factor_matrix (
@@ -4879,3 +4880,144 @@ CREATE TABLE IF NOT EXISTS t_claim_factor_matrix (
   UNIQUE KEY uk_factor_matrix_cell (tenant_id, liability_id, dimension_set, row_key, col_key, version),
   KEY idx_factor_matrix_lookup (tenant_id, liability_uuid, dimension_set, version)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '理算责任因子矩阵(版本化,按row_key/col_key合并保留已填值)';
+=======
+-- ============================================================
+-- procuraAI 生产强化（contract / ai-governance 域持久化，6 张 init-only 表）
+-- 与既有 15 张 t_proc_* 同口径：审计八列 + tenant_id + deleted + version 齐全；
+-- 全部唯一键以 tenant_id 打头；无增量迁移脚本。
+-- 合规：模型 output 原文、合同正文、身份证/银行账号禁止落库；复杂事实用 JSON 摘要或 hash 表达。
+-- ============================================================
+
+DROP TABLE IF EXISTS `t_proc_contract_review`;
+CREATE TABLE `t_proc_contract_review` (
+  `id`                  BIGINT          NOT NULL COMMENT '审查主键（Snowflake）',
+  `tenant_id`           VARCHAR(64)     NOT NULL COMMENT '租户ID（登录态注入，禁自报）',
+  `review_id`           VARCHAR(64)     NOT NULL COMMENT '审查业务ID（跨租户唯一）',
+  `contract_no`         VARCHAR(64)     NOT NULL COMMENT '合同编号（非正文）',
+  `idempotency_key`     VARCHAR(128)    NOT NULL COMMENT '投递幂等键；重复投递返回原 review_id',
+  `status`              VARCHAR(32)     NOT NULL COMMENT '审查状态 PENDING/PARSED/FAILED/IN_REVIEW/HUMAN_REVIEW/SNAPSHOTTED',
+  `ai_participation`    VARCHAR(32)     NOT NULL DEFAULT 'UNKNOWN' COMMENT 'AI 参与披露态（UNKNOWN fail-closed）',
+  `risk_level`          VARCHAR(32)     NOT NULL DEFAULT 'UNKNOWN' COMMENT '终决风险等级（人工可推翻）',
+  `risk_items_json`     TEXT            DEFAULT NULL COMMENT '风险项结构化摘要 JSON（basis 经 PII 扫描后落库，不存 output 原文）',
+  `ai_confidence`       DOUBLE          NOT NULL DEFAULT 0 COMMENT 'AI 置信度（仅建议输入）',
+  `model_version`       VARCHAR(128)    DEFAULT NULL COMMENT '模型版本快照（不构成 AI 参与证据）',
+  `human_reason`        VARCHAR(512)    DEFAULT NULL COMMENT '人工路由理由（注入扫描后落库）',
+  `failure_reason`      VARCHAR(512)    DEFAULT NULL COMMENT '解析失败理由（注入扫描后落库）',
+  `overrides_json`      TEXT            DEFAULT NULL COMMENT '人工推翻结构化留痕 JSON',
+  `snapshot_ref`        VARCHAR(256)    DEFAULT NULL COMMENT '审查快照引用（只存引用，禁合同正文）',
+  `human_finalized`     TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否完成人工终决',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人（登录态）',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人（登录态）',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_contract_review_review` (`tenant_id`,`review_id`),
+  UNIQUE KEY `uk_proc_contract_review_idem` (`tenant_id`,`idempotency_key`),
+  KEY `idx_proc_contract_review_status` (`tenant_id`,`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='合同审查聚合（幂等双唯一键；人工闸门不可绕过；禁原文落库）';
+
+DROP TABLE IF EXISTS `t_proc_review_trace`;
+CREATE TABLE `t_proc_review_trace` (
+  `id`                  BIGINT          NOT NULL COMMENT '追溯条目主键（Snowflake）',
+  `tenant_id`           VARCHAR(64)     NOT NULL COMMENT '租户ID',
+  `review_id`           VARCHAR(64)     NOT NULL COMMENT '审查业务ID',
+  `event_type`          VARCHAR(64)     NOT NULL COMMENT '事件类型 DEGRADED/PII_REJECTED/HUMAN_OVERRIDE 等',
+  `detail`              VARCHAR(512)    DEFAULT NULL COMMENT '结构化摘要（PII/注入扫描后落库）',
+  `occurred_at`         DATETIME(3)     NOT NULL COMMENT '发生时间 UTC',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人（登录态）',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人（登录态）',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_review_trace` (`tenant_id`,`review_id`,`event_type`,`occurred_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='审查追溯链（只追加不改写；快照不可变）';
+
+DROP TABLE IF EXISTS `t_proc_ai_capability`;
+CREATE TABLE `t_proc_ai_capability` (
+  `id`                  BIGINT          NOT NULL COMMENT '能力登记主键（Snowflake）',
+  `tenant_id`           VARCHAR(64)     NOT NULL COMMENT '租户ID',
+  `code`                VARCHAR(64)     NOT NULL COMMENT '能力码（业务唯一键）',
+  `display_name`        VARCHAR(128)    NOT NULL COMMENT '能力显示名',
+  `state`               VARCHAR(32)     NOT NULL COMMENT '能力状态 AVAILABLE/DISABLED/DEGRADED/UNKNOWN/UNDETERMINED',
+  `owner_user_id`       VARCHAR(64)     NOT NULL COMMENT '具名责任人userId',
+  `owner_display_name`  VARCHAR(128)    DEFAULT NULL COMMENT '责任人展示名',
+  `trace_json`          TEXT            DEFAULT NULL COMMENT '状态变更追溯结构化摘要 JSON（不存模型输出）',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人（登录态）',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人（登录态）',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_ai_capability_code` (`tenant_id`,`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='AI 能力登记（缺省 UNKNOWN fail-closed；状态变更留痕）';
+
+DROP TABLE IF EXISTS `t_proc_human_decision`;
+CREATE TABLE `t_proc_human_decision` (
+  `id`                  BIGINT          NOT NULL COMMENT '人工终决主键（Snowflake）',
+  `tenant_id`           VARCHAR(64)     NOT NULL COMMENT '租户ID',
+  `decision_id`         VARCHAR(64)     NOT NULL COMMENT '终决业务ID（幂等键）',
+  `capability_code`     VARCHAR(64)     NOT NULL COMMENT '能力码',
+  `subject_ref`         VARCHAR(128)    NOT NULL COMMENT '主体引用（只存引用，不存 PII 原文）',
+  `ai_conclusion`       VARCHAR(256)    DEFAULT NULL COMMENT 'AI 结论摘要（禁 output 原文）',
+  `ai_confidence`       DOUBLE          NOT NULL DEFAULT 0 COMMENT 'AI 置信度',
+  `final_conclusion`    VARCHAR(256)    NOT NULL COMMENT '人工终决结论摘要',
+  `reviewer`            VARCHAR(64)     NOT NULL COMMENT '具名复核人（登录态注入）',
+  `reason`              VARCHAR(512)    DEFAULT NULL COMMENT '终决理由摘要（PII 扫描后落库）',
+  `review_duration_ms`  BIGINT          NOT NULL DEFAULT 0 COMMENT '复核耗时（有意义监督要件）',
+  `override_accepted`   TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '推翻是否被接受',
+  `evaluation_feedback` TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否触发评测增补标记',
+  `decided_at`          DATETIME(3)     NOT NULL COMMENT '终决时点 UTC',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人（登录态）',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人（登录态）',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_human_decision` (`tenant_id`,`decision_id`),
+  KEY `idx_proc_human_decision_subject` (`tenant_id`,`subject_ref`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='人工终决台账（AI 仅建议；终决权在人工；禁 output/PII 原文）';
+
+DROP TABLE IF EXISTS `t_proc_global_kill_switch`;
+CREATE TABLE `t_proc_global_kill_switch` (
+  `id`                  BIGINT          NOT NULL COMMENT '总闸主键（Snowflake）',
+  `tenant_id`           VARCHAR(64)     NOT NULL COMMENT '租户ID',
+  `switch_key`          VARCHAR(32)     NOT NULL DEFAULT 'GLOBAL' COMMENT '单例键 GLOBAL',
+  `mode`                VARCHAR(32)     NOT NULL COMMENT 'STANDBY/ENGAGED/DISENGAGED',
+  `operator`            VARCHAR(64)     NOT NULL COMMENT '操作人（登录态注入，缺失 fail-closed）',
+  `reason`              VARCHAR(512)    DEFAULT NULL COMMENT '切换理由摘要',
+  `changed_at`          DATETIME(3)     NOT NULL COMMENT '切换时点 UTC',
+  `drill_ref`           VARCHAR(64)     DEFAULT NULL COMMENT '停机演练引用',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人（登录态）',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人（登录态）',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_global_kill_switch` (`tenant_id`,`switch_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='全域 AI 一键停用总闸（每次裁决读最新行，无缓存；缺省全停）';
+
+DROP TABLE IF EXISTS `t_proc_governance_trace`;
+CREATE TABLE `t_proc_governance_trace` (
+  `id`                  BIGINT          NOT NULL COMMENT '治理追溯主键（Snowflake）',
+  `tenant_id`           VARCHAR(64)     NOT NULL COMMENT '租户ID',
+  `capability_code`     VARCHAR(64)     NOT NULL COMMENT '能力码（GLOBAL 表示全域）',
+  `event_type`          VARCHAR(64)     NOT NULL COMMENT '事件类型 REGISTERED/ENABLED/DISABLED/KILL_SWITCH_ENGAGED 等',
+  `detail`              VARCHAR(512)    DEFAULT NULL COMMENT '结构化摘要（PII/注入扫描后落库）',
+  `occurred_at`         DATETIME(3)     NOT NULL COMMENT '发生时间 UTC',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人（登录态）',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人（登录态）',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_governance_trace` (`tenant_id`,`capability_code`,`event_type`,`occurred_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='治理追溯链（停机演练/状态变更/人工终决均留痕，只追加）';
+>>>>>>> origin/dev

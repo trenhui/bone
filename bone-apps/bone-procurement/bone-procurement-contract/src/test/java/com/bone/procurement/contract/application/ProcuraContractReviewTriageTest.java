@@ -60,7 +60,7 @@ class ProcuraContractReviewTriageTest {
     ReviewReport report =
         service.submit(
             new SubmitReviewCommand(
-                "rv-green", "CT-1", new ByteArrayInputStream(new byte[0]), "src://c1", "doc-1"));
+                "CT-1", new ByteArrayInputStream(new byte[0]), "src://c1", "doc-1", "idem-green"));
 
     assertThat(report.status()).as("AI 仅辅助，终决前必须停在人工复核").isEqualTo("HUMAN_REVIEW");
     assertThat(report.humanFinalized()).isFalse();

@@ -13,4 +13,14 @@ public interface ContractReviewStore {
 
   /** 全局存在性：用于区分「跨租户拒绝」与「记录不存在」。 */
   boolean existsGlobally(String reviewId);
+
+  /**
+   * 幂等投递：同租户内同幂等键只落一条；重复投递返回原 review_id，不覆盖原记录。
+   *
+   * <p>默认实现委托 {@link #save}（内存实现语义）；持久化适配器覆盖此方法，以 uk(tenant_id, idempotency_key) 去重。保留原有三个方法签名不变。
+   */
+  default String saveIdempotent(String tenantId, String idempotencyKey, ContractReview review) {
+    save(tenantId, review);
+    return review.reviewId();
+  }
 }

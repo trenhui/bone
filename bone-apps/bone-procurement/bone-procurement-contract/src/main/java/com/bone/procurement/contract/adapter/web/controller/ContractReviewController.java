@@ -35,11 +35,11 @@ public class ContractReviewController {
     // walking skeleton：文档由 sourceRef 定位，真正的文件读取属 L3；此处不接收合同原文全文。
     SubmitReviewCommand command =
         new SubmitReviewCommand(
-            request.reviewId(),
             request.contractNo(),
             new ByteArrayInputStream(new byte[0]),
             request.sourceRef(),
-            request.docId());
+            request.docId(),
+            request.idempotencyKey());
     return ApiResponse.success(service.submit(command));
   }
 

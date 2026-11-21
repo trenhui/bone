@@ -1,6 +1,5 @@
 package com.bone.procurement.governance.infrastructure;
 
-import com.bone.procurement.governance.application.ConditionalOnAiGovernanceEnabled;
 import com.bone.procurement.governance.domain.gateway.HumanDecisionLedger;
 import com.bone.procurement.governance.domain.model.capability.CapabilityCode;
 import com.bone.procurement.governance.domain.model.capability.HumanFinalDecision;
@@ -8,11 +7,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.springframework.stereotype.Component;
 
-/** 受控内存人工终决台账：walking skeleton 用，生产持久化（DDL 属 L3）就绪后替换。 */
-@Component
-@ConditionalOnAiGovernanceEnabled
+/**
+ * 受控内存人工终决台账（已退役）：文件保留作骨架对照，不再注册为 bean。
+ *
+ * @deprecated 端口已由 {@link HumanDecisionLedgerAdapter} 委托 SDK 持久化仓储实现；同接口保留 bean 会双 bean。
+ */
+@Deprecated
 public class InMemoryHumanDecisionLedger implements HumanDecisionLedger {
 
   private final ConcurrentMap<String, HumanFinalDecision> byId = new ConcurrentHashMap<>();

@@ -12,10 +12,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.springframework.stereotype.Repository;
 
-/** 受控内存仓储：walking skeleton；生产持久化（t_proc_* 已落 DDL）后续替换。 */
-@Repository
+/**
+ * 受控内存仓储（已退役）：文件保留作骨架对照，不再注册为 bean。
+ *
+ * @deprecated gateway 端口已由 {@link QualificationRepositoryAdapter} 委托 SDK 仓储实现；同接口保留 @Repository
+ *     bean 会双 bean。
+ */
+@Deprecated
 public class InMemoryQualificationRepository implements QualificationRepository {
 
   private final Map<String, Qualification> qualifications = new ConcurrentHashMap<>();
