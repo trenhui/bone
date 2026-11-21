@@ -21,6 +21,7 @@ import com.bone.procurement.contract.domain.model.review.ReviewTraceEntry;
 import com.bone.procurement.contract.domain.service.ReviewEventAssembler;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 /**
@@ -62,13 +63,15 @@ public class ContractReviewApplicationService {
   /** 用例一：提交审查。解析 → AI 建议（仅建议）→ 确定性 HITL → 停在人工复核，不自动终决。 */
   public ReviewReport submit(SubmitReviewCommand command) {
     String tenantId = requireTenant();
-    ContractReview review = ContractReview.pending(command.reviewId(), command.contractNo());
+    // reviewId 必须服务端生成：请求体不接受业务键，避免跨租户覆写与自报绕过。
+    String reviewId = "rv-" + UUID.randomUUID();
+    ContractReview review = ContractReview.pending(reviewId, command.contractNo());
     try {
       ParsedContract ir =
           parsePort.parse(command.document(), tenantId, command.sourceRef(), command.docId());
       review.markParsed();
       ReviewRequest request =
-          new ReviewRequest(command.reviewId(), command.contractNo(), tenantId, clausesOf(ir));
+          new ReviewRequest(reviewId, command.contractNo(), tenantId, clausesOf(ir));
       ReviewSuggestion suggestion = reviewPort.review(request);
       review.startReview();
       review.applyAiSuggestion(suggestion);
@@ -96,8 +99,35 @@ public class ContractReviewApplicationService {
       }
       tracePort.append(ReviewTraceEntry.of(review.reviewId(), "AI_ERROR", e.getMessage()));
     }
-    store.save(tenantId, review);
+    // 幂等投递：同租户同幂等键只落一条，重复投递返回原 review_id 与原审查快照。
+    String effectiveReviewId =
+        store.saveIdempotent(tenantId, idempotencyKey(command, reviewId), review);
+    if (!effectiveReviewId.equals(review.reviewId())) {
+      return store
+          .find(tenantId, effectiveReviewId)
+          .map(ContractReviewApplicationService::toReport)
+          .orElseGet(() -> toReport(review));
+    }
     return toReport(review);
+  }
+
+  /** 幂等键优先取请求携带值，其次文档引用 / 来源引用，最后退回服务端 reviewId；租户不参与自报。 */
+  private static String idempotencyKey(SubmitReviewCommand command, String reviewId) {
+    if (command.idempotencyKey() != null && !command.idempotencyKey().isBlank()) {
+      String key = command.idempotencyKey().trim();
+      return key.length() > 128 ? key.substring(0, 128) : key;
+    }
+    if (command.docId() != null && !command.docId().isBlank()) {
+      return truncate("doc:" + command.docId());
+    }
+    if (command.sourceRef() != null && !command.sourceRef().isBlank()) {
+      return truncate("src:" + command.sourceRef());
+    }
+    return "review:" + reviewId;
+  }
+
+  private static String truncate(String value) {
+    return value.length() > 128 ? value.substring(0, 128) : value;
   }
 
   /** 用例二：查询报告。 */

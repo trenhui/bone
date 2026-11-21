@@ -43,6 +43,14 @@ public final class GlobalKillSwitch {
     return new GlobalKillSwitch(Mode.STANDBY, "system", "初始缺省", null);
   }
 
+  /** 持久化重建工厂：仅供基础设施适配器读库恢复最新快照，不产生新的变更时间。 */
+  public static GlobalKillSwitch rehydrate(
+      Mode mode, String operator, String reason, Instant changedAt, String drillRef) {
+    GlobalKillSwitch ks = new GlobalKillSwitch(mode, operator, reason, drillRef);
+    ks.changedAt = changedAt;
+    return ks;
+  }
+
   /** 一键停用：任意态可转入 ENGAGED，停机优先于可用性。 */
   public void engage(String operator, String reason, String drillRef) {
     requireOperator(operator);

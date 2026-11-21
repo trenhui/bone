@@ -16,7 +16,10 @@ import org.springframework.context.annotation.Import;
 @EnableSqlRepositories(
     basePackages = {
       "com.bone.procurement.transaction.domain.repository",
-      "com.bone.procurement.fulfillment.domain.repository"
+      "com.bone.procurement.fulfillment.domain.repository",
+      "com.bone.procurement.sourcing.domain.repository",
+      "com.bone.procurement.qualification.domain.repository",
+      "com.bone.procurement.risk.domain.repository"
     })
 @Import({MetadataAutoConfiguration.class, SqlRepositoryAutoConfiguration.class})
 public class ProcurementApplication {

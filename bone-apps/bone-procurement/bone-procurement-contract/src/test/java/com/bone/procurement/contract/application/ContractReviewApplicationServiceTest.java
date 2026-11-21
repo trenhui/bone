@@ -46,20 +46,22 @@ class ContractReviewApplicationServiceTest {
     AtomicReference<String> tenant = new AtomicReference<>("t-1");
     ContractReviewApplicationService service = service(tenant::get, aiSuggestion());
 
-    ReviewReport submitted = service.submit(command("rv-1", "CT-1"));
-    assertThat(submitted.reviewId()).isEqualTo("rv-1");
+    ReviewReport submitted = service.submit(command("idem-1", "CT-1"));
+    String reviewId = submitted.reviewId();
+    assertThat(reviewId).startsWith("rv-");
 
-    ReviewReport report = service.getReport("rv-1");
+    ReviewReport report = service.getReport(reviewId);
     assertThat(report.contractNo()).isEqualTo("CT-1");
     assertThat(report.status()).isEqualTo("HUMAN_REVIEW");
 
     ReviewReport finalized =
-        service.override("rv-1", new HumanOverrideInput("reviewer-1", "人工判定为高风险", RiskLevel.HIGH));
+        service.override(
+            reviewId, new HumanOverrideInput("reviewer-1", "人工判定为高风险", RiskLevel.HIGH));
     assertThat(finalized.status()).isEqualTo("SNAPSHOTTED");
     assertThat(finalized.humanFinalized()).isTrue();
     assertThat(finalized.riskLevel()).isEqualTo(RiskLevel.HIGH);
 
-    AiDisclosureView disclosure = service.disclosure("rv-1");
+    AiDisclosureView disclosure = service.disclosure(reviewId);
     assertThat(disclosure.aiAvailableCode()).isEqualTo("AVAILABLE");
     assertThat(disclosure.modelVersionSnapshot()).isEqualTo("m1");
     assertThat(traces).anyMatch(e -> e.eventType().equals("HUMAN_OVERRIDE"));
@@ -68,25 +70,25 @@ class ContractReviewApplicationServiceTest {
   @Test
   void 人工推翻后事件被消费一次且重复投递幂等() {
     ContractReviewApplicationService service = service(() -> "t-1", aiSuggestion());
-    service.submit(command("rv-e1", "CT-E"));
-    service.override("rv-e1", new HumanOverrideInput("r", "人工推翻", RiskLevel.HIGH));
+    String reviewId = service.submit(command("idem-e1", "CT-E")).reviewId();
+    service.override(reviewId, new HumanOverrideInput("r", "人工推翻", RiskLevel.HIGH));
 
     assertThat(consumer.conclusionCount())
         .as("override 后审查完成事件应在进程内被消费一次（walking skeleton 发布-消费闭环）")
         .isEqualTo(1);
     ContractReviewedConsumer.StoredConclusion conclusion =
-        consumer.conclusion("rv-e1").orElseThrow();
+        consumer.conclusion(reviewId).orElseThrow();
     assertThat(conclusion.riskLevel()).isEqualTo(RiskLevel.HIGH);
-    assertThat(conclusion.reviewSnapshotRef()).isEqualTo("snap://override/rv-e1");
+    assertThat(conclusion.reviewSnapshotRef()).isEqualTo("snap://override/" + reviewId);
 
     boolean redelivered =
         consumer.consume(
             new ContractReviewedEvent(
-                "rv-e1",
+                reviewId,
                 "CT-E",
                 RiskLevel.HIGH,
                 "hash",
-                "snap://override/rv-e1",
+                "snap://override/" + reviewId,
                 AiParticipation.AVAILABLE,
                 "m1"));
     assertThat(redelivered).as("同一 reviewId 重复投递不得再挂结论").isFalse();
@@ -97,23 +99,23 @@ class ContractReviewApplicationServiceTest {
   void 跨租户访问拒绝() {
     AtomicReference<String> tenant = new AtomicReference<>("t-1");
     ContractReviewApplicationService service = service(tenant::get, aiSuggestion());
-    service.submit(command("rv-t1", "CT-1"));
+    String reviewId = service.submit(command("idem-t1", "CT-1")).reviewId();
 
     tenant.set("t-2");
-    assertThatThrownBy(() -> service.getReport("rv-t1"))
+    assertThatThrownBy(() -> service.getReport(reviewId))
         .as("租户不一致必须 fail-closed")
         .isInstanceOf(CrossTenantAccessException.class);
     assertThatThrownBy(
-            () -> service.override("rv-t1", new HumanOverrideInput("r", "x", RiskLevel.LOW)))
+            () -> service.override(reviewId, new HumanOverrideInput("r", "x", RiskLevel.LOW)))
         .isInstanceOf(CrossTenantAccessException.class);
-    assertThatThrownBy(() -> service.disclosure("rv-t1"))
+    assertThatThrownBy(() -> service.disclosure(reviewId))
         .isInstanceOf(CrossTenantAccessException.class);
   }
 
   @Test
   void 无登录租户上下文时提交被拒() {
     ContractReviewApplicationService service = service(() -> null, aiSuggestion());
-    assertThatThrownBy(() -> service.submit(command("rv-none", "CT-N")))
+    assertThatThrownBy(() -> service.submit(command("idem-none", "CT-N")))
         .as("租户从登录态取，缺失即拒绝（不接受自报）")
         .isInstanceOf(IllegalStateException.class);
   }
@@ -126,11 +128,22 @@ class ContractReviewApplicationServiceTest {
                 AiParticipation.UNKNOWN, RiskLevel.UNKNOWN, List.of(), 0.0, false, null);
     ContractReviewApplicationService service = service(() -> "t-1", degraded);
 
-    ReviewReport report = service.submit(command("rv-deg", "CT-D"));
+    ReviewReport report = service.submit(command("idem-deg", "CT-D"));
 
     assertThat(report.status()).isEqualTo("HUMAN_REVIEW");
     assertThat(report.aiAvailable()).isEqualTo(AiParticipation.UNKNOWN);
     assertThat(traces).anyMatch(e -> e.eventType().equals("AI_DEGRADED"));
+  }
+
+  @Test
+  void 服务端生成reviewId且请求幂等键去重() {
+    ContractReviewApplicationService service = service(() -> "t-1", aiSuggestion());
+
+    ReviewReport first = service.submit(command("idem-dup", "CT-X"));
+    ReviewReport second = service.submit(command("idem-dup", "CT-Y"));
+
+    assertThat(first.reviewId()).startsWith("rv-");
+    assertThat(second.reviewId()).as("同租户同幂等键重复提交必须返回服务端生成的原 reviewId").isEqualTo(first.reviewId());
   }
 
   private ContractReviewApplicationService service(
@@ -154,8 +167,12 @@ class ContractReviewApplicationServiceTest {
             AiParticipation.AVAILABLE, RiskLevel.LOW, List.of(), 0.95, false, "m1");
   }
 
-  private static SubmitReviewCommand command(String reviewId, String contractNo) {
+  private static SubmitReviewCommand command(String idempotencyKey, String contractNo) {
     return new SubmitReviewCommand(
-        reviewId, contractNo, new ByteArrayInputStream(new byte[0]), "src://c", "doc");
+        contractNo,
+        new ByteArrayInputStream(new byte[0]),
+        "src://c",
+        "doc-" + idempotencyKey,
+        idempotencyKey);
   }
 }

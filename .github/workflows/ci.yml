@@ -142,8 +142,8 @@ jobs:
       # A10.17 守护：CI / check.sh G0 / check-procura-ci.sh 三处判据集合受控一致，
       # 防止「本地全绿但 CI 少一条」的静默漂移；且解析 run: 可执行命令，拦截
       # continue-on-error / if: 条件跳过 / 注释 run / --self-test 子串冒充 docGate。
-      # CI 与本地一键入口跑全集（7 判据，含 D-11 frontmatter 主判据+注入反证），
-      # check.sh G0 跑快反馈子集（4 判据，不含注入式 --self-test）。
+      # CI 与本地一键入口跑全集（9 判据，含 frontmatter / persistence 主判据+注入反证），
+      # check.sh G0 跑快反馈子集（5 判据，不含注入式 --self-test）。
       - name: ProcuraAI AsyncAPI Zero-Drift Gate (blocking)
         run: /usr/bin/env python3 doc/ai-product/procuraAI/detailed-design/contracts/generate_asyncapi.py --check
 
@@ -154,6 +154,13 @@ jobs:
 
       - name: ProcuraAI Frontmatter Negative Probes (blocking)
         run: /usr/bin/env python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py --self-test
+
+      # A10.29（生产化加固）：init-only DDL / 双唯一键 / 9 端口持久化实现进入 blocking。
+      - name: ProcuraAI Persistence Gate (blocking)
+        run: /usr/bin/env python3 tools/check_procura_persistence.py
+
+      - name: ProcuraAI Persistence Negative Probes (blocking)
+        run: /usr/bin/env python3 tools/check_procura_persistence.py --self-test
 
       # 以下 6 项此前**只存在于 scripts/ci-check.sh 里，而该脚本在全仓零调用者**
       # （2026-10-04 实测：命中全是脚本自身 docstring 与 gate-state.json 的描述文本，

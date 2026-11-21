@@ -55,6 +55,40 @@ public final class ContractReview {
     return new ContractReview(reviewId, contractNo);
   }
 
+  /**
+   * 持久化重建工厂：仅供 infrastructure 适配器从已落库快照恢复聚合，刻意绕过状态机迁移校验。
+   *
+   * <p>已落库数据本身经过状态机写入，重建时再走一遍迁移会丢失 overrides / snapshot 等不可变历史； 因此这里直接还原字段，禁止业务代码调用。
+   */
+  public static ContractReview rehydrate(
+      String reviewId,
+      String contractNo,
+      ReviewStatus status,
+      String failureReason,
+      String humanReason,
+      AiParticipation aiParticipation,
+      RiskLevel riskLevel,
+      List<RiskItem> riskItems,
+      ReviewSnapshotRef snapshotRef,
+      String modelVersionSnapshot,
+      double aiConfidence,
+      List<HumanOverride> overrides,
+      boolean humanFinalized) {
+    ContractReview review = new ContractReview(reviewId, contractNo);
+    review.status = Objects.requireNonNull(status, "status");
+    review.failureReason = failureReason;
+    review.humanReason = humanReason;
+    review.aiParticipation = aiParticipation == null ? AiParticipation.UNKNOWN : aiParticipation;
+    review.riskLevel = riskLevel == null ? RiskLevel.UNKNOWN : riskLevel;
+    review.riskItems = riskItems == null ? List.of() : List.copyOf(riskItems);
+    review.reviewSnapshotRef = snapshotRef;
+    review.modelVersionSnapshot = modelVersionSnapshot;
+    review.aiConfidence = aiConfidence;
+    review.overrides.addAll(overrides == null ? List.of() : overrides);
+    review.humanFinalized = humanFinalized;
+    return review;
+  }
+
   public void markParsed() {
     transitionTo(ReviewStatus.PARSED);
   }

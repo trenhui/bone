@@ -119,8 +119,8 @@ public class ContractReviewPortAdapter implements ContractReviewPort {
     return sb.toString();
   }
 
-  /** 模型输出入域前的 PII 扫描（含 riskItems.basis 所在的整段原文）。 */
-  private static boolean containsPii(String content) {
+  /** 模型输出入域前的 PII 扫描（含 riskItems.basis 所在的整段原文）。同包持久化适配器复用此护栏。 */
+  static boolean containsPii(String content) {
     return content != null
         && (ID_CARD.matcher(content).find() || BANK_ACCOUNT.matcher(content).find());
   }

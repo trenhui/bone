@@ -40,6 +40,30 @@ public final class AiCapability {
     this.trace.add(GovernanceTraceEntry.of(code.value(), "REGISTERED", "owner=" + owner.userId()));
   }
 
+  /** 持久化重建构造器：由已落库快照恢复，不追加 REGISTERED 留痕。 */
+  private AiCapability(
+      CapabilityCode code,
+      String displayName,
+      CapabilityState state,
+      OwnerRef owner,
+      List<GovernanceTraceEntry> trace) {
+    this.code = Objects.requireNonNull(code, "code");
+    this.displayName = displayName;
+    this.state = state == null ? CapabilityState.UNKNOWN : state;
+    this.owner = Objects.requireNonNull(owner, "owner");
+    this.trace.addAll(trace == null ? List.of() : trace);
+  }
+
+  /** 持久化重建工厂：仅供 infrastructure 适配器使用，业务代码不得绕过状态机。 */
+  public static AiCapability rehydrate(
+      CapabilityCode code,
+      String displayName,
+      CapabilityState state,
+      OwnerRef owner,
+      List<GovernanceTraceEntry> trace) {
+    return new AiCapability(code, displayName, state, owner, trace);
+  }
+
   /** 登记一个新能力；初始状态 UNKNOWN，需具名责任人显式启用。 */
   public static AiCapability register(CapabilityCode code, String displayName, OwnerRef owner) {
     return new AiCapability(code, displayName, owner);

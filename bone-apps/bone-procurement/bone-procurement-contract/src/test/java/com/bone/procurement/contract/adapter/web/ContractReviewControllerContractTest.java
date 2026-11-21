@@ -76,7 +76,7 @@ class ContractReviewControllerContractTest {
     ContractReviewController controller = new ContractReviewController(service);
 
     ApiResponse<?> submitted =
-        controller.submit(new ContractReviewSubmitRequest("rv-1", "CT-1", "src://c", "doc"));
+        controller.submit(new ContractReviewSubmitRequest("CT-1", "idem-1", "src://c", "doc"));
     assertThat(submitted.isSuccess()).isTrue();
     assertThat(submitted.getData()).isEqualTo(report);
     assertThat(controller.getReport("rv-1").getData()).isEqualTo(report);
