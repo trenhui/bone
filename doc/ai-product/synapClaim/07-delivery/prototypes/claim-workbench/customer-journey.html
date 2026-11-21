@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>客户旅程 · 微信小程序自助端</title>
+<style>
+  :root{
+    --brand:#1f6feb; --brand-soft:#eaf2ff; --bg:#f4f6fa; --card:#fff;
+    --line:#e7ebf2; --line-strong:#d7dfeb; --txt:#1b2436; --txt-2:#5b667d; --txt-3:#98a2b6;
+    --green:#12a150; --green-bg:#e9f8ef; --ok:#12a150; --ok-bg:#e9f8ef; --amber:#e8891b; --amber-bg:#fff4e6;
+    --red:#d92d20; --red-bg:#fef0ee; --blue-bg:#eef4ff; --purple:#7a5af8; --purple-bg:#f1edff;
+    --radius:12px; --shadow:0 1px 2px rgba(22,35,60,.04),0 6px 20px rgba(22,35,60,.05);
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;
+    padding:0 24px;gap:14px;position:sticky;top:0;z-index:50}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .logo .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#1f6feb,#7a5af8);
+    color:#fff;display:grid;place-items:center;font-size:14px;font-weight:800}
+  .crumb{color:var(--txt-3);font-size:13px;display:flex;gap:8px;align-items:center;margin-left:8px}
+  .crumb b{color:var(--txt-2);font-weight:500}
+  .crumb .sep{color:#c7d0de}
+  .topbar .right{margin-left:auto;display:flex;align-items:center;gap:18px}
+  .env{font-size:12px;color:var(--amber);background:var(--amber-bg);padding:4px 10px;border-radius:20px;font-weight:600}
+  .avatar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt-2)}
+  .avatar .dot{width:30px;height:30px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:700}
+  /* demo nav */
+  .demo-nav{display:flex;align-items:center;gap:6px;margin-left:10px;position:relative}
+  .demo-nav .dn-btn{font-size:12px;color:var(--txt-2);border:1px solid var(--line-strong);background:#fff;padding:5px 11px;border-radius:7px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px}
+  .demo-nav .dn-btn:hover{border-color:var(--brand);color:var(--brand)}
+  .demo-nav .dn-menu{display:none;position:absolute;top:34px;left:0;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:6px;min-width:200px;z-index:80}
+  .demo-nav.open .dn-menu{display:block}
+  .demo-nav .dn-menu a{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;font-size:13px;color:var(--txt-2)}
+  .demo-nav .dn-menu a:hover{background:var(--bg)}
+  .demo-nav .dn-menu a.cur{background:var(--brand-soft);color:var(--brand);font-weight:700}
+  .demo-nav .dn-menu a .ic{width:18px;text-align:center}
+  .demo-nav .dn-menu .cur-tag{margin-left:auto;font-size:10px;color:var(--brand)}
+  /* page */
+  .wrap{padding:20px 24px 60px}
+  .page-title{display:flex;align-items:center;gap:12px;margin-bottom:4px;flex-wrap:wrap}
+  .page-title h1{font-size:21px;font-weight:700}
+  .page-title .badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:16px;background:var(--green-bg);color:var(--green);border:1px solid #a7e3bf}
+  .page-title .sub{font-size:13px;color:var(--txt-3);margin-left:auto}
+  .policy-meta{display:flex;gap:22px;flex-wrap:wrap;font-size:12.5px;color:var(--txt-2);background:#fff;border:1px solid var(--line);
+    border-radius:var(--radius);padding:12px 18px;margin:14px 0 18px;box-shadow:var(--shadow)}
+  .policy-meta b{color:var(--txt);font-weight:600}
+  .policy-meta .mono{font-family:var(--mono);font-size:12px}
+  /* tabs */
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto}
+  .tab{padding:12px 18px;font-size:13.5px;color:var(--txt-2);cursor:pointer;white-space:nowrap;position:relative;font-weight:600}
+  .tab.active{color:var(--brand)}
+  .tab.active:after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:3px;background:var(--brand);border-radius:3px 3px 0 0}
+  /* card */
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden}
+  .card-h{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fcfdff,#fff)}
+  .card-h h2{font-size:15px;font-weight:700;display:flex;align-items:center;gap:9px}
+  .card-h .ico{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:14px;background:var(--blue-bg);color:var(--brand)}
+  .card-h .desc{font-size:12px;color:var(--txt-3);font-weight:400}
+  .card-h .tag{font-size:11px;color:var(--txt-3);background:var(--bg);border-radius:6px;padding:2px 8px}
+  .card-h .sp{flex:1}
+  .card-b{padding:18px}
+  .btn{border:1px solid var(--line-strong);background:#fff;color:var(--txt);padding:8px 15px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;font-family:inherit}
+  .btn:hover{border-color:var(--brand);color:var(--brand)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{background:#1859c4}
+  .btn.sm{padding:5px 11px;font-size:12px}
+  .btn.ghost{border-color:transparent;color:var(--brand)}
+  /* matrix table */
+  .mx-wrap{border:1px solid var(--line);border-radius:10px;overflow:auto;background:#fff}
+  .mx{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
+  .mx th,.mx td{padding:10px 12px;border:1px solid var(--line);text-align:left}
+  .mx thead .g1 th{background:#eaf0fa;color:var(--txt-2);text-align:center;font-weight:700;font-size:12px;border-bottom:2px solid #cdd9ec}
+  .mx thead .g2 th{background:#f7f9fc;color:var(--txt-2);font-weight:700;font-size:12px}
+  .mx tbody td{background:#fff}
+  .mx tbody tr:hover td{background:#fafcff}
+  .mx td.lvl{background:#fbfcfe;font-weight:700;color:var(--txt-2)}
+  .mx td.add{color:var(--brand);background:var(--blue-bg);text-align:center;cursor:pointer;font-weight:600}
+  .mx td.add:hover{background:#dfeaff}
+  .mx input,.mx select{width:100%;border:1px solid transparent;background:transparent;font-size:12.5px;font-family:inherit;color:var(--txt);padding:4px 6px;border-radius:5px}
+  .mx input:hover,.mx select:hover{border-color:var(--line-strong);background:#fff}
+  .mx input:focus,.mx select:focus{outline:none;border-color:var(--brand);background:#fff}
+  .mx td.num input{text-align:right;font-family:var(--mono)}
+  .pill{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;display:inline-block}
+  .pill.gen{color:var(--txt-2);background:var(--bg)}
+  .pill.exc{color:var(--purple);background:var(--purple-bg)}
+  .pill.diff{color:var(--amber);background:var(--amber-bg)}
+  .mx-note{font-size:11.5px;color:var(--txt-3);padding:9px 2px 0;line-height:1.7}
+  /* factor matrix */
+  .factor-bar{display:flex;align-items:center;gap:18px;flex-wrap:wrap;background:#fafcff;border:1px solid var(--line);
+    border-radius:9px;padding:12px 14px;margin-bottom:14px}
+  .factor-bar .fl{font-size:12.5px;font-weight:700;color:var(--txt-2)}
+  .factor-bar label{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--txt);cursor:pointer}
+  .factor-bar input[type=checkbox]{width:15px;height:15px;accent-color:var(--brand)}
+  .factor-bar .hint{margin-left:auto;font-size:11.5px;color:var(--txt-3)}
+  .factor-grid td.fdim{background:#f7f9fc;font-weight:600;color:var(--txt-2)}
+  .factor-grid td.val input{color:var(--brand);font-weight:600}
+  .preserve-tip{background:var(--green-bg);border:1px solid #a7e3bf;color:#0d6b38;font-size:12px;padding:8px 12px;border-radius:8px;margin-top:12px;display:flex;align-items:center;gap:8px}
+  /* expression editor */
+  .expr-wrap{display:grid;grid-template-columns:1fr 320px;gap:14px}
+  .expr-main{border:1px solid var(--line-strong);border-radius:9px;overflow:hidden}
+  .expr-main .em-h{background:#f7f9fc;padding:8px 12px;font-size:12px;color:var(--txt-2);border-bottom:1px solid var(--line);font-weight:600;display:flex;align-items:center;gap:8px}
+  .expr-main .em-h .ro{margin-left:auto;font-size:11px;color:var(--txt-3);font-weight:400}
+  .expr-str{min-height:64px;padding:14px;font-family:var(--mono);font-size:14px;color:var(--brand);background:#fff;line-height:1.9;word-break:break-all}
+  .expr-str .fn{color:var(--purple);font-weight:700}
+  .expr-str .fld{color:var(--green);font-weight:600}
+  .expr-str .op{color:var(--txt-3)}
+  .expr-str .cursor{display:inline-block;width:2px;height:16px;background:var(--brand);vertical-align:-3px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .expr-val{font-size:12px;padding:9px 14px;background:var(--green-bg);border-top:1px solid #a7e3bf;color:#0d6b38}
+  .expr-val.bad{background:var(--red-bg);border-color:#f3c3bd;color:var(--red)}
+  .expr-palette{border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .expr-palette .ep-h{background:#f7f9fc;padding:9px 12px;font-size:12px;font-weight:700;color:var(--txt-2);border-bottom:1px solid var(--line)}
+  .palette-tabs{display:flex;gap:0;border-bottom:1px solid var(--line)}
+  .palette-tabs span{flex:1;text-align:center;padding:8px;font-size:12px;color:var(--txt-3);cursor:pointer;font-weight:600}
+  .palette-tabs span.on{color:var(--brand);border-bottom:2px solid var(--brand)}
+  .palette-items{padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:196px;overflow:auto}
+  .palette-items button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:8px 6px;font-size:12px;color:var(--txt);cursor:pointer;font-family:inherit;text-align:left}
+  .palette-items button:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-soft)}
+  .palette-items button.fn{font-family:var(--mono);color:var(--purple)}
+  .palette-tip{font-size:11px;color:var(--txt-3);padding:8px 12px;border-top:1px solid var(--line);line-height:1.6}
+  /* modal (分区聚合校验) */
+  .mask{position:fixed;inset:0;background:rgba(22,35,60,.42);display:none;place-items:center;z-index:120;padding:24px}
+  .mask.show{display:grid}
+  .modal{background:#fff;border-radius:14px;width:760px;max-width:100%;max-height:92vh;overflow:auto;box-shadow:0 20px 60px rgba(22,35,60,.24)}
+  .modal .mh{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;font-size:16px;font-weight:700}
+  .modal .mh .x{margin-left:auto;cursor:pointer;color:var(--txt-3);font-size:22px;line-height:1}
+  .modal .mb{padding:20px}
+  .sec{border:1px solid var(--line);border-radius:9px;margin-bottom:14px;overflow:hidden}
+  .sec .sh{background:#f7f9fc;padding:9px 13px;font-size:13px;font-weight:700;color:var(--txt-2);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+  .sec .sh .badge-ok{margin-left:auto;font-size:11px;color:var(--green);font-weight:600}
+  .sec .sb{padding:13px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .mfield .lbl{font-size:12px;color:var(--txt-2);margin-bottom:5px;font-weight:600}
+  .mfield .lbl .req{color:var(--red)}
+  .mfield input,.mfield select,.mfield textarea{width:100%;border:1px solid var(--line-strong);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;color:var(--txt)}
+  .modal .mf{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+  .toast{position:fixed;top:74px;left:50%;transform:translateX(-50%);background:#1b2436;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;z-index:200;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1}
+  .foot{text-align:center;color:var(--txt-3);font-size:12px;padding:24px;border-top:1px solid var(--line);background:#fff}
+  @media(max-width:1100px){.expr-wrap{grid-template-columns:1fr}.demo-nav{display:none}}
+
+  /* ===== UX assist: help + command palette + feedback ===== */
+  .ux-fab{position:fixed;right:22px;bottom:22px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line-strong);
+    background:#fff;color:var(--brand);font-size:19px;font-weight:700;cursor:pointer;box-shadow:0 4px 18px rgba(22,35,60,.14);
+    z-index:120;display:grid;place-items:center;transition:.18s}
+  .ux-fab:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(31,111,235,.25);background:var(--brand);color:#fff}
+  .ux-mask{position:fixed;inset:0;background:rgba(20,28,45,.42);z-index:300;display:none}
+  .ux-mask.show{display:block}
+  .ux-drawer{position:fixed;right:0;top:0;bottom:0;width:420px;max-width:92vw;background:#fff;z-index:310;
+    box-shadow:-8px 0 30px rgba(22,35,60,.16);transform:translateX(105%);transition:transform .24s ease;
+    display:flex;flex-direction:column}
+  .ux-drawer.show{transform:translateX(0)}
+  .ux-dh{padding:20px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .ux-dh .ic{width:32px;height:32px;border-radius:9px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:800}
+  .ux-dh b{font-size:16px}
+  .ux-dh .x{margin-left:auto;cursor:pointer;color:var(--txt-3);font-size:22px;line-height:1;border:0;background:none}
+  .ux-db{padding:18px 22px;overflow:auto;flex:1}
+  .ux-lead{background:var(--brand-soft);border:1px solid #d3e3ff;color:#1e4e9c;border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.65;margin-bottom:18px}
+  .ux-sec{font-size:12px;color:var(--txt-3);font-weight:700;letter-spacing:.06em;margin:4px 0 11px}
+  .ux-step{display:flex;gap:11px;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .ux-step:last-child{border-bottom:0}
+  .ux-step .n{flex:0 0 22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;margin-top:1px}
+  .ux-step .c b{display:block;font-size:13.5px;margin-bottom:2px}
+  .ux-step .c span{font-size:12.5px;color:var(--txt-2);line-height:1.6}
+  .ux-tipbox{margin-top:20px;background:var(--amber-bg);border:1px solid #f7dcb5;border-radius:10px;padding:12px 14px}
+  .ux-tipbox .ux-sec{color:#a25b06;margin-top:0}
+  .ux-tipbox div{font-size:12.5px;color:#7a4a08;line-height:1.7;padding:3px 0}
+  .ux-df{padding:13px 22px;border-top:1px solid var(--line);font-size:12px;color:var(--txt-3);display:flex;align-items:center;gap:8px}
+  .ux-kbd{display:inline-block;background:#f4f6fa;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;
+    padding:1px 6px;font-family:var(--mono);font-size:11px;color:var(--txt-2)}
+  /* command palette */
+  .ux-cmd{position:fixed;left:50%;top:14%;transform:translate(-50%,-12px);width:min(560px,92vw);background:#fff;z-index:310;
+    border-radius:14px;box-shadow:0 20px 60px rgba(22,35,60,.24);overflow:hidden;opacity:0;transition:.16s;pointer-events:none}
+  .ux-mask.cmd-open~.ux-cmd,.ux-cmd.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .ux-cmd-in{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .ux-cmd-in span{color:var(--txt-3);font-size:18px}
+  .ux-cmd-in input{flex:1;border:0;outline:0;font-size:15px;color:var(--txt);background:transparent}
+  .ux-cmd-list{max-height:360px;overflow:auto;padding:8px}
+  .ux-cmd-grp{font-size:11px;color:var(--txt-3);font-weight:700;padding:8px 10px 4px;letter-spacing:.05em}
+  .ux-cmd-item{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:8px;cursor:pointer;font-size:13.5px}
+  .ux-cmd-item:hover,.ux-cmd-item.sel{background:var(--brand-soft)}
+  .ux-cmd-item .ic{width:26px;height:26px;border-radius:7px;background:#f4f6fa;color:var(--brand);display:grid;place-items:center;font-size:13px}
+  .ux-cmd-item .hint{margin-left:auto;font-size:11px;color:var(--txt-3)}
+  .ux-cmd-empty{padding:28px;text-align:center;color:var(--txt-3);font-size:13px}
+  /* inline feedback toast (fallback) */
+  .ux-toast{position:fixed;left:50%;bottom:76px;transform:translate(-50%,12px);background:#1b2436;color:#fff;padding:10px 18px;
+    border-radius:9px;font-size:13px;z-index:400;opacity:0;transition:.2s;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+  .ux-toast.show{opacity:1;transform:translate(-50%,0)}
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+  .mask{position:fixed;inset:0;background:rgba(16,24,40,.42);z-index:100;display:none;align-items:flex-start;justify-content:center;padding-top:9vh}
+  .mask.show{display:flex}
+  .modal{background:#fff;border-radius:14px;width:520px;max-width:92vw;box-shadow:0 20px 60px rgba(16,24,40,.25);overflow:hidden}
+  .modal .mh{padding:16px 20px;border-bottom:1px solid var(--line);font-size:15px;font-weight:700;display:flex;align-items:center}
+  .modal .mh .x{margin-left:auto;color:var(--txt-3);cursor:pointer;font-size:19px;font-weight:400}
+  .modal .mb{padding:18px 20px}
+  .modal .mf{padding:12px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;background:#fcfdff}
+  .mfield{margin-bottom:10px}.mfield .lbl{font-size:11.5px;color:var(--txt-3);margin-bottom:4px}
+  .mfield input,.mfield select,.mfield textarea{width:100%;border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;font-size:12.5px;background:#fff}
+  .btn:disabled{opacity:.45;cursor:not-allowed!important;background:var(--bg)!important;color:var(--txt-3)!important;border-color:var(--line)!important}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo"><span class="mark">P</span> TPA <span style="font-weight:400;color:var(--txt-3);font-size:12px">理赔运营平台</span></div>
+  <div class="crumb"><span>理赔服务</span><span class="sep">/</span><b>客户旅程（小程序）</b></div>
+  <div class="demo-nav" id="demoNav">
+    <button class="dn-btn" onclick="document.getElementById('demoNav').classList.toggle('open')">◫ 设计稿导航 ▾</button>
+    <div class="dn-menu">
+      <a href="claim-manage.html"><span class="ic">▤</span>赔案管理列表</a>
+      <a href="claim-detail.html"><span class="ic">▣</span>理赔审核详情</a>
+      <a href="claim-image-detail.html"><span class="ic">▧</span>赔案影像详情</a>
+      <a href="claim-rule-config.html"><span class="ic">∑</span>理算规则配置</a>
+      <a href="job-config.html"><span class="ic">⚙</span>主体专属作业配置</a>
+      <a href="import-record.html"><span class="ic">⇩</span>导入记录</a>
+      <a href="customer-journey.html" class="cur"><span class="ic">▣</span>客户旅程（小程序）<span class="cur-tag">当前</span></a>
+      <a href="form-config.html"><span class="ic">▤</span>表单配置中心<span class="cur-tag">NEW</span></a>
+      <a href="evaluation-report.html"><span class="ic">◫</span>评测报告</a>
+    </div>
+  </div>
+  <div class="right"><span class="env">测试环境</span><div class="avatar"><span class="dot">admin</span><span>系统管理员</span></div></div>
+</div>
+
+<div class="wrap">
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-h"><h2>客户旅程 · 微信小程序自助端</h2><span class="desc">报案 → AI 预填 → 进度透明 → 结果可申诉：单任务闭环，不跳端、不重复录入</span></div>
+    <div class="card-b"><div class="mx-note" style="padding-top:0">业界依据：Nielsen 可见性（进度常驻）、端到端单任务流（减少跨系统切换）、证据高亮（用原文解释 AI 结论）。点击左侧步骤切换手机屏幕，右侧同步展示该步的设计取舍。</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:400px 1fr;gap:18px;align-items:start">
+    <div class="card">
+      <div class="card-h"><h2>小程序屏幕</h2><span class="desc">5 步可切换</span></div>
+      <div class="card-b">
+        <div class="tabs" id="jTabs" style="margin-bottom:12px;flex-wrap:wrap">
+          <button class="tab active" onclick="showScr(1,this)">① 首页</button>
+          <button class="tab" onclick="showScr(2,this)">② 报案</button>
+          <button class="tab" onclick="showScr(3,this)">③ 进度</button>
+          <button class="tab" onclick="showScr(4,this)">④ 结果</button>
+          <button class="tab" onclick="showScr(5,this)">⑤ 我的</button>
+        </div>
+        <div style="width:340px;height:600px;margin:0 auto;border:10px solid #222;border-radius:32px;overflow:hidden;background:#f7f8fa;position:relative">
+          <div style="height:28px;background:#222;color:#fff;text-align:center;font-size:11px;line-height:28px">9:41 · 示例保险 · 小程序</div>
+          <div id="scr1" class="scr" style="padding:14px">
+            <div style="font-size:18px;font-weight:700;margin-bottom:12px">我的理赔</div>
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+              <div onclick="toast('进入拍照报案（示意）')" style="flex:1;background:var(--brand);color:#fff;border-radius:10px;padding:14px 8px;text-align:center;font-size:13px;cursor:pointer">＋ 拍照报案</div>
+              <div onclick="toast('进入进度查询（示意）')" style="flex:1;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 8px;text-align:center;font-size:13px;cursor:pointer">进度查询</div>
+            </div>
+            <div style="background:#fff;border-radius:10px;padding:12px;margin-bottom:10px;font-size:12px">📢 您的赔案 <b>900000000001</b> 已进入审核环节</div>
+            <div style="font-size:13px;font-weight:600;margin:10px 0">最近案件</div>
+            <div style="background:#fff;border-radius:10px;padding:12px;font-size:12px;line-height:1.9">
+              <div>赔案号 <span class="mono">900000000001</span></div><div>出险人 唐某 · 住院医疗</div>
+              <div>状态 <span class="badge warn">● 等待审核</span></div>
+              <div onclick="showScr(3,document.querySelectorAll('#jTabs .tab')[2])" style="color:var(--brand);cursor:pointer">查看进度 ›</div>
+            </div>
+          </div>
+          <div id="scr2" class="scr" style="padding:14px;display:none">
+            <div style="font-size:17px;font-weight:700;margin-bottom:10px">发起理赔申请</div>
+            <div onclick="toast('已打开相册（设计稿示意）')" style="background:#fff;border:1px dashed var(--brand);border-radius:10px;padding:22px;text-align:center;color:var(--brand);font-size:13px;cursor:pointer">＋ 上传发票 / 病历 / 费用清单</div>
+            <div style="font-size:12px;font-weight:600;margin:14px 0 8px">AI 已预填，请核对</div>
+            <div style="background:#fff;border-radius:10px;padding:10px 12px;font-size:12px;line-height:2">
+              <div>出险人 <b>唐某</b> <span style="color:var(--ok)">✓ 证件识别</span></div>
+              <div>就诊医院 <b>示例三甲医院</b> <span style="color:var(--ok)">✓ 票据识别</span></div>
+              <div>出险日期 <b>2026-06-05</b></div>
+              <div>申请金额 <b>¥ 1,280.00</b></div>
+            </div>
+            <div class="mx-note" style="margin-top:10px">AI 预填只做建议，关键字段必须人工确认后才允许提交——避免"自动填错"变成客户责任。</div>
+            <button class="btn primary" style="width:100%;margin-top:12px" onclick="submitJourney()">确认并提交</button>
+          </div>
+          <div id="scr3" class="scr" style="padding:14px;display:none">
+            <div style="font-size:17px;font-weight:700;margin-bottom:10px">处理进度</div>
+            <div style="background:#fff;border-radius:10px;padding:12px;font-size:12px;line-height:2">
+              <div>✓ 报案提交 <span style="color:var(--txt-3)">06-09 14:43</span></div>
+              <div>✓ 资料解析 <span style="color:var(--txt-3)">AI 抽取 8 个字段</span></div>
+              <div id="pstep3" style="color:var(--brand);font-weight:700">● AI 初审中 <span>30 秒内返回建议结论</span></div>
+              <div id="pstep4" style="color:var(--txt-3)">○ 人工审核（本案免人工，AI 建议 + 规则确定性理算）</div>
+              <div id="pstep5" style="color:var(--txt-3)">○ 赔付到账（到账时效随支付通道确定）</div>
+            </div>
+            <div style="font-size:12px;font-weight:600;margin:14px 0 8px">解析字段（点击看证据）</div>
+            <div style="background:#fff;border-radius:10px;padding:10px 12px;font-size:12px;line-height:2">
+              <div onclick="toast('证据定位：票据第 1 页金额栏')" style="cursor:pointer">金额 ¥1,280.00 <span style="color:var(--brand)">查看证据 ›</span></div>
+              <div onclick="toast('证据定位：票据第 1 页日期栏')" style="cursor:pointer">日期 2026-06-05 <span style="color:var(--brand)">查看证据 ›</span></div>
+            </div>
+          </div>
+          <div id="scr4" class="scr" style="padding:14px;display:none">
+            <div style="font-size:17px;font-weight:700;margin-bottom:10px">审核结果</div>
+            <div style="background:var(--ok-bg);border-radius:10px;padding:18px;text-align:center;margin-bottom:12px">
+              <div style="font-size:13px;color:var(--ok)">✓ 审核通过</div>
+              <div style="font-size:26px;font-weight:700;color:var(--ok);margin:6px 0">¥ 1,062.00</div>
+              <div style="font-size:12px;color:var(--txt-3)">到账时效随支付通道确定</div>
+            </div>
+            <div style="background:#fff;border-radius:10px;padding:12px;font-size:12px;line-height:2">
+              <div style="font-weight:700;color:var(--brand);margin-bottom:4px">确定性理算公式（AI 不碰钱）</div>
+              <div class="mono" style="color:var(--txt)">(¥1,280.00 − ¥100.00 免赔) × 90% = ¥1,062.00</div>
+              <div>· 控额：未触发分层控额 · 上限 100,000.00</div>
+              <div>· 依据：住院医疗责任条款 §3.2、§R-MED-03 / R-DED-01</div>
+              <div class="mx-note" style="margin-top:6px">金额全部由规则代码确定性计算；AI 只做票据字段抽取与建议，不参与金额判定。</div>
+            </div>
+            <button class="btn" style="width:100%;margin-top:12px" onclick="openAppeal()">对结果有疑问？提起申诉</button>
+          </div>
+          <div id="scr5" class="scr" style="padding:14px;display:none">
+            <div style="font-size:17px;font-weight:700;margin-bottom:10px">我的理赔</div>
+            <div style="background:#fff;border-radius:10px;padding:12px;margin-bottom:10px;font-size:12px;line-height:1.9">
+              <div class="mono">900000000001</div><div>唐某 · 住院医疗 · ¥1,062.00</div><div><span class="badge ok">✓ 已结案</span></div>
+            </div>
+            <div style="background:#fff;border-radius:10px;padding:12px;margin-bottom:10px;font-size:12px;line-height:1.9">
+              <div class="mono">900000000002</div><div>唐某 · 门诊医疗 · ¥320.00</div><div><span class="badge warn">● 审核中</span></div>
+            </div>
+            <div onclick="openAppeal()" style="background:#fff;border-radius:10px;padding:12px;font-size:12px;cursor:pointer">申诉记录与材料补充 ›</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h2>设计要点与业界依据</h2><span class="desc">随左侧步骤高亮</span></div>
+      <div class="card-b" id="why">
+        <div class="why" data-s="1"><b>① 首页只放三个动作</b><p>拍照报案 / 进度查询 / 我的理赔。用户进来只有一个目标，减少选择成本；通知条直接带案件号，点击直达进度。</p><p class="mx-note">依据：Nielsen 第一条可用性启发式（系统状态可见）+ 单任务入口收敛。</p></div>
+        <div class="why" data-s="2" style="display:none"><b>② AI 预填 + 强制确认</b><p>票据 OCR 自动填字段，但"确认并提交"前所有字段可改；AI 标注来源（证件识别 / 票据识别），让客户知道哪个字段可信。</p><p class="mx-note">依据：人机协作的"建议-确认"模式；自动填充错误若直接提交，责任归属不清。</p></div>
+        <div class="why" data-s="3" style="display:none"><b>③ 进度常驻 + 证据可点</b><p>五步状态条一直可见，不靠用户记忆；解析字段旁"查看证据"直接定位到票据原件，AI 结论可核对。</p><p class="mx-note">依据：进度指示器降低焦虑；可解释 AI（XAI）的客户侧落地形态。</p></div>
+        <div class="why" data-s="4" style="display:none"><b>④ 结果给金额也给算法</b><p>不只说"通过"，同时给完整确定性公式、免赔额、赔付比例与条款落点；AI 只出建议不碰钱，金额全部由规则代码计算。不通过时给逐条理由与可点的申诉入口。</p><p class="mx-note">依据：决策透明 + 可申诉闭环（保险监管对拒赔说明的通行要求）。</p></div>
+        <div class="why" data-s="5" style="display:none"><b>⑤ 历史可回溯</b><p>案件列表保留状态与金额，申诉入口与案件绑定，避免客户重复描述问题。</p><p class="mx-note">依据：以对象（案件）为中心组织信息，而非以流程阶段组织。</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="foot">演示数据已脱敏 · 非真实客户信息 · TPA 理赔运营平台 · 客户旅程设计稿 · 数据为测试环境结构还原</div>
+
+<button class="ux-fab" id="uxFab" title="操作指引 / 快捷命令 (Ctrl+K)" onclick="uxOpenHelp()">?</button>
+<div class="ux-mask" id="uxMask" onclick="uxCloseAll()"></div>
+<div class="ux-drawer" id="uxDrawer">
+  <div class="ux-dh"><span class="ic">?</span><b>客户旅程 · 快速上手</b><button class="x" onclick="uxCloseAll()">×</button></div>
+  <div class="ux-db">
+    <div class="ux-lead">这是一份可交互设计稿。按下面 5 步走一遍小程序端到端旅程，右侧同步解释每步的设计依据。</div>
+    <div class="ux-sec">操作五步走</div><div class="ux-step"><span class="n">1</span><div class="c"><b>看首页</b><span>三个动作收敛入口，通知条直达在途案件</span></div></div><div class="ux-step"><span class="n">2</span><div class="c"><b>试报案</b><span>上传票据后看 AI 预填字段，注意必须点确认才能提交</span></div></div><div class="ux-step"><span class="n">3</span><div class="c"><b>查进度</b><span>状态条常驻；点"查看证据"定位到票据原文</span></div></div><div class="ux-step"><span class="n">4</span><div class="c"><b>读结果</b><span>金额、免赔、条款依据一次给全；不通过可申诉</span></div></div><div class="ux-step"><span class="n">5</span><div class="c"><b>看我的</b><span>历史案件按对象组织，申诉与案件绑定</span></div></div>
+    <div class="ux-tipbox"><div class="ux-sec">易错提醒</div><div>· AI 预填只是建议，不要跳过人工确认</div><div>· 手机屏幕为 340×600 模拟框，不代表真实设备尺寸</div></div>
+  </div>
+  <div class="ux-df"><span class="ux-kbd">Esc</span> 关闭 · <span class="ux-kbd">Ctrl/⌘ + K</span> 快捷命令</div>
+</div>
+<div class="ux-cmd" id="uxCmd">
+  <div class="ux-cmd-in"><span>⌕</span><input id="uxCmdInput" placeholder="输入页面名或操作，如「影像」「批量拒赔」…" oninput="uxCmdRender()" onkeydown="uxCmdKey(event)"></div>
+  <div class="ux-cmd-list" id="uxCmdList"></div>
+</div>
+<div class="ux-toast" id="uxToast"></div>
+<script>
+(function(){
+  if(window.__uxInjected) return; window.__uxInjected=true;
+  var mask=document.getElementById('uxMask'),drawer=document.getElementById('uxDrawer'),cmd=document.getElementById('uxCmd'),inp=document.getElementById('uxCmdInput');
+  window.uxOpenHelp=function(){mask.classList.add('show');drawer.classList.add('show');};
+  window.uxCloseAll=function(){mask.classList.remove('show','cmd-open');drawer.classList.remove('show');cmd.classList.remove('show');};
+  window.uxOpenCmd=function(){mask.classList.add('show','cmd-open');cmd.classList.add('show');inp.value='';uxCmdRender();setTimeout(function(){inp.focus();},30);};
+  var items=[['claim-manage.html','▤','赔案管理列表','列表'],['claim-detail.html','▣','理赔审核详情','详情'],['claim-image-detail.html','▧','赔案影像详情','影像'],['claim-rule-config.html','∑','理算规则配置','规则'],['job-config.html','⚙','主体专属作业配置','配置'],['import-record.html','⇩','导入记录','导入'],['customer-journey.html','▣','客户旅程（小程序）','客户'],['form-config.html','▤','表单配置中心','表单'],['evaluation-report.html','◫','评测报告','评测']];
+  var sel=0,shown=[];
+  window.uxCmdRender=function(){
+    var q=(inp.value||'').trim().toLowerCase();
+    shown=items.filter(function(x){return !q||x[2].toLowerCase().indexOf(q)>=0||x[3].indexOf(q)>=0;});
+    if(sel>=shown.length)sel=0;
+    var h='<div class="ux-cmd-grp">跳转页面</div>';
+    if(!shown.length) h+='<div class="ux-cmd-empty">没有匹配项</div>';
+    shown.forEach(function(x,i){
+      h+='<a class="ux-cmd-item'+(i===sel?' sel':'')+'" href="'+x[0]+'"><span class="ic">'+x[1]+'</span>'+x[2]+'<span class="hint">'+x[3]+'</span></a>';
+    });
+    document.getElementById('uxCmdList').innerHTML=h;
+  };
+  window.uxCmdKey=function(e){
+    if(e.key==='ArrowDown'){e.preventDefault();sel=Math.min(sel+1,shown.length-1);uxCmdRender();}
+    else if(e.key==='ArrowUp'){e.preventDefault();sel=Math.max(sel-1,0);uxCmdRender();}
+    else if(e.key==='Enter'&&shown[sel]){location.href=shown[sel][0];}
+  };
+  document.addEventListener('keydown',function(e){
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();uxOpenCmd();}
+    if(e.key==='Escape')uxCloseAll();
+  });
+  if(typeof window.toast!=='function'){
+    var t=document.getElementById('uxToast'),timer;
+    window.toast=function(msg){if(!t)return;t.textContent=msg;t.classList.add('show');clearTimeout(timer);timer=setTimeout(function(){t.classList.remove('show');},1800);};
+  }
+})();
+
+
+function showScr(n,el){
+  for(var i=1;i<=5;i++){var s=document.getElementById('scr'+i);if(s)s.style.display=(i===n?'block':'none');}
+  document.querySelectorAll('#jTabs .tab').forEach(function(b){b.classList.remove('active');});
+  if(el)el.classList.add('active');
+  document.querySelectorAll('#why .why').forEach(function(d){d.style.display=(d.getAttribute('data-s')==String(n)?'block':'none');});
+}
+
+function submitJourney(){
+  toast('申请已提交 · AI 初审 30 秒内返回建议结论（示意）');
+  var p3=document.getElementById('pstep3'),p4=document.getElementById('pstep4'),p5=document.getElementById('pstep5');
+  if(p3){p3.style.color='var(--green)';p3.innerHTML='✓ AI 初审完成 <span>8 字段 · 置信度 0.96</span>';}
+  if(p4){p4.style.color='var(--green)';p4.innerHTML='✓ 规则核责与确定性理算完成 <span>无风险标记</span>';}
+  if(p5){p5.style.color='var(--brand)';p5.innerHTML='● 自动通过 · 建议结论已生成';}
+  setTimeout(function(){showScr(4,document.querySelectorAll('#jTabs .tab')[3]);toast('30 秒内返回建议结论：自动通过（到账时效不承诺）');},1200);
+}
+function openAppeal(){document.getElementById('mAppeal').classList.add('show');document.getElementById('apProgress').style.display='none';document.getElementById('apSubmit').style.display='';}
+function submitAppeal(){
+  var d=document.getElementById('apDesc').value.trim();
+  if(d.length<10){toast('补充说明不少于 10 字，请指明确切异议点');return;}
+  document.getElementById('apProgress').style.display='block';
+  document.getElementById('apSubmit').style.display='none';
+  toast('申诉已提交 · 复议单 AP-900000000001 已生成（设计稿示意）');
+}
+</script>
+
+<div class="mask" id="mAppeal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <div class="mh">申诉复议 · 900000000001 <span class="x" onclick="document.getElementById('mAppeal').classList.remove('show')">×</span></div>
+    <div class="mb">
+      <div class="mx-note" style="padding-top:0;margin-bottom:10px">对应拒赔/结论通知书「申诉渠道与时限」：签收后 10 个工作日内，可在此提交复议或联系客服。提交后生成复议单号，进度与案件绑定。</div>
+      <div class="mfield"><div class="lbl">申诉理由（必选）</div><select id="apReason"><option>对事实认定有异议</option><option>对条款适用有异议</option><option>补充新证据材料</option><option>金额计算有异议</option></select></div>
+      <div class="mfield"><div class="lbl">补充说明（不少于 10 字）</div><textarea id="apDesc" rows="3" placeholder="请说明异议点，并指明对应的票据或条款"></textarea></div>
+      <div id="apProgress" style="display:none;background:var(--bg);border-radius:8px;padding:12px;font-size:12px;line-height:2">
+        <div style="font-weight:700;color:var(--brand)">✓ 复议单 AP-900000000001 已生成</div>
+        <div>✓ 申诉受理 · 材料已绑定原案</div><div>● 复议审核中（预计 3 个工作日）</div><div style="color:var(--txt-3)">○ 复议结论与通知</div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn" onclick="document.getElementById('mAppeal').classList.remove('show')">关闭</button><button class="btn primary" id="apSubmit" onclick="submitAppeal()">提交申诉</button></div>
+  </div>
+</div>
+</body>
+</html>

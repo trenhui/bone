@@ -40,6 +40,7 @@ export function CaseIdBar({ value, onChange, onSubmit, loading, extra }: CaseIdB
   return (
     <Space>
       <Input
+        aria-label="案件ID"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onPressEnter={onSubmit}
@@ -47,11 +48,17 @@ export function CaseIdBar({ value, onChange, onSubmit, loading, extra }: CaseIdB
         allowClear
         style={{ width: 160 }}
       />
-      <Button icon={<SearchOutlined />} loading={loading} onClick={onSubmit}>
+      <Button aria-label="按案件ID查询" data-testid="case-query" icon={<SearchOutlined />} loading={loading} onClick={onSubmit}>
         查询
       </Button>
       {canOpenCase ? (
-        <Button icon={<LinkOutlined />} onClick={openCase360} title="带着当前案件 ID 打开案件 360">
+        <Button
+          aria-label="带着当前案件 ID 打开案件 360"
+          data-testid="case-open-360"
+          icon={<LinkOutlined />}
+          onClick={openCase360}
+          title="带着当前案件 ID 打开案件 360"
+        >
           案件 360
         </Button>
       ) : null}

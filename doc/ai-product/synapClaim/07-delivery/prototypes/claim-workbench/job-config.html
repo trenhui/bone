@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>主体专属作业配置 · TPA</title>
+<style>
+  :root{
+    --brand:#1f6feb; --brand-soft:#eaf2ff; --bg:#f4f6fa; --card:#fff;
+    --line:#e7ebf2; --line-strong:#d7dfeb; --txt:#1b2436; --txt-2:#5b667d; --txt-3:#98a2b6;
+    --green:#12a150; --green-bg:#e9f8ef; --amber:#e8891b; --amber-bg:#fff4e6;
+    --red:#d92d20; --red-bg:#fef0ee; --blue-bg:#eef4ff; --purple:#7a5af8; --purple-bg:#f1edff;
+    --radius:12px; --shadow:0 1px 2px rgba(22,35,60,.04),0 6px 20px rgba(22,35,60,.05);
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;
+    padding:0 24px;gap:14px;position:sticky;top:0;z-index:50}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .logo .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#1f6feb,#7a5af8);
+    color:#fff;display:grid;place-items:center;font-size:14px;font-weight:800}
+  .crumb{color:var(--txt-3);font-size:13px;display:flex;gap:8px;align-items:center;margin-left:8px}
+  .crumb b{color:var(--txt-2);font-weight:500}
+  .crumb .sep{color:#c7d0de}
+  .topbar .right{margin-left:auto;display:flex;align-items:center;gap:18px}
+  .env{font-size:12px;color:var(--amber);background:var(--amber-bg);padding:4px 10px;border-radius:20px;font-weight:600}
+  .avatar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt-2)}
+  .avatar .dot{width:30px;height:30px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:700}
+  .demo-nav{display:flex;align-items:center;gap:6px;margin-left:14px;position:relative}
+  .demo-nav .dn-btn{font-size:12px;color:var(--txt-2);border:1px solid var(--line-strong);background:#fff;
+    padding:6px 11px;border-radius:7px;cursor:pointer;font-weight:600;font-family:inherit}
+  .demo-nav .dn-btn:hover{border-color:var(--brand);color:var(--brand)}
+  .demo-nav .dn-menu{display:none;position:absolute;top:34px;left:0;background:#fff;border:1px solid var(--line);
+    border-radius:10px;box-shadow:0 12px 32px rgba(16,24,40,.14);min-width:200px;padding:6px;z-index:60}
+  .demo-nav.open .dn-menu{display:block}
+  .demo-nav .dn-menu a{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;font-size:13px;color:var(--txt-2)}
+  .demo-nav .dn-menu a:hover{background:var(--bg)}
+  .demo-nav .dn-menu a.cur{background:var(--brand-soft);color:var(--brand);font-weight:700}
+  .demo-nav .dn-menu a .ic{width:18px;text-align:center}
+  .demo-nav .dn-menu .cur-tag{margin-left:auto;font-size:10px;color:var(--brand)}
+  .btn{border:1px solid var(--line-strong);background:#fff;color:var(--txt);padding:8px 15px;border-radius:7px;
+    font-size:13px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;font-family:inherit}
+  .btn:hover{border-color:var(--brand);color:var(--brand)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{background:#1859c4}
+  .btn.ghost{border-color:transparent;color:var(--brand)}
+  .btn:disabled{opacity:.45;cursor:not-allowed!important;background:var(--bg)!important;color:var(--txt-3)!important;border-color:var(--line)!important}
+
+  .wrap{max-width:1500px;margin:0 auto;padding:22px 24px 60px}
+  .pagehead{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .pagehead h1{font-size:21px;font-weight:700;display:flex;align-items:center;gap:11px}
+  .pagehead h1 .badge{font-size:12px;font-weight:600;padding:4px 11px;border-radius:20px;background:var(--purple-bg);color:var(--purple)}
+  .pagehead .sub{font-size:12.5px;color:var(--txt-3);margin-top:6px}
+  .pagehead .ops{margin-left:auto;display:flex;gap:9px;flex-wrap:wrap}
+
+  .inherit-note{display:flex;gap:12px;align-items:flex-start;background:linear-gradient(90deg,#eef4ff,#f6f9ff);
+    border:1px solid #d5e4ff;border-radius:11px;padding:13px 16px;margin-bottom:16px;font-size:12.5px;color:var(--txt-2);line-height:1.65}
+  .inherit-note .ni{font-size:18px;line-height:1}
+  .inherit-note b{color:var(--brand)}
+  .inherit-note .legend{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 9px;border-radius:20px;font-weight:600}
+  .pill.gen{background:var(--bg);color:var(--txt-2)}
+  .pill.exc{background:var(--purple-bg);color:var(--purple)}
+  .pill.mod{background:var(--amber-bg);color:var(--amber)}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);background:#fbfcfe;padding:0 16px;overflow-x:auto}
+  .tab{padding:13px 17px;font-size:13.5px;color:var(--txt-2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-weight:600}
+  .tab:hover{color:var(--brand)}
+  .tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+  .tab .n{font-size:11px;color:var(--txt-3);background:var(--bg);border-radius:10px;padding:1px 6px;margin-left:5px}
+  .tbody{padding:20px}
+
+  .split-head{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px}
+  .col-title{display:flex;align-items:center;gap:9px;padding:11px 14px;border-radius:9px;font-size:13px;font-weight:700}
+  .col-title.std{background:var(--bg);color:var(--txt-2)}
+  .col-title.exc{background:var(--purple-bg);color:var(--purple)}
+  .col-title .n{margin-left:auto;font-size:11px;font-weight:600;background:#fff;padding:2px 9px;border-radius:10px}
+  .cmp-row{display:grid;grid-template-columns:170px 1fr 1fr;gap:0;border:1px solid var(--line);border-bottom:none;align-items:stretch}
+  .cmp-row:last-child{border-bottom:1px solid var(--line)}
+  .cmp-row>div{padding:11px 13px;border-right:1px solid var(--line);font-size:12.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .cmp-row>div:last-child{border-right:none}
+  .cmp-row .rk{background:#fbfcfe;font-weight:600;color:var(--txt-2)}
+  .cmp-row .rk small{display:block;color:var(--txt-3);font-weight:400;font-size:11px}
+  .cmp-row .sv{color:var(--txt-3)}
+  .cmp-row .sv .ena{font-size:11px;color:var(--green);background:var(--green-bg);padding:1px 7px;border-radius:10px}
+  .cmp-row .ev{background:#fdfcff}
+  .cmp-row .ev .val{color:var(--txt);font-weight:600}
+  .cmp-row .ev .syn{font-size:11px;color:var(--brand);cursor:pointer;margin-left:auto}
+  .cmp-row .ev .syn:hover{text-decoration:underline}
+  .cmp-row .ev .dis{font-size:11px;color:var(--txt-3)}
+  .syncbar{display:flex;gap:10px;align-items:center;margin-top:16px;padding:13px 15px;background:var(--amber-bg);
+    border:1px solid #f3d7a4;border-radius:9px;font-size:12.5px;color:#7a4d0c}
+  .syncbar .si{font-size:17px}
+  .syncbar .btn{margin-left:auto}
+
+  .rules-tools{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+  .rules-tools .sp{flex:1}
+  table.data{width:100%;border-collapse:collapse;font-size:12.5px}
+  table.data th{text-align:left;padding:10px 12px;background:#f7f9fc;color:var(--txt-2);font-weight:600;border-bottom:1px solid var(--line)}
+  table.data td{padding:11px 12px;border-bottom:1px solid var(--line)}
+  table.data tr:last-child td{border-bottom:none}
+  table.data tbody tr:hover{background:#fafcff}
+  table.data .mono{font-family:var(--mono);font-size:11.5px}
+  .sw{position:relative;width:34px;height:19px;border-radius:20px;background:var(--line-strong);display:inline-block;cursor:pointer;transition:.2s}
+  .sw:after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:.2s}
+  .sw.on{background:var(--brand)}
+  .sw.on:after{left:17px}
+
+  .flowchain{display:flex;align-items:center;gap:0;flex-wrap:wrap;padding:8px 0 4px}
+  .fnode{display:flex;align-items:center;gap:8px;padding:10px 13px;border:1px solid var(--line-strong);border-radius:9px;background:#fff;font-size:12.5px;cursor:pointer}
+  .fnode .fn{width:21px;height:21px;border-radius:50%;background:var(--bg);color:var(--txt-3);display:grid;place-items:center;font-size:11px;font-weight:700}
+  .fnode:hover{border-color:var(--brand)}
+  .fnode.sel{border-color:var(--brand);background:var(--brand-soft);color:var(--brand);font-weight:700}
+  .fnode.sel .fn{background:var(--brand);color:#fff}
+  .farr{width:26px;height:1px;background:var(--line-strong);margin:0 4px;position:relative}
+  .farr:after{content:"›";position:absolute;right:-2px;top:-9px;color:var(--txt-3);font-size:16px}
+  .fdetail{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;padding:15px;background:#fbfcfe;border:1px solid var(--line);border-radius:9px}
+  .fdetail .fd{font-size:12px;color:var(--txt-2)}
+  .fdetail .fd .l{color:var(--txt-3);font-size:11px;margin-bottom:4px}
+  .fdetail .fd .v{font-weight:600;color:var(--txt)}
+  .fdetail .fd .v code{font-family:var(--mono);font-size:11px;background:var(--bg);padding:1px 6px;border-radius:4px}
+
+  .verlist{padding:4px 0}
+  .ver{display:grid;grid-template-columns:90px 1fr 130px 100px;gap:12px;padding:12px 6px;border-bottom:1px solid var(--line);font-size:12.5px;align-items:center}
+  .ver:last-child{border-bottom:none}
+  .ver .vt{font-family:var(--mono);color:var(--brand)}
+  .ver .vc{color:var(--txt-2)}
+  .ver .vd{color:var(--txt-3);font-size:11.5px}
+
+  /* modal */
+  .mask{position:fixed;inset:0;background:rgba(16,24,40,.42);z-index:100;display:none;align-items:flex-start;justify-content:center;padding-top:10vh}
+  .mask.show{display:flex}
+  .modal{background:#fff;border-radius:14px;width:600px;max-width:92vw;box-shadow:0 20px 60px rgba(16,24,40,.25);overflow:hidden}
+  .modal .mh{padding:17px 22px;border-bottom:1px solid var(--line);font-size:16px;font-weight:700;display:flex;align-items:center}
+  .modal .mh .x{margin-left:auto;color:var(--txt-3);cursor:pointer;font-size:20px;font-weight:400}
+  .modal .mb{padding:20px 22px;font-size:13px;line-height:1.7;color:var(--txt-2)}
+  .modal .mf{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;background:#fcfdff}
+  .modal .note{background:var(--blue-bg);border:1px solid #d5e4ff;border-radius:8px;padding:11px 13px;font-size:12px;color:#2b5fa8;margin:12px 0}
+  .diff{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .diff .dc{border:1px solid var(--line);border-radius:9px;padding:12px 14px}
+  .diff .dc h4{font-size:12.5px;margin-bottom:8px;color:var(--txt)}
+  .diff .dc ul{list-style:none;font-size:12px;color:var(--txt-2)}
+  .diff .dc li{padding:3px 0}
+  .diff .dc li:before{content:"·";color:var(--brand);font-weight:700;margin-right:6px}
+  .toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#1b2436;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;z-index:200;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1}
+  @media(max-width:1100px){.split-head{grid-template-columns:1fr}.cmp-row{grid-template-columns:130px 1fr 1fr}.fdetail{grid-template-columns:1fr}.demo-nav{display:none}}
+
+  /* ===== UX assist: help + command palette + feedback ===== */
+  .ux-fab{position:fixed;right:22px;bottom:22px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line-strong);
+    background:#fff;color:var(--brand);font-size:19px;font-weight:700;cursor:pointer;box-shadow:0 4px 18px rgba(22,35,60,.14);
+    z-index:120;display:grid;place-items:center;transition:.18s}
+  .ux-fab:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(31,111,235,.25);background:var(--brand);color:#fff}
+  .ux-mask{position:fixed;inset:0;background:rgba(20,28,45,.42);z-index:300;display:none}
+  .ux-mask.show{display:block}
+  .ux-drawer{position:fixed;right:0;top:0;bottom:0;width:420px;max-width:92vw;background:#fff;z-index:310;
+    box-shadow:-8px 0 30px rgba(22,35,60,.16);transform:translateX(105%);transition:transform .24s ease;
+    display:flex;flex-direction:column}
+  .ux-drawer.show{transform:translateX(0)}
+  .ux-dh{padding:20px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .ux-dh .ic{width:32px;height:32px;border-radius:9px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:800}
+  .ux-dh b{font-size:16px}
+  .ux-dh .x{margin-left:auto;cursor:pointer;color:var(--txt-3);font-size:22px;line-height:1;border:0;background:none}
+  .ux-db{padding:18px 22px;overflow:auto;flex:1}
+  .ux-lead{background:var(--brand-soft);border:1px solid #d3e3ff;color:#1e4e9c;border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.65;margin-bottom:18px}
+  .ux-sec{font-size:12px;color:var(--txt-3);font-weight:700;letter-spacing:.06em;margin:4px 0 11px}
+  .ux-step{display:flex;gap:11px;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .ux-step:last-child{border-bottom:0}
+  .ux-step .n{flex:0 0 22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;margin-top:1px}
+  .ux-step .c b{display:block;font-size:13.5px;margin-bottom:2px}
+  .ux-step .c span{font-size:12.5px;color:var(--txt-2);line-height:1.6}
+  .ux-tipbox{margin-top:20px;background:var(--amber-bg);border:1px solid #f7dcb5;border-radius:10px;padding:12px 14px}
+  .ux-tipbox .ux-sec{color:#a25b06;margin-top:0}
+  .ux-tipbox div{font-size:12.5px;color:#7a4a08;line-height:1.7;padding:3px 0}
+  .ux-df{padding:13px 22px;border-top:1px solid var(--line);font-size:12px;color:var(--txt-3);display:flex;align-items:center;gap:8px}
+  .ux-kbd{display:inline-block;background:#f4f6fa;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;
+    padding:1px 6px;font-family:var(--mono);font-size:11px;color:var(--txt-2)}
+  /* command palette */
+  .ux-cmd{position:fixed;left:50%;top:14%;transform:translate(-50%,-12px);width:min(560px,92vw);background:#fff;z-index:310;
+    border-radius:14px;box-shadow:0 20px 60px rgba(22,35,60,.24);overflow:hidden;opacity:0;transition:.16s;pointer-events:none}
+  .ux-mask.cmd-open~.ux-cmd,.ux-cmd.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .ux-cmd-in{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .ux-cmd-in span{color:var(--txt-3);font-size:18px}
+  .ux-cmd-in input{flex:1;border:0;outline:0;font-size:15px;color:var(--txt);background:transparent}
+  .ux-cmd-list{max-height:360px;overflow:auto;padding:8px}
+  .ux-cmd-grp{font-size:11px;color:var(--txt-3);font-weight:700;padding:8px 10px 4px;letter-spacing:.05em}
+  .ux-cmd-item{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:8px;cursor:pointer;font-size:13.5px}
+  .ux-cmd-item:hover,.ux-cmd-item.sel{background:var(--brand-soft)}
+  .ux-cmd-item .ic{width:26px;height:26px;border-radius:7px;background:#f4f6fa;color:var(--brand);display:grid;place-items:center;font-size:13px}
+  .ux-cmd-item .hint{margin-left:auto;font-size:11px;color:var(--txt-3)}
+  .ux-cmd-empty{padding:28px;text-align:center;color:var(--txt-3);font-size:13px}
+  /* inline feedback toast (fallback) */
+  .ux-toast{position:fixed;left:50%;bottom:76px;transform:translate(-50%,12px);background:#1b2436;color:#fff;padding:10px 18px;
+    border-radius:9px;font-size:13px;z-index:400;opacity:0;transition:.2s;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+  .ux-toast.show{opacity:1;transform:translate(-50%,0)}
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo"><span class="mark">P</span> TPA <span style="font-weight:400;color:var(--txt-3);font-size:12px">理赔运营平台</span></div>
+  <div class="crumb"><span>系统配置</span><span class="sep">/</span><span>作业配置</span><span class="sep">/</span><b>主体专属配置</b></div>
+  <div class="demo-nav" id="demoNav">
+    <button class="dn-btn" onclick="document.getElementById('demoNav').classList.toggle('open')">◫ 设计稿导航 ▾</button>
+    <div class="dn-menu">
+      <a href="claim-manage.html"><span class="ic">▤</span>赔案管理列表</a>
+      <a href="claim-detail.html"><span class="ic">▣</span>理赔审核详情</a>
+      <a href="claim-image-detail.html"><span class="ic">▧</span>赔案影像详情</a>
+      <a href="claim-rule-config.html"><span class="ic">∑</span>理算规则配置</a>
+      <a href="job-config.html" class="cur"><span class="ic">⚙</span>主体专属作业配置<span class="cur-tag">当前</span></a>
+      <a href="import-record.html"><span class="ic">⇩</span>导入记录<span class="cur-tag">NEW</span></a>
+      <a href="customer-journey.html"><span class="ic">▣</span>客户旅程（小程序）<span class="cur-tag">NEW</span></a>
+      <a href="form-config.html"><span class="ic">▤</span>表单配置中心<span class="cur-tag">NEW</span></a>
+      <a href="evaluation-report.html"><span class="ic">◫</span>评测报告</a>
+    </div>
+  </div>
+  <div class="right">
+    <span class="env">测试环境</span>
+    <div class="avatar"><span class="dot">admin</span><span>系统管理员</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="pagehead">
+    <div>
+      <h1>主体专属作业配置 <span class="badge">示例财险 · 华北分公司</span></h1>
+      <div class="sub">bizIdentity: <span class="mono">1:DEMO</span> · 继承「平台标准配置」并叠加主体专属覆盖 · 最近发布 2026-11-18 10:24</div>
+    </div>
+    <div class="ops">
+      <button class="btn" onclick="toast('已滚动到配置继承说明')">继承关系说明</button>
+      <button class="btn" onclick="openModal('syncMask')">同步标准配置</button>
+      <button class="btn primary" onclick="openModal('publishMask')">发布配置 →</button>
+    </div>
+  </div>
+
+  <div class="inherit-note" id="inheritNote">
+    <span class="ni">ⓘ</span>
+    <div>
+      <b>配置继承原则</b>：本页配置 = <b>平台标准配置</b> + <b>主体专属覆盖</b>。左侧标准配置为只读基线，右侧专属配置为当前主体实际生效值；标记为「专属」的字段/规则覆盖标准值，标记为「通用」的直接继承标准值。
+      <div class="legend">
+        <span class="pill gen">通用 · 继承标准</span>
+        <span class="pill exc">专属 · 覆盖标准</span>
+        <span class="pill mod">专属·改 · 曾调整</span>
+        <span style="font-size:11px;color:var(--txt-3)">同屏对比 → 显式同步 → 发布声明，让"谁覆盖谁"一目了然</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" data-tab="field">字段配置<span class="n">18</span></div>
+      <div class="tab" data-tab="rule">规则配置<span class="n">12</span></div>
+      <div class="tab" data-tab="flow">流程节点<span class="n">7</span></div>
+      <div class="tab" data-tab="ver">发布记录<span class="n">4</span></div>
+    </div>
+    <div class="tbody">
+
+      <!-- 字段配置：双栏对比 -->
+      <div class="pane" id="pane-field">
+        <div class="split-head">
+          <div class="col-title std">◧ 平台标准选项集 <span class="n">只读基线</span></div>
+          <div class="col-title exc">◨ 主体专属选项集 <span class="n">当前生效</span></div>
+        </div>
+        <div class="cmp-row"><div class="rk">出险原因<small>字典字段</small></div><div class="sv">意外 / 疾病 / 自然灾害 <span class="ena">启用</span></div><div class="ev"><span class="pill gen">通用</span><span class="val">意外 / 疾病 / 自然灾害</span><span class="syn">继承标准</span></div></div>
+        <div class="cmp-row"><div class="rk">医院等级<small>字典字段</small></div><div class="sv">一级 / 二级 / 三级 <span class="ena">启用</span></div><div class="ev"><span class="pill mod">专属·改</span><span class="val">二级 / 三级</span><span class="syn">查看差异</span></div></div>
+        <div class="cmp-row"><div class="rk">理赔类型<small>字典字段</small></div><div class="sv">门诊 / 住院 / 手术 <span class="ena">启用</span></div><div class="ev"><span class="pill exc">专属</span><span class="val">门诊 / 住院 / 手术 / 牙科</span><span class="syn">查看差异</span></div></div>
+        <div class="cmp-row"><div class="rk">领款账户类型<small>业务字段</small></div><div class="sv">个人银行卡 / 对公账户 <span class="ena">启用</span></div><div class="ev"><span class="pill gen">通用</span><span class="val">个人银行卡 / 对公账户</span><span class="syn">继承标准</span></div></div>
+        <div class="cmp-row"><div class="rk">VIP 等级<small>业务字段</small></div><div class="sv">VIP1 / VIP2 / VIP3 <span class="ena">启用</span></div><div class="ev"><span class="pill exc">专属</span><span class="val">VIP1 / VIP2 / VIP3 / 钻石</span><span class="syn">查看差异</span></div></div>
+        <div class="cmp-row"><div class="rk">发票类型<small>影像字段</small></div><div class="sv">电子普票 / 电子专票 / 纸质 <span class="ena">启用</span></div><div class="ev"><span class="pill gen">通用</span><span class="val">电子普票 / 电子专票 / 纸质</span><span class="syn">继承标准</span></div></div>
+        <div class="syncbar"><span class="si">⇅</span><span>标准配置更新后，专属配置不会自动覆盖。"同步标准字段"将把新增标准字段追加到专属配置，<b>默认为不启用</b>，此前已有的专属配置不受影响。</span><button class="btn" onclick="openModal('syncMask')">同步标准字段</button></div>
+      </div>
+
+      <!-- 规则配置 -->
+      <div class="pane" id="pane-rule" style="display:none">
+        <div class="rules-tools"><span style="font-size:12.5px;color:var(--txt-2)">共 12 条规则 · 其中 <b style="color:var(--purple)">3 条专属</b> 覆盖标准 · <b>9 条通用</b>继承</span><span class="sp"></span><button class="btn" onclick="openModal('syncMask')">同步标准规则</button><button class="btn primary" onclick="toast('已打开新增规则编辑')">+ 新增专属规则</button></div>
+        <table class="data">
+          <thead><tr><th>规则名称</th><th>性质</th><th>适用环节</th><th>标准值</th><th>专属值</th><th>状态</th></tr></thead>
+          <tbody>
+            <tr><td><b>免赔额规则</b></td><td><span class="pill gen">通用</span></td><td>理算</td><td class="mono">100 元</td><td class="mono">100 元</td><td><span class="sw on" onclick="toggleSw(this)"></span></td></tr>
+            <tr><td><b>赔付比例规则</b></td><td><span class="pill mod">专属·改</span></td><td>理算</td><td class="mono">90%</td><td class="mono">85%</td><td><span class="sw on" onclick="toggleSw(this)"></span></td></tr>
+            <tr><td><b>医院等级限制</b></td><td><span class="pill exc">专属</span></td><td>初审</td><td>—</td><td class="mono">仅二级及以上</td><td><span class="sw on" onclick="toggleSw(this)"></span></td></tr>
+            <tr><td><b>单证齐全性校验</b></td><td><span class="pill gen">通用</span></td><td>质检</td><td>强制</td><td>强制</td><td><span class="sw on" onclick="toggleSw(this)"></span></td></tr>
+            <tr><td><b>超时自动挂起</b></td><td><span class="pill exc">专属</span></td><td>全流程</td><td>—</td><td class="mono">48 小时</td><td><span class="sw" onclick="toggleSw(this)"></span></td></tr>
+            <tr><td><b>重复报案拦截</b></td><td><span class="pill gen">通用</span></td><td>签收</td><td>启用</td><td>启用</td><td><span class="sw on" onclick="toggleSw(this)"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 流程节点 -->
+      <div class="pane" id="pane-flow" style="display:none">
+        <div style="font-size:12.5px;color:var(--txt-2);margin-bottom:12px">七节点作业链：点击节点查看该环节配置。节点可配跳转类型与条件，支持"编辑脚本"。<span style="color:var(--brand)">蓝色为已启用专属配置</span>。</div>
+        <div class="flowchain" id="flowchain">
+          <div class="fnode sel" data-i="0"><span class="fn">1</span>签收</div><div class="farr"></div>
+          <div class="fnode" data-i="1"><span class="fn">2</span>初审</div><div class="farr"></div>
+          <div class="fnode" data-i="2"><span class="fn">3</span>录入</div><div class="farr"></div>
+          <div class="fnode" data-i="3"><span class="fn">4</span>质检</div><div class="farr"></div>
+          <div class="fnode" data-i="4"><span class="fn">5</span>审核</div><div class="farr"></div>
+          <div class="fnode" data-i="5"><span class="fn">6</span>复核</div><div class="farr"></div>
+          <div class="fnode" data-i="6"><span class="fn">7</span>推送</div>
+        </div>
+        <div class="fdetail" id="fdetail">
+          <div class="fd"><div class="l">节点名称</div><div class="v" id="fdName">签收</div></div>
+          <div class="fd"><div class="l">分配规则</div><div class="v" id="fdRule"><code>手工分配</code></div></div>
+          <div class="fd"><div class="l">跳转条件</div><div class="v" id="fdCond">签收成功 → 自动进入初审</div></div>
+          <div class="fd"><div class="l">表单 Schema</div><div class="v" id="fdSchema"><code>claim_sign_v2</code></div></div>
+          <div class="fd"><div class="l">时效配置</div><div class="v" id="fdSla">2 小时内签收</div></div>
+          <div class="fd"><div class="l">脚本</div><div class="v"><span style="color:var(--brand);cursor:pointer" onclick="toast('脚本编辑器为交互示意')">编辑脚本 ✎</span></div></div>
+        </div>
+      </div>
+
+      <!-- 发布记录 -->
+      <div class="pane" id="pane-ver" style="display:none">
+        <div class="verlist">
+          <div class="ver"><span class="vt">v2.4.1</span><span class="vc">新增 VIP 钻石等级、牙科理赔类型；调整赔付比例 90%→85%</span><span class="vd">2026-11-18 10:24</span><span class="pill exc">已发布</span></div>
+          <div class="ver"><span class="vt">v2.4.0</span><span class="vc">同步标准配置：新增发票类型字段（默认不启用）</span><span class="vd">2026-10-30 09:12</span><span class="pill gen">已发布</span></div>
+          <div class="ver"><span class="vt">v2.3.2</span><span class="vc">医院等级限制改为二级及以上；新增超时自动挂起规则</span><span class="vd">2026-09-22 16:40</span><span class="pill exc">已发布</span></div>
+          <div class="ver"><span class="vt">v2.3.0</span><span class="vc">初始化主体专属配置，继承平台标准 v2.3</span><span class="vd">2026-08-05 11:00</span><span class="pill gen">已发布</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 同步标准配置弹窗 -->
+<div class="mask" id="syncMask" onclick="if(event.target===this)closeModal(this)">
+  <div class="modal">
+    <div class="mh">同步平台标准配置 <span class="x" onclick="closeModal(this)">×</span></div>
+    <div class="mb">
+      将把标准配置中<b>新增</b>的字段与规则追加到当前主体专属配置：
+      <div class="note">⚠ 同步项<b>默认为不启用</b>；此前已有专属配置（含已修改项）<b>不受影响</b>，不会被标准值覆盖。同步后需手动启用并发布才生效。</div>
+      <div class="diff">
+        <div class="dc"><h4>将新增的字段（3）</h4><ul><li>就诊科室（字典）</li><li>事故责任比例（业务字段）</li><li>医保结算方式（影像字段）</li></ul></div>
+        <div class="dc"><h4>将新增的规则（1）</h4><ul><li>发票金额阈值校验（默认不启用）</li></ul></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn" onclick="closeModal(this.closest('.mask'))">取消</button><button class="btn primary" onclick="toast('✓ 已同步 3 字段 + 1 规则（均默认不启用）');closeModal(this.closest('.mask'))">确认同步</button></div>
+  </div>
+</div>
+
+<!-- 发布声明弹窗 -->
+<div class="mask" id="publishMask" onclick="if(event.target===this)closeModal(this)">
+  <div class="modal">
+    <div class="mh">发布主体专属配置 <span class="x" onclick="closeModal(this)">×</span></div>
+    <div class="mb">
+      发布后，本配置将应用于<b>示例财险华北分公司（1:DEMO）</b>的作业页面，仅影响该主体。
+      <div class="note">⚠ 请确认差异：已有业务字段与新增字段的启用状态、专属规则覆盖范围。发布不影响其他主体配置。</div>
+      <div class="diff">
+        <div class="dc"><h4>已存在的业务字段（继承）</h4><ul><li>出险原因、领款账户类型</li><li>发票类型（通用）</li><li>单证齐全性校验规则</li></ul></div>
+        <div class="dc"><h4>新增 / 变更（本次生效）</h4><ul><li>新增：VIP 钻石等级、牙科理赔类型</li><li>变更：赔付比例 90% → 85%</li><li>变更：医院等级 二级及以上</li></ul></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn" onclick="closeModal(this.closest('.mask'))">取消</button><button class="btn primary" onclick="toast('✓ 配置已发布至 1:DEMO（v2.4.2）');closeModal(this.closest('.mask'))">确认发布</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div style="text-align:center;color:var(--txt-3);font-size:12px;padding:0 0 30px">TPA 理赔运营平台 · 主体专属作业配置设计稿 · 演示数据已脱敏 · 非真实客户信息</div>
+
+<script>
+  function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+  function openModal(id){document.getElementById(id).classList.add('show');}
+  function closeModal(el){el.classList.remove('show');}
+  document.addEventListener('click',e=>{const dn=document.getElementById('demoNav');if(dn&&!dn.contains(e.target))dn.classList.remove('open');});
+  // Tab 切换
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
+    document.querySelectorAll('.pane').forEach(p=>p.style.display='none');
+    document.getElementById('pane-'+t.dataset.tab).style.display='block';
+  }));
+  // 开关
+  function toggleSw(el){el.classList.toggle('on');}
+  // 流程节点详情
+  const flowData=[
+    ['签收','手工分配','签收成功 → 自动进入初审','claim_sign_v2','2 小时内签收'],
+    ['初审','随机分配','初审通过 → 录入；不通过 → 退回改写','claim_precheck_v3','4 小时内完成'],
+    ['录入','按账号分配','录入完成 → 质检','claim_entry_v5','8 小时内完成'],
+    ['质检','随机分配','质检通过 → 审核；异常 → 质检退回','claim_qc_v2','4 小时内完成'],
+    ['审核','手工分配','审核通过 → 复核','claim_audit_v4','12 小时内完成'],
+    ['复核','按字段分配','复核通过 → 推送；超限 → 审批','claim_review_v2','6 小时内完成'],
+    ['推送','系统自动','推送保司成功 → 结案','claim_push_v1','实时/定时推送']
+  ];
+  document.querySelectorAll('.fnode').forEach(n=>n.addEventListener('click',()=>{
+    document.querySelectorAll('.fnode').forEach(x=>x.classList.remove('sel'));n.classList.add('sel');
+    const d=flowData[+n.dataset.i];
+    document.getElementById('fdName').textContent=d[0];
+    document.getElementById('fdRule').innerHTML='<code>'+d[1]+'</code>';
+    document.getElementById('fdCond').textContent=d[2];
+    document.getElementById('fdSchema').innerHTML='<code>'+d[3]+'</code>';
+    document.getElementById('fdSla').textContent=d[4];
+  }));
+</script>
+<button class="ux-fab" id="uxFab" title="操作指引 / 快捷命令 (Ctrl+K)" onclick="uxOpenHelp()">?</button>
+<div class="ux-mask" id="uxMask" onclick="uxCloseAll()"></div>
+<div class="ux-drawer" id="uxDrawer">
+  <div class="ux-dh"><span class="ic">?</span><b>主体专属作业配置 · 快速上手</b><button class="x" onclick="uxCloseAll()">×</button></div>
+  <div class="ux-db">
+    <div class="ux-lead">这是一份可交互设计稿。按下面 5 步走一遍，就能完成本页核心操作；所有数据来自测试环境真实赔案。</div>
+    <div class="ux-sec">操作五步走</div><div class="ux-step"><span class="n">1</span><div class="c"><b>懂继承</b><span>本页 = 平台标准配置（只读基线）+ 主体专属覆盖，先理解这条主线。</span></div></div><div class="ux-step"><span class="n">2</span><div class="c"><b>看对比</b><span>字段配置双栏：左列标准值、右列主体生效值，一眼看出哪些被覆盖。</span></div></div><div class="ux-step"><span class="n">3</span><div class="c"><b>辨性质</b><span>通用=直接继承标准；专属=本主体新增；专属·改=改过标准值。</span></div></div><div class="ux-step"><span class="n">4</span><div class="c"><b>做同步</b><span>需要拉回标准时用「同步平台标准配置」，默认不启用、已有配置不受影响。</span></div></div><div class="ux-step"><span class="n">5</span><div class="c"><b>再发布</b><span>发布前会弹出声明，说明已有字段与新增字段的差异，确认后再发。</span></div></div>
+    <div class="ux-tipbox"><div class="ux-sec">易错提醒</div><div>· 左侧标准配置只读，改不了是正常的。</div><div>· 七节点流程链可点，看每个环节的分配规则与表单 schema。</div></div>
+  </div>
+  <div class="ux-df"><span class="ux-kbd">Esc</span> 关闭 · <span class="ux-kbd">Ctrl/⌘ + K</span> 快捷命令</div>
+</div>
+<div class="ux-cmd" id="uxCmd">
+  <div class="ux-cmd-in"><span>⌕</span><input id="uxCmdInput" placeholder="输入页面名或操作，如「影像」「批量拒赔」…" oninput="uxCmdRender()" onkeydown="uxCmdKey(event)"></div>
+  <div class="ux-cmd-list" id="uxCmdList"></div>
+</div>
+<div class="ux-toast" id="uxToast"></div>
+
+<script>
+(function(){
+  if(window.__uxInjected) return; window.__uxInjected=true;
+  var mask=document.getElementById('uxMask'),drawer=document.getElementById('uxDrawer'),cmd=document.getElementById('uxCmd'),inp=document.getElementById('uxCmdInput');
+  window.uxOpenHelp=function(){mask.classList.add('show');drawer.classList.add('show');};
+  window.uxCloseAll=function(){mask.classList.remove('show','cmd-open');drawer.classList.remove('show');cmd.classList.remove('show');};
+  window.uxOpenCmd=function(){mask.classList.add('show','cmd-open');cmd.classList.add('show');inp.value='';uxCmdRender();setTimeout(function(){inp.focus();},30);};
+  var items=[['claim-manage.html','▤','赔案管理列表','列表'],['claim-detail.html','▣','理赔审核详情','详情'],['claim-image-detail.html','▧','赔案影像详情','影像'],['claim-rule-config.html','∑','理算规则配置','规则'],['job-config.html','⚙','主体专属作业配置','配置'],['import-record.html','⇩','导入记录','导入'],['customer-journey.html','▣','客户旅程（小程序）','客户'],['form-config.html','▤','表单配置中心','表单'],['evaluation-report.html','◫','评测报告','评测']];
+  var sel=0,shown=[];
+  window.uxCmdRender=function(){
+    var q=(inp.value||'').trim().toLowerCase();
+    shown=items.filter(function(x){return !q||x[2].toLowerCase().indexOf(q)>=0||x[3].indexOf(q)>=0;});
+    if(sel>=shown.length)sel=0;
+    var h='<div class="ux-cmd-grp">跳转页面</div>';
+    if(!shown.length) h+='<div class="ux-cmd-empty">没有匹配项</div>';
+    shown.forEach(function(x,i){
+      h+='<a class="ux-cmd-item'+(i===sel?' sel':'')+'" href="'+x[0]+'"><span class="ic">'+x[1]+'</span>'+x[2]+'<span class="hint">'+x[3]+'</span></a>';
+    });
+    document.getElementById('uxCmdList').innerHTML=h;
+  };
+  window.uxCmdKey=function(e){
+    if(e.key==='ArrowDown'){e.preventDefault();sel=Math.min(sel+1,shown.length-1);uxCmdRender();}
+    else if(e.key==='ArrowUp'){e.preventDefault();sel=Math.max(sel-1,0);uxCmdRender();}
+    else if(e.key==='Enter'&&shown[sel]){location.href=shown[sel][0];}
+  };
+  document.addEventListener('keydown',function(e){
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();uxOpenCmd();}
+    if(e.key==='Escape')uxCloseAll();
+  });
+  if(typeof window.toast!=='function'){
+    var t=document.getElementById('uxToast'),timer;
+    window.toast=function(msg){if(!t)return;t.textContent=msg;t.classList.add('show');clearTimeout(timer);timer=setTimeout(function(){t.classList.remove('show');},1800);};
+  }
+})();
+</script>
+
+<div style="padding:12px 24px;color:#888;font-size:12px;text-align:center;border-top:1px solid #eee;margin-top:24px;">TPA 理赔运营平台 · 演示数据已脱敏 · 非真实客户信息</div>
+
+</body>
+</html>

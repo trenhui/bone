@@ -1,4 +1,4 @@
-SELECT id AS claim_id, TIMESTAMPDIFF(MILLISECOND, created_at, closed_at) AS duration_ms
+SELECT id AS claim_id, ROUND(TIMESTAMPDIFF(MICROSECOND, created_at, closed_at) / 1000) AS duration_ms
 FROM t_claim_case
 WHERE closed_at IS NOT NULL
   AND closed_at >= :from

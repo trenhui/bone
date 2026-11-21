@@ -651,3 +651,56 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
+
+  # 智能理赔四条关键链路的 UI 冒烟（2026-11-21）。
+  # 与 synap-claim-e2e.cjs 的真实全栈回归互补：本 job 只起子应用 :3013，
+  # 用受控信封驱动页面，断言「前端是否发出了正确载荷/展示了正确口径」——
+  # 幂等键、结构化拒赔五要素、运行时复核阈值、上传类型闸门。真实状态机仍由后端测试负责。
+  claim-four-chain-ui-smoke:
+    name: Claim Four-Chain UI Smoke (blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js for Playwright
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            bone-frontend/package-lock.json
+
+      - name: Install root E2E dependencies
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: bone-frontend
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start claim app dev server
+        working-directory: bone-frontend
+        run: |
+          npm run dev --workspace=bone-claim-app > "$RUNNER_TEMP/claim-app.log" 2>&1 &
+          # 判据用 HTTP 200 而非固定 sleep：dev server 首屏编译慢时不会假红。
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3013/ >/dev/null; then echo "claim app ready"; exit 0; fi
+            sleep 2
+          done
+          echo "claim app failed to start"
+          cat "$RUNNER_TEMP/claim-app.log"
+          exit 1
+
+      - name: Run four-chain UI smoke
+        run: node bone-frontend/e2e/claim-four-chain-ui-smoke.mjs
+
+      - name: Upload dev server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claim-four-chain-ui-smoke-log
+          path: ${{ runner.temp }}/claim-app.log

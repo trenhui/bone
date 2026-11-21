@@ -11,6 +11,29 @@ import { newIdempotencyKey } from './claim';
 
 const client = createApiClient('/api/v1/claims');
 
+/**
+ * 资金写动作的幂等键：由「案件 + 动作 + 结算单快照」派生。
+ *
+ * <p>pay/refund 后端 `required=true`；cancel 后端接入可选幂等。重试同一动作（响应丢失/双击）必须命中同一快照，
+ * 因此不能像 `newIdempotencyKey()` 那样每次现取 UUID——那等于关掉幂等。结算单快照变了（阶段推进/建新单）
+ * 说明是另一个业务动作，自然换键。
+ */
+export function stableSettlementKey(
+  claimId: string,
+  action: 'pay' | 'refund' | 'cancel',
+  settlement?: Pick<SettlementResult, 'settlementNo' | 'fundingStage' | 'attempt'> | null,
+): string {
+  const parts = [
+    claimId,
+    action,
+    settlement?.settlementNo,
+    settlement?.fundingStage,
+    settlement?.attempt == null ? undefined : String(settlement.attempt),
+  ].filter((v): v is string => Boolean(v && v.trim()));
+  // 结算单尚未加载时没有可锚定的业务事实，此时宁可拒绝调用方传空键（由后端 400 暴露），不用伪稳定键掩盖。
+  return parts.length >= 3 ? `settlement:${parts.join('|')}` : newIdempotencyKey();
+}
+
 export const settlementApi = {
   /** 查询最新结算单（无则 data 为 null）。 */
   latest(claimId: string): Promise<ApiResponse<SettlementResult | null>> {
@@ -42,16 +65,29 @@ export const settlementApi = {
   confirmReview(claimId: string): Promise<ApiResponse<SettlementResult>> {
     return client.post<never, ApiResponse<SettlementResult>>(`/${claimId}/settlement/review-confirm`);
   },
-  pay(claimId: string): Promise<ApiResponse<SettlementResult>> {
-    return client.post<never, ApiResponse<SettlementResult>>(`/${claimId}/settlement/pay`);
+  /** 支付（后端要求 Idempotency-Key 必传；缺省键仅供无结算单快照时兜底，页面应传稳定键）。 */
+  pay(claimId: string, idempotencyKey = newIdempotencyKey()): Promise<ApiResponse<SettlementResult>> {
+    return client.post<never, ApiResponse<SettlementResult>>(`/${claimId}/settlement/pay`, undefined, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
-  cancel(claimId: string, req: { payFailed?: boolean }): Promise<ApiResponse<SettlementResult>> {
+  cancel(
+    claimId: string,
+    req: { payFailed?: boolean },
+    idempotencyKey = newIdempotencyKey(),
+  ): Promise<ApiResponse<SettlementResult>> {
     return client.post<{ payFailed?: boolean }, ApiResponse<SettlementResult>>(
       `/${claimId}/settlement/cancel`,
       req,
+      { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   },
-  refund(claimId: string): Promise<ApiResponse<SettlementResult>> {
-    return client.post<never, ApiResponse<SettlementResult>>(`/${claimId}/settlement/refund`);
+  /** 退票退款（后端要求 Idempotency-Key 必传）。 */
+  refund(claimId: string, idempotencyKey = newIdempotencyKey()): Promise<ApiResponse<SettlementResult>> {
+    return client.post<never, ApiResponse<SettlementResult>>(
+      `/${claimId}/settlement/refund`,
+      undefined,
+      { headers: { 'Idempotency-Key': idempotencyKey } },
+    );
   },
 };

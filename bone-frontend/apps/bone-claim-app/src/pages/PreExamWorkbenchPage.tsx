@@ -20,7 +20,6 @@ import { CheckCircleOutlined, ReloadOutlined, ThunderboltOutlined, UserSwitchOut
 import {
   claimApi,
   normalizeTotal,
-  REVIEW_THRESHOLD,
   type ClaimHeadProjection,
   type ClaimStatusName,
 } from '../services/claimApi';
@@ -29,6 +28,9 @@ import { PageHeader } from '../components/PageHeader';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { Auth, AuthButton } from '@bone/ui';
 import { PERMISSIONS } from '../constants/permissions';
+import { useDualReviewThreshold } from '../hooks/useDualReviewThreshold';
+import { MoneyText } from '../components/Money';
+import { formatMoney } from '../services/money';
 
 /**
  * 初审工作台（打通案件 7→10→11/13→12→40 这一段）。
@@ -57,6 +59,8 @@ const COUNT_GROUPS: { key: string; label: string; statuses: ClaimStatusName[] }[
 ];
 
 export function PreExamWorkbenchPage(): ReactElement {
+  /** 大额门来自运行时配置；加载失败时隐藏标记，不回落硬编码阈值。 */
+  const { threshold: dualReviewAmount, error: thresholdError } = useDualReviewThreshold();
   const [rows, setRows] = useState<ClaimHeadProjection[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -194,6 +198,15 @@ export function PreExamWorkbenchPage(): ReactElement {
         ))}
       </Space>
 
+      {thresholdError && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="双人复核金额门加载失败：大额标记暂不可用"
+          description="请刷新页面重试；后端仍按真实阈值判定。"
+        />
+      )}
       <Alert
         type="info"
         showIcon
@@ -248,7 +261,7 @@ export function PreExamWorkbenchPage(): ReactElement {
               dataIndex: 'claimAmount',
               width: 130,
               align: 'right',
-              render: (v: number) => `¥${Number(v ?? 0).toFixed(2)}`,
+              render: (v: number) => <MoneyText value={v} />,
             },
             {
               title: '状态',
@@ -263,8 +276,10 @@ export function PreExamWorkbenchPage(): ReactElement {
               title: '大额',
               width: 100,
               render: (_, r) =>
-                Number(r.claimAmount) >= REVIEW_THRESHOLD ? (
-                  <Badge color="red" text="≥1万" />
+                dualReviewAmount == null ? (
+                  <span>阈值未知</span>
+                ) : Number(r.claimAmount) >= dualReviewAmount ? (
+                  <Badge color="red" text={`≥¥${dualReviewAmount.toLocaleString('zh-CN')}`} />
                 ) : (
                   <span>-</span>
                 ),
@@ -383,7 +398,7 @@ export function PreExamWorkbenchPage(): ReactElement {
         <Form form={form} layout="vertical">
           <Form.Item label="申请金额">
             <Typography.Text strong>
-              ¥{Number(completeTarget?.claimAmount ?? 0).toFixed(2)}
+              <MoneyText value={completeTarget?.claimAmount} />
             </Typography.Text>
           </Form.Item>
           <Form.Item
@@ -397,7 +412,7 @@ export function PreExamWorkbenchPage(): ReactElement {
                   if (value < 0) return Promise.reject(new Error('核定金额不能为负数'));
                   const claimAmount = Number(completeTarget?.claimAmount ?? 0);
                   if (value > claimAmount) {
-                    return Promise.reject(new Error(`不得超过申请金额 ¥${claimAmount.toFixed(2)}`));
+                    return Promise.reject(new Error(`不得超过申请金额 ${formatMoney(claimAmount)}`));
                   }
                   return Promise.resolve();
                 },

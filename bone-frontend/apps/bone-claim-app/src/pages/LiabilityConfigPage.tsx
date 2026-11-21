@@ -42,6 +42,7 @@ import { BatchImportModal, type ImportColumn } from '../components/BatchImportMo
 import { InsurerSelect } from '../components/InsurerSelect';
 import { usePolicyOptions } from '../hooks/usePolicyOptions';
 import { useConfirmAction } from '../hooks/useConfirmAction';
+import { useConfirmDiscard } from '../hooks/useConfirmDiscard';
 import { LIBRARY_MAX_PAGES, LIBRARY_PAGE_SIZE, fetchAllPages } from '../utils/libraryPaging';
 import { PERMISSIONS } from '../constants/permissions';
 import {
@@ -222,6 +223,7 @@ function validateLiabilityRow(row: Record<string, string>): string | null {
 export function LiabilityConfigPage(): ReactElement {
   const { message } = AntApp.useApp();
   const confirm = useConfirmAction();
+  const confirmDiscard = useConfirmDiscard();
   const { policies } = usePolicyOptions();
   // 支持 /liability?policyNo=xxx 深链：从保单管理「配置」跳入时带保单上下文
   const [searchParams] = useSearchParams();
@@ -331,25 +333,28 @@ export function LiabilityConfigPage(): ReactElement {
   const [feeRuleOpen, setFeeRuleOpen] = useState(false);
   const [feeRuleTarget, setFeeRuleTarget] = useState<LiabilityView | null>(null);
   const [feeRuleRows, setFeeRuleRows] = useState<FeeRuleRow[]>([]);
+  /** 费用规则是整批全量替换：对比打开/保存后的快照判断脏状态，关抽屉不静默丢整批编辑。 */
+  const [feeRuleBaseline, setFeeRuleBaseline] = useState('[]');
   const [feeRuleLoading, setFeeRuleLoading] = useState(false);
   const [feeRuleSaving, setFeeRuleSaving] = useState(false);
 
   const openFeeRules = async (row: LiabilityView) => {
     setFeeRuleTarget(row);
     setFeeRuleRows([]);
+    setFeeRuleBaseline('[]');
     setFeeRuleOpen(true);
     setFeeRuleLoading(true);
     try {
       const res = await claimConfigApi.listFeeRules(row.liabilityId);
-      setFeeRuleRows(
-        (res.data ?? []).map((r: FeeRuleView) => ({
-          feeCode: r.feeCode,
-          feeName: r.feeName,
-          payPercent: r.payPercent,
-          limitAmount: r.limitAmount,
-          socialOnly: r.socialOnly ?? 0,
-        })),
-      );
+      const loaded = (res.data ?? []).map((r: FeeRuleView) => ({
+        feeCode: r.feeCode,
+        feeName: r.feeName,
+        payPercent: r.payPercent,
+        limitAmount: r.limitAmount,
+        socialOnly: r.socialOnly ?? 0,
+      }));
+      setFeeRuleRows(loaded);
+      setFeeRuleBaseline(JSON.stringify(loaded));
     } catch (err) {
       message.error(resolveErrorMessage(err, '费用规则加载失败'));
     } finally {
@@ -405,15 +410,15 @@ export function LiabilityConfigPage(): ReactElement {
         return;
       }
       message.success('费用规则已保存（全量替换生效）');
-      setFeeRuleRows(
-        (res.data ?? []).map((r: FeeRuleView) => ({
-          feeCode: r.feeCode,
-          feeName: r.feeName,
-          payPercent: r.payPercent,
-          limitAmount: r.limitAmount,
-          socialOnly: r.socialOnly ?? 0,
-        })),
-      );
+      const saved = (res.data ?? []).map((r: FeeRuleView) => ({
+        feeCode: r.feeCode,
+        feeName: r.feeName,
+        payPercent: r.payPercent,
+        limitAmount: r.limitAmount,
+        socialOnly: r.socialOnly ?? 0,
+      }));
+      setFeeRuleRows(saved);
+      setFeeRuleBaseline(JSON.stringify(saved));
     } catch (err) {
       message.error(resolveErrorMessage(err, '费用规则保存失败'));
     } finally {
@@ -1397,7 +1402,13 @@ export function LiabilityConfigPage(): ReactElement {
         title={`费用类别规则 · ${feeRuleTarget?.liabilityCode ?? ''}`}
         width={760}
         open={feeRuleOpen}
-        onClose={() => setFeeRuleOpen(false)}
+        onClose={async () => {
+          if (JSON.stringify(feeRuleRows) !== feeRuleBaseline && !(await confirmDiscard({
+            title: '放弃费用规则修改？',
+            content: '这批规则直接参与理算；关闭抽屉会丢弃所有未保存的行编辑。',
+          }))) return;
+          setFeeRuleOpen(false);
+        }}
         destroyOnHidden
         extra={
           <Space>

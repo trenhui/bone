@@ -1,5 +1,11 @@
 # 数据库迁移版本化（Flyway 接入）— DRAFT，待架构师审批 (L3: DDL)
 
+> **治理状态（2026-11-21）**：本方案为**已评估、当前不采用**的备选。现行决策见
+> [ADR-生产数据库增量迁移策略](../doc/architecture/adr/ADR-生产数据库增量迁移策略.md) 与
+> [ADR-0001](../doc/architecture/adr/0001-database-ddl-single-source.md)：本地用 `bone-init.sql` 全量重建，
+> 生产用 `scripts/migrate.py` + manifest 增量迁移，各服务 `spring.flyway.enabled: false`。
+> 本文保留作为未来若切换 Flyway 的施工图；启用前须以新 ADR supersede 现行决策，并完成下方待办（L3 审批 + DBA 确认）。
+
 ## 现状（差距）
 `bone-init.sql` 头部注释明确写道：
 

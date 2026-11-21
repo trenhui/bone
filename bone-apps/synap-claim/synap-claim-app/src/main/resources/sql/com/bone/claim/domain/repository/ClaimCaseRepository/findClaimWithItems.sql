@@ -26,6 +26,10 @@ SELECT
        c.invoice_date,
        c.hospital_code,
        c.diagnosis_code,
+       s.sla_due_at,
+       s.legal_due_at,
+       s.remaining_work_hours,
+       s.last_refresh_at AS sla_refreshed_at,
        i.id             AS item_id,
        i.item_name,
        i.item_code,
@@ -46,6 +50,10 @@ SELECT
        i.department     AS item_department
 FROM t_claim_case c
        LEFT JOIN t_claim_item i ON i.claim_id = c.id AND i.deleted = 0
+       /* SLA 为可变更读模型（每 20 分钟物化），按 (tenant_id, claim_id) 唯一键 1:1 关联；
+          未物化时整行为 NULL，读侧必须显示「未物化」而不是估算或当 0。 */
+       LEFT JOIN t_claim_case_sla s
+                 ON s.claim_id = c.id AND s.tenant_id = c.tenant_id AND s.deleted = 0
 WHERE c.id = :claimId AND
   /*bone:tenant*/
   AND c.deleted = 0

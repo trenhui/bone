@@ -11,6 +11,7 @@
  * 中文标签统一由后端 `GET /api/v1/claim-config/dicts` 经 codegen 生成（dicts.generated.ts），本文件不再手抄。
  */
 import { AI_REJECT_REASON_DICT, FRAUD_GATE_REASON_DICT } from '../constants/dicts.generated';
+import { formatMoney } from './money';
 
 /** AI 结构化拒赔原因码 → 中文（对齐后端 RejectReasonCodes 白名单，单一真源 dicts.generated.ts）。 */
 export const REJECT_REASON_LABELS = AI_REJECT_REASON_DICT;
@@ -58,7 +59,7 @@ const fmtPercent = (v: unknown): string | null => {
 
 const fmtMoney = (v: unknown): string | null => {
   const n = toNumber(v);
-  return n === null ? null : `¥${n.toFixed(2)}`;
+  return n === null ? null : formatMoney(n);
 };
 
 /** 布尔事实：明确指定"真/假"两种语气，避免"真=好"的武断假设（证据齐备为真好，规则冲突为真坏）。 */

@@ -60,6 +60,24 @@ public class ClaimWithItemsProjection {
   private String planVersion;
   private java.time.Instant createdAt;
 
+  // ---- SLA 物化列（t_claim_case_sla，1:1；未物化时四列均为 null）----
+  /**
+   * 内部作业 SLA 截止（读模型 {@code t_claim_case_sla.sla_due_at}）。
+   *
+   * <p><b>为什么要从读模型带出来</b>：此前案件详情与工作台都拿不到 SLA，前端只能写「后端未提供」； 而 SLA 是排班、超时升级、监管时限的基础事实。数据源是每 20
+   * 分钟物化的读模型，不是前端临时估算—— 未物化必须显示「未物化」，不得用创建时间 + 拍脑袋工时倒推。
+   */
+  private java.time.Instant slaDueAt;
+
+  /** 法定时限截止（自然日，不可放宽；{@code t_claim_case_sla.legal_due_at}）。 */
+  private java.time.Instant legalDueAt;
+
+  /** 剩余工作小时（工作日口径、已扣挂起占用、下限 0；{@code t_claim_case_sla.remaining_work_hours}）。 */
+  private BigDecimal remainingWorkHours;
+
+  /** SLA 物化时间（{@code t_claim_case_sla.last_refresh_at}）：让读侧能判断「这组数字有多新」。 */
+  private java.time.Instant slaRefreshedAt;
+
   // ---- 明细列（无明细行为 null）----
   private Long itemId;
   private String itemName;

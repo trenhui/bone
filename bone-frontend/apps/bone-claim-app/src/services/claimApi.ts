@@ -4,12 +4,11 @@
  * 复用平台 createApiClient：统一 Bearer 注入、把 axios 响应解包为 ApiResponse 信封
  * （返回体仍是 { code, message, data }，业务数据须经 .data 取用）、401 过期广播。
  *
- * <p><b>注意（解包语义，勿再误读）</b>：拦截器只解 axios.response → ApiResponse，**不会**再解一层
- * ApiResponse → data，也不按业务码 reject。因此「HTTP 200 + 业务 code !== 200」会被正常
- * resolve，调用方若不检查 code 就会把错误响应当成功数据渲染。两条统一写法二选一：
- * ① 用 apiCall(...) 取 .data（不做业务码校验，适合确信只成功分支的场景）；
- * ② 显式 if (res.code !== 200) throw ...。同一模块内不要两种混用。
- * 幂等：写请求带 Idempotency-Key 请求头（UUID v4），同键同参返回首次结果。
+ * <p><b>解包与错误语义（与 shared-services/apiClient.ts 对齐）</b>：拦截器只解 axios.response →
+ * ApiResponse（业务数据仍须 `.data`）；业务失败以信封 `success:false` 为准并被 reject，
+ * 2xx 成功体的 `code` 被归一为 200（创建类 201 不再误判失败）。页面级仍建议对写动作做
+ * `code !== 200` 防御，避免非标准信封绕过共享通道。
+ * 幂等：写请求带 Idempotency-Key 请求头；同一次动作重试必须复用同一键，UUID 仅作无业务键兜底。
  *
  * <p>所有领域 service 已拆分为独立文件，本文件作为统一出口：
  * 1. import { claimApi } from '../services/claimApi' — 原页面零改动继续工作
@@ -21,10 +20,10 @@
 export * from './types';
 
 // ===== 子模块独立 API 对象（按需 import 入口） =====
-export { newIdempotencyKey, REVIEW_THRESHOLD } from './claim';
+export { newIdempotencyKey, stableClaimActionKey } from './claim';
 export { adjustApi } from './adjustment';
 export { evidenceApi, attachmentApi } from './evidence';
-export { settlementApi } from './settlement';
+export { settlementApi, stableSettlementKey } from './settlement';
 export { quotaApi } from './quota';
 export { appealApi } from './appeal';
 export { inspectionApi, inspectionHandoffApi } from './inspection';

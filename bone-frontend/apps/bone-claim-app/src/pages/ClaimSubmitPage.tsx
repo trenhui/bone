@@ -43,11 +43,18 @@ export function ClaimSubmitPage(): ReactElement {
   // 费用类别目录（t_ref_fee_category）：明细按类别落 fee_code，理算侧「责任 × 费用类别」规则据此命中。
   // 取不到时下拉为空但不阻塞报案——未分类明细按责任主比例算，并在理算诊断里提示补录。
   const [feeCategories, setFeeCategories] = useState<FeeCategoryView[]>([]);
+  const [feeCatalogFailed, setFeeCatalogFailed] = useState(false);
   useEffect(() => {
     claimConfigApi
       .listAllFeeCategories()
-      .then((res) => setFeeCategories(res?.data ?? []))
-      .catch(() => setFeeCategories([]));
+      .then((res) => {
+        setFeeCategories(res?.data ?? []);
+        setFeeCatalogFailed(false);
+      })
+      .catch(() => {
+        setFeeCategories([]);
+        setFeeCatalogFailed(true);
+      });
   }, []);
 
   const onFinish = async (values: SubmitFormValues) => {
@@ -65,9 +72,21 @@ export function ClaimSubmitPage(): ReactElement {
         items: values.items ?? [],
       };
       const resp = await claimApi.submit(req);
+      // 共享拦截器以 success:false 为业务失败真源；这里再守一道，避免非标准信封
+      // （无 success 字段）被误当成功渲染。缺赔案号时禁止弹"已受理"，并提示勿重复提交。
+      const envelope = resp as (typeof resp & { success?: boolean });
+      if (envelope.success === false || envelope.code !== 200) {
+        const err = new Error(envelope.message || '提交失败') as Error & { errorCode?: string };
+        const inner = envelope.data as { errorCode?: string } | undefined;
+        if (inner?.errorCode) err.errorCode = inner.errorCode;
+        throw err;
+      }
       const data = resp?.data;
-      setResult({ claimNo: data?.claimNo ?? '', status: data?.status ?? '' });
-      message.success(`报案已受理：${data?.claimNo ?? ''}`);
+      if (!data?.claimNo) {
+        throw new Error('报案受理成功但未返回赔案号，请联系核赔员确认，切勿重复提交');
+      }
+      setResult({ claimNo: data.claimNo, status: data?.status ?? '' });
+      message.success(`报案已受理：${data.claimNo}`);
       form.resetFields();
     } catch (err) {
       // 统一错误通道（resolveErrorCode）：类型收窄与多形态信封解析收口在 shared-utils，
@@ -102,6 +121,15 @@ export function ClaimSubmitPage(): ReactElement {
         style={{ marginBottom: 16 }}
         message="门诊小额快赔：≤500 元且材料完整、无风险标记、责任明确可自动通过；其余转人工核赔。"
       />
+      {feeCatalogFailed && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="费用类别目录加载失败"
+          description="当前无法选择费用类别，未分类明细将按责任主比例计算并在理算诊断中提示补录；请稍后刷新重试。"
+        />
+      )}
       {result && (
         <Alert
           type="success"
@@ -110,7 +138,7 @@ export function ClaimSubmitPage(): ReactElement {
           message={`报案已受理（${result.claimNo}）`}
           description={
             <>
-              当前状态：<Tag color="blue">{result.status}</Tag> 决策结果将在 30 秒内返回，可在「我的报案」查看。
+              当前状态：<Tag color="blue">{result.status}</Tag> 决策建议将在 30 秒内返回，可在「我的报案」查看。
             </>
           }
         />

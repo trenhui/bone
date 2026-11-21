@@ -34,7 +34,9 @@ import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { AuthButton } from '@bone/ui';
 import { useConfirmAction } from '../hooks/useConfirmAction';
+import { useConfirmDiscard } from '../hooks/useConfirmDiscard';
 import { PERMISSIONS } from '../constants/permissions';
+import { formatMoney } from '../services/money';
 import { ERROR_CODES } from '../constants/errorCodes';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
@@ -117,6 +119,7 @@ function validatePolicyRow(row: Record<string, string>): string | null {
 export function PolicyManagementPage(): ReactElement {
   const { message } = AntApp.useApp();
   const confirm = useConfirmAction();
+  const confirmDiscard = useConfirmDiscard();
   const navigate = useNavigate();
   const [rows, setRows] = useState<PolicyView[]>([]);
   const [loading, setLoading] = useState(false);
@@ -711,7 +714,14 @@ export function PolicyManagementPage(): ReactElement {
       <Modal
         title={editTarget ? `编辑保单（${editTarget.policyNo}）` : '编辑保单'}
         open={editTarget !== null}
-        onCancel={() => setEditTarget(null)}
+        onCancel={async () => {
+          // antd 表单弹窗关闭即丢弃草稿；脏检查是最后一道防误关闸门（数据真源仍在服务端）。
+          if (editForm.isFieldsTouched() && !(await confirmDiscard({
+            title: '放弃保单修改？',
+            content: '编辑中的承保期间、保司号、额度等字段尚未保存，关闭后不可恢复。',
+          }))) return;
+          setEditTarget(null);
+        }}
         onOk={() => void submitEdit()}
         confirmLoading={submitting}
         okText="保存"
@@ -1117,28 +1127,28 @@ export function PolicyManagementPage(): ReactElement {
                               dataIndex: 'quotaInitial',
                               width: 110,
                               render: (v: number) =>
-                                v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                                formatMoney(v),
                             },
                             {
                               title: '已扣减',
                               dataIndex: 'quotaClaimed',
                               width: 110,
                               render: (v: number) =>
-                                v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                                formatMoney(v),
                             },
                             {
                               title: '已冻结',
                               dataIndex: 'quotaFrozen',
                               width: 110,
                               render: (v: number) =>
-                                v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                                formatMoney(v),
                             },
                             {
                               title: '可用',
                               dataIndex: 'available',
                               width: 110,
                               render: (v: number) =>
-                                v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                                formatMoney(v),
                             },
                           ]}
                         />
@@ -1181,28 +1191,28 @@ export function PolicyManagementPage(): ReactElement {
                             dataIndex: 'quotaInitial',
                             width: 110,
                             render: (v: number) =>
-                              v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                              formatMoney(v),
                           },
                           {
                             title: '已扣减',
                             dataIndex: 'quotaClaimed',
                             width: 110,
                             render: (v: number) =>
-                              v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                              formatMoney(v),
                           },
                           {
                             title: '已冻结',
                             dataIndex: 'quotaFrozen',
                             width: 110,
                             render: (v: number) =>
-                              v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                              formatMoney(v),
                           },
                           {
                             title: '可用',
                             dataIndex: 'available',
                             width: 110,
                             render: (v: number) =>
-                              v == null ? '—' : `¥${Number(v).toFixed(2)}`,
+                              formatMoney(v),
                           },
                           {
                             title: '减人状态',

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.bone.claim.adapter.web.controller.ClaimIdempotencyProperties;
 import com.bone.claim.adapter.web.controller.ReviewTaskController;
 import com.bone.claim.adapter.web.controller.ReviewTaskController.BatchDecisionItem;
 import com.bone.claim.adapter.web.controller.ReviewTaskController.BatchDecisionReq;
@@ -59,7 +60,8 @@ class ReviewTaskBatchDecisionTest {
         new ReviewTaskController(
             claimCaseApplicationService,
             decisionExecutionApplicationService,
-            new IdempotencyService(new InMemoryIdempotencyStore()));
+            new IdempotencyService(new InMemoryIdempotencyStore()),
+            new ClaimIdempotencyProperties());
     MDC.put("userId", "op-77");
   }
 

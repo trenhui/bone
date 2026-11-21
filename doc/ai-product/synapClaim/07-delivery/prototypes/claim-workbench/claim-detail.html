@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>理赔审核详情 · 赔案 900000000001</title>
+<style>
+  :root{
+    --brand:#1f6feb; --brand-soft:#eaf2ff; --bg:#f4f6fa; --card:#ffffff;
+    --line:#e7ebf2; --line-strong:#d7dfeb; --txt:#1b2436; --txt-2:#5b667d; --txt-3:#98a2b6;
+    --green:#12a150; --green-bg:#e9f8ef; --amber:#e8891b; --amber-bg:#fff4e6;
+    --red:#d92d20; --red-bg:#fef0ee; --blue-bg:#eef4ff; --purple:#7a5af8;
+    --radius:12px; --shadow:0 1px 2px rgba(22,35,60,.04),0 6px 20px rgba(22,35,60,.05);
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  /* ---------- top bar ---------- */
+  .topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;
+    padding:0 24px;gap:14px;position:sticky;top:0;z-index:50}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px;letter-spacing:.2px}
+  .logo .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#1f6feb,#7a5af8);
+    color:#fff;display:grid;place-items:center;font-size:14px;font-weight:800}
+  .crumb{color:var(--txt-3);font-size:13px;display:flex;gap:8px;align-items:center;margin-left:8px}
+  .crumb b{color:var(--txt-2);font-weight:500}
+  .crumb .sep{color:#c7d0de}
+  .topbar .right{margin-left:auto;display:flex;align-items:center;gap:18px}
+  .env{font-size:12px;color:var(--amber);background:var(--amber-bg);padding:4px 10px;border-radius:20px;font-weight:600}
+  .avatar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt-2)}
+  .avatar .dot{width:30px;height:30px;border-radius:50%;background:var(--brand-soft);color:var(--brand);
+    display:grid;place-items:center;font-weight:700}
+  /* ---------- page head ---------- */
+  .head{background:#fff;border-bottom:1px solid var(--line);padding:20px 24px 0}
+  .head-row{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  .head h1{font-size:21px;font-weight:700;display:flex;align-items:center;gap:12px}
+  .claim-no{font-family:var(--mono);font-size:14px;color:var(--txt-2);background:var(--bg);
+    padding:5px 10px;border-radius:7px;border:1px solid var(--line)}
+  .badge{font-size:12px;font-weight:600;padding:4px 11px;border-radius:20px;white-space:nowrap}
+  .badge.warn{color:var(--amber);background:var(--amber-bg);border:1px solid #f6d9a8}
+  .badge.ok{color:var(--green);background:var(--green-bg);border:1px solid #a7e3bf}
+  .head-meta{display:flex;gap:26px;flex-wrap:wrap;color:var(--txt-2);font-size:13px;margin-top:10px}
+  .head-meta span b{color:var(--txt);font-weight:600}
+  .actions{margin-left:auto;display:flex;gap:10px;align-items:center}
+  .btn{border:1px solid var(--line-strong);background:#fff;color:var(--txt);padding:9px 16px;border-radius:8px;
+    font-size:13px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
+  .btn:hover{border-color:var(--brand);color:var(--brand)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{background:#1859c4}
+  .btn.danger{color:var(--red);border-color:#f3c3bd}
+  .btn.danger:hover{background:var(--red-bg)}
+  .btn.ghost{border-color:transparent;color:var(--txt-2)}
+  /* status tab strip */
+  .steps{display:flex;gap:0;margin-top:18px;border-top:1px solid var(--line)}
+  .step{padding:12px 20px 12px 0;font-size:13px;color:var(--txt-3);display:flex;align-items:center;gap:8px;position:relative}
+  .step .n{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line-strong);display:grid;place-items:center;font-size:11px}
+  .step.done{color:var(--txt-2)}
+  .step.done .n{background:var(--green);border-color:var(--green);color:#fff}
+  .step.active{color:var(--brand);font-weight:700}
+  .step.active .n{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 0 0 4px var(--brand-soft)}
+  .step:not(:last-child):after{content:"";width:34px;height:1px;background:var(--line-strong);margin-left:14px}
+  /* ---------- 作业环节视图：各环节独立详情表单 schema ---------- */
+  .stageview{margin-top:16px;border-top:1px dashed var(--line);padding-top:13px}
+  .stageview .sv-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .stageview .sv-head .lbl{font-size:12px;color:var(--txt-2);font-weight:700;letter-spacing:.5px}
+  .stageview .sv-head .tip{font-size:11px;color:var(--txt-3);font-weight:400}
+  .sv-tabs{display:flex;gap:8px;flex-wrap:wrap}
+  .sv-tab{display:flex;align-items:center;gap:7px;border:1px solid var(--line-strong);background:#fff;color:var(--txt-2);
+    padding:7px 15px;border-radius:8px;font-size:13px;cursor:pointer;transition:.18s;font-weight:600}
+  .sv-tab:hover{border-color:var(--brand);color:var(--brand)}
+  .sv-tab .d{width:7px;height:7px;border-radius:50%;background:var(--line-strong)}
+  .sv-tab.done .d{background:var(--green)}
+  .sv-tab.active{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 4px 12px rgba(31,111,235,.25)}
+  .sv-tab.active .d{background:#fff}
+  .sv-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:11px;padding:9px 14px;background:var(--blue-bg);
+    border:1px solid #d5e4ff;border-radius:9px;font-size:12px;color:var(--txt-2)}
+  .sv-meta .code{font-family:var(--mono);font-size:11px;color:var(--brand);background:#fff;padding:2px 8px;border-radius:5px;border:1px solid #d5e4ff}
+  .sv-meta b{color:var(--txt)}
+  .sv-meta .sep{color:#b9c9e6}
+  .nav a.focus:not(.active){color:var(--brand);font-weight:600;background:var(--blue-bg)}
+  .nav a.focus:not(.active) .ic{color:var(--brand)}
+  /* ---------- summary cards ---------- */
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:20px 24px 4px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .kpi .lab{font-size:12px;color:var(--txt-3);display:flex;align-items:center;gap:6px}
+  .kpi .val{font-size:24px;font-weight:750;margin-top:8px;letter-spacing:-.5px}
+  .kpi .sub{font-size:12px;color:var(--txt-3);margin-top:5px}
+  .kpi.money .val{color:var(--brand)}
+  .kpi .val small{font-size:14px;font-weight:600;color:var(--txt-3)}
+  .kpi.alert{border-color:#f3d7a4}
+  .kpi.alert .val{color:var(--amber);font-size:20px}
+  .kpi .flag{position:absolute;top:0;right:0;font-size:11px;padding:3px 10px;border-radius:0 11px 0 10px;font-weight:600}
+  .kpi.alert .flag{background:var(--amber-bg);color:var(--amber)}
+  /* ---------- layout ---------- */
+  .layout{display:grid;grid-template-columns:196px 1fr;gap:20px;padding:20px 24px 60px;align-items:start}
+  .nav{position:sticky;top:76px;background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:10px;box-shadow:var(--shadow)}
+  .nav .t{font-size:11px;color:var(--txt-3);font-weight:700;letter-spacing:1px;padding:8px 12px 6px}
+  .nav a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:13px;color:var(--txt-2);cursor:pointer}
+  .nav a:hover{background:var(--bg)}
+  .nav a.active{background:var(--brand-soft);color:var(--brand);font-weight:700}
+  .nav a .ic{width:18px;text-align:center;font-size:13px;opacity:.85}
+  .nav a .cnt{margin-left:auto;font-size:11px;color:var(--txt-3);background:var(--bg);border-radius:10px;padding:1px 7px}
+  .nav a.active .cnt{background:#fff;color:var(--brand)}
+  .main{display:flex;flex-direction:column;gap:16px;min-width:0}
+  /* ---------- section card ---------- */
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;scroll-margin-top:76px}
+  .card-h{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fcfdff,#fff);cursor:pointer;user-select:none}
+  .card-h .ico{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:15px;background:var(--blue-bg);color:var(--brand)}
+  .card-h h2{font-size:15px;font-weight:700}
+  .card-h .desc{font-size:12px;color:var(--txt-3);font-weight:400;margin-left:2px}
+  .card-h .tag{font-size:11px;color:var(--txt-3);background:var(--bg);border-radius:6px;padding:2px 8px}
+  .card-h .toggle{margin-left:auto;color:var(--txt-3);font-size:12px;display:flex;align-items:center;gap:5px;transition:.2s}
+  .card.collapsed .toggle{transform:rotate(-90deg)}
+  .card-b{padding:18px}
+  .card.collapsed .card-b{display:none}
+  /* fieldset grid */
+  .grp{margin-bottom:18px}
+  .grp:last-child{margin-bottom:0}
+  .grp-t{font-size:13px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-left:10px;border-left:3px solid var(--brand)}
+  .grp-t .n{font-size:11px;color:var(--txt-3);font-weight:500}
+  .fields{display:grid;grid-template-columns:repeat(4,1fr);gap:2px 20px}
+  .fld{display:flex;flex-direction:column;gap:3px;padding:8px 0;border-bottom:1px dashed #eef1f6;min-width:0}
+  .fld .k{font-size:12px;color:var(--txt-3);display:flex;align-items:center;gap:4px}
+  .fld .k .req{color:var(--red)}
+  .fld .v{font-size:13px;color:var(--txt);font-weight:500;word-break:break-all}
+  .fld .v.empty{color:var(--txt-3);font-weight:400}
+  .fld .v.mono{font-family:var(--mono);font-size:12.5px}
+  .fld .v.money{color:var(--brand);font-weight:700}
+  .fld .v .eye{margin-left:6px;color:var(--brand);cursor:pointer;font-size:12px;font-weight:400}
+  .fld .v.bad{color:var(--red);font-weight:600}
+  .fld.wide{grid-column:span 2}
+  /* table */
+  .tbl-wrap{border:1px solid var(--line);border-radius:10px;overflow:auto;background:#fff}
+  .tbl{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
+  .tbl th,.tbl td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left}
+  .tbl thead th{background:#f7f9fc;color:var(--txt-2);font-weight:700;font-size:12px;position:sticky;top:0;z-index:2}
+  .tbl thead .g1 th{background:#eef3fb;color:var(--brand);text-align:center;border-right:1px solid #dce5f3}
+  .tbl tbody tr:hover{background:#fafcff}
+  .tbl td.num{text-align:right;font-family:var(--mono);font-size:12px}
+  .tbl td.money{text-align:right;font-family:var(--mono);font-weight:600;color:var(--brand)}
+  .tbl td.neg{color:var(--red)}
+  .tbl tfoot td{background:#f7f9fc;font-weight:700;border-top:2px solid var(--line-strong)}
+  .tbl .fix{position:sticky;left:0;background:#fff;z-index:1;box-shadow:1px 0 0 var(--line)}
+  .tbl thead .fix{background:#f7f9fc;z-index:3}
+  .tbl tbody tr:hover .fix{background:#fafcff}
+  .pill{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+  .pill.g{color:var(--green);background:var(--green-bg)}
+  .pill.a{color:var(--amber);background:var(--amber-bg)}
+  .pill.r{color:var(--red);background:var(--red-bg)}
+  .pill.b{color:var(--brand);background:var(--blue-bg)}
+  .tbl-note{font-size:11.5px;color:var(--txt-3);padding:8px 2px 0;display:flex;gap:14px;flex-wrap:wrap}
+  .tbl-note i{font-style:normal;display:inline-flex;align-items:center;gap:4px}
+  .dot-s{width:7px;height:7px;border-radius:50%;display:inline-block}
+  /* result band */
+  .result-band{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+  .rb{border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative}
+  .rb.hl{border-color:#bcd3f7;background:linear-gradient(135deg,#f3f8ff,#fff)}
+  .rb .l{font-size:12px;color:var(--txt-3)}
+  .rb .v{font-size:22px;font-weight:750;margin-top:6px;color:var(--brand);font-family:var(--mono)}
+  .rb .v.big{font-size:28px}
+  .rb .s{font-size:11px;color:var(--txt-3);margin-top:4px}
+  .conclusion{background:var(--amber-bg);border:1px solid #f4dcb4;border-radius:10px;padding:14px 16px;margin-top:16px}
+  .conclusion .l{font-size:12px;color:var(--amber);font-weight:700;display:flex;align-items:center;gap:6px}
+  .conclusion .v{margin-top:6px;font-size:14px;color:#7a5316}
+  /* review decision */
+  .decision{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+  .decision h3{font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .decision .hint{font-size:12px;color:var(--txt-3);margin-bottom:14px}
+  .decision .row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+  .decision textarea{flex:1;min-width:260px;border:1px solid var(--line-strong);border-radius:8px;padding:10px 12px;font-size:13px;resize:vertical;font-family:inherit;min-height:76px}
+  .decision textarea:focus{outline:none;border-color:var(--brand)}
+  .decision .btns{display:flex;flex-direction:column;gap:8px}
+  .hintline{font-size:12px;color:var(--txt-3);margin-top:10px;display:flex;gap:16px;flex-wrap:wrap}
+  .hintline b{color:var(--txt-2)}
+  /* footer */
+  /* quota snapshot (五列额度口径：初始/占用/冻结/剩余/可用) */
+  .quota-card{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px}
+  .quota-card .qc-h{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f7f9fc;border-bottom:1px solid var(--line);font-size:12.5px;font-weight:700;color:var(--txt-2)}
+  .quota-card .qc-h .formula{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--txt-3);font-weight:400}
+  .qtbl{width:100%;border-collapse:collapse;font-size:12.5px}
+  .qtbl th,.qtbl td{padding:10px 14px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  .qtbl th:first-child,.qtbl td:first-child{text-align:left}
+  .qtbl thead th{background:#fff;color:var(--txt-3);font-size:11px;font-weight:600;border-bottom:1px solid var(--line-strong)}
+  .qtbl tbody td{font-family:var(--mono);color:var(--txt)}
+  .qtbl tbody td.item{font-family:inherit;font-weight:600;color:var(--txt)}
+  .qtbl tbody td.avail{color:var(--brand);font-weight:700;background:var(--blue-bg)}
+  .qtbl tbody td.warnv{color:var(--amber);font-weight:600}
+  .qtbl tfoot td{background:#fafbfd;font-weight:700;font-family:var(--mono)}
+  .qtbl tfoot td.item{font-family:inherit}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--txt-3);padding:9px 14px;background:#fff}
+  .legend i{font-style:normal;display:inline-flex;align-items:center;gap:5px}
+  /* demo cross-page nav */
+  .demo-nav{display:flex;align-items:center;gap:6px;margin-left:14px;position:relative}
+  .demo-nav .dn-btn{font-size:12px;color:var(--txt-2);border:1px solid var(--line-strong);background:#fff;
+    padding:5px 11px;border-radius:7px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px}
+  .demo-nav .dn-btn:hover{border-color:var(--brand);color:var(--brand)}
+  .demo-nav .dn-menu{display:none;position:absolute;top:34px;left:0;background:#fff;border:1px solid var(--line);
+    border-radius:10px;box-shadow:var(--shadow);padding:6px;min-width:200px;z-index:80}
+  .demo-nav.open .dn-menu{display:block}
+  .demo-nav .dn-menu a{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;font-size:13px;color:var(--txt-2)}
+  .demo-nav .dn-menu a:hover{background:var(--bg)}
+  .demo-nav .dn-menu a.cur{background:var(--brand-soft);color:var(--brand);font-weight:700}
+  .demo-nav .dn-menu a .ic{width:18px;text-align:center}
+  .demo-nav .dn-menu .cur-tag{margin-left:auto;font-size:10px;color:var(--brand)}
+  /* footer */
+  .foot{text-align:center;color:var(--txt-3);font-size:12px;padding:24px;border-top:1px solid var(--line);background:#fff}
+  @media(max-width:1100px){.summary{grid-template-columns:repeat(2,1fr)}.fields{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.nav{display:none}.demo-nav{display:none}}
+
+  /* ===== UX assist: help + command palette + feedback ===== */
+  .ux-fab{position:fixed;right:22px;bottom:22px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line-strong);
+    background:#fff;color:var(--brand);font-size:19px;font-weight:700;cursor:pointer;box-shadow:0 4px 18px rgba(22,35,60,.14);
+    z-index:120;display:grid;place-items:center;transition:.18s}
+  .ux-fab:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(31,111,235,.25);background:var(--brand);color:#fff}
+  .ux-mask{position:fixed;inset:0;background:rgba(20,28,45,.42);z-index:300;display:none}
+  .ux-mask.show{display:block}
+  .ux-drawer{position:fixed;right:0;top:0;bottom:0;width:420px;max-width:92vw;background:#fff;z-index:310;
+    box-shadow:-8px 0 30px rgba(22,35,60,.16);transform:translateX(105%);transition:transform .24s ease;
+    display:flex;flex-direction:column}
+  .ux-drawer.show{transform:translateX(0)}
+  .ux-dh{padding:20px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .ux-dh .ic{width:32px;height:32px;border-radius:9px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:800}
+  .ux-dh b{font-size:16px}
+  .ux-dh .x{margin-left:auto;cursor:pointer;color:var(--txt-3);font-size:22px;line-height:1;border:0;background:none}
+  .ux-db{padding:18px 22px;overflow:auto;flex:1}
+  .ux-lead{background:var(--brand-soft);border:1px solid #d3e3ff;color:#1e4e9c;border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.65;margin-bottom:18px}
+  .ux-sec{font-size:12px;color:var(--txt-3);font-weight:700;letter-spacing:.06em;margin:4px 0 11px}
+  .ux-step{display:flex;gap:11px;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .ux-step:last-child{border-bottom:0}
+  .ux-step .n{flex:0 0 22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;margin-top:1px}
+  .ux-step .c b{display:block;font-size:13.5px;margin-bottom:2px}
+  .ux-step .c span{font-size:12.5px;color:var(--txt-2);line-height:1.6}
+  .ux-tipbox{margin-top:20px;background:var(--amber-bg);border:1px solid #f7dcb5;border-radius:10px;padding:12px 14px}
+  .ux-tipbox .ux-sec{color:#a25b06;margin-top:0}
+  .ux-tipbox div{font-size:12.5px;color:#7a4a08;line-height:1.7;padding:3px 0}
+  .ux-df{padding:13px 22px;border-top:1px solid var(--line);font-size:12px;color:var(--txt-3);display:flex;align-items:center;gap:8px}
+  .ux-kbd{display:inline-block;background:#f4f6fa;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;
+    padding:1px 6px;font-family:var(--mono);font-size:11px;color:var(--txt-2)}
+  /* command palette */
+  .ux-cmd{position:fixed;left:50%;top:14%;transform:translate(-50%,-12px);width:min(560px,92vw);background:#fff;z-index:310;
+    border-radius:14px;box-shadow:0 20px 60px rgba(22,35,60,.24);overflow:hidden;opacity:0;transition:.16s;pointer-events:none}
+  .ux-mask.cmd-open~.ux-cmd,.ux-cmd.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .ux-cmd-in{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .ux-cmd-in span{color:var(--txt-3);font-size:18px}
+  .ux-cmd-in input{flex:1;border:0;outline:0;font-size:15px;color:var(--txt);background:transparent}
+  .ux-cmd-list{max-height:360px;overflow:auto;padding:8px}
+  .ux-cmd-grp{font-size:11px;color:var(--txt-3);font-weight:700;padding:8px 10px 4px;letter-spacing:.05em}
+  .ux-cmd-item{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:8px;cursor:pointer;font-size:13.5px}
+  .ux-cmd-item:hover,.ux-cmd-item.sel{background:var(--brand-soft)}
+  .ux-cmd-item .ic{width:26px;height:26px;border-radius:7px;background:#f4f6fa;color:var(--brand);display:grid;place-items:center;font-size:13px}
+  .ux-cmd-item .hint{margin-left:auto;font-size:11px;color:var(--txt-3)}
+  .ux-cmd-empty{padding:28px;text-align:center;color:var(--txt-3);font-size:13px}
+  /* inline feedback toast (fallback) */
+  .ux-toast{position:fixed;left:50%;bottom:76px;transform:translate(-50%,12px);background:#1b2436;color:#fff;padding:10px 18px;
+    border-radius:9px;font-size:13px;z-index:400;opacity:0;transition:.2s;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+  .ux-toast.show{opacity:1;transform:translate(-50%,0)}
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+  .dnode{background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px;text-align:center;cursor:pointer;transition:.15s}
+  .dnode:hover{border-color:var(--brand);background:var(--brand-soft)}
+  .dnode b{display:block;font-size:12px;margin-bottom:4px}
+  .dnode span{display:block;font-size:11px;color:var(--txt-3)}
+  .mask{position:fixed;inset:0;background:rgba(16,24,40,.42);z-index:100;display:none;align-items:flex-start;justify-content:center;padding-top:9vh}
+  .mask.show{display:flex}
+  .modal{background:#fff;border-radius:14px;width:560px;max-width:92vw;box-shadow:0 20px 60px rgba(16,24,40,.25);overflow:hidden}
+  .modal .mh{padding:18px 22px;border-bottom:1px solid var(--line);font-size:16px;font-weight:700;display:flex;align-items:center}
+  .modal .mh .x{margin-left:auto;color:var(--txt-3);cursor:pointer;font-size:20px;font-weight:400}
+  .modal .mb{padding:20px 22px}
+  .modal .mf{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;background:#fcfdff}
+  .btn:disabled{opacity:.45;cursor:not-allowed!important;background:var(--bg)!important;color:var(--txt-3)!important;border-color:var(--line)!important}
+</style>
+</head>
+<body>
+
+<!-- ===== top bar ===== -->
+<div class="topbar">
+  <div class="logo"><span class="mark">P</span> TPA <span style="font-weight:400;color:var(--txt-3);font-size:12px">理赔运营平台</span></div>
+  <div class="crumb"><span>理赔管理</span><span class="sep">/</span><span>赔案审核</span><span class="sep">/</span><b>赔案详情</b></div>
+  <div class="demo-nav" id="demoNav">
+    <button class="dn-btn" onclick="document.getElementById('demoNav').classList.toggle('open')">◫ 设计稿导航 ▾</button>
+    <div class="dn-menu">
+      <a href="claim-manage.html"><span class="ic">▤</span>赔案管理列表</a>
+      <a href="claim-detail.html" class="cur"><span class="ic">▣</span>理赔审核详情<span class="cur-tag">当前</span></a>
+      <a href="claim-image-detail.html"><span class="ic">▧</span>赔案影像详情</a>
+      <a href="claim-rule-config.html"><span class="ic">∑</span>理算规则配置</a>
+      <a href="job-config.html"><span class="ic">⚙</span>主体专属作业配置<span class="cur-tag">NEW</span></a>
+      <a href="import-record.html"><span class="ic">⇩</span>导入记录<span class="cur-tag">NEW</span></a>
+      <a href="customer-journey.html"><span class="ic">▣</span>客户旅程（小程序）<span class="cur-tag">NEW</span></a>
+      <a href="form-config.html"><span class="ic">▤</span>表单配置中心<span class="cur-tag">NEW</span></a>
+      <a href="evaluation-report.html"><span class="ic">◫</span>评测报告</a>
+    </div>
+  </div>
+  <div class="right">
+    <span class="env">测试环境</span>
+    <div class="avatar"><span class="dot">admin</span><span>系统管理员</span></div>
+  </div>
+</div>
+
+<!-- ===== page head ===== -->
+<div class="head">
+  <div class="head-row">
+    <div>
+      <h1>理赔审核详情 <span class="claim-no">900000000001</span> <span class="badge warn">● 等待审核</span></h1>
+      <div class="head-meta">
+        <span>保险公司 <b>示例财产保险股份有限公司</b></span>
+        <span>分公司 <b>华北分公司</b></span>
+        <span>投保单位 <b>示例玩具有限公司</b></span>
+        <span>保单号 <b class="mono">TEST0000000000000052</b></span>
+        <span>创建时间 <b>2026-06-09 14:43:15</b></span>
+        <span>赔案时效 <b style="color:var(--brand)">剩 6h</b></span>
+        <span>挂起 <b>无</b></span>
+        <span>复核驳回原因 <b>无</b></span>
+      </div>
+    </div>
+    <div class="actions" id="headActions">
+      <button class="btn danger" onclick="openDecision('return')">赔案退回</button>
+      <button class="btn" onclick="toast('已暂存草稿 · '+new Date().toLocaleTimeString('zh-CN'))">暂存</button>
+      <button class="btn" onclick="toast('✓ 当前环节数据已保存')">保存</button>
+      <button class="btn primary" onclick="openDecision('submit')">提交审核 →</button>
+    </div>
+  </div>
+  <div class="steps">
+    <div class="step done"><span class="n">✓</span>报案登记</div>
+    <div class="step done"><span class="n">✓</span>影像清点</div>
+    <div class="step done"><span class="n">✓</span>理算处理</div>
+    <div class="step active"><span class="n">4</span>赔案审核</div>
+    <div class="step"><span class="n">5</span>结案支付</div>
+  </div>
+  <!-- 作业环节视图：真实系统中初审/录入/质检/审核/复核各加载独立详情表单 schema -->
+  <div class="stageview">
+    <div class="sv-head">
+      <span class="lbl">◈ 作业环节视图</span>
+      <span class="tip">同一赔案，各环节加载独立详情表单 schema —— 字段范围、专属校验与操作按钮按环节隔离（点击切换查看）</span>
+    </div>
+    <div class="sv-tabs" id="svTabs">
+      <div class="sv-tab done" data-stage="precheck" data-schema="claim_precheck_v3" data-fields="31" data-focus="sec-claim,sec-accident,sec-insured" data-extra="身份真实性核验、影像齐全性初审" data-acts="通过初审 →|退回改写|挂起赔案"><span class="d"></span>初审</div>
+      <div class="sv-tab done" data-stage="entry" data-schema="claim_entry_v5" data-fields="52" data-focus="sec-invoice,sec-payee,sec-benefit" data-extra="费用明细录入、领款账户校验、受益人登记" data-acts="保存草稿|提交质检 →"><span class="d"></span>录入</div>
+      <div class="sv-tab done" data-stage="qc" data-schema="claim_qc_v2" data-fields="40" data-focus="sec-invoice,sec-policy" data-extra="影像清晰度标注、录入差错项复核" data-acts="质检通过 →|质检退回"><span class="d"></span>质检</div>
+      <div class="sv-tab active" data-stage="audit" data-schema="claim_audit_v4" data-fields="54" data-focus="sec-adjust,sec-policy,sec-decision" data-extra="责任额度快照核验、理算结果、审核结论" data-acts="赔案退回|暂存|保存|提交审核 →"><span class="d"></span>审核</div>
+      <div class="sv-tab" data-stage="review" data-schema="claim_review_v2" data-fields="22" data-focus="sec-adjust,sec-decision" data-extra="赔付结论复核、超限审批、复核意见" data-acts="复核退回|复核通过 →"><span class="d"></span>复核</div>
+    </div>
+    <div class="sv-meta" id="svMeta"></div>
+  </div>
+</div>
+
+<!-- ===== summary ===== -->
+<div class="summary">
+  <div class="kpi money">
+    <div class="lab">赔案赔付金额</div>
+    <div class="val">¥ <span class="n" id="kpiPay">1,062.00</span></div>
+    <div class="sub">公账 <b>¥1,062.00</b> · 个账 <b>¥0.00</b></div>
+  </div>
+  <div class="kpi">
+    <div class="lab">出险人 / 关系</div>
+    <div class="val" style="font-size:19px">唐某</div>
+    <div class="sub">身份证 · 与主被保人关系待确认</div>
+  </div>
+  <div class="kpi">
+    <div class="lab">发票 / 理算</div>
+    <div class="val">1 <small>张发票</small></div>
+    <div class="sub">理算过程 <b>1</b> 条 · 赔案时效 <b style="color:var(--brand)">剩 6h</b></div>
+  </div>
+  <div class="kpi alert">
+    <div class="flag">待关注</div>
+    <div class="lab">审核风险提示</div>
+    <div class="val">1 项信息待核验</div>
+    <div class="sub">领款账户未填 · 其余必填项已核验</div>
+  </div>
+</div>
+
+<!-- ===== layout ===== -->
+<div class="layout">
+  <nav class="nav">
+    <div class="t">信息分区</div>
+    <a href="#sec-claim" class="active"><span class="ic">▣</span>赔案信息<span class="cnt">54</span></a>
+    <a href="#sec-accident"><span class="ic">⚡</span>出险信息<span class="cnt">24</span></a>
+    <a href="#sec-insured"><span class="ic">♙</span>被保信息<span class="cnt">18</span></a>
+    <a href="#sec-benefit"><span class="ic">♧</span>受益信息<span class="cnt">4</span></a>
+    <a href="#sec-payee"><span class="ic">¥</span>领款信息<span class="cnt">3</span></a>
+    <a href="#sec-policy"><span class="ic">▤</span>保单信息<span class="cnt">8</span></a>
+    <a href="#sec-invoice"><span class="ic">▥</span>发票信息<span class="cnt">40</span></a>
+    <a href="#sec-adjust"><span class="ic">∑</span>理算信息<span class="cnt">14</span></a>
+    <div class="t" style="margin-top:8px">审核操作</div>
+    <a href="#sec-decision"><span class="ic">✓</span>审核结论</a>
+  </nav>
+
+  <main class="main">
+
+    <!-- 1 赔案信息 -->
+    <section class="card" id="sec-claim">
+      <div class="card-h"><span class="ico">▣</span><h2>赔案信息</h2><span class="desc">案件标识与流转状态</span><span class="tag">54 字段</span><span class="toggle">▾ 收起</span></div>
+      <div class="card-b">
+        <div class="grp">
+          <div class="grp-t">基础标识 <span class="n">· 10 项</span></div>
+          <div class="fields">
+            <div class="fld"><span class="k">赔案号</span><span class="v mono">900000000001</span></div>
+            <div class="fld"><span class="k">当前状态</span><span class="v"><span class="pill a">等待审核</span></span></div>
+            <div class="fld"><span class="k">当前阶段</span><span class="v">审核</span></div>
+            <div class="fld"><span class="k">保单号</span><span class="v mono">TEST0000000000000052</span></div>
+            <div class="fld"><span class="k">批次号</span><span class="v mono">900000000</span></div>
+            <div class="fld"><span class="k">个单号 / 分单号</span><span class="v mono">99000000000001</span></div>
+            <div class="fld"><span class="k">业务类型</span><span class="v">理赔业务</span></div>
+            <div class="fld"><span class="k">流程类型</span><span class="v">01 · 常规流程</span></div>
+            <div class="fld"><span class="k">赔案来源</span><span class="v">线上报案</span></div>
+            <div class="fld"><span class="k">保全号</span><span class="v empty">—</span></div>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="grp-t">保司与投保方 <span class="n">· 10 项</span></div>
+          <div class="fields">
+            <div class="fld wide"><span class="k">保险公司名称</span><span class="v">示例财产保险股份有限公司</span></div>
+            <div class="fld wide"><span class="k">保险分公司名称</span><span class="v">示例财产保险股份有限公司华北分公司</span></div>
+            <div class="fld wide"><span class="k">投保公司</span><span class="v">示例玩具有限公司</span></div>
+            <div class="fld"><span class="k">计划 UUID</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">保单属性</span><span class="v">团体保单</span></div>
+            <div class="fld"><span class="k">保单开始日期</span><span class="v mono">2024-11-21</span></div>
+            <div class="fld"><span class="k">保单结束日期</span><span class="v mono">2025-11-20</span></div>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="grp-t">影像与清点 <span class="n">· 6 项</span></div>
+          <div class="fields">
+            <div class="fld"><span class="k">影像是否上传</span><span class="v"><span class="pill r">否</span></span></div>
+            <div class="fld"><span class="k">影像数量</span><span class="v">—</span></div>
+            <div class="fld"><span class="k">清点张数</span><span class="v">—</span></div>
+            <div class="fld"><span class="k">影像上传时间</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">影像操作人员</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">影像上传次数</span><span class="v">0</span></div>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="grp-t">流转与时效 <span class="n">· 14 项</span></div>
+          <div class="fields">
+            <div class="fld"><span class="k">挂起状态</span><span class="v">正常</span></div>
+            <div class="fld"><span class="k">挂起类型</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">挂起总时长</span><span class="v">0h</span></div>
+            <div class="fld"><span class="k">赔案时效</span><span class="v" style="color:var(--brand)">剩 6h</span></div>
+            <div class="fld"><span class="k">VIP 级别</span><span class="v"><span class="pill b">普通</span></span></div>
+            <div class="fld"><span class="k">渠道名称</span><span class="v">微信小程序</span></div>
+            <div class="fld"><span class="k">操作组</span><span class="v">核赔组A</span></div>
+            <div class="fld"><span class="k">当前作业人员</span><span class="v">审核员A</span></div>
+            <div class="fld"><span class="k">登录账号</span><span class="v mono">admin</span></div>
+            <div class="fld"><span class="k">创建时间</span><span class="v mono">2026-06-09 14:43:15</span></div>
+            <div class="fld"><span class="k">修改时间</span><span class="v mono">2026-06-09 14:43:24</span></div>
+            <div class="fld"><span class="k">复核驳回原因</span><span class="v">无</span></div>
+            <div class="fld wide"><span class="k">退回原因</span><span class="v">无</span></div>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="grp-t">保司单号对照 <span class="n">· 8 项</span></div>
+          <div class="fields">
+            <div class="fld"><span class="k">保司报案号</span><span class="v mono">—</span></div>
+            <div class="fld"><span class="k">保司申请号</span><span class="v mono">—</span></div>
+            <div class="fld"><span class="k">保司批次号</span><span class="v mono">—</span></div>
+            <div class="fld"><span class="k">保司收单号</span><span class="v mono">—</span></div>
+            <div class="fld"><span class="k">保司保单号</span><span class="v mono">—</span></div>
+            <div class="fld"><span class="k">赔案 UUID</span><span class="v mono" style="font-size:11px">3590a8b4-…fb430b</span></div>
+            <div class="fld"><span class="k">出险人</span><span class="v">唐某</span></div>
+            <div class="fld"><span class="k">主被保人</span><span class="v bad">未填写 ⚠</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 出险信息 -->
+    <section class="card" id="sec-accident">
+      <div class="card-h"><span class="ico">⚡</span><h2>出险信息</h2><span class="desc">出险人身份与事故经过</span><span class="tag">24 字段</span><span class="toggle">▾ 收起</span></div>
+      <div class="card-b">
+        <div class="grp">
+          <div class="grp-t">出险人信息</div>
+          <div class="fields">
+            <div class="fld"><span class="k">姓名 <span class="req">*</span></span><span class="v">唐某</span></div>
+            <div class="fld"><span class="k">性别</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">出生年月</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">证件类型 <span class="req">*</span></span><span class="v">身份证</span></div>
+            <div class="fld wide"><span class="k">证件号 <span class="req">*</span></span><span class="v mono"><span class="mask">1504**********7349</span><span class="eye" onclick="toggleMask(this)">👁</span></span></div>
+            <div class="fld"><span class="k">证件有效期 <span class="req">*</span></span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">职业</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">国籍</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">联系方式</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">与主被保人关系</span><span class="v empty">—</span></div>
+            <div class="fld wide"><span class="k">详细地址</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">省市区</span><span class="v empty">—</span></div>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="grp-t">出险详情</div>
+          <div class="fields">
+            <div class="fld"><span class="k">出险时间 <span class="req">*</span></span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">出险类型</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">出险原因 <span class="req">*</span></span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">省市区 <span class="req">*</span></span><span class="v empty">—</span></div>
+            <div class="fld wide"><span class="k">出险详细地址 <span class="req">*</span></span><span class="v empty">—</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 被保信息 -->
+    <section class="card" id="sec-insured">
+      <div class="card-h"><span class="ico">♙</span><h2>被保信息</h2><span class="desc">主被保险人身份信息</span><span class="tag">18 字段</span><span class="tag" style="color:var(--red)">待补全</span><span class="toggle">▾ 收起</span></div>
+      <div class="card-b">
+        <div class="alert-inline" style="background:var(--red-bg);border:1px solid #f5c9c4;color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px">
+          ⚠ 主被保人信息缺失，将影响保单匹配与理算校验，请在提交前补全。
+        </div>
+        <div class="fields">
+          <div class="fld"><span class="k">姓名</span><span class="v bad">未填写</span></div>
+          <div class="fld"><span class="k">性别</span><span class="v empty">—</span></div>
+          <div class="fld"><span class="k">出生年月</span><span class="v empty">—</span></div>
+          <div class="fld"><span class="k">证件类型</span><span class="v empty">—</span></div>
+          <div class="fld wide"><span class="k">证件号</span><span class="v empty">—</span></div>
+          <div class="fld"><span class="k">证件有效期 <span class="req">*</span></span><span class="v empty">—</span></div>
+          <div class="fld"><span class="k">职业</span><span class="v empty">—</span></div>
+          <div class="fld"><span class="k">国籍</span><span class="v empty">—</span></div>
+          <div class="fld"><span class="k">联系方式</span><span class="v empty">—</span></div>
+          <div class="fld"><span class="k">省市区</span><span class="v empty">—</span></div>
+          <div class="fld"><span class="k">与出险人关系</span><span class="v empty">—</span></div>
+          <div class="fld wide"><span class="k">详细地址</span><span class="v empty">—</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 受益信息 -->
+    <section class="card" id="sec-benefit">
+      <div class="card-h"><span class="ico">♧</span><h2>受益信息</h2><span class="desc">受益人登记</span><span class="tag">受益人信息</span><span class="toggle">▾ 收起</span></div>
+      <div class="card-b">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>受益人姓名</th><th>证件类型</th><th>证件号</th><th>证件有效期</th></tr></thead>
+            <tbody><tr><td colspan="5" style="text-align:center;color:var(--txt-3);padding:22px">暂无受益人信息</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 领款信息 -->
+    <section class="card" id="sec-payee">
+      <div class="card-h"><span class="ico">¥</span><h2>领款信息</h2><span class="desc">领款方式与收款账户</span><span class="tag">个人 / 企业</span><span class="toggle">▾ 收起</span></div>
+      <div class="card-b">
+        <div class="grp">
+          <div class="grp-t">领款人信息</div>
+          <div class="fields">
+            <div class="fld"><span class="k">领款人类型</span><span class="v bad">未选择</span></div>
+            <div class="fld"><span class="k">支付方式</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">第三方与被保险人关系</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">支付第三方理由</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">代理人身份</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">代办理手续齐备</span><span class="v empty">—</span></div>
+            <div class="fld"><span class="k">证件核查情况</span><span class="v empty">—</span></div>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="grp-t">领款人（个人）</div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th class="fix">#</th><th>领款人姓名</th><th>证件类型</th><th>证件号</th><th>联系方式</th><th>与被保关系<span class="req">*</span></th><th>银行账号</th><th>开户行分行</th></tr></thead>
+              <tbody><tr><td colspan="8" style="text-align:center;color:var(--txt-3);padding:22px">暂无个人领款人</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="grp-t">领款人（企业）</div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th class="fix">#</th><th>领款单位名称</th><th>单位证件类型</th><th>银行账号</th><th>开户行分行</th><th>开户行地址</th><th>银行省市</th><th>法人联系方式<span class="req">*</span></th></tr></thead>
+              <tbody><tr><td colspan="8" style="text-align:center;color:var(--txt-3);padding:22px">暂无企业领款人</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 保单信息 -->
+    <section class="card" id="sec-policy">
+      <div class="card-h"><span class="ico">▤</span><h2>保单信息</h2><span class="desc">关联保单与保障计划</span><span class="tag">8 列</span><span class="toggle">▾ 收起</span></div>
+      <div class="card-b">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th class="fix">#</th><th>分单号</th><th>保全号</th><th>保单号</th><th>计划名称</th><th>投保公司名称</th><th>保险公司名称</th><th>保单开始日期</th><th>保单结束日期</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="fix">1</td>
+                <td class="num">99000000000001</td>
+                <td class="num">—</td>
+                <td class="num">TEST0000000000000052</td>
+                <td>—</td>
+                <td>示例玩具有限公司</td>
+                <td>示例财产保险股份有限公司</td>
+                <td class="num">2024-11-21</td>
+                <td class="num">2025-11-20</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 发票信息 -->
+    <section class="card" id="sec-invoice">
+      <div class="card-h"><span class="ico">▥</span><h2>发票信息</h2><span class="desc">票据、就诊与费用明细</span><span class="tag">40 列</span><span class="toggle">▾ 收起</span></div>
+      <div class="card-b">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr class="g1">
+                <th class="fix" rowspan="2">#</th>
+                <th colspan="5">票据信息</th>
+                <th colspan="6">就诊信息</th>
+                <th colspan="7">费用明细（元）</th>
+                <th colspan="7">医保 / 基金结算（元）</th>
+                <th colspan="5">理算标记</th>
+              </tr>
+              <tr>
+                <th>电子票据代码</th><th>票据类型</th><th>开票日期</th><th>票据号码</th><th>电子发票号</th>
+                <th>就诊日期</th><th>就诊类型</th><th>医院名称</th><th>诊断</th><th>住院期间</th><th>住院天数</th>
+                <th>发票总费用</th><th>合理费用</th><th>自付一</th><th>自付二</th><th>总自费</th><th>丙类自费</th><th>超限价自付</th>
+                <th>是否有医保</th><th>医保基金支付</th><th>其他基金</th><th>基本统筹</th><th>统筹起付线</th><th>统筹赔付比例</th><th>第三方已赔付</th>
+                <th>不合理费用</th><th>发票验真</th><th>是否慢病<span class="req">*</span></th><th>是否重疾<span class="req">*</span></th><th>适用责任</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>TEST-INV-04</td><td>电子住院发票</td><td>2026-06-08</td><td>0020137719</td><td>99000000000000000004</td><td>2026-06-05</td><td>住院</td><td>示例三甲医院</td><td>冠状动脉粥样硬化</td><td>2026-05-18 ~ 05-26</td><td>8</td><td>1,280.00</td><td>1,280.00</td><td>0.00</td><td>0.00</td><td>180.00</td><td>180.00</td><td>0.00</td><td>是</td><td>0.00</td><td>0.00</td><td>0.00</td><td>0.00</td><td>—</td><td>0.00</td><td>0.00</td><td>通过</td><td>否</td><td>否</td><td>住院医疗·社保内</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tbl-note">
+          <span><i><span class="dot-s" style="background:var(--brand)"></span>费用列</i>右对齐，便于金额纵向核对</span>
+          <span><i><span class="dot-s" style="background:var(--txt-3)"></span>横向滚动</i>查看全部 40 列</span>
+          <span>表头按业务语义分组，替代原 40 列平铺</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 理算信息 -->
+    <section class="card" id="sec-adjust">
+      <div class="card-h"><span class="ico">∑</span><h2>理算信息</h2><span class="desc">理算过程、结果与结论</span><span class="tag">14 字段</span><span class="toggle">▾ 收起</span></div>
+      <div class="card-b">
+        <div class="result-band">
+          <div class="rb hl"><div class="l">赔案赔付金额</div><div class="v big">¥ 1,062.00</div><div class="s">理算结果合计</div></div>
+          <div class="rb"><div class="l">公账赔付金额</div><div class="v">¥ 1,062.00</div><div class="s">对公支付的赔付部分</div></div>
+          <div class="rb"><div class="l">个账赔付金额</div><div class="v">¥ 0.00</div><div class="s">对个人的赔付部分</div></div>
+        </div>
+        <!-- 额度五列对照（口径：初始基线 / 占用·冻结=理赔事实流水 / 保全=配置变更历史） -->
+        <div class="grp-t" style="margin-bottom:10px">责任额度快照 <span class="n">· 初始 / 占用 / 冻结 / 剩余 / 可用 五列口径</span></div>
+        <div class="quota-card">
+          <div class="qc-h">⌗ 险种·责任维度额度 <span class="formula">可用 = 初始 − 已占用 − 冻结额</span></div>
+          <table class="qtbl">
+            <thead><tr><th>险种 / 责任</th><th>初始额度</th><th>已占用</th><th>冻结额</th><th>剩余额度</th><th>可用额度</th></tr></thead>
+            <tbody>
+              <tr><td class="item">住院医疗 · 社保内责任</td><td>100,000.00</td><td class="warnv">0.00</td><td>0.00</td><td>100,000.00</td><td class="avail">100,000.00</td></tr>
+              <tr><td class="item">住院医疗 · 社保外责任</td><td>50,000.00</td><td class="warnv">0.00</td><td>0.00</td><td>50,000.00</td><td class="avail">50,000.00</td></tr>
+              <tr><td class="item">门诊医疗 · 年度限额</td><td>10,000.00</td><td class="warnv">0.00</td><td>0.00</td><td>10,000.00</td><td class="avail">10,000.00</td></tr>
+            </tbody>
+            <tfoot><tr><td class="item">合计（元）</td><td>160,000.00</td><td>0.00</td><td>0.00</td><td>160,000.00</td><td>160,000.00</td></tr></tfoot>
+          </table>
+          <div class="legend">
+            <i><span class="dot-s" style="background:var(--brand)"></span>初始额度=配置基线</i>
+            <i><span class="dot-s" style="background:var(--amber)"></span>占用/冻结=理赔事实流水</i>
+            <i><span class="dot-s" style="background:var(--purple)"></span>保全变更=配置历史(另有流水)</i>
+            <i style="color:var(--brand)">可用额度为审核决策的直接依据</i>
+          </div>
+        </div>
+        <div class="conclusion" style="background:var(--blue-bg);border-color:#bcd3f7">
+          <div class="l" style="color:var(--brand)">ⓘ 口径说明</div>
+          <div class="v" style="color:#264a86;font-size:12.5px">本赔案理算过程已生成 1 条：社保内医疗费用，按 (¥1,280.00 − ¥100.00 免赔) × 90% 得 ¥1,062.00。金额由确定性规则代码计算，AI 只抽取字段与给建议、不碰钱；审核通过后写入占用流水。调额下界：「新初始额度 ≥ 已占用 + 冻结额」。</div>
+        </div>
+        <div class="grp-t" style="margin-bottom:10px;margin-top:18px">理算过程信息</div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th class="fix">#</th><th>发票号</th><th>险种名称</th><th>责任名称</th><th>免赔额</th><th>控额详情</th><th>赔付金额</th><th>理算公式</th><th>理算结论</th></tr></thead>
+            <tbody><tr><td>1</td><td class="mono">99000000000000000004</td><td>住院医疗</td><td>社保内医疗费用</td><td>100.00</td><td>通过 · 未降额</td><td class="avail">1,062.00</td><td class="mono">(1280.00 − 100.00) × 90%</td><td>建议自动通过</td></tr></tbody>
+          </table>
+        </div>
+        <div class="conclusion">
+          <div class="l">◆ 理赔结论</div>
+          <div class="v">建议自动通过 · 赔付 ¥1,062.00。命中 R-MED-03（社保内 90%）与 R-DED-01（免赔 ¥100），无风险标记；金额由确定性规则代码计算，AI 不参与金额判定。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9 审核结论 -->
+    <section class="decision" id="sec-decision">
+      <h3>✓ 审核结论 <span class="badge warn" style="font-weight:600">当前节点：赔案审核</span></h3>
+      <div class="hint">请基于上述信息进行审核判定；退回/驳回时需填写原因，提交后进入结案支付节点。</div>
+      <div class="row">
+        <textarea placeholder="填写审核意见 / 退回或驳回原因（驳回、退回时必填）…"></textarea>
+        <div class="btns">
+          <button class="btn primary" onclick="openDecision('pass')">✓ 审核通过</button>
+          <button class="btn danger" onclick="openRejectNotice()">✕ 建议拒赔</button>
+          <button class="btn" onclick="openDecision('return')">↩ 退回上一节点</button>
+        </div>
+      </div>
+      <div class="hintline">
+        <span><b>必填校验：</b>主被保人 · 出险详情 · 领款人 · 理算结论</span>
+        <span><b>时效：</b>当前节点无需挂起</span>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+
+<!-- ===== 决策回放：把 AI/规则/人工的结论链摊开 ===== -->
+<div class="card" style="margin-top:18px">
+  <div class="card-h"><h2><span class="ico">↺</span>决策回放（证据链）</h2><span class="desc">从报案到结论，每个判断都可点开看依据；命中规则与人工复核对等展示</span></div>
+  <div class="card-b">
+    <div class="mx-note" style="padding-top:0;margin-bottom:12px">为什么要有这一块：审核详情回答"现在是什么"，决策回放回答"为什么是这个结论"。拒赔/调额结论必须能逐条回到规则与证据，否则客户申诉与内部复核都无从下手。</div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+      <div class="dnode" onclick="toast('报案：客户提交票据 3 张 · 2026-06-09 14:43')"><b>① 报案</b><span>材料 3 份</span></div>
+      <div class="dnode" onclick="toast('AI 初审：票据 OCR 抽取 8 字段，置信度 0.96')"><b>② AI 初审</b><span>8 字段 · 0.96</span></div>
+      <div class="dnode" onclick="toast('规则命中：R-MED-03 社保内费用 90% · R-DED-01 免赔 100')"><b>③ 规则命中</b><span>R-MED-03 / R-DED-01</span></div>
+      <div class="dnode" onclick="toast('控额：责任剩余额度充足，未触发分层控额')"><b>④ 控额校验</b><span>通过 · 未降额</span></div>
+      <div class="dnode" onclick="toast('人工复核：审核员A 确认票据与字段一致，无例外')"><b>⑤ 人工复核</b><span>审核员A · 无例外</span></div>
+      <div class="dnode" onclick="toast('结论：赔付 ¥1,062.00 · 依据住院医疗条款 §3.2')"><b>⑥ 结论</b><span>¥1,062.00</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+      <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px;line-height:2">
+        <b>命中规则（可回查条款）</b>
+        <div>· R-MED-03 社保内医疗费用 · 赔付比例 90%</div>
+        <div>· R-DED-01 每次事故免赔额 ¥100.00</div>
+        <div>· R-HOSP-02 医院等级：二级及以上 ✓</div>
+      </div>
+      <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px;line-height:2">
+        <b>证据锚点（可定位原件）</b>
+        <div>· 发票号 99000000000000000004 → 影像第 1 页</div>
+        <div>· 费用明细 ¥1,280.00 → 影像第 2 页</div>
+        <div>· 出险日期 2026-06-05 → 病历首页</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== POC 案例 B：建议拒赔 → 核赔员一键确认 → 结构化拒赔通知书 ===== -->
+<div class="card" style="margin-top:18px">
+  <div class="card-h"><h2><span class="ico">⚖</span>POC 案例 B · 系统建议拒赔 + 人工确认</h2><span class="desc">AI 只给建议；核赔员一键确认后生效，拒赔必须给出可申诉的结构化通知书</span></div>
+  <div class="card-b">
+    <div class="mx-note" style="padding-top:0;margin-bottom:12px">演示话术锚点：自费药品（保健品）发票 → 系统建议拒赔 → 核赔员一键确认 → 结构化拒赔通知书（事实认定 / 条款依据 / 证据位置 / 申诉渠道与时限）。依据：POC 演示脚本 §三 案例 B；人工监督点对应金发〔2026〕8号。</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      <div class="dnode" onclick="openRejectNotice()"><b>① 系统建议拒赔</b><span>自费项目命中剔除规则</span></div>
+      <div class="dnode" onclick="openRejectNotice()"><b>② 核赔员一键确认</b><span>人工终审权，不自动生效</span></div>
+      <div class="dnode" onclick="openRejectNotice()"><b>③ 结构化通知书</b><span>四要素齐备 + 申诉入口</span></div>
+    </div>
+    <button class="btn danger" style="margin-top:14px" onclick="openRejectNotice()">演示：打开建议拒赔确认流 →</button>
+  </div>
+</div>
+
+<div class="mask" id="mRejectNotice" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <div class="mh" style="color:var(--red)">⚖ 建议拒赔 · 核赔员确认 <span class="x" onclick="document.getElementById('mRejectNotice').classList.remove('show')">×</span></div>
+    <div class="mb">
+      <div class="mx-note" style="padding-top:0;margin-bottom:12px">系统给出建议结论与证据，<b>不会自动生效</b>；须由核赔员逐项核对后一键确认（人工监督点）。</div>
+      <div class="mfield"><div class="lbl">建议结论</div><input value="建议拒赔 · 自费项目不属责任范围" readonly></div>
+      <div class="preserve-tip" style="margin-top:12px">结构化拒赔通知书（四要素缺一不可）</div>
+      <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12.5px;line-height:2;margin-top:8px">
+        <div><b>事实认定</b>：发票含保健品 1 项，金额 ¥180.00，非治疗性自费项目。</div>
+        <div><b>条款依据</b>：住院医疗责任条款 §3.4「自费项目不属于保险责任」。</div>
+        <div><b>证据位置</b>：发票影像第 1 页「商品明细」第 3 行；费用明细第 2 页。</div>
+        <div><b>申诉渠道与时限</b>：小程序「我的理赔 → 提起申诉」或 400 客服；签收后 10 个工作日内。</div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:14px;cursor:pointer"><input type="checkbox" id="rejectAck" onchange="document.getElementById('rejectConfirm').disabled=!this.checked"> 我已逐项核对事实认定、条款依据、证据位置与申诉告知</label>
+    </div>
+    <div class="mf"><button class="btn" onclick="document.getElementById('mRejectNotice').classList.remove('show')">取消</button><button class="btn danger" id="rejectConfirm" disabled onclick="toast('已确认拒赔 · 结构化通知书已生成并可申诉');document.getElementById('mRejectNotice').classList.remove('show')">一键确认拒赔</button></div>
+  </div>
+</div>
+
+
+<!-- 审核决策：危险动作统一走结构化确认（与案例 B 同标准） -->
+<div class="mask" id="mDecision" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <div class="mh" id="dmTitle">审核决策确认 <span class="x" onclick="document.getElementById('mDecision').classList.remove('show')">×</span></div>
+    <div class="mb">
+      <div class="mx-note" style="padding-top:0;margin-bottom:10px" id="dmLead"></div>
+      <div class="mfield"><div class="lbl">决策类型</div><input id="dmKind" readonly></div>
+      <div class="mfield"><div class="lbl">结构化原因（退回 / 拒赔必填，≥10 字）</div><textarea id="dmReason" rows="3" placeholder="按差错类型与事实说明，将写入可回放审计轨迹"></textarea></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:10px;cursor:pointer"><input type="checkbox" id="dmAck" onchange="document.getElementById('dmConfirm').disabled=!this.checked"> 已核对理算结果 ¥1,062.00、票据证据与时效，确认执行</label>
+    </div>
+    <div class="mf"><button class="btn" onclick="document.getElementById('mDecision').classList.remove('show')">取消</button><button class="btn primary" id="dmConfirm" disabled onclick="confirmDecision()">确认执行</button></div>
+  </div>
+</div>
+<div class="foot">TPA 理赔运营平台 · 赔案详情设计稿 · 演示数据已脱敏 · 非真实客户信息 · demoId=900000000001</div>
+
+<script>
+  // 折叠区块
+  document.querySelectorAll('.card-h').forEach(h=>{
+    h.addEventListener('click',()=>{
+      const c=h.parentElement;c.classList.toggle('collapsed');
+      const t=h.querySelector('.toggle');
+      t.textContent=c.classList.contains('collapsed')?'▸ 展开':'▾ 收起';
+    });
+  });
+  // 锚点导航高亮 + 点击滚动
+  const links=[...document.querySelectorAll('.nav a[href^="#"]')];
+  links.forEach(a=>a.addEventListener('click',e=>{
+    e.preventDefault();
+    const el=document.querySelector(a.getAttribute('href'));
+    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  }));
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(en=>{
+      if(en.isIntersecting){
+        links.forEach(l=>l.classList.toggle('active',l.getAttribute('href')==='#'+en.target.id));
+      }
+    });
+  },{rootMargin:'-70px 0px -70% 0px'});
+  document.querySelectorAll('section[id]').forEach(s=>obs.observe(s));
+  // 设计稿导航：点击外部关闭
+  document.addEventListener('click',e=>{
+    const dn=document.getElementById('demoNav');
+    if(dn && !dn.contains(e.target)) dn.classList.remove('open');
+  });
+  // 证件号脱敏切换
+  function toggleMask(el){
+    const m=el.previousElementSibling;
+    const full='110101199001010019';
+    if(m.classList.contains('mask')){m.textContent=full;m.classList.remove('mask');el.textContent='🙈';}
+    else{m.textContent='1504**********7349';m.classList.add('mask');el.textContent='👁';}
+  }
+  // 作业环节视图切换：按环节加载不同详情表单 schema（交互示意，字段/校验/操作随环节变化）
+  const stageName={precheck:'初审',entry:'录入',qc:'质检',audit:'审核',review:'复核'};
+  const navLabels={};
+  document.querySelectorAll('.nav a[href^="#"]').forEach(a=>{navLabels[a.getAttribute('href').slice(1)]=a.textContent.trim()});
+  function applyStage(tab){
+    const d=tab.dataset;
+    document.querySelectorAll('.sv-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    // 元信息条
+    const focusNames=(d.focus||'').split(',').filter(Boolean).map(id=>navLabels[id]||id).join('、');
+    document.getElementById('svMeta').innerHTML=
+      '<span>表单 Schema <span class="code">'+d.schema+'</span></span>'+
+      '<span class="sep">|</span><span>字段范围 <b>'+d.fields+' 项</b></span>'+
+      '<span class="sep">|</span><span>本环节关注 <b>'+(focusNames||'—')+'</b></span>'+
+      '<span class="sep">|</span><span>专属校验 <b>'+d.extra+'</b></span>';
+    // 顶部操作按钮随环节变化
+    const acts=(d.acts||'').split('|').filter(Boolean);
+    document.getElementById('headActions').innerHTML=acts.map((t,i)=>{
+      const cls=i===acts.length-1?'btn primary':(t.indexOf('退回')>=0?'btn danger':'btn');
+      return '<button class="'+cls+'">'+t+'</button>';
+    }).join('');
+    // 左侧导航标记本环节关注区块
+    document.querySelectorAll('.nav a').forEach(a=>a.classList.remove('focus'));
+    (d.focus||'').split(',').filter(Boolean).forEach(id=>{
+      const a=document.querySelector('.nav a[href="#'+id+'"]');if(a)a.classList.add('focus');
+    });
+  }
+  document.getElementById('svTabs').addEventListener('click',e=>{
+    const tab=e.target.closest('.sv-tab');if(tab)applyStage(tab);
+  });
+  applyStage(document.querySelector('.sv-tab.active'));
+</script>
+<button class="ux-fab" id="uxFab" title="操作指引 / 快捷命令 (Ctrl+K)" onclick="uxOpenHelp()">?</button>
+<div class="ux-mask" id="uxMask" onclick="uxCloseAll()"></div>
+<div class="ux-drawer" id="uxDrawer">
+  <div class="ux-dh"><span class="ic">?</span><b>理赔审核详情 · 快速上手</b><button class="x" onclick="uxCloseAll()">×</button></div>
+  <div class="ux-db">
+    <div class="ux-lead">这是一份可交互设计稿。按下面 5 步走一遍，就能完成本页核心操作；所有数据来自测试环境真实赔案。</div>
+    <div class="ux-sec">操作五步走</div><div class="ux-step"><span class="n">1</span><div class="c"><b>选环节</b><span>顶部「作业环节视图」切换初审/录入/质检/审核/复核，每环节有独立表单与校验重点。</span></div></div><div class="ux-step"><span class="n">2</span><div class="c"><b>看摘要</b><span>4 张摘要卡先读赔案状态、金额、时效、VIP——这些是审核决策的第一入口。</span></div></div><div class="ux-step"><span class="n">3</span><div class="c"><b>跳区块</b><span>左侧锚点导航点一下直达对应信息块；点区块标题可折叠收起。</span></div></div><div class="ux-step"><span class="n">4</span><div class="c"><b>脱敏查看</b><span>证件号默认脱敏，点眼睛图标切换明文（当前为演示数据）。</span></div></div><div class="ux-step"><span class="n">5</span><div class="c"><b>下结论</b><span>滚到底部审核结论区，选通过/驳回/退回并填意见，再点「提交审核」。</span></div></div>
+    <div class="ux-tipbox"><div class="ux-sec">易错提醒</div><div>· 冻结额占用中不可动用；可用额度=初始−占用−冻结。</div><div>· 发票、理算、领款为空时会在顶部「待关注」提示。</div></div>
+  </div>
+  <div class="ux-df"><span class="ux-kbd">Esc</span> 关闭 · <span class="ux-kbd">Ctrl/⌘ + K</span> 快捷命令</div>
+</div>
+<div class="ux-cmd" id="uxCmd">
+  <div class="ux-cmd-in"><span>⌕</span><input id="uxCmdInput" placeholder="输入页面名或操作，如「影像」「批量拒赔」…" oninput="uxCmdRender()" onkeydown="uxCmdKey(event)"></div>
+  <div class="ux-cmd-list" id="uxCmdList"></div>
+</div>
+<div class="ux-toast" id="uxToast"></div>
+
+<script>
+(function(){
+  if(window.__uxInjected) return; window.__uxInjected=true;
+  var mask=document.getElementById('uxMask'),drawer=document.getElementById('uxDrawer'),cmd=document.getElementById('uxCmd'),inp=document.getElementById('uxCmdInput');
+  window.uxOpenHelp=function(){mask.classList.add('show');drawer.classList.add('show');};
+  window.uxCloseAll=function(){mask.classList.remove('show','cmd-open');drawer.classList.remove('show');cmd.classList.remove('show');};
+  window.uxOpenCmd=function(){mask.classList.add('show','cmd-open');cmd.classList.add('show');inp.value='';uxCmdRender();setTimeout(function(){inp.focus();},30);};
+  var items=[['claim-manage.html','▤','赔案管理列表','列表'],['claim-detail.html','▣','理赔审核详情','详情'],['claim-image-detail.html','▧','赔案影像详情','影像'],['claim-rule-config.html','∑','理算规则配置','规则'],['job-config.html','⚙','主体专属作业配置','配置'],['import-record.html','⇩','导入记录','导入'],['customer-journey.html','▣','客户旅程（小程序）','客户'],['form-config.html','▤','表单配置中心','表单'],['evaluation-report.html','◫','评测报告','评测']];
+  var sel=0,shown=[];
+  window.uxCmdRender=function(){
+    var q=(inp.value||'').trim().toLowerCase();
+    shown=items.filter(function(x){return !q||x[2].toLowerCase().indexOf(q)>=0||x[3].indexOf(q)>=0;});
+    if(sel>=shown.length)sel=0;
+    var h='<div class="ux-cmd-grp">跳转页面</div>';
+    if(!shown.length) h+='<div class="ux-cmd-empty">没有匹配项</div>';
+    shown.forEach(function(x,i){
+      h+='<a class="ux-cmd-item'+(i===sel?' sel':'')+'" href="'+x[0]+'"><span class="ic">'+x[1]+'</span>'+x[2]+'<span class="hint">'+x[3]+'</span></a>';
+    });
+    document.getElementById('uxCmdList').innerHTML=h;
+  };
+  window.uxCmdKey=function(e){
+    if(e.key==='ArrowDown'){e.preventDefault();sel=Math.min(sel+1,shown.length-1);uxCmdRender();}
+    else if(e.key==='ArrowUp'){e.preventDefault();sel=Math.max(sel-1,0);uxCmdRender();}
+    else if(e.key==='Enter'&&shown[sel]){location.href=shown[sel][0];}
+  };
+  document.addEventListener('keydown',function(e){
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();uxOpenCmd();}
+    if(e.key==='Escape')uxCloseAll();
+  });
+  if(typeof window.toast!=='function'){
+    var t=document.getElementById('uxToast'),timer;
+    window.toast=function(msg){if(!t)return;t.textContent=msg;t.classList.add('show');clearTimeout(timer);timer=setTimeout(function(){t.classList.remove('show');},1800);};
+  }
+})();
+
+window.openRejectNotice=function(){document.getElementById('mRejectNotice').classList.add('show');document.getElementById('rejectAck').checked=false;document.getElementById('rejectConfirm').disabled=true;};
+
+var dmMode='pass';
+function openDecision(mode){
+  dmMode=mode;
+  var titles={pass:'✓ 审核通过 · 二次确认',submit:'提交审核 · 二次确认',
+              'return':'↩ 赔案退回 · 结构化原因'};
+  var leads={pass:'通过后写入占用流水与可回放审计轨迹；金额由确定性规则计算，不因人工点击改变。',
+             submit:'提交后进入结案支付节点；请确认必填项与理算结果已核对。',
+             'return':'退回必须给出结构化原因（差错类型 + ≥10 字说明），原因进入原处理人待办与审计轨迹。'};
+  document.getElementById('dmTitle').firstChild.nodeValue=titles[mode]+' ';
+  document.getElementById('dmLead').textContent=leads[mode];
+  document.getElementById('dmKind').value=titles[mode].replace(' · 二次确认','').replace(' · 结构化原因','');
+  document.getElementById('dmReason').value='';
+  document.getElementById('dmAck').checked=false;
+  document.getElementById('dmConfirm').disabled=true;
+  document.getElementById('mDecision').classList.add('show');
+}
+function confirmDecision(){
+  if(dmMode==='return' && document.getElementById('dmReason').value.trim().length<10){
+    toast('退回必须填写不少于 10 字的结构化原因');return;
+  }
+  var msg={pass:'✓ 审核已通过 · 占用流水与审计轨迹已写入（设计稿示意）',
+           submit:'✓ 已提交审核 · 进入结案支付（设计稿示意）',
+           'return':'↩ 已退回上一节点 · 原因随待办移交（设计稿示意）'}[dmMode];
+  toast(msg);document.getElementById('mDecision').classList.remove('show');
+}
+</script>
+
+</body>
+</html>

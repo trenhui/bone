@@ -27,6 +27,7 @@ import {
 import { AuthButton } from '@bone/ui';
 import { useConfirmAction } from '../hooks/useConfirmAction';
 import { PERMISSIONS } from '../constants/permissions';
+import { formatMoney } from '../services/money';
 import { ERROR_CODES } from '../constants/errorCodes';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -538,7 +539,7 @@ export function PlanConfigPage(): ReactElement {
                       title: '险种额度',
                       dataIndex: 'coverageLimit',
                       width: 140,
-                      render: (v: number) => (v > 0 ? `¥${v.toFixed(2)}` : '不限'),
+                      render: (v: number) => (v > 0 ? formatMoney(v) : '不限'),
                     },
                     {
                       title: '责任形式',
@@ -608,7 +609,7 @@ export function PlanConfigPage(): ReactElement {
               title: '计划额度',
               dataIndex: 'planLimit',
               width: 150,
-              render: (v: number) => (v > 0 ? `¥${v.toFixed(2)}` : '不限'),
+              render: (v: number) => (v > 0 ? formatMoney(v) : '不限'),
             },
             {
               title: '等待期',

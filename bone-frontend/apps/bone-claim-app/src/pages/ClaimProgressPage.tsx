@@ -18,6 +18,7 @@ import { PageHeader } from '../components/PageHeader';
 import { claimApi, type ClaimWithItemsProjection } from '../services/claimApi';
 import { claimStatusMeta } from '../services/claimStatus';
 import { resolveErrorCode } from '@bone/shared-utils';
+import { MoneyText } from '../components/Money';
 
 /**
  * 员工端 · 进度追踪（PRD §7.2「进度追踪」/ delivery/05 员工端查询进度）。
@@ -119,9 +120,9 @@ export function ClaimProgressPage(): ReactElement {
                 <Tag color={claimStatusMeta(head.status).color}>{claimStatusMeta(head.status).label}</Tag>
                 {head.externalStatus && <Tag>{head.externalStatus}</Tag>}
               </Descriptions.Item>
-              <Descriptions.Item label="申请金额">¥{Number(head.claimAmount).toFixed(2)}</Descriptions.Item>
+              <Descriptions.Item label="申请金额"><MoneyText value={head.claimAmount} /></Descriptions.Item>
               <Descriptions.Item label="核定金额">
-                {head.approvedAmount === null ? '待核定' : `¥${Number(head.approvedAmount).toFixed(2)}`}
+                <MoneyText value={head.approvedAmount} unknownText="待核定" />
               </Descriptions.Item>
               <Descriptions.Item label="受理时间">{head.createdAt}</Descriptions.Item>
               {/**
@@ -186,13 +187,13 @@ export function ClaimProgressPage(): ReactElement {
                     title: '金额',
                     dataIndex: 'itemAmount',
                     width: 120,
-                    render: (v: number | null) => (v === null ? '-' : `¥${Number(v).toFixed(2)}`),
+                    render: (v: number | null) => <MoneyText value={v} />,
                   },
                   {
                     title: '合理费用',
                     dataIndex: 'itemValidAmount',
                     width: 120,
-                    render: (v: number | null) => (v === null ? '-' : `¥${Number(v).toFixed(2)}`),
+                    render: (v: number | null) => <MoneyText value={v} />,
                   },
                 ]}
               />

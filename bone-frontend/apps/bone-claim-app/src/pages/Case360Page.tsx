@@ -1,20 +1,48 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import {
-  Alert, Button, Card, Descriptions, Empty, Input, Space, Spin, Tabs, Tag, Typography, message,
+  Alert, Button, Card, Descriptions, Empty, Input, Space, Spin, Table, Tabs, Tag, Typography, message,
 } from 'antd';
 import { ArrowLeftOutlined, LinkOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { claimApi } from '../services/claimApi';
-import type { ClaimWithItemsProjection } from '../services/types';
+import { claimSearchApi, type ClaimSearchHit } from '../services/aiFeedback';
+import type { ClaimWithItemsProjection, ItemCategory } from '../services/types';
 import { resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
 import { AiSuggestionCard } from '../components/AiSuggestionCard';
+import { MoneyText } from '../components/Money';
+import { formatMoney } from '../services/money';
+import { AsyncBoundary } from '../components/AsyncBoundary';
+import { claimStatusMeta } from '../services/claimStatus';
 import {
   CASE_TABS, CASE_TAB_META, buildCaseDeepLink, isSafeClaimId,
   parseCaseLocation, type CaseTab,
 } from '../workbench/caseDeepLinks';
 import { isEmbeddedCaseTab, renderCaseSection } from '../cases/caseSections';
 import { pushRecentCase } from '../workbench/recentCases';
+
+/** 费用类别中英文对照（与后端 ItemCategory 枚举对齐；未知值原样展示，不猜）。 */
+const ITEM_CATEGORY_LABEL: Record<ItemCategory, string> = {
+  DRUG: '药品',
+  SERVICE: '诊疗服务',
+  EXAM: '检查检验',
+  MATERIAL: '医用材料',
+};
+
+/** 时间展示：固定 zh-CN + 24 小时制，避免不同浏览器/系统区域设置导致同一时刻显示两样。 */
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+}
 
 /**
  * 案件 360 —— 一个 `claimId` 贯穿 8 个环节的单一 case record（hidden 路由）。
@@ -40,6 +68,11 @@ export function Case360Page(): ReactElement {
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [keyword, setKeyword] = useState('');
+  /** 关联历史案件：消费后端现成的跨键检索（含 insured_id_hash），不前端推断风险。 */
+  const [historyHits, setHistoryHits] = useState<ClaimSearchHit[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyReload, setHistoryReload] = useState(0);
 
   useEffect(() => {
     if (!claimId) {
@@ -102,6 +135,104 @@ export function Case360Page(): ReactElement {
 
   const head = rows[0];
 
+  /**
+   * 同被保人历史案件：只用后端已假名化的 insuredIdHash 检索。
+   * 后端检索规则要求关键词 2..64 字符，故长度不合法时保持空态而不是发必然 400 的请求。
+   * 不展示证件/姓名原值；matchedKey 是后端受控分类码，不是 PII。
+   */
+  useEffect(() => {
+    const hash = head?.insuredIdHash?.trim();
+    if (!hash || hash.length < 2 || hash.length > 64) {
+      setHistoryHits([]);
+      setHistoryLoading(false);
+      setHistoryError(null);
+      return;
+    }
+    let alive = true;
+    setHistoryLoading(true);
+    setHistoryError(null);
+    claimSearchApi.search(hash, 20)
+      .then((res) => {
+        if (!alive) return;
+        if (res?.code !== 200) {
+          setHistoryError(res?.message ?? '关联历史案件检索失败');
+          setHistoryHits([]);
+          return;
+        }
+        setHistoryHits((res.data ?? []).filter((h) => String(h.claimId) !== String(claimId)));
+      })
+      .catch((err) => {
+        if (!alive) return;
+        setHistoryError(resolveErrorMessage(err, '关联历史案件检索失败'));
+        setHistoryHits([]);
+      })
+      .finally(() => { if (alive) setHistoryLoading(false); });
+    return () => { alive = false; };
+  }, [head?.insuredIdHash, claimId, historyReload]);
+
+
+  /**
+   * 费用明细：后端按「每明细一行」扁平投影，无明细时 itemId 为 null。
+   * 金额一律走 MoneyText，缺值不伪装成 0。
+   */
+  const feeItems = useMemo(() => rows.filter((r) => r.itemId != null), [rows]);
+  const feeAmountSum = useMemo(
+    () => feeItems.reduce((sum, r) => sum + Number(r.itemAmount ?? 0), 0),
+    [feeItems],
+  );
+  const feeValidSum = useMemo(
+    () => feeItems.reduce((sum, r) => sum + Number(r.itemValidAmount ?? 0), 0),
+    [feeItems],
+  );
+  /** 是否至少有一行核定金额：全为 null 时合计必须显示「未核定」，不能合计成 ¥0.00。 */
+  const feeValidKnown = useMemo(() => feeItems.some((r) => r.itemValidAmount != null), [feeItems]);
+  /** 单次渲染只取一次「现在」，避免同一屏不同项跨秒判定不一致。 */
+  const now = Date.now();
+  const slaOverdue = head?.slaDueAt ? new Date(head.slaDueAt).getTime() < now : false;
+  const legalOverdue = head?.legalDueAt ? new Date(head.legalDueAt).getTime() < now : false;
+  const amountMismatch = head != null && feeItems.length > 0
+    && Math.abs(feeAmountSum - Number(head.claimAmount ?? 0)) > 0.01;
+  const validMismatch = head != null && head.approvedAmount != null && feeValidKnown
+    && Math.abs(feeValidSum - Number(head.approvedAmount)) > 0.01;
+
+  /**
+   * 待关注事项：只用后端已返回的事实，不推导、不估算。
+   *
+   * <p>核赔第一屏最需要的是「这单有什么坑」，而不是再抄一遍字段。这里覆盖三类高风险状态：
+   * 同意撤回（处理动作会被拒）、案件挂起（恢复前不可作业）、拒赔缺受控原因（审计断链）。
+   */
+  const attention = useMemo(() => {
+    const list: { tone: 'error' | 'warning' | 'info'; text: string }[] = [];
+    if (!head) return list;
+    if (head.consentWithdrawnFlag === 1) {
+      list.push({
+        tone: 'error',
+        text: '被保人已撤回个人信息处理同意：后端处理类动作将被拒绝（422），请先走合规处置，勿继续核赔。',
+      });
+    } else if (head.consentRecordId == null) {
+      list.push({
+        tone: 'info',
+        text: '未登记 PIPL 单独同意记录号：不等于未取得同意，但需核对渠道留痕后再处理敏感医疗信息。',
+      });
+    }
+    if (head.hangUpStatus > 0) {
+      list.push({ tone: 'warning', text: '案件处于挂起状态：恢复前不可继续常规作业。' });
+    }
+    if (head.status === 'REVIEWING' && !head.secondReviewerId) {
+      list.push({ tone: 'info', text: '案件已进入复核中，但尚未登记第二审核人（复核完成前不得结案）。' });
+    }
+    if (head.status === 'CLOSED_REJECTED' && !head.rejectType) {
+      list.push({ tone: 'warning', text: '已拒赔但缺少受控拒赔原因码：审计追溯会断链，请补录。' });
+    }
+    if (head.slaDueAt && new Date(head.slaDueAt).getTime() < Date.now()) {
+      list.push({ tone: 'warning', text: '已超过内部作业 SLA 截止时间：请优先处理，或按流程说明超时原因。' });
+    }
+    if (head.legalDueAt && new Date(head.legalDueAt).getTime() < Date.now()) {
+      list.push({ tone: 'error', text: '已超过法定时限：属监管风险事项，需立即上报并留痕。' });
+    }
+    return list;
+  }, [head]);
+
   if (!claimId) {
     return (
       <div style={{ padding: '16px 20px 32px' }}>
@@ -144,25 +275,219 @@ export function Case360Page(): ReactElement {
                   : '案件详情服务返回异常，请稍后重试；AI 结论卡仍会按 fail-closed 口径独立展示。'}
               />
             ) : null}
+            {attention.length > 0 ? (
+              <Alert
+                type={attention.some((a) => a.tone === 'error') ? 'error' : 'warning'}
+                showIcon
+                message="待关注事项"
+                description={(
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {attention.map((a) => (
+                      <li key={a.text}>{a.text}</li>
+                    ))}
+                  </ul>
+                )}
+              />
+            ) : null}
             {head ? (
               <Card size="small" title="案件概览（只读）">
                 <Descriptions size="small" column={2} bordered>
                   <Descriptions.Item label="案件号">{head.claimNo || '—'}</Descriptions.Item>
-                  <Descriptions.Item label="状态"><Tag>{head.status}</Tag></Descriptions.Item>
+                  <Descriptions.Item label="状态">
+                    <Tag color={claimStatusMeta(head.status).color}>{claimStatusMeta(head.status).label}</Tag>
+                  </Descriptions.Item>
                   <Descriptions.Item label="保单号">{head.policyNo || '—'}</Descriptions.Item>
                   <Descriptions.Item label="计划 / 版本">{head.planId || '—'} / {head.planVersion || '—'}</Descriptions.Item>
                   <Descriptions.Item label="案件类型">{head.claimType || '—'}</Descriptions.Item>
                   <Descriptions.Item label="来源渠道">{head.sourceChannel || '—'}</Descriptions.Item>
-                  <Descriptions.Item label="申请金额">{head.claimAmount ?? '—'}</Descriptions.Item>
-                  <Descriptions.Item label="核定金额">{head.approvedAmount ?? '—'}</Descriptions.Item>
-                  <Descriptions.Item label="创建时间" span={2}>{head.createdAt || '—'}</Descriptions.Item>
-                  <Descriptions.Item label="SLA" span={2}>
-                    <Typography.Text type="secondary">本版本后端未提供 SLA 字段，不做估算</Typography.Text>
+                  <Descriptions.Item label="出险时间">{head.outInsureTime || '—'}</Descriptions.Item>
+                  <Descriptions.Item label="事项阶段">{head.stage || '—'}</Descriptions.Item>
+                  <Descriptions.Item label="外部状态">{head.externalStatus || '—'}</Descriptions.Item>
+                  <Descriptions.Item label="同意状态">
+                    <Tag color={head.consentWithdrawnFlag === 1 ? 'red' : head.consentRecordId ? 'green' : 'default'}>
+                      {head.consentWithdrawnFlag === 1 ? '已撤回' : head.consentRecordId ? '已登记' : '未登记'}
+                    </Tag>
                   </Descriptions.Item>
-                  <Descriptions.Item label="费用明细" span={2}>{rows.length} 行</Descriptions.Item>
+                  <Descriptions.Item label="挂起状态">
+                    <Tag color={head.hangUpStatus > 0 ? 'orange' : 'default'}>
+                      {head.hangUpStatus > 0 ? '挂起中' : '正常'}
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="第二审核人">{head.secondReviewerId || '—'}</Descriptions.Item>
+                  <Descriptions.Item label="申请金额"><MoneyText value={head.claimAmount} /></Descriptions.Item>
+                  <Descriptions.Item label="核定金额">
+                    <MoneyText value={head.approvedAmount} unknownText="待核定" />
+                  </Descriptions.Item>
+                  {head.rejectType ? (
+                    <Descriptions.Item label="拒赔原因码" span={2}>
+                      {head.rejectType}
+                      {head.rejectComment ? ` · ${head.rejectComment}` : ''}
+                    </Descriptions.Item>
+                  ) : null}
+                  <Descriptions.Item label="创建时间" span={2}>{head.createdAt || '—'}</Descriptions.Item>
+                  <Descriptions.Item label="内部作业 SLA">
+                    {head.slaDueAt ? (
+                      <Space size={6} wrap>
+                        <span>{formatDateTime(head.slaDueAt)}</span>
+                        <Tag color={slaOverdue ? 'red' : 'green'}>{slaOverdue ? '已超期' : '在时限内'}</Tag>
+                        {head.remainingWorkHours != null ? (
+                          <Typography.Text type="secondary">
+                            剩余 {Number(head.remainingWorkHours).toFixed(1)} 工时
+                          </Typography.Text>
+                        ) : null}
+                        {head.slaRefreshedAt ? (
+                          <Typography.Text type="secondary">
+                            物化于 {formatDateTime(head.slaRefreshedAt)}
+                          </Typography.Text>
+                        ) : null}
+                      </Space>
+                    ) : (
+                      <Typography.Text type="secondary">未物化（刷新任务未产出，不做估算）</Typography.Text>
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="法定时限">
+                    {head.legalDueAt ? (
+                      <Space size={6} wrap>
+                        <span>{formatDateTime(head.legalDueAt)}</span>
+                        <Tag color={legalOverdue ? 'red' : 'green'}>{legalOverdue ? '已超期' : '在时限内'}</Tag>
+                      </Space>
+                    ) : (
+                      <Typography.Text type="secondary">未物化</Typography.Text>
+                    )}
+                  </Descriptions.Item>
                 </Descriptions>
               </Card>
             ) : null}
+            <Card size="small" title="关联历史案件（同被保人假名化 ID）">
+              <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                仅列示服务端按假名化 ID 命中的案件，不展示证件/姓名原值；风险判定以后端规则引擎为准，未命中不等于无风险。
+              </Typography.Text>
+              <AsyncBoundary
+                loading={historyLoading}
+                error={historyError}
+                empty={historyHits.length === 0}
+                emptyText="未发现同被保人历史案件（不等于无风险）"
+                onRetry={() => setHistoryReload((n) => n + 1)}
+              >
+                <Table<ClaimSearchHit>
+                  rowKey="claimId"
+                  size="small"
+                  pagination={false}
+                  dataSource={historyHits}
+                  columns={[
+                    {
+                      title: '案件号', dataIndex: 'claimNo',
+                      render: (v: string, h) => (
+                        <Button
+                          type="link"
+                          size="small"
+                          data-testid={`history-case-${h.claimId}`}
+                          onClick={() => {
+                            const link = buildCaseDeepLink(String(h.claimId));
+                            if (link) navigate(link);
+                          }}
+                        >{v || '—'}</Button>
+                      ),
+                    },
+                    {
+                      title: '状态', dataIndex: 'status',
+                      render: (v: string) => <Tag color={claimStatusMeta(v).color}>{claimStatusMeta(v).label}</Tag>,
+                    },
+                    { title: '阶段', dataIndex: 'stage', render: (v: string) => v || '—' },
+                    { title: '命中键', dataIndex: 'matchedKey', render: (v: string) => <Tag>{v || '—'}</Tag> },
+                    {
+                      title: '创建时间', dataIndex: 'createdAt',
+                      render: (v: string) => (v ? String(v).slice(0, 19).replace('T', ' ') : '—'),
+                    },
+                  ]}
+                />
+              </AsyncBoundary>
+            </Card>
+            <Card size="small" title={`费用明细（${feeItems.length} 行）`}>
+              {feeItems.length === 0 ? (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="后端未返回费用明细行（该案暂无 itemId）"
+                />
+              ) : (
+                <>
+                  {amountMismatch ? (
+                    <Alert
+                      type="warning"
+                      showIcon
+                      style={{ marginBottom: 12 }}
+                      message="明细金额合计与申请金额不一致"
+                      description={`明细合计 ${formatMoney(feeAmountSum)} vs 申请 ${formatMoney(head?.claimAmount)}，请核对录入或理算口径。`}
+                    />
+                  ) : null}
+                  {validMismatch ? (
+                    <Alert
+                      type="warning"
+                      showIcon
+                      style={{ marginBottom: 12 }}
+                      message="明细核定金额合计与核定金额不一致"
+                      description={`明细合计 ${formatMoney(feeValidSum)} vs 核定 ${formatMoney(head?.approvedAmount)}，请核对理算结果。`}
+                    />
+                  ) : null}
+                  <Table<ClaimWithItemsProjection>
+                    size="small"
+                    rowKey={(r) => String(r.itemId)}
+                    dataSource={feeItems}
+                    pagination={false}
+                    scroll={{ x: 820 }}
+                    columns={[
+                      { title: '费用项目', dataIndex: 'itemName', width: 180, render: (v: string | null) => v || '—' },
+                      { title: '编码', dataIndex: 'itemCode', width: 120, render: (v: string | null) => v || '—' },
+                      {
+                        title: '类别',
+                        dataIndex: 'itemCategory',
+                        width: 100,
+                        render: (v: ItemCategory | null) => (v ? ITEM_CATEGORY_LABEL[v] ?? v : '—'),
+                      },
+                      {
+                        title: '数量',
+                        dataIndex: 'itemQuantity',
+                        width: 80,
+                        align: 'right',
+                        render: (v: number | null) => (v == null ? '—' : v),
+                      },
+                      {
+                        title: '单价',
+                        dataIndex: 'itemUnitPrice',
+                        width: 120,
+                        align: 'right',
+                        render: (v: number | null) => <MoneyText value={v} />,
+                      },
+                      {
+                        title: '金额',
+                        dataIndex: 'itemAmount',
+                        width: 130,
+                        align: 'right',
+                        render: (v: number | null) => <MoneyText value={v} />,
+                      },
+                      {
+                        title: '核定金额',
+                        dataIndex: 'itemValidAmount',
+                        width: 140,
+                        align: 'right',
+                        render: (v: number | null) => <MoneyText value={v} unknownText="未核定" />,
+                      },
+                    ]}
+                    summary={() => (
+                      <Table.Summary.Row>
+                        <Table.Summary.Cell index={0} colSpan={5}>合计</Table.Summary.Cell>
+                        <Table.Summary.Cell index={1} align="right">
+                          <MoneyText value={feeAmountSum} />
+                        </Table.Summary.Cell>
+                        <Table.Summary.Cell index={2} align="right">
+                          <MoneyText value={feeValidKnown ? feeValidSum : null} unknownText="未核定" />
+                        </Table.Summary.Cell>
+                      </Table.Summary.Row>
+                    )}
+                  />
+                </>
+              )}
+            </Card>
             <AiSuggestionCard claimId={claimId} scene="case" />
           </Space>
         ),

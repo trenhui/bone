@@ -175,21 +175,13 @@ await context.route('**/api/v1/**', async (route) => {
   }
   if (path.includes('/ai-readiness/guard-check') && method === 'GET') {
     return json({
-      success: true,
-      code: 200,
-      data: {
-        wouldBlock: true,
-        blockers: ['autoApprove.enabled=false'],
-        scopeNote: 'deploymentGatesPassed 仅表示部署态闸门不再阻断，不构成放款许可',
-      },
+      wouldBlock: true,
+      blockers: ['autoApprove.enabled=false'],
+      scopeNote: 'deploymentGatesPassed 仅表示部署态闸门不再阻断，不构成放款许可',
     });
   }
   if (path.includes('/ai/feedback/summary') && method === 'GET') {
-    return json({
-      success: true,
-      code: 200,
-      data: { adopts: 50, rejects: 30, modifies: 20 },
-    });
+    return json({ adopts: 50, rejects: 30, modifies: 20, impressions: 100, dispositions: 100, windowDays: 30, serverSide: true });
   }
   if (path.includes('/clarity') && method === 'POST') return json({ success: true, code: 200, data: 1 });
   if (path.includes('/batch-decision') && method === 'POST') {
@@ -388,6 +380,7 @@ try {
 
   // ---------- 9. AI 治理逐案守门预演（本轮新增；wouldBlock=true 显示拦截 + scopeNote 原样） ----------
   await page.goto(`${APP}/#/ai-governance`, { waitUntil: 'domcontentloaded' });
+  await page.keyboard.press('Escape');
   await page.getByText('逐案守门预演', { exact: false }).first().waitFor({ timeout: 12000 }).catch(() => {});
   const claimInput = page.locator('.ant-card').filter({ hasText: '逐案守门预演' }).locator('input').first();
   if (await claimInput.count() > 0) {

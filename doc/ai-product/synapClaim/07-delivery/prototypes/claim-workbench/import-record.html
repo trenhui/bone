@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>导入记录 · TPA</title>
+<style>
+  :root{
+    --brand:#1f6feb; --brand-soft:#eaf2ff; --bg:#f4f6fa; --card:#fff;
+    --line:#e7ebf2; --line-strong:#d7dfeb; --txt:#1b2436; --txt-2:#5b667d; --txt-3:#98a2b6;
+    --green:#12a150; --green-bg:#e9f8ef; --amber:#e8891b; --amber-bg:#fff4e6;
+    --red:#d92d20; --red-bg:#fef0ee; --blue-bg:#eef4ff; --purple:#7a5af8; --purple-bg:#f1edff;
+    --radius:12px; --shadow:0 1px 2px rgba(22,35,60,.04),0 6px 20px rgba(22,35,60,.05);
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;
+    padding:0 24px;gap:14px;position:sticky;top:0;z-index:50}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .logo .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#1f6feb,#7a5af8);
+    color:#fff;display:grid;place-items:center;font-size:14px;font-weight:800}
+  .crumb{color:var(--txt-3);font-size:13px;display:flex;gap:8px;align-items:center;margin-left:8px}
+  .crumb b{color:var(--txt-2);font-weight:500}
+  .crumb .sep{color:#c7d0de}
+  .topbar .right{margin-left:auto;display:flex;align-items:center;gap:18px}
+  .env{font-size:12px;color:var(--amber);background:var(--amber-bg);padding:4px 10px;border-radius:20px;font-weight:600}
+  .avatar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt-2)}
+  .avatar .dot{width:30px;height:30px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:700}
+  .demo-nav{display:flex;align-items:center;gap:6px;margin-left:14px;position:relative}
+  .demo-nav .dn-btn{font-size:12px;color:var(--txt-2);border:1px solid var(--line-strong);background:#fff;
+    padding:6px 11px;border-radius:7px;cursor:pointer;font-weight:600;font-family:inherit}
+  .demo-nav .dn-btn:hover{border-color:var(--brand);color:var(--brand)}
+  .demo-nav .dn-menu{display:none;position:absolute;top:34px;left:0;background:#fff;border:1px solid var(--line);
+    border-radius:10px;box-shadow:0 12px 32px rgba(16,24,40,.14);min-width:200px;padding:6px;z-index:60}
+  .demo-nav.open .dn-menu{display:block}
+  .demo-nav .dn-menu a{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;font-size:13px;color:var(--txt-2)}
+  .demo-nav .dn-menu a:hover{background:var(--bg)}
+  .demo-nav .dn-menu a.cur{background:var(--brand-soft);color:var(--brand);font-weight:700}
+  .demo-nav .dn-menu a .ic{width:18px;text-align:center}
+  .demo-nav .dn-menu .cur-tag{margin-left:auto;font-size:10px;color:var(--brand)}
+  .btn{border:1px solid var(--line-strong);background:#fff;color:var(--txt);padding:8px 15px;border-radius:7px;
+    font-size:13px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;font-family:inherit}
+  .btn:hover{border-color:var(--brand);color:var(--brand)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{background:#1859c4}
+  .btn.link{border:none;background:none;color:var(--brand);padding:4px 6px;font-size:12.5px}
+  .btn.link:hover{text-decoration:underline}
+
+  .wrap{max-width:1500px;margin:0 auto;padding:22px 24px 60px}
+  .pagehead{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .pagehead h1{font-size:21px;font-weight:700}
+  .pagehead .sub{font-size:12.5px;color:var(--txt-3);margin-top:6px}
+  .pagehead .ops{margin-left:auto;display:flex;gap:9px}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:15px 18px;box-shadow:var(--shadow)}
+  .stat .l{font-size:12px;color:var(--txt-3)}
+  .stat .v{font-size:25px;font-weight:750;margin-top:6px;letter-spacing:-.5px}
+  .stat .v.g{color:var(--green)} .stat .v.r{color:var(--red)} .stat .v.a{color:var(--amber)}
+  .stat .s{font-size:11px;color:var(--txt-3);margin-top:3px}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px}
+  .filter{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:15px 18px;border-bottom:1px solid var(--line)}
+  .filter .fi{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--txt-2)}
+  .filter select,.filter input{height:32px;border:1px solid var(--line-strong);border-radius:6px;padding:0 9px;font-size:12.5px;font-family:inherit;color:var(--txt)}
+  .filter .sp{flex:1}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;padding:11px 14px;background:#f7f9fc;color:var(--txt-2);font-weight:600;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:11px 14px;border-bottom:1px solid var(--line)}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#fafcff}
+  .mono{font-family:var(--mono);font-size:11.5px}
+  .st{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap}
+  .st.ok{background:var(--green-bg);color:var(--green)}
+  .st.fail{background:var(--red-bg);color:var(--red)}
+  .st.part{background:var(--amber-bg);color:var(--amber)}
+  .st.run{background:var(--blue-bg);color:var(--brand)}
+  .num{font-variant-numeric:tabular-nums;font-weight:600}
+  .bar{height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:5px;min-width:80px}
+  .bar i{display:block;height:100%;border-radius:3px}
+  .bar i.g{background:var(--green)} .bar i.r{background:var(--red)}
+  .err-link{color:var(--red);font-weight:600;cursor:pointer}
+  .err-link:hover{text-decoration:underline}
+
+  /* 错误明细 drawer */
+  .drawer-mask{position:fixed;inset:0;background:rgba(16,24,40,.36);z-index:90;display:none}
+  .drawer-mask.show{display:block}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:920px;max-width:95vw;background:#fff;z-index:100;
+    box-shadow:-16px 0 48px rgba(16,24,40,.18);transform:translateX(102%);transition:transform .25s;display:flex;flex-direction:column}
+  .drawer.show{transform:translateX(0)}
+  .dr-h{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+  .dr-h h2{font-size:17px;font-weight:700}
+  .dr-h .x{margin-left:auto;cursor:pointer;color:var(--txt-3);font-size:22px}
+  .dr-b{padding:18px 22px;overflow-y:auto;flex:1}
+  .batch-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+  .bm{background:#fbfcfe;border:1px solid var(--line);border-radius:9px;padding:11px 13px}
+  .bm .l{font-size:11px;color:var(--txt-3)}
+  .bm .v{font-size:14px;font-weight:700;margin-top:3px}
+  .err-tabs{display:flex;gap:6px;margin-bottom:12px}
+  .err-tab{padding:6px 13px;border:1px solid var(--line-strong);border-radius:7px;font-size:12.5px;color:var(--txt-2);cursor:pointer;font-weight:600}
+  .err-tab.active{background:var(--red);border-color:var(--red);color:#fff}
+  .err-table th{background:var(--red-bg);color:#8f2018}
+  .err-table tr.bad-row{background:#fff8f7}
+  .err-table tr.bad-row:hover{background:#fff2f0}
+  .err-cell{color:var(--red);position:relative}
+  .err-cell .em{background:#ffe3df;border-radius:3px;padding:1px 3px}
+  .reason{font-size:11.5px;color:#8f2018}
+  .dr-f{padding:13px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;background:#fcfdff}
+  .hint{font-size:11.5px;color:var(--txt-3);margin-top:10px;line-height:1.6}
+  .toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#1b2436;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;z-index:200;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1}
+  @media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}.batch-meta{grid-template-columns:repeat(2,1fr)}.demo-nav{display:none}}
+
+  /* ===== UX assist: help + command palette + feedback ===== */
+  .ux-fab{position:fixed;right:22px;bottom:22px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line-strong);
+    background:#fff;color:var(--brand);font-size:19px;font-weight:700;cursor:pointer;box-shadow:0 4px 18px rgba(22,35,60,.14);
+    z-index:120;display:grid;place-items:center;transition:.18s}
+  .ux-fab:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(31,111,235,.25);background:var(--brand);color:#fff}
+  .ux-mask{position:fixed;inset:0;background:rgba(20,28,45,.42);z-index:300;display:none}
+  .ux-mask.show{display:block}
+  .ux-drawer{position:fixed;right:0;top:0;bottom:0;width:420px;max-width:92vw;background:#fff;z-index:310;
+    box-shadow:-8px 0 30px rgba(22,35,60,.16);transform:translateX(105%);transition:transform .24s ease;
+    display:flex;flex-direction:column}
+  .ux-drawer.show{transform:translateX(0)}
+  .ux-dh{padding:20px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .ux-dh .ic{width:32px;height:32px;border-radius:9px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:800}
+  .ux-dh b{font-size:16px}
+  .ux-dh .x{margin-left:auto;cursor:pointer;color:var(--txt-3);font-size:22px;line-height:1;border:0;background:none}
+  .ux-db{padding:18px 22px;overflow:auto;flex:1}
+  .ux-lead{background:var(--brand-soft);border:1px solid #d3e3ff;color:#1e4e9c;border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.65;margin-bottom:18px}
+  .ux-sec{font-size:12px;color:var(--txt-3);font-weight:700;letter-spacing:.06em;margin:4px 0 11px}
+  .ux-step{display:flex;gap:11px;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .ux-step:last-child{border-bottom:0}
+  .ux-step .n{flex:0 0 22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;margin-top:1px}
+  .ux-step .c b{display:block;font-size:13.5px;margin-bottom:2px}
+  .ux-step .c span{font-size:12.5px;color:var(--txt-2);line-height:1.6}
+  .ux-tipbox{margin-top:20px;background:var(--amber-bg);border:1px solid #f7dcb5;border-radius:10px;padding:12px 14px}
+  .ux-tipbox .ux-sec{color:#a25b06;margin-top:0}
+  .ux-tipbox div{font-size:12.5px;color:#7a4a08;line-height:1.7;padding:3px 0}
+  .ux-df{padding:13px 22px;border-top:1px solid var(--line);font-size:12px;color:var(--txt-3);display:flex;align-items:center;gap:8px}
+  .ux-kbd{display:inline-block;background:#f4f6fa;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;
+    padding:1px 6px;font-family:var(--mono);font-size:11px;color:var(--txt-2)}
+  /* command palette */
+  .ux-cmd{position:fixed;left:50%;top:14%;transform:translate(-50%,-12px);width:min(560px,92vw);background:#fff;z-index:310;
+    border-radius:14px;box-shadow:0 20px 60px rgba(22,35,60,.24);overflow:hidden;opacity:0;transition:.16s;pointer-events:none}
+  .ux-mask.cmd-open~.ux-cmd,.ux-cmd.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .ux-cmd-in{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .ux-cmd-in span{color:var(--txt-3);font-size:18px}
+  .ux-cmd-in input{flex:1;border:0;outline:0;font-size:15px;color:var(--txt);background:transparent}
+  .ux-cmd-list{max-height:360px;overflow:auto;padding:8px}
+  .ux-cmd-grp{font-size:11px;color:var(--txt-3);font-weight:700;padding:8px 10px 4px;letter-spacing:.05em}
+  .ux-cmd-item{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:8px;cursor:pointer;font-size:13.5px}
+  .ux-cmd-item:hover,.ux-cmd-item.sel{background:var(--brand-soft)}
+  .ux-cmd-item .ic{width:26px;height:26px;border-radius:7px;background:#f4f6fa;color:var(--brand);display:grid;place-items:center;font-size:13px}
+  .ux-cmd-item .hint{margin-left:auto;font-size:11px;color:var(--txt-3)}
+  .ux-cmd-empty{padding:28px;text-align:center;color:var(--txt-3);font-size:13px}
+  /* inline feedback toast (fallback) */
+  .ux-toast{position:fixed;left:50%;bottom:76px;transform:translate(-50%,12px);background:#1b2436;color:#fff;padding:10px 18px;
+    border-radius:9px;font-size:13px;z-index:400;opacity:0;transition:.2s;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+  .ux-toast.show{opacity:1;transform:translate(-50%,0)}
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo"><span class="mark">P</span> TPA <span style="font-weight:400;color:var(--txt-3);font-size:12px">理赔运营平台</span></div>
+  <div class="crumb"><span>理赔管理</span><span class="sep">/</span><span>数据导入</span><span class="sep">/</span><b>导入记录</b></div>
+  <div class="demo-nav" id="demoNav">
+    <button class="dn-btn" onclick="document.getElementById('demoNav').classList.toggle('open')">◫ 设计稿导航 ▾</button>
+    <div class="dn-menu">
+      <a href="claim-manage.html"><span class="ic">▤</span>赔案管理列表</a>
+      <a href="claim-detail.html"><span class="ic">▣</span>理赔审核详情</a>
+      <a href="claim-image-detail.html"><span class="ic">▧</span>赔案影像详情</a>
+      <a href="claim-rule-config.html"><span class="ic">∑</span>理算规则配置</a>
+      <a href="job-config.html"><span class="ic">⚙</span>主体专属作业配置</a>
+      <a href="import-record.html" class="cur"><span class="ic">⇩</span>导入记录<span class="cur-tag">当前</span></a>
+      <a href="customer-journey.html"><span class="ic">▣</span>客户旅程（小程序）<span class="cur-tag">NEW</span></a>
+      <a href="form-config.html"><span class="ic">▤</span>表单配置中心<span class="cur-tag">NEW</span></a>
+      <a href="evaluation-report.html"><span class="ic">◫</span>评测报告</a>
+    </div>
+  </div>
+  <div class="right">
+    <span class="env">测试环境</span>
+    <div class="avatar"><span class="dot">admin</span><span>系统管理员</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="pagehead">
+    <div>
+      <h1>导入记录</h1>
+      <div class="sub">批量导入赔案 / 发票 / 人员清单 · 支持逐行定位错误、下载错误报告并回填修正后重新导入</div>
+    </div>
+    <div class="ops">
+      <button class="btn" onclick="toast('已下载导入模板')">下载模板</button>
+      <button class="btn primary" onclick="toast('请选择本地文件（交互示意）')">+ 新建导入</button>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="l">导入批次总数</div><div class="v">28</div><div class="s">近 30 天</div></div>
+    <div class="stat"><div class="l">全部成功</div><div class="v g">19</div><div class="s">成功率 67.9%</div></div>
+    <div class="stat"><div class="l">部分失败</div><div class="v a">6</div><div class="s">含错误行待修正</div></div>
+    <div class="stat"><div class="l">全部失败</div><div class="v r">3</div><div class="s">需检查模板格式</div></div>
+  </div>
+
+  <div class="card">
+    <div class="filter">
+      <div class="fi">导入类型 <select><option>全部</option><option>赔案导入</option><option>发票导入</option><option>人员清单</option></select></div>
+      <div class="fi">状态 <select><option>全部</option><option>全部成功</option><option>部分失败</option><option>全部失败</option><option>导入中</option></select></div>
+      <div class="fi">导入人 <input placeholder="姓名 / 账号"></div>
+      <div class="fi">时间 <input placeholder="开始 ~ 结束"></div>
+      <span class="sp"></span>
+      <button class="btn">重置</button><button class="btn primary">搜索</button>
+    </div>
+    <table>
+      <thead><tr><th>批次号</th><th>导入类型</th><th>文件名</th><th>导入人</th><th>导入时间</th><th>总行数</th><th>结果</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="mono">BATCH-20261121-0031</td><td>发票导入</td><td class="mono">示例财险发票_1121.xlsx</td><td>张某</td><td>2026-11-21 14:32</td>
+          <td class="num">120</td>
+          <td><span class="st part">● 部分失败 · 7 行错误</span><div class="bar"><i class="g" style="width:94%"></i></div></td>
+          <td><button class="btn link" onclick="openDrawer('BATCH-20261121-0031','发票导入','示例财险发票_1121.xlsx','张某','2026-11-21 14:32',120,113,7)">查看错误明细</button><button class="btn link" onclick="toast('已下载错误报告')">下载报告</button></td>
+        </tr>
+        <tr>
+          <td class="mono">BATCH-20261121-0030</td><td>赔案导入</td><td class="mono">团险赔案批次.xlsx</td><td>李强</td><td>2026-11-21 11:08</td>
+          <td class="num">45</td>
+          <td><span class="st ok">✓ 全部成功</span><div class="bar"><i class="g" style="width:100%"></i></div></td>
+          <td><button class="btn link" onclick="toast('全部成功，无错误明细')">查看详情</button><button class="btn link" onclick="toast('已下载导入结果')">下载报告</button></td>
+        </tr>
+        <tr>
+          <td class="mono">BATCH-20261120-0029</td><td>人员清单</td><td class="mono">团险签收名单.xlsx</td><td>王某</td><td>2026-11-20 16:47</td>
+          <td class="num">320</td>
+          <td><span class="st fail">✕ 全部失败 · 模板列不匹配</span><div class="bar"><i class="r" style="width:100%"></i></div></td>
+          <td><button class="btn link" onclick="openDrawer('BATCH-20261120-0029','人员清单','团险签收名单.xlsx','王某','2026-11-20 16:47',320,0,320)">查看错误明细</button><button class="btn link" onclick="toast('已下载错误报告')">下载报告</button></td>
+        </tr>
+        <tr>
+          <td class="mono">BATCH-20261120-0028</td><td>发票导入</td><td class="mono">示例财险发票_1120.xlsx</td><td>张某</td><td>2026-11-20 10:15</td>
+          <td class="num">86</td>
+          <td><span class="st part">● 部分失败 · 3 行错误</span><div class="bar"><i class="g" style="width:96%"></i></div></td>
+          <td><button class="btn link" onclick="openDrawer('BATCH-20261120-0028','发票导入','示例财险发票_1120.xlsx','张某','2026-11-20 10:15',86,83,3)">查看错误明细</button><button class="btn link" onclick="toast('已下载错误报告')">下载报告</button></td>
+        </tr>
+        <tr>
+          <td class="mono">BATCH-20261119-0027</td><td>赔案导入</td><td class="mono">批量报案_1119.xlsx</td><td>陈静</td><td>2026-11-19 15:22</td>
+          <td class="num">210</td>
+          <td><span class="st ok">✓ 全部成功</span><div class="bar"><i class="g" style="width:100%"></i></div></td>
+          <td><button class="btn link" onclick="toast('全部成功，无错误明细')">查看详情</button><button class="btn link" onclick="toast('已下载导入结果')">下载报告</button></td>
+        </tr>
+        <tr>
+          <td class="mono">BATCH-20261118-0026</td><td>人员清单</td><td class="mono">VIP客户清单.xlsx</td><td>李强</td><td>2026-11-18 09:40</td>
+          <td class="num">58</td>
+          <td><span class="st run">◌ 导入中 · 45/58</span><div class="bar"><i class="g" style="width:78%"></i></div></td>
+          <td><button class="btn link" onclick="toast('导入进行中，请稍后刷新')">查看进度</button><button class="btn link" disabled>下载报告</button></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--txt-2)">
+      <span>共 28 条记录</span><span class="sp" style="flex:1"></span><button class="btn" disabled>上一页</button><span>1 / 3</span><button class="btn">下一页</button>
+    </div>
+  </div>
+</div>
+
+<!-- 错误明细抽屉：逐行定位 -->
+<div class="drawer-mask" id="drMask" onclick="if(event.target===this)closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="dr-h"><h2>导入错误明细</h2><span class="badge mono" id="drBatch" style="font-size:12px;color:var(--brand);background:var(--brand-soft);padding:3px 10px;border-radius:6px"></span><span class="x" onclick="closeDrawer()">×</span></div>
+  <div class="dr-b">
+    <div class="batch-meta">
+      <div class="bm"><div class="l">导入类型</div><div class="v" id="drType"></div></div>
+      <div class="bm"><div class="l">文件 / 导入人</div><div class="v" id="drFile" style="font-size:12px"></div></div>
+      <div class="bm"><div class="l">成功 / 总行数</div><div class="v" id="drCount" style="color:var(--green)"></div></div>
+      <div class="bm"><div class="l">错误行数</div><div class="v" id="drErr" style="color:var(--red)"></div></div>
+    </div>
+    <div class="err-tabs">
+      <div class="err-tab active" id="et-all" onclick="filterErr('all')">全部错误</div>
+      <div class="err-tab" id="et-fmt" onclick="filterErr('fmt')">格式错误</div>
+      <div class="err-tab" id="et-dup" onclick="filterErr('dup')">重复数据</div>
+      <div class="err-tab" id="et-ref" onclick="filterErr('ref')">引用不存在</div>
+    </div>
+    <table class="err-table">
+      <thead><tr><th style="width:52px">行号</th><th>发票号</th><th>出险人</th><th>发票金额</th><th>开票日期</th><th>错误原因</th><th style="width:74px">操作</th></tr></thead>
+      <tbody id="errBody">
+        <tr class="bad-row" data-t="fmt"><td class="num">第 6 行</td><td class="mono err-cell"><span class="em">99000000000000000004</span></td><td>唐某</td><td class="num">1,280.00</td><td>2026-06-05</td><td class="reason">发票号校验失败：应为 20 位数字，当前 20 位但含非法前缀</td><td><button class="btn link" onclick="toast('已定位到源表第 6 行')">定位源行</button></td></tr>
+        <tr class="bad-row" data-t="dup"><td class="num">第 14 行</td><td class="mono err-cell"><span class="em">99000000000000000005</span></td><td>李某</td><td class="num">3,280.50</td><td>2026-06-03</td><td class="reason">重复发票：与第 9 行发票号重复，且已存在于赔案 900000000002</td><td><button class="btn link" onclick="toast('已定位到源表第 14 行')">定位源行</button></td></tr>
+        <tr class="bad-row" data-t="ref"><td class="num">第 27 行</td><td class="mono err-cell"><span class="em">99000000000000000006</span></td><td class="err-cell"><span class="em">赵某</span></td><td class="num">560.00</td><td>2026-06-01</td><td class="reason">出险人身份证号在保单 TEST0000000000000052 下不存在，请核对被保清单</td><td><button class="btn link" onclick="toast('已定位到源表第 27 行')">定位源行</button></td></tr>
+        <tr class="bad-row" data-t="fmt"><td class="num">第 43 行</td><td class="mono err-cell"><span class="em">99000000000000000007</span></td><td>王某</td><td class="num err-cell"><span class="em">-80.00</span></td><td>2026-05-30</td><td class="reason">金额非法：发票金额不能为负数，请核对红冲发票处理方式</td><td><button class="btn link" onclick="toast('已定位到源表第 43 行')">定位源行</button></td></tr>
+        <tr class="bad-row" data-t="fmt"><td class="num">第 68 行</td><td class="mono err-cell"><span class="em">99000000000000000008</span></td><td>刘某</td><td class="num">990.00</td><td class="err-cell"><span class="em">2026-13-45</span></td><td class="reason">日期格式错误：2026-13-45 不是合法日期，应为 yyyy-MM-dd</td><td><button class="btn link" onclick="toast('已定位到源表第 68 行')">定位源行</button></td></tr>
+        <tr class="bad-row" data-t="dup"><td class="num">第 91 行</td><td class="mono err-cell"><span class="em">99000000000000000009</span></td><td>孙某</td><td class="num">2,150.00</td><td>2026-05-22</td><td class="reason">重复发票：本批次内第 87 行已使用同一发票号</td><td><button class="btn link" onclick="toast('已定位到源表第 91 行')">定位源行</button></td></tr>
+        <tr class="bad-row" data-t="ref"><td class="num">第 108 行</td><td class="mono err-cell"><span class="em">99000000000000000010</span></td><td>周某</td><td class="num">430.00</td><td>2026-05-18</td><td class="reason">医院等级不在配置范围内：当前"社区诊所"，专属配置仅允许二级及以上</td><td><button class="btn link" onclick="toast('已定位到源表第 108 行')">定位源行</button></td></tr>
+      </tbody>
+    </table>
+    <div class="hint">补强说明：原导入记录页只展示批次级结果，失败时用户无法知道"哪一行错了、错在哪"。本稿新增逐行错误定位（行号 + 错误字段高亮 + 具体原因 + 定位源行），并支持按错误类型筛选与下载错误报告回填修正。</div>
+  </div>
+  <div class="dr-f">
+    <button class="btn" onclick="toast('已下载错误报告（含 7 行明细）')">下载错误报告</button>
+    <button class="btn primary" onclick="toast('已生成可修正的 Excel 副本（交互示意）')">下载可修正副本</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div style="text-align:center;color:var(--txt-3);font-size:12px;padding:0 0 30px">TPA 理赔运营平台 · 导入记录设计稿 · 逐行错误定位为 P2 补强建议落地</div>
+
+<script>
+  function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+  function openDrawer(batch,type,file,user,time,total,ok,err){
+    document.getElementById('drBatch').textContent=batch;
+    document.getElementById('drType').textContent=type;
+    document.getElementById('drFile').textContent=file+' · '+user;
+    document.getElementById('drCount').textContent=ok+' / '+total;
+    document.getElementById('drErr').textContent=err+' 行';
+    document.getElementById('drMask').classList.add('show');
+    document.getElementById('drawer').classList.add('show');
+  }
+  function closeDrawer(){
+    document.getElementById('drMask').classList.remove('show');
+    document.getElementById('drawer').classList.remove('show');
+  }
+  function filterErr(t){
+    document.querySelectorAll('.err-tab').forEach(x=>x.classList.remove('active'));
+    document.getElementById('et-'+t).classList.add('active');
+    document.querySelectorAll('#errBody tr').forEach(r=>{
+      r.style.display=(t==='all'||r.dataset.t===t)?'':'none';
+    });
+  }
+  document.addEventListener('click',e=>{const dn=document.getElementById('demoNav');if(dn&&!dn.contains(e.target))dn.classList.remove('open');});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer();});
+</script>
+<button class="ux-fab" id="uxFab" title="操作指引 / 快捷命令 (Ctrl+K)" onclick="uxOpenHelp()">?</button>
+<div class="ux-mask" id="uxMask" onclick="uxCloseAll()"></div>
+<div class="ux-drawer" id="uxDrawer">
+  <div class="ux-dh"><span class="ic">?</span><b>导入记录 · 快速上手</b><button class="x" onclick="uxCloseAll()">×</button></div>
+  <div class="ux-db">
+    <div class="ux-lead">这是一份可交互设计稿。按下面 5 步走一遍，就能完成本页核心操作；所有数据来自测试环境真实赔案。</div>
+    <div class="ux-sec">操作五步走</div><div class="ux-step"><span class="n">1</span><div class="c"><b>看批次</b><span>顶部 4 张统计卡看导入总览；下方表格按批次列出成功/失败条数。</span></div></div><div class="ux-step"><span class="n">2</span><div class="c"><b>找失败</b><span>筛「状态=部分失败/失败」定位问题批次，进度条显示成功比例。</span></div></div><div class="ux-step"><span class="n">3</span><div class="c"><b>查明细</b><span>点批次行的「查看错误」打开右侧抽屉，逐行看错误原因。</span></div></div><div class="ux-step"><span class="n">4</span><div class="c"><b>快定位</b><span>错误表格里点「定位源行」直达 Excel 对应行；错误字段已标红。</span></div></div><div class="ux-step"><span class="n">5</span><div class="c"><b>修完重传</b><span>按类型筛选错误、下载错误报告，修好后重新上传该批次。</span></div></div>
+    <div class="ux-tipbox"><div class="ux-sec">易错提醒</div><div>· 抽屉支持按错误类型筛选，先解决量最大的一类。</div><div>· 导入模板字段与线上 schema 一致，别改列名。</div></div>
+  </div>
+  <div class="ux-df"><span class="ux-kbd">Esc</span> 关闭 · <span class="ux-kbd">Ctrl/⌘ + K</span> 快捷命令</div>
+</div>
+<div class="ux-cmd" id="uxCmd">
+  <div class="ux-cmd-in"><span>⌕</span><input id="uxCmdInput" placeholder="输入页面名或操作，如「影像」「批量拒赔」…" oninput="uxCmdRender()" onkeydown="uxCmdKey(event)"></div>
+  <div class="ux-cmd-list" id="uxCmdList"></div>
+</div>
+<div class="ux-toast" id="uxToast"></div>
+
+<script>
+(function(){
+  if(window.__uxInjected) return; window.__uxInjected=true;
+  var mask=document.getElementById('uxMask'),drawer=document.getElementById('uxDrawer'),cmd=document.getElementById('uxCmd'),inp=document.getElementById('uxCmdInput');
+  window.uxOpenHelp=function(){mask.classList.add('show');drawer.classList.add('show');};
+  window.uxCloseAll=function(){mask.classList.remove('show','cmd-open');drawer.classList.remove('show');cmd.classList.remove('show');};
+  window.uxOpenCmd=function(){mask.classList.add('show','cmd-open');cmd.classList.add('show');inp.value='';uxCmdRender();setTimeout(function(){inp.focus();},30);};
+  var items=[['claim-manage.html','▤','赔案管理列表','列表'],['claim-detail.html','▣','理赔审核详情','详情'],['claim-image-detail.html','▧','赔案影像详情','影像'],['claim-rule-config.html','∑','理算规则配置','规则'],['job-config.html','⚙','主体专属作业配置','配置'],['import-record.html','⇩','导入记录','导入'],['customer-journey.html','▣','客户旅程（小程序）','客户'],['form-config.html','▤','表单配置中心','表单'],['evaluation-report.html','◫','评测报告','评测']];
+  var sel=0,shown=[];
+  window.uxCmdRender=function(){
+    var q=(inp.value||'').trim().toLowerCase();
+    shown=items.filter(function(x){return !q||x[2].toLowerCase().indexOf(q)>=0||x[3].indexOf(q)>=0;});
+    if(sel>=shown.length)sel=0;
+    var h='<div class="ux-cmd-grp">跳转页面</div>';
+    if(!shown.length) h+='<div class="ux-cmd-empty">没有匹配项</div>';
+    shown.forEach(function(x,i){
+      h+='<a class="ux-cmd-item'+(i===sel?' sel':'')+'" href="'+x[0]+'"><span class="ic">'+x[1]+'</span>'+x[2]+'<span class="hint">'+x[3]+'</span></a>';
+    });
+    document.getElementById('uxCmdList').innerHTML=h;
+  };
+  window.uxCmdKey=function(e){
+    if(e.key==='ArrowDown'){e.preventDefault();sel=Math.min(sel+1,shown.length-1);uxCmdRender();}
+    else if(e.key==='ArrowUp'){e.preventDefault();sel=Math.max(sel-1,0);uxCmdRender();}
+    else if(e.key==='Enter'&&shown[sel]){location.href=shown[sel][0];}
+  };
+  document.addEventListener('keydown',function(e){
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();uxOpenCmd();}
+    if(e.key==='Escape')uxCloseAll();
+  });
+  if(typeof window.toast!=='function'){
+    var t=document.getElementById('uxToast'),timer;
+    window.toast=function(msg){if(!t)return;t.textContent=msg;t.classList.add('show');clearTimeout(timer);timer=setTimeout(function(){t.classList.remove('show');},1800);};
+  }
+})();
+</script>
+
+<div style="padding:12px 24px;color:#888;font-size:12px;text-align:center;border-top:1px solid #eee;margin-top:24px;">TPA 理赔运营平台 · 演示数据已脱敏 · 非真实客户信息</div>
+
+</body>
+</html>

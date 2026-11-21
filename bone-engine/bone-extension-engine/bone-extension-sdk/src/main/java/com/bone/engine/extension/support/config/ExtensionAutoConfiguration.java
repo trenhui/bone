@@ -1,6 +1,7 @@
 package com.bone.engine.extension.support.config;
 
 import com.alibaba.nacos.api.config.ConfigService;
+import com.bone.core.context.RequestContextLifecycle;
 import com.bone.engine.extension.api.annotation.EnableExtensionPoints;
 import com.bone.engine.extension.api.spi.ExtensionPointRouter;
 import com.bone.engine.extension.api.spi.ExtensionRepository;
@@ -228,5 +229,11 @@ public class ExtensionAutoConfiguration implements ImportAware {
       ExtensionAlarmService alarmService,
       ExtensionProperties properties) {
     return new ExtensionMetricsAlarm(metricsCollector, alarmService, properties);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public RequestContextLifecycle extensionRequestContextLifecycle() {
+    return new com.bone.engine.extension.support.context.ExtensionRequestContextLifecycle();
   }
 }

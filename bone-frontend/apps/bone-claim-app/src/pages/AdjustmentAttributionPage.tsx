@@ -16,6 +16,7 @@ import adjustSchema from '../schemas/adjust-attribution.ui-schema.json';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { AuthButton } from '@bone/ui';
 import { PERMISSIONS } from '../constants/permissions';
+import { formatMoney } from '../services/money';
 
 /**
  * 理算归因页（synapClaim A6，只读展示）—— **由 UI Schema JSON 真正驱动**。
@@ -132,7 +133,7 @@ function summarize(lines: AdjustmentLine[]): AttributionSummary {
   );
 }
 
-const money = (v: number): string => `¥${v.toFixed(2)}`;
+const money = (v: number): string => formatMoney(v);
 
 export interface CasePageProps {
   /** 案件 360 内嵌时由 Tab 传入 claimId；传入即进入「无壳内容形态」。 */

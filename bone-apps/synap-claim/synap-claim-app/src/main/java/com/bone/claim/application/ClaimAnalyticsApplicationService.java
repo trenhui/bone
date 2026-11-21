@@ -85,7 +85,7 @@ public class ClaimAnalyticsApplicationService {
     // 领域投影 → 毫秒样本（仓储不返回裸 List<Long>，见 CaseDurationProjection）。
     List<Long> durations =
         durationRows.stream()
-            .map(CaseDurationProjection::durationMs)
+            .map(CaseDurationProjection::getDurationMs)
             .filter(Objects::nonNull)
             .toList();
     // 分母取窗口内已结案案件数（时长样本即全体结案案件）；分子取第二复核人已介入的案件数。

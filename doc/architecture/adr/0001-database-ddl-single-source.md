@@ -18,7 +18,8 @@ Bone 当前为内部演进阶段，需降低「Flyway 增量 + init 全量 + 模
 |----|------|
 | 唯一可执行 DDL | 仓库根目录 **`bone-init.sql`** |
 | 变更方式 | 修改 init → 开发环境 `DROP DATABASE` → 重新执行 |
-| Flyway | 各服务 `spring.flyway.enabled: false` |
+| Flyway | 各服务 `spring.flyway.enabled: false`（**已评估、当前不采用**；草案见 `db/migration/README.md`，属 L3 待审批） |
+| 生产增量迁移 | 已有库的演进走 `scripts/migration/*.sql` + `scripts/migrate.py`，详见 [ADR-生产数据库增量迁移策略](./ADR-生产数据库增量迁移策略.md) |
 | 历史双轨 | `初始脚本.sql`、`DDL对齐说明.md` **废止**（仅 Git 历史） |
 
 ## 理由
@@ -36,8 +37,8 @@ Bone 当前为内部演进阶段，需降低「Flyway 增量 + init 全量 + 模
 
 ### 负面
 
-- 生产大表变更须单独运维方案（未来若引入增量迁移需新 ADR）  
-- 无法「仅跑增量」回滚  
+- 生产大表变更须走独立增量流程（已由 [ADR-生产数据库增量迁移策略](./ADR-生产数据库增量迁移策略.md) 覆盖：expand/contract + gh-ost/pt-osc）  
+- 无法「仅跑增量」回滚（增量脚本的补偿式回滚见上述 ADR）  
 
 ## 合规与迁移
 

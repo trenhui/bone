@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>赔案管理 · TPA</title>
+<style>
+  :root{
+    --brand:#1f6feb; --brand-soft:#eaf2ff; --bg:#f4f6fa; --card:#fff;
+    --line:#e7ebf2; --line-strong:#d7dfeb; --txt:#1b2436; --txt-2:#5b667d; --txt-3:#98a2b6;
+    --green:#12a150; --green-bg:#e9f8ef; --amber:#e8891b; --amber-bg:#fff4e6;
+    --red:#d92d20; --red-bg:#fef0ee; --purple:#7a5af8; --purple-bg:#f1edff;
+    --radius:12px; --shadow:0 1px 2px rgba(22,35,60,.04),0 6px 20px rgba(22,35,60,.05);
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  /* topbar */
+  .topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;
+    padding:0 24px;gap:14px;position:sticky;top:0;z-index:50}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .logo .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#1f6feb,#7a5af8);
+    color:#fff;display:grid;place-items:center;font-size:14px;font-weight:800}
+  .crumb{color:var(--txt-3);font-size:13px;display:flex;gap:8px;align-items:center;margin-left:8px}
+  .crumb b{color:var(--txt-2);font-weight:500}
+  .topbar .right{margin-left:auto;display:flex;align-items:center;gap:18px}
+  .env{font-size:12px;color:var(--amber);background:var(--amber-bg);padding:4px 10px;border-radius:20px;font-weight:600}
+  .avatar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt-2)}
+  .avatar .dot{width:30px;height:30px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:700}
+  /* content */
+  .wrap{padding:20px 24px 60px}
+  .page-title{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .page-title h1{font-size:21px;font-weight:700}
+  .page-title .sub{font-size:13px;color:var(--txt-3)}
+  /* stat cards */
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;cursor:pointer;transition:.15s}
+  .stat:hover{border-color:var(--brand);transform:translateY(-1px)}
+  .stat .l{font-size:13px;color:var(--txt-2);display:flex;align-items:center;gap:7px}
+  .stat .l .di{width:8px;height:8px;border-radius:2px}
+  .stat .v{font-size:28px;font-weight:750;margin-top:8px;letter-spacing:-.5px}
+  .stat .s{font-size:11.5px;color:var(--txt-3);margin-top:4px}
+  .stat .trend{position:absolute;top:14px;right:16px;font-size:11px;font-weight:600}
+  .trend.up{color:var(--green)}.trend.down{color:var(--red)}
+  /* card + tabs */
+  .panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .tabs{display:flex;gap:4px;padding:0 20px;border-bottom:1px solid var(--line);overflow-x:auto}
+  .tab{padding:15px 16px;font-size:14px;color:var(--txt-2);cursor:pointer;white-space:nowrap;position:relative;font-weight:500}
+  .tab .num{font-size:11px;background:var(--bg);color:var(--txt-3);border-radius:10px;padding:1px 7px;margin-left:5px}
+  .tab.active{color:var(--brand);font-weight:700}
+  .tab.active:after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:3px;background:var(--brand);border-radius:3px 3px 0 0}
+  .tab.active .num{background:var(--brand-soft);color:var(--brand)}
+  /* search */
+  .search{padding:18px 20px 4px}
+  .search-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 18px}
+  .si{display:flex;flex-direction:column;gap:5px}
+  .si label{font-size:12px;color:var(--txt-2)}
+  .si input,.si select{height:34px;border:1px solid var(--line-strong);border-radius:7px;padding:0 10px;font-size:13px;color:var(--txt);font-family:inherit;background:#fff;width:100%}
+  .si input:focus,.si select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .si input::placeholder{color:var(--txt-3)}
+  .search-act{display:flex;justify-content:flex-end;gap:10px;padding:16px 0 4px}
+  .btn{border:1px solid var(--line-strong);background:#fff;color:var(--txt);padding:8px 15px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;font-family:inherit}
+  .btn:hover{border-color:var(--brand);color:var(--brand)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{background:#1859c4}
+  .btn.warn{background:var(--amber);border-color:var(--amber);color:#fff}
+  .btn.warn:hover{background:#cf7412}
+  .btn.danger{color:var(--red);border-color:#f3c3bd}
+  .btn:disabled{opacity:.45;cursor:not-allowed!important;background:var(--bg)!important;color:var(--txt-3)!important;border-color:var(--line)!important}
+  .btn.text{border-color:transparent;color:var(--brand);padding:6px 8px}
+  /* toolbar */
+  .toolbar{display:flex;align-items:center;gap:9px;padding:12px 20px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#fcfdff;flex-wrap:wrap}
+  .toolbar .sel{font-size:12.5px;color:var(--txt-2);margin-right:6px}
+  .toolbar .sel b{color:var(--brand)}
+  .toolbar .spacer{flex:1}
+  /* table */
+  .table-wrap{overflow:auto}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
+  thead th{background:#f7f9fc;color:var(--txt-2);font-weight:700; padding:11px 12px;text-align:center;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:2}
+  tbody td{padding:11px 12px;border-bottom:1px solid #eef1f6;text-align:center;color:var(--txt-2)}
+  tbody tr:hover{background:#fafcff}
+  tbody tr.striped{background:#fbfcfe}
+  .fix-l{position:sticky;left:0;background:#fff;z-index:1;box-shadow:1px 0 0 var(--line)}
+  .fix-l.h{background:#f7f9fc;z-index:3}
+  tbody tr:hover .fix-l{background:#fafcff}
+  .ck{width:15px;height:15px;accent-color:var(--brand);cursor:pointer}
+  .claim-link{color:var(--brand);font-weight:600;font-family:var(--mono);cursor:pointer}
+  .claim-link:hover{text-decoration:underline}
+  .mono{font-family:var(--mono);font-size:12px}
+  .pill{font-size:11px;padding:3px 9px;border-radius:11px;font-weight:600;display:inline-block}
+  .pill.g{color:var(--green);background:var(--green-bg)}
+  .pill.a{color:var(--amber);background:var(--amber-bg)}
+  .pill.r{color:var(--red);background:var(--red-bg)}
+  .pill.b{color:var(--brand);background:var(--blue-bg,var(--brand-soft))}
+  .pill.pp{color:var(--purple);background:var(--purple-bg)}
+  .pill.gray{color:var(--txt-2);background:var(--bg)}
+  .amt{font-family:var(--mono);font-weight:600;color:var(--brand)}
+  .warn-cell{color:var(--red);font-weight:600}
+  .ops{display:flex;gap:8px;justify-content:center}
+  .ops a{color:var(--brand);cursor:pointer;font-size:12.5px}
+  .ops a:hover{text-decoration:underline}
+  .ops a.danger{color:var(--red)}
+  /* pager */
+  .pager{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:14px 20px;font-size:12.5px;color:var(--txt-2)}
+  .pager .pg{border:1px solid var(--line-strong);border-radius:6px;min-width:30px;height:30px;padding:0 8px;background:#fff;cursor:pointer;color:var(--txt-2);font-family:inherit;font-size:12.5px}
+  .pager .pg.active{background:var(--brand);border-color:var(--brand);color:#fff}
+  .pager .pg:disabled{color:#ccc;cursor:not-allowed}
+  .pager select{height:30px;border:1px solid var(--line-strong);border-radius:6px;padding:0 6px;font-size:12.5px;font-family:inherit}
+  /* modal */
+  .mask{position:fixed;inset:0;background:rgba(16,24,40,.42);z-index:100;display:none;align-items:flex-start;justify-content:center;padding-top:9vh}
+  .mask.show{display:flex}
+  .modal{background:#fff;border-radius:14px;width:520px;max-width:92vw;box-shadow:0 20px 60px rgba(16,24,40,.25);overflow:hidden}
+  .modal .mh{padding:18px 22px;border-bottom:1px solid var(--line);font-size:16px;font-weight:700;display:flex;align-items:center}
+  .modal .mh .x{margin-left:auto;color:var(--txt-3);cursor:pointer;font-size:20px;font-weight:400}
+  .modal .mb{padding:20px 22px}
+  .modal .mf{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;background:#fcfdff}
+  /* 危险操作二次确认：发票清单 */
+  .warnbar{display:flex;gap:10px;align-items:flex-start;background:var(--red-bg);border:1px solid #f3c3bd;color:#8f2018;
+    padding:11px 14px;border-radius:9px;font-size:12.5px;line-height:1.6;margin-bottom:15px}
+  .warnbar .wi{font-size:17px;line-height:1}
+  .warnbar b{color:var(--red)}
+  .inv-list{border:1px solid var(--line);border-radius:9px;overflow:hidden;max-height:230px;overflow-y:auto}
+  .inv-list table{width:100%;border-collapse:collapse;font-size:12px}
+  .inv-list th{position:sticky;top:0;background:#f7f9fc;text-align:left;padding:8px 10px;color:var(--txt-2);font-weight:600;border-bottom:1px solid var(--line)}
+  .inv-list td{padding:8px 10px;border-bottom:1px solid var(--line);color:var(--txt)}
+  .inv-list tr:last-child td{border-bottom:none}
+  .inv-list .mono{font-family:var(--mono);font-size:11.5px}
+  .inv-list .bad{color:var(--red);font-weight:600}
+  .inv-sum{display:flex;gap:18px;margin-top:12px;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12.5px;color:var(--txt-2)}
+  .inv-sum b{color:var(--txt);font-size:14px}
+  .mfield{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}
+  .mfield .lbl{width:132px;flex-shrink:0;text-align:right;font-size:13px;color:var(--txt-2);padding-top:7px}
+  .mfield .lbl .req{color:var(--red)}
+  .mfield .ctl{flex:1}
+  .mfield .ctl input,.mfield .ctl select,.mfield .ctl textarea{width:100%;border:1px solid var(--line-strong);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;color:var(--txt)}
+  .mfield .ctl textarea{min-height:74px;resize:vertical}
+  .mfield .ctl input:focus,.mfield .ctl select:focus,.mfield .ctl textarea:focus{outline:none;border-color:var(--brand)}
+  .radio-row{display:flex;gap:22px;padding-top:7px;font-size:13px}
+  .radio-row label{display:flex;align-items:center;gap:6px;cursor:pointer}
+  .note{background:var(--brand-soft);border:1px solid #cfe0ff;border-radius:8px;padding:11px 13px;font-size:12.5px;color:#3a5b8c;margin-top:8px;line-height:1.7}
+  /* stage pipeline (七节点作业链路) */
+  .stage-bar{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:6px;overflow-x:auto}
+  .stage-bar .sb-title{font-size:12px;font-weight:700;color:var(--txt-3);letter-spacing:.5px;margin-right:8px;white-space:nowrap}
+  .stage{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--txt-2);white-space:nowrap;cursor:pointer;padding:5px 4px}
+  .stage:hover{color:var(--brand)}
+  .stage .sn{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:12px;font-weight:700;
+    background:var(--bg);color:var(--txt-3);border:1px solid var(--line)}
+  .stage .sc{font-size:11px;color:var(--txt-3);background:var(--bg);border-radius:10px;padding:1px 7px}
+  .stage.active{color:var(--brand);font-weight:700}
+  .stage.active .sn{background:var(--brand);color:#fff;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .stage.active .sc{background:var(--brand-soft);color:var(--brand)}
+  .stage .arrow{color:#c7d0de;margin-left:6px;font-size:13px}
+  .stage-bar .spacer{flex:1}
+  .view-toggles{display:flex;gap:4px;background:var(--bg);border-radius:8px;padding:3px}
+  .view-toggles button{border:0;background:transparent;font-size:12px;color:var(--txt-2);padding:5px 11px;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600}
+  .view-toggles button.on{background:#fff;color:var(--brand);box-shadow:0 1px 3px rgba(22,35,60,.1)}
+  /* quick filter strip (配置化 Tab: 待处理/处理中/已超时) */
+  .qfilter{display:flex;align-items:center;gap:8px;padding:10px 20px;background:#fcfdff;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .qfilter .ql{font-size:12px;color:var(--txt-3);font-weight:600}
+  .qchip{font-size:12px;border:1px solid var(--line-strong);background:#fff;color:var(--txt-2);padding:4px 12px;border-radius:16px;cursor:pointer;font-weight:600}
+  .qchip:hover{border-color:var(--brand);color:var(--brand)}
+  .qchip.on{background:var(--brand-soft);color:var(--brand);border-color:#bcd3f7}
+  /* demo cross-page nav */
+  .demo-nav{display:flex;align-items:center;gap:6px;margin-left:10px;position:relative}
+  .demo-nav .dn-btn{font-size:12px;color:var(--txt-2);border:1px solid var(--line-strong);background:#fff;padding:5px 11px;border-radius:7px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px}
+  .demo-nav .dn-btn:hover{border-color:var(--brand);color:var(--brand)}
+  .demo-nav .dn-menu{display:none;position:absolute;top:34px;left:0;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:6px;min-width:200px;z-index:80}
+  .demo-nav.open .dn-menu{display:block}
+  .demo-nav .dn-menu a{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;font-size:13px;color:var(--txt-2)}
+  .demo-nav .dn-menu a:hover{background:var(--bg)}
+  .demo-nav .dn-menu a.cur{background:var(--brand-soft);color:var(--brand);font-weight:700}
+  .demo-nav .dn-menu a .ic{width:18px;text-align:center}
+  .demo-nav .dn-menu .cur-tag{margin-left:auto;font-size:10px;color:var(--brand)}
+  .foot{text-align:center;color:var(--txt-3);font-size:12px;padding:24px}
+  @media(max-width:1200px){.stats{grid-template-columns:repeat(3,1fr)}.search-grid{grid-template-columns:repeat(2,1fr)}.demo-nav{display:none}.stage-bar .sb-title{display:none}}
+
+  /* ===== UX assist: help + command palette + feedback ===== */
+  .ux-fab{position:fixed;right:22px;bottom:22px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line-strong);
+    background:#fff;color:var(--brand);font-size:19px;font-weight:700;cursor:pointer;box-shadow:0 4px 18px rgba(22,35,60,.14);
+    z-index:120;display:grid;place-items:center;transition:.18s}
+  .ux-fab:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(31,111,235,.25);background:var(--brand);color:#fff}
+  .ux-mask{position:fixed;inset:0;background:rgba(20,28,45,.42);z-index:300;display:none}
+  .ux-mask.show{display:block}
+  .ux-drawer{position:fixed;right:0;top:0;bottom:0;width:420px;max-width:92vw;background:#fff;z-index:310;
+    box-shadow:-8px 0 30px rgba(22,35,60,.16);transform:translateX(105%);transition:transform .24s ease;
+    display:flex;flex-direction:column}
+  .ux-drawer.show{transform:translateX(0)}
+  .ux-dh{padding:20px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .ux-dh .ic{width:32px;height:32px;border-radius:9px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:800}
+  .ux-dh b{font-size:16px}
+  .ux-dh .x{margin-left:auto;cursor:pointer;color:var(--txt-3);font-size:22px;line-height:1;border:0;background:none}
+  .ux-db{padding:18px 22px;overflow:auto;flex:1}
+  .ux-lead{background:var(--brand-soft);border:1px solid #d3e3ff;color:#1e4e9c;border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.65;margin-bottom:18px}
+  .ux-sec{font-size:12px;color:var(--txt-3);font-weight:700;letter-spacing:.06em;margin:4px 0 11px}
+  .ux-step{display:flex;gap:11px;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .ux-step:last-child{border-bottom:0}
+  .ux-step .n{flex:0 0 22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;margin-top:1px}
+  .ux-step .c b{display:block;font-size:13.5px;margin-bottom:2px}
+  .ux-step .c span{font-size:12.5px;color:var(--txt-2);line-height:1.6}
+  .ux-tipbox{margin-top:20px;background:var(--amber-bg);border:1px solid #f7dcb5;border-radius:10px;padding:12px 14px}
+  .ux-tipbox .ux-sec{color:#a25b06;margin-top:0}
+  .ux-tipbox div{font-size:12.5px;color:#7a4a08;line-height:1.7;padding:3px 0}
+  .ux-df{padding:13px 22px;border-top:1px solid var(--line);font-size:12px;color:var(--txt-3);display:flex;align-items:center;gap:8px}
+  .ux-kbd{display:inline-block;background:#f4f6fa;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;
+    padding:1px 6px;font-family:var(--mono);font-size:11px;color:var(--txt-2)}
+  /* command palette */
+  .ux-cmd{position:fixed;left:50%;top:14%;transform:translate(-50%,-12px);width:min(560px,92vw);background:#fff;z-index:310;
+    border-radius:14px;box-shadow:0 20px 60px rgba(22,35,60,.24);overflow:hidden;opacity:0;transition:.16s;pointer-events:none}
+  .ux-mask.cmd-open~.ux-cmd,.ux-cmd.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .ux-cmd-in{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .ux-cmd-in span{color:var(--txt-3);font-size:18px}
+  .ux-cmd-in input{flex:1;border:0;outline:0;font-size:15px;color:var(--txt);background:transparent}
+  .ux-cmd-list{max-height:360px;overflow:auto;padding:8px}
+  .ux-cmd-grp{font-size:11px;color:var(--txt-3);font-weight:700;padding:8px 10px 4px;letter-spacing:.05em}
+  .ux-cmd-item{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:8px;cursor:pointer;font-size:13.5px}
+  .ux-cmd-item:hover,.ux-cmd-item.sel{background:var(--brand-soft)}
+  .ux-cmd-item .ic{width:26px;height:26px;border-radius:7px;background:#f4f6fa;color:var(--brand);display:grid;place-items:center;font-size:13px}
+  .ux-cmd-item .hint{margin-left:auto;font-size:11px;color:var(--txt-3)}
+  .ux-cmd-empty{padding:28px;text-align:center;color:var(--txt-3);font-size:13px}
+  /* inline feedback toast (fallback) */
+  .ux-toast{position:fixed;left:50%;bottom:76px;transform:translate(-50%,12px);background:#1b2436;color:#fff;padding:10px 18px;
+    border-radius:9px;font-size:13px;z-index:400;opacity:0;transition:.2s;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+  .ux-toast.show{opacity:1;transform:translate(-50%,0)}
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><span class="mark">P</span> TPA <span style="font-weight:400;color:var(--txt-3);font-size:12px">理赔运营平台</span></div>
+  <div class="crumb"><span>理赔管理</span><span class="sep" style="color:#c7d0de">/</span><b>赔案管理</b></div>
+  <div class="demo-nav" id="demoNav">
+    <button class="dn-btn" onclick="document.getElementById('demoNav').classList.toggle('open')">◫ 设计稿导航 ▾</button>
+    <div class="dn-menu">
+      <a href="claim-manage.html" class="cur"><span class="ic">▤</span>赔案管理列表<span class="cur-tag">当前</span></a>
+      <a href="claim-detail.html"><span class="ic">▣</span>理赔审核详情</a>
+      <a href="claim-image-detail.html"><span class="ic">▧</span>赔案影像详情</a>
+      <a href="claim-rule-config.html"><span class="ic">∑</span>理算规则配置</a>
+      <a href="job-config.html"><span class="ic">⚙</span>主体专属作业配置<span class="cur-tag">NEW</span></a>
+      <a href="import-record.html"><span class="ic">⇩</span>导入记录<span class="cur-tag">NEW</span></a>
+      <a href="customer-journey.html"><span class="ic">▣</span>客户旅程（小程序）<span class="cur-tag">NEW</span></a>
+      <a href="form-config.html"><span class="ic">▤</span>表单配置中心<span class="cur-tag">NEW</span></a>
+      <a href="evaluation-report.html"><span class="ic">◫</span>评测报告</a>
+    </div>
+  </div>
+  <div class="right">
+    <span class="env">测试环境</span>
+    <div class="avatar"><span class="dot">admin</span><span>系统管理员</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="page-title">
+    <h1>赔案管理</h1>
+    <span class="sub">统一查看、分派与处理全部理赔案件</span>
+  </div>
+
+  <!-- stat cards -->
+  <div class="stats">
+    <div class="stat"><div class="l"><span class="di" style="background:var(--brand)"></span>全部赔案</div><div class="v">1,284</div><div class="s">本月新增 148 件</div><span class="trend up">↑ 12.4%</span></div>
+    <div class="stat"><div class="l"><span class="di" style="background:var(--amber)"></span>待我审核</div><div class="v" style="color:var(--amber)">23</div><div class="s">其中 VIP 案件 4 件</div><span class="trend down">需优先处理</span></div>
+    <div class="stat"><div class="l"><span class="di" style="background:var(--purple)"></span>处理中</div><div class="v" style="color:var(--purple)">156</div><div class="s">初审 62 · 理算 94</div></div>
+    <div class="stat"><div class="l"><span class="di" style="background:var(--green)"></span>已结案</div><div class="v" style="color:var(--green)">1,031</div><div class="s">本月赔付 ¥ 2,846,120</div><span class="trend up">↑ 8.1%</span></div>
+    <div class="stat"><div class="l"><span class="di" style="background:var(--red)"></span>推送失败</div><div class="v" style="color:var(--red)">7</div><div class="s">需重新推送保司</div><span class="trend down">待处理</span></div>
+  </div>
+
+  <!-- 七节点阶段化作业链路 -->
+  <div class="stage-bar">
+    <span class="sb-title">作业链路</span>
+    <div class="stage" data-stage="sign"><span class="sn">1</span>签收<span class="sc">86</span><span class="arrow">›</span></div>
+    <div class="stage" data-stage="precheck"><span class="sn">2</span>初审<span class="sc">62</span><span class="arrow">›</span></div>
+    <div class="stage" data-stage="entry"><span class="sn">3</span>录入<span class="sc">48</span><span class="arrow">›</span></div>
+    <div class="stage" data-stage="qc"><span class="sn">4</span>质检<span class="sc">31</span><span class="arrow">›</span></div>
+    <div class="stage active" data-stage="audit"><span class="sn">5</span>审核<span class="sc">38</span><span class="arrow">›</span></div>
+    <div class="stage" data-stage="review"><span class="sn">6</span>复核<span class="sc">19</span><span class="arrow">›</span></div>
+    <div class="stage" data-stage="push"><span class="sn">7</span>推送<span class="sc">29</span></div>
+    <span class="spacer"></span>
+    <div class="view-toggles" id="viewToggles">
+      <button class="on" data-view="all">全部</button>
+      <button data-view="todo">待处理</button>
+      <button data-view="doing">处理中</button>
+      <button data-view="overdue">已超时</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <!-- tabs -->
+    <div class="tabs">
+      <div class="tab active">全部赔案 <span class="num">1,284</span></div>
+      <div class="tab">待审核 <span class="num">38</span></div>
+      <div class="tab">审核中 <span class="num">156</span></div>
+      <div class="tab">待推送 <span class="num">29</span></div>
+      <div class="tab">已结案 <span class="num">1,031</span></div>
+      <div class="tab">挂起 <span class="num">12</span></div>
+      <div class="tab" style="color:var(--red)">推送失败 <span class="num">7</span></div>
+    </div>
+
+    <!-- 配置化筛选 + 分配规则可视化 -->
+    <div class="qfilter">
+      <span class="ql">任务视图</span>
+      <span class="qchip on">全部</span>
+      <span class="qchip">待处理</span>
+      <span class="qchip">处理中</span>
+      <span class="qchip">已超时 ⚠</span>
+      <span class="ql" style="margin-left:12px">当前环节分配</span>
+      <span class="qchip" style="border-style:dashed" title="该环节采用手工分配">◉ 审核 · 手工分配</span>
+      <span class="ql" style="color:var(--txt-3);font-weight:400">分配规则由「作业配置」下发，普通案件按账号、VIP 按专属字段</span>
+    </div>
+
+    <!-- POC 案例 C：同日同院重复金额 → 风险标记 → 转人工，待办首位带上下文 -->
+    <div class="card" style="margin:14px 0 18px;border-left:4px solid var(--red)">
+      <div class="card-h"><h2>⚑ POC 案例 C · 风险标记待办（置顶）</h2><span class="desc">同日同院重复金额 → 标记风险 → 转人工；待办首位带上下文，不是甩一个标记</span></div>
+      <div class="card-b" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="font-size:12.5px;line-height:1.9">
+          <b>900000000003</b> · 唐某 · 示例三甲医院 · <span style="color:var(--red);font-weight:700">⚑ 重复金额风险</span><br>
+          两张发票同日同院、金额均为 ¥980.00；系统标记疑似重复报销，转人工终审。
+        </div>
+        <span style="margin-left:auto"></span>
+        <button class="btn" onclick="openModal('m-risk')">查看证据 + AI 建议 + 决策轨迹</button>
+        <button class="btn primary" onclick="openCaseCDispose('pass')">一键通过</button>
+        <button class="btn danger" onclick="openCaseCDispose('reject')">拒赔</button>
+        <button class="btn" onclick="openCaseCDispose('supplement')">补件</button>
+      </div>
+    </div>
+
+    <!-- search -->
+    <div class="search">
+      <div class="search-grid">
+        <div class="si"><label>赔案号</label><input placeholder="请输入赔案号" value=""></div>
+        <div class="si"><label>保单号</label><input placeholder="请输入保单号"></div>
+        <div class="si"><label>批次号</label><input placeholder="请输入批次号"></div>
+        <div class="si"><label>出险人姓名</label><input placeholder="请输入姓名"></div>
+        <div class="si"><label>出险人证件号</label><input placeholder="请输入证件号"></div>
+        <div class="si"><label>投保公司</label><input placeholder="请输入投保公司"></div>
+        <div class="si"><label>保险公司</label><input placeholder="请输入保险公司"></div>
+        <div class="si"><label>保险分公司</label><input placeholder="请输入分公司"></div>
+        <div class="si"><label>赔案状态</label><select><option>全部</option><option>待审核</option><option>审核中</option><option>待推送</option><option>已结案</option><option>挂起</option></select></div>
+        <div class="si"><label>赔案等级</label><select><option>全部</option><option>普通</option><option>VIP1</option><option>VIP2</option><option>VIP3</option></select></div>
+        <div class="si"><label>审核人员</label><input placeholder="请输入审核人员"></div>
+        <div class="si"><label>出险日期</label><input placeholder="开始日期 ~ 结束日期"></div>
+      </div>
+      <div class="search-act">
+        <button class="btn warn" onclick="document.querySelectorAll('.search-grid input,.search-grid select').forEach(function(e){e.value='';});toast('已清空筛选条件')">重置</button>
+        <button class="btn primary" onclick="toast('已应用筛选条件，共查到 1,284 条赔案')">搜索</button>
+      </div>
+    </div>
+
+    <!-- toolbar -->
+    <div class="toolbar">
+      <span class="sel">已选 <b id="selCount">0</b> 项</span>
+      <button class="btn primary" onclick="openModal('m-repush')">重新推送</button>
+      <button class="btn" onclick="openModal('m-return')">退回审核</button>
+      <button class="btn" onclick="openModal('m-copy')">复制赔案</button>
+      <button class="btn danger" onclick="openModal('m-reject')">批量拒赔</button>
+      <button class="btn" onclick="toast('已生成导出任务，完成后在消息中心通知')">批量导出</button>
+      <span class="spacer"></span>
+      <button class="btn text" onclick="toast('数据已刷新 · '+new Date().toLocaleTimeString('zh-CN'))">刷新 ⟳</button>
+      <button class="btn text" onclick="toast('列设置：显示 16 / 可选 24 列（设计稿示意）')">列设置 ⚙</button>
+    </div>
+
+    <!-- table -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="fix-l h" style="width:46px"><input type="checkbox" class="ck" id="ckAll" onchange="selectAll(this)"></th>
+            <th style="width:52px">序号</th>
+            <th>赔案号</th>
+            <th>状态</th>
+            <th>阶段</th>
+            <th>出险人</th>
+            <th>证件号</th>
+            <th>保单号</th>
+            <th>投保公司</th>
+            <th>保险公司</th>
+            <th>等级</th>
+            <th>赔付金额</th>
+            <th>时效</th>
+            <th>当前作业人</th>
+            <th>创建时间</th>
+            <th style="min-width:190px">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <!-- rows injected by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- pager -->
+    <div class="pager">
+      <span>共 1,284 条</span>
+      <select><option>20 条/页</option><option>50 条/页</option><option>100 条/页</option></select>
+      <button class="pg" disabled>‹</button>
+      <button class="pg active">1</button><button class="pg">2</button><button class="pg">3</button><button class="pg">4</button><button class="pg">5</button>
+      <span>…</span><button class="pg">65</button>
+      <button class="pg">›</button>
+      <span>前往 <input style="width:42px;height:30px;border:1px solid var(--line-strong);border-radius:6px;text-align:center;font-family:inherit" value="1"> 页</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- 案例 C 处置：结构化确认（复用案例 B 的人工监督标准） -->
+<div class="mask" id="mCaseC" onclick="if(event.target===this)closeModal(this)">
+  <div class="modal">
+    <div class="mh" id="ccTitle">风险案件处置 · 二次确认 <span class="x" onclick="closeModal(document.getElementById('mCaseC'))">×</span></div>
+    <div class="mb">
+      <div class="mx-note" style="padding-top:0;margin-bottom:10px">900000000003 · 同日同院同额 ¥980.00 ×2，命中 R-RISK-DUP-02。人工终审权保留：系统只给建议，处置必须留结构化原因与审计轨迹。</div>
+      <div class="mfield"><div class="lbl">处置动作</div><input id="ccKind" readonly></div>
+      <div class="mfield"><div class="lbl">结构化原因（≥10 字，进入审计轨迹）</div><textarea id="ccReason" rows="3" placeholder="说明依据、证据位置与处置理由"></textarea></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:8px;cursor:pointer"><input type="checkbox" id="ccAck" onchange="document.getElementById('ccConfirm').disabled=!this.checked"> 已查看证据 + AI 建议 + 决策轨迹，确认处置</label>
+    </div>
+    <div class="mf"><button class="btn" onclick="closeModal(document.getElementById('mCaseC'))">取消</button><button class="btn primary" id="ccConfirm" disabled onclick="confirmCaseC()">确认处置</button></div>
+  </div>
+</div>
+
+<!-- 推送失败闭环：失败原因 + 重推记录 + 重推动作 -->
+<div class="mask" id="mPushFail" onclick="if(event.target===this)closeModal(this)">
+  <div class="modal" style="width:620px">
+    <div class="mh" style="color:var(--red)">⚠ 推送失败详情 · <span id="pfNo">900000000007</span> <span class="x" onclick="closeModal(document.getElementById('mPushFail'))">×</span></div>
+    <div class="mb">
+      <div class="mfield"><div class="lbl">失败原因</div><input value="保司接口超时（HTTP 504）· 重试 2 次均失败" readonly></div>
+      <div class="mfield"><div class="lbl">失败时间 / 目标主体</div><input value="2026-06-07 11:05 · 示例财险C" readonly></div>
+      <div class="sec" style="margin-top:10px"><div class="sh">重推记录</div><div class="sb" style="font-size:12.5px;line-height:2">
+        <div>① 11:05 首次推送 · 失败（504）</div><div>② 11:10 自动重试 · 失败（504）</div><div>③ 11:20 自动重试 · 失败（504）</div><div style="color:var(--red)">④ 当前：待人工处置（重推 / 退回审核）</div>
+      </div></div>
+      <div class="mx-note" style="margin-top:10px">失败原因与重推记录成对展示，避免「只知道失败、不知道为什么」；处置结果写入操作记录可回放。</div>
+    </div>
+    <div class="mf"><button class="btn" onclick="closeModal(document.getElementById('mPushFail'))">关闭</button><button class="btn" onclick="toast('已退回审核 · 留痕（设计稿示意）');closeModal(document.getElementById('mPushFail'))">退回审核</button><button class="btn primary" onclick="toast('已重新推送 · 进入等待队列（设计稿示意）');closeModal(document.getElementById('mPushFail'))">重新推送</button></div>
+  </div>
+</div>
+<!-- ===== modals ===== -->
+
+<!-- POC 案例 C：风险案件上下文 -->
+<div class="mask" id="m-risk" onclick="if(event.target===this)closeModal(this)">
+  <div class="modal" style="width:640px">
+    <div class="mh" style="color:var(--red)">⚑ 风险标记上下文 · 900000000003 <span class="x" onclick="closeModal(this.closest('.mask'))">×</span></div>
+    <div class="mb">
+      <div class="sec"><div class="sh">证据（可定位原件）</div><div class="sb" style="font-size:12.5px;line-height:2">
+        <div>· 发票 A：99000000000000000003 · 2026-06-08 · 示例三甲医院 · ¥980.00 → 影像第 1 页</div>
+        <div>· 发票 B：99000000000000000004 · 2026-06-08 · 示例三甲医院 · ¥980.00 → 影像第 2 页</div>
+      </div></div>
+      <div class="sec"><div class="sh">AI 建议</div><div class="sb" style="font-size:12.5px;line-height:2">
+        <div>建议<b>转人工复核</b>：发票号不同但日期、机构、金额三项一致，命中 R-RISK-DUP-02「同日同院同额」。置信度 0.93。<b>系统不代替终审</b>。</div>
+      </div></div>
+      <div class="sec"><div class="sh">决策轨迹</div><div class="sb" style="font-size:12.5px;line-height:2">
+        <div>报案 → OCR 抽取 8 字段 → 规则命中 R-RISK-DUP-02 → 风险标记 → <b>转人工（当前）</b></div>
+      </div></div>
+      <div class="mx-note" style="margin-top:12px">带上下文移交：核赔员无需回查原单即可判断；处置结果写入可回放的审计轨迹。</div>
+    </div>
+    <div class="mf"><button class="btn" onclick="closeModal(document.getElementById('m-risk'))">关闭</button><button class="btn primary" onclick="toast('已进入人工终审 · 留痕（设计稿示意）');closeModal(document.getElementById('m-risk'))">进入人工终审</button></div>
+  </div>
+</div>
+
+<!-- 重新推送 -->
+<div class="mask" id="m-repush" onclick="if(event.target===this)closeModal(this)">
+  <div class="modal">
+    <div class="mh">重新推送 <span class="x" onclick="closeModal(this.closest('.mask'))">×</span></div>
+    <div class="mb">
+      <div class="mfield"><div class="lbl">重新推送方式</div><div class="ctl"><div class="radio-row">
+        <label><input type="radio" name="rp" checked> 常规等待推送（排队或者实时推）</label>
+        <label><input type="radio" name="rp" disabled> 强制立即推送（部分业务）</label>
+      </div></div></div>
+      <div class="note">说明：常规等待推送，实时推取决于不同保司业务的接口对接情况，否则为排队定时推送。如部分保司业务即通过接口实时推送。</div>
+    </div>
+    <div class="mf"><button class="btn" onclick="closeModal(this.closest('.mask'))">取消</button><button class="btn primary" onclick="closeModal(this.closest('.mask'))">确定</button></div>
+  </div>
+</div>
+<!-- 退回审核 -->
+<div class="mask" id="m-return" onclick="if(event.target===this)closeModal(this)">
+  <div class="modal">
+    <div class="mh">退回人工处理 <span class="x" onclick="closeModal(this.closest('.mask'))">×</span></div>
+    <div class="mb">
+      <div class="mfield"><div class="lbl"><span class="req">*</span> 请选择退回环节</div><div class="ctl"><select><option>请选择退回环节</option><option>初审</option><option>录入</option><option>审核</option><option>复核</option></select></div></div>
+      <div class="mfield"><div class="lbl"><span class="req">*</span> 退回至原处理人员</div><div class="ctl" style="display:flex;gap:8px"><select style="width:90px"><option>是</option><option>否</option></select><input placeholder="请输入指定处理人员姓名"></div></div>
+      <div class="mfield"><div class="lbl"><span class="req">*</span> 退回类型</div><div class="ctl"><select><option>请选择退回类型</option><option>系统问题</option><option>初审错误</option><option>录入错误</option><option>审核错误</option><option>其他问题</option></select></div></div>
+      <div class="mfield"><div class="lbl"><span class="req">*</span> 退回原因</div><div class="ctl"><textarea placeholder="请输入退回原因，大于10个字"></textarea></div></div>
+    </div>
+    <div class="mf"><button class="btn" onclick="closeModal(this.closest('.mask'))">取消</button><button class="btn primary" onclick="closeModal(this.closest('.mask'))">确定</button></div>
+  </div>
+</div>
+<!-- 批量拒赔（危险操作二次确认强化：列出具体发票号清单） -->
+<div class="mask" id="m-reject" onclick="if(event.target===this)closeModal(this)">
+  <div class="modal" style="width:640px">
+    <div class="mh" style="color:var(--red)">⚠ 批量拒赔确认 <span class="x" onclick="closeModal(this.closest('.mask'))">×</span></div>
+    <div class="mb">
+      <div class="warnbar"><span class="wi">⛔</span><div>本操作将<b>拒绝以下 3 笔赔案的全部理赔申请</b>，并退回保司。拒赔后赔案进入终态，<b>不可直接撤销</b>，如需恢复须走"赔案重开"审批。请逐条核对发票与出险人后再确认。</div></div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:9px">即将拒赔的发票清单 <span style="font-weight:400;color:var(--txt-3);font-size:12px">（共 3 条，来自当前选中赔案）</span></div>
+      <div class="inv-list">
+        <table>
+          <thead><tr><th style="width:40px">#</th><th>赔案号</th><th>发票号</th><th>出险人</th><th style="text-align:right">拒赔金额</th><th>状态</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td class="mono">900000000001</td><td class="mono">99000000000000000001</td><td>唐某</td><td style="text-align:right">¥ 0.00</td><td class="bad">● 等待审核</td></tr>
+            <tr><td>2</td><td class="mono">900000000002</td><td class="mono">99000000000000000002</td><td>李某</td><td style="text-align:right">¥ 3,280.50</td><td class="bad">● 审核中</td></tr>
+            <tr><td>3</td><td class="mono">900000000003</td><td class="mono">99000000000000000003</td><td>王某</td><td style="text-align:right">¥ 1,960.00</td><td class="bad">● 等待审核</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="inv-sum"><span>合计拒赔 <b>¥ 4,430.50</b></span><span>涉及出险人 <b>3 人</b></span><span>当前选择 <b id="rejectSel">3</b> 项</span></div>
+      <div class="mfield" style="margin:16px 0 0"><div class="lbl"><span class="req">*</span> 拒赔原因</div><div class="ctl"><select><option>请选择拒赔原因</option><option>不属于保险责任</option><option>材料不全且无法补充</option><option>超过索赔时效</option><option>重复索赔</option><option>其他（须在备注说明）</option></select></div></div>
+      <div class="mfield" style="margin:12px 0 0"><div class="lbl"><span class="req">*</span> 二次确认</div><div class="ctl" style="display:flex;align-items:center;gap:8px;font-size:13px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="rejectChk" onchange="document.getElementById('rejectOk').disabled=!this.checked"> 我已逐条核对上述发票号与出险人，确认执行批量拒赔</label></div></div>
+    </div>
+    <div class="mf"><button class="btn" onclick="closeModal(this.closest('.mask'))">取消</button><button class="btn danger" id="rejectOk" disabled onclick="closeModal(this.closest('.mask'))">确认拒赔（不可撤销）</button></div>
+  </div>
+</div>
+<!-- 复制赔案 -->
+<div class="mask" id="m-copy" onclick="if(event.target===this)closeModal(this)">
+  <div class="modal" style="width:560px">
+    <div class="mh">复制赔案 <span class="x" onclick="closeModal(this.closest('.mask'))">×</span></div>
+    <div class="mb">
+      <div class="note" style="margin-top:0;margin-bottom:16px">默认将复制原赔案的相关信息至新赔案，包括：赔案基本信息（出险人、领款人、受益人、签收信息）；赔案发票信息（影像、发票、发票关联影像）；客户报案信息（含签名影像）和出险信息。</div>
+      <div class="mfield"><div class="lbl"><span class="req">*</span> 原赔案号</div><div class="ctl"><textarea placeholder="支持多个赔案复制，一行一个赔案号"></textarea></div></div>
+      <div class="mfield"><div class="lbl">生成新批次和签收时间</div><div class="ctl"><select><option>新生成</option><option>同原赔案</option></select></div></div>
+      <div class="mfield"><div class="lbl">原赔案赔付金额</div><div class="ctl"><select><option>转至新赔案的三方已赔</option><option>手动处理</option></select></div></div>
+      <div class="mfield"><div class="lbl">新赔案所处环节</div><div class="ctl"><select><option>审核中</option></select></div></div>
+      <div class="mfield"><div class="lbl">处理人员</div><div class="ctl"><select><option>原赔案人员</option><option>操作人员本人</option><option>指定人员</option></select></div></div>
+      <div class="mfield"><div class="lbl"><span class="req">*</span> 复制备注</div><div class="ctl"><textarea placeholder="请输入备注"></textarea></div></div>
+    </div>
+    <div class="mf"><button class="btn" onclick="closeModal(this.closest('.mask'))">取消</button><button class="btn primary" onclick="closeModal(this.closest('.mask'))">确定</button></div>
+  </div>
+</div>
+
+<div class="foot">演示数据已脱敏 · 非真实客户信息 · TPA 理赔运营平台 · 赔案管理页设计稿</div>
+
+<script>
+  const rows = [
+    {no:'900000000001',status:'待审核',stage:'审核',name:'唐某',idno:'1101****0019',policy:'TEST0000000000000052',insure:'示例玩具',ins:'示例财险',vip:'普通',amt:'¥ 1,062.00',sla:'剩 6h',op:'审核员A',time:'2026-06-09 14:43'},
+    {no:'900000000004',status:'审核中',stage:'理算',name:'李某',idno:'1101****0013',policy:'TEST0000000000000041',insure:'示例电子',ins:'示例财险',vip:'VIP2',amt:'¥ 12,860.50',sla:'剩 6h',op:'审核员A',time:'2026-06-08 09:12'},
+    {no:'900000000005',status:'待推送',stage:'推送',name:'王某',idno:'1101****0027',policy:'TEST0000000000000038',insure:'示例医药',ins:'示例财险B',vip:'普通',amt:'¥ 3,420.00',sla:'正常',op:'推送员A',time:'2026-06-08 08:30'},
+    {no:'900000000006',status:'已结案',stage:'结案',name:'陈某',idno:'1101****0034',policy:'TEST0000000000000019',insure:'示例科技',ins:'示例财险',vip:'VIP1',amt:'¥ 28,900.00',sla:'已结案',op:'结案员A',time:'2026-06-07 16:22'},
+    {no:'900000000007',status:'推送失败',stage:'推送',name:'赵某',idno:'1101****0047',policy:'TEST0000000000000011',insure:'示例食品',ins:'示例财险C',vip:'普通',amt:'¥ 1,980.00',sla:'超时',op:'—',time:'2026-06-07 11:05'},
+    {no:'900000000008',status:'挂起',stage:'初审',name:'孙某',idno:'1101****0066',policy:'TEST0000000000000007',insure:'示例机械',ins:'示例财险',vip:'VIP3',amt:'—',sla:'挂起 2d',op:'初审员A',time:'2026-06-06 15:48'},
+    {no:'900000000009',status:'审核中',stage:'复核',name:'刘某',idno:'1101****0028',policy:'TEST0000000000000002',insure:'示例建材',ins:'示例财险B',vip:'普通',amt:'¥ 7,650.80',sla:'剩 12h',op:'复核员A',time:'2026-06-06 10:17'},
+    {no:'900000000010',status:'已结案',stage:'结案',name:'周某',idno:'1101****0073',policy:'TEST0000000000000188',insure:'示例物流',ins:'示例财险',vip:'普通',amt:'¥ 15,200.00',sla:'已结案',op:'结案员B',time:'2026-06-05 17:33'}
+  ];
+  const pill = (t)=>{
+    const m={'待审核':'a','审核中':'b','待推送':'pp','已结案':'g','推送失败':'r','挂起':'gray'};
+    return `<span class="pill ${m[t]||'gray'}">${t}</span>`;
+  };
+  const tb=document.getElementById('tbody');
+  tb.innerHTML=rows.map((r,i)=>`
+    <tr class="${i%2?'striped':''}">
+      <td class="fix-l"><input type="checkbox" class="ck rowck" onchange="updSel()"></td>
+      <td>${i+1}</td>
+      <td><a class="claim-link" href="claim-detail.html">${r.no}</a></td>
+      <td>${pill(r.status)}</td>
+      <td>${r.stage}</td>
+      <td style="color:var(--txt);font-weight:600">${r.name}</td>
+      <td class="mono">${r.idno}</td>
+      <td class="mono">${r.policy}</td>
+      <td>${r.insure}</td>
+      <td>${r.ins}</td>
+      <td>${r.vip==='普通'?r.vip:`<span class="pill pp">${r.vip}</span>`}</td>
+      <td class="amt">${r.amt}</td>
+      <td class="${r.sla==='超时'?'warn-cell':''}">${r.sla}</td>
+      <td>${r.op}</td>
+      <td class="mono">${r.time}</td>
+      <td><div class="ops">
+        <a href="claim-detail.html">查看</a>
+        <a href="claim-image-detail.html">影像</a>
+        ${r.status==='推送失败'?`<a class="danger" onclick="openPushFail('${r.no}')">重推</a>`:''}
+      </div></td>
+    </tr>`).join('');
+
+  function selectAll(el){document.querySelectorAll('.rowck').forEach(c=>c.checked=el.checked);updSel();}
+  function updSel(){document.getElementById('selCount').textContent=document.querySelectorAll('.rowck:checked').length;}
+  function openModal(id){
+    document.getElementById(id).classList.add('show');
+    if(id==='m-reject'){
+      const n=document.querySelectorAll('.rowck:checked').length||3;
+      document.getElementById('rejectSel').textContent=n;
+      const chk=document.getElementById('rejectChk');if(chk){chk.checked=false;document.getElementById('rejectOk').disabled=true;}
+    }
+  }
+  function closeModal(el){el.classList.remove('show');}
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
+  }));
+  // 七节点阶段切换
+  document.querySelectorAll('.stage').forEach(s=>s.addEventListener('click',()=>{
+    document.querySelectorAll('.stage').forEach(x=>x.classList.remove('active'));s.classList.add('active');
+  }));
+  // 视图切换（全部/待处理/处理中/已超时）
+  document.querySelectorAll('#viewToggles button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('#viewToggles button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    const chips=[...document.querySelectorAll('.qfilter .qchip')];
+    const map={'all':0,'todo':1,'doing':2,'overdue':3};
+    chips.forEach((c,i)=>c.classList.toggle('on',i===(map[b.dataset.view]??0)));
+  }));
+  // 配置化筛选 chip 组（前四个互斥）
+  const qchips=[...document.querySelectorAll('.qfilter .qchip')].slice(0,4);
+  qchips.forEach(c=>c.addEventListener('click',()=>{
+    qchips.forEach(x=>x.classList.remove('on'));c.classList.add('on');
+  }));
+  // 设计稿导航：点击外部关闭
+  document.addEventListener('click',e=>{
+    const dn=document.getElementById('demoNav');
+    if(dn && !dn.contains(e.target)) dn.classList.remove('open');
+  });
+</script>
+<button class="ux-fab" id="uxFab" title="操作指引 / 快捷命令 (Ctrl+K)" onclick="uxOpenHelp()">?</button>
+<div class="ux-mask" id="uxMask" onclick="uxCloseAll()"></div>
+<div class="ux-drawer" id="uxDrawer">
+  <div class="ux-dh"><span class="ic">?</span><b>赔案管理 · 快速上手</b><button class="x" onclick="uxCloseAll()">×</button></div>
+  <div class="ux-db">
+    <div class="ux-lead">这是一份可交互设计稿。按下面 5 步走一遍，就能完成本页核心操作；所有数据均为测试环境结构还原的脱敏赔案。</div>
+    <div class="ux-sec">操作五步走</div><div class="ux-step"><span class="n">1</span><div class="c"><b>先定位</b><span>顶部统计卡与状态 Tab 先过滤大范围，再在下方搜索区填精确条件。</span></div></div><div class="ux-step"><span class="n">2</span><div class="c"><b>用视图</b><span>「任务视图」提供待处理/处理中/已超时一键筛选，按你当前作业目标选。</span></div></div><div class="ux-step"><span class="n">3</span><div class="c"><b>批量做</b><span>勾选多条赔案后，工具栏批量拒赔/重新推送/复制赔案会作用于所选行。</span></div></div><div class="ux-step"><span class="n">4</span><div class="c"><b>进详情</b><span>点赔案号或「查看」进入审核详情；点「影像」直达影像作业界面。</span></div></div><div class="ux-step"><span class="n">5</span><div class="c"><b>看异常</b><span>红色「推送失败」Tab 收纳推送异常赔案，点开可看失败原因与重推记录。</span></div></div>
+    <div class="ux-tipbox"><div class="ux-sec">易错提醒</div><div>· 批量拒赔不可撤销，确认前会列出具体发票号清单。</div><div>· VIP 赔案有紫色标记，建议优先处理。</div></div>
+  </div>
+  <div class="ux-df"><span class="ux-kbd">Esc</span> 关闭 · <span class="ux-kbd">Ctrl/⌘ + K</span> 快捷命令</div>
+</div>
+<div class="ux-cmd" id="uxCmd">
+  <div class="ux-cmd-in"><span>⌕</span><input id="uxCmdInput" placeholder="输入页面名或操作，如「影像」「批量拒赔」…" oninput="uxCmdRender()" onkeydown="uxCmdKey(event)"></div>
+  <div class="ux-cmd-list" id="uxCmdList"></div>
+</div>
+<div class="ux-toast" id="uxToast"></div>
+
+<script>
+(function(){
+  if(window.__uxInjected) return; window.__uxInjected=true;
+  var mask=document.getElementById('uxMask'),drawer=document.getElementById('uxDrawer'),cmd=document.getElementById('uxCmd'),inp=document.getElementById('uxCmdInput');
+  window.uxOpenHelp=function(){mask.classList.add('show');drawer.classList.add('show');};
+  window.uxCloseAll=function(){mask.classList.remove('show','cmd-open');drawer.classList.remove('show');cmd.classList.remove('show');};
+  window.uxOpenCmd=function(){mask.classList.add('show','cmd-open');cmd.classList.add('show');inp.value='';uxCmdRender();setTimeout(function(){inp.focus();},30);};
+  var items=[['claim-manage.html','▤','赔案管理列表','列表'],['claim-detail.html','▣','理赔审核详情','详情'],['claim-image-detail.html','▧','赔案影像详情','影像'],['claim-rule-config.html','∑','理算规则配置','规则'],['job-config.html','⚙','主体专属作业配置','配置'],['import-record.html','⇩','导入记录','导入'],['customer-journey.html','▣','客户旅程（小程序）','客户'],['form-config.html','▤','表单配置中心','表单'],['evaluation-report.html','◫','评测报告','评测']];
+  var sel=0,shown=[];
+  window.uxCmdRender=function(){
+    var q=(inp.value||'').trim().toLowerCase();
+    shown=items.filter(function(x){return !q||x[2].toLowerCase().indexOf(q)>=0||x[3].indexOf(q)>=0;});
+    if(sel>=shown.length)sel=0;
+    var h='<div class="ux-cmd-grp">跳转页面</div>';
+    if(!shown.length) h+='<div class="ux-cmd-empty">没有匹配项</div>';
+    shown.forEach(function(x,i){
+      h+='<a class="ux-cmd-item'+(i===sel?' sel':'')+'" href="'+x[0]+'"><span class="ic">'+x[1]+'</span>'+x[2]+'<span class="hint">'+x[3]+'</span></a>';
+    });
+    document.getElementById('uxCmdList').innerHTML=h;
+  };
+  window.uxCmdKey=function(e){
+    if(e.key==='ArrowDown'){e.preventDefault();sel=Math.min(sel+1,shown.length-1);uxCmdRender();}
+    else if(e.key==='ArrowUp'){e.preventDefault();sel=Math.max(sel-1,0);uxCmdRender();}
+    else if(e.key==='Enter'&&shown[sel]){location.href=shown[sel][0];}
+  };
+  document.addEventListener('keydown',function(e){
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();uxOpenCmd();}
+    if(e.key==='Escape')uxCloseAll();
+  });
+  if(typeof window.toast!=='function'){
+    var t=document.getElementById('uxToast'),timer;
+    window.toast=function(msg){if(!t)return;t.textContent=msg;t.classList.add('show');clearTimeout(timer);timer=setTimeout(function(){t.classList.remove('show');},1800);};
+  }
+})();
+
+var ccMode='pass';
+function openCaseCDispose(mode){
+  ccMode=mode;
+  document.getElementById('ccTitle').firstChild.nodeValue=({pass:'一键通过',reject:'转拒赔',supplement:'发起补件'})[mode]+' · 人工终审确认 ';
+  document.getElementById('ccKind').value=({pass:'一键通过（写入终审留痕）',reject:'转拒赔（需结构化理由）',supplement:'发起补件（生成补件任务）'})[mode];
+  document.getElementById('ccReason').value='';
+  document.getElementById('ccAck').checked=false;
+  document.getElementById('ccConfirm').disabled=true;
+  openModal('mCaseC');
+}
+function confirmCaseC(){
+  if(document.getElementById('ccReason').value.trim().length<10){toast('请填写不少于 10 字的结构化原因');return;}
+  toast(({pass:'✓ 已一键通过 · 人工终审留痕（设计稿示意）',reject:'✓ 已转拒赔 · 结构化理由随案件流转（设计稿示意）',supplement:'✓ 已发起补件 · 任务绑定原案（设计稿示意）'})[ccMode]);
+  closeModal(document.getElementById('mCaseC'));
+}
+function openPushFail(no){document.getElementById('pfNo').textContent=no;openModal('mPushFail');}
+</script>
+
+</body>
+</html>

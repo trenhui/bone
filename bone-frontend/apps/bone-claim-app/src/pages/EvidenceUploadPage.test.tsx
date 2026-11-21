@@ -51,7 +51,7 @@ describe('EvidenceUploadPage · 影像清晰度三态', () => {
   it('UNCLEAR 渲染为红 Tag「不清晰」，CLEAR 渲染为绿 Tag「清晰」', async () => {
     render(<EvidenceUploadPage embeddedClaimId="c-1" />);
 
-    const table = screen.getByRole('table');
+    const table = await screen.findByRole('table');
     const unclear = await within(table).findByText('不清晰');
     expect(unclear.className).toContain('ant-tag-red');
 

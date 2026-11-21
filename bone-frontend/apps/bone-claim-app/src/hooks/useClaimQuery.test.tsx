@@ -6,9 +6,11 @@ import { useClaimQuery } from './useClaimQuery';
 import { useClaimIdParam } from './useClaimIdParam';
 
 function wrapper(initial: string) {
-  return ({ children }: { children: ReactNode }) => (
+  const Wrapper = ({ children }: { children: ReactNode }) => (
     <MemoryRouter initialEntries={[initial]}>{children}</MemoryRouter>
   );
+  Wrapper.displayName = 'ClaimQueryTestWrapper';
+  return Wrapper;
 }
 
 /** 同树内读取当前 URL，断言状态确实写进了地址栏（而不是只留在内存）。 */

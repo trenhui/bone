@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>理算规则配置 · TPA</title>
+<style>
+  :root{
+    --brand:#1f6feb; --brand-soft:#eaf2ff; --bg:#f4f6fa; --card:#fff;
+    --line:#e7ebf2; --line-strong:#d7dfeb; --txt:#1b2436; --txt-2:#5b667d; --txt-3:#98a2b6;
+    --green:#12a150; --green-bg:#e9f8ef; --amber:#e8891b; --amber-bg:#fff4e6;
+    --red:#d92d20; --red-bg:#fef0ee; --blue-bg:#eef4ff; --purple:#7a5af8; --purple-bg:#f1edff;
+    --radius:12px; --shadow:0 1px 2px rgba(22,35,60,.04),0 6px 20px rgba(22,35,60,.05);
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;
+    padding:0 24px;gap:14px;position:sticky;top:0;z-index:50}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .logo .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#1f6feb,#7a5af8);
+    color:#fff;display:grid;place-items:center;font-size:14px;font-weight:800}
+  .crumb{color:var(--txt-3);font-size:13px;display:flex;gap:8px;align-items:center;margin-left:8px}
+  .crumb b{color:var(--txt-2);font-weight:500}
+  .crumb .sep{color:#c7d0de}
+  .topbar .right{margin-left:auto;display:flex;align-items:center;gap:18px}
+  .env{font-size:12px;color:var(--amber);background:var(--amber-bg);padding:4px 10px;border-radius:20px;font-weight:600}
+  .avatar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt-2)}
+  .avatar .dot{width:30px;height:30px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:700}
+  /* demo nav */
+  .demo-nav{display:flex;align-items:center;gap:6px;margin-left:10px;position:relative}
+  .demo-nav .dn-btn{font-size:12px;color:var(--txt-2);border:1px solid var(--line-strong);background:#fff;padding:5px 11px;border-radius:7px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px}
+  .demo-nav .dn-btn:hover{border-color:var(--brand);color:var(--brand)}
+  .demo-nav .dn-menu{display:none;position:absolute;top:34px;left:0;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:6px;min-width:200px;z-index:80}
+  .demo-nav.open .dn-menu{display:block}
+  .demo-nav .dn-menu a{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;font-size:13px;color:var(--txt-2)}
+  .demo-nav .dn-menu a:hover{background:var(--bg)}
+  .demo-nav .dn-menu a.cur{background:var(--brand-soft);color:var(--brand);font-weight:700}
+  .demo-nav .dn-menu a .ic{width:18px;text-align:center}
+  .demo-nav .dn-menu .cur-tag{margin-left:auto;font-size:10px;color:var(--brand)}
+  /* page */
+  .wrap{padding:20px 24px 60px}
+  .page-title{display:flex;align-items:center;gap:12px;margin-bottom:4px;flex-wrap:wrap}
+  .page-title h1{font-size:21px;font-weight:700}
+  .page-title .badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:16px;background:var(--green-bg);color:var(--green);border:1px solid #a7e3bf}
+  .page-title .sub{font-size:13px;color:var(--txt-3);margin-left:auto}
+  .policy-meta{display:flex;gap:22px;flex-wrap:wrap;font-size:12.5px;color:var(--txt-2);background:#fff;border:1px solid var(--line);
+    border-radius:var(--radius);padding:12px 18px;margin:14px 0 18px;box-shadow:var(--shadow)}
+  .policy-meta b{color:var(--txt);font-weight:600}
+  .policy-meta .mono{font-family:var(--mono);font-size:12px}
+  /* tabs */
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto}
+  .tab{padding:12px 18px;font-size:13.5px;color:var(--txt-2);cursor:pointer;white-space:nowrap;position:relative;font-weight:600}
+  .tab.active{color:var(--brand)}
+  .tab.active:after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:3px;background:var(--brand);border-radius:3px 3px 0 0}
+  /* card */
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden}
+  .card-h{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fcfdff,#fff)}
+  .card-h h2{font-size:15px;font-weight:700;display:flex;align-items:center;gap:9px}
+  .card-h .ico{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:14px;background:var(--blue-bg);color:var(--brand)}
+  .card-h .desc{font-size:12px;color:var(--txt-3);font-weight:400}
+  .card-h .tag{font-size:11px;color:var(--txt-3);background:var(--bg);border-radius:6px;padding:2px 8px}
+  .card-h .sp{flex:1}
+  .card-b{padding:18px}
+  .btn{border:1px solid var(--line-strong);background:#fff;color:var(--txt);padding:8px 15px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;font-family:inherit}
+  .btn:hover{border-color:var(--brand);color:var(--brand)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{background:#1859c4}
+  .btn.sm{padding:5px 11px;font-size:12px}
+  .btn.ghost{border-color:transparent;color:var(--brand)}
+  /* matrix table */
+  .mx-wrap{border:1px solid var(--line);border-radius:10px;overflow:auto;background:#fff}
+  .mx{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
+  .mx th,.mx td{padding:10px 12px;border:1px solid var(--line);text-align:left}
+  .mx thead .g1 th{background:#eaf0fa;color:var(--txt-2);text-align:center;font-weight:700;font-size:12px;border-bottom:2px solid #cdd9ec}
+  .mx thead .g2 th{background:#f7f9fc;color:var(--txt-2);font-weight:700;font-size:12px}
+  .mx tbody td{background:#fff}
+  .mx tbody tr:hover td{background:#fafcff}
+  .mx td.lvl{background:#fbfcfe;font-weight:700;color:var(--txt-2)}
+  .mx td.add{color:var(--brand);background:var(--blue-bg);text-align:center;cursor:pointer;font-weight:600}
+  .mx td.add:hover{background:#dfeaff}
+  .mx input,.mx select{width:100%;border:1px solid transparent;background:transparent;font-size:12.5px;font-family:inherit;color:var(--txt);padding:4px 6px;border-radius:5px}
+  .mx input:hover,.mx select:hover{border-color:var(--line-strong);background:#fff}
+  .mx input:focus,.mx select:focus{outline:none;border-color:var(--brand);background:#fff}
+  .mx td.num input{text-align:right;font-family:var(--mono)}
+  .pill{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;display:inline-block}
+  .pill.gen{color:var(--txt-2);background:var(--bg)}
+  .pill.exc{color:var(--purple);background:var(--purple-bg)}
+  .pill.diff{color:var(--amber);background:var(--amber-bg)}
+  .mx-note{font-size:11.5px;color:var(--txt-3);padding:9px 2px 0;line-height:1.7}
+  /* factor matrix */
+  .factor-bar{display:flex;align-items:center;gap:18px;flex-wrap:wrap;background:#fafcff;border:1px solid var(--line);
+    border-radius:9px;padding:12px 14px;margin-bottom:14px}
+  .factor-bar .fl{font-size:12.5px;font-weight:700;color:var(--txt-2)}
+  .factor-bar label{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--txt);cursor:pointer}
+  .factor-bar input[type=checkbox]{width:15px;height:15px;accent-color:var(--brand)}
+  .factor-bar .hint{margin-left:auto;font-size:11.5px;color:var(--txt-3)}
+  .factor-grid td.fdim{background:#f7f9fc;font-weight:600;color:var(--txt-2)}
+  .factor-grid td.val input{color:var(--brand);font-weight:600}
+  .preserve-tip{background:var(--green-bg);border:1px solid #a7e3bf;color:#0d6b38;font-size:12px;padding:8px 12px;border-radius:8px;margin-top:12px;display:flex;align-items:center;gap:8px}
+  /* expression editor */
+  .expr-wrap{display:grid;grid-template-columns:1fr 320px;gap:14px}
+  .expr-main{border:1px solid var(--line-strong);border-radius:9px;overflow:hidden}
+  .expr-main .em-h{background:#f7f9fc;padding:8px 12px;font-size:12px;color:var(--txt-2);border-bottom:1px solid var(--line);font-weight:600;display:flex;align-items:center;gap:8px}
+  .expr-main .em-h .ro{margin-left:auto;font-size:11px;color:var(--txt-3);font-weight:400}
+  .expr-str{min-height:64px;padding:14px;font-family:var(--mono);font-size:14px;color:var(--brand);background:#fff;line-height:1.9;word-break:break-all}
+  .expr-str .fn{color:var(--purple);font-weight:700}
+  .expr-str .fld{color:var(--green);font-weight:600}
+  .expr-str .op{color:var(--txt-3)}
+  .expr-str .cursor{display:inline-block;width:2px;height:16px;background:var(--brand);vertical-align:-3px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .expr-val{font-size:12px;padding:9px 14px;background:var(--green-bg);border-top:1px solid #a7e3bf;color:#0d6b38}
+  .expr-val.bad{background:var(--red-bg);border-color:#f3c3bd;color:var(--red)}
+  .expr-palette{border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .expr-palette .ep-h{background:#f7f9fc;padding:9px 12px;font-size:12px;font-weight:700;color:var(--txt-2);border-bottom:1px solid var(--line)}
+  .palette-tabs{display:flex;gap:0;border-bottom:1px solid var(--line)}
+  .palette-tabs span{flex:1;text-align:center;padding:8px;font-size:12px;color:var(--txt-3);cursor:pointer;font-weight:600}
+  .palette-tabs span.on{color:var(--brand);border-bottom:2px solid var(--brand)}
+  .palette-items{padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:196px;overflow:auto}
+  .palette-items button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:8px 6px;font-size:12px;color:var(--txt);cursor:pointer;font-family:inherit;text-align:left}
+  .palette-items button:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-soft)}
+  .palette-items button.fn{font-family:var(--mono);color:var(--purple)}
+  .palette-tip{font-size:11px;color:var(--txt-3);padding:8px 12px;border-top:1px solid var(--line);line-height:1.6}
+  /* modal (分区聚合校验) */
+  .mask{position:fixed;inset:0;background:rgba(22,35,60,.42);display:none;place-items:center;z-index:120;padding:24px}
+  .mask.show{display:grid}
+  .modal{background:#fff;border-radius:14px;width:760px;max-width:100%;max-height:92vh;overflow:auto;box-shadow:0 20px 60px rgba(22,35,60,.24)}
+  .modal .mh{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;font-size:16px;font-weight:700}
+  .modal .mh .x{margin-left:auto;cursor:pointer;color:var(--txt-3);font-size:22px;line-height:1}
+  .modal .mb{padding:20px}
+  .sec{border:1px solid var(--line);border-radius:9px;margin-bottom:14px;overflow:hidden}
+  .sec .sh{background:#f7f9fc;padding:9px 13px;font-size:13px;font-weight:700;color:var(--txt-2);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+  .sec .sh .badge-ok{margin-left:auto;font-size:11px;color:var(--green);font-weight:600}
+  .sec .sb{padding:13px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .mfield .lbl{font-size:12px;color:var(--txt-2);margin-bottom:5px;font-weight:600}
+  .mfield .lbl .req{color:var(--red)}
+  .mfield input,.mfield select,.mfield textarea{width:100%;border:1px solid var(--line-strong);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;color:var(--txt)}
+  .modal .mf{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+  .toast{position:fixed;top:74px;left:50%;transform:translateX(-50%);background:#1b2436;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;z-index:200;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1}
+  .foot{text-align:center;color:var(--txt-3);font-size:12px;padding:24px;border-top:1px solid var(--line);background:#fff}
+  @media(max-width:1100px){.expr-wrap{grid-template-columns:1fr}.demo-nav{display:none}}
+
+  /* ===== UX assist: help + command palette + feedback ===== */
+  .ux-fab{position:fixed;right:22px;bottom:22px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line-strong);
+    background:#fff;color:var(--brand);font-size:19px;font-weight:700;cursor:pointer;box-shadow:0 4px 18px rgba(22,35,60,.14);
+    z-index:120;display:grid;place-items:center;transition:.18s}
+  .ux-fab:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(31,111,235,.25);background:var(--brand);color:#fff}
+  .ux-mask{position:fixed;inset:0;background:rgba(20,28,45,.42);z-index:300;display:none}
+  .ux-mask.show{display:block}
+  .ux-drawer{position:fixed;right:0;top:0;bottom:0;width:420px;max-width:92vw;background:#fff;z-index:310;
+    box-shadow:-8px 0 30px rgba(22,35,60,.16);transform:translateX(105%);transition:transform .24s ease;
+    display:flex;flex-direction:column}
+  .ux-drawer.show{transform:translateX(0)}
+  .ux-dh{padding:20px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .ux-dh .ic{width:32px;height:32px;border-radius:9px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:800}
+  .ux-dh b{font-size:16px}
+  .ux-dh .x{margin-left:auto;cursor:pointer;color:var(--txt-3);font-size:22px;line-height:1;border:0;background:none}
+  .ux-db{padding:18px 22px;overflow:auto;flex:1}
+  .ux-lead{background:var(--brand-soft);border:1px solid #d3e3ff;color:#1e4e9c;border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.65;margin-bottom:18px}
+  .ux-sec{font-size:12px;color:var(--txt-3);font-weight:700;letter-spacing:.06em;margin:4px 0 11px}
+  .ux-step{display:flex;gap:11px;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .ux-step:last-child{border-bottom:0}
+  .ux-step .n{flex:0 0 22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;margin-top:1px}
+  .ux-step .c b{display:block;font-size:13.5px;margin-bottom:2px}
+  .ux-step .c span{font-size:12.5px;color:var(--txt-2);line-height:1.6}
+  .ux-tipbox{margin-top:20px;background:var(--amber-bg);border:1px solid #f7dcb5;border-radius:10px;padding:12px 14px}
+  .ux-tipbox .ux-sec{color:#a25b06;margin-top:0}
+  .ux-tipbox div{font-size:12.5px;color:#7a4a08;line-height:1.7;padding:3px 0}
+  .ux-df{padding:13px 22px;border-top:1px solid var(--line);font-size:12px;color:var(--txt-3);display:flex;align-items:center;gap:8px}
+  .ux-kbd{display:inline-block;background:#f4f6fa;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;
+    padding:1px 6px;font-family:var(--mono);font-size:11px;color:var(--txt-2)}
+  /* command palette */
+  .ux-cmd{position:fixed;left:50%;top:14%;transform:translate(-50%,-12px);width:min(560px,92vw);background:#fff;z-index:310;
+    border-radius:14px;box-shadow:0 20px 60px rgba(22,35,60,.24);overflow:hidden;opacity:0;transition:.16s;pointer-events:none}
+  .ux-mask.cmd-open~.ux-cmd,.ux-cmd.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .ux-cmd-in{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .ux-cmd-in span{color:var(--txt-3);font-size:18px}
+  .ux-cmd-in input{flex:1;border:0;outline:0;font-size:15px;color:var(--txt);background:transparent}
+  .ux-cmd-list{max-height:360px;overflow:auto;padding:8px}
+  .ux-cmd-grp{font-size:11px;color:var(--txt-3);font-weight:700;padding:8px 10px 4px;letter-spacing:.05em}
+  .ux-cmd-item{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:8px;cursor:pointer;font-size:13.5px}
+  .ux-cmd-item:hover,.ux-cmd-item.sel{background:var(--brand-soft)}
+  .ux-cmd-item .ic{width:26px;height:26px;border-radius:7px;background:#f4f6fa;color:var(--brand);display:grid;place-items:center;font-size:13px}
+  .ux-cmd-item .hint{margin-left:auto;font-size:11px;color:var(--txt-3)}
+  .ux-cmd-empty{padding:28px;text-align:center;color:var(--txt-3);font-size:13px}
+  /* inline feedback toast (fallback) */
+  .ux-toast{position:fixed;left:50%;bottom:76px;transform:translate(-50%,12px);background:#1b2436;color:#fff;padding:10px 18px;
+    border-radius:9px;font-size:13px;z-index:400;opacity:0;transition:.2s;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+  .ux-toast.show{opacity:1;transform:translate(-50%,0)}
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><span class="mark">P</span> TPA <span style="font-weight:400;color:var(--txt-3);font-size:12px">理赔运营平台</span></div>
+  <div class="crumb"><span>保单配置</span><span class="sep">/</span><b>理算规则配置</b></div>
+  <div class="demo-nav" id="demoNav">
+    <button class="dn-btn" onclick="document.getElementById('demoNav').classList.toggle('open')">◫ 设计稿导航 ▾</button>
+    <div class="dn-menu">
+      <a href="claim-manage.html"><span class="ic">▤</span>赔案管理列表</a>
+      <a href="claim-detail.html"><span class="ic">▣</span>理赔审核详情</a>
+      <a href="claim-image-detail.html"><span class="ic">▧</span>赔案影像详情</a>
+      <a href="claim-rule-config.html" class="cur"><span class="ic">∑</span>理算规则配置<span class="cur-tag">当前</span></a>
+      <a href="job-config.html"><span class="ic">⚙</span>主体专属作业配置<span class="cur-tag">NEW</span></a>
+      <a href="import-record.html"><span class="ic">⇩</span>导入记录<span class="cur-tag">NEW</span></a>
+      <a href="customer-journey.html"><span class="ic">▣</span>客户旅程（小程序）<span class="cur-tag">NEW</span></a>
+      <a href="form-config.html"><span class="ic">▤</span>表单配置中心<span class="cur-tag">NEW</span></a>
+      <a href="evaluation-report.html"><span class="ic">◫</span>评测报告</a>
+    </div>
+  </div>
+  <div class="right">
+    <span class="env">测试环境</span>
+    <div class="avatar"><span class="dot">admin</span><span>系统管理员</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="page-title">
+    <h1>理算规则配置</h1>
+    <span class="badge">● 已发布 v3</span>
+    <span class="sub">复杂规则的可视化配置台 · 体现系统 UI 表达能力上限</span>
+  </div>
+  <div class="policy-meta">
+    <span>保障计划 <b>示例财险·住院医疗综合计划</b></span>
+    <span>险种 <b class="mono">3</b></span>
+    <span>责任 <b class="mono">6</b></span>
+    <span>最近发布 <b>2026-11-18 16:40</b></span>
+    <span>发布人 <b>张配置</b></span>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active">责任规则</div>
+    <div class="tab">个人额度</div>
+    <div class="tab">单证配置</div>
+    <div class="tab">免赔/比例</div>
+  </div>
+
+  <!-- 1. 三层矩阵表格 -->
+  <div class="card">
+    <div class="card-h">
+      <h2><span class="ico">▦</span>责任规则矩阵</h2>
+      <span class="desc">计划 → 险种 → 责任 三级结构，两级表头 + 合并单元格</span>
+      <span class="tag">先选行再操作</span>
+      <span class="sp"></span>
+      <button class="btn sm" onclick="toast('已生成同步预览：仅未锁定的标准规则可被覆盖（设计稿示意）')">同步标准规则</button>
+      <button class="btn sm primary" onclick="openModal()">＋ 责任编辑</button>
+    </div>
+    <div class="card-b">
+      <div class="mx-wrap">
+        <table class="mx">
+          <thead>
+            <tr class="g1">
+              <th rowspan="2" style="width:80px">保障计划</th>
+              <th rowspan="2" style="width:120px">险种名称</th>
+              <th colspan="3">责任层</th>
+              <th rowspan="2" style="width:96px">规则性质</th>
+              <th rowspan="2" style="width:100px">操作</th>
+            </tr>
+            <tr class="g2">
+              <th style="width:150px">责任名称</th>
+              <th style="width:100px">责任类型</th>
+              <th style="width:110px">保额 / 限额</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="lvl" rowspan="6">住院医疗<br>综合计划</td>
+              <td class="lvl" rowspan="3">住院医疗(A)</td>
+              <td><input value="社保内医疗费用"></td>
+              <td><select><option>费用补偿</option><option>定额给付</option></select></td>
+              <td class="num"><input value="100,000.00"></td>
+              <td><span class="pill gen">通用</span></td>
+              <td><button class="btn sm ghost" onclick="openModal()">编辑</button></td>
+            </tr>
+            <tr>
+              <td><input value="社保外医疗费用"></td>
+              <td><select><option>费用补偿</option></select></td>
+              <td class="num"><input value="50,000.00"></td>
+              <td><span class="pill exc">专属</span></td>
+              <td><button class="btn sm ghost" onclick="openModal()">编辑</button></td>
+            </tr>
+            <tr>
+              <td><input value="住院津贴"></td>
+              <td><select><option>定额给付</option></select></td>
+              <td class="num"><input value="200.00 / 天"></td>
+              <td><span class="pill gen">通用</span></td>
+              <td><button class="btn sm ghost" onclick="openModal()">编辑</button></td>
+            </tr>
+            <tr>
+              <td class="lvl" rowspan="2">门诊医疗(B)</td>
+              <td><input value="门诊医疗费用"></td>
+              <td><select><option>费用补偿</option></select></td>
+              <td class="num"><input value="10,000.00"></td>
+              <td><span class="pill diff">专属·改</span></td>
+              <td><button class="btn sm ghost" onclick="openModal()">编辑</button></td>
+            </tr>
+            <tr>
+              <td><input value="门诊津贴"></td>
+              <td><select><option>定额给付</option></select></td>
+              <td class="num"><input value="100.00 / 次"></td>
+              <td><span class="pill gen">通用</span></td>
+              <td><button class="btn sm ghost" onclick="openModal()">编辑</button></td>
+            </tr>
+            <tr>
+              <td class="lvl">重大疾病(C)</td>
+              <td><input value="重大疾病保险金"></td>
+              <td><select><option>定额给付</option></select></td>
+              <td class="num"><input value="300,000.00"></td>
+              <td><span class="pill exc">专属</span></td>
+              <td><button class="btn sm ghost" onclick="openModal()">编辑</button></td>
+            </tr>
+            <tr>
+              <td class="lvl" colspan="6" class="add">＋ 添加险种</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mx-note">
+        设计要点：① 三层结构用 <b>rowspan</b> 合并空单元格，先选行再操作，避免误改；② 空位提供「添加险种/添加责任」引导；③ 规则性质列（<span class="pill gen">通用</span> <span class="pill exc">专属</span> <span class="pill diff">专属·改</span>）显式标注「谁覆盖谁」，配「同步标准规则」按钮把覆盖关系讲清楚。
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 因子笛卡尔积矩阵 -->
+  <div class="card">
+    <div class="card-h">
+      <h2><span class="ico">⊞</span>赔付比例因子矩阵</h2>
+      <span class="desc">勾选条件即生成矩阵行列，改动结构时保留已填值</span>
+      <span class="tag">笛卡尔积</span>
+    </div>
+    <div class="card-b">
+      <div class="factor-bar">
+        <span class="fl">区分维度</span>
+        <label><input type="checkbox" class="fac" checked data-dim="hosp">区分医院等级</label>
+        <label><input type="checkbox" class="fac" checked data-dim="medi">区分医保身份</label>
+        <label><input type="checkbox" class="fac" data-dim="amt">区分金额区间</label>
+        <span class="hint">勾选后自动生成矩阵 · 已填值不会被清空</span>
+      </div>
+      <div class="mx-wrap">
+        <table class="mx factor-grid" id="factorTable">
+          <thead id="factorHead"></thead>
+          <tbody id="factorBody"></tbody>
+        </table>
+      </div>
+      <div class="preserve-tip">✓ 结构变更保留机制：切换「区分维度」时，通过 <b>mergeTableData</b> 语义按行键合并旧值，已填赔付比例不丢失。</div>
+    </div>
+  </div>
+
+  <!-- 3. 语法引导式公式编辑器 -->
+  <div class="card">
+    <div class="card-h">
+      <h2><span class="ico">ƒ</span>理算公式设置</h2>
+      <span class="desc">只读表达式 + 函数/业务字段双栏点击输入 + 上下文校验</span>
+      <span class="tag">语法引导</span>
+    </div>
+    <div class="card-b">
+      <div class="expr-wrap">
+        <div class="expr-main">
+          <div class="em-h">赔付金额 = <span class="ro">只读 · 点击右侧插入，不可自由输入</span></div>
+          <div class="expr-str" id="exprStr"><span class="fld">理算金额</span> <span class="op">−</span> <span class="fld">免赔额</span> <span class="op">×</span> <span class="fn">MIN</span><span class="op">(</span>1<span class="op">,</span> <span class="fld">赔付比例</span><span class="op">)</span> <span class="cursor"></span></div>
+          <div class="expr-val" id="exprVal">✓ 语法校验通过 · 括号配对正确 · 字段引用有效</div>
+        </div>
+        <div class="expr-palette">
+          <div class="ep-h">输入面板</div>
+          <div class="palette-tabs"><span class="on" data-pt="fn">函数</span><span data-pt="fld">业务字段</span><span data-pt="op">运算符</span></div>
+          <div class="palette-items" id="paletteItems"></div>
+          <div class="palette-tip">合法输入受上下文限制：括号内只能放数值/字段，函数后必须跟左括号。非法组合会被即时拦截。</div>
+        </div>
+      </div>
+      <div class="mx-note">设计要点：比自由文本框大幅降低配置错误率——函数与字段双栏点击输入、上下文感知的合法输入限制、括号与运算符校验，是整套配置台「专业感」最强的亮点。</div>
+    </div>
+  </div>
+
+  <!-- 4. 分区聚合校验弹窗触发说明 -->
+  <div class="card">
+    <div class="card-h">
+      <h2><span class="ico">✓</span>责任编辑（分区聚合校验）</h2>
+      <span class="desc">单弹窗四区：适用范围 / 赔付规则 / 控额规则 / 理算信息，逐区校验后聚合提交</span>
+    </div>
+    <div class="card-b">
+      <div class="mx-note" style="padding-top:0">复杂配置不拆成多步 Wizard（看不到全貌），而是「一屏分区 + 每区 <code>validate</code> + 父组件汇总校验」。点击上方「责任编辑」或下方按钮体验。</div>
+      <button class="btn primary" style="margin-top:12px" onclick="openModal()">打开责任编辑弹窗</button>
+    </div>
+  </div>
+</div>
+
+<div class="foot">演示数据已脱敏 · 非真实客户信息 · TPA 理赔运营平台 · 理算规则配置页设计稿（三层矩阵 / 因子矩阵 / 公式编辑器 / 分区校验）</div>
+
+<!-- 责任编辑弹窗：分区聚合校验 -->
+<div class="mask" id="editorMask" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="mh">责任编辑 · 社保内医疗费用 <span class="x" onclick="closeModal()">×</span></div>
+    <div class="mb">
+      <div class="sec">
+        <div class="sh">① 适用范围 <span class="badge-ok" id="v1">✓ 已校验</span></div>
+        <div class="sb">
+          <div class="mfield"><div class="lbl"><span class="req">*</span> 适用险种</div><input id="rv1" value="住院医疗(A)"></div>
+          <div class="mfield"><div class="lbl"><span class="req">*</span> 适用责任</div><input value="社保内医疗费用"></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sh">② 赔付规则 <span class="badge-ok" id="v2">✓ 已校验</span></div>
+        <div class="sb">
+          <div class="mfield"><div class="lbl"><span class="req">*</span> 赔付比例</div><input id="rv2" value="90%"></div>
+          <div class="mfield"><div class="lbl">免赔额</div><input value="100.00"></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sh">③ 控额规则 <span class="badge-ok" id="v3">✓ 已校验</span></div>
+        <div class="sb">
+          <div class="mfield"><div class="lbl"><span class="req">*</span> 单次限额</div><input id="rv3" value="50,000.00"></div>
+          <div class="mfield"><div class="lbl">年度限额</div><input value="100,000.00"></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sh">④ 理算信息 <span class="badge-ok" id="v4">✓ 已校验</span></div>
+        <div class="sb">
+          <div class="mfield"><div class="lbl"><span class="req">*</span> 理算公式</div><input id="rv4" value="理算金额 − 免赔额 × MIN(1,赔付比例)" readonly style="font-family:var(--mono);color:var(--brand)"></div>
+          <div class="mfield"><div class="lbl">取整方式</div><select><option>四舍五入到分</option><option>向下取整</option></select></div>
+        </div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="validateAll()">校验并保存</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const toast=(m)=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);};
+  // demo nav outside click
+  document.addEventListener('click',e=>{const dn=document.getElementById('demoNav');if(dn&&!dn.contains(e.target))dn.classList.remove('open');});
+  // tabs
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.tabs .tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
+  }));
+
+  // ---- 因子笛卡尔积矩阵 ----
+  const DIMS={
+    hosp:['一级医院','二级医院','三级医院'],
+    medi:['社保','自费'],
+    amt:['0–1万','1–5万','5万以上']
+  };
+  const factorVals={}; // 保留已填值: key -> value
+  function renderFactor(){
+    const dims=[...document.querySelectorAll('.fac:checked')].map(c=>c.dataset.dim);
+    const head=document.getElementById('factorHead'), body=document.getElementById('factorBody');
+    // 列维度：最后一个；行维度：其余
+    const colDim=dims[dims.length-1]||'medi';
+    const rowDims=dims.slice(0,-1);
+    const cols=DIMS[colDim]||['赔付比例'];
+    // row keys = 笛卡尔积
+    let rows=[''];
+    rowDims.forEach(d=>{const next=[];rows.forEach(r=>DIMS[d].forEach(v=>next.push(r?r+' / '+v:v)));rows=next;});
+    if(!rows.length) rows=['全部'];
+    let h='<tr class="g2"><th style="min-width:150px">维度组合</th>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr>';
+    head.innerHTML=h;
+    body.innerHTML=rows.map(r=>`<tr><td class="fdim">${r}</td>`+cols.map(c=>{
+      const key=r+'|'+c;
+      return `<td class="val"><input value="${factorVals[key]||'90%'}" onchange="factorVals['${key.replace(/'/g,"\\'")}']=this.value"></td>`;
+    }).join('')+'</tr>').join('');
+  }
+  document.querySelectorAll('.fac').forEach(c=>c.addEventListener('change',renderFactor));
+  renderFactor();
+
+  // ---- 语法引导式公式编辑器 ----
+  const PALETTE={
+    fn:['MIN','MAX','ROUND','IF','SUM'],
+    fld:['理算金额','免赔额','赔付比例','发票金额','社保已赔'],
+    op:['+','−','×','÷','(',')']
+  };
+  let ptab='fn';
+  function renderPalette(){
+    document.getElementById('paletteItems').innerHTML=PALETTE[ptab].map(x=>
+      `<button class="${ptab==='fn'?'fn':''}" onclick="insertToken('${x}')">${x}</button>`).join('');
+  }
+  document.querySelectorAll('.palette-tabs span').forEach(s=>s.addEventListener('click',()=>{
+    document.querySelectorAll('.palette-tabs span').forEach(x=>x.classList.remove('on'));s.classList.add('on');ptab=s.dataset.pt;renderPalette();
+  }));
+  renderPalette();
+  let exprTokens=[];
+  window.insertToken=(tok)=>{
+    exprTokens.push(tok);
+    const fnSet=new Set(PALETTE.fn), fldSet=new Set(PALETTE.fld);
+    const html=exprTokens.map(t=>{
+      if(fnSet.has(t))return `<span class="fn">${t}</span>`;
+      if(fldSet.has(t))return `<span class="fld">${t}</span>`;
+      return `<span class="op">${t}</span>`;
+    }).join(' ')+' <span class="cursor"></span>';
+    document.getElementById('exprStr').innerHTML=html;
+    validateExpr();
+  };
+  function validateExpr(){
+    const s=exprTokens.join('');
+    const bal=(s.match(/\(/g)||[]).length-(s.match(/\)/g)||[]).length;
+    const el=document.getElementById('exprVal');
+    if(bal!==0){el.className='expr-val bad';el.textContent='✕ 括号未配对 · 请在右侧插入「)」补全表达式';}
+    else{el.className='expr-val';el.textContent='✓ 语法校验通过 · 括号配对正确 · 字段引用有效';}
+  }
+
+  // ---- 责任编辑弹窗 / 分区聚合校验 ----
+  function openModal(){document.getElementById('editorMask').classList.add('show');}
+  function closeModal(){document.getElementById('editorMask').classList.remove('show');}
+  function validateAll(){
+    const vals=['rv1','rv2','rv3','rv4'].map(id=>(document.getElementById(id)?.value||'').trim());
+    const bad=vals.map((v,i)=>v?'':['适用范围','赔付规则','控额规则','理算信息'][i]).filter(Boolean);
+    if(bad.length){toast('✕ 分区未通过：'+bad.join('、')+' 必填项为空');return;}
+    if((document.getElementById('exprVal')?.textContent||'').indexOf('✕')===0){toast('✕ 理算表达式语法未通过，不能保存');return;}
+    ['v1','v2','v3','v4'].forEach(id=>{const e=document.getElementById(id);if(e){e.textContent='✓ 已校验';}});
+    toast('✓ 四个分区必填项与表达式均校验通过，责任编辑已保存');closeModal();
+  }
+</script>
+<button class="ux-fab" id="uxFab" title="操作指引 / 快捷命令 (Ctrl+K)" onclick="uxOpenHelp()">?</button>
+<div class="ux-mask" id="uxMask" onclick="uxCloseAll()"></div>
+<div class="ux-drawer" id="uxDrawer">
+  <div class="ux-dh"><span class="ic">?</span><b>理算规则配置 · 快速上手</b><button class="x" onclick="uxCloseAll()">×</button></div>
+  <div class="ux-db">
+    <div class="ux-lead">这是一份可交互设计稿。按下面 5 步走一遍，就能完成本页核心操作；所有数据来自测试环境真实赔案。</div>
+    <div class="ux-sec">操作五步走</div><div class="ux-step"><span class="n">1</span><div class="c"><b>看矩阵</b><span>责任规则是「计划→险种→责任」三层表格，先选左侧责任行再操作。</span></div></div><div class="ux-step"><span class="n">2</span><div class="c"><b>配因子</b><span>勾选「区分医院等级/医保/金额区间」自动生成赔付比例矩阵，改维度会保留已填值。</span></div></div><div class="ux-step"><span class="n">3</span><div class="c"><b>写公式</b><span>公式编辑器用点选方式插入函数与业务字段，避免手敲语法出错。</span></div></div><div class="ux-step"><span class="n">4</span><div class="c"><b>懂标签</b><span>通用=继承标准模板，专属=本主体覆盖，专属·改=改过标准值。</span></div></div><div class="ux-step"><span class="n">5</span><div class="c"><b>先校验</b><span>保存前用「责任编辑」弹窗逐区校验，四区全过才会保存。</span></div></div>
+    <div class="ux-tipbox"><div class="ux-sec">易错提醒</div><div>· 表达式串是只读的，只能通过下方按钮点选插入。</div><div>· 括号与运算符会实时校验，红了就改。</div></div>
+  </div>
+  <div class="ux-df"><span class="ux-kbd">Esc</span> 关闭 · <span class="ux-kbd">Ctrl/⌘ + K</span> 快捷命令</div>
+</div>
+<div class="ux-cmd" id="uxCmd">
+  <div class="ux-cmd-in"><span>⌕</span><input id="uxCmdInput" placeholder="输入页面名或操作，如「影像」「批量拒赔」…" oninput="uxCmdRender()" onkeydown="uxCmdKey(event)"></div>
+  <div class="ux-cmd-list" id="uxCmdList"></div>
+</div>
+<div class="ux-toast" id="uxToast"></div>
+
+<script>
+(function(){
+  if(window.__uxInjected) return; window.__uxInjected=true;
+  var mask=document.getElementById('uxMask'),drawer=document.getElementById('uxDrawer'),cmd=document.getElementById('uxCmd'),inp=document.getElementById('uxCmdInput');
+  window.uxOpenHelp=function(){mask.classList.add('show');drawer.classList.add('show');};
+  window.uxCloseAll=function(){mask.classList.remove('show','cmd-open');drawer.classList.remove('show');cmd.classList.remove('show');};
+  window.uxOpenCmd=function(){mask.classList.add('show','cmd-open');cmd.classList.add('show');inp.value='';uxCmdRender();setTimeout(function(){inp.focus();},30);};
+  var items=[['claim-manage.html','▤','赔案管理列表','列表'],['claim-detail.html','▣','理赔审核详情','详情'],['claim-image-detail.html','▧','赔案影像详情','影像'],['claim-rule-config.html','∑','理算规则配置','规则'],['job-config.html','⚙','主体专属作业配置','配置'],['import-record.html','⇩','导入记录','导入'],['customer-journey.html','▣','客户旅程（小程序）','客户'],['form-config.html','▤','表单配置中心','表单'],['evaluation-report.html','◫','评测报告','评测']];
+  var sel=0,shown=[];
+  window.uxCmdRender=function(){
+    var q=(inp.value||'').trim().toLowerCase();
+    shown=items.filter(function(x){return !q||x[2].toLowerCase().indexOf(q)>=0||x[3].indexOf(q)>=0;});
+    if(sel>=shown.length)sel=0;
+    var h='<div class="ux-cmd-grp">跳转页面</div>';
+    if(!shown.length) h+='<div class="ux-cmd-empty">没有匹配项</div>';
+    shown.forEach(function(x,i){
+      h+='<a class="ux-cmd-item'+(i===sel?' sel':'')+'" href="'+x[0]+'"><span class="ic">'+x[1]+'</span>'+x[2]+'<span class="hint">'+x[3]+'</span></a>';
+    });
+    document.getElementById('uxCmdList').innerHTML=h;
+  };
+  window.uxCmdKey=function(e){
+    if(e.key==='ArrowDown'){e.preventDefault();sel=Math.min(sel+1,shown.length-1);uxCmdRender();}
+    else if(e.key==='ArrowUp'){e.preventDefault();sel=Math.max(sel-1,0);uxCmdRender();}
+    else if(e.key==='Enter'&&shown[sel]){location.href=shown[sel][0];}
+  };
+  document.addEventListener('keydown',function(e){
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();uxOpenCmd();}
+    if(e.key==='Escape')uxCloseAll();
+  });
+  if(typeof window.toast!=='function'){
+    var t=document.getElementById('uxToast'),timer;
+    window.toast=function(msg){if(!t)return;t.textContent=msg;t.classList.add('show');clearTimeout(timer);timer=setTimeout(function(){t.classList.remove('show');},1800);};
+  }
+})();
+</script>
+
+</body>
+</html>

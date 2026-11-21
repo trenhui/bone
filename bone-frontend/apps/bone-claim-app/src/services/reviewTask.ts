@@ -13,6 +13,7 @@
 import { createApiClient } from '@bone/shared-services';
 import type { ApiResponse } from '@bone/shared-types';
 import { newIdempotencyKey } from './claim';
+import { stableClaimActionKey } from './claim';
 import type {
   ClaimHeadProjection,
   Decision,
@@ -53,11 +54,19 @@ export const reviewTaskApi = {
       params,
     });
   },
-  /** 审核决策（路由到案件中心人工核赔；审核人取认证主体，请求体不得带审核人）。 */
-  decide(claimId: string, req: ReviewTaskDecisionReq): Promise<ApiResponse<void>> {
+  /**
+   * 审核决策（路由到案件中心人工核赔；审核人取认证主体，请求体不得带审核人）。
+   * 后端按可选幂等接入：重试同一决策必须复用同一键，状态推进后自然换键。
+   */
+  decide(
+    claimId: string,
+    req: ReviewTaskDecisionReq,
+    idempotencyKey = stableClaimActionKey(claimId, 'review-decide'),
+  ): Promise<ApiResponse<void>> {
     return reviewClient.post<ReviewTaskDecisionReq, ApiResponse<void>>(
       `/tasks/${claimId}/decision`,
       req,
+      { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   },
   /**

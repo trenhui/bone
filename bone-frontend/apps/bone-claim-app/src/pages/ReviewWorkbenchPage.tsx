@@ -22,12 +22,12 @@ import {
   Typography,
   message,
 } from 'antd';
-import { ReloadOutlined, NodeIndexOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { ReloadOutlined, NodeIndexOutlined, CheckCircleOutlined, RobotOutlined } from '@ant-design/icons';
 import {
   claimApi,
   reviewTaskApi,
   normalizeTotal,
-  REVIEW_THRESHOLD,
+  stableClaimActionKey,
   type ClaimHeadProjection,
   type Decision,
   type DecisionExecutionSummary,
@@ -36,23 +36,22 @@ import {
 } from '../services/claimApi';
 import { PageHeader } from '../components/PageHeader';
 import { AiDisclosureCard } from '../components/AiDisclosureCard';
-import {
-  evidenceLocatorsOf,
-  explainNode,
-  toneColor,
-  type ExplainFact,
-} from '../services/decisionExplain';
+import { AiSuggestionCard } from '../components/AiSuggestionCard';
+import { explainNode, toneColor, type ExplainFact } from '../services/decisionExplain';
 import { claimStatusMeta } from '../services/claimStatus';
 import { consumptionReasonMeta } from '../services/decisionConsumption';
 import { rejectReasonGroups } from '../services/rejectReason';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { Auth, AuthButton } from '@bone/ui';
-import { PERMISSIONS } from '../constants/permissions';
 import {
   MAX_BATCH_DECISION,
   type BatchDecisionItem,
   type BatchDecisionResp,
 } from '../services/reviewTask';
+import { PERMISSIONS } from '../constants/permissions';
+import { useDualReviewThreshold } from '../hooks/useDualReviewThreshold';
+import { MoneyText } from '../components/Money';
+import { formatMoney } from '../services/money';
 import { reviewFatigueApi, sessionContinuousMinutes } from '../services/reviewFatigue';
 import type { ReviewFatigueEvaluation } from '../services/types';
 
@@ -117,6 +116,9 @@ export function ReviewWorkbenchPage(): ReactElement {
   const [loading, setLoading] = useState(false);
   /** 行级在途标记：只锁当前行，避免整表按钮变灰被误认为页面卡死。 */
   const [actingId, setActingId] = useState<string | null>(null);
+  /** 批量处置选择：rowKey 即 claimId；后端整批上限 20，前端同步收口。 */
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [batching, setBatching] = useState(false);
   const [taskFilter, setTaskFilter] = useState<ReviewTaskStatus | undefined>(undefined);
   /**
    * 服务端分页状态（page / pageSize / total）。
@@ -128,12 +130,61 @@ export function ReviewWorkbenchPage(): ReactElement {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [total, setTotal] = useState(0);
-  /** 批量处置选择：rowKey 即 claimId；后端整批上限 20，前端同步收口。 */
-  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-  const [batching, setBatching] = useState(false);
+  /**
+   * 任务维服务端计数（三个独立 `size:1` 查询的 total）。
+   *
+   * <p>此前三个 KPI 与「列表合计」都从**当前页** `rows` 统计：翻到第 2 页待领取直接变 0，
+   * 与同页「共 N 条」（服务端 COUNT(*)）自相矛盾，属于会误导排班的数字。计数必须与列表
+   * 同源（后端任务维），拿不到就显示「—」，不用 0 冒充。
+   */
+  const [counts, setCounts] = useState<Partial<Record<ReviewTaskStatus, number | null>>>({
+    WAITING: null,
+    PROCESSING: null,
+    DONE: null,
+  });
+  const [countsLoading, setCountsLoading] = useState(false);
+  /** AI 结论抽屉：把建议从案件 360 抬到核赔主决策面，但不改变任何结论与金额。 */
+  const [aiTarget, setAiTarget] = useState<ClaimHeadProjection | null>(null);
+
+  /**
+   * 三个任务维计数并行取，互不连坐。
+   *
+   * <p>用 `size:1` 只为拿 `total`，不拉数据行（避免为了三个数字把整页数据取三遍）。
+   * 任一失败只把该维标为 null（显示「—」），不影响其他维与列表。
+   */
+  const loadCounts = useCallback(async () => {
+    setCountsLoading(true);
+    const results = await Promise.allSettled([
+      reviewTaskApi.tasks({ status: 'WAITING', size: 1 }),
+      reviewTaskApi.tasks({ status: 'PROCESSING', size: 1 }),
+      reviewTaskApi.tasks({ status: 'DONE', size: 1 }),
+    ]);
+    const pick = (r: PromiseSettledResult<{ code?: number; data?: { total?: string | number } }>) =>
+      r.status === 'fulfilled' && r.value?.code === 200 ? normalizeTotal(r.value.data?.total) : null;
+    setCounts({
+      WAITING: pick(results[0]),
+      PROCESSING: pick(results[1]),
+      DONE: pick(results[2]),
+    });
+    setCountsLoading(false);
+  }, []);
   const [decisionTarget, setDecisionTarget] = useState<ClaimHeadProjection | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [decisionForm] = Form.useForm<{ decision: Decision; approvedAmount: number; comment: string; rejectType: string }>();
+  const [decisionForm] = Form.useForm<{
+    decision: Decision;
+    approvedAmount: number;
+    comment: string;
+    rejectType: string;
+    factFindings: string;
+    clauseBasis: string;
+    evidenceRefs: string;
+    appealChannel: string;
+    legalDeadline: string;
+  }>();
+  /** 双人复核金额门取运行时配置真源；加载失败时隐藏所有依赖该阈值的标记，绝不回落硬编码。 */
+  const { threshold: dualReviewAmount, error: thresholdError } = useDualReviewThreshold();
+  const thresholdLabel =
+    dualReviewAmount == null ? '阈值未知' : `≥¥${dualReviewAmount.toLocaleString('zh-CN')}`;
 
   /**
    * 审核疲劳评估（只读 soft prompt）。
@@ -161,6 +212,7 @@ export function ReviewWorkbenchPage(): ReactElement {
       message.success(approved ? '复核通过，案件已结案' : '复核拒绝，案件已转拒赔生效');
       setReviewTarget(null);
       void load();
+      void loadCounts();
     } catch (err) {
       const code = resolveErrorCode(err);
       const text =
@@ -254,6 +306,10 @@ export function ReviewWorkbenchPage(): ReactElement {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    void loadCounts();
+  }, [loadCounts]);
+
   // 疲劳评估与待办加载互不连坐：评估失败只隐藏提示，不清空已取到的待办。
   useEffect(() => {
     let cancelled = false;
@@ -277,16 +333,35 @@ export function ReviewWorkbenchPage(): ReactElement {
     try {
       // 走工作台契约决策口：服务端 `ReviewDecisionAssembler#requireRejectType` 会拦「拒赔但无受控原因码」，
       // 返回 400 SC_CLAIM_REJECT_REASON_REQUIRED——下面那个分支才能真正命中。
-      await reviewTaskApi.decide(decisionTarget.claimId, {
-        decision: values.decision,
-        comment: values.comment,
-        rejectType: values.rejectType,
-        approvedAmount: values.approvedAmount,
-      });
+      await reviewTaskApi.decide(
+        decisionTarget.claimId,
+        {
+          decision: values.decision,
+          comment: values.comment,
+          rejectType: values.rejectType,
+          approvedAmount: values.approvedAmount,
+          // 后端 ReviewDecisionAssembler 以结构化五要素优先拼 comment；自由文本仅作补充，不替代原因码。
+          rejection:
+            values.decision === 'REJECTED'
+              ? {
+                factFindings: values.factFindings,
+                clauseBasis: values.clauseBasis,
+                evidenceRefs: (values.evidenceRefs ?? '')
+                  .split(/[,，;；\s]+/)
+                  .map((v) => v.trim())
+                  .filter(Boolean),
+                appealChannel: values.appealChannel,
+                legalDeadline: values.legalDeadline,
+              }
+              : undefined,
+        },
+        stableClaimActionKey(decisionTarget.claimId, 'review-decide', decisionTarget.status),
+      );
       message.success('决策已生效');
       setDecisionTarget(null);
       decisionForm.resetFields();
       void load();
+      void loadCounts();
     } catch (err) {
       const errorCode = resolveErrorCode(err);
       // 有专用中文提示的按码分支，其余交给 i18n 的错误码译文（zh-CN 已覆盖 24 条 SC_CLAIM_* ），
@@ -312,7 +387,37 @@ export function ReviewWorkbenchPage(): ReactElement {
       approvedAmount: row.approvedAmount ?? row.claimAmount,
       comment: '',
       rejectType: undefined,
+      factFindings: '',
+      clauseBasis: '',
+      evidenceRefs: '',
+      appealChannel: '',
+      legalDeadline: '',
     });
+  };
+
+  /**
+   * 行内轻动作（领取 / 发起复核）的统一执行：行级 loading + 后端真实原因上屏。
+   *
+   * <p>原来这两处是裸 `await`，失败时既不提示也不刷新——Promise 在事件处理器里被丢弃，
+   * 用户只看到按钮点了没反应。
+   */
+  const runRow = async (
+    row: ClaimHeadProjection,
+    action: () => Promise<unknown>,
+    okMsg: string,
+    fallback: string,
+  ) => {
+    setActingId(row.claimId);
+    try {
+      await action();
+      message.success({ content: okMsg, key: MSG_KEY_ACTION });
+      await load();
+      void loadCounts();
+    } catch (err) {
+      message.error({ content: resolveErrorMessage(err, fallback), key: MSG_KEY_ACTION });
+    } finally {
+      setActingId(null);
+    }
   };
 
   /** 批量请求出口：成功/失败数用 message 汇总，业务失败体按 code 交调用方逐条展示。 */
@@ -364,7 +469,6 @@ export function ReviewWorkbenchPage(): ReactElement {
       const outcome = await callBatch(ids.map((claimId) => ({ claimId, decision })));
       if (!outcome) return;
       if (outcome.failed.length > 0) {
-        // 失败项保留选中并列出 claimId + code，可直接重试；成功项从选择中移除。
         setSelectedRowKeys(outcome.failed.map((f) => String(f.claimId)));
         showBatchFailures(outcome.failed, decision);
       } else {
@@ -396,34 +500,15 @@ export function ReviewWorkbenchPage(): ReactElement {
     }
   }
 
-  /**
-   * 行内轻动作（领取 / 发起复核）的统一执行：行级 loading + 后端真实原因上屏。
-   *
-   * <p>原来这两处是裸 `await`，失败时既不提示也不刷新——Promise 在事件处理器里被丢弃，
-   * 用户只看到按钮点了没反应。
-   */
-  const runRow = async (
-    row: ClaimHeadProjection,
-    action: () => Promise<unknown>,
-    okMsg: string,
-    fallback: string,
-  ) => {
-    setActingId(row.claimId);
-    try {
-      await action();
-      message.success({ content: okMsg, key: MSG_KEY_ACTION });
-      await load();
-    } catch (err) {
-      message.error({ content: resolveErrorMessage(err, fallback), key: MSG_KEY_ACTION });
-    } finally {
-      setActingId(null);
-    }
-  };
-
   const navigate = useNavigate();
-  const pendingCount = rows.filter((r) => r.status === 'PENDING_ADJUST').length;
-  const processingCount = rows.filter((r) => r.status === 'ADJUSTING').length;
-  const riskCount = rows.filter((r) => r.claimAmount >= REVIEW_THRESHOLD).length;
+  /**
+   * 仅「本页大额」保留当前页统计：后端任务维不支持按金额过滤，跨页大额数拿不到。
+   * 文案必须写明「本页」，否则又会被当成全局指标。
+   */
+  const pageRiskCount =
+    dualReviewAmount == null
+      ? 0
+      : rows.filter((r) => Number(r.claimAmount) >= dualReviewAmount).length;
 
   return (
     <div style={{ padding: 24 }}>
@@ -438,19 +523,34 @@ export function ReviewWorkbenchPage(): ReactElement {
       />
       <Space size="large" wrap style={{ marginBottom: 16 }}>
         <Card size="small">
-          <Statistic title="待领取" value={pendingCount} />
+          <Statistic title="待领取" value={counts.WAITING ?? '—'} />
         </Card>
         <Card size="small">
-          <Statistic title="处理中" value={processingCount} />
+          <Statistic title="处理中" value={counts.PROCESSING ?? '—'} />
         </Card>
         <Card size="small">
-          <Statistic title="大额（≥1万，需双人复核）" value={riskCount} />
+          <Statistic title="已处理（含复核中/结案）" value={counts.DONE ?? '—'} />
         </Card>
         <Card size="small">
-          <Statistic title="列表合计" value={rows.length} />
+          <Statistic title={`本页大额（${thresholdLabel}，需双人复核）`} value={pageRiskCount} />
         </Card>
+        <Card size="small">
+          <Statistic title="列表合计（服务端）" value={total} />
+        </Card>
+        {countsLoading ? (
+          <Typography.Text type="secondary">统计刷新中…</Typography.Text>
+        ) : null}
       </Space>
 
+      {thresholdError && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="双人复核金额门加载失败：大额标记与计数暂不可用"
+          description="后端仍按真实阈值判定；请刷新页面重试，勿按缺失标记判断案件是否需复核。"
+        />
+      )}
       <Alert
         type="warning"
         showIcon
@@ -511,38 +611,21 @@ export function ReviewWorkbenchPage(): ReactElement {
                   cancelText="取消"
                   onConfirm={() => void runBatch('APPROVED')}
                 >
-                  <Button
-                    type="primary"
-                    loading={batching}
-                    disabled={selectedRowKeys.length > MAX_BATCH_DECISION}
-                  >
-                    批量通过
-                  </Button>
+                  <Button type="primary" loading={batching}
+                    disabled={selectedRowKeys.length > MAX_BATCH_DECISION}>批量通过</Button>
                 </Popconfirm>
                 <Popconfirm
                   title={`批量拒赔 ${selectedRowKeys.length} 单？`}
-                  description="拒赔必填受控原因码与五要素；不满足的案件进入失败列表，不会中断整批。"
+                  description="逐案写入拒赔决策；拒赔五要素须在单案中已完成填写。"
                   okText="确认"
-                  okButtonProps={{ danger: true }}
                   cancelText="取消"
                   onConfirm={() => void runBatch('REJECTED')}
                 >
-                  <Button
-                    danger
-                    loading={batching}
-                    disabled={selectedRowKeys.length > MAX_BATCH_DECISION}
-                  >
-                    批量拒赔
-                  </Button>
+                  <Button danger loading={batching}
+                    disabled={selectedRowKeys.length > MAX_BATCH_DECISION}>批量拒赔</Button>
                 </Popconfirm>
               </Space>
             </Auth>
-            <Button size="small" disabled={batching} onClick={() => setSelectedRowKeys([])}>
-              清空选择
-            </Button>
-            {fatigue && (
-              <Typography.Text type="warning">审核疲劳提示仍仅提示，不阻断批量处置</Typography.Text>
-            )}
           </Space>
         </Card>
       )}
@@ -597,7 +680,7 @@ export function ReviewWorkbenchPage(): ReactElement {
               title: '申请金额',
               dataIndex: 'claimAmount',
               width: 120,
-              render: (v: number) => `¥${Number(v).toFixed(2)}`,
+              render: (v: number) => formatMoney(v),
             },
             {
               title: '状态',
@@ -623,7 +706,11 @@ export function ReviewWorkbenchPage(): ReactElement {
               title: '大额',
               width: 90,
               render: (_, r) =>
-                r.claimAmount >= REVIEW_THRESHOLD ? <Badge color="red" text="≥1万" /> : '-',
+                dualReviewAmount == null
+                  ? '阈值未知'
+                  : Number(r.claimAmount) >= dualReviewAmount
+                    ? <Badge color="red" text={thresholdLabel} />
+                    : '-',
             },
             { title: '第一审核人', dataIndex: 'firstReviewerId', width: 140 },
             { title: '受理时间', dataIndex: 'createdAt', width: 180 },
@@ -639,6 +726,16 @@ export function ReviewWorkbenchPage(): ReactElement {
                     onClick={() => void onOpenTrace(row)}
                   >
                     决策图
+                  </Button>
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<RobotOutlined />}
+                    data-testid="review-ai-suggestion"
+                    aria-label={`查看案件 ${row.claimNo} 的 AI 建议`}
+                    onClick={() => setAiTarget(row)}
+                  >
+                    AI 建议
                   </Button>
                   {row.status === 'PENDING_ADJUST' && (
                     <AuthButton
@@ -682,7 +779,7 @@ export function ReviewWorkbenchPage(): ReactElement {
                       </AuthButton>
                     </>
                   )}
-                  {row.status === 'ADJUSTED' && row.claimAmount >= REVIEW_THRESHOLD && (
+                  {row.status === 'ADJUSTED' && dualReviewAmount != null && Number(row.claimAmount) >= dualReviewAmount && (
                     <AuthButton
                       code={PERMISSIONS.REVIEW_WRITE}
                       type="link"
@@ -737,6 +834,7 @@ export function ReviewWorkbenchPage(): ReactElement {
           </Button>,
           <AuthButton
             key="ok"
+            data-testid="review-decision-confirm"
             code={PERMISSIONS.REVIEW_WRITE}
             type="primary"
             loading={submitting}
@@ -772,11 +870,42 @@ export function ReviewWorkbenchPage(): ReactElement {
               ) : getFieldValue('decision') === 'REJECTED' ? (
                 <>
                   <Form.Item
-                    name="comment"
-                    label="拒赔五要素（事实认定+条款依据+证据位置+申诉渠道+法定时限）"
-                    rules={[{ required: true, message: '拒赔必填五要素' }]}
+                    name="factFindings"
+                    label="① 事实认定"
+                    rules={[{ required: true, whitespace: true, message: '拒赔必填：事实认定' }]}
                   >
-                    <Input.TextArea rows={4} placeholder="事实认定：…；条款依据：…；证据位置：发票号X#p1#l3，多个用逗号分隔；申诉渠道：…；法定时限：…" />
+                    <Input.TextArea rows={2} placeholder="可核对的案件事实（不要写情绪化措辞）" />
+                  </Form.Item>
+                  <Form.Item
+                    name="clauseBasis"
+                    label="② 条款依据"
+                    rules={[{ required: true, whitespace: true, message: '拒赔必填：条款依据' }]}
+                  >
+                    <Input placeholder="具体条款号与约定摘要" />
+                  </Form.Item>
+                  <Form.Item
+                    name="evidenceRefs"
+                    label="③ 证据位置（多个用逗号分隔）"
+                    rules={[{ required: true, whitespace: true, message: '拒赔必填：证据位置' }]}
+                  >
+                    <Input placeholder="如 EV-001, EV-004；须可在证据集定位" />
+                  </Form.Item>
+                  <Form.Item
+                    name="appealChannel"
+                    label="④ 申诉渠道"
+                    rules={[{ required: true, whitespace: true, message: '拒赔必填：申诉渠道' }]}
+                  >
+                    <Input placeholder="客户可使用的申诉/复议入口" />
+                  </Form.Item>
+                  <Form.Item
+                    name="legalDeadline"
+                    label="⑤ 法定时限"
+                    rules={[{ required: true, whitespace: true, message: '拒赔必填：法定时限' }]}
+                  >
+                    <Input placeholder="如 收到通知书起 30 日内" />
+                  </Form.Item>
+                  <Form.Item name="comment" label="补充说明（可选）">
+                    <Input.TextArea rows={2} placeholder="补充五要素之外的说明；不替代受控原因码" />
                   </Form.Item>
                   <Form.Item
                     name="rejectType"
@@ -832,13 +961,10 @@ export function ReviewWorkbenchPage(): ReactElement {
           <Space size="large" wrap>
             <Typography.Text type="secondary">报案号：{reviewTarget?.claimNo ?? '-'}</Typography.Text>
             <Typography.Text type="secondary">
-              申请金额：¥{Number(reviewTarget?.claimAmount ?? 0).toFixed(2)}
+              申请金额：<MoneyText value={reviewTarget?.claimAmount} />
             </Typography.Text>
             <Typography.Text type="secondary">
-              核定金额：
-              {reviewTarget?.approvedAmount == null
-                ? '待核定'
-                : `¥${Number(reviewTarget.approvedAmount).toFixed(2)}`}
+              核定金额：<MoneyText value={reviewTarget?.approvedAmount} unknownText="待核定" />
             </Typography.Text>
           </Space>
         </div>
@@ -920,40 +1046,6 @@ export function ReviewWorkbenchPage(): ReactElement {
                       </div>
                     ) : null;
                   })()}
-                  {(() => {
-                    // 页码级证据锚点：只渲染材料真实带出的坐标（无坐标时 evidenceLocatorsOf 为空，不编造默认页）。
-                    // 点击走项目既有 ?claimId= 深链约定，selectedId 带入后端证据引用用于定位影像页。
-                    const locators = evidenceLocatorsOf(n.output);
-                    if (locators.length === 0 || !traceTarget) return null;
-                    return (
-                      <div style={{ marginTop: 6 }}>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                          证据锚点
-                        </Typography.Text>
-                        <List
-                          size="small"
-                          dataSource={locators}
-                          renderItem={(loc) => (
-                            <List.Item style={{ padding: '2px 0', border: 'none' }}>
-                              <Tag
-                                color="blue"
-                                style={{ cursor: 'pointer', marginInlineEnd: 0 }}
-                                onClick={() =>
-                                  navigate(
-                                    `/evidence?claimId=${encodeURIComponent(traceTarget.claimId)}` +
-                                    `&selectedId=${encodeURIComponent(loc.evidenceRef)}`,
-                                  )
-                                }
-                              >
-                                {loc.label} → 影像第{loc.pageNo}页
-                                {loc.lineNo === null ? '' : `（第${loc.lineNo}行）`}
-                              </Tag>
-                            </List.Item>
-                          )}
-                        />
-                      </div>
-                    );
-                  })()}
                   {n.output && (
                     <details style={{ marginTop: 6 }}>
                       <summary style={{ cursor: 'pointer', color: '#8c8c8c', fontSize: 12 }}>
@@ -977,6 +1069,28 @@ export function ReviewWorkbenchPage(): ReactElement {
             }))}
           />
         )}
+      </Drawer>
+
+      {/*
+        AI 结论进入主决策面：此前只有案件 360 能看到 AI 参与披露，核赔员在待办队列里必须多跳一次。
+        这里嵌入同一组件（同一契约、同一 fail-closed 口径），不与决策按钮联动，
+        避免"看一眼 AI 建议"被误解为已经采纳。
+      */}
+      <Drawer
+        title={`AI 结论 · ${aiTarget?.claimNo ?? ''}`}
+        width={560}
+        open={aiTarget !== null}
+        destroyOnClose
+        onClose={() => setAiTarget(null)}
+      >
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="AI 仅出建议，不改变案件结论与金额"
+          description="采纳/驳回只回流 AI 质量指标（命中率、改单率），不触发通过、拒赔或资金动作；最终结论仍须人工在决策弹窗内提交。"
+        />
+        {aiTarget ? <AiSuggestionCard claimId={String(aiTarget.claimId)} scene="review" /> : null}
       </Drawer>
     </div>
   );

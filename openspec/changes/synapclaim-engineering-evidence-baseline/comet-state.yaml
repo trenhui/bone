@@ -1,0 +1,3270 @@
+# comet-execution: managed-run
+change_id: a497d316-2502-482a-8722-02975ac1fd12
+workflow: full
+language: zh-CN
+phase: verify
+context_compression: off
+build_mode: direct
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: off
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: 3520939c319258562d013c7127654834adf7e817
+design_doc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+verify_result: pending
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-20-synapclaim-engineering-evidence-baseline-verify.md
+branch_status: pending
+created_at: 2026-11-20
+verified_at: null
+archive_confirmation: null
+archived: false
+bound_branch: dev
+direct_override: true
+handoff_context: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+handoff_hash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v1
+  hash: 167aece951d820e0eedef6b59673cfd33c73c9b8f725783095d9145efd5ae1b1
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: synapclaim-engineering-evidence-baseline
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: 2c05221bc6ce0976c6db2e1ed84222a11143e2e9449588dc4e82018db56b29ed
+    input:
+      change: synapclaim-engineering-evidence-baseline
+      changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+      workspaceBaseline:
+        ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+    state:
+      archiveConfirmation: null
+      archived: false
+      autoTransition: true
+      baseRef: 3520939c319258562d013c7127654834adf7e817
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: direct
+      buildPause: null
+      checkEpoch: 3
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-20
+      designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+      directOverride: true
+      handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+      handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+      isolation: current
+      language: zh-CN
+      phase: verify
+      plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+      reviewMode: off
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-20-synapclaim-engineering-evidence-baseline-verify.md
+      verifiedAt: null
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pending
+      workflow: full
+    status: running
+    sequence: 18
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-c4bf21f5269c269e412bb268459ccae01c946e6ae1b48ef6ded7bb169a75e84f
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-baseline:1
+        input:
+          input:
+            change: synapclaim-engineering-evidence-baseline
+            changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+            workspaceBaseline:
+              ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+          outputs: {}
+        inputHash: ea0888b4c24e9c8eeefaa9bd544085cc48c7046bf04a136002bc38fa7e0b5144
+        outcome:
+          actionId: synapclaim-engineering-evidence-baseline:1
+          attempt: 1
+          claimToken: portable-c4bf21f5269c269e412bb268459ccae01c946e6ae1b48ef6ded7bb169a75e84f
+          inputHash: ea0888b4c24e9c8eeefaa9bd544085cc48c7046bf04a136002bc38fa7e0b5144
+          outcomeId: 005e196a-bc92-4667-b4e0-57346bdeb584
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f80860907d16014bf78b9fb8ac73a805f67535a69294caa233cb0dc79f2498c5
+            outcomeId: 005e196a-bc92-4667-b4e0-57346bdeb584
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-baseline
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-8e585c177b2fea72d6b956ab37bc1a7de220ae79abe7294c1d1ba70e1acaf4c4
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-baseline:4
+        input:
+          input:
+            change: synapclaim-engineering-evidence-baseline
+            changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+            workspaceBaseline:
+              ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.evidence:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+        inputHash: b8068b1439601658be156a2140b5b1783f310c885d2ccc4b1a91c29b54a50a1c
+        outcome:
+          actionId: synapclaim-engineering-evidence-baseline:4
+          attempt: 2
+          claimToken: portable-8e585c177b2fea72d6b956ab37bc1a7de220ae79abe7294c1d1ba70e1acaf4c4
+          inputHash: b8068b1439601658be156a2140b5b1783f310c885d2ccc4b1a91c29b54a50a1c
+          outcomeId: synapclaim-engineering-evidence-baseline:4:2:executor-result
+          output:
+            contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: a255a75982592872ed95a0714fbe1343e445fef9f90de12e80ade44624b1984d
+            outcomeId: synapclaim-engineering-evidence-baseline:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核对来源：comet state check open --recover --details 的
+                recovery.record.status=missing、command=null、evidence.receiptRef=null；证据目录
+                .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110
+                为空；ps 无 revalidate/check.sh 进程。该 action 由 guard --json
+                预览意外领取，检查程序从未执行，未产生任何结果。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-baseline
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-fb2693a46c717b7a4336a3b168b043188ebf838c38d7c3517e88f5b7d92eb428
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-baseline:5
+        input:
+          input:
+            change: synapclaim-engineering-evidence-baseline
+            changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+            workspaceBaseline:
+              ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.evidence:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.revalidate:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        inputHash: 0016887fc563336f9f2a21af6ecf000d85e15a1ac302e364066800730f52fe8e
+        outcome:
+          actionId: synapclaim-engineering-evidence-baseline:5
+          attempt: 1
+          claimToken: portable-fb2693a46c717b7a4336a3b168b043188ebf838c38d7c3517e88f5b7d92eb428
+          inputHash: 0016887fc563336f9f2a21af6ecf000d85e15a1ac302e364066800730f52fe8e
+          outcomeId: 23898038-0975-480d-a4a6-c75355b0ef27
+          output:
+            handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+            handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+            proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+              证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+              不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+              DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+              AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+              fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+              provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+              产物一致，无开放问题。
+            requirementsEvidence:
+              contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            sourceEvidence:
+              contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 921a03558e6b2f0766cb95df513d8d150f64b13171e1b3738e9e90b183b3b5a6
+            outcomeId: 23898038-0975-480d-a4a6-c75355b0ef27
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-baseline
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-bb9cc4d709e6f02193ce5046a75b13f75fe1ef20b070df28b264c3ea5a66c588
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-baseline:7
+        input:
+          input:
+            change: synapclaim-engineering-evidence-baseline
+            changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+            workspaceBaseline:
+              ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+          outputs:
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.evidence:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.revalidate:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        inputHash: b950cb99fb349aca37c022fba324da4782567408df301aa2bf66821955872ce4
+        outcome:
+          actionId: synapclaim-engineering-evidence-baseline:7
+          attempt: 1
+          claimToken: portable-bb9cc4d709e6f02193ce5046a75b13f75fe1ef20b070df28b264c3ea5a66c588
+          inputHash: b950cb99fb349aca37c022fba324da4782567408df301aa2bf66821955872ce4
+          outcomeId: 5016e2e2-ecc1-41b0-af0d-7fee6d05b590
+          output:
+            designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 2bb5d0d67ec28b63bfdcdb12ce874fd88ceb63f1d7ba2b5b43ab9c77c8ebb879
+            outcomeId: 5016e2e2-ecc1-41b0-af0d-7fee6d05b590
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-baseline
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-51059935b24d11752d31a4131c61fb92a712c3ca6bfd40f0fab4cc52a8b8c1cb
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-baseline:9
+        input:
+          input:
+            change: synapclaim-engineering-evidence-baseline
+            changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+            workspaceBaseline:
+              ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+          outputs:
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+            full.design.evidence:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.evidence:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.revalidate:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        inputHash: 4c3ccccbf02f45c431260e831e6c941b2d1a11d5d584421d71f97d9e1830714f
+        outcome:
+          actionId: synapclaim-engineering-evidence-baseline:9
+          attempt: 1
+          claimToken: portable-51059935b24d11752d31a4131c61fb92a712c3ca6bfd40f0fab4cc52a8b8c1cb
+          inputHash: 4c3ccccbf02f45c431260e831e6c941b2d1a11d5d584421d71f97d9e1830714f
+          outcomeId: ddfa4607-74ff-4cc7-9747-8b1fb0f6a812
+          output:
+            boundBranch: master
+            buildMode: direct
+            directOverride: true
+            isolation: current
+            reviewMode: off
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 5dc90084433565eb602e5de1c08d3ea942d9e9c124f59dc81c2ebf2dc1b85a26
+            outcomeId: ddfa4607-74ff-4cc7-9747-8b1fb0f6a812
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-baseline
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-b2e52a30261b564d75ed619ed15894ef4b5de7b72609a37f0be2189f14e83b85
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-baseline:11
+        input:
+          input:
+            change: synapclaim-engineering-evidence-baseline
+            changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+            workspaceBaseline:
+              ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+          outputs:
+            full.build.configure:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.build.configure:
+                    boundBranch: master
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+            full.design.evidence:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.evidence:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.revalidate:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        inputHash: e2d47eecc398d7d3a06a81abe34358c0bd2138fe8c1e3968ac091274a3313615
+        outcome:
+          actionId: synapclaim-engineering-evidence-baseline:11
+          attempt: 1
+          claimToken: portable-b2e52a30261b564d75ed619ed15894ef4b5de7b72609a37f0be2189f14e83b85
+          inputHash: e2d47eecc398d7d3a06a81abe34358c0bd2138fe8c1e3968ac091274a3313615
+          outcomeId: 8e3dfae4-a1a0-49a8-946e-73f8f0910dd5
+          output:
+            designEvidence:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+            plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+            planEvidence:
+              contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+              ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+            taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1ff4256ef1245c7ed613f3d6d20f3db17aa9813ce4221c103e1af585f63ce1f1
+            outcomeId: 8e3dfae4-a1a0-49a8-946e-73f8f0910dd5
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-baseline
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-engineering-evidence-baseline:13/1
+          token: portable-1f8a48bc8df3c0c8613a5d664719d586d58b57fbebe5763dbd2308ee90675222
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-baseline:13
+        input:
+          input:
+            change: synapclaim-engineering-evidence-baseline
+            changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+            workspaceBaseline:
+              ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+          outputs:
+            full.build.configure:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.build.configure:
+                    boundBranch: master
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+            full.build.plan:
+              designEvidence:
+                contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+              plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              planEvidence:
+                contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+                ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+            full.build.plan.evidence:
+              contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+              ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+            full.design.evidence:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.evidence:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.revalidate:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        inputHash: 2658c5c09078d816a30d4854870b9845cc4685de6868785022a1dcc5fea66544
+        outcome:
+          actionId: synapclaim-engineering-evidence-baseline:13
+          attempt: 1
+          claimToken: portable-1f8a48bc8df3c0c8613a5d664719d586d58b57fbebe5763dbd2308ee90675222
+          inputHash: 2658c5c09078d816a30d4854870b9845cc4685de6868785022a1dcc5fea66544
+          outcomeId: e637f465-bf34-466d-bf21-7ad6a0414d16
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 0af9d8f9fa35c4ba97ff569b54e599752e9ba39f334308f5873b3e86467c4bb4
+            outcomeId: e637f465-bf34-466d-bf21-7ad6a0414d16
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-baseline
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-249881b78d9bad5df5eab12eb58821193637f75e8b449e4e2b46114f9251a369
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-baseline:14
+        input:
+          input:
+            change: synapclaim-engineering-evidence-baseline
+            changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+            workspaceBaseline:
+              ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+          outputs:
+            full.build.configure:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.build.configure:
+                    boundBranch: master
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+            full.build.execute:
+              event: build-complete
+            full.build.plan:
+              designEvidence:
+                contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+              plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              planEvidence:
+                contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+                ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+            full.build.plan.evidence:
+              contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+              ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+            full.design.evidence:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.evidence:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.revalidate:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        inputHash: 22cc864d402c8c10f1d403239061b3c0a0e2cb3f49be7f1ec7ce71972c06011c
+        outcome:
+          actionId: synapclaim-engineering-evidence-baseline:14
+          attempt: 1
+          claimToken: portable-249881b78d9bad5df5eab12eb58821193637f75e8b449e4e2b46114f9251a369
+          inputHash: 22cc864d402c8c10f1d403239061b3c0a0e2cb3f49be7f1ec7ce71972c06011c
+          outcomeId: 735f4df492407203e7de2832ea76dd29127ae39940ca0086bba2cdf4a268415b
+          output:
+            argv:
+              - bash
+              - openspec/changes/synapclaim-engineering-evidence-baseline/verify.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+            cwd: .
+            environment: 79f0896e61333f05f226868299a120f468e3ed1e01072ac1d89b97a461042954
+            exitCode: 0
+            inputAfter: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+            inputBefore: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+            manifestHash: b3ce028c65b2c4b4d61e39c2bc00018bbe2c3affbd4015e425832a384a2c375a
+            manifestRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/9e78ed69-6b3b-4ab6-b0c0-cdc7b841116f.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 0cdf669d5f94b9e9ac1bb27db30759debb3fa31f902d47c3338818eb5b545e73
+            outcomeId: 735f4df492407203e7de2832ea76dd29127ae39940ca0086bba2cdf4a268415b
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-baseline
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-c4c202b04e4190ee2afe14ab2546ad9532f314f61f60cce4e252921388ef581f
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-baseline:16
+        input:
+          input:
+            change: synapclaim-engineering-evidence-baseline
+            changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+            workspaceBaseline:
+              ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+          outputs:
+            full.build.check:
+              argv:
+                - bash
+                - openspec/changes/synapclaim-engineering-evidence-baseline/verify.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+              cwd: .
+              environment: 79f0896e61333f05f226868299a120f468e3ed1e01072ac1d89b97a461042954
+              exitCode: 0
+              inputAfter: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+              inputBefore: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+              manifestHash: b3ce028c65b2c4b4d61e39c2bc00018bbe2c3affbd4015e425832a384a2c375a
+              manifestRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/9e78ed69-6b3b-4ab6-b0c0-cdc7b841116f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            full.build.check.evidence:
+              contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+              ref: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+            full.build.configure:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.build.configure:
+                    boundBranch: master
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+            full.build.execute:
+              event: build-complete
+            full.build.plan:
+              designEvidence:
+                contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+              plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              planEvidence:
+                contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+                ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+            full.build.plan.evidence:
+              contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+              ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+            full.design.evidence:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.evidence:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.revalidate:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        inputHash: 978895c31c1dfe46888cd1d420a2b83bf2745031c44cc1557f2ff782585a80a0
+        outcome:
+          actionId: synapclaim-engineering-evidence-baseline:16
+          attempt: 1
+          claimToken: portable-c4c202b04e4190ee2afe14ab2546ad9532f314f61f60cce4e252921388ef581f
+          inputHash: 978895c31c1dfe46888cd1d420a2b83bf2745031c44cc1557f2ff782585a80a0
+          outcomeId: 5dd5cd81-00f7-4e23-8145-543acb39b262
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-20-synapclaim-engineering-evidence-baseline-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 7501b5cc81eecea50f7872b314c073dc41cf360df798832db04dcd48e11e31d6
+            outcomeId: 5dd5cd81-00f7-4e23-8145-543acb39b262
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-baseline
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-32959d9a7f331258058a49fa2ec9572d63fb33f2029cc912340841e278a85116
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-baseline:18
+        input:
+          input:
+            change: synapclaim-engineering-evidence-baseline
+            changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+            workspaceBaseline:
+              ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+          outputs:
+            full.build.check:
+              argv:
+                - bash
+                - openspec/changes/synapclaim-engineering-evidence-baseline/verify.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+              cwd: .
+              environment: 79f0896e61333f05f226868299a120f468e3ed1e01072ac1d89b97a461042954
+              exitCode: 0
+              inputAfter: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+              inputBefore: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+              manifestHash: b3ce028c65b2c4b4d61e39c2bc00018bbe2c3affbd4015e425832a384a2c375a
+              manifestRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/9e78ed69-6b3b-4ab6-b0c0-cdc7b841116f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            full.build.check.evidence:
+              contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+              ref: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+            full.build.configure:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.build.configure:
+                    boundBranch: master
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+            full.build.execute:
+              event: build-complete
+            full.build.plan:
+              designEvidence:
+                contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+              plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              planEvidence:
+                contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+                ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+            full.build.plan.evidence:
+              contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+              ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+            full.design.evidence:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.evidence:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+            full.open.revalidate:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+            full.verify.report.evidence:
+              contentHash: a76f4bc9ef34f7f0a45173f14e454f8f82516b92ecca24e7e7e4a67b5bf9d4ee
+              ref: docs/superpowers/reports/2026-11-20-synapclaim-engineering-evidence-baseline-verify.md
+            full.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-20-synapclaim-engineering-evidence-baseline-verify.md
+        inputHash: e4be7d8ddbc002f2b2f7d72199179bcf711642dea9755b88fb793727571807f2
+        protocolVersion: 1
+        reason: 原执行器在上次会话被限流中断：已启动 verify.sh 并写出日志与输入快照清单（receiptRef/manifestRef
+          均存在、日志末行成功），但未向 Runtime 提交 outcome（record=started,
+          receipt=null）。经用户明确授权重新执行以取得正式回执。
+        receipts: []
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-baseline
+        status: unknown
+        stepId: full.verify.check
+        type: call_tool
+    actionContexts:
+      synapclaim-engineering-evidence-baseline:1:
+        results: {}
+        sequence: 1
+      synapclaim-engineering-evidence-baseline:11:
+        results:
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.build.configure:
+                    boundBranch: master
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        sequence: 11
+      synapclaim-engineering-evidence-baseline:13:
+        results:
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.build.configure:
+                    boundBranch: master
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.plan:
+            sequence: 11
+            value:
+              designEvidence:
+                contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+              plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              planEvidence:
+                contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+                ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          full.build.plan.evidence:
+            sequence: 12
+            value:
+              contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+              ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        sequence: 13
+      synapclaim-engineering-evidence-baseline:14:
+        results:
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.build.configure:
+                    boundBranch: master
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.execute:
+            sequence: 13
+            value:
+              event: build-complete
+          full.build.plan:
+            sequence: 11
+            value:
+              designEvidence:
+                contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+              plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              planEvidence:
+                contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+                ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          full.build.plan.evidence:
+            sequence: 12
+            value:
+              contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+              ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        sequence: 14
+      synapclaim-engineering-evidence-baseline:16:
+        results:
+          full.build.check:
+            sequence: 14
+            value:
+              argv:
+                - bash
+                - openspec/changes/synapclaim-engineering-evidence-baseline/verify.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+              cwd: .
+              environment: 79f0896e61333f05f226868299a120f468e3ed1e01072ac1d89b97a461042954
+              exitCode: 0
+              inputAfter: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+              inputBefore: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+              manifestHash: b3ce028c65b2c4b4d61e39c2bc00018bbe2c3affbd4015e425832a384a2c375a
+              manifestRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/9e78ed69-6b3b-4ab6-b0c0-cdc7b841116f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          full.build.check.evidence:
+            sequence: 15
+            value:
+              contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+              ref: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.build.configure:
+                    boundBranch: master
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.execute:
+            sequence: 13
+            value:
+              event: build-complete
+          full.build.plan:
+            sequence: 11
+            value:
+              designEvidence:
+                contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+              plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              planEvidence:
+                contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+                ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          full.build.plan.evidence:
+            sequence: 12
+            value:
+              contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+              ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        sequence: 16
+      synapclaim-engineering-evidence-baseline:18:
+        results:
+          full.build.check:
+            sequence: 14
+            value:
+              argv:
+                - bash
+                - openspec/changes/synapclaim-engineering-evidence-baseline/verify.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+              cwd: .
+              environment: 79f0896e61333f05f226868299a120f468e3ed1e01072ac1d89b97a461042954
+              exitCode: 0
+              inputAfter: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+              inputBefore: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+              manifestHash: b3ce028c65b2c4b4d61e39c2bc00018bbe2c3affbd4015e425832a384a2c375a
+              manifestRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/9e78ed69-6b3b-4ab6-b0c0-cdc7b841116f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          full.build.check.evidence:
+            sequence: 15
+            value:
+              contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+              ref: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.build.configure:
+                    boundBranch: master
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.execute:
+            sequence: 13
+            value:
+              event: build-complete
+          full.build.plan:
+            sequence: 11
+            value:
+              designEvidence:
+                contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+              plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              planEvidence:
+                contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+                ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          full.build.plan.evidence:
+            sequence: 12
+            value:
+              contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+              ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+          full.verify.report.evidence:
+            sequence: 17
+            value:
+              contentHash: a76f4bc9ef34f7f0a45173f14e454f8f82516b92ecca24e7e7e4a67b5bf9d4ee
+              ref: docs/superpowers/reports/2026-11-20-synapclaim-engineering-evidence-baseline-verify.md
+          full.verify.run:
+            sequence: 16
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-20-synapclaim-engineering-evidence-baseline-verify.md
+        sequence: 18
+      synapclaim-engineering-evidence-baseline:4:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+        sequence: 4
+      synapclaim-engineering-evidence-baseline:5:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        sequence: 5
+      synapclaim-engineering-evidence-baseline:7:
+        results:
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        sequence: 7
+      synapclaim-engineering-evidence-baseline:9:
+        results:
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        sequence: 9
+    waits:
+      - id: synapclaim-engineering-evidence-baseline:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-engineering-evidence-baseline
+            changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+            workspaceBaseline:
+              ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+        proposalHash: af18d4cd4999565f3c87e54894973bc9709051f447d10f861596b2880f31f24b
+        choices:
+          - approved
+          - rejected
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+        decision:
+          id: classic-open-8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+          choice: approved
+          proposalHash: af18d4cd4999565f3c87e54894973bc9709051f447d10f861596b2880f31f24b
+      - id: synapclaim-engineering-evidence-baseline:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-engineering-evidence-baseline
+            changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+            workspaceBaseline:
+              ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+        proposalHash: aee575eacbeebc5e09f91fba78aa2e18f34ce307b74f90b30188827a01bfe1aa
+        choices:
+          - approved
+          - rejected
+        results:
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        decision:
+          id: classic-design-aee575eacbeebc5e09f91fba78aa2e18f34ce307b74f90b30188827a01bfe1aa-approved
+          choice: approved
+          proposalHash: aee575eacbeebc5e09f91fba78aa2e18f34ce307b74f90b30188827a01bfe1aa
+      - id: synapclaim-engineering-evidence-baseline:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-engineering-evidence-baseline
+            changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+            workspaceBaseline:
+              ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+          outputs:
+            full.build.configure:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: 1cd55e2e86f5433fa7c4239f6548b22eadd579013422aa4c9ac31ccef26793d2
+        choices:
+          - approved
+          - rejected
+        results:
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        decision:
+          id: 69a5de98-cd0e-4894-93cc-e2068202ac8d
+          choice: approved
+          proposalHash: 1cd55e2e86f5433fa7c4239f6548b22eadd579013422aa4c9ac31ccef26793d2
+    evidenceWaits:
+      - id: synapclaim-engineering-evidence-baseline:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+        receipt:
+          ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+          submissionId: 2998e12a-49fa-4e55-abfb-1e1ecdebbf7d
+      - id: synapclaim-engineering-evidence-baseline:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results:
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        receipt:
+          ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+          submissionId: dd289eab-f84f-460a-8eb8-4c12046437c9
+      - id: synapclaim-engineering-evidence-baseline:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results:
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.build.configure:
+                    boundBranch: master
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.plan:
+            sequence: 11
+            value:
+              designEvidence:
+                contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+              plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              planEvidence:
+                contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+                ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        receipt:
+          ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+          contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+          submissionId: 161cb4ae-491c-400b-9c92-76dfc4955603
+      - id: synapclaim-engineering-evidence-baseline:15
+        stepId: full.build.check.evidence
+        sequence: 15
+        kind: classic-build-check
+        status: resolved
+        results:
+          full.build.check:
+            sequence: 14
+            value:
+              argv:
+                - bash
+                - openspec/changes/synapclaim-engineering-evidence-baseline/verify.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+              cwd: .
+              environment: 79f0896e61333f05f226868299a120f468e3ed1e01072ac1d89b97a461042954
+              exitCode: 0
+              inputAfter: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+              inputBefore: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+              manifestHash: b3ce028c65b2c4b4d61e39c2bc00018bbe2c3affbd4015e425832a384a2c375a
+              manifestRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/9e78ed69-6b3b-4ab6-b0c0-cdc7b841116f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.build.configure:
+                    boundBranch: master
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.execute:
+            sequence: 13
+            value:
+              event: build-complete
+          full.build.plan:
+            sequence: 11
+            value:
+              designEvidence:
+                contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+              plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              planEvidence:
+                contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+                ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          full.build.plan.evidence:
+            sequence: 12
+            value:
+              contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+              ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+          contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+          submissionId: 735f4df492407203e7de2832ea76dd29127ae39940ca0086bba2cdf4a268415b
+      - id: synapclaim-engineering-evidence-baseline:17
+        stepId: full.verify.report.evidence
+        sequence: 17
+        kind: classic-verification-report
+        status: resolved
+        results:
+          full.build.check:
+            sequence: 14
+            value:
+              argv:
+                - bash
+                - openspec/changes/synapclaim-engineering-evidence-baseline/verify.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+              cwd: .
+              environment: 79f0896e61333f05f226868299a120f468e3ed1e01072ac1d89b97a461042954
+              exitCode: 0
+              inputAfter: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+              inputBefore: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+              manifestHash: b3ce028c65b2c4b4d61e39c2bc00018bbe2c3affbd4015e425832a384a2c375a
+              manifestRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/9e78ed69-6b3b-4ab6-b0c0-cdc7b841116f.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          full.build.check.evidence:
+            sequence: 15
+            value:
+              contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+              ref: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: master
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.build.configure:
+                    boundBranch: master
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.execute:
+            sequence: 13
+            value:
+              event: build-complete
+          full.build.plan:
+            sequence: 11
+            value:
+              designEvidence:
+                contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+              plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              planEvidence:
+                contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+                ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          full.build.plan.evidence:
+            sequence: 12
+            value:
+              contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+              ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                    handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                    proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                      证据视图只读，ai-native-readiness 12
+                      项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2) 不可达维度（区域/医保/药品/诊疗）在既有
+                      LimitedConditions 入口显式拒绝并返回稳定原因码，不新增 DDL、不碰金额；(3) provider
+                      缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                      AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED
+                      决策轨迹补充可查询 fail-closed
+                      原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                      provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                      Open 产物一致，无开放问题。
+                    requirementsEvidence:
+                      contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                    sourceEvidence:
+                      contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                      ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+              handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+              proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+                产物一致，无开放问题。
+              requirementsEvidence:
+                contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+              sourceEvidence:
+                contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-baseline
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+                  workspaceBaseline:
+                    ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                    ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+              ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+          full.verify.run:
+            sequence: 16
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-20-synapclaim-engineering-evidence-baseline-verify.md
+        receipt:
+          ref: docs/superpowers/reports/2026-11-20-synapclaim-engineering-evidence-baseline-verify.md
+          contentHash: a76f4bc9ef34f7f0a45173f14e454f8f82516b92ecca24e7e7e4a67b5bf9d4ee
+          submissionId: 478fd819-0341-4011-9f70-64bc771a4921
+    ready: []
+    joins: {}
+    outputs:
+      full.build.check:
+        sequence: 14
+        value:
+          argv:
+            - bash
+            - openspec/changes/synapclaim-engineering-evidence-baseline/verify.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+          cwd: .
+          environment: 79f0896e61333f05f226868299a120f468e3ed1e01072ac1d89b97a461042954
+          exitCode: 0
+          inputAfter: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+          inputBefore: 805cce8a2deaa956f6a6783f13ec6a2586301bfdb0c318c8c16d0a8abc63aa13
+          manifestHash: b3ce028c65b2c4b4d61e39c2bc00018bbe2c3affbd4015e425832a384a2c375a
+          manifestRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/9e78ed69-6b3b-4ab6-b0c0-cdc7b841116f.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      full.build.check.evidence:
+        sequence: 15
+        value:
+          contentHash: c58f280ed674460a628a1316a4a4c7f7ed09755a5ae9f7de30d9563c08af30b4
+          ref: .comet/runtime/classic-sdk-checks/b5e13baf9785b11a620ae6788ccc51ddaad73907ef763c91e023b24e8996f110/1d9c80f6-cccd-4ed8-861d-6600f9de5764.log
+      full.build.configure:
+        sequence: 9
+        value:
+          boundBranch: master
+          buildMode: direct
+          directOverride: true
+          isolation: current
+          reviewMode: off
+          subagentDispatch: null
+          tddMode: tdd
+      full.build.confirm:
+        sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-engineering-evidence-baseline
+              changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+              workspaceBaseline:
+                ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+            outputs:
+              full.build.configure:
+                boundBranch: master
+                buildMode: direct
+                directOverride: true
+                isolation: current
+                reviewMode: off
+                subagentDispatch: null
+                tddMode: tdd
+      full.build.execute:
+        sequence: 13
+        value:
+          event: build-complete
+      full.build.plan:
+        sequence: 11
+        value:
+          designEvidence:
+            contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+            ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+          plan: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+          planEvidence:
+            contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+            ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+          taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+      full.build.plan.evidence:
+        sequence: 12
+        value:
+          contentHash: d33a2cb1bfe47c13d22ae4fe16931dde90104b9485035f6a504c21c7606070fc
+          ref: docs/superpowers/plans/2026-11-20-synapclaim-engineering-evidence-baseline.md
+      full.design.confirm:
+        sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-engineering-evidence-baseline
+              changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+              workspaceBaseline:
+                ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+                handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+                proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+                  证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+                  不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+                  DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+                  AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+                  fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+                  provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与
+                  Open 产物一致，无开放问题。
+                requirementsEvidence:
+                  contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+                  ref: openspec/changes/synapclaim-engineering-evidence-baseline
+                sourceEvidence:
+                  contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+                  ref: openspec/changes/synapclaim-engineering-evidence-baseline
+      full.design.document:
+        sequence: 7
+        value:
+          designDoc: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+      full.design.evidence:
+        sequence: 8
+        value:
+          contentHash: 011a60b48ad30a0729cdeb0931c7b923f35253cc773db41de3ee3bffb15d2b5e
+          ref: openspec/changes/synapclaim-engineering-evidence-baseline/design.md
+      full.design.handoff:
+        sequence: 5
+        value:
+          handoffContext: openspec/changes/synapclaim-engineering-evidence-baseline/.comet/handoff/design-context.json
+          handoffHash: 99e5580d6fde8c5bc73007d2c2dad084449b0a036c9fcd74d3b9f51d02f5f667
+          proposal: 工程证据底座：为 synapClaim 的 fail-closed 安全姿态建立可机检、可变异证伪的只读证据视图。四个关键取舍：(1)
+            证据视图只读，ai-native-readiness 12 项门禁判据不放宽，冲突取更保守值，防第二配置源与绕过双签；(2)
+            不可达维度（区域/医保/药品/诊疗）在既有 LimitedConditions 入口显式拒绝并返回稳定原因码，不新增
+            DDL、不碰金额；(3) provider 缺失 fail-fast、决策保持 MANUAL_REQUIRED，复用
+            AiRuntimeHealthLocator 口径、桩不冒充模型；(4) MANUAL_REQUIRED 决策轨迹补充可查询
+            fail-closed 原因码，不改节点拓扑与决策结果。风险缓解：优先复用既有错误码避免三处齐备问题；每项判据配变异验证；无
+            provider 的 E2E 负向钉子验证主链仍走 MANUAL_REQUIRED。无 Spec Patch，范围与 Open
+            产物一致，无开放问题。
+          requirementsEvidence:
+            contentHash: 0cc95f19d04f3801ef28e1a758bf38074fd9f86ae3598d5da3afc7ef19468476
+            ref: openspec/changes/synapclaim-engineering-evidence-baseline
+          sourceEvidence:
+            contentHash: 816637fa0a414cd9eccf6ceebb31dbe66dac376c0ba3f16b1062d9e615da834d
+            ref: openspec/changes/synapclaim-engineering-evidence-baseline
+      full.open:
+        sequence: 1
+        value:
+          event: open-complete
+      full.open.confirm:
+        sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-engineering-evidence-baseline
+              changeDir: openspec/changes/synapclaim-engineering-evidence-baseline
+              workspaceBaseline:
+                ref: a0ee3f06-2f66-4082-8f3d-4032d9ca4c7d
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+                ref: openspec/changes/synapclaim-engineering-evidence-baseline
+      full.open.evidence:
+        sequence: 2
+        value:
+          contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+          ref: openspec/changes/synapclaim-engineering-evidence-baseline
+      full.open.revalidate:
+        sequence: 4
+        value:
+          contentHash: 8833838f0c2c161f380e0350e2f678bd777bf55e5f1ebed475b41d2fa20fa888
+      full.verify.report.evidence:
+        sequence: 17
+        value:
+          contentHash: a76f4bc9ef34f7f0a45173f14e454f8f82516b92ecca24e7e7e4a67b5bf9d4ee
+          ref: docs/superpowers/reports/2026-11-20-synapclaim-engineering-evidence-baseline-verify.md
+      full.verify.run:
+        sequence: 16
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-20-synapclaim-engineering-evidence-baseline-verify.md
+    children: []
+    lineage: []
+  sourceRevision: 33
+  sourceHash: 129451d22d38e88411d4bb8909211ec79cc32e15ea7cc538c35d2981e432019a
+check_epoch: 3

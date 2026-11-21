@@ -48,6 +48,9 @@ public class SettlementController {
    */
   public record CancelReq(Boolean payFailed) {}
 
+  /** 撤销幂等载荷：案件号 + payFailed 参与指纹，防同键把「撤销」重放成「支付失败释放」。 */
+  private record CancelPayload(long claimId, CancelReq request) {}
+
   @Operation(summary = "建结算单（软占额度）", description = "幂等：同 claim+attempt 重复建单返回首次结果")
   @PreAuthorize("hasAuthority('claim:settlement:write')")
   @ResponseStatus(HttpStatus.CREATED)
@@ -115,15 +118,42 @@ public class SettlementController {
     return body;
   }
 
-  @Operation(summary = "撤销/拒赔/支付失败（释放预占）")
+  @Operation(
+      summary = "撤销/拒赔/支付失败（释放预占）",
+      description = "同 Idempotency-Key 重复请求返回首次结果，防重复释放预占；不传则不启用幂等")
   @PreAuthorize("hasAuthority('claim:settlement:write')")
   @PostMapping("/cancel")
   public ApiResponse<SettlementResult> cancel(
       @Parameter(description = "案件ID") @PathVariable long claimId,
-      @Valid @RequestBody CancelReq request) {
-    return ApiResponse.success(
-        settlementApplicationService.cancel(
-            claimId, CurrentOperator.requireId(), Boolean.TRUE.equals(request.payFailed())));
+      @Parameter(description = "幂等键（UUID v4）；不传则不启用幂等，重试同动作必须复用同键")
+          @RequestHeader(value = IdempotencyService.IDEMPOTENCY_KEY_HEADER, required = false)
+          String idempotencyKey,
+      @Valid @RequestBody CancelReq request,
+      HttpServletRequest httpRequest) {
+    CancelPayload payload = new CancelPayload(claimId, request);
+    Optional<IdempotencyService.ReplayedResponse> replayed =
+        idempotencyService.replay(
+            idempotencyKey,
+            MDC.get("userId"),
+            httpRequest.getMethod(),
+            httpRequest.getRequestURI(),
+            payload);
+    if (replayed.isPresent()) {
+      return replayOf(replayed.get());
+    }
+    ApiResponse<SettlementResult> body =
+        ApiResponse.success(
+            settlementApplicationService.cancel(
+                claimId, CurrentOperator.requireId(), Boolean.TRUE.equals(request.payFailed())));
+    idempotencyService.remember(
+        idempotencyKey,
+        MDC.get("userId"),
+        httpRequest.getMethod(),
+        httpRequest.getRequestURI(),
+        payload,
+        new IdempotencyService.ReplayedResponse(HttpStatus.OK.value(), null, body),
+        idempotencyProperties.getTtl());
+    return body;
   }
 
   @Operation(summary = "已付退票退款（红冲并回冲额度）", description = "退款幂等：同 Idempotency-Key 重复请求返回首次结果，防重复红冲")

@@ -3,8 +3,11 @@ package com.bone.core.util;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
+import java.math.BigInteger;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -50,7 +53,13 @@ public class JsonUtil {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     static {
-      // 配置 ObjectMapper
+      // 配置 ObjectMapper: 统一 Long/BigInteger 序列化为 String，对齐 Spring MVC 与前端精度契约
+      SimpleModule numberModule = new SimpleModule("BoneNumberStringModule");
+      numberModule.addSerializer(Long.class, ToStringSerializer.instance);
+      numberModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
+      numberModule.addSerializer(BigInteger.class, ToStringSerializer.instance);
+
+      objectMapper.registerModule(numberModule);
       objectMapper.registerModule(new JavaTimeModule());
       objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
     }

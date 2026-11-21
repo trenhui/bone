@@ -11,6 +11,7 @@ import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.metadata.client.MetadataServiceClient;
 import com.bone.metadata.sdk.support.util.DistributedLockUtil;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import java.math.BigInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -64,7 +65,8 @@ public class MetadataAutoConfiguration {
     return builder ->
         builder
             .serializerByType(Long.class, ToStringSerializer.instance)
-            .serializerByType(Long.TYPE, ToStringSerializer.instance);
+            .serializerByType(Long.TYPE, ToStringSerializer.instance)
+            .serializerByType(BigInteger.class, ToStringSerializer.instance);
   }
 
   // ⚠️ @ConditionalOnBean：extension-studio 自带 @Primary 的 studioMetadataService 占位实现，

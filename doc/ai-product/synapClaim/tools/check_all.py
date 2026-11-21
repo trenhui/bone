@@ -67,6 +67,8 @@ GATES: tuple[Gate, ...] = (
     ("_check_ai_native_calibration.py", ("--self-test",), "校准内核负向探针"),
     ("_check_doc_structure.py", ("--self-test",), "方案文档结构判据自证"),
     ("_check_doc_structure.py", (), "方案文档必选四节全量判红"),
+    ("_check_demo_parity.py", ("--self-test",), "DEMO 对齐判据负向探针"),
+    ("_check_demo_parity.py", (), "P1–P8 三案例/评测/口径/映射表对齐"),
 )
 
 # 非 _check_*.py，但属于全套且必须执行的步骤。
@@ -103,6 +105,7 @@ EXPECTED_CALLS: dict[str, tuple[tuple[str, ...], ...]] = {
     "_check_error_code_i18n.py": (("--self-test",), ()),
     "_check_ai_native_calibration.py": (("--check",), ("--self-test",)),
     "_check_doc_structure.py": (("--self-test",), ()),
+    "_check_demo_parity.py": (("--self-test",), ()),
     "_audit_ddl_vs_db.py": (("--self-test",),),
     "_ai_native_readiness.py": (("--self-test",),),
     "_gen_ai_index.py": (("--check",),),

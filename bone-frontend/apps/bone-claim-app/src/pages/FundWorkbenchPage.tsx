@@ -22,6 +22,7 @@ import {
 import {
   quotaApi,
   settlementApi,
+  stableSettlementKey,
   type AccountType,
   type QuotaSummary,
   type SettlementResult,
@@ -32,6 +33,7 @@ import { useClaimIdParam } from '../hooks/useClaimIdParam';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { AuthButton } from '@bone/ui';
 import { PERMISSIONS } from '../constants/permissions';
+import { formatMoney } from '../services/money';
 
 /**
  * 资金工作台（synapClaim A7，手写不低代码化）。
@@ -59,7 +61,7 @@ const STAGE_META: Record<string, { color: string; label: string }> = {
 const isTerminal = (stage?: string) => ['RELEASED', 'FAILED', 'REFUNDED'].includes(stage ?? '');
 const isOccupied = (stage?: string) => ['HARD_RESERVED', 'REVIEW_FREEZE'].includes(stage ?? '');
 
-const fmt = (v?: number): string => `¥${(Number(v ?? 0) || 0).toFixed(2)}`;
+const fmt = (v?: number): string => formatMoney(v);
 
 function stageStep(stage?: string): { current: number; status: 'process' | 'finish' | 'wait' } {
   switch (stage) {
@@ -156,10 +158,25 @@ export function FundWorkbenchPage({ embeddedClaimId }: CasePageProps = {}): Reac
   const onConfirmReview = () =>
     run(() => settlementApi.confirmReview(claimId), '复核放行（硬预占）');
 
-  const onPay = () => run(() => settlementApi.pay(claimId), '支付成功（额度 frozen→claimed）');
-  const onCancel = () =>
-    run(() => settlementApi.cancel(claimId, { payFailed: false }), '已撤销/拒赔（释放预占）');
-  const onRefund = () => run(() => settlementApi.refund(claimId), '已退票退款（红冲并回冲额度）');
+  /**
+   * 幂等键在点击瞬间按当前结算单快照派生并闭包固定：响应丢失后的重试仍命中同一键；
+   * 结算单阶段变化后再次点击是另一个业务动作，自然换键。绝不在 service 默认值里现取 UUID。
+   */
+  const onPay = () => {
+    const key = stableSettlementKey(claimId, 'pay', settlement);
+    return run(() => settlementApi.pay(claimId, key), '支付成功（额度 frozen→claimed）');
+  };
+  const onCancel = () => {
+    const key = stableSettlementKey(claimId, 'cancel', settlement);
+    return run(
+      () => settlementApi.cancel(claimId, { payFailed: false }, key),
+      '已撤销/拒赔（释放预占）',
+    );
+  };
+  const onRefund = () => {
+    const key = stableSettlementKey(claimId, 'refund', settlement);
+    return run(() => settlementApi.refund(claimId, key), '已退票退款（红冲并回冲额度）');
+  };
 
   const stage = settlement?.fundingStage;
   const step = stageStep(stage);
@@ -181,6 +198,8 @@ export function FundWorkbenchPage({ embeddedClaimId }: CasePageProps = {}): Reac
               <CaseIdBar value={input} onChange={setInput} onSubmit={submit} loading={loading} />
             )}
             <Button
+              data-testid="fund-refresh"
+              aria-label="刷新结算状态"
               icon={<ReloadOutlined />}
               onClick={() => void load()}
               disabled={!claimId}
@@ -211,6 +230,7 @@ export function FundWorkbenchPage({ embeddedClaimId }: CasePageProps = {}): Reac
                     ]}
                   />
                   <AuthButton
+                    data-testid="fund-create"
                     code={PERMISSIONS.SETTLEMENT_WRITE}
                     type="primary"
                     icon={<PlusOutlined />}
@@ -225,6 +245,7 @@ export function FundWorkbenchPage({ embeddedClaimId }: CasePageProps = {}): Reac
                 <AuthButton
                   code={PERMISSIONS.SETTLEMENT_WRITE}
                   type="primary"
+                  data-testid="fund-audit-pass"
                   icon={<CheckCircleOutlined />}
                   loading={acting}
                   onClick={onAuditPass}
@@ -236,6 +257,7 @@ export function FundWorkbenchPage({ embeddedClaimId }: CasePageProps = {}): Reac
                 <AuthButton
                   code={PERMISSIONS.SETTLEMENT_WRITE}
                   type="primary"
+                  data-testid="fund-confirm-review"
                   icon={<CheckCircleOutlined />}
                   loading={acting}
                   onClick={onConfirmReview}
@@ -247,6 +269,7 @@ export function FundWorkbenchPage({ embeddedClaimId }: CasePageProps = {}): Reac
                 <AuthButton
                   code={PERMISSIONS.SETTLEMENT_WRITE}
                   type="primary"
+                  data-testid="fund-pay"
                   icon={<BankOutlined />}
                   loading={acting}
                   onClick={onPay}
@@ -257,6 +280,7 @@ export function FundWorkbenchPage({ embeddedClaimId }: CasePageProps = {}): Reac
               {(stage === 'SOFT_RESERVED' || isOccupied(stage)) && (
                 <AuthButton
                   code={PERMISSIONS.SETTLEMENT_WRITE}
+                  data-testid="fund-cancel"
                   icon={<StopOutlined />}
                   loading={acting}
                   onClick={onCancel}
@@ -267,6 +291,7 @@ export function FundWorkbenchPage({ embeddedClaimId }: CasePageProps = {}): Reac
               {stage === 'PAID' && (
                 <AuthButton
                   code={PERMISSIONS.SETTLEMENT_WRITE}
+                  data-testid="fund-refund"
                   icon={<RollbackOutlined />}
                   loading={acting}
                   onClick={onRefund}

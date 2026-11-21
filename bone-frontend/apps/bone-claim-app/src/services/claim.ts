@@ -37,21 +37,36 @@ export function newIdempotencyKey(): string {
 }
 
 /**
- * 大额双人复核门（后端 {@code ClaimThresholds.DUAL_REVIEW_AMOUNT} 单一真源，1 万元）。
- *
- * 前端仅用于列表徽标与计数展示，不参与任何资金判定；阈值调整必须与后端同批同步。
- * 注意：这是前端镜像常量，真实判定以后端为准——接入配置中心 /dict 后应替换为运行时取值，消除此处第二份真源。
- */
-export const REVIEW_THRESHOLD = 10000;
-
-/**
  * 提交幂等键：优先由稳定业务键 batchNo + invoiceNo 派生——同一批次同一张发票
  * 重试/双提交天然同键，后端幂等表可直接去重；默认 UUID 只在无业务键可依时兜底。
  */
 function stableSubmitKey(req: SubmitClaimReq): string {
-  return req.batchNo && req.invoiceNo
-    ? `claim:${req.batchNo}:${req.invoiceNo}`
-    : newIdempotencyKey();
+  // 报案页从不填 batchNo，旧实现必然落到 UUID 兜底 ⇒ 网络重试等同重新建案。
+  // 用「批次（若有）+ 保单号 + 票据代码/号码 + 出险时间」派生稳定业务键；
+  // 同一份表单重试/双击得到同一键，后端幂等表才有去重依据。
+  const parts = [
+    req.batchNo,
+    req.policyNo ?? req.insurerPolicyNo,
+    req.invoiceCode,
+    req.invoiceNo,
+    req.outInsureTime,
+  ].filter((v): v is string => Boolean(v && v.trim()));
+  return parts.length ? `claim:${parts.join('|')}` : newIdempotencyKey();
+}
+
+/**
+ * 案件写动作幂等键：案件 + 动作 + 当前状态快照。
+ *
+ * <p>后端决策/自动通过按可选幂等接入（同键重放首次结果）。同一案件状态未变时的重试必须同键；
+ * 状态推进后再次决策是另一个业务动作，自然换键。请求体本身还参与后端指纹校验，防止同键换内容。
+ */
+export function stableClaimActionKey(
+  claimId: string,
+  action: 'decide' | 'auto-approve' | 'review-decide',
+  status?: string,
+): string {
+  const parts = [claimId, action, status].filter((v): v is string => Boolean(v && v.trim()));
+  return parts.length >= 2 ? `claim:${parts.join('|')}` : newIdempotencyKey();
 }
 
 export const claimApi = {
@@ -121,8 +136,14 @@ export const claimApi = {
   },
 
   /** 人工核赔决策（APPROVED 必填 approvedAmount；REJECTED 必填 comment+rejectType）。 */
-  decide(claimId: string, req: ClaimDecisionReq): Promise<ApiResponse<void>> {
-    return client.post<never, ApiResponse<void>>(`/${claimId}/decision`, req);
+  decide(
+    claimId: string,
+    req: ClaimDecisionReq,
+    idempotencyKey = stableClaimActionKey(claimId, 'decide'),
+  ): Promise<ApiResponse<void>> {
+    return client.post<never, ApiResponse<void>>(`/${claimId}/decision`, req, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
 
   /** 发起双人复核：复核人 = 当前登录用户，故同一账号重复发起会被 409 拒（职责分离）。 */
@@ -144,8 +165,13 @@ export const claimApi = {
   },
 
   /** 自动通过：结案（12→50）+ 建结算单软占额度（同事务；结案必有结算单）。 */
-  autoApprove(claimId: string): Promise<ApiResponse<AutoApprovalOutcome>> {
-    return client.post<never, ApiResponse<AutoApprovalOutcome>>(`/${claimId}/auto-approve`);
+  autoApprove(
+    claimId: string,
+    idempotencyKey = stableClaimActionKey(claimId, 'auto-approve'),
+  ): Promise<ApiResponse<AutoApprovalOutcome>> {
+    return client.post<never, ApiResponse<AutoApprovalOutcome>>(`/${claimId}/auto-approve`, undefined, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
 
   /** 挂起/恢复（正交机制，不改状态码；FRAUD 仅风控岗可恢复）。 */

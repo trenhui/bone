@@ -138,6 +138,14 @@ export interface ClaimWithItemsProjection {
   rejectType: string;
   planVersion: string;
   createdAt: string;
+  /**
+   * SLA 物化列（后端 t_claim_case_sla，由定时任务每 20 分钟刷新）。
+   * 四列同时为 null = 该案尚未物化 → 读侧显示「未物化」，禁止用创建时间估算。
+   */
+  slaDueAt?: string | null;
+  legalDueAt?: string | null;
+  remainingWorkHours?: number | string | null;
+  slaRefreshedAt?: string | null;
   itemId: string | null;
   itemName: string | null;
   itemCode: string | null;

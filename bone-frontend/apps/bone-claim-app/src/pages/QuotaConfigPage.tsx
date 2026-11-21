@@ -34,6 +34,7 @@ import dayjs from 'dayjs';
 import { AuthButton } from '@bone/ui';
 import { useConfirmAction } from '../hooks/useConfirmAction';
 import { PERMISSIONS } from '../constants/permissions';
+import { formatMoney } from '../services/money';
 import { ERROR_CODES } from '../constants/errorCodes';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
@@ -502,16 +503,16 @@ export function QuotaConfigPage(): ReactElement {
                 width: 100,
                 render: (v: number, r) => `${v}${r.removedCount > 0 ? `（减人 ${r.removedCount}）` : ''}`,
               },
-              { title: '初始额度合计', dataIndex: 'initialTotal', width: 140, render: (v: number) => `¥ ${Number(v).toFixed(2)}` },
-              { title: '已扣减合计', dataIndex: 'claimedTotal', width: 130, render: (v: number) => `¥ ${Number(v).toFixed(2)}` },
-              { title: '已冻结合计', dataIndex: 'frozenTotal', width: 130, render: (v: number) => `¥ ${Number(v).toFixed(2)}` },
+              { title: '初始额度合计', dataIndex: 'initialTotal', width: 140, render: (v: number) => formatMoney(v) },
+              { title: '已扣减合计', dataIndex: 'claimedTotal', width: 130, render: (v: number) => formatMoney(v) },
+              { title: '已冻结合计', dataIndex: 'frozenTotal', width: 130, render: (v: number) => formatMoney(v) },
               {
                 title: '可用额度合计',
                 dataIndex: 'availableTotal',
                 width: 140,
                 render: (v: number) => (
                   <Typography.Text strong type={Number(v) <= 0 ? 'danger' : undefined}>
-                    ¥ {Number(v).toFixed(2)}
+                    {formatMoney(v)}
                   </Typography.Text>
                 ),
               },
@@ -604,26 +605,26 @@ export function QuotaConfigPage(): ReactElement {
               title: '初始额度',
               dataIndex: 'initial',
               width: 140,
-              render: (v: number) => `¥${(v ?? 0).toFixed(2)}`,
+              render: (v: number) => formatMoney(v),
             },
             {
               title: '已扣减',
               dataIndex: 'claimed',
               width: 130,
-              render: (v: number) => `¥${(v ?? 0).toFixed(2)}`,
+              render: (v: number) => formatMoney(v),
             },
             {
               title: '已冻结',
               dataIndex: 'frozen',
               width: 130,
-              render: (v: number) => `¥${(v ?? 0).toFixed(2)}`,
+              render: (v: number) => formatMoney(v),
             },
             {
               title: '可用额度',
               dataIndex: 'available',
               width: 140,
               render: (v: number) => (
-                <Typography.Text strong>¥{(v ?? 0).toFixed(2)}</Typography.Text>
+                <Typography.Text strong>{formatMoney(v)}</Typography.Text>
               ),
             },
             {
@@ -775,8 +776,8 @@ export function QuotaConfigPage(): ReactElement {
       >
         {adjustTarget && (
           <Typography.Paragraph type="secondary">
-            当前已占用 ¥{(adjustTarget.claimed + adjustTarget.frozen).toFixed(2)}
-            （已赔 ¥{adjustTarget.claimed.toFixed(2)} + 已冻结 ¥{adjustTarget.frozen.toFixed(2)}）。
+            当前已占用 {formatMoney(adjustTarget.claimed + adjustTarget.frozen)}
+            （已赔 {formatMoney(adjustTarget.claimed)} + 已冻结 {formatMoney(adjustTarget.frozen)}）。
             新的初始额度不得低于该值，否则可用额度会变为负数、后续占额将被守恒校验拦下。
           </Typography.Paragraph>
         )}
@@ -820,7 +821,7 @@ export function QuotaConfigPage(): ReactElement {
                         {QUOTA_CHANGE_TYPE_META[c.changeType]?.label ?? c.changeType}
                       </Typography.Text>
                       <Typography.Text type="secondary">
-                        ¥{c.beforeInitial.toFixed(2)} → ¥{c.afterInitial.toFixed(2)}
+                        {formatMoney(c.beforeInitial)} → {formatMoney(c.afterInitial)}
                       </Typography.Text>
                     </Space>
                     <div>

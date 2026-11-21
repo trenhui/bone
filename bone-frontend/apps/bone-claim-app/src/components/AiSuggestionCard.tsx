@@ -44,6 +44,8 @@ export function AiSuggestionCard({ claimId, scene = 'case' }: AiSuggestionCardPr
   const [reasonCode, setReasonCode] = useState<ReasonType | undefined>(undefined);
   const [comment, setComment] = useState('');
   const [lastRecord, setLastRecord] = useState<string | null>(null);
+  /** 最近一次裁决是否真正写库：true 落库 / false 仅本地 / null 尚未产生。 */
+  const [lastPersisted, setLastPersisted] = useState<boolean | null>(null);
   const impressionSent = useRef(false);
 
   const load = useCallback(async () => {
@@ -65,6 +67,7 @@ export function AiSuggestionCard({ claimId, scene = 'case' }: AiSuggestionCardPr
     setDisclosure(null);
     setExecution(null);
     setLastRecord(null);
+    setLastPersisted(null);
     void load();
   }, [load]);
 
@@ -115,6 +118,7 @@ export function AiSuggestionCard({ claimId, scene = 'case' }: AiSuggestionCardPr
     emitWorkbenchEvent(built.event);
     const base = `${built.event.disposition} · ${built.event.reasonCode ?? '无需原因码'} · ${built.event.at}`;
     const pr = await persistWorkbenchEvent(built.event);
+    setLastPersisted(pr.ok);
     if (pr.ok) {
       setLastRecord(`${base} · ${pr.replayed ? '幂等重放（已存在同事件）' : '已落库'}`);
       message.success(pr.replayed ? '裁决事件已落库（幂等重放）' : '裁决事件已落库，服务端采纳率口径已更新');
@@ -188,7 +192,12 @@ export function AiSuggestionCard({ claimId, scene = 'case' }: AiSuggestionCardPr
           )}
 
           {lastRecord ? (
-            <Alert type="success" showIcon message="本地裁决事件已生成" description={lastRecord} />
+            <Alert
+              type={lastPersisted === false ? 'warning' : 'success'}
+              showIcon
+              message={lastPersisted === false ? '本地裁决事件已生成 · 写库失败' : '裁决事件已登记'}
+              description={lastRecord}
+            />
           ) : null}
 
           <Alert
@@ -236,7 +245,8 @@ export function AiSuggestionCard({ claimId, scene = 'case' }: AiSuggestionCardPr
             rows={2}
           />
           <Typography.Text type="secondary">
-            记录仅写入浏览器本地事件总线，不写库、不改变结论与金额。
+            裁决事件会异步写入后端回流表（曝光 / 采纳 / 驳回 / 修改 + 受控原因码 + traceId），
+            写库失败只提示；不改变案件结论与金额。
           </Typography.Text>
         </Space>
       </Modal>

@@ -222,7 +222,22 @@ public class ClaimCaseController {
   @PostMapping("/{id}/decision")
   public ApiResponse<Void> decide(
       @Parameter(description = "案件ID") @PathVariable long id,
-      @Parameter(description = "审核决策") @Valid @RequestBody ClaimDecisionReq request) {
+      @Parameter(description = "幂等键（UUID v4）；不传则不启用幂等，重试同动作必须复用同键")
+          @RequestHeader(value = IdempotencyService.IDEMPOTENCY_KEY_HEADER, required = false)
+          String idempotencyKey,
+      @Parameter(description = "审核决策") @Valid @RequestBody ClaimDecisionReq request,
+      HttpServletRequest httpRequest) {
+    DecisionPayload payload = new DecisionPayload(id, request);
+    Optional<IdempotencyService.ReplayedResponse> replayed =
+        idempotencyService.replay(
+            idempotencyKey,
+            MDC.get("userId"),
+            httpRequest.getMethod(),
+            httpRequest.getRequestURI(),
+            payload);
+    if (replayed.isPresent()) {
+      return replayedBody(replayed.get());
+    }
     claimCaseApplicationService.decide(
         id,
         request.decision(),
@@ -230,7 +245,16 @@ public class ClaimCaseController {
         request.comment(),
         request.rejectType(),
         request.approvedAmount());
-    return ApiResponse.success();
+    ApiResponse<Void> body = ApiResponse.success();
+    idempotencyService.remember(
+        idempotencyKey,
+        MDC.get("userId"),
+        httpRequest.getMethod(),
+        httpRequest.getRequestURI(),
+        payload,
+        new IdempotencyService.ReplayedResponse(HttpStatus.OK.value(), null, body),
+        idempotencyProperties.getTtl());
+    return body;
   }
 
   @Operation(summary = "发起双人复核", description = "42→44（≥1 万；复核人须非第一审核人）")
@@ -270,9 +294,33 @@ public class ClaimCaseController {
   @PreAuthorize("hasAuthority('claim:review:write')")
   @PostMapping("/{id}/auto-approve")
   public ApiResponse<AutoApprovalOutcome> autoApprove(
-      @Parameter(description = "案件ID") @PathVariable long id) {
-    return ApiResponse.success(
-        autoApprovalApplicationService.approveAndSettle(id, CurrentOperator.requireId()));
+      @Parameter(description = "案件ID") @PathVariable long id,
+      @Parameter(description = "幂等键（UUID v4）；不传则不启用幂等，重试同动作必须复用同键")
+          @RequestHeader(value = IdempotencyService.IDEMPOTENCY_KEY_HEADER, required = false)
+          String idempotencyKey,
+      HttpServletRequest httpRequest) {
+    Optional<IdempotencyService.ReplayedResponse> replayed =
+        idempotencyService.replay(
+            idempotencyKey,
+            MDC.get("userId"),
+            httpRequest.getMethod(),
+            httpRequest.getRequestURI(),
+            id);
+    if (replayed.isPresent()) {
+      return replayedBody(replayed.get());
+    }
+    ApiResponse<AutoApprovalOutcome> body =
+        ApiResponse.success(
+            autoApprovalApplicationService.approveAndSettle(id, CurrentOperator.requireId()));
+    idempotencyService.remember(
+        idempotencyKey,
+        MDC.get("userId"),
+        httpRequest.getMethod(),
+        httpRequest.getRequestURI(),
+        id,
+        new IdempotencyService.ReplayedResponse(HttpStatus.OK.value(), null, body),
+        idempotencyProperties.getTtl());
+    return body;
   }
 
   @Operation(summary = "挂起/恢复", description = "正交挂起机制（不改状态码）；FRAUD 仅风控岗可恢复")
@@ -325,9 +373,17 @@ public class ClaimCaseController {
     return ApiResponse.success(claimCaseApplicationService.revokeConsent(id));
   }
 
+  /** 决策幂等载荷：案件号 + 请求体参与指纹，防同键换决策内容仍能重放。 */
+  private record DecisionPayload(long claimId, ClaimDecisionReq request) {}
+
   @SuppressWarnings("unchecked")
   private static ApiResponse<ClaimCaseResp> toReplayedResponse(
       IdempotencyService.ReplayedResponse snapshot) {
     return (ApiResponse<ClaimCaseResp>) snapshot.body();
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <T> ApiResponse<T> replayedBody(IdempotencyService.ReplayedResponse snapshot) {
+    return (ApiResponse<T>) snapshot.body();
   }
 }

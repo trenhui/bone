@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -33,11 +34,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -87,6 +91,8 @@ public class ReviewTaskController {
 
   public record BatchDecisionFailure(long claimId, String code, String message) {}
 
+  private final ClaimIdempotencyProperties idempotencyProperties;
+
   @Operation(
       summary = "待办列表",
       description = "任务维 status（WAITING/ASSIGNED/PROCESSING/DONE）→ 案件状态集；不传取默认待办（40+41）")
@@ -101,7 +107,11 @@ public class ReviewTaskController {
     return ApiResponse.success(claimCaseApplicationService.page(statuses, null, page, size));
   }
 
-  @Operation(summary = "审核决策", description = "路由到案件中心人工核赔决策（41→42/45/21）；审核人取认证主体")
+  @Operation(
+      summary = "审核决策",
+      description =
+          "路由到案件中心人工核赔决策（41→42/45/21）；审核人取认证主体。"
+              + "同 Idempotency-Key 重复请求重放首次结果，防「决策已生效但响应丢失」的重试二次改判；不传则不启用幂等")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "200",
@@ -117,7 +127,22 @@ public class ReviewTaskController {
   @PostMapping("/{claimId}/decision")
   public ApiResponse<Void> decide(
       @Parameter(description = "案件ID（= 任务ID）") @PathVariable long claimId,
-      @Valid @RequestBody ReviewDecisionReq request) {
+      @Parameter(description = "幂等键（UUID v4）；不传则不启用幂等，重试同动作必须复用同键")
+          @RequestHeader(value = IdempotencyService.IDEMPOTENCY_KEY_HEADER, required = false)
+          String idempotencyKey,
+      @Valid @RequestBody ReviewDecisionReq request,
+      HttpServletRequest httpRequest) {
+    DecisionPayload payload = new DecisionPayload(claimId, request);
+    Optional<IdempotencyService.ReplayedResponse> replayed =
+        idempotencyService.replay(
+            idempotencyKey,
+            MDC.get("userId"),
+            httpRequest.getMethod(),
+            httpRequest.getRequestURI(),
+            payload);
+    if (replayed.isPresent()) {
+      return replayedBody(replayed.get());
+    }
     claimCaseApplicationService.decide(
         claimId,
         request.decision(),
@@ -125,7 +150,16 @@ public class ReviewTaskController {
         ReviewDecisionAssembler.composeComment(request),
         ReviewDecisionAssembler.requireRejectType(request),
         request.approvedAmount());
-    return ApiResponse.success();
+    ApiResponse<Void> body = ApiResponse.success();
+    idempotencyService.remember(
+        idempotencyKey,
+        MDC.get("userId"),
+        httpRequest.getMethod(),
+        httpRequest.getRequestURI(),
+        payload,
+        new IdempotencyService.ReplayedResponse(HttpStatus.OK.value(), null, body),
+        idempotencyProperties.getTtl());
+    return body;
   }
 
   /**
@@ -263,5 +297,13 @@ public class ReviewTaskController {
     }
     return ApiResponse.success(
         DecisionTraceAssembler.toResp(decisionExecutionApplicationService.replay(traceId)));
+  }
+
+  /** 决策幂等载荷：案件号 + 请求体参与指纹，防同键换决策内容仍能重放。 */
+  private record DecisionPayload(long claimId, ReviewDecisionReq request) {}
+
+  @SuppressWarnings("unchecked")
+  private static <T> ApiResponse<T> replayedBody(IdempotencyService.ReplayedResponse snapshot) {
+    return (ApiResponse<T>) snapshot.body();
   }
 }
