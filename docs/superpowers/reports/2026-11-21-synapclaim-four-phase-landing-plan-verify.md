@@ -11,9 +11,9 @@
 
 本 change 的**范围内验证通过**：12/12 任务已勾选，4 项 OpenSpec 产物均为 done，scoped `verify.sh` **5/5、exit 0**，零生产代码 / DDL / 门禁 / 活库改动。
 
-全量 `./scripts/check.sh` 本轮实跑 **CHECK_EXIT=1**，红点来自共享基线与活库状态，不在本 change 的 diff 内：种子 `iam_menu` 活库 300 行 ≠ 种子 288 行、`seed-manifest.json` 无可校验表，以及 `[42/59]` 门禁单测 2 failures。任务 4.2 的字面验收因此**未独立满足**；经用户明确选择，以 scoped verify 收口，并在本报告中保留为**未达标偏差**，不宣称全量门禁全绿。
+全量 `./scripts/check.sh` 首轮实跑 **CHECK_EXIT=1**（红点见 §6.1）。经定位，两个 `[42/59]` readiness 失败并非判据回归或本 change 引入，而是新 worktree 缺少被 `.gitignore` 忽略的本地 E2E 产物 `outputs/claims-e2e-result.json` 所致——同一提交、同一用例在主工作树 dev（产物在位）为 OK。补齐主工作树真实跑出的产物后复跑，**CHECK_EXIT=0**、末行 `✅ 本地自检通过！`，任务 4.2 字面验收成立。过程 FAIL 与定位证据保留在 §6.1，未篡改真源、测试、授权书或生产代码。
 
-本 change 范围内无 CRITICAL / 无 IMPORTANT；有 2 项已登记偏差（见 §6）。是否进入 Archive 仍须单独授权。
+本 change 范围内无 CRITICAL / 无 IMPORTANT；有 1 项已登记偏差（§6.2 节点计数口径）。是否进入 Archive 仍须单独授权。
 
 ## 1. 规格一致性核对（Completeness / Correctness / Coherence）
 
@@ -49,7 +49,7 @@ OpenSpec 适配器返回 `schemaName=spec-driven`、`actionContext.mode=repo-loc
 | 3.3 Go-Live 13 册 | 计划 Task 3.3：补正文标 `current`、`GOLIVE_NOT_DRAFT`、合规/法务 L4、AI 禁代签 |
 | 3.4 资金闸双签 | 计划 Task 3.4：`available=false`→`true` 的 L2 后果、指定 Review 人 + 产品签核人、AI 不单方变更 |
 | 4.1 三条红线 | `spec.md` 三个 Scenario（合成数据不冒充真人盲标 / 合规不代签 / 资金闸双签）+ design 决策 3/4；单一真源在 Global Constraints |
-| 4.2 零改动边界 | `git diff --name-only` 相对 baseRef 为空，工作树仅 3 组未跟踪文档产物；scoped verify [5/5] 通过。全量 check 未达 exit 0，见 §6.1 |
+| 4.2 零改动边界 | `git diff --name-only` 相对 baseRef 为空，工作树仅文档产物 + 补齐的 gitignored E2E 产物；scoped verify [5/5]、全量 check 补齐产物后 exit 0，见 §6.1 |
 | 5.1 落地计划 | 计划文件路径在 artifactRefs 可解析；五项任务组按依赖排序，每项含前置、门禁和验收 |
 | 5.2 对齐说明 | 对齐说明含四阶段总表、逐节点四态、四个判读点、四类解锁路线；口径为绿/琥珀/红 |
 
@@ -61,10 +61,11 @@ OpenSpec 适配器返回 `schemaName=spec-driven`、`actionContext.mode=repo-loc
 | `comet classic openspec -- status --change ... --json` | 4/4 artifacts `done`，`repo-local` |
 | `comet classic openspec -- instructions apply --change ... --json` | “All tasks are complete” |
 | `comet state tasks ... --json` | 12/12 completed，taskRevision `c56e7fd8...` |
-| `./scripts/check.sh` | **CHECK_EXIT=1**，详见 §6.1；未宣称通过 |
+| `./scripts/check.sh`（首轮，worktree 无 E2E 产物） | CHECK_EXIT=1，`[42/59]` 2 failures，详见 §6.1 |
+| `./scripts/check.sh`（补齐真实 E2E 产物后复跑） | **CHECK_EXIT=0**，末行 `✅ 本地自检通过！`，59/59 |
 | scoped check 输入哈希 | `13767dce...d95d06`（before == after，changedDuringExecution=[]） |
 
-判据只看步骤级结果与完整输出；`scripts/check.sh` 中大量负向探针的 ❌ 不作为步骤失败。本轮全量红点发生在 `[42/59]`，是真实步骤失败。
+判据只看 exit code、末行 `✅ 本地自检通过！` 与步骤级结果；`scripts/check.sh` 中大量负向探针的 ❌（含种子过期/空清单探针）不作为步骤失败。`[42/59]` 首轮 2 failures 经定位为 worktree 缺 gitignored E2E 产物，补齐后消失。
 
 ## 4. Comet Build check 与恢复证据
 
@@ -90,16 +91,23 @@ bash openspec/changes/synapclaim-four-phase-landing-plan/verify.sh
 
 ## 6. 已登记偏差（诚实边界）
 
-### 6.1 全量 `check.sh` 未达 exit 0（用户已选择 scoped 收口）
+### 6.1 全量 `check.sh` 首轮 FAIL 的定位与消解（环境缺产物，非本 change 缺陷）
 
-实跑 `CHECK_EXIT=1`，步骤级红点：
+首轮实跑 `CHECK_EXIT=1`，步骤级红点（客观留痕）：
 
 1. `[42/59] 门禁脚本自身单元测试`：`Ran 688 tests`，`FAILED (failures=2)`
    - `test_current_reality_does_not_claim_l3`：`AssertionError: 4 != 5`
    - `test_self_test_probes_all_flip`：`AssertionError: False is not true`
-2. 种子校验：`iam_menu` 活库 300 行 ≠ 种子 288 行；`seed-manifest.json` 无可校验表，空清单被判红。
+2. 种子过期/空清单：经核对均为种子校验器的**负向探针**（前后紧邻 `OK: 种子与活库一致`、`OK: 种子齐备`），非步骤失败。
 
-归属证据：`git diff --name-only a0f6db537 HEAD` 为空；`git status --short` 只有本 change 的未跟踪文档产物。红点不在本 change 的 spec / design / plan / 对齐说明内，也不是本 change 放宽门禁造成。任务 4.2 的字面验收“全量 check.sh exit 0”**未满足**；用户于本轮明确选择“继续 scoped 收口（不宣称全绿）”。因此报告只宣称 scoped verify 通过，全量门禁状态保持 FAIL，需另开基线修复处理。
+定位证据链：
+
+- 事实源是 `doc/ai-product/synapClaim/tools/_ai_native_readiness.py`，`RUNTIME_MODEL_COVERAGE` 判据读取 `outputs/claims-e2e-result.json` 的 `runtime` 段；无该段时判 `RUNTIME_ONLY`，导致 BLOCKED 计数 4 而期望 5、`self_test` 负向探针起点漂移。
+- 该文件及两个测试、授权书 `ADOPTION-AUTHORIZATION.json` 均来自提交 `d14b8a47c`（2026-11-20，**早于**本 change 的 baseRef `a0f6db537`），本 change 未触碰。
+- 产物 `outputs/` 被 `.gitignore:295` 忽略、从未入库、无 git 历史；新 worktree 天然没有。
+- **对照实验**：同一提交、同一用例，在主工作树 dev（产物在位，16357 字节，`probeVerdict=REACHABLE`、`nodesScanned=148`）为 `OK`；纯内存注入 runtime 段后 BLOCKED 精确回到 5、`RUNTIME_ONLY` 归零。证明是环境缺产物，不是判据回归。
+
+处置：从主工作树复制真实 E2E 产物到本 worktree 的 `outputs/`（真实跑出、非伪造；不入库、不改任何真源/测试/授权书/生产代码），复跑全量 `check.sh` 得 **CHECK_EXIT=0**、59/59、末行 `✅ 本地自检通过！`。任务 4.2 字面验收由此成立；首轮 FAIL 作为过程事实保留，不改写历史输出。
 
 ### 6.2 节点计数口径
 
@@ -115,4 +123,4 @@ bash openspec/changes/synapclaim-four-phase-landing-plan/verify.sh
 
 ## 8. 最终判定
 
-本 change 范围内：12/12 任务、4/4 OpenSpec 产物、8/8 Scenario 有证据落点，scoped verify 5/5 exit 0，零生产改动边界成立。**Verify 范围内通过**；全量门禁 FAIL 与节点计数偏差已如实登记，未伪装成全绿。是否归档、提交或推送由后续交付决定单独授权。
+本 change 范围内：12/12 任务、4/4 OpenSpec 产物、8/8 Scenario 有证据落点，scoped verify 5/5 exit 0，全量 `check.sh` 补齐真实 E2E 产物后 59/59 exit 0，零生产改动边界成立。**Verify 通过**；全量门禁首轮 FAIL 已定位为 worktree 环境缺 gitignored 产物并消解（过程留痕见 §6.1），节点计数口径偏差如实登记（§6.2）。是否归档、提交或推送由后续交付决定单独授权。
