@@ -8,8 +8,8 @@ import static org.mockito.Mockito.mock;
 
 import com.bone.procurement.risk.application.RiskApplicationService;
 import com.bone.procurement.risk.domain.gateway.RiskAlertRepository;
-import com.bone.procurement.risk.domain.model.PerformanceScore;
-import com.bone.procurement.risk.domain.model.RiskAlert;
+import com.bone.procurement.risk.domain.model.risk.PerformanceScore;
+import com.bone.procurement.risk.domain.model.risk.RiskAlert;
 import com.bone.procurement.risk.domain.repository.PerformanceScoreSqlRepository;
 import com.bone.procurement.risk.domain.repository.RiskAlertSqlRepository;
 import java.math.BigDecimal;

@@ -2,8 +2,8 @@ package com.bone.procurement.qualification.domain.repository;
 
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import com.bone.procurement.qualification.domain.model.Qualification;
-import com.bone.procurement.qualification.domain.model.VerifyStatus;
+import com.bone.procurement.qualification.domain.model.qualification.Qualification;
+import com.bone.procurement.qualification.domain.model.qualification.VerifyStatus;
 import java.util.Date;
 import java.util.List;
 

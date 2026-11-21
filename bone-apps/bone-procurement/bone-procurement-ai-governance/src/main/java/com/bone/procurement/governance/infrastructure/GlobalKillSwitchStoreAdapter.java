@@ -4,7 +4,7 @@ import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.procurement.governance.application.ConditionalOnAiGovernanceEnabled;
 import com.bone.procurement.governance.domain.gateway.GlobalKillSwitchStore;
 import com.bone.procurement.governance.domain.gateway.GovernanceActorPort;
-import com.bone.procurement.governance.domain.model.GlobalKillSwitch;
+import com.bone.procurement.governance.domain.model.capability.GlobalKillSwitch;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;

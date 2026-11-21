@@ -2,8 +2,8 @@ package com.bone.procurement.qualification.domain.repository;
 
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import com.bone.procurement.qualification.domain.model.Onboarding;
-import com.bone.procurement.qualification.domain.model.OnboardingStatus;
+import com.bone.procurement.qualification.domain.model.qualification.Onboarding;
+import com.bone.procurement.qualification.domain.model.qualification.OnboardingStatus;
 import java.util.List;
 import java.util.Optional;
 

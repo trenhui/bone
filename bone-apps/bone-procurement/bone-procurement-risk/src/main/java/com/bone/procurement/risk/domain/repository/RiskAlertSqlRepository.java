@@ -2,7 +2,7 @@ package com.bone.procurement.risk.domain.repository;
 
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import com.bone.procurement.risk.domain.model.RiskAlert;
+import com.bone.procurement.risk.domain.model.risk.RiskAlert;
 import java.util.List;
 import java.util.Optional;
 

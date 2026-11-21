@@ -2,7 +2,7 @@ package com.bone.procurement.sourcing.domain.repository;
 
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import com.bone.procurement.sourcing.domain.model.Rfx;
+import com.bone.procurement.sourcing.domain.model.sourcing.Rfx;
 import java.util.List;
 import java.util.Optional;
 

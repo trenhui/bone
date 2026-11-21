@@ -4,7 +4,7 @@ import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.procurement.contract.application.ConditionalOnContractAiReviewEnabled;
 import com.bone.procurement.contract.domain.gateway.ContractReviewTenantPort;
 import com.bone.procurement.contract.domain.gateway.ReviewTracePort;
-import com.bone.procurement.contract.domain.model.ReviewTraceEntry;
+import com.bone.procurement.contract.domain.model.review.ReviewTraceEntry;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;

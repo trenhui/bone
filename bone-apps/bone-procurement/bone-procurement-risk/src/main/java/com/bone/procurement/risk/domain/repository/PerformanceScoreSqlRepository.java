@@ -2,7 +2,7 @@ package com.bone.procurement.risk.domain.repository;
 
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import com.bone.procurement.risk.domain.model.PerformanceScore;
+import com.bone.procurement.risk.domain.model.risk.PerformanceScore;
 import java.util.List;
 
 /** 绩效评分写侧仓储：只读投影查询落在 default 方法，不产出授信/淘汰决定。 */

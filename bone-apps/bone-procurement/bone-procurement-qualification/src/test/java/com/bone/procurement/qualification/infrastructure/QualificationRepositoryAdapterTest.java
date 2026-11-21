@@ -7,9 +7,9 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import com.bone.procurement.qualification.domain.gateway.QualificationRepository;
-import com.bone.procurement.qualification.domain.model.Onboarding;
-import com.bone.procurement.qualification.domain.model.Qualification;
-import com.bone.procurement.qualification.domain.model.VerifyStatus;
+import com.bone.procurement.qualification.domain.model.qualification.Onboarding;
+import com.bone.procurement.qualification.domain.model.qualification.Qualification;
+import com.bone.procurement.qualification.domain.model.qualification.VerifyStatus;
 import com.bone.procurement.qualification.domain.repository.OnboardingSqlRepository;
 import com.bone.procurement.qualification.domain.repository.QualificationSqlRepository;
 import java.math.BigDecimal;

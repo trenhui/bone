@@ -3,7 +3,7 @@ package com.bone.procurement.governance.infrastructure;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.procurement.governance.application.ConditionalOnAiGovernanceEnabled;
 import com.bone.procurement.governance.domain.gateway.GovernanceTracePort;
-import com.bone.procurement.governance.domain.model.GovernanceTraceEntry;
+import com.bone.procurement.governance.domain.model.capability.GovernanceTraceEntry;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;

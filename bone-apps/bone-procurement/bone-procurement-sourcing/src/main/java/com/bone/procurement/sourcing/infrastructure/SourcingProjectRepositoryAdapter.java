@@ -1,8 +1,8 @@
 package com.bone.procurement.sourcing.infrastructure;
 
 import com.bone.procurement.sourcing.domain.gateway.SourcingProjectRepository;
-import com.bone.procurement.sourcing.domain.model.Rfx;
-import com.bone.procurement.sourcing.domain.model.SourcingProject;
+import com.bone.procurement.sourcing.domain.model.sourcing.Rfx;
+import com.bone.procurement.sourcing.domain.model.sourcing.SourcingProject;
 import com.bone.procurement.sourcing.domain.repository.RfxSqlRepository;
 import com.bone.procurement.sourcing.domain.repository.SourcingProjectSqlRepository;
 import java.util.Optional;
