@@ -4857,7 +4857,6 @@ CREATE TABLE `t_proc_performance_score` (
   KEY `idx_proc_performance_score_period` (`tenant_id`,`period`,`total_score`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='供应商绩效评分（只读投影；权重与自动授信属 owner 红线，未开放）';
 
-<<<<<<< HEAD
 
 -- 理算责任因子矩阵（版本化，按 row_key/col_key 合并保留已填值；迁移 0135 同批）
 CREATE TABLE IF NOT EXISTS t_claim_factor_matrix (
@@ -4880,7 +4879,6 @@ CREATE TABLE IF NOT EXISTS t_claim_factor_matrix (
   UNIQUE KEY uk_factor_matrix_cell (tenant_id, liability_id, dimension_set, row_key, col_key, version),
   KEY idx_factor_matrix_lookup (tenant_id, liability_uuid, dimension_set, version)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '理算责任因子矩阵(版本化,按row_key/col_key合并保留已填值)';
-=======
 -- ============================================================
 -- procuraAI 生产强化（contract / ai-governance 域持久化，6 张 init-only 表）
 -- 与既有 15 张 t_proc_* 同口径：审计八列 + tenant_id + deleted + version 齐全；
@@ -5020,4 +5018,3 @@ CREATE TABLE `t_proc_governance_trace` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_proc_governance_trace` (`tenant_id`,`capability_code`,`event_type`,`occurred_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='治理追溯链（停机演练/状态变更/人工终决均留痕，只追加）';
->>>>>>> origin/dev
