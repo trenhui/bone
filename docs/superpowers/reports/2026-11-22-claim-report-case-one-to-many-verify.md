@@ -174,7 +174,13 @@ e90aebb75 docs(claim): 校正验证报告测试计数为 1662/8（以 Comet 收�
 
 `§1` 的形状探测与 `§4`/`§8` 的条件式 DDL 仍用 `PREPARE`（执行的是 DDL/SELECT 而非 `SIGNAL`，属正确用法，未动）。
 
-### 复验证据（隔离库 `bone_v0139`，脚本 `/tmp/verify_0139.py`）
+### 复验证据（隔离库 `bone_v0139`，脚本已入库：`scripts/verify-migration-0139.py`）
+
+复现命令（会自建/自删隔离库，不触碰共享活库 `bone`）：
+
+```bash
+python3 scripts/verify-migration-0139.py     # 期望末行「合计 15 项，失败 0 项」，RC=0
+```
 
 - **A. 幂等**：连跑两遍均无异常；报案 2 行（不重复插）、`report_id` 无 NULL、`is_nullable=NO`、`uk_report_no` 严格单列 `report_no`、报案号全带 `RP` 前缀、`batch_no` 注释已纠正 —— 7 项全绿。
 - **B. 守卫逐个触发**（每条都断言错误码为 `1644` 且消息含可读关键词，8 项全绿）：
