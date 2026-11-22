@@ -916,9 +916,28 @@ export function ReviewWorkbenchPage(): ReactElement {
                   <Form.Item
                     name="evidenceRefs"
                     label="③ 证据位置（多个用逗号分隔）"
-                    rules={[{ required: true, whitespace: true, message: '拒赔必填：证据位置' }]}
+                    rules={[
+                      { required: true, whitespace: true, message: '拒赔必填：证据位置' },
+                      {
+                        validator: (_, value: string | undefined) => {
+                          const refs = (value ?? '')
+                            .split(/[,，;；\s]+/)
+                            .map((v) => v.trim())
+                            .filter(Boolean);
+                          const ok =
+                            refs.length > 0 &&
+                            refs.length <= 20 &&
+                            refs.every((r) => /^EV-\d{3,6}(#p[1-9]\d{0,3})?$/.test(r));
+                          return ok
+                            ? Promise.resolve()
+                            : Promise.reject(
+                                new Error('须为可定位原件的位置，如 EV-001 或 EV-001#p2（#p 为影像页码）'),
+                              );
+                        },
+                      },
+                    ]}
                   >
-                    <Input placeholder="如 EV-001, EV-004；须可在证据集定位" />
+                    <Input placeholder="如 EV-001, EV-004#p2；#p 为影像页码，须可在证据集定位" />
                   </Form.Item>
                   <Form.Item
                     name="appealChannel"

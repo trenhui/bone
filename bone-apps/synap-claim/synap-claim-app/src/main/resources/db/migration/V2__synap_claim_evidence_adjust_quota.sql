@@ -13,6 +13,7 @@ CREATE TABLE t_claim_evidence (
   ocr_status      VARCHAR(16)   NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/PARSING/DONE/FAILED/MANUAL',
   ocr_confidence  DECIMAL(6,4)  DEFAULT NULL COMMENT '解析置信度(<0.7 转人工补录)',
   verify_valid    VARCHAR(16)   NOT NULL DEFAULT 'UNKNOWN' COMMENT '票面验真(UNKNOWN/PASS/FAIL/UNVERIFIABLE)',
+  clear_type      VARCHAR(16)   NOT NULL DEFAULT 'CLEAR' COMMENT '清晰度受控码(CLEAR/UNCLEAR/INCOMPLETE); 非CLEAR锁定证据集被阻断',
   extracted_json  VARCHAR(4000) NOT NULL DEFAULT '' COMMENT '解析结果(字段+置信度+证据坐标)',
   locked          TINYINT       NOT NULL DEFAULT 0 COMMENT '0未锁定/1已锁定(锁定后不可改)',
   locked_at       DATETIME(3)   DEFAULT NULL COMMENT '锁定时间',

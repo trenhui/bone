@@ -299,7 +299,8 @@
     "SC_CLAIM_AGENT_CONFLICT": "Agent conflict: the principal already has an active agent in this period, or the agency interval is invalid",
     "SC_CLAIM_INSPECTION_ACTION_INVALID": "Invalid inspection decision: it must be PASS/REJECT/BACK, and BACK requires a reason",
     "SC_CLAIM_EVIDENCE_UNCLEAR_BLOCKS_LOCK": "The evidence set contains unclear or incomplete images and cannot be locked for adjustment: re-upload or mark as clear first",
-    "SC_CLAIM_AI_GATE_BLOCKED": "AI capability readiness gate not passed; auto-approval was blocked and routed to manual review (fail-closed, never release funds on a green display)"
+    "SC_CLAIM_AI_GATE_BLOCKED": "AI capability readiness gate not passed; auto-approval was blocked and routed to manual review (fail-closed, never release funds on a green display)",
+    "SC_CLAIM_REJECT_EVIDENCE_REF_INVALID": "Invalid rejection evidence locator: use a locatable reference (e.g. EV-001 or EV-001#p2, where #p is the image page), not free text"
   },
   "enums": {
     "ORDER_STATUS": {

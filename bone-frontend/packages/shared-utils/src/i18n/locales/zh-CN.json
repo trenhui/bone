@@ -299,7 +299,8 @@
     "SC_CLAIM_AGENT_CONFLICT": "代理区间冲突：同一被代理人在该时段已有生效代理，或代理区间非法",
     "SC_CLAIM_INSPECTION_ACTION_INVALID": "抽检处置非法：结论须为通过/驳回/打回，且打回必须填写原因",
     "SC_CLAIM_EVIDENCE_UNCLEAR_BLOCKS_LOCK": "证据集含不清晰或不完整影像，不能锁定进入理算：请先补传或标注为清晰后再锁定",
-    "SC_CLAIM_AI_GATE_BLOCKED": "AI 能力就绪闸门未通过，自动通过已被拦截转人工复核（fail-closed，不因展示绿就放行资金）"
+    "SC_CLAIM_AI_GATE_BLOCKED": "AI 能力就绪闸门未通过，自动通过已被拦截转人工复核（fail-closed，不因展示绿就放行资金）",
+    "SC_CLAIM_REJECT_EVIDENCE_REF_INVALID": "拒赔证据位置格式错误：须填可定位原件的位置（如 EV-001 或 EV-001#p2，#p 为影像页码），不能填自由文本"
   },
   "enums": {
     "ORDER_STATUS": {
