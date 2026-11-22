@@ -110,6 +110,13 @@ public class FactorMatrixApplicationService {
     return published;
   }
 
+  /**
+   * 加载矩阵视图。
+   *
+   * <p><b>状态取自真实行而非 {@code draft()} 壳</b>：发布是整版操作，全部行 PUBLISHED 才对外显示 PUBLISHED；任一行仍 DRAFT 则显示
+   * DRAFT ——如实暴露"有未发布改动"，避免用户 publish 后刷新仍看到 DRAFT 误判发布失败而重复发布。此前用 {@code draft()} 造壳（status 恒
+   * DRAFT）+ {@code replaceCells()} 只并格不同步状态，导致已发布版本 load 出来恒 DRAFT，是确定性缺陷。
+   */
   @Transactional(readOnly = true)
   public MatrixView load(Long liabilityId, String dimensionSet, Integer version) {
     long tenantId = tenantPort.currentTenantId();
@@ -117,7 +124,23 @@ public class FactorMatrixApplicationService {
         repository.findByLiabilityAndVersion(tenantId, liabilityId, dimensionSet, version);
     FactorMatrix matrix = FactorMatrix.draft(tenantId, liabilityId, "", dimensionSet, version);
     matrix.replaceCells(rows.stream().map(FactorMatrix::asCell).toList());
-    return toView(matrix);
+    String status = deriveStatus(rows);
+    return new MatrixView(
+        matrix.getLiabilityId(),
+        matrix.getDimensionSet(),
+        matrix.getVersion(),
+        status,
+        matrix.cells());
+  }
+
+  /** 全部行已发布才算 PUBLISHED；空矩阵或任一行未发布均为 DRAFT（不虚报生效）。 */
+  private static String deriveStatus(List<FactorMatrix> rows) {
+    if (rows.isEmpty()) {
+      return FactorMatrix.STATUS_DRAFT;
+    }
+    return rows.stream().allMatch(FactorMatrix::isPublished)
+        ? FactorMatrix.STATUS_PUBLISHED
+        : FactorMatrix.STATUS_DRAFT;
   }
 
   /**
