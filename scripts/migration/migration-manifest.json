@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 145,
+  "executableCount": 146,
   "retired": [],
   "entries": [
     {
@@ -921,6 +921,12 @@
       "file": "0139_synap_claim_report_one_to_many.sql",
       "kind": "ddl",
       "summary": "落地报案1:N赔案模型（业界最佳实践 JR/T 0212-2020 报案/立案/赔案三实体划分）：新建报案主表 t_claim_report（report_no RP前缀全局唯一、uk_tenant_report_idem 幂等、idx_tenant_report_status），t_claim_case 增加 report_id/report_no 归属列与 idx_tenant_report 索引；系统未上线无存量数据，两列可空（历史/旁路数据），正常提交同事务绑定报案；资金幂等键仍以 claim_no 为单位不受分案影响。幂等 information_schema 判定 + 终态断言（表存在/uk_report_no 列序严格/两列齐全）；bone-init.sql 与模块参考态 V1 同批同步。"
+    },
+    {
+      "order": 146,
+      "file": "0140_synap_claim_report_plan_id_nullable.sql",
+      "kind": "ddl",
+      "summary": "修复 0139 遗留的代码/DDL 语义落差：0139 建 t_claim_report 时多建了 plan_id NOT NULL 无默认列，但 ClaimReport 聚合根无 planId 字段（FNOL 报案阶段只有 policy_no，计划分案时才确定），登记 INSERT 不带该列导致 SQL 1364「plan_id has no default value」、报案登记 500、1:N 链路不可通。bone-init.sql 与模块参考态 V1 的 t_claim_report 本就无此列（正确），仅 0139 与活库旧表多出。0139 已发不可回改，新迁移幂等 information_schema 判定把 plan_id 改为可空（保留列不删数据，最小侵入）+ 终态断言 IS_NULLABLE=YES。"
     }
   ],
   "ordinalConflicts": [
