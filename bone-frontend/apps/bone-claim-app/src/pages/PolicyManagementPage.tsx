@@ -30,7 +30,7 @@ import {
   SettingOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { AuthButton } from '@bone/ui';
 import { useConfirmAction } from '../hooks/useConfirmAction';
@@ -40,6 +40,8 @@ import { formatMoney } from '../services/money';
 import { ERROR_CODES } from '../constants/errorCodes';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
+import { PolicyNoLink } from '../components/PolicyNoLink';
+import { parsePolicyNoFromSearch } from '../workbench/policyDeepLinks';
 import { InsurerSelect } from '../components/InsurerSelect';
 import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
 import { FORM_VALIDATION_MESSAGE, isFormValidationError } from '../utils/formError';
@@ -144,6 +146,9 @@ export function PolicyManagementPage(): ReactElement {
   /** 聚合详情（主体健康度 + 计划→责任树 + 覆盖差异）；加载失败静默降级为基础信息。 */
   const [policyDetail, setPolicyDetail] = useState<PolicyDetail | null>(null);
   const [exporting, setExporting] = useState(false);
+  /** 保单详情深链参数：新标签页打开 /policy?policyNo=... 时自动展开下方既有详情抽屉。 */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkedPolicyNo = parsePolicyNoFromSearch(searchParams.toString());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -258,15 +263,18 @@ export function PolicyManagementPage(): ReactElement {
     setEditTarget(row);
   };
 
-  /** 打开详情抽屉：重新单查一次（列表数据可能已过期，详情要显示当前全量字段）。 */
-  const openDetail = async (row: PolicyView) => {
-    setDetailPolicyNo(row.policyNo);
-    setDetail(row); // 先用列表行兜底，避免抽屉闪空白
+  /**
+   * 打开详情抽屉：重新单查一次（列表数据可能已过期，详情要显示当前全量字段）。
+   * 入参改为 policyNo 而非整行——深链进来的新标签页没有列表行可兜底。
+   */
+  const openDetail = useCallback(async (policyNo: string, fallback: PolicyView | null = null) => {
+    setDetailPolicyNo(policyNo);
+    setDetail(fallback); // 列表行兜底避免闪空白；深链进入时为 null → 显示 Spin
     setDetailLoading(true);
     setPolicyDetail(null); // 换保单时清掉上一单的聚合详情
     try {
-      const res = await claimConfigApi.getPolicy(row.policyNo);
-      setDetail(res.data ?? row);
+      const res = await claimConfigApi.getPolicy(policyNo);
+      setDetail(res.data ?? fallback);
     } catch (err) {
       message.error(resolveErrorMessage(err, '保单详情加载失败'));
       setDetailPolicyNo(null);
@@ -275,12 +283,18 @@ export function PolicyManagementPage(): ReactElement {
     }
     // 聚合详情并行加载：失败不阻断基础信息展示（详情抽屉降级为只有基础信息）
     try {
-      const res = await claimConfigApi.getPolicyDetail(row.policyNo);
+      const res = await claimConfigApi.getPolicyDetail(policyNo);
       if (res.code === 200) setPolicyDetail(res.data ?? null);
     } catch {
       /* 聚合详情是增强信息，失败静默降级 */
     }
-  };
+  }, [message]);
+
+  // 深链进入时自动打开详情：详情实现仍只有下方 Drawer 一份，这里只把 URL 参数翻译成打开动作。
+  useEffect(() => {
+    if (!deepLinkedPolicyNo || detailPolicyNo === deepLinkedPolicyNo) return;
+    void openDetail(deepLinkedPolicyNo);
+  }, [deepLinkedPolicyNo, detailPolicyNo, openDetail]);
 
   const exportCsv = async () => {
     setExporting(true);
@@ -455,7 +469,15 @@ export function PolicyManagementPage(): ReactElement {
             },
           }}
           columns={[
-            { title: '保单号', dataIndex: 'policyNo', width: 160, fixed: 'left' },
+            {
+              title: '保单号',
+              dataIndex: 'policyNo',
+              width: 160,
+              fixed: 'left',
+              render: (v: string, r: PolicyView) => (
+                <PolicyNoLink policyNo={v ?? r.policyNo} testId={`policy-no-link-${r.policyNo}`} />
+              ),
+            },
             {
               title: '保司保单号',
               dataIndex: 'insurerPolicyNo',
@@ -535,7 +557,7 @@ export function PolicyManagementPage(): ReactElement {
                     type="link"
                     size="small"
                     icon={<EyeOutlined />}
-                    onClick={() => void openDetail(r)}
+                    onClick={() => void openDetail(r.policyNo, r)}
                   >
                     详情
                   </AuthButton>
@@ -869,7 +891,15 @@ export function PolicyManagementPage(): ReactElement {
       <Drawer
         title={detailPolicyNo ? `保单详情（${detailPolicyNo}）` : '保单详情'}
         open={detailPolicyNo !== null}
-        onClose={() => setDetailPolicyNo(null)}
+        onClose={() => {
+          setDetailPolicyNo(null);
+          // 关闭抽屉后清掉 URL 参数，避免刷新又弹出来；已复制出去的分享链接仍然有效。
+          if (deepLinkedPolicyNo) {
+            const next = new URLSearchParams(searchParams);
+            next.delete('policyNo');
+            setSearchParams(next, { replace: true });
+          }
+        }}
         width={860}
       >
         {detailLoading && !detail ? (

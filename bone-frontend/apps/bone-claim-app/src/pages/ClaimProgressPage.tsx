@@ -15,6 +15,7 @@ import {
 } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { PageHeader } from '../components/PageHeader';
+import { PolicyNoLink } from '../components/PolicyNoLink';
 import { claimApi, type ClaimWithItemsProjection } from '../services/claimApi';
 import { claimStatusMeta } from '../services/claimStatus';
 import { resolveErrorCode } from '@bone/shared-utils';
@@ -115,7 +116,7 @@ export function ClaimProgressPage(): ReactElement {
           <Card title="案件信息" style={{ marginBottom: 16 }}>
             <Descriptions column={2} size="small">
               <Descriptions.Item label="报案号">{head.claimNo}</Descriptions.Item>
-              <Descriptions.Item label="保单号">{head.policyNo}</Descriptions.Item>
+              <Descriptions.Item label="保单号"><PolicyNoLink policyNo={head.policyNo} /></Descriptions.Item>
               <Descriptions.Item label="当前状态">
                 <Tag color={claimStatusMeta(head.status).color}>{claimStatusMeta(head.status).label}</Tag>
                 {head.externalStatus && <Tag>{head.externalStatus}</Tag>}

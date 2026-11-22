@@ -9,6 +9,7 @@ import { claimSearchApi, type ClaimSearchHit } from '../services/aiFeedback';
 import type { ClaimWithItemsProjection, ItemCategory } from '../services/types';
 import { resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
+import { PolicyNoLink } from '../components/PolicyNoLink';
 import { AiSuggestionCard } from '../components/AiSuggestionCard';
 import { MoneyText } from '../components/Money';
 import { formatMoney } from '../services/money';
@@ -296,7 +297,7 @@ export function Case360Page(): ReactElement {
                   <Descriptions.Item label="状态">
                     <Tag color={claimStatusMeta(head.status).color}>{claimStatusMeta(head.status).label}</Tag>
                   </Descriptions.Item>
-                  <Descriptions.Item label="保单号">{head.policyNo || '—'}</Descriptions.Item>
+                  <Descriptions.Item label="保单号"><PolicyNoLink policyNo={head.policyNo} /></Descriptions.Item>
                   <Descriptions.Item label="计划 / 版本">{head.planId || '—'} / {head.planVersion || '—'}</Descriptions.Item>
                   <Descriptions.Item label="案件类型">{head.claimType || '—'}</Descriptions.Item>
                   <Descriptions.Item label="来源渠道">{head.sourceChannel || '—'}</Descriptions.Item>

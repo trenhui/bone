@@ -36,6 +36,7 @@ import {
 } from '../services/claimApi';
 import { PageHeader } from '../components/PageHeader';
 import { ClaimIdLink } from '../components/ClaimIdLink';
+import { PolicyNoLink } from '../components/PolicyNoLink';
 import { AiDisclosureCard } from '../components/AiDisclosureCard';
 import { AiSuggestionCard } from '../components/AiSuggestionCard';
 import { explainNode, toneColor, type ExplainFact } from '../services/decisionExplain';
@@ -684,7 +685,15 @@ export function ReviewWorkbenchPage(): ReactElement {
                 <ClaimIdLink claimId={row.claimId} text={v} testId={`review-case-link-${row.claimId}`} />
               ),
             },
-            { title: '保单号', dataIndex: 'policyNo', width: 140 },
+            {
+              title: '保单号',
+              dataIndex: 'policyNo',
+              width: 140,
+              // 点平台保单号下钻保单详情（新标签页；保司保单号不唯一，不接此链接）。
+              render: (v: string, row: ClaimHeadProjection) => (
+                <PolicyNoLink policyNo={v ?? row.policyNo} testId={`policy-no-link-${row.policyNo}`} />
+              ),
+            },
             {
               title: '申请金额',
               dataIndex: 'claimAmount',

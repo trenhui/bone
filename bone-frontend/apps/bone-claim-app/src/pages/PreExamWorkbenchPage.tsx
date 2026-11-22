@@ -26,6 +26,7 @@ import {
 import { PRE_EXAM_TODO_STATUSES, claimStatusMeta, statusOptions } from '../services/claimStatus';
 import { PageHeader } from '../components/PageHeader';
 import { ClaimIdLink } from '../components/ClaimIdLink';
+import { PolicyNoLink } from '../components/PolicyNoLink';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { Auth, AuthButton } from '@bone/ui';
 import { PERMISSIONS } from '../constants/permissions';
@@ -265,7 +266,14 @@ export function PreExamWorkbenchPage(): ReactElement {
                 <ClaimIdLink claimId={row.claimId} text={v} testId={`pre-exam-case-link-${row.claimId}`} />
               ),
             },
-            { title: '保单号', dataIndex: 'policyNo', width: 150 },
+            {
+              title: '保单号',
+              dataIndex: 'policyNo',
+              width: 150,
+              render: (v: string, row: ClaimHeadProjection) => (
+                <PolicyNoLink policyNo={v ?? row.policyNo} testId={`policy-no-link-${row.policyNo}`} />
+              ),
+            },
             {
               title: '申请金额',
               dataIndex: 'claimAmount',
