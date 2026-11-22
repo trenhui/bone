@@ -44,11 +44,12 @@ def main():
     )
     check("登记报案返回 201", st == 201, f"status={st} body={str(body)[:200]}")
     data = (body or {}).get("data") or {}
-    report_no = data.get("reportNo")
+    # ReportResp(id, no)：no 依端点而是报案号 RP / 赔案号 CL，此处登记端点返回 RP。
+    report_no = data.get("no")
     check(
         "报案号为 RP 前缀",
         bool(report_no and str(report_no).startswith("RP")),
-        f"reportNo={report_no}",
+        f"no={report_no}",
     )
     if not report_no:
         return 0  # finish 仍按已记录的断言退出

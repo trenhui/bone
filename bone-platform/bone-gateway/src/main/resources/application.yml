@@ -185,6 +185,15 @@ spring:
           uri: ${BONE_CLAIM_URI:http://localhost:8087}
           predicates:
             - Path=/api/v1/claim-ops/**
+        # 智能理赔 · 报案面命名空间：`/api/v1/claim-reports/**`（同属 synap-claim，1:N 报案域）。
+        # 四个端点：报案登记 / 报案下分案 / 报案下赔案列表 / 关闭报案（ClaimReportController）。
+        # 【为什么必须单独登记】同 review / claim-config / claim-ops：网关按前缀白名单转发，
+        # `/api/v1/claims/**` 不覆盖 claim-reports 前缀，缺此路由时四个端点整体 404 且不产生
+        # 后端日志（请求没进上游 DispatcherServlet），排查时极易误判为「服务没实现」。
+        - id: synap-claim-report
+          uri: ${BONE_CLAIM_URI:http://localhost:8087}
+          predicates:
+            - Path=/api/v1/claim-reports/**
         # 采购履约域：bone-procurement（:8090，2026-11-18 补齐路由登记）。
         # FulfillmentController#/api/v1/procurement（PO 确认/ASN/开票/IR 例外，设计见
         # doc/ai-product/procuraAI/detailed-design/05）。网关按前缀白名单转发，缺此路由时
