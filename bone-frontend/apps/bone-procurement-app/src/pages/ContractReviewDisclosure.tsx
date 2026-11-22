@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Card, Empty, Tag, Typography } from 'antd';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { contractReviewApi } from '../services/contractReviewApi';
 import {
   disclosureErrorMessage,
@@ -59,6 +59,11 @@ const ContractReviewDisclosure: React.FC = () => {
               模型版本快照：{data.modelVersionSnapshot}（仅版本快照，不作参与证据）
             </Typography.Text>
           )}
+          <Typography.Paragraph>
+            <Link to={`/contract-hitl?reviewId=${encodeURIComponent(reviewId)}`}>
+              进入人工终决
+            </Link>
+          </Typography.Paragraph>
         </>
       )}
     </Card>

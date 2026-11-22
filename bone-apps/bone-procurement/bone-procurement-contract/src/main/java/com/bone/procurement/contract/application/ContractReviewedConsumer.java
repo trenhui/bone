@@ -63,7 +63,7 @@ public class ContractReviewedConsumer {
     }
     if (event.reviewSnapshotRef() != null
         && event.reviewSnapshotRef().startsWith(OVERRIDE_REF_PREFIX)) {
-      tracePort.append(ReviewTraceEntry.of(event.reviewId(), "HUMAN_OVERRIDE", "人工推翻终决，快照不可变"));
+      tracePort.append(ReviewTraceEntry.of(event.reviewId(), "SNAPSHOT_IMMUTABLE", "人工推翻终决，快照不可变"));
     }
     return true;
   }

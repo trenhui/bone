@@ -138,6 +138,7 @@ public final class ContractReview {
     }
     Objects.requireNonNull(override, "override");
     this.overrides.add(override);
+    this.humanReason = override.reason();
     this.riskLevel = override.finalRiskLevel();
     this.humanFinalized = true;
   }

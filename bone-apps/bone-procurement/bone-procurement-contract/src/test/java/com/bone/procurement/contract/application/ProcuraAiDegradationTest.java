@@ -70,7 +70,7 @@ class ProcuraAiDegradationTest {
             "snap://override/rv-override"));
 
     assertThat(tracePort.findByReviewId("rv-override"))
-        .anyMatch(e -> e.eventType().equals("HUMAN_OVERRIDE"));
+        .anyMatch(e -> e.eventType().equals("SNAPSHOT_IMMUTABLE"));
     assertThat(consumer.conclusion("rv-override").orElseThrow().reviewSnapshotRef())
         .isEqualTo("snap://override/rv-override");
   }

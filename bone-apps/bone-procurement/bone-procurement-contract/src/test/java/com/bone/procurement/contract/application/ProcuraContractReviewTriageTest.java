@@ -54,6 +54,7 @@ class ProcuraContractReviewTriageTest {
             tracePort,
             new InMemoryContractReviewStore(),
             () -> "t-1",
+            () -> "reviewer-green",
             new AiDisclosureService(),
             new ContractReviewedConsumer(tracePort));
 

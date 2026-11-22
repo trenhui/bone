@@ -1,6 +1,7 @@
 package com.bone.procurement.contract.application;
 
 import com.bone.procurement.contract.domain.gateway.ContractParsePort;
+import com.bone.procurement.contract.domain.gateway.ContractReviewIdentityPort;
 import com.bone.procurement.contract.domain.gateway.ContractReviewPort;
 import com.bone.procurement.contract.domain.gateway.ContractReviewStore;
 import com.bone.procurement.contract.domain.gateway.ContractReviewTenantPort;
@@ -39,6 +40,7 @@ public class ContractReviewApplicationService {
   private final ReviewTracePort tracePort;
   private final ContractReviewStore store;
   private final ContractReviewTenantPort tenantPort;
+  private final ContractReviewIdentityPort identityPort;
   private final AiDisclosureService disclosureService;
   private final ContractReviewedConsumer reviewedConsumer;
   private final HitlRoutingPolicy hitlPolicy = new HitlRoutingPolicy();
@@ -49,6 +51,7 @@ public class ContractReviewApplicationService {
       ReviewTracePort tracePort,
       ContractReviewStore store,
       ContractReviewTenantPort tenantPort,
+      ContractReviewIdentityPort identityPort,
       AiDisclosureService disclosureService,
       ContractReviewedConsumer reviewedConsumer) {
     this.parsePort = Objects.requireNonNull(parsePort, "parsePort");
@@ -56,6 +59,7 @@ public class ContractReviewApplicationService {
     this.tracePort = Objects.requireNonNull(tracePort, "tracePort");
     this.store = Objects.requireNonNull(store, "store");
     this.tenantPort = Objects.requireNonNull(tenantPort, "tenantPort");
+    this.identityPort = Objects.requireNonNull(identityPort, "identityPort");
     this.disclosureService = Objects.requireNonNull(disclosureService, "disclosureService");
     this.reviewedConsumer = Objects.requireNonNull(reviewedConsumer, "reviewedConsumer");
   }
@@ -138,9 +142,24 @@ public class ContractReviewApplicationService {
   /** 用例三：人工推翻；记录 AI 结论与人工终决、留痕，并进入快照终态。 */
   public ReviewReport override(String reviewId, HumanOverrideInput input) {
     ContractReview review = requireOwned(reviewId);
+    String reviewer = identityPort.currentReviewer();
+    if (reviewer == null || reviewer.isBlank()) {
+      throw new IllegalStateException("人工终决需要登录态身份，禁止匿名/自报复核");
+    }
+    if (input.reviewer() != null
+        && !input.reviewer().isBlank()
+        && !input.reviewer().trim().equals(reviewer)) {
+      throw new IllegalArgumentException("请求复核人与登录态不一致，禁止冒名复核");
+    }
+    if (input.reason() == null || input.reason().isBlank()) {
+      throw new IllegalArgumentException("人工终决理由不得为空");
+    }
+    if (input.finalRiskLevel() == null) {
+      throw new IllegalArgumentException("人工终决风险等级不得为空");
+    }
     review.recordHumanOverride(
         new HumanOverride(
-            input.reviewer(),
+            reviewer,
             input.reason(),
             review.aiConfidence(),
             review.riskLevel(),
@@ -149,7 +168,7 @@ public class ContractReviewApplicationService {
         ReviewTraceEntry.of(
             reviewId,
             "HUMAN_OVERRIDE",
-            "reviewer=" + input.reviewer() + ", final=" + input.finalRiskLevel()));
+            "reviewer=" + reviewer + ", final=" + input.finalRiskLevel()));
     review.snapshot(ReviewSnapshotRef.of("snap://override/" + reviewId));
     store.save(requireTenant(), review);
 
