@@ -3375,6 +3375,13 @@
    "cases": []
   },
   {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/ai-readiness/guard-check",
+   "controller": "AiCapabilityReadinessController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiCapabilityReadinessController.java",
+   "cases": []
+  },
+  {
    "http": "POST",
    "path": "/api/v1/claim-ops/blind-labels/{id}/submit",
    "controller": "BlindLabelController",
@@ -3756,7 +3763,8 @@
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
    "cases": [
-    "ui/claim-config-ui-probe.mjs"
+    "ui/claim-config-ui-probe.mjs",
+    "ui/policy-no-link-probe.mjs"
    ]
   },
   {
@@ -3765,7 +3773,8 @@
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
    "cases": [
-    "ui/claim-config-ui-probe.mjs"
+    "ui/claim-config-ui-probe.mjs",
+    "ui/policy-no-link-probe.mjs"
    ]
   },
   {
@@ -3783,7 +3792,8 @@
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
    "cases": [
-    "ui/claim-config-ui-probe.mjs"
+    "ui/claim-config-ui-probe.mjs",
+    "ui/policy-no-link-probe.mjs"
    ]
   },
   {
@@ -3792,7 +3802,8 @@
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
    "cases": [
-    "ui/claim-config-ui-probe.mjs"
+    "ui/claim-config-ui-probe.mjs",
+    "ui/policy-no-link-probe.mjs"
    ]
   },
   {
@@ -3879,6 +3890,13 @@
   {
    "http": "POST",
    "path": "/api/v1/review/tasks/{claimId}/decision",
+   "controller": "ReviewTaskController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReviewTaskController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/review/tasks/batch-decision",
    "controller": "ReviewTaskController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReviewTaskController.java",
    "cases": []
@@ -4161,6 +4179,34 @@
   },
   {
    "http": "GET",
+   "path": "/api/v1/claim-config/factor-matrix/{liabilityId}",
+   "controller": "FactorMatrixController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/FactorMatrixController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/claim-config/factor-matrix/{liabilityId}",
+   "controller": "FactorMatrixController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/FactorMatrixController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/factor-matrix/{liabilityId}/publish",
+   "controller": "FactorMatrixController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/FactorMatrixController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/factor-matrix/generate-formula",
+   "controller": "FactorMatrixController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/FactorMatrixController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
    "path": "/api/v1/claim-ops/ai-provider-probe",
    "controller": "AiProviderProbeController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiProviderProbeController.java",
@@ -4188,6 +4234,13 @@
    "cases": [
     "e2e_synap_claim.py"
    ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/evidences/clarity",
+   "controller": "EvidenceController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/EvidenceController.java",
+   "cases": []
   },
   {
    "http": "POST",
@@ -4231,6 +4284,13 @@
   {
    "http": "POST",
    "path": "/api/v1/claim-config/coverage-overrides/publish",
+   "controller": "CoverageOverrideController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageOverrideController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/coverage-overrides/sync",
    "controller": "CoverageOverrideController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageOverrideController.java",
    "cases": []
@@ -4283,6 +4343,42 @@
    "controller": "CoverageConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageConfigController.java",
    "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-reports",
+   "controller": "ClaimReportController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimReportController.java",
+   "cases": [
+    "synap-claim-report-one-to-many-e2e.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-reports/{reportNo}/cases",
+   "controller": "ClaimReportController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimReportController.java",
+   "cases": [
+    "synap-claim-report-one-to-many-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-reports/{reportNo}/cases",
+   "controller": "ClaimReportController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimReportController.java",
+   "cases": [
+    "synap-claim-report-one-to-many-e2e.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-reports/{reportNo}/close",
+   "controller": "ClaimReportController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimReportController.java",
+   "cases": [
+    "synap-claim-report-one-to-many-e2e.py"
+   ]
   },
   {
    "http": "POST",
@@ -4484,6 +4580,13 @@
    ]
   },
   {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-readiness",
+   "controller": "AiReadinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-app/src/main/java/com/bone/procurement/readiness/AiReadinessController.java",
+   "cases": []
+  },
+  {
    "http": "POST",
    "path": "/api/v1/procurement/qualifications",
    "controller": "QualificationController",
@@ -4493,6 +4596,20 @@
   {
    "http": "GET",
    "path": "/api/v1/procurement/qualifications/expiring",
+   "controller": "QualificationController",
+   "file": "bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/qualifications/{id}",
+   "controller": "QualificationController",
+   "file": "bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/qualifications/{id}/ocr-review",
    "controller": "QualificationController",
    "file": "bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java",
    "cases": []
@@ -4982,8 +5099,8 @@
   }
  ],
  "summary": {
-  "endpoints": 604,
-  "covered": 240,
-  "uncovered": 364
+  "endpoints": 619,
+  "covered": 244,
+  "uncovered": 375
  }
 }

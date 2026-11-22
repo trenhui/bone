@@ -47,6 +47,7 @@ class ClaimPageDefaultsTest {
                 new ClaimCaseController(
                     service,
                     null,
+                    null,
                     ClaimCaseAssembler.INSTANCE,
                     null,
                     new ClaimIdempotencyProperties()))

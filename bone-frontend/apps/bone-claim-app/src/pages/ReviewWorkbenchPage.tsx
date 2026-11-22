@@ -19,6 +19,7 @@ import {
   Table,
   Tag,
   Timeline,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
@@ -677,12 +678,20 @@ export function ReviewWorkbenchPage(): ReactElement {
           }}
           columns={[
             {
+              // 1:N：报案号（RP）是一次事故告知，一个报案下可有多笔赔案。
               title: '报案号',
-              dataIndex: 'claimNo',
-              // 存量报案号 28 字符，列宽按最大值取 + 省略兜底，避免溢出覆盖保单号列。
+              dataIndex: 'reportNo',
               width: 250,
               ellipsis: { showTitle: false },
-              // 点报案号直接下钻案件 360 详情（显示报案号、下钻用 claimId，见 ClaimIdLink）。
+              render: (v: string | null) =>
+                v ? <Tooltip title={v}>{v}</Tooltip> : <span style={{ color: '#999' }}>—</span>,
+            },
+            {
+              // 赔案号（CL）是每笔赔付的处理单元，点它下钻案件详情（下钻用 claimId）。
+              title: '赔案号',
+              dataIndex: 'claimNo',
+              width: 250,
+              ellipsis: { showTitle: false },
               render: (v: string, row: ClaimHeadProjection) => (
                 <ClaimIdLink claimId={row.claimId} text={v} testId={`review-case-link-${row.claimId}`} />
               ),

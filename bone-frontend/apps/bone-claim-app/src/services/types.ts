@@ -76,9 +76,29 @@ export interface SubmitClaimReq {
 
 export interface ClaimCaseResp {
   claimId: string;
+  /** 赔案号（CL 前缀，一笔赔付一个号） */
   claimNo: string;
   /** 对外两值投影：PENDING_EVIDENCE / REVIEWING（终态为 null） */
   status: string;
+  /** 报案ID（1:N 的“一”；旁路数据可能为 null） */
+  reportId?: string | null;
+  /** 报案号（RP 前缀，一次事故告知一个号；旁路数据可能为 null） */
+  reportNo?: string | null;
+}
+
+/** 报案登记响应。 */
+export interface ReportResp {
+  id: string;
+  no: string;
+}
+
+/** 报案下赔案行（1:N 的“多”）。 */
+export interface CaseUnderReport {
+  claimId: string;
+  claimNo: string;
+  status: string;
+  externalStatus: string;
+  claimAmount: number;
 }
 
 export interface ClaimDecisionReq {
@@ -105,12 +125,20 @@ export interface ClaimHeadProjection {
   approvedAmount: number | null;
   firstReviewerId: string;
   createdAt: string;
+  /** 报案号（RP 前缀，1:N 的“一”；旁路数据可能为 null） */
+  reportNo?: string | null;
+  /** 报案ID（1:N 的“一”；旁路数据可能为 null） */
+  reportId?: string | null;
 }
 
 /** 赔案 + 明细扁平投影（后端每明细一行，无明细时明细列为 null）。 */
 export interface ClaimWithItemsProjection {
   claimId: string;
   claimNo: string;
+  /** 报案号（RP 前缀） */
+  reportNo?: string | null;
+  /** 报案ID */
+  reportId?: string | null;
   policyNo: string;
   planId: string;
   insuredIdHash: string;

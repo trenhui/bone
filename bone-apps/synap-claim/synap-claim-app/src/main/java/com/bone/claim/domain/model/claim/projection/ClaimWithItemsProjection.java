@@ -28,6 +28,13 @@ public class ClaimWithItemsProjection {
 
   private Long claimId;
   private String claimNo;
+
+  /** 报案号（RP 前缀，1:N 的“一”；旁路数据为 null）。 */
+  private String reportNo;
+
+  /** 报案ID（1:N 的“一”；旁路数据为 null）。 */
+  private Long reportId;
+
   private String policyNo;
   private Long planId;
   private String insuredIdHash;

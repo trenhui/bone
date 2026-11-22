@@ -601,6 +601,20 @@ public class ScenarioHarness {
       return rows;
     }
 
+    // HEAD 预存缺口：接口已有 caseDurationsInWindow，本内存仓储未实现会编译失败。
+    // 场景测试不涉及分位数口径，返回空列表（不伪造统计结果）。
+    @Override
+    public List<com.bone.claim.domain.model.claim.projection.CaseDurationProjection>
+        caseDurationsInWindow(java.sql.Timestamp from, java.sql.Timestamp to) {
+      return List.of();
+    }
+
+    // 同上：HEAD 预存缺口，场景测试不涉及复核率统计，返回 0（不伪造计数）。
+    @Override
+    public long countReviewedInWindow(java.sql.Timestamp from, java.sql.Timestamp to) {
+      return 0L;
+    }
+
     @Override
     public List<ClaimWithItemsProjection> findClaimWithItems(long claimId) {
       ClaimCase c = store.get(claimId);

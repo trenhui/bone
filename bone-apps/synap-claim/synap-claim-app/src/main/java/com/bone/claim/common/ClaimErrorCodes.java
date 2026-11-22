@@ -17,6 +17,17 @@ public final class ClaimErrorCodes {
   /** 状态冲突（当前状态不允许该动作，§6.2 合法转换表）。 */
   public static final String CLAIM_STATUS_CONFLICT = "SC_CLAIM_STATUS_CONFLICT";
 
+  /** 报案不存在或不可见（1:N 的"一"；租户隔离下统一 404 语义，防枚举）。 */
+  public static final String CLAIM_REPORT_NOT_FOUND = "SC_CLAIM_REPORT_NOT_FOUND";
+
+  /**
+   * 报案已关闭，不能再建赔案（CLOSED 态分案被拒）。
+   *
+   * <p>409：请求合法，是"该报案是否还接受新赔案"这一业务前提不成立。与 {@link #CLAIM_STATUS_CONFLICT} 分开：
+   * 监控里"报案维度封案"与"赔案状态机冲突"是两种处置动作，混码会把前者淹没在后者里。
+   */
+  public static final String CLAIM_REPORT_CLOSED = "SC_CLAIM_REPORT_CLOSED";
+
   /** 乐观锁冲突（版本竞争重试 ≤3 次后仍失败）。 */
   public static final String CLAIM_CONCURRENT_CONFLICT = "SC_CLAIM_CONCURRENT_CONFLICT";
 

@@ -13,6 +13,7 @@ import {
   Statistic,
   Table,
   Tag,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
@@ -242,10 +243,10 @@ export function PreExamWorkbenchPage(): ReactElement {
           rowKey="claimId"
           loading={loading}
           dataSource={rows}
-          // 列宽合计 1440：报案号/保单号是长标识符，scroll.x 必须 >= 列宽之和，
-          // 否则 antd 切 fixed table layout 会压缩列宽，28 字符报案号撑破 nowrap 链接、
-          // 溢出覆盖相邻保单号列（截图「报案号+保单号粘连」）。见 ClaimIdLink 的 maxWidth 兜底。
-          scroll={{ x: 1440 }}
+          // 列宽合计 1690：报案号/赔案号/保单号是长标识符，scroll.x 必须 >= 列宽之和，
+          // 否则 antd 切 fixed table layout 会压缩列宽，长号撑破 nowrap 链接、
+          // 溢出覆盖相邻列（截图「报案号+保单号粘连」）。见 ClaimIdLink 的 maxWidth 兜底。
+          scroll={{ x: 1690 }}
           pagination={{
             current: page,
             pageSize: size,
@@ -260,14 +261,25 @@ export function PreExamWorkbenchPage(): ReactElement {
           }}
           columns={[
             {
+              // 1:N：报案号（RP）是一次事故告知，一个报案下可有多笔赔案。
               title: '报案号',
-              dataIndex: 'claimNo',
-              // 存量报案号 28 字符（CL+yyyyMMdd+18 位雪花 ID），需 ~240px；
-              // 新规范号 18 字符更短，列宽按存量最大值取，避免历史数据溢出。
+              dataIndex: 'reportNo',
               width: 250,
               fixed: 'left',
               ellipsis: { showTitle: false },
-              // 点报案号下钻案件 360 详情（显示报案号、下钻用 claimId，见 ClaimIdLink）。
+              render: (v: string | null) =>
+                v ? (
+                  <Tooltip title={v}>{v}</Tooltip>
+                ) : (
+                  <span style={{ color: '#999' }}>—</span>
+                ),
+            },
+            {
+              // 赔案号（CL）是每笔赔付的处理单元，点它下钻案件详情（下钻用 claimId）。
+              title: '赔案号',
+              dataIndex: 'claimNo',
+              width: 250,
+              ellipsis: { showTitle: false },
               render: (v: string, row: ClaimHeadProjection) => (
                 <ClaimIdLink claimId={row.claimId} text={v} testId={`pre-exam-case-link-${row.claimId}`} />
               ),

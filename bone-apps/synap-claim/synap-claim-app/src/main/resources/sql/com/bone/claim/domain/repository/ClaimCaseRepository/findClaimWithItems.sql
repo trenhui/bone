@@ -1,6 +1,8 @@
 SELECT
        c.id             AS claim_id,
        c.claim_no,
+       c.report_no,
+       c.report_id,
        c.policy_no,
        c.plan_id,
        c.insured_id_hash,

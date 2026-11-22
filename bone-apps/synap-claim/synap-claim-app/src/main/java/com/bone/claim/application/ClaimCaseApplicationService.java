@@ -46,6 +46,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ClaimCaseApplicationService {
 
+  // 本类只持久化 ClaimCase 聚合，绝不注入 ClaimReportRepository——R9 一事务一聚合。
   private final ClaimCaseRepository claimCaseRepository;
   private final ClaimItemRepository claimItemRepository;
   private final PolicyQueryPort policyQueryPort;
@@ -75,16 +76,39 @@ public class ClaimCaseApplicationService {
    * <p>幂等：同租户同 {@code idempotencyKey} 重复提交返回首次案件（协议层另有 {@code
    * com.bone.core.idempotency.IdempotencyService} 快照，此处是业务层第二道防线——两处都不能少：快照防重复执行，业务键防并发双写）。
    */
-  /** 报案提交结果（adapter 组装 201 响应的输入，不含协议字段）。 */
-  public record SubmittedClaim(Long claimId, String claimNo) {}
+  /** 报案提交结果（adapter 组装 201 响应的输入，不含协议字段）。reportNo/reportId 为 1:N 归属报案的双键。 */
+  public record SubmittedClaim(Long claimId, String claimNo, Long reportId, String reportNo) {}
 
+  /**
+   * 建案（不带报案归属）——保留给存量旁路/内部调用与单测造数。用户提交主链路走 {@link #submit(SubmitClaim, Long, String)} 或 {@link
+   * ClaimSubmissionOrchestrator}。
+   */
   @Transactional
   public SubmittedClaim submit(SubmitClaim command) {
+    return submit(command, null, null);
+  }
+
+  /**
+   * 在已登记的报案下建首赔案（1:N 事务边界的关键）。
+   *
+   * <p><b>本方法只持久化 ClaimCase 聚合</b>（含聚合内 ClaimItem），不碰 ClaimReport——报案由 {@link
+   * ClaimReportApplicationService#registerFromSubmission} 在其独立事务中登记。两个聚合分属不同一致性边界， 遵守
+   * R9「一事务一聚合」。编排由 {@link ClaimSubmissionOrchestrator} 负责；"已报案未立案"是业界合法状态， 因此建案失败后遗留的报案无需补偿删除。
+   *
+   * @param reportId 报案物理主键（null = 旁路/未归属报案的历史调用）
+   * @param reportNo 报案号（与 reportId 同进同出）
+   */
+  @Transactional
+  public SubmittedClaim submit(SubmitClaim command, Long reportId, String reportNo) {
+    if ((reportId == null) != (reportNo == null)) {
+      throw new DomainException("报案归属不完整：reportId/reportNo 必须同时提供或同时为空");
+    }
     long tenantId = tenantPort.currentTenantId();
     ClaimCase existing =
         claimCaseRepository.findByIdempotencyKey(tenantId, command.idempotencyKey());
     if (existing != null) {
-      return new SubmittedClaim(existing.getId(), existing.getClaimNo());
+      return new SubmittedClaim(
+          existing.getId(), existing.getClaimNo(), existing.getReportId(), existing.getReportNo());
     }
 
     // 报案前置校验：保单生效中 + 被保人匹配（§7.1）；快照缺失即拒收，不进入状态机。
@@ -140,6 +164,10 @@ public class ClaimCaseApplicationService {
             command.idempotencyKey(),
             snapshot.planVersion(),
             items);
+    // 绑定 1:N 归属：赔案 → 报案（报案已由编排层在独立事务登记）。旁路调用无报案归属时留空。
+    if (reportId != null) {
+      claim.assignReport(reportId, reportNo);
+    }
     // 发票维度（开票日期/医院/病种）是「次」分组的依据，必须随报案落库：
     // 只加列不写入等于"配了不生效"，理算侧会一律判定为维度缺失。
     claim.bindInvoiceContext(
@@ -170,7 +198,8 @@ public class ClaimCaseApplicationService {
 
     claimCaseRepository.insert(claim);
     domainEventPublisher.publishFrom(claim);
-    return new SubmittedClaim(claim.getId(), claim.getClaimNo());
+    // 本方法只持久化 ClaimCase 聚合——报案计数由编排层在独立事务中另行登记（R9）。
+    return new SubmittedClaim(claim.getId(), claim.getClaimNo(), reportId, reportNo);
   }
 
   /**

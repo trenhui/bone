@@ -601,6 +601,8 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 |-----------|------|------|
 | `SC_CLAIM_NOT_FOUND` | 404 | 案件不存在或不可见（租户隔离下的统一 404 语义，防枚举） |
 | `SC_CLAIM_STATUS_CONFLICT` | 409 | 状态冲突（当前状态不允许该动作） |
+| `SC_CLAIM_REPORT_NOT_FOUND` | 404 | 报案不存在或不可见（1:N 的“一”，租户隔离防枚举） |
+| `SC_CLAIM_REPORT_CLOSED` | 409 | 报案已关闭，不再接受新赔案（CLOSED 态分案被拒） |
 | `SC_CLAIM_CONCURRENT_CONFLICT` | 409 | 乐观锁冲突（版本竞争重试后仍失败） |
 | `SC_CLAIM_POLICY_NOT_ACTIVE` | 400 | 保单不存在/未生效（报案前置校验） |
 | `SC_CLAIM_POLICY_KEY_REQUIRED` | 400 | 报案未提供任何保单标识（平台保单号与保司保单号均为空） |

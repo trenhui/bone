@@ -9,6 +9,7 @@ import com.bone.claim.application.AutoApprovalApplicationService;
 import com.bone.claim.application.AutoApprovalApplicationService.AutoApprovalOutcome;
 import com.bone.claim.application.ClaimCaseApplicationService;
 import com.bone.claim.application.ClaimCaseApplicationService.SubmitClaim;
+import com.bone.claim.application.ClaimSubmissionOrchestrator;
 import com.bone.claim.domain.model.claim.projection.ClaimHeadProjection;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
 import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
@@ -55,6 +56,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ClaimCaseController {
 
   private final ClaimCaseApplicationService claimCaseApplicationService;
+  private final ClaimSubmissionOrchestrator claimSubmissionOrchestrator;
   private final AutoApprovalApplicationService autoApprovalApplicationService;
   private final ClaimCaseAssembler claimCaseAssembler;
   private final IdempotencyService idempotencyService;
@@ -105,12 +107,18 @@ public class ClaimCaseController {
       return toReplayedResponse(replayed.get());
     }
 
+    // 走编排层：报案与赔案分属两个独立事务（R9）；对外响应与幂等快照不变。
     ClaimCaseApplicationService.SubmittedClaim submitted =
-        claimCaseApplicationService.submit(command);
+        claimSubmissionOrchestrator.submit(command);
     ApiResponse<ClaimCaseResp> body =
         ApiResponse.success(
             HttpStatus.CREATED.value(),
-            ClaimCaseResp.of(submitted.claimId(), submitted.claimNo(), "PENDING_EVIDENCE"));
+            ClaimCaseResp.of(
+                submitted.claimId(),
+                submitted.claimNo(),
+                "PENDING_EVIDENCE",
+                submitted.reportId(),
+                submitted.reportNo()));
     idempotencyService.remember(
         idempotencyKey,
         MDC.get("userId"),

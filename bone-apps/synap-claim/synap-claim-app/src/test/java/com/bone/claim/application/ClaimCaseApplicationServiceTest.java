@@ -43,6 +43,7 @@ class ClaimCaseApplicationServiceTest {
   private static final Instant OUT_INSURE = Instant.parse("2026-03-12T10:00:00Z");
 
   @Mock private ClaimCaseRepository claimCaseRepository;
+  @Mock private com.bone.claim.domain.repository.ClaimReportRepository claimReportRepository;
   @Mock private ClaimItemRepository claimItemRepository;
   @Mock private PolicyQueryPort policyQueryPort;
   @Mock private TenantPort tenantPort;

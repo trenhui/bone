@@ -9,6 +9,8 @@
     "AI_HITL_NOT_FOUND": "人工终审项不存在或已终审",
     "SC_CLAIM_NOT_FOUND": "案件不存在或不可见（租户隔离下的统一 404 语义，防枚举）",
     "SC_CLAIM_STATUS_CONFLICT": "案件状态冲突（当前状态不允许该动作）",
+    "SC_CLAIM_REPORT_NOT_FOUND": "报案不存在或不可见",
+    "SC_CLAIM_REPORT_CLOSED": "报案已关闭，不能再新增赔案",
     "SC_CLAIM_RECON_DIFF_NOT_FOUND": "对账差异不存在或不可见（租户隔离下的统一 404 语义，防枚举）",
     "SC_CLAIM_RECON_DIFF_CONFLICT": "对账差异状态冲突（已处置不可再次处置 / 处置结论非法；不静默幂等）",
     "SC_CLAIM_EVAL_SAMPLE_QUERY_INVALID": "评测样本导出参数非法（时间窗必填且跨度不超过 31 天，条数 1..500）",

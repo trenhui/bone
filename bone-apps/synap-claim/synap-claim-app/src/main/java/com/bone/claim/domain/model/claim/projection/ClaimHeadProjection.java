@@ -17,7 +17,9 @@ public record ClaimHeadProjection(
     java.math.BigDecimal claimAmount,
     java.math.BigDecimal approvedAmount,
     String firstReviewerId,
-    java.time.Instant createdAt) {
+    java.time.Instant createdAt,
+    String reportNo,
+    Long reportId) {
 
   public static ClaimHeadProjection from(ClaimCase c) {
     return new ClaimHeadProjection(
@@ -34,6 +36,8 @@ public record ClaimHeadProjection(
         c.getClaimAmount(),
         c.getApprovedAmount(),
         c.getFirstReviewerId(),
-        c.getCreatedAt());
+        c.getCreatedAt(),
+        c.getReportNo(),
+        c.getReportId());
   }
 }

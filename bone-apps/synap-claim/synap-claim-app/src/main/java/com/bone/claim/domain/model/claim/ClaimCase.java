@@ -38,9 +38,26 @@ import lombok.NoArgsConstructor;
 @Table("t_claim_case")
 public class ClaimCase extends TenantAggregateRoot<Long> {
 
-  /** 报案号（对外展示/客服检索键，与物理 id 分离；由 {@link ClaimNoGenerator} 生成，格式见该类）。 */
+  /**
+   * 赔案号（对外展示/客服检索键，CL 前缀，与物理 id 分离；由 {@link ClaimNoGenerator} 生成，格式见该类）。
+   *
+   * <p>1:N 建模后本字段语义是<b>赔案号</b>（一笔赔付一个号），与报案号 {@link #reportNo}（RP 前缀）区分。 资金/额度幂等键 {@code
+   * {claimNo}:{stage}:{attempt}} 依赖本字段稳定，故每笔赔案独立生成、互不踩踏。
+   */
   @Column(name = "claim_no", nullable = false)
   private String claimNo;
+
+  /**
+   * 归属报案 ID（1:N 的"多"指向"一"；{@link ClaimReport} 物理主键）。
+   *
+   * <p>{@code null} = 尚未归属报案的历史/旁路数据（系统未上线，正常提交均带报案）。分案时子案继承母案的 reportId。
+   */
+  @Column(name = "report_id")
+  private Long reportId;
+
+  /** 归属报案号（RP 前缀，冗余存储便于列表展示免联表；与 {@link #reportId} 同源，由报案登记时写入）。 */
+  @Column(name = "report_no")
+  private String reportNo;
 
   /** 写接口幂等键（Idempotency-Key 请求头值，服务端登记）。 */
   @Column(name = "idempotency_key", nullable = false)
@@ -292,13 +309,104 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   }
 
   /**
-   * 报案号生成：委托 {@link ClaimNoGenerator}。
+   * 赔案号生成：委托 {@link ClaimNoGenerator}。
    *
    * <p>格式 {@code CL + yyyyMMdd(东八区) + 13位Base32 + 校验位}。雪花 id 经 6 轮 Feistel 双射混淆，
    * 唯一性与物理主键同源（零碰撞）、外观不可枚举、校验位防手抄错输。业务时区固定东八区。
    */
   private static String generateClaimNo(long id) {
     return ClaimNoGenerator.generate(id);
+  }
+
+  /**
+   * 绑定报案归属（1:N 的"多"指向"一"）。
+   *
+   * <p>单独成方法而非塞进 {@code draft} 参数：{@code draft} 有 19 处调用方（含旁路同步、单测造数）， 加参会造成大面积无谓改动；正常提交在建案后、{@code
+   * accept()} 前调用本方法绑定（同事务）。
+   */
+  public void assignReport(Long reportId, String reportNo) {
+    if (reportId == null || reportNo == null) {
+      throw new DomainException("报案归属不完整：reportId/reportNo 不可为 null");
+    }
+    if (!ReportNoGenerator.isValid(reportNo)) {
+      throw new DomainException("报案号格式或校验位非法：" + reportNo);
+    }
+    this.reportId = reportId;
+    this.reportNo = reportNo;
+  }
+
+  /**
+   * 分案工厂：从母案复制<b>主体/保单上下文</b>，生成一笔全新的赔案（1:N 的"N"）。
+   *
+   * <p><b>克隆什么</b>：保单、被保人、计划、险种、出险时间、报案归属、同意留痕、来源渠道——这些是事故/主体的客观上下文， 子案应与母案一致。
+   *
+   * <p><b>不克隆什么</b>：赔案号（新 id 派生新号）、幂等键（子案独立）、发票标识/明细/金额（来自分案请求，一票一赔约束仍由 {@code uk_tenant_invoice}
+   * 兜底）、以及<b>全部理算/结算/审核结果</b>（approvedAmount / reviewer / reject / planVersion
+   * 等状态字段保持初始）——绝不把已结案的金额或决策复制进子案，避免"复制即赔付"。
+   *
+   * @param newId 子案物理主键（雪花，调用方预分配）
+   * @param idempotencyKey 子案写幂等键（新生成，禁止复用母案）
+   * @param invoiceCode 子案发票代码（可为 null）
+   * @param invoiceNo 子案发票号码（可为 null）
+   * @param items 子案费用明细（claimId 须指向 newId，调用方重建）
+   */
+  public static ClaimCase splitFrom(
+      ClaimCase source,
+      long newId,
+      String idempotencyKey,
+      String invoiceCode,
+      String invoiceNo,
+      java.time.LocalDate invoiceDate,
+      String hospitalCode,
+      String diagnosisCode,
+      List<ClaimItem> items) {
+    if (source == null) {
+      throw new DomainException("分案母案不能为空");
+    }
+    if (source.reportId == null || source.reportNo == null) {
+      throw new DomainException("母案未绑定报案，不能分案");
+    }
+    if (idempotencyKey == null || idempotencyKey.isBlank()) {
+      throw new DomainException("分案必须携带独立幂等键");
+    }
+    if (items == null || items.isEmpty()) {
+      throw new DomainException("分案至少需要一个费用明细项");
+    }
+    BigDecimal total = BigDecimal.ZERO;
+    for (ClaimItem item : items) {
+      total = total.add(item.getAmount());
+    }
+    ClaimCase child = new ClaimCase();
+    child.setId(newId);
+    child.setTenantId(source.getTenantId());
+    child.claimNo = generateClaimNo(newId);
+    child.reportId = source.reportId;
+    child.reportNo = source.reportNo;
+    child.idempotencyKey = idempotencyKey;
+    child.policyNo = source.policyNo;
+    child.planId = source.planId;
+    child.insuredIdHash = source.insuredIdHash;
+    child.claimType = source.claimType;
+    child.invoiceCode = normalizeInvoicePart(invoiceCode);
+    child.invoiceNo = normalizeInvoicePart(invoiceNo);
+    child.invoiceDate = invoiceDate;
+    child.hospitalCode = normalise(hospitalCode);
+    child.diagnosisCode = normalise(diagnosisCode);
+    child.outInsureTime = source.outInsureTime;
+    child.sourceChannel = source.sourceChannel;
+    child.sourceSystem = source.sourceSystem;
+    child.batchNo = source.batchNo;
+    child.consentRecordId = source.consentRecordId;
+    child.consentWithdrawnFlag = source.consentWithdrawnFlag;
+    child.claimAmount = total;
+    child.status = ClaimStatus.DRAFT.name();
+    child.stage = ClaimStage.SIGNING.name();
+    child.items = new ArrayList<>(items);
+    child.version = 0L;
+    Instant now = Instant.now();
+    child.createdAt = now;
+    child.updatedAt = now;
+    return child;
   }
 
   /**

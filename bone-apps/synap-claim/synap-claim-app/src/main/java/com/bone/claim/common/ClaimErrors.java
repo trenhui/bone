@@ -16,6 +16,9 @@ public final class ClaimErrors {
   private static final Map<String, Integer> DEFAULT_HTTP_STATUS =
       Map.ofEntries(
           Map.entry(ClaimErrorCodes.CLAIM_NOT_FOUND, 404),
+          // 1:N 报案：404 报案不存在（防枚举）/ 409 报案已关闭不可再分案
+          Map.entry(ClaimErrorCodes.CLAIM_REPORT_NOT_FOUND, 404),
+          Map.entry(ClaimErrorCodes.CLAIM_REPORT_CLOSED, 409),
           Map.entry(ClaimErrorCodes.CLAIM_STATUS_CONFLICT, 409),
           Map.entry(ClaimErrorCodes.CLAIM_CONCURRENT_CONFLICT, 409),
           Map.entry(ClaimErrorCodes.CLAIM_POLICY_NOT_ACTIVE, 422),

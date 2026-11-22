@@ -125,6 +125,7 @@ class DecisionWriteIdempotencyTest {
     ClaimCaseController controller =
         new ClaimCaseController(
             claimService,
+            null,
             autoApprovalService,
             mock(ClaimCaseAssembler.class),
             idempotency,

@@ -126,7 +126,18 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
   List<CaseDurationProjection> caseDurationsInWindow(
       @Param("from") java.sql.Timestamp from, @Param("to") java.sql.Timestamp to);
 
-  /** 按报案号查（对外检索键）。 */
+  /** 按归属报案 ID 列出其下全部赔案（1:N 的"多"，按创建时间升序 = 母案在前）。 */
+  default List<ClaimCase> findByReportId(Long tenantId, Long reportId) {
+    Criteria<ClaimCase> criteria =
+        Criteria.<ClaimCase>create()
+            .eq(ClaimCase::getTenantId, tenantId)
+            .eq(ClaimCase::getReportId, reportId)
+            .orderByAsc(ClaimCase::getCreatedAt)
+            .orderByAsc(ClaimCase::getId);
+    return findByCriteria(criteria);
+  }
+
+  /** 按赔案号查（对外检索键，CL 前缀）。 */
   default ClaimCase findByClaimNo(Long tenantId, String claimNo) {
     Criteria<ClaimCase> criteria =
         Criteria.<ClaimCase>create()
