@@ -56,6 +56,17 @@ import { groupClaimMenuItems, isClaimMenuLeaf } from './utils/claimMenuGroups';
 import { PermissionCodes, clearScopes, persistScopesFromToken, readScopes } from './auth/jwt';
 import { PERMISSIONS_CHANGE_EVENT } from '@bone/shared-utils';
 
+/**
+ * 无壳独立页路径（新标签页打开）。与 bone-claim-app/src/workbench/focusMode.ts 的
+ * FOCUS_PATHS 保持一致：/standalone 是新链接唯一口径，/claim-detail 是历史别名。
+ * 微应用与 shell 是两个独立构建单元，无法共享常量，故两处各定义一份并在此互相标注。
+ */
+const STANDALONE_PATH = '/standalone';
+const LEGACY_FOCUS_PATHS = ['/claim-detail'];
+const FOCUS_PATHS: readonly string[] = [STANDALONE_PATH, ...LEGACY_FOCUS_PATHS];
+const isFocusPath = (pathname: string): boolean =>
+  FOCUS_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
 /** 通知等级 → antd Tag 颜色 */
 function levelColor(level?: string): string {
   switch ((level || '').toUpperCase()) {
@@ -697,9 +708,9 @@ function AppContent({
         name: 'bone-claim-app',
         entry: import.meta.env.VITE_CLAIM_APP_ENTRY || '//localhost:3013',
         container: '#subapp-viewport',
-        // 焦点模式详情页：新标签页打开 /claim-detail#/case?... 或 #/policy?...，
+        // 无壳独立详情页：新标签页打开 /standalone#/case?... 或 #/policy?...（旧 /claim-detail 仍兼容），
         // 由 MainLayout 判定为 isFocusMode，只渲染微应用内容区（无侧栏/顶栏/Content 边距）。
-        activeRule: ['/claim', '/claim-detail'],
+        activeRule: ['/claim', ...FOCUS_PATHS],
         props: globalContext,
       },
       {
@@ -988,15 +999,15 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 焦点模式：/claim-detail#/case?... 或 #/policy?... 由新标签页打开，
+  // 独立页模式：/standalone#/case?... 或 #/policy?... 由新标签页打开（旧 /claim-detail 亦兼容），
   // 只渲染微应用内容区——无侧栏、无顶栏、无 Content 边距（对标旧理赔 claimDetail 独立页）。
-  const isFocusMode = location.pathname.startsWith('/claim-detail');
+  const isFocusMode = isFocusPath(location.pathname);
 
   // 当前路径是否为微应用路由（与下方 Routes 中的微应用路由前缀一一对应）。
   // 用于控制常驻容器的显隐——见 microAppViewport 处的竞态修复说明。
   const MICRO_APP_BASES = [
     '/iam', '/metadata', '/masterdata', '/commerce', '/integration',
-    '/system', '/extension', '/generator', '/claim', '/claim-detail', '/procurement',
+    '/system', '/extension', '/generator', '/claim', '/procurement', ...FOCUS_PATHS,
   ];
   const isMicroAppPath = MICRO_APP_BASES.some(
     (base) => location.pathname === base || location.pathname.startsWith(`${base}/`),
@@ -1428,7 +1439,9 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
             {/* 智能理赔（bone-claim-app，2026-10-26 联调补线）：缺此路由时
                 /claim/* 命中 `*` 被静默送回首页（菜单可见也点不开）。 */}
             <Route path="/claim/*" element={null} />
-            {/* 焦点模式详情页（新标签页）：无 shell 导航，见 MainLayout 的 isFocusMode。 */}
+            {/* 无壳独立详情页（新标签页）：无 shell 导航，见 MainLayout 的 isFocusMode。
+                /claim-detail 为历史别名，只为兼容已发出的旧链接；新链接一律 /standalone。 */}
+            <Route path="/standalone/*" element={null} />
             <Route path="/claim-detail/*" element={null} />
             <Route path="/extension/*" element={null} />
             <Route path="/generator/*" element={null} />

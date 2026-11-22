@@ -26,11 +26,12 @@ import { buildFocusHref } from '../workbench/focusMode';
  * 前者保留「复制链接地址 / 右键新标签页打开 / 状态栏预览 / 中键点击」等原生语义，
  * 且 `noopener` 防止新页面通过 window.opener 反向操作原窗口，`noreferrer` 不泄漏来源。
  *
- * <p>无壳焦点模式
- * --------------
- * href 由 {@link buildFocusHref} 统一拼成 `origin + /claim-detail#/case?...`：shell 识别
- * `/claim-detail` 后只挂载微应用内容区，不渲染侧栏/顶栏/Content 边距，得到与旧理赔
+ * <p>无壳独立页模式
+ * ----------------
+ * href 由 {@link buildFocusHref} 统一拼成 `origin + /standalone#/case?...`：shell 识别
+ * `/standalone` 后只挂载微应用内容区，不渲染侧栏/顶栏/Content 边距，得到与旧理赔
  * `claimDetail` 一致的独立详情页。微应用内部仍是 HashRouter，hash 路由契约不变。
+ * 旧路径 `/claim-detail` 仅作历史别名识别，不再用于生成新链接。
  */
 export interface ClaimIdLinkProps {
   /** 案件 ID（真值来源）。数字类型会被转成字符串；空值降级为占位符。 */
