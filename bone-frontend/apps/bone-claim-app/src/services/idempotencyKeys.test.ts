@@ -18,6 +18,34 @@ describe('稳定业务幂等键', () => {
     expect(stableClaimActionKey('1', 'review-decide', 'ADJUSTED')).not.toBe(a);
   });
 
+  /**
+   * 契约硬约束：幂等键落 `t_claim_case.idempotency_key varchar(64) NOT NULL`。
+   * 业务字段（报案号/invoiceNo/policyNo）都来自真实数据，长度不可控；键一旦超 64，
+   * insert 直接撞「数据违反完整性约束」400 —— 前端单测全绿、联调才暴露。
+   * 这里对三个稳定键统一钉死长度上限，防止再次回退。
+   */
+  it('所有稳定幂等键必须 ≤64 字符（对齐 DB varchar(64)），且超长输入仍确定性/有区分度', () => {
+    const LONG = 'X'.repeat(200);
+    const keys = [
+      stableClaimActionKey(LONG, 'review-decide', LONG),
+      stableAppendCaseKey('RP202611225S5C9NF7H97DKP', {
+        invoiceCode: LONG,
+        invoiceNo: LONG,
+        items: [{ itemName: '诊查费', amount: 321.5 }],
+      }),
+    ];
+    for (const k of keys) {
+      expect(k.length).toBeLessThanOrEqual(64);
+    }
+    // 超长被压缩后仍确定性；且不同业务快照不能压成同一个键（哈希不退化）
+    const req = { invoiceCode: LONG, invoiceNo: LONG, items: [{ itemName: '诊查费', amount: 321.5 }] };
+    const a = stableAppendCaseKey('RP202611225S5C9NF7H97DKP', req);
+    expect(stableAppendCaseKey('RP202611225S5C9NF7H97DKP', req)).toBe(a);
+    expect(
+      stableAppendCaseKey('RP202611225S5C9NF7H97DKP', { ...req, invoiceNo: LONG + 'Y' }),
+    ).not.toBe(a);
+  });
+
   it('资金键：同一结算单快照的支付动作同键，阶段推进后换键', () => {
     const snapshot = { settlementNo: 'SO-1', fundingStage: 'HARD_RESERVED', attempt: 1 };
     const a = stableSettlementKey('1', 'pay', snapshot);

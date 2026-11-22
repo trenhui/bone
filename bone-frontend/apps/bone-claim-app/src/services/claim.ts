@@ -39,6 +39,33 @@ export function newIdempotencyKey(): string {
 }
 
 /**
+ * 幂等键长度上限，对齐后端 `t_claim_case.idempotency_key / t_claim_report.idempotency_key`
+ * 的 `varchar(64) NOT NULL`。稳定键的业务片段（报案号、invoiceNo、policyNo）来自真实数据、
+ * 长度不可控；键一旦超过 64，insert 会撞「数据违反完整性约束」400——前端单测全绿，
+ * 只在真库联调时暴露。所有稳定键统一过这道闸。
+ */
+const IDEMPOTENCY_KEY_MAX = 64;
+
+/** FNV-1a 32 位：非加密哈希，快且确定；仅用于把超长业务片段压成定长十六进制。 */
+function fnv1a32(input: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+/**
+ * 有界稳定键：短键原样返回（保留可读性与既有格式），超长键保留前缀、
+ * 对主体做哈希压缩到 64 以内。同一输入恒等；不同业务快照不碰撞（FNV 32 位 + 前缀）。
+ */
+function boundedStableKey(prefix: string, body: string): string {
+  if (prefix.length + body.length <= IDEMPOTENCY_KEY_MAX) return `${prefix}${body}`;
+  return `${prefix}${fnv1a32(body)}`;
+}
+
+/**
  * 提交幂等键：优先由稳定业务键 batchNo + invoiceNo 派生——同一批次同一张发票
  * 重试/双提交天然同键，后端幂等表可直接去重；默认 UUID 只在无业务键可依时兜底。
  */
@@ -53,7 +80,7 @@ function stableSubmitKey(req: SubmitClaimReq): string {
     req.invoiceNo,
     req.outInsureTime,
   ].filter((v): v is string => Boolean(v && v.trim()));
-  return parts.length ? `claim:${parts.join('|')}` : newIdempotencyKey();
+  return parts.length ? boundedStableKey('claim:', parts.join('|')) : newIdempotencyKey();
 }
 
 /**
@@ -68,7 +95,7 @@ export function stableClaimActionKey(
   status?: string,
 ): string {
   const parts = [claimId, action, status].filter((v): v is string => Boolean(v && v.trim()));
-  return parts.length >= 2 ? `claim:${parts.join('|')}` : newIdempotencyKey();
+  return parts.length >= 2 ? boundedStableKey('claim:', parts.join('|')) : newIdempotencyKey();
 }
 
 /**
@@ -83,7 +110,7 @@ export function stableAppendCaseKey(reportNo: string, req: AppendCaseReq): strin
   const parts = [reportNo, req.invoiceCode, req.invoiceNo, total.toFixed(2)].filter((v): v is string =>
     Boolean(v && v.trim()),
   );
-  return parts.length >= 2 ? `claim:append:${parts.join('|')}` : newIdempotencyKey();
+  return parts.length >= 2 ? boundedStableKey('claim:append:', parts.join('|')) : newIdempotencyKey();
 }
 
 export const claimApi = {
