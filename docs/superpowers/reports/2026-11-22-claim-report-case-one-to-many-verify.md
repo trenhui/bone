@@ -23,8 +23,12 @@
 
 ```
 mvn -o -pl bone-apps/synap-claim/synap-claim-app -am test
-→ Tests run: 1661, Failures: 0, Errors: 0, Skipped: 7   BUILD SUCCESS
+→ Tests run: 1662, Failures: 0, Errors: 0, Skipped: 8   BUILD SUCCESS
 ```
+
+8 例跳过逐项有据，实际执行 **1654** 例：`ClaimLifecycleE2ETest` 3 例（整类由 `LocalE2EEnvironment` 守卫，仅 `-De2e.local=true` 时运行，见 2.3「端到端」）、`SettlementGuardContractTest` 5 例（本次未触碰的存量跳过）。
+
+> **口径校正**：本报告初稿写的 `1661 / Skipped: 7` 是补入第 3 个 E2E 用例之前的一次手工跑数。Comet build 与 verify 两次 check 的收据（`db994036-878a-…log` / `cdbf6950-878a-…log`）**均为 1662 / 8**，以收据为准。
 
 关键子集：
 
@@ -128,6 +132,6 @@ mvn -o -pl ... -am test -Dtest=ClaimLifecycleE2ETest -De2e.local=true
 
 ## 7. 结论
 
-变更的验收口径全部达成：全模块 1661 测试 0 失败、前端 214 测试 0 失败且类型零错、真库真 HTTP 端到端 3/3、迁移两遍幂等并带终态断言、两处变异验证证明新断言有判别力、与本次改动相关的门禁逐条绿。5 项基线存量红已逐项举证归属，均不在本次改动集内。
+变更的验收口径全部达成：全模块 1662 测试 0 失败（8 例按环境跳过，实际执行 1654）、前端 214 测试 0 失败且类型零错、真库真 HTTP 端到端 3/3、迁移两遍幂等并带终态断言、两处变异验证证明新断言有判别力、与本次改动相关的门禁逐条绿。5 项基线存量红已逐项举证归属，均不在本次改动集内。
 
 **判定：通过。**
