@@ -87,7 +87,9 @@
 - **账本历史残留**：本机活库 `schema_migration_journal` 在 `order 145` 记的是**对方文件名** `0139_synap_claim_report_one_to_many.sql`。本 ADR 采纳的实现文件名不同（`0139_synap_claim_report_case_split.sql`）⇒ 部署时 `migrate.py status` 会把对方那条报为 `orphan`（账本有、清单无），并把我的 `0139` 列为 `pending` 重放。重放本身**幂等无害**（§4/§5/§6/§8 全部条件化），记账后会出现两行 `order_no=145` —— 允许，账本主键是 `file`，`order_no` 按 `migrate.py` 注释只是「最近一次记账时在清单里的位置」。处置见下。
 - **本机活库仍留着 `t_claim_case.report_no`**（0 行有值）。0140 已就绪但未执行。
 - **接口面既定即锁定前端与 E2E**：对方若继续合并，其前端调用与 `scripts/e2e/synap-claim-report-one-to-many-e2e.py` 需改到 `/api/v1/claims/reports/…`，否则被 E2E 影响面门禁判零覆盖。
-- **`0139` 内 8 处 `PREPARE` + `SIGNAL` 是坏写法**（MySQL 1295「not supported in the prepared statement protocol」）：中止行为正确，但错误信息与意图无关，只在异常路径暴露。这是**全仓存量问题**（同类写法散布多个迁移），不在本 change 修 —— 在本已通过验证的迁移上做 8 处结构性重写会让验证证据失效，收益与风险不成比例。另开 change 做全仓清扫（`0140` 已是正确写法，可作模板）。
+- **`PREPARE` 不能执行 `SIGNAL`（MySQL 1295）**：中止行为正确，但报错信息与意图完全无关，只在异常路径暴露。全仓扫描（146 个迁移）结果：**命中该坏写法仅 5 个文件**（`0139` 7 处、`0138` 4 处、`0021` / `0022` / `0023` 各 1 处），另有 **63 个文件已是正确的 `CREATE PROCEDURE` 写法**（先例 `0133`）。据此分两类处置：
+  - `0139` **本次已修**：7 处 guard 改为 `sp_pre_0139` / `sp_verify_0139` 两个存储过程，并在中止前打印违规行。隔离库验证 15/15（两遍幂等 7 项 + 六个 guard 逐个触发 8 项），另做变异验证（§6 回填条件改 `1=0` → 第 17 条语句以 `1644` + 可读消息中止，旧写法此处只会给 1295 语法错）。
+  - `0138` / `0021` / `0022` / `0023` **不可回改**：均已在环境记账（`schema_migration_journal` 有 sha256），改一字即报 drift —— 与 `check-ddl-duplicate-column` 记 0046 的口径同源（「不回改 0046：migrate.py 按 sha256 记 journal，改已应用脚本会让所有已应用环境报 drift」）。故**不存在「另开 change 全仓清扫」这条路径**，这四个文件的坏写法属**已知限制**：中止仍会发生，只是信息不可读。治本只能是「新迁移不改旧迁移」，而这类 guard 无对应新迁移可承载，故维持现状并在此登记。
 
 ## 备选方案
 
@@ -103,12 +105,25 @@
 
 ### 合并
 
+**前置判据（三条全绿才可合，缺一即停）**：
+
 ```bash
-git checkout dev
-git merge --ff-only comet/claim-report-case-one-to-many   # 已验证零冲突
+# ① dev 所在工作树必须干净——合并要有干净索引，脏索引下 FF 合并会被拒或污染他人暂存区
+git -C <dev 工作树> status --short | wc -l      # 必须为 0
+# ② 干跑合并无冲突
+git merge-tree --write-tree dev HEAD             # RC=0 且不列出文件名
+# ③ 领先数与本分支一致，判是否 fast-forward
+git rev-list --count dev..HEAD
 ```
 
-若 `dev` 已前进（他人先行合并），先 `rebase` 再复跑 `git merge-tree --write-tree dev HEAD` 复核冲突面 —— 唯一预期冲突点是 `0139` 文件名与 `migration-manifest.json` 的 `order`。
+实测（2026-11-22 20:35）：①②③ 中 **① 不满足** —— 主工作树 `/Users/renhui.trh/wps/bone` 停在 `dev`，有 **214 项已暂存改动**（`bone-procurement` 域，属另一并行会话）。此状态下执行合并会动到他人的暂存区，故**当前不可合**；须等该会话提交或撤出，再复跑 ①。②③ 已满足：`merge-tree` RC=0 无冲突、领先 21 提交、`dev` 相对本分支独占 0 提交。
+
+```bash
+git checkout dev
+git merge --ff-only comet/claim-report-case-one-to-many   # 仅在①满足后
+```
+
+若 `dev` 已前进（他人先行合并），先 `rebase` 再复跑 ② —— 唯一预期冲突点是 `0139` 文件名与 `migration-manifest.json` 的 `order`。
 
 ### 部署迁移
 
@@ -116,21 +131,32 @@ git merge --ff-only comet/claim-report-case-one-to-many   # 已验证零冲突
 
 ```bash
 python3 scripts/migrate.py status      # 预期：我方 0139 为 pending，对方 0139 为 orphan
-python3 scripts/migrate.py apply       # 0139 幂等可重放，末尾 §10 六条终态断言 fail-closed
+python3 scripts/migrate.py apply       # 0139 幂等可重放，末尾 §10 五条终态断言 fail-closed
 ```
 
 ### 清理冗余列（0140）
 
-执行前必须两项核对，缺一不可：
+执行前必须三项核对，缺一不可：
 
 ```sql
 -- ① 列内无数据（有数据则 0140 打印清单并 SIGNAL 中止，不会自动删）
 SELECT COUNT(*) FROM t_claim_case WHERE report_no IS NOT NULL AND report_no <> '';
--- ② 没有其它服务持有连接池（共享库：删列会让仍在跑旧分支代码的实例读路径立刻 500）
-SELECT id, user, host, db, command, time FROM information_schema.processlist WHERE db LIKE 'bone%';
 ```
 
-确认后 `python3 scripts/migrate.py apply`。**不在共享活库手工 DDL** —— 手工执行会留下「库已改、账本无记录」的状态，下次 `migrate.py` 重放时行为不可预测。
+```bash
+# ② 没有进程在跑会读写该列的代码。判据不是数 processlist 条数——那分不清谁是谁，
+--   必须落到「哪个 PID → 加载了哪套代码」：
+lsof -nP -iTCP:3306 -sTCP:ESTABLISHED        # 列出持有连接的 PID
+lsof -p <PID> | grep -c synap-claim          # 该 PID 的 classpath 里有没有 claim 模块
+```
+
+实测（2026-11-22 20:35）：90 条连接由 **2 个 JVM** 持有（分别监听 8081 = IAM、8084），两者 `synap-claim` 加载计数均为 **0** ⇒ 当前没有 claim 服务在读这张表。（上版判据只写了「没有他人连接池持有者」，属于无法执行的表述：processlist 里 90 条 `Sleep` 看着像有人，查清后才知道不是 claim。）
+
+```bash
+# ③ 执行通道：必须经 migrate.py 记账，本机无 mysql 客户端 ⇒ 本机不可执行
+```
+
+确认 ①②③ 后 `python3 scripts/migrate.py apply`。**不在共享活库手工 DDL** —— 手工执行会留下「库已改、账本无记录」的状态，下次 `migrate.py` 重放时行为不可预测。
 
 ### 账本 orphan 处置（环境清理，不入仓库脚本）
 

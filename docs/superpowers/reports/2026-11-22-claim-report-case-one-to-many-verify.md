@@ -157,3 +157,45 @@ e90aebb75 docs(claim): 校正验证报告测试计数为 1662/8（以 Comet 收�
 五条恢复通道均已按源码逐条确认封闭（`record-outcome` 要求 `record.status==='completed'`；`retry` 要求 `resolution='not-executed'`；`acknowledge-stopped` 要求 `terminal(action)`；`cancel` 是 Run 级；`mark-unknown` 语义为「未执行」），根因是 **Classic 域从未调用 `acknowledgeStopped`**——Native 有 `reconcileInterrupted` 收口回路，Classic 没有。完整取证见 `2026-11-22-claim-report-case-branch-review.md` 附录 A。
 
 处置：**不 cancel、不 mark-unknown、不伪造回执**（前两者会让归档彻底不可达，后者是伪造证据）。交付事实以本节 Git 提交 + 本报告为准。
+
+## 9. 验证后修正：`0139` 守卫重写与复验（2026-11-22T20:45）
+
+§1–§7 的证据对应的是**重写前**的 `0139`。该文件在本轮之后被修改过一次，故补本节记录差异与复验，避免报告指向一个已不存在的文件版本。
+
+### 改了什么
+
+`0139` 原有 7 处 fail-closed 守卫采用 `SET @sql = IF(cond,'DO 0','SIGNAL …'); PREPARE …; EXECUTE`。**MySQL 的 `PREPARE` 不能执行 `SIGNAL`**（报 1295「not supported in the prepared statement protocol」）——中止行为还在，但报错信息与意图完全无关，只在异常路径暴露。改为存储过程（本仓 63 个迁移的既有写法，先例 `0133`）：
+
+| 位置 | 改后 | 备注 |
+|---|---|---|
+| §7 收紧 NOT NULL 前 | `sp_pre_0139()` | 中止前 `SELECT` 打印前 50 条 NULL 行 |
+| §10 终态断言 | `sp_verify_0139()` | 5 条断言；悬空 / 丢前缀两类会先打印违规行 |
+| §10.5 报案号无重复 | **删除** | `uk_report_no` 唯一键 + `report_no NOT NULL` ⇒ 结构上不可触发；保留只会让人误以为「唯一性还有第二道防线」 |
+
+`§1` 的形状探测与 `§4`/`§8` 的条件式 DDL 仍用 `PREPARE`（执行的是 DDL/SELECT 而非 `SIGNAL`，属正确用法，未动）。
+
+### 复验证据（隔离库 `bone_v0139`，脚本 `/tmp/verify_0139.py`）
+
+- **A. 幂等**：连跑两遍均无异常；报案 2 行（不重复插）、`report_id` 无 NULL、`is_nullable=NO`、`uk_report_no` 严格单列 `report_no`、报案号全带 `RP` 前缀、`batch_no` 注释已纠正 —— 7 项全绿。
+- **B. 守卫逐个触发**（每条都断言错误码为 `1644` 且消息含可读关键词，8 项全绿）：
+
+| 场景 | 期望消息关键词 |
+|---|---|
+| 收紧前存在 NULL 行 | `still NULL` |
+| 无主赔案（10.1） | `without report_id` |
+| 悬空 `report_id`（10.2） | `dangling` |
+| 列仍可空（10.3） | `still nullable` |
+| 唯一键缺失（10.4） | `uk_report_no missing` |
+| 报案号丢 `RP` 前缀（10.6） | `RP prefix` |
+| 诊断 SELECT 位于 SIGNAL 之前（结构） | 文本位置比较 |
+| 诊断 SELECT 能取到违规行 | 返回 1 行 `XX` |
+
+- **C. 变异验证**：把 §6 回填条件由 `report_id IS NULL` 改为 `1 = 0` → 脚本在**第 17 条语句**以 `1644` + `0139 ABORT: t_claim_case.report_id still NULL (see list above); backfill before NOT NULL` 中止。对照：旧写法在此处只会给 `1295`，操作者无法从信息里判断是「有赔案没汇报案」。还原后复跑 15/15 全绿。
+
+### 未改动的同族文件（已发布，不可回改）
+
+全仓 146 个迁移中，命中该坏写法的共 **5 个**：`0139`（本节已修）、`0138`（4 处）、`0021` / `0022` / `0023`（各 1 处）。后四者**已在环境记账**（`schema_migration_journal` 存有 sha256），改一字即报 drift —— 与仓库既有口径同源（见 `check-ddl-duplicate-column` 对 0046 的处理说明）。故不存在「全仓清扫」这条路径，这四个文件的坏写法登记为**已知限制**：中止会发生，只是信息不可读。
+
+### 门禁（真实退出码）
+
+`check-migration-manifest` RC=0（153 文件 / order 1..146 连续）、`check-ddl-doc-sync` RC=0（200=200）、`check-ddl-duplicate-column` RC=0、`check-ddl-required-columns` RC=0。

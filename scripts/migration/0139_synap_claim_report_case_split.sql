@@ -162,16 +162,29 @@ UPDATE t_claim_case SET report_id = id WHERE report_id IS NULL;
 
 -- ---------- §7 收紧 report_id 为 NOT NULL（幂等） ----------
 -- 先做一次 fail-closed 探测：仍有 NULL 说明 §6 没覆盖全（例如中途插入了无主赔案），
--- 此时收紧 DDL 会在 MySQL 侧报 1138，但错误信息不含定位线索，故自行 SIGNAL。
-SET @null_report_id = (SELECT COUNT(*) FROM t_claim_case WHERE report_id IS NULL);
-SET @probe_null = IF(
-  @null_report_id = 0,
-  'DO 0',
-  'SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT = ''0139 ABORT: t_claim_case.report_id still NULL; run section 6 again'''
-);
-PREPARE probe_null_stmt FROM @probe_null;
-EXECUTE probe_null_stmt;
-DEALLOCATE PREPARE probe_null_stmt;
+-- 此时收紧 DDL 会在 MySQL 侧报 1138，但错误信息不含定位线索，故自行中止并打印违规行。
+--
+-- 【为什么用存储过程而不是 SET @sql=IF(...) + PREPARE】
+-- `PREPARE` 不支持执行 `SIGNAL`（MySQL 报 1295 not supported in the prepared statement
+-- protocol）。那种写法**中止行为还在，但报错信息与意图完全无关**，只有异常路径才暴露 ——
+-- 部署现场看到一个 1295 语法错误，根本不知道是"有赔案没汇报案"。本仓 63 个迁移已是
+-- `CREATE PROCEDURE` 写法（见 0133），此处对齐；顺带把违规行打印出来，让操作者知道改什么。
+DELIMITER $$
+DROP PROCEDURE IF EXISTS sp_pre_0139$$
+CREATE PROCEDURE sp_pre_0139()
+BEGIN
+    DECLARE v_null INT DEFAULT 0;
+    SELECT COUNT(*) INTO v_null FROM t_claim_case WHERE report_id IS NULL;
+    IF v_null > 0 THEN
+        SELECT id, tenant_id, claim_no FROM t_claim_case
+         WHERE report_id IS NULL ORDER BY id LIMIT 50;
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = '0139 ABORT: t_claim_case.report_id still NULL (see list above); backfill before NOT NULL';
+    END IF;
+END$$
+DELIMITER ;
+CALL sp_pre_0139();
+DROP PROCEDURE IF EXISTS sp_pre_0139;
 
 ALTER TABLE t_claim_case
   MODIFY COLUMN report_id BIGINT NOT NULL COMMENT '所属报案ID(t_claim_report.id, 1:0..N 的 N 侧)';
@@ -203,86 +216,76 @@ ALTER TABLE t_claim_case
     COMMENT '批次号(OSS 路径前缀 + 复制赔案分组, 不参与编号生成)';
 
 -- ---------- §10 终态断言（fail-closed：不满足则中止；全部可幂等重跑） ----------
--- 10.1 不存在无主赔案
-SET @orphan_case = (SELECT COUNT(*) FROM t_claim_case WHERE report_id IS NULL);
-SET @assert_orphan = IF(
-  @orphan_case = 0,
-  'DO 0',
-  'SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT = ''0139 FAIL: claim case without report_id exists'''
-);
-PREPARE assert_orphan_stmt FROM @assert_orphan;
-EXECUTE assert_orphan_stmt;
-DEALLOCATE PREPARE assert_orphan_stmt;
+-- 六条断言收在一个存储过程里，理由同 §7：`PREPARE` 不能执行 `SIGNAL`（1295），
+-- 那种写法只在异常路径暴露成一条与意图无关的语法错误。每类违规在中止前先打印违规行
+-- （LIMIT 50，避免刷屏），让操作者拿到可执行的修复线索而不是一个计数。
+DELIMITER $$
+DROP PROCEDURE IF EXISTS sp_verify_0139$$
+CREATE PROCEDURE sp_verify_0139()
+BEGIN
+    DECLARE v_orphan   INT DEFAULT 0;
+    DECLARE v_dangling INT DEFAULT 0;
+    DECLARE v_nullable VARCHAR(8) DEFAULT '';
+    DECLARE v_uk_cols  VARCHAR(128) DEFAULT NULL;
+    DECLARE v_bad_pref INT DEFAULT 0;
 
--- 10.2 不存在指向空气的 report_id（回填完整性）
-SET @dangling = (
-  SELECT COUNT(*) FROM t_claim_case c
-  LEFT JOIN t_claim_report r ON r.id = c.report_id
-  WHERE r.id IS NULL
-);
-SET @assert_dangling = IF(
-  @dangling = 0,
-  'DO 0',
-  'SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT = ''0139 FAIL: dangling report_id, no matching t_claim_report'''
-);
-PREPARE assert_dangling_stmt FROM @assert_dangling;
-EXECUTE assert_dangling_stmt;
-DEALLOCATE PREPARE assert_dangling_stmt;
+    -- 10.1 不存在无主赔案
+    SELECT COUNT(*) INTO v_orphan FROM t_claim_case WHERE report_id IS NULL;
+    IF v_orphan > 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = '0139 FAIL: claim case without report_id exists (orphan cases)';
+    END IF;
 
--- 10.3 report_id 列已收敛为 NOT NULL
-SET @report_id_nullable = (
-  SELECT is_nullable FROM information_schema.columns
-  WHERE table_schema = DATABASE() AND table_name = 't_claim_case' AND column_name = 'report_id'
-);
-SET @assert_not_null = IF(
-  @report_id_nullable = 'NO',
-  'DO 0',
-  'SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT = ''0139 FAIL: report_id column still nullable'''
-);
-PREPARE assert_not_null_stmt FROM @assert_not_null;
-EXECUTE assert_not_null_stmt;
-DEALLOCATE PREPARE assert_not_null_stmt;
+    -- 10.2 不存在指向空气的 report_id（回填完整性）
+    SELECT COUNT(*) INTO v_dangling
+      FROM t_claim_case c
+      LEFT JOIN t_claim_report r ON r.id = c.report_id
+     WHERE r.id IS NULL;
+    IF v_dangling > 0 THEN
+        SELECT c.id, c.tenant_id, c.report_id
+          FROM t_claim_case c
+          LEFT JOIN t_claim_report r ON r.id = c.report_id
+         WHERE r.id IS NULL ORDER BY c.id LIMIT 50;
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = '0139 FAIL: dangling report_id, no matching t_claim_report (see list above)';
+    END IF;
 
--- 10.4 报案号全局唯一键存在且列序严格为单列 report_no
-SET @report_no_cols = (
-  SELECT GROUP_CONCAT(column_name ORDER BY seq_in_index)
-  FROM information_schema.statistics
-  WHERE table_schema = DATABASE() AND table_name = 't_claim_report'
-    AND index_name = 'uk_report_no' AND non_unique = 0
-);
-SET @assert_uk = IF(
-  @report_no_cols = 'report_no',
-  'DO 0',
-  'SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT = ''0139 FAIL: uk_report_no missing or wrong columns'''
-);
-PREPARE assert_uk_stmt FROM @assert_uk;
-EXECUTE assert_uk_stmt;
-DEALLOCATE PREPARE assert_uk_stmt;
+    -- 10.3 report_id 列已收敛为 NOT NULL
+    SELECT is_nullable INTO v_nullable
+      FROM information_schema.columns
+     WHERE table_schema = DATABASE() AND table_name = 't_claim_case'
+       AND column_name = 'report_id';
+    IF v_nullable IS NULL OR v_nullable <> 'NO' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = '0139 FAIL: report_id column still nullable; section 7 ALTER did not take effect';
+    END IF;
 
--- 10.5 报案号无重复（唯一键已保证，双保险）
-SET @dup_report_no = (
-  SELECT COUNT(*) FROM (
-    SELECT report_no FROM t_claim_report GROUP BY report_no HAVING COUNT(*) > 1
-  ) AS d
-);
-SET @assert_dup = IF(
-  @dup_report_no = 0,
-  'DO 0',
-  'SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT = ''0139 FAIL: duplicate report_no exists'''
-);
-PREPARE assert_dup_stmt FROM @assert_dup;
-EXECUTE assert_dup_stmt;
-DEALLOCATE PREPARE assert_dup_stmt;
+    -- 10.4 报案号全局唯一键存在且列序严格为单列 report_no
+    SELECT GROUP_CONCAT(column_name ORDER BY seq_in_index) INTO v_uk_cols
+      FROM information_schema.statistics
+     WHERE table_schema = DATABASE() AND table_name = 't_claim_report'
+       AND index_name = 'uk_report_no' AND non_unique = 0;
+    IF v_uk_cols IS NULL OR v_uk_cols <> 'report_no' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = '0139 FAIL: uk_report_no missing or does not cover exactly (report_no)';
+    END IF;
 
--- 10.6 所有报案号带 RP 前缀（前缀是「这是报案号」的唯一标识，丢了就与赔案号混淆）
-SET @bad_prefix = (SELECT COUNT(*) FROM t_claim_report WHERE report_no NOT LIKE 'RP%');
-SET @assert_prefix = IF(
-  @bad_prefix = 0,
-  'DO 0',
-  'SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT = ''0139 FAIL: report_no without RP prefix found'''
-);
-PREPARE assert_prefix_stmt FROM @assert_prefix;
-EXECUTE assert_prefix_stmt;
-DEALLOCATE PREPARE assert_prefix_stmt;
+    -- 10.5（原「报案号无重复」双保险已删除）：
+    -- uk_report_no 是 report_no 上的 UNIQUE 索引且该列 NOT NULL ⇒ 重复在结构上不可能出现。
+    -- 10.4 已断言该索引存在且列序正确，再扫一遍 GROUP BY 是**永远不可能触发**的检查：
+    -- 它不增加任何保护，只会让读代码的人误以为「唯一性还有第二道防线」。
+
+    -- 10.6 所有报案号带 RP 前缀（前缀是「这是报案号」的唯一标识，丢了就与赔案号混淆）
+    SELECT COUNT(*) INTO v_bad_pref FROM t_claim_report WHERE report_no NOT LIKE 'RP%';
+    IF v_bad_pref > 0 THEN
+        SELECT id, tenant_id, report_no FROM t_claim_report
+         WHERE report_no NOT LIKE 'RP%' ORDER BY id LIMIT 50;
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = '0139 FAIL: report_no without RP prefix (see list above); CL->RP rewrite incomplete';
+    END IF;
+END$$
+DELIMITER ;
+CALL sp_verify_0139();
+DROP PROCEDURE IF EXISTS sp_verify_0139;
 
 SELECT '0139 OK: t_claim_report 就位, 存量赔案已回填为 1:0..N 结构' AS result;
