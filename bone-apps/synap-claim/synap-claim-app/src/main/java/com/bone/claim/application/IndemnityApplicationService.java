@@ -55,6 +55,7 @@ public class IndemnityApplicationService {
   private final TenantPort tenantPort;
   private final DomainEventPublisher domainEventPublisher;
   private final LiabilityRuleReadGate liabilityRuleReadGate;
+  private final FactorMatrixApplicationService factorMatrixApplicationService;
 
   /**
    * 理算结果（含逐行归因，供拒赔五要素「事实认定」引用）。
@@ -130,6 +131,9 @@ public class IndemnityApplicationService {
     // ③ 3a：开关关闭时这里什么都不做（连 JSON 都不解析），保证零行为变更可被证明；
     // 打开时挂载按键回落视图，装配阶段产出差异，算出金额后再由 logDiffs 记录。
     liabilityRuleReadGate.attach(liability);
+    // 因子矩阵生效比例表：按责任当前已发布最高版本装载；无矩阵时回落 uniform(payPercent)，行为与引入前逐字一致。
+    // 只挂在首次 calculate/preview 路径；recalculate/readjudicate 走 bound 历史责任，不挂载——配置变更不影响在途案件。
+    liability.attachRatios(factorMatrixApplicationService.activeRatiosFor(liability));
     return new CalculationInput(
         rows, liability, accumulate(rows, liability), catalogFactsOf(rows, liability));
   }

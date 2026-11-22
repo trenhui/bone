@@ -712,6 +712,34 @@ public record LiabilityRule(
         feeRules);
   }
 
+  /**
+   * 替换赔付比例表（因子矩阵生效视图）：{@code null} 表示未配矩阵，保持原 uniform 表（零行为变更）。
+   *
+   * <p>只替换 ratios 数据源，不动任何计算步骤——金额算法全链仍是唯一的九步主链（{@code AdjustmentEngine}）。 返回新规则实例，原实例不变。
+   */
+  public LiabilityRule withRatios(PayRatioTable ratios) {
+    if (ratios == null) {
+      return this;
+    }
+    return new LiabilityRule(
+        liabilityUuid,
+        liabilityVersion,
+        form,
+        socialOnly,
+        coveredBuckets,
+        waitingPeriodDays,
+        deductible,
+        ratios,
+        limits,
+        quota,
+        occurrences,
+        relation,
+        limitedConditions,
+        invoiceDeductible,
+        adjustDeductible,
+        feeRules);
+  }
+
   /** 设置费用类别规则（{@code t_adj_liability_fee_rule} 的生效快照）：返回新规则实例，原实例不变。 */
   public LiabilityRule withFeeRules(List<FeeCategoryRule> rules) {
     return new LiabilityRule(

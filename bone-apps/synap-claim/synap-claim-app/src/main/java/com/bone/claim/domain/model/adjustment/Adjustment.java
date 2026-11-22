@@ -452,6 +452,9 @@ public class Adjustment extends TenantAggregateRoot<Long> {
                 liability.getRuleReadMode(),
                 ruleDiffs)
             .withFeeRules(feeRulesOf(feeRules))
+            // 因子矩阵生效比例表（非持久化视图，由应用层挂载）：null = 未配矩阵，保持原 uniform，零行为变更。
+            // 只替换 ratios 数据源，金额计算仍走唯一九步主链；复算/改绑不挂载该视图，故不受配置变更影响。
+            .withRatios(liability.getRatioOverride())
             .withRelation(
                 LiabilityRule.Relation.of(
                     liability.getSharedCode(), liability.getPriorLiabilityUuid()));

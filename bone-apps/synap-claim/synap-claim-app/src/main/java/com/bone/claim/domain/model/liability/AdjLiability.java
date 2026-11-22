@@ -1,5 +1,6 @@
 package com.bone.claim.domain.model.liability;
 
+import com.bone.claim.domain.model.adjustment.engine.PayRatioTable;
 import com.bone.core.annotation.Transient;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
@@ -81,6 +82,16 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
 
   /** 读侧模式（非持久化）：默认只走旧标量列，故未挂载视图时行为与 ② 逐笔一致。 */
   @Transient private LiabilityReadMode ruleReadMode = LiabilityReadMode.LEGACY_ONLY;
+
+  /**
+   * 因子矩阵生效比例表（非持久化）：由应用层在理算前按当前生效版本装载并挂载。
+   *
+   * <p>与 {@link #ruleView} 同构——把视图挂在实体上，装配点仍是唯一的 {@code LiabilityRule.fromLegacy}， 不改任何
+   * calculate/recalculate 重载签名。为 {@code null} 时引擎走原 {@code uniform(payPercent)}，行为与引入矩阵前逐字一致。
+   *
+   * <p><b>边界</b>：只影响首次 calculate/preview 的装配；复算/改绑按历史版本语义不挂载矩阵（配置变更不影响在途案件）。
+   */
+  @Transient private PayRatioTable ratioOverride;
 
   /** 本次装配产生的双轨差异（非持久化）：由应用层取走后写日志，不落库、不改金额。 */
   @Transient
@@ -568,6 +579,16 @@ public class AdjLiability extends TenantAggregateRoot<Long> {
 
   public LiabilityReadMode getRuleReadMode() {
     return ruleReadMode;
+  }
+
+  /** 挂载因子矩阵生效比例表（非持久化，理算前由应用层调用一次）。 */
+  public void attachRatios(PayRatioTable ratios) {
+    this.ratioOverride = ratios;
+  }
+
+  /** 未挂载返回 null（走责任统一比例）。 */
+  public PayRatioTable getRatioOverride() {
+    return ratioOverride;
   }
 
   /**
