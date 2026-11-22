@@ -16,6 +16,7 @@ import {
 } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { PageHeader } from '../components/PageHeader';
+import { ClaimIdLink } from '../components/ClaimIdLink';
 import {
   agreementMeta,
   blindLabelApi,
@@ -220,7 +221,15 @@ export function BlindLabelWorkbenchPage(): ReactElement {
           onRow={(record) => ({ onClick: () => { setResultText(''); void refreshSelected(record.id); }, style: { cursor: 'pointer' } })}
           columns={[
             { title: '任务号', dataIndex: 'taskNo', width: 220 },
-            { title: '案件 ID', dataIndex: 'claimId', width: 120 },
+            {
+              title: '案件 ID',
+              dataIndex: 'claimId',
+              width: 140,
+              // 点案件 ID 下钻案件 360 详情；ClaimIdLink 内部 stopPropagation，不影响整行选中。
+              render: (v: string, row: BlindLabelTaskView) => (
+                <ClaimIdLink claimId={v ?? row.claimId} testId={`blind-case-link-${row.claimId}`} />
+              ),
+            },
             {
               title: '状态',
               dataIndex: 'status',

@@ -25,6 +25,7 @@ import {
 } from '../services/claimApi';
 import { PRE_EXAM_TODO_STATUSES, claimStatusMeta, statusOptions } from '../services/claimStatus';
 import { PageHeader } from '../components/PageHeader';
+import { ClaimIdLink } from '../components/ClaimIdLink';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { Auth, AuthButton } from '@bone/ui';
 import { PERMISSIONS } from '../constants/permissions';
@@ -254,7 +255,16 @@ export function PreExamWorkbenchPage(): ReactElement {
             },
           }}
           columns={[
-            { title: '报案号', dataIndex: 'claimNo', width: 200, fixed: 'left' },
+            {
+              title: '报案号',
+              dataIndex: 'claimNo',
+              width: 200,
+              fixed: 'left',
+              // 点报案号下钻案件 360 详情（显示报案号、下钻用 claimId，见 ClaimIdLink）。
+              render: (v: string, row: ClaimHeadProjection) => (
+                <ClaimIdLink claimId={row.claimId} text={v} testId={`pre-exam-case-link-${row.claimId}`} />
+              ),
+            },
             { title: '保单号', dataIndex: 'policyNo', width: 150 },
             {
               title: '申请金额',

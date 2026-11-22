@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 139,
+  "executableCount": 140,
   "retired": [],
   "entries": [
     {
@@ -885,6 +885,12 @@
       "file": "0135_synap_claim_factor_matrix.sql",
       "kind": "ddl",
       "summary": "新建 t_claim_factor_matrix 表(理算责任因子矩阵,版本化,按row_key/col_key合并保留已填值): 移植原理赔valueList范式支撑三层责任矩阵配置; 必备列tenant_id/审计/deleted/version齐全; bone-init.sql 同批并入; 终态information_schema断言"
+    },
+    {
+      "order": 140,
+      "file": "0136_seed_claim_governance_menus.sql",
+      "kind": "mixed",
+      "summary": "给「智能理赔」目录补 2 条治理面叶子菜单「AI 治理」(/claim#/ai-governance) 与「运营分析看板」(/claim#/analytics)，与 routes.tsx 逐字对齐：由工作台卡片 hidden 深链提升为正式侧栏治理菜单（菜单是侧栏唯一来源，缺则入口不可达且 single-nav 探针判红）。id=目录+27/+28，permission=claim:claims:read，order_no=18/19，icon=SafetyCertificateOutlined/DashboardOutlined（均在 MENU_ICON_MAP 白名单）。含临时表 DDL+幂等 INSERT+终态信息断言；与 routes.tsx 去 hidden、claimMenuGroups 登记治理组同提交。"
     }
   ],
   "ordinalConflicts": [

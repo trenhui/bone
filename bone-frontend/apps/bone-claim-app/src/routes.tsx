@@ -145,9 +145,12 @@ export const CLAIM_ROUTES: ClaimRoute[] = [
   // 菜单名 / 顺序 / 图标必须与本文件逐字一致，否则 scripts/e2e/ui/claim-single-nav-probe.mjs 判红。
   { path: '/insurers', name: '承保主体', icon: <SafetyCertificateOutlined />, element: <InsurerManagementPage /> },
   { path: '/mappings', name: '主数据映射', icon: <LinkOutlined />, element: <MappingPage /> },
-  { path: '/ai-governance', name: 'AI 治理', icon: <SafetyCertificateOutlined />, element: <AiGovernancePage />, hidden: true },
-  // 运营分析看板：消费既有 GET /analytics/summary，hidden 路由从工作台治理空间深链进入（不占 IAM 菜单）。
-  { path: '/analytics', name: '运营分析看板', icon: <DashboardOutlined />, element: <AnalyticsDashboardPage />, hidden: true },
+  // AI 治理 / 运营分析看板：2026-11-22 从工作台深链提升为正式侧栏菜单项（治理空间）。
+  // 二者消费的后端读码都是 claim:claims:read，IAM 菜单与顺序见 0136_seed_claim_governance_menus.sql；
+  // App.tsx 的 HIDDEN_ROUTE_REQUIRED 仍保留其 Auth 守卫（按 path 查表，与 hidden 无关）——
+  // 直接输 hash 绕过侧栏时依然 fail-closed，不能因为进了菜单就去掉鉴权。
+  { path: '/ai-governance', name: 'AI 治理', icon: <SafetyCertificateOutlined />, element: <AiGovernancePage /> },
+  { path: '/analytics', name: '运营分析看板', icon: <DashboardOutlined />, element: <AnalyticsDashboardPage /> },
   // 盲标工作台：防反馈环金标准闸门的标注面，hidden 路由，从核赔工作台「盲标」深链进入（同 /ai-governance 形态）。
   { path: '/blind-labels', name: '盲标工作台', icon: <FormOutlined />, element: <BlindLabelWorkbenchPage />, hidden: true },
   // My Home：登录后默认落点。hidden 且 isDefault —— 不占菜单，但空 hash / 未知 hash 都落到这里。

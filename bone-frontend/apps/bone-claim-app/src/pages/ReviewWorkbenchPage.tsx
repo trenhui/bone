@@ -35,6 +35,7 @@ import {
   type ReviewTaskStatus,
 } from '../services/claimApi';
 import { PageHeader } from '../components/PageHeader';
+import { ClaimIdLink } from '../components/ClaimIdLink';
 import { AiDisclosureCard } from '../components/AiDisclosureCard';
 import { AiSuggestionCard } from '../components/AiSuggestionCard';
 import { explainNode, toneColor, type ExplainFact } from '../services/decisionExplain';
@@ -674,7 +675,15 @@ export function ReviewWorkbenchPage(): ReactElement {
             },
           }}
           columns={[
-            { title: '报案号', dataIndex: 'claimNo', width: 200 },
+            {
+              title: '报案号',
+              dataIndex: 'claimNo',
+              width: 200,
+              // 点报案号直接下钻案件 360 详情（显示报案号、下钻用 claimId，见 ClaimIdLink）。
+              render: (v: string, row: ClaimHeadProjection) => (
+                <ClaimIdLink claimId={row.claimId} text={v} testId={`review-case-link-${row.claimId}`} />
+              ),
+            },
             { title: '保单号', dataIndex: 'policyNo', width: 140 },
             {
               title: '申请金额',
