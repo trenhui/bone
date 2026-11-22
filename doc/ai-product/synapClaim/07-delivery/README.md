@@ -53,7 +53,7 @@ currency: current
 | `customer-journey.html` | `/submit` + `/progress`（员工端视角；DEMO 为客户小程序视角） | 视角差异，仅演示客户旅程 |
 | `claim-manage.html` | `/workbench` | 对齐 |
 | `claim-detail.html` | `/case` + `/review` | 对齐 |
-| `claim-image-detail.html` | `/evidence` | 部分对齐：OCR + 三栏作业台（分类树/关联发票/快捷键）已在；清晰度三态批量标注无后端契约，未迁移 |
+| `claim-image-detail.html` | `/evidence` | 对齐：OCR + 三栏作业台（分类树/关联发票/快捷键）+ 清晰度三态批量标注（后端 `POST /evidences/clarity` + DDL 0133）+ 决策证据锚点页码均已在；仅原型专属的"分类规则浮层"未迁移 |
 | `claim-rule-config.html` | `/liability` + 后端规则集 | 部分对齐：矩阵是方案设计，非现网配置面 |
 | `job-config.html` | 无现网路由 | 独立配置治理原型 |
 | `form-config.html` | 无现网路由 | 独立配置治理原型 |

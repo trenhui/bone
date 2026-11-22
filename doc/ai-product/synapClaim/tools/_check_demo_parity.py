@@ -106,6 +106,32 @@ def check_no_promise(texts: dict[str, str]) -> list[str]:
     return errs
 
 
+# P7：README 承诺九页共用 UX 骨架（互跳导航 / 命令面板 / 指引抽屉 / toast）。
+# 这些是签约演示的"一套系统"观感基线；任一页漏接会让现场演示出现差异化体验，
+# 而 M1–M9 只扫 .md 语义，不会判红。锚点取自九页实测公共 id（每页均命中）。
+UX_ANCHORS = (
+    "id=\"uxCmd\"", "id=\"uxCmdList\"", "id=\"uxCmdInput\"",
+    "id=\"uxFab\"", "id=\"uxDrawer\"", "id=\"uxToast\"", "id=\"uxMask\"",
+)
+
+
+def check_ux_skeleton(texts: dict[str, str], files: set[str]) -> list[str]:
+    """P7：九页共用 UX 骨架齐全 + 互跳覆盖全部 9 页。"""
+    errs: list[str] = []
+    if set(PAGES) - files:  # 缺页由 P1 报，避免重复计数
+        return errs
+    for page in PAGES:
+        text = texts.get(page, "")
+        for anchor in UX_ANCHORS:
+            if anchor not in text:
+                errs.append(f"P7 {page} 缺少公共 UX 锚点：{anchor}")
+        linked = set(re.findall(r'href="([a-z-]+\.html)"', text))
+        missing = set(PAGES) - linked
+        if missing:
+            errs.append(f"P7 {page} 互跳缺页：{', '.join(sorted(missing))}")
+    return errs
+
+
 def run() -> list[str]:
     errs: list[str] = []
     if not DEMO.is_dir():
@@ -116,6 +142,7 @@ def run() -> list[str]:
              for p in PAGES if (DEMO / p).is_file()}
     errs += check_cases(texts)
     errs += check_no_promise(texts)
+    errs += check_ux_skeleton(texts, files)
     if not README.is_file():
         errs.append("P2 README 不存在 → fail-closed")
     else:
@@ -150,12 +177,24 @@ def self_test() -> int:
     must_red("P6 到账承诺", check_no_promise(t))
     t = dict(good); t["customer-journey.html"] = "预计 2 分钟内返回"
     must_red("P6 无口径 SLA", check_no_promise(t))
+    # P7 负向：缺一个公共 UX 锚点必须判红
+    skeleton = {p: " ".join(UX_ANCHORS) + " " +
+                " ".join(f'href="{x}"' for x in PAGES) for p in PAGES}
+    t = dict(skeleton); t["claim-detail.html"] = t["claim-detail.html"].replace('id="uxToast"', "")
+    must_red("P7 公共 UX 锚点缺失", check_ux_skeleton(t, set(PAGES)))
+    # P7 负向：互跳少一页必须判红
+    t = dict(skeleton); t["claim-manage.html"] = t["claim-manage.html"].replace(
+        'href="form-config.html"', "")
+    must_red("P7 互跳缺页", check_ux_skeleton(t, set(PAGES)))
+    # P7 边界：缺页时交由 P1 计，P7 不重复计数（防止双计虚增红点）
+    if check_ux_skeleton(skeleton, set(PAGES) - {"form-config.html"}):
+        errs.append("P7 缺页时应交由 P1 计，不应重复判红")
     # 正向：完整样本必须全绿
-    if check_cases(good) or check_no_promise(good):
+    if check_cases(good) or check_no_promise(good) or check_ux_skeleton(skeleton, set(PAGES)):
         errs.append("正向样本被误判为红（判据过严）")
     for e in errs:
         print("【SELF-TEST FAIL】" + e)
-    print(f"自检：{10 - len(errs)}/10 探针通过")
+    print(f"自检：{13 - len(errs)}/13 探针通过")
     return 1 if errs else 0
 
 

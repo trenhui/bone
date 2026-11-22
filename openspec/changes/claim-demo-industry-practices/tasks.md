@@ -111,4 +111,18 @@
 - [x] 12.3 **真机联调暴露并修复 long-as-string 缺陷**（本轮最高价值发现）：经网关调 `GET /analytics/summary` 返回 `converged="31"`、`byDecisionResult` 值为**字符串**（Jackson 全局 long→string，与 `normalizeTotal` 同因），但比率/耗时是数字。原 helper 只认 `number` ⇒ 真机会把全部计数显示成 `—`，而 mock 用数字时 E2E 恒绿。修复：类型改 `NumericLike = string | number` + `toFiniteNumber`，helper 同时接受两种形态；E2E mock 改为字符串形态复刻真机，单测加判别力用例。教训固化：**「mock 绿」≠「真机对」，新接后端聚合端点必须先真机看返回体形状再定类型**。
 - [x] 12.4 README 对齐表真源修复：`07-delivery/README.md` 第 49 行路由数 21→22，第 56 行 `/evidence` 状态由「分类树/关联发票未迁移」改为「OCR + 三栏作业台已在；清晰度三态无后端契约未迁移」。`tools/_check_demo_parity.py` 机检口径（覆盖 9 页 + 14 态 + claimStatus.ts）未受影响。
 - [x] 12.5 验证（多层）：前端 typecheck 绿；单测 **16 文件 / 173 例全绿**（新增 analytics 8 例，含 long-as-string 判别力）；生产构建通过（新增 `/analytics` chunk）；四链路 UI 冒烟扩为 **26/26**（新增 6 条运营看板断言）；后端 `ClaimAnalyticsApplicationServiceTest` **3/3 绿**；**真机浏览器级联调**（起 claim:8087 + gateway:8888，无 mock，真实 JWT 经网关）`REAL_INTEGRATION=PASS`——渲染真值 `converged=31 / fallback=31 / shadowRate=0.0%`、scopeNote 在屏、0 页面异常、2×HTTP 200。联调后服务已停（8087/8888 均回 000，未留残留进程）。
-- [ ] 12.6 仍阻塞（不伪造，与上轮一致）：8.8 推送失败无后端端点；清晰度三态批量标注（`EvidenceController` 无批量更新端点、angle/clearType/imageType 字段不存在）；证据锚点页码定位（决策 trace 无证据位置结构化字段）；规则矩阵配置（无矩阵 valueList 端点）、主体专属覆盖、导入记录逐行错误、运营看板之外的驾驶舱指标（保单级 SLA 列等）。均需后端契约落地后同批实现。
+- [ ] 12.6 仍阻塞（**部分已于 §13 取证推翻并纠偏**，保留原文留痕）：8.8 推送失败无后端端点（仍属实）；~~清晰度三态批量标注无端点/字段不存在~~（**已证伪，见 §13.1**）；~~证据锚点页码定位无结构化字段~~（**已证伪，见 §13.2**）；规则矩阵配置（无矩阵 valueList 端点）、主体专属覆盖、导入记录逐行错误、运营看板之外的驾驶舱指标（保单级 SLA 列等，案件 360 的 SLA 已打通见 §13.3）。仍需后端契约落地后同批实现。
+
+## 13. 第七轮：文档漂移纠偏 + 原型运行时缺陷 + P7 门禁补齐（2026-11-22）
+
+> 用户续跑「继续完成未完成任务」。沿用既有裁定：Comet SDK 仍卡 `open.revalidate` outcome-unknown 死锁——不碰守卫、不 mark-unknown、不 cancel、不伪造回执；以当前源码实证为事实直接落地。
+> 本轮为**三方重新取证**（07-delivery 原型 / bone-claim-app 实现 / 原理赔 views）后的低风险修正：不新增后端契约、不造静态骨架，只做「文档真源对齐 + 原型 bug 修复 + 门禁判别力补齐」。
+
+- [x] 13.1 **文档漂移纠偏（清晰度三态）**：§10.7/§12.6 登记的「清晰度三态无批量更新端点、字段不存在」已被当前源码证伪——后端 `EvidenceController.java:145-157` `POST /{claimId}/evidences/clarity` + `EvidenceApplicationService.java:185` + `Evidence.java:64-65` `clearType` + DDL `scripts/migration/0133_synap_claim_evidence_clear_type.sql:32`，前端 `evidence.ts:47` + `EvidenceUploadPage.tsx:331-337` 批量标注 + `EvidenceUploadPage.test.tsx:44-46` 三态用例，均已在 origin/dev（`b2d8a0f8e`）。README 对齐表第 56 行由「未迁移」改为「对齐」。
+- [x] 13.2 **文档漂移纠偏（证据锚点页码）**：§12.6 登记的「决策 trace 无证据位置结构化字段」已证伪——`decisionExplain.ts:85-149` 定义 `EvidenceLocatorView.pageNo` + `evidenceLocatorsOf` 解析 `aiFacts`/`evidenceLocators` 去重 + `explainEvidenceLocators` 生成「影像第 N 页」，判别力单测 `decisionExplain.test.ts:85-149`（含旧轨迹无 pageNo 不产锚点）。口径如实保留：坐标来自决策 trace output，非独立端点。
+- [x] 13.3 **文档漂移纠偏（案件 SLA）**：§11.8 只登记「案件列表未带 SLA 列」属实，但案件 360 的 SLA 已打通——`Case360Page.tsx:192,228-231,329-353` 读 `slaDueAt`/`legalDueAt` 并标「已超期/在时限内」；该部分不再列为阻塞。列表级 SLA 列仍待服务端契约。
+- [x] 13.4 **原型运行时缺陷修复**：`evaluation-report.html:324-333` 存在从 `form-config.html` 复制残留的 `FIELDS`/`pickTpl`/`pickField`/`pubAck` 监听，但本页无 `id="pubAck"` 元素（`pubAck` 恒 `null`），加载即抛 `TypeError`、阻断后续脚本。删除该死代码块并留注释说明，命令面板/toast/指引抽屉仍由公共脚本提供。`node --check` 通过。
+- [x] 13.5 **P7 门禁补齐**：`_check_demo_parity.py` 自称 P1–P8 但**无 P7 判据**——README:45 承诺九页共用 UX 骨架（互跳/命令面板/指引抽屉/toast）却无任何机检。新增 `check_ux_skeleton`：九页逐一校验公共锚点（`uxCmd`/`uxCmdList`/`uxCmdInput`/`uxFab`/`uxDrawer`/`uxToast`/`uxMask`）+ 互跳覆盖全部 9 页；缺页时交由 P1 计、不重复计数。自检探针 10→13（新增锚点缺失/互跳缺页/缺页不重复计数三例）。同步 `check_all.py:71` 标签与治理规约 §五登记。
+- [ ] 13.6 仍阻塞（真无契约，不伪造）：8.8 推送失败列表/重推/退回审核端点全仓 0 命中；案件复制（无 copy 端点/台账表）、责任关系图（无实体/表）、表达式编译预览（仅 formulaHash 快照）、规则矩阵 valueList（前端 0 命中）、主体专属覆盖、导入记录逐行错误、列表级 SLA 列。这些需后端契约落地后同批实现，不以静态骨架伪造可用。
+
+> 来源：原理赔 views 深挖另识别 A2 笛卡尔积值保留 / C13 快捷键流 / C15 差分保存 / B8 行内编辑回滚等机制，但均需后端契约或引入新交互栈，不属于本轮低风险纠偏范围；已登记于 §9/§10，待独立契约项目推进。
