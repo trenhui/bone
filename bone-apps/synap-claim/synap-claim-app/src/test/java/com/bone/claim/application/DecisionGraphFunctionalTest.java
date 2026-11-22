@@ -66,6 +66,7 @@ class DecisionGraphFunctionalTest {
         ClaimCase.draft(
             1001L,
             TENANT_ID,
+            9001L,
             "EG20260001",
             7L,
             "hash-abc",

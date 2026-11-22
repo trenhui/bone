@@ -2,6 +2,7 @@ package com.bone.claim.e2e;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.bone.core.idempotency.IdempotencyService;
 import com.bone.core.security.jwt.JwtTokenService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -87,6 +88,27 @@ class ClaimLifecycleE2ETest {
     return rest.exchange(url, method, new HttpEntity<>(reqBody, authHeaders()), String.class);
   }
 
+  private <T> ResponseEntity<String> exchange(
+      HttpMethod method, String url, Object reqBody, HttpHeaders headers) {
+    return rest.exchange(url, method, new HttpEntity<>(reqBody, headers), String.class);
+  }
+
+  /**
+   * 建案/追加必须带幂等键（缺失即 400 —— P0-3 fail-closed，服务端不代生成）。
+   *
+   * <p>本类原先不带该头，两个用例在 {@code -De2e.local=true} 下恒 400 —— 因为该 E2E 不进 CI（需本地库），
+   * 这条破坏性变更没有在任何地方转红，门禁实质上停用了。此处按「一次请求一个键」补上；要验证重放语义的用例显式传入同一个键。
+   */
+  private HttpHeaders idempotentHeaders(String key) {
+    HttpHeaders headers = authHeaders();
+    headers.set(IdempotencyService.IDEMPOTENCY_KEY_HEADER, key);
+    return headers;
+  }
+
+  private HttpHeaders idempotentHeaders() {
+    return idempotentHeaders(UUID.randomUUID().toString());
+  }
+
   @BeforeEach
   void warmup() {
     // 触发一次鉴权上下文，确保 JWT + 租户装配在正式流程前可用。
@@ -107,7 +129,7 @@ class ClaimLifecycleE2ETest {
                 "outInsureTime", "2026-11-01T00:00:00Z",
                 "claimType", "OUTPATIENT",
                 "items", List.of(java.util.Map.of("itemName", "诊查费", "amount", 100.00))));
-    JsonNode claim = body(exchange(HttpMethod.POST, "/api/v1/claims", submit));
+    JsonNode claim = body(exchange(HttpMethod.POST, "/api/v1/claims", submit, idempotentHeaders()));
     long claimId = claim.get("claimId").asLong();
     assertThat(claimId).isPositive();
     System.out.println("[E2E] 建案 claimId=" + claimId + " claimNo=" + claim.get("claimNo"));
@@ -228,7 +250,7 @@ class ClaimLifecycleE2ETest {
             rest.exchange(
                 "/api/v1/claims",
                 HttpMethod.POST,
-                new HttpEntity<>(submit, authHeaders()),
+                new HttpEntity<>(submit, idempotentHeaders()),
                 String.class));
     long claimId = claim.get("claimId").asLong();
     assertThat(claimId).isPositive();
@@ -293,5 +315,121 @@ class ClaimLifecycleE2ETest {
             new HttpEntity<>(body, h),
             String.class);
     return body(resp);
+  }
+
+  /**
+   * 报案 1:0..N 赔付的端到端贯通：建案产出报案号 → 查报案详情 → 追加第二笔 → 重放不新增 → 反例（400/404）。
+   *
+   * <p><b>为什么必须在真库真 HTTP 上跑一遍</b>：报案号/赔案号由聚合派生、跨两张表同事务写入、报告清单靠 {@code findByReportId} 反查、{@code
+   * report_id} 是 {@code NOT NULL} 外键列——这四件事任何一件在内存替身里都是"天然成立"的。 只有真跑才知道：INSERT 的列是否与活库对齐、追加案的
+   * {@code report_id} 是否真的写进去了（写空即 1054 或挂不到报案下）、 幂等重放是否真的复用了赔案而不是又建一笔。
+   *
+   * <p>反例部分刻意验"错误码"而非只验状态码：400 与 404 都可能由通用参数校验触发，只有 {@code errorCode}
+   * 能证明拒绝发生在"报案维度"这一层（而不是请求体解析失败）。
+   */
+  @Test
+  @DisplayName("报案详情与追加赔案：1:0..N 贯通 + 幂等重放不新增 + 400/404 反例")
+  void reportDetailAndAppendCaseEndToEnd() throws Exception {
+    String submit =
+        objectMapper.writeValueAsString(
+            java.util.Map.of(
+                "policyNo", "E2E-POLICY-0001",
+                "planId", 9001,
+                "insuredIdHash", "e2e-insured-hash-0001",
+                "outInsureTime", "2026-11-01T00:00:00Z",
+                "claimType", "OUTPATIENT",
+                "items", List.of(java.util.Map.of("itemName", "诊查费", "amount", 100.00))));
+    JsonNode first = body(exchange(HttpMethod.POST, "/api/v1/claims", submit, idempotentHeaders()));
+
+    String claimNo = first.get("claimNo").asText();
+    String reportNo = first.hasNonNull("reportNo") ? first.get("reportNo").asText() : null;
+    assertThat(reportNo).as("建案响应必须带回报案号（否则前端拿不到追加入口所需的键）").isNotNull();
+    assertThat(reportNo).as("报案号前缀 RP").startsWith("RP");
+    assertThat(claimNo).as("赔案号前缀 CL").startsWith("CL");
+    assertThat(reportNo).as("两套号互不推导：同一笔的第一案也不能让报案号等于赔案号").isNotEqualTo(claimNo);
+    System.out.println("[E2E] 建案 claimNo=" + claimNo + " reportNo=" + reportNo);
+
+    // 1) 报案详情：刚建案即有 1 笔赔案
+    JsonNode detail = body(exchange(HttpMethod.GET, "/api/v1/claims/reports/" + reportNo, null));
+    assertThat(detail.get("reportNo").asText()).isEqualTo(reportNo);
+    assertThat(detail.get("status").asText()).isEqualTo("REPORTED");
+    assertThat(detail.get("caseCount").asInt()).isEqualTo(1);
+    assertThat(detail.get("allCasesFinished").asBoolean()).as("在办赔案未终态，不能显示已完成").isFalse();
+    // 报案头持有事故事实：追加案的一切上下文都从这里继承
+    assertThat(detail.get("policyNo").asText()).isEqualTo("E2E-POLICY-0001");
+    assertThat(detail.get("planId").asLong()).isEqualTo(9001);
+    assertThat(detail.get("cases").get(0).get("claimNo").asText()).isEqualTo(claimNo);
+
+    // 2) 追加第二笔（只带赔付维度，不带任何保单维度）
+    String append =
+        objectMapper.writeValueAsString(
+            java.util.Map.of(
+                "invoiceCode", "0440" + (System.nanoTime() % 10000),
+                "invoiceNo", String.valueOf(System.nanoTime()),
+                "items", List.of(java.util.Map.of("itemName", "治疗费", "amount", 200.00))));
+    String appendKey = UUID.randomUUID().toString();
+    ResponseEntity<String> appendedResp =
+        exchange(
+            HttpMethod.POST,
+            "/api/v1/claims/reports/" + reportNo + "/cases",
+            append,
+            idempotentHeaders(appendKey));
+    assertThat(appendedResp.getStatusCode().value())
+        .as("追加成功必须是 201，body=%s", appendedResp.getBody())
+        .isEqualTo(201);
+    JsonNode appended = body(appendedResp);
+    String secondClaimNo = appended.get("claimNo").asText();
+    assertThat(secondClaimNo).startsWith("CL").isNotEqualTo(claimNo);
+    assertThat(appended.get("reportNo").asText()).as("追加案必须回报同一个报案号").isEqualTo(reportNo);
+    assertThat(objectMapper.readTree(appendedResp.getBody()).get("code").asInt())
+        .as("信封 code 必须与 HTTP 201 一致（API 规范 §3.1）")
+        .isEqualTo(201);
+    System.out.println("[E2E] 追加赔案 claimNo=" + secondClaimNo);
+
+    // 3) 同一幂等键重放 → 返回同一笔赔案，盘点仍为 2
+    JsonNode replayed =
+        body(
+            exchange(
+                HttpMethod.POST,
+                "/api/v1/claims/reports/" + reportNo + "/cases",
+                append,
+                idempotentHeaders(appendKey)));
+    assertThat(replayed.get("claimNo").asText())
+        .as("重放必须复用首笔追加案，否则同一张发票会赔两次")
+        .isEqualTo(secondClaimNo);
+    assertThat(
+            body(exchange(HttpMethod.GET, "/api/v1/claims/reports/" + reportNo, null))
+                .get("caseCount")
+                .asInt())
+        .as("重放不得新增赔案")
+        .isEqualTo(2);
+
+    // 4) 400：请求体带保单维度字段 → CONTEXT_MISMATCH（不静默忽略）
+    String illegal =
+        objectMapper.writeValueAsString(
+            java.util.Map.of(
+                "policyNo",
+                "E2E-POLICY-0001",
+                "items",
+                List.of(java.util.Map.of("itemName", "诊查费", "amount", 1.00))));
+    ResponseEntity<String> rejected =
+        exchange(
+            HttpMethod.POST,
+            "/api/v1/claims/reports/" + reportNo + "/cases",
+            illegal,
+            idempotentHeaders());
+    assertThat(rejected.getStatusCode().value()).as("携带保单维度字段即 400").isEqualTo(400);
+    // errorCode 在 ProblemDetail 里嵌在 data 下（root 只有 success/code/message/timestamp）
+    assertThat(objectMapper.readTree(rejected.getBody()).path("data").path("errorCode").asText())
+        .as("必须是报案上下文不匹配，而不是通用参数校验失败 —— 两者都是 400")
+        .isEqualTo("SC_CLAIM_REPORT_CONTEXT_MISMATCH");
+
+    // 5) 404：不存在的报案号（与跨租户同号同一口径，不泄露存在性）
+    ResponseEntity<String> missing =
+        exchange(HttpMethod.GET, "/api/v1/claims/reports/RP20260101ZZZZZZZZ9999", null);
+    assertThat(missing.getStatusCode().value()).isEqualTo(404);
+    assertThat(objectMapper.readTree(missing.getBody()).path("data").path("errorCode").asText())
+        .as("报案不存在与跨租户同号同一口径（防枚举），不走通用 NOT_FOUND")
+        .isEqualTo("SC_CLAIM_REPORT_NOT_FOUND");
   }
 }

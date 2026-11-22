@@ -29,8 +29,13 @@ public interface ClaimCaseAssembler {
 
   List<ClaimItemDto> toClaimItemDtos(List<SubmitClaimReq.ClaimItemReq> reqs);
 
-  default ClaimCaseResp toClaimCaseResp(ClaimCase claim) {
-    return ClaimCaseResp.of(claim.getId(), claim.getClaimNo(), claim.externalStatus());
+  /**
+   * 建案响应装配。
+   *
+   * <p>{@code reportNo} 由调用方传入而不是从聚合读：赔案只持有 {@code reportId}（单向引用）， 报案号属于报案聚合——让赔案自己去查报案会把读放大塞进装配器。
+   */
+  default ClaimCaseResp toClaimCaseResp(ClaimCase claim, String reportNo) {
+    return ClaimCaseResp.of(claim.getId(), claim.getClaimNo(), reportNo, claim.externalStatus());
   }
 
   default List<com.bone.claim.domain.model.claim.valueobject.ClaimStatus> statusesOf(

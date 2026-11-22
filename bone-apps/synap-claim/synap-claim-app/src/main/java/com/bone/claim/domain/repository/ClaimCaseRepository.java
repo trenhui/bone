@@ -145,6 +145,24 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
   }
 
   /**
+   * 某报案下的全部赔案（1:0..N 的读侧，按创建时间升序）。
+   *
+   * <p><b>为什么查赔案而不是查报案的集合</b>：报案聚合不持有赔案子集合（赔案有自己的状态机与生命周期）， 「同报案的赔案」只能从赔案侧反查。升序让「首案 →
+   * 追加案」的顺序与业务时间一致，便于前端按索赔路径展示。
+   *
+   * <p><b>不限状态</b>：结案/拒赔的赔案同样属于该报案的索赔历史，客服追溯时不能因为「已结案」就从清单里消失。
+   */
+  default List<ClaimCase> findByReportId(Long tenantId, Long reportId) {
+    Criteria<ClaimCase> criteria =
+        Criteria.<ClaimCase>create()
+            .eq(ClaimCase::getTenantId, tenantId)
+            .eq(ClaimCase::getReportId, reportId)
+            .orderByAsc(ClaimCase::getCreatedAt)
+            .orderByAsc(ClaimCase::getId);
+    return findByCriteria(criteria);
+  }
+
+  /**
    * 独立复审队列过滤条件（批 3，任务 3.1）：tenantId + 状态 43 + 复审持权人，列表与计数共用唯一口径。
    *
    * <p><b>为什么按 secondReviewerId 而不是新建任务表</b>：独立复审的持权人就是登记在案件上的独立复审人 （{@code

@@ -16,6 +16,12 @@ public final class ClaimErrors {
   private static final Map<String, Integer> DEFAULT_HTTP_STATUS =
       Map.ofEntries(
           Map.entry(ClaimErrorCodes.CLAIM_NOT_FOUND, 404),
+          // 报案与赔案同一 404 口径：跨租户同号不区分「不存在」与「无权查看」，避免枚举
+          Map.entry(ClaimErrorCodes.CLAIM_REPORT_NOT_FOUND, 404),
+          // 422：报案已关闭，不再受理新赔案（请求合法，业务前提不成立）
+          Map.entry(ClaimErrorCodes.CLAIM_REPORT_CLOSED, 422),
+          // 400：追加赔案请求体不得携带保单维度字段（形状问题，不是业务前提）
+          Map.entry(ClaimErrorCodes.CLAIM_REPORT_CONTEXT_MISMATCH, 400),
           Map.entry(ClaimErrorCodes.CLAIM_STATUS_CONFLICT, 409),
           Map.entry(ClaimErrorCodes.CLAIM_CONCURRENT_CONFLICT, 409),
           Map.entry(ClaimErrorCodes.CLAIM_POLICY_NOT_ACTIVE, 422),

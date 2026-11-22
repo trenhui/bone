@@ -20,7 +20,7 @@
 export * from './types';
 
 // ===== 子模块独立 API 对象（按需 import 入口） =====
-export { newIdempotencyKey, stableClaimActionKey } from './claim';
+export { newIdempotencyKey, stableClaimActionKey, stableAppendCaseKey } from './claim';
 export { adjustApi } from './adjustment';
 export { evidenceApi, attachmentApi } from './evidence';
 export { settlementApi, stableSettlementKey } from './settlement';

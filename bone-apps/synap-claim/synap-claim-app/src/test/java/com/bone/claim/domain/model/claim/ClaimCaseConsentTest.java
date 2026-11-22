@@ -30,6 +30,7 @@ class ClaimCaseConsentTest {
     return ClaimCase.draft(
         1001L,
         42L,
+        9001L,
         "EG20260001",
         7L,
         "hash-abc",

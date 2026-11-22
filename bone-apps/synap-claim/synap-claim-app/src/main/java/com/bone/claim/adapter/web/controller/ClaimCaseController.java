@@ -110,7 +110,12 @@ public class ClaimCaseController {
     ApiResponse<ClaimCaseResp> body =
         ApiResponse.success(
             HttpStatus.CREATED.value(),
-            ClaimCaseResp.of(submitted.claimId(), submitted.claimNo(), "PENDING_EVIDENCE"));
+            ClaimCaseResp.of(
+                submitted.claimId(),
+                submitted.claimNo(),
+                submitted.reportNo(),
+                // 建案末端恒为 ACCEPTED（报案即受理签收）：从枚举派生，不写字面量
+                ClaimStatus.ACCEPTED.toExternal()));
     idempotencyService.remember(
         idempotencyKey,
         MDC.get("userId"),

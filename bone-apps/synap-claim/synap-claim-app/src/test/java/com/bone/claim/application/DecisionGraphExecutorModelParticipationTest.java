@@ -263,6 +263,7 @@ class DecisionGraphExecutorModelParticipationTest {
         ClaimCase.draft(
             CLAIM_ID,
             TENANT_ID,
+            9001L,
             "EG20260001",
             7L,
             "hash-abc",

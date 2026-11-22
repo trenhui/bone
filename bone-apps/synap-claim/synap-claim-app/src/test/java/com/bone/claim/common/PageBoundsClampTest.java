@@ -37,9 +37,11 @@ class PageBoundsClampTest {
   @BeforeEach
   void setUp() {
     // 只装配本测试用到的两个依赖；page() 不触碰其余端口
+    // 第 2 位 ClaimReportRepository 与第 3 位 ClaimIntakePort 是报案/赔案拆分后新增的依赖，
+    // page() 同样不触碰它们。
     service =
         new ClaimCaseApplicationService(
-            claimCaseRepository, null, null, tenantPort, null, null, null);
+            claimCaseRepository, null, null, null, null, tenantPort, null, null, null);
   }
 
   @Test

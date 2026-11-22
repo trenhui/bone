@@ -28,6 +28,15 @@ public class ClaimWithItemsProjection {
 
   private Long claimId;
   private String claimNo;
+
+  /**
+   * 所属报案 id 与报案号（{@code t_claim_report}，1:0..N 的反向可见性）。
+   *
+   * <p><b>为什么详情要带报案号</b>：客服受理的是「一次事故告知」，后续所有赔付都挂在同一报案下。 只给赔案号，客服无法回答「这次事故一共赔了几笔」；两个编号的口径不同，不能互相推导。
+   */
+  private Long reportId;
+
+  private String reportNo;
   private String policyNo;
   private Long planId;
   private String insuredIdHash;

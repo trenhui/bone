@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 144,
+  "executableCount": 145,
   "retired": [],
   "entries": [
     {
@@ -915,6 +915,12 @@
       "file": "0138_synap_claim_claim_no_global_unique.sql",
       "kind": "ddl",
       "summary": "把报案号 claim_no 唯一约束从租户内唯一 uk_tenant_claim_no(tenant_id,claim_no) 升级为全局唯一 uk_claim_no(claim_no)，与新生成器 ClaimNoGenerator（雪花ID经Feistel双射混淆，全局唯一零碰撞）的承诺对齐；系统未上线无存量数据。幂等 information_schema 判定 + 脏数据探测（跨租户重复先 SIGNAL 中止不自动删）+ 终态断言（新索引列序严格 claim_no、旧索引消失、无重复）；bone-init.sql 与模块参考态 V1 同批改索引与列注释。"
+    },
+    {
+      "order": 145,
+      "file": "0139_synap_claim_report_case_split.sql",
+      "kind": "mixed",
+      "summary": "报案与赔案从 1:1 拆为 1:0..N（JR/T 0212-2020 口径：报案=FNOL 事故告知事件，赔案=赔付处理单元）：新建 t_claim_report（事故维度，含 policy_no/plan_id/insured_id_hash/claim_type/out_insure_time/plan_version，状态只两值 REPORTED/CLOSED）承载报案号 report_no；t_claim_case 增加 report_id 单向引用并收紧为 NOT NULL；存量回填 id=claim.id、report_no=CONCAT('RP',SUBSTRING(claim_no,3))、report_id=claim.id（前缀不参与校验位计算，故 CL→RP 改写后校验位仍合法，纯 SQL 即可）。幂等 information_schema 判定 + 前置同名异形表零行形状断言（CREATE TABLE IF NOT EXISTS 对形状不符是静默 no-op）+ NULL 前置探测再收紧 NOT NULL + 6 条终态断言（无无主赔案/无悬空引用/列已 NOT NULL/uk_report_no 列序/无重复/前缀全 RP）。bone-init.sql、模块参考态 V25 与契约 §9.3.1/§9.5 同批。"
     }
   ],
   "ordinalConflicts": [

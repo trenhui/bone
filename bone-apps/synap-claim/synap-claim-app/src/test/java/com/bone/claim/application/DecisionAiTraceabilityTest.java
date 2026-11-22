@@ -208,6 +208,7 @@ class DecisionAiTraceabilityTest {
         ClaimCase.draft(
             CLAIM_ID,
             TENANT_ID,
+            9001L,
             "P-1",
             7L,
             "hash-1",

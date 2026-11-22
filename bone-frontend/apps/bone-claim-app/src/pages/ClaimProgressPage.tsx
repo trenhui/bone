@@ -1,4 +1,5 @@
-import { useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Button,
@@ -13,10 +14,16 @@ import {
   Typography,
   message,
 } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { PageHeader } from '../components/PageHeader';
 import { PolicyNoLink } from '../components/PolicyNoLink';
-import { claimApi, type ClaimWithItemsProjection } from '../services/claimApi';
+import {
+  claimApi,
+  type ClaimReportCaseBrief,
+  type ClaimReportDetail,
+  type ClaimStatusName,
+  type ClaimWithItemsProjection,
+} from '../services/claimApi';
 import { claimStatusMeta } from '../services/claimStatus';
 import { resolveErrorCode } from '@bone/shared-utils';
 import { MoneyText } from '../components/Money';
@@ -47,12 +54,24 @@ const STAGE_LABEL: Record<string, string> = {
  */
 
 export function ClaimProgressPage(): ReactElement {
-  const [claimIdText, setClaimIdText] = useState('');
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [claimIdText, setClaimIdText] = useState(() => searchParams.get('claimId') ?? '');
   const [rows, setRows] = useState<ClaimWithItemsProjection[] | null>(null);
   const [loading, setLoading] = useState(false);
+  /**
+   * 同案赔案（同一报案下的其它赔案）。
+   *
+   * <p>为什么不塞进主查询返回：报案是「事故」维度、赔案是「赔付」维度，一个详情页要同时展示两层。
+   * 后端刻意不把同案清单拼进赔案详情（那会让每行明细都重复携带整份清单），故这里二次拉取。
+   * 拉不到不影响赔案本身的展示——同案清单是增强信息，不是主数据。
+   */
+  const [report, setReport] = useState<ClaimReportDetail | null>(null);
+  const [reportLoading, setReportLoading] = useState(false);
 
-  const search = async () => {
-    const idText = claimIdText.trim();
+  /** 按案件 ID 查询（同案清单里点「查看」也走这条路径，避免两套查询逻辑漂移）。 */
+  const runSearch = useCallback(async (rawId: string) => {
+    const idText = rawId.trim();
     /**
      * 只做「非空 + 纯数字」校验，**不要**转 Number 判大小。
      * 案件 ID 是雪花 ID（19 位），超出 `Number.MAX_SAFE_INTEGER`，`Number('1846...')` 会静默丢精度；
@@ -77,11 +96,53 @@ export function ClaimProgressPage(): ReactElement {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const search = useCallback(() => {
+    void runSearch(claimIdText);
+  }, [claimIdText, runSearch]);
 
   const head = rows?.[0];
   const currentStageIndex = head ? STAGE_FLOW.indexOf(head.stage) : -1;
   const items = rows?.filter((r) => r.itemId !== null) ?? [];
+
+  /**
+   * 从深链进入时自动查询（`?claimId=`）——追加赔案成功后要能一跳回到原赔案，
+   * 而不是让用户再手抄一次 19 位雪花 ID。
+   */
+  useEffect(() => {
+    if (searchParams.get('claimId')) {
+      void runSearch(searchParams.get('claimId') ?? '');
+    }
+    // 只认首次挂载时的参数：runSearch 是稳定引用，重复执行会变成「每次渲染都查询」
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** 赔案变了就重新取它的报案（报案号可能为空：回填未完成的历史赔案）。 */
+  useEffect(() => {
+    const reportNo = head?.reportNo;
+    if (!reportNo) {
+      setReport(null);
+      return;
+    }
+    let alive = true;
+    setReportLoading(true);
+    claimApi
+      .reportDetail(reportNo)
+      .then((resp) => {
+        if (alive) setReport(resp?.data ?? null);
+      })
+      .catch(() => {
+        // 同案清单是增强信息：查不到（权限/数据未回填）时静默降级，不能让整页报错
+        if (alive) setReport(null);
+      })
+      .finally(() => {
+        if (alive) setReportLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [head?.reportNo]);
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: 24 }}>
@@ -115,7 +176,19 @@ export function ClaimProgressPage(): ReactElement {
           )}
           <Card title="案件信息" style={{ marginBottom: 16 }}>
             <Descriptions column={2} size="small">
-              <Descriptions.Item label="报案号">{head.claimNo}</Descriptions.Item>
+              {/*
+                两条都展示，且标签必须写准：这里原先只有一条「报案号」而值其实是 claim_no（赔案号），
+                属于「标签与数据不是同一个东西」——用户拿它去客服报「报案号」，客服按报案号查不到；
+                开发按标签理解字段，就会把赔案号当报案号写进对账脚本。拆分后两者都有真实来源。
+              */}
+              <Descriptions.Item label="赔案号">{head.claimNo}</Descriptions.Item>
+              <Descriptions.Item label="报案号">
+                {head.reportNo ? (
+                  <Typography.Text copyable={{ text: head.reportNo }}>{head.reportNo}</Typography.Text>
+                ) : (
+                  <Typography.Text type="secondary">未关联（历史数据未回填）</Typography.Text>
+                )}
+              </Descriptions.Item>
               <Descriptions.Item label="保单号"><PolicyNoLink policyNo={head.policyNo} /></Descriptions.Item>
               <Descriptions.Item label="当前状态">
                 <Tag color={claimStatusMeta(head.status).color}>{claimStatusMeta(head.status).label}</Tag>
@@ -170,6 +243,99 @@ export function ClaimProgressPage(): ReactElement {
               />
             )}
           </Card>
+
+          {/**
+           * 同案赔案清单 + 追加入口。
+           *
+           * 这一块是「报案 1 : 0..N 赔案」在界面上的落点：用户在一次事故里产生了第二张发票，
+           * 应该挂到同一条报案下追加赔案，而不是重新报案——重新报案会让两次就诊变成两个「事故」，
+           * 年度免赔、责任限额与对账都会被拆到两条互不相干的链上。
+           */}
+          {head.reportNo && (
+            <Card
+              title={`同案赔案（${report ? report.caseCount : '…'} 笔）`}
+              style={{ marginBottom: 16 }}
+              loading={reportLoading}
+              extra={
+                <Space>
+                  <Tag color={report?.status === 'CLOSED' ? 'default' : 'green'}>
+                    {report?.status === 'CLOSED' ? '报案已关闭' : '报案开放中'}
+                  </Tag>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    // 只有 REPORTED 才接受追加；CLOSED 是「不再受理新赔付」，不是「在办案件作废」，
+                    // 所以这里只禁用新增入口，不影响下方已在办赔案的查看。
+                    disabled={!report || report.status !== 'REPORTED'}
+                    onClick={() => navigate(`/submit?reportNo=${encodeURIComponent(head.reportNo ?? '')}`)}
+                  >
+                    追加赔案
+                  </Button>
+                </Space>
+              }
+            >
+              {report ? (
+                <>
+                  <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
+                    一次事故告知（报案）可对应多笔赔付（赔案）：同一次事故的多张发票、后续复诊追加，
+                    都应挂到同一个报案下；年度免赔与责任限额按同案累计。
+                  </Typography.Paragraph>
+                  <Table<ClaimReportCaseBrief>
+                    rowKey="claimId"
+                    dataSource={report.cases}
+                    size="small"
+                    pagination={false}
+                    locale={{ emptyText: <Empty description="该报案下暂无赔案" /> }}
+                    columns={[
+                      { title: '赔案号', dataIndex: 'claimNo' },
+                      {
+                        title: '状态',
+                        dataIndex: 'status',
+                        width: 120,
+                        render: (v: string) => {
+                          const meta = claimStatusMeta(v as ClaimStatusName);
+                          return <Tag color={meta.color}>{meta.label}</Tag>;
+                        },
+                      },
+                      {
+                        title: '申请金额',
+                        dataIndex: 'claimAmount',
+                        width: 120,
+                        render: (v: number | null) => <MoneyText value={v} />,
+                      },
+                      {
+                        title: '核定金额',
+                        dataIndex: 'approvedAmount',
+                        width: 120,
+                        render: (v: number | null) => <MoneyText value={v} unknownText="待核定" />,
+                      },
+                      { title: '受理时间', dataIndex: 'createdAt', width: 180 },
+                      {
+                        title: '操作',
+                        width: 90,
+                        render: (_, row) =>
+                          row.claimId === head.claimId ? (
+                            <Typography.Text type="secondary">当前</Typography.Text>
+                          ) : (
+                            <Button
+                              type="link"
+                              onClick={() => {
+                                setClaimIdText(row.claimId);
+                                void runSearch(row.claimId);
+                              }}
+                            >
+                              查看
+                            </Button>
+                          ),
+                      },
+                    ]}
+                  />
+                </>
+              ) : (
+                <Empty description="未取到同案赔案清单（报案可能尚未回填或无权查看）" />
+              )}
+            </Card>
+          )}
 
           <Card title={`费用明细（${items.length} 项）`}>
             {items.length === 0 ? (

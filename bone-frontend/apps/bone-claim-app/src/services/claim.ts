@@ -14,10 +14,12 @@
 import { createApiClient } from '@bone/shared-services';
 import type { ApiResponse } from '@bone/shared-types';
 import type {
+  AppendCaseReq,
   AutoApprovalOutcome,
   ClaimCaseResp,
   ClaimDecisionReq,
   ClaimHeadProjection,
+  ClaimReportDetail,
   ClaimStatusName,
   ClaimWithItemsProjection,
   HangUpType,
@@ -67,6 +69,21 @@ export function stableClaimActionKey(
 ): string {
   const parts = [claimId, action, status].filter((v): v is string => Boolean(v && v.trim()));
   return parts.length >= 2 ? `claim:${parts.join('|')}` : newIdempotencyKey();
+}
+
+/**
+ * 追加赔案幂等键：报案号 + 票据代码/号码 + 明细金额合计。
+ *
+ * <p>为什么不用 UUID 兜底：追加赔案是「同一事故第二笔赔付」，网络超时后的重试若不换键，
+ * 后端幂等表（uk_tenant_idem）能直接去重；换键就等于关掉幂等，用户点两次会真的多赔一笔。
+ * 明细金额合计进键，是为了让「同一个案子补录了更多明细后再次提交」得到新键（那是另一笔业务）。
+ */
+export function stableAppendCaseKey(reportNo: string, req: AppendCaseReq): string {
+  const total = (req.items ?? []).reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
+  const parts = [reportNo, req.invoiceCode, req.invoiceNo, total.toFixed(2)].filter((v): v is string =>
+    Boolean(v && v.trim()),
+  );
+  return parts.length >= 2 ? `claim:append:${parts.join('|')}` : newIdempotencyKey();
 }
 
 export const claimApi = {
@@ -180,5 +197,33 @@ export const claimApi = {
       ? { 'X-Hangup-Action': 'HANG_UP', 'X-Hangup-Type': type }
       : { 'X-Hangup-Action': 'RESUME' };
     return client.post<never, ApiResponse<void>>(`/${claimId}/hangup`, undefined, { headers });
+  },
+
+  /**
+   * 报案详情（一次事故告知 + 同案赔案清单）。
+   *
+   * <p>入参是**报案号**（RP 前缀），不是赔案号：二者是不同命名空间，拿赔案号来查会在后端按号查不到
+   * 并返回 404（`SC_CLAIM_REPORT_NOT_FOUND`）。UI 上的入口必须从赔案详情的 `reportNo` 取。
+   */
+  reportDetail(reportNo: string): Promise<ApiResponse<ClaimReportDetail>> {
+    return client.get<never, ApiResponse<ClaimReportDetail>>(`/reports/${encodeURIComponent(reportNo)}`);
+  },
+
+  /**
+   * 在既有报案下追加赔案（201；带 Idempotency-Key）。
+   *
+   * <p>保单/计划/被保人/出险时间不在请求体里——它们从报案继承。传了会被后端按
+   * `SC_CLAIM_REPORT_CONTEXT_MISMATCH` 拒收（400），因为「允许请求覆盖」等于「允许把 A 保单的赔付挂到 B 事故上」。
+   */
+  appendCase(
+    reportNo: string,
+    req: AppendCaseReq,
+    idempotencyKey = stableAppendCaseKey(reportNo, req),
+  ): Promise<ApiResponse<ClaimCaseResp>> {
+    return client.post<never, ApiResponse<ClaimCaseResp>>(
+      `/reports/${encodeURIComponent(reportNo)}/cases`,
+      req,
+      { headers: { 'Idempotency-Key': idempotencyKey } },
+    );
   },
 };

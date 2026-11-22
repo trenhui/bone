@@ -666,6 +666,9 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_INSPECTION_ACTION_INVALID` | 400 | 抽检处置入参非法：结论非 PASS/REJECT/BACK，或打回（BACK）未填原因；请求内容不合法故 400，写入期拒绝而非静默登记 |
 | `SC_CLAIM_EVIDENCE_UNCLEAR_BLOCKS_LOCK` | 422 | 证据集含不清晰/不完整影像，阻断锁定进入理算：请求合法、案件状态允许，缺的是「所有影像可入理算」事实前提；写入期硬拒避免「看图不清却已锁定出金」，明细（哪几张 UNCLEAR/INCOMPLETE）随 detail 返回供前端定位 |
 | `SC_CLAIM_AI_GATE_BLOCKED` | 422 | AI 能力就绪闸门未通过，自动通过被守门拦截转人工：请求合法，是部署态闸门/写开关前提不成立；fail-closed 绝不因展示层绿放行资金，blocker 明细随 detail 返回 |
+| `SC_CLAIM_REPORT_NOT_FOUND` | 404 | 报案不存在或不可见（与 `SC_CLAIM_NOT_FOUND` 同口径的租户隔离 404，防枚举）。报案与赔案拆分后二者是不同命名空间，**不能**用赔案号查报案 —— 前缀不匹配在入参校验即拒，本码只表达「号合法但查无此案」 |
+| `SC_CLAIM_REPORT_CLOSED` | 422 | 报案已关闭，不再受理新赔案：请求合法、报案号也存在，缺的是「该案仍可追加」这一前提（报案状态 CLOSED）。422 而非 404 —— 资源在，是不允许这个动作；文案须带当前状态，否则用户会以为传错号 |
+| `SC_CLAIM_REPORT_CONTEXT_MISMATCH` | 400 | 追加赔案的请求试图覆盖事故维度（保单号/计划/被保人/出险时间）：这些值一律从报案继承，允许覆盖等于允许把 A 保单的赔付挂到 B 事故上。400 而非 422 —— 请求内容本身不合法（传了不该传的字段），detail 点名字段 |
 
 ---
 

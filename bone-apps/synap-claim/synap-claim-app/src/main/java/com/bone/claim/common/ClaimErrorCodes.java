@@ -14,6 +14,23 @@ public final class ClaimErrorCodes {
   /** 案件不存在或不可见（租户隔离下的统一 404 语义，防枚举）。 */
   public static final String CLAIM_NOT_FOUND = "SC_CLAIM_NOT_FOUND";
 
+  /** 报案不存在或不可见（同上 404 语义：跨租户同号不区分「不存在」与「无权」）。 */
+  public static final String CLAIM_REPORT_NOT_FOUND = "SC_CLAIM_REPORT_NOT_FOUND";
+
+  /**
+   * 报案已关闭，不再受理新赔案。
+   *
+   * <p>422 而非 409：请求合法、操作人有权限，是「该报案已停止受理新赔付」这一业务前提不成立。 已立案的赔案不受影响——关闭报案拦的是「追加」，不是把在办案件卡死。
+   */
+  public static final String CLAIM_REPORT_CLOSED = "SC_CLAIM_REPORT_CLOSED";
+
+  /**
+   * 追加赔案的请求体携带了保单维度字段（保单号/计划/被保人/出险时间）。
+   *
+   * <p>400 而非静默忽略：这些字段一律从报案继承。若静默忽略，调用方会以为「我传了新保单号、覆盖成功了」， 实际赔付仍挂在原保单上——这种「看着生效、其实没生效」比报错危险得多。
+   */
+  public static final String CLAIM_REPORT_CONTEXT_MISMATCH = "SC_CLAIM_REPORT_CONTEXT_MISMATCH";
+
   /** 状态冲突（当前状态不允许该动作，§6.2 合法转换表）。 */
   public static final String CLAIM_STATUS_CONFLICT = "SC_CLAIM_STATUS_CONFLICT";
 

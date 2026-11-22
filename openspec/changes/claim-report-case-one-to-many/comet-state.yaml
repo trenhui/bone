@@ -1,0 +1,1755 @@
+# comet-execution: managed-run
+change_id: 5318e673-f073-475a-838b-1610b5281f92
+workflow: full
+language: zh-CN
+phase: build
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: direct
+review_mode: standard
+isolation: worktree
+verify_mode: null
+auto_transition: true
+base_ref: 2a2e40134af620d0ac10697c9bdb85b1fe407a5a
+design_doc: openspec/changes/claim-report-case-one-to-many/design.md
+plan: docs/superpowers/plans/claim-report-case-one-to-many.md
+verify_result: pending
+verify_failures: 0
+verification_report: null
+branch_status: pending
+created_at: 2026-11-22
+verified_at: null
+archive_confirmation: null
+archived: false
+bound_branch: comet/claim-report-case-one-to-many
+direct_override: false
+handoff_context: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+handoff_hash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v1
+  hash: dbc9baadf4b84d4fd6c990b1179bcae1ba1e951ac02dabf99361460d91a0aa2f
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: claim-report-case-one-to-many
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    definitionHashes:
+      '["comet-classic-full","1"]': 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    initialStateHash: 7e072a86c9476a6d81bab371685add1bd7b59b518e6a056f0adeda0dbaa9f998
+    input:
+      change: claim-report-case-one-to-many
+      changeDir: openspec/changes/claim-report-case-one-to-many
+      workspaceBaseline:
+        ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+    state:
+      archiveConfirmation: null
+      archived: false
+      autoTransition: true
+      baseRef: 2a2e40134af620d0ac10697c9bdb85b1fe407a5a
+      boundBranch: comet/claim-report-case-one-to-many
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 2
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-22
+      designDoc: openspec/changes/claim-report-case-one-to-many/design.md
+      directOverride: false
+      handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+      handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+      isolation: worktree
+      language: zh-CN
+      phase: build
+      plan: docs/superpowers/plans/claim-report-case-one-to-many.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: direct
+      verificationReport: null
+      verifiedAt: null
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pending
+      workflow: full
+    status: running
+    sequence: 15
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-a7389ed890267641dc2019c9dc92619c392cac29fdacdadca784fcb9b75f87fc
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-report-case-one-to-many:1
+        input:
+          input:
+            change: claim-report-case-one-to-many
+            changeDir: openspec/changes/claim-report-case-one-to-many
+            workspaceBaseline:
+              ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+          outputs: {}
+        inputHash: f1ad0944e6cec02594f7dbb6ec8a9177dfcaeb3cfd5cfd3897b739b340145b3b
+        outcome:
+          actionId: claim-report-case-one-to-many:1
+          attempt: 1
+          claimToken: portable-a7389ed890267641dc2019c9dc92619c392cac29fdacdadca784fcb9b75f87fc
+          inputHash: f1ad0944e6cec02594f7dbb6ec8a9177dfcaeb3cfd5cfd3897b739b340145b3b
+          outcomeId: b5e50026-5ba0-4d98-9d6e-8986ad1359a8
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: ce8f4d068e0de6a6b1934e63fc21b6051c7f5952d4ae41af92bee54feb2b9d90
+            outcomeId: b5e50026-5ba0-4d98-9d6e-8986ad1359a8
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-report-case-one-to-many
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-d15bc5d549895e524af4df200b195e0a6a798051c2bc347a0df64331b8fde4ef
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-report-case-one-to-many:4
+        input:
+          input:
+            change: claim-report-case-one-to-many
+            changeDir: openspec/changes/claim-report-case-one-to-many
+            workspaceBaseline:
+              ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+                    ref: openspec/changes/claim-report-case-one-to-many
+            full.open.evidence:
+              contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+              ref: openspec/changes/claim-report-case-one-to-many
+        inputHash: 48ce4561a958bab481b21ffd93750bb691d962bec38702ee1f8815fbe26d57fc
+        outcome:
+          actionId: claim-report-case-one-to-many:4
+          attempt: 1
+          claimToken: portable-d15bc5d549895e524af4df200b195e0a6a798051c2bc347a0df64331b8fde4ef
+          inputHash: 48ce4561a958bab481b21ffd93750bb691d962bec38702ee1f8815fbe26d57fc
+          outcomeId: 758ff5b9-a3e9-43e9-b3d5-228d61541628
+          output:
+            contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4b0507d28dd7decb6c758981f034e0d2f67adc9053c1fe255bc72732e30baaa9
+            outcomeId: 758ff5b9-a3e9-43e9-b3d5-228d61541628
+        reconciliations: []
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-report-case-one-to-many
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-088979799a49dac3df9ed67fee703eb231ddb4c964a8fd6e74b4ec3f72637830
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-report-case-one-to-many:5
+        input:
+          input:
+            change: claim-report-case-one-to-many
+            changeDir: openspec/changes/claim-report-case-one-to-many
+            workspaceBaseline:
+              ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+                    ref: openspec/changes/claim-report-case-one-to-many
+            full.open.evidence:
+              contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+              ref: openspec/changes/claim-report-case-one-to-many
+            full.open.revalidate:
+              contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+        inputHash: ccb7848f9b4cee955d62f83d4860f158ce0d50be32a9041d5a0ee94e483eab27
+        outcome:
+          actionId: claim-report-case-one-to-many:5
+          attempt: 1
+          claimToken: portable-088979799a49dac3df9ed67fee703eb231ddb4c964a8fd6e74b4ec3f72637830
+          inputHash: ccb7848f9b4cee955d62f83d4860f158ce0d50be32a9041d5a0ee94e483eab27
+          outcomeId: 8039b172-8eb0-465e-ac5e-8929e94ca35b
+          output: {}
+          status: failed
+          summary: propose-design 在 Runtime 写锁超时（Timed out waiting for file lock）后中止，未生成
+            handoff 包与提案哈希
+        protocolVersion: 1
+        receipts:
+          - hash: d4c4cddb065e61fb990ce3eba35ef05fdc1714b6fcc0659251868b47f54a5078
+            outcomeId: 8039b172-8eb0-465e-ac5e-8929e94ca35b
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-report-case-one-to-many
+        status: failed
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-work-continuation
+          token: portable-0197ea29dc7a396f8a5f503184756452c62c8791b0d001f31e4092553734a306
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-report-case-one-to-many:6
+        input:
+          activation:
+            expectedRevision: 9
+            fromPhase: design
+            interruptedActionId: claim-report-case-one-to-many:5
+          input:
+            change: claim-report-case-one-to-many
+            changeDir: openspec/changes/claim-report-case-one-to-many
+            workspaceBaseline:
+              ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+          outputs: {}
+        inputHash: 52f41e425764871ce4ea0ff54389be0fec07c67953b95991f4ad1eca84b02ef9
+        outcome:
+          actionId: claim-report-case-one-to-many:6
+          attempt: 1
+          claimToken: portable-0197ea29dc7a396f8a5f503184756452c62c8791b0d001f31e4092553734a306
+          inputHash: 52f41e425764871ce4ea0ff54389be0fec07c67953b95991f4ad1eca84b02ef9
+          outcomeId: claim-report-case-one-to-many:6:1:executor-result
+          output:
+            interruptedActionId: claim-report-case-one-to-many:5
+            resumeStepId: full.design.handoff
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 2e169f3328e6e985237fc1e0507c97b16098e7f1b459b7b26a2105c2e4f7e367
+            outcomeId: claim-report-case-one-to-many:6:1:executor-result
+        reconciliations: []
+        ref: classic-work-continuation
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-report-case-one-to-many
+        status: succeeded
+        stepId: classic.resume-work
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-1c97a7297fbde9caa7da0cc0d43bcc07aa69df606a31d6632c255719f030fcd0
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-report-case-one-to-many:7
+        input:
+          activation:
+            interruptedActionId: claim-report-case-one-to-many:5
+            summary: Continue preserved partial work; do not repeat completed side effects.
+          input:
+            change: claim-report-case-one-to-many
+            changeDir: openspec/changes/claim-report-case-one-to-many
+            workspaceBaseline:
+              ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+          outputs:
+            classic.resume-work:
+              interruptedActionId: claim-report-case-one-to-many:5
+              resumeStepId: full.design.handoff
+        inputHash: 5419772682e634a4529bf4ee7442b5ccd941a8d0247d2db4f64eb03b2fc84588
+        outcome:
+          actionId: claim-report-case-one-to-many:7
+          attempt: 1
+          claimToken: portable-1c97a7297fbde9caa7da0cc0d43bcc07aa69df606a31d6632c255719f030fcd0
+          inputHash: 5419772682e634a4529bf4ee7442b5ccd941a8d0247d2db4f64eb03b2fc84588
+          outcomeId: a64df0cd-25ce-45b4-a1b0-acedf71947b3
+          output:
+            handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+            handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+            proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+              单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+              CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+              表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+              /api/v1/claims/reports/{reportNo}/cases 与 GET
+              /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+              id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+              条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+              模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+              表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+            requirementsEvidence:
+              contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+              ref: openspec/changes/claim-report-case-one-to-many
+            sourceEvidence:
+              contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+              ref: openspec/changes/claim-report-case-one-to-many
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: e90adb9ab369bcaaa4a04db62980d12ea602d379036adaf8d07a1abae8d6ba26
+            outcomeId: a64df0cd-25ce-45b4-a1b0-acedf71947b3
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-report-case-one-to-many
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-af8c7d9381dcea7009eb31f53d42ae9cf15b8ef3d26f861720b1401077ba03ff
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-report-case-one-to-many:9
+        input:
+          input:
+            change: claim-report-case-one-to-many
+            changeDir: openspec/changes/claim-report-case-one-to-many
+            workspaceBaseline:
+              ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+          outputs:
+            classic.resume-work:
+              interruptedActionId: claim-report-case-one-to-many:5
+              resumeStepId: full.design.handoff
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+                    handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+                    proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                      单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32
+                      内核（校验位只覆盖日期+载荷，故回填 CL->RP
+                      仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                      表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增
+                      POST /api/v1/claims/reports/{reportNo}/cases 与 GET
+                      /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                      id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                      条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                      模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                      表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+                    requirementsEvidence:
+                      contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                      ref: openspec/changes/claim-report-case-one-to-many
+                    sourceEvidence:
+                      contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                      ref: openspec/changes/claim-report-case-one-to-many
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+              handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+              proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+                CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+                /api/v1/claims/reports/{reportNo}/cases 与 GET
+                /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+              requirementsEvidence:
+                contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                ref: openspec/changes/claim-report-case-one-to-many
+              sourceEvidence:
+                contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                ref: openspec/changes/claim-report-case-one-to-many
+        inputHash: a116ccb8b4147e34dc8f0209481186f4d39abe6c1800b3c2b71c86f5c29626cb
+        outcome:
+          actionId: claim-report-case-one-to-many:9
+          attempt: 1
+          claimToken: portable-af8c7d9381dcea7009eb31f53d42ae9cf15b8ef3d26f861720b1401077ba03ff
+          inputHash: a116ccb8b4147e34dc8f0209481186f4d39abe6c1800b3c2b71c86f5c29626cb
+          outcomeId: 94a2bcce-cb7b-4af0-aaea-d29e5a25df5d
+          output:
+            designDoc: openspec/changes/claim-report-case-one-to-many/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: ee0e127f82b51481a0e5a854ef44a8dc14378249437c93d9c7f107a49bf6d2ac
+            outcomeId: 94a2bcce-cb7b-4af0-aaea-d29e5a25df5d
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-report-case-one-to-many
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-8f94cd939682909fbf8fd8a17f47191c29e79fcb2b349954e94ff72049d4c1d1
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-report-case-one-to-many:11
+        input:
+          input:
+            change: claim-report-case-one-to-many
+            changeDir: openspec/changes/claim-report-case-one-to-many
+            workspaceBaseline:
+              ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+          outputs:
+            classic.resume-work:
+              interruptedActionId: claim-report-case-one-to-many:5
+              resumeStepId: full.design.handoff
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+                    handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+                    proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                      单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32
+                      内核（校验位只覆盖日期+载荷，故回填 CL->RP
+                      仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                      表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增
+                      POST /api/v1/claims/reports/{reportNo}/cases 与 GET
+                      /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                      id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                      条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                      模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                      表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+                    requirementsEvidence:
+                      contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                      ref: openspec/changes/claim-report-case-one-to-many
+                    sourceEvidence:
+                      contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                      ref: openspec/changes/claim-report-case-one-to-many
+            full.design.document:
+              designDoc: openspec/changes/claim-report-case-one-to-many/design.md
+            full.design.evidence:
+              contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+              ref: openspec/changes/claim-report-case-one-to-many/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+              handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+              proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+                CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+                /api/v1/claims/reports/{reportNo}/cases 与 GET
+                /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+              requirementsEvidence:
+                contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                ref: openspec/changes/claim-report-case-one-to-many
+              sourceEvidence:
+                contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                ref: openspec/changes/claim-report-case-one-to-many
+        inputHash: b3fba6e6d587fa7660ea91c4f5b0d88632a740562463b8505a1ce34c22612b6c
+        outcome:
+          actionId: claim-report-case-one-to-many:11
+          attempt: 1
+          claimToken: portable-8f94cd939682909fbf8fd8a17f47191c29e79fcb2b349954e94ff72049d4c1d1
+          inputHash: b3fba6e6d587fa7660ea91c4f5b0d88632a740562463b8505a1ce34c22612b6c
+          outcomeId: 0584148a-4ede-4dcf-a7aa-e0c1b1cca865
+          output:
+            boundBranch: comet/claim-report-case-one-to-many
+            buildMode: autonomous
+            directOverride: false
+            isolation: worktree
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: direct
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 2cd5d78e4208fa9004c04bc507ad0118db36c798e17428ed9557bb7b3671f57d
+            outcomeId: 0584148a-4ede-4dcf-a7aa-e0c1b1cca865
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-report-case-one-to-many
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-540f8e59b6bdd39eea2f9eabcfe7ef9efeefb5063b0456eb753ae06dac95bc7e
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-report-case-one-to-many:13
+        input:
+          input:
+            change: claim-report-case-one-to-many
+            changeDir: openspec/changes/claim-report-case-one-to-many
+            workspaceBaseline:
+              ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+          outputs:
+            classic.resume-work:
+              interruptedActionId: claim-report-case-one-to-many:5
+              resumeStepId: full.design.handoff
+            full.build.configure:
+              boundBranch: comet/claim-report-case-one-to-many
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: direct
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.build.configure:
+                    boundBranch: comet/claim-report-case-one-to-many
+                    buildMode: autonomous
+                    directOverride: false
+                    isolation: worktree
+                    reviewMode: standard
+                    subagentDispatch: null
+                    tddMode: direct
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+                    handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+                    proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                      单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32
+                      内核（校验位只覆盖日期+载荷，故回填 CL->RP
+                      仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                      表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增
+                      POST /api/v1/claims/reports/{reportNo}/cases 与 GET
+                      /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                      id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                      条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                      模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                      表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+                    requirementsEvidence:
+                      contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                      ref: openspec/changes/claim-report-case-one-to-many
+                    sourceEvidence:
+                      contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                      ref: openspec/changes/claim-report-case-one-to-many
+            full.design.document:
+              designDoc: openspec/changes/claim-report-case-one-to-many/design.md
+            full.design.evidence:
+              contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+              ref: openspec/changes/claim-report-case-one-to-many/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+              handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+              proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+                CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+                /api/v1/claims/reports/{reportNo}/cases 与 GET
+                /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+              requirementsEvidence:
+                contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                ref: openspec/changes/claim-report-case-one-to-many
+              sourceEvidence:
+                contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                ref: openspec/changes/claim-report-case-one-to-many
+        inputHash: 3ca620dcaa061346849d7544603866b0a39cdf6c60d6efae92601da9eff72d14
+        outcome:
+          actionId: claim-report-case-one-to-many:13
+          attempt: 1
+          claimToken: portable-540f8e59b6bdd39eea2f9eabcfe7ef9efeefb5063b0456eb753ae06dac95bc7e
+          inputHash: 3ca620dcaa061346849d7544603866b0a39cdf6c60d6efae92601da9eff72d14
+          outcomeId: 45a11f42-fbed-403f-b745-1cc428b63822
+          output:
+            designEvidence:
+              contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+              ref: openspec/changes/claim-report-case-one-to-many/design.md
+            plan: docs/superpowers/plans/claim-report-case-one-to-many.md
+            planEvidence:
+              contentHash: e84bc7b63f19fdfbbf9db08b5c8efed531d6e6cac0b41c0a29c700a2cc7996db
+              ref: docs/superpowers/plans/claim-report-case-one-to-many.md
+            taskRevision: 815e9bc28e9d3f5029a41bcbdc0366defbddc77748c7a7891d8e98650521aa1d
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: e11aafa8f9053089091d8c89e1e391e468f12306198a522d223ca6563de086cd
+            outcomeId: 45a11f42-fbed-403f-b745-1cc428b63822
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-report-case-one-to-many
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        id: claim-report-case-one-to-many:15
+        input:
+          input:
+            change: claim-report-case-one-to-many
+            changeDir: openspec/changes/claim-report-case-one-to-many
+            workspaceBaseline:
+              ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+          outputs:
+            classic.resume-work:
+              interruptedActionId: claim-report-case-one-to-many:5
+              resumeStepId: full.design.handoff
+            full.build.configure:
+              boundBranch: comet/claim-report-case-one-to-many
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: direct
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.build.configure:
+                    boundBranch: comet/claim-report-case-one-to-many
+                    buildMode: autonomous
+                    directOverride: false
+                    isolation: worktree
+                    reviewMode: standard
+                    subagentDispatch: null
+                    tddMode: direct
+            full.build.plan:
+              designEvidence:
+                contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+                ref: openspec/changes/claim-report-case-one-to-many/design.md
+              plan: docs/superpowers/plans/claim-report-case-one-to-many.md
+              planEvidence:
+                contentHash: e84bc7b63f19fdfbbf9db08b5c8efed531d6e6cac0b41c0a29c700a2cc7996db
+                ref: docs/superpowers/plans/claim-report-case-one-to-many.md
+              taskRevision: 815e9bc28e9d3f5029a41bcbdc0366defbddc77748c7a7891d8e98650521aa1d
+            full.build.plan.evidence:
+              contentHash: e84bc7b63f19fdfbbf9db08b5c8efed531d6e6cac0b41c0a29c700a2cc7996db
+              ref: docs/superpowers/plans/claim-report-case-one-to-many.md
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+                    handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+                    proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                      单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32
+                      内核（校验位只覆盖日期+载荷，故回填 CL->RP
+                      仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                      表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增
+                      POST /api/v1/claims/reports/{reportNo}/cases 与 GET
+                      /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                      id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                      条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                      模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                      表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+                    requirementsEvidence:
+                      contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                      ref: openspec/changes/claim-report-case-one-to-many
+                    sourceEvidence:
+                      contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                      ref: openspec/changes/claim-report-case-one-to-many
+            full.design.document:
+              designDoc: openspec/changes/claim-report-case-one-to-many/design.md
+            full.design.evidence:
+              contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+              ref: openspec/changes/claim-report-case-one-to-many/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+              handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+              proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+                CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+                /api/v1/claims/reports/{reportNo}/cases 与 GET
+                /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+              requirementsEvidence:
+                contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                ref: openspec/changes/claim-report-case-one-to-many
+              sourceEvidence:
+                contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                ref: openspec/changes/claim-report-case-one-to-many
+        inputHash: 217a7b274c33a8cdee0e1044b3c3d46fabacdf9b87fa6b74b8a0561d211ec87a
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-report-case-one-to-many
+        status: pending
+        stepId: full.build.execute
+        type: invoke_skill
+    commands:
+      - id: 3ead481c63d8d94cac3e3f11b129e22916ae6f0449334854b6001a4c7cbcd2a8
+        name: continue-work
+        inputHash: f9b5a4bdc7ce903f5106393847248949bb1a5885941b41e66b3458ebd3a4095b
+        actionId: claim-report-case-one-to-many:6
+    actionContexts:
+      claim-report-case-one-to-many:1:
+        results: {}
+        sequence: 1
+      claim-report-case-one-to-many:11:
+        results:
+          classic.resume-work:
+            sequence: 6
+            value:
+              interruptedActionId: claim-report-case-one-to-many:5
+              resumeStepId: full.design.handoff
+          full.design.confirm:
+            sequence: 8
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+                    handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+                    proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                      单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32
+                      内核（校验位只覆盖日期+载荷，故回填 CL->RP
+                      仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                      表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增
+                      POST /api/v1/claims/reports/{reportNo}/cases 与 GET
+                      /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                      id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                      条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                      模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                      表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+                    requirementsEvidence:
+                      contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                      ref: openspec/changes/claim-report-case-one-to-many
+                    sourceEvidence:
+                      contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                      ref: openspec/changes/claim-report-case-one-to-many
+          full.design.document:
+            sequence: 9
+            value:
+              designDoc: openspec/changes/claim-report-case-one-to-many/design.md
+          full.design.evidence:
+            sequence: 10
+            value:
+              contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+              ref: openspec/changes/claim-report-case-one-to-many/design.md
+          full.design.handoff:
+            sequence: 7
+            value:
+              handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+              handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+              proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+                CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+                /api/v1/claims/reports/{reportNo}/cases 与 GET
+                /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+              requirementsEvidence:
+                contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                ref: openspec/changes/claim-report-case-one-to-many
+              sourceEvidence:
+                contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                ref: openspec/changes/claim-report-case-one-to-many
+        sequence: 11
+      claim-report-case-one-to-many:13:
+        results:
+          classic.resume-work:
+            sequence: 6
+            value:
+              interruptedActionId: claim-report-case-one-to-many:5
+              resumeStepId: full.design.handoff
+          full.build.configure:
+            sequence: 11
+            value:
+              boundBranch: comet/claim-report-case-one-to-many
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: direct
+          full.build.confirm:
+            sequence: 12
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.build.configure:
+                    boundBranch: comet/claim-report-case-one-to-many
+                    buildMode: autonomous
+                    directOverride: false
+                    isolation: worktree
+                    reviewMode: standard
+                    subagentDispatch: null
+                    tddMode: direct
+          full.design.confirm:
+            sequence: 8
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+                    handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+                    proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                      单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32
+                      内核（校验位只覆盖日期+载荷，故回填 CL->RP
+                      仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                      表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增
+                      POST /api/v1/claims/reports/{reportNo}/cases 与 GET
+                      /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                      id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                      条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                      模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                      表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+                    requirementsEvidence:
+                      contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                      ref: openspec/changes/claim-report-case-one-to-many
+                    sourceEvidence:
+                      contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                      ref: openspec/changes/claim-report-case-one-to-many
+          full.design.document:
+            sequence: 9
+            value:
+              designDoc: openspec/changes/claim-report-case-one-to-many/design.md
+          full.design.evidence:
+            sequence: 10
+            value:
+              contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+              ref: openspec/changes/claim-report-case-one-to-many/design.md
+          full.design.handoff:
+            sequence: 7
+            value:
+              handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+              handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+              proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+                CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+                /api/v1/claims/reports/{reportNo}/cases 与 GET
+                /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+              requirementsEvidence:
+                contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                ref: openspec/changes/claim-report-case-one-to-many
+              sourceEvidence:
+                contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                ref: openspec/changes/claim-report-case-one-to-many
+        sequence: 13
+      claim-report-case-one-to-many:15:
+        results:
+          classic.resume-work:
+            sequence: 6
+            value:
+              interruptedActionId: claim-report-case-one-to-many:5
+              resumeStepId: full.design.handoff
+          full.build.configure:
+            sequence: 11
+            value:
+              boundBranch: comet/claim-report-case-one-to-many
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: direct
+          full.build.confirm:
+            sequence: 12
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.build.configure:
+                    boundBranch: comet/claim-report-case-one-to-many
+                    buildMode: autonomous
+                    directOverride: false
+                    isolation: worktree
+                    reviewMode: standard
+                    subagentDispatch: null
+                    tddMode: direct
+          full.build.plan:
+            sequence: 13
+            value:
+              designEvidence:
+                contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+                ref: openspec/changes/claim-report-case-one-to-many/design.md
+              plan: docs/superpowers/plans/claim-report-case-one-to-many.md
+              planEvidence:
+                contentHash: e84bc7b63f19fdfbbf9db08b5c8efed531d6e6cac0b41c0a29c700a2cc7996db
+                ref: docs/superpowers/plans/claim-report-case-one-to-many.md
+              taskRevision: 815e9bc28e9d3f5029a41bcbdc0366defbddc77748c7a7891d8e98650521aa1d
+          full.build.plan.evidence:
+            sequence: 14
+            value:
+              contentHash: e84bc7b63f19fdfbbf9db08b5c8efed531d6e6cac0b41c0a29c700a2cc7996db
+              ref: docs/superpowers/plans/claim-report-case-one-to-many.md
+          full.design.confirm:
+            sequence: 8
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+                    handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+                    proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                      单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32
+                      内核（校验位只覆盖日期+载荷，故回填 CL->RP
+                      仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                      表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增
+                      POST /api/v1/claims/reports/{reportNo}/cases 与 GET
+                      /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                      id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                      条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                      模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                      表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+                    requirementsEvidence:
+                      contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                      ref: openspec/changes/claim-report-case-one-to-many
+                    sourceEvidence:
+                      contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                      ref: openspec/changes/claim-report-case-one-to-many
+          full.design.document:
+            sequence: 9
+            value:
+              designDoc: openspec/changes/claim-report-case-one-to-many/design.md
+          full.design.evidence:
+            sequence: 10
+            value:
+              contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+              ref: openspec/changes/claim-report-case-one-to-many/design.md
+          full.design.handoff:
+            sequence: 7
+            value:
+              handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+              handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+              proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+                CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+                /api/v1/claims/reports/{reportNo}/cases 与 GET
+                /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+              requirementsEvidence:
+                contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                ref: openspec/changes/claim-report-case-one-to-many
+              sourceEvidence:
+                contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                ref: openspec/changes/claim-report-case-one-to-many
+        sequence: 15
+      claim-report-case-one-to-many:4:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+                    ref: openspec/changes/claim-report-case-one-to-many
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+              ref: openspec/changes/claim-report-case-one-to-many
+        sequence: 4
+      claim-report-case-one-to-many:5:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+                    ref: openspec/changes/claim-report-case-one-to-many
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+              ref: openspec/changes/claim-report-case-one-to-many
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+        sequence: 5
+      claim-report-case-one-to-many:6:
+        results: {}
+        sequence: 6
+      claim-report-case-one-to-many:7:
+        results:
+          classic.resume-work:
+            sequence: 6
+            value:
+              interruptedActionId: claim-report-case-one-to-many:5
+              resumeStepId: full.design.handoff
+        sequence: 7
+      claim-report-case-one-to-many:9:
+        results:
+          classic.resume-work:
+            sequence: 6
+            value:
+              interruptedActionId: claim-report-case-one-to-many:5
+              resumeStepId: full.design.handoff
+          full.design.confirm:
+            sequence: 8
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+                    handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+                    proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                      单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32
+                      内核（校验位只覆盖日期+载荷，故回填 CL->RP
+                      仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                      表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增
+                      POST /api/v1/claims/reports/{reportNo}/cases 与 GET
+                      /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                      id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                      条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                      模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                      表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+                    requirementsEvidence:
+                      contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                      ref: openspec/changes/claim-report-case-one-to-many
+                    sourceEvidence:
+                      contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                      ref: openspec/changes/claim-report-case-one-to-many
+          full.design.handoff:
+            sequence: 7
+            value:
+              handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+              handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+              proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+                CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+                /api/v1/claims/reports/{reportNo}/cases 与 GET
+                /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+              requirementsEvidence:
+                contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                ref: openspec/changes/claim-report-case-one-to-many
+              sourceEvidence:
+                contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                ref: openspec/changes/claim-report-case-one-to-many
+        sequence: 9
+    waits:
+      - id: claim-report-case-one-to-many:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: claim-report-case-one-to-many
+            changeDir: openspec/changes/claim-report-case-one-to-many
+            workspaceBaseline:
+              ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+              ref: openspec/changes/claim-report-case-one-to-many
+        proposalHash: e24cd7e9c1b7da6519c1660517f84bff231cc6f93d8f752c1541bfe3ffacf920
+        choices:
+          - approved
+          - rejected
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+              ref: openspec/changes/claim-report-case-one-to-many
+        decision:
+          id: classic-open-02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+          choice: approved
+          proposalHash: e24cd7e9c1b7da6519c1660517f84bff231cc6f93d8f752c1541bfe3ffacf920
+      - id: claim-report-case-one-to-many:8
+        stepId: full.design.confirm
+        sequence: 8
+        status: resolved
+        proposal:
+          input:
+            change: claim-report-case-one-to-many
+            changeDir: openspec/changes/claim-report-case-one-to-many
+            workspaceBaseline:
+              ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+              handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+              proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+                CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+                /api/v1/claims/reports/{reportNo}/cases 与 GET
+                /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+              requirementsEvidence:
+                contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                ref: openspec/changes/claim-report-case-one-to-many
+              sourceEvidence:
+                contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                ref: openspec/changes/claim-report-case-one-to-many
+        proposalHash: 1f825c759ad98a351a0c10f551648053137464c3ce1ae3634ea1d6885142b4d7
+        choices:
+          - approved
+          - rejected
+        results:
+          classic.resume-work:
+            sequence: 6
+            value:
+              interruptedActionId: claim-report-case-one-to-many:5
+              resumeStepId: full.design.handoff
+          full.design.handoff:
+            sequence: 7
+            value:
+              handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+              handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+              proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+                CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+                /api/v1/claims/reports/{reportNo}/cases 与 GET
+                /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+              requirementsEvidence:
+                contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                ref: openspec/changes/claim-report-case-one-to-many
+              sourceEvidence:
+                contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                ref: openspec/changes/claim-report-case-one-to-many
+        decision:
+          id: classic-design-1f825c759ad98a351a0c10f551648053137464c3ce1ae3634ea1d6885142b4d7-approved
+          choice: approved
+          proposalHash: 1f825c759ad98a351a0c10f551648053137464c3ce1ae3634ea1d6885142b4d7
+      - id: claim-report-case-one-to-many:12
+        stepId: full.build.confirm
+        sequence: 12
+        status: resolved
+        proposal:
+          input:
+            change: claim-report-case-one-to-many
+            changeDir: openspec/changes/claim-report-case-one-to-many
+            workspaceBaseline:
+              ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+          outputs:
+            full.build.configure:
+              boundBranch: comet/claim-report-case-one-to-many
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: direct
+        proposalHash: a306cac536f4a7f1392b20e4053b2e280e14fa5b32f549319e033c84b4a852a1
+        choices:
+          - approved
+          - rejected
+        results:
+          classic.resume-work:
+            sequence: 6
+            value:
+              interruptedActionId: claim-report-case-one-to-many:5
+              resumeStepId: full.design.handoff
+          full.build.configure:
+            sequence: 11
+            value:
+              boundBranch: comet/claim-report-case-one-to-many
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: direct
+          full.design.confirm:
+            sequence: 8
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+                    handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+                    proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                      单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32
+                      内核（校验位只覆盖日期+载荷，故回填 CL->RP
+                      仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                      表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增
+                      POST /api/v1/claims/reports/{reportNo}/cases 与 GET
+                      /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                      id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                      条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                      模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                      表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+                    requirementsEvidence:
+                      contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                      ref: openspec/changes/claim-report-case-one-to-many
+                    sourceEvidence:
+                      contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                      ref: openspec/changes/claim-report-case-one-to-many
+          full.design.document:
+            sequence: 9
+            value:
+              designDoc: openspec/changes/claim-report-case-one-to-many/design.md
+          full.design.evidence:
+            sequence: 10
+            value:
+              contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+              ref: openspec/changes/claim-report-case-one-to-many/design.md
+          full.design.handoff:
+            sequence: 7
+            value:
+              handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+              handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+              proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+                CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+                /api/v1/claims/reports/{reportNo}/cases 与 GET
+                /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+              requirementsEvidence:
+                contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                ref: openspec/changes/claim-report-case-one-to-many
+              sourceEvidence:
+                contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                ref: openspec/changes/claim-report-case-one-to-many
+        decision:
+          id: 16045b10-2158-4a68-8e7a-c0e934a1bcf9
+          choice: approved
+          proposalHash: a306cac536f4a7f1392b20e4053b2e280e14fa5b32f549319e033c84b4a852a1
+    evidenceWaits:
+      - id: claim-report-case-one-to-many:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+        receipt:
+          ref: openspec/changes/claim-report-case-one-to-many
+          contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+          submissionId: 06571944-7ab0-43f0-bf9a-9b7088c91f5f
+      - id: claim-report-case-one-to-many:10
+        stepId: full.design.evidence
+        sequence: 10
+        kind: classic-design-document
+        status: resolved
+        results:
+          classic.resume-work:
+            sequence: 6
+            value:
+              interruptedActionId: claim-report-case-one-to-many:5
+              resumeStepId: full.design.handoff
+          full.design.confirm:
+            sequence: 8
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+                    handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+                    proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                      单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32
+                      内核（校验位只覆盖日期+载荷，故回填 CL->RP
+                      仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                      表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增
+                      POST /api/v1/claims/reports/{reportNo}/cases 与 GET
+                      /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                      id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                      条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                      模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                      表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+                    requirementsEvidence:
+                      contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                      ref: openspec/changes/claim-report-case-one-to-many
+                    sourceEvidence:
+                      contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                      ref: openspec/changes/claim-report-case-one-to-many
+          full.design.document:
+            sequence: 9
+            value:
+              designDoc: openspec/changes/claim-report-case-one-to-many/design.md
+          full.design.handoff:
+            sequence: 7
+            value:
+              handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+              handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+              proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+                CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+                /api/v1/claims/reports/{reportNo}/cases 与 GET
+                /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+              requirementsEvidence:
+                contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                ref: openspec/changes/claim-report-case-one-to-many
+              sourceEvidence:
+                contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                ref: openspec/changes/claim-report-case-one-to-many
+        receipt:
+          ref: openspec/changes/claim-report-case-one-to-many/design.md
+          contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+          submissionId: 4d2454c4-8c45-4d75-9cc6-e8f4ec524792
+      - id: claim-report-case-one-to-many:14
+        stepId: full.build.plan.evidence
+        sequence: 14
+        kind: classic-build-plan
+        status: resolved
+        results:
+          classic.resume-work:
+            sequence: 6
+            value:
+              interruptedActionId: claim-report-case-one-to-many:5
+              resumeStepId: full.design.handoff
+          full.build.configure:
+            sequence: 11
+            value:
+              boundBranch: comet/claim-report-case-one-to-many
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: direct
+          full.build.confirm:
+            sequence: 12
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.build.configure:
+                    boundBranch: comet/claim-report-case-one-to-many
+                    buildMode: autonomous
+                    directOverride: false
+                    isolation: worktree
+                    reviewMode: standard
+                    subagentDispatch: null
+                    tddMode: direct
+          full.build.plan:
+            sequence: 13
+            value:
+              designEvidence:
+                contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+                ref: openspec/changes/claim-report-case-one-to-many/design.md
+              plan: docs/superpowers/plans/claim-report-case-one-to-many.md
+              planEvidence:
+                contentHash: e84bc7b63f19fdfbbf9db08b5c8efed531d6e6cac0b41c0a29c700a2cc7996db
+                ref: docs/superpowers/plans/claim-report-case-one-to-many.md
+              taskRevision: 815e9bc28e9d3f5029a41bcbdc0366defbddc77748c7a7891d8e98650521aa1d
+          full.design.confirm:
+            sequence: 8
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-report-case-one-to-many
+                  changeDir: openspec/changes/claim-report-case-one-to-many
+                  workspaceBaseline:
+                    ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+                    handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+                    proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                      单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32
+                      内核（校验位只覆盖日期+载荷，故回填 CL->RP
+                      仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                      表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增
+                      POST /api/v1/claims/reports/{reportNo}/cases 与 GET
+                      /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                      id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                      条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                      模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                      表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+                    requirementsEvidence:
+                      contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                      ref: openspec/changes/claim-report-case-one-to-many
+                    sourceEvidence:
+                      contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                      ref: openspec/changes/claim-report-case-one-to-many
+          full.design.document:
+            sequence: 9
+            value:
+              designDoc: openspec/changes/claim-report-case-one-to-many/design.md
+          full.design.evidence:
+            sequence: 10
+            value:
+              contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+              ref: openspec/changes/claim-report-case-one-to-many/design.md
+          full.design.handoff:
+            sequence: 7
+            value:
+              handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+              handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+              proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+                CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+                /api/v1/claims/reports/{reportNo}/cases 与 GET
+                /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+              requirementsEvidence:
+                contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                ref: openspec/changes/claim-report-case-one-to-many
+              sourceEvidence:
+                contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                ref: openspec/changes/claim-report-case-one-to-many
+        receipt:
+          ref: docs/superpowers/plans/claim-report-case-one-to-many.md
+          contentHash: e84bc7b63f19fdfbbf9db08b5c8efed531d6e6cac0b41c0a29c700a2cc7996db
+          submissionId: 31260418-102a-4fe3-ac11-76f2db3830b1
+    ready: []
+    joins: {}
+    outputs:
+      classic.resume-work:
+        sequence: 6
+        value:
+          interruptedActionId: claim-report-case-one-to-many:5
+          resumeStepId: full.design.handoff
+      full.build.configure:
+        sequence: 11
+        value:
+          boundBranch: comet/claim-report-case-one-to-many
+          buildMode: autonomous
+          directOverride: false
+          isolation: worktree
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: direct
+      full.build.confirm:
+        sequence: 12
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-report-case-one-to-many
+              changeDir: openspec/changes/claim-report-case-one-to-many
+              workspaceBaseline:
+                ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+            outputs:
+              full.build.configure:
+                boundBranch: comet/claim-report-case-one-to-many
+                buildMode: autonomous
+                directOverride: false
+                isolation: worktree
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: direct
+      full.build.plan:
+        sequence: 13
+        value:
+          designEvidence:
+            contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+            ref: openspec/changes/claim-report-case-one-to-many/design.md
+          plan: docs/superpowers/plans/claim-report-case-one-to-many.md
+          planEvidence:
+            contentHash: e84bc7b63f19fdfbbf9db08b5c8efed531d6e6cac0b41c0a29c700a2cc7996db
+            ref: docs/superpowers/plans/claim-report-case-one-to-many.md
+          taskRevision: 815e9bc28e9d3f5029a41bcbdc0366defbddc77748c7a7891d8e98650521aa1d
+      full.build.plan.evidence:
+        sequence: 14
+        value:
+          contentHash: e84bc7b63f19fdfbbf9db08b5c8efed531d6e6cac0b41c0a29c700a2cc7996db
+          ref: docs/superpowers/plans/claim-report-case-one-to-many.md
+      full.design.confirm:
+        sequence: 8
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-report-case-one-to-many
+              changeDir: openspec/changes/claim-report-case-one-to-many
+              workspaceBaseline:
+                ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+                handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+                proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+                  单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32
+                  内核（校验位只覆盖日期+载荷，故回填 CL->RP
+                  仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+                  表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+                  /api/v1/claims/reports/{reportNo}/cases 与 GET
+                  /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+                  id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+                  条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+                  模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+                  表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+                requirementsEvidence:
+                  contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+                  ref: openspec/changes/claim-report-case-one-to-many
+                sourceEvidence:
+                  contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+                  ref: openspec/changes/claim-report-case-one-to-many
+      full.design.document:
+        sequence: 9
+        value:
+          designDoc: openspec/changes/claim-report-case-one-to-many/design.md
+      full.design.evidence:
+        sequence: 10
+        value:
+          contentHash: 08625771bc68b0053c4de080929e902b900bff8d3e38a8bdb1e4cac61557f752
+          ref: openspec/changes/claim-report-case-one-to-many/design.md
+      full.design.handoff:
+        sequence: 7
+        value:
+          handoffContext: openspec/changes/claim-report-case-one-to-many/.comet/handoff/design-context.json
+          handoffHash: 83d1c8406eddebcb7d7a9a532a7454ad584d163807010560036a37fe116ab8a4
+          proposal: 方案：新建报案聚合 t_claim_report（report_no 全局唯一，RP 前缀），赔案通过 report_id
+            单向引用，报赔基数 1:0..N；两套编号共用 Feistel+Base32+Luhn32 内核（校验位只覆盖日期+载荷，故回填
+            CL->RP 仍合法）；幂等键保留在赔案，报案与首案同事务创建，冲突整事务回滚；报案状态只落 REPORTED/CLOSED
+            表达可否追加，赔付进度由赔案派生；追加赔案继承保单/计划/被保人/出险时间，请求体出现保单维度即 400；新增 POST
+            /api/v1/claims/reports/{reportNo}/cases 与 GET
+            /api/v1/claims/reports/{reportNo}；存量回填一条赔案一条报案（复用赔案
+            id，report_no=RP+claim_no[2:]），迁移幂等 + 5
+            条终态断言；前端详情页纠正赔案号标签并展示报案号与同案清单，追加入口复用报案页 ?reportNo=
+            模式。取舍：否决内嵌字段、级联子集合、幂等键搬移、迁移内实现 Feistel、独立 Modal
+            表单。风险：孤儿报案（同事务解决）、跨租户挂靠（应用层+终态断言）、发票唯一不可放松。Spec Patch：无。
+          requirementsEvidence:
+            contentHash: aa18df7bf6d6a7ac2b90c940f5d7b836fa590790d466e44f617576eab725a125
+            ref: openspec/changes/claim-report-case-one-to-many
+          sourceEvidence:
+            contentHash: c89cf851ab64c05453eafb6f02cac3b5d96f774940639e0622a9d23f8759a4bd
+            ref: openspec/changes/claim-report-case-one-to-many
+      full.open:
+        sequence: 1
+        value:
+          event: open-complete
+      full.open.confirm:
+        sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-report-case-one-to-many
+              changeDir: openspec/changes/claim-report-case-one-to-many
+              workspaceBaseline:
+                ref: 77c9b45f-91ab-4bb2-a3d0-487637da3e1a
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+                ref: openspec/changes/claim-report-case-one-to-many
+      full.open.evidence:
+        sequence: 2
+        value:
+          contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+          ref: openspec/changes/claim-report-case-one-to-many
+      full.open.revalidate:
+        sequence: 4
+        value:
+          contentHash: 02727cd5b81019b23ad396cd8cdf3acb649df67677b063501abcac1781379056
+    children: []
+    lineage: []
+  sourceRevision: 22
+  sourceHash: dab8aa20b65c0ac2185f764a991718f7369529d79f78421a122767992bc2e08b
+check_epoch: 2

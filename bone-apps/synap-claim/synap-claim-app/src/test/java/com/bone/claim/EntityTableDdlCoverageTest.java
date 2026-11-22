@@ -57,6 +57,12 @@ class EntityTableDdlCoverageTest {
   private static final Pattern VERSION_COLUMN =
       Pattern.compile("^\\s*`?version`?\\s", Pattern.MULTILINE);
 
+  /** {@code UNIQUE KEY name (col_a, col_b, ...)} —— 兼容反引号与多余空白。 */
+  private static final Pattern UNIQUE_KEY =
+      Pattern.compile(
+          "UNIQUE\\s+(?:KEY|INDEX)\\s+`?([A-Za-z0-9_]+)`?\\s*\\(([^)]*)\\)",
+          Pattern.CASE_INSENSITIVE);
+
   private static final int MIN_ENTITY_TABLES = 25;
   private static final int MIN_INIT_TABLES = 100;
 
@@ -124,6 +130,43 @@ class EntityTableDdlCoverageTest {
         .isEmpty();
   }
 
+  /**
+   * 报案 1:0..N 拆分后，<b>防重复赔付的唯一键不得被报案维度稀释</b>。
+   *
+   * <p><b>为什么这条必须有</b>：拆表最容易被顺手做的一件事，是把 {@code uk_tenant_invoice} 从 {@code (tenant_id,
+   * invoice_code, invoice_no, deleted)} 扩成含 {@code report_id}。语义上看起来更"贴合"新模型（发票属于某次报案），
+   * 实际上是<b>放开同一张发票在两个赔案下各赔一次</b>——唯一键只挡住同报案内的重复，跨报案的重复赔付全部放行，而且<b>没有任何用例会转红</b>：
+   * 内存替身不实现唯一键，这个缺口只在上线后以"同一张票赔了两次"的形式出现。
+   *
+   * <p>发票是<b>票据维度的全局事实</b>（一张票只能报一次），与"这次事故赔了几笔"是两个正交维度。故唯一键里出现 {@code report_id} 即判红。
+   */
+  @Test
+  @DisplayName("uk_tenant_invoice 不得含 report_id：发票唯一性是租户级事实，不随报案拆分而放宽")
+  void invoiceUniqueKeyIsNotScopedByReport() throws IOException {
+    Map<String, String> initTables = readInitTables();
+
+    String caseDdl = initTables.get("t_claim_case");
+    assertThat(caseDdl).as("bone-init.sql 里找不到 t_claim_case 建表 —— 解析失效会让本门禁恒绿").isNotNull();
+
+    Map<String, List<String>> uniqueKeys = readUniqueKeys(caseDdl);
+    assertThat(uniqueKeys).as("t_claim_case 没有任何 UNIQUE KEY —— 解析失效或唯一约束被整体删除").isNotEmpty();
+
+    List<String> invoiceKey = uniqueKeys.get("uk_tenant_invoice");
+    assertThat(invoiceKey).as("uk_tenant_invoice 缺失：防重复赔付的最后防线（并发下只有 DB 唯一键有效）").isNotNull();
+    assertThat(invoiceKey)
+        .as(
+            "uk_tenant_invoice 的列集合变了。它必须是 (tenant_id, invoice_code, invoice_no, deleted)："
+                + "tenant_id 做租户隔离，deleted 让草稿（deleted=1）不占用唯一键。"
+                + "出现 report_id 意味着同一张发票可在不同报案下各赔一次 —— 这是重复赔付，不是新特性")
+        .containsExactly("tenant_id", "invoice_code", "invoice_no", "deleted");
+
+    String reportDdl = initTables.get("t_claim_report");
+    assertThat(reportDdl).as("bone-init.sql 里找不到 t_claim_report 建表").isNotNull();
+    assertThat(readUniqueKeys(reportDdl).get("uk_report_no"))
+        .as("报案号必须全局唯一（业务号是客服检索键，重号会让两个事故共用一个号）")
+        .containsExactly("report_no");
+  }
+
   // ===================== 读取与解析 =====================
 
   private Map<String, String> readEntityTables() throws IOException {
@@ -164,6 +207,22 @@ class EntityTableDdlCoverageTest {
       tables.put(matcher.group(1), matcher.group(2));
     }
     return tables;
+  }
+
+  /** 从单表 DDL 体内抽出 {@code 唯一键名 → 列名列表}（列名去反引号，保持书写顺序）。 */
+  private Map<String, List<String>> readUniqueKeys(String ddl) {
+    Map<String, List<String>> keys = new LinkedHashMap<>();
+    Matcher matcher = UNIQUE_KEY.matcher(ddl);
+    while (matcher.find()) {
+      List<String> columns =
+          Stream.of(matcher.group(2).split(","))
+              .map(String::trim)
+              .map(c -> c.replace("`", ""))
+              .filter(c -> !c.isEmpty())
+              .toList();
+      keys.put(matcher.group(1), columns);
+    }
+    return keys;
   }
 
   /**

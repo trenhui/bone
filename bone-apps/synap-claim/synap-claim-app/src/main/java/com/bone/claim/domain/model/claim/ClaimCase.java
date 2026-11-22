@@ -38,9 +38,23 @@ import lombok.NoArgsConstructor;
 @Table("t_claim_case")
 public class ClaimCase extends TenantAggregateRoot<Long> {
 
-  /** 报案号（对外展示/客服检索键，与物理 id 分离；由 {@link ClaimNoGenerator} 生成，格式见该类）。 */
+  /**
+   * 赔案号（对外展示/客服检索键，与物理 id 分离；由 {@link ClaimNoGenerator} 生成，前缀 {@code CL}）。
+   *
+   * <p><b>只是赔案号，不是报案号</b>：报案号在 {@code t_claim_report.report_no}（前缀 {@code RP}）。1:1 时代两者共用一列，
+   * 拆分后各自独立——「报过几次案」看报案号，「赔了几笔」看赔案号。
+   */
   @Column(name = "claim_no", nullable = false)
   private String claimNo;
+
+  /**
+   * 所属报案（{@code t_claim_report.id}）。
+   *
+   * <p><b>单向引用</b>：赔案指向报案，报案不持有赔案集合（赔案有自己的状态机，级联保存会批量改写状态）。 一个报案下 0..N
+   * 个赔案，每个赔案必须挂靠一个报案——不存在「无主赔案」，否则事故上下文（保单/出险时间）会出现第二个来源。
+   */
+  @Column(name = "report_id", nullable = false)
+  private Long reportId;
 
   /** 写接口幂等键（Idempotency-Key 请求头值，服务端登记）。 */
   @Column(name = "idempotency_key", nullable = false)
@@ -160,7 +174,12 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   @Column(name = "source_system", nullable = false)
   private String sourceSystem;
 
-  /** 批次号（报案号生成前缀 + 复制赔案分组）。 */
+  /**
+   * 批次号（OSS 路径前缀 + 复制赔案分组）。
+   *
+   * <p><b>不参与任何编号生成</b>：1:1 时代文档曾写「报案号 = 批次号 + 序号」，该规则早已废弃； 赔案号见 {@link ClaimNoGenerator}，报案号见
+   * {@link ReportNoGenerator}。此处保留字段仅为 OSS 路径与分组。
+   */
   @Column(name = "batch_no")
   private String batchNo;
 
@@ -217,7 +236,8 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   /**
    * 报案草稿（受理前）。
    *
-   * <p>此步只落草稿：受理签收（{@link #accept}）才进入 7 并对外可见。id 由调用方预分配（雪花），报案号由 id 派生，全局唯一且可重复推导（对账友好）。
+   * <p>此步只落草稿：受理签收（{@link #accept}）才进入 7 并对外可见。id 由调用方预分配（雪花），赔案号由 id 派生，全局唯一且可重复推导（对账友好），并挂靠调用方传入的
+   * {@code reportId}。
    *
    * @param idempotencyKey 写接口幂等键（{@code Idempotency-Key} 请求头值）。<b>P0-3（2026-11-11 落地）</b>：必传、
    *     不得服务端代生成——无键提交即独立案件的兼容底已移除（IETF / Stripe 惯例：幂等键由客户端生成， 服务端代生成会让重试必然建案，恰恰放大重复提交）；缺失由 adapter
@@ -227,6 +247,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   public static ClaimCase draft(
       long id,
       Long tenantId,
+      Long reportId,
       String policyNo,
       Long planId,
       String insuredIdHash,
@@ -238,6 +259,9 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
       String idempotencyKey,
       String planVersion,
       List<ClaimItem> items) {
+    if (reportId == null) {
+      throw new DomainException("赔案必须挂靠一个报案（reportId 不能为空）：无主赔案会让保单/出险时间出现第二个来源");
+    }
     if (policyNo == null || policyNo.isBlank()) {
       throw new DomainException("保单号不能为空");
     }
@@ -260,6 +284,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
     ClaimCase claim = new ClaimCase();
     claim.setId(id);
     claim.setTenantId(tenantId);
+    claim.reportId = reportId;
     claim.claimNo = generateClaimNo(id);
     claim.policyNo = policyNo;
     claim.planId = planId;
@@ -292,7 +317,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   }
 
   /**
-   * 报案号生成：委托 {@link ClaimNoGenerator}。
+   * 赔案号生成：委托 {@link ClaimNoGenerator}（报案号另由 {@link ReportNoGenerator} 生成，二者不共用号段）。
    *
    * <p>格式 {@code CL + yyyyMMdd(东八区) + 13位Base32 + 校验位}。雪花 id 经 6 轮 Feistel 双射混淆，
    * 唯一性与物理主键同源（零碰撞）、外观不可枚举、校验位防手抄错输。业务时区固定东八区。

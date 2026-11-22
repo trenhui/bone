@@ -58,6 +58,7 @@ class DecisionGraphFlowConfigTest {
         ClaimCase.draft(
             1001L,
             42L,
+            9001L,
             "P-1",
             7L,
             "hash-1",

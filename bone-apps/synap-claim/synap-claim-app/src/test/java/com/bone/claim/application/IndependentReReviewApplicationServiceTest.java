@@ -68,6 +68,7 @@ class IndependentReReviewApplicationServiceTest {
         ClaimCase.draft(
             TENANT,
             42L,
+            9001L,
             "EG20260001",
             7L,
             "hash-rereview",

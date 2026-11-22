@@ -43,18 +43,33 @@ class ClaimCaseApplicationServiceTest {
   private static final Instant OUT_INSURE = Instant.parse("2026-03-12T10:00:00Z");
 
   @Mock private ClaimCaseRepository claimCaseRepository;
+  // 报案/赔案拆分后 submit 会先落一条报案再建赔案（同事务），缺此 mock 会让构造注入为 null
+  @Mock private com.bone.claim.domain.repository.ClaimReportRepository claimReportRepository;
   @Mock private ClaimItemRepository claimItemRepository;
   @Mock private PolicyQueryPort policyQueryPort;
   @Mock private TenantPort tenantPort;
   @Mock private DomainEventPublisher domainEventPublisher;
   @Mock private CodeMappingApplicationService codeMappingApplicationService;
   @Mock private com.bone.claim.domain.repository.ClaimInsurerRepository claimInsurerRepository;
+  @Mock private com.bone.claim.application.port.out.ClaimIntakePort claimIntakePort;
   @InjectMocks private ClaimCaseApplicationService service;
 
   private PolicyQueryPort.PolicySnapshot snapshot;
 
   @BeforeEach
   void setUp() {
+    // 受理落库端口默认「透传」到两个仓储 mock：本类的断言主体是
+    // 「submit 有没有把赔案/报案落库、落进去的是什么内容」，桩掉端口会让那些 verify 全部失去落脚点。
+    // 真实实现的同事务语义由 ClaimIntakePortAdapterTest 与场景测试覆盖。
+    org.mockito.Mockito.lenient()
+        .doAnswer(
+            inv -> {
+              claimReportRepository.insert(inv.getArgument(0));
+              claimCaseRepository.insert(inv.getArgument(1));
+              return null;
+            })
+        .when(claimIntakePort)
+        .persistIntake(any(), any());
     snapshot =
         new PolicyQueryPort.PolicySnapshot(
             "EG20260001",
@@ -218,6 +233,7 @@ class ClaimCaseApplicationServiceTest {
         ClaimCase.draft(
             999L,
             TENANT_ID,
+            9001L,
             "EG20260001",
             7L,
             "hash-abc",
@@ -500,6 +516,7 @@ class ClaimCaseApplicationServiceTest {
         ClaimCase.draft(
             1001L,
             TENANT_ID,
+            9001L,
             "EG20260001",
             7L,
             "hash-abc",
@@ -558,6 +575,7 @@ class ClaimCaseApplicationServiceTest {
         ClaimCase.draft(
             1001L,
             TENANT_ID,
+            9001L,
             "EG20260001",
             7L,
             "hash-abc",
@@ -609,6 +627,7 @@ class ClaimCaseApplicationServiceTest {
         ClaimCase.draft(
             1001L,
             999L,
+            9001L,
             "EG20260001",
             7L,
             "hash-abc",

@@ -1,9 +1,11 @@
 import { useEffect, useState, type ReactElement } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Button,
   Card,
   DatePicker,
+  Descriptions,
   Form,
   Input,
   InputNumber,
@@ -18,7 +20,14 @@ import { PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { resolveErrorCode } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
-import { claimApi, type ClaimItemReq, type ItemCategory, type SubmitClaimReq } from '../services/claimApi';
+import {
+  claimApi,
+  type AppendCaseReq,
+  type ClaimItemReq,
+  type ClaimReportDetail,
+  type ItemCategory,
+  type SubmitClaimReq,
+} from '../services/claimApi';
 import { claimConfigApi, type FeeCategoryView } from '../services/claimConfigApi';
 
 /**
@@ -37,9 +46,28 @@ type SubmitFormValues = Omit<SubmitClaimReq, 'outInsureTime'> & {
 };
 
 export function ClaimSubmitPage(): ReactElement {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  /**
+   * 追加模式：`/submit?reportNo=RP...` 表示「为既有报案追加一笔赔付」。
+   *
+   * <p>为什么复用同一个页面而不是新开一页：报案与追加赔案的**输入项几乎相同**（票据、明细、同意记录号），
+   * 唯一差别是事故上下文（保单/计划/被保人/出险时间）在追加时由报案继承、不接受录入。
+   * 新开一页等于把表单、目录下拉、明细表格、错误分支复制一份——两份实现必然漂移。
+   */
+  const reportNo = searchParams.get('reportNo');
+  const isAppend = Boolean(reportNo);
   const [form] = Form.useForm<SubmitFormValues>();
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ claimNo: string; status: string } | null>(null);
+  const [result, setResult] = useState<{
+    claimId?: string;
+    claimNo: string;
+    reportNo?: string;
+    status: string;
+  } | null>(null);
+  /** 追加模式下的事故上下文（只读展示，值由后端从报案给出）。 */
+  const [report, setReport] = useState<ClaimReportDetail | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
   // 费用类别目录（t_ref_fee_category）：明细按类别落 fee_code，理算侧「责任 × 费用类别」规则据此命中。
   // 取不到时下拉为空但不阻塞报案——未分类明细按责任主比例算，并在理算诊断里提示补录。
   const [feeCategories, setFeeCategories] = useState<FeeCategoryView[]>([]);
@@ -57,7 +85,87 @@ export function ClaimSubmitPage(): ReactElement {
       });
   }, []);
 
+  // 追加模式：先把报案的事故上下文取回来。取不到就直接停手——
+  // 让用户在不知道「往哪个事故里追加」的情况下盲填一笔赔付，比报错更危险。
+  useEffect(() => {
+    if (!reportNo) return;
+    let alive = true;
+    claimApi
+      .reportDetail(reportNo)
+      .then((resp) => {
+        if (!alive) return;
+        const detail = resp?.data ?? null;
+        setReport(detail);
+        setReportError(detail ? null : '未取到报案信息');
+        if (detail?.claimType) form.setFieldValue('claimType', detail.claimType);
+      })
+      .catch((err) => {
+        if (!alive) return;
+        const code = resolveErrorCode(err);
+        setReport(null);
+        setReportError(
+          code === 'SC_CLAIM_REPORT_NOT_FOUND'
+            ? '报案不存在或无权查看：请确认链接里的报案号（RP 开头）正确'
+            : '报案信息加载失败，请稍后重试',
+        );
+      });
+    return () => {
+      alive = false;
+    };
+  }, [reportNo, form]);
+
   const onFinish = async (values: SubmitFormValues) => {
+    if (isAppend) {
+      // 追加模式下保单维度字段不渲染，values 里也没有它们——
+      // 请求体刻意只带「赔付维度」字段，事故上下文一律由后端从报案继承。
+      const req: AppendCaseReq = {
+        claimType: values.claimType,
+        invoiceCode: values.invoiceCode,
+        invoiceNo: values.invoiceNo,
+        consentRecordId: values.consentRecordId,
+        items: values.items ?? [],
+      };
+      setSubmitting(true);
+      try {
+        const resp = await claimApi.appendCase(reportNo ?? '', req);
+        const envelope = resp as (typeof resp & { success?: boolean });
+        if (envelope.success === false || envelope.code !== 200) {
+          const err = new Error(envelope.message || '追加失败') as Error & { errorCode?: string };
+          const inner = envelope.data as { errorCode?: string } | undefined;
+          if (inner?.errorCode) err.errorCode = inner.errorCode;
+          throw err;
+        }
+        const data = resp?.data;
+        if (!data?.claimNo) {
+          throw new Error('追加成功但未返回赔案号，请联系核赔员确认，切勿重复提交');
+        }
+        setResult({
+          claimId: data.claimId,
+          claimNo: data.claimNo,
+          reportNo: data.reportNo,
+          status: data?.status ?? '',
+        });
+        message.success(`已追加赔案：${data.claimNo}`);
+        return;
+      } catch (err) {
+        const errorCode = resolveErrorCode(err);
+        message.error(
+          errorCode === 'SC_CLAIM_REPORT_NOT_FOUND'
+            ? '报案不存在或无权查看'
+            : errorCode === 'SC_CLAIM_REPORT_CLOSED'
+              ? '该报案已关闭，不能再追加赔案；如需继续赔付请重新报案'
+              : errorCode === 'SC_CLAIM_REPORT_CONTEXT_MISMATCH'
+                ? '请求里带了不该传的保单维度字段（保单/计划/被保人/出险时间），这些值一律继承报案'
+                : errorCode === 'SC_CLAIM_CONCURRENT_CONFLICT'
+                  ? '同一笔赔付已被处理（幂等键冲突），请刷新后确认是否已追加成功'
+                  : '追加失败，请稍后重试或联系核赔员',
+        );
+        return;
+      } finally {
+        setSubmitting(false);
+      }
+    }
+
     // 「至少一个保单标识」是后端同一条约束的前置提示：两个都空提交上去只会换回一个 400 错误码，
     // 在表单内就挡住能少一次无意义的往返（规则本身不放松——后端仍是唯一判定方）。
     if (!values.policyNo?.trim() && !values.insurerPolicyNo?.trim()) {
@@ -85,7 +193,7 @@ export function ClaimSubmitPage(): ReactElement {
       if (!data?.claimNo) {
         throw new Error('报案受理成功但未返回赔案号，请联系核赔员确认，切勿重复提交');
       }
-      setResult({ claimNo: data.claimNo, status: data?.status ?? '' });
+      setResult({ claimId: data.claimId, claimNo: data.claimNo, status: data?.status ?? '' });
       message.success(`报案已受理：${data.claimNo}`);
       form.resetFields();
     } catch (err) {
@@ -114,13 +222,34 @@ export function ClaimSubmitPage(): ReactElement {
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: 24 }}>
-      <PageHeader title="理赔申请" />
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-        message="门诊小额快赔：≤500 元且材料完整、无风险标记、责任明确可自动通过；其余转人工核赔。"
-      />
+      <PageHeader title={isAppend ? '追加赔案' : '理赔申请'} />
+      {isAppend && reportError && (
+        <Alert type="error" showIcon style={{ marginBottom: 16 }} message="无法追加" description={reportError} />
+      )}
+      {isAppend && report && (
+        <Card size="small" title={`正在为报案 ${report.reportNo} 追加赔案`} style={{ marginBottom: 16 }}>
+          <Descriptions column={2} size="small">
+            <Descriptions.Item label="保单号">{report.policyNo}</Descriptions.Item>
+            <Descriptions.Item label="险种">{report.claimType}</Descriptions.Item>
+            <Descriptions.Item label="出险时间">{report.outInsureTime}</Descriptions.Item>
+            <Descriptions.Item label="已建赔案">
+              <Tag>{report.caseCount} 笔</Tag>
+            </Descriptions.Item>
+          </Descriptions>
+          <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+            保单、计划、被保人与出险时间由报案继承，此处不接受修改：这些值在事故维度恒定，
+            允许逐笔覆盖等于允许把 A 保单的赔付挂到 B 事故上。
+          </Typography.Paragraph>
+        </Card>
+      )}
+      {!isAppend && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="门诊小额快赔：≤500 元且材料完整、无风险标记、责任明确可自动通过；其余转人工核赔。"
+        />
+      )}
       {feeCatalogFailed && (
         <Alert
           type="warning"
@@ -135,15 +264,29 @@ export function ClaimSubmitPage(): ReactElement {
           type="success"
           showIcon
           style={{ marginBottom: 16 }}
-          message={`报案已受理（${result.claimNo}）`}
+          message={
+            isAppend ? `已追加赔案（${result.claimNo}）` : `报案已受理（${result.claimNo}）`
+          }
           description={
             <>
-              当前状态：<Tag color="blue">{result.status}</Tag> 决策建议将在 30 秒内返回，可在「我的报案」查看。
+              当前状态：<Tag color="blue">{result.status}</Tag>{' '}
+              {isAppend
+                ? '同一报案下的赔案共用事故上下文，年度免赔与责任限额按同案累计。'
+                : '决策建议将在 30 秒内返回，可在「我的报案」查看。'}
+              {result.claimId && (
+                <Button
+                  type="link"
+                  onClick={() => navigate(`/progress?claimId=${result.claimId}`)}
+                  style={{ paddingLeft: 0 }}
+                >
+                  查看进度
+                </Button>
+              )}
             </>
           }
         />
       )}
-      <Card title="报案信息">
+      <Card title={isAppend ? '赔付信息' : '报案信息'}>
         <Form
           form={form}
           layout="vertical"
@@ -151,43 +294,56 @@ export function ClaimSubmitPage(): ReactElement {
           initialValues={{ claimType: 'OUTPATIENT', items: [{}] as ClaimItemReq[] }}
         >
           <Space size="large" wrap>
-            <Form.Item
-              name="policyNo"
-              label="保单号"
-              tooltip="平台保单号。与「保司保单号」至少填一个；两者都填时以本字段为准，号码不一致会被拒收。"
-            >
-              <Input placeholder="EG20260001" style={{ width: 220 }} />
-            </Form.Item>
             {/*
-              保司侧保单号（§16-2）：员工手上常常只有保司给的号（保司来单/保险卡）。
-              选填而非必填——平台号仍是主键，两个都必填只会让日常报案多一次无谓录入；
-              「至少填一个」的约束在提交前统一校验（后端也有同一道闸，返回 400 可见）。
+              事故维度字段：仅「报案」模式渲染。
+              追加模式下这些值由报案继承，所以必须**真的不渲染**而不是 hidden ——
+              hidden 的表单项仍参与 required 校验，会让用户在没看到这些字段的情况下被"请选择出险日期"拦住。
             */}
-            <Form.Item
-              name="insurerPolicyNo"
-              label="保司保单号"
-              tooltip="保险卡/保司通知上的保单号（选填）。保司号可能对应多张平台保单，若无法唯一确定，系统会提示改填平台保单号。"
-            >
-              <Input placeholder="如 INS-2026-0001" style={{ width: 220 }} />
-            </Form.Item>
-            <Form.Item name="planId" label="计划ID" rules={[{ required: true, message: '请输入计划ID' }]}>
-              <InputNumber placeholder="7" stringMode style={{ width: 160 }} />
-            </Form.Item>
-            <Form.Item
-              name="insuredIdHash"
-              label="被保人标识"
-              tooltip="服务端按登录主体计算，演示环境填写假名化ID"
-              rules={[{ required: true, message: '请输入被保人标识' }]}
-            >
-              <Input placeholder="hash-abc" style={{ width: 220 }} />
-            </Form.Item>
-            <Form.Item
-              name="outInsureTime"
-              label="出险日期"
-              rules={[{ required: true, message: '请选择出险日期' }]}
-            >
-              <DatePicker style={{ width: 180 }} />
-            </Form.Item>
+            {!isAppend && (
+              <>
+                <Form.Item
+                  name="policyNo"
+                  label="保单号"
+                  tooltip="平台保单号。与「保司保单号」至少填一个；两者都填时以本字段为准，号码不一致会被拒收。"
+                >
+                  <Input placeholder="EG20260001" style={{ width: 220 }} />
+                </Form.Item>
+                {/*
+                  保司侧保单号（§16-2）：员工手上常常只有保司给的号（保司来单/保险卡）。
+                  选填而非必填——平台号仍是主键，两个都必填只会让日常报案多一次无谓录入；
+                  「至少填一个」的约束在提交前统一校验（后端也有同一道闸，返回 400 可见）。
+                */}
+                <Form.Item
+                  name="insurerPolicyNo"
+                  label="保司保单号"
+                  tooltip="保险卡/保司通知上的保单号（选填）。保司号可能对应多张平台保单，若无法唯一确定，系统会提示改填平台保单号。"
+                >
+                  <Input placeholder="如 INS-2026-0001" style={{ width: 220 }} />
+                </Form.Item>
+                <Form.Item
+                  name="planId"
+                  label="计划ID"
+                  rules={[{ required: true, message: '请输入计划ID' }]}
+                >
+                  <InputNumber placeholder="7" stringMode style={{ width: 160 }} />
+                </Form.Item>
+                <Form.Item
+                  name="insuredIdHash"
+                  label="被保人标识"
+                  tooltip="服务端按登录主体计算，演示环境填写假名化ID"
+                  rules={[{ required: true, message: '请输入被保人标识' }]}
+                >
+                  <Input placeholder="hash-abc" style={{ width: 220 }} />
+                </Form.Item>
+                <Form.Item
+                  name="outInsureTime"
+                  label="出险日期"
+                  rules={[{ required: true, message: '请选择出险日期' }]}
+                >
+                  <DatePicker style={{ width: 180 }} />
+                </Form.Item>
+              </>
+            )}
             <Form.Item name="invoiceCode" label="发票代码">
               <Input placeholder="04400001" style={{ width: 200 }} />
             </Form.Item>
@@ -304,17 +460,41 @@ export function ClaimSubmitPage(): ReactElement {
 
           <Form.Item style={{ marginTop: 24 }}>
             <Space>
-              <Button type="primary" htmlType="submit" loading={submitting}>
-                提交理赔
+              {/*
+                追加模式下按钮必须换文案：用户点的是「往已有报案里加一笔赔付」，
+                写着「提交理赔」会让人以为又要新建一次报案（于是回到本页重新报案，把一起事故拆成两个）。
+                加载报案失败时一并禁用——事故上下文没拿到就提交，等于盲填赔付归属。
+              */}
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={submitting}
+                disabled={isAppend && (!report || report.status !== 'REPORTED')}
+              >
+                {isAppend ? '追加赔案' : '提交理赔'}
               </Button>
               <Button onClick={() => form.resetFields()}>重置</Button>
+              {isAppend && (
+                <Button type="link" onClick={() => navigate(-1)}>
+                  返回
+                </Button>
+              )}
             </Space>
           </Form.Item>
         </Form>
       </Card>
       <Typography.Paragraph type="secondary" style={{ marginTop: 16 }}>
-        出险日期请按就诊日期填写（医保结算单日期）；发票代码/号码为重复报销校验依据（R-FRAUD-07），请勿填错。
-        演示环境当前使用{dayjs().format('YYYY-MM-DD')}的客户端日期。
+        {isAppend ? (
+          <>
+            发票代码/号码是重复报销校验依据（R-FRAUD-07）：同一张发票在同一租户内只能赔付一次，
+            跨赔案重复提交会被拒收。出险时间沿用报案登记的事故时间，不按本笔就诊日期修改。
+          </>
+        ) : (
+          <>
+            出险日期请按就诊日期填写（医保结算单日期）；发票代码/号码为重复报销校验依据（R-FRAUD-07），请勿填错。
+            演示环境当前使用{dayjs().format('YYYY-MM-DD')}的客户端日期。
+          </>
+        )}
       </Typography.Paragraph>
     </div>
   );

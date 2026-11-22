@@ -77,8 +77,72 @@ export interface SubmitClaimReq {
 export interface ClaimCaseResp {
   claimId: string;
   claimNo: string;
+  /**
+   * 所属报案号（RP 前缀）。
+   *
+   * 报案与赔案是 1:0..N：一次事故告知（报案）可产生多笔赔付（赔案）。两个号都返回，
+   * 是因为「报案号」与「赔案号」是不同命名空间的检索键，客服/对账分别用它们查不同的东西，
+   * 前端拿一个去充另一个会让用户按报案号查不到自己的案子。
+   */
+  reportNo: string;
   /** 对外两值投影：PENDING_EVIDENCE / REVIEWING（终态为 null） */
   status: string;
+}
+
+/** 同案赔案摘要（报案详情里的清单行）。 */
+export interface ClaimReportCaseBrief {
+  claimId: string;
+  claimNo: string;
+  /** 领域状态枚举名（ClaimStatus）。 */
+  status: string;
+  /** 对外两值投影（PENDING_EVIDENCE / REVIEWING，终态 null）。 */
+  externalStatus: string | null;
+  stage: string;
+  claimAmount: number | null;
+  approvedAmount: number | null;
+  createdAt: string;
+}
+
+/**
+ * 报案详情（一次事故告知 + 其下的全部赔案）。
+ *
+ * <p>`allCasesFinished` / `caseCount` 是后端**派生**的，不落库：报案状态只表达「能否再追加」，
+ * 赔付进度由赔案聚合算出来。前端不要自己再按 cases 重算一遍——两处算必然漂移。
+ */
+export interface ClaimReportDetail {
+  reportNo: string;
+  policyNo: string;
+  planId: string;
+  claimType: string;
+  outInsureTime: string;
+  /** REPORTED（可追加）/ CLOSED（已关闭，不再受理新赔案）。 */
+  status: string;
+  createdAt: string;
+  caseCount: number;
+  allCasesFinished: boolean;
+  cases: ClaimReportCaseBrief[];
+}
+
+/**
+ * 追加赔案请求。
+ *
+ * <p><b>刻意不含保单维度字段</b>（policyNo / insurerPolicyNo / planId / insuredIdHash / outInsureTime）：
+ * 这些是事故维度上下文，一律从报案继承。后端用 `@JsonAnySetter` 捕获未知字段，命中这些键名直接 400
+ * （`SC_CLAIM_REPORT_CONTEXT_MISMATCH`）——所以这里也不能声明它们，否则「传了就被拒」变成「传了能过」。
+ */
+export interface AppendCaseReq {
+  /** 险种（空 = 继承报案的事故险种）。 */
+  claimType?: string;
+  invoiceCode?: string;
+  invoiceNo?: string;
+  /** 开票日期（yyyy-MM-dd）；「次」分组维度之一。 */
+  invoiceDate?: string;
+  hospitalCode?: string;
+  diagnosisCode?: string;
+  batchNo?: string;
+  consentRecordId?: string;
+  insurerCode?: string;
+  items: ClaimItemReq[];
 }
 
 export interface ClaimDecisionReq {
@@ -111,6 +175,15 @@ export interface ClaimHeadProjection {
 export interface ClaimWithItemsProjection {
   claimId: string;
   claimNo: string;
+  /**
+   * 所属报案 ID（1:0..N 的 N 侧）。
+   *
+   * 后端用 LEFT JOIN 取报案号：回填窗口内 report_id 尚未落库的赔案仍要能查出来（整行消失比少一个字段更糟），
+   * 所以这两个字段可能是 null / 空串，前端必须按「未知」渲染而不是当 0 处理。
+   */
+  reportId: string | null;
+  /** 所属报案号（RP 前缀）；空表示报案行缺失（数据未回填完），不是「没有报案」。 */
+  reportNo: string | null;
   policyNo: string;
   planId: string;
   insuredIdHash: string;

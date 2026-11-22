@@ -37,6 +37,7 @@ import com.bone.claim.domain.model.adjustment.AdjustmentLine;
 import com.bone.claim.domain.model.appeal.AppealRecord;
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.ClaimItem;
+import com.bone.claim.domain.model.claim.ClaimReport;
 import com.bone.claim.domain.model.claim.projection.ClaimHeadProjection;
 import com.bone.claim.domain.model.claim.projection.ClaimTenantRef;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
@@ -59,6 +60,7 @@ import com.bone.claim.domain.repository.AdjustmentRepository;
 import com.bone.claim.domain.repository.AppealRepository;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.ClaimItemRepository;
+import com.bone.claim.domain.repository.ClaimReportRepository;
 import com.bone.claim.domain.repository.DecisionExecutionRepository;
 import com.bone.claim.domain.repository.EvidenceRepository;
 import com.bone.claim.domain.repository.InspectionRepository;
@@ -119,6 +121,7 @@ public class ScenarioHarness {
   public final CapturingEventPublisher events = new CapturingEventPublisher();
 
   public final InMemoryClaimItemRepository itemRepo = new InMemoryClaimItemRepository();
+  public final InMemoryClaimReportRepository reportRepo = new InMemoryClaimReportRepository();
   public final InMemoryClaimCaseRepository claimRepo;
   public final InMemoryAdjustmentRepository adjRepo = new InMemoryAdjustmentRepository();
   public final InMemoryLiabilityRepository liabRepo = new InMemoryLiabilityRepository();
@@ -147,12 +150,17 @@ public class ScenarioHarness {
 
   public ScenarioHarness() {
     TenantPort tenantPort = () -> tenantId;
-    claimRepo = new InMemoryClaimCaseRepository(itemRepo);
+    claimRepo = new InMemoryClaimCaseRepository(itemRepo, reportRepo);
     // 映射解析依赖：场景报案的 insurerCode 恒为空（存量行为），解析分支不会被触达；
     // 需要验证「收单落双码」的场景应在 ClaimCaseApplicationServiceTest 单测层覆盖。
     claimSvc =
         new ClaimCaseApplicationService(
             claimRepo,
+            reportRepo,
+            // 用真实适配器而不是桩：它只是「报案 + 首案」同事务写入两条内存仓储，
+            // 桩掉会让场景里的 1:0..N 结构（提交后报案行是否存在）失去验证意义。
+            new com.bone.claim.infrastructure.persistence.ClaimIntakePortAdapter(
+                reportRepo, claimRepo),
             itemRepo,
             policyPort,
             tenantPort,
@@ -568,12 +576,24 @@ public class ScenarioHarness {
 
   // ===================== 各聚合内存仓储 =====================
 
+  /**
+   * 报案聚合的内存夹具。
+   *
+   * <p>只覆盖 {@code findByReportNo} 一条读路径（走接口 default 方法 → {@code findOneByCriteria}），
+   * 与场景里的用法一致：报案在场景中只承担「提交时落一行、追加时反查一行」的职责，聚合自身的 状态机由 {@code ClaimReportTest} 在领域层覆盖。
+   */
+  static class InMemoryClaimReportRepository extends InMemoryRepository<ClaimReport>
+      implements ClaimReportRepository {}
+
   static class InMemoryClaimCaseRepository extends InMemoryRepository<ClaimCase>
       implements ClaimCaseRepository {
     private final InMemoryClaimItemRepository itemRepo;
+    private final InMemoryClaimReportRepository reportRepo;
 
-    InMemoryClaimCaseRepository(InMemoryClaimItemRepository itemRepo) {
+    InMemoryClaimCaseRepository(
+        InMemoryClaimItemRepository itemRepo, InMemoryClaimReportRepository reportRepo) {
       this.itemRepo = itemRepo;
+      this.reportRepo = reportRepo;
     }
 
     @Override
@@ -601,6 +621,64 @@ public class ScenarioHarness {
       return rows;
     }
 
+    /**
+     * 时间窗内进入复核态的案件数，与 {@code countReviewedInWindow.sql} 同口径： {@code second_reviewer_id} 非空且非空串 +
+     * 状态落在三态复核区间 + {@code created_at} ∈ [from, to)。
+     */
+    @Override
+    public long countReviewedInWindow(java.sql.Timestamp from, java.sql.Timestamp to) {
+      java.time.Instant start = from == null ? null : from.toInstant();
+      java.time.Instant end = to == null ? null : to.toInstant();
+      if (start == null || end == null) {
+        return 0L;
+      }
+      long count = 0L;
+      for (ClaimCase c : store.values()) {
+        String reviewer = c.getSecondReviewerId();
+        if (reviewer == null || reviewer.isEmpty()) {
+          continue;
+        }
+        ClaimStatus status = c.status();
+        if (status != ClaimStatus.REVIEWING
+            && status != ClaimStatus.RE_REVIEW_PENDING
+            && status != ClaimStatus.RE_REVIEW_PASSED) {
+          continue;
+        }
+        java.time.Instant createdAt = c.getCreatedAt();
+        if (createdAt == null || createdAt.isBefore(start) || !createdAt.isBefore(end)) {
+          continue;
+        }
+        count++;
+      }
+      return count;
+    }
+
+    @Override
+    public List<com.bone.claim.domain.model.claim.projection.CaseDurationProjection>
+        caseDurationsInWindow(java.sql.Timestamp from, java.sql.Timestamp to) {
+      java.time.Instant start = from == null ? null : from.toInstant();
+      java.time.Instant end = to == null ? null : to.toInstant();
+      List<com.bone.claim.domain.model.claim.projection.CaseDurationProjection> rows =
+          new ArrayList<>();
+      for (ClaimCase c : store.values()) {
+        java.time.Instant closedAt = c.closedAt();
+        if (closedAt == null || start == null || end == null) {
+          continue;
+        }
+        // 与 SQL 同口径：左闭右开区间 [from, to)
+        if (closedAt.isBefore(start) || !closedAt.isBefore(end)) {
+          continue;
+        }
+        java.time.Instant createdAt = c.getCreatedAt();
+        long durationMs =
+            createdAt == null ? 0L : closedAt.toEpochMilli() - createdAt.toEpochMilli();
+        rows.add(
+            new com.bone.claim.domain.model.claim.projection.CaseDurationProjection(
+                c.getId(), durationMs));
+      }
+      return rows;
+    }
+
     @Override
     public List<ClaimWithItemsProjection> findClaimWithItems(long claimId) {
       ClaimCase c = store.get(claimId);
@@ -611,6 +689,11 @@ public class ScenarioHarness {
         ClaimWithItemsProjection p = new ClaimWithItemsProjection();
         p.setClaimId(c.getId());
         p.setClaimNo(c.getClaimNo());
+        // 与 findClaimWithItems.sql 的 LEFT JOIN 同口径：报案缺行时报告案号为空串，
+        // 而不是让整行消失（回填窗口内 report_id 尚未落库的真实形态）。
+        ClaimReport report = reportRepo.findById(c.getReportId());
+        p.setReportId(c.getReportId());
+        p.setReportNo(report == null ? "" : report.getReportNo());
         p.setPolicyNo(c.getPolicyNo());
         p.setPlanId(c.getPlanId());
         p.setInsuredIdHash(c.getInsuredIdHash());

@@ -25,6 +25,7 @@ class ClaimCaseTest {
     return ClaimCase.draft(
         1001L,
         42L,
+        9001L,
         "EG20260001",
         7L,
         "hash-abc",
@@ -174,6 +175,7 @@ class ClaimCaseTest {
       return ClaimCase.draft(
           1002L,
           42L,
+          9001L,
           "EG20260001",
           7L,
           "hash-abc",
@@ -284,6 +286,7 @@ class ClaimCaseTest {
                 ClaimCase.draft(
                     1L,
                     42L,
+                    9001L,
                     "P1",
                     1L,
                     "h",
@@ -303,6 +306,7 @@ class ClaimCaseTest {
                 ClaimCase.draft(
                     1L,
                     42L,
+                    9001L,
                     "P1",
                     1L,
                     "",
@@ -322,6 +326,7 @@ class ClaimCaseTest {
                 ClaimCase.draft(
                     1L,
                     42L,
+                    9001L,
                     "P1",
                     1L,
                     "h",

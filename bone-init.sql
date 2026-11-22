@@ -2714,9 +2714,43 @@ ON DUPLICATE KEY UPDATE `role` = VALUES(`role`);
 -- 权限码种子：iam_permission 114-119 + role 1 绑定（0059_synap_claim_permissions.sql，
 -- 与 0045 runtime 授权修复同类——新装环境亦须补，见 §9.2）。
 -- ------------------------------------------------------------
+CREATE TABLE t_claim_report (
+  id              BIGINT        NOT NULL COMMENT '主键(分布式ID)',
+  report_no       VARCHAR(64)   NOT NULL COMMENT '报案号(RP+yyyyMMdd+13位Base32+校验位, 24字符, 全局唯一)',
+  policy_no       VARCHAR(32)   NOT NULL COMMENT '保单号(事故归属, 追加赔案时继承)',
+  plan_id         BIGINT        NOT NULL COMMENT '计划ID(理赔口径基线)',
+  insured_id_hash CHAR(64)      NOT NULL COMMENT '假名化被保人(服务端 HMAC 计算, 不落明文)',
+  claim_type      VARCHAR(32)   NOT NULL DEFAULT 'OUTPATIENT' COMMENT '险种(事故级属性, 继承给每个赔案)',
+  out_insure_time DATETIME(3)   NOT NULL COMMENT '出险时间(事故告知事实)',
+  -- plan_version 放在报案而不是赔案：计划版本在「受理」这一刻锁定。赔案各存一份会让
+  -- 同一事故的多个赔案锁到不同版本，复算时分不清哪个才是当时的合同状态。
+  plan_version    VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '受理时锁定的计划版本(全案复算确定性)',
+  source_channel  VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '渠道',
+  source_system   VARCHAR(32)   NOT NULL DEFAULT 'self' COMMENT '来源系统(self/pk_tpa)',
+  -- 报案状态只表达「能否再追加赔案」，不表达赔付进度：进度是派生量（由同案赔案聚合），
+  -- 落成初始态会让两套状态机互相漂移。
+  status          VARCHAR(32)   NOT NULL DEFAULT 'REPORTED' COMMENT '报案状态(REPORTED可追加/CLOSED已关闭)',
+  tenant_id       BIGINT        NOT NULL COMMENT '租户',
+  created_by      BIGINT        DEFAULT NULL COMMENT '创建人ID',
+  created_at      DATETIME(3)   NOT NULL COMMENT '创建时间',
+  updated_by      BIGINT        DEFAULT NULL COMMENT '修改人ID',
+  updated_at      DATETIME(3)   NOT NULL COMMENT '更新时间',
+  version         BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本(SDK @Version 维护)',
+  deleted         TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
+  PRIMARY KEY (id),
+  -- 与 t_claim_case.uk_claim_no 同口径：编号全局唯一（源自全局雪花 ID），而非租户内唯一
+  UNIQUE KEY uk_report_no (report_no),
+  KEY idx_tenant_report_status (tenant_id, status, created_at),
+  KEY idx_tenant_report_policy (tenant_id, policy_no)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '报案主表(FNOL, 1:0..N 的 1 侧)';
+
 CREATE TABLE t_claim_case (
   id          BIGINT      NOT NULL COMMENT '主键(分布式ID)',
-  claim_no          VARCHAR(64)   NOT NULL COMMENT '报案号(CL+yyyyMMdd+13位Base32+校验位, 24字符, 全局唯一)',
+  claim_no          VARCHAR(64)   NOT NULL COMMENT '赔案号(CL+yyyyMMdd+13位Base32+校验位, 24字符, 全局唯一)',
+  -- 1:0..N 的 N 侧：赔案挂靠一个报案（单向引用，报案聚合不持有赔案子集合）。
+  -- 事故维度上下文（保单/计划/被保人/出险时间/计划版本）一律从报案继承，赔案不重复持有口径，
+  -- 否则同一事故的多个赔案会出现第二个来源。
+  report_id         BIGINT        NOT NULL COMMENT '所属报案ID(t_claim_report.id, 1:0..N 的 N 侧)',
   idempotency_key   VARCHAR(64)   NOT NULL COMMENT '写接口幂等键(Idempotency-Key 请求头值)',
   policy_no         VARCHAR(32)   NOT NULL COMMENT '保单号',
   plan_id           BIGINT        NOT NULL COMMENT '计划ID',
@@ -2739,7 +2773,7 @@ CREATE TABLE t_claim_case (
   out_insure_time   DATETIME(3)   NOT NULL COMMENT '出险时间',
   source_channel    VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '渠道',
   source_system     VARCHAR(32)   NOT NULL DEFAULT 'self' COMMENT '来源系统(self/pk_tpa)',
-  batch_no          VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '批次号(报案号前缀+复制赔案分组)',
+  batch_no          VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '批次号(OSS 路径前缀 + 复制赔案分组, 不参与编号生成)',
   claim_amount      DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '申请金额',
   approved_amount   DECIMAL(12,2) DEFAULT NULL COMMENT '核定金额(理算后回填)',
   first_reviewer_id VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '第一审核人(核赔)',
@@ -2777,7 +2811,9 @@ CREATE TABLE t_claim_case (
   KEY idx_tenant_status (tenant_id, status, created_at),
   KEY idx_tenant_insured (tenant_id, insured_id_hash),
   KEY idx_policy_no (policy_no),
-  KEY idx_tenant_batch (tenant_id, batch_no)
+  KEY idx_tenant_batch (tenant_id, batch_no),
+  -- 「按报案查同案赔案」是读侧主路径（详情页同案清单、追加赔案前置校验）
+  KEY idx_tenant_report (tenant_id, report_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '赔案主表';
 
 CREATE TABLE t_claim_item (

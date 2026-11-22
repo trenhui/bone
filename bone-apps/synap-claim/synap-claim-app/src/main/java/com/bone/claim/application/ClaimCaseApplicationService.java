@@ -1,5 +1,6 @@
 package com.bone.claim.application;
 
+import com.bone.claim.application.port.out.ClaimIntakePort;
 import com.bone.claim.application.port.out.PolicyQueryPort;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
@@ -7,6 +8,7 @@ import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.common.PageBounds;
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.ClaimItem;
+import com.bone.claim.domain.model.claim.ClaimReport;
 import com.bone.claim.domain.model.claim.event.ClaimStatusChangedEvent;
 import com.bone.claim.domain.model.claim.projection.ClaimHeadProjection;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
@@ -19,6 +21,7 @@ import com.bone.claim.domain.model.mapping.ResolutionStatus;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.ClaimInsurerRepository;
 import com.bone.claim.domain.repository.ClaimItemRepository;
+import com.bone.claim.domain.repository.ClaimReportRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.DomainException;
 import com.bone.core.model.PageResult;
@@ -47,6 +50,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ClaimCaseApplicationService {
 
   private final ClaimCaseRepository claimCaseRepository;
+  private final ClaimReportRepository claimReportRepository;
+  private final ClaimIntakePort claimIntakePort;
   private final ClaimItemRepository claimItemRepository;
   private final PolicyQueryPort policyQueryPort;
   private final TenantPort tenantPort;
@@ -76,7 +81,7 @@ public class ClaimCaseApplicationService {
    * com.bone.core.idempotency.IdempotencyService} 快照，此处是业务层第二道防线——两处都不能少：快照防重复执行，业务键防并发双写）。
    */
   /** 报案提交结果（adapter 组装 201 响应的输入，不含协议字段）。 */
-  public record SubmittedClaim(Long claimId, String claimNo) {}
+  public record SubmittedClaim(Long claimId, String claimNo, String reportNo) {}
 
   @Transactional
   public SubmittedClaim submit(SubmitClaim command) {
@@ -84,7 +89,8 @@ public class ClaimCaseApplicationService {
     ClaimCase existing =
         claimCaseRepository.findByIdempotencyKey(tenantId, command.idempotencyKey());
     if (existing != null) {
-      return new SubmittedClaim(existing.getId(), existing.getClaimNo());
+      // 幂等命中：返回首案与它的报案号，不新建报案——否则每次重试都会留下一条孤儿报案。
+      return toSubmitted(existing);
     }
 
     // 报案前置校验：保单生效中 + 被保人匹配（§7.1）；快照缺失即拒收，不进入状态机。
@@ -99,6 +105,83 @@ public class ClaimCaseApplicationService {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_OUT_OF_POLICY_PERIOD, snapshot.policyNo());
     }
 
+    // 报案与首案在同一事务内创建：报案先落库（持有事故上下文与锁定计划版本），赔案挂靠它。
+    // 两者要么都成功，要么都回滚——中间态（有报案无赔案）只在业务上成立（报案未立案），
+    // 但绝不能是「提交失败留下的残留」。并发双写时败者触发 uk_tenant_idem 冲突，报案插入同事务回滚。
+    ClaimReport report =
+        ClaimReport.open(
+            DistributedIdGenerator.generateLongId(),
+            tenantId,
+            // 落库的是**解析后的平台保单号**：入参给的是保司号时 command.policyNo() 为空，
+            // 直接用会把 NOT NULL 列写成空串（等于把"按保司号收的单"变成孤儿赔案，额度/对账两侧都对不上）。
+            snapshot.policyNo(),
+            command.planId(),
+            command.insuredIdHash(),
+            command.claimType(),
+            command.outInsureTime(),
+            snapshot.planVersion(),
+            // 报案渠道：提交命令目前不带渠道字段（与赔案 sourceChannel 同口径，落空串）。
+            // 渠道来源由 adapter 的入站头/网关提供，属后续扩展；此处不从保单快照臆造。
+            "");
+    ClaimCase claim = buildClaim(tenantId, report, command);
+
+    // 跨聚合原子落库收口到一个端口（R9 的显式化）：报案与首案必须同事务，
+    // 但「同事务创建两个新聚合」与「同事务改写两个既有聚合」不是一回事，R9 按聚合类型计数无法区分。
+    // 端口让这个唯一的跨聚合写点集中可见，其余场景仍受 R9 严格约束（见 ClaimIntakePort 注释）。
+    claimIntakePort.persistIntake(report, claim);
+    domainEventPublisher.publishFrom(claim);
+    return new SubmittedClaim(claim.getId(), claim.getClaimNo(), report.getReportNo());
+  }
+
+  /**
+   * 在既有报案下建赔案（追加赔付；与首案共用同一条建案管线）。
+   *
+   * <p><b>为什么与 {@link #submit} 共用 {@code buildClaim}</b>：收款码解析、STP 闸门、同意留痕、受理签收与挂起判定
+   * 都是「建案」的固有环节。追加赔案若走一条精简路径，追加案就会静默跳过映射解析——直接以 raw 码进自动理算， 那是 fail-open，不是简化。
+   *
+   * <p><b>事故上下文一律从报案继承</b>（保单号/计划/被保人/出险时间/计划版本）：报案是同一事故的告知， 这些值在事故维度恒定。允许追加请求覆盖，等于允许把 A 保单的赔付挂到 B
+   * 事故上。
+   *
+   * <p>幂等：同一幂等键重复追加返回首次赔案；若该键已被**其它报案**用过，说明调用方复用了错误键， 按上下文不匹配拒绝（静默返回别人的赔案会造成跨案串账）。
+   */
+  @Transactional
+  public SubmittedClaim appendCase(ClaimReport report, SubmitClaim command) {
+    long tenantId = tenantPort.currentTenantId();
+    ClaimCase existing =
+        claimCaseRepository.findByIdempotencyKey(tenantId, command.idempotencyKey());
+    if (existing != null) {
+      if (!report.getId().equals(existing.getReportId())) {
+        throw ClaimErrors.of(
+            ClaimErrorCodes.CLAIM_REPORT_CONTEXT_MISMATCH, command.idempotencyKey());
+      }
+      return new SubmittedClaim(existing.getId(), existing.getClaimNo(), report.getReportNo());
+    }
+    ClaimCase claim = buildClaim(tenantId, report, command);
+    claimCaseRepository.insert(claim);
+    domainEventPublisher.publishFrom(claim);
+    return new SubmittedClaim(claim.getId(), claim.getClaimNo(), report.getReportNo());
+  }
+
+  /** 幂等命中时的响应装配：赔案 + 其报案号（报案缺失属数据损坏，不因幂等重放而抛错）。 */
+  private SubmittedClaim toSubmitted(ClaimCase claim) {
+    ClaimReport report =
+        claim.getReportId() == null ? null : claimReportRepository.findById(claim.getReportId());
+    if (report == null) {
+      log.warn(
+          "赔案 {} 找不到所属报案（reportId={}），幂等重放返回空报案号：疑似回填未完成或数据损坏",
+          claim.getClaimNo(),
+          claim.getReportId());
+      return new SubmittedClaim(claim.getId(), claim.getClaimNo(), "");
+    }
+    return new SubmittedClaim(claim.getId(), claim.getClaimNo(), report.getReportNo());
+  }
+
+  /**
+   * 建案管线（首案与追加共用）：明细 → 聚合 → 发票维度 → 码解析 → STP 闸门 → 同意留痕 → 受理签收。
+   *
+   * @return 待落库的赔案（调用方负责 {@code insert}；本方法不触碰仓储写）
+   */
+  private ClaimCase buildClaim(long tenantId, ClaimReport report, SubmitClaim command) {
     long claimId = DistributedIdGenerator.generateLongId();
     List<ClaimItem> items =
         command.items().stream()
@@ -127,18 +210,17 @@ public class ClaimCaseApplicationService {
         ClaimCase.draft(
             claimId,
             tenantId,
-            // 落库的是**解析后的平台保单号**：入参给的是保司号时 command.policyNo() 为空，
-            // 直接用会把 NOT NULL 列写成空串（等于把"按保司号收的单"变成孤儿赔案，额度/对账两侧都对不上）。
-            snapshot.policyNo(),
-            command.planId(),
-            command.insuredIdHash(),
-            command.claimType(),
+            report.getId(),
+            report.getPolicyNo(),
+            report.getPlanId(),
+            report.getInsuredIdHash(),
+            claimTypeOf(report, command),
             command.invoiceCode(),
             command.invoiceNo(),
-            command.outInsureTime(),
+            report.getOutInsureTime(),
             command.batchNo(),
             command.idempotencyKey(),
-            snapshot.planVersion(),
+            report.getPlanVersion(),
             items);
     // 发票维度（开票日期/医院/病种）是「次」分组的依据，必须随报案落库：
     // 只加列不写入等于"配了不生效"，理算侧会一律判定为维度缺失。
@@ -167,10 +249,14 @@ public class ClaimCaseApplicationService {
     if (stpBlocked) {
       claim.requireManualReview();
     }
+    return claim;
+  }
 
-    claimCaseRepository.insert(claim);
-    domainEventPublisher.publishFrom(claim);
-    return new SubmittedClaim(claim.getId(), claim.getClaimNo());
+  /** 险种：请求显式给了就用请求（同一事故下不同赔付可有不同险种），否则继承报案。 */
+  private static String claimTypeOf(ClaimReport report, SubmitClaim command) {
+    return command.claimType() == null || command.claimType().isBlank()
+        ? report.getClaimType()
+        : command.claimType();
   }
 
   /**

@@ -1,6 +1,8 @@
 SELECT
        c.id             AS claim_id,
        c.claim_no,
+       c.report_id,
+       r.report_no,
        c.policy_no,
        c.plan_id,
        c.insured_id_hash,
@@ -49,6 +51,9 @@ SELECT
        i.invalid_amount AS item_invalid_amount,
        i.department     AS item_department
 FROM t_claim_case c
+       /* 报案 1:0..N 赔案：赔案侧单向引用 report_id。用 LEFT JOIN 而非 INNER——
+          回填窗口内若存在 report_id 尚未落库的历史行，详情不能整行消失（宁缺报案号，不丢赔案）。 */
+       LEFT JOIN t_claim_report r ON r.id = c.report_id AND r.deleted = 0
        LEFT JOIN t_claim_item i ON i.claim_id = c.id AND i.deleted = 0
        /* SLA 为可变更读模型（每 20 分钟物化），按 (tenant_id, claim_id) 唯一键 1:1 关联；
           未物化时整行为 NULL，读侧必须显示「未物化」而不是估算或当 0。 */
