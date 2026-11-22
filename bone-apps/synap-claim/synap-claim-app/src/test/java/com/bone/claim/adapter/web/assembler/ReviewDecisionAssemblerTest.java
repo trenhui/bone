@@ -85,6 +85,47 @@ class ReviewDecisionAssemblerTest {
   }
 
   @Test
+  @DisplayName("16 个受控原因码全部放行（含历史 E2E 用的 01/02 与引擎派生的 05/06/09）")
+  void acceptsAllControlledRejectTypes() {
+    for (String code :
+        List.of(
+            "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "20",
+            "30", "40")) {
+      assertThat(ReviewDecisionAssembler.requireRejectType(reqWithType(code)))
+          .as("受控码 " + code + " 应放行")
+          .isEqualTo(code);
+    }
+  }
+
+  @Test
+  @DisplayName("非受控原因码 → 400（自由文本/数字不在字典/大小写都不放行，杜绝前端脱节）")
+  void rejectsUncontrolledRejectType() {
+    for (String bad :
+        List.of(
+            "00", "14", "019", "99", "EVIDENCE_INSUFFICIENT", "目录外费用", "abc", "03; DROP TABLE")) {
+      BizException ex =
+          catchThrowableOfType(
+              () -> ReviewDecisionAssembler.requireRejectType(reqWithType(bad)),
+              BizException.class);
+      assertThat(ex).as("非法码「" + bad + "」应拒绝").isNotNull();
+      assertThat(ex.getErrorCode()).isEqualTo(ClaimErrorCodes.SC_CLAIM_REJECT_REASON_INVALID);
+      assertThat(ex.getCode()).isEqualTo(400);
+    }
+  }
+
+  private static ReviewDecisionReq reqWithType(String rejectType) {
+    return new ReviewDecisionReq(
+        Decision.REJECTED,
+        "u-1001",
+        "u-1002",
+        "意见",
+        List.of("doc-001"),
+        new Rejection("事实", "条款", List.of("EV-001"), "渠道", "时限"),
+        rejectType,
+        null);
+  }
+
+  @Test
   @DisplayName("拒赔证据位置：EV 编号与 #p 页码锚点均放行（含前后空格裁剪）")
   void acceptsValidEvidenceRefs() {
     ReviewDecisionReq request =

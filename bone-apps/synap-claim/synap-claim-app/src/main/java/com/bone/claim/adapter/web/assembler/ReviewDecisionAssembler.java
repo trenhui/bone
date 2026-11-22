@@ -2,6 +2,7 @@ package com.bone.claim.adapter.web.assembler;
 
 import com.bone.claim.adapter.web.dto.request.ReviewDecisionReq;
 import com.bone.claim.adapter.web.dto.request.ReviewDecisionReq.Rejection;
+import com.bone.claim.application.ClaimDictApplicationService;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.valueobject.Decision;
@@ -22,7 +23,7 @@ public final class ReviewDecisionAssembler {
   /**
    * 拒赔证据位置锚点格式（可定位到证据集条目）。
    *
-   * <p>形如 {@code EV-001} 或 {@code EV-001#p2}（#后为 1-based 影像页码，正本第 2 页）。只认 ASCII 大写 EV + 4 位序号，可选
+   * <p>形如 {@code EV-001} 或 {@code EV-001#p2}（#后为 1-based 影像页码，正本第 2 页）。只认 ASCII 大写 EV + 3~6 位序号，可选
    * {@code #p<正整数>}。拒绝自由文本、排序号、路径、超长——拒赔文书一旦写入不可定位的"证据位置"，申诉/复核就无法回放原件，是合规硬伤。
    */
   private static final Pattern EVIDENCE_REF = Pattern.compile("EV-\\d{3,6}(#p[1-9]\\d{0,3})?");
@@ -32,18 +33,26 @@ public final class ReviewDecisionAssembler {
   private static final String EV_REF_HINT = "EV-001 或 EV-001#p2（#p 为影像页码）";
 
   /**
-   * 受控拒赔原因码：非拒赔一律置空，拒赔缺失即 400。
+   * 受控拒赔原因码：非拒赔一律置空；拒赔缺失即 400，非受控码亦 400。
    *
-   * <p>不放行「用 comment 里的自由文本代替原因码」——差异归因与拒赔率统计按码聚合，自由文本一进来就断。
+   * <p>不放行「用 comment 里的自由文本代替原因码」——差异归因与拒赔率统计按码聚合，自由文本一进来就断。 白名单直接引用字典真源 {@link
+   * ClaimDictApplicationService#REJECT_REASON_CODES}，与前端 codegen 字典同源：杜绝「前端受控、后端照收任意字符串」的双口径（历史 E2E
+   * 用 01/02 却不在旧 8 码表内，正是这种漂移的实证）。新增码只改字典真源一处，前后端同步生效。
    */
   public static String requireRejectType(ReviewDecisionReq request) {
     if (request.decision() != Decision.REJECTED) {
       return null;
     }
-    if (request.rejectType() == null || request.rejectType().isBlank()) {
+    String code = request.rejectType() == null ? null : request.rejectType().trim();
+    if (code == null || code.isEmpty()) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_REJECT_REASON_REQUIRED, "缺少受控拒赔原因码 rejectType");
     }
-    return request.rejectType().trim();
+    if (!ClaimDictApplicationService.REJECT_REASON_CODES.contains(code)) {
+      throw ClaimErrors.of(
+          ClaimErrorCodes.SC_CLAIM_REJECT_REASON_INVALID,
+          "非法受控拒赔原因码「" + code + "」，允许值：" + ClaimDictApplicationService.REJECT_REASON_CODES);
+    }
+    return code;
   }
 
   /**

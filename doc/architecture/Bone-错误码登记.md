@@ -669,6 +669,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_EVIDENCE_UNCLEAR_BLOCKS_LOCK` | 422 | 证据集含不清晰/不完整影像，阻断锁定进入理算：请求合法、案件状态允许，缺的是「所有影像可入理算」事实前提；写入期硬拒避免「看图不清却已锁定出金」，明细（哪几张 UNCLEAR/INCOMPLETE）随 detail 返回供前端定位 |
 | `SC_CLAIM_AI_GATE_BLOCKED` | 422 | AI 能力就绪闸门未通过，自动通过被守门拦截转人工：请求合法，是部署态闸门/写开关前提不成立；fail-closed 绝不因展示层绿放行资金，blocker 明细随 detail 返回 |
 | `SC_CLAIM_REJECT_EVIDENCE_REF_INVALID` | 400 | 拒赔「证据位置」锚点格式非法（请求入参形状非法，非业务前提）：拒赔文书必须写可定位原件的位置 `EV-001` 或 `EV-001#p2`（#p 为影像页码），禁止自由文本/排序号/路径混入，否则申诉复核无法回放原件；与 `CLAIM_REJECT_REASON_REQUIRED` 同族，仅接单条决策端点（批量端点契约不带此字段） |
+| `SC_CLAIM_REJECT_REASON_INVALID` | 400 | 受控拒赔原因码非法（入参形状非法）：rejectType 不在字典真源 `ClaimDictApplicationService.REJECT_REASON_CODES`（01-13/20/30/40 共 16 码）内即拒，与「缺失码」`CLAIM_REJECT_REASON_REQUIRED` 分开定位；白名单与前端 codegen 字典同源，杜绝「前端受控、后端照收」双口径 |
 
 ---
 

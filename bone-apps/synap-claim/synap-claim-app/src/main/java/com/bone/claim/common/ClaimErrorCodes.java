@@ -397,4 +397,12 @@ public final class ClaimErrorCodes {
    */
   public static final String SC_CLAIM_REJECT_EVIDENCE_REF_INVALID =
       "SC_CLAIM_REJECT_EVIDENCE_REF_INVALID";
+
+  /**
+   * 受控拒赔原因码非法（写入期拒绝）。
+   *
+   * <p>rejectType 非字典真源 {@code ClaimDictApplicationService.REJECT_REASON_CODES} 中的码即 400。400 而非
+   * 422：入参形状非法，与 CLAIM_REJECT_REASON_REQUIRED 同族；「缺失」与「非法」分不同码，便于定位是漏填还是前端字典与后端脱节。
+   */
+  public static final String SC_CLAIM_REJECT_REASON_INVALID = "SC_CLAIM_REJECT_REASON_INVALID";
 }

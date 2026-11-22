@@ -111,7 +111,9 @@ public final class ClaimErrors {
           // 422：AI 闸门未过是「部署态前提不成立」，fail-closed 转人工，绝不因展示绿放行资金
           Map.entry(ClaimErrorCodes.SC_CLAIM_AI_GATE_BLOCKED, 422),
           // 400：拒赔证据位置锚点格式非法（请求入参形状非法，与 CLAIM_REJECT_REASON_REQUIRED 同族）
-          Map.entry(ClaimErrorCodes.SC_CLAIM_REJECT_EVIDENCE_REF_INVALID, 400));
+          Map.entry(ClaimErrorCodes.SC_CLAIM_REJECT_EVIDENCE_REF_INVALID, 400),
+          // 400：受控拒赔原因码非法（入参形状非法，与缺失码同族但分开定位）
+          Map.entry(ClaimErrorCodes.SC_CLAIM_REJECT_REASON_INVALID, 400));
 
   static {
     checkEveryCodeRegistered();
