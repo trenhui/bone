@@ -3,7 +3,8 @@
  *
  * 判据：
  *   1. 核赔工作台列表的「报案号」是带稳定 testid 的可点击链接（不是纯文本）；
- *   2. 点击后在**新标签页**打开 /standalone#/case?claimId=<id>&tab=overview，原工作台不动且详情渲染；
+ *   2. 点击后在**新标签页**打开 /sclaim/claim/detail?claimId=<id>&tab=overview（SynapClaim
+ *      规范、干净 path + query、无 hash），原工作台不动且详情渲染；
  *   3. 初审工作台的报案号、盲标工作台的案件 ID 同样是可点击链接（同一组件，三处接入）；
  *   4. 全程无 console error。
  *
@@ -85,7 +86,7 @@ if (reviewCount > 0) {
   const testId = await first.getAttribute('data-testid');
   const claimId = testId.replace('review-case-link-', '');
   const href = await first.getAttribute('href');
-  check('链接 href 指向案件 360 独立页深链', Boolean(href && href.includes(`/standalone#/case?claimId=${claimId}`)), `href=${href}`);
+  check('href 指向 sclaim 规范案件详情 URL', Boolean(href && href.includes(`/sclaim/claim/detail?claimId=${claimId}`) && !href.includes('#')), `href=${href}`);
   check('链接声明在新标签页打开', (await first.getAttribute('target')) === '_blank', `target=${await first.getAttribute('target')}`);
 
   // 点击 → 断言新标签页打开案件详情，且原工作台保持不变
@@ -98,7 +99,7 @@ if (reviewCount > 0) {
   await detailPage.waitForLoadState('domcontentloaded').catch(() => {});
   await detailPage.waitForTimeout(2500);
   const detailUrl = detailPage.url();
-  check('点击报案号在新标签页打开案件 360 独立页', detailUrl.includes('/standalone#/case?claimId=') && detailUrl.includes(claimId), `url=${detailUrl}`);
+  check('点击报案号在新标签页打开 sclaim 规范案件详情', detailUrl.includes('/sclaim/claim/detail?claimId=') && detailUrl.includes(claimId) && !detailUrl.includes('#'), `url=${detailUrl}`);
   check('焦点页无左侧菜单', (await detailPage.locator('.shell-sider').count()) === 0, `shell-sider 数=${await detailPage.locator('.shell-sider').count()}`);
   check('焦点页无顶栏', (await detailPage.locator('.shell-header').count()) === 0, `shell-header 数=${await detailPage.locator('.shell-header').count()}`);
   check('原工作台页面未被导航走', page.url() === workbenchUrl, `before=${workbenchUrl} after=${page.url()}`);
@@ -108,15 +109,10 @@ if (reviewCount > 0) {
     await detailPage.screenshot({ path: `${SHOT_DIR}/case-focus-detail-${Date.now()}.png`, fullPage: false });
   } catch { /* 截图失败不影响判据 */ }
 
-  // 旧别名兼容：已发出的 /claim-detail#/case?... 历史链接仍应直达同一独立页。
-  const legacyUrl = new URL(detailUrl);
-  legacyUrl.pathname = '/claim-detail';
-  await detailPage.goto(legacyUrl.toString(), { waitUntil: 'domcontentloaded' }).catch(() => {});
-  await detailPage.waitForTimeout(2200);
-  check('旧别名 /claim-detail 仍可直达独立页', detailPage.url().includes('/claim-detail#/case?claimId='), `url=${detailPage.url()}`);
-  check('旧别名页无左侧菜单', (await detailPage.locator('.shell-sider').count()) === 0, `shell-sider 数=${await detailPage.locator('.shell-sider').count()}`);
-  const legacyText = await detailPage.locator('#subapp-viewport').innerText().catch(() => '');
-  check('旧别名页详情仍渲染', legacyText.length > 30, `text长度=${legacyText.length}`);
+  // 规范 URL 无 hash、query 直达：详情内容须由 window.location.search 的 claimId 驱动。
+  const detailParams = new URL(detailUrl).searchParams;
+  check('规范 URL 用 query 传 claimId', detailParams.get('claimId') === claimId, `claimId=${detailParams.get('claimId')}`);
+  check('规范 URL 无 hash 路由', !detailUrl.includes('#'), `url=${detailUrl}`);
   await detailPage.close();
 }
 

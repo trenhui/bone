@@ -42,7 +42,7 @@ import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
 import { PolicyNoLink } from '../components/PolicyNoLink';
 import { parsePolicyNoFromSearch } from '../workbench/policyDeepLinks';
-import { isFocusPath } from '../workbench/focusMode';
+import { isStandalonePath } from '../workbench/sclaimRoutes';
 import { InsurerSelect } from '../components/InsurerSelect';
 import { BatchImportModal, type ImportColumn } from '../components/BatchImportModal';
 import { FORM_VALIDATION_MESSAGE, isFormValidationError } from '../utils/formError';
@@ -152,10 +152,10 @@ export function PolicyManagementPage(): ReactElement {
   const deepLinkedPolicyNo = parsePolicyNoFromSearch(searchParams.toString());
   /**
    * 独立页模式：新标签页只展示详情本身（列表/工具条/弹窗都不渲染）。
-   * 必须读浏览器地址栏的 pathname —— HashRouter 的 useLocation().pathname 是 hash 内的
-   * `/policy`，拿不到 shell 的 `/standalone` 前缀（旧别名为 `/claim-detail`）。
+   * 规范 URL 是干净的 `/sclaim/policy/detail?policyNo=...`（BrowserRouter），
+   * 这里按浏览器地址栏 pathname 判定；常规嵌入态仍是 HashRouter 的 `/policy`（返回 false）。
    */
-  const isFocusMode = isFocusPath(window.location.pathname);
+  const isFocusMode = isStandalonePath(window.location.pathname);
 
   const load = useCallback(async () => {
     setLoading(true);

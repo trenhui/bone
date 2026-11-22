@@ -17,7 +17,8 @@ describe('ClaimIdLink', () => {
     render(<ClaimIdLink claimId="776102367333449728" />);
     const link = screen.getByTestId('claim-id-link-776102367333449728');
     expect(link.tagName).toBe('A');
-    expect(link.getAttribute('href')).toContain('/standalone#/case?claimId=776102367333449728&tab=overview');
+    expect(link.getAttribute('href')).toContain('/sclaim/claim/detail?claimId=776102367333449728&tab=overview');
+    expect(link.getAttribute('href')).not.toContain('#');
     expect(link.getAttribute('target')).toBe('_blank');
     expect(link.getAttribute('rel')).toContain('noopener');
   });
@@ -26,7 +27,7 @@ describe('ClaimIdLink', () => {
     render(<ClaimIdLink claimId="776102367333449728" text="BAOAN-2026-001" tab="material" testId="cell-case" />);
     const link = screen.getByTestId('cell-case');
     expect(link.textContent).toContain('BAOAN-2026-001');
-    expect(link.getAttribute('href')).toContain('/standalone#/case?claimId=776102367333449728&tab=material');
+    expect(link.getAttribute('href')).toContain('/sclaim/claim/detail?claimId=776102367333449728&tab=material');
     expect(link.getAttribute('href')).not.toContain('BAOAN-2026-001');
     expect(link.getAttribute('target')).toBe('_blank');
   });

@@ -1,7 +1,7 @@
 import type { MouseEvent, ReactElement } from 'react';
 import { Button, Tooltip } from 'antd';
-import { buildPolicyDetailLink, isSafePolicyNo } from '../workbench/policyDeepLinks';
-import { buildFocusHref } from '../workbench/focusMode';
+import { isSafePolicyNo } from '../workbench/policyDeepLinks';
+import { buildPolicyDetailHref } from '../workbench/sclaimRoutes';
 
 /**
  * 保单号 → 保单详情的唯一「可点击单元格」入口。
@@ -38,7 +38,7 @@ export function PolicyNoLink({
 }: PolicyNoLinkProps): ReactElement {
   const id = policyNo == null ? '' : String(policyNo);
   const label = text?.trim() || id || placeholder;
-  const href = buildFocusHref(buildPolicyDetailLink(id));
+  const href = buildPolicyDetailHref(id);
 
   if (!href || !isSafePolicyNo(id)) {
     return <span data-testid={testId ?? 'policy-no-link-invalid'}>{label}</span>;

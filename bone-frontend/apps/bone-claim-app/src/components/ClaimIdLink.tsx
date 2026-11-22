@@ -1,7 +1,7 @@
 import type { MouseEvent, ReactElement } from 'react';
 import { Button, Tooltip } from 'antd';
-import { buildCase360Link, isSafeClaimId, type CaseTab } from '../workbench/caseDeepLinks';
-import { buildFocusHref } from '../workbench/focusMode';
+import { isSafeClaimId, type CaseTab } from '../workbench/caseDeepLinks';
+import { buildClaimDetailHref } from '../workbench/sclaimRoutes';
 
 /**
  * 案件 ID / 报案号 → 案件 360 详情页的唯一「可点击单元格」入口。
@@ -26,12 +26,12 @@ import { buildFocusHref } from '../workbench/focusMode';
  * 前者保留「复制链接地址 / 右键新标签页打开 / 状态栏预览 / 中键点击」等原生语义，
  * 且 `noopener` 防止新页面通过 window.opener 反向操作原窗口，`noreferrer` 不泄漏来源。
  *
- * <p>无壳独立页模式
- * ----------------
- * href 由 {@link buildFocusHref} 统一拼成 `origin + /standalone#/case?...`：shell 识别
- * `/standalone` 后只挂载微应用内容区，不渲染侧栏/顶栏/Content 边距，得到与旧理赔
- * `claimDetail` 一致的独立详情页。微应用内部仍是 HashRouter，hash 路由契约不变。
- * 旧路径 `/claim-detail` 仅作历史别名识别，不再用于生成新链接。
+ * <p>SynapClaim 规范独立页
+ * -------------------------
+ * href 遵循系统统一规范 `/sclaim/{module}/{page}`：案件详情为
+ * `/sclaim/claim/detail?claimId=...&tab=...`，干净的 path + query，不带 hash。
+ * shell 识别 `/sclaim/.../detail` 后只挂载微应用内容区，不渲染侧栏/顶栏/Content 边距。
+ * 微应用在该 URL 下用 BrowserRouter 直接渲染 Case360Page，从 window.location.search 读参数。
  */
 export interface ClaimIdLinkProps {
   /** 案件 ID（真值来源）。数字类型会被转成字符串；空值降级为占位符。 */
@@ -55,7 +55,7 @@ export function ClaimIdLink({
 }: ClaimIdLinkProps): ReactElement {
   const id = claimId == null ? '' : String(claimId);
   const label = text?.trim() || id || placeholder;
-  const href = buildFocusHref(buildCase360Link(id, tab));
+  const href = buildClaimDetailHref(id, tab);
 
   // fail-closed：非法 ID（含注入字符）或空值不生成链接，只显示纯文本。
   if (!href || !isSafeClaimId(id)) {

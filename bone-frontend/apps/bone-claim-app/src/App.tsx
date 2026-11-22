@@ -1,11 +1,14 @@
 import { Suspense } from 'react';
-import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { App as AntdApp, Button, Layout, Menu, Result, Spin, Tag, Typography } from 'antd';
 import { Auth } from '@bone/ui';
 import { CLAIM_DEFAULT_PATH, CLAIM_ROUTES } from './routes';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CommandPalette } from './components/CommandPalette';
 import { PERMISSIONS } from './constants/permissions';
+import { STANDALONE_PATHS, isStandalonePath } from './workbench/sclaimRoutes';
+import { Case360Page } from './pages/Case360Page';
+import { PolicyManagementPage } from './pages/PolicyManagementPage';
 import './App.css';
 
 /**
@@ -131,6 +134,24 @@ export interface AppProps {
 }
 
 export const App: React.FC<AppProps> = ({ embedded = false }) => {
+  // SynapClaim 规范独立页：/sclaim/claim/detail?claimId=... 或 /sclaim/policy/detail?policyNo=...
+  // 干净的 path + query（无 hash），因此必须用 BrowserRouter 让 useSearchParams 直接读到
+  // window.location.search；不渲染 CommandPalette / DevNav（那是 shell 与调试态能力）。
+  if (isStandalonePath(window.location.pathname)) {
+    return (
+      <AntdApp>
+        <BrowserRouter>
+          <ErrorBoundary>
+            <Routes>
+              <Route path={STANDALONE_PATHS.CLAIM_DETAIL} element={<Case360Page />} />
+              <Route path={STANDALONE_PATHS.POLICY_DETAIL} element={<PolicyManagementPage />} />
+            </Routes>
+          </ErrorBoundary>
+        </BrowserRouter>
+      </AntdApp>
+    );
+  }
+
   return (
     <AntdApp>
       {/* 必须用 HashRouter：微应用内路由挂在 URL hash 上（/claim#/review），
