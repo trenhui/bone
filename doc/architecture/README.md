@@ -26,7 +26,7 @@
 
 **质量与交付**：[Bone-测试策略.md](./Bone-测试策略.md) · [Bone-版本与发布规范.md](./Bone-版本与发布规范.md) · [Bone-国际化规范.md](./Bone-国际化规范.md) · [adr/](./adr/)
 
-**前端**：[bone-前端架构.md](./bone-前端架构.md) · [frontend/frontend-ui-spec.md](./frontend/frontend-ui-spec.md) · [SynapClaim-命名规范.md](./SynapClaim-命名规范.md)（智能理赔系统缩写 `sclaim`、浏览器 URL `/{sclaim}/{module}/{page}`、跨层命名映射；API 路径仍以 [Bone-API-规范](./Bone-API-规范.md) 为准）
+**前端**：[bone-前端架构.md](./bone-前端架构.md) · [frontend/frontend-ui-spec.md](./frontend/frontend-ui-spec.md) · [SynapClaim-命名规范.md](../ai-product/synapClaim/03-contract/SynapClaim-命名规范.md)（智能理赔系统缩写 `sclaim`、浏览器 URL `/{sclaim}/{module}/{page}`、跨层命名映射；API 路径仍以 [Bone-API-规范](./Bone-API-规范.md) 为准）
 
 **其他**：[元数据能力-实现映射与竞品对照](../design/modules/元数据能力-实现映射与竞品对照.md) · [smartmeta/README.md](./smartmeta/README.md) · [architecture-layers.svg](./architecture-layers.svg)（架构分层总览图：L1 功能层 / L2 数据层 / L3 扩展层 / L4 生态层 + 四大引擎与端口）
 

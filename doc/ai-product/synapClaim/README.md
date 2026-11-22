@@ -20,6 +20,7 @@ currency: current
 | 看系统全貌、模块边界、关键链路 | `04-design/总体技术方案.md` | `03-contract/工程详细设计-落地版.md`（落到代码的契约） |
 | 查某个模块的对外接口、领域不变量、详设落点 | `04-design/总体技术方案.md` §4.1 组件视图 | 按 §4.1「详设落点」列跳到对应真源章节 |
 | 改代码 / 加接口 / 动数据模型 | `03-contract/工程详细设计-落地版.md`（工程契约 SSOT） | `04-design/理算引擎设计.md`（若涉金额）、`07-delivery/05-接口契约与数据字典（MVP）.md`（对外契约） |
+| 改理赔路由 / 菜单 / 权限码 / 系统缩写 / 跨层命名 | `03-contract/SynapClaim-命名规范.md`（`sclaim` + `/{sclaim}/{module}/{page}` 真源） | `04-design/总体技术方案.md`（模块边界） |
 | 做 AI / 决策图 / 模型接入 | `04-design/AI技术方案.md` | `04-design/BONE-AI能力依赖图谱.md` |
 | 审理算算法 / 查金额为什么这么算 | `04-design/理算引擎设计.md` | `03-contract/智能理算引擎业务规则V1.md`（业务口径）、`06-verification/理算引擎验证套件.md`（怎么验证） |
 | 跑测试 / 判断"是不是真的修好了" | `06-verification/理算引擎验证套件.md` | `synap-claim-oracle-POINTER.md` → `doc/ai-product/synap-claim-oracle/synap-claim-settlement/README.md` |

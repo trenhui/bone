@@ -130,6 +130,17 @@
       "currency": "current"
     },
     {
+      "id": "contract.naming",
+      "path": "03-contract/SynapClaim-命名规范.md",
+      "layer": "L3",
+      "diataxis": "reference",
+      "status": "active",
+      "summary": "SynapClaim 系统级命名真源：sclaim 缩写与 /{sclaim}/{module}/{page} 浏览器 URL、模块/页面/权限/错误码注册表、跨层 API 路径裁定与机器门禁",
+      "authority": "系统缩写 / 浏览器 URL / 跨层命名映射 / 机器门禁",
+      "role": "ssot",
+      "currency": "current"
+    },
+    {
       "id": "design.ai",
       "path": "04-design/AI技术方案.md",
       "layer": "L4",

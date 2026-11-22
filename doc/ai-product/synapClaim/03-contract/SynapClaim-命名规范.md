@@ -1,10 +1,16 @@
+---
+doc_id: contract.naming
+role: ssot
+currency: current
+---
+
 # SynapClaim（智能理赔系统）命名规范
 
 > **文档性质**：SynapClaim 系统级命名**真源**，适用于前端路由、菜单、权限资源标识及与平台 API 规范的映射。
 > **更新日期**：2026-11-22
-> **上位规范**：[Bone-API-规范.md](./Bone-API-规范.md)（HTTP 契约，优先级更高）、[bone-前端架构.md](./bone-前端架构.md)、[Bone-API-规范.md §9.2](./Bone-API-规范.md#92-权限-scopeopenapi--iam)（权限 Scope 格式）
+> **上位规范**：[Bone-API-规范.md](../../../architecture/Bone-API-规范.md)（HTTP 契约，优先级更高）、[bone-前端架构.md](../../../architecture/bone-前端架构.md)、[Bone-API-规范.md §9.2](../../../architecture/Bone-API-规范.md#92-权限-scopeopenapi--iam)（权限 Scope 格式）
 > **机器载体**：`scripts/check-sclaim-naming.py`（`--self-test` 负向探针 + `--check` 主判据，接入 `scripts/check.sh` 与 `scripts/ci-check.sh`）
-> **API 域注册**：本文所述 `claims` / `claim-config` / `claim-ops` / `review` / `internal` 已登记于 [Bone-API-规范 §2.3 域注册表](./Bone-API-规范.md#23-域domain注册表)；API 路径模板以该规范为准。
+> **API 域注册**：本文所述 `claims` / `claim-config` / `claim-ops` / `review` / `internal` 已登记于 [Bone-API-规范 §2.3 域注册表](../../../architecture/Bone-API-规范.md#23-域domain注册表)；API 路径模板以该规范为准。
 
 ---
 
@@ -15,12 +21,12 @@
 | 系统名 / 缩写 | ✅ 强制 | 本文 §2 |
 | 浏览器页面 URL（新窗口独立页、深链） | ✅ 强制 | 本文 §3–§5 |
 | 菜单项名称、分组、图标 | ✅ 强制 | 本文 §6 |
-| 权限资源标识（`claim:{资源}:{动作}`） | ✅ 强制 | 本文 §6，格式沿用平台 [API 规范 §9.2](./Bone-API-规范.md#92-权限-scopeopenapi--iam) |
-| 错误码前缀 | ✅ 强制 | `SC_CLAIM_*`，真源为 [错误码登记 §SC_](./Bone-错误码登记.md#sc_-synap-claim-智能理赔平台)（本文只引用，不复述台账） |
-| 后端 HTTP API 路径 | ⚠️ **不适用结构改造**，只做跨层映射 | [Bone-API-规范 §2.1/§2.2](./Bone-API-规范.md#21-路径模板强制) 强制 `/api/v1/{domain}/...`，见本文 §7 |
-| 数据库表名、DDL | ❌ 不适用 | [数据库开发规范](./数据库开发规范.md) |
+| 权限资源标识（`claim:{资源}:{动作}`） | ✅ 强制 | 本文 §6，格式沿用平台 [API 规范 §9.2](../../../architecture/Bone-API-规范.md#92-权限-scopeopenapi--iam) |
+| 错误码前缀 | ✅ 强制 | `SC_CLAIM_*`，真源为 [错误码登记 §SC_](../../../architecture/Bone-错误码登记.md#sc_-synap-claim-智能理赔平台)（本文只引用，不复述台账） |
+| 后端 HTTP API 路径 | ⚠️ **不适用结构改造**，只做跨层映射 | [Bone-API-规范 §2.1/§2.2](../../../architecture/Bone-API-规范.md#21-路径模板强制) 强制 `/api/v1/{domain}/...`，见本文 §7 |
+| 数据库表名、DDL | ❌ 不适用 | [数据库开发规范](../../../architecture/数据库开发规范.md) |
 
-**真源优先级**：平台规范 > 本文 > 模块详设 > 代码实现。本文与平台规范冲突时以平台规范为准；若确需偏离，须走 ADR 并在 [Bone-API-规范 §13.2 迁移登记](./Bone-API-规范.md#132-废弃与迁移) 留痕。
+**真源优先级**：平台规范 > 本文 > 模块详设 > 代码实现。本文与平台规范冲突时以平台规范为准；若确需偏离，须走 ADR 并在 [Bone-API-规范 §13.2 迁移登记](../../../architecture/Bone-API-规范.md#132-废弃与迁移) 留痕。
 
 ---
 
@@ -81,7 +87,7 @@
 
 1. **不保留任何兼容别名**。已废止 `/standalone`、`/claim-detail`，旧 URL 直接失效，防止「同一语义两处配置源」。
 2. **不在路径里放视图态词**（如 `detail` 之外的 `view` / `show` / `page`）；页面标识只允许 §5 注册表的值。
-3. **不把资源 ID 塞进 path 段**。当前独立页通过 query 传 `claimId` / `policyNo`：微应用内嵌态受 qiankun `HashRouter` 约束，独立页用 `BrowserRouter` 直读 `window.location.search`（见 [sclaimRoutes.ts](../../bone-frontend/apps/bone-claim-app/src/workbench/sclaimRoutes.ts)）。若将来统一改为资源化路径（`/sclaim/claim/{id}`），须作为独立 ADR 评估全量路由契约，不得在本次规范下悄悄变体。
+3. **不把资源 ID 塞进 path 段**。当前独立页通过 query 传 `claimId` / `policyNo`：微应用内嵌态受 qiankun `HashRouter` 约束，独立页用 `BrowserRouter` 直读 `window.location.search`（见 [sclaimRoutes.ts](../../../../bone-frontend/apps/bone-claim-app/src/workbench/sclaimRoutes.ts)）。若将来统一改为资源化路径（`/sclaim/claim/{id}`），须作为独立 ADR 评估全量路由契约，不得在本次规范下悄悄变体。
 4. **深链构造只走唯一真源**：`sclaimRoutes.ts` 的 `buildClaimDetailHref` / `buildPolicyDetailHref`；组件不得自行拼接 URL 字符串。
 
 ### 3.4 双 Router 分流（实现约束，非规范选择）
@@ -136,7 +142,7 @@
 
 ### 6.2 权限资源标识
 
-格式沿用平台 [API 规范 §9.2](./Bone-API-规范.md#92-权限-scopeopenapi--iam) 的 `{域}:{资源}:{动作}`：
+格式沿用平台 [API 规范 §9.2](../../../architecture/Bone-API-规范.md#92-权限-scopeopenapi--iam) 的 `{域}:{资源}:{动作}`：
 
 ```
 claim:{资源}:{动作}
@@ -156,7 +162,7 @@ claim:{资源}:{动作}
 
 ### 6.3 错误码
 
-- 业务错误码前缀 **`SC_CLAIM_*`**，真源是 [Bone-错误码登记 §SC_](./Bone-错误码登记.md#sc_-synap-claim-智能理赔平台)。
+- 业务错误码前缀 **`SC_CLAIM_*`**，真源是 [Bone-错误码登记 §SC_](../../../architecture/Bone-错误码登记.md#sc_-synap-claim-智能理赔平台)。
 - 本文只规定「前缀来自系统名缩写 + 域名」这一命名原则；具体码值、HTTP 状态、双语译文一律以台账为准，禁止在本文或前端代码里另立副本。
 - 新增错误码三处必齐：`ClaimErrorCodes` + `ClaimErrors.DEFAULT_HTTP_STATUS` + 前端 `zh-CN`/`en-US` 语言包；机检见台账 §第 3 步登记的 `doc/ai-product/synapClaim/tools/_check_error_code_i18n.py`。
 
@@ -168,7 +174,7 @@ claim:{资源}:{动作}
 
 **建议中「API 统一纳入 `/api/sclaim` 前缀」不采纳。** 理由（均为可复核事实）：
 
-1. **违反平台强制真源**：[Bone-API-规范 §2.1](./Bone-API-规范.md#21-路径模板强制) 定义唯一路径模板 `/api/v1/{domain}/{resource-collection}`，§2.2 明确「新接口**必须** `/api/v1/...`」「无版本别名已废止」。`sclaim` 属于 `{domain}` 层级的候选值，不能取代 `/api/v1` 这个版本命名空间。
+1. **违反平台强制真源**：[Bone-API-规范 §2.1](../../../architecture/Bone-API-规范.md#21-路径模板强制) 定义唯一路径模板 `/api/v1/{domain}/{resource-collection}`，§2.2 明确「新接口**必须** `/api/v1/...`」「无版本别名已废止」。`sclaim` 属于 `{domain}` 层级的候选值，不能取代 `/api/v1` 这个版本命名空间。
 2. **两类 URL 职责不同**：浏览器 URL 是**页面导航**（面向人、可收藏、随 UI 重构变化）；HTTP API 是**资源契约**（面向机器、有版本与破坏性变更约束）。「统一」应体现在**业务标识一一对应**，而非结构完全相同。
 3. **爆炸半径不可接受**：现网理赔 API 有 5 个前缀（`/api/v1/claims`、`claim-config`、`claim-ops`、`review`、`internal`）、**40 个 Controller / 188 个端点**；网关按前缀白名单转发（4 条 route 全指向 `synap-claim:8087`）；前端 service 分散在多个 `createApiClient('/api/v1/...')`；E2E `impact-map.json` 固化了 156 条理赔端点，另有约 20 个脚本硬编码路径。一次性改名会同时触碰契约、网关、前端、E2E，且属于破坏性变更（需 v2 + Sunset），无法「按最新规范直接切换」。
 4. **反例已经存在**：`/api/v1/internal/**` 未登记网关白名单（直连 8087 可达、经网关 404），说明前缀体系本身还有缺口；此时再引入第六套例外只会放大不一致。
@@ -190,7 +196,7 @@ claim:{资源}:{动作}
 
 **约束**：
 - 新增理赔业务对象时，**先在本表登记**四个标识（浏览器模块 / API domain / 权限资源 / 错误码前缀），再写代码；只登记其中一个就开工视为违规。
-- API domain 的新增/变更遵循 [Bone-API-规范 §2.3 域注册表](./Bone-API-规范.md#23-域domain注册表)；本文不复制该表，仅在 §7.2 维护理赔系统内部映射。
+- API domain 的新增/变更遵循 [Bone-API-规范 §2.3 域注册表](../../../architecture/Bone-API-规范.md#23-域domain注册表)；本文不复制该表，仅在 §7.2 维护理赔系统内部映射。
 - 机检 `check-sclaim-naming.py` 保证：后端/网关**不得**出现 `/api/sclaim` 字面量（防止有人绕过 §7.1 裁定引入第六套前缀）。
 
 ---
@@ -219,7 +225,7 @@ claim:{资源}:{动作}
 - [ ] URL 无 hash（独立页）、无兼容别名、无拼音/驼峰、query 只放资源标识
 - [ ] 深链通过 `sclaimRoutes.ts` 构造，组件不自行拼 URL
 - [ ] 菜单名、权限码、错误码前缀与 §6 / §7.2 映射表一致
-- [ ] API 路径保持 `/api/v1/{domain}/...`，新增 domain 先在 [Bone-API-规范 §2.3](./Bone-API-规范.md#23-域domain注册表) 登记
+- [ ] API 路径保持 `/api/v1/{domain}/...`，新增 domain 先在 [Bone-API-规范 §2.3](../../../architecture/Bone-API-规范.md#23-域domain注册表) 登记
 - [ ] 跑 `python3 scripts/check-sclaim-naming.py --self-test && python3 scripts/check-sclaim-naming.py --check`
 - [ ] 前端 typecheck + 单测 + 独立页 E2E 探针（无菜单/无顶栏/无 hash）
 
@@ -230,3 +236,30 @@ claim:{资源}:{动作}
 | 日期 | 说明 |
 |---|---|
 | 2026-11-22 | 初版。确立 `sclaim` 系统缩写与 `/{sclaim}/{module}/{page}` 浏览器 URL 规范；登记模块/页面/权限/错误码映射；裁定 API 保持 `/api/v1`（附理由与独立议题路径）；新增机检门禁并接入 check.sh / ci-check.sh |
+| 2026-11-22 | 迁入 synapClaim 文档族 L3 契约层（`03-contract/`），登记 `docs.manifest.json`（id `contract.naming`）、补 front-matter、重生成 AI-INDEX；文档内跨目录链接按新位置重写；门禁 `DOC_REL` 与全仓引用同步更新 |
+
+---
+
+## 11. 决策摘要
+
+本规范只解决一类问题：**SynapClaim 的系统级标识在浏览器 URL、菜单、权限码、错误码、跨层映射之间各自为政**。核心决策三条：系统缩写唯一取 `sclaim`；浏览器 URL 统一 `/{sclaim}/{module}/{page}`（资源标识只走 query）；后端 API 路径维持平台强制的 `/api/v1/{domain}`，以语义映射表而非路径同形达成跨层一致。裁决细节见 §2、§3、§7。
+
+## 12. 不做清单
+
+- 不做兼容别名：`/standalone`、`/claim-detail` 直接失效，不保留重定向或双真源。
+- 不改造后端 API 路径为 `/api/sclaim/...`：那是破坏性变更，须独立 ADR（见 §7.1）。
+- 不把资源 ID 塞进 path 段、不引入 `view`/`info`/`show` 等页面标识同义词（见 §3.3、§5）。
+- 不复述错误码台账、数据库规范、权限 Scope 格式的正文——只引用各自真源（见 §1、§6.3）。
+
+## 13. 风险与回退
+
+- **风险**：模块/页面注册表是代码与文档的双真源，若新增模块先写代码后登记，G3 判据会当场判红（这是设计意图，不是缺陷）。回退路径是先补 §4/§5 登记再改 `sclaimRoutes.ts`。
+- **风险**：文档迁入文档族后受 `_check_doc_structure.py` 约束（L3/ssot/reference 必含四节）；本文件 §11–§14 即为此治理要求而设，不可删除。
+- **风险**：跨目录相对链接在文档再次移动时会失效；M6 路径判据会判红，须按新位置重算 `../../../` 层级（当前见 §11 迁移记录）。
+- **回退**：若 `sclaim` 缩写后续被平台级规范否决，须走 ADR 并在 [Bone-API-规范 §13.2 迁移登记](../../../architecture/Bone-API-规范.md#132-废弃与迁移) 留痕，再全量替换真源与门禁常量，禁止单独改代码绕过规范。
+
+## 14. 待决策
+
+- 资源化页面路径（`/sclaim/claim/{id}`）是否替代 query 传参：需评估全量路由契约与 qiankun 双 Router 影响，当前维持 query（见 §3.3）。
+- `/api/v1/internal/**` 网关前缀白名单缺口是否补齐：属 API 治理议题，不在本规范范围（见 §7.1 反例）。
+- 模块注册表中「规划」模块的启用时序：由各模块详设落地时逐项转「已落地」，本规范只提供登记入口。

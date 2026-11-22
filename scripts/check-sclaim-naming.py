@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SynapClaim 命名规范机检（规范正文：doc/architecture/SynapClaim-命名规范.md）。
+"""SynapClaim 命名规范机检（规范正文：doc/ai-product/synapClaim/03-contract/SynapClaim-命名规范.md）。
 
 判据（G1–G4，见规范 §8）：
   G1 系统缩写与路径构造：sclaimRoutes.ts 必须是 `sclaim` + `buildSclaimPath` 三级模板；
@@ -29,7 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 ROUTES_REL = "bone-frontend/apps/bone-claim-app/src/workbench/sclaimRoutes.ts"
-DOC_REL = "doc/architecture/SynapClaim-命名规范.md"
+DOC_REL = "doc/ai-product/synapClaim/03-contract/SynapClaim-命名规范.md"
 
 ALLOWED_PAGES = {"list", "detail", "create", "edit", "recognition"}
 LEGACY_PATHS = ("/standalone", "/claim-detail")

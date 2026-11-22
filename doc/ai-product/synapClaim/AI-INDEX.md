@@ -55,7 +55,7 @@ currency: current
 | 多保司接入 / 保单配置面 / 主数据映射 / 新保司接入周期 | `design.multi-insurer-mapping` |
 | 反欺诈 / 视觉反诈 / 图计算 / 直付通道 / 模型风险（MRM） | `design.risk-payment` |
 
-## 三、ACTIVE 现行真源（currency=current，可引用为事实，共 37 份）
+## 三、ACTIVE 现行真源（currency=current，可引用为事实，共 38 份）
 
 | id | 路径 | role | 一句话 |
 |---|---|---|---|
@@ -64,6 +64,7 @@ currency: current
 | `history` | `00-governance/02-整合历史.md` | navigation | P1–P10 各轮整合的动因、动作与口径修正记录（历史，非当前口径） |
 | `strategy` | `01-strategy/Synap（思纳普）创业方案.md` | ssot | 公司定位、1 底座 + 2 触角战略、竞争与团队；只讲商业，不含工程口径 |
 | `prd` | `02-requirements/产品需求文档.md` | ssot | 需求真源：功能范围、用户故事（BDD）、KPI、约束 |
+| `contract.naming` | `03-contract/SynapClaim-命名规范.md` | ssot | SynapClaim 系统级命名真源：sclaim 缩写与 /{sclaim}/{module}/{page} 浏览器 URL、模块/页面/权限/错误码注册表、跨层 API 路径裁定与机器门禁 |
 | `contract.landing` | `03-contract/工程详细设计-落地版.md` | ssot | 工程契约 SSOT：§9.5 设计态 DDL 集合（与 §9.1 清单 / §9.0 差异登记集合对账，不登记表数）、OpenAPI(§10)、非功能(§11)、ADR(§14)、时序；§9.0（4）（5）为活库列级体检与 14 张业务列差异的逐张整改台账 |
 | `contract.rules-v1` | `03-contract/智能理算引擎业务规则V1.md` | ssot | 理算业务口径真源(V1)：责任 11 要素、发票 6 公式、九步主流程、免赔 6 维、控额 7 层；含 Q-01–Q-15 待澄清 |
 | `design.ai` | `04-design/AI技术方案.md` | ssot | bone-ai 落地：六模块映射、DAG 执行器、五段式编排预算、资金、评测、ADR 摘记 |

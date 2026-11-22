@@ -112,7 +112,7 @@
 
 > **SynapClaim（智能理赔）命名**：系统缩写统一 `sclaim`，浏览器页面 URL 为 `/sclaim/{module}/{page}`；
 > 后端 API **仍遵循本节 `/api/v1/{domain}/...` 模板**，不设 `/api/sclaim` 例外。
-> 浏览器模块↔API domain↔权限资源↔错误码的映射真源见 [SynapClaim-命名规范 §7.2](./SynapClaim-命名规范.md#72-统一方式语义映射表api-路径裁定)，本文不复制该表。
+> 浏览器模块↔API domain↔权限资源↔错误码的映射真源见 [SynapClaim-命名规范 §7.2](../ai-product/synapClaim/03-contract/SynapClaim-命名规范.md#72-统一方式语义映射表api-路径裁定)，本文不复制该表。
 
 ### 2.4 HTTP 方法与状态码
 

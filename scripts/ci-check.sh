@@ -211,13 +211,13 @@ python3 scripts/check-event-envelope-version.py --check || {
 }
 
 echo "🔍 SynapClaim 命名规范（G0：缩写 / 浏览器 URL / 无遗留别名 / API 前缀裁定）..."
-# 规范正文：doc/architecture/SynapClaim-命名规范.md。先自测负向探针防恒绿，再跑主判据。
+# 规范正文：doc/ai-product/synapClaim/03-contract/SynapClaim-命名规范.md。先自测负向探针防恒绿，再跑主判据。
 python3 scripts/check-sclaim-naming.py --self-test || {
   echo -e "${RED}❌ SynapClaim 命名门禁负向探针失效（判据恒绿，绿灯不可信）！${RESET}"
   exit 1
 }
 python3 scripts/check-sclaim-naming.py --check || {
-  echo -e "${RED}❌ SynapClaim 命名规范违规（见 doc/architecture/SynapClaim-命名规范.md §8）！${RESET}"
+  echo -e "${RED}❌ SynapClaim 命名规范违规（见 doc/ai-product/synapClaim/03-contract/SynapClaim-命名规范.md §8）！${RESET}"
   exit 1
 }
 
