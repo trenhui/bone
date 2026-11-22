@@ -125,7 +125,7 @@ mvn -o -pl ... -am test -Dtest=ClaimLifecycleE2ETest -De2e.local=true
 
 ## 6. 残留风险
 
-1. **本地活库残留列**：`t_claim_case.report_no`（`NULL` 允许、0 行有值、注释「冗余展示」）存在于本机 bone 库，但**不在 `bone-init.sql`/迁移/实体任何一处**，代码也不读它。属早前实验残留，未删除（避免破坏共享库），但须明确：它不是报案号的第二来源，投影 SQL 取 `r.report_no`。
+1. **本地活库残留列**：`t_claim_case.report_no`（`NULL` 允许、0 行有值、注释「冗余展示」）存在于本机 bone 库，但**不在 `bone-init.sql`/迁移/实体任何一处**，代码也不读它。属早前并行实验残留，是「报案号有两个真源」的物证。清理脚本已交付：`scripts/migration/0140_synap_claim_drop_case_report_no_redundant.sql`（清单 order 146），在隔离库完成三场景 + 两处变异验证；**共享活库尚未执行**（探测到 90 个连接池连接，删列会让并行分支的读路径 500），留给部署流程。投影 SQL 取的是 `r.report_no`（`t_claim_report`），不是本列。
 2. **E2E 不进 CI**：`ClaimLifecycleE2ETest` 依赖本地 MySQL，只在本机 `-De2e.local=true` 下运行。本次已实跑，但回归保护依赖人工触发。
 3. **前端幂等键稳定性**：`stableAppendCaseKey` 以「报案号+发票代码+发票号+金额」构造，改单价会换键。若渠道侧会因重试而微调金额，仍可能产生第二笔赔案（发票唯一键会拦下，表现为 500 而非幂等命中）。
 4. **报案关闭入口未开放**：`ReportStatus.CLOSED` 只能由后续用例或运维置位，本次不提供关闭 API（已在契约「刻意不做」清单登记）。
@@ -135,3 +135,25 @@ mvn -o -pl ... -am test -Dtest=ClaimLifecycleE2ETest -De2e.local=true
 变更的验收口径全部达成：全模块 1662 测试 0 失败（8 例按环境跳过，实际执行 1654）、前端 214 测试 0 失败且类型零错、真库真 HTTP 端到端 3/3、迁移两遍幂等并带终态断言、两处变异验证证明新断言有判别力、与本次改动相关的门禁逐条绿。5 项基线存量红已逐项举证归属，均不在本次改动集内。
 
 **判定：通过。**
+
+## 8. 交付状态（2026-11-22T20:05）
+
+分支 `comet/claim-report-case-one-to-many`，已推双远程（Gitee + GitHub），两端 SHA 与本地一致：`3a3440c99`。
+
+```
+3a3440c99 feat(claim): 新增 0140 清理孤儿列 report_no，并更正评审材料一处事实误判
+dd0b42e5d docs(claim): 补报案 1:0..N 双分支实施方案评审材料
+e90aebb75 docs(claim): 校正验证报告测试计数为 1662/8（以 Comet 收据为准）
+609bf7352 chore(comet): 记录 verify 报告绑定与 action 序号（Run 停在 verify 待恢复）
+440e260f5 docs(claim): 验证报告按约定移入 docs/superpowers/reports
+438d42e49 docs(claim): 补 1:0..N 拆分验证报告（证据/变异验证/存量红归属）
+69e66f88b feat(claim): 报案与赔案拆分为 1:0..N，新增报案聚合与追加赔案链路
+```
+
+**Comet Run 未进入 Archive**，停在 `phase=verify`、`verifyResult=pending`、`archived=false`。
+
+原因不是「没跑检查」，而是检查跑成了、结果没回填：18:45 的 verify check 收据日志尾行是 `Tests run: 1662 … BUILD SUCCESS`，但 SDK 在收尾清理 `.write.lock.contenders/*` 时被沙箱终止，`sdk-aef7….json` 停在 `status=started`，Action `:20` 悬在 `running`。
+
+五条恢复通道均已按源码逐条确认封闭（`record-outcome` 要求 `record.status==='completed'`；`retry` 要求 `resolution='not-executed'`；`acknowledge-stopped` 要求 `terminal(action)`；`cancel` 是 Run 级；`mark-unknown` 语义为「未执行」），根因是 **Classic 域从未调用 `acknowledgeStopped`**——Native 有 `reconcileInterrupted` 收口回路，Classic 没有。完整取证见 `2026-11-22-claim-report-case-branch-review.md` 附录 A。
+
+处置：**不 cancel、不 mark-unknown、不伪造回执**（前两者会让归档彻底不可达，后者是伪造证据）。交付事实以本节 Git 提交 + 本报告为准。
