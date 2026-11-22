@@ -1,6 +1,5 @@
 import type { MouseEvent, ReactElement } from 'react';
 import { Button, Tooltip } from 'antd';
-import { useNavigate } from 'react-router-dom';
 import { buildCase360Link, isSafeClaimId, type CaseTab } from '../workbench/caseDeepLinks';
 
 /**
@@ -18,12 +17,18 @@ import { buildCase360Link, isSafeClaimId, type CaseTab } from '../workbench/case
  * {@link isSafeClaimId}（[A-Za-z0-9_-]{1,64}）把关。非法 ID **fail-closed** 降级为纯文本，
  * 绝不生成可能被注入的链接——与 caseDeepLinks.ts 的安全约定一致。
  *
- * <p>导航行为（业界惯例）
- * ----------------------
- * · 普通左键：应用内 `navigate()`（微应用 hash 路由，不整页刷新）；
- * · Ctrl/Cmd+点击、中键：交给浏览器新标签页打开（保留用户的工作上下文，便于多案并行核对）。
- *   通过渲染真实 `<a href>` 实现，而不是在 onClick 里手写 window.open —— 后者丢掉
- *   「复制链接地址 / 新标签页打开 / 状态栏预览」等原生语义。
+ * <p>导航行为：始终新标签页打开
+ * ------------------------------
+ * 用户在工作台逐案核对时，原列表的滚动位置、筛选条件、已勾选任务都必须原样保留，
+ * 因此普通左键点击也**强制新标签页**打开案件 360。实现上渲染真实
+ * `<a href target="_blank" rel="noopener noreferrer">`，而不是在 onClick 里 `window.open`：
+ * 前者保留「复制链接地址 / 右键新标签页打开 / 状态栏预览 / 中键点击」等原生语义，
+ * 且 `noopener` 防止新页面通过 window.opener 反向操作原窗口，`noreferrer` 不泄漏来源。
+ *
+ * <p>qiankun 微应用注意
+ * --------------------
+ * href 必须带 origin + 当前路径前缀 + `#`，新标签页才能重新加载 shell 并命中微应用 hash
+ * 路由；只写 `#/case?...` 对应用内 navigate 有效，但新标签页会停在空白相对 URL 上。
  */
 export interface ClaimIdLinkProps {
   /** 案件 ID（真值来源）。数字类型会被转成字符串；空值降级为占位符。 */
@@ -45,7 +50,6 @@ export function ClaimIdLink({
   testId,
   placeholder = '—',
 }: ClaimIdLinkProps): ReactElement {
-  const navigate = useNavigate();
   const id = claimId == null ? '' : String(claimId);
   const label = text?.trim() || id || placeholder;
   const link = buildCase360Link(id, tab);
@@ -56,26 +60,24 @@ export function ClaimIdLink({
   }
 
   const resolvedTestId = testId ?? `claim-id-link-${id}`;
-  // qiankun 微应用：hash 路由锚点 `#/case?...`；带 origin+pathname 才能在浏览器新标签页正确打开。
   const href = `${window.location.origin}${window.location.pathname}#${link}`;
 
   const handleClick = (e: MouseEvent<HTMLElement>): void => {
-    // 阻止冒泡：盲标等工作台整行有 onClick（选中任务），点 ID 不应同时触发行选中。
+    // 盲标等工作台整行有 onClick（选中任务）：点 ID 不应同时触发行选中。
+    // 不调用 preventDefault —— 让浏览器按 <a target="_blank"> 原生语义打开新标签页。
     e.stopPropagation();
-    // 修饰键 / 中键交给浏览器默认行为（新标签页），仅普通左键走应用内导航。
-    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    e.preventDefault();
-    navigate(link);
   };
 
   return (
-    <Tooltip title={`打开案件 ${id} 详情`} mouseEnterDelay={0.4}>
+    <Tooltip title={`在新标签页打开案件 ${id} 详情`} mouseEnterDelay={0.4}>
       <Button
         type="link"
         size="small"
         href={href}
+        target="_blank"
+        rel="noopener noreferrer"
         data-testid={resolvedTestId}
-        aria-label={`打开案件 ${label} 详情`}
+        aria-label={`在新标签页打开案件 ${label} 详情`}
         onClick={handleClick}
         style={{ paddingInline: 0, height: 'auto' }}
       >

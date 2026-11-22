@@ -3,7 +3,7 @@
  *
  * 判据：
  *   1. 核赔工作台列表的「报案号」是带稳定 testid 的可点击链接（不是纯文本）；
- *   2. 点击后落到 /claim#/case?claimId=<id>&tab=overview，且案件 360 详情渲染出内容；
+ *   2. 点击后在**新标签页**打开 /claim#/case?claimId=<id>&tab=overview，原工作台不动且详情渲染；
  *   3. 初审工作台的报案号、盲标工作台的案件 ID 同样是可点击链接（同一组件，三处接入）；
  *   4. 全程无 console error。
  *
@@ -22,13 +22,17 @@ const isNoise = (e) =>
 const launchOpts = { headless: true };
 if (fs.existsSync(CHROME)) launchOpts.executablePath = CHROME;
 const browser = await chromium.launch(launchOpts);
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+const page = await context.newPage();
 page.setDefaultTimeout(20000);
 
 const consoleErrors = [];
-page.on('console', (m) => {
-  if (m.type() === 'error' && !isNoise(m.text())) consoleErrors.push(m.text().slice(0, 200));
-});
+function watchConsole(p) {
+  p.on('console', (m) => {
+    if (m.type() === 'error' && !isNoise(m.text())) consoleErrors.push(m.text().slice(0, 200));
+  });
+}
+watchConsole(page);
 
 const ok = await uiLogin(page);
 check('UI 登录成功', ok, page.url());
@@ -82,14 +86,23 @@ if (reviewCount > 0) {
   const claimId = testId.replace('review-case-link-', '');
   const href = await first.getAttribute('href');
   check('链接 href 指向案件 360 深链', Boolean(href && href.includes(`#/case?claimId=${claimId}`)), `href=${href}`);
+  check('链接声明在新标签页打开', (await first.getAttribute('target')) === '_blank', `target=${await first.getAttribute('target')}`);
 
-  // 点击 → 断言落到案件详情
-  await first.click();
-  await page.waitForTimeout(2500);
-  const url = page.url();
-  check('点击报案号跳转到案件 360 详情', url.includes('#/case?claimId=') && url.includes(claimId), `url=${url}`);
-  const viewportText = await page.locator('#subapp-viewport').innerText().catch(() => '');
-  check('案件 360 详情页渲染出内容', viewportText.length > 30, `text长度=${viewportText.length}`);
+  // 点击 → 断言新标签页打开案件详情，且原工作台保持不变
+  const workbenchUrl = page.url();
+  const [detailPage] = await Promise.all([
+    context.waitForEvent('page', { timeout: 15000 }),
+    first.click(),
+  ]);
+  watchConsole(detailPage);
+  await detailPage.waitForLoadState('domcontentloaded').catch(() => {});
+  await detailPage.waitForTimeout(2500);
+  const detailUrl = detailPage.url();
+  check('点击报案号在新标签页打开案件 360', detailUrl.includes('#/case?claimId=') && detailUrl.includes(claimId), `url=${detailUrl}`);
+  check('原工作台页面未被导航走', page.url() === workbenchUrl, `before=${workbenchUrl} after=${page.url()}`);
+  const viewportText = await detailPage.locator('#subapp-viewport').innerText().catch(() => '');
+  check('新标签页的案件 360 详情页渲染出内容', viewportText.length > 30, `text长度=${viewportText.length}`);
+  await detailPage.close();
 }
 
 // ---------- 2. 初审工作台：报案号是可点击链接 ----------
