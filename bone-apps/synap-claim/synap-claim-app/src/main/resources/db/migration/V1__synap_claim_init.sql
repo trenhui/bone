@@ -5,7 +5,7 @@
 
 CREATE TABLE t_claim_case (
   id          BIGINT      NOT NULL COMMENT '主键(分布式ID)',
-  claim_no          VARCHAR(64)   NOT NULL COMMENT '报案号(CL+yyyyMMdd+id, 全行唯一)',
+  claim_no          VARCHAR(64)   NOT NULL COMMENT '报案号(CL+yyyyMMdd+13位Base32+校验位, 24字符, 全局唯一)',
   idempotency_key   VARCHAR(64)   NOT NULL COMMENT '写接口幂等键(Idempotency-Key 请求头值)',
   policy_no         VARCHAR(32)   NOT NULL COMMENT '保单号',
   plan_id           BIGINT        NOT NULL COMMENT '计划ID',
@@ -38,7 +38,7 @@ CREATE TABLE t_claim_case (
   version           BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本(SDK @Version 维护)',
   deleted           TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_tenant_claim_no (tenant_id, claim_no),
+  UNIQUE KEY uk_claim_no (claim_no),
   UNIQUE KEY uk_tenant_idem (tenant_id, idempotency_key),
   -- 发票唯一性硬约束（R-FRAUD-07）：含 deleted，软删案件不永久占用发票键；
   -- 发票列为 NULL（草稿未附票）时按 SQL 唯一索引语义互不相等，多条草稿可共存

@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 143,
+  "executableCount": 144,
   "retired": [],
   "entries": [
     {
@@ -909,6 +909,12 @@
       "kind": "mixed",
       "order": 143,
       "summary": "把智能理赔菜单叶子 path 从历史 hash 形态 /claim#/<hash> 幂等迁移为 SynapClaim 规范干净路径 /sclaim/claim/<hash>（无 #），与内嵌微应用 BrowserRouter basename=/sclaim/claim 及 shell activeRule 同批；name/order_no/permission/icon 不变，含终态 SIGNAL 断言（旧路径归零、无 # 残留、新路径非空）。"
+    },
+    {
+      "order": 144,
+      "file": "0138_synap_claim_claim_no_global_unique.sql",
+      "kind": "ddl",
+      "summary": "把报案号 claim_no 唯一约束从租户内唯一 uk_tenant_claim_no(tenant_id,claim_no) 升级为全局唯一 uk_claim_no(claim_no)，与新生成器 ClaimNoGenerator（雪花ID经Feistel双射混淆，全局唯一零碰撞）的承诺对齐；系统未上线无存量数据。幂等 information_schema 判定 + 脏数据探测（跨租户重复先 SIGNAL 中止不自动删）+ 终态断言（新索引列序严格 claim_no、旧索引消失、无重复）；bone-init.sql 与模块参考态 V1 同批改索引与列注释。"
     }
   ],
   "ordinalConflicts": [

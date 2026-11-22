@@ -38,7 +38,7 @@ import lombok.NoArgsConstructor;
 @Table("t_claim_case")
 public class ClaimCase extends TenantAggregateRoot<Long> {
 
-  /** 报案号（对外展示/客服检索键，与物理 id 分离；由 {@code CL + yyyyMMdd + id} 生成）。 */
+  /** 报案号（对外展示/客服检索键，与物理 id 分离；由 {@link ClaimNoGenerator} 生成，格式见该类）。 */
   @Column(name = "claim_no", nullable = false)
   private String claimNo;
 
@@ -291,12 +291,14 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
     return claim;
   }
 
-  /** 报案号生成策略：{@code CL + yyyyMMdd(东八区) + 雪花 id}——业务时区固定，禁止跟随宿主机默认时区。 */
+  /**
+   * 报案号生成：委托 {@link ClaimNoGenerator}。
+   *
+   * <p>格式 {@code CL + yyyyMMdd(东八区) + 13位Base32 + 校验位}。雪花 id 经 6 轮 Feistel 双射混淆，
+   * 唯一性与物理主键同源（零碰撞）、外观不可枚举、校验位防手抄错输。业务时区固定东八区。
+   */
   private static String generateClaimNo(long id) {
-    return "CL"
-        + java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai"))
-            .format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE)
-        + id;
+    return ClaimNoGenerator.generate(id);
   }
 
   /**
