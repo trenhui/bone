@@ -12,6 +12,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -46,7 +47,12 @@ public class CapabilityRegistryAdapter implements CapabilityRegistry {
                 .eq("tenantId", tenantId)
                 .eq("code", capability.code().value()));
     AiCapabilityEntity entity = new AiCapabilityEntity();
-    if (!existing.isEmpty()) entity.setId(existing.get(0).getId());
+    if (!existing.isEmpty()) {
+      entity.setId(existing.get(0).getId());
+      entity.setVersion(existing.get(0).getVersion());
+    } else {
+      entity.setVersion(0);
+    }
     entity.setTenantId(tenantId);
     entity.setCode(capability.code().value());
     entity.setDisplayName(capability.displayName());
@@ -60,6 +66,9 @@ public class CapabilityRegistryAdapter implements CapabilityRegistry {
               entry.eventType(), redact(entry.detail()), entry.occurredAt().toEpochMilli()));
     }
     entity.setTraceJson(writeJson(snapshots));
+    Date now = new Date();
+    entity.setCreatedAt(existing.isEmpty() ? now : existing.get(0).getCreatedAt());
+    entity.setUpdatedAt(now);
     repository.save(entity);
   }
 

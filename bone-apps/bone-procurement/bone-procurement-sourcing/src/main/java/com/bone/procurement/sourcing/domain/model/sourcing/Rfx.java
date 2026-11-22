@@ -62,6 +62,9 @@ public class Rfx extends AbstractEntity<Long> {
     r.status = "DRAFT";
     r.sealed = true;
     r.version = 0;
+    Date now = new Date();
+    r.setCreatedAt(now);
+    r.setUpdatedAt(now);
     return r;
   }
 

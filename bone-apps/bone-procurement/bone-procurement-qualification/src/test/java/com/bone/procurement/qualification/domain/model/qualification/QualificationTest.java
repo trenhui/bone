@@ -21,12 +21,16 @@ class QualificationTest {
         Qualification.submit(
             1L, "SUP-1", "BUSINESS_LICENSE", "MASKED-001", future(), "att-1", "ocr-hit-true");
     assertThat(q.status()).isEqualTo(VerifyStatus.PENDING);
+    assertThat(q.getCreatedAt()).isNotNull();
+    assertThat(q.getUpdatedAt()).isNotNull();
     assertThatThrownBy(() -> q.reviewByHuman("  ", true, new Date()))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("人工复核");
-    q.reviewByHuman("reviewer-1", true, new Date());
+    Date reviewedAt = new Date();
+    q.reviewByHuman("reviewer-1", true, reviewedAt);
     assertThat(q.status()).isEqualTo(VerifyStatus.VERIFIED);
     assertThat(q.getReviewedBy()).isEqualTo("reviewer-1");
+    assertThat(q.getUpdatedAt()).isEqualTo(reviewedAt);
   }
 
   @Test

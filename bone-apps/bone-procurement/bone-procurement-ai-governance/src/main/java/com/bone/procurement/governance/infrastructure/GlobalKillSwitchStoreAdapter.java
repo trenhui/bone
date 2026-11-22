@@ -46,7 +46,12 @@ public class GlobalKillSwitchStoreAdapter implements GlobalKillSwitchStore {
                 .eq("tenantId", tenantId)
                 .eq("switchKey", SWITCH_KEY));
     GlobalKillSwitchEntity entity = new GlobalKillSwitchEntity();
-    if (!existing.isEmpty()) entity.setId(existing.get(0).getId());
+    if (!existing.isEmpty()) {
+      entity.setId(existing.get(0).getId());
+      entity.setVersion(existing.get(0).getVersion());
+    } else {
+      entity.setVersion(0);
+    }
     entity.setTenantId(tenantId);
     entity.setSwitchKey(SWITCH_KEY);
     entity.setMode(killSwitch.mode().name());
@@ -54,6 +59,9 @@ public class GlobalKillSwitchStoreAdapter implements GlobalKillSwitchStore {
     entity.setReason(killSwitch.reason());
     entity.setChangedAt(Date.from(killSwitch.changedAt()));
     entity.setDrillRef(killSwitch.drillRef());
+    Date now = new Date();
+    entity.setCreatedAt(existing.isEmpty() ? now : existing.get(0).getCreatedAt());
+    entity.setUpdatedAt(now);
     repository.save(entity);
   }
 

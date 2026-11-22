@@ -78,6 +78,9 @@ public class RiskAlert extends AbstractEntity<Long> {
     a.detectedAt = detectedAt;
     a.status = "OPEN";
     a.version = 0;
+    Date now = new Date();
+    a.setCreatedAt(now);
+    a.setUpdatedAt(now);
     return a;
   }
 

@@ -29,11 +29,15 @@ public class GovernanceTraceAdapter implements GovernanceTracePort {
   @Override
   public void append(GovernanceTraceEntry entry) {
     GovernanceTraceEntity entity = new GovernanceTraceEntity();
+    entity.setVersion(0);
     entity.setTenantId(GovernanceTenant.current());
     entity.setCapabilityCode(entry.capabilityCode());
     entity.setEventType(entry.eventType());
     entity.setDetail(redact(entry.detail()));
     entity.setOccurredAt(Date.from(entry.occurredAt()));
+    Date now = new Date();
+    entity.setCreatedAt(now);
+    entity.setUpdatedAt(now);
     repository.save(entity);
   }
 

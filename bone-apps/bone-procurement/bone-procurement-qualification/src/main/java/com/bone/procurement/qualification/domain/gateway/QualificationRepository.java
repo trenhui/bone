@@ -16,4 +16,9 @@ public interface QualificationRepository {
   Optional<Onboarding> findByNo(Long tenantId, String no);
 
   List<Qualification> findExpiring(Long tenantId);
+
+  /** 按租户 + ID 读取证照；跨租户返回 empty（租户锚定，防越权复核）。退役内存实现不提供该能力。 */
+  default Optional<Qualification> findById(Long tenantId, Long qualificationId) {
+    return Optional.empty();
+  }
 }

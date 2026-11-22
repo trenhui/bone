@@ -80,6 +80,9 @@ public class SourcingProject extends AbstractEntity<Long> {
     p.ownerId = ownerId;
     p.status = SourcingProjectStatus.DRAFT.name();
     p.version = 0;
+    Date now = new Date();
+    p.setCreatedAt(now);
+    p.setUpdatedAt(now);
     return p;
   }
 

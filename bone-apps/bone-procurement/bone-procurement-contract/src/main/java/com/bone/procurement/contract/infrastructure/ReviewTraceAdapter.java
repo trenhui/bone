@@ -32,11 +32,15 @@ public class ReviewTraceAdapter implements ReviewTracePort {
       throw new IllegalStateException("追溯留痕需要登录态租户，拒绝匿名写入");
     }
     ReviewTraceEntity entity = new ReviewTraceEntity();
+    entity.setVersion(0);
     entity.setTenantId(tenantId);
     entity.setReviewId(entry.reviewId());
     entity.setEventType(entry.eventType());
     entity.setDetail(entry.detail());
     entity.setOccurredAt(Date.from(entry.occurredAt()));
+    Date now = new Date();
+    entity.setCreatedAt(now);
+    entity.setUpdatedAt(now);
     repository.save(entity);
   }
 

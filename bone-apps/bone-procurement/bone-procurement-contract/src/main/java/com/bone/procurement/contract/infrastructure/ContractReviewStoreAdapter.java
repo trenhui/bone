@@ -18,6 +18,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -95,14 +96,14 @@ public class ContractReviewStoreAdapter implements ContractReviewStore {
     }
     ContractReviewEntity entity = new ContractReviewEntity();
     // 同租户二次写入（人工推翻 / 快照）必须复用原主键与版本，否则 SDK save 会 insert 并撞唯一键。
-    global.stream()
-        .filter(e -> tenantId.equals(e.getTenantId()))
-        .findFirst()
-        .ifPresent(
-            existing -> {
-              entity.setId(existing.getId());
-              entity.setVersion(existing.getVersion());
-            });
+    ContractReviewEntity existing =
+        global.stream().filter(e -> tenantId.equals(e.getTenantId())).findFirst().orElse(null);
+    if (existing != null) {
+      entity.setId(existing.getId());
+      entity.setVersion(existing.getVersion());
+    } else {
+      entity.setVersion(0);
+    }
     entity.setTenantId(tenantId);
     entity.setReviewId(review.reviewId());
     entity.setContractNo(review.contractNo());
@@ -120,6 +121,10 @@ public class ContractReviewStoreAdapter implements ContractReviewStore {
     entity.setSnapshotRef(
         review.reviewSnapshotRef() == null ? null : review.reviewSnapshotRef().ref());
     entity.setHumanFinalized(review.isHumanFinalized());
+    Date now = new Date();
+    entity.setCreatedAt(
+        existing == null || existing.getCreatedAt() == null ? now : existing.getCreatedAt());
+    entity.setUpdatedAt(now);
     repository.save(entity);
   }
 

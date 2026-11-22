@@ -10,6 +10,7 @@ import com.bone.procurement.fulfillment.domain.port.FinanceAclPort;
 import com.bone.procurement.fulfillment.domain.port.VendorIdentityPort;
 import com.bone.procurement.fulfillment.domain.repository.InvoiceSubmissionRepository;
 import com.bone.procurement.fulfillment.domain.repository.IrExceptionRepository;
+import java.util.Date;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +56,9 @@ public class IrExceptionService {
     ex.setMatchStatus(matchStatus);
     ex.setStatus(IrExceptionStatus.OPEN.name());
     ex.setVersion(0);
+    Date now = new Date();
+    ex.setCreatedAt(now);
+    ex.setUpdatedAt(now);
     Long id = repository.save(ex);
     ex.setId(id);
     return ex;

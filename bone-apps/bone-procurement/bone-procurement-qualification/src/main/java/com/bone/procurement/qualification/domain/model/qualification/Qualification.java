@@ -79,6 +79,9 @@ public class Qualification extends AbstractEntity<Long> {
     q.ocrResultJson = ocrResultJson;
     q.verifyStatus = VerifyStatus.PENDING.name();
     q.version = 0;
+    Date now = new Date();
+    q.setCreatedAt(now);
+    q.setUpdatedAt(now);
     return q;
   }
 
@@ -111,5 +114,6 @@ public class Qualification extends AbstractEntity<Long> {
     }
     this.verifyStatus = (ocrAccurate ? VerifyStatus.VERIFIED : VerifyStatus.REJECTED).name();
     this.reviewedBy = reviewer;
+    setUpdatedAt(now);
   }
 }

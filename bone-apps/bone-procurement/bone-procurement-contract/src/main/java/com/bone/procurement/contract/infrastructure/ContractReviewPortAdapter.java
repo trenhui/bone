@@ -89,6 +89,14 @@ public class ContractReviewPortAdapter implements ContractReviewPort {
               traceId);
       LlmResponse response = gateway.invoke(llmRequest);
       String content = response.content();
+      // Mock 身份拒绝：未配真实 provider 时网关注入 MockLlmClient，其 mock:true 回显不得当作模型结论。
+      if (isMockResponse(content, response.model())) {
+        tracePort.append(
+            ReviewTraceEntry.of(
+                traceId, "MOCK_PROVIDER_REJECTED", "模型响应自报 mock 身份，拒绝进入 AVAILABLE 并强制人工终决"));
+        log.warn("MOCK_PROVIDER_REJECTED: 拒绝 Mock 替身结论进入可用态: reviewId={}", traceId);
+        return degrade();
+      }
       // PII 入口拒绝：原文（含 basis）在解析成领域对象之前扫描，命中即降级 + 告警，绝不入域。
       if (containsPii(content)) {
         tracePort.append(
@@ -117,6 +125,19 @@ public class ContractReviewPortAdapter implements ContractReviewPort {
           .append('\n');
     }
     return sb.toString();
+  }
+
+  /**
+   * Mock 身份识别：响应 JSON 自报 {@code mock:true}，或模型名标注 mock，均视为确定性替身。 参照 MockLlmClient 的 {@code
+   * mock:true} 自报契约（Rules of ML #10 反对静默失败）。
+   */
+  static boolean isMockResponse(String content, String model) {
+    boolean mockJson = content != null && content.matches("(?s).*\"mock\"\\s*:\\s*true.*");
+    // 默认 review 请求 jsonResponse=false；真实 MockLlmClient 此时返回 "MOCK[model]: ..."。
+    // 不识别该前缀会让替身响应靠 JSON 解析失败偶然降级，缺失显式留痕（假绿）。
+    boolean mockPlainText = content != null && content.trim().startsWith("MOCK[");
+    boolean mockModel = model != null && model.toLowerCase(java.util.Locale.ROOT).contains("mock");
+    return mockJson || mockPlainText || mockModel;
   }
 
   /** 模型输出入域前的 PII 扫描（含 riskItems.basis 所在的整段原文）。同包持久化适配器复用此护栏。 */

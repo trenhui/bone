@@ -5,6 +5,9 @@ import SupplierManagement from './pages/SupplierManagement';
 import PurchaseConsole from './pages/PurchaseConsole';
 import FulfillmentConsole from './pages/FulfillmentConsole';
 import ContractReviewDisclosure from './pages/ContractReviewDisclosure';
+import AiReadiness from './pages/AiReadiness';
+import HumanReviewConsole from './pages/HumanReviewConsole';
+import GovernanceStatus from './pages/GovernanceStatus';
 
 type MessageApi = ReturnType<typeof AntdApp.useApp>['message'];
 
@@ -29,6 +32,9 @@ const AppContent: React.FC = () => {
           <Route path="/fulfillment" element={<FulfillmentConsole />} />
           <Route path="/transactions/fulfillment" element={<Navigate to="/fulfillment" replace />} />
           <Route path="/contract-review" element={<ContractReviewDisclosure />} />
+          <Route path="/ai-readiness" element={<AiReadiness />} />
+          <Route path="/human-review" element={<HumanReviewConsole />} />
+          <Route path="/governance" element={<GovernanceStatus />} />
           <Route path="/" element={<Navigate to="/transactions" replace />} />
         </Routes>
       </Router>

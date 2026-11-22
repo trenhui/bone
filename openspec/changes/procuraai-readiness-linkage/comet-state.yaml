@@ -1,0 +1,2134 @@
+# comet-execution: managed-run
+change_id: fbc86d6b-2db5-4ab0-ab15-7d2386c5af7d
+workflow: full
+language: zh-CN
+phase: build
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: standard
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: 8a009e5e58313751a4e183feac79e11888c2db1d
+design_doc: openspec/changes/procuraai-readiness-linkage/design.md
+plan: docs/superpowers/plans/procuraai-readiness-linkage.md
+verify_result: pending
+verify_failures: 0
+verification_report: null
+branch_status: pending
+created_at: 2026-11-21
+verified_at: null
+archive_confirmation: null
+archived: false
+bound_branch: dev
+direct_override: false
+handoff_context: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+handoff_hash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v1
+  hash: e98403b89150229ad271087a766edfc17e24e8cc9f38b9d4545362201bfde64f
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: procuraai-readiness-linkage
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: a1e1ef7aafd862406abe562ce6a4dbeb3513d64015136a5e3228bb49f60c22af
+    input:
+      change: procuraai-readiness-linkage
+      changeDir: openspec/changes/procuraai-readiness-linkage
+      workspaceBaseline:
+        ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+    state:
+      archiveConfirmation: null
+      archived: false
+      autoTransition: true
+      baseRef: 8a009e5e58313751a4e183feac79e11888c2db1d
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 2
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-21
+      designDoc: openspec/changes/procuraai-readiness-linkage/design.md
+      directOverride: false
+      handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+      handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+      isolation: current
+      language: zh-CN
+      phase: build
+      plan: docs/superpowers/plans/procuraai-readiness-linkage.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: null
+      verifiedAt: null
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pending
+      workflow: full
+    status: running
+    sequence: 13
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-92df17204b26a3123f9d86c04b142e220779de716fb05e81b70f06e001a1c398
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-readiness-linkage:1
+        input:
+          input:
+            change: procuraai-readiness-linkage
+            changeDir: openspec/changes/procuraai-readiness-linkage
+            workspaceBaseline:
+              ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+          outputs: {}
+        inputHash: 2fd0e2ec5cd105f9887e9d576039c98c4657018c47be72f2dbc29aa69e610b25
+        outcome:
+          actionId: procuraai-readiness-linkage:1
+          attempt: 1
+          claimToken: portable-92df17204b26a3123f9d86c04b142e220779de716fb05e81b70f06e001a1c398
+          inputHash: 2fd0e2ec5cd105f9887e9d576039c98c4657018c47be72f2dbc29aa69e610b25
+          outcomeId: 46057188-b190-4330-b620-6c75ebdce0ae
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: de2c17396e33eef63946bc1a090ae51faaa9e1c9f755a693d2dbcbe7372b1015
+            outcomeId: 46057188-b190-4330-b620-6c75ebdce0ae
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-readiness-linkage
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-e9878e23bc831b276e3f0baf0c0f4937b618fe34dddf4b5ba9809a23ca15e662
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-readiness-linkage:4
+        input:
+          input:
+            change: procuraai-readiness-linkage
+            changeDir: openspec/changes/procuraai-readiness-linkage
+            workspaceBaseline:
+              ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+            full.open.evidence:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+        inputHash: 375035ca247ea121377332429792cb528137d485ce2867913b4dbe2385acd568
+        outcome:
+          actionId: procuraai-readiness-linkage:4
+          attempt: 1
+          claimToken: portable-e9878e23bc831b276e3f0baf0c0f4937b618fe34dddf4b5ba9809a23ca15e662
+          inputHash: 375035ca247ea121377332429792cb528137d485ce2867913b4dbe2385acd568
+          outcomeId: procuraai-readiness-linkage:4:1:executor-result
+          output:
+            contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: d238dfd9b77d9a0b73af9c04eabd7b1c94d768f00503c98271919eede480ca4f
+            outcomeId: procuraai-readiness-linkage:4:1:executor-result
+        reconciliations: []
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-readiness-linkage
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-d97f5d1d372ac9f4fda32a816d9c9f702c0f47142e08b5a1cb971765d6236589
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-readiness-linkage:5
+        input:
+          input:
+            change: procuraai-readiness-linkage
+            changeDir: openspec/changes/procuraai-readiness-linkage
+            workspaceBaseline:
+              ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+            full.open.evidence:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+            full.open.revalidate:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+        inputHash: 43eb49f62966317503cbdfb0c716f92df1f4b28ab9eb414ef137b13ccfef4f7d
+        outcome:
+          actionId: procuraai-readiness-linkage:5
+          attempt: 1
+          claimToken: portable-d97f5d1d372ac9f4fda32a816d9c9f702c0f47142e08b5a1cb971765d6236589
+          inputHash: 43eb49f62966317503cbdfb0c716f92df1f4b28ab9eb414ef137b13ccfef4f7d
+          outcomeId: ecd56f57-f8c7-42ca-8235-1600a23f502f
+          output:
+            handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+            handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+            proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+              同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+              探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+              降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别 mock
+              身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+              degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+              AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+              AVAILABLE/DEGRADED/UNKNOWN，未知
+              fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR 人工复核——Qualification
+              实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+              UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+              backlog。5) 前端三页
+              AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+              services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+              验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+              前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+              不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+              登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+            requirementsEvidence:
+              contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+              ref: openspec/changes/procuraai-readiness-linkage
+            sourceEvidence:
+              contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+              ref: openspec/changes/procuraai-readiness-linkage
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 457ea225362c4ebd348a168b824a9e8782fee1db422143dfd17da8c745607bb0
+            outcomeId: ecd56f57-f8c7-42ca-8235-1600a23f502f
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-readiness-linkage
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-604cd3d041502bacfb86cecdb4b671923cdac8721808bd394711c4f910cc7422
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-readiness-linkage:7
+        input:
+          input:
+            change: procuraai-readiness-linkage
+            changeDir: openspec/changes/procuraai-readiness-linkage
+            workspaceBaseline:
+              ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+          outputs:
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+                    handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+                    proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                      同用 @ConditionalOnAiGovernanceEnabled，双态
+                      ApplicationContextRunner 探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与
+                      ObjectProvider 兜底（掩盖错误）。2) Mock
+                      降级——ContractReviewPortAdapter.review() 在 gateway.invoke()
+                      后识别 mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                      degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                      AiReadinessApplicationService 聚合 provider
+                      配置/能力注册/总闸/评测四态，判词 AVAILABLE/DEGRADED/UNKNOWN，未知
+                      fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                      人工复核——Qualification 实体加幂等 reviewByHuman，服务
+                      findById→领域方法→save 替换 UnsupportedOperationException，新增
+                      Controller，不改 DDL，完整复核台账留 backlog。5) 前端三页
+                      AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                      services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                      验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭
+                      advisory 前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test
+                      profile 不改生产库；readiness 读 evalset 只读失败即 UNKNOWN
+                      不写文档族；新增权限点需 owner 登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份
+                      delta spec 覆盖。
+                    requirementsEvidence:
+                      contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                      ref: openspec/changes/procuraai-readiness-linkage
+                    sourceEvidence:
+                      contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                      ref: openspec/changes/procuraai-readiness-linkage
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+              handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+              proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+                探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+                降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别
+                mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+                AVAILABLE/DEGRADED/UNKNOWN，未知
+                fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                人工复核——Qualification 实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+                UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+                backlog。5) 前端三页
+                AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+                前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+                不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+                登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+              requirementsEvidence:
+                contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                ref: openspec/changes/procuraai-readiness-linkage
+              sourceEvidence:
+                contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                ref: openspec/changes/procuraai-readiness-linkage
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+            full.open.evidence:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+            full.open.revalidate:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+        inputHash: 7b1062069bea313b1aced752632241bed7fee5908ac6bbb8d40150faec55ef79
+        outcome:
+          actionId: procuraai-readiness-linkage:7
+          attempt: 1
+          claimToken: portable-604cd3d041502bacfb86cecdb4b671923cdac8721808bd394711c4f910cc7422
+          inputHash: 7b1062069bea313b1aced752632241bed7fee5908ac6bbb8d40150faec55ef79
+          outcomeId: a55d69fe-559e-4d0c-b505-31859b8d0b41
+          output:
+            designDoc: openspec/changes/procuraai-readiness-linkage/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 67e6e6e2c05fd74da6cad4b289a7a2a9d6afb036701f8a308093c84f9897b4d3
+            outcomeId: a55d69fe-559e-4d0c-b505-31859b8d0b41
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-readiness-linkage
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-2208726996e8764213c7daa91864aa6829a1d032b5348dc64a11395ff55572cb
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-readiness-linkage:9
+        input:
+          input:
+            change: procuraai-readiness-linkage
+            changeDir: openspec/changes/procuraai-readiness-linkage
+            workspaceBaseline:
+              ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+          outputs:
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+                    handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+                    proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                      同用 @ConditionalOnAiGovernanceEnabled，双态
+                      ApplicationContextRunner 探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与
+                      ObjectProvider 兜底（掩盖错误）。2) Mock
+                      降级——ContractReviewPortAdapter.review() 在 gateway.invoke()
+                      后识别 mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                      degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                      AiReadinessApplicationService 聚合 provider
+                      配置/能力注册/总闸/评测四态，判词 AVAILABLE/DEGRADED/UNKNOWN，未知
+                      fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                      人工复核——Qualification 实体加幂等 reviewByHuman，服务
+                      findById→领域方法→save 替换 UnsupportedOperationException，新增
+                      Controller，不改 DDL，完整复核台账留 backlog。5) 前端三页
+                      AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                      services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                      验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭
+                      advisory 前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test
+                      profile 不改生产库；readiness 读 evalset 只读失败即 UNKNOWN
+                      不写文档族；新增权限点需 owner 登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份
+                      delta spec 覆盖。
+                    requirementsEvidence:
+                      contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                      ref: openspec/changes/procuraai-readiness-linkage
+                    sourceEvidence:
+                      contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                      ref: openspec/changes/procuraai-readiness-linkage
+            full.design.document:
+              designDoc: openspec/changes/procuraai-readiness-linkage/design.md
+            full.design.evidence:
+              contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+              ref: openspec/changes/procuraai-readiness-linkage/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+              handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+              proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+                探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+                降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别
+                mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+                AVAILABLE/DEGRADED/UNKNOWN，未知
+                fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                人工复核——Qualification 实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+                UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+                backlog。5) 前端三页
+                AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+                前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+                不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+                登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+              requirementsEvidence:
+                contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                ref: openspec/changes/procuraai-readiness-linkage
+              sourceEvidence:
+                contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                ref: openspec/changes/procuraai-readiness-linkage
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+            full.open.evidence:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+            full.open.revalidate:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+        inputHash: edc795998d119d93af9fc43e36d8ab36e35c6bb3052f0e902f50dd2c3345407b
+        outcome:
+          actionId: procuraai-readiness-linkage:9
+          attempt: 1
+          claimToken: portable-2208726996e8764213c7daa91864aa6829a1d032b5348dc64a11395ff55572cb
+          inputHash: edc795998d119d93af9fc43e36d8ab36e35c6bb3052f0e902f50dd2c3345407b
+          outcomeId: 1877ff34-484f-4234-a751-a623b26b65ff
+          output:
+            boundBranch: dev
+            buildMode: autonomous
+            directOverride: false
+            isolation: current
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f77688f479cc26dae486bf14176eeb06486c0cf308bc017092477262a063b27f
+            outcomeId: 1877ff34-484f-4234-a751-a623b26b65ff
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-readiness-linkage
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-2e3fef15fc435219fc30e0d36eca183747ea7ed702cb49b7e587c3836387286c
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-readiness-linkage:11
+        input:
+          input:
+            change: procuraai-readiness-linkage
+            changeDir: openspec/changes/procuraai-readiness-linkage
+            workspaceBaseline:
+              ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: autonomous
+                    directOverride: false
+                    isolation: current
+                    reviewMode: standard
+                    subagentDispatch: null
+                    tddMode: tdd
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+                    handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+                    proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                      同用 @ConditionalOnAiGovernanceEnabled，双态
+                      ApplicationContextRunner 探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与
+                      ObjectProvider 兜底（掩盖错误）。2) Mock
+                      降级——ContractReviewPortAdapter.review() 在 gateway.invoke()
+                      后识别 mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                      degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                      AiReadinessApplicationService 聚合 provider
+                      配置/能力注册/总闸/评测四态，判词 AVAILABLE/DEGRADED/UNKNOWN，未知
+                      fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                      人工复核——Qualification 实体加幂等 reviewByHuman，服务
+                      findById→领域方法→save 替换 UnsupportedOperationException，新增
+                      Controller，不改 DDL，完整复核台账留 backlog。5) 前端三页
+                      AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                      services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                      验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭
+                      advisory 前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test
+                      profile 不改生产库；readiness 读 evalset 只读失败即 UNKNOWN
+                      不写文档族；新增权限点需 owner 登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份
+                      delta spec 覆盖。
+                    requirementsEvidence:
+                      contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                      ref: openspec/changes/procuraai-readiness-linkage
+                    sourceEvidence:
+                      contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                      ref: openspec/changes/procuraai-readiness-linkage
+            full.design.document:
+              designDoc: openspec/changes/procuraai-readiness-linkage/design.md
+            full.design.evidence:
+              contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+              ref: openspec/changes/procuraai-readiness-linkage/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+              handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+              proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+                探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+                降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别
+                mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+                AVAILABLE/DEGRADED/UNKNOWN，未知
+                fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                人工复核——Qualification 实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+                UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+                backlog。5) 前端三页
+                AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+                前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+                不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+                登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+              requirementsEvidence:
+                contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                ref: openspec/changes/procuraai-readiness-linkage
+              sourceEvidence:
+                contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                ref: openspec/changes/procuraai-readiness-linkage
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+            full.open.evidence:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+            full.open.revalidate:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+        inputHash: 361efd3e59e26e3626b90a95490253333f924bedfaa6219ec55620275e03e34e
+        outcome:
+          actionId: procuraai-readiness-linkage:11
+          attempt: 1
+          claimToken: portable-2e3fef15fc435219fc30e0d36eca183747ea7ed702cb49b7e587c3836387286c
+          inputHash: 361efd3e59e26e3626b90a95490253333f924bedfaa6219ec55620275e03e34e
+          outcomeId: 8a568a7f-cfcb-47a0-aaef-ed4d60f4919a
+          output:
+            designEvidence:
+              contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+              ref: openspec/changes/procuraai-readiness-linkage/design.md
+            plan: docs/superpowers/plans/procuraai-readiness-linkage.md
+            planEvidence:
+              contentHash: 20079f3dbe40395c2b29106148af0de2d4935235a1fd0ec8dbcbb89ba0a34a9c
+              ref: docs/superpowers/plans/procuraai-readiness-linkage.md
+            taskRevision: 5852bfeb89032b993121d77968a1444c09de918e3912decf205585a317a8ebaf
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c2f3d9ab5885b8467a6354578a417dfec90a3b25fa56136725d37349022a186c
+            outcomeId: 8a568a7f-cfcb-47a0-aaef-ed4d60f4919a
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-readiness-linkage
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        id: procuraai-readiness-linkage:13
+        input:
+          input:
+            change: procuraai-readiness-linkage
+            changeDir: openspec/changes/procuraai-readiness-linkage
+            workspaceBaseline:
+              ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: autonomous
+                    directOverride: false
+                    isolation: current
+                    reviewMode: standard
+                    subagentDispatch: null
+                    tddMode: tdd
+            full.build.plan:
+              designEvidence:
+                contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+                ref: openspec/changes/procuraai-readiness-linkage/design.md
+              plan: docs/superpowers/plans/procuraai-readiness-linkage.md
+              planEvidence:
+                contentHash: 20079f3dbe40395c2b29106148af0de2d4935235a1fd0ec8dbcbb89ba0a34a9c
+                ref: docs/superpowers/plans/procuraai-readiness-linkage.md
+              taskRevision: 5852bfeb89032b993121d77968a1444c09de918e3912decf205585a317a8ebaf
+            full.build.plan.evidence:
+              contentHash: 20079f3dbe40395c2b29106148af0de2d4935235a1fd0ec8dbcbb89ba0a34a9c
+              ref: docs/superpowers/plans/procuraai-readiness-linkage.md
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+                    handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+                    proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                      同用 @ConditionalOnAiGovernanceEnabled，双态
+                      ApplicationContextRunner 探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与
+                      ObjectProvider 兜底（掩盖错误）。2) Mock
+                      降级——ContractReviewPortAdapter.review() 在 gateway.invoke()
+                      后识别 mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                      degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                      AiReadinessApplicationService 聚合 provider
+                      配置/能力注册/总闸/评测四态，判词 AVAILABLE/DEGRADED/UNKNOWN，未知
+                      fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                      人工复核——Qualification 实体加幂等 reviewByHuman，服务
+                      findById→领域方法→save 替换 UnsupportedOperationException，新增
+                      Controller，不改 DDL，完整复核台账留 backlog。5) 前端三页
+                      AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                      services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                      验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭
+                      advisory 前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test
+                      profile 不改生产库；readiness 读 evalset 只读失败即 UNKNOWN
+                      不写文档族；新增权限点需 owner 登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份
+                      delta spec 覆盖。
+                    requirementsEvidence:
+                      contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                      ref: openspec/changes/procuraai-readiness-linkage
+                    sourceEvidence:
+                      contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                      ref: openspec/changes/procuraai-readiness-linkage
+            full.design.document:
+              designDoc: openspec/changes/procuraai-readiness-linkage/design.md
+            full.design.evidence:
+              contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+              ref: openspec/changes/procuraai-readiness-linkage/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+              handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+              proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+                探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+                降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别
+                mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+                AVAILABLE/DEGRADED/UNKNOWN，未知
+                fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                人工复核——Qualification 实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+                UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+                backlog。5) 前端三页
+                AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+                前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+                不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+                登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+              requirementsEvidence:
+                contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                ref: openspec/changes/procuraai-readiness-linkage
+              sourceEvidence:
+                contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                ref: openspec/changes/procuraai-readiness-linkage
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+            full.open.evidence:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+            full.open.revalidate:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+        inputHash: 25efafaea627f7bbe163919689548e77bf57be97255f71340426e193f42bb077
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-readiness-linkage
+        status: pending
+        stepId: full.build.execute
+        type: invoke_skill
+    actionContexts:
+      procuraai-readiness-linkage:1:
+        results: {}
+        sequence: 1
+      procuraai-readiness-linkage:11:
+        results:
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: autonomous
+                    directOverride: false
+                    isolation: current
+                    reviewMode: standard
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+                    handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+                    proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                      同用 @ConditionalOnAiGovernanceEnabled，双态
+                      ApplicationContextRunner 探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与
+                      ObjectProvider 兜底（掩盖错误）。2) Mock
+                      降级——ContractReviewPortAdapter.review() 在 gateway.invoke()
+                      后识别 mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                      degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                      AiReadinessApplicationService 聚合 provider
+                      配置/能力注册/总闸/评测四态，判词 AVAILABLE/DEGRADED/UNKNOWN，未知
+                      fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                      人工复核——Qualification 实体加幂等 reviewByHuman，服务
+                      findById→领域方法→save 替换 UnsupportedOperationException，新增
+                      Controller，不改 DDL，完整复核台账留 backlog。5) 前端三页
+                      AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                      services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                      验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭
+                      advisory 前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test
+                      profile 不改生产库；readiness 读 evalset 只读失败即 UNKNOWN
+                      不写文档族；新增权限点需 owner 登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份
+                      delta spec 覆盖。
+                    requirementsEvidence:
+                      contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                      ref: openspec/changes/procuraai-readiness-linkage
+                    sourceEvidence:
+                      contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                      ref: openspec/changes/procuraai-readiness-linkage
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/procuraai-readiness-linkage/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+              ref: openspec/changes/procuraai-readiness-linkage/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+              handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+              proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+                探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+                降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别
+                mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+                AVAILABLE/DEGRADED/UNKNOWN，未知
+                fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                人工复核——Qualification 实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+                UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+                backlog。5) 前端三页
+                AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+                前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+                不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+                登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+              requirementsEvidence:
+                contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                ref: openspec/changes/procuraai-readiness-linkage
+              sourceEvidence:
+                contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                ref: openspec/changes/procuraai-readiness-linkage
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+        sequence: 11
+      procuraai-readiness-linkage:13:
+        results:
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: autonomous
+                    directOverride: false
+                    isolation: current
+                    reviewMode: standard
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.plan:
+            sequence: 11
+            value:
+              designEvidence:
+                contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+                ref: openspec/changes/procuraai-readiness-linkage/design.md
+              plan: docs/superpowers/plans/procuraai-readiness-linkage.md
+              planEvidence:
+                contentHash: 20079f3dbe40395c2b29106148af0de2d4935235a1fd0ec8dbcbb89ba0a34a9c
+                ref: docs/superpowers/plans/procuraai-readiness-linkage.md
+              taskRevision: 5852bfeb89032b993121d77968a1444c09de918e3912decf205585a317a8ebaf
+          full.build.plan.evidence:
+            sequence: 12
+            value:
+              contentHash: 20079f3dbe40395c2b29106148af0de2d4935235a1fd0ec8dbcbb89ba0a34a9c
+              ref: docs/superpowers/plans/procuraai-readiness-linkage.md
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+                    handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+                    proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                      同用 @ConditionalOnAiGovernanceEnabled，双态
+                      ApplicationContextRunner 探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与
+                      ObjectProvider 兜底（掩盖错误）。2) Mock
+                      降级——ContractReviewPortAdapter.review() 在 gateway.invoke()
+                      后识别 mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                      degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                      AiReadinessApplicationService 聚合 provider
+                      配置/能力注册/总闸/评测四态，判词 AVAILABLE/DEGRADED/UNKNOWN，未知
+                      fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                      人工复核——Qualification 实体加幂等 reviewByHuman，服务
+                      findById→领域方法→save 替换 UnsupportedOperationException，新增
+                      Controller，不改 DDL，完整复核台账留 backlog。5) 前端三页
+                      AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                      services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                      验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭
+                      advisory 前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test
+                      profile 不改生产库；readiness 读 evalset 只读失败即 UNKNOWN
+                      不写文档族；新增权限点需 owner 登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份
+                      delta spec 覆盖。
+                    requirementsEvidence:
+                      contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                      ref: openspec/changes/procuraai-readiness-linkage
+                    sourceEvidence:
+                      contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                      ref: openspec/changes/procuraai-readiness-linkage
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/procuraai-readiness-linkage/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+              ref: openspec/changes/procuraai-readiness-linkage/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+              handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+              proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+                探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+                降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别
+                mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+                AVAILABLE/DEGRADED/UNKNOWN，未知
+                fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                人工复核——Qualification 实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+                UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+                backlog。5) 前端三页
+                AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+                前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+                不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+                登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+              requirementsEvidence:
+                contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                ref: openspec/changes/procuraai-readiness-linkage
+              sourceEvidence:
+                contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                ref: openspec/changes/procuraai-readiness-linkage
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+        sequence: 13
+      procuraai-readiness-linkage:4:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+        sequence: 4
+      procuraai-readiness-linkage:5:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+        sequence: 5
+      procuraai-readiness-linkage:7:
+        results:
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+                    handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+                    proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                      同用 @ConditionalOnAiGovernanceEnabled，双态
+                      ApplicationContextRunner 探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与
+                      ObjectProvider 兜底（掩盖错误）。2) Mock
+                      降级——ContractReviewPortAdapter.review() 在 gateway.invoke()
+                      后识别 mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                      degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                      AiReadinessApplicationService 聚合 provider
+                      配置/能力注册/总闸/评测四态，判词 AVAILABLE/DEGRADED/UNKNOWN，未知
+                      fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                      人工复核——Qualification 实体加幂等 reviewByHuman，服务
+                      findById→领域方法→save 替换 UnsupportedOperationException，新增
+                      Controller，不改 DDL，完整复核台账留 backlog。5) 前端三页
+                      AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                      services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                      验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭
+                      advisory 前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test
+                      profile 不改生产库；readiness 读 evalset 只读失败即 UNKNOWN
+                      不写文档族；新增权限点需 owner 登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份
+                      delta spec 覆盖。
+                    requirementsEvidence:
+                      contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                      ref: openspec/changes/procuraai-readiness-linkage
+                    sourceEvidence:
+                      contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                      ref: openspec/changes/procuraai-readiness-linkage
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+              handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+              proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+                探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+                降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别
+                mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+                AVAILABLE/DEGRADED/UNKNOWN，未知
+                fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                人工复核——Qualification 实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+                UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+                backlog。5) 前端三页
+                AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+                前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+                不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+                登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+              requirementsEvidence:
+                contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                ref: openspec/changes/procuraai-readiness-linkage
+              sourceEvidence:
+                contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                ref: openspec/changes/procuraai-readiness-linkage
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+        sequence: 7
+      procuraai-readiness-linkage:9:
+        results:
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+                    handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+                    proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                      同用 @ConditionalOnAiGovernanceEnabled，双态
+                      ApplicationContextRunner 探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与
+                      ObjectProvider 兜底（掩盖错误）。2) Mock
+                      降级——ContractReviewPortAdapter.review() 在 gateway.invoke()
+                      后识别 mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                      degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                      AiReadinessApplicationService 聚合 provider
+                      配置/能力注册/总闸/评测四态，判词 AVAILABLE/DEGRADED/UNKNOWN，未知
+                      fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                      人工复核——Qualification 实体加幂等 reviewByHuman，服务
+                      findById→领域方法→save 替换 UnsupportedOperationException，新增
+                      Controller，不改 DDL，完整复核台账留 backlog。5) 前端三页
+                      AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                      services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                      验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭
+                      advisory 前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test
+                      profile 不改生产库；readiness 读 evalset 只读失败即 UNKNOWN
+                      不写文档族；新增权限点需 owner 登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份
+                      delta spec 覆盖。
+                    requirementsEvidence:
+                      contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                      ref: openspec/changes/procuraai-readiness-linkage
+                    sourceEvidence:
+                      contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                      ref: openspec/changes/procuraai-readiness-linkage
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/procuraai-readiness-linkage/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+              ref: openspec/changes/procuraai-readiness-linkage/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+              handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+              proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+                探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+                降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别
+                mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+                AVAILABLE/DEGRADED/UNKNOWN，未知
+                fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                人工复核——Qualification 实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+                UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+                backlog。5) 前端三页
+                AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+                前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+                不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+                登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+              requirementsEvidence:
+                contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                ref: openspec/changes/procuraai-readiness-linkage
+              sourceEvidence:
+                contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                ref: openspec/changes/procuraai-readiness-linkage
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+        sequence: 9
+    waits:
+      - id: procuraai-readiness-linkage:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-readiness-linkage
+            changeDir: openspec/changes/procuraai-readiness-linkage
+            workspaceBaseline:
+              ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+        proposalHash: ea055db8c8d83fb8549b1ec7b4d6f5e5a7855fc41fe3cc4131af503cf14619c3
+        choices:
+          - approved
+          - rejected
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+        decision:
+          id: classic-open-c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+          choice: approved
+          proposalHash: ea055db8c8d83fb8549b1ec7b4d6f5e5a7855fc41fe3cc4131af503cf14619c3
+      - id: procuraai-readiness-linkage:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-readiness-linkage
+            changeDir: openspec/changes/procuraai-readiness-linkage
+            workspaceBaseline:
+              ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+              handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+              proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+                探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+                降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别
+                mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+                AVAILABLE/DEGRADED/UNKNOWN，未知
+                fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                人工复核——Qualification 实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+                UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+                backlog。5) 前端三页
+                AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+                前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+                不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+                登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+              requirementsEvidence:
+                contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                ref: openspec/changes/procuraai-readiness-linkage
+              sourceEvidence:
+                contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                ref: openspec/changes/procuraai-readiness-linkage
+        proposalHash: 648c017dec9c4dc7a3391e7ee35ff810030f059b9c52122807827fddf1cf2941
+        choices:
+          - approved
+          - rejected
+        results:
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+              handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+              proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+                探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+                降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别
+                mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+                AVAILABLE/DEGRADED/UNKNOWN，未知
+                fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                人工复核——Qualification 实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+                UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+                backlog。5) 前端三页
+                AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+                前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+                不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+                登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+              requirementsEvidence:
+                contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                ref: openspec/changes/procuraai-readiness-linkage
+              sourceEvidence:
+                contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                ref: openspec/changes/procuraai-readiness-linkage
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+        decision:
+          id: classic-design-648c017dec9c4dc7a3391e7ee35ff810030f059b9c52122807827fddf1cf2941-approved
+          choice: approved
+          proposalHash: 648c017dec9c4dc7a3391e7ee35ff810030f059b9c52122807827fddf1cf2941
+      - id: procuraai-readiness-linkage:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-readiness-linkage
+            changeDir: openspec/changes/procuraai-readiness-linkage
+            workspaceBaseline:
+              ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: fc7123493bb2c9cc62cf210029e4f8165dd297fa9947048d0731c8a23c52fe8b
+        choices:
+          - approved
+          - rejected
+        results:
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+                    handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+                    proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                      同用 @ConditionalOnAiGovernanceEnabled，双态
+                      ApplicationContextRunner 探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与
+                      ObjectProvider 兜底（掩盖错误）。2) Mock
+                      降级——ContractReviewPortAdapter.review() 在 gateway.invoke()
+                      后识别 mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                      degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                      AiReadinessApplicationService 聚合 provider
+                      配置/能力注册/总闸/评测四态，判词 AVAILABLE/DEGRADED/UNKNOWN，未知
+                      fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                      人工复核——Qualification 实体加幂等 reviewByHuman，服务
+                      findById→领域方法→save 替换 UnsupportedOperationException，新增
+                      Controller，不改 DDL，完整复核台账留 backlog。5) 前端三页
+                      AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                      services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                      验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭
+                      advisory 前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test
+                      profile 不改生产库；readiness 读 evalset 只读失败即 UNKNOWN
+                      不写文档族；新增权限点需 owner 登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份
+                      delta spec 覆盖。
+                    requirementsEvidence:
+                      contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                      ref: openspec/changes/procuraai-readiness-linkage
+                    sourceEvidence:
+                      contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                      ref: openspec/changes/procuraai-readiness-linkage
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/procuraai-readiness-linkage/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+              ref: openspec/changes/procuraai-readiness-linkage/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+              handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+              proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+                探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+                降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别
+                mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+                AVAILABLE/DEGRADED/UNKNOWN，未知
+                fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                人工复核——Qualification 实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+                UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+                backlog。5) 前端三页
+                AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+                前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+                不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+                登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+              requirementsEvidence:
+                contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                ref: openspec/changes/procuraai-readiness-linkage
+              sourceEvidence:
+                contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                ref: openspec/changes/procuraai-readiness-linkage
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+        decision:
+          id: 3a8961c8-4a6b-4e8b-a1be-d977753ff2ac
+          choice: approved
+          proposalHash: fc7123493bb2c9cc62cf210029e4f8165dd297fa9947048d0731c8a23c52fe8b
+    evidenceWaits:
+      - id: procuraai-readiness-linkage:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+        receipt:
+          ref: openspec/changes/procuraai-readiness-linkage
+          contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+          submissionId: f957a203-b9d4-4e9f-8a0b-26a42f573341
+      - id: procuraai-readiness-linkage:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results:
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+                    handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+                    proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                      同用 @ConditionalOnAiGovernanceEnabled，双态
+                      ApplicationContextRunner 探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与
+                      ObjectProvider 兜底（掩盖错误）。2) Mock
+                      降级——ContractReviewPortAdapter.review() 在 gateway.invoke()
+                      后识别 mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                      degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                      AiReadinessApplicationService 聚合 provider
+                      配置/能力注册/总闸/评测四态，判词 AVAILABLE/DEGRADED/UNKNOWN，未知
+                      fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                      人工复核——Qualification 实体加幂等 reviewByHuman，服务
+                      findById→领域方法→save 替换 UnsupportedOperationException，新增
+                      Controller，不改 DDL，完整复核台账留 backlog。5) 前端三页
+                      AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                      services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                      验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭
+                      advisory 前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test
+                      profile 不改生产库；readiness 读 evalset 只读失败即 UNKNOWN
+                      不写文档族；新增权限点需 owner 登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份
+                      delta spec 覆盖。
+                    requirementsEvidence:
+                      contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                      ref: openspec/changes/procuraai-readiness-linkage
+                    sourceEvidence:
+                      contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                      ref: openspec/changes/procuraai-readiness-linkage
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/procuraai-readiness-linkage/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+              handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+              proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+                探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+                降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别
+                mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+                AVAILABLE/DEGRADED/UNKNOWN，未知
+                fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                人工复核——Qualification 实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+                UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+                backlog。5) 前端三页
+                AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+                前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+                不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+                登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+              requirementsEvidence:
+                contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                ref: openspec/changes/procuraai-readiness-linkage
+              sourceEvidence:
+                contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                ref: openspec/changes/procuraai-readiness-linkage
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+        receipt:
+          ref: openspec/changes/procuraai-readiness-linkage/design.md
+          contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+          submissionId: 19bbc13e-967a-433b-aa18-bacdf07a8532
+      - id: procuraai-readiness-linkage:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results:
+          full.build.configure:
+            sequence: 9
+            value:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 10
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: autonomous
+                    directOverride: false
+                    isolation: current
+                    reviewMode: standard
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.plan:
+            sequence: 11
+            value:
+              designEvidence:
+                contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+                ref: openspec/changes/procuraai-readiness-linkage/design.md
+              plan: docs/superpowers/plans/procuraai-readiness-linkage.md
+              planEvidence:
+                contentHash: 20079f3dbe40395c2b29106148af0de2d4935235a1fd0ec8dbcbb89ba0a34a9c
+                ref: docs/superpowers/plans/procuraai-readiness-linkage.md
+              taskRevision: 5852bfeb89032b993121d77968a1444c09de918e3912decf205585a317a8ebaf
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+                    handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+                    proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                      同用 @ConditionalOnAiGovernanceEnabled，双态
+                      ApplicationContextRunner 探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与
+                      ObjectProvider 兜底（掩盖错误）。2) Mock
+                      降级——ContractReviewPortAdapter.review() 在 gateway.invoke()
+                      后识别 mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                      degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                      AiReadinessApplicationService 聚合 provider
+                      配置/能力注册/总闸/评测四态，判词 AVAILABLE/DEGRADED/UNKNOWN，未知
+                      fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                      人工复核——Qualification 实体加幂等 reviewByHuman，服务
+                      findById→领域方法→save 替换 UnsupportedOperationException，新增
+                      Controller，不改 DDL，完整复核台账留 backlog。5) 前端三页
+                      AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                      services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                      验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭
+                      advisory 前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test
+                      profile 不改生产库；readiness 读 evalset 只读失败即 UNKNOWN
+                      不写文档族；新增权限点需 owner 登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份
+                      delta spec 覆盖。
+                    requirementsEvidence:
+                      contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                      ref: openspec/changes/procuraai-readiness-linkage
+                    sourceEvidence:
+                      contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                      ref: openspec/changes/procuraai-readiness-linkage
+          full.design.document:
+            sequence: 7
+            value:
+              designDoc: openspec/changes/procuraai-readiness-linkage/design.md
+          full.design.evidence:
+            sequence: 8
+            value:
+              contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+              ref: openspec/changes/procuraai-readiness-linkage/design.md
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+              handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+              proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+                探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+                降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别
+                mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+                AVAILABLE/DEGRADED/UNKNOWN，未知
+                fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                人工复核——Qualification 实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+                UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+                backlog。5) 前端三页
+                AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+                前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+                不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+                登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+              requirementsEvidence:
+                contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                ref: openspec/changes/procuraai-readiness-linkage
+              sourceEvidence:
+                contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                ref: openspec/changes/procuraai-readiness-linkage
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: procuraai-readiness-linkage
+                  changeDir: openspec/changes/procuraai-readiness-linkage
+                  workspaceBaseline:
+                    ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                    ref: openspec/changes/procuraai-readiness-linkage
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+              ref: openspec/changes/procuraai-readiness-linkage
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+        receipt:
+          ref: docs/superpowers/plans/procuraai-readiness-linkage.md
+          contentHash: 20079f3dbe40395c2b29106148af0de2d4935235a1fd0ec8dbcbb89ba0a34a9c
+          submissionId: 7791a4d4-bdcb-457d-bb9d-136c0cd412ae
+    ready: []
+    joins: {}
+    outputs:
+      full.build.configure:
+        sequence: 9
+        value:
+          boundBranch: dev
+          buildMode: autonomous
+          directOverride: false
+          isolation: current
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: tdd
+      full.build.confirm:
+        sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-readiness-linkage
+              changeDir: openspec/changes/procuraai-readiness-linkage
+              workspaceBaseline:
+                ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: autonomous
+                directOverride: false
+                isolation: current
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: tdd
+      full.build.plan:
+        sequence: 11
+        value:
+          designEvidence:
+            contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+            ref: openspec/changes/procuraai-readiness-linkage/design.md
+          plan: docs/superpowers/plans/procuraai-readiness-linkage.md
+          planEvidence:
+            contentHash: 20079f3dbe40395c2b29106148af0de2d4935235a1fd0ec8dbcbb89ba0a34a9c
+            ref: docs/superpowers/plans/procuraai-readiness-linkage.md
+          taskRevision: 5852bfeb89032b993121d77968a1444c09de918e3912decf205585a317a8ebaf
+      full.build.plan.evidence:
+        sequence: 12
+        value:
+          contentHash: 20079f3dbe40395c2b29106148af0de2d4935235a1fd0ec8dbcbb89ba0a34a9c
+          ref: docs/superpowers/plans/procuraai-readiness-linkage.md
+      full.design.confirm:
+        sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-readiness-linkage
+              changeDir: openspec/changes/procuraai-readiness-linkage
+              workspaceBaseline:
+                ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+                handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+                proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+                  同用 @ConditionalOnAiGovernanceEnabled，双态
+                  ApplicationContextRunner 探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与
+                  ObjectProvider 兜底（掩盖错误）。2) Mock
+                  降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别
+                  mock 身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+                  degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+                  AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+                  AVAILABLE/DEGRADED/UNKNOWN，未知
+                  fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR
+                  人工复核——Qualification 实体加幂等 reviewByHuman，服务 findById→领域方法→save
+                  替换 UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+                  backlog。5) 前端三页
+                  AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+                  services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+                  验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+                  前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+                  不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+                  登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+                requirementsEvidence:
+                  contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+                  ref: openspec/changes/procuraai-readiness-linkage
+                sourceEvidence:
+                  contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+                  ref: openspec/changes/procuraai-readiness-linkage
+      full.design.document:
+        sequence: 7
+        value:
+          designDoc: openspec/changes/procuraai-readiness-linkage/design.md
+      full.design.evidence:
+        sequence: 8
+        value:
+          contentHash: 0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0
+          ref: openspec/changes/procuraai-readiness-linkage/design.md
+      full.design.handoff:
+        sequence: 5
+        value:
+          handoffContext: openspec/changes/procuraai-readiness-linkage/.comet/handoff/design-context.json
+          handoffHash: c066be9b962dc2aae8d7e7f6bd5cbb05af7437686253b314022abe80f75973f3
+          proposal: 候选方案：1) 装配一致性——AdvisoryController/AdvisoryApplicationService 与治理 Bean
+            同用 @ConditionalOnAiGovernanceEnabled，双态 ApplicationContextRunner
+            探针；否决无条件装配治理 Bean（破坏关闭即无 AI）与 ObjectProvider 兜底（掩盖错误）。2) Mock
+            降级——ContractReviewPortAdapter.review() 在 gateway.invoke() 后识别 mock
+            身份，追加 MOCK_PROVIDER_REJECTED trace 并复用现有
+            degrade()（UNKNOWN+强制人工），不在网关全局拒绝。3) readiness 端点——新增只读
+            AiReadinessApplicationService 聚合 provider 配置/能力注册/总闸/评测四态，判词
+            AVAILABLE/DEGRADED/UNKNOWN，未知
+            fail-closed，响应分离部署门禁与授标/放款许可，前端未知码原样显示。4) OCR 人工复核——Qualification
+            实体加幂等 reviewByHuman，服务 findById→领域方法→save 替换
+            UnsupportedOperationException，新增 Controller，不改 DDL，完整复核台账留
+            backlog。5) 前端三页 AiReadiness/HumanReviewConsole/GovernanceStatus，复用现有
+            services/useMessage，失败显示无法确认、AI 建议不渲染为已生效。6)
+            验收分机器/运行/数据三层，真实启动后端+前端并用浏览器完成端到端，写操作以落库为第二证据。风险：默认关闭 advisory
+            前端入口不可达→readiness 页常驻解释；本地 MySQL 需密码→优先内存/H2 test profile
+            不改生产库；readiness 读 evalset 只读失败即 UNKNOWN 不写文档族；新增权限点需 owner
+            登记则报告列遗留不阻塞联调。无 Spec Patch：行为已由 Open 两份 delta spec 覆盖。
+          requirementsEvidence:
+            contentHash: 64c892a2676b18f3766406d7154121f3817763fb0eaadea75fe1da2386d6f2a8
+            ref: openspec/changes/procuraai-readiness-linkage
+          sourceEvidence:
+            contentHash: fec15ffbef952514f3333a857048c4cadb142216b53ea34c4376416ee2040957
+            ref: openspec/changes/procuraai-readiness-linkage
+      full.open:
+        sequence: 1
+        value:
+          event: open-complete
+      full.open.confirm:
+        sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-readiness-linkage
+              changeDir: openspec/changes/procuraai-readiness-linkage
+              workspaceBaseline:
+                ref: b61008f6-a29c-412d-96b6-8ebcaf23f6a5
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+                ref: openspec/changes/procuraai-readiness-linkage
+      full.open.evidence:
+        sequence: 2
+        value:
+          contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+          ref: openspec/changes/procuraai-readiness-linkage
+      full.open.revalidate:
+        sequence: 4
+        value:
+          contentHash: c904a36fe6fa9152d9185d677639495ea595a2ed22484637d222a649e34d67e2
+    children: []
+    lineage: []
+  sourceRevision: 19
+  sourceHash: 1ad94d5e1aa47ea54545eb9e2002cc6e03f183baaf6cf98fab5012032db1c39e
+check_epoch: 2

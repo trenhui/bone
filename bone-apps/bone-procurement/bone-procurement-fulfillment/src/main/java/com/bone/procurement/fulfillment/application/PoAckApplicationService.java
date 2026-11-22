@@ -78,6 +78,9 @@ public class PoAckApplicationService {
     ack.setAckLinesJson(toJson(cmd.lines()));
     ack.setAckAt(new Date());
     ack.setVersion(0);
+    Date now = new Date();
+    ack.setCreatedAt(now);
+    ack.setUpdatedAt(now);
     Long id = repository.save(ack);
     ack.setId(id);
 

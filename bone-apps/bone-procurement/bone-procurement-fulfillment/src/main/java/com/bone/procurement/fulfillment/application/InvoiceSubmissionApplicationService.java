@@ -13,6 +13,7 @@ import com.bone.procurement.fulfillment.domain.port.VendorIdentityPort;
 import com.bone.procurement.fulfillment.domain.repository.InvoiceSubmissionRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Date;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,6 +93,9 @@ public class InvoiceSubmissionApplicationService {
     inv.setLinesJson(toJson(cmd));
     inv.setStatus(InvoiceStatus.DRAFT.name());
     inv.setVersion(0);
+    Date now = new Date();
+    inv.setCreatedAt(now);
+    inv.setUpdatedAt(now);
     Long id = repository.save(inv);
     inv.setId(id);
     return inv;

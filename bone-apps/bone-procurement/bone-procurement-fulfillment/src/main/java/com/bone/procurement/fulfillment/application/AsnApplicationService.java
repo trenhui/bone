@@ -91,6 +91,9 @@ public class AsnApplicationService {
     asn.setSsccJson(toJson(cmd.sscc()));
     asn.setStatus(AsnStatus.CREATED.name());
     asn.setVersion(0);
+    Date now = new Date();
+    asn.setCreatedAt(now);
+    asn.setUpdatedAt(now);
     Long id = asnRepository.save(asn);
     asn.setId(id);
 
@@ -107,6 +110,8 @@ public class AsnApplicationService {
         line.setUom(l.uom());
         line.setPackRef(l.packRef());
         line.setVersion(0);
+        line.setCreatedAt(now);
+        line.setUpdatedAt(now);
         lineRepository.save(line);
       }
     }

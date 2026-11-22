@@ -37,7 +37,12 @@ public class HumanDecisionLedgerAdapter implements HumanDecisionLedger {
                 .eq("tenantId", tenantId)
                 .eq("decisionId", decision.decisionId()));
     HumanDecisionEntity entity = new HumanDecisionEntity();
-    if (!existing.isEmpty()) entity.setId(existing.get(0).getId());
+    if (!existing.isEmpty()) {
+      entity.setId(existing.get(0).getId());
+      entity.setVersion(existing.get(0).getVersion());
+    } else {
+      entity.setVersion(0);
+    }
     entity.setTenantId(tenantId);
     entity.setDecisionId(decision.decisionId());
     entity.setCapabilityCode(decision.capabilityCode().value());
@@ -51,6 +56,9 @@ public class HumanDecisionLedgerAdapter implements HumanDecisionLedger {
     entity.setOverrideAccepted(decision.overrideAccepted());
     entity.setEvaluationFeedback(decision.evaluationFeedbackRaised());
     entity.setDecidedAt(Date.from(decision.decidedAt()));
+    Date now = new Date();
+    entity.setCreatedAt(existing.isEmpty() ? now : existing.get(0).getCreatedAt());
+    entity.setUpdatedAt(now);
     repository.save(entity);
   }
 

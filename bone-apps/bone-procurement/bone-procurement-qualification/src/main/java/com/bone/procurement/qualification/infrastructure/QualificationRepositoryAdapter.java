@@ -46,4 +46,13 @@ public class QualificationRepositoryAdapter implements QualificationRepository {
   public List<Qualification> findExpiring(Long tenantId) {
     return qualifications.findExpiring(tenantId);
   }
+
+  @Override
+  public Optional<Qualification> findById(Long tenantId, Long qualificationId) {
+    if (tenantId == null || qualificationId == null) {
+      return Optional.empty();
+    }
+    Qualification q = qualifications.findById(qualificationId);
+    return q != null && tenantId.equals(q.getTenantId()) ? Optional.of(q) : Optional.empty();
+  }
 }

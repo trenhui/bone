@@ -19,7 +19,11 @@ import org.springframework.context.annotation.Import;
       "com.bone.procurement.fulfillment.domain.repository",
       "com.bone.procurement.sourcing.domain.repository",
       "com.bone.procurement.qualification.domain.repository",
-      "com.bone.procurement.risk.domain.repository"
+      "com.bone.procurement.risk.domain.repository",
+      // 合同审查/治理仓储接口位于各模块 infrastructure 包（非 domain.repository）；
+      // 其适配器受功能开关控制，开启时必须能被 SDK 注册，否则全能力配置启动即失败。
+      "com.bone.procurement.contract.infrastructure",
+      "com.bone.procurement.governance.infrastructure"
     })
 @Import({MetadataAutoConfiguration.class, SqlRepositoryAutoConfiguration.class})
 public class ProcurementApplication {

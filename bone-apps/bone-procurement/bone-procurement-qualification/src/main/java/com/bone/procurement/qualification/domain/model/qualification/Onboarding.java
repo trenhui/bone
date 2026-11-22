@@ -8,6 +8,7 @@ import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.math.BigDecimal;
+import java.util.Date;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -65,6 +66,9 @@ public class Onboarding extends AbstractEntity<Long> {
     o.score = aiScore;
     o.status = OnboardingStatus.DRAFT.name();
     o.version = 0;
+    Date now = new Date();
+    o.setCreatedAt(now);
+    o.setUpdatedAt(now);
     return o;
   }
 

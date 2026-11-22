@@ -37,7 +37,17 @@ class QualificationControllerContractTest {
         Arrays.stream(QualificationController.class.getDeclaredMethods())
             .filter(m -> m.isAnnotationPresent(GetMapping.class))
             .count();
-    assertThat(writeCount).isEqualTo(2L);
-    assertThat(readCount).isEqualTo(1L);
+    assertThat(writeCount).isEqualTo(3L);
+    assertThat(readCount).isEqualTo(2L);
+    assertThat(
+            Arrays.stream(QualificationController.class.getDeclaredMethods())
+                .filter(m -> m.isAnnotationPresent(PostMapping.class))
+                .map(Method::getName))
+        .containsExactlyInAnyOrder("submit", "approve", "reviewOcr");
+    assertThat(
+            Arrays.stream(QualificationController.class.getDeclaredMethods())
+                .filter(m -> m.isAnnotationPresent(GetMapping.class))
+                .map(Method::getName))
+        .containsExactlyInAnyOrder("expiring", "findOne");
   }
 }

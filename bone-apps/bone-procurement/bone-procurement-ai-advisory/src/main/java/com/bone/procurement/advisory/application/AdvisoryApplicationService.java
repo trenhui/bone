@@ -4,6 +4,7 @@ import com.bone.procurement.advisory.domain.model.advisory.AdvisoryCapability;
 import com.bone.procurement.advisory.domain.model.advisory.AdvisoryResponse;
 import com.bone.procurement.advisory.domain.model.advisory.AiAvailability;
 import com.bone.procurement.governance.application.AiGovernanceApplicationService;
+import com.bone.procurement.governance.application.ConditionalOnAiGovernanceEnabled;
 import com.bone.procurement.governance.application.SafetyApplicationService;
 import com.bone.procurement.governance.domain.model.capability.GovernanceDecision;
 import java.time.Instant;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
  * <p>不注入任何 LLM 网关：本服务不产生模型输出、不声明效果达标；真实模型接入与效果声明属 owner（D-15/D-16/D-17）。
  */
 @Service
+@ConditionalOnAiGovernanceEnabled
 public class AdvisoryApplicationService {
 
   private final AiGovernanceApplicationService governance;
