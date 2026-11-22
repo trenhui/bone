@@ -85,7 +85,7 @@ if (reviewCount > 0) {
   const testId = await first.getAttribute('data-testid');
   const claimId = testId.replace('review-case-link-', '');
   const href = await first.getAttribute('href');
-  check('链接 href 指向案件 360 深链', Boolean(href && href.includes(`#/case?claimId=${claimId}`)), `href=${href}`);
+  check('链接 href 指向案件 360 焦点深链', Boolean(href && href.includes(`/claim-detail#/case?claimId=${claimId}`)), `href=${href}`);
   check('链接声明在新标签页打开', (await first.getAttribute('target')) === '_blank', `target=${await first.getAttribute('target')}`);
 
   // 点击 → 断言新标签页打开案件详情，且原工作台保持不变
@@ -98,10 +98,15 @@ if (reviewCount > 0) {
   await detailPage.waitForLoadState('domcontentloaded').catch(() => {});
   await detailPage.waitForTimeout(2500);
   const detailUrl = detailPage.url();
-  check('点击报案号在新标签页打开案件 360', detailUrl.includes('#/case?claimId=') && detailUrl.includes(claimId), `url=${detailUrl}`);
+  check('点击报案号在新标签页打开案件 360 焦点页', detailUrl.includes('/claim-detail#/case?claimId=') && detailUrl.includes(claimId), `url=${detailUrl}`);
+  check('焦点页无左侧菜单', (await detailPage.locator('.shell-sider').count()) === 0, `shell-sider 数=${await detailPage.locator('.shell-sider').count()}`);
+  check('焦点页无顶栏', (await detailPage.locator('.shell-header').count()) === 0, `shell-header 数=${await detailPage.locator('.shell-header').count()}`);
   check('原工作台页面未被导航走', page.url() === workbenchUrl, `before=${workbenchUrl} after=${page.url()}`);
   const viewportText = await detailPage.locator('#subapp-viewport').innerText().catch(() => '');
   check('新标签页的案件 360 详情页渲染出内容', viewportText.length > 30, `text长度=${viewportText.length}`);
+  try {
+    await detailPage.screenshot({ path: `${SHOT_DIR}/case-focus-detail-${Date.now()}.png`, fullPage: false });
+  } catch { /* 截图失败不影响判据 */ }
   await detailPage.close();
 }
 

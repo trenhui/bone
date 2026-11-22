@@ -17,7 +17,7 @@ describe('PolicyNoLink', () => {
     render(<PolicyNoLink policyNo="POL-2026-0001" />);
     const link = screen.getByTestId('policy-no-link-POL-2026-0001');
     expect(link.tagName).toBe('A');
-    expect(link.getAttribute('href')).toContain('#/policy?policyNo=POL-2026-0001');
+    expect(link.getAttribute('href')).toContain('/claim-detail#/policy?policyNo=POL-2026-0001');
     expect(link.getAttribute('target')).toBe('_blank');
     expect(link.getAttribute('rel')).toContain('noopener');
   });

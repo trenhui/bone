@@ -5,3 +5,20 @@
 body {
   margin: 0;
 }
+
+/* 焦点模式（新标签页 /claim-detail#/policy?...）：保单详情提升为页面主体。
+   列表与工具条已在 PolicyManagementPage 条件隐藏，这里只把同一个 Drawer
+   从浮层改为静态全宽面板——详情内容仍只有一份实现，不复制 JSX。 */
+.policy-focus-drawer.ant-drawer {
+  position: static;
+  transform: none !important;
+}
+.policy-focus-drawer .ant-drawer-content-wrapper {
+  position: static !important;
+  max-width: none !important;
+  height: auto !important;
+  box-shadow: none !important;
+}
+.policy-focus-drawer .ant-drawer-body {
+  padding: 24px 32px;
+}

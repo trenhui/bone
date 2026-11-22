@@ -1,6 +1,7 @@
 import type { MouseEvent, ReactElement } from 'react';
 import { Button, Tooltip } from 'antd';
 import { buildPolicyDetailLink, isSafePolicyNo } from '../workbench/policyDeepLinks';
+import { buildFocusHref } from '../workbench/focusMode';
 
 /**
  * 保单号 → 保单详情的唯一「可点击单元格」入口。
@@ -37,15 +38,13 @@ export function PolicyNoLink({
 }: PolicyNoLinkProps): ReactElement {
   const id = policyNo == null ? '' : String(policyNo);
   const label = text?.trim() || id || placeholder;
-  const link = buildPolicyDetailLink(id);
+  const href = buildFocusHref(buildPolicyDetailLink(id));
 
-  if (!link || !isSafePolicyNo(id)) {
+  if (!href || !isSafePolicyNo(id)) {
     return <span data-testid={testId ?? 'policy-no-link-invalid'}>{label}</span>;
   }
 
   const resolvedTestId = testId ?? `policy-no-link-${id}`;
-  // qiankun：新标签页必须带完整 URL（origin + 应用前缀 + #），否则落不到微应用路由。
-  const href = `${window.location.origin}${window.location.pathname}#${link}`;
   const handleClick = (e: MouseEvent<HTMLElement>): void => {
     e.stopPropagation();
   };

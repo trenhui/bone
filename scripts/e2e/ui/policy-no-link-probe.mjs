@@ -90,7 +90,7 @@ try {
 
   if (linkCount > 0) {
     const href = await link.getAttribute('href');
-    check('href 指向保单详情深链', Boolean(href && href.includes(`#/policy?policyNo=${POLICY_NO}`)), `href=${href}`);
+    check('href 指向保单详情焦点深链', Boolean(href && href.includes(`/claim-detail#/policy?policyNo=${POLICY_NO}`)), `href=${href}`);
     check('链接声明在新标签页打开', (await link.getAttribute('target')) === '_blank', `target=${await link.getAttribute('target')}`);
 
     const listUrl = page.url();
@@ -103,13 +103,19 @@ try {
     await detailPage.waitForTimeout(2800);
 
     const detailUrl = detailPage.url();
-    check('新标签页打开保单详情深链', detailUrl.includes('#/policy?policyNo=') && detailUrl.includes(POLICY_NO), `url=${detailUrl}`);
+    check('新标签页打开保单详情焦点页', detailUrl.includes('/claim-detail#/policy?policyNo=') && detailUrl.includes(POLICY_NO), `url=${detailUrl}`);
+    check('焦点页无左侧菜单', (await detailPage.locator('.shell-sider').count()) === 0, `shell-sider 数=${await detailPage.locator('.shell-sider').count()}`);
+    check('焦点页无顶栏', (await detailPage.locator('.shell-header').count()) === 0, `shell-header 数=${await detailPage.locator('.shell-header').count()}`);
+    check('焦点页无保单列表（详情即整页）', (await detailPage.locator('#subapp-viewport .ant-table').count()) === 0, `列表表数=${await detailPage.locator('#subapp-viewport .ant-table').count()}`);
     check('原列表页面未被导航走', page.url() === listUrl, `before=${listUrl} after=${page.url()}`);
 
     const drawer = detailPage.locator('.ant-drawer').filter({ hasText: '保单详情' });
     check('保单详情抽屉自动展开', (await drawer.count()) > 0 && (await drawer.first().isVisible().catch(() => false)), `抽屉数=${await drawer.count()}`);
     const drawerText = await drawer.first().innerText().catch(() => '');
     check('详情抽屉渲染出保单字段', drawerText.includes(POLICY_NO) && drawerText.includes('基础信息'), `text长度=${drawerText.length}`);
+    try {
+      await detailPage.screenshot({ path: `${SHOT_DIR}/policy-focus-detail-${Date.now()}.png`, fullPage: false });
+    } catch { /* 截图失败不影响判据 */ }
     await detailPage.close();
   }
 

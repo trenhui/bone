@@ -1,6 +1,7 @@
 import type { MouseEvent, ReactElement } from 'react';
 import { Button, Tooltip } from 'antd';
 import { buildCase360Link, isSafeClaimId, type CaseTab } from '../workbench/caseDeepLinks';
+import { buildFocusHref } from '../workbench/focusMode';
 
 /**
  * 案件 ID / 报案号 → 案件 360 详情页的唯一「可点击单元格」入口。
@@ -25,10 +26,11 @@ import { buildCase360Link, isSafeClaimId, type CaseTab } from '../workbench/case
  * 前者保留「复制链接地址 / 右键新标签页打开 / 状态栏预览 / 中键点击」等原生语义，
  * 且 `noopener` 防止新页面通过 window.opener 反向操作原窗口，`noreferrer` 不泄漏来源。
  *
- * <p>qiankun 微应用注意
- * --------------------
- * href 必须带 origin + 当前路径前缀 + `#`，新标签页才能重新加载 shell 并命中微应用 hash
- * 路由；只写 `#/case?...` 对应用内 navigate 有效，但新标签页会停在空白相对 URL 上。
+ * <p>无壳焦点模式
+ * --------------
+ * href 由 {@link buildFocusHref} 统一拼成 `origin + /claim-detail#/case?...`：shell 识别
+ * `/claim-detail` 后只挂载微应用内容区，不渲染侧栏/顶栏/Content 边距，得到与旧理赔
+ * `claimDetail` 一致的独立详情页。微应用内部仍是 HashRouter，hash 路由契约不变。
  */
 export interface ClaimIdLinkProps {
   /** 案件 ID（真值来源）。数字类型会被转成字符串；空值降级为占位符。 */
@@ -52,15 +54,14 @@ export function ClaimIdLink({
 }: ClaimIdLinkProps): ReactElement {
   const id = claimId == null ? '' : String(claimId);
   const label = text?.trim() || id || placeholder;
-  const link = buildCase360Link(id, tab);
+  const href = buildFocusHref(buildCase360Link(id, tab));
 
   // fail-closed：非法 ID（含注入字符）或空值不生成链接，只显示纯文本。
-  if (!link || !isSafeClaimId(id)) {
+  if (!href || !isSafeClaimId(id)) {
     return <span data-testid={testId ?? 'claim-id-link-invalid'}>{label}</span>;
   }
 
   const resolvedTestId = testId ?? `claim-id-link-${id}`;
-  const href = `${window.location.origin}${window.location.pathname}#${link}`;
 
   const handleClick = (e: MouseEvent<HTMLElement>): void => {
     // 盲标等工作台整行有 onClick（选中任务）：点 ID 不应同时触发行选中。

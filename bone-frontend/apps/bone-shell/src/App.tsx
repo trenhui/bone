@@ -697,7 +697,9 @@ function AppContent({
         name: 'bone-claim-app',
         entry: import.meta.env.VITE_CLAIM_APP_ENTRY || '//localhost:3013',
         container: '#subapp-viewport',
-        activeRule: '/claim',
+        // 焦点模式详情页：新标签页打开 /claim-detail#/case?... 或 #/policy?...，
+        // 由 MainLayout 判定为 isFocusMode，只渲染微应用内容区（无侧栏/顶栏/Content 边距）。
+        activeRule: ['/claim', '/claim-detail'],
         props: globalContext,
       },
       {
@@ -986,11 +988,15 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // 焦点模式：/claim-detail#/case?... 或 #/policy?... 由新标签页打开，
+  // 只渲染微应用内容区——无侧栏、无顶栏、无 Content 边距（对标旧理赔 claimDetail 独立页）。
+  const isFocusMode = location.pathname.startsWith('/claim-detail');
+
   // 当前路径是否为微应用路由（与下方 Routes 中的微应用路由前缀一一对应）。
   // 用于控制常驻容器的显隐——见 microAppViewport 处的竞态修复说明。
   const MICRO_APP_BASES = [
     '/iam', '/metadata', '/masterdata', '/commerce', '/integration',
-    '/system', '/extension', '/generator', '/claim', '/procurement',
+    '/system', '/extension', '/generator', '/claim', '/claim-detail', '/procurement',
   ];
   const isMicroAppPath = MICRO_APP_BASES.some(
     (base) => location.pathname === base || location.pathname.startsWith(`${base}/`),
@@ -1254,6 +1260,15 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
     </div>
   );
 
+  // 焦点模式提前返回：所有 hooks 与 microAppViewport 均已就绪，此处只换布局外壳。
+  if (isFocusMode) {
+    return (
+      <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
+        <Content style={{ margin: 0, padding: 0 }}>{microAppViewport}</Content>
+      </Layout>
+    );
+  }
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       {layoutMode !== 'top' && (
@@ -1413,6 +1428,8 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
             {/* 智能理赔（bone-claim-app，2026-10-26 联调补线）：缺此路由时
                 /claim/* 命中 `*` 被静默送回首页（菜单可见也点不开）。 */}
             <Route path="/claim/*" element={null} />
+            {/* 焦点模式详情页（新标签页）：无 shell 导航，见 MainLayout 的 isFocusMode。 */}
+            <Route path="/claim-detail/*" element={null} />
             <Route path="/extension/*" element={null} />
             <Route path="/generator/*" element={null} />
             {/* 采购平台（bone-procurement-app，2026-11-17）：缺此路由 /procurement/*

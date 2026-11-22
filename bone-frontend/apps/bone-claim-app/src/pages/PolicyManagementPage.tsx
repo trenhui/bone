@@ -149,6 +149,12 @@ export function PolicyManagementPage(): ReactElement {
   /** 保单详情深链参数：新标签页打开 /policy?policyNo=... 时自动展开下方既有详情抽屉。 */
   const [searchParams, setSearchParams] = useSearchParams();
   const deepLinkedPolicyNo = parsePolicyNoFromSearch(searchParams.toString());
+  /**
+   * 焦点模式：新标签页只展示详情本身（列表/工具条/弹窗都不渲染）。
+   * 必须读浏览器地址栏的 pathname —— HashRouter 的 useLocation().pathname 是 hash 内的
+   * `/policy`，拿不到 shell 的 `/claim-detail` 前缀。
+   */
+  const isFocusMode = window.location.pathname.startsWith('/claim-detail');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -390,6 +396,7 @@ export function PolicyManagementPage(): ReactElement {
 
   return (
     <div>
+      {!isFocusMode && (<>
       <PageHeader
         title="保单管理"
         description="维护保单的承保期间、规则开关与被保人清单。规则启用后，该保单方可接受新报案。"
@@ -887,6 +894,7 @@ export function PolicyManagementPage(): ReactElement {
           )}
         </Form>
       </Modal>
+      </>)}
 
       <Drawer
         title={detailPolicyNo ? `保单详情（${detailPolicyNo}）` : '保单详情'}
@@ -900,7 +908,11 @@ export function PolicyManagementPage(): ReactElement {
             setSearchParams(next, { replace: true });
           }
         }}
-        width={860}
+        width={isFocusMode ? '100%' : 860}
+        getContainer={isFocusMode ? () => document.getElementById('subapp-viewport') ?? document.body : undefined}
+        mask={!isFocusMode}
+        closable={!isFocusMode}
+        rootClassName={isFocusMode ? 'policy-focus-drawer' : undefined}
       >
         {detailLoading && !detail ? (
           <Spin />
