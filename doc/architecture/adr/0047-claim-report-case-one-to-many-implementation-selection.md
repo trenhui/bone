@@ -112,6 +112,8 @@ git merge --ff-only comet/claim-report-case-one-to-many   # 已验证零冲突
 
 ### 部署迁移
 
+**前置条件**：`scripts/migrate.py` 硬依赖 `mysql` 客户端二进制（`MYSQL_BIN` 或 `PATH` 中的 `mysql`，见 `migrate.py:144`），缺失时直接 `sys.exit("❌ 找不到 mysql 客户端")`。**本机（macOS 开发机）无该客户端，故以下命令属部署/CI 步骤，不要在工作站照抄执行** —— 若在无客户端环境硬跑，失败信息是「找不到 mysql 客户端」，容易被误读为「迁移有问题」。
+
 ```bash
 python3 scripts/migrate.py status      # 预期：我方 0139 为 pending，对方 0139 为 orphan
 python3 scripts/migrate.py apply       # 0139 幂等可重放，末尾 §10 六条终态断言 fail-closed
