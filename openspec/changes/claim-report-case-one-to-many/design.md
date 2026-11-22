@@ -103,7 +103,7 @@ ClaimReport (t_claim_report) 1 ──── 0..N ClaimCase (t_claim_case.report_
 | 位置 | 角色 |
 |---|---|
 | `scripts/migration/0139_*.sql` | 生效通道（已发迁移，登记 `migration-manifest.json` order 顺延） |
-| `sql/bone-init.sql` | 全量新装基线 |
+| `bone-init.sql` | 全量新装基线 |
 | `bone-apps/synap-claim/synap-claim-app/src/main/resources/db/migration/V*.sql` | 模块内参考态（与 0058 同构） |
 
 漏一处即「配了不生效」：新装库缺列会在启动期才炸，或在 `INSERT` 时因列缺失静默丢字段。

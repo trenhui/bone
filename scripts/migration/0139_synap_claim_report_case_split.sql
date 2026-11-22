@@ -38,7 +38,7 @@
 --
 -- 关联（必须同提交）
 -- ----------------------------------------------------------------
---   · sql/bone-init.sql：全量基线同批加表与列
+--   · bone-init.sql：全量基线同批加表与列（仓库根，与其余 34 个迁移同写法）
 --   · db/migration/V17__synap_claim_report.sql：模块参考态同批（保持同源）
 --   · ClaimReport.java / ClaimCase.java：实体加 report_id
 --   · ClaimReportRepository.findByReportNo / ClaimCaseRepository.findByReportId

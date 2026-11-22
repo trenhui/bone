@@ -175,6 +175,11 @@ bone-frontend/apps/bone-claim-app/src/workbench/sclaimRoutes.ts     mine=8d9a4d2
 
 ## 5. 需要裁决的三件事
 
+> **裁决已定稿（2026-11-22）**：三件事按下述推荐方案采纳，决策已归档为
+> [ADR-0047](../../../doc/architecture/adr/0047-claim-report-case-one-to-many-implementation-selection.md)
+> （状态「已接受」）。本节保留当时的利弊对照，供追溯「为什么这么定」，不再作为待办事项。
+> 唯一仍待执行的是 D4 的**执行时机**（需协调共享活库使用者），以及 D3 引申出的对方分支改动。
+
 ### D1 报案拆分的域模型与迁移保留哪一套
 
 | | 保留本分支 | 保留对方分支 |

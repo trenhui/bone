@@ -24,7 +24,7 @@
 
 ## Impact
 
-- **数据库**：新增表 `t_claim_report`；`t_claim_case` 增列 `report_id` + 索引；迁移 `0139`（生效通道 `scripts/migration/`）+ `sql/bone-init.sql` 全量基线 + 模块内参考态 DDL 三处同批。
+- **数据库**：新增表 `t_claim_report`；`t_claim_case` 增列 `report_id` + 索引；迁移 `0139`（生效通道 `scripts/migration/`）+ `bone-init.sql` 全量基线 + 模块内参考态 DDL 三处同批。
 - **后端**：`synap-claim-app` 的 domain（新聚合 `ClaimReport`、`ClaimCase` 增字段）、domain/repository、application（提交用例改造 + 追加赔案用例）、adapter/web（新 Controller 方法/DTO）、错误码（新增报案相关码）、SQL 模板。
 - **前端**：`bone-claim-app` 案件详情页展示报案号 + 同报案赔案清单 + 「追加赔案」表单入口。
 - **契约/治理**：`03-contract/工程详细设计-落地版.md` §9.3.1、§9.5、术语表；错误码台账；迁移清单 `migration-manifest.json`。
