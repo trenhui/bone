@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 142,
+  "executableCount": 143,
   "retired": [],
   "entries": [
     {
@@ -903,6 +903,12 @@
       "file": "0134_seed_procurement_ai_readiness_menus.sql",
       "kind": "mixed",
       "summary": "procuraAI 就绪度/人工终决/治理状态三个采购菜单叶子登记，复用既有权限码；菜单可见不等于 AI 可用。"
+    },
+    {
+      "file": "0137_migrate_claim_menu_paths_to_sclaim.sql",
+      "kind": "mixed",
+      "order": 143,
+      "summary": "把智能理赔菜单叶子 path 从历史 hash 形态 /claim#/<hash> 幂等迁移为 SynapClaim 规范干净路径 /sclaim/claim/<hash>（无 #），与内嵌微应用 BrowserRouter basename=/sclaim/claim 及 shell activeRule 同批；name/order_no/permission/icon 不变，含终态 SIGNAL 断言（旧路径归零、无 # 残留、新路径非空）。"
     }
   ],
   "ordinalConflicts": [

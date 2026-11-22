@@ -57,8 +57,8 @@ async function gotoMenu(name) {
   const item = page.locator('.shell-sider .ant-menu-item').filter({ hasText: name }).first();
   const visible = await item.isVisible().catch(() => false);
   if (!visible) {
-    // 详情页可能让侧栏暂时折叠；直接回 /claim 基址再展开。
-    await page.evaluate(() => { window.location.href = '/claim#/workbench'; });
+    // 详情页可能让侧栏暂时折叠；直接回规范工作台基址再展开（无 hash）。
+    await page.evaluate(() => { window.location.href = '/sclaim/claim/workbench'; });
     await page.waitForTimeout(1500);
     await ensureGroupOpen();
   }

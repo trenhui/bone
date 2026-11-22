@@ -11,9 +11,9 @@
  *                     的非 hidden 路由双向全等；多一条 = 幽灵菜单（点了空白），
  *                     少一条 = 功能不可达。hidden 路由（保单下钻页）豁免——它们
  *                     从对象列表深链进入，本就不该有菜单。
- *   C. 真实点击    —— 逐个点侧边栏菜单（不是 goto），断言 hash 落地、顶栏标题、页面标题、内容非空
+ *   C. 真实点击    —— 逐个点侧边栏菜单（不是 goto），断言规范 pathname 落地（无 hash）、顶栏标题、页面标题、内容非空
  *   D. 无致命错误  —— 导航期间无 5xx、无 console error（第三方噪音除外）
- *   E. 常驻分组    —— 四个分组标题常驻可见、15 条菜单项默认全部可见可点、
+ *   E. 常驻分组    —— 四个分组标题常驻可见、全部可见菜单项默认可点（条数取 routes.tsx 真源）、
  *                     DOM 序仍等于 routes.tsx 声明顺序、分组内无折叠 SubMenu（2026-11-13 新增）
  *
  * 为什么 C 用「点击」而不是 goto：goto 绕过了 shell 的菜单点击链路（handleMenuClick → navigate）。
@@ -39,7 +39,8 @@ import { uiLogin, shot } from '../e2e_lib/ui.cjs';
 const { chromium } = loadPlaywright();
 const { check, report } = makeChecker();
 
-const CLAIM_MENU_PREFIX = '/claim#';
+// SynapClaim 规范：内嵌菜单 path 为 /sclaim/claim/<short-path>，无 hash（BrowserRouter basename）。
+const CLAIM_MENU_PREFIX = '/sclaim/claim';
 const ROUTES_TSX = path.resolve(
   path.dirname(new URL(import.meta.url).pathname),
   '../../../bone-frontend/apps/bone-claim-app/src/routes.tsx',
@@ -239,7 +240,7 @@ try {
     if (await item.isVisible().catch(() => false)) visibleCount += 1;
   }
   check(
-    '分组后 15 条菜单项默认全部可见（无需任何展开动作）',
+    `分组后 ${visibleRoutes.length} 条菜单项默认全部可见（无需任何展开动作）`,
     visibleCount === visibleRoutes.length,
     `实际 ${visibleCount}/${visibleRoutes.length}`,
   );
@@ -262,7 +263,7 @@ try {
   );
   const groupedClickable = await page.locator('.shell-sider .ant-menu-item-group .ant-menu-item').count();
   check(
-    '分组内菜单仍是可直接点击的 .ant-menu-item（15 条）',
+    `分组内菜单仍是可直接点击的 .ant-menu-item（${visibleRoutes.length} 条）`,
     groupedClickable === visibleRoutes.length,
     `实际 ${groupedClickable}`,
   );
@@ -299,8 +300,13 @@ try {
     await item.click();
     const body = await waitStable();
 
-    const hash = await page.evaluate(() => location.hash);
-    check(`[${r.name}] hash 落地 ${r.path}`, hash === `#${r.path}`, `实际 ${hash}`);
+    const loc = await page.evaluate(() => ({ pathname: location.pathname, hash: location.hash }));
+    const expectedPath = `${CLAIM_MENU_PREFIX}${r.path}`;
+    check(
+      `[${r.name}] 规范 pathname 落地 ${expectedPath}（无 hash）`,
+      loc.pathname === expectedPath && loc.hash === '',
+      `实际 ${loc.pathname}${loc.hash}`,
+    );
 
     const headerTitle = (await page.locator('.shell-header .page-title').first().innerText().catch(() => '')).trim();
     check(`[${r.name}] 顶栏标题 = 菜单名`, headerTitle === r.name, `实际「${headerTitle}」`);

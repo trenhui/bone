@@ -73,6 +73,8 @@ currency: current
 |---|---|---|
 | 案件详情（新窗口） | `/sclaim/claim/detail?claimId=...&tab=overview` | ✅ 已落地 |
 | 保单详情（新窗口） | `/sclaim/policy/detail?policyNo=...` | ✅ 已落地 |
+| 初审工作台（内嵌菜单） | `/sclaim/claim/pre-exam` | ✅ 已落地 |
+| 核赔工作台（内嵌菜单） | `/sclaim/claim/review` | ✅ 已落地 |
 | 赔案列表 | `/sclaim/claim/list` | 📋 规划 |
 | 核赔工作台 | `/sclaim/review/list` | 📋 规划 |
 | 理赔规则列表 | `/sclaim/rule/list` | 📋 规划 |
@@ -87,17 +89,21 @@ currency: current
 
 1. **不保留任何兼容别名**。已废止 `/standalone`、`/claim-detail`，旧 URL 直接失效，防止「同一语义两处配置源」。
 2. **不在路径里放视图态词**（如 `detail` 之外的 `view` / `show` / `page`）；页面标识只允许 §5 注册表的值。
-3. **不把资源 ID 塞进 path 段**。当前独立页通过 query 传 `claimId` / `policyNo`：微应用内嵌态受 qiankun `HashRouter` 约束，独立页用 `BrowserRouter` 直读 `window.location.search`（见 [sclaimRoutes.ts](../../../../bone-frontend/apps/bone-claim-app/src/workbench/sclaimRoutes.ts)）。若将来统一改为资源化路径（`/sclaim/claim/{id}`），须作为独立 ADR 评估全量路由契约，不得在本次规范下悄悄变体。
+3. **不把资源 ID 塞进 path 段**。所有页面（含内嵌菜单页与独立详情页）统一用 `BrowserRouter`，资源标识通过 query 传 `claimId` / `policyNo`，直读 `window.location.search`（见 [sclaimRoutes.ts](../../../../bone-frontend/apps/bone-claim-app/src/workbench/sclaimRoutes.ts)）。若将来统一改为资源化路径（`/sclaim/claim/{id}`），须作为独立 ADR 评估全量路由契约，不得在本次规范下悄悄变体。
 4. **深链构造只走唯一真源**：`sclaimRoutes.ts` 的 `buildClaimDetailHref` / `buildPolicyDetailHref`；组件不得自行拼接 URL 字符串。
 
-### 3.4 双 Router 分流（实现约束，非规范选择）
+### 3.4 统一 BrowserRouter（全场景无 hash）
 
-| 场景 | Router | 地址栏形态 | 参数来源 |
+| 场景 | Router | 地址栏形态 | 内部路由 / 参数来源 |
 |---|---|---|---|
-| 微应用内嵌（shell 菜单） | `HashRouter`（历史事故：误用 BrowserRouter 致空白页） | `/claim#/case?claimId=...` | `useSearchParams`（hash 内 query） |
-| 新窗口独立页 | `BrowserRouter` | `/sclaim/claim/detail?claimId=...` | `window.location.search`（经 `standaloneSearch()`） |
+| 微应用内嵌（shell 菜单） | `BrowserRouter basename=/sclaim/claim` | `/sclaim/claim/pre-exam?...` | 内部 `<Route path="/pre-exam">` 短路径不变，basename 负责拼路径；query 直读 `window.location.search` |
+| 新窗口独立页 | `BrowserRouter`（无 basename） | `/sclaim/claim/detail?claimId=...` | 完整路径 `<Route path="/sclaim/claim/detail">`；query 直读 `window.location.search`（经 `standaloneSearch()`） |
 
-两者并存是 qiankun 微前端的历史约束，不是双真源；`sclaimRoutes.ts` 只负责「浏览器地址栏 pathname」这一层。
+**历史事故的解除（必须留痕，防回退）**：2026-10-28 曾把微应用从 BrowserRouter 改回 HashRouter（提交 `9c55e9924`），根因是当时 URL 形如 `/claim#/review`——hash 模式下 BrowserRouter 只读 `pathname=/claim`、忽略 `#/review`，内部 `<Routes>` 永远匹配不到业务页 ⇒ 内容区空白。**当前改为无 hash 的 `/sclaim/claim/review`，路由信息进入 pathname，basename 精确剥离后短路径正确匹配**，事故的前提（hash 承载路由）已被消除。回归判据：`scripts/e2e/ui/claim-single-nav-probe.mjs` 逐条点击 15 个菜单断言规范 pathname 落地且无 hash（实测 136/136 通过）；任何回退到 HashRouter 或在 path 里塞 hash 的改动都会被该探针判红。
+
+**三方常量必须一致**：shell 的 `activeRule`、微应用 `sclaimRoutes.ts` 的 `CLAIM_MENU_BASENAME`、数据库 `iam_menu.path` 前缀均为 `/sclaim/claim`（迁移见 `scripts/migration/0137_*.sql`）。三者是独立构建/存储单元，无法共享常量，故各存一份并互相标注；改任一处须同批改另两处，否则整域菜单失效（点击跳到旧路径 ⇒ basename 剥离失败 ⇒ 空白）。
+
+`sclaimRoutes.ts` 负责「浏览器地址栏 pathname」这一层，内部短路径由 `routes.tsx` 维护，两者通过 basename 衔接，不是双真源。
 
 ---
 
@@ -127,6 +133,32 @@ currency: current
 | `create` | 新建 | `/sclaim/rule/create` |
 | `edit` | 编辑 | `/sclaim/rule/edit?ruleId=...` |
 | `recognition` | OCR 识别（专用） | `/sclaim/ocr/recognition` |
+
+**`claim` 模块作业页标识（已落地，{page} 段的业务专用值）**：赔案域的作业台按业务短路径命名，
+不与通用 `list` 混用；唯一真源是 `bone-claim-app/src/routes.tsx` 的 `CLAIM_ROUTES`，新增须先登记该表
+（并经 `claim-single-nav-probe.mjs` 与 IAM 菜单双向对账）。当前 17 条可见菜单：
+
+| 作业页标识 | 中文名 | 规范 URL |
+|---|---|---|
+| `pre-exam` | 初审工作台 | `/sclaim/claim/pre-exam` |
+| `review` | 核赔工作台 | `/sclaim/claim/review` |
+| `adjust` | 理算归因 | `/sclaim/claim/adjust` |
+| `evidence` | 材料上传 | `/sclaim/claim/evidence` |
+| `fund` | 资金工作台 | `/sclaim/claim/fund` |
+| `appeal` | 申诉复议 | `/sclaim/claim/appeal` |
+| `suspend` | 挂起/恢复 | `/sclaim/claim/suspend` |
+| `inspection` | 后督抽检 | `/sclaim/claim/inspection` |
+| `submit` | 理赔申请 | `/sclaim/claim/submit` |
+| `progress` | 理赔进度 | `/sclaim/claim/progress` |
+| `policy` | 保单管理 | `/sclaim/claim/policy` |
+| `quota` | 额度管理 | `/sclaim/claim/quota` |
+| `library` | 基础目录库 | `/sclaim/claim/library` |
+| `insurers` | 承保主体 | `/sclaim/claim/insurers` |
+| `mappings` | 主数据映射 | `/sclaim/claim/mappings` |
+| `ai-governance` | AI 治理 | `/sclaim/claim/ai-governance` |
+| `analytics` | 运营分析看板 | `/sclaim/claim/analytics` |
+
+> hidden 下钻/落点页（不占菜单，由深链进入）：`/plan` `/liability` `/workbench` `/case` `/blind-labels`。
 
 除已登记的专用页面外，新增页面标识须先登记本表；禁止使用 `view` / `info` / `show` 等同义多种写法。
 
@@ -209,7 +241,8 @@ claim:{资源}:{动作}
 | G2 无遗留别名 | 源码中不得出现 `/standalone`、`/claim-detail` 字面量（测试中的反例断言白名单） | 同上 |
 | G3 文档-代码一致 | `sclaimRoutes.ts` 的每个已落地模块都必须在本文 §4 注册表登记 | 同上 |
 | G4 API 裁定不漂移 | 后端 Java / 网关配置 / 前端 service 中不得出现 `/api/sclaim` 字面量 | 同上 |
-| 负向探针 | 上述四类各注入一条反例，必须判红；否则门禁本身恒绿不可信 | `check-sclaim-naming.py --self-test` |
+| G5 内嵌页无 hash | 生产代码可执行行不得出现 `/claim#/` 跳转（注释里的历史说明允许）；防 HashRouter 回退致内容区空白 | 同上 |
+| 负向探针 | 上述五类各注入一条反例，必须判红；否则门禁本身恒绿不可信 | `check-sclaim-naming.py --self-test` |
 
 接入：
 - `scripts/check.sh` G0 段（pre-commit 阻断，本地与 AI 代提交两条路径）
@@ -222,7 +255,9 @@ claim:{资源}:{动作}
 ## 9. 新增理赔页面的落地检查清单
 
 - [ ] 系统前缀为 `/sclaim`，模块与页面分别取自 §4 / §5 注册表（未登记先登记）
-- [ ] URL 无 hash（独立页）、无兼容别名、无拼音/驼峰、query 只放资源标识
+- [ ] URL 全场景无 hash（内嵌菜单页 + 独立页）、无兼容别名、无拼音/驼峰、query 只放资源标识
+- [ ] 内嵌菜单页 path 为 `/sclaim/claim/<短路径>`，shell activeRule / `CLAIM_MENU_BASENAME` / `iam_menu.path` 前缀三者一致（迁移 0137）
+- [ ] 跑 `scripts/e2e/ui/claim-single-nav-probe.mjs` 逐条点击断言规范 pathname 落地（防 HashRouter 回退致空白页）
 - [ ] 深链通过 `sclaimRoutes.ts` 构造，组件不自行拼 URL
 - [ ] 菜单名、权限码、错误码前缀与 §6 / §7.2 映射表一致
 - [ ] API 路径保持 `/api/v1/{domain}/...`，新增 domain 先在 [Bone-API-规范 §2.3](../../../architecture/Bone-API-规范.md#23-域domain注册表) 登记
@@ -237,6 +272,7 @@ claim:{资源}:{动作}
 |---|---|
 | 2026-11-22 | 初版。确立 `sclaim` 系统缩写与 `/{sclaim}/{module}/{page}` 浏览器 URL 规范；登记模块/页面/权限/错误码映射；裁定 API 保持 `/api/v1`（附理由与独立议题路径）；新增机检门禁并接入 check.sh / ci-check.sh |
 | 2026-11-22 | 迁入 synapClaim 文档族 L3 契约层（`03-contract/`），登记 `docs.manifest.json`（id `contract.naming`）、补 front-matter、重生成 AI-INDEX；文档内跨目录链接按新位置重写；门禁 `DOC_REL` 与全仓引用同步更新 |
+| 2026-11-22 | 全站内嵌菜单页去 hash：微应用 HashRouter → BrowserRouter basename=/sclaim/claim，菜单 path `/claim#/x` → `/sclaim/claim/x`（迁移 0137），shell activeRule / 菜单解析 / 分组 / 命令面板 / E2E 探针同步；§3.4 由双 Router 改统一 BrowserRouter。单导航 E2E 136/136、案件 14/14、保单 20/20 实测通过，历史空白页事故未重现 |
 
 ---
 
@@ -260,6 +296,6 @@ claim:{资源}:{动作}
 
 ## 14. 待决策
 
-- 资源化页面路径（`/sclaim/claim/{id}`）是否替代 query 传参：需评估全量路由契约与 qiankun 双 Router 影响，当前维持 query（见 §3.3）。
+- 资源化页面路径（`/sclaim/claim/{id}`）是否替代 query 传参：需评估全量路由契约与 6 个单案页的 `useClaimIdParam` 复用影响，当前维持 query（见 §3.3）。
 - `/api/v1/internal/**` 网关前缀白名单缺口是否补齐：属 API 治理议题，不在本规范范围（见 §7.1 反例）。
 - 模块注册表中「规划」模块的启用时序：由各模块详设落地时逐项转「已落地」，本规范只提供登记入口。

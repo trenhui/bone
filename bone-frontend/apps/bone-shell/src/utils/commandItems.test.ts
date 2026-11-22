@@ -39,7 +39,8 @@ describe('全局命令面板结果构造', () => {
   it('纯数字输入优先给案件 ID 直达，且带 claimId 与 tab', () => {
     const items = buildCommandItems(config, '1001');
     expect(items[0].group).toBe('case');
-    expect(items[0].target).toBe('/claim#/case?claimId=1001&tab=overview');
+    expect(items[0].target).toBe('/sclaim/claim/case?claimId=1001&tab=overview');
+    expect(items[0].target).not.toContain('#');
   });
 
   it('负向：IAM 未下发的菜单绝不能出现在结果里（防越权入口）', () => {

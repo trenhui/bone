@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """SynapClaim 命名规范机检（规范正文：doc/ai-product/synapClaim/03-contract/SynapClaim-命名规范.md）。
 
-判据（G1–G4，见规范 §8）：
+判据（G1–G5，见规范 §8）：
   G1 系统缩写与路径构造：sclaimRoutes.ts 必须是 `sclaim` + `buildSclaimPath` 三级模板；
      模块值小写短横线，页面值在注册表内。
   G2 无遗留别名：生产源码不得出现 `/standalone` / `/claim-detail`
@@ -9,9 +9,11 @@
   G3 文档-代码一致：代码中已落地的每个模块都必须在规范 §4 注册表登记。
   G4 API 裁定不漂移：后端 / 网关 / 前端 service / E2E 不得出现 `/api/sclaim`
      （平台强制 `/api/v1/{domain}`，见 Bone-API-规范 §2.1/§2.2）。
+  G5 内嵌页无 hash：生产代码可执行行不得出现 `/claim#/` 跳转（注释里的历史说明允许）；
+     防 HashRouter 回退——历史事故 9c55e9924 中 hash 模式致 BrowserRouter 读不到路由而空白。
 
 用法：
-  python3 scripts/check-sclaim-naming.py --self-test   # 4+ 负向探针，证明判据能变红
+  python3 scripts/check-sclaim-naming.py --self-test   # 5+ 负向探针，证明判据能变红
   python3 scripts/check-sclaim-naming.py --check       # 主判据（默认）
   python3 scripts/check-sclaim-naming.py --report-only # 只打印，不阻断
 
@@ -33,6 +35,9 @@ DOC_REL = "doc/ai-product/synapClaim/03-contract/SynapClaim-命名规范.md"
 
 ALLOWED_PAGES = {"list", "detail", "create", "edit", "recognition"}
 LEGACY_PATHS = ("/standalone", "/claim-detail")
+# G5：内嵌菜单页去 hash 后，生产代码不得再用 /claim#/... 跳转（防 HashRouter 回退致空白页）。
+# 只抓「可执行代码行」，注释行（// * /*）里的历史说明允许保留——它们是事故留痕。
+LEGACY_HASH_PREFIX = "/claim#"
 FORBIDDEN_API = "/api/sclaim"
 
 LEGACY_SCAN_DIRS = (
@@ -139,6 +144,22 @@ def check(root: Path) -> list[str]:
             rel = path.relative_to(root)
             errors.append(f"G4: {rel} 出现 {FORBIDDEN_API}（API 路径必须以 /api/v1 为准，见规范 §7.1）")
 
+    # ---------- G5 内嵌页无 hash（防 HashRouter 回退致空白页） ----------
+    for path in _iter_files(root, LEGACY_SCAN_DIRS, WEB_SUFFIXES):
+        if ".test." in path.name or ".spec." in path.name:
+            continue
+        rel = path.relative_to(root)
+        for lineno, line in enumerate(_read(path).splitlines(), 1):
+            stripped = line.lstrip()
+            # 注释行允许保留历史形态说明（事故留痕），只判可执行代码。
+            if stripped.startswith(("//", "*", "/*")):
+                continue
+            if LEGACY_HASH_PREFIX in line:
+                errors.append(
+                    f"G5: {rel}:{lineno} 仍有 /claim#/... 跳转（须 /sclaim/claim/<page> 无 hash，"
+                    "见规范 §3.4；HashRouter 回退会致内容区空白）"
+                )
+
     return errors
 
 
@@ -236,6 +257,14 @@ def self_test() -> int:
                 "createApiClient('/api/sclaim/claim')", encoding="utf-8"
             ),
         ),
+        (
+            "G5",
+            "可执行代码出现 /claim#/ 跳转必须判红（HashRouter 回退）",
+            lambda root: (root / "bone-frontend/apps/bone-claim-app/src/demo.tsx").write_text(
+                "navigate('/claim#/review');\n// 历史说明 /claim#/x 是注释，允许保留\n",
+                encoding="utf-8",
+            ),
+        ),
     ]
 
     failed = 0
@@ -285,7 +314,7 @@ def main() -> int:
             print(f"  - {item}")
         return 0 if args.report_only else 1
 
-    print("[SCLAIM-NAMING] ✅ SynapClaim 命名规范合规（G1–G4）")
+    print("[SCLAIM-NAMING] ✅ SynapClaim 命名规范合规（G1–G5）")
     return 0
 
 

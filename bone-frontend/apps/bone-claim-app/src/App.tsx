@@ -1,12 +1,12 @@
 import { Suspense } from 'react';
-import { BrowserRouter, HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { App as AntdApp, Button, Layout, Menu, Result, Spin, Tag, Typography } from 'antd';
 import { Auth } from '@bone/ui';
 import { CLAIM_DEFAULT_PATH, CLAIM_ROUTES } from './routes';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CommandPalette } from './components/CommandPalette';
 import { PERMISSIONS } from './constants/permissions';
-import { STANDALONE_PATHS, isStandalonePath } from './workbench/sclaimRoutes';
+import { CLAIM_MENU_BASENAME, STANDALONE_PATHS, isStandalonePath } from './workbench/sclaimRoutes';
 import { Case360Page } from './pages/Case360Page';
 import { PolicyManagementPage } from './pages/PolicyManagementPage';
 import './App.css';
@@ -154,11 +154,13 @@ export const App: React.FC<AppProps> = ({ embedded = false }) => {
 
   return (
     <AntdApp>
-      {/* 必须用 HashRouter：微应用内路由挂在 URL hash 上（/claim#/review），
-          与 shell 的 MICRO_APP_ROUTE_PREFIXES 约定（pathname#/hash）一致。
-          此前误用 BrowserRouter 会去读 pathname=/claim 而忽略 #/review，
-          导致内部 <Routes> 永远匹配不到业务页面 ⇒ 内容区空白。 */}
-      <HashRouter future={{ v7_relativeSplatPath: true }}>
+      {/* SynapClaim 规范：内嵌菜单页也用干净 pathname（/sclaim/claim/review），无 hash。
+          BrowserRouter + basename=/sclaim/claim 剥离前缀后，内部 <Route path="/review"> 照常匹配，
+          所有 navigate('/review') 等短路径调用无需改动。
+          历史事故（9c55e9924）根因是 hash 模式下 BrowserRouter 读 pathname=/claim 忽略 #/review；
+          去掉 hash 后路由信息进入 pathname，basename 精确剥离即可——事故前提已消除。
+          shell 的 activeRule 与数据库 iam_menu.path 必须与 CLAIM_MENU_BASENAME 一致。 */}
+      <BrowserRouter basename={CLAIM_MENU_BASENAME} future={{ v7_relativeSplatPath: true }}>
         {/* 全局命令面板（⌘/Ctrl+K）只在根布局挂一次；必须在 Router 内使用 useNavigate。 */}
         <CommandPalette />
         <ErrorBoundary>
@@ -173,7 +175,7 @@ export const App: React.FC<AppProps> = ({ embedded = false }) => {
             </Layout>
           )}
         </ErrorBoundary>
-      </HashRouter>
+      </BrowserRouter>
     </AntdApp>
   );
 };

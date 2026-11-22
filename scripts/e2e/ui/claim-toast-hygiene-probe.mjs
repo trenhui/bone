@@ -57,7 +57,7 @@ const toastText = (page) =>
   };
   page.on('request', onAdjustReq);
 
-  await page.goto(`${BASE}/claim#/adjust`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+  await page.goto(`${BASE}/sclaim/claim/adjust`, { waitUntil: 'domcontentloaded' }).catch(() => {});
   await page.waitForTimeout(4000);
 
   check(
@@ -91,7 +91,7 @@ const toastText = (page) =>
     if (/\/adjust(\?|$)/.test(p + new URL(r.url()).search)) realReqs.push(r.url());
   };
   page.on('request', onReal);
-  await page.goto(`${BASE}/claim#/adjust?claimId=${REAL_CLAIM_ID}`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+  await page.goto(`${BASE}/sclaim/claim/adjust?claimId=${REAL_CLAIM_ID}`, { waitUntil: 'domcontentloaded' }).catch(() => {});
   await page.waitForTimeout(4000);
   check(
     '指定案件时仍发起理算查询（未被误伤）',
@@ -129,7 +129,7 @@ const toastText = (page) =>
     },
   );
 
-  await page.goto(`${BASE}/claim#/review`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+  await page.goto(`${BASE}/sclaim/claim/review`, { waitUntil: 'domcontentloaded' }).catch(() => {});
 
   // toast 默认 3s 自动关闭：固定等待会整段错过（先前 4.5s 采样读到「0 条」是采样点不对，
   // 不是没报错）。这里轮询取「首次出现」的文本，并追踪过程中最大并列数。
@@ -171,7 +171,7 @@ const toastText = (page) =>
   await page.unroute((url) => url.pathname === '/api/v1/claims/');
 
   // ---------- D. 正常链路：核赔工作台无错误 toast ----------
-  await page.goto(`${BASE}/claim#/review`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+  await page.goto(`${BASE}/sclaim/claim/review`, { waitUntil: 'domcontentloaded' }).catch(() => {});
   await page.waitForTimeout(4000);
   check('正常链路核赔工作台无错误 toast', (await errorToasts(page)) === 0, await toastText(page));
   await shot(page, 'claim_toast_hygiene_review_ok');

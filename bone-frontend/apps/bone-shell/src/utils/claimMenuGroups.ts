@@ -51,14 +51,27 @@ export const CLAIM_MENU_GROUP_BY_HASH: Readonly<Record<string, ClaimNavGroupTitl
   '/analytics': '治理',
 };
 
+/** SynapClaim 规范内嵌菜单页前缀（无 hash）。与 App.tsx / claim-app sclaimRoutes.ts 一致。 */
+export const CLAIM_MENU_PREFIX = '/sclaim/claim';
+
 export interface ClaimMenuGroupable {
   hash?: string | null;
   path?: string | null;
 }
 
-/** 兼容 `hash` 未下发、只有 `path` 形如 `/claim#/fund` 的历史节点。 */
+/**
+ * 取菜单项的「逻辑短路径」（如 `/fund`）作为分组键，兼容两代形态：
+ *  - SynapClaim 规范：`path=/sclaim/claim/fund`、无 hash ⇒ 剥离前缀得 `/fund`；
+ *  - 历史节点：`hash=/fund` 或 `path=/claim#/fund`。
+ * 分组表 CLAIM_MENU_GROUP_BY_HASH 仍以短路径为键，故两种形态共用同一张表。
+ */
 export function claimHashOf(item: ClaimMenuGroupable): string | null {
-  const raw = item.hash ?? (item.path?.includes('#') ? item.path.split('#')[1] : null);
+  const path = item.path ?? '';
+  if (path.startsWith(`${CLAIM_MENU_PREFIX}/`)) {
+    const tail = path.slice(CLAIM_MENU_PREFIX.length); // '/fund'
+    return tail && tail !== '/' ? tail : null;
+  }
+  const raw = item.hash ?? (path.includes('#') ? path.split('#')[1] : null);
   if (!raw) return null;
   return raw.startsWith('/') ? raw : `/${raw}`;
 }
@@ -66,10 +79,11 @@ export function claimHashOf(item: ClaimMenuGroupable): string | null {
 /**
  * 只有理赔域的可导航叶子参与分组；其它域与按钮权限点保持原样。
  *
- * `parseMenuPath('/claim#/review')` 会把 pathname `/claim` 与 hash `/review` 拆开存进
- * `ShellMenuItem`，故这里认的是 `path === '/claim'` + 非空 hash，而不是原始 `/claim#/...` 串。
+ * 新形态认 `path` 以 `/sclaim/claim/` 开头且能取到逻辑短路径；
+ * 历史形态认 `parseMenuPath('/claim#/review')` 拆出的 `path === '/claim'` + 非空 hash。
  */
 export function isClaimMenuLeaf(item: ClaimMenuGroupable): boolean {
+  if (item.path?.startsWith(`${CLAIM_MENU_PREFIX}/`)) return claimHashOf(item) !== null;
   return item.path === '/claim' && claimHashOf(item) !== null;
 }
 

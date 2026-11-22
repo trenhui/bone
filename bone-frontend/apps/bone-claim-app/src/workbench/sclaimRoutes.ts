@@ -10,8 +10,9 @@
  * - 页面统一 `list` / `detail` / `create` / `edit`；全小写、必要时短横线分隔。
  * - 不保留任何历史别名：旧 URL 直接失效，防止「同一语义两处配置源」。
  *
- * 独立新窗口详情页率先按本规范落地。微应用内嵌路由仍受 qiankun HashRouter 约束
- * （`/claim#/xxx`），本文件只负责「浏览器地址栏 pathname」这一层，二者不互相覆盖。
+ * 全站（含 shell 内嵌菜单页与新窗口详情页）统一按本规范落地，浏览器地址栏无 hash。
+ * 内嵌微应用用 `BrowserRouter basename={CLAIM_MENU_BASE}`（= `/sclaim/claim`），
+ * 内部路由仍是 `/pre-exam` 等短路径；basename 负责拼出规范 pathname。
  */
 
 import { isSafeClaimId, normalizeTab } from './caseDeepLinks';
@@ -25,6 +26,22 @@ export const SCLAIM_MODULE = {
   CLAIM: 'claim',
   POLICY: 'policy',
 } as const;
+
+/**
+ * 微应用内嵌菜单页的 basename：`/sclaim/claim`。
+ *
+ * <p>shell 侧 activeRule 与本值、数据库 `iam_menu.path`（`/sclaim/claim/<hash>`）三者必须一致；
+ * 微应用用 `BrowserRouter basename=CLAIM_MENU_BASENAME`，内部 `<Route path="/pre-exam">` 等短路径
+ * 不变，浏览器地址栏得到 `/sclaim/claim/pre-exam`。历史事故（9c55e9924）的根因是 hash 模式下
+ * BrowserRouter 读 pathname 忽略 `#/review`；去掉 hash 后路由信息进入 pathname，basename 精确
+ * 剥离即可正确匹配——事故的前提已被消除。
+ */
+export const CLAIM_MENU_BASENAME = `/${SCLAIM_SYSTEM}/${SCLAIM_MODULE.CLAIM}`; // -> '/sclaim/claim'
+
+/** 由微应用内部短路径构造内嵌菜单页规范 URL：`/pre-exam` -> `/sclaim/claim/pre-exam`。 */
+export function buildClaimMenuPath(internalPath: string): string {
+  return `${CLAIM_MENU_BASENAME}${internalPath.startsWith('/') ? internalPath : `/${internalPath}`}`;
+}
 
 /** 页面标识（统一命名）。 */
 export const SCLAIM_PAGE = {

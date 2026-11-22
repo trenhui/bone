@@ -59,6 +59,16 @@ describe('智能理赔侧栏四空间常驻分组（纯展示层）', () => {
     expect(isClaimMenuLeaf({ path: '/claim' })).toBe(false);
   });
 
+  it('SynapClaim 规范路径 /sclaim/claim/<page> 参与分组；无 hash 也会被识别为理赔叶子', () => {
+    expect(claimHashOf({ path: '/sclaim/claim/fund' })).toBe('/fund');
+    expect(claimHashOf({ path: '/sclaim/claim/ai-governance' })).toBe('/ai-governance');
+    expect(isClaimMenuLeaf({ path: '/sclaim/claim/review' })).toBe(true);
+    expect(groupForClaimHash(claimHashOf({ path: '/sclaim/claim/fund' }))).toBe('作业');
+    // 负向：非 sclaim 前缀、且非旧 /claim 域，不得被误判。
+    expect(isClaimMenuLeaf({ path: '/procurement/pr/list' })).toBe(false);
+    expect(claimHashOf({ path: '/sclaim/claim' })).toBe(null);
+  });
+
   // 变异护栏：把映射改成跨段搬动时，展平顺序必须不再等于真源顺序（证明该判据有判别力）。
   it('变异：映射表若把 /library 改判到「查询」，连续性断言立刻失效', () => {
     const mutated: Record<string, string> = { ...CLAIM_MENU_GROUP_BY_HASH, '/library': '查询' };

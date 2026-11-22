@@ -66,6 +66,12 @@ const STANDALONE_PATHS = ['/sclaim/claim/detail', '/sclaim/policy/detail'] as co
 const isStandalonePath = (pathname: string): boolean =>
   STANDALONE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
+/**
+ * 内嵌菜单页 basename（/sclaim/claim）。与 bone-claim-app/src/workbench/sclaimRoutes.ts 的
+ * CLAIM_MENU_BASENAME、数据库 iam_menu.path 前缀三者必须一致；独立构建单元故各存一份。
+ */
+const CLAIM_MENU_PREFIX = '/sclaim/claim';
+
 /** 通知等级 → antd Tag 颜色 */
 function levelColor(level?: string): string {
   switch ((level || '').toUpperCase()) {
@@ -265,16 +271,20 @@ const MICRO_APP_ROUTE_PREFIXES = [
   '/system',
   '/extension',
   '/generator',
-  // 智能理赔（bone-claim-app，qiankun activeRule=/claim，2026-10-26 联调补线）：
-  // 此前漏登记 ⇒ isKnownMenuPath 把 /claim#/* 菜单（含其顶级分组）整组静默滤掉——
-  // 后端菜单种下发、接口可见，侧边栏却永远不出现（「这里没有的菜单 = 平台不可达」的隐性一跳）。
-  '/claim',
+  // 智能理赔（bone-claim-app）：SynapClaim 规范后菜单 path 形如 /sclaim/claim/<page>（无 hash）。
+  // 此前漏登记 ⇒ isKnownMenuPath 整组静默滤掉——后端菜单已下发、接口可见，侧边栏却不出现。
+  '/sclaim/claim',
   // 采购平台（bone-procurement-app，activeRule=/procurement，2026-11-17）。
   // 与 claim 同理：漏登记会让「采购」整组菜单被静默滤掉。
   '/procurement',
 ] as const;
 
-/** path 形态为 `pathname` 或 `pathname#/hash`（微应用内是 HashRouter）。 */
+/**
+ * 解析菜单 path，兼容两代微应用：
+ *  - SynapClaim 规范（bone-claim-app）：`/sclaim/claim/pre-exam`，纯 pathname、无 hash，
+ *    微应用用 BrowserRouter basename=/sclaim/claim，整段即 pathname；
+ *  - 其余微应用（iam/metadata/...）：`/iam#/accounts`，HashRouter，拆成 path + hash。
+ */
 function parseMenuPath(raw?: string | null): { path?: string; hash?: string } {
   if (!raw) {
     return {};
@@ -293,7 +303,14 @@ function isKnownMenuPath(path?: string | null): boolean {
   if (path === '/' || path === '/profile') {
     return true;
   }
-  return MICRO_APP_ROUTE_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}#`));
+  // SynapClaim 无 hash 规范路径：/sclaim/claim/<page>（page 必须是一段，不含更深层）。
+  if (path.startsWith(`${CLAIM_MENU_PREFIX}/`)) {
+    return path.slice(CLAIM_MENU_PREFIX.length + 1).length > 0;
+  }
+  // 其余微应用仍为 pathname#hash 形态。
+  return MICRO_APP_ROUTE_PREFIXES.some(
+    (prefix) => prefix !== CLAIM_MENU_PREFIX && (path === prefix || path.startsWith(`${prefix}#`)),
+  );
 }
 
 /**
@@ -707,9 +724,10 @@ function AppContent({
         name: 'bone-claim-app',
         entry: import.meta.env.VITE_CLAIM_APP_ENTRY || '//localhost:3013',
         container: '#subapp-viewport',
-        // SynapClaim 规范独立页：/sclaim/claim/detail?claimId=... 或 /sclaim/policy/detail?policyNo=...，
-        // 由 MainLayout 判定为 isStandalonePage，只渲染微应用内容区（无侧栏/顶栏/Content 边距）。
-        activeRule: ['/claim', ...STANDALONE_PATHS],
+        // SynapClaim 规范：内嵌菜单页 /sclaim/claim/<page> 与独立页 /sclaim/{claim,policy}/detail
+        // 都由本微应用处理。MainLayout 用 isStandalonePath 区分：独立页只渲染内容区（无壳），
+        // 内嵌菜单页走完整 shell。claim/detail 落在 CLAIM_MENU_PREFIX 前缀内，policy/detail 另列。
+        activeRule: [CLAIM_MENU_PREFIX, '/sclaim/policy/detail'],
         props: globalContext,
       },
       {
@@ -1006,7 +1024,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
   // 用于控制常驻容器的显隐——见 microAppViewport 处的竞态修复说明。
   const MICRO_APP_BASES = [
     '/iam', '/metadata', '/masterdata', '/commerce', '/integration',
-    '/system', '/extension', '/generator', '/claim', '/procurement', ...STANDALONE_PATHS,
+    '/system', '/extension', '/generator', CLAIM_MENU_PREFIX, '/procurement', '/sclaim/policy/detail',
   ];
   const isMicroAppPath = MICRO_APP_BASES.some(
     (base) => location.pathname === base || location.pathname.startsWith(`${base}/`),
@@ -1136,9 +1154,9 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
     const currentHash = hash.replace('#', '');
     // hidden 的 My Home / case record 不在 IAM 菜单树里，顶栏若回退成「BONE 平台控制台」
     // 用户就不知道自己在哪（Nielsen #1 Visibility of system status）。这里只补标题，
-    // 不改菜单数据与选中态 —— 零门禁风险。
-    if (pathname === '/claim' && currentHash === '/workbench') return '我的工作台';
-    if (pathname === '/claim' && currentHash.startsWith('/case')) return '案件 360';
+    // 不改菜单数据与选中态 —— 零门禁风险。SynapClaim 规范后这俩落在 /sclaim/claim/* pathname。
+    if (pathname === `${CLAIM_MENU_PREFIX}/workbench`) return '我的工作台';
+    if (pathname.startsWith(`${CLAIM_MENU_PREFIX}/case`)) return '案件 360';
     const walk = (items: ShellMenuItem[]): string => {
       let fallback = '';
       for (const item of items) {
@@ -1435,11 +1453,10 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
             <Route path="/commerce/*" element={null} />
             <Route path="/integration/*" element={null} />
             <Route path="/system/*" element={null} />
-            {/* 智能理赔（bone-claim-app，2026-10-26 联调补线）：缺此路由时
-                /claim/* 命中 `*` 被静默送回首页（菜单可见也点不开）。 */}
-            <Route path="/claim/*" element={null} />
-            {/* SynapClaim 规范独立页（新标签页）：无 shell 导航，见 MainLayout 的 isStandalonePage。 */}
-            <Route path="/sclaim/claim/detail" element={null} />
+            {/* 智能理赔（bone-claim-app）：SynapClaim 规范下内嵌菜单页与案件详情独立页
+                都在 /sclaim/claim/* 下。缺此路由时命中 `*` 被静默送回首页（菜单可见也点不开）。 */}
+            <Route path="/sclaim/claim/*" element={null} />
+            {/* SynapClaim 保单详情独立页（新标签页）：无 shell 导航，见 MainLayout 的 isStandalonePage。 */}
             <Route path="/sclaim/policy/detail" element={null} />
             <Route path="/extension/*" element={null} />
             <Route path="/generator/*" element={null} />

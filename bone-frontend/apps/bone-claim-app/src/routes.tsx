@@ -65,7 +65,8 @@ const Case360Page = lazy(() => import('./pages/Case360Page').then((m) => ({ defa
  *
  * 现在的架构约定（业界通行的微前端单一导航）：
  *   1. **导航只有一处**：登录后由 shell 依据 IAM 菜单渲染，微应用内不再出现侧边栏；
- *   2. 微应用只负责「hash 路由 → 页面」的映射，本表就是这份映射；
+ *   2. 微应用只负责「pathname 路由 → 页面」的映射（SynapClaim 规范 `/sclaim/claim/<hash>`，
+ *      经 BrowserRouter basename=/sclaim/claim 剥离后落到本表短路径），本表就是这份映射；
  *   3. `name` 必须与 IAM 菜单名逐字一致 —— shell 顶栏标题取的就是菜单名，
  *      这样「菜单名 / 顶栏标题 / 页面语义」天然同一，页面内不再重复写标题（一页一标题）；
  *   4. 本表与 IAM 菜单的一致性由 `scripts/e2e/ui/claim-single-nav-probe.mjs` 在真实环境里双向断言
@@ -96,7 +97,7 @@ const Case360Page = lazy(() => import('./pages/Case360Page').then((m) => ({ defa
  * 探针在 `claim-single-nav-probe.mjs:98-101` 对 hidden 路由豁免「功能不可达」断言。
  */
 export interface ClaimRoute {
-  /** 微应用内 hash 路由（shell 侧菜单 path 形如 `/claim#/review`）。 */
+  /** 微应用内部路由短路径（浏览器地址栏为 `/sclaim/claim` + 本值；见 sclaimRoutes.ts）。 */
   path: string;
   /** 菜单名 = 顶栏标题 = 本页唯一标题（与 IAM 菜单 `name` 逐字一致）。 */
   name: string;
@@ -159,8 +160,8 @@ export const CLAIM_ROUTES: ClaimRoute[] = [
   { path: '/case', name: '案件 360', icon: <AuditOutlined />, element: <Case360Page />, hidden: true },
 ];
 
-/** shell（qiankun activeRule）侧的路由前缀；菜单 path 形如 `/claim#/<hash>`。 */
-export const CLAIM_MENU_PREFIX = '/claim';
+/** shell（qiankun activeRule）侧的路由前缀；菜单 path 形如 `/sclaim/claim/<hash>`（无 hash）。 */
+export const CLAIM_MENU_PREFIX = '/sclaim/claim';
 
 /** 默认落点（无 hash 时重定向目标）。 */
 export const CLAIM_DEFAULT_PATH = CLAIM_ROUTES.find((r) => r.isDefault)?.path ?? CLAIM_ROUTES[0].path;

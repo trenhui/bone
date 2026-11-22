@@ -13,7 +13,7 @@ const { chromium } = loadPlaywright();
 
 const targets = process.argv.slice(2).length
   ? process.argv.slice(2)
-  : ['/claim#/review', '/claim#/adjust', '/claim#/evidence', '/claim#/fund', '/claim#/appeal', '/claim#/progress'];
+  : ['/sclaim/claim/review', '/sclaim/claim/adjust', '/sclaim/claim/evidence', '/sclaim/claim/fund', '/sclaim/claim/appeal', '/sclaim/claim/progress'];
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });

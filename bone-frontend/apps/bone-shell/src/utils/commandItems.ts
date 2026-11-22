@@ -79,7 +79,7 @@ export function buildCommandItems(
       group: 'case',
       label: `打开案件 ${keyword}`,
       description: '直达案件 360 概览（案件 ID 合法性由目标页复核）',
-      target: `/claim#/case?claimId=${encodeURIComponent(keyword)}&tab=overview`,
+      target: `/sclaim/claim/case?claimId=${encodeURIComponent(keyword)}&tab=overview`,
     });
   }
 

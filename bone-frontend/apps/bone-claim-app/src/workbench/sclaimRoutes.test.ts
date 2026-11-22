@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   SCLAIM_SYSTEM, STANDALONE_PATHS, ALL_STANDALONE_PATHS,
+  CLAIM_MENU_BASENAME, buildClaimMenuPath,
   buildSclaimPath, isStandalonePath, standaloneSearch,
   buildClaimDetailHref, buildPolicyDetailHref,
 } from './sclaimRoutes';
@@ -17,6 +18,15 @@ describe('sclaimRoutes · SynapClaim URL 规范', () => {
     expect(STANDALONE_PATHS.CLAIM_DETAIL).toBe('/sclaim/claim/detail');
     expect(STANDALONE_PATHS.POLICY_DETAIL).toBe('/sclaim/policy/detail');
     expect(ALL_STANDALONE_PATHS).toEqual(['/sclaim/claim/detail', '/sclaim/policy/detail']);
+  });
+
+  it('内嵌菜单页 basename 与短路径构造无 hash 规范 URL', () => {
+    // 此常量同时被 shell activeRule 与数据库 iam_menu.path 依赖，漂移即整域菜单失效。
+    expect(CLAIM_MENU_BASENAME).toBe('/sclaim/claim');
+    expect(buildClaimMenuPath('/pre-exam')).toBe('/sclaim/claim/pre-exam');
+    expect(buildClaimMenuPath('/review')).toBe('/sclaim/claim/review');
+    expect(buildClaimMenuPath('adjust')).toBe('/sclaim/claim/adjust');
+    expect(buildClaimMenuPath('/pre-exam')).not.toContain('#');
   });
 
   it('isStandalonePath 认规范路径但不误判相似前缀', () => {
@@ -50,7 +60,7 @@ describe('sclaimRoutes · SynapClaim URL 规范', () => {
       spy.mockReturnValue({ pathname: '/sclaim/claim/detail', search: '?claimId=123' } as Location);
       expect(standaloneSearch()).toBe('?claimId=123');
 
-      spy.mockReturnValue({ pathname: '/claim', search: '?foo=bar' } as Location);
+      spy.mockReturnValue({ pathname: '/sclaim/claim/review', search: '?foo=bar' } as Location);
       expect(standaloneSearch()).toBe('');
     } finally {
       spy.mockRestore();
