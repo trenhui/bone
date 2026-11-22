@@ -71,7 +71,16 @@ export function ClaimIdLink({
   };
 
   return (
-    <Tooltip title={`在新标签页打开案件 ${id} 详情`} mouseEnterDelay={0.4}>
+    <Tooltip
+      title={
+        <span>
+          报案号 {label}
+          <br />
+          在新标签页打开案件 {id} 详情
+        </span>
+      }
+      mouseEnterDelay={0.4}
+    >
       <Button
         type="link"
         size="small"
@@ -81,7 +90,10 @@ export function ClaimIdLink({
         data-testid={resolvedTestId}
         aria-label={`在新标签页打开案件 ${label} 详情`}
         onClick={handleClick}
-        style={{ paddingInline: 0, height: 'auto' }}
+        // maxWidth + ellipsis：长标识符（存量 28 字符报案号）在窄列里省略显示，
+        // 完整值由上方 Tooltip 承载；绝不撑破单元格覆盖相邻列。
+        style={{ paddingInline: 0, height: 'auto', maxWidth: '100%', textAlign: 'left' }}
+        className="sclaim-id-link"
       >
         {label}
       </Button>

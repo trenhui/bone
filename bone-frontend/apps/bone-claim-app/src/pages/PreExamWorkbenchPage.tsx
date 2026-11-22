@@ -242,7 +242,10 @@ export function PreExamWorkbenchPage(): ReactElement {
           rowKey="claimId"
           loading={loading}
           dataSource={rows}
-          scroll={{ x: 1100 }}
+          // 列宽合计 1440：报案号/保单号是长标识符，scroll.x 必须 >= 列宽之和，
+          // 否则 antd 切 fixed table layout 会压缩列宽，28 字符报案号撑破 nowrap 链接、
+          // 溢出覆盖相邻保单号列（截图「报案号+保单号粘连」）。见 ClaimIdLink 的 maxWidth 兜底。
+          scroll={{ x: 1440 }}
           pagination={{
             current: page,
             pageSize: size,
@@ -259,8 +262,11 @@ export function PreExamWorkbenchPage(): ReactElement {
             {
               title: '报案号',
               dataIndex: 'claimNo',
-              width: 200,
+              // 存量报案号 28 字符（CL+yyyyMMdd+18 位雪花 ID），需 ~240px；
+              // 新规范号 18 字符更短，列宽按存量最大值取，避免历史数据溢出。
+              width: 250,
               fixed: 'left',
+              ellipsis: { showTitle: false },
               // 点报案号下钻案件 360 详情（显示报案号、下钻用 claimId，见 ClaimIdLink）。
               render: (v: string, row: ClaimHeadProjection) => (
                 <ClaimIdLink claimId={row.claimId} text={v} testId={`pre-exam-case-link-${row.claimId}`} />
@@ -269,7 +275,8 @@ export function PreExamWorkbenchPage(): ReactElement {
             {
               title: '保单号',
               dataIndex: 'policyNo',
-              width: 150,
+              width: 180,
+              ellipsis: { showTitle: false },
               render: (v: string, row: ClaimHeadProjection) => (
                 <PolicyNoLink policyNo={v ?? row.policyNo} testId={`policy-no-link-${row.policyNo}`} />
               ),

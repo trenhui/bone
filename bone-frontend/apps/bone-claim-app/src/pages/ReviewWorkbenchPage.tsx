@@ -679,7 +679,9 @@ export function ReviewWorkbenchPage(): ReactElement {
             {
               title: '报案号',
               dataIndex: 'claimNo',
-              width: 200,
+              // 存量报案号 28 字符，列宽按最大值取 + 省略兜底，避免溢出覆盖保单号列。
+              width: 250,
+              ellipsis: { showTitle: false },
               // 点报案号直接下钻案件 360 详情（显示报案号、下钻用 claimId，见 ClaimIdLink）。
               render: (v: string, row: ClaimHeadProjection) => (
                 <ClaimIdLink claimId={row.claimId} text={v} testId={`review-case-link-${row.claimId}`} />
@@ -688,7 +690,8 @@ export function ReviewWorkbenchPage(): ReactElement {
             {
               title: '保单号',
               dataIndex: 'policyNo',
-              width: 140,
+              width: 180,
+              ellipsis: { showTitle: false },
               // 点平台保单号下钻保单详情（新标签页；保司保单号不唯一，不接此链接）。
               render: (v: string, row: ClaimHeadProjection) => (
                 <PolicyNoLink policyNo={v ?? row.policyNo} testId={`policy-no-link-${row.policyNo}`} />

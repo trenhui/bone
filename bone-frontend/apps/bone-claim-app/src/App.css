@@ -2,3 +2,28 @@
   min-height: 100%;
   background: #f5f5f5;
 }
+
+/*
+ * 长标识符（报案号/保单号）在表格窄列内的省略显示。
+ *
+ * <p>为什么需要：antd Button 内的文字节点默认 nowrap，存量 28 字符报案号在窄列里会
+ * 撑破单元格、覆盖相邻列——截图里「报案号+保单号粘连」。列宽已按存量最大值调宽，
+ * 这条 CSS 是第二道防线：任何超长号都只在列内省略（…），完整值由 Tooltip 承载。
+ * max-width:100% 让按钮不超出单元格；display:inline-flex + min-width:0 是 flex 子项
+ * 省略号生效的必要条件（否则 min-width:auto 会撑开）。
+ */
+.sclaim-id-link {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.sclaim-id-link > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

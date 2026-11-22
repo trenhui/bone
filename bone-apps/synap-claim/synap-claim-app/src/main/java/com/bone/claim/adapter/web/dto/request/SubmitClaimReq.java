@@ -51,7 +51,7 @@ public record SubmitClaimReq(
     @Schema(description = "出险时间", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull(message = "出险时间不能为空")
         Instant outInsureTime,
-    @Schema(description = "批次号（报案号生成前缀，可空）") String batchNo,
+    @Schema(description = "批次号（OSS 路径前缀/复制赔案分组；不参与报案号生成，可空）") String batchNo,
     @Schema(
             description =
                 "承保主体编码（多保司映射解析维度；空 = 跳过解析走存量行为）。"

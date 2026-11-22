@@ -50,7 +50,16 @@ export function PolicyNoLink({
   };
 
   return (
-    <Tooltip title={`在新标签页打开保单 ${id} 详情`} mouseEnterDelay={0.4}>
+    <Tooltip
+      title={
+        <span>
+          保单号 {label}
+          <br />
+          在新标签页打开保单详情
+        </span>
+      }
+      mouseEnterDelay={0.4}
+    >
       <Button
         type="link"
         size="small"
@@ -60,7 +69,9 @@ export function PolicyNoLink({
         data-testid={resolvedTestId}
         aria-label={`在新标签页打开保单 ${label} 详情`}
         onClick={handleClick}
-        style={{ paddingInline: 0, height: 'auto' }}
+        // 与 ClaimIdLink 同构：长号在窄列里省略，完整值由 Tooltip 承载，不撑破单元格。
+        style={{ paddingInline: 0, height: 'auto', maxWidth: '100%', textAlign: 'left' }}
+        className="sclaim-id-link"
       >
         {label}
       </Button>
