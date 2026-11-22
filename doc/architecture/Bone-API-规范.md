@@ -104,6 +104,15 @@
 | `integration` | bone-integration | `INT_` | 连接器、流程 |
 | `system` | bone-system | `SYS_` | 配置、告警 |
 | `console` | bone-system（聚合读） | `SYS_` | **只读** BFF；OpenAPI：[console-v1.yaml](./openapi/console-v1.yaml) |
+| `claims` | synap-claim | `SC_CLAIM_` | 智能理赔赔案主干（报案/理算/结案/证据） |
+| `claim-config` | synap-claim | `SC_CLAIM_` | 智能理赔运营配置面（保单/计划/额度/规则/编码映射） |
+| `claim-ops` | synap-claim | `SC_CLAIM_` | 智能理赔 AI 治理与运营只读面 |
+| `review` | synap-claim | `SC_CLAIM_` | 智能理赔核赔/后督工作台 |
+| `internal` | synap-claim | `SC_CLAIM_` | 智能理赔内部运维面；**经网关访问须先登记前缀白名单**（当前未登记，经网关 404） |
+
+> **SynapClaim（智能理赔）命名**：系统缩写统一 `sclaim`，浏览器页面 URL 为 `/sclaim/{module}/{page}`；
+> 后端 API **仍遵循本节 `/api/v1/{domain}/...` 模板**，不设 `/api/sclaim` 例外。
+> 浏览器模块↔API domain↔权限资源↔错误码的映射真源见 [SynapClaim-命名规范 §7.2](./SynapClaim-命名规范.md#72-统一方式语义映射表api-路径裁定)，本文不复制该表。
 
 ### 2.4 HTTP 方法与状态码
 

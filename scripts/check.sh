@@ -924,6 +924,20 @@ if ! python3 tools/check_procura_persistence.py > /dev/null; then
   exit_code=1
 fi
 
+# 2026-11-22 新增（SynapClaim 命名规范 §8）：系统缩写 sclaim / 三级浏览器 URL /
+# 无遗留别名 / API 仍走 /api/v1。先跑 --self-test（6 条负向探针）证明判据能变红，
+# 再跑 --check 主判据；沿用 G0 无编号做法避免改动 59 步计数。
+if ! python3 scripts/check-sclaim-naming.py --self-test > /dev/null; then
+  echo -e "${RED}❌ SynapClaim 命名门禁负向探针失效（判据可能恒绿，绿灯不可信）${RESET}"
+  echo -e "${DIM}  复核：python3 scripts/check-sclaim-naming.py --self-test${RESET}"
+  exit_code=1
+fi
+if ! python3 scripts/check-sclaim-naming.py --check > /dev/null; then
+  echo -e "${RED}❌ SynapClaim 命名规范违规（缩写 / 路径构造 / 遗留别名 / API 前缀漂移）${RESET}"
+  echo -e "${DIM}  复核：python3 scripts/check-sclaim-naming.py --check${RESET}"
+  exit_code=1
+fi
+
 # 结果处理 + 熔断计数
 if [ "$exit_code" -ne 0 ]; then
   count=$(cat "$FAIL_COUNT_FILE" 2>/dev/null || echo 0)

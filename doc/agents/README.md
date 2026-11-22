@@ -48,6 +48,7 @@ AGENTS.md 路由只把 agent 引到本目录六份正文；横切与专项规范
 | 版本号、发布与回滚流程 | `doc/architecture/Bone-版本与发布规范.md` |
 | 国际化文案、语言包 | `doc/architecture/Bone-国际化规范.md` |
 | 模块合规文档模板（Docs-as-Code） | `doc/architecture/Docs-as-Code-模块合规模板.md`（06 §11 已挂） |
+| 新增/改动理赔页面路由、菜单、权限码或跨层命名 | `doc/architecture/SynapClaim-命名规范.md`（`sclaim` 缩写、`/{sclaim}/{module}/{page}`、模块/页面注册表、API 映射裁定） |
 | 追溯某条约束的决策依据 | `doc/architecture/adr/`（编号索引见架构 README） |
 
 > 单一真源：本表只做**加载指针**，不复制任何规范内容；规范正文只在其所在文档维护。
