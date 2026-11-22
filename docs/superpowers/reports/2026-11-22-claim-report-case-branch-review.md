@@ -8,23 +8,24 @@
 
 ## 0. 一页结论
 
-**两个分支不是同一件事的两份实现，而是一个交集加两处独占内容。**
+**两个分支分叉于 `2a2e40134`，各自独占的内容只有报案拆分那一套；对方没有任何本分支缺失的功能。**
 
 | | `comet/claim-report-case-one-to-many`（本分支） | `comet/claim-id-linkage`（对方） |
 |---|---|---|
+| 分叉点 | `2a2e40134`（报案号 Feistel 内核） | 同一分叉点 |
+| 独占提交 | 6 个（1 功能 + 4 文档 + 1 chore） | 2 个（1 功能 + 1 网关路由 fix） |
 | 相对 dev | +16 提交 / 90 文件 / +5575 −164 | +14 提交 / 68 文件 / +3543 −87 |
 | 报案 1:N 拆分 | 有 | 有 |
-| 赔案号↔保单号互链前端 | 无 | **有（dev 上完全不存在）** |
-| 编号内核（Feistel/Base32/Luhn） | 有（本分支 `2a2e40134` 先落，0138 由对方引用） | 引用同一份 0138 |
+| 赔案号↔保单号互链前端 | **有**（共同祖先 `baf3f70a7`） | **有**（同一提交，blob 相同） |
+| 编号内核（Feistel/Base32/Luhn） | 有（`2a2e40134`，0138 即出自此） | 引用同一份 0138 |
 
-⇒ **不存在「整条弃用对方」这个选项**：那样会把 `ClaimIdLink` / `PolicyNoLink` / `policyDeepLinks` / `sclaimRoutes` 四个 dev 上不存在的模块一起丢掉。
+⇒ **可以整条取舍，不存在功能损失。** 这一点在初稿里判错并已更正，过程见 §4。
 
-**需要裁决的四件事**（详见 §5）：
+**需要裁决的三件事**（详见 §5）：
 
 1. 报案拆分的域模型与迁移保留哪一套 —— 建议保留本分支。
-2. 对方分支的 id-linkage 部分如何剥离保留 —— 建议单独摘出、与报案拆分解耦合入。
-3. HTTP 接口面统一到哪一套路径 —— 两套现已分叉，前端只能跟一套。
-4. 活库残留列 `t_claim_case.report_no` 的清理迁移（0140）。
+2. HTTP 接口面统一到哪一套路径 —— 两套现已分叉，前端只能跟一套。
+3. 活库残留列 `t_claim_case.report_no` 的清理（脚本 0140 已交付，执行时机见 §6）。
 
 ---
 
@@ -146,28 +147,33 @@
 
 ---
 
-## 4. 新发现：对方分支捆绑了另一个功能
+## 4. 一处误判的更正：id-linkage 不是对方独占
 
-`comet/claim-id-linkage` 名字里的「id linkage」不是比喻，是独立功能：
+**初稿的错误结论**：曾判定 `ClaimIdLink` / `PolicyNoLink` / `policyDeepLinks` / `sclaimRoutes` 四组文件为对方分支独占，进而推出「不存在整条弃用对方这个选项」。
+
+**错在哪**：取证只做了单边 —— 查了 `git ls-tree dev` 零命中，就推断「对方独占」，**没有查本分支自己有没有**。实际 `git ls-tree -r --name-only HEAD` 四组文件全在，blob 与对方逐字节相同：
 
 ```
-A bone-frontend/apps/bone-claim-app/src/components/ClaimIdLink.tsx        (+ .test.tsx)
-A bone-frontend/apps/bone-claim-app/src/components/PolicyNoLink.tsx       (+ .test.tsx)
-A bone-frontend/apps/bone-claim-app/src/workbench/policyDeepLinks.ts      (+ .test.ts)
-A bone-frontend/apps/bone-claim-app/src/workbench/sclaimRoutes.ts         (+ .test.ts)
-M App.tsx / routes.tsx / Case360Page / ClaimProgressPage / ReviewWorkbenchPage …
+bone-frontend/apps/bone-claim-app/src/components/ClaimIdLink.tsx    mine=d60bb1fa… theirs=d60bb1fa…
+bone-frontend/apps/bone-claim-app/src/workbench/sclaimRoutes.ts     mine=8d9a4d21… theirs=8d9a4d21…
 ```
 
-`dev` 上 `grep ClaimIdLink|PolicyNoLink` → **零命中**。这四组文件在两条分支里只有对方有。
+`git branch --contains baf3f70a7` 显示该提交在**两条分支上都存在**，且 `git merge-base --is-ancestor baf3f70a7 dev` 为假 —— 即它落在共同祖先与 dev 之间的历史里，两条分支都继承到了。
 
-⇒ 「弃用对方分支」会连带丢掉一个已开发但未落地的功能。正确做法是**按功能拆分**，而不是按分支取舍：
+**正确结论**：id-linkage 是**共同祖先**，不是独占。两条分支的真实分叉点是 `2a2e40134`，各自独占提交如下：
 
-1. 从对方分支摘出 id-linkage 相关提交，单独合入 `dev`（与报案拆分无耦合）。
-2. 报案拆分部分按 §5 的口径二选一。
+```
+本分支: dd0b42e5d e90aebb75 609bf7352 440e260f5 438d42e49 69e66f88b   (6)
+对方  : bd3aaa0b2 c23d2b2c6                                            (2)
+```
+
+⇒ 取舍可以是整条分支级的，不存在功能损失；D2（id-linkage 剥离）因此**取消**。
+
+**教训（保留在本文而非悄悄改掉）**：「对方有没有」和「我有没有」是两个独立问题。只查一侧就下「独占」结论，得到的是**误报**，而误报比漏报更贵 —— 它会让决策者基于一个不存在约束去做本不必做的额外工作（本文初稿的 D2 就是这样的额外工作）。
 
 ---
 
-## 5. 需要裁决的四件事
+## 5. 需要裁决的三件事
 
 ### D1 报案拆分的域模型与迁移保留哪一套
 
@@ -182,9 +188,9 @@ M App.tsx / routes.tsx / Case360Page / ClaimProgressPage / ReviewWorkbenchPage �
 
 **建议：保留本分支。** 决定性理由是 §3.3——活库已经出现「冗余列 0 行有值」这种静默分叉，而 NOT NULL + 单一真源能从库层消灭这一整类 bug。
 
-### D2 对方分支的 id-linkage 部分如何处置
+### D2 id-linkage 的处置 —— 已取消（初稿误判）
 
-建议单独摘出合入 `dev`，不要与报案拆分绑在同一次合并里。理由：两者无代码耦合，绑在一起会让回滚粒度失控。
+不需要任何操作：它在共同祖先 `baf3f70a7` 里，两条分支都有、dev 都没有。无论 D1 选谁，id-linkage 都随分支一起走。更正过程见 §4。
 
 ### D3 接口面统一到哪一套
 
@@ -192,18 +198,34 @@ M App.tsx / routes.tsx / Case360Page / ClaimProgressPage / ReviewWorkbenchPage �
 
 若产品确实需要「先登记报案、后补赔案」，则应恢复对方的两步式；这是**产品口径问题，不是技术口径问题**，需要产品确认。
 
-### D4 活库清理
+### D4 活库清理 —— 脚本已交付并验证，执行时机待定
 
-无论 D1 选谁，活库那条孤儿列都要清：
+**已交付**：`scripts/migration/0140_synap_claim_drop_case_report_no_redundant.sql`，已在 `migration-manifest.json` 登记为 `order 146`（清单与脚本同批入库，M11 已过）。不回改已发的 0139。
 
-```sql
--- 0140，新迁移，不回改已发的 0139
-ALTER TABLE t_claim_case DROP COLUMN report_no;
-```
+**已验证**（隔离库，不碰共享活库）：
 
-前置校验：该列必须 0 行有值（已核实），否则先打印清单再 `SIGNAL` 中止——存量脏数据不自动删。
+| 场景 | 结果 |
+|---|---|
+| 列存在且全空 | 真删，§3 终态断言通过 |
+| 同库再跑一遍 | 幂等 no-op，不报错 |
+| 列有数据 | `SIGNAL` 中止（`ERROR 1644: 0140 ABORT: … has data, migrate it first`），**数据未删、列仍在** |
 
-同时 `bone-init.sql` 与实体需确认无该列（已确认无）。
+**变异验证**（证明断言有判别力，不是「通过即正确」）：
+
+- 守卫阈值 `> 0` 改成 `> 999` → 场景 3 立刻转红「未 fail-closed」；
+- 删除条件 `@has_col = 1` 改成 `= 0` → §3 终态断言抛出 `0140 FAIL: … still present after drop`。
+
+后者尤其说明为什么 §3 必须有：「语句没报错」与「目标达成」是两件事，动态 SQL 的条件写反会以无害的 `DO 0` 通过。
+
+**未在共享活库执行，理由**（这是判断，不是拖延）：
+
+- 执行前探测：`information_schema.processlist` 有 **90 个连到 `bone` 的连接**，全部 `Sleep`，最长约 1773 秒 ⇒ 有其他服务（可能是对方分支）正持有连接池。删列会让对方代码里 `SELECT c.report_no` 的读路径立刻 500。
+- `t_claim_case.report_no` 当前 0 行有值，删除不丢数据；但 `DROP COLUMN` 不可逆，且影响他人。
+- 迁移执行属部署动作，应由 `scripts/migrate.py` 或 CI 做，以保证 `schema_migration_journal` 与库状态一致。
+
+**顺带发现的一处账本不一致**：账本里只有对方的 `0139_synap_claim_report_one_to_many.sql`（order 145、`source=apply`），**本分支的 `0139_synap_claim_report_case_split.sql` 没有记账**，但活库里 `report_id` 已是 `NOT NULL`（本分支 §7 的收紧生效）—— 说明本分支的 0139 曾被手工执行、未记账。下次 `migrate.py` 运行会重放它（脚本幂等，行为无害），但账本这条缺口应当在正式部署前补齐或说明。
+
+`bone-init.sql` 与模块参考态 `V25` 本就没有该列（本方案最终态形状），无需改动。
 
 ---
 
@@ -224,8 +246,22 @@ git rev-parse 'comet/claim-report-case-one-to-many:scripts/migration/0138_synap_
 git show 'comet/claim-id-linkage:scripts/migration/0139_synap_claim_report_one_to_many.sql' | grep -n 'report_id'
 git show 'comet/claim-report-case-one-to-many:scripts/migration/0139_synap_claim_report_case_split.sql' | grep -n 'report_id'
 
-# id-linkage 是否独占
-git ls-tree -r --name-only dev -- bone-frontend/apps/bone-claim-app/src/components | grep -E 'ClaimIdLink|PolicyNoLink'
+# id-linkage 归属：必须查三侧，只查 dev 会得出相反的错结论
+git ls-tree -r --name-only dev  -- bone-frontend/apps/bone-claim-app/src/components | grep -E 'ClaimIdLink|PolicyNoLink'
+git ls-tree -r --name-only HEAD -- bone-frontend/apps/bone-claim-app/src/components | grep -E 'ClaimIdLink|PolicyNoLink'
+git ls-tree -r --name-only comet/claim-id-linkage -- bone-frontend/apps/bone-claim-app/src/components | grep -E 'ClaimIdLink|PolicyNoLink'
+
+# 逐字节比对两侧同一文件
+git rev-parse 'HEAD:bone-frontend/apps/bone-claim-app/src/components/ClaimIdLink.tsx'
+git rev-parse 'comet/claim-id-linkage:bone-frontend/apps/bone-claim-app/src/components/ClaimIdLink.tsx'
+
+# 分叉点与各自独占提交（比 diff --stat 更能定位「谁多了什么」）
+git merge-base HEAD comet/claim-id-linkage
+git log --oneline "$(git merge-base HEAD comet/claim-id-linkage)..HEAD"
+git log --oneline "$(git merge-base HEAD comet/claim-id-linkage)..comet/claim-id-linkage"
+
+# 0140 迁移在隔离库的三场景 + 变异验证（不碰共享活库）
+python3 /tmp/verify_0140.py
 ```
 
 > zsh 下取 git 引用里的文件必须写 `"${B}:${P}"`（花括号 + 独立变量）。写成 `"$B:scripts/…"` 会被当成参数修饰符 `:s/…/…/` 吃掉路径，报 `ambiguous argument`。
