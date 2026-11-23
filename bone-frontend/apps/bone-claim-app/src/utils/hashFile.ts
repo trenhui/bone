@@ -6,20 +6,27 @@
  */
 export async function hashFile(file: File): Promise<string> {
   if (typeof Worker === 'undefined') return hashOnMainThread(file);
-  const worker = new Worker(new URL('../workers/sha256.worker.ts', import.meta.url), {
-    type: 'module',
-  });
   try {
-    return await new Promise<string>((resolve, reject) => {
-      worker.onmessage = (event: MessageEvent<{ id: string; hex?: string; error?: string }>) => {
-        if (event.data.error) reject(new Error(event.data.error));
-        else if (event.data.hex) resolve(event.data.hex);
-      };
-      worker.onerror = (event) => reject(new Error(event.message || '哈希 Worker 运行失败'));
-      worker.postMessage({ id: 'hash', file });
+    const worker = new Worker(new URL('../workers/sha256.worker.ts', import.meta.url), {
+      type: 'module',
     });
-  } finally {
-    worker.terminate();
+    try {
+      return await new Promise<string>((resolve, reject) => {
+        worker.onmessage = (event: MessageEvent<{ id: string; hex?: string; error?: string }>) => {
+          if (event.data.error) reject(new Error(event.data.error));
+          else if (event.data.hex) resolve(event.data.hex);
+        };
+        worker.onerror = (event) => reject(new Error(event.message || '哈希 Worker 运行失败'));
+        worker.postMessage({ id: 'hash', file });
+      });
+    } finally {
+      worker.terminate();
+    }
+  } catch {
+    // qiankun 下子应用资源来自 :3013，而页面源是 shell :3000：
+    // `new Worker(new URL(...))` 会同步抛 SecurityError（实测材料上传整链断在这里）。
+    // 文件头承诺「Worker 不可用时主线程兜底」，构造/运行失败都必须走兜底，不能把原始异常抛给用户。
+    return hashOnMainThread(file);
   }
 }
 

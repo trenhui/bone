@@ -351,6 +351,7 @@
     "chains.py",
     "seed-commerce-fixtures.py",
     "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs",
     "write_coverage.py"
    ]
   },
@@ -400,6 +401,7 @@
     "chains.py",
     "seed-commerce-fixtures.py",
     "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs",
     "write_coverage.py"
    ]
   },
@@ -412,6 +414,7 @@
     "chains.py",
     "seed-commerce-fixtures.py",
     "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs",
     "write_coverage.py"
    ]
   },
@@ -745,7 +748,8 @@
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
     "chains.py",
-    "seed-commerce-fixtures.py"
+    "seed-commerce-fixtures.py",
+    "ui/ui-nine-module-deep-probe.mjs"
    ]
   },
   {
@@ -775,7 +779,8 @@
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
     "chains.py",
-    "seed-commerce-fixtures.py"
+    "seed-commerce-fixtures.py",
+    "ui/ui-nine-module-deep-probe.mjs"
    ]
   },
   {
@@ -785,7 +790,8 @@
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
     "chains.py",
-    "seed-commerce-fixtures.py"
+    "seed-commerce-fixtures.py",
+    "ui/ui-nine-module-deep-probe.mjs"
    ]
   },
   {
@@ -847,7 +853,8 @@
    "controller": "MasterDataRecordTopController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
-    "seed-commerce-fixtures.py"
+    "seed-commerce-fixtures.py",
+    "ui/ui-nine-module-deep-probe.mjs"
    ]
   },
   {

@@ -44,7 +44,7 @@ class ContractReviewApplicationServiceTest {
   @Test
   void 提交查询推翻披露四用例() {
     AtomicReference<String> tenant = new AtomicReference<>("t-1");
-    ContractReviewApplicationService service = service(tenant::get, aiSuggestion());
+    ContractReviewApplicationService service = service(tenant::get, aiSuggestion(), "reviewer-1");
 
     ReviewReport submitted = service.submit(command("idem-1", "CT-1"));
     String reviewId = submitted.reviewId();
@@ -148,6 +148,11 @@ class ContractReviewApplicationServiceTest {
 
   private ContractReviewApplicationService service(
       ContractReviewTenantPort tenantPort, ContractReviewPort reviewPort) {
+    return service(tenantPort, reviewPort, "r");
+  }
+
+  private ContractReviewApplicationService service(
+      ContractReviewTenantPort tenantPort, ContractReviewPort reviewPort, String reviewer) {
     ContractParsePort parsePort =
         (input, tenantId, sourceRef, docId) ->
             new ParsedContract(
@@ -158,7 +163,14 @@ class ContractReviewApplicationServiceTest {
                 List.of(ParsedClause.of("第一条", "条款正文。", 1, 0, 4)),
                 false);
     return new ContractReviewApplicationService(
-        parsePort, reviewPort, tracePort, store, tenantPort, new AiDisclosureService(), consumer);
+        parsePort,
+        reviewPort,
+        tracePort,
+        store,
+        tenantPort,
+        () -> reviewer,
+        new AiDisclosureService(),
+        consumer);
   }
 
   private static ContractReviewPort aiSuggestion() {

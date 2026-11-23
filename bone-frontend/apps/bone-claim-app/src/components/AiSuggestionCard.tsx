@@ -217,7 +217,7 @@ export function AiSuggestionCard({ claimId, scene = 'case' }: AiSuggestionCardPr
         okButtonProps={{ disabled: needsReason && !reasonCode }}
         okText="记录裁决"
         cancelText="取消"
-        destroyOnClose
+        destroyOnHidden
       >
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <Typography.Text>

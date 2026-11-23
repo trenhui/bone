@@ -1101,7 +1101,7 @@ export function ReviewWorkbenchPage(): ReactElement {
         title={`AI 结论 · ${aiTarget?.claimNo ?? ''}`}
         width={560}
         open={aiTarget !== null}
-        destroyOnClose
+        destroyOnHidden
         onClose={() => setAiTarget(null)}
       >
         <Alert

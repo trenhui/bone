@@ -146,9 +146,10 @@ try {
 
   await page.getByRole('button', { name: '提交理赔' }).click();
   const msg = await waitMessage(/报案已受理/);
-  // 报案号新格式：CL + yyyyMMdd + 13位Crockford Base32 + 1位校验 = 24字符（含大写字母）。
-  // 旧正则 /CL\d+/ 会把它截成 "CL20261122"，导致后续 claimNo→claimId 检索落空。
-  const claimNo = msg?.match(/CL[0-9]{8}[0-9A-HJKMNP-TV-Z]{14}/)?.[0] ?? '';
+  // 赔案号形如 CL20261123ASCRETH89A8XY4（新 24 字符格式），也兼容 CL20261028001（旧纯数字）。
+  // 旧正则 /CL\d+/ 只截到日期，导致入库复核恒空（探针假红）；
+  // 精确固定长度正则又会漏掉 CL20261122NEWCASE 这类测试样例，故用宽松大写字母数字串。
+  const claimNo = msg?.match(/CL[0-9A-Z]+/)?.[0] ?? '';
   check('[理赔申请] 提交成功且回执受理号', Boolean(claimNo), msg ?? '未捕获 message');
 
   // 经 API 把 claimNo 换成 claimId（后续页面用）

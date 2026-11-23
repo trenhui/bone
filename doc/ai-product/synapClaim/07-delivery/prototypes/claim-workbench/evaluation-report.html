@@ -320,17 +320,9 @@
   }
 })();
 
-
-var FIELDS={'出险人姓名':['文本','平台标准','必填','2–20 位中文或字母'],'证件号码':['证件','平台标准','必填','18 位身份证 / 护照'],'就诊医院':['机构选择','平台标准','选填','医院库内可选'],'出险日期':['日期','平台标准','必填','不晚于今天'],'发票金额':['金额','平台标准','必填','> 0 且 ≤ 100000'],'费用明细上传':['附件','专属·改','选填','PDF/JPG ≤ 10MB']};
-function pickTpl(el,name){document.querySelectorAll('.tpl').forEach(function(x){x.classList.remove('active');});el.classList.add('active');document.getElementById('tplName').textContent=name;document.getElementById('pubTpl').textContent=name;toast('已切换模板：'+name);}
-function pickField(el,name){
-  document.querySelectorAll('.frow').forEach(function(x){x.classList.remove('active');});el.classList.add('active');
-  var v=FIELDS[name];if(!v)return;
-  document.getElementById('fName').textContent=name;document.getElementById('pLabel').value=name;
-  document.getElementById('pType').value=v[0];document.getElementById('pSrc').value=v[1];
-  document.getElementById('pReq').value=v[2];document.getElementById('pRule').value=v[3];
-}
-document.getElementById('pubAck').addEventListener('change',function(){document.getElementById('pubBtn').disabled=!this.checked;});
+/* 本页为评测报告讲解稿，无表单配置交互；早期从 form-config 复制残留的
+   FIELDS/pickTpl/pickField/pubAck 监听在本页无对应 DOM（pubAck 恒为 null），
+   加载即抛 TypeError，已移除。命令面板 / toast / 指引抽屉由上方公共脚本提供。 */
 </script>
 </body>
 </html>

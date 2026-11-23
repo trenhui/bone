@@ -30,6 +30,7 @@ class ContractReviewTest {
     review.snapshot(ReviewSnapshotRef.of("snap://rv-1"));
     assertThat(review.status()).isEqualTo(ReviewStatus.SNAPSHOTTED);
     assertThat(review.reviewSnapshotRef().ref()).isEqualTo("snap://rv-1");
+    assertThat(review.humanReason()).isEqualTo("人工确认");
   }
 
   @Test

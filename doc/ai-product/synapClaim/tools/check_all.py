@@ -68,7 +68,7 @@ GATES: tuple[Gate, ...] = (
     ("_check_doc_structure.py", ("--self-test",), "方案文档结构判据自证"),
     ("_check_doc_structure.py", (), "方案文档必选四节全量判红"),
     ("_check_demo_parity.py", ("--self-test",), "DEMO 对齐判据负向探针"),
-    ("_check_demo_parity.py", (), "P1–P8 三案例/评测/口径/映射表对齐"),
+    ("_check_demo_parity.py", (), "P1–P8 三案例/评测/口径/UX骨架/映射表对齐"),
 )
 
 # 非 _check_*.py，但属于全套且必须执行的步骤。
