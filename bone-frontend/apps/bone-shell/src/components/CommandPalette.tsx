@@ -97,7 +97,7 @@ export default function CommandPalette({ menuConfig, onNavigate }: CommandPalett
         footer={null}
         width={620}
         title="全局检索 · 找功能或找案件"
-        destroyOnClose
+        destroyOnHidden
       >
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <Input

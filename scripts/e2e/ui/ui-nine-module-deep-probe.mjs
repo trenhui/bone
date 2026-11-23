@@ -331,7 +331,7 @@ try {
   if (!logged) throw new Error('登录失败');
 
   // 预取真实引用：
-  //   · 订单管理建单需要「真实客户 + 真实商品」→ 取首个有 customerId 的订单及其明细里的商品；
+  //   · 订单管理建单需要「真实客户 + 当前已发布商品」→ 客户取历史订单，商品现查 MD_PRODUCT 已发布记录；
   //   · 发货物流需要「可发货状态的订单」→ 取首个 PAID 订单（CREATED 会被 409 正确拒，这是产品做对了）。
   const token = await tryLogin();
   if (token) {
@@ -349,6 +349,31 @@ try {
       }
       const paid = recs.find((r) => r.status === 'PAID');
       if (paid) REAL_ORDER_ID = String(paid.id);
+    }
+    // 订单里取到的商品可能已被下架（实测 900001 → 409 BP_ORDER_PRODUCT_NOT_PUBLISHED）。
+    // 建单是写操作，必须现取「当前已发布」商品，不能复用历史订单快照。
+    const er = await api(
+      'GET',
+      '/masterdata/entities?page=1&size=20&keyword=MD_PRODUCT',
+      undefined,
+      { token },
+    ).catch(() => null);
+    const entityId = er?.data?.data?.records?.find(
+      (r) => r.entityCode === 'MD_PRODUCT' && r.status === 'PUBLISHED',
+    )?.id;
+    if (entityId) {
+      const pr = await api(
+        'GET',
+        `/masterdata/records?page=1&size=5&masterDataEntityId=${entityId}&status=PUBLISHED`,
+        undefined,
+        { token },
+      ).catch(() => null);
+      // 下单按商品编码（record_code / data.code）查主数据，不是记录 id。
+      const product = pr?.data?.data?.records?.[0];
+      let dataCode;
+      try { dataCode = JSON.parse(product?.data || '{}').code; } catch { dataCode = undefined; }
+      const productCode = product?.recordCode ?? dataCode;
+      if (productCode) REAL_PRODUCT_ID = String(productCode);
     }
   }
   console.log(`预取真实引用：customer=${REAL_CUSTOMER_ID} product=${REAL_PRODUCT_ID} order(PAID)=${REAL_ORDER_ID}`);

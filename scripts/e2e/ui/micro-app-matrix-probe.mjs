@@ -42,20 +42,30 @@ function parseShellRegistry() {
     ? [...prefixBlock[1].matchAll(/'(\/[^']+)'/g)].map((m) => m[1])
     : [];
 
-  // 微应用注册：name: 'bone-xxx-app' ... entry: ... || '//localhost:30xx'
-  const apps = [];
-  const re = /name:\s*'(bone-[a-z-]+)'[\s\S]{0,400}?entry:[^|]*\|\|\s*'\/\/localhost:(\d{4})'/g;
-  let m;
-  while ((m = re.exec(src))) apps.push({ app: m[1], port: Number(m[2]) });
+  // shell 里的路径常量（SynapClaim 用 CLAIM_MENU_PREFIX，不能按 app 名推成 /claim）
+  const constPaths = Object.fromEntries(
+    [...src.matchAll(/^const\s+([A-Z][A-Z_]*)\s*=\s*'(\/[^']+)'/gm)].map((m) => [m[1], m[2]]),
+  );
 
-  // app 名 → 路由前缀：bone-commerce-app → /commerce
-  return {
-    prefixes,
-    apps: apps.map((a) => {
-      const key = a.app.replace(/^bone-/, '').replace(/-app$/, '');
-      return { ...a, route: `/${key}` };
-    }),
-  };
+  // 微应用注册：name / entry / activeRule。activeRule 才是路由真源——
+  // bone-claim-app 的 activeRule 是 [CLAIM_MENU_PREFIX, '/sclaim/policy/detail']，
+  // 按 app 名硬推 /claim 会把正常菜单误判成「漏登记 + 无菜单入口」。
+  const apps = [];
+  const re =
+    /name:\s*'(bone-[a-z-]+)'[\s\S]{0,400}?entry:[^|]*\|\|\s*'\/\/localhost:(\d{4})'[\s\S]{0,400}?activeRule:\s*(\[[^\]]*\]|'([^']+)')/g;
+  let m;
+  while ((m = re.exec(src))) {
+    const rules = m[3].startsWith('[')
+      ? // activeRule 数组里既有字面量也有常量标识符（CLAIM_MENU_PREFIX 未加引号）
+        [...m[3].matchAll(/'([^']+)'|\b([A-Z][A-Z0-9_]+)\b/g)].map(
+          (r) => constPaths[r[2] ?? r[1]] ?? r[2] ?? r[1],
+        )
+      : [m[4]];
+    const route = rules.find((r) => r && prefixes.some((p) => r === p || r.startsWith(`${p}/`)));
+    const key = m[1].replace(/^bone-/, '').replace(/-app$/, '');
+    apps.push({ app: m[1], port: Number(m[2]), route: route ?? `/${key}` });
+  }
+  return { prefixes, apps };
 }
 
 /**
@@ -83,16 +93,20 @@ async function mountedText(page) {
  * 为什么不用 `#/` 直达：子应用的根路由未必有匹配（实测 masterdata / commerce 的 `#/` 是空白页），
  * 而用户走的永远是菜单里的真实路径 —— 用菜单第一项才复现得了真实链路。
  */
-async function fetchEntryPaths() {
+async function fetchEntryPaths(prefixes) {
   const { data } = await api('GET', '/iam/menus/current');
   const root = data?.data ?? data;
   const found = new Map();
+  const sorted = [...prefixes].sort((a, b) => b.length - a.length);
   const walk = (n) => {
     if (Array.isArray(n)) return n.forEach(walk);
     if (!n || typeof n !== 'object') return;
     const p = n.path || '';
     const m = p.match(/^\/([a-z-]+)#\/(.+)$/);
-    if (m && !found.has(`/${m[1]}`)) found.set(`/${m[1]}`, p);
+    const key = m
+      ? `/${m[1]}`
+      : sorted.find((prefix) => p === prefix || p.startsWith(`${prefix}/`));
+    if (key && !found.has(key)) found.set(key, p);
     (n.children || []).forEach(walk);
   };
   walk(root);
@@ -132,7 +146,7 @@ async function fetchEntryPaths() {
     process.exit(1);
   }
 
-  const entryPaths = await fetchEntryPaths();
+  const entryPaths = await fetchEntryPaths(prefixes);
   const noMenu = registry.filter((r) => !entryPaths.has(r.route)).map((r) => r.route);
   check(
     '每个已注册微应用都有至少一条可导航菜单（功能可达）',
@@ -151,7 +165,11 @@ async function fetchEntryPaths() {
 
     const errPanels = await page.locator('.subapp-error').count();
     const body = await mountedText(page);
-    const hasContent = body.length > 10 && !body.includes('微应用加载失败');
+    // 采购交易台的正常态可以是「能力未启用」空态（后端能力开关关闭或列表为空），
+    // 文本只有 10 字；按固定长度阈值会把它误判成白屏。认已知空态文案即可。
+    const knownEmptyState = /能力未启用|暂无数据|暂无|No Data/.test(body);
+    const hasContent =
+      (body.length > 10 || knownEmptyState) && !body.includes('微应用加载失败');
 
     check(`[${r.app}] 无「微应用加载失败」面板（入口 :${r.port}）`, errPanels === 0, `实际面板数 ${errPanels}`);
     check(`[${r.app}] 挂载点渲染出内容`, hasContent, `容器文本 ${body.length} 字`);

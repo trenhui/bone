@@ -351,6 +351,7 @@
     "chains.py",
     "seed-commerce-fixtures.py",
     "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs",
     "write_coverage.py"
    ]
   },
@@ -400,6 +401,7 @@
     "chains.py",
     "seed-commerce-fixtures.py",
     "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs",
     "write_coverage.py"
    ]
   },
@@ -412,6 +414,7 @@
     "chains.py",
     "seed-commerce-fixtures.py",
     "ui/ui-full-module-crud-probe.mjs",
+    "ui/ui-nine-module-deep-probe.mjs",
     "write_coverage.py"
    ]
   },
@@ -745,7 +748,8 @@
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
     "chains.py",
-    "seed-commerce-fixtures.py"
+    "seed-commerce-fixtures.py",
+    "ui/ui-nine-module-deep-probe.mjs"
    ]
   },
   {
@@ -775,7 +779,8 @@
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
     "chains.py",
-    "seed-commerce-fixtures.py"
+    "seed-commerce-fixtures.py",
+    "ui/ui-nine-module-deep-probe.mjs"
    ]
   },
   {
@@ -785,7 +790,8 @@
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
     "chains.py",
-    "seed-commerce-fixtures.py"
+    "seed-commerce-fixtures.py",
+    "ui/ui-nine-module-deep-probe.mjs"
    ]
   },
   {
@@ -847,7 +853,8 @@
    "controller": "MasterDataRecordTopController",
    "file": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordTopController.java",
    "cases": [
-    "seed-commerce-fixtures.py"
+    "seed-commerce-fixtures.py",
+    "ui/ui-nine-module-deep-probe.mjs"
    ]
   },
   {
@@ -3375,6 +3382,13 @@
    "cases": []
   },
   {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/ai-readiness/guard-check",
+   "controller": "AiCapabilityReadinessController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiCapabilityReadinessController.java",
+   "cases": []
+  },
+  {
    "http": "POST",
    "path": "/api/v1/claim-ops/blind-labels/{id}/submit",
    "controller": "BlindLabelController",
@@ -3756,7 +3770,8 @@
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
    "cases": [
-    "ui/claim-config-ui-probe.mjs"
+    "ui/claim-config-ui-probe.mjs",
+    "ui/policy-no-link-probe.mjs"
    ]
   },
   {
@@ -3765,7 +3780,8 @@
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
    "cases": [
-    "ui/claim-config-ui-probe.mjs"
+    "ui/claim-config-ui-probe.mjs",
+    "ui/policy-no-link-probe.mjs"
    ]
   },
   {
@@ -3783,7 +3799,8 @@
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
    "cases": [
-    "ui/claim-config-ui-probe.mjs"
+    "ui/claim-config-ui-probe.mjs",
+    "ui/policy-no-link-probe.mjs"
    ]
   },
   {
@@ -3792,7 +3809,8 @@
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
    "cases": [
-    "ui/claim-config-ui-probe.mjs"
+    "ui/claim-config-ui-probe.mjs",
+    "ui/policy-no-link-probe.mjs"
    ]
   },
   {
@@ -3879,6 +3897,13 @@
   {
    "http": "POST",
    "path": "/api/v1/review/tasks/{claimId}/decision",
+   "controller": "ReviewTaskController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReviewTaskController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/review/tasks/batch-decision",
    "controller": "ReviewTaskController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReviewTaskController.java",
    "cases": []
@@ -4161,6 +4186,34 @@
   },
   {
    "http": "GET",
+   "path": "/api/v1/claim-config/factor-matrix/{liabilityId}",
+   "controller": "FactorMatrixController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/FactorMatrixController.java",
+   "cases": []
+  },
+  {
+   "http": "PUT",
+   "path": "/api/v1/claim-config/factor-matrix/{liabilityId}",
+   "controller": "FactorMatrixController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/FactorMatrixController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/factor-matrix/{liabilityId}/publish",
+   "controller": "FactorMatrixController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/FactorMatrixController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/factor-matrix/generate-formula",
+   "controller": "FactorMatrixController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/FactorMatrixController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
    "path": "/api/v1/claim-ops/ai-provider-probe",
    "controller": "AiProviderProbeController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiProviderProbeController.java",
@@ -4188,6 +4241,13 @@
    "cases": [
     "e2e_synap_claim.py"
    ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/evidences/clarity",
+   "controller": "EvidenceController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/EvidenceController.java",
+   "cases": []
   },
   {
    "http": "POST",
@@ -4231,6 +4291,13 @@
   {
    "http": "POST",
    "path": "/api/v1/claim-config/coverage-overrides/publish",
+   "controller": "CoverageOverrideController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageOverrideController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claim-config/coverage-overrides/sync",
    "controller": "CoverageOverrideController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/CoverageOverrideController.java",
    "cases": []
@@ -4484,6 +4551,13 @@
    ]
   },
   {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-readiness",
+   "controller": "AiReadinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-app/src/main/java/com/bone/procurement/readiness/AiReadinessController.java",
+   "cases": []
+  },
+  {
    "http": "POST",
    "path": "/api/v1/procurement/qualifications",
    "controller": "QualificationController",
@@ -4493,6 +4567,20 @@
   {
    "http": "GET",
    "path": "/api/v1/procurement/qualifications/expiring",
+   "controller": "QualificationController",
+   "file": "bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/qualifications/{id}",
+   "controller": "QualificationController",
+   "file": "bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/qualifications/{id}/ocr-review",
    "controller": "QualificationController",
    "file": "bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java",
    "cases": []
@@ -4982,8 +5070,8 @@
   }
  ],
  "summary": {
-  "endpoints": 604,
+  "endpoints": 615,
   "covered": 240,
-  "uncovered": 364
+  "uncovered": 375
  }
 }

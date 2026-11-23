@@ -146,7 +146,9 @@ try {
 
   await page.getByRole('button', { name: '提交理赔' }).click();
   const msg = await waitMessage(/报案已受理/);
-  const claimNo = msg?.match(/CL\d+/)?.[0] ?? '';
+  // 报案号形如 CL20261123ASCRETH89A8XY4：日期后还有字母后缀，
+  // 旧正则 /CL\d+/ 只截到日期，导致入库复核恒空（探针假红）。
+  const claimNo = msg?.match(/CL[0-9A-Z]+/)?.[0] ?? '';
   check('[理赔申请] 提交成功且回执受理号', Boolean(claimNo), msg ?? '未捕获 message');
 
   // 经 API 把 claimNo 换成 claimId（后续页面用）
