@@ -162,6 +162,14 @@ jobs:
       - name: ProcuraAI Persistence Negative Probes (blocking)
         run: /usr/bin/env python3 tools/check_procura_persistence.py --self-test
 
+      # A10.17 / D-11：ContractReviewed 事件闭环三表、三类负向探针与三入口判据集合，
+      # 与本地入口及快反馈入口共用同一组判据 key，由本文件 blocking 步骤守护。
+      - name: ProcuraAI Event Chain Gate (blocking)
+        run: /usr/bin/env python3 tools/check_procura_event_chain.py
+
+      - name: ProcuraAI Event Chain Negative Probes (blocking)
+        run: /usr/bin/env python3 tools/check_procura_event_chain.py --self-test
+
       # 以下 6 项此前**只存在于 scripts/ci-check.sh 里，而该脚本在全仓零调用者**
       # （2026-10-04 实测：命中全是脚本自身 docstring 与 gate-state.json 的描述文本，
       # ci.yml 里唯一出现处是一句注释）⇒ 六个维度完全没有回归保护。

@@ -35,7 +35,10 @@ class ContractReviewIdentityBindingTest {
           return traces.stream().filter(e -> e.reviewId().equals(reviewId)).toList();
         }
       };
-  private final ContractReviewedConsumer consumer = new ContractReviewedConsumer(tracePort);
+  private final InMemoryContractReviewedEventStore eventStore =
+      new InMemoryContractReviewedEventStore();
+  private final ContractReviewedConsumer consumer =
+      new ContractReviewedConsumer(tracePort, () -> "t-1", eventStore);
 
   @Test
   void 无登录身份时终决被拒且不落终态() {
@@ -73,6 +76,8 @@ class ContractReviewIdentityBindingTest {
 
     assertThat(report.humanFinalized()).isTrue();
     assertThat(report.humanReason()).isEqualTo("登录态权威复核");
+    // override 只事务性发布 Outbox；显式驱动投递后才有 SNAPSHOT_IMMUTABLE 留痕。
+    new ContractReviewedEventDriver(eventStore, consumer).deliverPending("t-1");
     assertThat(traces)
         .anyMatch(
             e ->
@@ -122,7 +127,7 @@ class ContractReviewIdentityBindingTest {
         () -> "t-1",
         () -> reviewer,
         new AiDisclosureService(),
-        consumer);
+        new ContractReviewedEventPublisher(store, eventStore));
   }
 
   private static SubmitReviewCommand command(String idempotencyKey) {

@@ -3,11 +3,13 @@ package com.bone.procurement.contract.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.bone.procurement.contract.application.ContractReviewedConsumer.ConsumeResult;
 import com.bone.procurement.contract.domain.gateway.ContractParsePort;
 import com.bone.procurement.contract.domain.gateway.ContractReviewPort;
 import com.bone.procurement.contract.domain.gateway.ContractReviewTenantPort;
 import com.bone.procurement.contract.domain.gateway.ReviewTracePort;
 import com.bone.procurement.contract.domain.model.review.AiParticipation;
+import com.bone.procurement.contract.domain.model.review.ContractReviewedConclusion;
 import com.bone.procurement.contract.domain.model.review.ContractReviewedEvent;
 import com.bone.procurement.contract.domain.model.review.CrossTenantAccessException;
 import com.bone.procurement.contract.domain.model.review.ParsedClause;
@@ -39,7 +41,10 @@ class ContractReviewApplicationServiceTest {
           return traces.stream().filter(e -> e.reviewId().equals(reviewId)).toList();
         }
       };
-  private final ContractReviewedConsumer consumer = new ContractReviewedConsumer(tracePort);
+  private final InMemoryContractReviewedEventStore eventStore =
+      new InMemoryContractReviewedEventStore();
+  private final ContractReviewedConsumer consumer =
+      new ContractReviewedConsumer(tracePort, () -> "t-1", eventStore);
 
   @Test
   void 提交查询推翻披露四用例() {
@@ -73,15 +78,14 @@ class ContractReviewApplicationServiceTest {
     String reviewId = service.submit(command("idem-e1", "CT-E")).reviewId();
     service.override(reviewId, new HumanOverrideInput("r", "人工推翻", RiskLevel.HIGH));
 
-    assertThat(consumer.conclusionCount())
-        .as("override 后审查完成事件应在进程内被消费一次（walking skeleton 发布-消费闭环）")
-        .isEqualTo(1);
-    ContractReviewedConsumer.StoredConclusion conclusion =
-        consumer.conclusion(reviewId).orElseThrow();
+    // override 只做事务性发布；显式驱动扫描 Outbox 后才落 Inbox 结论。
+    new ContractReviewedEventDriver(eventStore, consumer).deliverPending("t-1");
+    assertThat(consumer.conclusionCount()).as("override 后审查完成事件经显式驱动只消费一次").isEqualTo(1);
+    ContractReviewedConclusion conclusion = consumer.conclusion(reviewId).orElseThrow();
     assertThat(conclusion.riskLevel()).isEqualTo(RiskLevel.HIGH);
     assertThat(conclusion.reviewSnapshotRef()).isEqualTo("snap://override/" + reviewId);
 
-    boolean redelivered =
+    ConsumeResult redelivered =
         consumer.consume(
             new ContractReviewedEvent(
                 reviewId,
@@ -91,7 +95,7 @@ class ContractReviewApplicationServiceTest {
                 "snap://override/" + reviewId,
                 AiParticipation.AVAILABLE,
                 "m1"));
-    assertThat(redelivered).as("同一 reviewId 重复投递不得再挂结论").isFalse();
+    assertThat(redelivered).as("同一 reviewId 重复投递不得再挂结论").isEqualTo(ConsumeResult.DUPLICATE);
     assertThat(consumer.conclusionCount()).isEqualTo(1);
   }
 
@@ -170,7 +174,7 @@ class ContractReviewApplicationServiceTest {
         tenantPort,
         () -> reviewer,
         new AiDisclosureService(),
-        consumer);
+        new ContractReviewedEventPublisher(store, eventStore));
   }
 
   private static ContractReviewPort aiSuggestion() {

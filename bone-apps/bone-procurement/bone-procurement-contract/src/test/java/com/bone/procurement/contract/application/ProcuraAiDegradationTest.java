@@ -2,7 +2,9 @@ package com.bone.procurement.contract.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.bone.procurement.contract.application.ContractReviewedConsumer.ConsumeResult;
 import com.bone.procurement.contract.domain.model.review.AiParticipation;
+import com.bone.procurement.contract.domain.model.review.ContractReviewedConclusion;
 import com.bone.procurement.contract.domain.model.review.ContractReviewedEvent;
 import com.bone.procurement.contract.domain.model.review.ReviewTraceEntry;
 import com.bone.procurement.contract.domain.model.review.RiskLevel;
@@ -18,16 +20,18 @@ import org.junit.jupiter.api.Test;
 class ProcuraAiDegradationTest {
 
   private final InMemoryReviewTraceAdapter tracePort = new InMemoryReviewTraceAdapter();
-  private final ContractReviewedConsumer consumer = new ContractReviewedConsumer(tracePort);
+  private final InMemoryContractReviewedEventStore eventStore =
+      new InMemoryContractReviewedEventStore();
+  private final ContractReviewedConsumer consumer =
+      new ContractReviewedConsumer(tracePort, () -> "t-1", eventStore);
 
   @Test
   void aiDownDoesNotTurnIntoReject() {
     ContractReviewedEvent event =
         event("rv-down", AiParticipation.UNKNOWN, RiskLevel.UNKNOWN, "snap://rv-down");
 
-    assertThat(consumer.consume(event)).isTrue();
-    ContractReviewedConsumer.StoredConclusion conclusion =
-        consumer.conclusion("rv-down").orElseThrow();
+    assertThat(consumer.consume(event)).isEqualTo(ConsumeResult.CONSUMED);
+    ContractReviewedConclusion conclusion = consumer.conclusion("rv-down").orElseThrow();
 
     assertThat(conclusion.riskLevel())
         .as("AI 降级不得被压成 LOW/REJECT 自动结论")
@@ -43,8 +47,8 @@ class ProcuraAiDegradationTest {
     ContractReviewedEvent event =
         event("rv-idem", AiParticipation.AVAILABLE, RiskLevel.LOW, "snap://rv-idem");
 
-    assertThat(consumer.consume(event)).as("首次投递真正消费").isTrue();
-    assertThat(consumer.consume(event)).as("重复投递跳过").isFalse();
+    assertThat(consumer.consume(event)).as("首次投递真正消费").isEqualTo(ConsumeResult.CONSUMED);
+    assertThat(consumer.consume(event)).as("重复投递跳过").isEqualTo(ConsumeResult.DUPLICATE);
     assertThat(consumer.conclusionCount()).isEqualTo(1);
     assertThat(tracePort.findByReviewId("rv-idem")).isEmpty();
   }

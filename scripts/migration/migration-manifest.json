@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 146,
+  "executableCount": 147,
   "retired": [],
   "entries": [
     {
@@ -927,6 +927,12 @@
       "file": "0140_synap_claim_drop_case_report_no_redundant.sql",
       "kind": "ddl",
       "summary": "清理并行分支遗留在 t_claim_case 上的孤儿列 report_no（对方 0139 作为「冗余展示键」添加，本方案不消费，报案号唯一真源是 t_claim_report.report_no，读侧 LEFT JOIN 取真值）。危险不在占空间而在于它是「报案号有两个真源」的物证：本方案所有写入路径都不写它，它只会越来越旧且无任何约束能发现分叉。不回改已发 0139，按 journal 纪律写新迁移。安全前提 fail-closed：列不存在则整条 no-op（幂等可重复）；列存在且有值则先打印有值行清单再 SIGNAL 中止，存量脏数据不自动删；列存在且全空才 DROP COLUMN，并用独立的 §6 终态断言确认列已消失（动态 SQL 的 IF 写反会以无害的 DO 0 通过而列还在）。bone-init.sql 与模块参考态 V25 本就没有该列，无需改动。"
+    },
+    {
+      "order": 147,
+      "file": "0141_procura_contract_review_event_chain.sql",
+      "kind": "ddl",
+      "summary": "ContractReviewed 持久化事件闭环三表（Outbox/Inbox/DLQ）：以 (tenant_id, review_id) 唯一键实现事务发布、幂等消费与失败重放，审计八列齐全；payload 仅存 7 字段快照禁 PII/正文。init-only 本地基线，不接生产 MQ、不执行生产库，投递由显式驱动模拟。对应 bone-init.sql 同名三表。"
     }
   ],
   "ordinalConflicts": [

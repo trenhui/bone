@@ -5054,3 +5054,68 @@ CREATE TABLE `t_proc_governance_trace` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_proc_governance_trace` (`tenant_id`,`capability_code`,`event_type`,`occurred_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='治理追溯链（停机演练/状态变更/人工终决均留痕，只追加）';
+
+-- ============================================================
+-- ContractReviewed 持久化事件闭环（本地 walking skeleton；不接生产 MQ）
+-- 三表均以 (tenant_id, review_id) 为业务唯一键：Outbox 存 7 字段 payload 快照（禁 PII/正文），
+-- Inbox 存结论去重态（条件插入裁决"只消费一次"），DLQ 存失败原因与重放状态。
+-- 与既有 t_proc_* 同口径：审计八列 + tenant_id + deleted + version；唯一键以 tenant_id 打头。
+-- 仅为 init-only 基线，本地显式驱动模拟投递，生产 MQ listener 仍属 L3。
+-- ============================================================
+
+DROP TABLE IF EXISTS `t_proc_contract_outbox`;
+CREATE TABLE `t_proc_contract_outbox` (
+  `id`                  BIGINT          NOT NULL COMMENT 'Outbox 主键（Snowflake）',
+  `tenant_id`           VARCHAR(64)     NOT NULL COMMENT '租户ID（登录态注入，禁事件自报）',
+  `review_id`           VARCHAR(64)     NOT NULL COMMENT '审查业务ID（幂等键）',
+  `payload_json`        TEXT            NOT NULL COMMENT 'ContractReviewed 7 字段快照 JSON（禁 output 原文/PII/正文）',
+  `delivery_status`     VARCHAR(16)     NOT NULL DEFAULT 'PENDING' COMMENT '投递状态 PENDING/DELIVERED/FAILED',
+  `delivered_at`        DATETIME(3)     DEFAULT NULL COMMENT '成功投递时点 UTC',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人（登录态）',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人（登录态）',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_contract_outbox` (`tenant_id`,`review_id`),
+  KEY `idx_proc_contract_outbox_status` (`tenant_id`,`delivery_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='ContractReviewed Outbox（事务性发布；待投递由显式驱动扫描，不接生产 MQ）';
+
+DROP TABLE IF EXISTS `t_proc_contract_inbox`;
+CREATE TABLE `t_proc_contract_inbox` (
+  `id`                  BIGINT          NOT NULL COMMENT 'Inbox 主键（Snowflake）',
+  `tenant_id`           VARCHAR(64)     NOT NULL COMMENT '消费方租户ID（TenantContext 权威，禁事件覆盖）',
+  `review_id`           VARCHAR(64)     NOT NULL COMMENT '审查业务ID（幂等键）',
+  `risk_level`          VARCHAR(32)     NOT NULL COMMENT '消费结论风险等级（UNKNOWN 隔离转人工）',
+  `ai_participation`    VARCHAR(32)     NOT NULL COMMENT 'AI 参与披露三态（UNKNOWN/AVAILABLE/CANNOT_CONFIRM）',
+  `review_snapshot_ref` VARCHAR(256)    DEFAULT NULL COMMENT '审查快照引用（只存引用，快照不可变）',
+  `quarantined`         TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否因 UNKNOWN 隔离转人工',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人（登录态）',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人（登录态）',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_contract_inbox` (`tenant_id`,`review_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='ContractReviewed Inbox（结论去重态；唯一键裁决只消费一次，重启可恢复）';
+
+DROP TABLE IF EXISTS `t_proc_contract_dlq`;
+CREATE TABLE `t_proc_contract_dlq` (
+  `id`                  BIGINT          NOT NULL COMMENT 'DLQ 主键（Snowflake）',
+  `tenant_id`           VARCHAR(64)     NOT NULL COMMENT '消费方租户ID',
+  `review_id`           VARCHAR(64)     NOT NULL COMMENT '审查业务ID（按此重放）',
+  `failure_reason`      VARCHAR(512)    NOT NULL COMMENT '失败原因摘要（禁 output 原文/PII）',
+  `outbox_ref`          VARCHAR(256)    NOT NULL COMMENT '原始 payload 引用（Outbox tenant_id+review_id）',
+  `resolved`            TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否已重放成功',
+  `occurred_at`         DATETIME(3)     NOT NULL COMMENT '失败时点 UTC',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人（登录态）',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人（登录态）',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_contract_dlq` (`tenant_id`,`review_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='ContractReviewed 死信队列（失败隔离与按 review_id 重放；不成半条结论）';
