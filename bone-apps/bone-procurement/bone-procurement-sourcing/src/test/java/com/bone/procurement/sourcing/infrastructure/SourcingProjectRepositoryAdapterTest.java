@@ -60,6 +60,31 @@ class SourcingProjectRepositoryAdapterTest {
   }
 
   @Test
+  @DisplayName("findProjectByRfxNo 经 RFx.projectId 定位项目，按租户锚定，找不到或不对应返回空")
+  void findProjectByRfxNoIsTenantScoped() {
+    FakeSdkStore<SourcingProject> projectStore = new FakeSdkStore<>();
+    FakeSdkStore<Rfx> rfxStore = new FakeSdkStore<>();
+    SourcingProjectRepository port = adapter(projectStore, rfxStore);
+
+    Long id =
+        port.save(
+            SourcingProject.create(
+                1L, "PRJ-1", "CAT-1", new BigDecimal("100"), "CNY", "STRATEGY", "owner-1"));
+    port.save(
+        SourcingProject.create(
+            2L, "PRJ-2", "CAT-2", new BigDecimal("200"), "CNY", "STRATEGY", "owner-2"));
+    Date due = new Date(System.currentTimeMillis() + 86400000L);
+    port.saveRfx(Rfx.create(1L, id, "RFX-1", "RFP", due));
+    // 租户 2 的 RFX-1 刻意指向租户 1 的真实项目 id：即使 findById 缺 tenant 过滤也不能命中。
+    port.saveRfx(Rfx.create(2L, id, "RFX-1", "RFP", due));
+
+    assertThat(port.findProjectByRfxNo(1L, "RFX-1")).isPresent();
+    assertThat(port.findProjectByRfxNo(1L, "RFX-1").orElseThrow().getId()).isEqualTo(id);
+    assertThat(port.findProjectByRfxNo(2L, "RFX-1")).isEmpty();
+    assertThat(port.findProjectByRfxNo(1L, "MISSING")).isEmpty();
+  }
+
+  @Test
   @DisplayName("新适配器实例（模拟重启）读回同一份持久化数据，字段一致")
   void newAdapterInstanceReadsBackSameState() {
     FakeSdkStore<SourcingProject> projectStore = new FakeSdkStore<>();

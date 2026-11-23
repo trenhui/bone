@@ -40,4 +40,15 @@ public class SourcingProjectRepositoryAdapter implements SourcingProjectReposito
   public Optional<Rfx> findRfxByNo(Long tenantId, String rfxNo) {
     return rfxes.findByRfxNo(tenantId, rfxNo);
   }
+
+  @Override
+  public Optional<SourcingProject> findProjectByRfxNo(Long tenantId, String rfxNo) {
+    if (tenantId == null || rfxNo == null || rfxNo.isBlank()) {
+      return Optional.empty();
+    }
+    return rfxes
+        .findByRfxNo(tenantId, rfxNo)
+        .map(Rfx::getProjectId)
+        .flatMap(projectId -> projects.findById(tenantId, projectId));
+  }
 }

@@ -1,0 +1,3354 @@
+# comet-execution: managed-run
+change_id: b8eb9399-3de7-4ce7-b141-d242ddcc5ffb
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: standard
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: 8c04f5100d2b98666947aa20030c816507e71eb4
+design_doc: openspec/changes/archive/2026-11-23-procuraai-human-decision-identity-binding/design.md
+plan: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-23-procuraai-human-decision-identity-binding-verify.md
+branch_status: pending
+created_at: 2026-11-23
+verified_at: 2026-11-23
+archive_confirmation: confirmed
+archived: true
+bound_branch: dev
+direct_override: false
+handoff_context: openspec/changes/archive/2026-11-23-procuraai-human-decision-identity-binding/.comet/handoff/design-context.json
+handoff_hash: 3f4e3d38b4ddde00eac3c04356efa7650fe3dbff36f693d2a5be37c02bedd5e7
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: 8e2fbb13c269b7d708931e145ac5d199fb6ea2a5b0767e051c80001093fe28e7
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: procuraai-human-decision-identity-binding
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    definitionHashes:
+      '["comet-classic-full","1"]': 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    initialStateHash: 93b721d065906c857aa43e5fcbd3c1c2bae8d6bba77d2e48803af0c635b4330f
+    input:
+      change: procuraai-human-decision-identity-binding
+      changeDir: openspec/changes/procuraai-human-decision-identity-binding
+      workspaceBaseline:
+        ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+    state:
+      archiveConfirmation: confirmed
+      archived: true
+      autoTransition: true
+      baseRef: 8c04f5100d2b98666947aa20030c816507e71eb4
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 7
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-23
+      designDoc: openspec/changes/archive/2026-11-23-procuraai-human-decision-identity-binding/design.md
+      directOverride: false
+      handoffContext: openspec/changes/archive/2026-11-23-procuraai-human-decision-identity-binding/.comet/handoff/design-context.json
+      handoffHash: 3f4e3d38b4ddde00eac3c04356efa7650fe3dbff36f693d2a5be37c02bedd5e7
+      isolation: current
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-23-procuraai-human-decision-identity-binding-verify.md
+      verifiedAt: 2026-11-23
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 31
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-aa9c63a853150a0778aa38daed49e79d6e295b5ed658afde5bdb3eab0fa5eebd
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:1
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: 8fc222d242f96cbc29bd49ba4d2fc66563e52c611272ff68f125039ae049f85f
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:1
+          attempt: 1
+          claimToken: portable-aa9c63a853150a0778aa38daed49e79d6e295b5ed658afde5bdb3eab0fa5eebd
+          inputHash: 8fc222d242f96cbc29bd49ba4d2fc66563e52c611272ff68f125039ae049f85f
+          outcomeId: 3897c50e-1acc-4f92-b877-2a368edfff9d
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 811b612185fbd9b97d0824098d00cfa927574d90fc01a34a65edd87c76dc0d68
+            outcomeId: 3897c50e-1acc-4f92-b877-2a368edfff9d
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-3b4a035541cc0334fa66977e0b841130cea101d6141ac9b9463af82c21c782c0
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:4
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: c9e27589c5cbe760bf2c3dece7715f3061b5ca0b6ab2fdab8e0e66410acb44f9
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:4
+          attempt: 2
+          claimToken: portable-3b4a035541cc0334fa66977e0b841130cea101d6141ac9b9463af82c21c782c0
+          inputHash: c9e27589c5cbe760bf2c3dece7715f3061b5ca0b6ab2fdab8e0e66410acb44f9
+          outcomeId: procuraai-human-decision-identity-binding:4:2:executor-result
+          output:
+            contentHash: 09c90eb3494c7c12c9bfd3fcff2c17dae322ff6676c54336edba4116060855b0
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 156c7cb02809ab5220286897fd2830391ef6ac2719ca6ed8aaff73302a7114f5
+            outcomeId: procuraai-human-decision-identity-binding:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              checkedAt: 2026-11-23
+              conclusion: 原 attempt 1 的 classic-open-revalidate 检查完全未执行
+              facts:
+                - Runtime query action :4 显示 receipts=[] 且 reconciliations=[],
+                  status 先为 running 后经 mark-unknown 转 unknown, 无 outcome
+                - 证据目录
+                  .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d
+                  不存在（Not a directory/无记录）
+                - 该 change 目录无 .comet/trajectory.jsonl, 无任何
+                  command_check_started 或 classic-check-not-executed 事件
+                - state 中 record.status=missing, receiptRef=null,
+                  manifestRef=null, reason=Portable recovery requires
+                  reconciliation of external execution
+                - 原领取方为上一会话的 comet-classic-open-revalidate,
+                  该会话在返回执行结果前被上下文压缩中断，本会话为新执行器且未发现仍在运行的原执行器
+              source: comet state check --recover + runtime dispatch inspect/query + 只读文件系统核对
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-db43ce55f30b31c7f7a66bb046268fbabcfecfd92fe2f7ea9c5fbf9ebdddeb68
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:5
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: a5935298f1e2c319182027c6e4c97ee8814fb68653a382d479a7c9fb7a77af31
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:5
+          attempt: 1
+          claimToken: portable-db43ce55f30b31c7f7a66bb046268fbabcfecfd92fe2f7ea9c5fbf9ebdddeb68
+          inputHash: a5935298f1e2c319182027c6e4c97ee8814fb68653a382d479a7c9fb7a77af31
+          outcomeId: 98eb39e1-9e00-4699-a97f-0d026f436e59
+          output:
+            handoffContext: openspec/changes/procuraai-human-decision-identity-binding/.comet/handoff/design-context.json
+            handoffHash: c1c516b7b1ea8f3d4fae48044ad1d01bc2b6d7c27129f43eedbca29eca584d7a
+            proposal: 候选技术方案（源码实证，随本次 Design Wait 请确认）：T1 onboarding approve 复用已注入的
+              ReviewIdentityPort（QualificationController:86-92 当前仍自报
+              request.tenantId/operator，同文件 reviewOcr:81-82
+              已是登录态基线），请求体同名字段仅做一致性校验，冲突/匿名/缺租户 fail-closed 不落库。T2 sourcing
+              新增本域只读 AwardIdentityPort，基础设施从 SecurityContextHolder+JwtPrincipal
+              解析，避免跨域依赖 qualification（备选直接复用会泄漏准入域概念，不采用）。T3 授标端点按 OpenAPI 已登记的
+              POST /api/v1/procurement/rfx/{rfxNo}/award，经 findRfxByNo 取
+              projectId 再 tenant 锚定定位项目，新增只读 findProjectByRfxNo 到仓储端口；不存在/不对应
+              400 状态不变（用 projectNo 路径会触发 A8 契约漂移，不采用）。T4 请求体不带
+              confirmed_by，OpenAPI 文案同步为确认人来自登录态，状态码集合不变（403/400/409）。T5 不新增
+              DDL/表/列/迁移，复用现有
+              Repository。取舍：新增一个本域身份端口与一个只读仓储查询，换取限界上下文边界与可审计身份链。风险与失败路径：同步更新匿名/请求体
+              operator 的既有测试夹具并保留负向场景；rfxNo→project 映射缺失用只读定位单测+400 覆盖；OpenAPI
+              口径同 change 内同步不动判据。验证：具名授标/准入正向 + 冒名/匿名/跨租户/空白操作人/非对应项目/AI
+              直接授标负向均不落库；qualification+sourcing 全量测试、前端
+              tsc/vitest/eslint(json)、procuraAI 对齐/evalset/AsyncAPI/persistence
+              门禁。Spec Patch：无，Open 阶段规格已确认，方案不改外部行为与验收。
+            requirementsEvidence:
+              contentHash: fc18f8a335cb9bdebb5769d2492b60e36c5529aefa86d70bb2bc4916c9b43726
+              ref: openspec/changes/procuraai-human-decision-identity-binding
+            sourceEvidence:
+              contentHash: 04e97739bad218962c266d153daa835280bfd31cc4bc0749e898cb39e0562cd0
+              ref: openspec/changes/procuraai-human-decision-identity-binding
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 36cb10fde1bcdeab8d1259b4d420666d775913117e4eb3f58deadbb67d5fc41d
+            outcomeId: 98eb39e1-9e00-4699-a97f-0d026f436e59
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-41477716de81594212ed2c5bf27403c5982ee788481e6b27595cdf6d79935f8d
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:7
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: 663734cea77c7a2ceb96350e2b6b9b912e3443eb99bd694ffc5dd47bd08a54dc
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:7
+          attempt: 1
+          claimToken: portable-41477716de81594212ed2c5bf27403c5982ee788481e6b27595cdf6d79935f8d
+          inputHash: 663734cea77c7a2ceb96350e2b6b9b912e3443eb99bd694ffc5dd47bd08a54dc
+          outcomeId: 50dca975-ba75-4fa0-815a-5759269daefb
+          output:
+            designDoc: openspec/changes/procuraai-human-decision-identity-binding/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 54b2b145d4b9485e4510c69bf187e70f2eb95995496aa48cbf021eb0bc418d0b
+            outcomeId: 50dca975-ba75-4fa0-815a-5759269daefb
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-33c1fcdb93d8650b0dddad902b0e2e504f18e8b463be4fcdeb07339d4ecc412d
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:9
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: 9ec97d4a7c60fd228ee1b7479a60ae26d04896fbb7c0ef91a3a356959a6f7f9c
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:9
+          attempt: 1
+          claimToken: portable-33c1fcdb93d8650b0dddad902b0e2e504f18e8b463be4fcdeb07339d4ecc412d
+          inputHash: 9ec97d4a7c60fd228ee1b7479a60ae26d04896fbb7c0ef91a3a356959a6f7f9c
+          outcomeId: 01385281-f12b-4965-a2fd-b814cf85a578
+          output:
+            boundBranch: dev
+            buildMode: autonomous
+            directOverride: false
+            isolation: current
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c6d3c5487346e1e964cfc5f471255bb203f4f1ad2ea4afdd63170b0f8c5c7906
+            outcomeId: 01385281-f12b-4965-a2fd-b814cf85a578
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-f8e3a71160089841a62547b17390b15fc3a5d80736fd902707466b9561038be2
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:11
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: 038429d7f3d176e09fdef83bbc407dc4ae22e0da3ab02fb609f004489f3c75df
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:11
+          attempt: 1
+          claimToken: portable-f8e3a71160089841a62547b17390b15fc3a5d80736fd902707466b9561038be2
+          inputHash: 038429d7f3d176e09fdef83bbc407dc4ae22e0da3ab02fb609f004489f3c75df
+          outcomeId: fc05abd1-a0c7-4307-bff4-d0fbb491a53c
+          output:
+            designEvidence:
+              contentHash: d65e26b8a3a1b8e0a24e908bad073530e6a33cfa6661c9e4f3295d46b888d94a
+              ref: openspec/changes/procuraai-human-decision-identity-binding/design.md
+            plan: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+            planEvidence:
+              contentHash: 90b03e0be1932ec4298717c06d0a2ca8f40ab04d2d4ccb4716da34ddcfa48630
+              ref: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+            taskRevision: f137d1f0d0c7e2ea97f7bf89638ba2bed74281b64b9e1811e6efa245b155f471
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 6e11eee19360a9d99995653f9a3fb999088f2a99bd03f53e32dc9de07d996d16
+            outcomeId: fc05abd1-a0c7-4307-bff4-d0fbb491a53c
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        id: procuraai-human-decision-identity-binding:13
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: ffbe964bf323321dc1f1919edd5bb599fa048d14921e34c3273e4c7115f83823
+        protocolVersion: 1
+        reason: 命令 revise-design 已取代待执行 Action
+        receipts: []
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: cancelled
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-fc81f9bf74d091b7e5e3253c6dfa7d43874b9a2e0cd31098a67f8f5d6bdf9384
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:14
+        input:
+          activation:
+            expectedRevision: 22
+            fromPhase: build
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: 0bfb81a4de207cb00d6f63bdeee7493e47ae440b35aa96324f69deb38ecefbaf
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:14
+          attempt: 1
+          claimToken: portable-fc81f9bf74d091b7e5e3253c6dfa7d43874b9a2e0cd31098a67f8f5d6bdf9384
+          inputHash: 0bfb81a4de207cb00d6f63bdeee7493e47ae440b35aa96324f69deb38ecefbaf
+          outcomeId: 7ca6797a-501f-4d7b-927e-d6a91ca90452
+          output:
+            handoffContext: openspec/changes/procuraai-human-decision-identity-binding/.comet/handoff/design-context.json
+            handoffHash: 3f4e3d38b4ddde00eac3c04356efa7650fe3dbff36f693d2a5be37c02bedd5e7
+            proposal: 设计复核修订（契约未变，仅文档澄清，无需新决定）：Build 阶段 standard 独立审查后对 design.md
+              做了两处非语义澄清——(1) 决策4明确请求体 confirmed_by/operator/tenantId
+              仅在与登录态不一致时用于拒绝，绝不参与赋值，与已批准提案『确认人只取登录态』一致；(2) Open Questions
+              记录一个范围外已知缺口（生产代码尚无把 SourcingProject 推进到 BIDDING_CLOSED 的调用方，属
+              Bid/Award 聚合与契约冻结的 owner/L3 边界，本 change 明确 Non-Goal，不在
+              awardByRfxNo 内隐式改状态绕过）。delta spec（2 Requirement/6 场景）、任务（8
+              项）、权限码、DDL/CI 边界与技术方案 T1–T5 均未变化。审查另修复两处纵深防御：两个 Controller 在解析到身份
+              record 后显式校验 tenantId/operator/reviewer 非空非空白，并补负向测试。请确认此修订后的设计。
+            requirementsEvidence:
+              contentHash: fc18f8a335cb9bdebb5769d2492b60e36c5529aefa86d70bb2bc4916c9b43726
+              ref: openspec/changes/procuraai-human-decision-identity-binding
+            sourceEvidence:
+              contentHash: 36e79c9bc0753cd8ff4b1e47167fe004a469f09bb2620e222102189ad1b9f42b
+              ref: openspec/changes/procuraai-human-decision-identity-binding
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 8483e01bb237b573715869c33ef78b3e224cdb12cbea20d1e2dd43c4449f5111
+            outcomeId: 7ca6797a-501f-4d7b-927e-d6a91ca90452
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-d24407b09cdb5ca84db83a2de452598f7833550e7500370a1fbb3c2a9f105db8
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:16
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: a5f4c13f38ce56110d1a68650d0ef1136f823c29a5f81f73ab629fff9d77feee
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:16
+          attempt: 1
+          claimToken: portable-d24407b09cdb5ca84db83a2de452598f7833550e7500370a1fbb3c2a9f105db8
+          inputHash: a5f4c13f38ce56110d1a68650d0ef1136f823c29a5f81f73ab629fff9d77feee
+          outcomeId: eabdf596-420c-4e15-990d-431b6e5abe1a
+          output:
+            designDoc: openspec/changes/procuraai-human-decision-identity-binding/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 27fd91bfe45ece533f1eca2d97e3402d4e1fa9308f76836b3051350daae6ddb4
+            outcomeId: eabdf596-420c-4e15-990d-431b6e5abe1a
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-efc26c4a6bce8a6085051f482eb231c4177cafafb24eac0a123c133f04036fc8
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:18
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: 4dc9b03ee400e6c99cf31203aa018ee6c0ecbeff614e5809ba7912c1a8699c6d
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:18
+          attempt: 1
+          claimToken: portable-efc26c4a6bce8a6085051f482eb231c4177cafafb24eac0a123c133f04036fc8
+          inputHash: 4dc9b03ee400e6c99cf31203aa018ee6c0ecbeff614e5809ba7912c1a8699c6d
+          outcomeId: 8a75f600-bcc1-4734-89c7-7ea01582243b
+          output:
+            designEvidence:
+              contentHash: 77cc955d4d3901d4177d8747ed738ea29c8cecce9cb1526fad102949ac6a2982
+              ref: openspec/changes/procuraai-human-decision-identity-binding/design.md
+            plan: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+            planEvidence:
+              contentHash: 90b03e0be1932ec4298717c06d0a2ca8f40ab04d2d4ccb4716da34ddcfa48630
+              ref: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+            taskRevision: f137d1f0d0c7e2ea97f7bf89638ba2bed74281b64b9e1811e6efa245b155f471
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: caaf81495c06509ce036acc3c0af321cb60892cf4a260fff065827afd9b6a561
+            outcomeId: 8a75f600-bcc1-4734-89c7-7ea01582243b
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/procuraai-human-decision-identity-binding:20/1
+          token: portable-f9f687684d15b71ddbd4ff0ff2b7770fd0f28b13dd80ad3e008065533725e390
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:20
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: 94aba2d8044507bf99445f2ff99fe43e81505809d630273fc7b5909188e55eba
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:20
+          attempt: 1
+          claimToken: portable-f9f687684d15b71ddbd4ff0ff2b7770fd0f28b13dd80ad3e008065533725e390
+          inputHash: 94aba2d8044507bf99445f2ff99fe43e81505809d630273fc7b5909188e55eba
+          outcomeId: 8dc5ad59-dd33-4700-8aed-6297b16a35b3
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 100b92b47d48a92356cd04af5dd0c8babc88a7348baf176ccb88e44a8831a7fb
+            outcomeId: 8dc5ad59-dd33-4700-8aed-6297b16a35b3
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-4d9a233a5ae058c92bd6e92cbe0df93d8af4648d0efc3fe2c359ba68e829fbe0
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:21
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: 9c31a6ead5daf6a433251ca1f9f100e829c6a4b184aa2611eca2aa84416513a4
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:21
+          attempt: 1
+          claimToken: portable-4d9a233a5ae058c92bd6e92cbe0df93d8af4648d0efc3fe2c359ba68e829fbe0
+          inputHash: 9c31a6ead5daf6a433251ca1f9f100e829c6a4b184aa2611eca2aa84416513a4
+          outcomeId: f6a91c10-6499-4ac4-a8b0-a492cc0dc4ef
+          output:
+            argv:
+              - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+              - -o
+              - -f
+              - bone-apps/bone-procurement/pom.xml
+              - test
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: 9c3826533449bc18658f1759c428a329f91834fa5fa899e91a9c5e3099add6cb
+            cwd: .
+            environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+            exitCode: 0
+            inputAfter: a1b963f9e1068c1b61deab5f4d50980e8f0070b717dc9e758d052f235606a0f9
+            inputBefore: a1b963f9e1068c1b61deab5f4d50980e8f0070b717dc9e758d052f235606a0f9
+            manifestHash: 3833e6191c2b10a9082803a30e790b98fad5811fcb06d4bc88253ab6f7a94be8
+            manifestRef: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/88217741-5ed6-4a45-b10f-acbe5a7f6953.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/4c8fd196-e033-4403-9755-9ff5ecd00117.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 0b5a5e0205e7631bbc45da3cc94d83ea7dcfb5d684d0864d31dbe04c5fcdf8a9
+            outcomeId: f6a91c10-6499-4ac4-a8b0-a492cc0dc4ef
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-bce2af06df4673615c784454bc50442982e599ce3f8e2e92cf513edcdf3fea1a
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:23
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: 9baf828fff79dc7a65e9dead7d3990bbfd013b6775d2f0332849a44b04d4716f
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:23
+          attempt: 1
+          claimToken: portable-bce2af06df4673615c784454bc50442982e599ce3f8e2e92cf513edcdf3fea1a
+          inputHash: 9baf828fff79dc7a65e9dead7d3990bbfd013b6775d2f0332849a44b04d4716f
+          outcomeId: 84232f5f-5903-4528-ba86-a40ac9679b6e
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-23-procuraai-human-decision-identity-binding-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 7367d8ab028f5c4312bd9270bb1547aaf29d274703fe6bef6626ef601f669646
+            outcomeId: 84232f5f-5903-4528-ba86-a40ac9679b6e
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-420d4deaae09c9f94015fd9f48276cdb2459b7090f6090bd3102a9d8927c83c5
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:25
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: 12c1ca3d6cf53a211b8eda56516d431365dd2ae1a5572ce7f010dbcf95e50973
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:25
+          attempt: 2
+          claimToken: portable-420d4deaae09c9f94015fd9f48276cdb2459b7090f6090bd3102a9d8927c83c5
+          inputHash: 12c1ca3d6cf53a211b8eda56516d431365dd2ae1a5572ce7f010dbcf95e50973
+          outcomeId: 52fafb4b-2056-4a30-b209-a7cef4542e10
+          output:
+            argv:
+              - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+              - -o
+              - -f
+              - bone-apps/bone-procurement/pom.xml
+              - test
+            changedDuringExecution: []
+            checkEpoch: 4
+            contentHash: 87f747d5d9a8b090d422f535b7c7319ec5412fd334b5345670f7ba79af8420d9
+            cwd: .
+            deliveryInputs:
+              bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/QualificationExceptionHandler.java: git:fabf677e9cb8ae8debd4d858cb286caae97df864
+              bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java: git:cddb7618954e5b0e45fddb97028c132acaa11e7d
+              bone-apps/bone-procurement/bone-procurement-qualification/src/test/java/com/bone/procurement/qualification/adapter/web/ReviewIdentityBindingTest.java: git:4d7ce7da4ead4237792f4c027be6f6deb75f83e2
+              bone-apps/bone-procurement/bone-procurement-sourcing/pom.xml: git:f4f95056fada47e8329d24c4853bd7ffe998ae6f
+              bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/adapter/web/SourcingExceptionHandler.java: git:90adc27abfa6805d7fc6a61fb00f43e6bdda7719
+              bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/adapter/web/controller/SourcingController.java: git:00b6088a27f0125eeebd2b4ee44860ed70c74003
+              bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/application/SourcingApplicationService.java: git:8393a71e7689f979e7a535832e24836bad186587
+              bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/domain/gateway/AwardIdentityPort.java: git:8816c5363245e676187adda8ff84a450624f235e
+              bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/domain/gateway/SourcingProjectRepository.java: git:0fc3abe5c08044b59e10c1d0d4d430f78cfa1f50
+              bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/domain/repository/SourcingProjectSqlRepository.java: git:4e4ef30f9f0dd454b35e23c80c37ff2af384b16c
+              bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/infrastructure/SecurityContextAwardIdentityPort.java: git:9bc509c3fade5b9f91b0b454374dbe3d4181cd49
+              bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/infrastructure/SourcingProjectRepositoryAdapter.java: git:69adc4b9555849340ef4f7ff210a97eafd32b585
+              bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/adapter/web/AwardIdentityBindingTest.java: git:2c0c4387c60bc858189e891520b50310a55cce4e
+              bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/adapter/web/SourcingControllerContractTest.java: git:a5208147154bcba003e139bb609622926aa5cfa1
+              bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/application/SourcingAwardByRfxNoTest.java: git:e54558607948103280914592ffde472b14896710
+              bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/infrastructure/AwardIdentityPortTest.java: git:ea4570a1efdffef228dffcf73261480dafadf957
+              bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/infrastructure/SourcingProjectRepositoryAdapterTest.java: git:799a6a89a3e114edc2cb7e750d5a4d524a50528e
+              doc/ai-product/procuraAI/detailed-design/contracts/openapi.yaml: git:143174be7e73f96932410b00c155a964ab640528
+            environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+            exitCode: 0
+            inputAfter: c50c3ab3239b513196eb8ea921668b6c177206c15e2fa6bb6ab7b6b939555f0a
+            inputBefore: c50c3ab3239b513196eb8ea921668b6c177206c15e2fa6bb6ab7b6b939555f0a
+            manifestHash: 78249cf7b9ea9c8399848274e5b2d1d53e1eee403b60d88f7d1be797993c1d44
+            manifestRef: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/4b963fb0-66ea-4a65-a48c-bd78688fed29.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/fdc53197-8d4e-41cb-a3e6-9d44ce66ec95.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: a17729ca9885c6e4d9d3099c4d7de09e93775de50814db82d66ab7e6c5a9ccb5
+            outcomeId: 52fafb4b-2056-4a30-b209-a7cef4542e10
+        reconciliations:
+          - attempt: 1
+            evidence:
+              checkedAt: 2026-11-23
+              conclusion: SDK Action :25 的收据提交因环境 safe-delete hook 中断，未在 Runtime 形成可采信的
+                outcome/receipt；resolution=not-executed 仅指 SDK 记账层面本次 attempt
+                未形成有效结果，不代表检查命令物理上未执行
+              facts:
+                - 外部检查命令 mvn -o -f bone-apps/bone-procurement/pom.xml test
+                  已真实执行两次（14:01 与 14:14）且日志均为 BUILD SUCCESS，日志与 manifest 完整存在于
+                  classic-sdk-checks/2ebb64a78... 目录
+                - 但 record sdk-e5bc7415...json status=started 且无
+                  result，check-receipts/classic 中无本次日志 d9541be6 对应的收据，Runtime
+                  action :25 receipts=[] outcome={} status=unknown
+                - 根因是环境层 SAFE_DELETE_BULK_CONFIRM_REQUIRED(count=50) 在 guard
+                  写回收据/清理锁文件阶段中断父进程（exit 70），非业务门禁失败
+                - 原领取结果无法从 SDK 取回；不复用、不编造收据；将重新真实执行完整检查以取得 attempt 2 的合法收据
+                - not-executed 仅描述 SDK Action 记账未落地，明确不代表命令物理上未执行
+              source: comet state check verify --recover + runtime dispatch inspect +
+                只读文件系统核对（record/log/manifest/receipt store）
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-0518b0c71740264c91c74a07218f32f2d4ea629009541cf4612842de09b080c4
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:27
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: 73c0ff9fc51e9f24c195f457c3a40cc84643f982b0e8127cca3cfb7ae6b2a88e
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:27
+          attempt: 1
+          claimToken: portable-0518b0c71740264c91c74a07218f32f2d4ea629009541cf4612842de09b080c4
+          inputHash: 73c0ff9fc51e9f24c195f457c3a40cc84643f982b0e8127cca3cfb7ae6b2a88e
+          outcomeId: 33e421b4-9548-4dc6-9873-9bffc284d8fb
+          output:
+            summary: 人工终决身份绑定：onboarding approve 与 RFx 授标改为登录态权威绑定（请求体身份仅一致性校验，冒名/跨租户/匿名
+              fail-closed）；新增 sourcing AwardIdentityPort + HTTP 授标端点 + tenant 锚定
+              findProjectByRfxNo；OpenAPI 契约同步。TDD 8/8 任务、standard 独立审查两轮闭环、全量验证
+              BUILD SUCCESS（采购后端 438 例）+ 前端 + 文档门禁全绿；范围外缺口记录为 owner/L3。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 7b65f487179d2ce55b70c7efd2b1218950b06ebbed8af52a2987e5667ec3ff11
+            outcomeId: 33e421b4-9548-4dc6-9873-9bffc284d8fb
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-7f69f37eab288b117505147732fb9ba9f7422a46b0df5a28bdaf909eca4a3a66
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:29
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: df050c5c66928e6d346f3dfdb31e15574c34b51270e375158b7f63d68a88d96a
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:29
+          attempt: 1
+          claimToken: portable-7f69f37eab288b117505147732fb9ba9f7422a46b0df5a28bdaf909eca4a3a66
+          inputHash: df050c5c66928e6d346f3dfdb31e15574c34b51270e375158b7f63d68a88d96a
+          outcomeId: 07d32854-7edd-4f55-85c8-69bffed2bddb
+          output:
+            baseCommit: 8c04f5100d2b98666947aa20030c816507e71eb4
+            deliveryAction: local
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 095e0c08f86f2b85614e428d4ca6e2314e41ff284b3c847d2ecf1c787e27cd8d
+            outcomeId: 07d32854-7edd-4f55-85c8-69bffed2bddb
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-89178697210e646a5e59a121cfd640accf4baecbcb58756133b2f63a449fbb35
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-human-decision-identity-binding:30
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: c437f545c7967b46b0b99aa608dafdee2c7d4e037bc3f3770d1ed30aefb39079
+        outcome:
+          actionId: procuraai-human-decision-identity-binding:30
+          artifacts:
+            - sha256: 8a9ffbccf3f90097caf11fc9a6584bcbfcb723b63d57576c249700a63ca8b483
+              uri: openspec/changes/archive/2026-11-23-procuraai-human-decision-identity-binding/.comet/archive-manifest.json
+          attempt: 1
+          claimToken: portable-89178697210e646a5e59a121cfd640accf4baecbcb58756133b2f63a449fbb35
+          inputHash: c437f545c7967b46b0b99aa608dafdee2c7d4e037bc3f3770d1ed30aefb39079
+          outcomeId: procuraai-human-decision-identity-binding:30:1:recovered:53
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-23-procuraai-human-decision-identity-binding
+          status: succeeded
+        protocolVersion: 1
+        reason: 原 Guard 执行器已完成归档文件系统操作后返回退出码 1（副作用边界检测到自身 running
+          Action），进程已停止且未回报完整结果；按其恢复协议标记为 outcome-unknown 后由 archive --recover
+          核对磁盘实际结果
+        receipts:
+          - hash: 7132cb9eae0bc8ed04aa1106470916ceb15f6428e139b4aca3f04fad2c840dd3
+            outcomeId: procuraai-human-decision-identity-binding:30:1:recovered:53
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: succeeded
+        stepId: full.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: procuraai-human-decision-identity-binding:31
+        input:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs: {}
+        inputHash: b34082dac5399edd316b2375d471341a7278603c22e1fba2dda9e2f6d53410b0
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-human-decision-identity-binding
+        status: pending
+        stepId: full.archive.deliver
+        type: invoke_skill
+    commands:
+      - id: 70c4c9e9de80827794ab575f58a59ea8223b26ba679f7921f680047c22c4e1b6
+        name: revise-design
+        inputHash: 416877678b8ce14a589fcc5b6a6cc30f689bfd69ed0326d11d70ee3cc5ede124
+        actionId: procuraai-human-decision-identity-binding:14
+    actionContexts:
+      procuraai-human-decision-identity-binding:1:
+        results: {}
+        sequence: 1
+      procuraai-human-decision-identity-binding:11:
+        results: {}
+        sequence: 11
+      procuraai-human-decision-identity-binding:13:
+        results: {}
+        sequence: 13
+      procuraai-human-decision-identity-binding:14:
+        results: {}
+        sequence: 14
+      procuraai-human-decision-identity-binding:16:
+        results: {}
+        sequence: 16
+      procuraai-human-decision-identity-binding:18:
+        results: {}
+        sequence: 18
+      procuraai-human-decision-identity-binding:20:
+        results: {}
+        sequence: 20
+      procuraai-human-decision-identity-binding:21:
+        results: {}
+        sequence: 21
+      procuraai-human-decision-identity-binding:23:
+        results: {}
+        sequence: 23
+      procuraai-human-decision-identity-binding:25:
+        results: {}
+        sequence: 25
+      procuraai-human-decision-identity-binding:27:
+        results: {}
+        sequence: 27
+      procuraai-human-decision-identity-binding:29:
+        results: {}
+        sequence: 29
+      procuraai-human-decision-identity-binding:30:
+        results: {}
+        sequence: 30
+      procuraai-human-decision-identity-binding:31:
+        results: {}
+        sequence: 31
+      procuraai-human-decision-identity-binding:4:
+        results: {}
+        sequence: 4
+      procuraai-human-decision-identity-binding:5:
+        results: {}
+        sequence: 5
+      procuraai-human-decision-identity-binding:7:
+        results: {}
+        sequence: 7
+      procuraai-human-decision-identity-binding:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: procuraai-human-decision-identity-binding:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 09c90eb3494c7c12c9bfd3fcff2c17dae322ff6676c54336edba4116060855b0
+              ref: openspec/changes/procuraai-human-decision-identity-binding
+        proposalHash: d6c3e87af45a3fd1d04753b737baf509805ce20f08e4bf1489da03edcf551c93
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-09c90eb3494c7c12c9bfd3fcff2c17dae322ff6676c54336edba4116060855b0
+          choice: approved
+          proposalHash: d6c3e87af45a3fd1d04753b737baf509805ce20f08e4bf1489da03edcf551c93
+      - id: procuraai-human-decision-identity-binding:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-human-decision-identity-binding/.comet/handoff/design-context.json
+              handoffHash: c1c516b7b1ea8f3d4fae48044ad1d01bc2b6d7c27129f43eedbca29eca584d7a
+              proposal: 候选技术方案（源码实证，随本次 Design Wait 请确认）：T1 onboarding approve 复用已注入的
+                ReviewIdentityPort（QualificationController:86-92 当前仍自报
+                request.tenantId/operator，同文件 reviewOcr:81-82
+                已是登录态基线），请求体同名字段仅做一致性校验，冲突/匿名/缺租户 fail-closed 不落库。T2 sourcing
+                新增本域只读 AwardIdentityPort，基础设施从
+                SecurityContextHolder+JwtPrincipal 解析，避免跨域依赖
+                qualification（备选直接复用会泄漏准入域概念，不采用）。T3 授标端点按 OpenAPI 已登记的 POST
+                /api/v1/procurement/rfx/{rfxNo}/award，经 findRfxByNo 取 projectId
+                再 tenant 锚定定位项目，新增只读 findProjectByRfxNo 到仓储端口；不存在/不对应 400 状态不变（用
+                projectNo 路径会触发 A8 契约漂移，不采用）。T4 请求体不带 confirmed_by，OpenAPI
+                文案同步为确认人来自登录态，状态码集合不变（403/400/409）。T5 不新增 DDL/表/列/迁移，复用现有
+                Repository。取舍：新增一个本域身份端口与一个只读仓储查询，换取限界上下文边界与可审计身份链。风险与失败路径：同步更新匿名/请求体
+                operator 的既有测试夹具并保留负向场景；rfxNo→project 映射缺失用只读定位单测+400 覆盖；OpenAPI
+                口径同 change 内同步不动判据。验证：具名授标/准入正向 + 冒名/匿名/跨租户/空白操作人/非对应项目/AI
+                直接授标负向均不落库；qualification+sourcing 全量测试、前端
+                tsc/vitest/eslint(json)、procuraAI
+                对齐/evalset/AsyncAPI/persistence 门禁。Spec Patch：无，Open
+                阶段规格已确认，方案不改外部行为与验收。
+              requirementsEvidence:
+                contentHash: fc18f8a335cb9bdebb5769d2492b60e36c5529aefa86d70bb2bc4916c9b43726
+                ref: openspec/changes/procuraai-human-decision-identity-binding
+              sourceEvidence:
+                contentHash: 04e97739bad218962c266d153daa835280bfd31cc4bc0749e898cb39e0562cd0
+                ref: openspec/changes/procuraai-human-decision-identity-binding
+        proposalHash: e9a2d0598bbcfb3d1506d84a1925c17a0e7eb04d80dbcc7cb16c7257f4a425d1
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-e9a2d0598bbcfb3d1506d84a1925c17a0e7eb04d80dbcc7cb16c7257f4a425d1-approved
+          choice: approved
+          proposalHash: e9a2d0598bbcfb3d1506d84a1925c17a0e7eb04d80dbcc7cb16c7257f4a425d1
+      - id: procuraai-human-decision-identity-binding:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: dd28d3cfa8ce70db0a6bfda3cf2496a953b66c7b6c57dd340fd4811c3fe180aa
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: 7abcc711-a55e-491c-988f-91c285609cdf
+          choice: approved
+          proposalHash: dd28d3cfa8ce70db0a6bfda3cf2496a953b66c7b6c57dd340fd4811c3fe180aa
+      - id: procuraai-human-decision-identity-binding:15
+        stepId: full.design.confirm
+        sequence: 15
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-human-decision-identity-binding/.comet/handoff/design-context.json
+              handoffHash: 3f4e3d38b4ddde00eac3c04356efa7650fe3dbff36f693d2a5be37c02bedd5e7
+              proposal: 设计复核修订（契约未变，仅文档澄清，无需新决定）：Build 阶段 standard 独立审查后对 design.md
+                做了两处非语义澄清——(1) 决策4明确请求体 confirmed_by/operator/tenantId
+                仅在与登录态不一致时用于拒绝，绝不参与赋值，与已批准提案『确认人只取登录态』一致；(2) Open Questions
+                记录一个范围外已知缺口（生产代码尚无把 SourcingProject 推进到 BIDDING_CLOSED 的调用方，属
+                Bid/Award 聚合与契约冻结的 owner/L3 边界，本 change 明确 Non-Goal，不在
+                awardByRfxNo 内隐式改状态绕过）。delta spec（2 Requirement/6 场景）、任务（8
+                项）、权限码、DDL/CI 边界与技术方案 T1–T5 均未变化。审查另修复两处纵深防御：两个 Controller
+                在解析到身份 record 后显式校验 tenantId/operator/reviewer
+                非空非空白，并补负向测试。请确认此修订后的设计。
+              requirementsEvidence:
+                contentHash: fc18f8a335cb9bdebb5769d2492b60e36c5529aefa86d70bb2bc4916c9b43726
+                ref: openspec/changes/procuraai-human-decision-identity-binding
+              sourceEvidence:
+                contentHash: 36e79c9bc0753cd8ff4b1e47167fe004a469f09bb2620e222102189ad1b9f42b
+                ref: openspec/changes/procuraai-human-decision-identity-binding
+        proposalHash: 3123cfd8f26c1371db6478917de1ec584325b8b34b45b4acb2f6cfbe434d70ba
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-3123cfd8f26c1371db6478917de1ec584325b8b34b45b4acb2f6cfbe434d70ba-approved
+          choice: approved
+          proposalHash: 3123cfd8f26c1371db6478917de1ec584325b8b34b45b4acb2f6cfbe434d70ba
+      - id: procuraai-human-decision-identity-binding:28
+        stepId: full.archive.confirm
+        sequence: 28
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs:
+            full.archive.prepare:
+              summary: 人工终决身份绑定：onboarding approve 与 RFx 授标改为登录态权威绑定（请求体身份仅一致性校验，冒名/跨租户/匿名
+                fail-closed）；新增 sourcing AwardIdentityPort + HTTP 授标端点 + tenant
+                锚定 findProjectByRfxNo；OpenAPI 契约同步。TDD 8/8 任务、standard
+                独立审查两轮闭环、全量验证 BUILD SUCCESS（采购后端 438 例）+ 前端 + 文档门禁全绿；范围外缺口记录为
+                owner/L3。
+              targetBranch: dev
+        proposalHash: b26c8c5ab0ee34aff4bf3de90d6171aa029b7fbad5069b399a2794e9ffed1738
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-b26c8c5ab0ee34aff4bf3de90d6171aa029b7fbad5069b399a2794e9ffed1738-local
+          choice: local
+          proposalHash: b26c8c5ab0ee34aff4bf3de90d6171aa029b7fbad5069b399a2794e9ffed1738
+    evidenceWaits:
+      - id: procuraai-human-decision-identity-binding:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-human-decision-identity-binding
+          contentHash: 09c90eb3494c7c12c9bfd3fcff2c17dae322ff6676c54336edba4116060855b0
+          submissionId: 286928be-d12b-424e-9e89-9937bd6c0a1d
+      - id: procuraai-human-decision-identity-binding:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-human-decision-identity-binding/design.md
+          contentHash: d65e26b8a3a1b8e0a24e908bad073530e6a33cfa6661c9e4f3295d46b888d94a
+          submissionId: 10b6a05c-e20b-47fb-9214-93d259f202c8
+      - id: procuraai-human-decision-identity-binding:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+          contentHash: 90b03e0be1932ec4298717c06d0a2ca8f40ab04d2d4ccb4716da34ddcfa48630
+          submissionId: d6cda908-99d7-4035-ad2c-c3ae1598a196
+      - id: procuraai-human-decision-identity-binding:17
+        stepId: full.design.evidence
+        sequence: 17
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-human-decision-identity-binding/design.md
+          contentHash: 77cc955d4d3901d4177d8747ed738ea29c8cecce9cb1526fad102949ac6a2982
+          submissionId: 005fd366-cfed-4de1-b9b6-8743206afd38
+      - id: procuraai-human-decision-identity-binding:19
+        stepId: full.build.plan.evidence
+        sequence: 19
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+          contentHash: 90b03e0be1932ec4298717c06d0a2ca8f40ab04d2d4ccb4716da34ddcfa48630
+          submissionId: 9dcfa987-dfc5-4fe7-865c-dad9c1e3de21
+      - id: procuraai-human-decision-identity-binding:22
+        stepId: full.build.check.evidence
+        sequence: 22
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/4c8fd196-e033-4403-9755-9ff5ecd00117.log
+          contentHash: 9c3826533449bc18658f1759c428a329f91834fa5fa899e91a9c5e3099add6cb
+          submissionId: a20fd708-a141-4dfc-b9a2-d5b034b571c8
+      - id: procuraai-human-decision-identity-binding:24
+        stepId: full.verify.report.evidence
+        sequence: 24
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-23-procuraai-human-decision-identity-binding-verify.md
+          contentHash: 0446a7ca3393cca4c4cca7a665ff3b07bf314ec320f71b0e1a72858fd71c67da
+          submissionId: d1295322-488a-430b-a498-96281f22857d
+      - id: procuraai-human-decision-identity-binding:26
+        stepId: full.verify.check.evidence
+        sequence: 26
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/fdc53197-8d4e-41cb-a3e6-9d44ce66ec95.log
+          contentHash: 87f747d5d9a8b090d422f535b7c7319ec5412fd334b5345670f7ba79af8420d9
+          submissionId: 3eb2f912-4487-4bb9-81f3-ced48060fede
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 54
+  sourceHash: 9bbdaa8570ce0d50c966c4d783e02657132afa254d515e3514ce407e126b71d6
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 09c90eb3494c7c12c9bfd3fcff2c17dae322ff6676c54336edba4116060855b0
+              ref: openspec/changes/procuraai-human-decision-identity-binding
+      - contentHash: 09c90eb3494c7c12c9bfd3fcff2c17dae322ff6676c54336edba4116060855b0
+        ref: openspec/changes/procuraai-human-decision-identity-binding
+      - contentHash: 09c90eb3494c7c12c9bfd3fcff2c17dae322ff6676c54336edba4116060855b0
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-human-decision-identity-binding/.comet/handoff/design-context.json
+              handoffHash: c1c516b7b1ea8f3d4fae48044ad1d01bc2b6d7c27129f43eedbca29eca584d7a
+              proposal: 候选技术方案（源码实证，随本次 Design Wait 请确认）：T1 onboarding approve 复用已注入的
+                ReviewIdentityPort（QualificationController:86-92 当前仍自报
+                request.tenantId/operator，同文件 reviewOcr:81-82
+                已是登录态基线），请求体同名字段仅做一致性校验，冲突/匿名/缺租户 fail-closed 不落库。T2 sourcing
+                新增本域只读 AwardIdentityPort，基础设施从
+                SecurityContextHolder+JwtPrincipal 解析，避免跨域依赖
+                qualification（备选直接复用会泄漏准入域概念，不采用）。T3 授标端点按 OpenAPI 已登记的 POST
+                /api/v1/procurement/rfx/{rfxNo}/award，经 findRfxByNo 取 projectId
+                再 tenant 锚定定位项目，新增只读 findProjectByRfxNo 到仓储端口；不存在/不对应 400 状态不变（用
+                projectNo 路径会触发 A8 契约漂移，不采用）。T4 请求体不带 confirmed_by，OpenAPI
+                文案同步为确认人来自登录态，状态码集合不变（403/400/409）。T5 不新增 DDL/表/列/迁移，复用现有
+                Repository。取舍：新增一个本域身份端口与一个只读仓储查询，换取限界上下文边界与可审计身份链。风险与失败路径：同步更新匿名/请求体
+                operator 的既有测试夹具并保留负向场景；rfxNo→project 映射缺失用只读定位单测+400 覆盖；OpenAPI
+                口径同 change 内同步不动判据。验证：具名授标/准入正向 + 冒名/匿名/跨租户/空白操作人/非对应项目/AI
+                直接授标负向均不落库；qualification+sourcing 全量测试、前端
+                tsc/vitest/eslint(json)、procuraAI
+                对齐/evalset/AsyncAPI/persistence 门禁。Spec Patch：无，Open
+                阶段规格已确认，方案不改外部行为与验收。
+              requirementsEvidence:
+                contentHash: fc18f8a335cb9bdebb5769d2492b60e36c5529aefa86d70bb2bc4916c9b43726
+                ref: openspec/changes/procuraai-human-decision-identity-binding
+              sourceEvidence:
+                contentHash: 04e97739bad218962c266d153daa835280bfd31cc4bc0749e898cb39e0562cd0
+                ref: openspec/changes/procuraai-human-decision-identity-binding
+      - handoffContext: openspec/changes/procuraai-human-decision-identity-binding/.comet/handoff/design-context.json
+        handoffHash: c1c516b7b1ea8f3d4fae48044ad1d01bc2b6d7c27129f43eedbca29eca584d7a
+        proposal: 候选技术方案（源码实证，随本次 Design Wait 请确认）：T1 onboarding approve 复用已注入的
+          ReviewIdentityPort（QualificationController:86-92 当前仍自报
+          request.tenantId/operator，同文件 reviewOcr:81-82
+          已是登录态基线），请求体同名字段仅做一致性校验，冲突/匿名/缺租户 fail-closed 不落库。T2 sourcing 新增本域只读
+          AwardIdentityPort，基础设施从 SecurityContextHolder+JwtPrincipal 解析，避免跨域依赖
+          qualification（备选直接复用会泄漏准入域概念，不采用）。T3 授标端点按 OpenAPI 已登记的 POST
+          /api/v1/procurement/rfx/{rfxNo}/award，经 findRfxByNo 取 projectId 再
+          tenant 锚定定位项目，新增只读 findProjectByRfxNo 到仓储端口；不存在/不对应 400 状态不变（用
+          projectNo 路径会触发 A8 契约漂移，不采用）。T4 请求体不带 confirmed_by，OpenAPI
+          文案同步为确认人来自登录态，状态码集合不变（403/400/409）。T5 不新增 DDL/表/列/迁移，复用现有
+          Repository。取舍：新增一个本域身份端口与一个只读仓储查询，换取限界上下文边界与可审计身份链。风险与失败路径：同步更新匿名/请求体
+          operator 的既有测试夹具并保留负向场景；rfxNo→project 映射缺失用只读定位单测+400 覆盖；OpenAPI 口径同
+          change 内同步不动判据。验证：具名授标/准入正向 + 冒名/匿名/跨租户/空白操作人/非对应项目/AI
+          直接授标负向均不落库；qualification+sourcing 全量测试、前端
+          tsc/vitest/eslint(json)、procuraAI 对齐/evalset/AsyncAPI/persistence
+          门禁。Spec Patch：无，Open 阶段规格已确认，方案不改外部行为与验收。
+        requirementsEvidence:
+          contentHash: fc18f8a335cb9bdebb5769d2492b60e36c5529aefa86d70bb2bc4916c9b43726
+          ref: openspec/changes/procuraai-human-decision-identity-binding
+        sourceEvidence:
+          contentHash: 04e97739bad218962c266d153daa835280bfd31cc4bc0749e898cb39e0562cd0
+          ref: openspec/changes/procuraai-human-decision-identity-binding
+      - designDoc: openspec/changes/procuraai-human-decision-identity-binding/design.md
+      - contentHash: d65e26b8a3a1b8e0a24e908bad073530e6a33cfa6661c9e4f3295d46b888d94a
+        ref: openspec/changes/procuraai-human-decision-identity-binding/design.md
+      - boundBranch: dev
+        buildMode: autonomous
+        directOverride: false
+        isolation: current
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: d65e26b8a3a1b8e0a24e908bad073530e6a33cfa6661c9e4f3295d46b888d94a
+          ref: openspec/changes/procuraai-human-decision-identity-binding/design.md
+        plan: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+        planEvidence:
+          contentHash: 90b03e0be1932ec4298717c06d0a2ca8f40ab04d2d4ccb4716da34ddcfa48630
+          ref: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+        taskRevision: f137d1f0d0c7e2ea97f7bf89638ba2bed74281b64b9e1811e6efa245b155f471
+      - contentHash: 90b03e0be1932ec4298717c06d0a2ca8f40ab04d2d4ccb4716da34ddcfa48630
+        ref: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-human-decision-identity-binding/.comet/handoff/design-context.json
+              handoffHash: 3f4e3d38b4ddde00eac3c04356efa7650fe3dbff36f693d2a5be37c02bedd5e7
+              proposal: 设计复核修订（契约未变，仅文档澄清，无需新决定）：Build 阶段 standard 独立审查后对 design.md
+                做了两处非语义澄清——(1) 决策4明确请求体 confirmed_by/operator/tenantId
+                仅在与登录态不一致时用于拒绝，绝不参与赋值，与已批准提案『确认人只取登录态』一致；(2) Open Questions
+                记录一个范围外已知缺口（生产代码尚无把 SourcingProject 推进到 BIDDING_CLOSED 的调用方，属
+                Bid/Award 聚合与契约冻结的 owner/L3 边界，本 change 明确 Non-Goal，不在
+                awardByRfxNo 内隐式改状态绕过）。delta spec（2 Requirement/6 场景）、任务（8
+                项）、权限码、DDL/CI 边界与技术方案 T1–T5 均未变化。审查另修复两处纵深防御：两个 Controller
+                在解析到身份 record 后显式校验 tenantId/operator/reviewer
+                非空非空白，并补负向测试。请确认此修订后的设计。
+              requirementsEvidence:
+                contentHash: fc18f8a335cb9bdebb5769d2492b60e36c5529aefa86d70bb2bc4916c9b43726
+                ref: openspec/changes/procuraai-human-decision-identity-binding
+              sourceEvidence:
+                contentHash: 36e79c9bc0753cd8ff4b1e47167fe004a469f09bb2620e222102189ad1b9f42b
+                ref: openspec/changes/procuraai-human-decision-identity-binding
+      - handoffContext: openspec/changes/procuraai-human-decision-identity-binding/.comet/handoff/design-context.json
+        handoffHash: 3f4e3d38b4ddde00eac3c04356efa7650fe3dbff36f693d2a5be37c02bedd5e7
+        proposal: 设计复核修订（契约未变，仅文档澄清，无需新决定）：Build 阶段 standard 独立审查后对 design.md
+          做了两处非语义澄清——(1) 决策4明确请求体 confirmed_by/operator/tenantId
+          仅在与登录态不一致时用于拒绝，绝不参与赋值，与已批准提案『确认人只取登录态』一致；(2) Open Questions
+          记录一个范围外已知缺口（生产代码尚无把 SourcingProject 推进到 BIDDING_CLOSED 的调用方，属
+          Bid/Award 聚合与契约冻结的 owner/L3 边界，本 change 明确 Non-Goal，不在 awardByRfxNo
+          内隐式改状态绕过）。delta spec（2 Requirement/6 场景）、任务（8 项）、权限码、DDL/CI 边界与技术方案
+          T1–T5 均未变化。审查另修复两处纵深防御：两个 Controller 在解析到身份 record 后显式校验
+          tenantId/operator/reviewer 非空非空白，并补负向测试。请确认此修订后的设计。
+        requirementsEvidence:
+          contentHash: fc18f8a335cb9bdebb5769d2492b60e36c5529aefa86d70bb2bc4916c9b43726
+          ref: openspec/changes/procuraai-human-decision-identity-binding
+        sourceEvidence:
+          contentHash: 36e79c9bc0753cd8ff4b1e47167fe004a469f09bb2620e222102189ad1b9f42b
+          ref: openspec/changes/procuraai-human-decision-identity-binding
+      - contentHash: 77cc955d4d3901d4177d8747ed738ea29c8cecce9cb1526fad102949ac6a2982
+        ref: openspec/changes/procuraai-human-decision-identity-binding/design.md
+      - designEvidence:
+          contentHash: 77cc955d4d3901d4177d8747ed738ea29c8cecce9cb1526fad102949ac6a2982
+          ref: openspec/changes/procuraai-human-decision-identity-binding/design.md
+        plan: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+        planEvidence:
+          contentHash: 90b03e0be1932ec4298717c06d0a2ca8f40ab04d2d4ccb4716da34ddcfa48630
+          ref: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+        taskRevision: f137d1f0d0c7e2ea97f7bf89638ba2bed74281b64b9e1811e6efa245b155f471
+      - event: build-complete
+      - argv:
+          - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+          - -o
+          - -f
+          - bone-apps/bone-procurement/pom.xml
+          - test
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: 9c3826533449bc18658f1759c428a329f91834fa5fa899e91a9c5e3099add6cb
+        cwd: .
+        environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+        exitCode: 0
+        inputAfter: a1b963f9e1068c1b61deab5f4d50980e8f0070b717dc9e758d052f235606a0f9
+        inputBefore: a1b963f9e1068c1b61deab5f4d50980e8f0070b717dc9e758d052f235606a0f9
+        manifestHash: 3833e6191c2b10a9082803a30e790b98fad5811fcb06d4bc88253ab6f7a94be8
+        manifestRef: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/88217741-5ed6-4a45-b10f-acbe5a7f6953.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/4c8fd196-e033-4403-9755-9ff5ecd00117.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 9c3826533449bc18658f1759c428a329f91834fa5fa899e91a9c5e3099add6cb
+        ref: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/4c8fd196-e033-4403-9755-9ff5ecd00117.log
+      - contentHash: 0446a7ca3393cca4c4cca7a665ff3b07bf314ec320f71b0e1a72858fd71c67da
+        ref: docs/superpowers/reports/2026-11-23-procuraai-human-decision-identity-binding-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-23-procuraai-human-decision-identity-binding-verify.md
+      - argv:
+          - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+          - -o
+          - -f
+          - bone-apps/bone-procurement/pom.xml
+          - test
+        changedDuringExecution: []
+        checkEpoch: 4
+        contentHash: 87f747d5d9a8b090d422f535b7c7319ec5412fd334b5345670f7ba79af8420d9
+        cwd: .
+        deliveryInputs:
+          bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/QualificationExceptionHandler.java: git:fabf677e9cb8ae8debd4d858cb286caae97df864
+          bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java: git:cddb7618954e5b0e45fddb97028c132acaa11e7d
+          bone-apps/bone-procurement/bone-procurement-qualification/src/test/java/com/bone/procurement/qualification/adapter/web/ReviewIdentityBindingTest.java: git:4d7ce7da4ead4237792f4c027be6f6deb75f83e2
+          bone-apps/bone-procurement/bone-procurement-sourcing/pom.xml: git:f4f95056fada47e8329d24c4853bd7ffe998ae6f
+          bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/adapter/web/SourcingExceptionHandler.java: git:90adc27abfa6805d7fc6a61fb00f43e6bdda7719
+          bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/adapter/web/controller/SourcingController.java: git:00b6088a27f0125eeebd2b4ee44860ed70c74003
+          bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/application/SourcingApplicationService.java: git:8393a71e7689f979e7a535832e24836bad186587
+          bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/domain/gateway/AwardIdentityPort.java: git:8816c5363245e676187adda8ff84a450624f235e
+          bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/domain/gateway/SourcingProjectRepository.java: git:0fc3abe5c08044b59e10c1d0d4d430f78cfa1f50
+          bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/domain/repository/SourcingProjectSqlRepository.java: git:4e4ef30f9f0dd454b35e23c80c37ff2af384b16c
+          bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/infrastructure/SecurityContextAwardIdentityPort.java: git:9bc509c3fade5b9f91b0b454374dbe3d4181cd49
+          bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/infrastructure/SourcingProjectRepositoryAdapter.java: git:69adc4b9555849340ef4f7ff210a97eafd32b585
+          bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/adapter/web/AwardIdentityBindingTest.java: git:2c0c4387c60bc858189e891520b50310a55cce4e
+          bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/adapter/web/SourcingControllerContractTest.java: git:a5208147154bcba003e139bb609622926aa5cfa1
+          bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/application/SourcingAwardByRfxNoTest.java: git:e54558607948103280914592ffde472b14896710
+          bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/infrastructure/AwardIdentityPortTest.java: git:ea4570a1efdffef228dffcf73261480dafadf957
+          bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/infrastructure/SourcingProjectRepositoryAdapterTest.java: git:799a6a89a3e114edc2cb7e750d5a4d524a50528e
+          doc/ai-product/procuraAI/detailed-design/contracts/openapi.yaml: git:143174be7e73f96932410b00c155a964ab640528
+        environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+        exitCode: 0
+        inputAfter: c50c3ab3239b513196eb8ea921668b6c177206c15e2fa6bb6ab7b6b939555f0a
+        inputBefore: c50c3ab3239b513196eb8ea921668b6c177206c15e2fa6bb6ab7b6b939555f0a
+        manifestHash: 78249cf7b9ea9c8399848274e5b2d1d53e1eee403b60d88f7d1be797993c1d44
+        manifestRef: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/4b963fb0-66ea-4a65-a48c-bd78688fed29.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/fdc53197-8d4e-41cb-a3e6-9d44ce66ec95.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 87f747d5d9a8b090d422f535b7c7319ec5412fd334b5345670f7ba79af8420d9
+        ref: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/fdc53197-8d4e-41cb-a3e6-9d44ce66ec95.log
+      - choice: local
+        proposal:
+          input:
+            change: procuraai-human-decision-identity-binding
+            changeDir: openspec/changes/procuraai-human-decision-identity-binding
+            workspaceBaseline:
+              ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+          outputs:
+            full.archive.prepare:
+              summary: 人工终决身份绑定：onboarding approve 与 RFx 授标改为登录态权威绑定（请求体身份仅一致性校验，冒名/跨租户/匿名
+                fail-closed）；新增 sourcing AwardIdentityPort + HTTP 授标端点 + tenant
+                锚定 findProjectByRfxNo；OpenAPI 契约同步。TDD 8/8 任务、standard
+                独立审查两轮闭环、全量验证 BUILD SUCCESS（采购后端 438 例）+ 前端 + 文档门禁全绿；范围外缺口记录为
+                owner/L3。
+              targetBranch: dev
+      - summary: 人工终决身份绑定：onboarding approve 与 RFx 授标改为登录态权威绑定（请求体身份仅一致性校验，冒名/跨租户/匿名
+          fail-closed）；新增 sourcing AwardIdentityPort + HTTP 授标端点 + tenant 锚定
+          findProjectByRfxNo；OpenAPI 契约同步。TDD 8/8 任务、standard 独立审查两轮闭环、全量验证
+          BUILD SUCCESS（采购后端 438 例）+ 前端 + 文档门禁全绿；范围外缺口记录为 owner/L3。
+        targetBranch: dev
+      - baseCommit: 8c04f5100d2b98666947aa20030c816507e71eb4
+        deliveryAction: local
+        targetBranch: dev
+        verifiedBranch: dev
+      - archiveDirectory: openspec/changes/archive/2026-11-23-procuraai-human-decision-identity-binding
+      - sequence: 9
+        value:
+          boundBranch: dev
+          buildMode: autonomous
+          directOverride: false
+          isolation: current
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-human-decision-identity-binding
+              changeDir: openspec/changes/procuraai-human-decision-identity-binding
+              workspaceBaseline:
+                ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: autonomous
+                directOverride: false
+                isolation: current
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-human-decision-identity-binding
+              changeDir: openspec/changes/procuraai-human-decision-identity-binding
+              workspaceBaseline:
+                ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/procuraai-human-decision-identity-binding/.comet/handoff/design-context.json
+                handoffHash: c1c516b7b1ea8f3d4fae48044ad1d01bc2b6d7c27129f43eedbca29eca584d7a
+                proposal: 候选技术方案（源码实证，随本次 Design Wait 请确认）：T1 onboarding approve 复用已注入的
+                  ReviewIdentityPort（QualificationController:86-92 当前仍自报
+                  request.tenantId/operator，同文件 reviewOcr:81-82
+                  已是登录态基线），请求体同名字段仅做一致性校验，冲突/匿名/缺租户 fail-closed 不落库。T2 sourcing
+                  新增本域只读 AwardIdentityPort，基础设施从
+                  SecurityContextHolder+JwtPrincipal 解析，避免跨域依赖
+                  qualification（备选直接复用会泄漏准入域概念，不采用）。T3 授标端点按 OpenAPI 已登记的 POST
+                  /api/v1/procurement/rfx/{rfxNo}/award，经 findRfxByNo 取
+                  projectId 再 tenant 锚定定位项目，新增只读 findProjectByRfxNo
+                  到仓储端口；不存在/不对应 400 状态不变（用 projectNo 路径会触发 A8 契约漂移，不采用）。T4 请求体不带
+                  confirmed_by，OpenAPI 文案同步为确认人来自登录态，状态码集合不变（403/400/409）。T5 不新增
+                  DDL/表/列/迁移，复用现有
+                  Repository。取舍：新增一个本域身份端口与一个只读仓储查询，换取限界上下文边界与可审计身份链。风险与失败路径：同步更新匿名/请求体
+                  operator 的既有测试夹具并保留负向场景；rfxNo→project 映射缺失用只读定位单测+400
+                  覆盖；OpenAPI 口径同 change 内同步不动判据。验证：具名授标/准入正向 +
+                  冒名/匿名/跨租户/空白操作人/非对应项目/AI 直接授标负向均不落库；qualification+sourcing
+                  全量测试、前端 tsc/vitest/eslint(json)、procuraAI
+                  对齐/evalset/AsyncAPI/persistence 门禁。Spec Patch：无，Open
+                  阶段规格已确认，方案不改外部行为与验收。
+                requirementsEvidence:
+                  contentHash: fc18f8a335cb9bdebb5769d2492b60e36c5529aefa86d70bb2bc4916c9b43726
+                  ref: openspec/changes/procuraai-human-decision-identity-binding
+                sourceEvidence:
+                  contentHash: 04e97739bad218962c266d153daa835280bfd31cc4bc0749e898cb39e0562cd0
+                  ref: openspec/changes/procuraai-human-decision-identity-binding
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/procuraai-human-decision-identity-binding/design.md
+      - sequence: 8
+        value:
+          contentHash: d65e26b8a3a1b8e0a24e908bad073530e6a33cfa6661c9e4f3295d46b888d94a
+          ref: openspec/changes/procuraai-human-decision-identity-binding/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/procuraai-human-decision-identity-binding/.comet/handoff/design-context.json
+          handoffHash: c1c516b7b1ea8f3d4fae48044ad1d01bc2b6d7c27129f43eedbca29eca584d7a
+          proposal: 候选技术方案（源码实证，随本次 Design Wait 请确认）：T1 onboarding approve 复用已注入的
+            ReviewIdentityPort（QualificationController:86-92 当前仍自报
+            request.tenantId/operator，同文件 reviewOcr:81-82
+            已是登录态基线），请求体同名字段仅做一致性校验，冲突/匿名/缺租户 fail-closed 不落库。T2 sourcing 新增本域只读
+            AwardIdentityPort，基础设施从 SecurityContextHolder+JwtPrincipal 解析，避免跨域依赖
+            qualification（备选直接复用会泄漏准入域概念，不采用）。T3 授标端点按 OpenAPI 已登记的 POST
+            /api/v1/procurement/rfx/{rfxNo}/award，经 findRfxByNo 取 projectId 再
+            tenant 锚定定位项目，新增只读 findProjectByRfxNo 到仓储端口；不存在/不对应 400 状态不变（用
+            projectNo 路径会触发 A8 契约漂移，不采用）。T4 请求体不带 confirmed_by，OpenAPI
+            文案同步为确认人来自登录态，状态码集合不变（403/400/409）。T5 不新增 DDL/表/列/迁移，复用现有
+            Repository。取舍：新增一个本域身份端口与一个只读仓储查询，换取限界上下文边界与可审计身份链。风险与失败路径：同步更新匿名/请求体
+            operator 的既有测试夹具并保留负向场景；rfxNo→project 映射缺失用只读定位单测+400 覆盖；OpenAPI 口径同
+            change 内同步不动判据。验证：具名授标/准入正向 + 冒名/匿名/跨租户/空白操作人/非对应项目/AI
+            直接授标负向均不落库；qualification+sourcing 全量测试、前端
+            tsc/vitest/eslint(json)、procuraAI 对齐/evalset/AsyncAPI/persistence
+            门禁。Spec Patch：无，Open 阶段规格已确认，方案不改外部行为与验收。
+          requirementsEvidence:
+            contentHash: fc18f8a335cb9bdebb5769d2492b60e36c5529aefa86d70bb2bc4916c9b43726
+            ref: openspec/changes/procuraai-human-decision-identity-binding
+          sourceEvidence:
+            contentHash: 04e97739bad218962c266d153daa835280bfd31cc4bc0749e898cb39e0562cd0
+            ref: openspec/changes/procuraai-human-decision-identity-binding
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-human-decision-identity-binding
+              changeDir: openspec/changes/procuraai-human-decision-identity-binding
+              workspaceBaseline:
+                ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 09c90eb3494c7c12c9bfd3fcff2c17dae322ff6676c54336edba4116060855b0
+                ref: openspec/changes/procuraai-human-decision-identity-binding
+      - sequence: 2
+        value:
+          contentHash: 09c90eb3494c7c12c9bfd3fcff2c17dae322ff6676c54336edba4116060855b0
+          ref: openspec/changes/procuraai-human-decision-identity-binding
+      - sequence: 4
+        value:
+          contentHash: 09c90eb3494c7c12c9bfd3fcff2c17dae322ff6676c54336edba4116060855b0
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: d65e26b8a3a1b8e0a24e908bad073530e6a33cfa6661c9e4f3295d46b888d94a
+            ref: openspec/changes/procuraai-human-decision-identity-binding/design.md
+          plan: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+          planEvidence:
+            contentHash: 90b03e0be1932ec4298717c06d0a2ca8f40ab04d2d4ccb4716da34ddcfa48630
+            ref: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+          taskRevision: f137d1f0d0c7e2ea97f7bf89638ba2bed74281b64b9e1811e6efa245b155f471
+      - sequence: 12
+        value:
+          contentHash: 90b03e0be1932ec4298717c06d0a2ca8f40ab04d2d4ccb4716da34ddcfa48630
+          ref: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+      - sequence: 15
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-human-decision-identity-binding
+              changeDir: openspec/changes/procuraai-human-decision-identity-binding
+              workspaceBaseline:
+                ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/procuraai-human-decision-identity-binding/.comet/handoff/design-context.json
+                handoffHash: 3f4e3d38b4ddde00eac3c04356efa7650fe3dbff36f693d2a5be37c02bedd5e7
+                proposal: 设计复核修订（契约未变，仅文档澄清，无需新决定）：Build 阶段 standard 独立审查后对 design.md
+                  做了两处非语义澄清——(1) 决策4明确请求体 confirmed_by/operator/tenantId
+                  仅在与登录态不一致时用于拒绝，绝不参与赋值，与已批准提案『确认人只取登录态』一致；(2) Open Questions
+                  记录一个范围外已知缺口（生产代码尚无把 SourcingProject 推进到 BIDDING_CLOSED 的调用方，属
+                  Bid/Award 聚合与契约冻结的 owner/L3 边界，本 change 明确 Non-Goal，不在
+                  awardByRfxNo 内隐式改状态绕过）。delta spec（2 Requirement/6 场景）、任务（8
+                  项）、权限码、DDL/CI 边界与技术方案 T1–T5 均未变化。审查另修复两处纵深防御：两个 Controller
+                  在解析到身份 record 后显式校验 tenantId/operator/reviewer
+                  非空非空白，并补负向测试。请确认此修订后的设计。
+                requirementsEvidence:
+                  contentHash: fc18f8a335cb9bdebb5769d2492b60e36c5529aefa86d70bb2bc4916c9b43726
+                  ref: openspec/changes/procuraai-human-decision-identity-binding
+                sourceEvidence:
+                  contentHash: 36e79c9bc0753cd8ff4b1e47167fe004a469f09bb2620e222102189ad1b9f42b
+                  ref: openspec/changes/procuraai-human-decision-identity-binding
+      - sequence: 14
+        value:
+          handoffContext: openspec/changes/procuraai-human-decision-identity-binding/.comet/handoff/design-context.json
+          handoffHash: 3f4e3d38b4ddde00eac3c04356efa7650fe3dbff36f693d2a5be37c02bedd5e7
+          proposal: 设计复核修订（契约未变，仅文档澄清，无需新决定）：Build 阶段 standard 独立审查后对 design.md
+            做了两处非语义澄清——(1) 决策4明确请求体 confirmed_by/operator/tenantId
+            仅在与登录态不一致时用于拒绝，绝不参与赋值，与已批准提案『确认人只取登录态』一致；(2) Open Questions
+            记录一个范围外已知缺口（生产代码尚无把 SourcingProject 推进到 BIDDING_CLOSED 的调用方，属
+            Bid/Award 聚合与契约冻结的 owner/L3 边界，本 change 明确 Non-Goal，不在 awardByRfxNo
+            内隐式改状态绕过）。delta spec（2 Requirement/6 场景）、任务（8 项）、权限码、DDL/CI 边界与技术方案
+            T1–T5 均未变化。审查另修复两处纵深防御：两个 Controller 在解析到身份 record 后显式校验
+            tenantId/operator/reviewer 非空非空白，并补负向测试。请确认此修订后的设计。
+          requirementsEvidence:
+            contentHash: fc18f8a335cb9bdebb5769d2492b60e36c5529aefa86d70bb2bc4916c9b43726
+            ref: openspec/changes/procuraai-human-decision-identity-binding
+          sourceEvidence:
+            contentHash: 36e79c9bc0753cd8ff4b1e47167fe004a469f09bb2620e222102189ad1b9f42b
+            ref: openspec/changes/procuraai-human-decision-identity-binding
+      - sequence: 16
+        value:
+          designDoc: openspec/changes/procuraai-human-decision-identity-binding/design.md
+      - sequence: 17
+        value:
+          contentHash: 77cc955d4d3901d4177d8747ed738ea29c8cecce9cb1526fad102949ac6a2982
+          ref: openspec/changes/procuraai-human-decision-identity-binding/design.md
+      - sequence: 18
+        value:
+          designEvidence:
+            contentHash: 77cc955d4d3901d4177d8747ed738ea29c8cecce9cb1526fad102949ac6a2982
+            ref: openspec/changes/procuraai-human-decision-identity-binding/design.md
+          plan: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+          planEvidence:
+            contentHash: 90b03e0be1932ec4298717c06d0a2ca8f40ab04d2d4ccb4716da34ddcfa48630
+            ref: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+          taskRevision: f137d1f0d0c7e2ea97f7bf89638ba2bed74281b64b9e1811e6efa245b155f471
+      - sequence: 19
+        value:
+          contentHash: 90b03e0be1932ec4298717c06d0a2ca8f40ab04d2d4ccb4716da34ddcfa48630
+          ref: docs/superpowers/plans/2026-11-23-procuraai-human-decision-identity-binding.md
+      - sequence: 20
+        value:
+          event: build-complete
+      - sequence: 21
+        value:
+          argv:
+            - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+            - -o
+            - -f
+            - bone-apps/bone-procurement/pom.xml
+            - test
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: 9c3826533449bc18658f1759c428a329f91834fa5fa899e91a9c5e3099add6cb
+          cwd: .
+          environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+          exitCode: 0
+          inputAfter: a1b963f9e1068c1b61deab5f4d50980e8f0070b717dc9e758d052f235606a0f9
+          inputBefore: a1b963f9e1068c1b61deab5f4d50980e8f0070b717dc9e758d052f235606a0f9
+          manifestHash: 3833e6191c2b10a9082803a30e790b98fad5811fcb06d4bc88253ab6f7a94be8
+          manifestRef: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/88217741-5ed6-4a45-b10f-acbe5a7f6953.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/4c8fd196-e033-4403-9755-9ff5ecd00117.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 22
+        value:
+          contentHash: 9c3826533449bc18658f1759c428a329f91834fa5fa899e91a9c5e3099add6cb
+          ref: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/4c8fd196-e033-4403-9755-9ff5ecd00117.log
+      - sequence: 24
+        value:
+          contentHash: 0446a7ca3393cca4c4cca7a665ff3b07bf314ec320f71b0e1a72858fd71c67da
+          ref: docs/superpowers/reports/2026-11-23-procuraai-human-decision-identity-binding-verify.md
+      - sequence: 23
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-23-procuraai-human-decision-identity-binding-verify.md
+      - sequence: 25
+        value:
+          argv:
+            - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+            - -o
+            - -f
+            - bone-apps/bone-procurement/pom.xml
+            - test
+          changedDuringExecution: []
+          checkEpoch: 4
+          contentHash: 87f747d5d9a8b090d422f535b7c7319ec5412fd334b5345670f7ba79af8420d9
+          cwd: .
+          deliveryInputs:
+            bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/QualificationExceptionHandler.java: git:fabf677e9cb8ae8debd4d858cb286caae97df864
+            bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java: git:cddb7618954e5b0e45fddb97028c132acaa11e7d
+            bone-apps/bone-procurement/bone-procurement-qualification/src/test/java/com/bone/procurement/qualification/adapter/web/ReviewIdentityBindingTest.java: git:4d7ce7da4ead4237792f4c027be6f6deb75f83e2
+            bone-apps/bone-procurement/bone-procurement-sourcing/pom.xml: git:f4f95056fada47e8329d24c4853bd7ffe998ae6f
+            bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/adapter/web/SourcingExceptionHandler.java: git:90adc27abfa6805d7fc6a61fb00f43e6bdda7719
+            bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/adapter/web/controller/SourcingController.java: git:00b6088a27f0125eeebd2b4ee44860ed70c74003
+            bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/application/SourcingApplicationService.java: git:8393a71e7689f979e7a535832e24836bad186587
+            bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/domain/gateway/AwardIdentityPort.java: git:8816c5363245e676187adda8ff84a450624f235e
+            bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/domain/gateway/SourcingProjectRepository.java: git:0fc3abe5c08044b59e10c1d0d4d430f78cfa1f50
+            bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/domain/repository/SourcingProjectSqlRepository.java: git:4e4ef30f9f0dd454b35e23c80c37ff2af384b16c
+            bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/infrastructure/SecurityContextAwardIdentityPort.java: git:9bc509c3fade5b9f91b0b454374dbe3d4181cd49
+            bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/infrastructure/SourcingProjectRepositoryAdapter.java: git:69adc4b9555849340ef4f7ff210a97eafd32b585
+            bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/adapter/web/AwardIdentityBindingTest.java: git:2c0c4387c60bc858189e891520b50310a55cce4e
+            bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/adapter/web/SourcingControllerContractTest.java: git:a5208147154bcba003e139bb609622926aa5cfa1
+            bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/application/SourcingAwardByRfxNoTest.java: git:e54558607948103280914592ffde472b14896710
+            bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/infrastructure/AwardIdentityPortTest.java: git:ea4570a1efdffef228dffcf73261480dafadf957
+            bone-apps/bone-procurement/bone-procurement-sourcing/src/test/java/com/bone/procurement/sourcing/infrastructure/SourcingProjectRepositoryAdapterTest.java: git:799a6a89a3e114edc2cb7e750d5a4d524a50528e
+            doc/ai-product/procuraAI/detailed-design/contracts/openapi.yaml: git:143174be7e73f96932410b00c155a964ab640528
+          environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+          exitCode: 0
+          inputAfter: c50c3ab3239b513196eb8ea921668b6c177206c15e2fa6bb6ab7b6b939555f0a
+          inputBefore: c50c3ab3239b513196eb8ea921668b6c177206c15e2fa6bb6ab7b6b939555f0a
+          manifestHash: 78249cf7b9ea9c8399848274e5b2d1d53e1eee403b60d88f7d1be797993c1d44
+          manifestRef: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/4b963fb0-66ea-4a65-a48c-bd78688fed29.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/fdc53197-8d4e-41cb-a3e6-9d44ce66ec95.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 26
+        value:
+          contentHash: 87f747d5d9a8b090d422f535b7c7319ec5412fd334b5345670f7ba79af8420d9
+          ref: .comet/runtime/classic-sdk-checks/2ebb64a78f933d8a523250f5d1e19abc0be542e193feaa564a3a9a6c88ac9f4d/fdc53197-8d4e-41cb-a3e6-9d44ce66ec95.log
+      - sequence: 28
+        value:
+          choice: local
+          proposal:
+            input:
+              change: procuraai-human-decision-identity-binding
+              changeDir: openspec/changes/procuraai-human-decision-identity-binding
+              workspaceBaseline:
+                ref: 67351dce-0bb5-45d6-a72b-6b142ed8e908
+            outputs:
+              full.archive.prepare:
+                summary: 人工终决身份绑定：onboarding approve 与 RFx 授标改为登录态权威绑定（请求体身份仅一致性校验，冒名/跨租户/匿名
+                  fail-closed）；新增 sourcing AwardIdentityPort + HTTP 授标端点 +
+                  tenant 锚定 findProjectByRfxNo；OpenAPI 契约同步。TDD 8/8 任务、standard
+                  独立审查两轮闭环、全量验证 BUILD SUCCESS（采购后端 438 例）+ 前端 + 文档门禁全绿；范围外缺口记录为
+                  owner/L3。
+                targetBranch: dev
+      - sequence: 27
+        value:
+          summary: 人工终决身份绑定：onboarding approve 与 RFx 授标改为登录态权威绑定（请求体身份仅一致性校验，冒名/跨租户/匿名
+            fail-closed）；新增 sourcing AwardIdentityPort + HTTP 授标端点 + tenant 锚定
+            findProjectByRfxNo；OpenAPI 契约同步。TDD 8/8 任务、standard 独立审查两轮闭环、全量验证
+            BUILD SUCCESS（采购后端 438 例）+ 前端 + 文档门禁全绿；范围外缺口记录为 owner/L3。
+          targetBranch: dev
+      - sequence: 29
+        value:
+          baseCommit: 8c04f5100d2b98666947aa20030c816507e71eb4
+          deliveryAction: local
+          targetBranch: dev
+          verifiedBranch: dev
+      - sequence: 30
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-23-procuraai-human-decision-identity-binding
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.design.handoff
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 12
+        left: null
+        right: 27
+        height: 2
+      - key: full.design.confirm
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 14
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 13
+        left: 30
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 29
+        right: 31
+        height: 3
+      - key: full.build.plan
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 33
+        right: 34
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 35
+        right: 31
+        height: 3
+      - key: full.build.execute
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 15
+        left: 37
+        right: null
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: 38
+        right: 34
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 39
+        right: 31
+        height: 4
+      - key: full.build.check.evidence
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 17
+        left: null
+        right: 41
+        height: 2
+      - key: full.build.plan
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 43
+        right: 34
+        height: 2
+      - key: full.build.execute
+        value: 16
+        left: 42
+        right: 44
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 45
+        right: 31
+        height: 4
+      - key: full.verify.run
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 19
+        left: null
+        right: 47
+        height: 2
+      - key: full.design.handoff
+        value: 13
+        left: 30
+        right: 48
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 45
+        right: 49
+        height: 4
+      - key: full.design.handoff
+        value: 13
+        left: 30
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 19
+        left: 52
+        right: 47
+        height: 2
+      - key: full.verify.check
+        value: 21
+        left: 51
+        right: 53
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 45
+        right: 54
+        height: 4
+      - key: full.archive.prepare
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 23
+        left: null
+        right: 56
+        height: 2
+      - key: full.build.check
+        value: 17
+        left: 57
+        right: 41
+        height: 3
+      - key: full.build.execute
+        value: 16
+        left: 58
+        right: 44
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 59
+        right: 54
+        height: 5
+      - key: full.archive.confirm
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 25
+        left: 61
+        right: 62
+        height: 2
+      - key: full.build.check
+        value: 17
+        left: 63
+        right: 41
+        height: 3
+      - key: full.build.execute
+        value: 16
+        left: 64
+        right: 44
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 65
+        right: 54
+        height: 5
+      - key: full.archive.execute
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 23
+        left: null
+        right: 67
+        height: 2
+      - key: full.build.check
+        value: 17
+        left: 62
+        right: 41
+        height: 2
+      - key: full.archive.preflight
+        value: 25
+        left: 68
+        right: 69
+        height: 3
+      - key: full.build.execute
+        value: 16
+        left: 70
+        right: 44
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 71
+        right: 54
+        height: 5
+      - key: full.build.configure
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 28
+        left: 73
+        right: 74
+        height: 2
+      - key: full.design.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: 76
+        right: 77
+        height: 2
+      - key: full.open.revalidate
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: 79
+        height: 2
+      - key: full.open.confirm
+        value: 34
+        left: 78
+        right: 80
+        height: 3
+      - key: full.design.document
+        value: 30
+        left: 75
+        right: 81
+        height: 4
+      - key: full.build.plan
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 38
+        left: 83
+        right: 84
+        height: 2
+      - key: full.build.confirm
+        value: 28
+        left: 73
+        right: 85
+        height: 3
+      - key: full.design.document
+        value: 30
+        left: 86
+        right: 81
+        height: 4
+      - key: full.design.handoff
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 39
+        left: null
+        right: 88
+        height: 2
+      - key: full.design.confirm
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 40
+        left: 91
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 41
+        left: 90
+        right: 92
+        height: 3
+      - key: full.build.plan
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 44
+        left: 94
+        right: 95
+        height: 2
+      - key: full.design.document
+        value: 41
+        left: 96
+        right: 92
+        height: 3
+      - key: full.build.execute
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 43
+        left: 98
+        right: null
+        height: 2
+      - key: full.build.plan.evidence
+        value: 44
+        left: 99
+        right: 95
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 100
+        right: 92
+        height: 4
+      - key: full.build.check.evidence
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 46
+        left: null
+        right: 102
+        height: 2
+      - key: full.build.plan
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 44
+        left: 104
+        right: 95
+        height: 2
+      - key: full.build.execute
+        value: 45
+        left: 103
+        right: 105
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 106
+        right: 92
+        height: 4
+      - key: full.verify.run
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 48
+        left: null
+        right: 108
+        height: 2
+      - key: full.design.handoff
+        value: 40
+        left: 91
+        right: 109
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 106
+        right: 110
+        height: 4
+      - key: full.design.handoff
+        value: 40
+        left: 91
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 48
+        left: 113
+        right: 108
+        height: 2
+      - key: full.verify.check
+        value: 50
+        left: 112
+        right: 114
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 106
+        right: 115
+        height: 4
+      - key: full.archive.prepare
+        value: 53
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 52
+        left: null
+        right: 117
+        height: 2
+      - key: full.build.check
+        value: 46
+        left: 118
+        right: 102
+        height: 3
+      - key: full.build.execute
+        value: 45
+        left: 119
+        right: 105
+        height: 4
+      - key: full.design.document
+        value: 41
+        left: 120
+        right: 115
+        height: 5
+      - key: full.archive.confirm
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 53
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 54
+        left: 122
+        right: 123
+        height: 2
+      - key: full.build.check
+        value: 46
+        left: 124
+        right: 102
+        height: 3
+      - key: full.build.execute
+        value: 45
+        left: 125
+        right: 105
+        height: 4
+      - key: full.design.document
+        value: 41
+        left: 126
+        right: 115
+        height: 5
+      - key: full.archive.execute
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 52
+        left: null
+        right: 128
+        height: 2
+      - key: full.build.check
+        value: 46
+        left: 123
+        right: 102
+        height: 2
+      - key: full.archive.preflight
+        value: 54
+        left: 129
+        right: 130
+        height: 3
+      - key: full.build.execute
+        value: 45
+        left: 131
+        right: 105
+        height: 4
+      - key: full.design.document
+        value: 41
+        left: 132
+        right: 115
+        height: 5
+      - key: full.open
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 34
+        left: 134
+        right: 135
+        height: 2
+      - key: full.open.revalidate
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: 137
+        height: 2
+      - key: full.open.confirm
+        value: 34
+        left: 134
+        right: 138
+        height: 3
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: 140
+        right: 141
+        height: 2
+      - key: full.open.confirm
+        value: 34
+        left: 142
+        right: 138
+        height: 3
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 30
+        left: 144
+        right: 145
+        height: 2
+      - key: full.design.handoff
+        value: 32
+        left: 146
+        right: 141
+        height: 3
+      - key: full.open.confirm
+        value: 34
+        left: 147
+        right: 138
+        height: 4
+      - key: full.archive.confirm
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 55
+        left: 149
+        right: 150
+        height: 2
+      - key: full.build.check
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 47
+        left: 152
+        right: 153
+        height: 2
+      - key: full.archive.prepare
+        value: 53
+        left: 151
+        right: 154
+        height: 3
+      - key: full.build.execute
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 39
+        left: 157
+        right: null
+        height: 2
+      - key: full.build.plan
+        value: 43
+        left: 156
+        right: 158
+        height: 3
+      - key: full.build.confirm
+        value: 28
+        left: 155
+        right: 159
+        height: 4
+      - key: full.design.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 40
+        left: 161
+        right: 141
+        height: 2
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 36
+        left: 163
+        right: 164
+        height: 2
+      - key: full.verify.run
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 48
+        left: null
+        right: 166
+        height: 2
+      - key: full.verify.check.evidence
+        value: 51
+        left: 165
+        right: 167
+        height: 3
+      - key: full.open.confirm
+        value: 34
+        left: 162
+        right: 168
+        height: 4
+      - key: full.design.document
+        value: 41
+        left: 160
+        right: 169
+        height: 5
+      - key: full.open.evidence
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 33
+        left: null
+        right: 171
+        height: 2
+      - key: full.design.handoff
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: 174
+        right: 175
+        height: 2
+      - key: full.open
+        value: 33
+        left: 173
+        right: 176
+        height: 3
+      - key: full.build.configure
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 31
+        left: 179
+        right: 180
+        height: 2
+      - key: full.design.confirm
+        value: 29
+        left: 178
+        right: 181
+        height: 3
+      - key: full.open
+        value: 33
+        left: 182
+        right: 176
+        height: 4
+      - key: full.design.handoff
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 53
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 46
+        left: 185
+        right: 186
+        height: 2
+      - key: full.build.plan
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 44
+        left: 188
+        right: 189
+        height: 2
+      - key: full.build.execute
+        value: 45
+        left: 187
+        right: 190
+        height: 3
+      - key: full.design.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 40
+        left: 192
+        right: 193
+        height: 2
+      - key: full.verify.run
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 48
+        left: null
+        right: 195
+        height: 2
+      - key: full.verify.check.evidence
+        value: 51
+        left: 194
+        right: 196
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 191
+        right: 197
+        height: 4
+      - key: full.open
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 30
+        left: 200
+        right: 201
+        height: 2
+      - key: full.open.confirm
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 35
+        left: 203
+        right: 204
+        height: 2
+      - key: full.open
+        value: 33
+        left: 202
+        right: 205
+        height: 3
+      - key: full.build.configure
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 28
+        left: 207
+        right: 208
+        height: 2
+      - key: full.design.document
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 31
+        left: 210
+        right: 211
+        height: 2
+      - key: full.design.confirm
+        value: 29
+        left: 209
+        right: 212
+        height: 3
+      - key: full.open
+        value: 33
+        left: 213
+        right: 205
+        height: 4
+      - key: full.design.confirm
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 41
+        left: 215
+        right: 216
+        height: 2
+      - key: full.build.plan
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 39
+        left: 218
+        right: null
+        height: 2
+      - key: full.design.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 40
+        left: 220
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 41
+        left: 219
+        right: 221
+        height: 3
+      - key: full.build.execute
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 46
+        left: null
+        right: 223
+        height: 2
+      - key: full.build.plan.evidence
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 39
+        left: 225
+        right: null
+        height: 2
+      - key: full.build.plan
+        value: 43
+        left: 224
+        right: 226
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 227
+        right: 221
+        height: 4
+      - key: full.build.check
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.build.execute
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 47
+        left: 229
+        right: 230
+        height: 2
+      - key: full.build.plan
+        value: 43
+        left: 231
+        right: 226
+        height: 3
+      - key: full.verify.run
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 40
+        left: 220
+        right: 233
+        height: 2
+      - key: full.design.document
+        value: 41
+        left: 232
+        right: 234
+        height: 4
+      - key: full.verify.check
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 48
+        left: 236
+        right: 237
+        height: 2
+      - key: full.design.handoff
+        value: 40
+        left: 220
+        right: 238
+        height: 3
+      - key: full.design.document
+        value: 41
+        left: 232
+        right: 239
+        height: 4
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 28
+      - 32
+      - 36
+      - 40
+      - 46
+      - 50
+      - 55
+      - 60
+      - 66
+      - 72
+      - 82
+      - 87
+      - 89
+      - 93
+      - 97
+      - 101
+      - 107
+      - 111
+      - 116
+      - 121
+      - 127
+      - 133
+      - 136
+      - 139
+      - 143
+      - 148
+      - 170
+      - 172
+      - 177
+      - 183
+      - 184
+      - 198
+      - 199
+      - 206
+      - 214
+      - 217
+      - 222
+      - 228
+      - 235
+      - 240
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "14"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actions
+          - "15"
+          - input
+          - outputs
+        map: 14
+      - path:
+          - actions
+          - "16"
+          - input
+          - outputs
+        map: 15
+      - path:
+          - actions
+          - "17"
+          - input
+          - outputs
+        map: 16
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:11
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:13
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:14
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:16
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:18
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:20
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:21
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:23
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:25
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:27
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:29
+          - results
+        map: 26
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:30
+          - results
+        map: 27
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:31
+          - results
+        map: 28
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:4
+          - results
+        map: 29
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:5
+          - results
+        map: 30
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:7
+          - results
+        map: 31
+      - path:
+          - actionContexts
+          - procuraai-human-decision-identity-binding:9
+          - results
+        map: 32
+      - path:
+          - outputs
+        map: 33
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 34
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 35
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 36
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 37
+      - path:
+          - waits
+          - "4"
+          - results
+        map: 38
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 39
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 40
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 41
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 42
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 43
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 44
+      - path:
+          - evidenceWaits
+          - "6"
+          - results
+        map: 45
+      - path:
+          - evidenceWaits
+          - "7"
+          - results
+        map: 46
+  storageHash: 18701a48e9752796820e17e8a476328cafa2df947f1f5ff2d69733e1dba60463
+check_epoch: 7

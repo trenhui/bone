@@ -109,11 +109,20 @@ paths:
     post:
       tags: [sourcing]
       operationId: confirmAward
-      summary: 人工确认授标（缺 confirmed_by → 20xxx；AI 直接置位 → 31203）
+      summary: 人工确认授标（确认人来自登录态；请求体自报冒名 → 400；匿名/无权限 → 403；AI 直接置位 → 拒绝；终态冲突 → 409）
       security: [{ bearerAuth: [procurement:rfx:approve] }]
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tenantId: { type: integer, format: int64, description: '可选，仅与登录态一致性校验，不作为权威值' }
+                confirmedBy: { type: string, description: '可选，仅与登录态一致性校验，不作为权威值' }
       responses:
         '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '409': { $ref: '#/components/responses/Conflict' }
   /procurement/onboardings:
     post:
@@ -668,11 +677,20 @@ paths:
     post:
       tags: [sourcing]
       operationId: approveOnboarding
-      summary: '准入审批（WF 推状态，人工最终决策）'
+      summary: '准入审批（人工最终决策；租户/操作人取登录态，请求体自报冒名/跨租户 → 400）'
       security: [{ bearerAuth: [procurement:onboarding:approve] }]
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tenantId: { type: integer, format: int64, description: '可选，仅与登录态一致性校验，不作为权威值' }
+                operator: { type: string, description: '可选，仅与登录态一致性校验，不作为权威值' }
       responses:
         '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '409': { $ref: '#/components/responses/Conflict' }
   /procurement/qualifications/expiring:
     get:
@@ -1074,6 +1092,9 @@ components:
       content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
     Conflict:
       description: 版本冲突 / 非法迁移 / 幂等键指纹冲突 / 重复业务键
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+    BadRequest:
+      description: 参数非法 / 身份或租户与登录态不一致（禁止冒名与跨租户）
       content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
 
 x-endpoint-adjudication:

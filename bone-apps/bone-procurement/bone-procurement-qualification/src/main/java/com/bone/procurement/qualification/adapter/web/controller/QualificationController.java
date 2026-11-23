@@ -87,7 +87,23 @@ public class QualificationController {
   @PreAuthorize("hasAuthority('procurement:onboarding:approve')")
   public ApiResponse<Void> approve(
       @PathVariable("no") String no, @Valid @RequestBody ApproveOnboardingRequest request) {
-    onboardingService.approveByHuman(request.tenantId(), no, request.operator());
+    ReviewIdentity identity = reviewIdentity.current();
+    if (identity == null
+        || identity.tenantId() == null
+        || identity.reviewer() == null
+        || identity.reviewer().isBlank()) {
+      throw new IllegalArgumentException("人工终决需要登录态身份与租户上下文，禁止缺省租户或匿名终决");
+    }
+    // 请求体自报的租户/操作人不可信：与登录态不一致即拒绝，一致才落登录态权威值。
+    if (request.tenantId() != null && !request.tenantId().equals(identity.tenantId())) {
+      throw new IllegalArgumentException("请求租户与登录态不一致，禁止跨租户终决");
+    }
+    if (request.operator() != null
+        && !request.operator().isBlank()
+        && !request.operator().trim().equals(identity.reviewer())) {
+      throw new IllegalArgumentException("请求操作人与登录态不一致，禁止冒名终决");
+    }
+    onboardingService.approveByHuman(identity.tenantId(), no, identity.reviewer());
     return ApiResponse.success(null);
   }
 
