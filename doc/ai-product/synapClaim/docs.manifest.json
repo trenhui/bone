@@ -470,12 +470,23 @@
       "currency": "current"
     },
     {
+      "id": "delivery.12",
+      "path": "07-delivery/12-POC就绪度评估与启动清单.md",
+      "layer": "L7",
+      "diataxis": "guide",
+      "status": "active",
+      "summary": "POC 就绪度评估与启动清单：三态准入门槛、当前态实测数字、5 个 BLOCKED 的 owner 与解锁、Shadow POC 启动 checklist（复核器实测为准，不伪造门禁）",
+      "authority": "POC 就绪度评估与启动清单",
+      "role": "guide",
+      "currency": "current"
+    },
+    {
       "id": "delivery.index",
       "path": "07-delivery/README.md",
       "layer": "L7",
       "diataxis": "navigation",
       "status": "active",
-      "summary": "交付包索引：01–11 编号与内容对照（新增交付包必须在此登记）",
+      "summary": "交付包索引：01–12 编号与内容对照（新增交付包必须在此登记）",
       "authority": "",
       "role": "navigation",
       "currency": "current"

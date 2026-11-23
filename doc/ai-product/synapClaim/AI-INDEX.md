@@ -91,7 +91,7 @@ currency: current
 | `delivery.08` | `07-delivery/08-部署运维手册.md` | ssot | 部署、日常运维、应急手册 |
 | `delivery.09` | `07-delivery/09-培训与用户手册.md` | ssot | 培训计划、核赔工作台操作手册、AI 人责归属说明 |
 | `delivery.10` | `07-delivery/10-商务合同模板与规模化准备.md` | ssot | 商务模式、竞品矩阵、白皮书大纲、等保清单、规模化检查表 |
-| `delivery.index` | `07-delivery/README.md` | navigation | 交付包索引：01–11 编号与内容对照（新增交付包必须在此登记） |
+| `delivery.index` | `07-delivery/README.md` | navigation | 交付包索引：01–12 编号与内容对照（新增交付包必须在此登记） |
 | `golive.00` | `08-go-live/00-总纲与Go-Live门禁.md` | ssot | 总纲：缺口→分册映射表、G1–G16 上线门禁、与既有治理的衔接 |
 | `records.evidence.index` | `09-records/evidence/README.md` | navigation | 运行期证据索引：E2E 与复核器时点快照的登记清单、采集 HEAD 与诚实判读、复现纪律 |
 | `records.review.M2-` | `09-records/reviews/M2-责任额度列迁移评审.md` | evidence | M2（责任额度 3 个金额列 → JSON）评审材料：实测范围、四阶段验收、8 个待拍板决策点、开工前置证据；§五 零调用点前置问题已于 2026-11-08 按代码核销，路 A / 路 B 撤销 |
@@ -115,11 +115,12 @@ currency: current
 - `golive.12` → `08-go-live/12-资金累计DB级并发正确性.md`：累计扣减的 DB 级并发正确性（单测契约不足）
 - `golive.13` → `08-go-live/13-理算引擎三重路径收敛与护栏移植（F1）.md`：唯一权威资金路径决策、整改步骤、双路径歧义根除
 
-## 五、GUIDE 操作指南（role=guide，可执行步骤；结论以对应 ssot 为准，共 3 份）
+## 五、GUIDE 操作指南（role=guide，可执行步骤；结论以对应 ssot 为准，共 4 份）
 
 - `plan.ainative` → `05-plan/AI原生改造执行计划.md`：AI 原生改造执行计划：将 _ai_native_readiness.py 的 12 判据映射为阶段/负责/动作/验收，并叠加 Phase B/V2 能力纵深路线，作为 gsd-core Plan 阶段交付物与循环可复用终止判据
 - `plan.ux-workbench` → `05-plan/智能理赔-易用性与角色工作台设计提案.md`：智能理赔易用性优化提案：现状六条诊断（菜单平铺/无角色差异/作业断点/查询缺口/效率设施/AI 悬空）、四空间信息架构与角色工作台矩阵、案件 360 与队列驱动、全局检索基座、AI 四层融合、分期路线图、度量与决策速查表
 - `delivery.11` → `07-delivery/11-L3外部前置运行手册.md`：L3 外部前置运行手册：provider 配置 → 探活 → 实跑 E2E → 复核器归因的可执行闭环
+- `delivery.12` → `07-delivery/12-POC就绪度评估与启动清单.md`：POC 就绪度评估与启动清单：三态准入门槛、当前态实测数字、5 个 BLOCKED 的 owner 与解锁、Shadow POC 启动 checklist（复核器实测为准，不伪造门禁）
 
 ## 六、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 17 份）
 
