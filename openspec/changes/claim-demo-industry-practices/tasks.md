@@ -159,3 +159,11 @@
 - [x] 16.3 **采购模块 ID number 修复**：`bone-procurement-app/.../qualificationApi.ts` 的 `id`/`tenantId` 由 number 改 string（后端雪花 ID 下发 string，number 会静默截断；同文件 findOne/reviewOcr 入参本就是 string）。[10/59] 复跑 23 处全部登记、0 违规。
 - [x] 16.4 **dev 基线门禁自测债务（登记，不在本次范围）**：纯 dev HEAD（`32de702c6`，未应用 patch）复跑 `check.sh` 的 [42/59] 有 10 个失败（本批分支反而 8 个），根因是并行会话加 `check-sclaim-naming` 漏更新 `scripts/registry/checks.json`（counts 62 vs 63）等注册表漂移 + 活库 `iam_menu` 300≠种子 288 环境漂移。属仓库级 L3 工程债，修复会动多人共享的 check.sh 注册表，与理赔改动无关——如实登记，不假装 check 全绿。另前置检查（typecheck/204+13 单测/procura 10-10/E2E impact/G42+ID 隔离复跑）全绿，证明本批 8 改动本身干净。
 - [ ] 16.5 **待架构师/并行会话处理**：dev 基线 [42/59] 门禁自测 8–10 例（checks.json 注册表漂移、verify/waivers/catalog 同步、ai_native_readiness）+ 活库种子漂移；本轮不跨领域修，避免与并行会话大面积冲突。
+
+## 17. 第十二轮：P0-3 资产漂移闭环（2026-11-23）
+
+- [x] 17.1 **取证**：README:29 声明旧 Demo 已删但 `demo/` 两 HTML 仍在（1597/819 行）；`_check_demo_parity.py` 只扫 `prototypes/` 抓不到；独特能力已迁移进 9 页原型、无功能引用、manifest 未登记——删除前置满足。
+- [x] 17.2 **删旧资产**：`git rm` 两个过时 HTML（git 历史可恢复），清空遗留 `demo/` 目录。
+- [x] 17.3 **P9 机检防回归**：`_check_demo_parity.py` 加 `RETIRED` 清单 + `rglob` 全目录扫描，退役文件重现或 README 缺"已删除"声明即判红；self-test 探针改动态计数 + P9 三探针（临时目录构造假树，不碰真实文件）。变异验证：删前判红 2 处、删后转绿。
+- [x] 17.4 **同步登记**：`check_all.py:71` 标签 P1–P9、治理规约 §五、诊断报告 §5/附录删除前快照加注。
+
