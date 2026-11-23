@@ -492,6 +492,17 @@
       "currency": "current"
     },
     {
+      "id": "delivery.14",
+      "path": "07-delivery/14-真实企业POC推进计划.md",
+      "layer": "L7",
+      "diataxis": "guide",
+      "status": "active",
+      "summary": "真实企业 POC 推进计划：从 Shadow 到投产的三态分阶段路线，2 项红线 + 16 项 Go-Live 门禁按 owner 拆为可执行动作/签核材料/外部依赖/判定标准，明确内部已完成与待外部签核边界，红线不伪造",
+      "authority": "真实企业 POC 推进计划",
+      "role": "guide",
+      "currency": "current"
+    },
+    {
       "id": "delivery.index",
       "path": "07-delivery/README.md",
       "layer": "L7",

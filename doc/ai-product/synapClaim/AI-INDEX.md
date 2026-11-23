@@ -115,13 +115,14 @@ currency: current
 - `golive.12` → `08-go-live/12-资金累计DB级并发正确性.md`：累计扣减的 DB 级并发正确性（单测契约不足）
 - `golive.13` → `08-go-live/13-理算引擎三重路径收敛与护栏移植（F1）.md`：唯一权威资金路径决策、整改步骤、双路径歧义根除
 
-## 五、GUIDE 操作指南（role=guide，可执行步骤；结论以对应 ssot 为准，共 5 份）
+## 五、GUIDE 操作指南（role=guide，可执行步骤；结论以对应 ssot 为准，共 6 份）
 
 - `plan.ainative` → `05-plan/AI原生改造执行计划.md`：AI 原生改造执行计划：将 _ai_native_readiness.py 的 12 判据映射为阶段/负责/动作/验收，并叠加 Phase B/V2 能力纵深路线，作为 gsd-core Plan 阶段交付物与循环可复用终止判据
 - `plan.ux-workbench` → `05-plan/智能理赔-易用性与角色工作台设计提案.md`：智能理赔易用性优化提案：现状六条诊断（菜单平铺/无角色差异/作业断点/查询缺口/效率设施/AI 悬空）、四空间信息架构与角色工作台矩阵、案件 360 与队列驱动、全局检索基座、AI 四层融合、分期路线图、度量与决策速查表
 - `delivery.11` → `07-delivery/11-L3外部前置运行手册.md`：L3 外部前置运行手册：provider 配置 → 探活 → 实跑 E2E → 复核器归因的可执行闭环
 - `delivery.12` → `07-delivery/12-POC就绪度评估与启动清单.md`：POC 就绪度评估与启动清单：三态准入门槛、当前态实测数字、5 个 BLOCKED 的 owner 与解锁、Shadow POC 启动 checklist（复核器实测为准，不伪造门禁）
 - `delivery.13` → `07-delivery/13-内部模拟POC验证报告.md`：内部模拟 POC 验证报告：用契约合规的内部模拟 provider 真实闭环 3 项技术 BLOCKED，成熟度 L2、l3Claimable=false；红线 2 项保持 BLOCKED，附可复现取证器与诚实边界
+- `delivery.14` → `07-delivery/14-真实企业POC推进计划.md`：真实企业 POC 推进计划：从 Shadow 到投产的三态分阶段路线，2 项红线 + 16 项 Go-Live 门禁按 owner 拆为可执行动作/签核材料/外部依赖/判定标准，明确内部已完成与待外部签核边界，红线不伪造
 
 ## 六、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 19 份）
 
