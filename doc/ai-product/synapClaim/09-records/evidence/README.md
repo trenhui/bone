@@ -18,6 +18,8 @@ currency: current
 |---|---|---|---|
 | `2026-11-07-claims-e2e-result.md` | 2026-11-07T03:06:38Z | d953da0fc | 前后端 E2E（real-services-no-mock）：`passed=true`、API 断言 37 条；`runtime.probeVerdict=NOT_CONFIGURED`（provider 未配的**诚实降级**，非故障）、`aiParticipated=8`、`participationRate=0.0769`、窗口为 UTC 日界 30 天单一真源；`consoleErrors` 4 条均为探活端点 503（provider 未配置的预期响应，与判词同源）。JSON 逐字快照存于 md 围栏内 |
 | `2026-11-07-ai-native-readiness.txt` | 2026-11-07（同日固化） | d953da0fc | 复核器同日输出：SATISFIED 5 / BLOCKED 7 / RUNTIME_ONLY 0，`l3Claimable=false`，可判定档位 L0——与上表 E2E 判词互相印证。文件头部 front-matter 为登记所需元数据，非复核器输出 |
+| `2026-11-23-internal-poc-claims-e2e-result.md` | 2026-11-23T06:22:43Z | a30c14d5 | **内部模拟 POC**（mode=internal-simulated-poc）：`tools/internal-poc-provider.py`（model=`poc-internal-v1`，响应带 `X-POC-Simulated: true`）经隔离栈真实调用探活 + 健康度端点；`probeVerdict=REACHABLE`、probeEvidence 自洽（requestId=`poc-28c64ce5-…`）、`participationRate=0.0541`。**非真实商业 provider，仅用于把 3 项技术 BLOCKED 内部闭环**；历史基线产物未被篡改（取证器 finally 逐字恢复） |
+| `2026-11-23-internal-poc-readiness.md` | 2026-11-23（同日固化） | a30c14d5 | 上述内部模拟 POC 的复核器输出：SATISFIED 10 / BLOCKED 2 / RUNTIME_ONLY 0，成熟度 L2、`l3Claimable=false`。3 项技术 BLOCKED（provider/感知 llm/运行期覆盖）内部闭环；红线 2 项（CATALOG_ADMISSION / GOLIVE）仍 BLOCKED。`--self-test` 在干净环境全 PASS |
 
 ## 采集与复现纪律
 

@@ -481,6 +481,17 @@
       "currency": "current"
     },
     {
+      "id": "delivery.13",
+      "path": "07-delivery/13-内部模拟POC验证报告.md",
+      "layer": "L7",
+      "diataxis": "guide",
+      "status": "active",
+      "summary": "内部模拟 POC 验证报告：用契约合规的内部模拟 provider 真实闭环 3 项技术 BLOCKED，成熟度 L2、l3Claimable=false；红线 2 项保持 BLOCKED，附可复现取证器与诚实边界",
+      "authority": "内部模拟 POC 验证报告",
+      "role": "guide",
+      "currency": "current"
+    },
+    {
       "id": "delivery.index",
       "path": "07-delivery/README.md",
       "layer": "L7",
@@ -800,6 +811,28 @@
       "status": "active",
       "summary": "2026-11-07 前后端 E2E 时点快照（real-services-no-mock，passed，probeVerdict=NOT_CONFIGURED 诚实降级，HEAD d953da0fc）",
       "authority": "",
+      "role": "evidence",
+      "currency": "frozen"
+    },
+    {
+      "id": "records.evidence.readiness-internal-poc-20261123",
+      "path": "09-records/evidence/2026-11-23-internal-poc-readiness.md",
+      "layer": "L9",
+      "diataxis": "explanation",
+      "status": "active",
+      "summary": "2026-11-23 内部模拟 POC 复核器输出快照（10 SAT / 2 BLOCKED / L2 / l3Claimable=false，红线保持）",
+      "authority": "内部模拟 POC 复核器时点快照",
+      "role": "evidence",
+      "currency": "frozen"
+    },
+    {
+      "id": "records.evidence.e2e-internal-poc-20261123",
+      "path": "09-records/evidence/2026-11-23-internal-poc-claims-e2e-result.md",
+      "layer": "L9",
+      "diataxis": "explanation",
+      "status": "active",
+      "summary": "2026-11-23 内部模拟 POC 探活/参与率时点快照（internal-simulated-poc，probeVerdict=REACHABLE，model=poc-internal-v1，HEAD a30c14d5）",
+      "authority": "内部模拟 POC E2E 时点快照",
       "role": "evidence",
       "currency": "frozen"
     },

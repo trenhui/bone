@@ -115,16 +115,19 @@ currency: current
 - `golive.12` → `08-go-live/12-资金累计DB级并发正确性.md`：累计扣减的 DB 级并发正确性（单测契约不足）
 - `golive.13` → `08-go-live/13-理算引擎三重路径收敛与护栏移植（F1）.md`：唯一权威资金路径决策、整改步骤、双路径歧义根除
 
-## 五、GUIDE 操作指南（role=guide，可执行步骤；结论以对应 ssot 为准，共 4 份）
+## 五、GUIDE 操作指南（role=guide，可执行步骤；结论以对应 ssot 为准，共 5 份）
 
 - `plan.ainative` → `05-plan/AI原生改造执行计划.md`：AI 原生改造执行计划：将 _ai_native_readiness.py 的 12 判据映射为阶段/负责/动作/验收，并叠加 Phase B/V2 能力纵深路线，作为 gsd-core Plan 阶段交付物与循环可复用终止判据
 - `plan.ux-workbench` → `05-plan/智能理赔-易用性与角色工作台设计提案.md`：智能理赔易用性优化提案：现状六条诊断（菜单平铺/无角色差异/作业断点/查询缺口/效率设施/AI 悬空）、四空间信息架构与角色工作台矩阵、案件 360 与队列驱动、全局检索基座、AI 四层融合、分期路线图、度量与决策速查表
 - `delivery.11` → `07-delivery/11-L3外部前置运行手册.md`：L3 外部前置运行手册：provider 配置 → 探活 → 实跑 E2E → 复核器归因的可执行闭环
 - `delivery.12` → `07-delivery/12-POC就绪度评估与启动清单.md`：POC 就绪度评估与启动清单：三态准入门槛、当前态实测数字、5 个 BLOCKED 的 owner 与解锁、Shadow POC 启动 checklist（复核器实测为准，不伪造门禁）
+- `delivery.13` → `07-delivery/13-内部模拟POC验证报告.md`：内部模拟 POC 验证报告：用契约合规的内部模拟 provider 真实闭环 3 项技术 BLOCKED，成熟度 L2、l3Claimable=false；红线 2 项保持 BLOCKED，附可复现取证器与诚实边界
 
-## 六、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 17 份）
+## 六、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 19 份）
 
 - `records.evidence.e2e-20261107` → `09-records/evidence/2026-11-07-claims-e2e-result.md`：2026-11-07 前后端 E2E 时点快照（real-services-no-mock，passed，probeVerdict=NOT_CONFIGURED 诚实降级，HEAD d953da0fc）
+- `records.evidence.e2e-internal-poc-20261123` → `09-records/evidence/2026-11-23-internal-poc-claims-e2e-result.md`：2026-11-23 内部模拟 POC 探活/参与率时点快照（internal-simulated-poc，probeVerdict=REACHABLE，model=poc-internal-v1，HEAD a30c14d5）
+- `records.evidence.readiness-internal-poc-20261123` → `09-records/evidence/2026-11-23-internal-poc-readiness.md`：2026-11-23 内部模拟 POC 复核器输出快照（10 SAT / 2 BLOCKED / L2 / l3Claimable=false，红线保持）
 - `records.impl.14` → `09-records/impl-log/14-主链路闭环体检与P0修复记录.md`：四本账未对齐的体检与 3 项 P0 修复（含变异证据）  ⚠️ 已被 `09-records/impl-log/15-跨案累计读侧与责任账接线（P0-4）.md` 撤销/修正：impl-log/15 已撤销本册"额度服务 0 调用方"判断
 - `records.impl.15` → `09-records/impl-log/15-跨案累计读侧与责任账接线（P0-4）.md`：跨案累计读侧与 A7 责任账接线
 - `records.impl.16` → `09-records/impl-log/16-理算引擎V1重建（分层管线·七层控额·免赔六维）.md`：按 V1 规则重建分层管线与控额  ⚠️ 已被 `09-records/impl-log/17-控额层接线修正与多次闭环.md` 撤销/修正：impl-log/17 修正本册"七层控额四层仅声明未读取"（死配置）

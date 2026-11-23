@@ -65,6 +65,8 @@ python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py
 
 **成熟度诚实定位**：L1 已越过、L2 部分达到、未配真实 provider 时运行态接近 L0。`l3Claimable=false`，不得对外宣称 L3。
 
+> **内部模拟 POC 补充（2026-11-23）**：上述是**默认态**（未配 provider）的实测，口径不变。另用契约合规的内部模拟 provider（`tools/internal-poc-provider.py`）已在内部把前 3 项纯技术 BLOCKED 真实闭环到 SATISFIED（成熟度 L2、`l3Claimable=false`、红线 2 项仍 BLOCKED），证明"配好真实 provider 后链路可达、模型可上场"。这是**内部技术验证**，不是真实企业 POC 通过，也不改变本节默认态数字。详见 `13-内部模拟POC验证报告.md` 与 `../09-records/evidence/2026-11-23-internal-poc-claims-e2e-result.md`、`../09-records/evidence/2026-11-23-internal-poc-readiness.md`。
+
 ---
 
 ## 四、为什么历史报告写「5 SAT / 7 BLOCKED」（口径对齐）
@@ -136,6 +138,7 @@ python3 doc/ai-product/synapClaim/tools/_ai_native_readiness.py
 - `00-落地交付包清单.md`：10 项交付物总览与四阶段节奏
 - `03-POC演示脚本.md`：45 分钟演示剧本与异议应答
 - `11-L3外部前置运行手册.md`：provider → 探活 → E2E → 复核器归因的操作闭环
+- `13-内部模拟POC验证报告.md`：内部模拟 provider 闭环 3 项技术 BLOCKED 的取证与边界（非真实企业 POC 通过）
 - `../08-go-live/00-总纲与Go-Live门禁.md`：G1–G16 门禁与 owner
 - `../09-records/evidence/README.md`：历史快照与证据固化说明
 
