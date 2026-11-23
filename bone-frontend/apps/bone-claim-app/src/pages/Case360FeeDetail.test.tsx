@@ -7,7 +7,7 @@ import type { ClaimWithItemsProjection } from '../services/types';
 const ok = (data: unknown) => Promise.resolve({ code: 200, message: 'ok', data });
 
 const feeRow: ClaimWithItemsProjection = {
-  claimId: '930001', claimNo: 'CL-001', policyNo: 'P-001', planId: 'PLAN-001',
+  claimId: '930001', claimNo: 'CL-001', reportId: '940001', reportNo: 'RP-001', policyNo: 'P-001', planId: 'PLAN-001',
   insuredIdHash: 'hash', consentRecordId: null, consentWithdrawnFlag: 0,
   claimType: ' outpatient', status: 'FINISHED', externalStatus: 'FINISHED', stage: 'FINISH',
   hangUpStatus: 0, invoiceCode: 'TEST', invoiceNo: '001', outInsureTime: '2026-09-09',

@@ -15,7 +15,7 @@ vi.mock('../services/claimConfigApi', () => ({
   },
 }));
 
-import { ClaimSubmitPage } from './ClaimSubmitPage';
+import { ClaimSubmitPage, DECISION_LATENCY_NOTICE, FAST_TRACK_NOTICE } from './ClaimSubmitPage';
 import { claimApi } from '../services/claimApi';
 
 const ok = <T,>(data: T) => ({ code: 200, message: 'ok', data });
@@ -144,5 +144,42 @@ describe('ClaimSubmitPage · 报案模式不变', () => {
     expect(screen.getByPlaceholderText('hash-abc')).toBeTruthy();
     expect(screen.getByRole('button', { name: /提交理赔/ })).toBeTruthy();
     expect(claimApi.reportDetail).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * 高风险口径护栏（诊断报告 §7 P0-1 / §9.3）：
+ * 前端不得硬编码后端不存在的快赔金额阈值或确定性时效承诺——
+ * 真实金额阈值在服务端 autoAmountLimit 策略配置、按租户生效；30 秒是"建议返回 P95 ≤30s"目标。
+ * 这两条曾在代码里被写死成"≤500 元可自动通过""30 秒内返回"的确定性承诺。
+ */
+describe('ClaimSubmitPage · 高风险口径不硬编码', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('报案页不写死 ≤500 快赔金额，改为服务端策略口径', async () => {
+    renderAt('/submit');
+    await screen.findByPlaceholderText('EG20260001');
+
+    // 不得出现与后端 autoAmountLimit 冲突的硬编码金额承诺
+    expect(screen.queryByText(/≤\s*500\s*元/)).toBeNull();
+    expect(screen.queryByText(/500\s*元.*自动通过/)).toBeNull();
+    // 必须明示阈值由服务端配置、前端不预设
+    expect(screen.getByText(/金额阈值由服务端策略配置/)).toBeTruthy();
+    expect(screen.getByText(/不预设具体金额/)).toBeTruthy();
+  });
+
+  it('报案成功提示常量不承诺确定 30 秒，标注 P95 目标与非时效承诺', () => {
+    // 直接钉住导出口径常量（单一真源），无需穿透 antd DatePicker/表单校验
+    expect(DECISION_LATENCY_NOTICE).not.toMatch(/将在 30 秒内返回/);
+    expect(DECISION_LATENCY_NOTICE).toMatch(/目标 P95 30 秒内返回/);
+    expect(DECISION_LATENCY_NOTICE).toMatch(/非时效承诺/);
+  });
+
+  it('快赔提示常量本身也不含硬编码金额', () => {
+    expect(FAST_TRACK_NOTICE).not.toMatch(/≤\s*500|500\s*元/);
+    expect(FAST_TRACK_NOTICE).toMatch(/金额阈值由服务端策略配置/);
+    expect(FAST_TRACK_NOTICE).toMatch(/不预设具体金额/);
   });
 });

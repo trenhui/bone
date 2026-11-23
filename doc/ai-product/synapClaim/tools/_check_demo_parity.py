@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""DEMO ↔ 实现对齐判据（P1–P8）。
+"""DEMO ↔ 实现对齐判据（P1–P10）。
 
 为什么要有这道门禁：9 页原型是签约演示资产，03-POC演示脚本 是签约承诺。
 两者漂移不会让任何现有门禁变红（M1–M9 只扫 .md 语义），现场演示才会穿帮。
-本判据把「POC 三案例在位」「不承诺到账时间」「映射表覆盖 8 页」变成可判红的不变量。
+本判据把「POC 三案例在位」「不承诺到账时间」「映射表覆盖 9 页 + 路由真源对账」
+「退役 DEMO 不残留」变成可判红的不变量。
 
 设计约束：纯 stdlib、零 DB、零网络；--self-test 用注入文本反证每条判据，
 不碰真实文件（换机无 /tmp 残留依赖）。
@@ -19,9 +20,12 @@ import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
+REPO = ROOT.parents[2]  # doc/ai-product/synapClaim → 仓库根
 DELIVERY = ROOT / "07-delivery"
 DEMO = DELIVERY / "prototypes" / "claim-workbench"
 README = DELIVERY / "README.md"
+# P10：README 承诺"9 页 ↔ 22 路由由本脚本机检"，路由真源在前端 routes.tsx。
+ROUTES_TS = REPO / "bone-frontend" / "apps" / "bone-claim-app" / "src" / "routes.tsx"
 
 PAGES = (
     "customer-journey.html", "claim-manage.html", "claim-detail.html",
@@ -90,6 +94,43 @@ def check_mapping(readme: str, pages: set[str]) -> list[str]:
     missing = sorted(set(PAGES) - named)
     if missing:
         errs.append(f"P2 对齐表未覆盖：{', '.join(missing)}")
+    return errs
+
+
+def check_route_mapping(readme: str, routes_ts: str) -> list[str]:
+    """P10：README 承诺「9 页 ↔ 22 路由由本脚本机检」——补全此前只校验左列的缺口。
+
+    旧 check_mapping 只提取第 1 列 HTML 文件名，从不读第 2 列「实现落点」路由，
+    也不校验 routes.tsx 实际路由条数，于是 README 写着"22 路由"却无人对账：
+    新增/删路由、或映射表把落点写成不存在的路径，机检依然全绿。
+    """
+    errs: list[str] = []
+    if not routes_ts.strip():
+        errs.append("P10 routes.tsx 读取失败/为空 → fail-closed")
+        return errs
+    # 只匹配 `{ path: '...' }` 形式的路由声明；刻意不匹配 interface 里的
+    # `path: string;`（§9.2 曾把类型定义计入 grep 得 23 的误判）。
+    actual = set(re.findall(r"\{ path: '([^']+)'", routes_ts))
+    if not actual:
+        errs.append("P10 routes.tsx 未解析到任何路由（格式变更？）→ fail-closed")
+        return errs
+    # README 声明的路由条数（如「22 路由」）
+    declared = re.findall(r"(\d+)\s*路由", readme)
+    if declared and int(declared[0]) != len(actual):
+        errs.append(
+            f"P10 路由条数漂移：README 声明 {declared[0]} 条，routes.tsx 实际 {len(actual)} 条"
+        )
+    # 映射表第 2 列「实现落点」引用的路由必须都存在于 routes.tsx
+    m = re.search(r"### DEMO ↔ 实现对齐.*?(?=\n### |\Z)", readme, re.S)
+    if m:
+        mapped: set[str] = set()
+        for line in m.group(0).splitlines():
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) >= 2 and re.fullmatch(r"`[a-z-]+\.html`", cells[0]):
+                mapped.update(re.findall(r"`(/[a-z][a-z0-9-]*)`", cells[1]))
+        stale = sorted(mapped - actual)
+        if stale:
+            errs.append(f"P10 映射表引用不存在的路由：{', '.join(stale)}")
     return errs
 
 
@@ -183,6 +224,9 @@ def run() -> list[str]:
         errs.append("P2 README 不存在 → fail-closed")
     else:
         errs += check_mapping(readme_text, files)
+        # P10：路由映射对账（README 承诺由本脚本机检）；routes.tsx 缺失时 fail-closed。
+        routes_text = ROUTES_TS.read_text(encoding="utf-8") if ROUTES_TS.is_file() else ""
+        errs += check_route_mapping(readme_text, routes_text)
     errs += check_retired(readme_text, DELIVERY)
     return errs
 
@@ -215,6 +259,30 @@ def self_test() -> int:
     must_red("P2 对齐表缺失", check_mapping("无对齐章节", set(PAGES)))
     bad_map = "### DEMO ↔ 实现对齐\n\n| 页 |\n| `claim-detail.html` |\n\n### 下一节\n14 态 claimStatus.ts"
     must_red("P2 映射表漏页", check_mapping(bad_map, set(PAGES)))
+    # P10 负向/正向探针：注入最小映射表 + routes 文本，验证三类判红与 fail-closed
+    p10_readme = (
+        "原型与实现（22 路由）不是一一对应。\n"
+        "### DEMO ↔ 实现对齐\n\n| DEMO 页 | 实现落点 | 对齐状态 |\n|---|---|---|\n"
+        "| `claim-manage.html` | `/workbench` | 对齐 |\n"
+        "| `claim-detail.html` | `/case` + `/review` | 对齐 |\n"
+        "### 下一节\n"
+    )
+    p10_routes = "\n".join(
+        [f"  {{ path: '/r{i}', name: 'n', element: <P /> }}," for i in range(19)]
+        + ["  { path: '/workbench', name: 'n', element: <P /> },",
+           "  { path: '/case', name: 'n', element: <P /> },",
+           "  { path: '/review', name: 'n', element: <P /> },"]
+    )  # 22 条：19 占位 + workbench/case/review（覆盖映射表第 2 列全部 token）
+    must_green("P10 正向映射", check_route_mapping(p10_readme, p10_routes))
+    # §9.2 教训钉子：interface 里的 `path: string;` 不得被误计为路由 → 仍应绿
+    must_green("P10 类型定义不计入", check_route_mapping(
+        p10_readme, p10_routes + "\nexport interface X { path: string; name: string; }"))
+    must_red("P10 映射引用不存在路由", check_route_mapping(
+        p10_readme.replace("`/workbench`", "`/no-such-route`"), p10_routes))
+    must_red("P10 routes 缺失 fail-closed", check_route_mapping(p10_readme, ""))
+    # 删掉一条路由（21 条），声明仍 22 → 必须判红
+    must_red("P10 路由条数少于声明", check_route_mapping(
+        p10_readme, "\n".join(p10_routes.splitlines()[:-1])))
     t = dict(good); t["evaluation-report.html"] = t["evaluation-report.html"].replace("现场生成", "")
     must_red("P8 评测预置实测值", check_cases(t))
     t = dict(good); t["claim-detail.html"] = t["claim-detail.html"].replace("事实认定", "")
@@ -275,7 +343,7 @@ def main() -> int:
             print("【FAIL】" + e)
         print(f"共 {len(errs)} 处问题")
         return 1
-    print("【OK】DEMO ↔ 实现对齐：9 页齐全 / 三案例与评测锚点在位 / 无到账承诺 / 映射表完整")
+    print("【OK】DEMO ↔ 实现对齐：9 页齐全 / 三案例与评测锚点在位 / 无到账承诺 / 映射表与路由真源一致 / 退役 DEMO 不残留")
     return 0
 
 

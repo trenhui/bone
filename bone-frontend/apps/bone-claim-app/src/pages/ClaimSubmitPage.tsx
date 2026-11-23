@@ -31,6 +31,19 @@ import {
 import { claimConfigApi, type FeeCategoryView } from '../services/claimConfigApi';
 
 /**
+ * 高风险口径文案（诊断报告 §7 P0-1 / §9.3）——导出以便判别力单测直接钉住。
+ *
+ * <p>两条都曾写死成与后端矛盾的确定性承诺："≤500 元可自动通过"（后端实际按
+ * 服务端 autoAmountLimit 策略、按租户生效且封顶 1 万，无 500 常量）、"30 秒内返回"
+ * （权威口径是"建议返回 P95 ≤30s"目标，非时效承诺）。导出为常量，避免测试穿透
+ * antd DatePicker/表单校验才能触达文案，同时使口径单一真源。
+ */
+export const FAST_TRACK_NOTICE =
+  '小额案件在材料完整、无风险标记且责任明确时可能进入自动通过；自动通过的金额阈值由服务端策略配置并按租户生效，本页不预设具体金额；不满足条件的案件转人工核赔。';
+export const DECISION_LATENCY_NOTICE =
+  '决策建议目标 P95 30 秒内返回（示意，非时效承诺），可在「我的报案」查看。';
+
+/**
  * 员工端 · 报案页（synapClaim 一期：企业补充医疗 · 门诊小额快赔）。
  *
  * 提交即受理（后端 DRAFT→7）；缺件走工作台「要求补件」回流，不阻塞受理。
@@ -247,7 +260,7 @@ export function ClaimSubmitPage(): ReactElement {
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-          message="门诊小额快赔：≤500 元且材料完整、无风险标记、责任明确可自动通过；其余转人工核赔。"
+          message={FAST_TRACK_NOTICE}
         />
       )}
       {feeCatalogFailed && (
@@ -272,7 +285,7 @@ export function ClaimSubmitPage(): ReactElement {
               当前状态：<Tag color="blue">{result.status}</Tag>{' '}
               {isAppend
                 ? '同一报案下的赔案共用事故上下文，年度免赔与责任限额按同案累计。'
-                : '决策建议将在 30 秒内返回，可在「我的报案」查看。'}
+                : DECISION_LATENCY_NOTICE}
               {result.claimId && (
                 <Button
                   type="link"
