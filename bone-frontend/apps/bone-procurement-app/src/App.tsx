@@ -7,6 +7,7 @@ import FulfillmentConsole from './pages/FulfillmentConsole';
 import ContractReviewDisclosure from './pages/ContractReviewDisclosure';
 import ContractHitlConsole from './pages/ContractHitlConsole';
 import AiReadiness from './pages/AiReadiness';
+import AdvisoryConsole from './pages/AdvisoryConsole';
 import HumanReviewConsole from './pages/HumanReviewConsole';
 import GovernanceStatus from './pages/GovernanceStatus';
 
@@ -35,6 +36,7 @@ const AppContent: React.FC = () => {
           <Route path="/contract-review" element={<ContractReviewDisclosure />} />
           <Route path="/contract-hitl" element={<ContractHitlConsole />} />
           <Route path="/ai-readiness" element={<AiReadiness />} />
+          <Route path="/advisory" element={<AdvisoryConsole />} />
           <Route path="/human-review" element={<HumanReviewConsole />} />
           <Route path="/governance" element={<GovernanceStatus />} />
           <Route path="/" element={<Navigate to="/transactions" replace />} />
