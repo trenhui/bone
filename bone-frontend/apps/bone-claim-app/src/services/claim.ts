@@ -253,4 +253,15 @@ export const claimApi = {
       { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   },
+
+  /**
+   * 撤回个人信息处理同意（PIPL 第 15 条；后端 `POST /{id}/consent/revoke`，权限 claim:claims:write）。
+   *
+   * <p>幂等：重复撤回返回 200 + data=false（本来就已撤回），不 bump version。撤回后分配/初审/核赔/
+   * 复核/自动通过等处理类用例一律 422 拒绝；关单/挂起等收尾动作不受影响。**本系统内不可撤销**——
+   * 重新处理须由上游同意服务重新采集并签发新的同意记录号，故调用方必须二次确认并明示后果。
+   */
+  revokeConsent(claimId: string): Promise<ApiResponse<boolean>> {
+    return client.post<never, ApiResponse<boolean>>(`/${claimId}/consent/revoke`);
+  },
 };

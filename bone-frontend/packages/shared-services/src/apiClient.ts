@@ -120,6 +120,16 @@ export function createApiClient(baseURL: string, config?: AxiosRequestConfig): A
         // 微应用不直接跳转，通知主应用处理
         window.dispatchEvent(new CustomEvent('bone:auth:expired', { detail: { status: 401 } }));
       }
+      if (error.response?.status === 429) {
+        // 限流：把 Retry-After 透传给消费端（秒数或 HTTP 日期都原样保留）。
+        // 刻意不在这里自动重试——多数写操作没有幂等键，自动重试会重复执行；
+        // 退避/重试策略归消费端，按 error.retryAfter 决定提示或延时。
+        const retryAfter = error.response?.headers?.['retry-after']
+          ?? error.response?.headers?.get?.('Retry-After');
+        if (retryAfter != null) {
+          error.retryAfter = String(retryAfter);
+        }
+      }
       // 错误响应体是 ApiResponse<ProblemDetail>：data 里挂着稳定业务码 errorCode，
       // 前端按 errors.<errorCode> 取 locale 文案（见 shared-utils 的 resolveErrorMessage）。
       // 这里只做透传，不翻译——本包不依赖 i18n，翻译留给消费端，避免给共享包加语言包依赖边。

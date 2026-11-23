@@ -108,6 +108,32 @@ describe('createApiClient 拦截器', () => {
     expect(err.displayMessage).toBe('unauthorized');
   });
 
+  it('429 响应透传 Retry-After（AxiosHeaders.get 形态），不自动重试', async () => {
+    createApiClient('/api/v1/iam');
+    const h = store.resHandlers[0];
+    const err: { response: { status: number; headers: { get: (k: string) => string | null } }; retryAfter?: string } = {
+      response: { status: 429, headers: { get: (k) => (k === 'Retry-After' ? '30' : null) } },
+    };
+    await expect(h.onRejected(err)).rejects.toBe(err);
+    expect(err.retryAfter).toBe('30');
+  });
+
+  it('429 响应透传 Retry-After（纯对象形态），Header 缺失时不臆造字段', async () => {
+    createApiClient('/api/v1/iam');
+    const h = store.resHandlers[0];
+    const withHeader: { response: { status: number; headers: Record<string, string> }; retryAfter?: string } = {
+      response: { status: 429, headers: { 'retry-after': 'Wed, 21 Oct 2026 07:28:00 GMT' } },
+    };
+    await expect(h.onRejected(withHeader)).rejects.toBe(withHeader);
+    expect(withHeader.retryAfter).toBe('Wed, 21 Oct 2026 07:28:00 GMT');
+
+    const noHeader: { response: { status: number }; retryAfter?: string } = {
+      response: { status: 429 },
+    };
+    await expect(h.onRejected(noHeader)).rejects.toBe(noHeader);
+    expect(noHeader.retryAfter).toBeUndefined();
+  });
+
   it('2xx + success:true 正常解包', async () => {
     createApiClient('/api/v1/iam');
     const h = store.resHandlers[0];
