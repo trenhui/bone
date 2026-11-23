@@ -64,4 +64,20 @@ public class SourcingApplicationService {
     project.awardByHuman(operator);
     repository.save(project);
   }
+
+  /**
+   * 按 RFx 编号人工授标：路径键 rfxNo 经 RFx.projectId 租户锚定定位项目；operator 必须来自登录态， 空白操作人抛
+   * IllegalArgumentException（400），AI 建议不得调用此入口（红线）。
+   */
+  public void awardByRfxNo(Long tenantId, String rfxNo, String operator) {
+    if (operator == null || operator.isBlank()) {
+      throw new IllegalArgumentException("授标必须具名人工操作人，AI/匿名不得终决");
+    }
+    SourcingProject project =
+        repository
+            .findProjectByRfxNo(tenantId, rfxNo)
+            .orElseThrow(() -> new IllegalArgumentException("RFx 对应项目不存在或不匹配"));
+    project.awardByHuman(operator);
+    repository.save(project);
+  }
 }

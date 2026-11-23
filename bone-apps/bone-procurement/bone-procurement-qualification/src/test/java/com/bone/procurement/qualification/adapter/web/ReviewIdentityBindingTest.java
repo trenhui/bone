@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.bone.procurement.qualification.adapter.web.controller.QualificationController;
+import com.bone.procurement.qualification.adapter.web.controller.QualificationController.ApproveOnboardingRequest;
 import com.bone.procurement.qualification.adapter.web.controller.QualificationController.OcrReviewRequest;
 import com.bone.procurement.qualification.application.OnboardingApplicationService;
 import com.bone.procurement.qualification.application.QualificationApplicationService;
@@ -68,5 +69,63 @@ class ReviewIdentityBindingTest {
         .reviewOcrByHuman(tenant.capture(), eq(7L), reviewer.capture(), eq(true), any(Date.class));
     assertThat(tenant.getValue()).isEqualTo(1L);
     assertThat(reviewer.getValue()).isEqualTo("alice");
+  }
+
+  @Test
+  void 准入终决无登录态时拒绝且不落库() {
+    when(identityPort.current()).thenReturn(null);
+
+    assertThatThrownBy(() -> controller.approve("ON-1", new ApproveOnboardingRequest(1L, "alice")))
+        .isInstanceOf(IllegalArgumentException.class);
+    verifyNoInteractions(onboarding);
+  }
+
+  @Test
+  void 准入终决请求租户与登录态不一致时拒绝() {
+    when(identityPort.current()).thenReturn(new ReviewIdentity(1L, "alice"));
+
+    assertThatThrownBy(() -> controller.approve("ON-1", new ApproveOnboardingRequest(2L, "alice")))
+        .isInstanceOf(IllegalArgumentException.class);
+    verifyNoInteractions(onboarding);
+  }
+
+  @Test
+  void 准入终决请求操作人与登录态不一致时拒绝() {
+    when(identityPort.current()).thenReturn(new ReviewIdentity(1L, "alice"));
+
+    assertThatThrownBy(() -> controller.approve("ON-1", new ApproveOnboardingRequest(1L, "bob")))
+        .isInstanceOf(IllegalArgumentException.class);
+    verifyNoInteractions(onboarding);
+  }
+
+  @Test
+  void 登录态身份字段不全时拒绝且不落库() {
+    when(identityPort.current()).thenReturn(new ReviewIdentity(null, "alice"));
+
+    assertThatThrownBy(() -> controller.approve("ON-1", new ApproveOnboardingRequest(null, null)))
+        .isInstanceOf(IllegalArgumentException.class);
+    verifyNoInteractions(onboarding);
+  }
+
+  @Test
+  void 登录态复核人空白时拒绝且不落库() {
+    when(identityPort.current()).thenReturn(new ReviewIdentity(1L, "  "));
+
+    assertThatThrownBy(() -> controller.approve("ON-1", new ApproveOnboardingRequest(null, null)))
+        .isInstanceOf(IllegalArgumentException.class);
+    verifyNoInteractions(onboarding);
+  }
+
+  @Test
+  void 准入终决一致时按登录态权威值落库() {
+    when(identityPort.current()).thenReturn(new ReviewIdentity(1L, "alice"));
+
+    controller.approve("ON-1", new ApproveOnboardingRequest(1L, "alice"));
+
+    ArgumentCaptor<Long> tenant = ArgumentCaptor.forClass(Long.class);
+    ArgumentCaptor<String> operator = ArgumentCaptor.forClass(String.class);
+    verify(onboarding).approveByHuman(tenant.capture(), eq("ON-1"), operator.capture());
+    assertThat(tenant.getValue()).isEqualTo(1L);
+    assertThat(operator.getValue()).isEqualTo("alice");
   }
 }

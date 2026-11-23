@@ -13,4 +13,9 @@ public interface SourcingProjectRepository {
   Optional<SourcingProject> findByProjectNo(Long tenantId, String projectNo);
 
   Optional<Rfx> findRfxByNo(Long tenantId, String rfxNo);
+
+  /** 按租户 + RFx 编号定位对应寻源项目；RFx 不存在或 projectId 不命中返回 empty（租户锚定）。 */
+  default Optional<SourcingProject> findProjectByRfxNo(Long tenantId, String rfxNo) {
+    return Optional.empty();
+  }
 }

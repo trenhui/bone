@@ -18,4 +18,17 @@ public interface SourcingProjectSqlRepository extends Repository<SourcingProject
                 .eq("projectNo", projectNo));
     return list.stream().findFirst();
   }
+
+  default Optional<SourcingProject> findById(Long tenantId, Long projectId) {
+    if (tenantId == null || projectId == null) {
+      return Optional.empty();
+    }
+    List<SourcingProject> list =
+        findByCriteria(
+            Criteria.<SourcingProject>create()
+                .entityClass(SourcingProject.class)
+                .eq("tenantId", tenantId)
+                .eq("id", projectId));
+    return list.stream().findFirst();
+  }
 }

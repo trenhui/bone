@@ -26,12 +26,25 @@ class SourcingControllerContractTest {
   }
 
   @Test
+  @DisplayName("授标端点要求既有 RFx 审批权限；无权限主体由框架拒绝（403）")
+  void awardEndpointRequiresRfxApproveAuthority() throws Exception {
+    Method award =
+        SourcingController.class.getMethod(
+            "awardRfx", String.class, SourcingController.AwardRfxRequest.class);
+    PreAuthorize pa = award.getAnnotation(PreAuthorize.class);
+    assertThat(pa).as("授标端点必须声明 @PreAuthorize").isNotNull();
+    assertThat(pa.value())
+        .as("无 procurement:rfx:approve 权限的主体不得进入授标方法；框架返回 403")
+        .isEqualTo("hasAuthority('procurement:rfx:approve')");
+  }
+
+  @Test
   @DisplayName("端点数量与 OpenAPI §02 卷骨架对齐")
   void endpointCountMatchesContract() {
     long postCount =
         Arrays.stream(SourcingController.class.getDeclaredMethods())
             .filter(m -> m.isAnnotationPresent(PostMapping.class))
             .count();
-    assertThat(postCount).isEqualTo(2L);
+    assertThat(postCount).isEqualTo(3L);
   }
 }
