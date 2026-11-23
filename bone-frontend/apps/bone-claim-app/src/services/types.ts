@@ -227,6 +227,29 @@ export interface ClaimWithItemsProjection {
   itemUnitPrice: number | null;
   itemAmount: number | null;
   itemValidAmount: number | null;
+  /** 费用编码（后端 item_fee_code）。医保/诊疗项目编码，缺值为 null。 */
+  itemFeeCode: string | null;
+  /** 社保标志（后端 item_social_flag，Y/N）。 */
+  itemSocialFlag: string | null;
+  /** 医保类型（后端 item_medical_type，如"甲类"）。 */
+  itemMedicalType: string | null;
+  /** 统筹支付金额（后端 item_pooling_amount）——理算输入事实，只读展示，不参与前端加总。 */
+  itemPoolingAmount: number | null;
+  /** 自付一（后端 item_self_pay_1，计入免赔）——理算输入事实。 */
+  itemSelfPay1: number | null;
+  /** 自付二（后端 item_self_pay_2，乙类先行自付）——理算输入事实。 */
+  itemSelfPay2: number | null;
+  /** 丙类自费（后端 item_self_pay_c）——理算输入事实。 */
+  itemSelfPayC: number | null;
+  /** 第三方已赔付（后端 item_third_party_paid）——理算输入事实。 */
+  itemThirdPartyPaid: number | null;
+  /** 不合理费用（后端 item_invalid_amount，初审核减的事实记录，非待扣金额）——只读展示。 */
+  itemInvalidAmount: number | null;
+  /** 就诊/票据上下文（后端 invoice_date / hospital_code / diagnosis_code / item_department）。 */
+  invoiceDate: string | null;
+  hospitalCode: string | null;
+  diagnosisCode: string | null;
+  itemDepartment: string | null;
 }
 
 export interface PageResult<T> {

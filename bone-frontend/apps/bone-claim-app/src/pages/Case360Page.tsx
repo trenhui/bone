@@ -480,43 +480,125 @@ export function Case360Page(): ReactElement {
                     rowKey={(r) => String(r.itemId)}
                     dataSource={feeItems}
                     pagination={false}
-                    scroll={{ x: 820 }}
+                    scroll={{ x: 1560 }}
                     columns={[
-                      { title: '费用项目', dataIndex: 'itemName', width: 180, render: (v: string | null) => v || '—' },
-                      { title: '编码', dataIndex: 'itemCode', width: 120, render: (v: string | null) => v || '—' },
+                      { title: '费用项目', dataIndex: 'itemName', width: 160, render: (v: string | null) => v || '—' },
+                      { title: '编码', dataIndex: 'itemCode', width: 100, render: (v: string | null) => v || '—' },
                       {
                         title: '类别',
                         dataIndex: 'itemCategory',
-                        width: 100,
+                        width: 90,
                         render: (v: ItemCategory | null) => (v ? ITEM_CATEGORY_LABEL[v] ?? v : '—'),
                       },
                       {
                         title: '数量',
                         dataIndex: 'itemQuantity',
-                        width: 80,
+                        width: 70,
                         align: 'right',
                         render: (v: number | null) => (v == null ? '—' : v),
                       },
                       {
                         title: '单价',
                         dataIndex: 'itemUnitPrice',
-                        width: 120,
+                        width: 110,
                         align: 'right',
                         render: (v: number | null) => <MoneyText value={v} />,
                       },
                       {
                         title: '金额',
                         dataIndex: 'itemAmount',
-                        width: 130,
+                        width: 120,
                         align: 'right',
                         render: (v: number | null) => <MoneyText value={v} />,
                       },
                       {
                         title: '核定金额',
                         dataIndex: 'itemValidAmount',
-                        width: 140,
+                        width: 120,
                         align: 'right',
                         render: (v: number | null) => <MoneyText value={v} unknownText="未核定" />,
+                      },
+                      {
+                        title: '医保结算（事实记录）',
+                        children: [
+                          {
+                            title: '社保 / 医保类型',
+                            width: 110,
+                            render: (_: unknown, r: ClaimWithItemsProjection) =>
+                              [r.itemSocialFlag, r.itemMedicalType].filter(Boolean).join(' / ') || '—',
+                          },
+                          {
+                            title: '统筹支付',
+                            dataIndex: 'itemPoolingAmount',
+                            width: 110,
+                            align: 'right',
+                            render: (v: number | null) => <MoneyText value={v} />,
+                          },
+                          {
+                            title: '自付一',
+                            dataIndex: 'itemSelfPay1',
+                            width: 100,
+                            align: 'right',
+                            render: (v: number | null) => <MoneyText value={v} />,
+                          },
+                          {
+                            title: '自付二',
+                            dataIndex: 'itemSelfPay2',
+                            width: 100,
+                            align: 'right',
+                            render: (v: number | null) => <MoneyText value={v} />,
+                          },
+                          {
+                            title: '丙类自费',
+                            dataIndex: 'itemSelfPayC',
+                            width: 100,
+                            align: 'right',
+                            render: (v: number | null) => <MoneyText value={v} />,
+                          },
+                          {
+                            title: '第三方已赔付',
+                            dataIndex: 'itemThirdPartyPaid',
+                            width: 120,
+                            align: 'right',
+                            render: (v: number | null) => <MoneyText value={v} />,
+                          },
+                          {
+                            title: '不合理费用(核减)',
+                            dataIndex: 'itemInvalidAmount',
+                            width: 130,
+                            align: 'right',
+                            render: (v: number | null) => <MoneyText value={v} />,
+                          },
+                        ],
+                      },
+                      {
+                        title: '就诊上下文',
+                        children: [
+                          {
+                            title: '费用编码',
+                            dataIndex: 'itemFeeCode',
+                            width: 110,
+                            render: (v: string | null) => v || '—',
+                          },
+                          {
+                            title: '开票日期',
+                            dataIndex: 'invoiceDate',
+                            width: 110,
+                            render: (v: string | null) => v || '—',
+                          },
+                          {
+                            title: '医院编码',
+                            dataIndex: 'hospitalCode',
+                            width: 100,
+                            render: (v: string | null) => v || '—',
+                          },
+                          {
+                            title: '诊断编码',
+                            dataIndex: 'diagnosisCode',
+                            width: 110,
+                            render: (v: string | null) => v || '—',
+                          },
+                        ],
                       },
                     ]}
                     summary={() => (
@@ -527,6 +609,11 @@ export function Case360Page(): ReactElement {
                         </Table.Summary.Cell>
                         <Table.Summary.Cell index={2} align="right">
                           <MoneyText value={feeValidKnown ? feeValidSum : null} unknownText="未核定" />
+                        </Table.Summary.Cell>
+                        <Table.Summary.Cell index={3} colSpan={11}>
+                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                            医保结算/就诊列为理算输入事实记录（自付、统筹、核减等），不参与此处合计，避免与赔付金额双扣。
+                          </Typography.Text>
                         </Table.Summary.Cell>
                       </Table.Summary.Row>
                     )}
