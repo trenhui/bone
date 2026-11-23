@@ -837,6 +837,28 @@
       "currency": "frozen"
     },
     {
+      "id": "records.evidence.readiness-internal-poc-rerun-202611231929",
+      "path": "09-records/evidence/2026-11-23-1929-internal-poc-readiness.md",
+      "layer": "L9",
+      "diataxis": "explanation",
+      "status": "active",
+      "summary": "2026-11-23 19:29 内部模拟 POC 复跑复核器输出快照（10 SAT/2 BLOCKED/L2/l3Claimable=false，self-test PASS，结论可复现）",
+      "authority": "内部模拟 POC 复跑复核器时点快照",
+      "role": "evidence",
+      "currency": "frozen"
+    },
+    {
+      "id": "records.evidence.e2e-internal-poc-rerun-202611231929",
+      "path": "09-records/evidence/2026-11-23-1929-internal-poc-claims-e2e-result.md",
+      "layer": "L9",
+      "diataxis": "explanation",
+      "status": "active",
+      "summary": "2026-11-23 19:29 内部模拟 POC 复跑 E2E/探活时点快照（internal-simulated-poc，新 requestId poc-a07a49c8，HEAD b24f9c5d1，REACHABLE/PROVIDER，红线守住）",
+      "authority": "内部模拟 POC 复跑 E2E 时点快照",
+      "role": "evidence",
+      "currency": "frozen"
+    },
+    {
       "id": "records.evidence.e2e-internal-poc-20261123",
       "path": "09-records/evidence/2026-11-23-internal-poc-claims-e2e-result.md",
       "layer": "L9",

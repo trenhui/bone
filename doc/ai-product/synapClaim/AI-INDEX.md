@@ -124,9 +124,11 @@ currency: current
 - `delivery.13` → `07-delivery/13-内部模拟POC验证报告.md`：内部模拟 POC 验证报告：用契约合规的内部模拟 provider 真实闭环 3 项技术 BLOCKED，成熟度 L2、l3Claimable=false；红线 2 项保持 BLOCKED，附可复现取证器与诚实边界
 - `delivery.14` → `07-delivery/14-真实企业POC推进计划.md`：真实企业 POC 推进计划：从 Shadow 到投产的三态分阶段路线，2 项红线 + 16 项 Go-Live 门禁按 owner 拆为可执行动作/签核材料/外部依赖/判定标准，明确内部已完成与待外部签核边界，红线不伪造
 
-## 六、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 19 份）
+## 六、FROZEN 冻结证据（role=evidence/tooling，仅用于「为什么/历史」，禁止当作现状，共 21 份）
 
 - `records.evidence.e2e-20261107` → `09-records/evidence/2026-11-07-claims-e2e-result.md`：2026-11-07 前后端 E2E 时点快照（real-services-no-mock，passed，probeVerdict=NOT_CONFIGURED 诚实降级，HEAD d953da0fc）
+- `records.evidence.e2e-internal-poc-rerun-202611231929` → `09-records/evidence/2026-11-23-1929-internal-poc-claims-e2e-result.md`：2026-11-23 19:29 内部模拟 POC 复跑 E2E/探活时点快照（internal-simulated-poc，新 requestId poc-a07a49c8，HEAD b24f9c5d1，REACHABLE/PROVIDER，红线守住）
+- `records.evidence.readiness-internal-poc-rerun-202611231929` → `09-records/evidence/2026-11-23-1929-internal-poc-readiness.md`：2026-11-23 19:29 内部模拟 POC 复跑复核器输出快照（10 SAT/2 BLOCKED/L2/l3Claimable=false，self-test PASS，结论可复现）
 - `records.evidence.e2e-internal-poc-20261123` → `09-records/evidence/2026-11-23-internal-poc-claims-e2e-result.md`：2026-11-23 内部模拟 POC 探活/参与率时点快照（internal-simulated-poc，probeVerdict=REACHABLE，model=poc-internal-v1，HEAD a30c14d5）
 - `records.evidence.readiness-internal-poc-20261123` → `09-records/evidence/2026-11-23-internal-poc-readiness.md`：2026-11-23 内部模拟 POC 复核器输出快照（10 SAT / 2 BLOCKED / L2 / l3Claimable=false，红线保持）
 - `records.impl.14` → `09-records/impl-log/14-主链路闭环体检与P0修复记录.md`：四本账未对齐的体检与 3 项 P0 修复（含变异证据）  ⚠️ 已被 `09-records/impl-log/15-跨案累计读侧与责任账接线（P0-4）.md` 撤销/修正：impl-log/15 已撤销本册"额度服务 0 调用方"判断

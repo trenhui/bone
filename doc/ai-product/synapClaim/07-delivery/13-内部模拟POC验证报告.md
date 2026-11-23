@@ -108,6 +108,8 @@ l3Claimable = false
 
 两份时点快照已登记在 `09-records/evidence/README.md`。
 
+**复跑验证（2026-11-23 19:29）**：按 §七 复现步骤在 HEAD `b24f9c5d1` 上重跑隔离栈与取证器，结论一致（10 SAT / 2 BLOCKED / L2 / l3Claimable=false / self-test PASS），探活返回新 requestId `poc-a07a49c8-…`（区别于首次 `poc-28c64ce5-…`），证明结论可复现而非偶发。复跑时点快照另存 `09-records/evidence/2026-11-23-1929-internal-poc-claims-e2e-result.md` 与 `09-records/evidence/2026-11-23-1929-internal-poc-readiness.md`（首次快照原文保留作审计轨迹，不回改）。
+
 ---
 
 ## 五、诚实边界（不得越线）
