@@ -7,6 +7,7 @@ import {
   calibrationEvidenceMeta,
   capabilityStateMeta,
   drillMeta,
+  evidenceStatusMeta,
   gatesMeta,
   governanceWindow,
   isLoosened,
@@ -339,5 +340,40 @@ describe('CONFIG_LIMIT_DIRECTION 收紧方向真源（批 2）', () => {
     expect(isLoosened('aiManualThreshold', 0.7, 0.8)).toBe(false); // 升高 = 收紧
     expect(isLoosened('autoAmountLimit', 0.7, 0.6)).toBe(false);  // 降低 = 收紧
     expect(isLoosened('aiManualThreshold', 0.7, 0.6)).toBe(true); // 降低 = 放宽
+  });
+});
+
+describe('evidenceStatusMeta 工程证据口径', () => {
+  it('EVIDENCED 只译作有证据，刻意非 success，且明示 ≠ 达标 ≠ 放款', () => {
+    const meta = evidenceStatusMeta('EVIDENCED');
+    expect(meta.label).toBe('有可核证据');
+    expect(meta.tone).toBe('neutral'); // 防止绿色被误读为"能力达标/可放款"
+    expect(meta.detail).toContain('≠ 能力达标');
+    expect(meta.detail).toContain('放款许可');
+    expect(meta.label).not.toContain('达标');
+    expect(meta.label).not.toContain('通过');
+  });
+
+  it('NOT_EVIDENCED 是 warning 非 error：多为有意 fail-closed', () => {
+    const meta = evidenceStatusMeta('NOT_EVIDENCED');
+    expect(meta.label).toBe('无可核证据');
+    expect(meta.tone).toBe('warning');
+    expect(meta.tone).not.toBe('error');
+  });
+
+  it('未知/空状态保守处理，不压平成有证据或达标', () => {
+    for (const v of [null, undefined, '', 'READY', 'PASSED']) {
+      const meta = evidenceStatusMeta(v);
+      expect(meta.tone).toBe('warning');
+      expect(meta.label).toContain('未登记状态');
+      expect(meta.detail).toContain('按无证据处理');
+    }
+  });
+
+  it('互补判别力：EVIDENCED 与 NOT_EVIDENCED 标签/色调不同', () => {
+    const yes = evidenceStatusMeta('EVIDENCED');
+    const no = evidenceStatusMeta('NOT_EVIDENCED');
+    expect(yes.label).not.toBe(no.label);
+    expect(yes.tone).not.toBe(no.tone);
   });
 });

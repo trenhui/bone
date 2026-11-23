@@ -10,6 +10,7 @@ import {
   capabilityStateMeta,
   CONFIG_LIMIT_DIRECTION,
   drillMeta,
+  evidenceStatusMeta,
   gatesMeta,
   governanceWindow,
   isLoosened,
@@ -22,6 +23,7 @@ import {
   type AiCalibrationReport,
   type AiConfigGovernance,
   type AiRuntimeHealth,
+  type EngineeringEvidence,
   type GovernanceTone,
   type GuardCheckResp,
   type ProviderProbeReport,
@@ -39,6 +41,7 @@ interface GovernanceState {
   calibration: Load<AiCalibrationReport>;
   rollout: Load<RolloutSnapshot>;
   drill: Load<RolloutDrillReport>;
+  evidence: Load<EngineeringEvidence>;
   config: Load<AiConfigGovernance>;
 }
 
@@ -48,6 +51,7 @@ const INITIAL: GovernanceState = {
   calibration: { state: 'loading' },
   rollout: { state: 'loading' },
   drill: { state: 'loading' },
+  evidence: { state: 'loading' },
   config: { state: 'loading' },
 };
 
@@ -375,12 +379,13 @@ export function AiGovernancePage(): ReactElement {
   const load = useCallback(async () => {
     setState(INITIAL);
     const { from, to } = governanceWindow();
-    const [readiness, runtime, calibration, rollout, drill, config] = await Promise.allSettled([
+    const [readiness, runtime, calibration, rollout, drill, evidence, config] = await Promise.allSettled([
       aiGovernanceApi.readiness(),
       aiGovernanceApi.runtimeHealth(from, to),
       aiGovernanceApi.calibration(),
       aiGovernanceApi.rollout(from, to),
       aiGovernanceApi.drill(),
+      aiGovernanceApi.engineeringEvidence(),
       aiGovernanceApi.config(),
     ]);
     const settle = <T,>(r: PromiseSettledResult<T>): Load<T> =>
@@ -393,6 +398,7 @@ export function AiGovernancePage(): ReactElement {
       calibration: settle(calibration),
       rollout: settle(rollout),
       drill: settle(drill),
+      evidence: settle(evidence),
       config: settle(config),
     });
   }, []);
@@ -407,7 +413,7 @@ export function AiGovernancePage(): ReactElement {
     <div style={{ padding: 16 }}>
       <PageHeader
         title="AI 治理"
-        description="运行期证据与配置治理：能力就绪、模型参与、盲标校准、放量档位、回滚演练、仅收紧阈值配置（受写开关控制）与连通性探活"
+        description="运行期证据与配置治理：能力就绪、模型参与、盲标校准、放量档位、回滚演练、工程证据底座、仅收紧阈值配置（受写开关控制）与连通性探活"
         extra={
           <Space>
             <Button icon={<ReloadOutlined />} onClick={() => void load()}>刷新</Button>
@@ -611,6 +617,38 @@ export function AiGovernancePage(): ReactElement {
                   <Descriptions.Item label="禁止项">{metricText((d.forbiddenMutations ?? []).length)}</Descriptions.Item>
                 </Descriptions>
               </>
+            );
+          }}
+        </Section>
+
+        <Section title="工程证据底座" load={state.evidence}>
+          {(raw: never) => {
+            const d = raw as unknown as EngineeringEvidence;
+            return (
+              <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                <Table
+                  size="small"
+                  bordered
+                  pagination={false}
+                  rowKey="id"
+                  dataSource={d.criteria}
+                  columns={[
+                    { title: '判据 ID', dataIndex: 'id', width: 240 },
+                    {
+                      title: '证据状态',
+                      dataIndex: 'status',
+                      width: 140,
+                      render: (v: string) => <StatusTag meta={evidenceStatusMeta(v)} />,
+                    },
+                    {
+                      title: '原因码',
+                      dataIndex: 'reason',
+                      render: (v: string) => (v ? <Typography.Text code>{v}</Typography.Text> : <Typography.Text type="secondary">—</Typography.Text>),
+                    },
+                  ]}
+                />
+                {d.note ? <Alert type="info" showIcon message="口径声明" description={d.note} /> : null}
+              </Space>
             );
           }}
         </Section>

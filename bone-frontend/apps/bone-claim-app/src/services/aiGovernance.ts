@@ -157,6 +157,25 @@ export interface ProviderProbeReport {
   requestId: string | null;
 }
 
+/**
+ * 工程证据底座视图（GET /api/v1/claim-ops/engineering-evidence，只读）。
+ *
+ * 判据 ID / 状态 / 原因码全部来自后端部署态真源，前端不硬编码判据清单、不推算状态。
+ * 关键口径：EVIDENCED 仅表示"部署态有可核证据"，≠ 能力达标 ≠ 放款许可；
+ * 该声明由后端 note 原样下发，前端必须完整呈现，不得简化为"达标/通过"。
+ */
+export interface EvidenceCriterion {
+  id: string;
+  status: string;
+  reason: string;
+}
+
+export interface EngineeringEvidence {
+  criteria: EvidenceCriterion[];
+  /** 后端下发的口径声明：证据齐备 ≠ 能力达标 ≠ 放款许可。必须原样呈现。 */
+  note: string;
+}
+
 export interface CalibrationBucket {
   bucketFrom: number | string | null;
   bucketTo: number | string | null;
@@ -283,6 +302,29 @@ export function capabilityStateMeta(state: string | null | undefined): StatusMet
   }
   const raw = state === null || state === undefined || state === '' ? '(空)' : String(state);
   return { label: `未登记状态：${raw}`, tone: 'warning', detail: '未知能力状态不得按已就绪处理。' };
+}
+
+/**
+ * 工程证据判据状态映射。
+ *
+ * 铁律：EVIDENCED 只译作「有可核证据」，刻意用 neutral 而非 success——
+ * 绿色会被读成「能力达标 / 可放款」，正是后端 NOTE 严禁的口径。
+ * NOT_EVIDENCED 用 warning（多为有意 fail-closed，如 provider 未配置/限定维度无列），
+ * 不当作系统故障的 error。未知状态一律保守，不压平成"有证据"。
+ */
+export function evidenceStatusMeta(status: string | null | undefined): StatusMeta {
+  if (status === 'EVIDENCED') {
+    return {
+      label: '有可核证据',
+      tone: 'neutral',
+      detail: '仅表示部署态有可核证据，≠ 能力达标 ≠ 放款许可。',
+    };
+  }
+  if (status === 'NOT_EVIDENCED') {
+    return { label: '无可核证据', tone: 'warning', detail: '能力未接线 / 配置缺失 / 声明缺失 / 当前不可表达。' };
+  }
+  const raw = status === null || status === undefined || status === '' ? '(空)' : String(status);
+  return { label: `未登记状态：${raw}`, tone: 'warning', detail: '未知证据状态一律按无证据处理，不得推定为达标。' };
 }
 
 export function rolloutVerdictMeta(code: string | null | undefined): StatusMeta {
@@ -413,6 +455,10 @@ export const aiGovernanceApi = {
   },
   drill(): Promise<RolloutDrillReport> {
     return apiCall(opsClient.get<never, ApiResponse<RolloutDrillReport>>('/ai-rollout/drill'));
+  },
+  /** 工程证据底座（只读）：判据 ID/状态/原因码全部来自后端部署态真源，前端不推算。 */
+  engineeringEvidence(): Promise<EngineeringEvidence> {
+    return apiCall(opsClient.get<never, ApiResponse<EngineeringEvidence>>('/engineering-evidence'));
   },
   /** 仅由用户显式点击触发；调用方不得放进默认加载或轮询。 */
   providerProbe(): Promise<ProviderProbeReport> {
