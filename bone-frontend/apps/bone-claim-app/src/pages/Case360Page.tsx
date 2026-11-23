@@ -4,6 +4,7 @@ import {
 } from 'antd';
 import { ArrowLeftOutlined, LinkOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { AuthButton } from '@bone/ui';
 import { claimApi } from '../services/claimApi';
 import { claimSearchApi, type ClaimSearchHit } from '../services/aiFeedback';
 import type { ClaimWithItemsProjection, ItemCategory } from '../services/types';
@@ -15,6 +16,8 @@ import { MoneyText } from '../components/Money';
 import { formatMoney } from '../services/money';
 import { AsyncBoundary } from '../components/AsyncBoundary';
 import { claimStatusMeta } from '../services/claimStatus';
+import { useConfirmAction } from '../hooks/useConfirmAction';
+import { PERMISSIONS } from '../constants/permissions';
 import {
   CASE_TABS, CASE_TAB_META, buildCaseDeepLink, isSafeClaimId,
   parseCaseLocation, type CaseTab,
@@ -74,6 +77,9 @@ export function Case360Page(): ReactElement {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [historyReload, setHistoryReload] = useState(0);
+  /** 写动作成功后自增，触发案件详情重新拉取（同意状态、挂起状态等即时回写）。 */
+  const [reloadKey, setReloadKey] = useState(0);
+  const confirmAction = useConfirmAction();
 
   useEffect(() => {
     if (!claimId) {
@@ -109,7 +115,33 @@ export function Case360Page(): ReactElement {
       })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [claimId, tab]);
+  }, [claimId, tab, reloadKey]);
+
+  /** 撤回同意：高危合规动作——先二次确认并明示"不可在本系统撤销"，成功后刷新案件详情。 */
+  const handleRevokeConsent = useCallback(() => {
+    if (!claimId) return;
+    confirmAction({
+      title: '确认撤回个人信息处理同意？',
+      content:
+        '依据 PIPL 第 15 条，撤回后本系统对该案件分配/初审/核赔/复核/自动通过等处理动作将被拒绝（422）；'
+        + '本系统内不可撤销，重新处理须由上游重新采集并签发新同意记录号。请确认已完成合规处置。',
+      okText: '确认撤回',
+      onOk: async () => {
+        try {
+          const res = await claimApi.revokeConsent(claimId);
+          if (res?.code !== 200) {
+            message.error(res?.message ?? '撤回失败，请重试');
+            return;
+          }
+          const already = res.data === false;
+          message.success(already ? '该案件此前已撤回同意' : '已撤回同意，后续处理动作将被拒绝');
+          setReloadKey((k) => k + 1);
+        } catch (err) {
+          message.error(resolveErrorMessage(err, '撤回同意失败，请重试'));
+        }
+      },
+    });
+  }, [claimId, confirmAction]);
 
   const changeTab = useCallback((next: string) => {
     setSearchParams({ claimId: claimId ?? '', tab: next });
@@ -305,9 +337,22 @@ export function Case360Page(): ReactElement {
                   <Descriptions.Item label="事项阶段">{head.stage || '—'}</Descriptions.Item>
                   <Descriptions.Item label="外部状态">{head.externalStatus || '—'}</Descriptions.Item>
                   <Descriptions.Item label="同意状态">
-                    <Tag color={head.consentWithdrawnFlag === 1 ? 'red' : head.consentRecordId ? 'green' : 'default'}>
-                      {head.consentWithdrawnFlag === 1 ? '已撤回' : head.consentRecordId ? '已登记' : '未登记'}
-                    </Tag>
+                    <Space size={6} wrap>
+                      <Tag color={head.consentWithdrawnFlag === 1 ? 'red' : head.consentRecordId ? 'green' : 'default'}>
+                        {head.consentWithdrawnFlag === 1 ? '已撤回' : head.consentRecordId ? '已登记' : '未登记'}
+                      </Tag>
+                      {head.consentWithdrawnFlag !== 1 && head.consentRecordId ? (
+                        <AuthButton
+                          code={PERMISSIONS.CLAIMS_WRITE}
+                          size="small"
+                          danger
+                          onClick={handleRevokeConsent}
+                          data-testid="revoke-consent-btn"
+                        >
+                          撤回同意
+                        </AuthButton>
+                      ) : null}
+                    </Space>
                   </Descriptions.Item>
                   <Descriptions.Item label="挂起状态">
                     <Tag color={head.hangUpStatus > 0 ? 'orange' : 'default'}>

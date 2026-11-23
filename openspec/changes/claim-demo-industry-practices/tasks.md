@@ -126,3 +126,36 @@
 - [ ] 13.6 仍阻塞（真无契约，不伪造）：8.8 推送失败列表/重推/退回审核端点全仓 0 命中；案件复制（无 copy 端点/台账表）、责任关系图（无实体/表）、表达式编译预览（仅 formulaHash 快照）、规则矩阵 valueList（前端 0 命中）、主体专属覆盖、导入记录逐行错误、列表级 SLA 列。这些需后端契约落地后同批实现，不以静态骨架伪造可用。
 
 > 来源：原理赔 views 深挖另识别 A2 笛卡尔积值保留 / C13 快捷键流 / C15 差分保存 / B8 行内编辑回滚等机制，但均需后端契约或引入新交互栈，不属于本轮低风险纠偏范围；已登记于 §9/§10，待独立契约项目推进。
+
+## 14. 第八轮：07-delivery 全量诊断后的建议落地 + 两条误判纠偏（2026-11-23）
+
+> 用户 `/comet 基于业界最佳实践对以上合理的建议都执行优化`。沿用既有裁定：Comet SDK 卡 `open.revalidate` outcome-unknown 死锁——不碰守卫、不 mark-unknown、不 cancel、不伪造回执；以产物与 Git 为事实直接落地。
+> 铁律：取证先行——只对**有真后端契约**或**纯前端零契约**的建议落码，无契约登记阻塞；否定结论逐行回读复核（本轮据此推翻两条初版误判，避免"把对的改错"）。
+
+- [x] 14.1 **429 Retry-After 透传**（对应运维手册限流承诺）：共享 `packages/shared-services/src/apiClient.ts` 错误拦截器在 429 时把 `Retry-After`（兼容 AxiosHeaders.get 与纯对象两形态）透传到 `error.retryAfter`。**刻意不自动重试**——多数写操作无幂等键，自动重试会重复执行；退避/重试策略归消费端。新增 2 例判别力测试。验证：shared-services `npm run build` ✅ / `npm test` 13/13 ✅。
+- [x] 14.2 **同意撤回前端操作入口**（对应 DPA PIPL 第15条）：取证确认后端真端点 `POST /{id}/consent/revoke`（ClaimCaseController:370，`claim:claims:write`，幂等）已存在，但前端只有状态展示无操作。新增 `claimApi.revokeConsent()`；Case360 概览"同意状态"旁加 `AuthButton` + 二次确认（明示"撤回后处理类动作 422、本系统内不可撤销"）+ 成功后 reload；已撤回则不渲染入口。新增 `revokeConsent.test.ts`（路径/无请求体/幂等 false 透传）2 例。验证：typecheck ✅ / 单测 2/2 ✅。
+- [x] 14.3 **申诉注释口径纠偏**：初版诊断称"48h/14日双口径冲突"，逐行取证反转——真源是 **14 自然日受理窗口**（`AppealRecord.APPEAL_WINDOW=Duration.ofDays(14)`，专为保守覆盖对客"签收后10个工作日"），"48h"是转人工案件响应 SLA（规则书 R-MAN-02），维度不同、前后端一致。字典键 `APPEAL_WITHIN_48H` 名不副实但文案"14日内申诉"正确，**未改字典/页面**（改即制造 bug）。唯一真缺陷=`AppealController` 类注释/Swagger 仍写"48h内受理"，修正为14天并注明区分，纯注释零行为变更。
+- [x] 14.4 **路由数误判纠偏**：初版诊断称"README 22 vs 实测23"，取证反转——真值 **22**（README 正确）。`grep -c "path:" routes.tsx` 得23是把接口类型定义 `path: string;`（routes.tsx:101）计入；`CLAIM_ROUTES` 数组（128-166行）实际22条。**未改 README**（改即制造 bug）。教训固化：`grep -c` 不区分定义与实例会产假结论，与 §13 的"否定结论用 cat 复核"同源。
+- [x] 14.5 **诊断报告 V2.1 更新**：`doc/ai-product/synapClaim/智能理赔-三方诊断与优化建议.md` 纠偏 §1/§2/§4/§6/§7 的路由数与申诉表述，新增 §9 本轮落地记录（已落地 / 误判推翻 / 阻塞登记 / 验证汇总）。
+- [ ] 14.6 仍阻塞（真无契约，不伪造）：快赔 ≤500 自动通过阈值（全仓仅 `DUAL_REVIEW_AMOUNT=10000` 与 config_json 的 `autoAmountLimit`，无 500 常量，需服务端定义阈值+口径+审计）；沿用 13.6 阻塞清单（推送失败端点/案件复制/责任关系图/表达式编译/矩阵 valueList/列表级 SLA 列）。DEMO 66% 硬编码属原型资产口径，需先裁决 demo/ 旧资产处置（README 声明已删但文件仍在）再定改数字还是清理，本轮不擅动。
+
+## 15. 第九轮：前后端联调实证（2026-11-23）
+
+> 用户 `/comet 基于业界最佳实践对以上合理的建议落地实现，并完成前后端功能的联调`。
+> 环境已就绪：shell:3000 + claim 微应用:3013 + 理赔后端:8087 + 网关:8888 + MySQL/Redis。新建 2 个带 consentRecordId 的 E2E 联调案件，不碰真实业务数据。
+
+- [x] 15.1 **同意撤回 HTTP 全链路 6 步对照通过**：新建 E2E 案件（consent 已登记/未撤回）→ 第一次撤回 `data=true` → 第二次幂等 `data=false` → 撤回后 `POST /{id}/decision` 得 `422 SC_CLAIM_CONSENT_WITHDRAWN` → 撤回后 `POST /{id}/hangup` 收尾动作仍 200 → 重查 `consentWithdrawnFlag=1` 持久化；无 token 直调得 `401 GW_UNAUTHORIZED`（端点 `claim:claims:write`）。
+- [x] 15.2 **浏览器 UI 端到端通过**（Playwright 无头 Chrome，真实登录）：`/sclaim/claim/detail` 概览"同意状态=已登记"旁渲染"撤回同意"按钮 → 点击出二次确认弹窗（PIPL15/422后果/不可撤销/需重签）→ 确认发真请求 200 → 状态变"已撤回"、按钮消失。截图 `/tmp/claim-e2e-screens/case360-{before,confirm,after}.png`。2 个 404 为 SIGNING 阶段 `/review/tasks/{id}/execution` 空态预取，非本轮引入。
+- [x] 15.3 **429 Retry-After 联调**（环境无真实限流，route 注入 429+Retry-After:7）：前端红色 Alert 正确显示限流文案，AI 结论卡 fail-closed 独立展示；detail 请求 2 次系 React.StrictMode dev 双渲染（唯一调用点 Case360:96），非自动重试。截图 case360-429.png。
+- [ ] 15.4 **联调新发现，待用户裁决**：`error.retryAfter` 已透传但无消费端——`resolveErrorMessage` 优先命中 i18n `COMMON_RATE_LIMITED` 译文，不读秒数。若要显示"约 N 秒后重试"须改共享 `resolveErrorMessage`（影响所有微应用回退链），收益边际、风险非零，本轮不擅改，登记待裁决。
+- [x] 15.5 **留痕**：诊断报告新增 §10 联调实证；本轮未新增业务代码改动（15.1-15.3 为验证既有落地，15.4 为发现登记），git 暂存仍是第八轮 8 文件。
+
+## 16. 第十轮：剩余建议取证 + 提交门禁基线债务修复（2026-11-23）
+
+> 用户 `/comet 基于业界最佳实践对以上合理的建议执行优化`。铁律不变：只对有真契约/纯前端零契约的项落码，无契约登记阻塞，否定结论逐行回读复核。
+
+- [x] 16.1 **剩余建议逐条取证，无可落地项**（诊断报告 §11.1）：置信度三档——后端 DTO 未映射 `aiConfidence`，`decisionTier` 明确"内部分档不对外/不解释为业务话术"，包装成置信度即制造口径冲突⇒阻塞；审核四区域证据高亮——`EvidenceLocator` 只有页码行号无坐标⇒阻塞；分步金额明细——trace Adjust 节点只有 `amount`⇒阻塞；`error.retryAfter` 秒数消费⇒待裁决（§15.4）；两个未消费 GET 端点（ai-eval-sample-index 自述易失、claim-assistant/tools 工具元数据）无业务价值⇒不接。经十轮，§7 "有真契约未落地"项已全数消化，剩余均属契约缺失或伪缺口，不造静态骨架。
+- [x] 16.2 **G42 门禁污染根治**：`check-sql-entity-column-coverage.py` 的 `os.walk(REPO)` 未排除被 gitignore 的 `.worktrees/`，两个并行会话 worktree 的旧 SQL（缺 `clear_type`/`last_sync_version`）被误判为新增缺列，拦下本批提交。`SKIP_DIRS` 增补 `.worktrees` 后隔离复跑 58 模板 0 缺口——根治共享主树被他人 worktree 污染门禁的问题。
+- [x] 16.3 **采购模块 ID number 修复**：`bone-procurement-app/.../qualificationApi.ts` 的 `id`/`tenantId` 由 number 改 string（后端雪花 ID 下发 string，number 会静默截断；同文件 findOne/reviewOcr 入参本就是 string）。[10/59] 复跑 23 处全部登记、0 违规。
+- [x] 16.4 **dev 基线门禁自测债务（登记，不在本次范围）**：纯 dev HEAD（`32de702c6`，未应用 patch）复跑 `check.sh` 的 [42/59] 有 10 个失败（本批分支反而 8 个），根因是并行会话加 `check-sclaim-naming` 漏更新 `scripts/registry/checks.json`（counts 62 vs 63）等注册表漂移 + 活库 `iam_menu` 300≠种子 288 环境漂移。属仓库级 L3 工程债，修复会动多人共享的 check.sh 注册表，与理赔改动无关——如实登记，不假装 check 全绿。另前置检查（typecheck/204+13 单测/procura 10-10/E2E impact/G42+ID 隔离复跑）全绿，证明本批 8 改动本身干净。
+- [ ] 16.5 **待架构师/并行会话处理**：dev 基线 [42/59] 门禁自测 8–10 例（checks.json 注册表漂移、verify/waivers/catalog 同步、ai_native_readiness）+ 活库种子漂移；本轮不跨领域修，避免与并行会话大面积冲突。

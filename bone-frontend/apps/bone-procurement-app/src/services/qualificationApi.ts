@@ -7,8 +7,8 @@ const apiClient = createApiClient('');
 
 /** 证照终决读回 DTO（只取展示所需字段）。 */
 export interface QualificationDTO {
-  id: number;
-  tenantId: number;
+  id: string;
+  tenantId: string;
   supplierId: string;
   certType: string;
   verifyStatus: string;

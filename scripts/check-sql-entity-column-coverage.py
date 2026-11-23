@@ -74,6 +74,11 @@ SKIP_DIRS = {
     ".gradle",
     ".workbuddy",
     "coverage",
+    # git worktree 检出目录（被 .gitignore 忽略）：并行会话的 worktree 里是各自分支的
+    # 旧代码，其 SQL 模板缺列不应算作主树的"新增缺口"。不排除会让共享主树的门禁
+    # 因他人 worktree 里的历史版本恒红（2026-11-23 实证：两个并行 worktree 的
+    # clear_type/last_sync_version 缺列污染了主树提交门禁）。
+    ".worktrees",
 }
 
 TABLE_ANN = re.compile(r'@Table\(\s*(?:value\s*=\s*)?"([^"]+)"')

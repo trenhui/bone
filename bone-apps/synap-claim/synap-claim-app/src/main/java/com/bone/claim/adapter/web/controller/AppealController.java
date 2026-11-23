@@ -20,7 +20,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** A8 申诉接口（结案/拒赔生效后 48h 内受理；复议维持或推翻重启审核）。 */
+/**
+ * A8 申诉接口（结案/拒赔生效后 14 个自然日内受理；复议维持或推翻重启审核）。
+ *
+ * <p>受理窗口真源是领域层 {@code AppealRecord.APPEAL_WINDOW}=14 天（保守覆盖对客"签收后 10 个工作日"）。
+ * "48h"是转人工案件响应 SLA（规则书 R-MAN-02），不是受理窗口——两者混写会让客户第 3 天申诉被误拒。
+ */
 @Tag(name = "智能理赔-申诉复议", description = "发起申诉 / 复议结论 / 查询")
 @RestController
 @RequestMapping(value = {"/api/v1/claims/{claimId}/appeal", "/api/v1/claims/{claimId}/appeals"})
@@ -33,7 +38,7 @@ public class AppealController {
 
   public record ReviewAppealReq(AppealReviewResult result, String reason) {}
 
-  @Operation(summary = "发起申诉（受理）", description = "须已终态且未超 48h；幂等")
+  @Operation(summary = "发起申诉（受理）", description = "须已终态且未超 14 个自然日受理窗口；幂等")
   @PreAuthorize("hasAuthority('claim:appeal:write')")
   @ResponseStatus(HttpStatus.CREATED)
   @PostMapping
