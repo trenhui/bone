@@ -15,16 +15,26 @@ import argparse
 import pathlib
 import re
 import sys
+import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
-DEMO = ROOT / "07-delivery" / "prototypes" / "claim-workbench"
-README = ROOT / "07-delivery" / "README.md"
+DELIVERY = ROOT / "07-delivery"
+DEMO = DELIVERY / "prototypes" / "claim-workbench"
+README = DELIVERY / "README.md"
 
 PAGES = (
     "customer-journey.html", "claim-manage.html", "claim-detail.html",
     "claim-image-detail.html", "claim-rule-config.html", "job-config.html",
     "form-config.html", "import-record.html", "evaluation-report.html",
+)
+
+# P9：README 已声明删除的过时单文件大 Demo（独特能力已升级进 9 页原型）。
+# 这两个文件若重新出现在 07-delivery/ 任意子目录，即"文档声明删除但文件仍在"漂移，
+# 现场演示可能拿错旧稿。新增退役资产时在此登记文件名即可持续防回归。
+RETIRED = (
+    "synapClaim DEMO.html",
+    "synapClaim DEMO（PC版v1）.html",
 )
 
 # P3–P5：每个 POC 案例的落点与必备锚点（缺一即演示失败）
@@ -132,27 +142,56 @@ def check_ux_skeleton(texts: dict[str, str], files: set[str]) -> list[str]:
     return errs
 
 
+def check_retired(readme: str, delivery_root: pathlib.Path) -> list[str]:
+    """P9：README 声明已删的过时 DEMO 不得残留在 07-delivery/ 任意子目录。
+
+    fail-closed：README 缺"已删除"声明、或交付目录不存在时判红——
+    否则将来有人移除声明，本判据就会被静默旁路。
+    """
+    errs: list[str] = []
+    # 只要退役清单非空，就要求 README 明确登记"已删除"，否则本判据可被移除声明旁路
+    if RETIRED and "已删除" not in readme:
+        errs.append("P9 README 缺少过时 DEMO「已删除」声明 → 判据可能被旁路")
+    if not delivery_root.is_dir():
+        errs.append(f"P9 交付目录不存在：{delivery_root} → fail-closed")
+        return errs
+    # rglob 覆盖 07-delivery/ 全目录（含 demo/ 等历史子目录），不再只扫 prototypes/
+    present = {p.name: p for p in delivery_root.rglob("*.html")}
+    for retired in RETIRED:
+        if retired in present:
+            errs.append(
+                f"P9 过时 DEMO 未删除（README 声明已删但文件仍在）：{present[retired].relative_to(delivery_root)}"
+            )
+    return errs
+
+
 def run() -> list[str]:
     errs: list[str] = []
     if not DEMO.is_dir():
-        return [f"P1 原型目录不存在：{DEMO}"]
-    files = {p.name for p in DEMO.glob("*.html")}
-    errs += check_pages(files)
+        errs.append(f"P1 原型目录不存在：{DEMO}")
+        files: set[str] = set()
+    else:
+        files = {p.name for p in DEMO.glob("*.html")}
+        errs += check_pages(files)
     texts = {p: (DEMO / p).read_text(encoding="utf-8")
              for p in PAGES if (DEMO / p).is_file()}
     errs += check_cases(texts)
     errs += check_no_promise(texts)
     errs += check_ux_skeleton(texts, files)
-    if not README.is_file():
+    readme_text = README.read_text(encoding="utf-8") if README.is_file() else ""
+    if not readme_text:
         errs.append("P2 README 不存在 → fail-closed")
     else:
-        errs += check_mapping(README.read_text(encoding="utf-8"), files)
+        errs += check_mapping(readme_text, files)
+    errs += check_retired(readme_text, DELIVERY)
     return errs
 
 
 def self_test() -> int:
     """负向探针：每条判据喂入缺失样本必须变红，防止判据被改成恒绿。"""
     errs: list[str] = []
+    probes = 0  # 动态计数：新增判据即新增探针，杜绝硬编码数字与真实探针数脱节的假绿
+
     good = {p: "OK" for p in PAGES}
     full_b = " ".join(CASE_B["claim-detail.html"])
     good["claim-detail.html"] = full_b + " 决策回放"
@@ -161,8 +200,16 @@ def self_test() -> int:
     good["evaluation-report.html"] = " ".join(CASE_EVAL["evaluation-report.html"])
 
     def must_red(label: str, actual: list[str]) -> None:
+        nonlocal probes
+        probes += 1
         if not actual:
             errs.append(f"负向探针失效（恒绿）：{label}")
+
+    def must_green(label: str, actual: list[str]) -> None:
+        nonlocal probes
+        probes += 1
+        if actual:
+            errs.append(f"正向探针失效（过严）：{label}")
 
     must_red("P1 缺页", check_pages(set(PAGES) - {"form-config.html"}))
     must_red("P2 对齐表缺失", check_mapping("无对齐章节", set(PAGES)))
@@ -187,14 +234,31 @@ def self_test() -> int:
         'href="form-config.html"', "")
     must_red("P7 互跳缺页", check_ux_skeleton(t, set(PAGES)))
     # P7 边界：缺页时交由 P1 计，P7 不重复计数（防止双计虚增红点）
+    probes += 1
     if check_ux_skeleton(skeleton, set(PAGES) - {"form-config.html"}):
         errs.append("P7 缺页时应交由 P1 计，不应重复判红")
     # 正向：完整样本必须全绿
-    if check_cases(good) or check_no_promise(good) or check_ux_skeleton(skeleton, set(PAGES)):
-        errs.append("正向样本被误判为红（判据过严）")
+    must_green("正向 P3/P4/P6", check_cases(good) + check_no_promise(good))
+    must_green("正向 P7 UX 骨架", check_ux_skeleton(skeleton, set(PAGES)))
+
+    # P9 负向/正向探针：在系统临时目录构造假 07-delivery/ 树，测完自动清理，不碰真实文件
+    with tempfile.TemporaryDirectory(prefix="synap-parity-p9-") as td:
+        root = pathlib.Path(td)
+        (root / "prototypes" / "claim-workbench").mkdir(parents=True)
+        # 正向：README 有"已删除"声明且无退役文件 → 绿
+        must_green("P9 干净交付目录", check_retired("过时 Demo 已删除", root))
+        # 负向1：退役文件重现（深层子目录，验证 rglob 覆盖全目录）→ 必须红
+        victim = root / "demo" / "legacy" / RETIRED[0]
+        victim.parent.mkdir(parents=True)
+        victim.write_text("x", encoding="utf-8")
+        must_red("P9 退役 DEMO 重现", check_retired("过时 Demo 已删除", root))
+        # 负向2：README 删掉"已删除"声明 → 必须红（fail-closed，防旁路）
+        must_red("P9 删声明旁路", check_retired("", root))
+        victim.unlink()
+
     for e in errs:
         print("【SELF-TEST FAIL】" + e)
-    print(f"自检：{13 - len(errs)}/13 探针通过")
+    print(f"自检：{probes - len(errs)}/{probes} 探针通过")
     return 1 if errs else 0
 
 
