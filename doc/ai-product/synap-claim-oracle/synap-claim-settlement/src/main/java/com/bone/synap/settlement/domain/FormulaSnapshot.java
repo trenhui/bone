@@ -84,7 +84,7 @@ public final class FormulaSnapshot {
         public final Money deductInvoice; // 发票层面免赔（绝对额，0=无）
         public final Money deductAdjust;  // 理算层面免赔（绝对额，0=无）
         /** 拒赔类型（目录外/免责项目）：非空表示该费用项不赔，payout=0 并登记 rejectType。
-         *  对应真实 TPA 场景：丙类自费不赔、免责条款项目（普康内置医保三大目录 + 泰康责任免除）。 */
+         *  对应真实 TPA 场景：丙类自费不赔、免责条款项目（内置医保三大目录 + 泰康责任免除）。 */
         public final String rejectType;
         /** 是否社保内费用（目录内/甲类乙类）：非空时用于「第三方已付按费用类别归因」变体
          *  （socialInsuranceCovered=true 的费用优先核销第三方已付）。null = 未标注（变体退化为现行比例分摊）。 */

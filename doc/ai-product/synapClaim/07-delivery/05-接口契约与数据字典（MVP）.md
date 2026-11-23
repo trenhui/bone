@@ -111,7 +111,7 @@ currency: current
 |stage|VARCHAR(32)|业务阶段码（对外筛选维度，值域 INIT/SIGNING/PRE_EXAM/SUBMITTING/INSPECTION/AUDITING/REVIEWING/FINISH）|系统|
 |idempotency_key|VARCHAR(64) UNIQUE|幂等键|客户端（`Idempotency-Key` 请求头）|
 
-> **对外 / 内部字段边界**：`status` 对外只投影 `PENDING_EVIDENCE`/`REVIEWING` 两值；`status_sub`（子状态，如录入中 22 + sub `1`普康/`2`外包）与内部细粒度状态码**仅内部使用，不对外暴露**，也不作为筛选入参；`stage` 是与 `status` 相互独立的第二维度（8 段业务大阶段），对外作为工作台筛选维度暴露，值域如上。
+> **对外 / 内部字段边界**：`status` 对外只投影 `PENDING_EVIDENCE`/`REVIEWING` 两值；`status_sub`（子状态，如录入中 22 + sub `1`平台/`2`外包）与内部细粒度状态码**仅内部使用，不对外暴露**，也不作为筛选入参；`stage` 是与 `status` 相互独立的第二维度（8 段业务大阶段），对外作为工作台筛选维度暴露，值域如上。
 >
 > **工作台任务状态（`GET /review/tasks` 的 `status` 查询入参，属任务维度、非案件状态）**：`WAITING`（待领取）/ `ASSIGNED`（已分配未处理）/ `PROCESSING`（处理中）/ `DONE`（已处理）。
 

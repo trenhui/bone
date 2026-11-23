@@ -4,7 +4,7 @@ package com.bone.aiserver.claim;
  * 理赔决策的机器编码原因（TPA「编码化结论」模式，借鉴 pk-tpa-saas 理算引擎的 {@code AdjustmentDetailFailReasonEnum} / {@code
  * BizErrorCode}：每一次核赔结果都带一个稳定、可聚合、可 i18n 的码，而非只有自由文本）。
  *
- * <p><b>为什么需要</b>：亿保 / 普康等 TPA 的智能核赔要把结论喂给「审核路由 / 监控告警 / 前端 i18n / 规则回流」， 这些下游只认机器码——
+ * <p><b>为什么需要</b>：亿保 / 平台等 TPA 的智能核赔要把结论喂给「审核路由 / 监控告警 / 前端 i18n / 规则回流」， 这些下游只认机器码——
  * 按中文文案聚合会随措辞漂移、英文用户看到中文。{@code code} 是跨系统契约与 {@code i18n.t('claim.reason.'+code)} 的键，{@code desc}
  * 仅供人读。
  *
