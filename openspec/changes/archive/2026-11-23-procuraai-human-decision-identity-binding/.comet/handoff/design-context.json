@@ -1,0 +1,16 @@
+{
+  "change": "procuraai-human-decision-identity-binding",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "3f4e3d38b4ddde00eac3c04356efa7650fe3dbff36f693d2a5be37c02bedd5e7",
+  "files": [
+    { "path": "openspec/changes/procuraai-human-decision-identity-binding/proposal.md", "sha256": "6590da182934432926611ecaa1ab2294ece1297252015493617c94a045a05fc0" },
+    { "path": "openspec/changes/procuraai-human-decision-identity-binding/design.md", "sha256": "77cc955d4d3901d4177d8747ed738ea29c8cecce9cb1526fad102949ac6a2982" },
+    { "path": "openspec/changes/procuraai-human-decision-identity-binding/tasks.md", "sha256": "f137d1f0d0c7e2ea97f7bf89638ba2bed74281b64b9e1811e6efa245b155f471" },
+    { "path": "openspec/changes/procuraai-human-decision-identity-binding/.openspec.yaml", "sha256": "01c3365f21ad2129d7e1db5577bc59c382883cdcbfece60900a8ac86293e3398" },
+    { "path": "openspec/changes/procuraai-human-decision-identity-binding/specs/procurement/business-module-skeleton/spec.md", "sha256": "8f4a146445e63d15800270972f1d5909a70bc1bd3308e2f0d54e9be6574acfcc" }
+  ]
+}
