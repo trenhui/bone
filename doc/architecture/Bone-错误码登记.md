@@ -601,6 +601,8 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 |-----------|------|------|
 | `SC_CLAIM_NOT_FOUND` | 404 | 案件不存在或不可见（租户隔离下的统一 404 语义，防枚举） |
 | `SC_CLAIM_STATUS_CONFLICT` | 409 | 状态冲突（当前状态不允许该动作） |
+| `SC_CLAIM_REPORT_NOT_FOUND` | 404 | 报案不存在或不可见（1:N 的“一”，租户隔离防枚举） |
+| `SC_CLAIM_REPORT_CLOSED` | 409 | 报案已关闭，不再接受新赔案（CLOSED 态分案被拒） |
 | `SC_CLAIM_CONCURRENT_CONFLICT` | 409 | 乐观锁冲突（版本竞争重试后仍失败） |
 | `SC_CLAIM_POLICY_NOT_ACTIVE` | 400 | 保单不存在/未生效（报案前置校验） |
 | `SC_CLAIM_POLICY_KEY_REQUIRED` | 400 | 报案未提供任何保单标识（平台保单号与保司保单号均为空） |
@@ -669,6 +671,8 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_REPORT_NOT_FOUND` | 404 | 报案不存在或不可见（与 `SC_CLAIM_NOT_FOUND` 同口径的租户隔离 404，防枚举）。报案与赔案拆分后二者是不同命名空间，**不能**用赔案号查报案 —— 前缀不匹配在入参校验即拒，本码只表达「号合法但查无此案」 |
 | `SC_CLAIM_REPORT_CLOSED` | 422 | 报案已关闭，不再受理新赔案：请求合法、报案号也存在，缺的是「该案仍可追加」这一前提（报案状态 CLOSED）。422 而非 404 —— 资源在，是不允许这个动作；文案须带当前状态，否则用户会以为传错号 |
 | `SC_CLAIM_REPORT_CONTEXT_MISMATCH` | 400 | 追加赔案的请求试图覆盖事故维度（保单号/计划/被保人/出险时间）：这些值一律从报案继承，允许覆盖等于允许把 A 保单的赔付挂到 B 事故上。400 而非 422 —— 请求内容本身不合法（传了不该传的字段），detail 点名字段 |
+| `SC_CLAIM_REJECT_EVIDENCE_REF_INVALID` | 400 | 拒赔「证据位置」锚点格式非法（请求入参形状非法，非业务前提）：拒赔文书必须写可定位原件的位置 `EV-001` 或 `EV-001#p2`（#p 为影像页码），禁止自由文本/排序号/路径混入，否则申诉复核无法回放原件；与 `CLAIM_REJECT_REASON_REQUIRED` 同族，仅接单条决策端点（批量端点契约不带此字段） |
+| `SC_CLAIM_REJECT_REASON_INVALID` | 400 | 受控拒赔原因码非法（入参形状非法）：rejectType 不在字典真源 `ClaimDictApplicationService.REJECT_REASON_CODES`（01-13/20/30/40 共 16 码）内即拒，与「缺失码」`CLAIM_REJECT_REASON_REQUIRED` 分开定位；白名单与前端 codegen 字典同源，杜绝「前端受控、后端照收」双口径 |
 
 ---
 

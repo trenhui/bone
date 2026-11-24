@@ -186,7 +186,12 @@ public class ScenarioHarness {
             tenantPort,
             events,
             // ③ 3a 读开关：场景验证的是「默认关闭 ⇒ 行为与 ② 逐笔一致」，故显式传 false
-            new com.bone.claim.application.LiabilityRuleReadGate(false));
+            new com.bone.claim.application.LiabilityRuleReadGate(false),
+            // 因子矩阵：场景无矩阵配置，mock 仓储返回空 ⇒ activeRatiosFor 回落 uniform(payPercent)，零行为变更
+            new com.bone.claim.application.FactorMatrixApplicationService(
+                org.mockito.Mockito.mock(
+                    com.bone.claim.domain.repository.FactorMatrixRepository.class),
+                tenantPort));
     decExecSvc = new DecisionExecutionApplicationService(decRepo, events);
 
     // 反欺诈 / 知识图谱 端口：默认「能力可用、无命中」，可按场景切换

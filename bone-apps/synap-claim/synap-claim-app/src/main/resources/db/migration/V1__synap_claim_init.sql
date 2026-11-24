@@ -5,7 +5,9 @@
 
 CREATE TABLE t_claim_case (
   id          BIGINT      NOT NULL COMMENT '主键(分布式ID)',
-  claim_no          VARCHAR(64)   NOT NULL COMMENT '报案号(CL+yyyyMMdd+13位Base32+校验位, 24字符, 全局唯一)',
+  claim_no          VARCHAR(64)   NOT NULL COMMENT '赔案号(CL+yyyyMMdd+13位Base32+校验位, 24字符, 全局唯一;一笔赔付一号)',
+  report_id         BIGINT        DEFAULT NULL COMMENT '归属报案ID(1:N的多指向一; t_claim_report.id)',
+  report_no         VARCHAR(64)   DEFAULT NULL COMMENT '归属报案号(RP前缀,冗余展示; 与report_id同源)',
   idempotency_key   VARCHAR(64)   NOT NULL COMMENT '写接口幂等键(Idempotency-Key 请求头值)',
   policy_no         VARCHAR(32)   NOT NULL COMMENT '保单号',
   plan_id           BIGINT        NOT NULL COMMENT '计划ID',
@@ -46,8 +48,35 @@ CREATE TABLE t_claim_case (
   KEY idx_tenant_status (tenant_id, status, created_at),
   KEY idx_tenant_insured (tenant_id, insured_id_hash),
   KEY idx_policy_no (policy_no),
-  KEY idx_tenant_batch (tenant_id, batch_no)
+  KEY idx_tenant_batch (tenant_id, batch_no),
+  KEY idx_tenant_report (tenant_id, report_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '赔案主表';
+
+-- 报案主表（FNOL，1:N 的"1"；报案=事故告知事件，赔案=赔付处理单元）
+CREATE TABLE t_claim_report (
+  id                BIGINT        NOT NULL COMMENT '主键(雪花)',
+  report_no         VARCHAR(64)   NOT NULL COMMENT '报案号(RP+yyyyMMdd+13位Base32+校验位, 24字符, 全局唯一)',
+  idempotency_key   VARCHAR(64)   NOT NULL COMMENT '报案登记幂等键(Idempotency-Key)',
+  policy_no         VARCHAR(32)   NOT NULL COMMENT '归属保单号',
+  insured_id_hash   CHAR(64)      NOT NULL COMMENT '假名化被保人',
+  out_insure_time   DATETIME(3)   NOT NULL COMMENT '出险时间(事故告知事实)',
+  loss_description  VARCHAR(500)  DEFAULT NULL COMMENT '事故简述(PII不落明文)',
+  source_channel    VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '渠道',
+  source_system     VARCHAR(32)   NOT NULL DEFAULT 'self' COMMENT '来源系统',
+  status            VARCHAR(32)   NOT NULL DEFAULT 'REPORTED' COMMENT '报案状态(REPORTED/CLOSED)',
+  case_count        INT           NOT NULL DEFAULT 0 COMMENT '已建赔案数(分案递增)',
+  tenant_id         BIGINT        NOT NULL COMMENT '租户',
+  created_by        BIGINT        DEFAULT NULL COMMENT '创建人ID',
+  created_at        DATETIME(3)   NOT NULL COMMENT '创建时间',
+  updated_by        BIGINT        DEFAULT NULL COMMENT '修改人ID',
+  updated_at        DATETIME(3)   NOT NULL COMMENT '更新时间',
+  version           BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  deleted           TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_report_no (report_no),
+  UNIQUE KEY uk_tenant_report_idem (tenant_id, idempotency_key),
+  KEY idx_tenant_report_status (tenant_id, status, created_at)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '报案主表(FNOL, 1:N的1)';
 
 CREATE TABLE t_claim_item (
   id          BIGINT      NOT NULL COMMENT '主键(分布式ID)',

@@ -126,7 +126,7 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
   List<CaseDurationProjection> caseDurationsInWindow(
       @Param("from") java.sql.Timestamp from, @Param("to") java.sql.Timestamp to);
 
-  /** 按报案号查（对外检索键）。 */
+  /** 按赔案号查（对外检索键，CL 前缀）。 */
   default ClaimCase findByClaimNo(Long tenantId, String claimNo) {
     Criteria<ClaimCase> criteria =
         Criteria.<ClaimCase>create()

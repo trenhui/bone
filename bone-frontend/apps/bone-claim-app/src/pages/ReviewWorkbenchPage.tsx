@@ -19,6 +19,7 @@ import {
   Table,
   Tag,
   Timeline,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
@@ -677,12 +678,20 @@ export function ReviewWorkbenchPage(): ReactElement {
           }}
           columns={[
             {
+              // 1:N：报案号（RP）是一次事故告知，一个报案下可有多笔赔案。
               title: '报案号',
-              dataIndex: 'claimNo',
-              // 存量报案号 28 字符，列宽按最大值取 + 省略兜底，避免溢出覆盖保单号列。
+              dataIndex: 'reportNo',
               width: 250,
               ellipsis: { showTitle: false },
-              // 点报案号直接下钻案件 360 详情（显示报案号、下钻用 claimId，见 ClaimIdLink）。
+              render: (v: string | null) =>
+                v ? <Tooltip title={v}>{v}</Tooltip> : <span style={{ color: '#999' }}>—</span>,
+            },
+            {
+              // 赔案号（CL）是每笔赔付的处理单元，点它下钻案件详情（下钻用 claimId）。
+              title: '赔案号',
+              dataIndex: 'claimNo',
+              width: 250,
+              ellipsis: { showTitle: false },
               render: (v: string, row: ClaimHeadProjection) => (
                 <ClaimIdLink claimId={row.claimId} text={v} testId={`review-case-link-${row.claimId}`} />
               ),
@@ -907,9 +916,28 @@ export function ReviewWorkbenchPage(): ReactElement {
                   <Form.Item
                     name="evidenceRefs"
                     label="③ 证据位置（多个用逗号分隔）"
-                    rules={[{ required: true, whitespace: true, message: '拒赔必填：证据位置' }]}
+                    rules={[
+                      { required: true, whitespace: true, message: '拒赔必填：证据位置' },
+                      {
+                        validator: (_, value: string | undefined) => {
+                          const refs = (value ?? '')
+                            .split(/[,，;；\s]+/)
+                            .map((v) => v.trim())
+                            .filter(Boolean);
+                          const ok =
+                            refs.length > 0 &&
+                            refs.length <= 20 &&
+                            refs.every((r) => /^EV-\d{3,6}(#p[1-9]\d{0,3})?$/.test(r));
+                          return ok
+                            ? Promise.resolve()
+                            : Promise.reject(
+                                new Error('须为可定位原件的位置，如 EV-001 或 EV-001#p2（#p 为影像页码）'),
+                              );
+                        },
+                      },
+                    ]}
                   >
-                    <Input placeholder="如 EV-001, EV-004；须可在证据集定位" />
+                    <Input placeholder="如 EV-001, EV-004#p2；#p 为影像页码，须可在证据集定位" />
                   </Form.Item>
                   <Form.Item
                     name="appealChannel"
