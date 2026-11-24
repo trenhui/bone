@@ -1,0 +1,394 @@
+# comet-execution: managed-run
+change_id: f63ad888-0d63-4fb4-aaf2-fd234a88bbf7
+workflow: full
+language: zh-CN
+phase: design
+context_compression: off
+build_mode: null
+build_pause: null
+subagent_dispatch: null
+tdd_mode: null
+review_mode: off
+isolation: worktree
+verify_mode: null
+auto_transition: true
+base_ref: 879a5352808e7bab457f3eca4f77a01aa99d2a3b
+design_doc: null
+plan: null
+verify_result: pending
+verify_failures: 0
+verification_report: null
+branch_status: pending
+created_at: 2026-11-23
+verified_at: null
+archive_confirmation: null
+archived: false
+bound_branch: comet/claim-mrm-governance
+direct_override: null
+handoff_context: null
+handoff_hash: null
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v1
+  hash: 2ca6a9dfa01ecf5b46077c9e29b7fc089a8365d6579ae9f9dda9b861974b27a5
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: claim-mrm-governance
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: 59bcaa45c4ae3138a0f5e84032d61072afa3e0c5a6911f1887e10785d4c36dac
+    input:
+      change: claim-mrm-governance
+      changeDir: openspec/changes/claim-mrm-governance
+      workspaceBaseline:
+        ref: 17b72d9f-6efa-4cf0-b55a-96ec7751d087
+    state:
+      archiveConfirmation: null
+      archived: false
+      autoTransition: true
+      baseRef: 879a5352808e7bab457f3eca4f77a01aa99d2a3b
+      boundBranch: comet/claim-mrm-governance
+      branchStatus: pending
+      buildMode: null
+      buildPause: null
+      checkEpoch: 1
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-23
+      designDoc: null
+      directOverride: null
+      handoffContext: null
+      handoffHash: null
+      isolation: worktree
+      language: zh-CN
+      phase: design
+      plan: null
+      reviewMode: off
+      subagentDispatch: null
+      tddMode: null
+      verificationReport: null
+      verifiedAt: null
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pending
+      workflow: full
+    status: running
+    sequence: 5
+    actions:
+      - attempt: 2
+        claim:
+          executorId: comet-classic-guard
+          token: portable-680762e946710b290c7dd9d395889295ea57583c73538033c1217e9452bc1bf9
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-mrm-governance:1
+        input:
+          input:
+            change: claim-mrm-governance
+            changeDir: openspec/changes/claim-mrm-governance
+            workspaceBaseline:
+              ref: 17b72d9f-6efa-4cf0-b55a-96ec7751d087
+          outputs: {}
+        inputHash: be5a3ea70ad5578638eeb542e8351f72e26db7a00170445d2637374641daccb7
+        outcome:
+          actionId: claim-mrm-governance:1
+          attempt: 2
+          claimToken: portable-680762e946710b290c7dd9d395889295ea57583c73538033c1217e9452bc1bf9
+          inputHash: be5a3ea70ad5578638eeb542e8351f72e26db7a00170445d2637374641daccb7
+          outcomeId: 4a3b9390-11d2-4362-a6a2-b7eb43000bb4
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f79841b5a8bfd969d1697b66bdb7f1aa3ce46827a4006c4c53a617df0fd64093
+            outcomeId: 4a3b9390-11d2-4362-a6a2-b7eb43000bb4
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 已核实原尝试完全未执行且无副作用：该 action
+                无外部收据(command=null/record=missing/receiptRef=null/manifestRef=null)，原执行器已结束；Open
+                产物已完整生成并通过 openspec validate --strict，重放幂等安全。
+            resolution: not-executed
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-mrm-governance
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 3
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-ecc8ad09be630b54158a08adc1052e5bf9f0ebabef81e33fcc997a04ff6df4df
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-mrm-governance:4
+        input:
+          input:
+            change: claim-mrm-governance
+            changeDir: openspec/changes/claim-mrm-governance
+            workspaceBaseline:
+              ref: 17b72d9f-6efa-4cf0-b55a-96ec7751d087
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-mrm-governance
+                  changeDir: openspec/changes/claim-mrm-governance
+                  workspaceBaseline:
+                    ref: 17b72d9f-6efa-4cf0-b55a-96ec7751d087
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+                    ref: openspec/changes/claim-mrm-governance
+            full.open.evidence:
+              contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+              ref: openspec/changes/claim-mrm-governance
+        inputHash: d85725e4a42819f33d071bebfaf15c7172a68af1af78d2384b9d26c8e370b362
+        outcome:
+          actionId: claim-mrm-governance:4
+          attempt: 3
+          claimToken: portable-ecc8ad09be630b54158a08adc1052e5bf9f0ebabef81e33fcc997a04ff6df4df
+          inputHash: d85725e4a42819f33d071bebfaf15c7172a68af1af78d2384b9d26c8e370b362
+          outcomeId: claim-mrm-governance:4:3:executor-result
+          output:
+            contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 052c986c8fb45aa2e75cb7855f98b83b30b0324f3a00d9aa23c90ad2aa822249
+            outcomeId: claim-mrm-governance:4:3:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 已核实原尝试完全未执行且无副作用：无外部收据(command=null/record=missing/receiptRef=null/manifestRef=null)，原执行器已结束；Open
+                产物已完整生成并通过 openspec validate --strict，重放幂等安全。
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: 已核实原尝试完全未执行且无副作用：该 action 是进程内只读 Open
+                重校验(ref=classic-open-revalidate)，仅计算 change
+                目录内容哈希、不派发外部命令；recovery 显示
+                command=null、record.status=missing、receiptRef=null、manifestRef=null，证据目录
+                .comet/runtime/classic-sdk-checks/9cc0f17a 不存在；原执行器已结束无残留进程。Open
+                产物已完整生成并通过 openspec validate --strict，重放幂等安全。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-mrm-governance
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        id: claim-mrm-governance:5
+        input:
+          input:
+            change: claim-mrm-governance
+            changeDir: openspec/changes/claim-mrm-governance
+            workspaceBaseline:
+              ref: 17b72d9f-6efa-4cf0-b55a-96ec7751d087
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-mrm-governance
+                  changeDir: openspec/changes/claim-mrm-governance
+                  workspaceBaseline:
+                    ref: 17b72d9f-6efa-4cf0-b55a-96ec7751d087
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+                    ref: openspec/changes/claim-mrm-governance
+            full.open.evidence:
+              contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+              ref: openspec/changes/claim-mrm-governance
+            full.open.revalidate:
+              contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+        inputHash: 35749bbbf242619cbcf27103140f5b20ef4d52e41517f1041f28b7d08b0fad10
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-mrm-governance
+        status: pending
+        stepId: full.design.handoff
+        type: invoke_skill
+    actionContexts:
+      claim-mrm-governance:1:
+        results: {}
+        sequence: 1
+      claim-mrm-governance:4:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-mrm-governance
+                  changeDir: openspec/changes/claim-mrm-governance
+                  workspaceBaseline:
+                    ref: 17b72d9f-6efa-4cf0-b55a-96ec7751d087
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+                    ref: openspec/changes/claim-mrm-governance
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+              ref: openspec/changes/claim-mrm-governance
+        sequence: 4
+      claim-mrm-governance:5:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: claim-mrm-governance
+                  changeDir: openspec/changes/claim-mrm-governance
+                  workspaceBaseline:
+                    ref: 17b72d9f-6efa-4cf0-b55a-96ec7751d087
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+                    ref: openspec/changes/claim-mrm-governance
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+              ref: openspec/changes/claim-mrm-governance
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+        sequence: 5
+    waits:
+      - id: claim-mrm-governance:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: claim-mrm-governance
+            changeDir: openspec/changes/claim-mrm-governance
+            workspaceBaseline:
+              ref: 17b72d9f-6efa-4cf0-b55a-96ec7751d087
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+              ref: openspec/changes/claim-mrm-governance
+        proposalHash: 0616aeb2215d8a53dc6bab0d0e1131dfcb0052859887e503f11409a679117630
+        choices:
+          - approved
+          - rejected
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+              ref: openspec/changes/claim-mrm-governance
+        decision:
+          id: classic-open-c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+          choice: approved
+          proposalHash: 0616aeb2215d8a53dc6bab0d0e1131dfcb0052859887e503f11409a679117630
+    evidenceWaits:
+      - id: claim-mrm-governance:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+        receipt:
+          ref: openspec/changes/claim-mrm-governance
+          contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+          submissionId: 745d2a76-c2d5-4ba9-a0d9-08474cdd74ed
+    ready: []
+    joins: {}
+    outputs:
+      full.open:
+        sequence: 1
+        value:
+          event: open-complete
+      full.open.confirm:
+        sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-mrm-governance
+              changeDir: openspec/changes/claim-mrm-governance
+              workspaceBaseline:
+                ref: 17b72d9f-6efa-4cf0-b55a-96ec7751d087
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+                ref: openspec/changes/claim-mrm-governance
+      full.open.evidence:
+        sequence: 2
+        value:
+          contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+          ref: openspec/changes/claim-mrm-governance
+      full.open.revalidate:
+        sequence: 4
+        value:
+          contentHash: c3a0d56937fc07c49ab4466f4d5773ed4e8c70ced2e18ca613cd24029c3cef81
+    children: []
+    lineage: []
+  sourceRevision: 16
+  sourceHash: 661f4356046fc472657f5f213462d909ede91fe51f8489405806251fae7134df
+check_epoch: 1
