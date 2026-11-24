@@ -74,7 +74,12 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
       @Param("before") java.sql.Timestamp before);
 
   /**
-   * 后督抽样候选（全租户，定时任务专用）：{@code status = FINISHED}（已自动结案），按创建时间倒序取前 {@code limit} 条。
+   * 后督抽样候选（全租户，定时任务专用）：终态 {@code FINISHED}（已自动结案）与 {@code CLOSED_REJECTED}（拒赔生效）， 按创建时间倒序取前 {@code
+   * limit} 条；SQL 内 {@code NOT EXISTS} 排除已抽检案件。
+   *
+   * <p><b>终态范围（V1.0 100% 全量覆盖）</b>：拒赔终态 {@code CLOSED_REJECTED} 纳入候选，使「自动通过 + 拒赔」两类结论 在配置 100%
+   * 时均可被后督覆盖；下游 {@code sampleIfEligible} 的 {@code claim.finished()} 门槛已兼容两终态。默认比例仍为
+   * 5%，拒赔入候选后同样按确定性比例抽样，不改变现网抽检数量口径。
    *
    * <p>仅 {@code adapter.schedule} 可调用（ArchitectureTest {@code
    * schedule_only_calls_all_tenants_repository_methods} 收紧）；分层抽样比例细化属后续迭代。

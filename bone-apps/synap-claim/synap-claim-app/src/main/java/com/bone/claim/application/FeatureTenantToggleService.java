@@ -148,17 +148,17 @@ public class FeatureTenantToggleService implements TriageLimitsPort {
     if (featureToggleRepository == null) {
       return InspectionConfig.defaults();
     }
-    FeatureToggle toggle =
-        featureToggleRepository.findByFeatureKey(
-            tenantId, FeatureToggle.FEATURE_INSPECTION_SAMPLING);
-    if (toggle == null || !toggle.isOn(tenantId)) {
-      return InspectionConfig.defaults();
-    }
-    String raw = toggle.getConfigJson();
-    if (raw == null || raw.isBlank()) {
-      return InspectionConfig.defaults();
-    }
     try {
+      FeatureToggle toggle =
+          featureToggleRepository.findByFeatureKey(
+              tenantId, FeatureToggle.FEATURE_INSPECTION_SAMPLING);
+      if (toggle == null || !toggle.isOn(tenantId)) {
+        return InspectionConfig.defaults();
+      }
+      String raw = toggle.getConfigJson();
+      if (raw == null || raw.isBlank()) {
+        return InspectionConfig.defaults();
+      }
       Map<String, Object> parsed =
           objectMapper.readValue(raw, new TypeReference<Map<String, Object>>() {});
       InspectionConfig cfg = InspectionConfig.from(parsed);
@@ -167,11 +167,13 @@ public class FeatureTenantToggleService implements TriageLimitsPort {
       }
       return cfg;
     } catch (Exception e) {
+      // 配置读取（仓储/开关判定）与解析任一失败都回落基线 5%，绝不把 DB 故障变成"该笔不抽检"。
       log.warn(
-          "[抽检配置] config_json 解析失败，回落基线 {}%：tenantId={}, err={}",
+          "[抽检配置] 配置读取/解析失败，回落基线 {}%：tenantId={}, err={}",
           InspectionConfig.DEFAULT_SAMPLING_RATE, tenantId, e.getMessage());
       return new InspectionConfig(
-          InspectionConfig.DEFAULT_SAMPLING_RATE, Map.of(JSON_SENTINEL, "不是合法 JSON 对象；已回落基线"));
+          InspectionConfig.DEFAULT_SAMPLING_RATE,
+          Map.of(JSON_SENTINEL, "配置读取/解析失败（" + e.getMessage() + "）；已回落基线"));
     }
   }
 
