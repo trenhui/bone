@@ -1,0 +1,16 @@
+{
+  "change": "claim-ai-inspection-full-coverage",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "9d78ffdca512fcc1ab2753c12a5f61481eb32b6a567190d1c068710495167d5f",
+  "files": [
+    { "path": "openspec/changes/claim-ai-inspection-full-coverage/proposal.md", "sha256": "2a7fa0f335ebefab147e7f956322e497877fbb143a5f055c3a40f42dbf14c4f2" },
+    { "path": "openspec/changes/claim-ai-inspection-full-coverage/design.md", "sha256": "31e23cfce04e16ed61819543e9138e0d4a0839e3a9ac827baf6f5e83e4ea9a9b" },
+    { "path": "openspec/changes/claim-ai-inspection-full-coverage/tasks.md", "sha256": "c75fcb20da7109442fc3e93a7cf64bd3d14a9788878076fde8fdc91823dca867" },
+    { "path": "openspec/changes/claim-ai-inspection-full-coverage/.openspec.yaml", "sha256": "01c3365f21ad2129d7e1db5577bc59c382883cdcbfece60900a8ac86293e3398" },
+    { "path": "openspec/changes/claim-ai-inspection-full-coverage/specs/claim/ai-inspection-full-coverage/spec.md", "sha256": "0778e38719a0df4a6c7bf51b2357fe4eed8c53707ae4adba217c0fd23c4727f1" }
+  ]
+}
