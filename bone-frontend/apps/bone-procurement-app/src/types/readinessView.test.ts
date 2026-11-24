@@ -13,14 +13,21 @@ describe('就绪度判词前端映射', () => {
     expect(readinessText('DEGRADED')).not.toBe('可判定可用');
   });
 
-  it('UNKNOWN 显示无法确认且保留原始码', () => {
+  it('UNKNOWN 显示无法确认、保留原始码且为告警色', () => {
     expect(readinessText('UNKNOWN')).toBe('无法确认');
     expect(verdictTextOrRaw('UNKNOWN')).toContain('UNKNOWN');
+    expect(verdictColor('UNKNOWN')).toBe('red');
   });
 
-  it('未知判词原样显示，不乐观映射', () => {
+  it('未知判词原样显示、不乐观映射且为告警色', () => {
     expect(readinessText('FUTURE_VERDICT')).toBe('无法确认');
     expect(verdictTextOrRaw('FUTURE_VERDICT')).toContain('FUTURE_VERDICT');
+    expect(verdictColor('FUTURE_VERDICT')).toBe('red');
+  });
+
+  it('缺失判词同样为告警色，fail-closed', () => {
+    expect(verdictColor(null)).toBe('red');
+    expect(verdictColor(undefined)).toBe('red');
   });
 
   it('null/空判词 fail-closed', () => {
