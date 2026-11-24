@@ -4783,6 +4783,13 @@
   },
   {
    "http": "POST",
+   "path": "/api/v1/procurement/rfx/{rfxNo}/award",
+   "controller": "SourcingController",
+   "file": "bone-apps/bone-procurement/bone-procurement-sourcing/src/main/java/com/bone/procurement/sourcing/adapter/web/controller/SourcingController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
    "path": "/api/v1/procurement/purchase-orders/{no}/ack",
    "controller": "FulfillmentController",
    "file": "bone-apps/bone-procurement/bone-procurement-fulfillment/src/main/java/com/bone/procurement/fulfillment/adapter/web/controller/FulfillmentController.java",
@@ -5091,8 +5098,8 @@
   }
  ],
  "summary": {
-  "endpoints": 617,
+  "endpoints": 618,
   "covered": 242,
-  "uncovered": 375
+  "uncovered": 376
  }
 }
