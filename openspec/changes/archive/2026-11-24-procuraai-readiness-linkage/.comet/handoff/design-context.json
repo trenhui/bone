@@ -1,0 +1,17 @@
+{
+  "change": "procuraai-readiness-linkage",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "7b78886539e89990a9049a824d3c90c153a965692a6d8890f1a3637dd3497d74",
+  "files": [
+    { "path": "openspec/changes/procuraai-readiness-linkage/proposal.md", "sha256": "d3710c5768fc1f7aa726634188db743954eb16f311b92e73c20f2e4f4cf71671" },
+    { "path": "openspec/changes/procuraai-readiness-linkage/design.md", "sha256": "0f81ad367758c344f50bdec4048b0eeeed5bd600af1da205f71d8d941d0f31b0" },
+    { "path": "openspec/changes/procuraai-readiness-linkage/tasks.md", "sha256": "5852bfeb89032b993121d77968a1444c09de918e3912decf205585a317a8ebaf" },
+    { "path": "openspec/changes/procuraai-readiness-linkage/.openspec.yaml", "sha256": "5354b7028230e74b1f9295986352ad4a8253375220377f8a7a98bdbaf9251dc9" },
+    { "path": "openspec/changes/procuraai-readiness-linkage/specs/procurement/ai-readiness/spec.md", "sha256": "2bfb103d4a50aeee0f57f2ebb78f6b4cc17d44151ab5931b7d8ac4afe44319c7" },
+    { "path": "openspec/changes/procuraai-readiness-linkage/specs/procurement/human-review/spec.md", "sha256": "9ff1ec834f1b6bf83423f3ea67fb626d4587dc645d0255f7e26310c40b1cf68f" }
+  ]
+}
