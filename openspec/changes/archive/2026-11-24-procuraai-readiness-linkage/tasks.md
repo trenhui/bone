@@ -34,7 +34,7 @@
 
 - [x] 7.1 本地真实启动后端（H2/内存或已确认的本地 MySQL 配置）与前端 dev server；用真实浏览器打开 readiness 页、进入人工终决页执行一次采纳/驳回并刷新；截图与日志作为证据（浏览器可访问、页面渲染判词与终决结果） <!-- comet-task:bb72099c-2248-47ee-9050-4446541584ba -->
 - [x] 7.2 对写操作以数据库直查或持久化读回作第二证据，并断言 Mock/未配 provider 场景不出现 AVAILABLE（落库证据存在、API 与 DB 一致） <!-- comet-task:ef4c55d2-c516-4e25-a4bf-ad54481a83bb -->
-- [ ] 7.3 运行完整验证与独立审查，产出 Verify 报告并归档（报告 PASS，无 CRITICAL/IMPORTANT，归档完成） <!-- comet-task:b1dc3a0f-a022-4e1a-8eba-7fd549a3dccc -->
+- [x] 7.3 运行完整验证与独立审查，产出 Verify 报告并归档（报告 PASS，无 CRITICAL/IMPORTANT，归档完成） <!-- comet-task:b1dc3a0f-a022-4e1a-8eba-7fd549a3dccc -->
 
 ## Workflow follow-up
 

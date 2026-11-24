@@ -2,6 +2,8 @@
 comet_change: procuraai-readiness-linkage
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-11-24-procuraai-readiness-linkage
+status: final
 ---
 
 # Design：procuraAI 就绪度加固与前后端联调

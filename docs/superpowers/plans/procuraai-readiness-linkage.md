@@ -2,6 +2,7 @@
 change: procuraai-readiness-linkage
 design-doc: openspec/changes/procuraai-readiness-linkage/design.md
 base-ref: 8a009e5e58313751a4e183feac79e11888c2db1d
+archived-with: 2026-11-24-procuraai-readiness-linkage
 ---
 
 <!-- comet-task-authority: openspec/changes/procuraai-readiness-linkage/tasks.md -->
