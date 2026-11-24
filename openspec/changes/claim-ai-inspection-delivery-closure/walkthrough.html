@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><title>变更说明 · V1.0 AI后督质检交付闭环收口</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --page: #fafbfc;
+  --ink: #202a35;
+  --muted: #566575;
+  --line: #dbe2e8;
+  --accent: #245b85;
+  --highlight: #edf3f7;
+  --hover: #e9eef3;
+  --code-bg: #edf0f4;
+  --code-ink: #263443;
+  --success: #236d4f;
+  --failure: #a83131;
+  --text: 15px;
+  --small: 13px;
+  --label: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #181d23;
+    --ink: #e4eaf0;
+    --muted: #a4b1be;
+    --line: #35404b;
+    --accent: #94c6ec;
+    --highlight: #222e39;
+    --hover: #27323d;
+    --code-bg: #10161d;
+    --code-ink: #e0e8f0;
+    --success: #8ed8b5;
+    --failure: #ffb0a8;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: var(--text)/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1040px; margin: auto; padding: 32px 32px 48px; }
+.eyebrow { color: var(--accent); font-size: var(--label); font-weight: 500; letter-spacing: .08em; }
+h1 { margin: 8px 0 12px; max-width: 32em; font-size: 28px; font-weight: 500; line-height: 1.4; letter-spacing: -.02em; overflow-wrap: anywhere; }
+h2 { margin: 0; font-size: 18px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+h3 { margin: 0 0 4px; color: var(--muted); font-size: var(--label); font-weight: 500; }
+p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+strong { font-weight: 500; }
+.meta { margin-bottom: 24px; color: var(--muted); font-size: var(--small); overflow-wrap: anywhere; }
+.meta p + p { margin-top: 2px; }
+article { padding: 20px 0 12px; border-top: 1px solid var(--line); }
+article header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+.number { color: var(--muted); font: var(--label)/1.5 ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.comparison { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.comparison section { min-width: 0; padding: 12px; }
+.after { background: var(--highlight); border-radius: 4px; }
+.after h3 { color: var(--accent); }
+.reason { margin-top: 12px; font-size: var(--small); color: var(--muted); }
+.reason strong { margin-right: 8px; color: var(--ink); }
+summary { min-height: 44px; padding: 10px 4px; cursor: pointer; font-size: var(--small); font-weight: 500; border-radius: 4px; }
+summary:hover { background: var(--hover); }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.count, .tag { color: var(--muted); font-size: var(--label); font-weight: 400; }
+.count { margin-left: 4px; font-variant-numeric: tabular-nums; }
+.file { min-width: 0; padding: 0 0 16px; scroll-margin-top: 20px; }
+.file:target { outline: 2px solid var(--accent); outline-offset: 4px; }
+.file-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.file-heading code { min-width: 0; font-size: var(--small); overflow-wrap: anywhere; }
+.tag { white-space: nowrap; }
+pre { margin: 8px 0 0; padding: 12px 16px; overflow: auto; background: var(--code-bg); color: var(--code-ink); border-radius: 4px; font: var(--small)/1.65 ui-monospace, Consolas, monospace; tab-size: 2; }
+footer { margin-top: 12px; padding-top: 20px; border-top: 1px solid var(--line); }
+footer h2 { margin-bottom: 8px; }
+.check { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.status { padding-top: 2px; font-size: var(--label); font-weight: 500; }
+.passed { color: var(--success); }
+.failed { color: var(--failure); }
+.not-run, .unknown { color: var(--muted); }
+.check p { margin-top: 2px; color: var(--muted); font-size: var(--small); }
+.more { border-top: 1px solid var(--line); }
+.more > summary { padding-block: 12px; }
+.diagram { margin: 0; padding: 20px 0; border-top: 1px solid var(--line); }
+.diagram figcaption { margin-bottom: 12px; font-size: 18px; font-weight: 500; overflow-wrap: anywhere; }
+.diagram-svg { display: block; max-width: 100%; height: auto; margin: auto; overflow: visible; font: 13px system-ui, -apple-system, "Segoe UI", sans-serif; }
+.diagram-svg text { fill: var(--ink); }
+.diagram-edge { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.diagram-svg marker path { fill: var(--muted); }
+.diagram-edge-label { fill: var(--page); }
+.diagram-svg .diagram-edge-text { fill: var(--muted); font-size: 12px; }
+.diagram-node rect { fill: var(--page); stroke: var(--line); stroke-width: 1.5; }
+.diagram-node.modified rect { fill: var(--highlight); stroke: var(--accent); }
+.diagram-node.added rect { stroke: var(--success); }
+.diagram-node.deleted rect { stroke: var(--failure); stroke-dasharray: 4 3; }
+.diagram-svg .diagram-kind { fill: var(--muted); font-size: 11px; }
+.diagram-node[href] { cursor: pointer; }
+.diagram-node[href]:hover rect, .diagram-node[href]:focus-visible rect { stroke: var(--accent); stroke-width: 2.5; }
+.diagram-node[href]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.diagram-hint { margin-top: 12px; color: var(--muted); font-size: var(--small); text-align: center; }
+.diagram-comparison { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 16px; }
+.diagram-comparison > section { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 4px; }
+.diagram-comparison > section > h3 { margin-bottom: 12px; }
+.diagram-compact { display: none; }
+@media (max-width: 999px) {
+  .diagram-wide { display: none; }
+  .diagram-compact { display: block; }
+}
+@media (max-width: 640px) {
+  main { padding: 24px 16px 32px; }
+  h1 { font-size: 24px; }
+  .meta { margin-bottom: 20px; }
+  article { padding-top: 16px; }
+  article header { gap: 8px; }
+  .comparison { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .check { grid-template-columns: 60px minmax(0, 1fr); gap: 8px; }
+  pre { padding: 12px; }
+  .diagram-comparison { grid-template-columns: minmax(0,1fr); }
+  .diagram-comparison > section { padding: 12px 0; border: 0; }
+}
+</style></head><body><main><div class="eyebrow">COMET / 变更说明</div><h1>V1.0 AI后督质检交付闭环收口</h1><div class="meta"><p>比较范围 · 新建独立 Classic full change claim-ai-inspection-delivery-closure，在干净基线 b2d0342fd 上以官方 Guard 全程验证取得 done 终态；零 delta spec、零生产代码、零 DDL，不触碰旧 Run claim-ai-inspection-full-coverage 与 openspec/specs/。</p><p>生成时间 · 2026-11-24T03:01:09.224Z</p></div><article><header><span class="number">01</span><h2>交付范围根因登记</h2></header><div class="comparison"><section><h3>原来</h3><p>旧 Run claim-ai-inspection-full-coverage 的业务实现、1674 例测试、归档与主 spec 同步全部完成，但 complete-delivery 因交付范围被误夹带的 scripts/e2e/impact-map.json 无法闭合。</p></section><section class="after"><h3>现在</h3><p>proposal.md 与 design.md 以源码实证逐条登记根因：SDK 逐提交 diff-tree 取 baseCommit..HEAD 路径并集、allowed() 过滤、verify 收据 deliveryInputs 仅 7 个实现文件、四个官方恢复通道逐一不适用。</p></section></div><p class="reason"><strong>原因</strong> 把偏差作为可审计事实保留，不伪造收据、不改写已推送历史、不绕过 Guard。</p><details><summary>查看文件和关键代码 <span class="count">2</span></summary><div class="file" id="walkthrough-file-0-0"><div class="file-heading"><span class="tag">新增</span><code>openspec/changes/claim-ai-inspection-delivery-closure/proposal.md</code></div><pre><code>## Why
+旧 Run complete-delivery 因归档提交被 pre-commit hook 误夹带 scripts/e2e/impact-map.json（并行会话 procurement 端点映射）而无法闭合；SDK 以 baseCommit..HEAD 只含本 change 已验证实现为不变量。
+
+## What Changes
+新建独立 full change，在干净基线 b2d0342fd 上走完整 Guard 流程拿 done 终态；零 delta spec、零生产代码、零 DDL。</code></pre></div><div class="file" id="walkthrough-file-0-1"><div class="file-heading"><span class="tag">新增</span><code>openspec/changes/claim-ai-inspection-delivery-closure/design.md</code></div><pre><code>D1 新 change 而非修补旧 Run（先例 procuraai-archive-delivery-closure 已成功）
+D2 零 delta spec + skip_specs=true，不写主 spec
+D3 交付提交精确 git add 且 BONE_DATA_IMPACT=off 防 hook 回写 impact-map
+D4 复用已验证两条真实检查命令，不新增脚本不改 config
+D5 standard 审查 + 独立只读最终集成审查</code></pre></div></details></article><article><header><span class="number">02</span><h2>干净基线新 Run 闭环</h2></header><div class="comparison"><section><h3>原来</h3><p>旧 Run 的 baseCommit=879a5352，其交付范围含已被 hook 误写的 impact-map.json；后续补交也无法从 changed 集合移除该路径。</p></section><section class="after"><h3>现在</h3><p>新 Run 以当前干净 HEAD b2d0342fd 为基线（impact-map.json 已与基线字节一致），交付范围从该基线起算，只含本 change 的 proposal/design/tasks/plan/report/walkthrough 与归档产物。</p></section></div><p class="reason"><strong>原因</strong> SDK 归档后无官方重设基线通道；新 Run 是唯一既满足不变量、又不伪造/不改历史、且有成功先例的路径。</p><details><summary>查看文件和关键代码 <span class="count">2</span></summary><div class="file" id="walkthrough-file-1-0"><div class="file-heading"><span class="tag">新增</span><code>openspec/changes/claim-ai-inspection-delivery-closure/tasks.md</code></div><pre><code>10 项可验证任务：1.1-1.3 范围与偏差登记；2.1-2.4 机器验证与闭环证据；3.1-3.3 交付范围前置核对（含 impact-map.json 与基线一致且交付范围内无提交触及它）。归档/交付动作保留为 Workflow follow-up。</code></pre></div><div class="file" id="walkthrough-file-1-1"><div class="file-heading"><span class="tag">新增</span><code>docs/superpowers/plans/2026-11-24-claim-ai-inspection-delivery-closure.md</code></div><pre><code>frontmatter change/design-doc/base-ref=b2d0342fd；comet-task-authority 指向 tasks.md；10 个 comet-task-ref 锚点；约束：绝不 git add -A、归档提交 BONE_DATA_IMPACT=off、独立审查优先、不改写历史、输入漂移则 reopen-verification。</code></pre></div></details></article><footer><h2>实际验证</h2><div class="check"><span class="status passed">通过</span><div><strong>OpenSpec 严格校验</strong><p>comet classic openspec validate --strict：Change &#39;claim-ai-inspection-delivery-closure&#39; is valid；artifact 闭包 proposal/specs(skipped)/design/tasks 全部 complete。</p></div></div><div class="check"><span class="status passed">通过</span><div><strong>设计批准</strong><p>用户确认正式设计（proposalHash 35084923…），decide-design approved + complete-design 通过，进入 Build。</p></div></div><div class="check"><span class="status not-run">未执行</span><div><strong>Build 主判据</strong><p>mvn -pl bone-apps/synap-claim/synap-claim-app -am test，基线 Tests run: 1674, Failures: 0, Errors: 0, Skipped: 8；Verify 阶段将写入实际结果。</p></div></div></footer></main><template id="walkthrough-data">eyJzdW1tYXJ5IjoiVjEuMCBBSeWQjuedo+i0qOajgOS6pOS7mOmXreeOr+aUtuWPoyIsInNjb3BlIjoi5paw5bu654us56uLIENsYXNzaWMgZnVsbCBjaGFuZ2UgY2xhaW0tYWktaW5zcGVjdGlvbi1kZWxpdmVyeS1jbG9zdXJl77yM5Zyo5bmy5YeA5Z+657q/IGIyZDAzNDJmZCDkuIrku6XlrpjmlrkgR3VhcmQg5YWo56iL6aqM6K+B5Y+W5b6XIGRvbmUg57uI5oCB77yb6Zu2IGRlbHRhIHNwZWPjgIHpm7bnlJ/kuqfku6PnoIHjgIHpm7YgRERM77yM5LiN6Kem56Kw5penIFJ1biBjbGFpbS1haS1pbnNwZWN0aW9uLWZ1bGwtY292ZXJhZ2Ug5LiOIG9wZW5zcGVjL3NwZWNzL+OAgiIsImNoYW5nZXMiOlt7InRpdGxlIjoi5Lqk5LuY6IyD5Zu05qC55Zug55m76K6wIiwiYmVmb3JlIjoi5penIFJ1biBjbGFpbS1haS1pbnNwZWN0aW9uLWZ1bGwtY292ZXJhZ2Ug55qE5Lia5Yqh5a6e546w44CBMTY3NCDkvovmtYvor5XjgIHlvZLmoaPkuI7kuLsgc3BlYyDlkIzmraXlhajpg6jlrozmiJDvvIzkvYYgY29tcGxldGUtZGVsaXZlcnkg5Zug5Lqk5LuY6IyD5Zu06KKr6K+v5aS55bim55qEIHNjcmlwdHMvZTJlL2ltcGFjdC1tYXAuanNvbiDml6Dms5Xpl63lkIjjgIIiLCJhZnRlciI6InByb3Bvc2FsLm1kIOS4jiBkZXNpZ24ubWQg5Lul5rqQ56CB5a6e6K+B6YCQ5p2h55m76K6w5qC55Zug77yaU0RLIOmAkOaPkOS6pCBkaWZmLXRyZWUg5Y+WIGJhc2VDb21taXQuLkhFQUQg6Lev5b6E5bm26ZuG44CBYWxsb3dlZCgpIOi/h+a7pOOAgXZlcmlmeSDmlLbmja4gZGVsaXZlcnlJbnB1dHMg5LuFIDcg5Liq5a6e546w5paH5Lu244CB5Zub5Liq5a6Y5pa55oGi5aSN6YCa6YGT6YCQ5LiA5LiN6YCC55So44CCIiwicmVhc29uIjoi5oqK5YGP5beu5L2c5Li65Y+v5a6h6K6h5LqL5a6e5L+d55WZ77yM5LiN5Lyq6YCg5pS25o2u44CB5LiN5pS55YaZ5bey5o6o6YCB5Y6G5Y+y44CB5LiN57uV6L+HIEd1YXJk44CCIiwiZmlsZXMiOlt7InBhdGgiOiJvcGVuc3BlYy9jaGFuZ2VzL2NsYWltLWFpLWluc3BlY3Rpb24tZGVsaXZlcnktY2xvc3VyZS9wcm9wb3NhbC5tZCIsImtpbmQiOiJhZGRlZCIsImNvZGUiOiIjIyBXaHlcbuaXpyBSdW4gY29tcGxldGUtZGVsaXZlcnkg5Zug5b2S5qGj5o+Q5Lqk6KKrIHByZS1jb21taXQgaG9vayDor6/lpLnluKYgc2NyaXB0cy9lMmUvaW1wYWN0LW1hcC5qc29u77yI5bm26KGM5Lya6K+dIHByb2N1cmVtZW50IOerr+eCueaYoOWwhO+8ieiAjOaXoOazlemXreWQiO+8m1NESyDku6UgYmFzZUNvbW1pdC4uSEVBRCDlj6rlkKvmnKwgY2hhbmdlIOW3sumqjOivgeWunueOsOS4uuS4jeWPmOmHj+OAglxuXG4jIyBXaGF0IENoYW5nZXNcbuaWsOW7uueLrOeriyBmdWxsIGNoYW5nZe+8jOWcqOW5suWHgOWfuue6vyBiMmQwMzQyZmQg5LiK6LWw5a6M5pW0IEd1YXJkIOa1geeoi+aLvyBkb25lIOe7iOaAge+8m+mbtiBkZWx0YSBzcGVj44CB6Zu255Sf5Lqn5Luj56CB44CB6Zu2IERETOOAgiJ9LHsicGF0aCI6Im9wZW5zcGVjL2NoYW5nZXMvY2xhaW0tYWktaW5zcGVjdGlvbi1kZWxpdmVyeS1jbG9zdXJlL2Rlc2lnbi5tZCIsImtpbmQiOiJhZGRlZCIsImNvZGUiOiJEMSDmlrAgY2hhbmdlIOiAjOmdnuS/ruihpeaXpyBSdW7vvIjlhYjkvosgcHJvY3VyYWFpLWFyY2hpdmUtZGVsaXZlcnktY2xvc3VyZSDlt7LmiJDlip/vvIlcbkQyIOmbtiBkZWx0YSBzcGVjICsgc2tpcF9zcGVjcz10cnVl77yM5LiN5YaZ5Li7IHNwZWNcbkQzIOS6pOS7mOaPkOS6pOeyvuehriBnaXQgYWRkIOS4lCBCT05FX0RBVEFfSU1QQUNUPW9mZiDpmLIgaG9vayDlm57lhpkgaW1wYWN0LW1hcFxuRDQg5aSN55So5bey6aqM6K+B5Lik5p2h55yf5a6e5qOA5p+l5ZG95Luk77yM5LiN5paw5aKe6ISa5pys5LiN5pS5IGNvbmZpZ1xuRDUgc3RhbmRhcmQg5a6h5p+lICsg54us56uL5Y+q6K+75pyA57uI6ZuG5oiQ5a6h5p+lIn1dfSx7InRpdGxlIjoi5bmy5YeA5Z+657q/5pawIFJ1biDpl63njq8iLCJiZWZvcmUiOiLml6cgUnVuIOeahCBiYXNlQ29tbWl0PTg3OWE1MzUy77yM5YW25Lqk5LuY6IyD5Zu05ZCr5bey6KKrIGhvb2sg6K+v5YaZ55qEIGltcGFjdC1tYXAuanNvbu+8m+WQjue7reihpeS6pOS5n+aXoOazleS7jiBjaGFuZ2VkIOmbhuWQiOenu+mZpOivpei3r+W+hOOAgiIsImFmdGVyIjoi5pawIFJ1biDku6XlvZPliY3lubLlh4AgSEVBRCBiMmQwMzQyZmQg5Li65Z+657q/77yIaW1wYWN0LW1hcC5qc29uIOW3suS4juWfuue6v+Wtl+iKguS4gOiHtO+8ie+8jOS6pOS7mOiMg+WbtOS7juivpeWfuue6v+i1t+eul++8jOWPquWQq+acrCBjaGFuZ2Ug55qEIHByb3Bvc2FsL2Rlc2lnbi90YXNrcy9wbGFuL3JlcG9ydC93YWxrdGhyb3VnaCDkuI7lvZLmoaPkuqfnianjgIIiLCJyZWFzb24iOiJTREsg5b2S5qGj5ZCO5peg5a6Y5pa56YeN6K6+5Z+657q/6YCa6YGT77yb5pawIFJ1biDmmK/llK/kuIDml6Lmu6HotrPkuI3lj5jph4/jgIHlj4jkuI3kvKrpgKAv5LiN5pS55Y6G5Y+y44CB5LiU5pyJ5oiQ5Yqf5YWI5L6L55qE6Lev5b6E44CCIiwiZmlsZXMiOlt7InBhdGgiOiJvcGVuc3BlYy9jaGFuZ2VzL2NsYWltLWFpLWluc3BlY3Rpb24tZGVsaXZlcnktY2xvc3VyZS90YXNrcy5tZCIsImtpbmQiOiJhZGRlZCIsImNvZGUiOiIxMCDpobnlj6/pqozor4Hku7vliqHvvJoxLjEtMS4zIOiMg+WbtOS4juWBj+W3rueZu+iusO+8mzIuMS0yLjQg5py65Zmo6aqM6K+B5LiO6Zet546v6K+B5o2u77ybMy4xLTMuMyDkuqTku5jojIPlm7TliY3nva7moLjlr7nvvIjlkKsgaW1wYWN0LW1hcC5qc29uIOS4juWfuue6v+S4gOiHtOS4lOS6pOS7mOiMg+WbtOWGheaXoOaPkOS6pOinpuWPiuWug++8ieOAguW9kuahoy/kuqTku5jliqjkvZzkv53nlZnkuLogV29ya2Zsb3cgZm9sbG93LXVw44CCIn0seyJwYXRoIjoiZG9jcy9zdXBlcnBvd2Vycy9wbGFucy8yMDI2LTExLTI0LWNsYWltLWFpLWluc3BlY3Rpb24tZGVsaXZlcnktY2xvc3VyZS5tZCIsImtpbmQiOiJhZGRlZCIsImNvZGUiOiJmcm9udG1hdHRlciBjaGFuZ2UvZGVzaWduLWRvYy9iYXNlLXJlZj1iMmQwMzQyZmTvvJtjb21ldC10YXNrLWF1dGhvcml0eSDmjIflkJEgdGFza3MubWTvvJsxMCDkuKogY29tZXQtdGFzay1yZWYg6ZSa54K577yb57qm5p2f77ya57ud5LiNIGdpdCBhZGQgLUHjgIHlvZLmoaPmj5DkuqQgQk9ORV9EQVRBX0lNUEFDVD1vZmbjgIHni6znq4vlrqHmn6XkvJjlhYjjgIHkuI3mlLnlhpnljoblj7LjgIHovpPlhaXmvILnp7vliJkgcmVvcGVuLXZlcmlmaWNhdGlvbuOAgiJ9XX1dLCJ2ZXJpZmljYXRpb24iOlt7ImxhYmVsIjoiT3BlblNwZWMg5Lil5qC85qCh6aqMIiwic3RhdHVzIjoicGFzc2VkIiwiZGV0YWlsIjoiY29tZXQgY2xhc3NpYyBvcGVuc3BlYyB2YWxpZGF0ZSAtLXN0cmljdO+8mkNoYW5nZSAnY2xhaW0tYWktaW5zcGVjdGlvbi1kZWxpdmVyeS1jbG9zdXJlJyBpcyB2YWxpZO+8m2FydGlmYWN0IOmXreWMhSBwcm9wb3NhbC9zcGVjcyhza2lwcGVkKS9kZXNpZ24vdGFza3Mg5YWo6YOoIGNvbXBsZXRl44CCIn0seyJsYWJlbCI6IuiuvuiuoeaJueWHhiIsInN0YXR1cyI6InBhc3NlZCIsImRldGFpbCI6IueUqOaIt+ehruiupOato+W8j+iuvuiuoe+8iHByb3Bvc2FsSGFzaCAzNTA4NDkyM+KApu+8ie+8jGRlY2lkZS1kZXNpZ24gYXBwcm92ZWQgKyBjb21wbGV0ZS1kZXNpZ24g6YCa6L+H77yM6L+b5YWlIEJ1aWxk44CCIn0seyJsYWJlbCI6IkJ1aWxkIOS4u+WIpOaNriIsInN0YXR1cyI6Im5vdC1ydW4iLCJkZXRhaWwiOiJtdm4gLXBsIGJvbmUtYXBwcy9zeW5hcC1jbGFpbS9zeW5hcC1jbGFpbS1hcHAgLWFtIHRlc3TvvIzln7rnur8gVGVzdHMgcnVuOiAxNjc0LCBGYWlsdXJlczogMCwgRXJyb3JzOiAwLCBTa2lwcGVkOiA477ybVmVyaWZ5IOmYtuauteWwhuWGmeWFpeWunumZhee7k+aenOOAgiJ9XX0=</template></body></html>
