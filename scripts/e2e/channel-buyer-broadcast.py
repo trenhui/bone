@@ -82,6 +82,13 @@ def main() -> int:
     # ==================== A. 渠道买家映射 ====================
     print("\n--- A. 渠道买家映射 ---")
 
+    # 前置：确保 900002 已在渠道上架并同步库存（与 multichannel.py 的 900001 同构，
+    # 否则拉单会因 BP_INVENTORY_NOT_FOUND 404）
+    http.call("POST", "/channel-products", {
+        "channelCode": "TAOBAO", "productId": PRODUCT,
+        "productName": ITEM_TITLE, "listingPrice": 99.00})
+    http.call("POST", "/channel-products/sync-inventory" + qs({"productId": PRODUCT, "stock": 480}))
+
     # 幂等重置：解绑 + 清掉历史订单，保证「再拉单」这一步真的能观察到客户维度变化
     http.call("POST", "/channel-buyers/unbind" + qs(
         {"channelCode": "TAOBAO", "channelBuyerId": BUYER_ID}))
