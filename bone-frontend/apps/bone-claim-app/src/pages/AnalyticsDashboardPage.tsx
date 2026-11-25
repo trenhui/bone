@@ -18,11 +18,11 @@ import {
 import { aiFeedbackApi, type AiFeedbackSummaryResp } from '../services/aiFeedback';
 
 /**
- * 运营分析看板（hidden 路由，从工作台治理空间深链进入）。
+ * 运营分析看板（正式侧栏菜单项；仍可从工作台治理空间深链进入）。
  *
- * 为什么是 hidden 而不是菜单项：单导航探针要求「IAM 菜单 ↔ 非 hidden 路由」双向全等，
- * 新增菜单需先落 IAM 种子（L4 禁区）。沿用 `/workbench`、`/case` 的既定形态——
- * hidden 路由从对象入口深链进入，不占菜单，仍受 Auth 包裹（见 App.tsx HIDDEN_ROUTE_REQUIRED）。
+ * 口径更新（2026-11-22）：本页已由 hidden 深链路由提升为正式菜单项（迁移 0136 已落 IAM 种子）。
+ * 鉴权不随之上移：App.tsx 的 HIDDEN_ROUTE_REQUIRED 按 path 查表保留 Auth 守卫，
+ * 直接输 hash 绕过侧栏时依然 fail-closed——不能因为进了菜单就去掉鉴权。
  *
  * 口径纪律：所有数字来自后端 `GET /analytics/summary`，前端零假数据。后端 `scopeNote`
  * 原样上屏——影子自动化率 ≠ 实际出金率（自动放款开关默认关闭、E1/E2 未交付），

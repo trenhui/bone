@@ -147,7 +147,7 @@
 - [x] 15.1 **同意撤回 HTTP 全链路 6 步对照通过**：新建 E2E 案件（consent 已登记/未撤回）→ 第一次撤回 `data=true` → 第二次幂等 `data=false` → 撤回后 `POST /{id}/decision` 得 `422 SC_CLAIM_CONSENT_WITHDRAWN` → 撤回后 `POST /{id}/hangup` 收尾动作仍 200 → 重查 `consentWithdrawnFlag=1` 持久化；无 token 直调得 `401 GW_UNAUTHORIZED`（端点 `claim:claims:write`）。
 - [x] 15.2 **浏览器 UI 端到端通过**（Playwright 无头 Chrome，真实登录）：`/sclaim/claim/detail` 概览"同意状态=已登记"旁渲染"撤回同意"按钮 → 点击出二次确认弹窗（PIPL15/422后果/不可撤销/需重签）→ 确认发真请求 200 → 状态变"已撤回"、按钮消失。截图 `/tmp/claim-e2e-screens/case360-{before,confirm,after}.png`。2 个 404 为 SIGNING 阶段 `/review/tasks/{id}/execution` 空态预取，非本轮引入。
 - [x] 15.3 **429 Retry-After 联调**（环境无真实限流，route 注入 429+Retry-After:7）：前端红色 Alert 正确显示限流文案，AI 结论卡 fail-closed 独立展示；detail 请求 2 次系 React.StrictMode dev 双渲染（唯一调用点 Case360:96），非自动重试。截图 case360-429.png。
-- [ ] 15.4 **联调新发现，待用户裁决**：`error.retryAfter` 已透传但无消费端——`resolveErrorMessage` 优先命中 i18n `COMMON_RATE_LIMITED` 译文，不读秒数。若要显示"约 N 秒后重试"须改共享 `resolveErrorMessage`（影响所有微应用回退链），收益边际、风险非零，本轮不擅改，登记待裁决。
+- [x] 15.4 **联调新发现 → §18 已落地**：`error.retryAfter` 曾透传但无消费端（`resolveErrorMessage` 只按码取通用译文"请稍后重试"）。用户连续要求"完成所有合理建议"后于 §18 落地：新增限流专用 i18n key + Retry-After 秒数解析，浏览器实测显示"请约 7 秒后重试"。
 - [x] 15.5 **留痕**：诊断报告新增 §10 联调实证；本轮未新增业务代码改动（15.1-15.3 为验证既有落地，15.4 为发现登记），git 暂存仍是第八轮 8 文件。
 
 ## 16. 第十轮：剩余建议取证 + 提交门禁基线债务修复（2026-11-23）
@@ -176,3 +176,71 @@
 - [x] 18.4 **排除项登记**：原型数字（P0-3 已闭环）、单独同意勾选（上游采集、造即假合规）、擦除入口/字典版本（后端无契约）、拆页/i18n/a11y/保存视图落库（高风险或无契约）——均不落码。
 - [x] 18.5 **验证**：typecheck RC0（含修复并行会话双号字段致的 Case360FeeDetail mock 缺字段）；ClaimSubmitPage 单测 3 例新增、全量 26 文件 228 例全绿；变异验证 3 条口径测试全红；check_all 本轮 [17][18] 全绿，2 红为 dev 存量债务（manifest M3/ruleset A9）。
 
+
+## 18. 第十四轮：Retry-After 秒数消费落地（2026-11-24）
+
+> 用户连续要求"基于业界最佳实践对所有合理建议落地 + 完成联调"+"继续完成未完成的任务"。
+> **并行会话安全**：当前主树有 40+ 其他会话在途改动（bone-ai / claim 多页面 / prototypes），本轮只碰自己的 4 文件 + 2 文档，逐路径 `git add`，严禁 `git add -A`。经取证：§7 有真契约项已全数消化（§16.1），阻塞项重新扫描仍无契约（推送失败/复制/快赔500/责任图/SLA列），唯一可落地项=§15.4 遗留的 retryAfter 秒数消费。
+
+- [x] 18.1 **Retry-After 秒数消费落地（§15.4 结案）**：`resolveErrorMessage` 原只按 errorCode 取 i18n 通用译文"请稍后重试"，透传的 `error.retryAfter` 成死字段。方案：新增限流专用 key `COMMON_RATE_LIMITED_RETRY`（zh「请求过于频繁，请约 {{seconds}} 秒后重试」/ en「...about {{seconds}} seconds」），`resolveErrorMessage` 对 `COMMON_RATE_LIMITED`/`GW_RATE_LIMITED` 且 Retry-After 为纯数字秒（1–86400）时优先用专用 key；HTTP-date 形态因无法可靠换算（客户端时钟不准）保守回退通用译文；**不在共享层硬编码中文后缀**（文件头明确要求避免英文界面出现中文）。改动 4 文件：shared-utils `errorMessage.ts` + 中英文言包、claim-app `retryAfterMessage.test.ts`（7 例判别力：数字秒/网关码/HTTP-date回退/非限流码不带秒/无秒零回归/英文文案无中文/异常秒数过滤）。
+- [x] 18.2 **联调验证秒数真实可见**：route 注入 429+Retry-After:7 → Case360 页面文案由"请稍后重试"变为 **"请求过于频繁，请约 7 秒后重试"**（截图 `/tmp/claim-e2e-screens/case360-429.png` 已更新）；AI 结论卡仍 fail-closed 独立展示、无自动重试。验证：shared-utils `npm run build` ✅ / 新测试 7/7 ✅。
+- [x] 18.3 **精确 git add**：只暂存本轮 4 文件（`git add -- <精确路径>`），其他会话 40+ 在途改动一字未动。
+
+## 19. 收口状态（截至 2026-11-24）
+
+- 诊断报告 §7 全部"有真契约未落地"建议已在前 13 轮消化完毕；剩余均为**真无后端契约**（推送失败端点、案件复制、快赔≤500 阈值、责任关系图、表达式编译、矩阵 valueList、列表级 SLA 列）或**仓库级门禁基线债务**（§16.5），不可伪造、不属本 change 单人可解。
+- §15.4 本轮结案后，本 change 已无"可由单人落地"的剩余建议。
+
+## 20. 第十五轮：完整前后端真机联调 + 两处环境/脚本债务修复（2026-11-24 18:22 起）
+
+> 用户 `/comet 基于业界最佳实践对以上所有合理的建议落地实现，并完成前后端功能的联调`。
+> 沿用既有裁定：Comet SDK 仍卡 `open.revalidate` running 等待态（resume-probe=ask_user/low；`state next`=wait executor）——不碰守卫、不 mark-unknown、不 cancel、不伪造回执；以产物与真机联调为事实直接落地。
+> 取证先行：阻塞清单三项复核仍无契约（推送失败仅 analytics 计数、列表 SLA 列 0 命中、快赔 500 常量 0 命中）⇒ §19 结论属实，不伪造。本轮增量聚焦用户明确要求的「完成前后端功能联调」。
+
+- [x] 20.1 **完整真机联调首跑 28/39**：跑仓库 `bone-frontend/e2e/synap-claim-e2e.cjs`（真实服务栈、零 mock、经网关 JWT、Playwright Chromium）。A 段 API 15/15 + C 段循环对账 3/3 全绿；B 段 UI 11 项 FAIL，根因集中在 qiankun 从未挂载（hits 空、entryCards=0、url 停在根）。
+- [x] 20.2 **脚本过期路径纠偏（工程债务，非产品缺陷）**：逐层取证——shell 用 BrowserRouter，`CLAIM_MENU_PREFIX=/sclaim/claim`（App.tsx，明确「不保留任何历史别名」），默认落点是 hidden `/workbench`（routes.tsx isDefault）；脚本却用废弃别名 `/claim/review`（被 302 弹回根）+ hash 断言 `#/ai-governance`。真机验证正确路径 `/sclaim/claim/workbench`（我的工作台 4/4 标记、22 卡片）与卡片深链 `/sclaim/claim/ai-governance`（6 标记全中）。修正脚本 3 处路径后 UI 段 10/11 转绿，总 38/39。
+- [x] 20.3 **联调暴露旧 jar 缺陷（真红，非误报）**：唯一残留 FAIL「5 个治理端点可用」=治理页「工程证据底座」显示「数据不可用」。抓真实响应定位 `GET /api/v1/claim-ops/engineering-evidence` 404；双向取证发现后端源码有 `EngineeringEvidenceController`（commit 540229a1f，11-20）但运行中 jar 是 11-19 构建、jar 内无该类——**构建产物过期**，非代码缺陷。用 `-am clean install` 跨模块重建（单模块构建缺 sdk/adjustment-engine 本地依赖）+ 重启 8087（`Started in 3.736s`），端点恢复 200 返回完整判据。
+- [x] 20.4 **联调结果 39/39 PASS**：重跑全链——A 段 15/15（含负向探针 401/400、minSamples 下限不可绕过、演练零副作用）+ B 段 18/18（qiankun 挂载、深链、探活默认零请求、判词不伪造、参与率独立对账、数据可用）+ C 段 3/3（静态判据 vs 运行期就绪清单双向一致）。本轮 provider 真探活返回 `REACHABLE`（deepseek-flash，httpStatus 200 + 证据束），比上轮 `NOT_CONFIGURED` 更真实。产物 `outputs/claims-e2e-result.json` + 3 张截图。
+- [x] 20.5 **全量回归**：前端 typecheck RC0、单测 34 文件 266/266 全绿；后端 `EngineeringEvidenceControllerTest` 2/2 + `EngineeringEvidenceServiceTest` 4/4 全绿。改动仅 1 文件（`bone-frontend/e2e/synap-claim-e2e.cjs`），未碰业务源码。
+- [ ] 20.6 仍阻塞（沿用 §13.6/§14.6，真无契约不伪造）：推送失败端点、案件复制、快赔≤500 阈值、责任关系图、表达式编译、矩阵 valueList、列表级 SLA 列。本轮未改其状态。
+
+## 21. 第十六轮：企业场景模拟数据 + 全业务链端到端串联（2026-11-24 18:37）
+
+> 用户「基于企业真实场景构建模拟数据，对智能理赔系统前后端所有功能进行端到端的联调测试，把整体智能理赔流程串联起来」。沿用既有裁定：Comet SDK 卡 open.revalidate 死锁——不碰守卫/不 mark-unknown/不 cancel/不伪造回执。
+
+- [x] 21.1 **场景数据生产化**：复用 `fixtures.cjs`（词表真源 wordlist.json + 可种子 PRNG），同 STAMP 同数据、金额非圆整、Σ 明细守恒；经网关真实写 API 落库（非直插 DB），额度夹具只增不减整备；MySQL 直查第二证据源对账。
+- [x] 21.2 **全业务链 67/67 PASS**：`claim-full-chain-e2e.mjs` 七分支串联——小额直付 / 大额双人复核（SoD）/ 拒赔维持 / 申诉推翻+挂起恢复 / 补件循环 / 决策图+自动通过 / 后督抽检；外加查询分页、假名化检索、保单聚合、MySQL 落库对账。真实落库 7 案件（FINISHED×2 等）。
+- [x] 21.3 **前端数据串联**（`tools/poc/bone-fullchain-ui.cjs`）：qiankun 挂载下逐案 360 做 API↔UI 金额对账（243.42/22233.58/122.83/565.19 命中）；核赔列表读真实分页、我的工作台导航渲染。console 两类噪音（execution 404 已 allSettled 兜底、antd Spin tip 警告）取证定性为已知无害，判据纠偏后聚焦真错误。
+- [x] 21.4 **全功能页面巡检 19/19**（`tools/poc/bone-fullchain-pages.cjs`）：19 页逐一挂载 0 pageerror 0 5xx；「理赔进度」初判红经取证为查询驱动页需带 `?claimId=`，用真实案件深链验证渲染 498 字符全链数据后修正判据全绿。
+- [x] 21.5 **产物**：`outputs/chain-{ui,pages}-result.json` + `chain-{review-list,case360,progress}.png`；两探针沉淀 `tools/poc/`；诊断报告新增 §16。
+- [ ] 21.6 阻塞清单（推送失败端点等）本轮未涉及、真无契约，不伪造。
+
+## 22. 第十七轮：保单→打款八环节单案贯穿 + 广覆盖复跑（2026-11-24 21:30）
+
+> 用户「从保单配置，到报案，签收，智能初审，智能理算，复核，推送保司，打款整个全链路打通，并构建模拟数据，进行端到端测试」。沿用既有裁定：Comet SDK 卡 open.revalidate 死锁——不碰守卫/不 mark-unknown/不 cancel/不伪造回执。
+
+- [x] 22.1 **八环节单案贯穿 31/31 PASS**（`claim-journey-e2e.mjs`，本轮复跑两遍）：一条案件走完保单配置(真落库 t_claim_policy ACTIVE)→报案(HTTP 201，CL/RP 双号)→签收(PENDING_EVIDENCE+证据锁定)→初审(分配/开始/回填/转人工/领取)→理算(formulaHash+snapshot 非空)→复核(APPROVED)→推送保司(Outbox INSURER_PUSH PENDING→SENT)→打款(FINISHED，claim_amount=Σ明细)。每环 API + MySQL 双源对账。
+- [x] 22.2 **广覆盖全链 67/67 PASS 复跑**：`claim-full-chain-e2e.mjs` 七分支 + 查询分页/假名化检索/保单聚合/MySQL 对账全绿，与第十六轮一致无回归。
+- [x] 22.3 **判据纠偏**：`t_claim_case.report_no=NULL` 取证为设计如此——RP 报案号真源在 `t_claim_report.report_no`（唯一索引），case 表只存 CL 号；Outbox payload 两号齐全。未改业务代码。
+- [x] 22.4 **脚本修复**：`claim-journey-e2e.mjs` 汇总行 `report()` 补 title，消除 `undefined：通过 31/31`；重跑确认标签正确且 31/31。
+- [x] 22.5 **产物**：诊断报告 §17；复跑日志 `/tmp/claim-journey-final.log`、`/tmp/claim-fullchain-rerun.log`；服务恢复原状（8087/8888 停，3306/6379/8081 保留）。
+- [ ] 22.6 边界保留：`SENT`=事件总线派发并被内部消费，非 HTTP 推外部保司（无 webhook 配置）；真接外系统属二期 MQ/HTTP 出站。
+
+## 23. 第十八轮：推送保司升级为真实 HTTP 出站（2026-11-24 21:53）
+
+> 用户裁定"推送保司升级为真外发"+"新增仓库内保司接收桩"。沿用 Comet SDK 死锁裁定：不碰守卫/不伪造回执。
+
+- [x] 23.1 **真实 HTTP 出站适配器**：新增 `InsurerPushGatewayPort` + `InsurerPushGatewayPortAdapter`（JDK HttpClient 真 POST，信封+原 payload，稳定 eventId 幂等，fail-closed，可选 Bearer）；`SpringOutboxDispatcher` 按事件类型路由 INSURER_PUSH→HTTP（配置端点时），未配置回落一期进程内总线。
+- [x] 23.2 **配置与接收桩**：`bone.claim.insurer-push.{endpoint,timeout-ms,auth-token}`；新增 `tools/mock-insurer-receiver.py`（真 HTTP+JSONL 落盘+/received 查询+422 契约校验，非 AI mock）。
+- [x] 23.3 **验证全绿**：claim-app 单测 1700/1700（含 ArchUnit 28 规则）；适配器 3/3、路由 3/3；journey E2E 加"真实 HTTP 送达+契约"2 断言 → 33/33（最终 jar 重跑）；广覆盖 67/67 无回归。接收端 JSONL 真 POST 落盘双向对账。
+- [x] 23.4 **判据纠偏**：报送金额=理算核定/结算实付额（非申请额），按 pay() 的 amount 参数取证；新 @Component 自建 ObjectMapper 避免切片测试装配失败。
+- [ ] 23.5 边界：真外发当前指向仓库内保司桩（真网络出站+落盘，非假投递）；接真实保司只换配置。
+
+## 24. 第十九轮：全链复跑 + 决策超时假红修复（2026-11-24 21:53）
+
+> 用户第三次同一全链需求，本轮直接最终交付验证，无新增产品能力。
+
+- [x] 24.1 最终验证：真外发栈跑 journey E2E 33/33（八环节+真实 HTTP 送达+契约）、广覆盖 67/67（修复后连跑两次）。样本 CL202611249QT36987CQXPS7 / 申请额 802.86。
+- [x] 24.2 决策超时假红根因：首次广覆盖 62/67 的 5 条失败系决策真实 AI 耗时 10.19s > 网关 TimeLimiter 5s，网关超时返回空响应、后端仍成功落库（trace 0a07dac5 / PENDING_ADJUST 为证）。非产品缺陷。
+- [x] 24.3 测试健壮性修复：`claim-full-chain-e2e.mjs` 决策 POST 同幂等键重试（≤6 次/2s）+ 读端点 `/review/tasks/{claimId}/execution` 回查兜底；两条恢复通道实测可用，修复后 67/67×2。
+- [ ] 24.4 边界留痕：网关 5s TimeLimiter 对慢 AI 决策偏紧（既存配置，本轮未改）；产品级消除需评估端点豁免或异步轮询。

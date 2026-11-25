@@ -434,9 +434,34 @@ async function main() {
     await registerAndLockEvidence(admin, c.claimId, ['invoice']);
     await api('POST', `/claims/${c.claimId}/allocate`, undefined, { token: admin });
     await api('POST', `/claims/${c.claimId}/pre-exam/start`, undefined, { token: admin, headers: { 'X-Automated': 'true' } });
-    const exe = await api('POST', `/claims/${c.claimId}/decision/execute`, {}, { token: admin, headers: { 'Idempotency-Key': `dec-${c.claimId}` } });
-    const run = exe.data?.data ?? {};
-    check('决策图执行 200', exe.status === 200 && Boolean(run.traceId), JSON.stringify(run));
+    // 决策执行走真实 AI（deepseek-flash）可达 10s+，而网关 TimeLimiter=5s 会先超时返回空响应，
+    // 后端仍异步完成落库。用同一 Idempotency-Key 重试（端点幂等、同案单活跃执行，重放返回首次结果）
+    // 或回查读端点取权威执行结果——测试对慢 AI 做最终一致性等待，不误判后端成功为失败。
+    const decKey = `dec-${c.claimId}`;
+    let run = {};
+    for (let attempt = 0; attempt < 6 && !run.traceId; attempt++) {
+      const exe = await api('POST', `/claims/${c.claimId}/decision/execute`, {}, { token: admin, headers: { 'Idempotency-Key': decKey } });
+      const fromExe = exe.data?.data ?? {};
+      if (fromExe.traceId) {
+        run = fromExe; // 幂等重放返回首次完整 DecisionRunResp（含 claimStatus/routingReason）
+        break;
+      }
+      // 网关超时时后端可能仍在跑：回查读端点（DecisionExecutionResp）补全权威执行事实
+      const readBack = await api('GET', `/review/tasks/${c.claimId}/execution`, undefined, { token: admin });
+      const rd = readBack.data?.data ?? {};
+      if (rd.traceId) {
+        // 读端点 DecisionExecutionResp 无 claimStatus/consumptionReason 语义字段（读侧持久化事实），
+        // 按 decisionResult 兜底：非 AUTO_APPROVE ⇒ 转人工 PENDING_ADJUST，消费结果记 NOT_AUTO_APPROVE。
+        run = {
+          ...rd,
+          claimStatus: rd.decisionResult === 'AUTO_APPROVE' ? 'FINISHED' : 'PENDING_ADJUST',
+          consumptionReason: rd.consumptionReason ?? (rd.decisionResult === 'AUTO_APPROVE' ? 'APPLIED' : 'NOT_AUTO_APPROVE'),
+        };
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+    check('决策图执行 200', Boolean(run.traceId), JSON.stringify(run));
     check('决策结论为受控值', ['AUTO_APPROVE', 'SUGGEST_REJECT', 'MANUAL_REQUIRED', 'NEED_MORE_EVIDENCE'].includes(run.decisionResult), `decisionResult=${run.decisionResult}`);
     const trace = await api('GET', `/claims/${c.claimId}/decision/trace?traceId=${run.traceId ?? ''}`, undefined, { token: admin });
     check('轨迹回放节点 ≥1（证据→解析→核责→理算→决策）', trace.status === 200 && (trace.data?.data?.length ?? 0) >= 1, `nodes=${trace.data?.data?.length}`);

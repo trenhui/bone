@@ -91,6 +91,35 @@ function stripErrorCodePrefix(text: string): string {
 }
 
 /**
+ * 限流业务码 → 带等待秒数的专用译文 key。
+ *
+ * <p>为什么用独立 key 而不是在通用译文后拼中文后缀：本模块的服务对象含英文用户，
+ * 后端 message 与调用方 fallback 都是中文（文件头已说明），若在这里硬编码"（约 N 秒后重试）"
+ * 会让英文界面出现中文。独立 key 让中英文各自翻译，且无 Retry-After 时仍走通用译文、零回归。
+ */
+const RATE_LIMIT_RETRY_KEYS: Readonly<Record<string, string>> = {
+  COMMON_RATE_LIMITED: 'errors.COMMON_RATE_LIMITED_RETRY',
+  GW_RATE_LIMITED: 'errors.COMMON_RATE_LIMITED_RETRY',
+};
+
+/**
+ * 取 Retry-After 的 delta-seconds（RFC 9110 允许「秒数」或「HTTP 日期」两种形态）。
+ *
+ * <p>只认纯数字秒：日期形态无法可靠转成"还有几秒"（要解析并减当前时间，且客户端时钟可能不准），
+ * 保守返回 null 让文案退回通用「请稍后重试」。上界 86400（1 天）过滤异常值，避免误导用户死等。
+ * retryAfter 由 `createApiClient` 429 拦截器透传（见 shared-services/apiClient.ts）。
+ */
+function retryAfterSeconds(error: unknown): number | null {
+  const err = error as { retryAfter?: unknown } | null;
+  const raw = err?.retryAfter;
+  if (typeof raw !== 'number' && typeof raw !== 'string') return null;
+  const text = String(raw).trim();
+  if (!/^\d+$/.test(text)) return null;
+  const seconds = Number(text);
+  return Number.isFinite(seconds) && seconds > 0 && seconds <= 86400 ? seconds : null;
+}
+
+/**
  * 解析错误提示文案。
  *
  * @param error 任意捕获到的错误（通常是 axios 错误）
@@ -99,6 +128,16 @@ function stripErrorCodePrefix(text: string): string {
 export function resolveErrorMessage(error: unknown, fallback: string): string {
   const errorCode = extractErrorCode(error);
   if (errorCode) {
+    // 限流 + 可解析的 Retry-After 秒数：优先用带秒数的专用译文（中英文各自措辞）。
+    //  translators 若未提供该 key，i18next 返回 defaultValue 空串，自然落回通用译文。
+    const retryKey = RATE_LIMIT_RETRY_KEYS[errorCode];
+    const seconds = retryKey ? retryAfterSeconds(error) : null;
+    if (retryKey && seconds != null) {
+      const withSeconds = i18n.t(retryKey, { defaultValue: '', seconds });
+      if (typeof withSeconds === 'string' && withSeconds.length > 0) {
+        return withSeconds;
+      }
+    }
     // defaultValue 给空串：i18next 在键缺失时会回传 key 本身（'errors.XXX'），不能直接展示
     const translated = i18n.t(`errors.${errorCode}`, {
       defaultValue: '',

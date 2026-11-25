@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>synapClaim · 三方对标增强优化执行与验证报告</title>
+<style>
+  :root{--bg:#f6f7f9;--card:#fff;--border:#e4e7ec;--text:#1f2329;--muted:#646a73;--primary:#1f6feb;
+    --green:#237804;--green-soft:#f0f9e8;--red:#d4380d;--red-soft:#fff1ed;--amber:#ad6800;--amber-soft:#fff8e6}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 28px 80px}
+  header{border-bottom:2px solid var(--text);padding-bottom:20px;margin-bottom:26px}
+  .eyebrow{font-size:12px;letter-spacing:.16em;color:var(--primary);font-weight:600}
+  h1{font-size:28px;margin:8px 0 10px;letter-spacing:-.02em}
+  .meta{font-size:13px;color:var(--muted)}
+  h2{font-size:19px;margin:40px 0 6px;padding-left:12px;border-left:4px solid var(--primary)}
+  .sub{font-size:13px;color:var(--muted);margin:0 0 16px 16px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}
+  .kpi{background:#fff;border:1px solid #dbe6ff;border-radius:8px;padding:12px 14px}
+  .kpi b{display:block;font-size:22px;color:var(--primary);line-height:1.25}
+  .kpi span{font-size:12px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden;font-size:12.5px;border:1px solid var(--border)}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:#f3f6fb;font-weight:600;color:#344054}
+  tr:last-child td{border-bottom:none}
+  code{background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:11px}
+  .tag{display:inline-block;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap}
+  .tag.d{background:var(--green-soft);color:var(--green)}
+  .tag.b{background:var(--red-soft);color:var(--red)}
+  .tag.p{background:var(--amber-soft);color:var(--amber)}
+  .note{background:var(--amber-soft);border:1px solid #f0d9a8;border-radius:8px;padding:14px 16px;font-size:13px;color:#6b4b12;margin:14px 0}
+  .note.ok{background:var(--green-soft);border-color:#c9e8b0;color:#2c5c14}
+  .note.red{background:var(--red-soft);border-color:#ffccc7;color:#8c2a0a}
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+  @media(max-width:800px){.wrap{padding:24px 16px 60px}table{font-size:11px}.kpis{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">SYNAPCLAIM · 执行与验证报告</div>
+  <h1>三方对标增强优化：执行落地与测试验证</h1>
+  <div class="meta">2026-11-24 ｜ 基于《智能理赔-三方对标增强优化建议-速览》13 项建议逐条执行；「合理」以<b>后端真实能力 + 项目纪律（L3 审批边界、PIPL、AI 不碰钱）</b>为准绳</div>
+</header>
+
+<div class="kpis">
+  <div class="kpi"><b>9 / 13</b><span>建议已实质落地（P0 全 5 项 + P1/P2 共 4 项）</span></div>
+  <div class="kpi"><b>259 / 259</b><span>理赔前端单测全绿（33 个测试文件）</span></div>
+  <div class="kpi"><b>5 / 5</b><span>原型一致性机检通过（含 5 个反例自测）</span></div>
+  <div class="kpi"><b>4 项</b><span>经取证不可实施 / 需 L3 评审，附实证不伪造</span></div>
+</div>
+
+<h2>一、已落地项与验证证据</h2>
+<table>
+<thead><tr><th style="width:6%">编号</th><th style="width:20%">建议</th><th style="width:38%">落地内容（关键文件）</th><th>验证证据</th></tr></thead>
+<tbody>
+<tr><td>P0-1</td><td>原型跨页数据一致性</td><td>统一发票 ¥1,280 为事实源、影像 12 张、链路统计口径；新增 <code>check_demo_consistency.py</code>（只读机检 + --self-test 5 反例）</td><td>机检 5/5 PASS；错误金额零命中；13 页齐全</td></tr>
+<tr><td>P0-2</td><td>修两个静默 bug</td><td><code>PolicyManagementPage.tsx</code> 编辑弹窗改 <code>editForm.setFieldsValue</code>；标准码取全抽为 <code>standardCodeOptions.ts</code> 走 <code>fetchAllPages</code> + 触顶告警</td><td>14 个单测通过（2 个源码钉子 + 12 个分页/取全）；tsc 0 错</td></tr>
+<tr><td>P0-3</td><td>铺开查询基座</td><td><b>第二轮补全 4 个主列表</b>：<code>useClaimQuery(defaultSize)</code> 可覆盖默认分页；<code>PolicyManagement</code> / <code>Library</code> / <code>ReviewWorkbench</code> / <code>PreExamWorkbench</code> / <code>QuotaConfig</code> 全部接入 URL 真源 + <code>ClaimQueryBar</code> + 保存视图。核赔 <code>f_taskStatus</code>、初审 <code>f_status</code>、额度 <code>f_removed</code> 走结构化筛选；后端无 keyword 的两页显式 <code>searchable={false}</code>，不放假搜索。顺带修复查询条「外部清空 keyword 后输入框残留旧文本」与查询基座「同一事件连续改两参被渲染快照覆盖」两个静默 bug</td><td>查询基座 11 + 查询条 5 + 接线源码钉子 5 个单测通过（含反例：修复前 <code>q=NEW</code> 被覆盖，修复后两参都落 URL）；tsc 0 错</td></tr>
+<tr><td>P0-4</td><td>批量拒赔五要素对齐</td><td>取证发现<b>后端批量 DTO 无五要素字段、批量拒赔 100% 进 failed</b>；按合规改「显式禁止批量拒赔」，<code>isBatchDecisionAllowed</code> 白名单 + UI 禁用 + 两处纵深守卫</td><td>3 个单测通过（含源码钉子：禁止 REJECTED 入口）；tsc 0 错</td></tr>
+<tr><td>P0-5</td><td>文档口径漂移</td><td><code>AnalyticsDashboardPage</code> 注释从「hidden 路由」改为正式菜单（0136）；<code>WorkbenchPage</code> 保存视图文案对齐已实现事实</td><td>grep 回读确认旧口径零残留</td></tr>
+<tr><td>P1-1</td><td>原型补 4 页（能力回流）</td><td>新增 <code>settlement.html</code>（结算状态机+四向对账+幂等）、<code>ai-governance.html</code>（7 卡片+AI 四态+显式探活）、<code>mapping.html</code>（码值映射+STP 五把尺）、<code>role-views.html</code>（6 视角 JS 驱动 + 职责分离拒答）；9 页导航与命令面板补至 13 页</td><td>机检确认 13 页互跳齐全；抽查 JS 切换与非对称字段在位</td></tr>
+<tr><td>P2-1</td><td>角色视角切换</td><td><code>role-views.html</code> 6 角色可切换，客户只见进度结果、初审看不到复核按钮、复核显示「复核人≠第一审核人」</td><td>源码回读 data-roles / setRole 驱动为真</td></tr>
+<tr><td>P2-2</td><td>结案支付原型页</td><td><code>settlement.html</code> 6 态结算单状态机 + 资金三值 + 四向对账差异表</td><td>源码回读 6 个状态 + 四向对账表头在位</td></tr>
+<tr><td>P2-3</td><td>横切能力（可落地部分）</td><td><code>claimTheme.ts</code> + <code>AppAntdProvider</code> 跟随 Shell 主题（复用 <code>toAntdTheme</code>，不造第二套 token）；<code>ErrorBoundary</code> 加可注入 reporter（默认 console.error，不内置假 Sentry）</td><td>7 个单测通过；全量 246 绿；vite build 成功</td></tr>
+<tr><td>P2-4</td><td>MRM 面板</td><td><code>evaluation-report.html</code> 增补 MRM 区块（模型卡片/PSI/ champion-challenger/公平性三维）；<code>ai-governance.html</code> 漂移公平性目标线双列</td><td>机检「现场生成」留空、无写死达成百分比 PASS</td></tr>
+<tr><td>P1-2</td><td>责任配置规则对账</td><td>产出《责任配置三方对账-速览.html》：原理赔 9 section ↔ 规则书 ↔ 实现 20 项逐项对账 + 缺项分组</td><td>三方源码取证，路径/字段/规则 ID 均标注</td></tr>
+</tbody></table>
+
+<div class="note">
+<b>第二轮补做的取证细节（P0-3 剩余部分）</b>：首轮只把查询基座接到保单页，但建议原文要求「铺到核赔 / 初审 / 保单 / 额度 4 个主列表」。本轮核实发现核赔 <code>reviewTaskApi.tasks</code> 只接 <code>status/page/size</code>、初审 <code>claimApi.page</code> 只接 <code>statuses/page/size</code>——这两页若显示搜索框必然是假功能，故给 <code>ClaimQueryBar</code> 加 <code>searchable</code> 开关并写测试钉住；额度页关键字是后端真实参数，正常接入。另用 <code>renderHook</code> 复现了「同一事件内 setKeyword + setFilter 只有后者生效」（URL 实得 <code>q=OLD&amp;f_risk=HIGH</code>，<code>q=NEW</code> 被吞），修复为 ref 串联连续更新，避免切 Tab 时「清了筛选却留着页码」。
+</div>
+
+<h2>二、经取证不可实施的建议（不伪造「配了不生效」）</h2>
+<div class="note red">
+<b>以下 4 项不是「没做」，而是「核实后确认做了会是假功能」</b>。判定依据：后端真实能力取证 + 项目纪律（L3 需架构师审批、PIPL 明文不落库、AI 不碰钱）。每项都给出可复核的代码证据。
+</div>
+<table>
+<thead><tr><th style="width:14%">建议</th><th style="width:12%">判定</th><th>实证原因与后续条件</th></tr></thead>
+<tbody>
+<tr><td>P1-3 反洗钱 9 要素</td><td><span class="tag b">不支持</span></td><td>新后端全仓无 AML/9要素实现：干系人实体 <code>ClaimStakeholder</code> 仅 <code>person_id_hash / name_masked / phone_masked / bank_ref</code>，无身份证明/常驻地址/职业字段；<code>10000</code> 阈值仅用于双人复核门；拒赔码字典无反洗钱项。且明文证件依 PIPL 不落库。<b>后续条件</b>：需先做 L3 评审（字段/存储/写入期校验/驳回码/阈值配置），不得前端单侧伪造校验。</td></tr>
+<tr><td>P1-4 OCR 字段→影像 bbox 画框</td><td><span class="tag b">不支持</span></td><td>理赔侧 OCR 结果仅 <code>code/value/confidence/evidenceRef</code>（文本偏移 <code>text@12:8</code> 或 <code>image@code</code>），<code>pageNo/lineNo</code> 恒 null；全仓 bbox 零命中。真实 bbox 能力在独立模块 <code>bone-ai-document</code>（<code>BoundingBox{x1,y1,x2,y2}</code>）但 synap-claim 的 pom 未依赖、端口注释明确列「二期」。<b>后续条件</b>：跨模块集成改造（加依赖 + 改 DocumentParsePort 契约 + 改落库 extracted_json + 改响应 DTO）。现有 <code>evidenceLocatorsOf</code> 无坐标返回空数组的诚实行为<b>保持不变</b>——补默认页就是幻觉。</td></tr>
+<tr><td>P0-3 保存视图升级后端落库</td><td><span class="tag p">范围收口</span></td><td><code>useSavedViews</code> 的 localStorage 方案有明确设计理由（个人偏好、与权限无关、无消费方不建服务端表）。凭空造后端接口会违反「新增字段先找消费方」。本次把<b>能真实交付的</b> URL 真源铺开到保单页，保存视图后端化留待有真实消费方时迁移。</td></tr>
+<tr><td>P2-3 页面文案全量 i18n</td><td><span class="tag p">范围收口</span></td><td>现状「错误码双语随 shell 切换 + 页面主体文案硬编码中文」。全量改造涉及 23 页数百处文案与双语翻译校验，且需要与业务术语表同步——不是本次增量能完成的，且错误码三处必齐门禁已在保护合规口径。保留半国际化现状，如实披露。</td></tr>
+</tbody></table>
+
+<div class="note">
+<b>本次对暂缓项的重新取证（维持不做，不做≠遗漏）</b>：曾重新评估「AML 只校验齐备性、不落明文」与「OCR 基于 <code>evidenceRef</code> 做字段→证据定位」是否有合规轻量路径，逐条核实后仍判定不可实施：① synap-claim 模块全仓 AML 关键字仅命中无关子串（如 <code>YamlPropertySourceLoader</code>），无任何字段 / 校验 / 驳回码 / 阈值配置，前端单侧校验没有消费方即假功能；② 前端 <code>EvidenceResp</code> 不返回 <code>extractedJson</code>，拿不到 OCR 文本原文，而 <code>evidenceRef</code> 是 <code>text@offset</code> 文本偏移；后端 <code>AiAssessNodeHandler.locatorsOf</code> 仅在 <code>pageNo</code> 非 null 时产坐标（解析层实测恒 null），现有 <code>decisionExplain.ts</code> 已消费 <code>evidenceLocators</code> 且有防幻觉测试。把文本偏移当影像页码展示即为坐标幻觉。两项的后续条件不变：AML 需 L3 评审，OCR 需跨模块接入真实 bbox。
+</div>
+
+<h2>三、测试与门禁验证汇总</h2>
+<table>
+<thead><tr><th style="width:26%">验证项</th><th style="width:14%">结果</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>理赔前端全量单测</td><td><span class="tag d">259 / 259 通过</span></td><td><code>npm run test --workspace=apps/bone-claim-app</code>，33 个测试文件；第二轮新增查询条开关/文本同步 2 例、查询基座连续更新 1 例、接线源码钉子 5 例；第四轮新增 a11y 可访问名称源码钉子 5 例</td></tr>
+<tr><td>TypeScript 类型检查</td><td><span class="tag d">0 错误</span></td><td><code>npx tsc --noEmit -p apps/bone-claim-app/tsconfig.json</code></td></tr>
+<tr><td>生产构建</td><td><span class="tag d">成功（5.26s）</span></td><td><code>npx vite build</code>；dist 被 gitignore，未污染工作树</td></tr>
+<tr><td>原型一致性机检</td><td><span class="tag d">5 / 5 PASS</span></td><td>含 --self-test 的 5 个反例（缺文件/items 缺项/错误金额/旧影像表述/预置实测值）全部被拦截，判据非恒真</td></tr>
+<tr><td>DEMO ↔ 实现对齐门禁</td><td><span class="tag d">PASS</span></td><td><code>_check_demo_parity.py</code> P1–P10 齐过（新增 4 页为增量，不影响既有 9 页判定）</td></tr>
+<tr><td>synapClaim 文档门禁全套</td><td><span class="tag p">19 / 21 PASS，2 项存量红</span></td><td>失败项 <code>_check_manifest.py</code>（2 个未登记 .md：来自其它会话的 <code>09-records/synapClaim-实现度与联调评估报告.md</code>、<code>智能理赔-三方诊断与优化建议.md</code>）与 <code>_check_ruleset_alignment.py</code>（A9：R-DIR-01 端口待接声明被远端提交改变）。<b>均与本次改动无关</b>——本次零 .md 变更，未碰规则资产</td></tr>
+</tbody></table>
+
+<h2>四、企业真实 POC 测试验证（服务端 + 浏览器，无 mock）</h2>
+<p class="sub">前三章是静态门禁与单测证据；本章在真实运行环境取证：真实 MySQL / Redis、真实 JWT、真实浏览器、真实 HTTP 请求，所有断言均来自运行态返回值与 DOM，不使用任何 mock。</p>
+<table>
+<thead><tr><th style="width:22%">验证层</th><th style="width:14%">结果</th><th>运行态证据</th></tr></thead>
+<tbody>
+<tr><td>真实服务栈启动</td><td><span class="tag d">4 / 4 就绪</span></td><td>gateway <code>:8888</code>、synap-claim <code>:8087</code>、MySQL <code>:3306</code>、Redis <code>:6379</code> 均 health 200 / PONG；前端 <code>:3013</code> 独立渲染分支返回 200；<code>Started ClaimApplication</code> 与 <code>Started BoneGatewayApplication</code> 各 1 条，无 ERROR。<b>网关四个理赔前缀路由</b> <code>/claims</code>、<code>/review</code>、<code>/claim-config</code>、<code>/claim-ops</code> 全部登记，上游强制 <code>127.0.0.1</code> 规避 IPv6 假打通。</td></tr>
+<tr><td>真实 API POC（经网关）</td><td><span class="tag d">12 / 12 PASS</span></td><td>用 <code>admin/123456</code> 换真实 JWT（128 个 scope，含 <code>claim:claims:read</code>）。<b>真分页</b>：核赔 tasks total=179，page1/page2 各 5 条、claimId 交集 0；初审 claims total=47、交集 0。<b>真筛选</b>：核赔 <code>status=WAITING</code> total 179→47；保单 <code>keyword=POL-LINK-RCJ4J2</code> total 75→1 且命中行全部同名。<b>四类前缀</b>：额度账户按保单查询 200、四库标准码 200（hospitals 7 / diseases 4 / drugs 4 / fee-categories 11 条）、AI 治理 <code>/claim-ops/ai-runtime-health</code> 带 ISO 时间窗 200。</td></tr>
+<tr><td>真实浏览器 UI POC</td><td><span class="tag d">10 / 10 PASS</span></td><td>系统 Chrome 无头，注入真实 JWT，访问 <code>/sclaim/claim/review?f_taskStatus=WAITING&amp;page=2&amp;size=10</code>：URL 参数直达保留、表格 10 行；切筛选写回 <code>f_taskStatus=PROCESSING</code> 且自动回第 1 页；刷新保持；浏览器后退恢复原条件。勾选后「批量拒赔（需逐案填写五要素）」按钮 <code>disabled=true</code>。额度页 <code>q=e2e</code> 回填搜索框，切公账视图清空后输入框同步为空。派发 <code>bone:theme:change</code> 后卡片背景 <code>rgb(255,255,255) → rgb(31,31,31)</code>。<b>0 失败请求、0 console error / pageerror</b>。</td></tr>
+<tr><td>静默 bug 的浏览器复验</td><td><span class="tag d">2 / 2 PASS</span></td><td>保单编辑弹窗选择承保主体后，<code>#insurerName</code> 由「中国人民财产保险股份有限公司」→「E2EP381239」——若编辑态仍误用新建 <code>form</code> 实例，此字段不会变化。POC 首次判 FAIL 是探针把下拉 label「名称（编码）」当成回写值，按 <code>InsurerSelect</code> 回调契约（第二参为纯名称）修正期望后通过。</td></tr>
+</tbody></table>
+
+<div class="note red">
+<b>POC 暴露并已修复的真实问题（2 项）</b>：① <b>JDK 版本漂移</b>——本地 E2E 文档仍写 Java 17，而 jar 由 JDK 21 编译（class 65.0），首启直接 <code>UnsupportedClassVersionError</code>；改用 <code>temurin-21</code> 后启动成功（此项属启动规范，不涉及代码）。② <b>antd 废弃 API 污染 console</b>——真实浏览器每次打开保存视图菜单均报 <code>[antd: Dropdown] dropdownRender is deprecated</code>（4 次 console.error）；<code>ClaimQueryBar.tsx</code> 改用 antd 5.27.6 的 <code>popupRender</code>（签名一致），复跑 UI POC 后 0 console error。另有 5 个 API POC 初判 FAIL 与 1 个保单 POC 初判 FAIL，逐条取证均为<b>探针脚本自身</b>的路径（<code>reference</code> 应为 <code>libraries</code>）、参数（时间需 ISO-8601）、JWT 未解码、期望值口径错误，非产品缺陷，修正脚本后全绿。
+</div>
+
+<div class="note">
+<b>POC 可复现资产</b>：运行类脚本已沉淀到 <code>doc/ai-product/synapClaim/tools/poc/</code>——<code>bone-poc-api.py</code>（API 断言）、<code>bone-poc-ui.cjs</code>（UI 交互探针）、<code>bone-poc-policy.cjs</code>（承保主体写回）、<code>bone-poc-stack.sh</code>（服务启动，含全部 env 与 127.0.0.1 上游）。浏览器截图在 <code>/tmp/bone-poc-screens/</code>：01 URL 真源、02 批量拒赔禁用、03 额度关键字同步、04 暗色主题、05 承保主体写回。运行环境：JDK 21（<code>temurin-21</code>）+ MySQL 3306 + Redis 6379 + 系统 Chrome；UI 探针用 <code>NODE_PATH=~/.workbuddy/binaries/node/workspace/node_modules</code> 解析 playwright，<code>POC_TOKEN</code> 取登录 JWT。
+</div>
+
+<h2>五、无障碍（a11y）真实浏览器审计与修复</h2>
+<p class="sub">对应建议 P2-3 中此前唯一未落地的一项。先用真实 DOM 审计取缺口基线，修正审计判据排除误报后，再针对性修复并复验；不以「页面看着正常」当作可访问。</p>
+<table>
+<thead><tr><th style="width:22%">阶段</th><th style="width:14%">结果</th><th>运行态 / 源码证据</th></tr></thead>
+<tbody>
+<tr><td>审计基线（修复前）</td><td><span class="tag b">5 页均有缺口</span></td><td>系统 Chrome 审计核赔 / 保单 / 额度 / 映射 / 目录库五页：每页 1 个 <code>&lt;table&gt;</code> 无 accessible name；保单 / 额度 / 映射 / 目录库各 1 个检索框只有 <code>placeholder</code>（WCAG 不将其计为可访问名称）；映射页「含历史行」<code>Switch</code> 无名称。合计 5 表格 + 4 输入框 + 1 开关。</td></tr>
+<tr><td>判据纠偏（防误报）</td><td><span class="tag d">已排除</span></td><td>初版审计把 antd 内部控件误报成缺口（Tooltip 包裹按钮已有 <code>aria-describedby</code>、图标按钮子元素带 <code>aria-label</code>、Select 内部 input 由 <code>combobox</code> role 承载、隐藏 clear 图标位于 <code>aria-hidden</code> 容器内）。按可访问名称计算规则修正判据后重新取基线，避免把「审计工具太笨」当成产品缺陷。</td></tr>
+<tr><td>修复落地</td><td><span class="tag d">17 处</span></td><td>14 个表格补 <code>aria-label</code>（五主列表 + 保单详情弹窗 4 个 + 公账汇总 1 个 + 映射页其余 Tab 4 个）；统一查询条输入框以 <code>aria-label={placeholder}</code> 一处覆盖全部接入页；映射页独立检索框与「含历史行」开关各补名称。均带源码钉子，未改任何后端与 DDL。</td></tr>
+<tr><td>修复后复验</td><td><span class="tag d">5 / 5 页零缺口</span></td><td>同一探针重跑：五页 <code>unnamedTables=0 / unnamedButtons=0 / unlabeledInputs=0</code>。<b>Modal 焦点陷阱实测本来正常</b>：打开保单编辑弹窗后 Tab 连按 12 次焦点未逃逸、Escape 关闭后焦点回到「编辑」触发按钮，故未对 antd rc-dialog 做多余改动。全量复验：单测 259/259、tsc 0 错、build 6.01s、真实 API POC 12/12、真实 UI POC 10/10、承保主体写回 2/2。</td></tr>
+</tbody></table>
+
+<div class="note">
+<b>可复现资产</b>：a11y 审计探针 <code>doc/ai-product/synapClaim/tools/poc/bone-a11y-audit.cjs</code>（含判据纠偏说明），回归钉子 <code>src/pages/a11yWiring.test.ts</code>。审计输出为 JSON，逐页列出无名称表格 / 按钮 / 输入框与焦点状态，可比对修复前后。
+</div>
+
+<div class="note ok">
+<b>交付纪律核对</b>：① 全程未改任何后端 Java / DDL / 规则资产；② 未新增任何 .md 到 synapClaim 文档树（3 份交付均为 HTML 研判稿，不进 manifest、不触发门禁）；③ 未创建/切换分支，工作树落在 dev；④ fast-forward 到 origin/dev 最新后才动手（16 个远端提交已合并，其中 4 个触及我要改的文件）；⑤ 原型 / 代码改动均可回退，关键 bug 修复均带回归钉子。
+</div>
+
+<footer>
+研判与执行范围：<code>doc/ai-product/synapClaim/07-delivery/prototypes/claim-workbench/</code>、<code>bone-frontend/apps/bone-claim-app/</code>；判定依据文档见同目录《智能理赔-三方对标增强优化建议-速览.html》《责任配置三方对账-速览.html》。工作树未执行提交，便于逐项 review。
+</footer>
+</div>
+</body>
+</html>

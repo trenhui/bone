@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { MemoryRouter, useSearchParams } from 'react-router-dom';
@@ -116,5 +117,37 @@ describe('useClaimQuery · 查询状态与 URL 双向同步', () => {
     expect(result.current.search).toContain('f_status=43');
     act(() => result.current.id.submit());
     expect(result.current.search).toContain('claimId=123');
+  });
+});
+
+describe('useClaimQuery · 同一事件内多次更新的合并语义', () => {
+  it('连续改两个查询参数，两次更新都应落到 URL（不被同一渲染快照覆盖）', () => {
+    const { result } = renderHook(
+      () => ({ q: useClaimQuery(), search: useCurrentSearch() }),
+      { wrapper: wrapper('/quota?q=OLD&page=5&f_status=43') },
+    );
+    act(() => {
+      result.current.q.setKeyword('NEW');
+      result.current.q.setFilter('risk', 'HIGH');
+    });
+    expect(result.current.search).toContain('q=NEW');
+    expect(result.current.search).toContain('f_risk=HIGH');
+    expect(result.current.search).not.toContain('page=');
+  });
+});
+
+describe('useClaimQuery · defaultSize 可覆盖（列表页既有分页口径）', () => {
+  it('未传 size 参数时用调用方指定的 defaultSize，而非全局默认 20', () => {
+    const { result } = renderHook(() => useClaimQuery(10), {
+      wrapper: wrapper('/policy'),
+    });
+    expect(result.current.query.size).toBe(10);
+  });
+
+  it('URL 显式 size 优先于 defaultSize', () => {
+    const { result } = renderHook(() => useClaimQuery(10), {
+      wrapper: wrapper('/policy?size=50'),
+    });
+    expect(result.current.query.size).toBe(50);
   });
 });

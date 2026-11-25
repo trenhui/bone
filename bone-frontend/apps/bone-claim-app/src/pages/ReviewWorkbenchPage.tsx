@@ -23,7 +23,7 @@ import {
   Typography,
   message,
 } from 'antd';
-import { ReloadOutlined, NodeIndexOutlined, CheckCircleOutlined, RobotOutlined } from '@ant-design/icons';
+import { NodeIndexOutlined, CheckCircleOutlined, RobotOutlined } from '@ant-design/icons';
 import {
   claimApi,
   reviewTaskApi,
@@ -36,6 +36,9 @@ import {
   type ReviewTaskStatus,
 } from '../services/claimApi';
 import { PageHeader } from '../components/PageHeader';
+import { ClaimQueryBar } from '../components/ClaimQueryBar';
+import { useClaimQuery } from '../hooks/useClaimQuery';
+import { useSavedViews } from '../hooks/useSavedViews';
 import { ClaimIdLink } from '../components/ClaimIdLink';
 import { PolicyNoLink } from '../components/PolicyNoLink';
 import { AiDisclosureCard } from '../components/AiDisclosureCard';
@@ -48,6 +51,7 @@ import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { Auth, AuthButton } from '@bone/ui';
 import {
   MAX_BATCH_DECISION,
+  isBatchDecisionAllowed,
   type BatchDecisionItem,
   type BatchDecisionResp,
 } from '../services/reviewTask';
@@ -122,16 +126,22 @@ export function ReviewWorkbenchPage(): ReactElement {
   /** 批量处置选择：rowKey 即 claimId；后端整批上限 20，前端同步收口。 */
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [batching, setBatching] = useState(false);
-  const [taskFilter, setTaskFilter] = useState<ReviewTaskStatus | undefined>(undefined);
   /**
-   * 服务端分页状态（page / pageSize / total）。
+   * 查询状态进 URL（统一查询基座）：任务维筛选 / 页码 / 每页条数都可分享、可前进后退恢复。
+   *
+   * <p><b>为什么不接搜索框</b>：后端 `/review/tasks` 只接 status/page/size，没有 keyword 参数。
+   * 显示检索框却让后端忽略，或只在前端过滤当前页（翻页即失效），都是「配了不生效」的假功能，
+   * 故查询条以 `searchable={false}` 呈现，只复用保存视图 / 刷新 / 自定义动作。
    *
    * <p><b>为什么必须真分页</b>：此前固定取 `size: 50` 再由 antd 按 `pageSize: 20` 前端切片，
    * 第 3 页起就是空白，而 `total` 仍显示全部——用户看到「共 N 条」却翻不到，属数据正确性缺陷而非体验问题
    * （design §13.4 / D5：total 由服务端同一 COUNT(*) 口径产出，前端只传 page/size）。
    */
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const { query, setFilter, setPage, setSize, applyQueryString } = useClaimQuery();
+  const savedViews = useSavedViews();
+  const taskFilterRaw = query.filters.taskStatus;
+  const taskFilter = (taskFilterRaw || undefined) as ReviewTaskStatus | undefined;
+  const { page, size: pageSize } = query;
   const [total, setTotal] = useState(0);
   /**
    * 任务维服务端计数（三个独立 `size:1` 查询的 total）。
@@ -300,10 +310,7 @@ export function ReviewWorkbenchPage(): ReactElement {
     }
   }, [taskFilter, page, pageSize]);
 
-  /** 切换任务维筛选回到第 1 页：否则从第 3 页切到只有 1 页数据的筛选条件会看到空表。 */
-  useEffect(() => {
-    setPage(1);
-  }, [taskFilter]);
+  // 切筛选回第 1 页由 setFilter 统一完成（URL 真源），本页不再另设 useEffect 副作用。
 
   useEffect(() => {
     void load();
@@ -461,6 +468,12 @@ export function ReviewWorkbenchPage(): ReactElement {
   }
 
   async function runBatch(decision: Decision) {
+    // 拒赔不可批量：后端批量 DTO 无五要素字段，且一批案件的事实/条款各不相同，共用一套五要素不合规。
+    // 前端按钮已禁用，此处为纵深防御（防止程序化调用绕过 UI）。
+    if (!isBatchDecisionAllowed(decision)) {
+      message.warning('拒赔须逐案填写结构化五要素，不支持批量；请逐案进入详情拒赔');
+      return;
+    }
     const ids = selectedRowKeys.map(String);
     if (ids.length === 0) return;
     if (ids.length > MAX_BATCH_DECISION) {
@@ -486,6 +499,10 @@ export function ReviewWorkbenchPage(): ReactElement {
   }
 
   async function retryFailed(claimId: string, decision: Decision) {
+    if (!isBatchDecisionAllowed(decision)) {
+      message.warning('拒赔须逐案填写结构化五要素，不支持批量重试；请逐案进入详情拒赔');
+      return;
+    }
     setBatching(true);
     try {
       const outcome = await callBatch([{ claimId, decision }]);
@@ -617,16 +634,11 @@ export function ReviewWorkbenchPage(): ReactElement {
                   <Button type="primary" loading={batching}
                     disabled={selectedRowKeys.length > MAX_BATCH_DECISION}>批量通过</Button>
                 </Popconfirm>
-                <Popconfirm
-                  title={`批量拒赔 ${selectedRowKeys.length} 单？`}
-                  description="逐案写入拒赔决策；拒赔五要素须在单案中已完成填写。"
-                  okText="确认"
-                  cancelText="取消"
-                  onConfirm={() => void runBatch('REJECTED')}
-                >
-                  <Button danger loading={batching}
-                    disabled={selectedRowKeys.length > MAX_BATCH_DECISION}>批量拒赔</Button>
-                </Popconfirm>
+                <Tooltip title="拒赔须逐案填写结构化五要素（事实认定/条款依据/证据位置/申诉渠道/法定时限），不可批量；请逐案进入详情拒赔">
+                  <Button danger disabled>
+                    批量拒赔（需逐案填写五要素）
+                  </Button>
+                </Tooltip>
               </Space>
             </Auth>
           </Space>
@@ -636,22 +648,40 @@ export function ReviewWorkbenchPage(): ReactElement {
       <Card
         size="small"
         extra={
-          <Space>
-            <Select<ReviewTaskStatus | undefined>
-              allowClear
-              placeholder="全部待办（待领取 + 处理中）"
-              style={{ width: 240 }}
-              value={taskFilter}
-              onChange={(v) => setTaskFilter(v)}
-              options={TASK_FILTER_OPTIONS}
-            />
-            <Button icon={<ReloadOutlined />} onClick={() => void load()}>
-              刷新
-            </Button>
-          </Space>
+          <ClaimQueryBar
+            keyword=""
+            onKeyword={() => undefined}
+            searchable={false}
+            onRefresh={() => void load()}
+            views={savedViews.views}
+            onApplyView={(view) => applyQueryString(view.queryString)}
+            onSaveView={(name) =>
+              savedViews.save(
+                name,
+                new URLSearchParams({
+                  ...(taskFilter ? { f_taskStatus: taskFilter } : {}),
+                  ...(page > 1 ? { page: String(page) } : {}),
+                  ...(pageSize !== 20 ? { size: String(pageSize) } : {}),
+                }).toString(),
+              )
+            }
+            onRemoveView={savedViews.remove}
+            onTogglePin={savedViews.togglePin}
+            actions={
+              <Select<ReviewTaskStatus | undefined>
+                allowClear
+                placeholder="全部待办（待领取 + 处理中）"
+                style={{ width: 240 }}
+                value={taskFilter}
+                onChange={(v) => setFilter('taskStatus', v ?? '')}
+                options={TASK_FILTER_OPTIONS}
+              />
+            }
+          />
         }
       >
         <Table<ClaimHeadProjection>
+          aria-label="核赔待办列表"
           rowKey="claimId"
           loading={loading}
           dataSource={rows}
@@ -669,11 +699,9 @@ export function ReviewWorkbenchPage(): ReactElement {
             pageSizeOptions: ['20', '50', '100'],
             showTotal: (t) => `共 ${t} 条`,
             onChange: (nextPage, nextSize) => {
-              setPage(nextPage);
-              if (nextSize !== pageSize) {
-                setPageSize(nextSize);
-                setPage(1);
-              }
+              // setSize 内部已回第 1 页；只发一次 URL 更新，避免连发两次产生中间态。
+              if (nextSize !== pageSize) setSize(nextSize);
+              else setPage(nextPage);
             },
           }}
           columns={[

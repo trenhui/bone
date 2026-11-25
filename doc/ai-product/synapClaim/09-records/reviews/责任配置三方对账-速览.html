@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>synapClaim · 责任配置三方对账（原理赔 / 规则书 / 实现）</title>
+<style>
+  :root{--bg:#f6f7f9;--card:#fff;--border:#e4e7ec;--text:#1f2329;--muted:#646a73;
+    --primary:#1f6feb;--green:#237804;--green-soft:#f0f9e8;--red:#d4380d;--red-soft:#fff1ed;
+    --amber:#ad6800;--amber-soft:#fff8e6}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 28px 80px}
+  header{border-bottom:2px solid var(--text);padding-bottom:20px;margin-bottom:26px}
+  .eyebrow{font-size:12px;letter-spacing:.16em;color:var(--primary);font-weight:600}
+  h1{font-size:28px;margin:8px 0 10px;letter-spacing:-.02em}
+  .meta{font-size:13px;color:var(--muted)}
+  h2{font-size:19px;margin:40px 0 6px;padding-left:12px;border-left:4px solid var(--primary)}
+  .sub{font-size:13px;color:var(--muted);margin:0 0 16px 16px}
+  .lead{background:#eef4ff;border:1px solid #cfe0ff;border-radius:12px;padding:20px 22px;font-size:14px}
+  .lead b{color:#1c4f9c}
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden;font-size:12.5px;border:1px solid var(--border)}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:#f3f6fb;font-weight:600;color:#344054}
+  tr:last-child td{border-bottom:none}
+  code{background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:11px}
+  .y{color:var(--green);font-weight:600}
+  .n{color:var(--red);font-weight:600}
+  .p{color:var(--amber);font-weight:600}
+  .note{background:var(--amber-soft);border:1px solid #f0d9a8;border-radius:8px;padding:14px 16px;font-size:13px;color:#6b4b12;margin-top:14px}
+  .note.ok{background:var(--green-soft);border-color:#c9e8b0;color:#2c5c14}
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+  @media(max-width:800px){.wrap{padding:24px 16px 60px}table{font-size:11px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">SYNAPCLAIM · 逐项对账研判</div>
+  <h1>责任配置三方对账：原理赔 9 section ↔ 规则书 ↔ 当前实现</h1>
+  <div class="meta">2026-11-24 ｜ 全程只读取证；✓ 有 / ✗ 无 / ≈ 部分。图例口径见各节，“实现”列同时核对前端界面与后端 DTO。</div>
+</header>
+
+<div class="lead">
+  <b>结论先行</b>：三方责任配置呈「<b>旧系统最细 → 规则书中等 → 实现最粗</b>」。实现已覆盖骨架（免赔三处、比例、限额、目录准入、社保内、等待期、共保、先后赔付），
+  但缺<b>医疗险 TPA 签单高频的四类口径</b>：津贴三算法、区间四种开闭、免赔抵扣（医保/三方）、次期定义 8 种、医保结算自付一公式。
+  其中「门诊慢特病」在旧系统与后端测试中出现、但规则书与配置 DTO 未见，属口径漂移，需先定真源再补。
+</div>
+
+<h2>一、原理赔 9 个 section 的字段级能力（参照基线）</h2>
+<p class="sub">路径前缀：<code>/Users/renhui.trh/创业项目/code/pk-tpa-saas/tpa-sass-vue3/src/views/policyConfig/policyRuleConfig/components/EditLiabilityDialog/section/</code></p>
+<table>
+<thead><tr><th>section 文件</th><th>覆盖的字段级口径</th></tr></thead>
+<tbody>
+<tr><td><code>LiabilityType.vue</code></td><td>责任形式、给付依据、等待期、<b>日津贴金额 / 期间天数上限 / 期满天数上限</b>；<b>津贴天数计算三算法</b>：自然日法（入出两天计两天）/ 日历日法（计一天）/ 24 小时法（满 24h 计一天）</td></tr>
+<tr><td><code>PayPercent.vue</code></td><td>同一比例 / 不同比例；<b>区间因素</b>含医保身份、医院等级、医院类型、严重度、年龄、发票总费用、理算金额、赔案累计、赔付次数；<b>区间四种开闭</b>（左开右开 / 左闭右开 / 左开右开 / 左闭右开）；三区间互斥校验</td></tr>
+<tr><td><code>LiabilityDeduct.vue</code></td><td>免赔模式（统一/个人/直付）、<b>绝对免赔 / 相对免赔</b>、形式（金额/比例/天数）、方式（年度/次数）、对象（理算金额/发票费用）、<b>免赔抵扣三态</b>（医保及三方可抵扣 / 医保不可抵扣三方可抵扣 / 均不可抵扣）、按因素笛卡尔积</td></tr>
+<tr><td><code>TimesLimit.vue</code></td><td><b>次期定义 8 种</b>：一赔案记一次 / 发票同日 / 同日同院 / 同日同院同科室 / 同日同院同病 / 同日赔案累计 / 同日发票累计；控制方式 FORCE 强制 / ALARM 仅提醒</td></tr>
+<tr><td><code>LiabilityLimit.vue</code></td><td>控额方式、责任额度 + 发票医疗类型（门急诊 / 住院 / <b>门诊慢特病</b> / 购药）、个人专属额度、给付基础额度</td></tr>
+<tr><td><code>AdjustmentDetail.vue</code></td><td>按 <code>liabilityFeeType + 医保</code> 分组的理算公式矩阵（965 行），含有无医保值转换、因子键值解析、合并单元格展示</td></tr>
+<tr><td><code>RestricOutInsure.vue</code></td><td><b>医保结算最细</b>：基本统筹 / 起付线 / 统筹赔付比例 / 自付二 / 总自费；内置公式字符串「自付一 = 统筹起付线 +（发票总费用 − 统筹起付线 − 自付二 − 总自费）×（1 − 统筹赔付比例）」；录入项 INPUT / 计算项 CALCULATE + 表达式；伤残等级一至十级</td></tr>
+<tr><td><code>RestrictObject.vue</code></td><td>适用对象：性别、年龄区间（四种开闭）、职业（白名单式枚举）</td></tr>
+<tr><td><code>RestrictScope.vue</code></td><td>范围限定：医院 / 药品 / 诊疗 / 病种；方式白名单 / 黑名单 + 限定清单</td></tr>
+</tbody></table>
+
+<h2>二、逐项对账表</h2>
+<p class="sub">「规则书」指 <code>04-业务规则书（Rulebook）-门诊小额快赔MVP全集.md</code> 与 <code>03-contract/智能理算引擎业务规则V1.md</code>；「实现」= 前端 <code>LiabilityConfigPage.tsx</code> + 后端 <code>LiabilityRequests.java</code> / 理算引擎。</p>
+<table>
+<thead><tr><th style="width:22%">配置项</th><th style="width:8%">原理赔</th><th style="width:8%">规则书</th><th style="width:8%">实现</th><th>实现侧证据与判定</th></tr></thead>
+<tbody>
+<tr><td>四级建模 保单→计划→险种→责任</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td><code>CreateLiabilityReq(planId, coverageId, liabilityCode…)</code>，前端保单/计划/险种级联</td></tr>
+<tr><td>责任类型 报销/定额/津贴</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td><code>liabilityType: REIMBURSEMENT/FIXED_AMOUNT/ALLOWANCE</code></td></tr>
+<tr><td>赔付比例（百分数）</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td><code>payPercent</code> 字符串字段</td></tr>
+<tr><td>比例因子矩阵（医保/医院等级/金额区间）</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td>因子矩阵已接入理算引擎（origin 提交 <code>fc8300b59</code>）：矩阵格优先 / 未配继承 / 无矩阵零行为变更</td></tr>
+<tr><td><b>区间四种开闭</b>（左开右开等）</td><td class="y">✓</td><td class="p">≈</td><td class="n">✗</td><td>后端 DTO 无开闭枚举；规则书未逐项钉死。<b>缺项</b>，影响边界金额归属，需先定真源</td></tr>
+<tr><td>免赔额（年度 / 发票级 / 理算级）</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td><code>liabilityDeduct / invoiceDeduct / adjustDeduct</code> 三处，理算引擎「免赔六维」</td></tr>
+<tr><td><b>绝对 / 相对免赔</b></td><td class="y">✓</td><td class="y">✓</td><td class="n">✗</td><td>后端 DTO 只有金额字段，无类型枚举；规则书 R-DED-01~04 有口径。<b>签单高频缺项</b></td></tr>
+<tr><td><b>免赔抵扣（医保/三方三态）</b></td><td class="y">✓</td><td class="p">≈</td><td class="n">✗</td><td>后端有 <code>socialOnly</code>（是否仅社保内），但无抵扣三态。影响社保理赔金额，<b>优先补齐</b></td></tr>
+<tr><td>责任额度上限 + 日限额</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td><code>liabilityLimit / dailyLimit / dailyLimitBasis(NONE|SAME_DAY_INVOICE|SAME_DAY_CLAIM)</code></td></tr>
+<tr><td><b>次期定义 8 种</b></td><td class="y">✓</td><td class="p">≈</td><td class="p">≈</td><td>实现有 2 种（同日发票 / 同日赔案），旧系统 8 种。缺「同日同院 / 同科室 / 同病」等维度</td></tr>
+<tr><td>等待期</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td><code>waitingPeriod</code>（≥0）</td></tr>
+<tr><td>限定方式 白名单/黑名单</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td><code>limitMode(NONE|WHITELIST|BLACKLIST)</code> + <code>limitHospitalCodes / limitDiagnosisCodes</code></td></tr>
+<tr><td>目录准入策略</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td><code>catalogPolicy(NONE|MANDATORY)</code> + <code>catalogCode</code> + <code>confirmCatalogMandatory</code> 二次确认</td></tr>
+<tr><td><b>年龄区间 + 职业限定</b></td><td class="y">✓</td><td class="p">≈</td><td class="n">✗</td><td><code>LiabilityRequests</code> 中出现 age 仅属正则子串命中，非适用对象配置。<b>缺项</b></td></tr>
+<tr><td><b>津贴三算法 + 日津贴</b></td><td class="y">✓</td><td class="p">≈</td><td class="n">✗</td><td>责任类型有 ALLOWANCE，但无日津贴金额与三算法枚举。津贴类保单签不出</td></tr>
+<tr><td><b>医保自付一公式 / 统筹起付线</b></td><td class="y">✓</td><td class="y">✓</td><td class="p">≈</td><td>理算引擎有社保内外分流（<code>socialOnly</code>、R-DIR 系列），但是否产出「自付一」明细字段未在 DTO 见，需后端复核</td></tr>
+<tr><td><b>门诊慢特病</b></td><td class="y">✓</td><td class="n">✗</td><td class="p">≈</td><td>仅在旧系统 section 与后端测试字符串中出现，规则书与 <code>LiabilityRequests</code> 未见。<b>口径漂移：先定真源</b></td></tr>
+<tr><td>共保（共享保额）</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td><code>sharedCode</code></td></tr>
+<tr><td>先后赔付关系 TYPE1/2/3</td><td class="y">✓</td><td class="y">✓</td><td class="p">≈</td><td>有 <code>priorLiabilityUuid</code>，但未见三类型枚举（比例外也赔/比例外不赔/先付为0才赔）</td></tr>
+<tr><td>伤残等级 1–10 级</td><td class="y">✓</td><td class="p">≈</td><td class="n">✗</td><td>后端未见等级字段；医疗险场景低频，可后置</td></tr>
+</tbody></table>
+
+<h2>三、缺项分组与补齐建议</h2>
+<table>
+<thead><tr><th style="width:12%">优先级</th><th style="width:28%">缺项</th><th style="width:20%">应补在哪一层</th><th>理由与量级提示</th></tr></thead>
+<tbody>
+<tr><td><span class="n">最高</span></td><td>绝对/相对免赔、免赔抵扣三态、区间四种开闭</td><td>后端枚举 + 规则书口径 + 前端配置控件</td><td>直接决定赔多少且签单高频；规则书已有口径的先接后端字段，再补前端。约 3–5 人日（不含回归）</td></tr>
+<tr><td><span class="p">次高</span></td><td>次期定义补至 8 种、津贴三算法 + 日津贴、年龄/职业限定</td><td>后端字段 + 前端配置</td><td>决定特定责任类型（津贴/团险）能否签下；按签单品类排期。约 5–8 人日</td></tr>
+<tr><td><span class="p">中</span></td><td>先后赔付 TYPE1/2/3、自付一明细字段确认</td><td>先取证后端理算引擎，再决定补哪一层的展示</td><td>自付一可能已在引擎内部计算但未出 DTO——先确认再动手，避免重复造字段</td></tr>
+<tr><td><span class="y">低</span></td><td>伤残等级 1–10 级</td><td>后端字段 + 配置</td><td>当前 MVP 为门诊小额快赔，伤残场景低频；V2 再评估</td></tr>
+<tr><td><span class="n">先定真源</span></td><td>门诊慢特病</td><td>规则书 ↔ 后端测试 ↔ DTO 三方对账后确定</td><td>三方口径不一致，直接补字段会制造第二真源。先在小节说明中钉一句口径</td></tr>
+</tbody></table>
+
+<div class="note ok">
+<b>纪律边界</b>：本对账表只指出「规则书有但实现无」的缺项，<b>未修改任何规则书、后端字段或前端配置</b>。所有补项仍须遵守：AI 不碰钱、拒赔人工确认 + 五要素、规则热更过回归门禁；新增字段须先找消费方、同批交 SQL 模板并过 DDL 列级体检。本表为 HTML 研判稿，不进 docs.manifest.json、不触发文档门禁，如需正式 evidence 文档再按 L9 登记流程办理。
+</div>
+
+<footer>
+证据来源：三方源码逐文件读取；实现列字段引自 <code>bone-apps/synap-claim/.../dto/request/LiabilityRequests.java</code> 与 <code>bone-frontend/apps/bone-claim-app/src/pages/LiabilityConfigPage.tsx</code>；规则 ID 引自 Rulebook 与《智能理算引擎业务规则V1》。「≈」表示部分覆盖或需进一步取证，本表已如实标注，未把部分写成全部。
+</footer>
+</div>
+</body>
+</html>

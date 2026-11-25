@@ -95,6 +95,7 @@
 | `check-three-entry-boundaries.py` | 业务建模三入口页职责边界 |
 | `check-synapclaim-architecture.py` | 理赔 20 子域 → 7 上下文归属完整互斥 |
 | `check-synapclaim-module-boundaries.py` | 理赔模块边界 |
+| `check-sclaim-naming.py` | SynapClaim 全局命名规范（G1–G5：路径构造 / 无遗留别名 / 文档-代码一致 / API 裁定 / 内嵌页无 hash）；`--check` 主判据 + `--self-test` 负向探针 |
 | `check-ddd-doc-drift.py` | DDD 文档 ↔ 实现漂移（四项） |
 | `check-ddd-gate-state.py` | HC 硬约束表状态 ↔ 实测（Planned 不得写成 Active） |
 | `check-archunit-freeze-baseline.py` | ArchUnit 冻结基线只可收缩 |
@@ -254,6 +255,7 @@
 | `verify-system-app-integration.py` | **保留（唯一能力）**：`bone-system-app` ↔ `bone-system` 联调——配置中心分页/CRUD 闭环、字典两级模型、定时任务闭环；`e2e/` 只覆盖 metadata 链路，不覆盖 system 配置中心 |
 | `verify_masterdata_tenant_isolation.py` | **保留（唯一能力）**：主数据两租户隔离——平台全局只读/不可篡改、跨租户 IDOR 直读 404、overlay 私有写；`verify_tenant_isolation_e2e.py` 验的是 IAM 侧租户，**不重叠** |
 | `verify-synapclaim-case360.sh` | **change 级构建期校验**（`synapclaim-case360-object-cohesion`）：shell 分组渲染/类型、claim-app 内容组件与 URL 契约、文档族门禁；只验本 change 交付物，不跑全仓 monorepo 测试。非通用联调，不应并入 `e2e/` |
+| `verify-migration-0139.py` | 0139 迁移专项校验（procuraAI 生产强化批次数据资产）；历史专项脚本保留 |
 
 > 上面三个「**保留（唯一能力）**」是 2026-11-11 逐份读判据后的结论，不是「没人管所以留着」。
 > **2026-11-12 已接入统一入口**：`./scripts/e2e/run.sh py-domain`（实跑 23/23 + 19/19 + 54/54）。

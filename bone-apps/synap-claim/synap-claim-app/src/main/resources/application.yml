@@ -96,6 +96,14 @@ bone:
       #   ① PolicyQueryPort 接真实保单系统（一期为进程内存桩，只有 dev seeder 种进去的保单）；
       #   ② 把既有 t_quota_account.quota_year 按保单年度重映射（数据迁移，不是开关）。
       basis: ${BONE_CLAIM_QUOTA_YEAR_BASIS:CALENDAR}
+    insurer-push:
+      # 结案报送保司的真实 HTTP 出站端点（ADR-0021 二期）。留空=回落一期进程内事件总线（不造假投递）；
+      # 配置后，Outbox 中继派发 INSURER_PUSH 时走真实 HTTP POST，非 2xx/超时按 Outbox 退避重试+死信告警。
+      # 报文为轻量信封(eventId/eventType/occurredAt/tenantId/aggregate/aggregateId/payload)，payload 沿用原 INSURER_PUSH 载荷。
+      # 本地联调可用 tools/mock-insurer-receiver.py；生产换成保司真实地址与 token。
+      endpoint: ${BONE_CLAIM_INSURER_PUSH_ENDPOINT:}
+      timeout-ms: ${BONE_CLAIM_INSURER_PUSH_TIMEOUT_MS:5000}
+      auth-token: ${BONE_CLAIM_INSURER_PUSH_AUTH_TOKEN:}
   # 模型 provider（OpenAI 兼容协议）。三项都由环境变量注入，配置库零明文。
   # 留空 base-url = 网关回落 MockLlmClient：服务照常启动，但 AiGatewayPortAdapter 显式拒绝替身响应
   # （fail-closed），所有 AI 节点降级——「没配」与「配错」在运行期报表上表现相同，

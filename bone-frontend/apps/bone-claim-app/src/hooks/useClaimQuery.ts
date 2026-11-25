@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 /**
@@ -53,7 +53,7 @@ function isManagedKey(key: string): boolean {
   return key === KEYWORD || key === PAGE || key === SIZE || key.startsWith(FILTER_PREFIX);
 }
 
-export function useClaimQuery(): ClaimQueryController {
+export function useClaimQuery(defaultSize: number = DEFAULT_SIZE): ClaimQueryController {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const query = useMemo<ClaimQueryState>(() => {
@@ -64,21 +64,37 @@ export function useClaimQuery(): ClaimQueryController {
     return {
       keyword: searchParams.get(KEYWORD) ?? '',
       page: positiveInt(searchParams.get(PAGE), 1),
-      size: positiveInt(searchParams.get(SIZE), DEFAULT_SIZE),
+      size: positiveInt(searchParams.get(SIZE), defaultSize),
       filters,
     };
-  }, [searchParams]);
+  }, [searchParams, defaultSize]);
 
   /**
    * 基于「当前」URL 增量改写，而非写死对象——否则会覆盖 claimId / tab 等外部参数。
    * 与 `useClaimIdParam` 的 `setSearchParams({ claimId: id })` 不同：那个 hook 只管一个键，
    * 本 hook 与其它 hook 共存于同一 URL，必须 merge 而不是 replace。
    */
+  /**
+   * 同一事件内连续 patch 的暂存。
+   *
+   * <p>React Router v6 的 `setSearchParams(fn)` 中 fn 收到的 `prev` 来自**渲染时**的 location
+   * 快照，不是上一次调用的结果。同一事件里连着改两个参数（例如切 Tab 同时 setPage(1) +
+   * setKeyword('')）时，第二次会基于旧快照、把第一次的改动整段覆盖——表现为「筛选清了但页码还在」
+   * 或反过来，属「配了不生效」同族的静默故障。这里用 ref 把本次事件内的连续更新串起来。
+   */
+  const pendingRef = useRef<URLSearchParams | null>(null);
+
+  // URL 真正落地后再清空暂存；下一事件从最新地址栏出发，不复用过期快照。
+  useEffect(() => {
+    pendingRef.current = null;
+  }, [searchParams]);
+
   const patch = useCallback(
     (mutate: (next: URLSearchParams) => void) => {
       setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
+        const next = new URLSearchParams(pendingRef.current ?? prev);
         mutate(next);
+        pendingRef.current = next;
         return next;
       });
     },
@@ -128,11 +144,11 @@ export function useClaimQuery(): ClaimQueryController {
   const setSize = useCallback(
     (size: number) => {
       patch((next) => {
-        next.set(SIZE, String(size > 0 ? Math.trunc(size) : DEFAULT_SIZE));
+        next.set(SIZE, String(size > 0 ? Math.trunc(size) : defaultSize));
         next.delete(PAGE);
       });
     },
-    [patch],
+    [patch, defaultSize],
   );
 
   const reset = useCallback(() => {

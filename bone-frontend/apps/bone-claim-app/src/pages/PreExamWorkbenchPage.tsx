@@ -17,7 +17,7 @@ import {
   Typography,
   message,
 } from 'antd';
-import { CheckCircleOutlined, ReloadOutlined, ThunderboltOutlined, UserSwitchOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, ThunderboltOutlined, UserSwitchOutlined } from '@ant-design/icons';
 import {
   claimApi,
   normalizeTotal,
@@ -26,6 +26,9 @@ import {
 } from '../services/claimApi';
 import { PRE_EXAM_TODO_STATUSES, claimStatusMeta, statusOptions } from '../services/claimStatus';
 import { PageHeader } from '../components/PageHeader';
+import { ClaimQueryBar } from '../components/ClaimQueryBar';
+import { useClaimQuery } from '../hooks/useClaimQuery';
+import { useSavedViews } from '../hooks/useSavedViews';
 import { ClaimIdLink } from '../components/ClaimIdLink';
 import { PolicyNoLink } from '../components/PolicyNoLink';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
@@ -66,9 +69,16 @@ export function PreExamWorkbenchPage(): ReactElement {
   const { threshold: dualReviewAmount, error: thresholdError } = useDualReviewThreshold();
   const [rows, setRows] = useState<ClaimHeadProjection[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [size, setSize] = useState(20);
-  const [statusFilter, setStatusFilter] = useState<ClaimStatusName | undefined>(undefined);
+  /**
+   * 查询状态进 URL（统一查询基座）：状态筛选 / 页码 / 每页条数可分享、可前进后退恢复。
+   *
+   * <p>后端 `claimApi.page` 只接 statuses/page/size，没有 keyword，故查询条以
+   * `searchable={false}` 呈现——显示一个后端不认的搜索框属「配了不生效」的假功能。
+   */
+  const { query, setFilter, setPage, setSize, applyQueryString } = useClaimQuery();
+  const savedViews = useSavedViews();
+  const statusFilter = (query.filters.status || undefined) as ClaimStatusName | undefined;
+  const { page, size } = query;
   const [loading, setLoading] = useState(false);
   /** 行级在途动作：只锁当前行，避免整表按钮全灰（用户会以为页面卡死）。 */
   const [actingId, setActingId] = useState<string | null>(null);
@@ -221,22 +231,36 @@ export function PreExamWorkbenchPage(): ReactElement {
       <Card
         size="small"
         extra={
-          <Space>
-            <Select<ClaimStatusName | undefined>
-              allowClear
-              placeholder="状态筛选"
-              style={{ width: 200 }}
-              value={statusFilter}
-              onChange={(v) => {
-                setStatusFilter(v);
-                setPage(1);
-              }}
-              options={statusOptions(PRE_EXAM_TODO_STATUSES)}
-            />
-            <Button icon={<ReloadOutlined />} onClick={() => void load()}>
-              刷新
-            </Button>
-          </Space>
+          <ClaimQueryBar
+            keyword=""
+            onKeyword={() => undefined}
+            searchable={false}
+            onRefresh={() => void load()}
+            views={savedViews.views}
+            onApplyView={(view) => applyQueryString(view.queryString)}
+            onSaveView={(name) =>
+              savedViews.save(
+                name,
+                new URLSearchParams({
+                  ...(statusFilter ? { f_status: statusFilter } : {}),
+                  ...(page > 1 ? { page: String(page) } : {}),
+                  ...(size !== 20 ? { size: String(size) } : {}),
+                }).toString(),
+              )
+            }
+            onRemoveView={savedViews.remove}
+            onTogglePin={savedViews.togglePin}
+            actions={
+              <Select<ClaimStatusName | undefined>
+                allowClear
+                placeholder="状态筛选"
+                style={{ width: 200 }}
+                value={statusFilter}
+                onChange={(v) => setFilter('status', v ?? '')}
+                options={statusOptions(PRE_EXAM_TODO_STATUSES)}
+              />
+            }
+          />
         }
       >
         <Table<ClaimHeadProjection>
@@ -255,8 +279,9 @@ export function PreExamWorkbenchPage(): ReactElement {
             pageSizeOptions: [20, 50, 100],
             showTotal: (t) => `共 ${t} 条`,
             onChange: (p, s) => {
-              setPage(p);
-              setSize(s);
+              // setSize 内部已回第 1 页；只发一次 URL 更新，避免连发两次产生中间态。
+              if (s !== size) setSize(s);
+              else setPage(p);
             },
           }}
           columns={[

@@ -253,7 +253,12 @@ public class ScenarioHarness {
             tenantPort,
             events,
             adjRepo,
-            tenantId -> TriageLimits.defaultResolution());
+            tenantId -> TriageLimits.defaultResolution(),
+            org.mockito.Mockito.mock(com.bone.claim.domain.repository.ClaimPolicyRepository.class),
+            new com.bone.claim.application.InsurerPushWriter(
+                org.mockito.Mockito.mock(
+                    com.bone.claim.domain.repository.DomainEventOutboxRepository.class),
+                new ObjectMapper()));
     // 场景基座不注入 @Value，auto-approve 全局开关因此为 false（= 关闭态），开关服务不会被真正问询；
     // 传 null 仓储即可，若日后场景要验证「自动放款开启」须换成内存仓储实现。
     autoApproveSvc =

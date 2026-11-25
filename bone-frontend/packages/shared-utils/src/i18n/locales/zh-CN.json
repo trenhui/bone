@@ -114,6 +114,7 @@
     "COMMON_NOT_FOUND": "请求的资源不存在",
     "COMMON_NOT_IMPLEMENTED": "能力未实现",
     "COMMON_RATE_LIMITED": "请求过于频繁，请稍后重试",
+    "COMMON_RATE_LIMITED_RETRY": "请求过于频繁，请约 {{seconds}} 秒后重试",
     "COMMON_UNAUTHORIZED": "未登录或登录已过期",
     "COMMON_UNSUPPORTED_MEDIA_TYPE": "请求的 Content-Type 不被支持，上传接口请使用 multipart/form-data",
     "COMMON_VALIDATION_FAILED": "参数校验失败：{{errors}}",

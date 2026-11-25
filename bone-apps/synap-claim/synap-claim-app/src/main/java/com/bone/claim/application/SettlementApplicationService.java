@@ -6,9 +6,11 @@ import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.adjustment.Adjustment;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
+import com.bone.claim.domain.model.policy.ClaimPolicy;
 import com.bone.claim.domain.model.settlement.AccountType;
 import com.bone.claim.domain.model.settlement.SettlementOrder;
 import com.bone.claim.domain.repository.AdjustmentRepository;
+import com.bone.claim.domain.repository.ClaimPolicyRepository;
 import com.bone.claim.domain.repository.SettlementRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.util.DistributedIdGenerator;
@@ -42,6 +44,8 @@ public class SettlementApplicationService {
   private final DomainEventPublisher domainEventPublisher;
   private final AdjustmentRepository adjustmentRepository;
   private final TriageLimitsPort triageLimitsPort;
+  private final ClaimPolicyRepository claimPolicyRepository;
+  private final InsurerPushWriter insurerPushWriter;
 
   public record SettlementResult(
       String settlementNo, Long claimId, BigDecimal amount, String fundingStage, Integer attempt) {}
@@ -225,6 +229,22 @@ public class SettlementApplicationService {
       claim.finishUponPaid(operatorId);
       claimCaseApplicationService.saveClaim(claim);
     }
+
+    // 结案报送保司（ADR-0021）：与支付、结案同事务写一条 INSURER_PUSH 到 Outbox，
+    // 保存成功则推送事件必在库；中继按 PENDING→SENT 投递、失败退避重试、耗尽进死信。
+    // 小额在此结案、大额在双人复核时已终态，两条路径都经此登记（writer 内按 claimId 幂等）。
+    ClaimPolicy policy = claimPolicyRepository.findByPolicyNo(ctx.getPolicyNo());
+    insurerPushWriter.appendOnFinish(
+        order.getTenantId(),
+        claimId,
+        order.getClaimNo(),
+        ctx.getReportNo(),
+        ctx.getPolicyNo(),
+        policy == null ? "" : policy.getInsurerPolicyNo(),
+        policy == null ? "" : policy.getBizIdentityCode(),
+        policy == null ? "" : policy.getInsurerName(),
+        amount,
+        operatorId);
 
     domainEventPublisher.publishFrom(order);
     return toResult(order);
