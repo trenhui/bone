@@ -13,7 +13,11 @@ import com.bone.procurement.governance.domain.model.capability.GovernanceDecisio
 import com.bone.procurement.governance.domain.model.capability.GovernanceTraceEntry;
 import com.bone.procurement.governance.domain.model.capability.HumanFinalDecision;
 import com.bone.procurement.governance.domain.model.capability.OversightSignal;
+import com.bone.procurement.governance.domain.model.capability.OversightVerdict;
+import com.bone.procurement.governance.domain.model.capability.PostureVerdict;
 import com.bone.procurement.governance.domain.service.CapabilityGovernancePolicy;
+import com.bone.procurement.governance.domain.service.GovernancePosturePolicy;
+import com.bone.procurement.governance.domain.service.GovernancePosturePolicy.PostureItemVerdict;
 import com.bone.procurement.governance.domain.service.OversightThresholds;
 import java.time.Instant;
 import java.util.List;
@@ -41,6 +45,7 @@ public class AiGovernanceApplicationService {
   private final GovernanceTracePort tracePort;
   private final GovernanceActorPort actorPort;
   private final CapabilityGovernancePolicy policy = new CapabilityGovernancePolicy();
+  private final GovernancePosturePolicy posturePolicy = new GovernancePosturePolicy();
 
   public AiGovernanceApplicationService(
       CapabilityRegistry registry,
@@ -217,6 +222,44 @@ public class AiGovernanceApplicationService {
             thresholds,
             Instant.now());
     return OversightMetricsView.from(signal);
+  }
+
+  /**
+   * 治理态势聚合（只读）：复用既有裁决 / 漂移 / 监督信号，按领域策略确定性汇总。
+   *
+   * <p>无副作用——不写追溯链、不改能力状态、不落库。阈值由服务端（owner 配置）提供，缺省即 UNDETERMINED；不接受客户端注入。 不声明模型效果达标，也不回传 reason
+   * 原文 / AI output / PII。
+   */
+  public GovernancePostureView posture(
+      DriftThresholds driftThresholds, OversightThresholds oversightThresholds) {
+    List<CapabilityView> capabilities = listCapabilities();
+    List<PostureItemVerdict> items = new java.util.ArrayList<>();
+    List<GovernancePostureView.CapabilityPostureEntry> entries = new java.util.ArrayList<>();
+    for (CapabilityView view : capabilities) {
+      GovernanceDecision decision =
+          registry
+              .find(new CapabilityCode(view.code()))
+              .map(policy::decide)
+              .orElseGet(() -> policy.denyUnknown(new CapabilityCode(view.code())));
+      DriftSignal drift = driftSignal(view.code(), driftThresholds);
+      OversightMetricsView oversight = oversightSignal(view.code(), oversightThresholds);
+      items.add(
+          new PostureItemVerdict(
+              decision.allowed(), drift.verdict(), OversightVerdict.valueOf(oversight.verdict())));
+      entries.add(
+          new GovernancePostureView.CapabilityPostureEntry(
+              view.code(),
+              view.displayName(),
+              view.state(),
+              decision.allowed(),
+              decision.reasonCode(),
+              drift.verdict().name(),
+              oversight.verdict(),
+              OversightVerdict.valueOf(oversight.verdict()).isActionable()
+                  || drift.verdict().isActionable()));
+    }
+    PostureVerdict verdict = posturePolicy.aggregate(items);
+    return GovernancePostureView.from(verdict, entries);
   }
 
   /** 审计追溯：按能力码查留痕。 */
