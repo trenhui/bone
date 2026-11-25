@@ -6,6 +6,7 @@ import com.bone.procurement.governance.application.AiGovernanceProperties;
 import com.bone.procurement.governance.application.CapabilityView;
 import com.bone.procurement.governance.application.ConditionalOnAiGovernanceEnabled;
 import com.bone.procurement.governance.application.DriftMetricsView;
+import com.bone.procurement.governance.application.GovernancePostureView;
 import com.bone.procurement.governance.application.HumanDecisionView;
 import com.bone.procurement.governance.application.OversightMetricsView;
 import com.bone.procurement.governance.domain.model.capability.DriftThresholds;
@@ -117,6 +118,29 @@ public class AiGovernanceController {
                 properties.getOversightMinSampleSize(),
                 properties.getOversightFastReviewRatio());
     return ApiResponse.success(service.oversightSignal(code, thresholds));
+  }
+
+  /**
+   * 治理态势聚合只读查询：在 ai-governance 模块内聚合能力裁决 / 漂移 / 监督分项；readiness 与全域总闸由前端从既有端点补取。 阈值是 owner
+   * 通过线，只由服务端配置提供（缺省未配置 → 分项 UNDETERMINED），方法无参数，不接受客户端注入。
+   */
+  @GetMapping("/posture")
+  @PreAuthorize("hasAuthority('procurement:ai-governance:read')")
+  public ApiResponse<GovernancePostureView> posture() {
+    DriftThresholds drift =
+        properties.getDriftThreshold() == null
+            ? DriftThresholds.unconfigured()
+            : new DriftThresholds(
+                properties.getDriftThreshold(), properties.getDriftMinSampleSize());
+    OversightThresholds oversight =
+        properties.getOversightReviewDurationFloorMs() == null
+                || properties.getOversightFastReviewRatio() == null
+            ? OversightThresholds.unconfigured()
+            : new OversightThresholds(
+                properties.getOversightReviewDurationFloorMs(),
+                properties.getOversightMinSampleSize(),
+                properties.getOversightFastReviewRatio());
+    return ApiResponse.success(service.posture(drift, oversight));
   }
 
   @PostMapping("/human-decisions")
