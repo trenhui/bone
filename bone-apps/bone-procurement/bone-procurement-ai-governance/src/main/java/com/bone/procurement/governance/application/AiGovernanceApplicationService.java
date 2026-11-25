@@ -12,7 +12,9 @@ import com.bone.procurement.governance.domain.model.capability.DriftThresholds;
 import com.bone.procurement.governance.domain.model.capability.GovernanceDecision;
 import com.bone.procurement.governance.domain.model.capability.GovernanceTraceEntry;
 import com.bone.procurement.governance.domain.model.capability.HumanFinalDecision;
+import com.bone.procurement.governance.domain.model.capability.OversightSignal;
 import com.bone.procurement.governance.domain.service.CapabilityGovernancePolicy;
+import com.bone.procurement.governance.domain.service.OversightThresholds;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -175,6 +177,46 @@ public class AiGovernanceApplicationService {
             .count();
     long overrideCount = ledger.countOverrides(code);
     return DriftSignal.evaluate(code.value(), sampleSize, overrideCount, thresholds, Instant.now());
+  }
+
+  /**
+   * 人类监督有效性只读观测：基于人工终决台账真实计数，识别橡皮图章复核 / 无理由推翻 / 未回流评测。 只读无副作用——不写追溯链、不改能力状态、不落库；阈值由服务端提供，不接受客户端注入。
+   */
+  public OversightMetricsView oversightSignal(String codeValue, OversightThresholds thresholds) {
+    CapabilityCode code = new CapabilityCode(codeValue);
+    if (!registry.exists(code)) {
+      throw new CapabilityNotFoundException(code.value());
+    }
+    List<HumanFinalDecision> decisions = ledger.findByCapability(code);
+    long sampleSize = decisions.size();
+    // 阈值未配置时不能把「耗时过短计数」算成样本总量——判词虽为 UNDETERMINED，
+    // 但计数会随投影外泄，形成「100% 橡皮图章」的误导性结论（spec 要求不返回质量结论）。
+    long fastReviewCount =
+        thresholds.reviewDurationFloorMs() == null
+            ? 0L
+            : decisions.stream()
+                .filter(d -> d.reviewDurationMs() < thresholds.reviewDurationFloorMs())
+                .count();
+    long unreasonedOverrideCount =
+        decisions.stream()
+            .filter(HumanFinalDecision::isOverride)
+            .filter(d -> d.reason() == null || d.reason().isBlank())
+            .count();
+    long feedbackNotRaisedCount =
+        decisions.stream()
+            .filter(HumanFinalDecision::isOverride)
+            .filter(d -> !d.evaluationFeedbackRaised())
+            .count();
+    OversightSignal signal =
+        OversightSignal.evaluate(
+            code.value(),
+            sampleSize,
+            fastReviewCount,
+            unreasonedOverrideCount,
+            feedbackNotRaisedCount,
+            thresholds,
+            Instant.now());
+    return OversightMetricsView.from(signal);
   }
 
   /** 审计追溯：按能力码查留痕。 */

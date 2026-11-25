@@ -35,7 +35,7 @@ class AiGovernanceControllerContractTest {
   }
 
   @Test
-  void 九端点路径与方法锁定() {
+  void 十端点路径与方法锁定() {
     assertThat(hasPost("/capabilities")).isTrue();
     assertThat(hasGet("/capabilities")).isTrue();
     assertThat(hasGet("/capabilities/{code}")).isTrue();
@@ -44,6 +44,7 @@ class AiGovernanceControllerContractTest {
     assertThat(hasGet("/capabilities/{code}/trace")).isTrue();
     assertThat(hasGet("/capabilities/{code}/overrides")).isTrue();
     assertThat(hasGet("/capabilities/{code}/drift")).isTrue();
+    assertThat(hasGet("/capabilities/{code}/oversight")).isTrue();
     assertThat(hasPost("/human-decisions")).isTrue();
   }
 
@@ -58,6 +59,15 @@ class AiGovernanceControllerContractTest {
     assertAuthority("trace", "procurement:ai-governance:read");
     assertAuthority("countOverrides", "procurement:ai-governance:read");
     assertAuthority("drift", "procurement:ai-governance:read");
+    assertAuthority("oversight", "procurement:ai-governance:read");
+  }
+
+  @Test
+  void oversight端点只接受路径参数不接受阈值注入() throws NoSuchMethodException {
+    Method m = AiGovernanceController.class.getDeclaredMethod("oversight", String.class);
+    assertThat(m.getParameterTypes()).containsExactly(String.class);
+    assertThat(m.getAnnotation(GetMapping.class).value()[0])
+        .isEqualTo("/capabilities/{code}/oversight");
   }
 
   @Test
@@ -120,9 +130,8 @@ class AiGovernanceControllerContractTest {
         com.bone.procurement.governance.adapter.web.controller.HumanDecisionRequest.class
       };
       case "listCapabilities" -> new Class<?>[0];
-      case "getCapability", "decide", "trace", "countOverrides", "drift" -> new Class<?>[] {
-        String.class
-      };
+      case "getCapability", "decide", "trace", "countOverrides", "drift", "oversight" -> new Class<
+              ?>[] {String.class};
       default -> throw new IllegalArgumentException(name);
     };
   }

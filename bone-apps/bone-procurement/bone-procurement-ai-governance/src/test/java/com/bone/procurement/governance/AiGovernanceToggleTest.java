@@ -35,6 +35,16 @@ class AiGovernanceToggleTest {
   }
 
   @Test
+  void 监督有效性阈值默认未配置failClosed() {
+    AiGovernanceProperties properties = new AiGovernanceProperties();
+    assertThat(properties.getOversightReviewDurationFloorMs())
+        .as("复核耗时下限缺省必须为未配置，端点据此判 UNDETERMINED")
+        .isNull();
+    assertThat(properties.getOversightMinSampleSize()).isEqualTo(20);
+    assertThat(properties.getOversightFastReviewRatio()).as("橡皮图章比例阈值缺省必须为未配置").isNull();
+  }
+
+  @Test
   void 配置属性前缀与开关键一致() {
     assertThat(AiGovernanceProperties.PREFIX).isEqualTo("bone.procurement.ai-governance");
     assertThat(AiGovernanceProperties.ENABLED_KEY)

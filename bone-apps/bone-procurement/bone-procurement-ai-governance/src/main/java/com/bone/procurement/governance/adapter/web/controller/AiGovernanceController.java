@@ -7,9 +7,11 @@ import com.bone.procurement.governance.application.CapabilityView;
 import com.bone.procurement.governance.application.ConditionalOnAiGovernanceEnabled;
 import com.bone.procurement.governance.application.DriftMetricsView;
 import com.bone.procurement.governance.application.HumanDecisionView;
+import com.bone.procurement.governance.application.OversightMetricsView;
 import com.bone.procurement.governance.domain.model.capability.DriftThresholds;
 import com.bone.procurement.governance.domain.model.capability.GovernanceDecision;
 import com.bone.procurement.governance.domain.model.capability.GovernanceTraceEntry;
+import com.bone.procurement.governance.domain.service.OversightThresholds;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -97,6 +99,24 @@ public class AiGovernanceController {
             : new DriftThresholds(
                 properties.getDriftThreshold(), properties.getDriftMinSampleSize());
     return ApiResponse.success(DriftMetricsView.from(service.driftSignal(code, thresholds)));
+  }
+
+  /**
+   * 人类监督有效性只读查询。阈值是 owner 通过线，只由服务端配置提供（缺省未配置 → UNDETERMINED）， 方法只接受路径参数，不接受客户端阈值注入，避免具 read
+   * 权限者自设通过线绕过 fail-closed。
+   */
+  @GetMapping("/capabilities/{code}/oversight")
+  @PreAuthorize("hasAuthority('procurement:ai-governance:read')")
+  public ApiResponse<OversightMetricsView> oversight(@PathVariable("code") String code) {
+    OversightThresholds thresholds =
+        properties.getOversightReviewDurationFloorMs() == null
+                || properties.getOversightFastReviewRatio() == null
+            ? OversightThresholds.unconfigured()
+            : new OversightThresholds(
+                properties.getOversightReviewDurationFloorMs(),
+                properties.getOversightMinSampleSize(),
+                properties.getOversightFastReviewRatio());
+    return ApiResponse.success(service.oversightSignal(code, thresholds));
   }
 
   @PostMapping("/human-decisions")
