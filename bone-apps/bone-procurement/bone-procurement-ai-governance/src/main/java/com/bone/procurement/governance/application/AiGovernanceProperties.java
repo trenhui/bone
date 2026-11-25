@@ -16,11 +16,33 @@ public class AiGovernanceProperties {
 
   private boolean enabled = false;
 
+  /** 漂移判定阈值（owner 通过线）；null 表示未配置，任何漂移判词 fail-closed 到 UNDETERMINED。 */
+  private Double driftThreshold = null;
+
+  /** 漂移判定最小样本量；默认 20。 */
+  private int driftMinSampleSize = 20;
+
   public boolean isEnabled() {
     return enabled;
   }
 
   public void setEnabled(boolean enabled) {
     this.enabled = enabled;
+  }
+
+  public Double getDriftThreshold() {
+    return driftThreshold;
+  }
+
+  public void setDriftThreshold(Double driftThreshold) {
+    this.driftThreshold = driftThreshold;
+  }
+
+  public int getDriftMinSampleSize() {
+    return driftMinSampleSize;
+  }
+
+  public void setDriftMinSampleSize(int driftMinSampleSize) {
+    this.driftMinSampleSize = driftMinSampleSize;
   }
 }

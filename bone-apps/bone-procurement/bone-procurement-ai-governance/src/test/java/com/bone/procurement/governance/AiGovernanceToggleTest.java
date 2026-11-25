@@ -28,6 +28,13 @@ class AiGovernanceToggleTest {
   }
 
   @Test
+  void 漂移阈值默认未配置failClosed() {
+    AiGovernanceProperties properties = new AiGovernanceProperties();
+    assertThat(properties.getDriftThreshold()).as("owner 通过线缺省必须为未配置，端点据此判 UNDETERMINED").isNull();
+    assertThat(properties.getDriftMinSampleSize()).isEqualTo(20);
+  }
+
+  @Test
   void 配置属性前缀与开关键一致() {
     assertThat(AiGovernanceProperties.PREFIX).isEqualTo("bone.procurement.ai-governance");
     assertThat(AiGovernanceProperties.ENABLED_KEY)

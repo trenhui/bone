@@ -35,7 +35,7 @@ class AiGovernanceControllerContractTest {
   }
 
   @Test
-  void 八端点路径与方法锁定() {
+  void 九端点路径与方法锁定() {
     assertThat(hasPost("/capabilities")).isTrue();
     assertThat(hasGet("/capabilities")).isTrue();
     assertThat(hasGet("/capabilities/{code}")).isTrue();
@@ -43,6 +43,7 @@ class AiGovernanceControllerContractTest {
     assertThat(hasPost("/capabilities/{code}/decide")).isTrue();
     assertThat(hasGet("/capabilities/{code}/trace")).isTrue();
     assertThat(hasGet("/capabilities/{code}/overrides")).isTrue();
+    assertThat(hasGet("/capabilities/{code}/drift")).isTrue();
     assertThat(hasPost("/human-decisions")).isTrue();
   }
 
@@ -56,6 +57,7 @@ class AiGovernanceControllerContractTest {
     assertAuthority("decide", "procurement:ai-governance:read");
     assertAuthority("trace", "procurement:ai-governance:read");
     assertAuthority("countOverrides", "procurement:ai-governance:read");
+    assertAuthority("drift", "procurement:ai-governance:read");
   }
 
   @Test
@@ -118,7 +120,9 @@ class AiGovernanceControllerContractTest {
         com.bone.procurement.governance.adapter.web.controller.HumanDecisionRequest.class
       };
       case "listCapabilities" -> new Class<?>[0];
-      case "getCapability", "decide", "trace", "countOverrides" -> new Class<?>[] {String.class};
+      case "getCapability", "decide", "trace", "countOverrides", "drift" -> new Class<?>[] {
+        String.class
+      };
       default -> throw new IllegalArgumentException(name);
     };
   }

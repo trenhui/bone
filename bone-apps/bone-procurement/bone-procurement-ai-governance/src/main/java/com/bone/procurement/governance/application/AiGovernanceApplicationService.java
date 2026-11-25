@@ -7,6 +7,8 @@ import com.bone.procurement.governance.domain.gateway.HumanDecisionLedger;
 import com.bone.procurement.governance.domain.model.capability.AiCapability;
 import com.bone.procurement.governance.domain.model.capability.CapabilityCode;
 import com.bone.procurement.governance.domain.model.capability.CapabilityNotFoundException;
+import com.bone.procurement.governance.domain.model.capability.DriftSignal;
+import com.bone.procurement.governance.domain.model.capability.DriftThresholds;
 import com.bone.procurement.governance.domain.model.capability.GovernanceDecision;
 import com.bone.procurement.governance.domain.model.capability.GovernanceTraceEntry;
 import com.bone.procurement.governance.domain.model.capability.HumanFinalDecision;
@@ -151,6 +153,28 @@ public class AiGovernanceApplicationService {
   /** 查询：override 回流计数（drift 告警输入）。 */
   public long countOverrides(String codeValue) {
     return ledger.countOverrides(new CapabilityCode(codeValue));
+  }
+
+  /**
+   * 查询：漂移信号（只读，fail-closed）。
+   *
+   * <p>样本数取追溯链中人工终决事件数（每次终决都会留痕），推翻数取台账真实计数；阈值未配置 / 样本不足 / 计数非法一律
+   * UNDETERMINED。本方法不写追溯链、不改能力状态、不声明模型效果达标。
+   */
+  public DriftSignal driftSignal(String codeValue, DriftThresholds thresholds) {
+    CapabilityCode code = new CapabilityCode(codeValue);
+    if (!registry.exists(code)) {
+      throw new CapabilityNotFoundException(code.value());
+    }
+    long sampleSize =
+        tracePort.listByCapability(code.value()).stream()
+            .filter(
+                entry ->
+                    "HUMAN_FINAL_DECISION".equals(entry.eventType())
+                        || "HUMAN_OVERRIDE".equals(entry.eventType()))
+            .count();
+    long overrideCount = ledger.countOverrides(code);
+    return DriftSignal.evaluate(code.value(), sampleSize, overrideCount, thresholds, Instant.now());
   }
 
   /** 审计追溯：按能力码查留痕。 */

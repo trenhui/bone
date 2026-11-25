@@ -2,9 +2,12 @@ package com.bone.procurement.governance.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.procurement.governance.application.AiGovernanceApplicationService;
+import com.bone.procurement.governance.application.AiGovernanceProperties;
 import com.bone.procurement.governance.application.CapabilityView;
 import com.bone.procurement.governance.application.ConditionalOnAiGovernanceEnabled;
+import com.bone.procurement.governance.application.DriftMetricsView;
 import com.bone.procurement.governance.application.HumanDecisionView;
+import com.bone.procurement.governance.domain.model.capability.DriftThresholds;
 import com.bone.procurement.governance.domain.model.capability.GovernanceDecision;
 import com.bone.procurement.governance.domain.model.capability.GovernanceTraceEntry;
 import jakarta.validation.Valid;
@@ -29,9 +32,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AiGovernanceController {
 
   private final AiGovernanceApplicationService service;
+  private final AiGovernanceProperties properties;
 
-  public AiGovernanceController(AiGovernanceApplicationService service) {
+  public AiGovernanceController(
+      AiGovernanceApplicationService service, AiGovernanceProperties properties) {
     this.service = service;
+    this.properties = properties;
   }
 
   @PostMapping("/capabilities")
@@ -76,6 +82,21 @@ public class AiGovernanceController {
   @PreAuthorize("hasAuthority('procurement:ai-governance:read')")
   public ApiResponse<Long> countOverrides(@PathVariable("code") String code) {
     return ApiResponse.success(service.countOverrides(code));
+  }
+
+  /**
+   * 漂移信号只读查询。阈值属 owner 通过线，只能由服务端配置属性提供（默认未配置 → UNDETERMINED）， 不接受客户端查询参数，避免具 read 权限者自设通过线绕过
+   * fail-closed。
+   */
+  @GetMapping("/capabilities/{code}/drift")
+  @PreAuthorize("hasAuthority('procurement:ai-governance:read')")
+  public ApiResponse<DriftMetricsView> drift(@PathVariable("code") String code) {
+    DriftThresholds thresholds =
+        (properties.getDriftThreshold() == null)
+            ? DriftThresholds.unconfigured()
+            : new DriftThresholds(
+                properties.getDriftThreshold(), properties.getDriftMinSampleSize());
+    return ApiResponse.success(DriftMetricsView.from(service.driftSignal(code, thresholds)));
   }
 
   @PostMapping("/human-decisions")
