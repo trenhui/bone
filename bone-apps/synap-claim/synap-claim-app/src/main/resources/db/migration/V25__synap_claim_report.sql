@@ -46,14 +46,38 @@ CREATE TABLE t_claim_report (
   KEY idx_tenant_report_policy (tenant_id, policy_no)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '报案主表(FNOL, 1:0..N 的 1 侧)';
 
--- 赔案侧新增归属列。全新装环境无存量，故直接 NOT NULL；
--- 在途库（0139）必须先加可空列、回填、再收紧，否则加列即失败。
-ALTER TABLE t_claim_case
-  ADD COLUMN report_id BIGINT NOT NULL
-    COMMENT '所属报案ID(t_claim_report.id, 1:0..N 的 N 侧)' AFTER claim_no;
+-- 赔案侧新增归属列。幂等写法，与生效通道 0139 §4 一字不差：
+-- V1__synap_claim_init.sql 已在建表时声明 report_id（1:N 拆分后并入），
+-- 若在途库由 0139 加过列则此处跳过，全新装则 V1 已建、同样跳过——
+-- 无条件 ADD 会在两种环境都报 ERROR 1060（门禁 D1 判红的就是它）。
+SET @has_report_id_col = (
+  SELECT COUNT(*) FROM information_schema.columns
+  WHERE table_schema = DATABASE() AND table_name = 't_claim_case' AND column_name = 'report_id'
+);
+SET @add_report_id = IF(
+  @has_report_id_col = 0,
+  'ALTER TABLE t_claim_case ADD COLUMN report_id BIGINT NULL COMMENT ''所属报案ID(t_claim_report.id, 1:0..N 的 N 侧)'' AFTER claim_no',
+  'DO 0'
+);
+PREPARE add_report_id_stmt FROM @add_report_id;
+EXECUTE add_report_id_stmt;
+DEALLOCATE PREPARE add_report_id_stmt;
 
--- 「按报案查同案赔案」是读侧主路径（详情页同案清单、追加赔案前置校验）
-ALTER TABLE t_claim_case ADD KEY idx_tenant_report (tenant_id, report_id);
+-- 「按报案查同案赔案」是读侧主路径（详情页同案清单、追加赔案前置校验）。
+-- 同样幂等：与 0139 §8 同源，重跑不报 ERROR 1061（重复索引名）。
+SET @has_report_idx = (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_claim_case'
+    AND index_name = 'idx_tenant_report'
+);
+SET @add_report_idx = IF(
+  @has_report_idx = 0,
+  'ALTER TABLE t_claim_case ADD KEY idx_tenant_report (tenant_id, report_id)',
+  'DO 0'
+);
+PREPARE add_report_idx_stmt FROM @add_report_idx;
+EXECUTE add_report_idx_stmt;
+DEALLOCATE PREPARE add_report_idx_stmt;
 
 -- batch_no 不再参与任何编号生成：报案号与赔案号各由自己的雪花 ID 生成，
 -- batch_no 只剩 OSS 归档路径前缀与复制赔案分组两个用途。
