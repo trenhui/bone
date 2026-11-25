@@ -15,6 +15,7 @@ import {
 /** AI 治理态势只读页：聚合能力裁决/漂移/监督判词与就绪度事实，不触发任何写操作。 */
 const GovernanceStatus: React.FC = () => {
   const [data, setData] = useState<AiReadinessDTO | null>(null);
+  const [readinessError, setReadinessError] = useState<string>('');
   const [posture, setPosture] = useState<GovernancePostureDTO | null>(null);
   const [postureError, setPostureError] = useState<string>('');
 
@@ -26,7 +27,10 @@ const GovernanceStatus: React.FC = () => {
         if (active) setData(resp.data ?? null);
       })
       .catch(() => {
-        if (active) setData(null);
+        if (active) {
+          setData(null);
+          setReadinessError(GOVERNANCE_POSTURE_FETCH_ERROR);
+        }
       });
     governanceApi
       .getPosture()
@@ -44,11 +48,22 @@ const GovernanceStatus: React.FC = () => {
     };
   }, []);
 
+  // 全域总闸停用是人工有意冻结，不能被分项全清渲染成绿色「全部正常」——降级展示为需关注。
+  // 阈值仍由服务端裁决；此处只组合前端已取得的 killSwitch 事实，不新增任何写入或判词注入。
+  const killSwitchEngaged = data?.killSwitchEngaged === true;
+  const displayedVerdict =
+    killSwitchEngaged && posture?.verdict === 'ALL_CLEAR' ? 'ATTENTION_REQUIRED' : (posture?.verdict ?? '');
+
   const columns = [
     { title: '能力码', dataIndex: 'code', key: 'code' },
     { title: '名称', dataIndex: 'displayName', key: 'displayName' },
     { title: '状态', dataIndex: 'state', key: 'state' },
-    { title: '准入', dataIndex: 'decisionAllowed', key: 'decisionAllowed' },
+    {
+      title: '准入',
+      dataIndex: 'decisionAllowed',
+      key: 'decisionAllowed',
+      render: (v: boolean) => (v ? '允许(仅建议)' : '拒绝'),
+    },
     { title: '漂移', dataIndex: 'driftVerdict', key: 'driftVerdict' },
     { title: '监督', dataIndex: 'oversightVerdict', key: 'oversightVerdict' },
   ];
@@ -60,9 +75,12 @@ const GovernanceStatus: React.FC = () => {
         {posture && !postureError && (
           <Descriptions bordered size="small" column={1}>
             <Descriptions.Item label="汇总判词">
-              <Tag color={postureVerdictColor(posture.verdict)}>
-                {postureVerdictTextOrRaw(posture.verdict)}
+              <Tag color={postureVerdictColor(displayedVerdict)}>
+                {postureVerdictTextOrRaw(displayedVerdict)}
               </Tag>
+              {killSwitchEngaged && (
+                <Typography.Text type="secondary">（全域总闸已停用，AI 路径冻结，不展示为全部正常）</Typography.Text>
+              )}
             </Descriptions.Item>
             <Descriptions.Item label="需关注 / 不可判定能力">
               {posture.attentionCount} / {posture.undeterminedCount}
@@ -84,6 +102,7 @@ const GovernanceStatus: React.FC = () => {
         )}
       </Card>
       <Card title="AI 治理状态">
+        {readinessError && <Alert type="warning" message={readinessError} showIcon />}
         {data && (
           <Descriptions bordered size="small" column={1}>
             <Descriptions.Item label="就绪度判词">

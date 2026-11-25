@@ -128,4 +128,23 @@ describe('治理态势看板（反假绿）', () => {
     await waitFor(() => expect(screen.getByText('辅助评标')).toBeTruthy());
     expect(screen.queryByRole('button')).toBeNull();
   });
+
+  it('就绪度取数失败也显示无法确认，不留空白卡片', async () => {
+    (governanceApi.getPosture as ReturnType<typeof vi.fn>).mockResolvedValue({ data: posture() });
+    (readinessApi.getReadiness as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('network'));
+    wrap();
+    await waitFor(() => expect(screen.getAllByText('无法确认').length).toBeGreaterThan(0));
+  });
+
+  it('全域总闸停用时分项全清不渲染成全部正常', async () => {
+    (governanceApi.getPosture as ReturnType<typeof vi.fn>).mockResolvedValue({ data: posture() });
+    (readinessApi.getReadiness as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: { ...readyDto, killSwitchEngaged: true },
+    });
+    wrap();
+    await waitFor(() => {
+      expect(screen.getByText(/需关注/)).toBeTruthy();
+      expect(screen.queryByText('全部正常')).toBeNull();
+    });
+  });
 });
