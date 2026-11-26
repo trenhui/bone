@@ -5119,3 +5119,77 @@ CREATE TABLE `t_proc_contract_dlq` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_proc_contract_dlq` (`tenant_id`,`review_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='ContractReviewed 死信队列（失败隔离与按 review_id 重放；不成半条结论）';
+
+-- 案件签收三表（0142_claim_secure_signing）：批次/明细/轨迹
+CREATE TABLE；终态断言失败用存储过程 SIGNAL（PREPARE 不支持 SIGNAL）；
+--   · 本脚本为本地/部署迁移，不在本机会话对共享生产库执行 DDL。
+-- ============================================================
+
+CREATE TABLE `t_claim_sign_batch` (
+  `id`              BIGINT       NOT NULL,
+  `tenant_id`       BIGINT       NOT NULL,
+  `batch_no`        VARCHAR(64)  NOT NULL,
+  `source`          VARCHAR(16)  NOT NULL,
+  `sign_type`       VARCHAR(16)  NOT NULL,
+  `sign_channel`    VARCHAR(32)  NOT NULL,
+  `sign_status`     VARCHAR(32)  NOT NULL DEFAULT 'WAIT_FOR_PARTICIPANT',
+  `business_key`    VARCHAR(64)  DEFAULT NULL,
+  `claim_count`     INT          NOT NULL DEFAULT 0,
+  `image_ready_count` INT        NOT NULL DEFAULT 0,
+  `express_company` VARCHAR(64)  DEFAULT NULL,
+  `express_no`      VARCHAR(64)  DEFAULT NULL,
+  `sender`          VARCHAR(64)  DEFAULT NULL,
+  `arrive_time`     DATETIME(3)  DEFAULT NULL,
+  `sign_institution` VARCHAR(128) DEFAULT NULL,
+  `sign_operator`   VARCHAR(64)  DEFAULT NULL,
+  `sign_time`       DATETIME(3)  DEFAULT NULL,
+  `sign_remark`     VARCHAR(256) DEFAULT NULL,
+  `version`         INT          NOT NULL DEFAULT 0,
+  `created_by`      BIGINT       DEFAULT NULL,
+  `updated_by`      BIGINT       DEFAULT NULL,
+  `created_at`      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updated_at`      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  `deleted`         TINYINT(1)   NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_claim_sign_batch_no` (`batch_no`),
+  KEY `idx_claim_sign_batch_tenant_status` (`tenant_id`,`sign_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='签收批次（线上自动+线下人工）';
+
+CREATE TABLE `t_claim_sign_batch_item` (
+  `id`         BIGINT       NOT NULL,
+  `tenant_id`  BIGINT       NOT NULL,
+  `batch_id`   BIGINT       NOT NULL,
+  `claim_id`   BIGINT       NOT NULL,
+  `claim_no`   VARCHAR(64)  DEFAULT NULL,
+  `image_ready` TINYINT(1)  NOT NULL DEFAULT 0,
+  `created_by` BIGINT       DEFAULT NULL,
+  `updated_by` BIGINT       DEFAULT NULL,
+  `created_at` DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updated_at` DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  `deleted`    TINYINT(1)   NOT NULL DEFAULT 0,
+  `version`    INT          NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_claim_sign_batch_item` (`batch_id`,`claim_id`),
+  KEY `idx_claim_sign_batch_item_claim` (`claim_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='签收批次明细';
+
+CREATE TABLE `t_claim_sign_track` (
+  `id`          BIGINT       NOT NULL,
+  `tenant_id`   BIGINT       NOT NULL,
+  `batch_id`    BIGINT       NOT NULL,
+  `claim_id`    BIGINT       DEFAULT NULL,
+  `sign_status` VARCHAR(32)  DEFAULT NULL,
+  `action_type` VARCHAR(32)  NOT NULL,
+  `message`     VARCHAR(256) DEFAULT NULL,
+  `remark`      VARCHAR(256) DEFAULT NULL,
+  `operator`    VARCHAR(64)  DEFAULT NULL,
+  `occurred_at` DATETIME(3)  NOT NULL,
+  `created_by`  BIGINT       DEFAULT NULL,
+  `updated_by`  BIGINT       DEFAULT NULL,
+  `created_at`  DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updated_at`  DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  `deleted`     TINYINT(1)   NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_claim_sign_track_batch` (`batch_id`,`occurred_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='签收轨迹（append-only，无version列）';
+

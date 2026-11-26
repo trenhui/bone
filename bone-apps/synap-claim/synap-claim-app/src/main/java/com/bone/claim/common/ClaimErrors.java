@@ -116,7 +116,12 @@ public final class ClaimErrors {
           // 400：拒赔证据位置锚点格式非法（请求入参形状非法，与 CLAIM_REJECT_REASON_REQUIRED 同族）
           Map.entry(ClaimErrorCodes.SC_CLAIM_REJECT_EVIDENCE_REF_INVALID, 400),
           // 400：受控拒赔原因码非法（入参形状非法，与缺失码同族但分开定位）
-          Map.entry(ClaimErrorCodes.SC_CLAIM_REJECT_REASON_INVALID, 400));
+          Map.entry(ClaimErrorCodes.SC_CLAIM_REJECT_REASON_INVALID, 400),
+          // 签收：404 批次不存在 / 409 状态冲突 / 400 推送要素 / 422 名单为空
+          Map.entry(ClaimErrorCodes.SC_CLAIM_SIGN_BATCH_NOT_FOUND, 404),
+          Map.entry(ClaimErrorCodes.SC_CLAIM_SIGN_STATUS_CONFLICT, 409),
+          Map.entry(ClaimErrorCodes.SC_CLAIM_SIGN_PUSH_INVALID, 400),
+          Map.entry(ClaimErrorCodes.SC_CLAIM_SIGN_PARTICIPANTS_EMPTY, 422));
 
   static {
     checkEveryCodeRegistered();

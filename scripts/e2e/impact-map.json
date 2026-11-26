@@ -3975,6 +3975,62 @@
    "cases": []
   },
   {
+   "http": "POST",
+   "path": "/api/v1/claims/sign",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/sign/batches",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/sign/batches/{batchId}/participants",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/sign/batches/{batchId}/image",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/sign/batches/{batchId}/confirm",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/sign/batches",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/sign/batches/{batchId}/tracks",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/sign/batches/{batchId}",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": []
+  },
+  {
    "http": "GET",
    "path": "/api/v1/claim-ops/engineering-evidence",
    "controller": "EngineeringEvidenceController",
@@ -5132,8 +5188,8 @@
   }
  ],
  "summary": {
-  "endpoints": 619,
+  "endpoints": 627,
   "covered": 245,
-  "uncovered": 374
+  "uncovered": 382
  }
 }

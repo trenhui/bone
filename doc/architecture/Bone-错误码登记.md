@@ -673,6 +673,10 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SC_CLAIM_REPORT_CONTEXT_MISMATCH` | 400 | 追加赔案的请求试图覆盖事故维度（保单号/计划/被保人/出险时间）：这些值一律从报案继承，允许覆盖等于允许把 A 保单的赔付挂到 B 事故上。400 而非 422 —— 请求内容本身不合法（传了不该传的字段），detail 点名字段 |
 | `SC_CLAIM_REJECT_EVIDENCE_REF_INVALID` | 400 | 拒赔「证据位置」锚点格式非法（请求入参形状非法，非业务前提）：拒赔文书必须写可定位原件的位置 `EV-001` 或 `EV-001#p2`（#p 为影像页码），禁止自由文本/排序号/路径混入，否则申诉复核无法回放原件；与 `CLAIM_REJECT_REASON_REQUIRED` 同族，仅接单条决策端点（批量端点契约不带此字段） |
 | `SC_CLAIM_REJECT_REASON_INVALID` | 400 | 受控拒赔原因码非法（入参形状非法）：rejectType 不在字典真源 `ClaimDictApplicationService.REJECT_REASON_CODES`（01-13/20/30/40 共 16 码）内即拒，与「缺失码」`CLAIM_REJECT_REASON_REQUIRED` 分开定位；白名单与前端 codegen 字典同源，杜绝「前端受控、后端照收」双口径 |
+| `SC_CLAIM_SIGN_BATCH_NOT_FOUND` | 404 | 签收批次不存在或不属于当前租户（跨租户读一律按不存在处理，防枚举），与案件/报案同一条租户隔离纪律 |
+| `SC_CLAIM_SIGN_STATUS_CONFLICT` | 409 | 签收批次状态冲突：当前状态不允许该动作（跳步/终态再操作），或并发下已被他人签收（CAS 影响行数 0）。不静默幂等，让调用方看到「请刷新」而不是错误地以为成功 |
+| `SC_CLAIM_SIGN_PUSH_INVALID` | 400 | 线上签收回执入参非法：businessKey 缺失，或 Idempotency-Key 超过 64 字符（对齐 DB varchar(64)，超长写入会静默失败）。显式拒绝而非裁剪，保证重试同键语义 |
+| `SC_CLAIM_SIGN_PARTICIPANTS_EMPTY` | 422 | 线下签收名单为空：请求本身合法，缺的是「至少一名赔案参与人」这一业务前提（空批次签收没有意义），故 422 而非 400 |
 
 ---
 

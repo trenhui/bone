@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 147,
+  "executableCount": 150,
   "retired": [],
   "entries": [
     {
@@ -933,6 +933,24 @@
       "file": "0141_procura_contract_review_event_chain.sql",
       "kind": "ddl",
       "summary": "ContractReviewed 持久化事件闭环三表（Outbox/Inbox/DLQ）：以 (tenant_id, review_id) 唯一键实现事务发布、幂等消费与失败重放，审计八列齐全；payload 仅存 7 字段快照禁 PII/正文。init-only 本地基线，不接生产 MQ、不执行生产库，投递由显式驱动模拟。对应 bone-init.sql 同名三表。"
+    },
+    {
+      "order": 148,
+      "file": "0142_claim_secure_signing.sql",
+      "kind": "ddl",
+      "summary": "案件签收三表（批次/明细/轨迹）：批次号 batch_no 全局唯一、四态状态机 sign_status 落枚举 name、CAS 前置态条件更新；明细按 (batch_id,claim_id) 唯一并带 image_ready 影像完备标记；轨迹 append-only 无 version 列。审计八列齐全；CREATE TABLE IF NOT EXISTS 幂等；information_schema 终态断言 + 存储过程 SIGNAL(1644)（PREPARE 不能 SIGNAL）。对应 bone-init.sql 三表与模块参考态。线上自动签收（内部报案+外部推送）与线下人工签收共用此模型。"
+    },
+    {
+      "order": 149,
+      "file": "0143_seed_claim_sign_menu.sql",
+      "kind": "mixed",
+      "summary": "案件签收正式菜单：/sclaim/claim/sign，名称「案件签收」与 routes.tsx 逐字一致，order_no=20 接在治理组之后避免重排；id=目录+29，permission=claim:claims:read，icon 在 shell 白名单。幂等 + 终态断言（含临时表/存储过程 DDL 与 INSERT DML，kind=mixed）。"
+    },
+    {
+      "order": 150,
+      "file": "0144_fix_claim_sign_tenant_id.sql",
+      "kind": "ddl",
+      "summary": "修正 0142 签收三表 tenant_id：VARCHAR(64) → BIGINT，对齐 TenantAggregateRoot<Long> 与全仓 t_claim_case 口径；否则线下批次 requireBatch 比较租户时 ClassCastException。幂等条件 ALTER + 终态 SIGNAL(1644)，不改已记账的 0142。同步 bone-init.sql 三表定义。"
     }
   ],
   "ordinalConflicts": [

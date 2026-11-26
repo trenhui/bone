@@ -52,6 +52,11 @@ public class ClaimCaseApplicationService {
   private final ClaimCaseRepository claimCaseRepository;
   private final ClaimReportRepository claimReportRepository;
   private final ClaimIntakePort claimIntakePort;
+
+  /** 线上自动签收（内部报案链路末端）；@Lazy 避免与签收用例的潜在循环依赖。 */
+  @org.springframework.context.annotation.Lazy
+  private final ClaimSignApplicationService signService;
+
   private final ClaimItemRepository claimItemRepository;
   private final PolicyQueryPort policyQueryPort;
   private final TenantPort tenantPort;
@@ -130,6 +135,11 @@ public class ClaimCaseApplicationService {
     // 端口让这个唯一的跨聚合写点集中可见，其余场景仍受 R9 严格约束（见 ClaimIntakePort 注释）。
     claimIntakePort.persistIntake(report, claim);
     domainEventPublisher.publishFrom(claim);
+    // 线上自动签收：与报案/首案同事务，签收失败即报案失败（不吞错）。businessKey 用报案号幂等去重。
+    signService.signOnAcceptance(
+        new ClaimSignApplicationService.AutoSignCommand(
+            report.getReportNo(),
+            com.bone.claim.domain.model.sign.valueobject.SignChannel.INTERNAL_REPORT));
     return new SubmittedClaim(claim.getId(), claim.getClaimNo(), report.getReportNo());
   }
 

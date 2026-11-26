@@ -411,4 +411,16 @@ public final class ClaimErrorCodes {
    * 422：入参形状非法，与 CLAIM_REJECT_REASON_REQUIRED 同族；「缺失」与「非法」分不同码，便于定位是漏填还是前端字典与后端脱节。
    */
   public static final String SC_CLAIM_REJECT_REASON_INVALID = "SC_CLAIM_REJECT_REASON_INVALID";
+
+  /** 签收批次不存在（跨租户同号不区分，404 口径）。 */
+  public static final String SC_CLAIM_SIGN_BATCH_NOT_FOUND = "SC_CLAIM_SIGN_BATCH_NOT_FOUND";
+
+  /** 签收状态冲突（并发 CAS 失败或前置态不满足，409）。 */
+  public static final String SC_CLAIM_SIGN_STATUS_CONFLICT = "SC_CLAIM_SIGN_STATUS_CONFLICT";
+
+  /** 外部推送要素缺失（400）。 */
+  public static final String SC_CLAIM_SIGN_PUSH_INVALID = "SC_CLAIM_SIGN_PUSH_INVALID";
+
+  /** 人员名单为空（422）。 */
+  public static final String SC_CLAIM_SIGN_PARTICIPANTS_EMPTY = "SC_CLAIM_SIGN_PARTICIPANTS_EMPTY";
 }

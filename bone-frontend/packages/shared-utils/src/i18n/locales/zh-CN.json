@@ -305,7 +305,11 @@
     "SC_CLAIM_REPORT_CLOSED": "该报案已关闭，不能再追加赔案；如需继续赔付，请重新报案",
     "SC_CLAIM_REPORT_CONTEXT_MISMATCH": "追加赔案不能修改保单、计划、被保人或出险时间：这些信息一律继承报案，请求里出现了不该传的字段",
     "SC_CLAIM_REJECT_EVIDENCE_REF_INVALID": "拒赔证据位置格式错误：须填可定位原件的位置（如 EV-001 或 EV-001#p2，#p 为影像页码），不能填自由文本",
-    "SC_CLAIM_REJECT_REASON_INVALID": "受控拒赔原因码非法：须从下拉的受控码中选择（01-13/20/30/40），不能填自由文本或不在字典内的码"
+    "SC_CLAIM_REJECT_REASON_INVALID": "受控拒赔原因码非法：须从下拉的受控码中选择（01-13/20/30/40），不能填自由文本或不在字典内的码",
+    "SC_CLAIM_SIGN_BATCH_NOT_FOUND": "签收批次不存在，或不属于当前租户",
+    "SC_CLAIM_SIGN_STATUS_CONFLICT": "签收状态冲突：当前状态不允许该操作，或本批次已被他人签收，请刷新后重试",
+    "SC_CLAIM_SIGN_PUSH_INVALID": "线上签收回执不合法：businessKey 缺失，或 Idempotency-Key 超过64字符",
+    "SC_CLAIM_SIGN_PARTICIPANTS_EMPTY": "线下签收名单为空：至少需要导入一个赔案才能推进签收"
   },
   "enums": {
     "ORDER_STATUS": {

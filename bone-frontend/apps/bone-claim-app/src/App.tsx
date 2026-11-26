@@ -24,12 +24,14 @@ import './App.css';
  *   这条导航**不是产品导航**，不承载权限与可见性，故显式标注「独立调试」，
  *   且数据源同为 {@link CLAIM_ROUTES} —— 路由与名称仍然只有一份真源。
  */
-/** hidden 路由不是"无需权限"，而是"不进导航但仍需授权"：对齐后端 @PreAuthorize。 */
+/** 不进导航的 hidden 路由仍需授权；已进入菜单的读码页也保留守卫，防止绕过菜单直达时越权。 */
 const HIDDEN_ROUTE_REQUIRED: Record<string, string> = {
   '/ai-governance': PERMISSIONS.CLAIMS_READ,
   // 运营看板消费 GET /api/v1/claims/analytics/summary，后端 @PreAuthorize('claim:claims:read')。
   '/analytics': PERMISSIONS.CLAIMS_READ,
   '/blind-labels': PERMISSIONS.INSPECTION_WRITE,
+  // 案件签收：菜单挂 claim:claims:read；直输 /sclaim/claim/sign 绕过菜单时仍 fail-closed。
+  '/sign': PERMISSIONS.CLAIMS_READ,
 };
 
 function RouteDenied(): JSX.Element {
