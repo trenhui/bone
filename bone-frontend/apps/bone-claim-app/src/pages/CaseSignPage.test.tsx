@@ -1,14 +1,17 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import { App as AntdApp } from 'antd';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * 案件签收页面护栏。
  *
- * 守三类回归：
+ * 守五类回归：
  *   1. 四态状态机在 UI 上漏动作 / 多动作（终态还留写按钮 = 允许二次签收）；
  *   2. 二次确认被绕过（点一下就直接签收，没有确认弹窗）；
- *   3. 来源 Tab 切换不改查询条件（线上/线下串数据）。
+ *   3. 来源 Tab 切换不改查询条件（线上/线下串数据）；
+ *   4. 404 只有一闪而过的 toast、用户无法自助排查（必须持久化 Alert + 重试）；
+ *   5. 空态只有「暂无数据」，没有下一步动作入口。
  */
 const h = vi.hoisted(() => ({
   list: vi.fn(),
@@ -64,11 +67,20 @@ vi.mock('antd', async (importOriginal) => {
   };
 });
 
-import { CaseSignPage } from './CaseSignPage';
+import { CaseSignPage, describeSignLoadError } from './CaseSignPage';
 
 const ok = <T,>(data: T) => ({ code: 200, message: 'ok', success: true, data });
 const BATCH_ID = '776102367333449728';
 const BATCH_NO = 'SIGN-20261125-0001';
+
+/** App.useApp() 依赖 antd App context；真实入口由 AppAntdProvider + AntdApp 提供。 */
+function renderPage(): ReturnType<typeof render> {
+  return render(
+    <AntdApp>
+      <CaseSignPage />
+    </AntdApp>,
+  );
+}
 
 function batch(signStatus: string) {
   return {
@@ -102,7 +114,7 @@ describe('CaseSignPage · 四态操作入口', () => {
     ['WAIT_FOR_CONFIRMATION', 'sign-confirm', '确认签收'],
   ])('%s 状态只暴露 %s 动作', async (status, testId, label) => {
     givenStatus(status);
-    render(<CaseSignPage />);
+    renderPage();
 
     expect(await screen.findByText(BATCH_NO)).toBeTruthy();
     expect(screen.getByTestId(testId).textContent).toBe(label);
@@ -113,7 +125,7 @@ describe('CaseSignPage · 四态操作入口', () => {
 
   it('FINISHED 终态不暴露任何写操作入口', async () => {
     givenStatus('FINISHED');
-    render(<CaseSignPage />);
+    renderPage();
 
     expect(await screen.findByText('已签收确认')).toBeTruthy();
     expect(screen.queryByTestId('sign-import')).toBeNull();
@@ -125,7 +137,7 @@ describe('CaseSignPage · 四态操作入口', () => {
 describe('CaseSignPage · 交互护栏', () => {
   it('确认签收先弹二次确认，onOk 只触发一次写调用', async () => {
     givenStatus('WAIT_FOR_CONFIRMATION');
-    render(<CaseSignPage />);
+    renderPage();
 
     fireEvent.click(await screen.findByTestId('sign-confirm'));
 
@@ -140,9 +152,22 @@ describe('CaseSignPage · 交互护栏', () => {
     expect(h.confirm).toHaveBeenCalledWith(BATCH_ID, '影像齐全，确认完成签收');
   });
 
+  it('签收意见不足 10 字时拦截写调用并保持弹窗打开', async () => {
+    givenStatus('WAIT_FOR_CONFIRMATION');
+    renderPage();
+
+    const input = await screen.findByPlaceholderText('确认签收意见（不少于10字）');
+    fireEvent.change(input, { target: { value: '太短' } });
+    fireEvent.click(await screen.findByTestId('sign-confirm'));
+
+    const config = h.confirmModal.mock.calls[0][0];
+    expect(await config.onOk()).toBe(false);
+    expect(h.confirm).not.toHaveBeenCalled();
+  });
+
   it('切换线上 Tab 立即以 ONLINE 来源重新查询，不与线下串数据', async () => {
     givenStatus('FINISHED');
-    render(<CaseSignPage />);
+    renderPage();
 
     await screen.findByText(BATCH_NO);
     fireEvent.click(screen.getByText('线上自动签收'));
@@ -150,6 +175,7 @@ describe('CaseSignPage · 交互护栏', () => {
     await waitFor(() =>
       expect(h.list).toHaveBeenCalledWith({ source: 'ONLINE', page: 1, size: 20 }),
     );
+    expect(await screen.findByText('线上签收由系统自动完成')).toBeTruthy();
   });
 
   it('轨迹抽屉按批次加载并展示真实轨迹内容', async () => {
@@ -166,11 +192,36 @@ describe('CaseSignPage · 交互护栏', () => {
         },
       ]),
     );
-    render(<CaseSignPage />);
+    renderPage();
 
     fireEvent.click(await screen.findByTestId('sign-tracks'));
 
     expect(h.tracks).toHaveBeenCalledWith(BATCH_ID);
     expect(await screen.findByText('批次创建')).toBeTruthy();
+  });
+});
+
+describe('CaseSignPage · 可观测性与空态', () => {
+  it('404 展示持久化错误态与重试，而不是一闪而过的 toast', async () => {
+    h.list.mockRejectedValue({ response: { status: 404 } });
+    renderPage();
+
+    const alert = await screen.findByTestId('sign-load-error');
+    expect(alert.textContent).toContain('签收服务未在当前环境部署');
+    expect(screen.getByTestId('sign-retry')).toBeTruthy();
+  });
+
+  it('空态给出新建批次入口，不是干巴巴的暂无数据', async () => {
+    h.list.mockResolvedValue(ok({ records: [], total: '0', page: 1, size: 20 }));
+    renderPage();
+
+    expect(await screen.findByText('暂无线下签收批次')).toBeTruthy();
+    expect(screen.getByTestId('sign-empty-create')).toBeTruthy();
+  });
+
+  it('错误翻译覆盖 404 / 403 / 5xx 三类可操作提示', () => {
+    expect(describeSignLoadError({ response: { status: 404 } })).toContain('未在当前环境部署');
+    expect(describeSignLoadError({ response: { status: 403 } })).toContain('缺少签收权限');
+    expect(describeSignLoadError({ response: { status: 500 } })).toContain('HTTP 500');
   });
 });
