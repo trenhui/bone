@@ -18,8 +18,8 @@ import org.junit.jupiter.api.Test;
 /**
  * procuraAI 生产强化：采购域 DDL ↔ 实体对账守卫。
  *
- * <p>本测试位于 contract 模块，但通过文件路径读取 contract + ai-governance 两个模块的实体源码， 断言 bone-init.sql 共 24 张
- * t_proc_* 表、9 张新表（合同/治理/事件闭环域）必备列齐全、审查表幂等双唯一键、 全部新表唯一键以 tenant_id 打头。不执行真实 MySQL。
+ * <p>本测试位于 contract 模块，但通过文件路径读取多个采购模块的实体源码，断言 bone-init.sql 共 28 张 t_proc_* 表、13
+ * 张增强表（合同/治理/事件闭环/持久业务聚合域）必备列齐全、审查表幂等双唯一键、全部新表唯一键以 tenant_id 打头。不执行真实 MySQL。
  */
 class ProcuraAiGovernanceDdlCoverageTest {
 
@@ -33,7 +33,11 @@ class ProcuraAiGovernanceDdlCoverageTest {
           "t_proc_governance_trace",
           "t_proc_contract_outbox",
           "t_proc_contract_inbox",
-          "t_proc_contract_dlq");
+          "t_proc_contract_dlq",
+          "t_proc_bid",
+          "t_proc_quotation",
+          "t_proc_award",
+          "t_proc_capa");
 
   private static final List<String> REQUIRED_COLUMNS =
       List.of(
@@ -56,19 +60,19 @@ class ProcuraAiGovernanceDdlCoverageTest {
       Pattern.compile("@Table\\s*\\(\\s*\"([A-Za-z0-9_]+)\"\\s*\\)");
 
   @Test
-  @DisplayName("bone-init.sql 共 24 张 t_proc_* 表，9 张新表均已建表")
+  @DisplayName("bone-init.sql 共 28 张 t_proc_* 表，13 张增强表均已建表")
   void twentyFourTablesDeclared() throws IOException {
     Map<String, String> ddl = readInitTables();
     List<String> all = ddl.keySet().stream().filter(t -> t.startsWith("t_proc_")).toList();
 
-    assertThat(all).as("t_proc_* 表数应为 24").hasSize(24);
+    assertThat(all).as("t_proc_* 表数应为 28").hasSize(28);
     for (String table : NEW_TABLES) {
       assertThat(ddl).as("缺少建表：" + table).containsKey(table);
     }
   }
 
   @Test
-  @DisplayName("9 张新表审计八列齐全")
+  @DisplayName("13 张增强表审计八列齐全")
   void newTablesHaveRequiredColumns() throws IOException {
     Map<String, String> ddl = readInitTables();
     List<String> offenders = new ArrayList<>();
@@ -103,7 +107,7 @@ class ProcuraAiGovernanceDdlCoverageTest {
   }
 
   @Test
-  @DisplayName("9 张新表的全部唯一键均以 tenant_id 打头")
+  @DisplayName("13 张增强表的全部唯一键均以 tenant_id 打头")
   void everyNewTableUniqueKeyStartsWithTenant() throws IOException {
     Map<String, String> ddl = readInitTables();
     for (String table : NEW_TABLES) {
@@ -116,11 +120,15 @@ class ProcuraAiGovernanceDdlCoverageTest {
   }
 
   @Test
-  @DisplayName("两个模块均声明了 9 个 @Table 实体，与 DDL 一一对应")
+  @DisplayName("三个模块均声明了 13 个 @Table 实体，与 DDL 一一对应")
   void entitiesDeclaredForAllNewTables() throws IOException {
     List<String> entities = new ArrayList<>();
     Path root = locateRoot();
-    for (String module : List.of("bone-procurement-contract", "bone-procurement-ai-governance")) {
+    for (String module :
+        List.of(
+            "bone-procurement-contract",
+            "bone-procurement-ai-governance",
+            "bone-procurement-business")) {
       Path src =
           root.resolve("bone-apps/bone-procurement").resolve(module).resolve("src/main/java");
       try (Stream<Path> paths = Files.walk(src)) {
@@ -130,7 +138,7 @@ class ProcuraAiGovernanceDdlCoverageTest {
         }
       }
     }
-    assertThat(entities).as("9 个新实体都应有 @Table").containsAll(NEW_TABLES);
+    assertThat(entities).as("13 个增强实体都应有 @Table").containsAll(NEW_TABLES);
   }
 
   private static Map<String, String> uniqueKeys(String body) {

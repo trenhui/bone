@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 147,
+  "executableCount": 148,
   "retired": [],
   "entries": [
     {
@@ -933,6 +933,12 @@
       "file": "0141_procura_contract_review_event_chain.sql",
       "kind": "ddl",
       "summary": "ContractReviewed 持久化事件闭环三表（Outbox/Inbox/DLQ）：以 (tenant_id, review_id) 唯一键实现事务发布、幂等消费与失败重放，审计八列齐全；payload 仅存 7 字段快照禁 PII/正文。init-only 本地基线，不接生产 MQ、不执行生产库，投递由显式驱动模拟。对应 bone-init.sql 同名三表。"
+    },
+    {
+      "order": 148,
+      "file": "0142_procura_business_aggregates.sql",
+      "kind": "ddl",
+      "summary": "procuraAI 持久业务聚合四表（Bid/Quotation/Award/CAPA）：租户锚定业务唯一键 + 审计八列；授标确认人只来自登录态，报价 AI 字段只存建议，CAPA 关闭证据只存引用；终态回写由 DDL 与 Adapter 双层拒绝。仓库内增量脚本，不执行生产库。对应 bone-init.sql 同名四表。"
     }
   ],
   "ordinalConflicts": [

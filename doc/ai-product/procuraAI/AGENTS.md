@@ -63,7 +63,7 @@ python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py
 python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py --self-test
 ```
 
-以上均在仓库根执行。**前 7 条**是 A10.17 锁死的三入口判据全集（一键脚本覆盖同一全集，是本地评审前的权威入口）；**后 2 条**是本族 frontmatter 语义守护（`frontmatterGate` 主判据 / `frontmatterProbe` 注入反证），D-11（2026-11-20 L3 授权）已接入三入口：主判据进 `ci.yml` 与 `check.sh` G0 快反馈，注入反证进 `ci.yml` 与一键脚本全集。A10.17 以 `FULL_GATE_KEYS`（7 key）/ `FAST_GATE_KEYS`（4 key）严格比对，任一口径删改即转红（见 `decisions/DECISION-REGISTER.md` D-11）。改 frontmatter 或旧族 banner 后必须跑最后两条。注意：`| tail` 会吞掉退出码；中文路径 git 操作须带 `-c core.quotePath=false`。
+以上均在仓库根执行。**前 6 条**构成基础判据，一键脚本 `check-procura-ci.sh` 覆盖 `ci.yml` 的 `FULL_GATE_KEYS` 全集，是本地评审前的权威入口；后两条是本族 frontmatter 语义守护（`frontmatterGate` 主判据 / `frontmatterProbe` 注入反证），D-11（2026-11-20 L3 授权）已接入三入口。A10.17 以脚本中的 `FULL_GATE_KEYS` / `FAST_GATE_KEYS` 为唯一真源严格比对，判据集合不在文档写死数量，任一口径删改即转红（见 `decisions/DECISION-REGISTER.md` D-11）。持久业务聚合门禁 `tools/check_procura_business_aggregates.py` 同属三入口全集，以脚本 key 裁决。改 frontmatter 或旧族 banner 后必须跑最后两条。注意：`| tail` 会吞掉退出码；中文路径 git 操作须带 `-c core.quotePath=false`。
 
 ## 4. 禁止修改 / 须先审批
 
