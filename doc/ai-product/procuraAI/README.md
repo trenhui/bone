@@ -2,7 +2,7 @@
 status: Active
 layer: entry
 truth-for: 文档族索引与导航入口（不承载变更史）
-updated-on: 2026-11-12
+updated-on: 2026-11-26
 ---
 
 # procuraAI 专题包
@@ -136,4 +136,4 @@ procuraAI 为**采购域内的 AI 子能力**（**非独立可交付产品**；�
 
 ## 变更史
 
-26 轮执行台账与建议落点记录见 [CHANGELOG.md](./CHANGELOG.md)。本文件不承载过程记录，避免索引与变更史互相污染。
+28 轮执行台账与建议落点记录见 [CHANGELOG.md](./CHANGELOG.md)。本文件不承载过程记录，避免索引与变更史互相污染。
