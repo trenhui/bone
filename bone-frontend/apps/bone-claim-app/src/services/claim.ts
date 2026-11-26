@@ -89,10 +89,11 @@ function stableSubmitKey(req: SubmitClaimReq): string {
  *
  * <p>后端决策/自动通过按可选幂等接入（同键重放首次结果）。同一案件状态未变时的重试必须同键；
  * 状态推进后再次决策是另一个业务动作，自然换键。请求体本身还参与后端指纹校验，防止同键换内容。
+ * 签收回执/确认也走同一约定：businessKey 或 batchId 作为稳定标识，动作名区分键空间。
  */
 export function stableClaimActionKey(
   claimId: string,
-  action: 'decide' | 'auto-approve' | 'review-decide',
+  action: 'decide' | 'auto-approve' | 'review-decide' | 'sign-ack' | 'sign-confirm',
   status?: string,
 ): string {
   const parts = [claimId, action, status].filter((v): v is string => Boolean(v && v.trim()));

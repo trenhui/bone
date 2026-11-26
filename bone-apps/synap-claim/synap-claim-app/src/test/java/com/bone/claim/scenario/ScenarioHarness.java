@@ -161,6 +161,8 @@ public class ScenarioHarness {
             // 桩掉会让场景里的 1:0..N 结构（提交后报案行是否存在）失去验证意义。
             new com.bone.claim.infrastructure.persistence.ClaimIntakePortAdapter(
                 reportRepo, claimRepo),
+            // 签收是报案末端的旁路：场景断言报案/赔案结构，不关心签收批次，故 mock 掉。
+            org.mockito.Mockito.mock(com.bone.claim.application.ClaimSignApplicationService.class),
             itemRepo,
             policyPort,
             tenantPort,

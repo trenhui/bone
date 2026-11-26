@@ -1,0 +1,17 @@
+{
+  "change": "claim-secure-signing",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "675917e4f5c800a66e5d1659c453d7d057bfd83d7f9a798a51d5d2e3096787e6",
+  "files": [
+    { "path": "openspec/changes/claim-secure-signing/proposal.md", "sha256": "46f087383c5762fef91dad5652aadad53f673823af974491d533adfa06464c2c" },
+    { "path": "openspec/changes/claim-secure-signing/design.md", "sha256": "d1e5cd5edcf85722260f1fdcb7f96fb7c64253a5dcda1c1afdf9c346c834c03e" },
+    { "path": "openspec/changes/claim-secure-signing/tasks.md", "sha256": "d14d9cb3f4f29f5a9d504a5bb01ede76f5c5f31b48c1b9b189a42bbad57b8043" },
+    { "path": "openspec/changes/claim-secure-signing/.openspec.yaml", "sha256": "3c3c72cd1a100807c59ef8347538654b4d2d22269f59561c985b01cb44c39491" },
+    { "path": "openspec/changes/claim-secure-signing/specs/claim/secure-signing/spec.md", "sha256": "433de87ed6c59bb2c88096659d9996e4dbe3b533a6634ad167256ab706c269aa" },
+    { "path": "openspec/changes/claim-secure-signing/specs/claim/web-response-contract/spec.md", "sha256": "25e8308d879f8e361d13040e420ca818b1365ec62ac64807228410ec5fe07e28" }
+  ]
+}

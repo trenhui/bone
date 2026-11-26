@@ -54,6 +54,7 @@ const BlindLabelWorkbenchPage = lazy(() => import('./pages/BlindLabelWorkbenchPa
 const WorkbenchPage = lazy(() => import('./pages/WorkbenchPage').then((m) => ({ default: m.WorkbenchPage })));
 const Case360Page = lazy(() => import('./pages/Case360Page').then((m) => ({ default: m.Case360Page })));
 const CaseQueryPage = lazy(() => import('./pages/CaseQueryPage').then((m) => ({ default: m.CaseQueryPage })));
+const CaseSignPage = lazy(() => import('./pages/CaseSignPage').then((m) => ({ default: m.CaseSignPage })));
 
 /**
  * 智能理赔 · 路由与页面名的**唯一真源**（单导航架构的前端侧锚点）。
@@ -154,6 +155,8 @@ export const CLAIM_ROUTES: ClaimRoute[] = [
   // 直接输 hash 绕过侧栏时依然 fail-closed，不能因为进了菜单就去掉鉴权。
   { path: '/ai-governance', name: 'AI 治理', icon: <SafetyCertificateOutlined />, element: <AiGovernancePage /> },
   { path: '/analytics', name: '运营分析看板', icon: <DashboardOutlined />, element: <AnalyticsDashboardPage /> },
+  // 案件签收：线上自动签收与线下人工签收（IAM 菜单 order_no=20，接在治理组之后，避免重排既有菜单）。
+  { path: '/sign', name: '案件签收', icon: <SafetyCertificateOutlined />, element: <CaseSignPage /> },
   // 盲标工作台：防反馈环金标准闸门的标注面，hidden 路由，从核赔工作台「盲标」深链进入（同 /ai-governance 形态）。
   { path: '/blind-labels', name: '盲标工作台', icon: <FormOutlined />, element: <BlindLabelWorkbenchPage />, hidden: true },
   // My Home：登录后默认落点。hidden 且 isDefault —— 不占菜单，但空 hash / 未知 hash 都落到这里。

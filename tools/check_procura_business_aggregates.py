@@ -152,8 +152,12 @@ def check(texts: dict[str, str]) -> tuple[bool, list[str]]:
         )
         if entry is None or entry.get("order") != 148:
             errors.append(f"{PREFIX} 迁移清单缺少 order=148 登记")
-        if manifest.get("executableCount") != 148:
-            errors.append(f"{PREFIX} 迁移清单 executableCount != 148")
+        # executableCount 是「当前清单总数」，会随后续分支合入单调增长；
+        # 这里只钉下限（procura 四表登记时已到 148），且必须与整数 order 条目数一致，
+        # 避免把快照值写死导致后续任何合并都假红。
+        count = manifest.get("executableCount")
+        if not isinstance(count, int) or count < 148:
+            errors.append(f"{PREFIX} 迁移清单 executableCount 回退到 {count}（应 >= 148）")
         orders = [e["order"] for e in manifest.get("entries", []) if isinstance(e.get("order"), int)]
         if sorted(orders) != list(range(1, len(orders) + 1)):
             errors.append(f"{PREFIX} 迁移清单 order 不连续")

@@ -17,6 +17,10 @@ const boneAliases: Record<string, string> = {
   '@bone/shared-components': pkg('packages/shared-components/src/index.ts'),
 }
 
+// API 代理目标可外置：默认仍走共享网关 8888；独立联调时设 BONE_API_PROXY_TARGET
+// 指向自带新后端的网关（如 18888），避免为了验收一个分支功能去动共享实例。
+const apiProxyTarget = process.env.BONE_API_PROXY_TARGET || 'http://localhost:8888'
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -38,7 +42,7 @@ export default defineConfig({
     cors: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8888',
+        target: apiProxyTarget,
         changeOrigin: true,
       },
     },

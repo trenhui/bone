@@ -1,0 +1,2576 @@
+# comet-execution: managed-run
+change_id: f0afc9a4-c234-48b3-bc6f-954c39602afb
+workflow: full
+language: zh-CN
+phase: verify
+context_compression: off
+build_mode: direct
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: standard
+isolation: worktree
+verify_mode: null
+auto_transition: true
+base_ref: c9e868365c5e67632f90fde0baab8d34d5cc12be
+design_doc: openspec/changes/claim-sign-auto-case/design.md
+plan: docs/superpowers/plans/claim-sign-auto-case.md
+verify_result: pending
+verify_failures: 1
+verification_report: docs/superpowers/reports/2026-11-26-claim-sign-auto-case-verify.md
+branch_status: pending
+created_at: 2026-11-26
+verified_at: null
+archive_confirmation: null
+archived: false
+bound_branch: comet/claim-sign-auto-case
+direct_override: true
+handoff_context: openspec/changes/claim-sign-auto-case/.comet/handoff/design-context.json
+handoff_hash: ad5bb8f4638607d9c952c028bda35fc5251b0398541346e629f8b8adaf4c03c0
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: c27128b78e2169fe2f9ec3bb54732de298048d4ecf43a26cee914b117bf61f7d
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: claim-sign-auto-case
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    definitionHashes:
+      '["comet-classic-full","1"]': 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    initialStateHash: b3c50a55307f8062bdcda4662c1de1fe5be9aa19e05c46fef9aed966c83c8963
+    input:
+      change: claim-sign-auto-case
+      changeDir: openspec/changes/claim-sign-auto-case
+      workspaceBaseline:
+        ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+    state:
+      archiveConfirmation: null
+      archived: false
+      autoTransition: true
+      baseRef: c9e868365c5e67632f90fde0baab8d34d5cc12be
+      boundBranch: comet/claim-sign-auto-case
+      branchStatus: pending
+      buildMode: direct
+      buildPause: null
+      checkEpoch: 5
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-26
+      designDoc: openspec/changes/claim-sign-auto-case/design.md
+      directOverride: true
+      handoffContext: openspec/changes/claim-sign-auto-case/.comet/handoff/design-context.json
+      handoffHash: ad5bb8f4638607d9c952c028bda35fc5251b0398541346e629f8b8adaf4c03c0
+      isolation: worktree
+      language: zh-CN
+      phase: verify
+      plan: docs/superpowers/plans/claim-sign-auto-case.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-26-claim-sign-auto-case-verify.md
+      verifiedAt: null
+      verifyFailures: 1
+      verifyMode: null
+      verifyResult: pending
+      workflow: full
+    status: running
+    sequence: 28
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-3b18c2afdf694ed70c5179b337e988524d5daf720237b116f3f052986d9c91fd
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:1
+        input:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: 02fb8a270a1e125456eadef24122d9b7f4c44156ec57999fe67b3a1201debd36
+        outcome:
+          actionId: claim-sign-auto-case:1
+          attempt: 1
+          claimToken: portable-3b18c2afdf694ed70c5179b337e988524d5daf720237b116f3f052986d9c91fd
+          inputHash: 02fb8a270a1e125456eadef24122d9b7f4c44156ec57999fe67b3a1201debd36
+          outcomeId: claim-sign-auto-case-open-20261126-02
+          output:
+            approvalHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+            change: claim-sign-auto-case
+            event: open-complete
+          status: succeeded
+          summary: Open 产物已完成：proposal/specs/design/tasks 四类产物通过 artifacts 校验，用户已确认继续
+        protocolVersion: 1
+        receipts:
+          - hash: 96240758383dbbb8d5f60b99e6ddaec62dc01a245fc0ca090a0a5dae62d633df
+            outcomeId: claim-sign-auto-case-open-20261126-02
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-fb5025d5cbd2ef5b31d802cfae51e8a58c818163eb001a860761dc83aa4b7363
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:4
+        input:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: 730068a5b162e73ebda63a086112b3c11f912a87496e51e5e8b581443b63d9ad
+        outcome:
+          actionId: claim-sign-auto-case:4
+          attempt: 1
+          claimToken: portable-fb5025d5cbd2ef5b31d802cfae51e8a58c818163eb001a860761dc83aa4b7363
+          inputHash: 730068a5b162e73ebda63a086112b3c11f912a87496e51e5e8b581443b63d9ad
+          outcomeId: claim-sign-auto-case-open-revalidate-20261126-01
+          output:
+            contentHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+          status: succeeded
+          summary: Open 产物重校验通过，内容与批准哈希一致
+        protocolVersion: 1
+        receipts:
+          - hash: af00d0d087126a8684e63ec42c9254c4e25a4056e5b38131a3f4b9935bfb1479
+            outcomeId: claim-sign-auto-case-open-revalidate-20261126-01
+        reconciliations: []
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-2dda9bf7eaa2a381aa577e3904573507ce0e137643bb11cc26f7947521f552fb
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:5
+        input:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: 86438593d316ec17374527c9a1ffd64770b5464958b317cc2fd251041d269bc7
+        outcome:
+          actionId: claim-sign-auto-case:5
+          attempt: 1
+          claimToken: portable-2dda9bf7eaa2a381aa577e3904573507ce0e137643bb11cc26f7947521f552fb
+          inputHash: 86438593d316ec17374527c9a1ffd64770b5464958b317cc2fd251041d269bc7
+          outcomeId: claim-sign-auto-case-design-handoff-20261126-01
+          output:
+            handoffContext: openspec/changes/claim-sign-auto-case/.comet/handoff/design-context.json
+            handoffHash: ad5bb8f4638607d9c952c028bda35fc5251b0398541346e629f8b8adaf4c03c0
+            proposal: 签收确认后自动建案：订阅 SignStatusChangedEvent(FINISHED) AFTER_COMMIT 执行；扩展明细表 10
+              列承载建案要素；明细级 business_key 幂等；自动化流水线
+              accept→allocateToPreExam→startPreExam(automated)
+              失败降级人工；实名明文落主表（用户裁决，偏离 PIPL）；plan_id=0、占位费用明细沿用既有口径。无 Spec Patch。
+          status: succeeded
+          summary: Design handoff：基于已批准 Open 产物生成设计上下文包
+        protocolVersion: 1
+        receipts:
+          - hash: 55c7d0517b715a017a4e740dcfc6e7c6a82437f4e3dd157306d4336b43ded49e
+            outcomeId: claim-sign-auto-case-design-handoff-20261126-01
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-b630fcc4c0fb278637b71a9b82baf210be17776b3a40cbfd105ffd04af2c1923
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:7
+        input:
+          activation:
+            expectedRevision: 10
+            fromPhase: design
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: a0e743dde0469a5a03fedebe9fb8143a06d38c03bed256e8e0ef95e872f95ceb
+        outcome:
+          actionId: claim-sign-auto-case:7
+          attempt: 1
+          claimToken: portable-b630fcc4c0fb278637b71a9b82baf210be17776b3a40cbfd105ffd04af2c1923
+          inputHash: a0e743dde0469a5a03fedebe9fb8143a06d38c03bed256e8e0ef95e872f95ceb
+          outcomeId: claim-sign-auto-case-design-handoff-20261126-03
+          output:
+            handoffContext: openspec/changes/claim-sign-auto-case/.comet/handoff/design-context.json
+            handoffHash: ad5bb8f4638607d9c952c028bda35fc5251b0398541346e629f8b8adaf4c03c0
+            proposal: 签收确认后自动建案：订阅事件 AFTER_COMMIT 建案；扩展明细表 10 列；明细 business_key
+              幂等；自动化流水线失败降级人工；实名明文落主表（用户裁决偏离 PIPL）；plan_id=0 占位费用沿用既有口径。无 Spec
+              Patch。
+          status: succeeded
+          summary: Design handoff 重提交，来源证据已刷新
+        protocolVersion: 1
+        receipts:
+          - hash: 66ef66c8abe6d47ae2c45644bd26e63fe1aa3cb3d0251f9138e9fbf488901b65
+            outcomeId: claim-sign-auto-case-design-handoff-20261126-03
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-02387f09c849801a901b0d4f0488a42c26e0c4c7c616a5363d66db0359447e8d
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:9
+        input:
+          activation:
+            expectedRevision: 14
+            fromPhase: design
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: f44d982141460130e35166c5ef3ff289acecd87861b280853aaa4b3b7a728475
+        outcome:
+          actionId: claim-sign-auto-case:9
+          attempt: 1
+          claimToken: portable-02387f09c849801a901b0d4f0488a42c26e0c4c7c616a5363d66db0359447e8d
+          inputHash: f44d982141460130e35166c5ef3ff289acecd87861b280853aaa4b3b7a728475
+          outcomeId: 356fc325-41c2-4e67-a11b-8c83ba43c21f
+          output:
+            handoffContext: openspec/changes/claim-sign-auto-case/.comet/handoff/design-context.json
+            handoffHash: ad5bb8f4638607d9c952c028bda35fc5251b0398541346e629f8b8adaf4c03c0
+            proposal: 签收确认后自动建案：订阅 SignStatusChangedEvent(FINISHED) 在 AFTER_COMMIT 执行；扩展明细表
+              10 列承载建案要素，claim_id 非空引用已有案件、为空则携带要素建案；明细级 business_key 幂等 +
+              uk_tenant_idem 兜底；自动化流水线
+              accept→allocateToPreExam→startPreExam(automated)，失败写
+              AUTO_CASE_FAILED 轨迹停在人工状态；实名明文落主表（用户裁决，偏离 PIPL
+              仅限本地开发库）；plan_id=0、占位费用明细金额0 沿用既有口径。无 Spec Patch。
+            requirementsEvidence:
+              contentHash: fd3ca6c38f91a794aff7b61f8f55670c88653e7bc8376cd4f5db8e8db09c4176
+              ref: openspec/changes/claim-sign-auto-case
+            sourceEvidence:
+              contentHash: 703f2c40f1dc5fa8655b6f6588ac7828a60128a6016f34539fb8c8c5a0a6c7e6
+              ref: openspec/changes/claim-sign-auto-case
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1a68ba5ee7617d6a91b21d7e4fa4a9958fc9b8380fa163407203ef920eded542
+            outcomeId: 356fc325-41c2-4e67-a11b-8c83ba43c21f
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-7f69a7019f37f912bc8a09f838d1c29eef52ec0045629a323c35c072f1505362
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:11
+        input:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: 4ec9bb86a9e87f4e7d2b26adbe7b32df13bf94a831d5a9ad081646b1011c242c
+        outcome:
+          actionId: claim-sign-auto-case:11
+          attempt: 1
+          claimToken: portable-7f69a7019f37f912bc8a09f838d1c29eef52ec0045629a323c35c072f1505362
+          inputHash: 4ec9bb86a9e87f4e7d2b26adbe7b32df13bf94a831d5a9ad081646b1011c242c
+          outcomeId: claim-sign-auto-case-design-document-20261126-01
+          output:
+            approvalHash: 7bab7e8d91869228251cd47a6a9eb45b0bf7c5dec62e2287318f80174993e3bc
+            contentHash: 087c7cdd2f17b08f7fb27614be8d26e02a29eb52781648c3e89b824302359f7c
+            designDoc: openspec/changes/claim-sign-auto-case/design.md
+          status: succeeded
+          summary: 正式技术设计文档已完成并带 frontmatter
+        protocolVersion: 1
+        receipts:
+          - hash: 4c16e09c0948bfc48fc9e7ca18ec7e869d6c37acb0beba7c797516b3ac19b731
+            outcomeId: claim-sign-auto-case-design-document-20261126-01
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-74bf6de0d2289a62cc222d76a35ff04a285f7894cb28e167d5f92d2e8249eab7
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:13
+        input:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: 2bdea7ace4bc05af305df67cec152f51d2ca752feb20e3c153ff2aad4a22c95d
+        outcome:
+          actionId: claim-sign-auto-case:13
+          attempt: 1
+          claimToken: portable-74bf6de0d2289a62cc222d76a35ff04a285f7894cb28e167d5f92d2e8249eab7
+          inputHash: 2bdea7ace4bc05af305df67cec152f51d2ca752feb20e3c153ff2aad4a22c95d
+          outcomeId: a650dd1f-f2e0-4ea4-ae06-3168e9d8183b
+          output:
+            boundBranch: comet/claim-sign-auto-case
+            buildMode: direct
+            directOverride: true
+            isolation: worktree
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c73b204d63d09cbcf8a58981b91043683592a7c12eec7682e5977639fa0f1a83
+            outcomeId: a650dd1f-f2e0-4ea4-ae06-3168e9d8183b
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-96884596b0a28c72cffd05bb4c8e4bed4240b1c2c85407d23b255ac8c5978e2c
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:15
+        input:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: 08c21cce66b03e1213abce629b143cbc74d0e93d6de333240c3860d9c2add9ff
+        outcome:
+          actionId: claim-sign-auto-case:15
+          attempt: 1
+          claimToken: portable-96884596b0a28c72cffd05bb4c8e4bed4240b1c2c85407d23b255ac8c5978e2c
+          inputHash: 08c21cce66b03e1213abce629b143cbc74d0e93d6de333240c3860d9c2add9ff
+          outcomeId: 0a75bc8d-1f6c-40c9-b355-a0429eb01f17
+          output:
+            designEvidence:
+              contentHash: 087c7cdd2f17b08f7fb27614be8d26e02a29eb52781648c3e89b824302359f7c
+              ref: openspec/changes/claim-sign-auto-case/design.md
+            plan: docs/superpowers/plans/claim-sign-auto-case.md
+            planEvidence:
+              contentHash: c8cf2e82e7d42d3f7d27e4f28083899130c2143fc2f445cd43e13ffcfc1bd25c
+              ref: docs/superpowers/plans/claim-sign-auto-case.md
+            taskRevision: d13dd0c8f3dd1853b06d4b16674b074f8d5a7d46b98c1ec75aa1b39634351df0
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 5968c8fc2840e379a13804a8b7f8f5216b51e4e723be601c6ac5460972485bb8
+            outcomeId: 0a75bc8d-1f6c-40c9-b355-a0429eb01f17
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/claim-sign-auto-case:17/1
+          token: portable-bdd68df0406454b7c4168d4a24f16cae15688a130dd4200ca88650e17c9ea136
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:17
+        input:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: 23b84814abc19941a6e129a86a79be2f40e0aa2219eac777732eefe0e1f6d140
+        outcome:
+          actionId: claim-sign-auto-case:17
+          attempt: 1
+          claimToken: portable-bdd68df0406454b7c4168d4a24f16cae15688a130dd4200ca88650e17c9ea136
+          inputHash: 23b84814abc19941a6e129a86a79be2f40e0aa2219eac777732eefe0e1f6d140
+          outcomeId: 7dd33fcc-a0c9-4694-a6ad-7cbfe74edf2f
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 149615de9f69b682348c9924f741f7ab339413ccb13a398b44786d1e684d7c85
+            outcomeId: 7dd33fcc-a0c9-4694-a6ad-7cbfe74edf2f
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-800785973b8dad2c41a35ed67cc53d1c1e58a128e8b2ad1f1cefc683f7c2491b
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:18
+        input:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: c87f6437f1e15c93624e3371f59d7c031ecb012c512c58803db65335c102b8a4
+        outcome:
+          actionId: claim-sign-auto-case:18
+          attempt: 1
+          claimToken: portable-800785973b8dad2c41a35ed67cc53d1c1e58a128e8b2ad1f1cefc683f7c2491b
+          inputHash: c87f6437f1e15c93624e3371f59d7c031ecb012c512c58803db65335c102b8a4
+          outcomeId: 843cf70531296dfd29db931a02f58974733f8189f0508f711d6771da4e6d684a
+          output:
+            argv:
+              - bash
+              - docs/superpowers/reports/2026-11-26-claim-sign-auto-case-build-check.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 2d63a6147d5cb16458721c8c8ea13e7c50580e616988937d1b5de8ab0b670426
+            cwd: .
+            environment: 0109f5488ada0879d1d505802a5dddcf3c5e0ae4b1c0720f13df6f0e559d1354
+            exitCode: 0
+            inputAfter: 1001e828f5e930903a4d81e8d21a67b08362481fe059056bfe9a9e05cf6b1129
+            inputBefore: 1001e828f5e930903a4d81e8d21a67b08362481fe059056bfe9a9e05cf6b1129
+            manifestHash: fdf5b38e5f15e8855dbedb5b1ba268d46d81d6438b3b8f78f724f8457fbbc287
+            manifestRef: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/c1124ca3-c7ee-44b5-a2e8-98154c80c610.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/3eb662af-ebcf-44ac-8c91-f5d9759d1c5a.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 63fa1e26bb911cd91dd5e4ee5d5d9be0aed4aa20aabd6a61c82276e4076d9f6b
+            outcomeId: 843cf70531296dfd29db931a02f58974733f8189f0508f711d6771da4e6d684a
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-56a871cde6a20cd6201a1b6881a7aa6768cca1fd8a83a494bcfd4dd3779f20c4
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:20
+        input:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: b2ab32b592f245001aa7b80df24e923695dd764c820be75ee6fad6c7a942bc31
+        outcome:
+          actionId: claim-sign-auto-case:20
+          attempt: 2
+          claimToken: portable-56a871cde6a20cd6201a1b6881a7aa6768cca1fd8a83a494bcfd4dd3779f20c4
+          inputHash: b2ab32b592f245001aa7b80df24e923695dd764c820be75ee6fad6c7a942bc31
+          outcomeId: 2914e827-e423-4698-afce-d2073889f69b
+          output:
+            event: verify-fail
+            reason: 独立最终集成审查发现 4 项 IMPORTANT：失败轨迹缺环节与异常原因；并发幂等兜底遗留孤儿 ClaimReport 行；claim-ref
+              businessKey 唯一键破坏跨批次重复引用；回填脚本被 gitignore 且存量 case_status 为 NULL
+              导致人工态误报。另有失败轨迹读取边界与姓名要素校验 WARNING。回 Build 修复后重验。
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 68c1e7e6519d8ffad7a93f0c0318ac2cc4a31f0682da7eb964ac24f53db3a0c6
+            outcomeId: 2914e827-e423-4698-afce-d2073889f69b
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 执行 comet state transition verify-fail 时命令退出码 70，stderr 为 Classic SDK
+                has a claimed Action with an unknown outcome；恢复检查
+                /tmp/claim-auto-verifyrecover.json 显示该 Action
+                record.status=missing、command=null、无检查日志与清单，确认领取后未执行任何 Verify
+                工作、无外部副作用
+            resolution: not-executed
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-09a95dba5a837d4315abad730ca4ab947f03f314060a51ba7906befb79f8f39e
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:21
+        input:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: 5363fdf3443613d3cc185d42b6535ba4fdf31cfcb2ff0b8222e020febfced332
+        outcome:
+          actionId: claim-sign-auto-case:21
+          attempt: 2
+          claimToken: portable-09a95dba5a837d4315abad730ca4ab947f03f314060a51ba7906befb79f8f39e
+          inputHash: 5363fdf3443613d3cc185d42b6535ba4fdf31cfcb2ff0b8222e020febfced332
+          outcomeId: 16a4698d-b4e4-496f-86ad-392946cf6765
+          output:
+            designEvidence:
+              contentHash: 087c7cdd2f17b08f7fb27614be8d26e02a29eb52781648c3e89b824302359f7c
+              ref: openspec/changes/claim-sign-auto-case/design.md
+            plan: docs/superpowers/plans/claim-sign-auto-case.md
+            planEvidence:
+              contentHash: c8cf2e82e7d42d3f7d27e4f28083899130c2143fc2f445cd43e13ffcfc1bd25c
+              ref: docs/superpowers/plans/claim-sign-auto-case.md
+            taskRevision: d13dd0c8f3dd1853b06d4b16674b074f8d5a7d46b98c1ec75aa1b39634351df0
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 06076f7c855158bcb20dd9ba247a517daa876ba069af0d6788e9ff04a60e340c
+            outcomeId: 16a4698d-b4e4-496f-86ad-392946cf6765
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: submit-plan 命令退出码70且报 claimed Action with unknown outcome；恢复检查显示
+                record.status=missing、command=null、无计划证据文件，确认领取后未执行任何提交工作、无外部副作用
+            resolution: not-executed
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/claim-sign-auto-case:23/1
+          token: portable-81d11e4b02a9739bc75e7c6b09f30a8e18518836dfe422c24d7fada8af27bc6e
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:23
+        input:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: 5363fdf3443613d3cc185d42b6535ba4fdf31cfcb2ff0b8222e020febfced332
+        outcome:
+          actionId: claim-sign-auto-case:23
+          attempt: 1
+          claimToken: portable-81d11e4b02a9739bc75e7c6b09f30a8e18518836dfe422c24d7fada8af27bc6e
+          inputHash: 5363fdf3443613d3cc185d42b6535ba4fdf31cfcb2ff0b8222e020febfced332
+          outcomeId: 47ac0701-0caf-43b7-bf14-f30de46f94aa
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: df264b8cf7a1a3f1eef8733126603d9a04534d7f13c5b9e44f34d16c8f4db910
+            outcomeId: 47ac0701-0caf-43b7-bf14-f30de46f94aa
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-fba46acf46d54926f6e7a2d681b79ea033c6a47c8eca34f6b2d14587b94e62df
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:24
+        input:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: 5363fdf3443613d3cc185d42b6535ba4fdf31cfcb2ff0b8222e020febfced332
+        outcome:
+          actionId: claim-sign-auto-case:24
+          attempt: 1
+          claimToken: portable-fba46acf46d54926f6e7a2d681b79ea033c6a47c8eca34f6b2d14587b94e62df
+          inputHash: 5363fdf3443613d3cc185d42b6535ba4fdf31cfcb2ff0b8222e020febfced332
+          outcomeId: 8aa21dbe36e4a88d57a6db1e05d2f3c8a2a65c8cd8fa7968470d294c36b9a402
+          output:
+            argv:
+              - bash
+              - docs/superpowers/reports/2026-11-26-claim-sign-auto-case-build-check.sh
+            changedDuringExecution: []
+            checkEpoch: 4
+            contentHash: 48a66d50ea519f2c852a26bc4bb4814465b2288b85b0107c52a3d25f37c66bc1
+            cwd: .
+            environment: 0109f5488ada0879d1d505802a5dddcf3c5e0ae4b1c0720f13df6f0e559d1354
+            exitCode: 0
+            inputAfter: 5542c1fe6c46e6aa28f15a0dcdc6d700cc9536f6c9c7ffbde726f98bba70e31b
+            inputBefore: 5542c1fe6c46e6aa28f15a0dcdc6d700cc9536f6c9c7ffbde726f98bba70e31b
+            manifestHash: 58d1d8d0c2bc14d529d8df16a7cff204a37a6b508c6681fa22c1b62bb8121ec0
+            manifestRef: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/4c4442dc-8acf-4f7f-9d52-7d88aa83bb2e.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/91d9944e-e0c5-48eb-9757-06d9f7d03889.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f11f88f0c51468c5f381662509141b0023e3e4a2261adb1fd03d6ad3e1c88739
+            outcomeId: 8aa21dbe36e4a88d57a6db1e05d2f3c8a2a65c8cd8fa7968470d294c36b9a402
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-guard
+          token: portable-a152f37cfbda46093294697c71d177df2c367691ae2c3c41864d2a01638bed55
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:26
+        input:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: 359386986f27ec7991101abb47b5a4b650369794c0c1a45f34a1a1201c95cee4
+        outcome:
+          actionId: claim-sign-auto-case:26
+          attempt: 2
+          claimToken: portable-a152f37cfbda46093294697c71d177df2c367691ae2c3c41864d2a01638bed55
+          inputHash: 359386986f27ec7991101abb47b5a4b650369794c0c1a45f34a1a1201c95cee4
+          outcomeId: 886c2d95-2b9f-4d7a-bee5-1bc8a591bc19
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-26-claim-sign-auto-case-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 077b2a67647e68ebd3cc3b0299b76b6688fa85b6dfc4256066e5892e241b6b7a
+            outcomeId: 886c2d95-2b9f-4d7a-bee5-1bc8a591bc19
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: guard verify --apply 退出码1并报 Classic SDK has a running Action；恢复检查显示该
+                Action
+                record.status=missing、command=null、无检查日志与清单，确认领取后未执行任何验证工作、无外部副作用
+            resolution: not-executed
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-727b5543079027ee43e95df9ef9db3ac4147834c0c77683a9ccf27481ee9f3f6
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-sign-auto-case:28
+        input:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs: {}
+        inputHash: 467c6f65d447e6c0c5a26901272a60e08464decb0d0b02833ebe25e1d3c5689d
+        protocolVersion: 1
+        reason: Portable recovery requires reconciliation of external execution
+        receipts: []
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-sign-auto-case
+        status: unknown
+        stepId: full.verify.check
+        type: call_tool
+    commands:
+      - id: 6f280d7db34a9bcd48a0eeef43682fc71e09285664c6d47385415f7f9c5198e6
+        name: revise-design
+        inputHash: 1e306398e8ef1b55aff26e460caf48bcb138d19c27c0b9cc8a4403fd380edfcc
+        actionId: claim-sign-auto-case:7
+      - id: bdb692e17e5b7732bcda5eef86d8a23206b1ccbfbdb16310181c43f694286bc3
+        name: revise-design
+        inputHash: a4449a5b12d64212db2a02ce93e178f1958898fb892db804928ca0736bf33fd8
+        actionId: claim-sign-auto-case:9
+    actionContexts:
+      claim-sign-auto-case:1:
+        results: {}
+        sequence: 1
+      claim-sign-auto-case:11:
+        results: {}
+        sequence: 11
+      claim-sign-auto-case:13:
+        results: {}
+        sequence: 13
+      claim-sign-auto-case:15:
+        results: {}
+        sequence: 15
+      claim-sign-auto-case:17:
+        results: {}
+        sequence: 17
+      claim-sign-auto-case:18:
+        results: {}
+        sequence: 18
+      claim-sign-auto-case:20:
+        results: {}
+        sequence: 20
+      claim-sign-auto-case:21:
+        results: {}
+        sequence: 21
+      claim-sign-auto-case:23:
+        results: {}
+        sequence: 23
+      claim-sign-auto-case:24:
+        results: {}
+        sequence: 24
+      claim-sign-auto-case:26:
+        results: {}
+        sequence: 26
+      claim-sign-auto-case:28:
+        results: {}
+        sequence: 28
+      claim-sign-auto-case:4:
+        results: {}
+        sequence: 4
+      claim-sign-auto-case:5:
+        results: {}
+        sequence: 5
+      claim-sign-auto-case:7:
+        results: {}
+        sequence: 7
+      claim-sign-auto-case:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: claim-sign-auto-case:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs:
+            full.open:
+              approvalHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+              change: claim-sign-auto-case
+              event: open-complete
+            full.open.evidence:
+              contentHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+              ref: openspec/changes/claim-sign-auto-case
+        proposalHash: 6eb647131aa0a70d8db95f473bc865b080fa04fc7f16ee902476a9e79ea3b7af
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: claim-sign-auto-case-open-approved-20261126-01
+          choice: approved
+          proposalHash: 6eb647131aa0a70d8db95f473bc865b080fa04fc7f16ee902476a9e79ea3b7af
+      - id: claim-sign-auto-case:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: cancelled
+        proposal:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-sign-auto-case/.comet/handoff/design-context.json
+              handoffHash: ad5bb8f4638607d9c952c028bda35fc5251b0398541346e629f8b8adaf4c03c0
+              proposal: 签收确认后自动建案：订阅 SignStatusChangedEvent(FINISHED) AFTER_COMMIT 执行；扩展明细表 10
+                列承载建案要素；明细级 business_key 幂等；自动化流水线
+                accept→allocateToPreExam→startPreExam(automated)
+                失败降级人工；实名明文落主表（用户裁决，偏离 PIPL）；plan_id=0、占位费用明细沿用既有口径。无 Spec
+                Patch。
+        proposalHash: db0585cbcac053496a4c695eababafd097b51fea854ae5566eda91e6a8659249
+        choices:
+          - approved
+          - rejected
+        results: {}
+      - id: claim-sign-auto-case:8
+        stepId: full.design.confirm
+        sequence: 8
+        status: cancelled
+        proposal:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-sign-auto-case/.comet/handoff/design-context.json
+              handoffHash: ad5bb8f4638607d9c952c028bda35fc5251b0398541346e629f8b8adaf4c03c0
+              proposal: 签收确认后自动建案：订阅事件 AFTER_COMMIT 建案；扩展明细表 10 列；明细 business_key
+                幂等；自动化流水线失败降级人工；实名明文落主表（用户裁决偏离 PIPL）；plan_id=0 占位费用沿用既有口径。无 Spec
+                Patch。
+        proposalHash: 972638fbe997071e6888a28f35936b2be086c46fc6c09354edfade60b633a7a3
+        choices:
+          - approved
+          - rejected
+        results: {}
+      - id: claim-sign-auto-case:10
+        stepId: full.design.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-sign-auto-case/.comet/handoff/design-context.json
+              handoffHash: ad5bb8f4638607d9c952c028bda35fc5251b0398541346e629f8b8adaf4c03c0
+              proposal: 签收确认后自动建案：订阅 SignStatusChangedEvent(FINISHED) 在 AFTER_COMMIT 执行；扩展明细表
+                10 列承载建案要素，claim_id 非空引用已有案件、为空则携带要素建案；明细级 business_key 幂等 +
+                uk_tenant_idem 兜底；自动化流水线
+                accept→allocateToPreExam→startPreExam(automated)，失败写
+                AUTO_CASE_FAILED 轨迹停在人工状态；实名明文落主表（用户裁决，偏离 PIPL
+                仅限本地开发库）；plan_id=0、占位费用明细金额0 沿用既有口径。无 Spec Patch。
+              requirementsEvidence:
+                contentHash: fd3ca6c38f91a794aff7b61f8f55670c88653e7bc8376cd4f5db8e8db09c4176
+                ref: openspec/changes/claim-sign-auto-case
+              sourceEvidence:
+                contentHash: 703f2c40f1dc5fa8655b6f6588ac7828a60128a6016f34539fb8c8c5a0a6c7e6
+                ref: openspec/changes/claim-sign-auto-case
+        proposalHash: 7bab7e8d91869228251cd47a6a9eb45b0bf7c5dec62e2287318f80174993e3bc
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-7bab7e8d91869228251cd47a6a9eb45b0bf7c5dec62e2287318f80174993e3bc-approved
+          choice: approved
+          proposalHash: 7bab7e8d91869228251cd47a6a9eb45b0bf7c5dec62e2287318f80174993e3bc
+      - id: claim-sign-auto-case:14
+        stepId: full.build.confirm
+        sequence: 14
+        status: resolved
+        proposal:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs:
+            full.build.configure:
+              boundBranch: comet/claim-sign-auto-case
+              buildMode: direct
+              directOverride: true
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: f43266f750e0cfdcc159d5d141ff88df111f2216f0754c1e16e4321ff7001f20
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-build-f43266f750e0cfdcc159d5d141ff88df111f2216f0754c1e16e4321ff7001f20-approved
+          choice: approved
+          proposalHash: f43266f750e0cfdcc159d5d141ff88df111f2216f0754c1e16e4321ff7001f20
+    evidenceWaits:
+      - id: claim-sign-auto-case:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/claim-sign-auto-case
+          contentHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+          submissionId: claim-sign-auto-case-open-evidence-20261126-01
+      - id: claim-sign-auto-case:12
+        stepId: full.design.evidence
+        sequence: 12
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/claim-sign-auto-case/design.md
+          contentHash: 087c7cdd2f17b08f7fb27614be8d26e02a29eb52781648c3e89b824302359f7c
+          submissionId: claim-sign-auto-case-design-evidence-20261126-01
+      - id: claim-sign-auto-case:16
+        stepId: full.build.plan.evidence
+        sequence: 16
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/claim-sign-auto-case.md
+          contentHash: c8cf2e82e7d42d3f7d27e4f28083899130c2143fc2f445cd43e13ffcfc1bd25c
+          submissionId: 24c3e520-a39f-4dbb-a6ac-4eaee1ea201a
+      - id: claim-sign-auto-case:19
+        stepId: full.build.check.evidence
+        sequence: 19
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/3eb662af-ebcf-44ac-8c91-f5d9759d1c5a.log
+          contentHash: 2d63a6147d5cb16458721c8c8ea13e7c50580e616988937d1b5de8ab0b670426
+          submissionId: c4fb005e-97c9-43a1-ba24-9d5fb63be63d
+      - id: claim-sign-auto-case:22
+        stepId: full.build.plan.evidence
+        sequence: 22
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/claim-sign-auto-case.md
+          contentHash: c8cf2e82e7d42d3f7d27e4f28083899130c2143fc2f445cd43e13ffcfc1bd25c
+          submissionId: b3a5a442-b79c-4f6e-8ac3-b504d442033c
+      - id: claim-sign-auto-case:25
+        stepId: full.build.check.evidence
+        sequence: 25
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/91d9944e-e0c5-48eb-9757-06d9f7d03889.log
+          contentHash: 48a66d50ea519f2c852a26bc4bb4814465b2288b85b0107c52a3d25f37c66bc1
+          submissionId: 66f65d86-2e14-4e74-aef7-0da7b137c2b2
+      - id: claim-sign-auto-case:27
+        stepId: full.verify.report.evidence
+        sequence: 27
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-26-claim-sign-auto-case-verify.md
+          contentHash: 8c4ef41f3c3feaa353ed1cdc989795c191e88d7b737a5aa4ba6784785f664cc7
+          submissionId: 14eb16d5-cd90-43fa-ab45-fc771d99f0bd
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 55
+  sourceHash: 5fff2f5a9b7efe20b0ac3cdb34453855136d99d5f5d811c61601cfec231fc0b4
+  pool:
+    version: 3
+    values:
+      - approvalHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+        change: claim-sign-auto-case
+        event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs:
+            full.open:
+              approvalHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+              change: claim-sign-auto-case
+              event: open-complete
+            full.open.evidence:
+              contentHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+              ref: openspec/changes/claim-sign-auto-case
+      - contentHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+        ref: openspec/changes/claim-sign-auto-case
+      - contentHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+      - choice: approved
+        proposal:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-sign-auto-case/.comet/handoff/design-context.json
+              handoffHash: ad5bb8f4638607d9c952c028bda35fc5251b0398541346e629f8b8adaf4c03c0
+              proposal: 签收确认后自动建案：订阅 SignStatusChangedEvent(FINISHED) 在 AFTER_COMMIT 执行；扩展明细表
+                10 列承载建案要素，claim_id 非空引用已有案件、为空则携带要素建案；明细级 business_key 幂等 +
+                uk_tenant_idem 兜底；自动化流水线
+                accept→allocateToPreExam→startPreExam(automated)，失败写
+                AUTO_CASE_FAILED 轨迹停在人工状态；实名明文落主表（用户裁决，偏离 PIPL
+                仅限本地开发库）；plan_id=0、占位费用明细金额0 沿用既有口径。无 Spec Patch。
+              requirementsEvidence:
+                contentHash: fd3ca6c38f91a794aff7b61f8f55670c88653e7bc8376cd4f5db8e8db09c4176
+                ref: openspec/changes/claim-sign-auto-case
+              sourceEvidence:
+                contentHash: 703f2c40f1dc5fa8655b6f6588ac7828a60128a6016f34539fb8c8c5a0a6c7e6
+                ref: openspec/changes/claim-sign-auto-case
+      - handoffContext: openspec/changes/claim-sign-auto-case/.comet/handoff/design-context.json
+        handoffHash: ad5bb8f4638607d9c952c028bda35fc5251b0398541346e629f8b8adaf4c03c0
+        proposal: 签收确认后自动建案：订阅 SignStatusChangedEvent(FINISHED) 在 AFTER_COMMIT 执行；扩展明细表
+          10 列承载建案要素，claim_id 非空引用已有案件、为空则携带要素建案；明细级 business_key 幂等 +
+          uk_tenant_idem 兜底；自动化流水线
+          accept→allocateToPreExam→startPreExam(automated)，失败写 AUTO_CASE_FAILED
+          轨迹停在人工状态；实名明文落主表（用户裁决，偏离 PIPL 仅限本地开发库）；plan_id=0、占位费用明细金额0 沿用既有口径。无
+          Spec Patch。
+        requirementsEvidence:
+          contentHash: fd3ca6c38f91a794aff7b61f8f55670c88653e7bc8376cd4f5db8e8db09c4176
+          ref: openspec/changes/claim-sign-auto-case
+        sourceEvidence:
+          contentHash: 703f2c40f1dc5fa8655b6f6588ac7828a60128a6016f34539fb8c8c5a0a6c7e6
+          ref: openspec/changes/claim-sign-auto-case
+      - approvalHash: 7bab7e8d91869228251cd47a6a9eb45b0bf7c5dec62e2287318f80174993e3bc
+        contentHash: 087c7cdd2f17b08f7fb27614be8d26e02a29eb52781648c3e89b824302359f7c
+        designDoc: openspec/changes/claim-sign-auto-case/design.md
+      - contentHash: 087c7cdd2f17b08f7fb27614be8d26e02a29eb52781648c3e89b824302359f7c
+        ref: openspec/changes/claim-sign-auto-case/design.md
+      - boundBranch: comet/claim-sign-auto-case
+        buildMode: direct
+        directOverride: true
+        isolation: worktree
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: claim-sign-auto-case
+            changeDir: openspec/changes/claim-sign-auto-case
+            workspaceBaseline:
+              ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+          outputs:
+            full.build.configure:
+              boundBranch: comet/claim-sign-auto-case
+              buildMode: direct
+              directOverride: true
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 087c7cdd2f17b08f7fb27614be8d26e02a29eb52781648c3e89b824302359f7c
+          ref: openspec/changes/claim-sign-auto-case/design.md
+        plan: docs/superpowers/plans/claim-sign-auto-case.md
+        planEvidence:
+          contentHash: c8cf2e82e7d42d3f7d27e4f28083899130c2143fc2f445cd43e13ffcfc1bd25c
+          ref: docs/superpowers/plans/claim-sign-auto-case.md
+        taskRevision: d13dd0c8f3dd1853b06d4b16674b074f8d5a7d46b98c1ec75aa1b39634351df0
+      - contentHash: c8cf2e82e7d42d3f7d27e4f28083899130c2143fc2f445cd43e13ffcfc1bd25c
+        ref: docs/superpowers/plans/claim-sign-auto-case.md
+      - event: build-complete
+      - argv:
+          - bash
+          - docs/superpowers/reports/2026-11-26-claim-sign-auto-case-build-check.sh
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 2d63a6147d5cb16458721c8c8ea13e7c50580e616988937d1b5de8ab0b670426
+        cwd: .
+        environment: 0109f5488ada0879d1d505802a5dddcf3c5e0ae4b1c0720f13df6f0e559d1354
+        exitCode: 0
+        inputAfter: 1001e828f5e930903a4d81e8d21a67b08362481fe059056bfe9a9e05cf6b1129
+        inputBefore: 1001e828f5e930903a4d81e8d21a67b08362481fe059056bfe9a9e05cf6b1129
+        manifestHash: fdf5b38e5f15e8855dbedb5b1ba268d46d81d6438b3b8f78f724f8457fbbc287
+        manifestRef: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/c1124ca3-c7ee-44b5-a2e8-98154c80c610.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/3eb662af-ebcf-44ac-8c91-f5d9759d1c5a.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 2d63a6147d5cb16458721c8c8ea13e7c50580e616988937d1b5de8ab0b670426
+        ref: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/3eb662af-ebcf-44ac-8c91-f5d9759d1c5a.log
+      - event: verify-fail
+        reason: 独立最终集成审查发现 4 项 IMPORTANT：失败轨迹缺环节与异常原因；并发幂等兜底遗留孤儿 ClaimReport 行；claim-ref
+          businessKey 唯一键破坏跨批次重复引用；回填脚本被 gitignore 且存量 case_status 为 NULL
+          导致人工态误报。另有失败轨迹读取边界与姓名要素校验 WARNING。回 Build 修复后重验。
+      - argv:
+          - bash
+          - docs/superpowers/reports/2026-11-26-claim-sign-auto-case-build-check.sh
+        changedDuringExecution: []
+        checkEpoch: 4
+        contentHash: 48a66d50ea519f2c852a26bc4bb4814465b2288b85b0107c52a3d25f37c66bc1
+        cwd: .
+        environment: 0109f5488ada0879d1d505802a5dddcf3c5e0ae4b1c0720f13df6f0e559d1354
+        exitCode: 0
+        inputAfter: 5542c1fe6c46e6aa28f15a0dcdc6d700cc9536f6c9c7ffbde726f98bba70e31b
+        inputBefore: 5542c1fe6c46e6aa28f15a0dcdc6d700cc9536f6c9c7ffbde726f98bba70e31b
+        manifestHash: 58d1d8d0c2bc14d529d8df16a7cff204a37a6b508c6681fa22c1b62bb8121ec0
+        manifestRef: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/4c4442dc-8acf-4f7f-9d52-7d88aa83bb2e.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/91d9944e-e0c5-48eb-9757-06d9f7d03889.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 48a66d50ea519f2c852a26bc4bb4814465b2288b85b0107c52a3d25f37c66bc1
+        ref: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/91d9944e-e0c5-48eb-9757-06d9f7d03889.log
+      - contentHash: 8c4ef41f3c3feaa353ed1cdc989795c191e88d7b737a5aa4ba6784785f664cc7
+        ref: docs/superpowers/reports/2026-11-26-claim-sign-auto-case-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-26-claim-sign-auto-case-verify.md
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-sign-auto-case
+              changeDir: openspec/changes/claim-sign-auto-case
+              workspaceBaseline:
+                ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/claim-sign-auto-case/.comet/handoff/design-context.json
+                handoffHash: ad5bb8f4638607d9c952c028bda35fc5251b0398541346e629f8b8adaf4c03c0
+                proposal: 签收确认后自动建案：订阅 SignStatusChangedEvent(FINISHED) 在 AFTER_COMMIT 执行；扩展明细表
+                  10 列承载建案要素，claim_id 非空引用已有案件、为空则携带要素建案；明细级 business_key 幂等 +
+                  uk_tenant_idem 兜底；自动化流水线
+                  accept→allocateToPreExam→startPreExam(automated)，失败写
+                  AUTO_CASE_FAILED 轨迹停在人工状态；实名明文落主表（用户裁决，偏离 PIPL
+                  仅限本地开发库）；plan_id=0、占位费用明细金额0 沿用既有口径。无 Spec Patch。
+                requirementsEvidence:
+                  contentHash: fd3ca6c38f91a794aff7b61f8f55670c88653e7bc8376cd4f5db8e8db09c4176
+                  ref: openspec/changes/claim-sign-auto-case
+                sourceEvidence:
+                  contentHash: 703f2c40f1dc5fa8655b6f6588ac7828a60128a6016f34539fb8c8c5a0a6c7e6
+                  ref: openspec/changes/claim-sign-auto-case
+      - sequence: 9
+        value:
+          handoffContext: openspec/changes/claim-sign-auto-case/.comet/handoff/design-context.json
+          handoffHash: ad5bb8f4638607d9c952c028bda35fc5251b0398541346e629f8b8adaf4c03c0
+          proposal: 签收确认后自动建案：订阅 SignStatusChangedEvent(FINISHED) 在 AFTER_COMMIT 执行；扩展明细表
+            10 列承载建案要素，claim_id 非空引用已有案件、为空则携带要素建案；明细级 business_key 幂等 +
+            uk_tenant_idem 兜底；自动化流水线
+            accept→allocateToPreExam→startPreExam(automated)，失败写
+            AUTO_CASE_FAILED 轨迹停在人工状态；实名明文落主表（用户裁决，偏离 PIPL
+            仅限本地开发库）；plan_id=0、占位费用明细金额0 沿用既有口径。无 Spec Patch。
+          requirementsEvidence:
+            contentHash: fd3ca6c38f91a794aff7b61f8f55670c88653e7bc8376cd4f5db8e8db09c4176
+            ref: openspec/changes/claim-sign-auto-case
+          sourceEvidence:
+            contentHash: 703f2c40f1dc5fa8655b6f6588ac7828a60128a6016f34539fb8c8c5a0a6c7e6
+            ref: openspec/changes/claim-sign-auto-case
+      - sequence: 11
+        value:
+          approvalHash: 7bab7e8d91869228251cd47a6a9eb45b0bf7c5dec62e2287318f80174993e3bc
+          contentHash: 087c7cdd2f17b08f7fb27614be8d26e02a29eb52781648c3e89b824302359f7c
+          designDoc: openspec/changes/claim-sign-auto-case/design.md
+      - sequence: 12
+        value:
+          contentHash: 087c7cdd2f17b08f7fb27614be8d26e02a29eb52781648c3e89b824302359f7c
+          ref: openspec/changes/claim-sign-auto-case/design.md
+      - sequence: 13
+        value:
+          boundBranch: comet/claim-sign-auto-case
+          buildMode: direct
+          directOverride: true
+          isolation: worktree
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 14
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-sign-auto-case
+              changeDir: openspec/changes/claim-sign-auto-case
+              workspaceBaseline:
+                ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+            outputs:
+              full.build.configure:
+                boundBranch: comet/claim-sign-auto-case
+                buildMode: direct
+                directOverride: true
+                isolation: worktree
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 15
+        value:
+          designEvidence:
+            contentHash: 087c7cdd2f17b08f7fb27614be8d26e02a29eb52781648c3e89b824302359f7c
+            ref: openspec/changes/claim-sign-auto-case/design.md
+          plan: docs/superpowers/plans/claim-sign-auto-case.md
+          planEvidence:
+            contentHash: c8cf2e82e7d42d3f7d27e4f28083899130c2143fc2f445cd43e13ffcfc1bd25c
+            ref: docs/superpowers/plans/claim-sign-auto-case.md
+          taskRevision: d13dd0c8f3dd1853b06d4b16674b074f8d5a7d46b98c1ec75aa1b39634351df0
+      - sequence: 16
+        value:
+          contentHash: c8cf2e82e7d42d3f7d27e4f28083899130c2143fc2f445cd43e13ffcfc1bd25c
+          ref: docs/superpowers/plans/claim-sign-auto-case.md
+      - sequence: 17
+        value:
+          event: build-complete
+      - sequence: 18
+        value:
+          argv:
+            - bash
+            - docs/superpowers/reports/2026-11-26-claim-sign-auto-case-build-check.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 2d63a6147d5cb16458721c8c8ea13e7c50580e616988937d1b5de8ab0b670426
+          cwd: .
+          environment: 0109f5488ada0879d1d505802a5dddcf3c5e0ae4b1c0720f13df6f0e559d1354
+          exitCode: 0
+          inputAfter: 1001e828f5e930903a4d81e8d21a67b08362481fe059056bfe9a9e05cf6b1129
+          inputBefore: 1001e828f5e930903a4d81e8d21a67b08362481fe059056bfe9a9e05cf6b1129
+          manifestHash: fdf5b38e5f15e8855dbedb5b1ba268d46d81d6438b3b8f78f724f8457fbbc287
+          manifestRef: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/c1124ca3-c7ee-44b5-a2e8-98154c80c610.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/3eb662af-ebcf-44ac-8c91-f5d9759d1c5a.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 19
+        value:
+          contentHash: 2d63a6147d5cb16458721c8c8ea13e7c50580e616988937d1b5de8ab0b670426
+          ref: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/3eb662af-ebcf-44ac-8c91-f5d9759d1c5a.log
+      - sequence: 20
+        value:
+          event: verify-fail
+          reason: 独立最终集成审查发现 4 项 IMPORTANT：失败轨迹缺环节与异常原因；并发幂等兜底遗留孤儿 ClaimReport 行；claim-ref
+            businessKey 唯一键破坏跨批次重复引用；回填脚本被 gitignore 且存量 case_status 为 NULL
+            导致人工态误报。另有失败轨迹读取边界与姓名要素校验 WARNING。回 Build 修复后重验。
+      - sequence: 21
+        value:
+          designEvidence:
+            contentHash: 087c7cdd2f17b08f7fb27614be8d26e02a29eb52781648c3e89b824302359f7c
+            ref: openspec/changes/claim-sign-auto-case/design.md
+          plan: docs/superpowers/plans/claim-sign-auto-case.md
+          planEvidence:
+            contentHash: c8cf2e82e7d42d3f7d27e4f28083899130c2143fc2f445cd43e13ffcfc1bd25c
+            ref: docs/superpowers/plans/claim-sign-auto-case.md
+          taskRevision: d13dd0c8f3dd1853b06d4b16674b074f8d5a7d46b98c1ec75aa1b39634351df0
+      - sequence: 22
+        value:
+          contentHash: c8cf2e82e7d42d3f7d27e4f28083899130c2143fc2f445cd43e13ffcfc1bd25c
+          ref: docs/superpowers/plans/claim-sign-auto-case.md
+      - sequence: 23
+        value:
+          event: build-complete
+      - sequence: 24
+        value:
+          argv:
+            - bash
+            - docs/superpowers/reports/2026-11-26-claim-sign-auto-case-build-check.sh
+          changedDuringExecution: []
+          checkEpoch: 4
+          contentHash: 48a66d50ea519f2c852a26bc4bb4814465b2288b85b0107c52a3d25f37c66bc1
+          cwd: .
+          environment: 0109f5488ada0879d1d505802a5dddcf3c5e0ae4b1c0720f13df6f0e559d1354
+          exitCode: 0
+          inputAfter: 5542c1fe6c46e6aa28f15a0dcdc6d700cc9536f6c9c7ffbde726f98bba70e31b
+          inputBefore: 5542c1fe6c46e6aa28f15a0dcdc6d700cc9536f6c9c7ffbde726f98bba70e31b
+          manifestHash: 58d1d8d0c2bc14d529d8df16a7cff204a37a6b508c6681fa22c1b62bb8121ec0
+          manifestRef: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/4c4442dc-8acf-4f7f-9d52-7d88aa83bb2e.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/91d9944e-e0c5-48eb-9757-06d9f7d03889.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 25
+        value:
+          contentHash: 48a66d50ea519f2c852a26bc4bb4814465b2288b85b0107c52a3d25f37c66bc1
+          ref: .comet/runtime/classic-sdk-checks/a8ab2d9ee0257120896cf78262c35c9d09bb052e71e81a2242c268f6a93e71bb/91d9944e-e0c5-48eb-9757-06d9f7d03889.log
+      - sequence: 27
+        value:
+          contentHash: 8c4ef41f3c3feaa353ed1cdc989795c191e88d7b737a5aa4ba6784785f664cc7
+          ref: docs/superpowers/reports/2026-11-26-claim-sign-auto-case-verify.md
+      - sequence: 26
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-26-claim-sign-auto-case-verify.md
+      - sequence: 1
+        value:
+          approvalHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+          change: claim-sign-auto-case
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-sign-auto-case
+              changeDir: openspec/changes/claim-sign-auto-case
+              workspaceBaseline:
+                ref: 3b630b6c-0447-472d-8255-029b1cd2ed11
+            outputs:
+              full.open:
+                approvalHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+                change: claim-sign-auto-case
+                event: open-complete
+              full.open.evidence:
+                contentHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+                ref: openspec/changes/claim-sign-auto-case
+      - sequence: 2
+        value:
+          contentHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+          ref: openspec/changes/claim-sign-auto-case
+      - sequence: 4
+        value:
+          contentHash: 37906e8680dd669f4e4b45d6958f6dc00002d479c599e036d140773e0f58e2a8
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/claim-sign-auto-case/.comet/handoff/design-context.json
+          handoffHash: ad5bb8f4638607d9c952c028bda35fc5251b0398541346e629f8b8adaf4c03c0
+          proposal: 签收确认后自动建案：订阅 SignStatusChangedEvent(FINISHED) AFTER_COMMIT 执行；扩展明细表 10
+            列承载建案要素；明细级 business_key 幂等；自动化流水线
+            accept→allocateToPreExam→startPreExam(automated)
+            失败降级人工；实名明文落主表（用户裁决，偏离 PIPL）；plan_id=0、占位费用明细沿用既有口径。无 Spec Patch。
+      - sequence: 7
+        value:
+          handoffContext: openspec/changes/claim-sign-auto-case/.comet/handoff/design-context.json
+          handoffHash: ad5bb8f4638607d9c952c028bda35fc5251b0398541346e629f8b8adaf4c03c0
+          proposal: 签收确认后自动建案：订阅事件 AFTER_COMMIT 建案；扩展明细表 10 列；明细 business_key
+            幂等；自动化流水线失败降级人工；实名明文落主表（用户裁决偏离 PIPL）；plan_id=0 占位费用沿用既有口径。无 Spec
+            Patch。
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.handoff
+        value: 5
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: 6
+        height: 2
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 9
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 8
+        right: 10
+        height: 3
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 12
+        right: 13
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 14
+        right: 10
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 16
+        right: 17
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 12
+        right: 18
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 19
+        right: 10
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 12
+        right: 21
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 17
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 22
+        right: 23
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 10
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 14
+        left: 26
+        right: 27
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 28
+        right: 21
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 23
+        right: 10
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 29
+        right: 30
+        height: 4
+      - key: full.verify.run
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 9
+        right: 32
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 23
+        right: 33
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 29
+        right: 34
+        height: 4
+      - key: full.build.check
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 17
+        left: 36
+        right: 27
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 37
+        right: 21
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 38
+        right: 34
+        height: 4
+      - key: full.verify.report.evidence
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 19
+        left: 40
+        right: null
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 9
+        right: 41
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 23
+        right: 42
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: 38
+        right: 43
+        height: 5
+      - key: full.design.handoff
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 20
+        left: null
+        right: 45
+        height: 2
+      - key: full.design.confirm
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 21
+        left: 48
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 22
+        left: 47
+        right: 49
+        height: 3
+      - key: full.build.configure
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 25
+        left: 51
+        right: 52
+        height: 2
+      - key: full.design.document
+        value: 22
+        left: 53
+        right: 49
+        height: 3
+      - key: full.build.plan
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 27
+        left: 55
+        right: 56
+        height: 2
+      - key: full.build.confirm
+        value: 25
+        left: 51
+        right: 57
+        height: 3
+      - key: full.design.document
+        value: 22
+        left: 58
+        right: 49
+        height: 4
+      - key: full.build.execute
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 25
+        left: 51
+        right: 60
+        height: 2
+      - key: full.build.plan.evidence
+        value: 27
+        left: null
+        right: 56
+        height: 2
+      - key: full.build.plan
+        value: 26
+        left: 61
+        right: 62
+        height: 3
+      - key: full.design.document
+        value: 22
+        left: 63
+        right: 49
+        height: 4
+      - key: full.build.check
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 30
+        left: 65
+        right: 66
+        height: 2
+      - key: full.build.confirm
+        value: 25
+        left: 67
+        right: 60
+        height: 3
+      - key: full.design.document
+        value: 22
+        left: 62
+        right: 49
+        height: 3
+      - key: full.build.plan
+        value: 26
+        left: 68
+        right: 69
+        height: 4
+      - key: full.verify.run
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 21
+        left: 48
+        right: 71
+        height: 2
+      - key: full.design.document
+        value: 22
+        left: 62
+        right: 72
+        height: 3
+      - key: full.build.plan
+        value: 26
+        left: 68
+        right: 73
+        height: 4
+      - key: full.build.plan.evidence
+        value: 33
+        left: null
+        right: 56
+        height: 2
+      - key: full.design.document
+        value: 22
+        left: 75
+        right: 72
+        height: 3
+      - key: full.build.plan
+        value: 32
+        left: 68
+        right: 76
+        height: 4
+      - key: full.build.execute
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 25
+        left: 67
+        right: 78
+        height: 3
+      - key: full.build.plan
+        value: 32
+        left: 79
+        right: 76
+        height: 4
+      - key: full.build.check
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 36
+        left: 81
+        right: 66
+        height: 2
+      - key: full.build.confirm
+        value: 25
+        left: 82
+        right: 78
+        height: 3
+      - key: full.build.plan
+        value: 32
+        left: 83
+        right: 76
+        height: 4
+      - key: full.verify.report.evidence
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 38
+        left: 85
+        right: null
+        height: 2
+      - key: full.design.handoff
+        value: 21
+        left: 48
+        right: 86
+        height: 3
+      - key: full.design.document
+        value: 22
+        left: 75
+        right: 87
+        height: 4
+      - key: full.build.plan
+        value: 32
+        left: 83
+        right: 88
+        height: 5
+      - key: full.open
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 40
+        left: 90
+        right: 91
+        height: 2
+      - key: full.open.revalidate
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 41
+        left: null
+        right: 93
+        height: 2
+      - key: full.open.confirm
+        value: 40
+        left: 90
+        right: 94
+        height: 3
+      - key: full.build.check
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 36
+        left: 96
+        right: 97
+        height: 2
+      - key: full.build.execute
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 32
+        left: 99
+        right: 100
+        height: 2
+      - key: full.build.confirm
+        value: 25
+        left: 98
+        right: 101
+        height: 3
+      - key: full.design.document
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 23
+        left: 103
+        right: 104
+        height: 2
+      - key: full.open.confirm
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 37
+        left: 107
+        right: 108
+        height: 2
+      - key: full.open.evidence
+        value: 41
+        left: 106
+        right: 109
+        height: 3
+      - key: full.open
+        value: 39
+        left: 105
+        right: 110
+        height: 4
+      - key: full.design.confirm
+        value: 20
+        left: 102
+        right: 111
+        height: 5
+      - key: full.open.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 39
+        left: null
+        right: 113
+        height: 2
+      - key: full.design.handoff
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 41
+        left: 116
+        right: 117
+        height: 2
+      - key: full.open
+        value: 39
+        left: 115
+        right: 118
+        height: 3
+      - key: full.design.handoff
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 23
+        left: 123
+        right: 124
+        height: 2
+      - key: full.design.confirm
+        value: 20
+        left: 122
+        right: 125
+        height: 3
+      - key: full.open
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 22
+        left: 128
+        right: 129
+        height: 2
+      - key: full.build.configure
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 25
+        left: 131
+        right: 132
+        height: 2
+      - key: full.design.document
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 23
+        left: 134
+        right: 135
+        height: 2
+      - key: full.design.confirm
+        value: 20
+        left: 133
+        right: 136
+        height: 3
+      - key: full.build.check
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 24
+        left: 138
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 26
+        left: 140
+        right: 141
+        height: 2
+      - key: full.build.confirm
+        value: 25
+        left: 139
+        right: 142
+        height: 3
+      - key: full.design.confirm
+        value: 20
+        left: 143
+        right: 136
+        height: 4
+      - key: full.build.check
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 30
+        left: 145
+        right: 146
+        height: 2
+      - key: full.build.plan
+        value: 32
+        left: 140
+        right: 141
+        height: 2
+      - key: full.build.confirm
+        value: 25
+        left: 147
+        right: 148
+        height: 3
+      - key: full.verify.run
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 21
+        left: null
+        right: 150
+        height: 2
+      - key: full.design.evidence
+        value: 23
+        left: 134
+        right: 151
+        height: 3
+      - key: full.design.confirm
+        value: 20
+        left: 149
+        right: 152
+        height: 4
+      - key: full.build.check
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 30
+        left: 154
+        right: 146
+        height: 2
+      - key: full.build.execute
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 32
+        left: 156
+        right: 157
+        height: 2
+      - key: full.build.confirm
+        value: 25
+        left: 155
+        right: 158
+        height: 3
+      - key: full.design.confirm
+        value: 20
+        left: 159
+        right: 152
+        height: 4
+      - key: full.build.check.evidence
+        value: 36
+        left: 154
+        right: 146
+        height: 2
+      - key: full.build.confirm
+        value: 25
+        left: 161
+        right: 158
+        height: 3
+      - key: full.verify.run
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 21
+        left: null
+        right: 163
+        height: 2
+      - key: full.design.evidence
+        value: 23
+        left: 134
+        right: 164
+        height: 3
+      - key: full.design.confirm
+        value: 20
+        left: 162
+        right: 165
+        height: 4
+    maps:
+      - null
+      - 2
+      - 5
+      - 7
+      - 11
+      - 15
+      - 20
+      - 25
+      - 31
+      - 35
+      - 39
+      - 44
+      - 46
+      - 50
+      - 54
+      - 59
+      - 64
+      - 70
+      - 74
+      - 77
+      - 80
+      - 84
+      - 89
+      - 92
+      - 95
+      - 112
+      - 114
+      - 119
+      - 120
+      - 121
+      - 126
+      - 127
+      - 130
+      - 137
+      - 144
+      - 153
+      - 160
+      - 166
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "14"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "15"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:11
+          - results
+        map: 12
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:13
+          - results
+        map: 13
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:15
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:17
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:18
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:20
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:21
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:23
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:24
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:26
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:28
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:4
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:5
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:7
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - claim-sign-auto-case:9
+          - results
+        map: 0
+      - path:
+          - outputs
+        map: 25
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 26
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 27
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 28
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 29
+      - path:
+          - waits
+          - "4"
+          - results
+        map: 30
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 31
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 32
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 33
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 34
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 35
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 36
+      - path:
+          - evidenceWaits
+          - "6"
+          - results
+        map: 37
+  storageHash: f45e125340f7c8d34112871027e1d4546d09c3995df16a451011d1a7cb39a23b
+check_epoch: 5
