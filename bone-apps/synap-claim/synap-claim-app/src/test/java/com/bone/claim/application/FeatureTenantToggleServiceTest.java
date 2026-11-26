@@ -10,6 +10,7 @@ import com.bone.claim.domain.model.config.ReviewFatigueConfig;
 import com.bone.claim.domain.model.decision.DecisionResult;
 import com.bone.claim.domain.model.decision.DecisionTriage;
 import com.bone.claim.domain.model.decision.TriageLimits;
+import com.bone.claim.domain.model.inspection.InspectionConfig;
 import com.bone.claim.domain.repository.FeatureToggleRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -261,5 +262,59 @@ class FeatureTenantToggleServiceTest {
     ReviewFatigueConfig cfg = service.reviewFatigueConfig(TENANT);
     assertThat(cfg.maxPerShift()).isEqualTo(ReviewFatigueConfig.DEFAULT_MAX_PER_SHIFT);
     assertThat(cfg.rejected()).containsKey("maxPerShift");
+  }
+
+  // ===== V1.0 · INSPECTION_SAMPLING 抽样比例配置（fail-safe 回落基线 5%） =====
+
+  private FeatureToggle samplingToggle(String state, String configJson) {
+    return FeatureToggle.create(
+        TENANT,
+        FeatureToggle.FEATURE_INSPECTION_SAMPLING,
+        state,
+        100,
+        "",
+        configJson,
+        Instant.now());
+  }
+
+  @Test
+  @DisplayName("抽检比例：无记录 ⇒ 回落 5%（fail-safe，绝不默认 0 不抽或 100 全量）")
+  void samplingAbsentFallsBackToFive() {
+    when(repository.findByFeatureKey(TENANT, FeatureToggle.FEATURE_INSPECTION_SAMPLING))
+        .thenReturn(null);
+    InspectionConfig cfg = service.inspectionConfig(TENANT);
+    assertThat(cfg.samplingRatePercent()).isEqualTo(InspectionConfig.DEFAULT_SAMPLING_RATE);
+  }
+
+  @Test
+  @DisplayName("抽检比例：显式配置 100 ⇒ 全量生效（V1.0 口径）")
+  void samplingHundredTakesEffect() {
+    when(repository.findByFeatureKey(TENANT, FeatureToggle.FEATURE_INSPECTION_SAMPLING))
+        .thenReturn(samplingToggle(FeatureToggle.STATE_ENABLED, "{\"samplingRatePercent\":100}"));
+    InspectionConfig cfg = service.inspectionConfig(TENANT);
+    assertThat(cfg.samplingRatePercent()).isEqualTo(100);
+    assertThat(cfg.fullyApplied()).isTrue();
+  }
+
+  @Test
+  @DisplayName("抽检比例：非法 JSON ⇒ 不抛异常、回落 5% 且登记 $json（坏配置不拖挂抽样）")
+  void samplingBrokenJsonFallsBack() {
+    when(repository.findByFeatureKey(TENANT, FeatureToggle.FEATURE_INSPECTION_SAMPLING))
+        .thenReturn(samplingToggle(FeatureToggle.STATE_ENABLED, "{not-json"));
+    InspectionConfig cfg = service.inspectionConfig(TENANT);
+    assertThat(cfg.samplingRatePercent()).isEqualTo(InspectionConfig.DEFAULT_SAMPLING_RATE);
+    assertThat(cfg.rejected()).containsKey(FeatureTenantToggleService.JSON_SENTINEL);
+  }
+
+  @Test
+  @DisplayName("抽检比例：仓储读取抛异常 ⇒ 不冒泡、回落 5% 且登记诊断（DB 故障不等于该笔不抽检）")
+  void samplingRepositoryFailureFallsBack() {
+    when(repository.findByFeatureKey(TENANT, FeatureToggle.FEATURE_INSPECTION_SAMPLING))
+        .thenThrow(new RuntimeException("db down"));
+    InspectionConfig cfg = service.inspectionConfig(TENANT);
+    assertThat(cfg.samplingRatePercent()).isEqualTo(InspectionConfig.DEFAULT_SAMPLING_RATE);
+    assertThat(cfg.fullyApplied()).isFalse();
+    assertThat(cfg.rejected()).containsKey(FeatureTenantToggleService.JSON_SENTINEL);
+    assertThat(cfg.rejected().get(FeatureTenantToggleService.JSON_SENTINEL)).contains("db down");
   }
 }
