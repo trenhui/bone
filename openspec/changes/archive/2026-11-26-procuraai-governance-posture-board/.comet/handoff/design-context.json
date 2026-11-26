@@ -1,0 +1,16 @@
+{
+  "change": "procuraai-governance-posture-board",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "a5ef5b69552c09e0ff77b097aa38e6ac6862b6567c205a5d9d10fffff4ed1f9c",
+  "files": [
+    { "path": "openspec/changes/procuraai-governance-posture-board/proposal.md", "sha256": "e8dcbde1c4ef7b8922448d442e355f31d14a698e7f14de42c99005e5ad5c2702" },
+    { "path": "openspec/changes/procuraai-governance-posture-board/design.md", "sha256": "e9d1949dcdc82d41cf5d145f4f21415e0544e91b33c3c50d7cd8f71e59803fbf" },
+    { "path": "openspec/changes/procuraai-governance-posture-board/tasks.md", "sha256": "b9011f7d7001ad441e099f091ad2de58127f32d93d7c60725705f50e97d99892" },
+    { "path": "openspec/changes/procuraai-governance-posture-board/.openspec.yaml", "sha256": "3c3c72cd1a100807c59ef8347538654b4d2d22269f59561c985b01cb44c39491" },
+    { "path": "openspec/changes/procuraai-governance-posture-board/specs/procurement/ai-governance-posture/spec.md", "sha256": "323d30585797f68dd861190ff0787b9430fb5066606c3bfd8bc486fd97a87f43" }
+  ]
+}
