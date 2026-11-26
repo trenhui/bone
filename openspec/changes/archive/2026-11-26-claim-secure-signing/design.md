@@ -2,6 +2,8 @@
 comet_change: claim-secure-signing
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-11-26-claim-secure-signing
+status: final
 ---
 
 ## Context

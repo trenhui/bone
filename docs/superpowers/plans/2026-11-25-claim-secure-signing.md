@@ -3,6 +3,7 @@ change: claim-secure-signing
 design-doc: openspec/changes/claim-secure-signing/design.md
 base-ref: 62e589b3c74ca83e237d3a3a3207f0f56e1a2b97
 plan-revision: 1
+archived-with: 2026-11-26-claim-secure-signing
 ---
 
 <!-- comet-task-authority: openspec/changes/claim-secure-signing/tasks.md -->
