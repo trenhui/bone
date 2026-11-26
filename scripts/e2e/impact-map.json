@@ -3456,6 +3456,13 @@
   },
   {
    "http": "GET",
+   "path": "/api/v1/claims/query",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
    "path": "/api/v1/claims/{id}",
    "controller": "ClaimCaseController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
@@ -4251,6 +4258,13 @@
    "path": "/api/v1/claim-ops/ai-provider-probe",
    "controller": "AiProviderProbeController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AiProviderProbeController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/{claimId}/evidences/reclassify",
+   "controller": "EvidenceController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/EvidenceController.java",
    "cases": []
   },
   {
@@ -5132,8 +5146,8 @@
   }
  ],
  "summary": {
-  "endpoints": 619,
+  "endpoints": 621,
   "covered": 245,
-  "uncovered": 374
+  "uncovered": 376
  }
 }

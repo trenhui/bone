@@ -37,10 +37,17 @@ import {
 } from '../services/claimApi';
 import { PageHeader } from '../components/PageHeader';
 import { ClaimQueryBar } from '../components/ClaimQueryBar';
+import {
+  ClaimQueryFields,
+  formValuesToQueryString,
+  queryParamsFromState,
+  type ClaimQueryFormValues,
+} from '../components/ClaimQueryFields';
 import { useClaimQuery } from '../hooks/useClaimQuery';
 import { useSavedViews } from '../hooks/useSavedViews';
 import { ClaimIdLink } from '../components/ClaimIdLink';
 import { PolicyNoLink } from '../components/PolicyNoLink';
+import { EvidenceGallery } from '../components/EvidenceGallery';
 import { AiDisclosureCard } from '../components/AiDisclosureCard';
 import { AiSuggestionCard } from '../components/AiSuggestionCard';
 import { explainNode, toneColor, type ExplainFact } from '../services/decisionExplain';
@@ -127,21 +134,30 @@ export function ReviewWorkbenchPage(): ReactElement {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [batching, setBatching] = useState(false);
   /**
-   * 查询状态进 URL（统一查询基座）：任务维筛选 / 页码 / 每页条数都可分享、可前进后退恢复。
+   * 查询状态进 URL（统一查询基座）：任务维 / 关键字 / 状态 / 案件ID / 时间 / 金额都可分享。
    *
-   * <p><b>为什么不接搜索框</b>：后端 `/review/tasks` 只接 status/page/size，没有 keyword 参数。
-   * 显示检索框却让后端忽略，或只在前端过滤当前页（翻页即失效），都是「配了不生效」的假功能，
-   * 故查询条以 `searchable={false}` 呈现，只复用保存视图 / 刷新 / 自定义动作。
-   *
-   * <p><b>为什么必须真分页</b>：此前固定取 `size: 50` 再由 antd 按 `pageSize: 20` 前端切片，
-   * 第 3 页起就是空白，而 `total` 仍显示全部——用户看到「共 N 条」却翻不到，属数据正确性缺陷而非体验问题
-   * （design §13.4 / D5：total 由服务端同一 COUNT(*) 口径产出，前端只传 page/size）。
+   * <p>默认视图仍走 `/review/tasks` 的任务维口径；一旦输入查询条件，切到
+   * `GET /claims/query` 由后端真分页 + 真过滤，避免「只在当前页过滤」的假查询。
+   * 任务维到案件状态集的映射仍在后端 ReviewTaskStatusMapper，前端不另造口径。
    */
-  const { query, setFilter, setPage, setSize, applyQueryString } = useClaimQuery();
+  const {
+    query,
+    setKeyword,
+    setFilter,
+    setPage,
+    setSize,
+    reset,
+    applyQueryString,
+    currentQueryString,
+  } = useClaimQuery();
   const savedViews = useSavedViews();
   const taskFilterRaw = query.filters.taskStatus;
   const taskFilter = (taskFilterRaw || undefined) as ReviewTaskStatus | undefined;
   const { page, size: pageSize } = query;
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const hasQuery =
+    Boolean(query.keyword) ||
+    Object.keys(query.filters).some((key) => key !== 'taskStatus' || Boolean(taskFilter));
   const [total, setTotal] = useState(0);
   /**
    * 任务维服务端计数（三个独立 `size:1` 查询的 total）。
@@ -157,6 +173,8 @@ export function ReviewWorkbenchPage(): ReactElement {
   });
   const [countsLoading, setCountsLoading] = useState(false);
   /** AI 结论抽屉：把建议从案件 360 抬到核赔主决策面，但不改变任何结论与金额。 */
+  /** 影像件抽屉目标案件：只读查看，不触碰领取/决策等写操作。 */
+  const [evidenceClaimId, setEvidenceClaimId] = useState<string | null>(null);
   const [aiTarget, setAiTarget] = useState<ClaimHeadProjection | null>(null);
 
   /**
@@ -295,20 +313,22 @@ export function ReviewWorkbenchPage(): ReactElement {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // 不传 status = 后端默认待办（40+41）。先前传 ['PENDING_ADJUST'] 只覆盖 40，
-      // 领取后进入 41 的案件会整行消失，「通过/拒赔/补件」再无处可点。
-      const resp = await reviewTaskApi.tasks({ status: taskFilter, page, size: pageSize });
+      // 默认待办口径由后端 ReviewTaskStatusMapper 决定（40+41）；查询态切到专用接口做服务端过滤。
+      const resp = hasQuery
+        ? await claimApi.query({
+            ...queryParamsFromState(query),
+            statuses: undefined,
+            taskStatus: taskFilter,
+          })
+        : await reviewTaskApi.tasks({ status: taskFilter, page, size: pageSize });
       setRows(resp?.data?.records ?? []);
-      // total 取后端同源 COUNT(*)：前端不再用 rows.length 冒充总数（那会让「共 1 条」永远正确）。
       setTotal(normalizeTotal(resp?.data?.total));
     } catch (err) {
-      // 展示后端真实原因：createApiClient 已把 errorCode / message 挂到错误对象上，
-      // 先前这里把它一律概括成「待办加载失败」，用户只能截图求助、无法自助判断。
       message.error({ content: resolveErrorMessage(err, '待办加载失败'), key: MSG_KEY_LOAD });
     } finally {
       setLoading(false);
     }
-  }, [taskFilter, page, pageSize]);
+  }, [hasQuery, query, taskFilter, page, pageSize]);
 
   // 切筛选回第 1 页由 setFilter 统一完成（URL 真源），本页不再另设 useEffect 副作用。
 
@@ -649,33 +669,28 @@ export function ReviewWorkbenchPage(): ReactElement {
         size="small"
         extra={
           <ClaimQueryBar
-            keyword=""
-            onKeyword={() => undefined}
-            searchable={false}
+            keyword={query.keyword}
+            onKeyword={setKeyword}
+            placeholder="案件ID / 赔案号 / 保单号 / 发票号"
             onRefresh={() => void load()}
             views={savedViews.views}
             onApplyView={(view) => applyQueryString(view.queryString)}
-            onSaveView={(name) =>
-              savedViews.save(
-                name,
-                new URLSearchParams({
-                  ...(taskFilter ? { f_taskStatus: taskFilter } : {}),
-                  ...(page > 1 ? { page: String(page) } : {}),
-                  ...(pageSize !== 20 ? { size: String(pageSize) } : {}),
-                }).toString(),
-              )
-            }
+            onSaveView={(name) => savedViews.save(name, currentQueryString())}
             onRemoveView={savedViews.remove}
             onTogglePin={savedViews.togglePin}
             actions={
-              <Select<ReviewTaskStatus | undefined>
-                allowClear
-                placeholder="全部待办（待领取 + 处理中）"
-                style={{ width: 240 }}
-                value={taskFilter}
-                onChange={(v) => setFilter('taskStatus', v ?? '')}
-                options={TASK_FILTER_OPTIONS}
-              />
+              <Space size={8} wrap>
+                <Select<ReviewTaskStatus | undefined>
+                  allowClear
+                  placeholder="全部待办（待领取 + 处理中）"
+                  style={{ width: 240 }}
+                  value={taskFilter}
+                  onChange={(v) => setFilter('taskStatus', v ?? '')}
+                  options={TASK_FILTER_OPTIONS}
+                />
+                <Button onClick={() => setAdvancedOpen(true)}>高级查询</Button>
+                {hasQuery && <Button onClick={reset}>清空条件</Button>}
+              </Space>
             }
           />
         }
@@ -774,7 +789,7 @@ export function ReviewWorkbenchPage(): ReactElement {
             { title: '受理时间', dataIndex: 'createdAt', width: 180 },
             {
               title: '操作',
-              width: 260,
+              width: 330,
               render: (_, row) => (
                 <Space size={4} wrap>
                   <Button
@@ -866,12 +881,41 @@ export function ReviewWorkbenchPage(): ReactElement {
                       复核结论
                     </AuthButton>
                   )}
+                  <Button
+                    type="link"
+                    size="small"
+                    data-testid={`review-evidence-${row.claimId}`}
+                    onClick={() => setEvidenceClaimId(row.claimId)}
+                  >
+                    影像件
+                  </Button>
                 </Space>
               ),
             },
           ]}
         />
       </Card>
+
+      <Drawer
+        title="核赔工作台 · 高级查询"
+        width={720}
+        open={advancedOpen}
+        onClose={() => setAdvancedOpen(false)}
+        destroyOnHidden
+      >
+        <ClaimQueryFields
+          query={query}
+          showTaskStatus
+          onSubmit={(values: ClaimQueryFormValues) => {
+            applyQueryString(formValuesToQueryString(values));
+            setAdvancedOpen(false);
+          }}
+          onReset={() => {
+            reset();
+            setAdvancedOpen(false);
+          }}
+        />
+      </Drawer>
 
       <Modal
         title={`审核决策 · ${decisionTarget?.claimNo ?? ''}`}
@@ -1169,6 +1213,12 @@ export function ReviewWorkbenchPage(): ReactElement {
         />
         {aiTarget ? <AiSuggestionCard claimId={String(aiTarget.claimId)} scene="review" /> : null}
       </Drawer>
+
+      <EvidenceGallery
+        claimId={evidenceClaimId}
+        open={Boolean(evidenceClaimId)}
+        onClose={() => setEvidenceClaimId(null)}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 package com.bone.claim.domain.repository;
 
 import com.bone.claim.domain.model.claim.ClaimCase;
+import com.bone.claim.domain.model.claim.ClaimCaseQuery;
 import com.bone.claim.domain.model.claim.projection.CaseDurationProjection;
 import com.bone.claim.domain.model.claim.projection.ClaimHeadProjection;
 import com.bone.claim.domain.model.claim.projection.ClaimSearchHit;
@@ -190,25 +191,94 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
     return countByCriteria(reReviewQueueCriteria(tenantId, reviewerId));
   }
 
-  /** 待办分页（工作台）：按状态集 + 可选挂起/渠道过滤，priority 排序由读侧投影组装。 */
+  /** 待办分页（旧契约）：状态集 + 渠道，保持原调用方零改动。 */
   default PageResult<ClaimHeadProjection> findClaimPage(
       Long tenantId, List<ClaimStatus> statuses, String sourceChannel, int page, int size) {
-    // DB 存枚举 name，查询值须转 name（SDK String 持久化口径）
+    return findClaimPage(
+        tenantId,
+        new ClaimCaseQuery(
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            statuses,
+            null,
+            sourceChannel,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null),
+        page,
+        size);
+  }
+
+  /**
+   * 灵活查询分页（工作台/案件速查共用）。
+   *
+   * <p>所有条件以 AND 组合；keywords 内部的多个可检索列以 OR 组合，并额外把纯数字关键字 精确匹配案件主键，解决「复制 12 位案件 ID 搜不到」的问题。LIKE
+   * 值在此转义 （SDK 的 MySQL 模板带 ESCAPE '\'），避免用户输入 % / _ 放大扫描面。
+   */
+  default PageResult<ClaimHeadProjection> findClaimPage(
+      Long tenantId, ClaimCaseQuery q, int page, int size) {
     List<String> statusNames =
-        statuses.stream()
-            .map(com.bone.claim.domain.model.claim.valueobject.ClaimStatus::name)
-            .toList();
+        q.statuses() == null ? List.of() : q.statuses().stream().map(ClaimStatus::name).toList();
     Criteria<ClaimCase> criteria =
         Criteria.<ClaimCase>create()
             .eq(ClaimCase::getTenantId, tenantId)
             .in(!statusNames.isEmpty(), ClaimCase::getStatus, statusNames.toArray())
+            .eq(q.claimId() != null, ClaimCase::getId, q.claimId())
+            .like(q.claimNo() != null, ClaimCase::getClaimNo, likeTerm(q.claimNo()))
+            .eq(q.reportId() != null, ClaimCase::getReportId, q.reportId())
+            .like(q.policyNo() != null, ClaimCase::getPolicyNo, likeTerm(q.policyNo()))
+            .eq(q.stage() != null && !q.stage().isBlank(), ClaimCase::getStage, q.stage())
             .eq(
-                sourceChannel != null && !sourceChannel.isBlank(),
+                q.sourceChannel() != null && !q.sourceChannel().isBlank(),
                 ClaimCase::getSourceChannel,
-                sourceChannel)
+                q.sourceChannel())
+            .eq(
+                q.sourceSystem() != null && !q.sourceSystem().isBlank(),
+                ClaimCase::getSourceSystem,
+                q.sourceSystem())
+            .eq(
+                q.assigneeId() != null && !q.assigneeId().isBlank(),
+                ClaimCase::getFirstReviewerId,
+                q.assigneeId())
+            .eq(q.hangUpStatus() != null, ClaimCase::getHangUpStatus, q.hangUpStatus())
+            .gte(q.createdFrom() != null, ClaimCase::getCreatedAt, q.createdFrom())
+            .lte(q.createdTo() != null, ClaimCase::getCreatedAt, q.createdTo())
+            .gte(q.amountMin() != null, ClaimCase::getClaimAmount, q.amountMin())
+            .lte(q.amountMax() != null, ClaimCase::getClaimAmount, q.amountMax())
             .orderByDesc(ClaimCase::getCreatedAt)
             .page(page, size);
+    if (q.keyword() != null && !q.keyword().isBlank()) {
+      String term = likeTerm(q.keyword());
+      criteria.or(
+          sub -> {
+            sub.like(ClaimCase::getClaimNo, term)
+                .like(ClaimCase::getPolicyNo, term)
+                .like(ClaimCase::getInvoiceNo, term)
+                .like(ClaimCase::getInvoiceCode, term)
+                .like(ClaimCase::getBatchNo, term)
+                .like(ClaimCase::getInsuredIdHash, term);
+            if (q.keywordClaimId() != null) {
+              sub.eq(ClaimCase::getId, q.keywordClaimId());
+            }
+          });
+    }
     return pageByCriteria(criteria).map(ClaimHeadProjection::from);
+  }
+
+  /** 转义 LIKE 元字符；SDK 会自动包裹 %，这里只处理用户输入本身。 */
+  private static String likeTerm(String raw) {
+    if (raw == null || raw.isBlank()) {
+      return null;
+    }
+    return raw.trim().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
   }
 
   /**

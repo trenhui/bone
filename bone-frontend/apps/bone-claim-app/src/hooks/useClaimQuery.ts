@@ -34,6 +34,8 @@ export interface ClaimQueryController {
   reset: () => void;
   /** 整体应用一段查询串（保存视图回灌）；同样保留外部参数。 */
   applyQueryString: (queryString: string) => void;
+  /** 当前托管查询参数串（保存视图用；不含 claimId / tab 等外部参数）。 */
+  currentQueryString: () => string;
 }
 
 const KEYWORD = 'q';
@@ -171,5 +173,22 @@ export function useClaimQuery(defaultSize: number = DEFAULT_SIZE): ClaimQueryCon
     [patch],
   );
 
-  return { query, setKeyword, setFilter, setPage, setSize, reset, applyQueryString };
+  const currentQueryString = useCallback(() => {
+    const next = new URLSearchParams();
+    searchParams.forEach((value, key) => {
+      if (isManagedKey(key) && value) next.set(key, value);
+    });
+    return next.toString();
+  }, [searchParams]);
+
+  return {
+    query,
+    setKeyword,
+    setFilter,
+    setPage,
+    setSize,
+    reset,
+    applyQueryString,
+    currentQueryString,
+  };
 }

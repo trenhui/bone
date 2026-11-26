@@ -7,6 +7,7 @@ import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.common.PageBounds;
 import com.bone.claim.domain.model.claim.ClaimCase;
+import com.bone.claim.domain.model.claim.ClaimCaseQuery;
 import com.bone.claim.domain.model.claim.ClaimItem;
 import com.bone.claim.domain.model.claim.ClaimReport;
 import com.bone.claim.domain.model.claim.event.ClaimStatusChangedEvent;
@@ -28,6 +29,9 @@ import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -82,6 +86,29 @@ public class ClaimCaseApplicationService {
    */
   /** 报案提交结果（adapter 组装 201 响应的输入，不含协议字段）。 */
   public record SubmittedClaim(Long claimId, String claimNo, String reportNo) {}
+
+  /**
+   * 灵活查询命令（adapter → application 的边界对象）。
+   *
+   * <p>保留 HTTP 友好的原始形态：报案号在此解析为内部 reportId、日期在此按业务时区转 Instant， domain repository 不认识 controller
+   * 的字符串/枚举混用形态。
+   */
+  public record ClaimQueryCommand(
+      Long claimId,
+      String keyword,
+      String claimNo,
+      String reportNo,
+      String policyNo,
+      List<ClaimStatus> statuses,
+      String stage,
+      String sourceChannel,
+      String sourceSystem,
+      String assigneeId,
+      Integer hangUpStatus,
+      LocalDate createdFrom,
+      LocalDate createdTo,
+      BigDecimal amountMin,
+      BigDecimal amountMax) {}
 
   @Transactional
   public SubmittedClaim submit(SubmitClaim command) {
@@ -597,6 +624,59 @@ public class ClaimCaseApplicationService {
     PageBounds bounds = PageBounds.of(page, size);
     return claimCaseRepository.findClaimPage(
         tenantId, effective, sourceChannel, bounds.page(), bounds.size());
+  }
+
+  /**
+   * 灵活查询（工作台与全局案件速查共用）。
+   *
+   * <p>安全口径：关键字复用 {@link ClaimSearchRules} 的长度/字符护栏（拒绝而非静默截断）， 报案号经 tenant 锚点解析为内部
+   * ID——查不到报案时用不可能命中的 0 作为 reportId， 避免「报案号不存在」被降级成「忽略该条件」而返回全量案件。
+   */
+  @Transactional(readOnly = true)
+  public PageResult<ClaimHeadProjection> query(ClaimQueryCommand cmd, int page, int size) {
+    long tenantId = tenantPort.currentTenantId();
+    if (cmd.keyword() != null && !cmd.keyword().isBlank()) {
+      String problem = ClaimSearchRules.validate(cmd.keyword(), 1);
+      if (problem != null) {
+        throw ClaimErrors.of(ClaimErrorCodes.CLAIM_SEARCH_KEYWORD_INVALID, problem);
+      }
+    }
+    Long reportId = null;
+    if (cmd.reportNo() != null && !cmd.reportNo().isBlank()) {
+      ClaimReport report = claimReportRepository.findByReportNo(tenantId, cmd.reportNo().trim());
+      reportId = report == null ? 0L : report.getId();
+    }
+    ZoneId zone = ZoneId.of("Asia/Shanghai");
+    java.time.Instant from =
+        cmd.createdFrom() == null ? null : cmd.createdFrom().atStartOfDay(zone).toInstant();
+    java.time.Instant to =
+        cmd.createdTo() == null
+            ? null
+            : cmd.createdTo().atTime(LocalTime.MAX).atZone(zone).toInstant();
+    Long keywordId = null;
+    if (cmd.keyword() != null && cmd.keyword().trim().matches("\\d{6,19}")) {
+      keywordId = Long.valueOf(cmd.keyword().trim());
+    }
+    ClaimCaseQuery query =
+        new ClaimCaseQuery(
+            cmd.claimId(),
+            cmd.keyword(),
+            keywordId,
+            cmd.claimNo(),
+            reportId,
+            cmd.policyNo(),
+            cmd.statuses(),
+            cmd.stage(),
+            cmd.sourceChannel(),
+            cmd.sourceSystem(),
+            cmd.assigneeId(),
+            cmd.hangUpStatus(),
+            from,
+            to,
+            cmd.amountMin(),
+            cmd.amountMax());
+    PageBounds bounds = PageBounds.of(page, size);
+    return claimCaseRepository.findClaimPage(tenantId, query, bounds.page(), bounds.size());
   }
 
   /**
