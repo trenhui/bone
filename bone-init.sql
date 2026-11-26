@@ -5159,9 +5159,19 @@ CREATE TABLE `t_claim_sign_batch_item` (
   `id`         BIGINT       NOT NULL,
   `tenant_id`  BIGINT       NOT NULL,
   `batch_id`   BIGINT       NOT NULL,
-  `claim_id`   BIGINT       NOT NULL,
+  `claim_id`   BIGINT       DEFAULT NULL,
   `claim_no`   VARCHAR(64)  DEFAULT NULL,
   `image_ready` TINYINT(1)  NOT NULL DEFAULT 0,
+  `policy_no`  VARCHAR(64)  DEFAULT NULL,
+  `plan_id`    BIGINT       DEFAULT NULL,
+  `insured_name` VARCHAR(128) DEFAULT NULL,
+  `insured_id_no` VARCHAR(64) DEFAULT NULL,
+  `out_insure_time` DATETIME(3) DEFAULT NULL,
+  `claim_type` VARCHAR(32) DEFAULT NULL,
+  `source_channel` VARCHAR(64) DEFAULT NULL,
+  `business_key` VARCHAR(128) DEFAULT NULL,
+  `case_status` VARCHAR(32) DEFAULT 'PENDING',
+  `created_case_id` BIGINT DEFAULT NULL,
   `created_by` BIGINT       DEFAULT NULL,
   `updated_by` BIGINT       DEFAULT NULL,
   `created_at` DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -5170,6 +5180,7 @@ CREATE TABLE `t_claim_sign_batch_item` (
   `version`    INT          NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_claim_sign_batch_item` (`batch_id`,`claim_id`),
+  UNIQUE KEY `uk_sign_item_business_key` (`tenant_id`,`business_key`),
   KEY `idx_claim_sign_batch_item_claim` (`claim_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='签收批次明细';
 

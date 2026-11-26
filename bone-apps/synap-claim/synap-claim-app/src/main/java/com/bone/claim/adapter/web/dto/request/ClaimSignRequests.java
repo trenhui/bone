@@ -16,7 +16,19 @@ public final class ClaimSignRequests {
       @Schema(description = "业务唯一标识（幂等真源）") @NotBlank String businessKey,
       @Schema(description = "推送渠道") @NotBlank String signChannel,
       @Schema(description = "案件号（可空）") String claimNo,
-      @Schema(description = "赔案金额（可空）") Long claimAmount) {}
+      @Schema(description = "赔案金额（可空）") Long claimAmount,
+      @Schema(description = "随回执携带的建案要素，缺省只建签收批次") List<SignCaseElementReq> caseElements) {}
+
+  /** 线上自动签收随回执携带的建案要素（实名明文，仅限受控环境）。 */
+  public record SignCaseElementReq(
+      String claimNo,
+      String policyNo,
+      Long planId,
+      String insuredName,
+      String insuredIdNo,
+      Instant outInsureTime,
+      String claimType,
+      String sourceChannel) {}
 
   /** 线下创建批次。 */
   public record CreateSignBatchReq(

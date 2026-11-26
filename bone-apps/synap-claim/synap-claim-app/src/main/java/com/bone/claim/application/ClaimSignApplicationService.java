@@ -58,6 +58,23 @@ public class ClaimSignApplicationService {
             null,
             null,
             null);
+    if (command.caseElements() != null) {
+      for (CaseElement element : command.caseElements()) {
+        batch.addItem(
+            SignBatchItem.withCaseElements(
+                tenantId,
+                batch.getId(),
+                element.claimNo(),
+                itemBusinessKey(command.businessKey(), element.claimNo()),
+                element.policyNo(),
+                element.planId(),
+                element.insuredName(),
+                element.insuredIdNo(),
+                element.outInsureTime(),
+                element.claimType(),
+                element.sourceChannel()));
+      }
+    }
     batch.transitionTo(SignStatus.WAIT_FOR_IMAGE, "AUTO_ACCEPT", "SYSTEM");
     batch.transitionTo(SignStatus.WAIT_FOR_CONFIRMATION, "AUTO_IMAGE_READY", "SYSTEM");
     batch.transitionTo(SignStatus.FINISHED, "AUTO_SIGN", "SYSTEM");
@@ -210,13 +227,79 @@ public class ClaimSignApplicationService {
         track.getOccurredAt());
   }
 
+  @Transactional(readOnly = true)
+  public ClaimSignCaseSummary caseSummary(long batchId) {
+    requireBatch(tenantPort.currentTenantId(), batchId);
+    int created = 0;
+    int skipped = 0;
+    int manual = 0;
+    java.util.List<ClaimSignCaseSummary.Item> items = new java.util.ArrayList<>();
+    for (SignBatchItem item : batchRepository.findItemsByBatchId(batchId)) {
+      String status = item.getCaseStatus();
+      if (SignBatchItem.CASE_NEW.equals(status)) {
+        created++;
+      } else if (SignBatchItem.CASE_SKIPPED.equals(status)) {
+        skipped++;
+      } else {
+        manual++;
+      }
+      items.add(
+          new ClaimSignCaseSummary.Item(
+              item.getId(),
+              item.getClaimNo(),
+              item.getCreatedCaseId() == null ? item.getClaimId() : item.getCreatedCaseId(),
+              status,
+              caseResultText(status)));
+    }
+    return new ClaimSignCaseSummary(created, skipped, manual, items);
+  }
+
+  private static String caseResultText(String status) {
+    return switch (status == null ? "" : status) {
+      case SignBatchItem.CASE_NEW -> "已建案并自动流转";
+      case SignBatchItem.CASE_SKIPPED -> "引用或已存在案件，跳过建案";
+      default -> "待人工补录或处理";
+    };
+  }
+
+  /** 明细幂等键 ≤128 列宽：超长走前缀 + FNV-1a，避免真库静默截断。 */
+  private static String itemBusinessKey(String businessKey, String claimNo) {
+    String raw = businessKey + ":" + (claimNo == null ? "" : claimNo);
+    if (raw.length() <= 128) {
+      return raw;
+    }
+    int hash = 0x811c9dc5;
+    for (byte b : raw.getBytes(java.nio.charset.StandardCharsets.UTF_8)) {
+      hash ^= b & 0xff;
+      hash *= 0x01000193;
+    }
+    return raw.substring(0, 110) + "-" + Integer.toHexString(hash);
+  }
+
   private static String generateBatchNo() {
     return "SG" + DistributedIdGenerator.generateLongId();
   }
 
-  public record AutoSignCommand(String businessKey, SignChannel signChannel) {}
+  public record AutoSignCommand(
+      String businessKey, SignChannel signChannel, List<CaseElement> caseElements) {
+
+    public AutoSignCommand(String businessKey, SignChannel signChannel) {
+      this(businessKey, signChannel, List.of());
+    }
+  }
 
   public record AutoSignResult(String batchNo, long batchId, boolean created) {}
+
+  /** 外部推送随回执携带的建案要素（缺项时签名明细落到待人工，不拒签收）。 */
+  public record CaseElement(
+      String claimNo,
+      String policyNo,
+      Long planId,
+      String insuredName,
+      String insuredIdNo,
+      Instant outInsureTime,
+      String claimType,
+      String sourceChannel) {}
 
   public record CreateOfflineBatchCommand(
       SignChannel signChannel,

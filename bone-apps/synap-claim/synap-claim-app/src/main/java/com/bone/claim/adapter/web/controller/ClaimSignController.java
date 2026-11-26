@@ -5,11 +5,15 @@ import com.bone.claim.adapter.web.dto.request.ClaimSignRequests.AcknowledgeSignR
 import com.bone.claim.adapter.web.dto.request.ClaimSignRequests.ConfirmSignReq;
 import com.bone.claim.adapter.web.dto.request.ClaimSignRequests.CreateSignBatchReq;
 import com.bone.claim.adapter.web.dto.request.ClaimSignRequests.ImportParticipantsReq;
+import com.bone.claim.adapter.web.dto.request.ClaimSignRequests.SignCaseElementReq;
 import com.bone.claim.adapter.web.dto.response.SignBatchResp;
+import com.bone.claim.adapter.web.dto.response.SignCaseSummaryResp;
 import com.bone.claim.adapter.web.dto.response.SignTrackResp;
 import com.bone.claim.application.ClaimSignApplicationService;
 import com.bone.claim.application.ClaimSignApplicationService.AutoSignResult;
+import com.bone.claim.application.ClaimSignApplicationService.CaseElement;
 import com.bone.claim.application.ClaimSignApplicationService.CreateOfflineBatchCommand;
+import com.bone.claim.application.ClaimSignCaseSummary;
 import com.bone.claim.domain.model.sign.ClaimSignBatch;
 import com.bone.claim.domain.model.sign.valueobject.SignChannel;
 import com.bone.core.idempotency.IdempotencyService;
@@ -18,6 +22,7 @@ import com.bone.core.model.PageResult;
 import com.bone.core.security.auth.CurrentOperator;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -50,7 +55,7 @@ public class ClaimSignController {
     AutoSignResult result =
         signService.signOnAcceptance(
             new ClaimSignApplicationService.AutoSignCommand(
-                req.businessKey(), SignChannel.ofCode(req.signChannel())));
+                req.businessKey(), SignChannel.ofCode(req.signChannel()), caseElements(req)));
     return ApiResponse.success(
         new AutoSignResp(result.batchNo(), result.batchId(), result.created()));
   }
@@ -89,14 +94,15 @@ public class ClaimSignController {
 
   @PreAuthorize("hasAuthority('claim:claims:write')")
   @PostMapping("/batches/{batchId}/confirm")
-  public ApiResponse<Void> confirm(
+  public ApiResponse<SignCaseSummaryResp> confirm(
       @RequestHeader(value = IdempotencyService.IDEMPOTENCY_KEY_HEADER, required = true)
           String idempotencyKey,
       @PathVariable long batchId,
       @Valid @RequestBody ConfirmSignReq req) {
     checkIdempotencyKey(idempotencyKey);
     signService.confirmOffline(batchId, CurrentOperator.requireId(), req.remark());
-    return ApiResponse.success(null);
+    return ApiResponse.success(
+        ClaimSignAssembler.INSTANCE.toSummaryResp(signService.caseSummary(batchId)));
   }
 
   @PreAuthorize("hasAuthority('claim:claims:read')")
@@ -105,12 +111,15 @@ public class ClaimSignController {
       @ModelAttribute com.bone.claim.adapter.web.dto.request.ClaimSignPageReq req) {
     PageResult<ClaimSignBatch> page =
         signService.list(req.source(), req.signStatus(), req.pageOrDefault(), req.sizeOrDefault());
-    return ApiResponse.success(page.map(batch -> ClaimSignAssembler.INSTANCE.toResp(batch)));
+    return ApiResponse.success(
+        page.map(
+            batch ->
+                ClaimSignAssembler.INSTANCE.toResp(batch, signService.caseSummary(batch.getId()))));
   }
 
   @PreAuthorize("hasAuthority('claim:claims:read')")
   @GetMapping("/batches/{batchId}/tracks")
-  public ApiResponse<java.util.List<SignTrackResp>> tracks(@PathVariable long batchId) {
+  public ApiResponse<List<SignTrackResp>> tracks(@PathVariable long batchId) {
     return ApiResponse.success(
         signService.tracks(batchId).stream().map(ClaimSignAssembler.INSTANCE::toResp).toList());
   }
@@ -118,7 +127,28 @@ public class ClaimSignController {
   @PreAuthorize("hasAuthority('claim:claims:read')")
   @GetMapping("/batches/{batchId}")
   public ApiResponse<SignBatchResp> detail(@PathVariable long batchId) {
-    return ApiResponse.success(ClaimSignAssembler.INSTANCE.toResp(signService.detail(batchId)));
+    ClaimSignBatch batch = signService.detail(batchId);
+    ClaimSignCaseSummary summary = signService.caseSummary(batchId);
+    return ApiResponse.success(ClaimSignAssembler.INSTANCE.toResp(batch, summary));
+  }
+
+  private static List<CaseElement> caseElements(AcknowledgeSignReq req) {
+    if (req.caseElements() == null) {
+      return List.of();
+    }
+    return req.caseElements().stream().map(ClaimSignController::toCaseElement).toList();
+  }
+
+  private static CaseElement toCaseElement(SignCaseElementReq req) {
+    return new CaseElement(
+        req.claimNo(),
+        req.policyNo(),
+        req.planId(),
+        req.insuredName(),
+        req.insuredIdNo(),
+        req.outInsureTime(),
+        req.claimType(),
+        req.sourceChannel());
   }
 
   /** 幂等键长度上限对齐 DB varchar(64)：超长直接拒绝，避免真库写入时静默失败。 */

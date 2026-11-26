@@ -3979,56 +3979,72 @@
    "path": "/api/v1/claims/sign",
    "controller": "ClaimSignController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
-   "cases": []
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
   },
   {
    "http": "POST",
    "path": "/api/v1/claims/sign/batches",
    "controller": "ClaimSignController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
-   "cases": []
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
   },
   {
    "http": "POST",
    "path": "/api/v1/claims/sign/batches/{batchId}/participants",
    "controller": "ClaimSignController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
-   "cases": []
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
   },
   {
    "http": "POST",
    "path": "/api/v1/claims/sign/batches/{batchId}/image",
    "controller": "ClaimSignController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
-   "cases": []
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
   },
   {
    "http": "POST",
    "path": "/api/v1/claims/sign/batches/{batchId}/confirm",
    "controller": "ClaimSignController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
-   "cases": []
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
   },
   {
    "http": "GET",
    "path": "/api/v1/claims/sign/batches",
    "controller": "ClaimSignController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
-   "cases": []
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
   },
   {
    "http": "GET",
    "path": "/api/v1/claims/sign/batches/{batchId}/tracks",
    "controller": "ClaimSignController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
-   "cases": []
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
   },
   {
    "http": "GET",
    "path": "/api/v1/claims/sign/batches/{batchId}",
    "controller": "ClaimSignController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
-   "cases": []
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
   },
   {
    "http": "GET",
@@ -5189,7 +5205,7 @@
  ],
  "summary": {
   "endpoints": 627,
-  "covered": 245,
-  "uncovered": 382
+  "covered": 253,
+  "uncovered": 374
  }
 }

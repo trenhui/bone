@@ -1,6 +1,7 @@
 package com.bone.claim.domain.repository;
 
 import com.bone.claim.domain.model.sign.ClaimSignBatch;
+import com.bone.claim.domain.model.sign.SignBatchItem;
 import com.bone.claim.domain.model.sign.SignTrackLog;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.Repository;
@@ -30,6 +31,23 @@ public interface ClaimSignBatchRepository extends Repository<ClaimSignBatch, Lon
             .eq(ClaimSignBatch::getTenantId, tenantId)
             .eq(ClaimSignBatch::getBusinessKey, businessKey));
   }
+
+  /** 批次明细（自动建案输入），按 id 顺序稳定处理。 */
+  @TenantScope(value = TenantScopeMode.AUTO, column = "i.tenant_id")
+  List<SignBatchItem> findItemsByBatchId(@Param("batchId") long batchId);
+
+  /** 明细关联案件（新建或幂等命中），只改关联与结果状态。 */
+  @TenantScope(value = TenantScopeMode.AUTO, column = "i.tenant_id")
+  int linkCaseForItem(
+      @Param("id") long id,
+      @Param("tenantId") long tenantId,
+      @Param("claimId") long claimId,
+      @Param("status") String status);
+
+  /** 明细结果状态推进（跳过/待人工/失败）。 */
+  @TenantScope(value = TenantScopeMode.AUTO, column = "i.tenant_id")
+  int markCaseForItem(
+      @Param("id") long id, @Param("tenantId") long tenantId, @Param("status") String status);
 
   /** 确认签收 CAS：仅当前置态匹配时置 FINISHED，返回影响行数（0 即冲突/已签收）。 */
   @TenantScope(value = TenantScopeMode.AUTO, column = "b.tenant_id")

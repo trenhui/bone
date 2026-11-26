@@ -36,6 +36,7 @@ import {
   claimSignApi,
   type SignBatch,
   type SignBatchListParams,
+  type SignCaseItem,
   type SignTrack,
 } from '../services/claimSign';
 
@@ -91,6 +92,7 @@ export function CaseSignPage(): ReactElement {
   const [participantsOpen, setParticipantsOpen] = useState<string | null>(null);
   const [tracksOpen, setTracksOpen] = useState<string | null>(null);
   const [tracks, setTracks] = useState<SignTrack[]>([]);
+  const [caseItems, setCaseItems] = useState<SignCaseItem[]>([]);
   // 确认签收意见由页面输入；Modal.confirm 的 onOk 闭包捕获点击时的 state，无需伪 ref。
   const [confirmRemark, setConfirmRemark] = useState('影像齐全，确认完成签收');
   const [form] = Form.useForm();
@@ -131,9 +133,29 @@ export function CaseSignPage(): ReactElement {
 
   const showTracks = async (batchId: string) => {
     setTracksOpen(batchId);
+    setTracks([]);
+    setCaseItems([]);
     try {
-      const resp = await claimSignApi.tracks(batchId);
-      setTracks(resp?.data ?? []);
+      const [trackResult, detailResult] = await Promise.allSettled([
+        claimSignApi.tracks(batchId),
+        claimSignApi.detail(batchId),
+      ]);
+      if (trackResult.status === 'fulfilled') {
+        setTracks(trackResult.value?.data ?? []);
+      } else {
+        message.error({
+          content: resolveErrorMessage(trackResult.reason, '轨迹加载失败'),
+          key: MSG_KEY,
+        });
+      }
+      if (detailResult.status === 'fulfilled') {
+        setCaseItems(detailResult.value?.data?.caseItems ?? []);
+      } else {
+        message.error({
+          content: resolveErrorMessage(detailResult.reason, '自动建案结果加载失败'),
+          key: `${MSG_KEY}-case`,
+        });
+      }
     } catch (err) {
       message.error({ content: resolveErrorMessage(err, '轨迹加载失败'), key: MSG_KEY });
     }
@@ -168,6 +190,22 @@ export function CaseSignPage(): ReactElement {
       ],
       dataIndex: 'claimCount', key: 'claimCount', width: 130,
       render: (v: number, row: SignBatch) => `${row.imageReadyCount ?? 0}/${v ?? 0}`,
+    },
+    {
+      title: [
+        '自动建案',
+        <Tooltip key="tip" title="新建案件数 / 跳过数 / 待人工数">
+          <InfoCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+        </Tooltip>,
+      ],
+      key: 'caseBuild', width: 140,
+      render: (_: unknown, row: SignBatch) => (
+        <Tooltip title="新建 / 跳过 / 待人工，点击查看轨迹明细">
+          <span data-testid="sign-case-summary">
+            {row.createdCaseCount ?? 0} / {row.skippedCaseCount ?? 0} / {row.manualCaseCount ?? 0}
+          </span>
+        </Tooltip>
+      ),
     },
     { title: '签收人', dataIndex: 'signOperator', key: 'signOperator', width: 120 },
     {
@@ -319,6 +357,21 @@ export function CaseSignPage(): ReactElement {
 
       <Drawer open={tracksOpen !== null} title="签收轨迹" width={520}
         onClose={() => setTracksOpen(null)} destroyOnHidden>
+        {caseItems.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <Typography.Text strong>自动建案结果</Typography.Text>
+            {caseItems.map((item) => (
+              <div key={item.itemId} style={{ marginTop: 6 }}>
+                <Tag color={item.caseStatus === 'NEW' ? 'blue' : item.caseStatus === 'SKIPPED' ? 'default' : 'orange'}>
+                  {item.caseStatus}
+                </Tag>
+                <span>{item.claimNo}</span>
+                {item.caseId && <span> · 案件 {item.caseId}</span>}
+                <div style={{ color: '#666', fontSize: 12 }}>{item.result}</div>
+              </div>
+            ))}
+          </div>
+        )}
         <Timeline items={tracks.map((t) => ({
           color: t.signStatus === 'FINISHED' ? 'green' : 'blue',
           children: (

@@ -11,6 +11,14 @@ import { stableClaimActionKey } from './claim';
 
 const client = createApiClient('/api/v1/claims');
 
+export interface SignCaseItem {
+  itemId: string;
+  claimNo: string;
+  caseId?: string;
+  caseStatus: string;
+  result: string;
+}
+
 export interface SignBatch {
   batchId: string;
   batchNo: string;
@@ -26,6 +34,10 @@ export interface SignBatch {
   signTime?: string;
   signOperator?: string;
   signRemark?: string;
+  createdCaseCount?: number;
+  skippedCaseCount?: number;
+  manualCaseCount?: number;
+  caseItems?: SignCaseItem[];
 }
 
 export interface SignTrack {
@@ -38,6 +50,13 @@ export interface SignTrack {
   remark?: string;
   operator?: string;
   occurredAt: string;
+}
+
+export interface SignCaseSummary {
+  createdCaseCount: number;
+  skippedCaseCount: number;
+  manualCaseCount: number;
+  items: SignCaseItem[];
 }
 
 export interface SignBatchListParams {
@@ -90,7 +109,7 @@ export const claimSignApi = {
 
   /** 二次确认签收。 */
   confirm(batchId: string, remark: string) {
-    return client.post<never, ApiResponse<void>>(
+    return client.post<never, ApiResponse<SignCaseSummary>>(
       `/sign/batches/${batchId}/confirm`,
       { remark },
       { headers: { 'Idempotency-Key': stableClaimActionKey(batchId, 'sign-confirm') } },

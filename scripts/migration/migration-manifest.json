@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 150,
+  "executableCount": 152,
   "retired": [],
   "entries": [
     {
@@ -951,6 +951,18 @@
       "file": "0144_fix_claim_sign_tenant_id.sql",
       "kind": "ddl",
       "summary": "修正 0142 签收三表 tenant_id：VARCHAR(64) → BIGINT，对齐 TenantAggregateRoot<Long> 与全仓 t_claim_case 口径；否则线下批次 requireBatch 比较租户时 ClassCastException。幂等条件 ALTER + 终态 SIGNAL(1644)，不改已记账的 0142。同步 bone-init.sql 三表定义。"
+    },
+    {
+      "order": 151,
+      "file": "0145_claim_sign_auto_case.sql",
+      "kind": "ddl",
+      "summary": "扩展签收明细表 t_claim_sign_batch_item 以承载自动建案要素：新增 policy_no/plan_id/insured_name/insured_id_no/out_insure_time/claim_type/source_channel/business_key/case_status/created_case_id 共 10 列，并加 (tenant_id,business_key) 唯一索引保证重复签收与事件重放幂等。实名明文落库为用户显式裁决（偏离 PIPL 假名化，仅限本地开发库）。幂等 information_schema 条件 ADD COLUMN/INDEX + 存储过程 SIGNAL(1644) 终态断言。同步 bone-init.sql 明细表定义。"
+    },
+    {
+      "order": 152,
+      "file": "0146_claim_sign_case_status_backfill.sql",
+      "kind": "mixed",
+      "summary": "签收明细 case_status 存量语义回填：0145 已记账故新建迁移，不修改其 sha256；claim_id 非空的存量明细置 SKIPPED、为空的置 AWAIT_MANUAL，新行 DEFAULT PENDING；幂等 UPDATE + 条件 MODIFY COLUMN + 存储过程 SIGNAL(1644) 终态断言无 NULL。同步 bone-init.sql 明细表默认值。"
     }
   ],
   "ordinalConflicts": [
