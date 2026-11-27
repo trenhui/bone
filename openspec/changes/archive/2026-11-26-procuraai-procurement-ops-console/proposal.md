@@ -26,6 +26,6 @@ procuraAI 的交易、履约、合同审查、AI 就绪度、人工复核与治�
 ## Impact
 
 - **前端**：在 `bone-frontend/apps/bone-procurement-app` 增加路由、页面、API 客户端与组件测试；沿用 `@bone/ui` 与现有权限点映射，不新增权限种子。
-- **后端**：只消费现有端点与 `procuraai-business-aggregates-completion` 提供的只读/具名人工端点；本 change 不改 Java 代码、DDL 或 CI 判据集合。
-- **依赖**：`procuraai-business-aggregates-completion` 提供投标/报价/授标/CAPA 的端点；寻源页面在依赖完成前可先完成静态结构，但端到端验收以依赖到位为准。
+- **后端**：只消费现有端点与 `procuraai-durable-business-aggregates-rebaseline` 已交付的只读/具名人工端点（`/api/v1/procurement/business/*`）；本 change 不改 Java 代码、DDL 或 CI 判据集合。
+- **依赖**：`procuraai-durable-business-aggregates-rebaseline` 已交付投标/报价/授标/CAPA 端点并 push；寻源页面按其真实响应形状实现，取数失败走 fail-closed 降级，不默认显示成功。A 方案 `procuraai-business-aggregates-completion` 保留草稿，不作依赖。
 - **非目标**：不做真实模型效果展示，不改评测/契约冻结状态，不执行生产库操作，不扩大 CI 三入口判据集合。

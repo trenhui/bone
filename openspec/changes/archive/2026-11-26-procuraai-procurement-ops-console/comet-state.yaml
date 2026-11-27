@@ -1,0 +1,2757 @@
+# comet-execution: managed-run
+change_id: edcda5a8-f583-4d5b-a72d-dd6e3ff456e8
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: standard
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: 3f2ab42083dee879d8e1af0ff9e84b71ede33aef
+design_doc: openspec/changes/archive/2026-11-26-procuraai-procurement-ops-console/design.md
+plan: docs/superpowers/plans/procuraai-procurement-ops-console.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-26-procuraai-procurement-ops-console-verify.md
+branch_status: pending
+created_at: 2026-11-26
+verified_at: 2026-11-26
+archive_confirmation: confirmed
+archived: true
+bound_branch: dev
+direct_override: false
+handoff_context: openspec/changes/archive/2026-11-26-procuraai-procurement-ops-console/.comet/handoff/design-context.json
+handoff_hash: fbad28322252fb227815d54ed6f029a0819078b251830e3f00be6cf8311e7ac6
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: ee316ad63f22c9f2a53a2f0bc44c3ee969fc8625a012189904061e43ca019851
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: procuraai-procurement-ops-console
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: 6a851c22d621c3ea886ca8fa099b9d48e38ceefa686ae5f9268c154f00dc61da
+    input:
+      change: procuraai-procurement-ops-console
+      changeDir: openspec/changes/procuraai-procurement-ops-console
+      workspaceBaseline:
+        ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+    state:
+      archiveConfirmation: confirmed
+      archived: true
+      autoTransition: true
+      baseRef: 3f2ab42083dee879d8e1af0ff9e84b71ede33aef
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 6
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-26
+      designDoc: openspec/changes/archive/2026-11-26-procuraai-procurement-ops-console/design.md
+      directOverride: false
+      handoffContext: openspec/changes/archive/2026-11-26-procuraai-procurement-ops-console/.comet/handoff/design-context.json
+      handoffHash: fbad28322252fb227815d54ed6f029a0819078b251830e3f00be6cf8311e7ac6
+      isolation: current
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/procuraai-procurement-ops-console.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-26-procuraai-procurement-ops-console-verify.md
+      verifiedAt: 2026-11-26
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 24
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-4b97d227d796e8904dbda8e434b55f6b91d4fd09d66b389bf3212605cdf0d8f3
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-procurement-ops-console:1
+        input:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs: {}
+        inputHash: c09c3f9242d3458617d5f2bbd407adf493d9e620a3b24406edb8950ca4569de4
+        outcome:
+          actionId: procuraai-procurement-ops-console:1
+          attempt: 1
+          claimToken: portable-4b97d227d796e8904dbda8e434b55f6b91d4fd09d66b389bf3212605cdf0d8f3
+          inputHash: c09c3f9242d3458617d5f2bbd407adf493d9e620a3b24406edb8950ca4569de4
+          outcomeId: 23b433dc-1796-45b0-9569-ca71cdc04b78
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3e52034ed83061d4e1e9aaeb86a848807077cd33ecb3e457746a5c1d20932d5a
+            outcomeId: 23b433dc-1796-45b0-9569-ca71cdc04b78
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-procurement-ops-console
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-c3dc5f93a7ecd6944a06c6d1fdd74118531045bb3aadd41f538cbab89c82b904
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-procurement-ops-console:4
+        input:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs: {}
+        inputHash: 7b79e1012719d6c7b7021f03f283a8d3ef93a7956b4eb52a7bfbadc1e1825764
+        outcome:
+          actionId: procuraai-procurement-ops-console:4
+          attempt: 2
+          claimToken: portable-c3dc5f93a7ecd6944a06c6d1fdd74118531045bb3aadd41f538cbab89c82b904
+          inputHash: 7b79e1012719d6c7b7021f03f283a8d3ef93a7956b4eb52a7bfbadc1e1825764
+          outcomeId: procuraai-procurement-ops-console:4:2:executor-result
+          output:
+            contentHash: 62b18bf47c8219b89336a0b9c564406edd9b3f547141f2a8d8d91806a32deeb6
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 2b5faf33f118d6c68158d734b1fa6b8ec7bedefbffba394fb37098ff0e8671a4
+            outcomeId: procuraai-procurement-ops-console:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: runtime inspect 显示 claim b957de45-cb2b-44a8-a62f-d83521aeb0a3 对应 action
+                receipts=[]、reconciliations=[]、无 receiptRef/manifestRef；pgrep
+                未发现该 claim 的独立存活执行器，guard --apply 命令已返回。本次 retry 仅指 SDK
+                记账未落地，不代表命令物理未执行。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-procurement-ops-console
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-648da51460393b218699194742daba80c633d5e911cb9dbe2d23ec0f72e5e87c
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-procurement-ops-console:5
+        input:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs: {}
+        inputHash: 7024afb8ca594d9b0091c227f97e4e8dcd4496ba8cd4e6d219aec4c2a4d2122b
+        outcome:
+          actionId: procuraai-procurement-ops-console:5
+          attempt: 1
+          claimToken: portable-648da51460393b218699194742daba80c633d5e911cb9dbe2d23ec0f72e5e87c
+          inputHash: 7024afb8ca594d9b0091c227f97e4e8dcd4496ba8cd4e6d219aec4c2a4d2122b
+          outcomeId: 009fed88-d629-4fc6-b172-d7f93e7da47c
+          output:
+            handoffContext: openspec/changes/procuraai-procurement-ops-console/.comet/handoff/design-context.json
+            handoffHash: fbad28322252fb227815d54ed6f029a0819078b251830e3f00be6cf8311e7ac6
+            proposal: 候选方案（沿用既有页面模式，仅修正依赖事实）：在 bone-procurement-app 新增三条路由
+              /sourcing、/supplier-onboarding、/supplier-risk，配套纯映射层 *.view.ts 与
+              services/*Api.ts；以顶层 ApiResponse.success 而非 HTTP 2xx
+              判定结果，403→无权限、404→能力未启用、未知码保留原始码、取数失败→无法确认；授标/OCR 复核/预警处置请求不含前端自报
+              tenantId/operator/confirmedBy，身份只由后端登录态裁决。依赖从草稿 A 方案修正为已交付的
+              procuraai-durable-business-aggregates-rebaseline（/api/v1/procurement/business/*），此为事实修正不扩需求。取舍：不新增后端端点/DDL/权限种子/CI
+              判据集合；不改 HITL/就绪度/治理既有规格；导航只复用不改判词。风险：端点响应形状差异按实现遗漏在范围内修正；PII
+              用展示字段白名单；以限定 app 的 vitest + tsc --noEmit + eslint JSON errorCount
+              为权威判据避免全仓假红。Spec Patch：无（能力边界不变）。
+            requirementsEvidence:
+              contentHash: a15b6e919b99495fee8ce445cda52ee3491bb85a00d1ee3c7fd7970adf9eb910
+              ref: openspec/changes/procuraai-procurement-ops-console
+            sourceEvidence:
+              contentHash: 93a5d5c80d5ac4119dd7e48fc541e8f5d440e9b2ef3b863637ece1378f83764c
+              ref: openspec/changes/procuraai-procurement-ops-console
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 34c2237d4ea0668a85b96a0db4e4740e3d86172faab2e42c2657f25cb5f13e0f
+            outcomeId: 009fed88-d629-4fc6-b172-d7f93e7da47c
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-procurement-ops-console
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-eda93a2004e67672cea023e6aed599b649e179d54916a7bcd36f38e13d1188db
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-procurement-ops-console:7
+        input:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs: {}
+        inputHash: 418540f3a8ed258d4cf2b87d26ce79b8bbe9bd44909e080a5174eefd2e2b474f
+        outcome:
+          actionId: procuraai-procurement-ops-console:7
+          attempt: 1
+          claimToken: portable-eda93a2004e67672cea023e6aed599b649e179d54916a7bcd36f38e13d1188db
+          inputHash: 418540f3a8ed258d4cf2b87d26ce79b8bbe9bd44909e080a5174eefd2e2b474f
+          outcomeId: c6146029-b1a5-4a88-9d91-035fa54fcc27
+          output:
+            designDoc: openspec/changes/procuraai-procurement-ops-console/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3827b5ae94ebabc66a7ef34390702cb710e62e1b1d07f0e5e42978cd4f2bf7ab
+            outcomeId: c6146029-b1a5-4a88-9d91-035fa54fcc27
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-procurement-ops-console
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-232365c632dbf69ec21a613acdb3ed034429cea60e6495aaa52924c563781f7b
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-procurement-ops-console:9
+        input:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs: {}
+        inputHash: 77975f0d534af224b74824a2457e97101d01fb19ac9e8ff52ed639c0af8cff3b
+        outcome:
+          actionId: procuraai-procurement-ops-console:9
+          attempt: 1
+          claimToken: portable-232365c632dbf69ec21a613acdb3ed034429cea60e6495aaa52924c563781f7b
+          inputHash: 77975f0d534af224b74824a2457e97101d01fb19ac9e8ff52ed639c0af8cff3b
+          outcomeId: a672be73-7df2-4a2b-bcc6-d5ecdf810c77
+          output:
+            boundBranch: dev
+            buildMode: autonomous
+            directOverride: false
+            isolation: current
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 26e6ef9570be25f044f041bc0877e36087e7cce8dc173b996cb86e1fb9a451db
+            outcomeId: a672be73-7df2-4a2b-bcc6-d5ecdf810c77
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-procurement-ops-console
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-04d2d95776cb3cbb9ff6f6297931aeb572bde96cced85b89ef1dacf8ef31a70a
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-procurement-ops-console:11
+        input:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs: {}
+        inputHash: a72327fc95a3272b6d9058a3a4a4a27b8df2261dfa6a74ce9d433a36384659aa
+        outcome:
+          actionId: procuraai-procurement-ops-console:11
+          attempt: 1
+          claimToken: portable-04d2d95776cb3cbb9ff6f6297931aeb572bde96cced85b89ef1dacf8ef31a70a
+          inputHash: a72327fc95a3272b6d9058a3a4a4a27b8df2261dfa6a74ce9d433a36384659aa
+          outcomeId: 3fe13f6f-88ec-4925-8a5f-83677d9838b2
+          output:
+            designEvidence:
+              contentHash: 99b94ed71b51207999ed2c8be31d1990ba3e193028fb8325ff576a0bd0ae9d11
+              ref: openspec/changes/procuraai-procurement-ops-console/design.md
+            plan: docs/superpowers/plans/procuraai-procurement-ops-console.md
+            planEvidence:
+              contentHash: 31d7f01e37e23808703a57f0dcaaf23f1fcb3b609faa5d3a2302fbd5fe26e940
+              ref: docs/superpowers/plans/procuraai-procurement-ops-console.md
+            taskRevision: 8a5f655bdc47e0369a475f42aea6fd64ad7709f1fbcbc47906d70c2c2631463c
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 64a93ce6325927496e9afe9c8c83a55d33e596f5a9f4c0608f14d4d36f7d6fed
+            outcomeId: 3fe13f6f-88ec-4925-8a5f-83677d9838b2
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-procurement-ops-console
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/procuraai-procurement-ops-console:13/1
+          token: portable-093fec6e1e43c865b5f92debffe3ab1b9b56b2fa5042fece839bc38d1d4107d0
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-procurement-ops-console:13
+        input:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs: {}
+        inputHash: 95639f46b0b3b3f217e2fd160d85349347eced8fa9c212828c969e4a8d06e9c3
+        outcome:
+          actionId: procuraai-procurement-ops-console:13
+          attempt: 1
+          claimToken: portable-093fec6e1e43c865b5f92debffe3ab1b9b56b2fa5042fece839bc38d1d4107d0
+          inputHash: 95639f46b0b3b3f217e2fd160d85349347eced8fa9c212828c969e4a8d06e9c3
+          outcomeId: f488fb5c-3319-4032-bbbf-ac2155f35caa
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f6bcc42f26dea3e91408e42c41ca73c14d716fbeba83c3205b59a3395f9e61a2
+            outcomeId: f488fb5c-3319-4032-bbbf-ac2155f35caa
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-procurement-ops-console
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-020799d6d6e41e54181a8178fbb70f691fa56dd74dda4550582bccc0ee3efbf0
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-procurement-ops-console:14
+        input:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs: {}
+        inputHash: 44794b246ac1a055e14d35ee4a22d44fb752f23ff9fc5e8cb5f0e7c64286bca6
+        outcome:
+          actionId: procuraai-procurement-ops-console:14
+          attempt: 1
+          claimToken: portable-020799d6d6e41e54181a8178fbb70f691fa56dd74dda4550582bccc0ee3efbf0
+          inputHash: 44794b246ac1a055e14d35ee4a22d44fb752f23ff9fc5e8cb5f0e7c64286bca6
+          outcomeId: 03fabf8944ea408ed76320b983323acaa13129943055acc4aa0c45912edb4851
+          output:
+            argv:
+              - bash
+              - -c
+              - python3 tools/check_procura_ops_console.py && python3
+                tools/check_procura_ops_console.py --self-test && cd
+                bone-frontend && npx vitest run --root .
+                apps/bone-procurement-app && npx tsc --noEmit -p
+                apps/bone-procurement-app/tsconfig.json && npx eslint
+                apps/bone-procurement-app/src --ext ts,tsx -f json >
+                /tmp/ops-guard-eslint.json && python3 -c "import json;
+                d=json.load(open(\"/tmp/ops-guard-eslint.json\"));
+                e=sum(f.get(\"errorCount\",0) for f in d); assert e==0,
+                f\"eslint errors={e}\"; print(f\"eslint errorCount={e}\")"
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 8b9c5a2d5d469df37a9d211231661675c6b5796ca1476e7089aa6707c2927c58
+            cwd: .
+            environment: 396ac89fd32ffbe362c6fb216c59f34bf928a9d915b0ea23f788f70bf34beae1
+            exitCode: 0
+            inputAfter: 3ba45a227e474225511f57d6bc2d59202b3ade66e11db4e4349611ea9befaa73
+            inputBefore: 3ba45a227e474225511f57d6bc2d59202b3ade66e11db4e4349611ea9befaa73
+            manifestHash: a72cc8cd635d07b480098b07b9a66df859a7e437c1b4e6fb7b8dee8597aa6582
+            manifestRef: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/c804bb00-329b-4f48-b971-22bad7300f73.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/b6a5fe68-741f-42cc-9a3b-60598bd9f8e6.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 200a7cefbb53b03d3969b5acaa45276eaf7d029dbce9e06f023587d852411962
+            outcomeId: 03fabf8944ea408ed76320b983323acaa13129943055acc4aa0c45912edb4851
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-procurement-ops-console
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-cb5c3570805c2feaa551f9ae2e2dff16340d2daa21e01a3868a933616606fe74
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-procurement-ops-console:16
+        input:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs: {}
+        inputHash: 273f5a11213d86fd72b465203e8763df3aa3559511de6058cc2114de6d794dc3
+        outcome:
+          actionId: procuraai-procurement-ops-console:16
+          attempt: 1
+          claimToken: portable-cb5c3570805c2feaa551f9ae2e2dff16340d2daa21e01a3868a933616606fe74
+          inputHash: 273f5a11213d86fd72b465203e8763df3aa3559511de6058cc2114de6d794dc3
+          outcomeId: 3a78ee11-42e9-43ec-bf40-907a4b2737fc
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-26-procuraai-procurement-ops-console-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c3b50e5743d582b83d61536baca2f1d41005395e1d6e1e132ef64ca1a0575aba
+            outcomeId: 3a78ee11-42e9-43ec-bf40-907a4b2737fc
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-procurement-ops-console
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-efc59001cdc67b837c6a31aeb6848ab7f98c10ab28fc5d94ca235cf4f54c78f7
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-procurement-ops-console:18
+        input:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs: {}
+        inputHash: 6f127b4279f03f833d5ca2a62bc0bd54f69aad6e81f8a25ec6e38b99bb12e82e
+        outcome:
+          actionId: procuraai-procurement-ops-console:18
+          attempt: 2
+          claimToken: portable-efc59001cdc67b837c6a31aeb6848ab7f98c10ab28fc5d94ca235cf4f54c78f7
+          inputHash: 6f127b4279f03f833d5ca2a62bc0bd54f69aad6e81f8a25ec6e38b99bb12e82e
+          outcomeId: df0934f8-940d-4bf7-b5c4-46846a18148a
+          output:
+            argv:
+              - bash
+              - -c
+              - python3 tools/check_procura_ops_console.py && python3
+                tools/check_procura_ops_console.py --self-test && cd
+                bone-frontend && npx vitest run --root .
+                apps/bone-procurement-app && npx tsc --noEmit -p
+                apps/bone-procurement-app/tsconfig.json && npx eslint
+                apps/bone-procurement-app/src --ext ts,tsx -f json >
+                /tmp/ops-verify-eslint2.json && python3 -c "import json;
+                d=json.load(open(\"/tmp/ops-verify-eslint2.json\"));
+                e=sum(f.get(\"errorCount\",0) for f in d); assert e==0,
+                f\"eslint errors={e}\"; print(f\"eslint errorCount={e}\")"
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: 82a1917459f0104ec387f71cc615f62dd5d17e1cfea331b5a22153d084c446ed
+            cwd: .
+            deliveryInputs:
+              bone-frontend/apps/bone-procurement-app/src/App.tsx: git:75ce1cfe5994cfb4f337f4f37c7e5516595b39e9
+              bone-frontend/apps/bone-procurement-app/src/components/ProcurementWorkbenchNav.test.tsx: git:c93c73a621411c0bc82c1d4e97ef12f7da54f043
+              bone-frontend/apps/bone-procurement-app/src/components/ProcurementWorkbenchNav.tsx: git:70d2d6b4b5952ba6ca3923bffd20fa9a818dc12e
+              bone-frontend/apps/bone-procurement-app/src/pages/OpsConsoleRoutes.test.tsx: git:574ce45b4f3fc6435c8fa57b5d3f69a82b251828
+              bone-frontend/apps/bone-procurement-app/src/pages/SourcingConsole.test.tsx: git:b0f7fcbe17ec9f6f3ceabc0e7dd445ec2b3e1e44
+              bone-frontend/apps/bone-procurement-app/src/pages/SourcingConsole.tsx: git:a8080601b5916f034c5d5281412a822fb6ea3e41
+              bone-frontend/apps/bone-procurement-app/src/pages/SupplierOnboarding.test.tsx: git:ed7b32ef2d89e8dd1d0b2985c46e7471e9a806c4
+              bone-frontend/apps/bone-procurement-app/src/pages/SupplierOnboarding.tsx: git:4b69b7b65f7f52918c9aeb6913d25156c5f9dae8
+              bone-frontend/apps/bone-procurement-app/src/pages/SupplierRisk.test.tsx: git:0bfc3f5607cfb43c8f060a23db069b53340ac6a8
+              bone-frontend/apps/bone-procurement-app/src/pages/SupplierRisk.tsx: git:e78410597c6a53ee0d439e57931f0f7dfe58e84a
+              bone-frontend/apps/bone-procurement-app/src/services/sourcingApi.test.ts: git:9d09409a3476622cca7ae996aa7d9bd16795db40
+              bone-frontend/apps/bone-procurement-app/src/services/sourcingApi.ts: git:45a56920ff64d6a374b40e997f3d07649aee555b
+              bone-frontend/apps/bone-procurement-app/src/services/supplierRiskApi.test.ts: git:ab310a7bc312587908ea313f8d93c7d6ca2804a5
+              bone-frontend/apps/bone-procurement-app/src/services/supplierRiskApi.ts: git:3cf2ec764a0bca7d8716df6fedc5529960ee2f6e
+              bone-frontend/apps/bone-procurement-app/src/types/sourcingView.test.ts: git:c33c7beef30adcae27ffe57d2acd0a695d5d00b1
+              bone-frontend/apps/bone-procurement-app/src/types/sourcingView.ts: git:d09eac68770f518a926d8a556d4895c5c7d125e9
+              bone-frontend/apps/bone-procurement-app/src/types/supplierRiskView.test.ts: git:830b105688ac9654bcfa9638a5215952fd42b012
+              bone-frontend/apps/bone-procurement-app/src/types/supplierRiskView.ts: git:e79edd7f1829d4ad99e0a39cc80100989e94d3ee
+              tools/check_procura_ops_console.py: git:29021667d2515bc6c67e752febc74efe1b7badd2
+            environment: 92fbd1e566579b7c1abd18f1233791aa33cafb9ccb08274cd30a834afd502cb8
+            exitCode: 0
+            inputAfter: 3ba45a227e474225511f57d6bc2d59202b3ade66e11db4e4349611ea9befaa73
+            inputBefore: 3ba45a227e474225511f57d6bc2d59202b3ade66e11db4e4349611ea9befaa73
+            manifestHash: a72cc8cd635d07b480098b07b9a66df859a7e437c1b4e6fb7b8dee8597aa6582
+            manifestRef: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/c3ccabad-0082-4a21-957f-1a3debe403c7.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/6d0b8311-a712-4c97-976d-e382f7fe4d50.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 2e5be9d137f13cbb07d9897ae8b830018fa0516a7070571b0af21f3791c0bb14
+            outcomeId: df0934f8-940d-4bf7-b5c4-46846a18148a
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: not-executed 仅指 SDK 记账未落地，不代表命令物理未执行：原 verify 检查子进程日志已生成且全通过（26 文件/154
+                例 + eslint errorCount=0），但 SDK
+                record.status=started、无完整结果对象、无可采信收据，原执行器已停止（pgrep 无
+                vitest/eslint/comet guard 进程）。按 Runtime 指引以记账未落地重试，重跑取合法收据。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-procurement-ops-console
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-0da49b33b35e5d8e23e2efa183fe1fe99e94b50ce4b3758dd3608e70267c4a98
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-procurement-ops-console:20
+        input:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs: {}
+        inputHash: ce2ebfb1b68368de92b10fced0eeeb6302376a01d0434348815e6ff016025100
+        outcome:
+          actionId: procuraai-procurement-ops-console:20
+          attempt: 1
+          claimToken: portable-0da49b33b35e5d8e23e2efa183fe1fe99e94b50ce4b3758dd3608e70267c4a98
+          inputHash: ce2ebfb1b68368de92b10fced0eeeb6302376a01d0434348815e6ff016025100
+          outcomeId: beebc437-153c-4dd2-9e0a-c386cd84f400
+          output:
+            prBaseBranch: dev
+            remote: origin
+            summary: procuraAI 采购运营工作台补齐：新增 /sourcing、/supplier-onboarding、/supplier-risk
+              三路由 + 共享导航 + 2 API 客户端 + 2 纯映射层 + 静态门禁；路由/身份边界/fail-closed/PII
+              全通过。采购 app vitest 154/154、tsc EXIT=0、eslint errorCount=0、静态门禁 4/4
+              注入必红；独立审查 0 CRITICAL/0 IMPORTANT。交付 push 到 origin/dev。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: ec0a6a17ac282ef12479f7e950fd986cbd7ceca225f6c19733d754563d7625b1
+            outcomeId: beebc437-153c-4dd2-9e0a-c386cd84f400
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-procurement-ops-console
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-386afbccd93df949df76455a538d16e3cad225fff8d7d7b99d28ab88124c1960
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-procurement-ops-console:22
+        input:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs: {}
+        inputHash: 029c7da26380a3fa9117ac211de403cd7dd13e7a6ee94c8f73ae6e0dc85c9e84
+        outcome:
+          actionId: procuraai-procurement-ops-console:22
+          attempt: 1
+          claimToken: portable-386afbccd93df949df76455a538d16e3cad225fff8d7d7b99d28ab88124c1960
+          inputHash: 029c7da26380a3fa9117ac211de403cd7dd13e7a6ee94c8f73ae6e0dc85c9e84
+          outcomeId: 53cf121f-c524-4bb8-9804-942505c285be
+          output:
+            baseCommit: e64ad175a504b33a3ec51c2fbc8e1b4cc34f19e7
+            deliveryAction: push
+            prBaseBranch: dev
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 8bb4a196df66352c005f530c2cb8734c37cdd4ac08e632a44409663cb47fb03c
+            outcomeId: 53cf121f-c524-4bb8-9804-942505c285be
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-procurement-ops-console
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-9ea6017b4fdae19a3e9cbd16609ec94818740fb48865527db2069cc4fa679704
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-procurement-ops-console:23
+        input:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs: {}
+        inputHash: 533d6232ec1fe85868816c75ce27294de7d16be9966cdbc2651136e8024534aa
+        outcome:
+          actionId: procuraai-procurement-ops-console:23
+          artifacts:
+            - sha256: 6bfd149cc28ad349de503c10336d6e0cb5b461b46682e9df384c4d0c634903fa
+              uri: openspec/changes/archive/2026-11-26-procuraai-procurement-ops-console/.comet/archive-manifest.json
+          attempt: 1
+          claimToken: portable-9ea6017b4fdae19a3e9cbd16609ec94818740fb48865527db2069cc4fa679704
+          inputHash: 533d6232ec1fe85868816c75ce27294de7d16be9966cdbc2651136e8024534aa
+          outcomeId: procuraai-procurement-ops-console:23:1:recovered:43
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-26-procuraai-procurement-ops-console
+          status: succeeded
+        protocolVersion: 1
+        reason: 物理归档已落地（归档目录存在、活动目录消失），SDK action 仍 running；归档锁 pid 59723 经 kill -0 确认
+          DEAD，无 comet archive 执行器；标记记账未确认后按规程补记已完成的归档结果
+        receipts:
+          - hash: 85a55daf291f68f020667c99a064ee44cb95d66b80b962f57b89eb97248530fb
+            outcomeId: procuraai-procurement-ops-console:23:1:recovered:43
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-procurement-ops-console
+        status: succeeded
+        stepId: full.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: procuraai-procurement-ops-console:24
+        input:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs: {}
+        inputHash: f99c76d7e758a252fa97e35f75a7df3a9263a706bed5ec7128af602a27b9ba98
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-procurement-ops-console
+        status: pending
+        stepId: full.archive.deliver
+        type: invoke_skill
+    actionContexts:
+      procuraai-procurement-ops-console:1:
+        results: {}
+        sequence: 1
+      procuraai-procurement-ops-console:11:
+        results: {}
+        sequence: 11
+      procuraai-procurement-ops-console:13:
+        results: {}
+        sequence: 13
+      procuraai-procurement-ops-console:14:
+        results: {}
+        sequence: 14
+      procuraai-procurement-ops-console:16:
+        results: {}
+        sequence: 16
+      procuraai-procurement-ops-console:18:
+        results: {}
+        sequence: 18
+      procuraai-procurement-ops-console:20:
+        results: {}
+        sequence: 20
+      procuraai-procurement-ops-console:22:
+        results: {}
+        sequence: 22
+      procuraai-procurement-ops-console:23:
+        results: {}
+        sequence: 23
+      procuraai-procurement-ops-console:24:
+        results: {}
+        sequence: 24
+      procuraai-procurement-ops-console:4:
+        results: {}
+        sequence: 4
+      procuraai-procurement-ops-console:5:
+        results: {}
+        sequence: 5
+      procuraai-procurement-ops-console:7:
+        results: {}
+        sequence: 7
+      procuraai-procurement-ops-console:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: procuraai-procurement-ops-console:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 62b18bf47c8219b89336a0b9c564406edd9b3f547141f2a8d8d91806a32deeb6
+              ref: openspec/changes/procuraai-procurement-ops-console
+        proposalHash: 593e3d5b466d7bb26a27f85b74920835f6ab002d1ab1b38fb2a6766cb7a5dfca
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-62b18bf47c8219b89336a0b9c564406edd9b3f547141f2a8d8d91806a32deeb6
+          choice: approved
+          proposalHash: 593e3d5b466d7bb26a27f85b74920835f6ab002d1ab1b38fb2a6766cb7a5dfca
+      - id: procuraai-procurement-ops-console:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-procurement-ops-console/.comet/handoff/design-context.json
+              handoffHash: fbad28322252fb227815d54ed6f029a0819078b251830e3f00be6cf8311e7ac6
+              proposal: 候选方案（沿用既有页面模式，仅修正依赖事实）：在 bone-procurement-app 新增三条路由
+                /sourcing、/supplier-onboarding、/supplier-risk，配套纯映射层 *.view.ts 与
+                services/*Api.ts；以顶层 ApiResponse.success 而非 HTTP 2xx
+                判定结果，403→无权限、404→能力未启用、未知码保留原始码、取数失败→无法确认；授标/OCR 复核/预警处置请求不含前端自报
+                tenantId/operator/confirmedBy，身份只由后端登录态裁决。依赖从草稿 A 方案修正为已交付的
+                procuraai-durable-business-aggregates-rebaseline（/api/v1/procurement/business/*），此为事实修正不扩需求。取舍：不新增后端端点/DDL/权限种子/CI
+                判据集合；不改 HITL/就绪度/治理既有规格；导航只复用不改判词。风险：端点响应形状差异按实现遗漏在范围内修正；PII
+                用展示字段白名单；以限定 app 的 vitest + tsc --noEmit + eslint JSON
+                errorCount 为权威判据避免全仓假红。Spec Patch：无（能力边界不变）。
+              requirementsEvidence:
+                contentHash: a15b6e919b99495fee8ce445cda52ee3491bb85a00d1ee3c7fd7970adf9eb910
+                ref: openspec/changes/procuraai-procurement-ops-console
+              sourceEvidence:
+                contentHash: 93a5d5c80d5ac4119dd7e48fc541e8f5d440e9b2ef3b863637ece1378f83764c
+                ref: openspec/changes/procuraai-procurement-ops-console
+        proposalHash: 759275e3d5f1e679e98b91c3f5e41bc2ca12372033fa4441b5fde6958ca69ff3
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-759275e3d5f1e679e98b91c3f5e41bc2ca12372033fa4441b5fde6958ca69ff3-approved
+          choice: approved
+          proposalHash: 759275e3d5f1e679e98b91c3f5e41bc2ca12372033fa4441b5fde6958ca69ff3
+      - id: procuraai-procurement-ops-console:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: 2c2fad537cf199dfc3662a21b22c9a9d53cd05375b6377b2ef3af358c033edb8
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: ed3c1e64-4d59-46bd-bf0b-9fe71d120a7b
+          choice: approved
+          proposalHash: 2c2fad537cf199dfc3662a21b22c9a9d53cd05375b6377b2ef3af358c033edb8
+      - id: procuraai-procurement-ops-console:21
+        stepId: full.archive.confirm
+        sequence: 21
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs:
+            full.archive.prepare:
+              prBaseBranch: dev
+              remote: origin
+              summary: procuraAI 采购运营工作台补齐：新增 /sourcing、/supplier-onboarding、/supplier-risk
+                三路由 + 共享导航 + 2 API 客户端 + 2 纯映射层 + 静态门禁；路由/身份边界/fail-closed/PII
+                全通过。采购 app vitest 154/154、tsc EXIT=0、eslint errorCount=0、静态门禁
+                4/4 注入必红；独立审查 0 CRITICAL/0 IMPORTANT。交付 push 到 origin/dev。
+              targetBranch: dev
+        proposalHash: 75dc37656383e681d3561d5d70faeeb50e5bc499e60f2b1fea0eca117ec04e98
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-75dc37656383e681d3561d5d70faeeb50e5bc499e60f2b1fea0eca117ec04e98-push
+          choice: push
+          proposalHash: 75dc37656383e681d3561d5d70faeeb50e5bc499e60f2b1fea0eca117ec04e98
+    evidenceWaits:
+      - id: procuraai-procurement-ops-console:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-procurement-ops-console
+          contentHash: 62b18bf47c8219b89336a0b9c564406edd9b3f547141f2a8d8d91806a32deeb6
+          submissionId: 6afd5c92-b8b6-4045-b586-f40ddbb827e0
+      - id: procuraai-procurement-ops-console:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-procurement-ops-console/design.md
+          contentHash: 99b94ed71b51207999ed2c8be31d1990ba3e193028fb8325ff576a0bd0ae9d11
+          submissionId: 18a7e579-e41c-4aab-87f8-a6e6010ed593
+      - id: procuraai-procurement-ops-console:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/procuraai-procurement-ops-console.md
+          contentHash: 31d7f01e37e23808703a57f0dcaaf23f1fcb3b609faa5d3a2302fbd5fe26e940
+          submissionId: e1841cab-be94-464c-9dd1-a58128ba711c
+      - id: procuraai-procurement-ops-console:15
+        stepId: full.build.check.evidence
+        sequence: 15
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/b6a5fe68-741f-42cc-9a3b-60598bd9f8e6.log
+          contentHash: 8b9c5a2d5d469df37a9d211231661675c6b5796ca1476e7089aa6707c2927c58
+          submissionId: ff47590d-d33c-4d40-9c3d-c4ca31514499
+      - id: procuraai-procurement-ops-console:17
+        stepId: full.verify.report.evidence
+        sequence: 17
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-26-procuraai-procurement-ops-console-verify.md
+          contentHash: 639ec9cec6b5e4fc21c8e9ae6ed6b30b0bfd07e3b3dab5235f29ddb84858aa64
+          submissionId: 762b74cb-f522-46d6-ad64-467bb26a3a8e
+      - id: procuraai-procurement-ops-console:19
+        stepId: full.verify.check.evidence
+        sequence: 19
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/6d0b8311-a712-4c97-976d-e382f7fe4d50.log
+          contentHash: 82a1917459f0104ec387f71cc615f62dd5d17e1cfea331b5a22153d084c446ed
+          submissionId: 71ed8f33-1f43-4ff9-9e8c-0ec688937179
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 44
+  sourceHash: 4cc5e2d9923e44a0f5b167cee1c9be5dcdc055a96b265191b9b6a02c08cc635d
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 62b18bf47c8219b89336a0b9c564406edd9b3f547141f2a8d8d91806a32deeb6
+              ref: openspec/changes/procuraai-procurement-ops-console
+      - contentHash: 62b18bf47c8219b89336a0b9c564406edd9b3f547141f2a8d8d91806a32deeb6
+        ref: openspec/changes/procuraai-procurement-ops-console
+      - contentHash: 62b18bf47c8219b89336a0b9c564406edd9b3f547141f2a8d8d91806a32deeb6
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-procurement-ops-console/.comet/handoff/design-context.json
+              handoffHash: fbad28322252fb227815d54ed6f029a0819078b251830e3f00be6cf8311e7ac6
+              proposal: 候选方案（沿用既有页面模式，仅修正依赖事实）：在 bone-procurement-app 新增三条路由
+                /sourcing、/supplier-onboarding、/supplier-risk，配套纯映射层 *.view.ts 与
+                services/*Api.ts；以顶层 ApiResponse.success 而非 HTTP 2xx
+                判定结果，403→无权限、404→能力未启用、未知码保留原始码、取数失败→无法确认；授标/OCR 复核/预警处置请求不含前端自报
+                tenantId/operator/confirmedBy，身份只由后端登录态裁决。依赖从草稿 A 方案修正为已交付的
+                procuraai-durable-business-aggregates-rebaseline（/api/v1/procurement/business/*），此为事实修正不扩需求。取舍：不新增后端端点/DDL/权限种子/CI
+                判据集合；不改 HITL/就绪度/治理既有规格；导航只复用不改判词。风险：端点响应形状差异按实现遗漏在范围内修正；PII
+                用展示字段白名单；以限定 app 的 vitest + tsc --noEmit + eslint JSON
+                errorCount 为权威判据避免全仓假红。Spec Patch：无（能力边界不变）。
+              requirementsEvidence:
+                contentHash: a15b6e919b99495fee8ce445cda52ee3491bb85a00d1ee3c7fd7970adf9eb910
+                ref: openspec/changes/procuraai-procurement-ops-console
+              sourceEvidence:
+                contentHash: 93a5d5c80d5ac4119dd7e48fc541e8f5d440e9b2ef3b863637ece1378f83764c
+                ref: openspec/changes/procuraai-procurement-ops-console
+      - handoffContext: openspec/changes/procuraai-procurement-ops-console/.comet/handoff/design-context.json
+        handoffHash: fbad28322252fb227815d54ed6f029a0819078b251830e3f00be6cf8311e7ac6
+        proposal: 候选方案（沿用既有页面模式，仅修正依赖事实）：在 bone-procurement-app 新增三条路由
+          /sourcing、/supplier-onboarding、/supplier-risk，配套纯映射层 *.view.ts 与
+          services/*Api.ts；以顶层 ApiResponse.success 而非 HTTP 2xx
+          判定结果，403→无权限、404→能力未启用、未知码保留原始码、取数失败→无法确认；授标/OCR 复核/预警处置请求不含前端自报
+          tenantId/operator/confirmedBy，身份只由后端登录态裁决。依赖从草稿 A 方案修正为已交付的
+          procuraai-durable-business-aggregates-rebaseline（/api/v1/procurement/business/*），此为事实修正不扩需求。取舍：不新增后端端点/DDL/权限种子/CI
+          判据集合；不改 HITL/就绪度/治理既有规格；导航只复用不改判词。风险：端点响应形状差异按实现遗漏在范围内修正；PII
+          用展示字段白名单；以限定 app 的 vitest + tsc --noEmit + eslint JSON errorCount
+          为权威判据避免全仓假红。Spec Patch：无（能力边界不变）。
+        requirementsEvidence:
+          contentHash: a15b6e919b99495fee8ce445cda52ee3491bb85a00d1ee3c7fd7970adf9eb910
+          ref: openspec/changes/procuraai-procurement-ops-console
+        sourceEvidence:
+          contentHash: 93a5d5c80d5ac4119dd7e48fc541e8f5d440e9b2ef3b863637ece1378f83764c
+          ref: openspec/changes/procuraai-procurement-ops-console
+      - designDoc: openspec/changes/procuraai-procurement-ops-console/design.md
+      - contentHash: 99b94ed71b51207999ed2c8be31d1990ba3e193028fb8325ff576a0bd0ae9d11
+        ref: openspec/changes/procuraai-procurement-ops-console/design.md
+      - boundBranch: dev
+        buildMode: autonomous
+        directOverride: false
+        isolation: current
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 99b94ed71b51207999ed2c8be31d1990ba3e193028fb8325ff576a0bd0ae9d11
+          ref: openspec/changes/procuraai-procurement-ops-console/design.md
+        plan: docs/superpowers/plans/procuraai-procurement-ops-console.md
+        planEvidence:
+          contentHash: 31d7f01e37e23808703a57f0dcaaf23f1fcb3b609faa5d3a2302fbd5fe26e940
+          ref: docs/superpowers/plans/procuraai-procurement-ops-console.md
+        taskRevision: 8a5f655bdc47e0369a475f42aea6fd64ad7709f1fbcbc47906d70c2c2631463c
+      - contentHash: 31d7f01e37e23808703a57f0dcaaf23f1fcb3b609faa5d3a2302fbd5fe26e940
+        ref: docs/superpowers/plans/procuraai-procurement-ops-console.md
+      - event: build-complete
+      - argv:
+          - bash
+          - -c
+          - python3 tools/check_procura_ops_console.py && python3
+            tools/check_procura_ops_console.py --self-test && cd bone-frontend
+            && npx vitest run --root . apps/bone-procurement-app && npx tsc
+            --noEmit -p apps/bone-procurement-app/tsconfig.json && npx eslint
+            apps/bone-procurement-app/src --ext ts,tsx -f json >
+            /tmp/ops-guard-eslint.json && python3 -c "import json;
+            d=json.load(open(\"/tmp/ops-guard-eslint.json\"));
+            e=sum(f.get(\"errorCount\",0) for f in d); assert e==0, f\"eslint
+            errors={e}\"; print(f\"eslint errorCount={e}\")"
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 8b9c5a2d5d469df37a9d211231661675c6b5796ca1476e7089aa6707c2927c58
+        cwd: .
+        environment: 396ac89fd32ffbe362c6fb216c59f34bf928a9d915b0ea23f788f70bf34beae1
+        exitCode: 0
+        inputAfter: 3ba45a227e474225511f57d6bc2d59202b3ade66e11db4e4349611ea9befaa73
+        inputBefore: 3ba45a227e474225511f57d6bc2d59202b3ade66e11db4e4349611ea9befaa73
+        manifestHash: a72cc8cd635d07b480098b07b9a66df859a7e437c1b4e6fb7b8dee8597aa6582
+        manifestRef: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/c804bb00-329b-4f48-b971-22bad7300f73.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/b6a5fe68-741f-42cc-9a3b-60598bd9f8e6.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 8b9c5a2d5d469df37a9d211231661675c6b5796ca1476e7089aa6707c2927c58
+        ref: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/b6a5fe68-741f-42cc-9a3b-60598bd9f8e6.log
+      - contentHash: 639ec9cec6b5e4fc21c8e9ae6ed6b30b0bfd07e3b3dab5235f29ddb84858aa64
+        ref: docs/superpowers/reports/2026-11-26-procuraai-procurement-ops-console-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-26-procuraai-procurement-ops-console-verify.md
+      - argv:
+          - bash
+          - -c
+          - python3 tools/check_procura_ops_console.py && python3
+            tools/check_procura_ops_console.py --self-test && cd bone-frontend
+            && npx vitest run --root . apps/bone-procurement-app && npx tsc
+            --noEmit -p apps/bone-procurement-app/tsconfig.json && npx eslint
+            apps/bone-procurement-app/src --ext ts,tsx -f json >
+            /tmp/ops-verify-eslint2.json && python3 -c "import json;
+            d=json.load(open(\"/tmp/ops-verify-eslint2.json\"));
+            e=sum(f.get(\"errorCount\",0) for f in d); assert e==0, f\"eslint
+            errors={e}\"; print(f\"eslint errorCount={e}\")"
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: 82a1917459f0104ec387f71cc615f62dd5d17e1cfea331b5a22153d084c446ed
+        cwd: .
+        deliveryInputs:
+          bone-frontend/apps/bone-procurement-app/src/App.tsx: git:75ce1cfe5994cfb4f337f4f37c7e5516595b39e9
+          bone-frontend/apps/bone-procurement-app/src/components/ProcurementWorkbenchNav.test.tsx: git:c93c73a621411c0bc82c1d4e97ef12f7da54f043
+          bone-frontend/apps/bone-procurement-app/src/components/ProcurementWorkbenchNav.tsx: git:70d2d6b4b5952ba6ca3923bffd20fa9a818dc12e
+          bone-frontend/apps/bone-procurement-app/src/pages/OpsConsoleRoutes.test.tsx: git:574ce45b4f3fc6435c8fa57b5d3f69a82b251828
+          bone-frontend/apps/bone-procurement-app/src/pages/SourcingConsole.test.tsx: git:b0f7fcbe17ec9f6f3ceabc0e7dd445ec2b3e1e44
+          bone-frontend/apps/bone-procurement-app/src/pages/SourcingConsole.tsx: git:a8080601b5916f034c5d5281412a822fb6ea3e41
+          bone-frontend/apps/bone-procurement-app/src/pages/SupplierOnboarding.test.tsx: git:ed7b32ef2d89e8dd1d0b2985c46e7471e9a806c4
+          bone-frontend/apps/bone-procurement-app/src/pages/SupplierOnboarding.tsx: git:4b69b7b65f7f52918c9aeb6913d25156c5f9dae8
+          bone-frontend/apps/bone-procurement-app/src/pages/SupplierRisk.test.tsx: git:0bfc3f5607cfb43c8f060a23db069b53340ac6a8
+          bone-frontend/apps/bone-procurement-app/src/pages/SupplierRisk.tsx: git:e78410597c6a53ee0d439e57931f0f7dfe58e84a
+          bone-frontend/apps/bone-procurement-app/src/services/sourcingApi.test.ts: git:9d09409a3476622cca7ae996aa7d9bd16795db40
+          bone-frontend/apps/bone-procurement-app/src/services/sourcingApi.ts: git:45a56920ff64d6a374b40e997f3d07649aee555b
+          bone-frontend/apps/bone-procurement-app/src/services/supplierRiskApi.test.ts: git:ab310a7bc312587908ea313f8d93c7d6ca2804a5
+          bone-frontend/apps/bone-procurement-app/src/services/supplierRiskApi.ts: git:3cf2ec764a0bca7d8716df6fedc5529960ee2f6e
+          bone-frontend/apps/bone-procurement-app/src/types/sourcingView.test.ts: git:c33c7beef30adcae27ffe57d2acd0a695d5d00b1
+          bone-frontend/apps/bone-procurement-app/src/types/sourcingView.ts: git:d09eac68770f518a926d8a556d4895c5c7d125e9
+          bone-frontend/apps/bone-procurement-app/src/types/supplierRiskView.test.ts: git:830b105688ac9654bcfa9638a5215952fd42b012
+          bone-frontend/apps/bone-procurement-app/src/types/supplierRiskView.ts: git:e79edd7f1829d4ad99e0a39cc80100989e94d3ee
+          tools/check_procura_ops_console.py: git:29021667d2515bc6c67e752febc74efe1b7badd2
+        environment: 92fbd1e566579b7c1abd18f1233791aa33cafb9ccb08274cd30a834afd502cb8
+        exitCode: 0
+        inputAfter: 3ba45a227e474225511f57d6bc2d59202b3ade66e11db4e4349611ea9befaa73
+        inputBefore: 3ba45a227e474225511f57d6bc2d59202b3ade66e11db4e4349611ea9befaa73
+        manifestHash: a72cc8cd635d07b480098b07b9a66df859a7e437c1b4e6fb7b8dee8597aa6582
+        manifestRef: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/c3ccabad-0082-4a21-957f-1a3debe403c7.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/6d0b8311-a712-4c97-976d-e382f7fe4d50.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 82a1917459f0104ec387f71cc615f62dd5d17e1cfea331b5a22153d084c446ed
+        ref: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/6d0b8311-a712-4c97-976d-e382f7fe4d50.log
+      - choice: push
+        proposal:
+          input:
+            change: procuraai-procurement-ops-console
+            changeDir: openspec/changes/procuraai-procurement-ops-console
+            workspaceBaseline:
+              ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+          outputs:
+            full.archive.prepare:
+              prBaseBranch: dev
+              remote: origin
+              summary: procuraAI 采购运营工作台补齐：新增 /sourcing、/supplier-onboarding、/supplier-risk
+                三路由 + 共享导航 + 2 API 客户端 + 2 纯映射层 + 静态门禁；路由/身份边界/fail-closed/PII
+                全通过。采购 app vitest 154/154、tsc EXIT=0、eslint errorCount=0、静态门禁
+                4/4 注入必红；独立审查 0 CRITICAL/0 IMPORTANT。交付 push 到 origin/dev。
+              targetBranch: dev
+      - prBaseBranch: dev
+        remote: origin
+        summary: procuraAI 采购运营工作台补齐：新增 /sourcing、/supplier-onboarding、/supplier-risk
+          三路由 + 共享导航 + 2 API 客户端 + 2 纯映射层 + 静态门禁；路由/身份边界/fail-closed/PII 全通过。采购
+          app vitest 154/154、tsc EXIT=0、eslint errorCount=0、静态门禁 4/4 注入必红；独立审查 0
+          CRITICAL/0 IMPORTANT。交付 push 到 origin/dev。
+        targetBranch: dev
+      - baseCommit: e64ad175a504b33a3ec51c2fbc8e1b4cc34f19e7
+        deliveryAction: push
+        prBaseBranch: dev
+        remote: origin
+        remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+        targetBranch: dev
+        verifiedBranch: dev
+      - archiveDirectory: openspec/changes/archive/2026-11-26-procuraai-procurement-ops-console
+      - sequence: 9
+        value:
+          boundBranch: dev
+          buildMode: autonomous
+          directOverride: false
+          isolation: current
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-procurement-ops-console
+              changeDir: openspec/changes/procuraai-procurement-ops-console
+              workspaceBaseline:
+                ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: autonomous
+                directOverride: false
+                isolation: current
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-procurement-ops-console
+              changeDir: openspec/changes/procuraai-procurement-ops-console
+              workspaceBaseline:
+                ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/procuraai-procurement-ops-console/.comet/handoff/design-context.json
+                handoffHash: fbad28322252fb227815d54ed6f029a0819078b251830e3f00be6cf8311e7ac6
+                proposal: 候选方案（沿用既有页面模式，仅修正依赖事实）：在 bone-procurement-app 新增三条路由
+                  /sourcing、/supplier-onboarding、/supplier-risk，配套纯映射层 *.view.ts
+                  与 services/*Api.ts；以顶层 ApiResponse.success 而非 HTTP 2xx
+                  判定结果，403→无权限、404→能力未启用、未知码保留原始码、取数失败→无法确认；授标/OCR
+                  复核/预警处置请求不含前端自报
+                  tenantId/operator/confirmedBy，身份只由后端登录态裁决。依赖从草稿 A 方案修正为已交付的
+                  procuraai-durable-business-aggregates-rebaseline（/api/v1/procurement/business/*），此为事实修正不扩需求。取舍：不新增后端端点/DDL/权限种子/CI
+                  判据集合；不改 HITL/就绪度/治理既有规格；导航只复用不改判词。风险：端点响应形状差异按实现遗漏在范围内修正；PII
+                  用展示字段白名单；以限定 app 的 vitest + tsc --noEmit + eslint JSON
+                  errorCount 为权威判据避免全仓假红。Spec Patch：无（能力边界不变）。
+                requirementsEvidence:
+                  contentHash: a15b6e919b99495fee8ce445cda52ee3491bb85a00d1ee3c7fd7970adf9eb910
+                  ref: openspec/changes/procuraai-procurement-ops-console
+                sourceEvidence:
+                  contentHash: 93a5d5c80d5ac4119dd7e48fc541e8f5d440e9b2ef3b863637ece1378f83764c
+                  ref: openspec/changes/procuraai-procurement-ops-console
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/procuraai-procurement-ops-console/design.md
+      - sequence: 8
+        value:
+          contentHash: 99b94ed71b51207999ed2c8be31d1990ba3e193028fb8325ff576a0bd0ae9d11
+          ref: openspec/changes/procuraai-procurement-ops-console/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/procuraai-procurement-ops-console/.comet/handoff/design-context.json
+          handoffHash: fbad28322252fb227815d54ed6f029a0819078b251830e3f00be6cf8311e7ac6
+          proposal: 候选方案（沿用既有页面模式，仅修正依赖事实）：在 bone-procurement-app 新增三条路由
+            /sourcing、/supplier-onboarding、/supplier-risk，配套纯映射层 *.view.ts 与
+            services/*Api.ts；以顶层 ApiResponse.success 而非 HTTP 2xx
+            判定结果，403→无权限、404→能力未启用、未知码保留原始码、取数失败→无法确认；授标/OCR 复核/预警处置请求不含前端自报
+            tenantId/operator/confirmedBy，身份只由后端登录态裁决。依赖从草稿 A 方案修正为已交付的
+            procuraai-durable-business-aggregates-rebaseline（/api/v1/procurement/business/*），此为事实修正不扩需求。取舍：不新增后端端点/DDL/权限种子/CI
+            判据集合；不改 HITL/就绪度/治理既有规格；导航只复用不改判词。风险：端点响应形状差异按实现遗漏在范围内修正；PII
+            用展示字段白名单；以限定 app 的 vitest + tsc --noEmit + eslint JSON errorCount
+            为权威判据避免全仓假红。Spec Patch：无（能力边界不变）。
+          requirementsEvidence:
+            contentHash: a15b6e919b99495fee8ce445cda52ee3491bb85a00d1ee3c7fd7970adf9eb910
+            ref: openspec/changes/procuraai-procurement-ops-console
+          sourceEvidence:
+            contentHash: 93a5d5c80d5ac4119dd7e48fc541e8f5d440e9b2ef3b863637ece1378f83764c
+            ref: openspec/changes/procuraai-procurement-ops-console
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-procurement-ops-console
+              changeDir: openspec/changes/procuraai-procurement-ops-console
+              workspaceBaseline:
+                ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 62b18bf47c8219b89336a0b9c564406edd9b3f547141f2a8d8d91806a32deeb6
+                ref: openspec/changes/procuraai-procurement-ops-console
+      - sequence: 2
+        value:
+          contentHash: 62b18bf47c8219b89336a0b9c564406edd9b3f547141f2a8d8d91806a32deeb6
+          ref: openspec/changes/procuraai-procurement-ops-console
+      - sequence: 4
+        value:
+          contentHash: 62b18bf47c8219b89336a0b9c564406edd9b3f547141f2a8d8d91806a32deeb6
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 99b94ed71b51207999ed2c8be31d1990ba3e193028fb8325ff576a0bd0ae9d11
+            ref: openspec/changes/procuraai-procurement-ops-console/design.md
+          plan: docs/superpowers/plans/procuraai-procurement-ops-console.md
+          planEvidence:
+            contentHash: 31d7f01e37e23808703a57f0dcaaf23f1fcb3b609faa5d3a2302fbd5fe26e940
+            ref: docs/superpowers/plans/procuraai-procurement-ops-console.md
+          taskRevision: 8a5f655bdc47e0369a475f42aea6fd64ad7709f1fbcbc47906d70c2c2631463c
+      - sequence: 12
+        value:
+          contentHash: 31d7f01e37e23808703a57f0dcaaf23f1fcb3b609faa5d3a2302fbd5fe26e940
+          ref: docs/superpowers/plans/procuraai-procurement-ops-console.md
+      - sequence: 13
+        value:
+          event: build-complete
+      - sequence: 14
+        value:
+          argv:
+            - bash
+            - -c
+            - python3 tools/check_procura_ops_console.py && python3
+              tools/check_procura_ops_console.py --self-test && cd bone-frontend
+              && npx vitest run --root . apps/bone-procurement-app && npx tsc
+              --noEmit -p apps/bone-procurement-app/tsconfig.json && npx eslint
+              apps/bone-procurement-app/src --ext ts,tsx -f json >
+              /tmp/ops-guard-eslint.json && python3 -c "import json;
+              d=json.load(open(\"/tmp/ops-guard-eslint.json\"));
+              e=sum(f.get(\"errorCount\",0) for f in d); assert e==0, f\"eslint
+              errors={e}\"; print(f\"eslint errorCount={e}\")"
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 8b9c5a2d5d469df37a9d211231661675c6b5796ca1476e7089aa6707c2927c58
+          cwd: .
+          environment: 396ac89fd32ffbe362c6fb216c59f34bf928a9d915b0ea23f788f70bf34beae1
+          exitCode: 0
+          inputAfter: 3ba45a227e474225511f57d6bc2d59202b3ade66e11db4e4349611ea9befaa73
+          inputBefore: 3ba45a227e474225511f57d6bc2d59202b3ade66e11db4e4349611ea9befaa73
+          manifestHash: a72cc8cd635d07b480098b07b9a66df859a7e437c1b4e6fb7b8dee8597aa6582
+          manifestRef: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/c804bb00-329b-4f48-b971-22bad7300f73.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/b6a5fe68-741f-42cc-9a3b-60598bd9f8e6.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 15
+        value:
+          contentHash: 8b9c5a2d5d469df37a9d211231661675c6b5796ca1476e7089aa6707c2927c58
+          ref: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/b6a5fe68-741f-42cc-9a3b-60598bd9f8e6.log
+      - sequence: 17
+        value:
+          contentHash: 639ec9cec6b5e4fc21c8e9ae6ed6b30b0bfd07e3b3dab5235f29ddb84858aa64
+          ref: docs/superpowers/reports/2026-11-26-procuraai-procurement-ops-console-verify.md
+      - sequence: 16
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-26-procuraai-procurement-ops-console-verify.md
+      - sequence: 18
+        value:
+          argv:
+            - bash
+            - -c
+            - python3 tools/check_procura_ops_console.py && python3
+              tools/check_procura_ops_console.py --self-test && cd bone-frontend
+              && npx vitest run --root . apps/bone-procurement-app && npx tsc
+              --noEmit -p apps/bone-procurement-app/tsconfig.json && npx eslint
+              apps/bone-procurement-app/src --ext ts,tsx -f json >
+              /tmp/ops-verify-eslint2.json && python3 -c "import json;
+              d=json.load(open(\"/tmp/ops-verify-eslint2.json\"));
+              e=sum(f.get(\"errorCount\",0) for f in d); assert e==0, f\"eslint
+              errors={e}\"; print(f\"eslint errorCount={e}\")"
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: 82a1917459f0104ec387f71cc615f62dd5d17e1cfea331b5a22153d084c446ed
+          cwd: .
+          deliveryInputs:
+            bone-frontend/apps/bone-procurement-app/src/App.tsx: git:75ce1cfe5994cfb4f337f4f37c7e5516595b39e9
+            bone-frontend/apps/bone-procurement-app/src/components/ProcurementWorkbenchNav.test.tsx: git:c93c73a621411c0bc82c1d4e97ef12f7da54f043
+            bone-frontend/apps/bone-procurement-app/src/components/ProcurementWorkbenchNav.tsx: git:70d2d6b4b5952ba6ca3923bffd20fa9a818dc12e
+            bone-frontend/apps/bone-procurement-app/src/pages/OpsConsoleRoutes.test.tsx: git:574ce45b4f3fc6435c8fa57b5d3f69a82b251828
+            bone-frontend/apps/bone-procurement-app/src/pages/SourcingConsole.test.tsx: git:b0f7fcbe17ec9f6f3ceabc0e7dd445ec2b3e1e44
+            bone-frontend/apps/bone-procurement-app/src/pages/SourcingConsole.tsx: git:a8080601b5916f034c5d5281412a822fb6ea3e41
+            bone-frontend/apps/bone-procurement-app/src/pages/SupplierOnboarding.test.tsx: git:ed7b32ef2d89e8dd1d0b2985c46e7471e9a806c4
+            bone-frontend/apps/bone-procurement-app/src/pages/SupplierOnboarding.tsx: git:4b69b7b65f7f52918c9aeb6913d25156c5f9dae8
+            bone-frontend/apps/bone-procurement-app/src/pages/SupplierRisk.test.tsx: git:0bfc3f5607cfb43c8f060a23db069b53340ac6a8
+            bone-frontend/apps/bone-procurement-app/src/pages/SupplierRisk.tsx: git:e78410597c6a53ee0d439e57931f0f7dfe58e84a
+            bone-frontend/apps/bone-procurement-app/src/services/sourcingApi.test.ts: git:9d09409a3476622cca7ae996aa7d9bd16795db40
+            bone-frontend/apps/bone-procurement-app/src/services/sourcingApi.ts: git:45a56920ff64d6a374b40e997f3d07649aee555b
+            bone-frontend/apps/bone-procurement-app/src/services/supplierRiskApi.test.ts: git:ab310a7bc312587908ea313f8d93c7d6ca2804a5
+            bone-frontend/apps/bone-procurement-app/src/services/supplierRiskApi.ts: git:3cf2ec764a0bca7d8716df6fedc5529960ee2f6e
+            bone-frontend/apps/bone-procurement-app/src/types/sourcingView.test.ts: git:c33c7beef30adcae27ffe57d2acd0a695d5d00b1
+            bone-frontend/apps/bone-procurement-app/src/types/sourcingView.ts: git:d09eac68770f518a926d8a556d4895c5c7d125e9
+            bone-frontend/apps/bone-procurement-app/src/types/supplierRiskView.test.ts: git:830b105688ac9654bcfa9638a5215952fd42b012
+            bone-frontend/apps/bone-procurement-app/src/types/supplierRiskView.ts: git:e79edd7f1829d4ad99e0a39cc80100989e94d3ee
+            tools/check_procura_ops_console.py: git:29021667d2515bc6c67e752febc74efe1b7badd2
+          environment: 92fbd1e566579b7c1abd18f1233791aa33cafb9ccb08274cd30a834afd502cb8
+          exitCode: 0
+          inputAfter: 3ba45a227e474225511f57d6bc2d59202b3ade66e11db4e4349611ea9befaa73
+          inputBefore: 3ba45a227e474225511f57d6bc2d59202b3ade66e11db4e4349611ea9befaa73
+          manifestHash: a72cc8cd635d07b480098b07b9a66df859a7e437c1b4e6fb7b8dee8597aa6582
+          manifestRef: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/c3ccabad-0082-4a21-957f-1a3debe403c7.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/6d0b8311-a712-4c97-976d-e382f7fe4d50.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 19
+        value:
+          contentHash: 82a1917459f0104ec387f71cc615f62dd5d17e1cfea331b5a22153d084c446ed
+          ref: .comet/runtime/classic-sdk-checks/e7ae44b95bb3c7e0ac1c82fc91fdb64393dcb5fba7b0156628b93cbbde3a513d/6d0b8311-a712-4c97-976d-e382f7fe4d50.log
+      - sequence: 21
+        value:
+          choice: push
+          proposal:
+            input:
+              change: procuraai-procurement-ops-console
+              changeDir: openspec/changes/procuraai-procurement-ops-console
+              workspaceBaseline:
+                ref: 3cc9b7a6-ca61-47c8-9fff-2afe61318fed
+            outputs:
+              full.archive.prepare:
+                prBaseBranch: dev
+                remote: origin
+                summary: procuraAI 采购运营工作台补齐：新增 /sourcing、/supplier-onboarding、/supplier-risk
+                  三路由 + 共享导航 + 2 API 客户端 + 2 纯映射层 + 静态门禁；路由/身份边界/fail-closed/PII
+                  全通过。采购 app vitest 154/154、tsc EXIT=0、eslint errorCount=0、静态门禁
+                  4/4 注入必红；独立审查 0 CRITICAL/0 IMPORTANT。交付 push 到 origin/dev。
+                targetBranch: dev
+      - sequence: 20
+        value:
+          prBaseBranch: dev
+          remote: origin
+          summary: procuraAI 采购运营工作台补齐：新增 /sourcing、/supplier-onboarding、/supplier-risk
+            三路由 + 共享导航 + 2 API 客户端 + 2 纯映射层 + 静态门禁；路由/身份边界/fail-closed/PII
+            全通过。采购 app vitest 154/154、tsc EXIT=0、eslint errorCount=0、静态门禁 4/4
+            注入必红；独立审查 0 CRITICAL/0 IMPORTANT。交付 push 到 origin/dev。
+          targetBranch: dev
+      - sequence: 22
+        value:
+          baseCommit: e64ad175a504b33a3ec51c2fbc8e1b4cc34f19e7
+          deliveryAction: push
+          prBaseBranch: dev
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: dev
+          verifiedBranch: dev
+      - sequence: 23
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-26-procuraai-procurement-ops-console
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 14
+        left: 32
+        right: 33
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 34
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 35
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 25
+        height: 5
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: null
+        right: 39
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: 40
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 41
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 42
+        height: 5
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: 45
+        right: 39
+        height: 2
+      - key: full.verify.check
+        value: 17
+        left: 44
+        right: 46
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 47
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 48
+        height: 5
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 20
+        left: 50
+        right: 51
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 33
+        right: 27
+        height: 2
+      - key: full.build.check.evidence
+        value: 14
+        left: 52
+        right: 53
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 54
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 55
+        right: 48
+        height: 5
+      - key: full.archive.preflight
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: 57
+        height: 2
+      - key: full.archive.prepare
+        value: 20
+        left: 58
+        right: 51
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 53
+        right: 29
+        height: 3
+      - key: full.build.check.evidence
+        value: 14
+        left: 59
+        right: 60
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 61
+        right: 48
+        height: 5
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 22
+        left: 63
+        right: 64
+        height: 2
+      - key: full.archive.prepare
+        value: 20
+        left: 65
+        right: 51
+        height: 3
+      - key: full.build.check.evidence
+        value: 14
+        left: 66
+        right: 60
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 67
+        right: 48
+        height: 5
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 70
+        height: 2
+      - key: full.design.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: 72
+        right: 73
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: 75
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 76
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 71
+        right: 77
+        height: 4
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: 79
+        right: 80
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 81
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 82
+        right: 77
+        height: 4
+      - key: full.build.execute
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 84
+        height: 2
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: 80
+        height: 2
+      - key: full.build.plan
+        value: 33
+        left: 85
+        right: 86
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 87
+        right: 77
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: 89
+        right: 90
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 91
+        right: 84
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 92
+        right: 86
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 77
+        height: 5
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: null
+        right: 96
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: 95
+        right: 97
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 98
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 99
+        height: 5
+      - key: full.open.revalidate
+        value: 32
+        left: 95
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: 102
+        right: 96
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 101
+        right: 103
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 104
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 105
+        height: 5
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 43
+        left: 107
+        right: 108
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 90
+        right: 84
+        height: 2
+      - key: full.build.check.evidence
+        value: 37
+        left: 109
+        right: 110
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 111
+        right: 86
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 112
+        right: 105
+        height: 5
+      - key: full.archive.preflight
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: 114
+        height: 2
+      - key: full.archive.prepare
+        value: 43
+        left: 115
+        right: 108
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 110
+        right: 86
+        height: 3
+      - key: full.build.check.evidence
+        value: 37
+        left: 116
+        right: 117
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 118
+        right: 105
+        height: 5
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 45
+        left: 120
+        right: 121
+        height: 2
+      - key: full.archive.prepare
+        value: 43
+        left: 122
+        right: 108
+        height: 3
+      - key: full.build.check.evidence
+        value: 37
+        left: 123
+        right: 117
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 124
+        right: 105
+        height: 5
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 30
+        left: 126
+        right: 127
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: 129
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 126
+        right: 130
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: 132
+        right: 133
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 134
+        right: 130
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: 136
+        right: 137
+        height: 2
+      - key: full.design.handoff
+        value: 28
+        left: 138
+        right: 133
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 139
+        right: 130
+        height: 4
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: 141
+        height: 2
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 144
+        right: 145
+        height: 2
+      - key: full.open
+        value: 29
+        left: 143
+        right: 146
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: 149
+        right: 150
+        height: 2
+      - key: full.design.confirm
+        value: 25
+        left: 148
+        right: 151
+        height: 3
+      - key: full.open
+        value: 29
+        left: 152
+        right: 146
+        height: 4
+      - key: full.archive.prepare
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 36
+        left: 154
+        right: 155
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: 158
+        height: 2
+      - key: full.build.execute
+        value: 35
+        left: 157
+        right: 159
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: 156
+        right: 160
+        height: 4
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 144
+        right: 162
+        height: 2
+      - key: full.verify.check.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: 164
+        right: 165
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 163
+        right: 166
+        height: 3
+      - key: full.open
+        value: 29
+        left: 151
+        right: 167
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 161
+        right: 168
+        height: 5
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: 171
+        right: 172
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 175
+        height: 2
+      - key: full.open
+        value: 29
+        left: 173
+        right: 176
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 178
+        right: 179
+        height: 2
+      - key: full.design.document
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: 181
+        right: 182
+        height: 2
+      - key: full.design.confirm
+        value: 25
+        left: 180
+        right: 183
+        height: 3
+      - key: full.open
+        value: 29
+        left: 184
+        right: 176
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: 186
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: 188
+        right: 189
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 187
+        right: 190
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 176
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: 191
+        right: 192
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: 194
+        right: 195
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 196
+        right: 190
+        height: 3
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: 198
+        height: 2
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 199
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 200
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 197
+        right: 201
+        height: 5
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 203
+        height: 2
+      - key: full.verify.report.evidence
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: 205
+        right: null
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 204
+        right: 206
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 207
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 197
+        right: 208
+        height: 5
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 37
+      - 43
+      - 49
+      - 56
+      - 62
+      - 68
+      - 78
+      - 83
+      - 88
+      - 94
+      - 100
+      - 106
+      - 113
+      - 119
+      - 125
+      - 128
+      - 131
+      - 135
+      - 140
+      - 142
+      - 147
+      - 153
+      - 169
+      - 170
+      - 177
+      - 185
+      - 193
+      - 202
+      - 209
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actionContexts
+          - procuraai-procurement-ops-console:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procuraai-procurement-ops-console:11
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - procuraai-procurement-ops-console:13
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - procuraai-procurement-ops-console:14
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - procuraai-procurement-ops-console:16
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - procuraai-procurement-ops-console:18
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - procuraai-procurement-ops-console:20
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - procuraai-procurement-ops-console:22
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - procuraai-procurement-ops-console:23
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - procuraai-procurement-ops-console:24
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - procuraai-procurement-ops-console:4
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - procuraai-procurement-ops-console:5
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - procuraai-procurement-ops-console:7
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - procuraai-procurement-ops-console:9
+          - results
+        map: 26
+      - path:
+          - outputs
+        map: 22
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 27
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 28
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 29
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 30
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 31
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 32
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 33
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 34
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 35
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 36
+  storageHash: ed1b51d34ed98c5f72a450125fea711db725427f9e632a64317626278c82cd6f
+check_epoch: 6

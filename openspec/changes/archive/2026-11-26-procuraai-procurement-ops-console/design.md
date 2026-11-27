@@ -1,3 +1,11 @@
+---
+comet_change: procuraai-procurement-ops-console
+role: technical-design
+canonical_spec: openspec
+archived-with: 2026-11-26-procuraai-procurement-ops-console
+status: final
+---
+
 # Design：procuraAI 采购运营工作台补齐
 
 ## Context
@@ -42,11 +50,18 @@
 
 ## Risks / Trade-offs
 
-- **依赖后端 change 的端点**：若 `procuraai-business-aggregates-completion` 尚未落地，寻源页只能展示降级态。→ 以该 change 为依赖，端到端验收在其完成后执行。
+- **依赖后端已交付端点**：寻源/授标页面消费 `procuraai-durable-business-aggregates-rebaseline` 已落地的 `/api/v1/procurement/business/*`（GET award、POST bids/quotations、GET quotations）；A 方案 `procuraai-business-aggregates-completion` 保留为草稿，不作依赖。→ 取数失败/能力未启用一律走 fail-closed 降级，不默认显示成功。
 - **内存仓储不跨重启**：页面展示的数据可能随后端重启清空。→ 页面只呈现“当前服务实例内的事实”，不写“持久/生产可用”文案。
 - **PII 泄露**：证照响应可能意外携带证件号。→ 展示模型字段白名单，测试断言 DOM 可见文本与属性不含证件号/电话。
 - **权限码不匹配**：复用既有权限码可能与实际部署不一致。→ 403 显示无权限提示，不隐藏整个应用也不自行放行。
 - **全仓 vitest 假红基线**：不限定 app 的测试会扫到无关模块失败。→ 以采购 app 范围 vitest + tsc + eslint(JSON errorCount) 为权威判据。
+
+## Test Strategy
+
+- **API 客户端单测**：`sourcingApi.test.ts` / `supplierRiskApi.test.ts` mock `createApiClient`，断言路径与请求方法正确、body 不含 `tenantId`/`operator`/`confirmedBy`；覆盖 `success=false`（2xx）、403、404、网络失败四类降级映射。
+- **纯映射层单测**：`sourcingView.test.ts` / `supplierRiskView.test.ts` 覆盖未知码保留原始码、不可比报价带原因、AI 建议只作建议字段、PII 白名单剔除、绩效缺失显示“无法确认”。
+- **页面组件单测**：三页 + 导航组件用 Testing Library 挂载，断言冒名/匿名不显示成功、404 显示能力未启用、403 显示无权限、未知严重度转人工提示、取数失败不显示“无风险”。
+- **权威门禁**：限定 app 的 `vitest run --root . apps/bone-procurement-app`、`tsc --noEmit`、`eslint -f json` 解析 `errorCount`；不把全仓测试或 HTTP 2xx 当成功，不让 eslint 默认 stylish formatter 的 `ansiRegex` 崩溃制造假绿。
 
 ## Migration Plan
 
@@ -54,4 +69,4 @@
 
 ## Open Questions
 
-（无。依赖 change 的端点形状在 proposal 中已约定；若实际端点与之不符，按实现遗漏在当前范围内修正，不扩需求。）
+（无。依赖端点已由 `procuraai-durable-business-aggregates-rebaseline` 交付并在 `BusinessController` 落地；前端按真实响应形状实现，若与之不符，按实现遗漏在当前范围内修正，不扩需求。）
