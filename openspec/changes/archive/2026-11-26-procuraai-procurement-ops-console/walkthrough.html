@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><title>变更说明 · 把寻源、供应商准入与风险绩效从 API-only 补齐为浏览器可操作、可追溯、fail-closed 的运营工作台；身份只由后端登录态裁决，AI 建议只作建议字段。</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --page: #fafbfc;
+  --ink: #202a35;
+  --muted: #566575;
+  --line: #dbe2e8;
+  --accent: #245b85;
+  --highlight: #edf3f7;
+  --hover: #e9eef3;
+  --code-bg: #edf0f4;
+  --code-ink: #263443;
+  --success: #236d4f;
+  --failure: #a83131;
+  --text: 15px;
+  --small: 13px;
+  --label: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #181d23;
+    --ink: #e4eaf0;
+    --muted: #a4b1be;
+    --line: #35404b;
+    --accent: #94c6ec;
+    --highlight: #222e39;
+    --hover: #27323d;
+    --code-bg: #10161d;
+    --code-ink: #e0e8f0;
+    --success: #8ed8b5;
+    --failure: #ffb0a8;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: var(--text)/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1040px; margin: auto; padding: 32px 32px 48px; }
+.eyebrow { color: var(--accent); font-size: var(--label); font-weight: 500; letter-spacing: .08em; }
+h1 { margin: 8px 0 12px; max-width: 32em; font-size: 28px; font-weight: 500; line-height: 1.4; letter-spacing: -.02em; overflow-wrap: anywhere; }
+h2 { margin: 0; font-size: 18px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+h3 { margin: 0 0 4px; color: var(--muted); font-size: var(--label); font-weight: 500; }
+p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+strong { font-weight: 500; }
+.meta { margin-bottom: 24px; color: var(--muted); font-size: var(--small); overflow-wrap: anywhere; }
+.meta p + p { margin-top: 2px; }
+article { padding: 20px 0 12px; border-top: 1px solid var(--line); }
+article header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+.number { color: var(--muted); font: var(--label)/1.5 ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.comparison { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.comparison section { min-width: 0; padding: 12px; }
+.after { background: var(--highlight); border-radius: 4px; }
+.after h3 { color: var(--accent); }
+.reason { margin-top: 12px; font-size: var(--small); color: var(--muted); }
+.reason strong { margin-right: 8px; color: var(--ink); }
+summary { min-height: 44px; padding: 10px 4px; cursor: pointer; font-size: var(--small); font-weight: 500; border-radius: 4px; }
+summary:hover { background: var(--hover); }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.count, .tag { color: var(--muted); font-size: var(--label); font-weight: 400; }
+.count { margin-left: 4px; font-variant-numeric: tabular-nums; }
+.file { min-width: 0; padding: 0 0 16px; scroll-margin-top: 20px; }
+.file:target { outline: 2px solid var(--accent); outline-offset: 4px; }
+.file-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.file-heading code { min-width: 0; font-size: var(--small); overflow-wrap: anywhere; }
+.tag { white-space: nowrap; }
+pre { margin: 8px 0 0; padding: 12px 16px; overflow: auto; background: var(--code-bg); color: var(--code-ink); border-radius: 4px; font: var(--small)/1.65 ui-monospace, Consolas, monospace; tab-size: 2; }
+footer { margin-top: 12px; padding-top: 20px; border-top: 1px solid var(--line); }
+footer h2 { margin-bottom: 8px; }
+.check { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.status { padding-top: 2px; font-size: var(--label); font-weight: 500; }
+.passed { color: var(--success); }
+.failed { color: var(--failure); }
+.not-run, .unknown { color: var(--muted); }
+.check p { margin-top: 2px; color: var(--muted); font-size: var(--small); }
+.more { border-top: 1px solid var(--line); }
+.more > summary { padding-block: 12px; }
+.diagram { margin: 0; padding: 20px 0; border-top: 1px solid var(--line); }
+.diagram figcaption { margin-bottom: 12px; font-size: 18px; font-weight: 500; overflow-wrap: anywhere; }
+.diagram-svg { display: block; max-width: 100%; height: auto; margin: auto; overflow: visible; font: 13px system-ui, -apple-system, "Segoe UI", sans-serif; }
+.diagram-svg text { fill: var(--ink); }
+.diagram-edge { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.diagram-svg marker path { fill: var(--muted); }
+.diagram-edge-label { fill: var(--page); }
+.diagram-svg .diagram-edge-text { fill: var(--muted); font-size: 12px; }
+.diagram-node rect { fill: var(--page); stroke: var(--line); stroke-width: 1.5; }
+.diagram-node.modified rect { fill: var(--highlight); stroke: var(--accent); }
+.diagram-node.added rect { stroke: var(--success); }
+.diagram-node.deleted rect { stroke: var(--failure); stroke-dasharray: 4 3; }
+.diagram-svg .diagram-kind { fill: var(--muted); font-size: 11px; }
+.diagram-node[href] { cursor: pointer; }
+.diagram-node[href]:hover rect, .diagram-node[href]:focus-visible rect { stroke: var(--accent); stroke-width: 2.5; }
+.diagram-node[href]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.diagram-hint { margin-top: 12px; color: var(--muted); font-size: var(--small); text-align: center; }
+.diagram-comparison { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 16px; }
+.diagram-comparison > section { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 4px; }
+.diagram-comparison > section > h3 { margin-bottom: 12px; }
+.diagram-compact { display: none; }
+@media (max-width: 999px) {
+  .diagram-wide { display: none; }
+  .diagram-compact { display: block; }
+}
+@media (max-width: 640px) {
+  main { padding: 24px 16px 32px; }
+  h1 { font-size: 24px; }
+  .meta { margin-bottom: 20px; }
+  article { padding-top: 16px; }
+  article header { gap: 8px; }
+  .comparison { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .check { grid-template-columns: 60px minmax(0, 1fr); gap: 8px; }
+  pre { padding: 12px; }
+  .diagram-comparison { grid-template-columns: minmax(0,1fr); }
+  .diagram-comparison > section { padding: 12px 0; border: 0; }
+}
+</style></head><body><main><div class="eyebrow">COMET / 变更说明</div><h1>把寻源、供应商准入与风险绩效从 API-only 补齐为浏览器可操作、可追溯、fail-closed 的运营工作台；身份只由后端登录态裁决，AI 建议只作建议字段。</h1><div class="meta"><p>比较范围 · 比较范围：change procuraai-procurement-ops-console 的前端实现、静态门禁与验证产物。不改后端 Java/DDL/权限种子/CI 判据集合；未接真实业务数据流；未执行生产库或生产 MQ。</p><p>生成时间 · 2026-11-26T13:14:05.872Z</p></div><article><header><span class="number">01</span><h2>三条可操作路由 + 共享导航</h2></header><div class="comparison"><section><h3>原来</h3><p>仅 /transactions、/suppliers、/fulfillment 等 4+ 路由，寻源/准入/风险无浏览器入口。</p></section><section class="after"><h3>现在</h3><p>新增 /sourcing、/supplier-onboarding、/supplier-risk 与共享导航，串接合同 HITL/人工复核/AI 就绪度/治理态势。</p></section></div><p class="reason"><strong>原因</strong> 让 100% 人工终决可操作、可追溯；不重复渲染既有页面判词避免口径分叉。</p><details><summary>查看文件和关键代码 <span class="count">2</span></summary><div class="file" id="walkthrough-file-0-0"><div class="file-heading"><span class="tag">修改</span><code>bone-frontend/apps/bone-procurement-app/src/App.tsx</code></div><pre><code>注册三条新路由并保留既有路由。</code></pre></div><div class="file" id="walkthrough-file-0-1"><div class="file-heading"><span class="tag">新增</span><code>bone-frontend/apps/bone-procurement-app/src/components/ProcurementWorkbenchNav.tsx</code></div><pre><code>共享导航，403/404 显示降级提示。</code></pre></div></details></article><article><header><span class="number">02</span><h2>API 客户端与 fail-closed 呈现</h2></header><div class="comparison"><section><h3>原来</h3><p>无寻源/风险前端客户端，2xx 易被误当成功。</p></section><section class="after"><h3>现在</h3><p>sourcingApi/supplierRiskApi 以顶层 success 判定，403/404/网络失败/success=false 映射明确降级；请求体不含自报身份字段。</p></section></div><p class="reason"><strong>原因</strong> 采购域「2xx ≠ 成功」红线 + 身份只由后端登录态裁决。</p><details><summary>查看文件和关键代码 <span class="count">2</span></summary><div class="file" id="walkthrough-file-1-0"><div class="file-heading"><span class="tag">新增</span><code>bone-frontend/apps/bone-procurement-app/src/services/sourcingApi.ts</code></div><pre><code>消费 /api/v1/procurement/business/*。</code></pre></div><div class="file" id="walkthrough-file-1-1"><div class="file-heading"><span class="tag">新增</span><code>bone-frontend/apps/bone-procurement-app/src/services/supplierRiskApi.ts</code></div><pre><code>消费 /qualifications 与 /performance-scores。</code></pre></div></details></article><article><header><span class="number">03</span><h2>纯映射层与 PII 白名单</h2></header><div class="comparison"><section><h3>原来</h3><p>无独立展示映射，未知码可能被压成正常。</p></section><section class="after"><h3>现在</h3><p>sourcingView/supplierRiskView 未知码保留原始码、AI 建议只作建议字段、绩效缺失显示无法确认、PII 字段白名单剔除。</p></section></div><p class="reason"><strong>原因</strong> 反假绿与 PII 防护，测试覆盖未知码/缺失值/证件号剔除。</p><details><summary>查看文件和关键代码 <span class="count">2</span></summary><div class="file" id="walkthrough-file-2-0"><div class="file-heading"><span class="tag">新增</span><code>bone-frontend/apps/bone-procurement-app/src/types/sourcingView.ts</code></div><pre><code>投标/报价/授标展示映射。</code></pre></div><div class="file" id="walkthrough-file-2-1"><div class="file-heading"><span class="tag">新增</span><code>bone-frontend/apps/bone-procurement-app/src/types/supplierRiskView.ts</code></div><pre><code>风险展示映射 + stripPii 白名单。</code></pre></div></details></article><details class="more"><summary>其余变化 (1)</summary><div><article><header><span class="number">04</span><h2>注入必红静态门禁</h2></header><div class="comparison"><section><h3>原来</h3><p>无运营台专属门禁。</p></section><section class="after"><h3>现在</h3><p>check_procura_ops_console.py 守路由/身份边界/失败态/PII/任务勾选，4/4 注入探针转红。</p></section></div><p class="reason"><strong>原因</strong> 防假绿，避免前端 fail-closed 被静默撤销。</p><details><summary>查看文件和关键代码 <span class="count">1</span></summary><div class="file" id="walkthrough-file-3-0"><div class="file-heading"><span class="tag">新增</span><code>tools/check_procura_ops_console.py</code></div><pre><code>静态门禁 + --self-test 注入必红。</code></pre></div></details></article></div></details><footer><h2>实际验证</h2><div class="check"><span class="status passed">通过</span><div><strong>采购 app vitest</strong><p>26 文件 / 154 例全通过（含新增 8 组 fail-closed 测试）。</p></div></div><div class="check"><span class="status passed">通过</span><div><strong>TypeScript / eslint</strong><p>tsc --noEmit EXIT=0；eslint -f json errorCount=0（67 文件，3 非阻断 warning）。</p></div></div><div class="check"><span class="status passed">通过</span><div><strong>静态门禁与注入探针</strong><p>主判据 EXIT=0；4/4 注入探针转红（路由删除/自报身份/success=false 判据移除/PII 白名单动态化）。</p></div></div><div class="check"><span class="status passed">通过</span><div><strong>独立审查</strong><p>身份边界/失败态/PII/未知码四项审查 0 CRITICAL / 0 IMPORTANT；Build 与 Verify guard 均真实通过。</p></div></div></footer></main><template id="walkthrough-data">eyJzdW1tYXJ5Ijoi5oqK5a+75rqQ44CB5L6b5bqU5ZWG5YeG5YWl5LiO6aOO6Zmp57up5pWI5LuOIEFQSS1vbmx5IOihpem9kOS4uua1j+iniOWZqOWPr+aTjeS9nOOAgeWPr+i/vea6r+OAgWZhaWwtY2xvc2VkIOeahOi/kOiQpeW3peS9nOWPsO+8m+i6q+S7veWPqueUseWQjuerr+eZu+W9leaAgeijgeWGs++8jEFJIOW7uuiuruWPquS9nOW7uuiuruWtl+auteOAgiIsInNjb3BlIjoi5q+U6L6D6IyD5Zu077yaY2hhbmdlIHByb2N1cmFhaS1wcm9jdXJlbWVudC1vcHMtY29uc29sZSDnmoTliY3nq6/lrp7njrDjgIHpnZnmgIHpl6jnpoHkuI7pqozor4HkuqfnianjgILkuI3mlLnlkI7nq68gSmF2YS9EREwv5p2D6ZmQ56eN5a2QL0NJIOWIpOaNrumbhuWQiO+8m+acquaOpeecn+WunuS4muWKoeaVsOaNrua1ge+8m+acquaJp+ihjOeUn+S6p+W6k+aIlueUn+S6pyBNUeOAgiIsImNoYW5nZXMiOlt7InRpdGxlIjoi5LiJ5p2h5Y+v5pON5L2c6Lev55SxICsg5YWx5Lqr5a+86IiqIiwiYmVmb3JlIjoi5LuFIC90cmFuc2FjdGlvbnPjgIEvc3VwcGxpZXJz44CBL2Z1bGZpbGxtZW50IOetiSA0KyDot6/nlLHvvIzlr7vmupAv5YeG5YWlL+mjjumZqeaXoOa1j+iniOWZqOWFpeWPo+OAgiIsImFmdGVyIjoi5paw5aKeIC9zb3VyY2luZ+OAgS9zdXBwbGllci1vbmJvYXJkaW5n44CBL3N1cHBsaWVyLXJpc2sg5LiO5YWx5Lqr5a+86Iiq77yM5Liy5o6l5ZCI5ZCMIEhJVEwv5Lq65bel5aSN5qC4L0FJIOWwsee7quW6pi/msrvnkIbmgIHlir/jgIIiLCJyZWFzb24iOiLorqkgMTAwJSDkurrlt6Xnu4jlhrPlj6/mk43kvZzjgIHlj6/ov73muq/vvJvkuI3ph43lpI3muLLmn5Pml6LmnInpobXpnaLliKTor43pgb/lhY3lj6PlvoTliIblj4njgIIiLCJmaWxlcyI6W3sicGF0aCI6ImJvbmUtZnJvbnRlbmQvYXBwcy9ib25lLXByb2N1cmVtZW50LWFwcC9zcmMvQXBwLnRzeCIsImtpbmQiOiJtb2RpZmllZCIsImNvZGUiOiLms6jlhozkuInmnaHmlrDot6/nlLHlubbkv53nlZnml6LmnInot6/nlLHjgIIifSx7InBhdGgiOiJib25lLWZyb250ZW5kL2FwcHMvYm9uZS1wcm9jdXJlbWVudC1hcHAvc3JjL2NvbXBvbmVudHMvUHJvY3VyZW1lbnRXb3JrYmVuY2hOYXYudHN4Iiwia2luZCI6ImFkZGVkIiwiY29kZSI6IuWFseS6q+WvvOiIqu+8jDQwMy80MDQg5pi+56S66ZmN57qn5o+Q56S644CCIn1dfSx7InRpdGxlIjoiQVBJIOWuouaIt+err+S4jiBmYWlsLWNsb3NlZCDlkYjnjrAiLCJiZWZvcmUiOiLml6Dlr7vmupAv6aOO6Zmp5YmN56uv5a6i5oi356uv77yMMnh4IOaYk+iiq+ivr+W9k+aIkOWKn+OAgiIsImFmdGVyIjoic291cmNpbmdBcGkvc3VwcGxpZXJSaXNrQXBpIOS7pemhtuWxgiBzdWNjZXNzIOWIpOWumu+8jDQwMy80MDQv572R57uc5aSx6LSlL3N1Y2Nlc3M9ZmFsc2Ug5pig5bCE5piO56Gu6ZmN57qn77yb6K+35rGC5L2T5LiN5ZCr6Ieq5oql6Lqr5Lu95a2X5q6144CCIiwicmVhc29uIjoi6YeH6LSt5Z+f44CMMnh4IOKJoCDmiJDlip/jgI3nuqLnur8gKyDouqvku73lj6rnlLHlkI7nq6/nmbvlvZXmgIHoo4HlhrPjgIIiLCJmaWxlcyI6W3sicGF0aCI6ImJvbmUtZnJvbnRlbmQvYXBwcy9ib25lLXByb2N1cmVtZW50LWFwcC9zcmMvc2VydmljZXMvc291cmNpbmdBcGkudHMiLCJraW5kIjoiYWRkZWQiLCJjb2RlIjoi5raI6LS5IC9hcGkvdjEvcHJvY3VyZW1lbnQvYnVzaW5lc3MvKuOAgiJ9LHsicGF0aCI6ImJvbmUtZnJvbnRlbmQvYXBwcy9ib25lLXByb2N1cmVtZW50LWFwcC9zcmMvc2VydmljZXMvc3VwcGxpZXJSaXNrQXBpLnRzIiwia2luZCI6ImFkZGVkIiwiY29kZSI6Iua2iOi0uSAvcXVhbGlmaWNhdGlvbnMg5LiOIC9wZXJmb3JtYW5jZS1zY29yZXPjgIIifV19LHsidGl0bGUiOiLnuq/mmKDlsITlsYLkuI4gUElJIOeZveWQjeWNlSIsImJlZm9yZSI6IuaXoOeLrOeri+WxleekuuaYoOWwhO+8jOacquefpeeggeWPr+iDveiiq+WOi+aIkOato+W4uOOAgiIsImFmdGVyIjoic291cmNpbmdWaWV3L3N1cHBsaWVyUmlza1ZpZXcg5pyq55+l56CB5L+d55WZ5Y6f5aeL56CB44CBQUkg5bu66K6u5Y+q5L2c5bu66K6u5a2X5q6144CB57up5pWI57y65aSx5pi+56S65peg5rOV56Gu6K6k44CBUElJIOWtl+auteeZveWQjeWNleWJlOmZpOOAgiIsInJlYXNvbiI6IuWPjeWBh+e7v+S4jiBQSUkg6Ziy5oqk77yM5rWL6K+V6KaG55uW5pyq55+l56CBL+e8uuWkseWAvC/or4Hku7blj7fliZTpmaTjgIIiLCJmaWxlcyI6W3sicGF0aCI6ImJvbmUtZnJvbnRlbmQvYXBwcy9ib25lLXByb2N1cmVtZW50LWFwcC9zcmMvdHlwZXMvc291cmNpbmdWaWV3LnRzIiwia2luZCI6ImFkZGVkIiwiY29kZSI6IuaKleaghy/miqXku7cv5o6I5qCH5bGV56S65pig5bCE44CCIn0seyJwYXRoIjoiYm9uZS1mcm9udGVuZC9hcHBzL2JvbmUtcHJvY3VyZW1lbnQtYXBwL3NyYy90eXBlcy9zdXBwbGllclJpc2tWaWV3LnRzIiwia2luZCI6ImFkZGVkIiwiY29kZSI6IumjjumZqeWxleekuuaYoOWwhCArIHN0cmlwUGlpIOeZveWQjeWNleOAgiJ9XX0seyJ0aXRsZSI6IuazqOWFpeW/hee6oumdmeaAgemXqOemgSIsImJlZm9yZSI6IuaXoOi/kOiQpeWPsOS4k+WxnumXqOemgeOAgiIsImFmdGVyIjoiY2hlY2tfcHJvY3VyYV9vcHNfY29uc29sZS5weSDlrojot6/nlLEv6Lqr5Lu96L6555WML+Wksei0peaAgS9QSUkv5Lu75Yqh5Yu+6YCJ77yMNC80IOazqOWFpeaOoumSiOi9rOe6ouOAgiIsInJlYXNvbiI6IumYsuWBh+e7v++8jOmBv+WFjeWJjeerryBmYWlsLWNsb3NlZCDooqvpnZnpu5jmkqTplIDjgIIiLCJmaWxlcyI6W3sicGF0aCI6InRvb2xzL2NoZWNrX3Byb2N1cmFfb3BzX2NvbnNvbGUucHkiLCJraW5kIjoiYWRkZWQiLCJjb2RlIjoi6Z2Z5oCB6Zeo56aBICsgLS1zZWxmLXRlc3Qg5rOo5YWl5b+F57qi44CCIn1dfV0sInZlcmlmaWNhdGlvbiI6W3sibGFiZWwiOiLph4fotK0gYXBwIHZpdGVzdCIsInN0YXR1cyI6InBhc3NlZCIsImRldGFpbCI6IjI2IOaWh+S7tiAvIDE1NCDkvovlhajpgJrov4fvvIjlkKvmlrDlop4gOCDnu4QgZmFpbC1jbG9zZWQg5rWL6K+V77yJ44CCIn0seyJsYWJlbCI6IlR5cGVTY3JpcHQgLyBlc2xpbnQiLCJzdGF0dXMiOiJwYXNzZWQiLCJkZXRhaWwiOiJ0c2MgLS1ub0VtaXQgRVhJVD0w77ybZXNsaW50IC1mIGpzb24gZXJyb3JDb3VudD0w77yINjcg5paH5Lu277yMMyDpnZ7pmLvmlq0gd2FybmluZ++8ieOAgiJ9LHsibGFiZWwiOiLpnZnmgIHpl6jnpoHkuI7ms6jlhaXmjqLpkogiLCJzdGF0dXMiOiJwYXNzZWQiLCJkZXRhaWwiOiLkuLvliKTmja4gRVhJVD0w77ybNC80IOazqOWFpeaOoumSiOi9rOe6ou+8iOi3r+eUseWIoOmZpC/oh6rmiqXouqvku70vc3VjY2Vzcz1mYWxzZSDliKTmja7np7vpmaQvUElJIOeZveWQjeWNleWKqOaAgeWMlu+8ieOAgiJ9LHsibGFiZWwiOiLni6znq4vlrqHmn6UiLCJzdGF0dXMiOiJwYXNzZWQiLCJkZXRhaWwiOiLouqvku73ovrnnlYwv5aSx6LSl5oCBL1BJSS/mnKrnn6XnoIHlm5vpobnlrqHmn6UgMCBDUklUSUNBTCAvIDAgSU1QT1JUQU5U77ybQnVpbGQg5LiOIFZlcmlmeSBndWFyZCDlnYfnnJ/lrp7pgJrov4fjgIIifV19</template></body></html>
