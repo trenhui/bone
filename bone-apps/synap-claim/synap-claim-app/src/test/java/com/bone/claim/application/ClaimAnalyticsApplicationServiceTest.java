@@ -4,9 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.domain.model.claim.projection.CaseDurationProjection;
 import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
@@ -33,6 +36,7 @@ class ClaimAnalyticsApplicationServiceTest {
   @Mock private DecisionExecutionRepository decisionExecutionRepository;
   @Mock private ClaimCaseRepository claimCaseRepository;
   @Mock private DomainEventOutboxRepository domainEventOutboxRepository;
+  @Mock private TenantPort tenantPort;
 
   private ClaimAnalyticsApplicationService service;
 
@@ -40,7 +44,10 @@ class ClaimAnalyticsApplicationServiceTest {
   void setUp() {
     service =
         new ClaimAnalyticsApplicationService(
-            decisionExecutionRepository, claimCaseRepository, domainEventOutboxRepository);
+            decisionExecutionRepository,
+            claimCaseRepository,
+            domainEventOutboxRepository,
+            tenantPort);
   }
 
   @Test
@@ -138,11 +145,77 @@ class ClaimAnalyticsApplicationServiceTest {
         .isInstanceOf(RuntimeException.class);
   }
 
+  @Test
+  @DisplayName("按租户分组：各组指标与全量口径一致，scopeNote 随组返回")
+  void summaryByTenantGroupsAndKeepsScopeNote() {
+    List<DecisionExecution> rows =
+        List.of(
+            executionOfTenant("AUTO_APPROVE", "SUCCESS", 100, 11L),
+            executionOfTenant("AUTO_APPROVE", "SUCCESS", 200, 11L),
+            executionOfTenant("MANUAL_REQUIRED", "FALLBACK", 300, 11L),
+            executionOfTenant("AUTO_APPROVE", "SUCCESS", 900, 22L));
+    when(decisionExecutionRepository.findConvergedInWindow(FROM, TO)).thenReturn(rows);
+    when(tenantPort.currentTenantId()).thenReturn(11L);
+
+    var grouped = service.summaryByTenant(FROM, TO);
+
+    assertThat(grouped.tenantId()).isEqualTo(11L);
+    assertThat(grouped.converged()).isEqualTo(3L);
+    assertThat(grouped.byDecisionResult())
+        .containsEntry("AUTO_APPROVE", 2L)
+        .containsEntry("MANUAL_REQUIRED", 1L);
+    assertThat(grouped.fallbackCount()).isEqualTo(1L);
+    assertThat(grouped.shadowAutomationRate()).isEqualTo(2.0 / 3.0);
+    assertThat(grouped.avgDurationMs()).isEqualTo(200.0);
+    assertThat(grouped.scopeNote()).contains("不等于实际出金率");
+  }
+
+  @Test
+  @DisplayName("租户隔离：只返回当前租户的执行，不含其他租户数据")
+  void summaryByTenantIsolatesOtherTenants() {
+    List<DecisionExecution> rows =
+        List.of(
+            executionOfTenant("AUTO_APPROVE", "SUCCESS", 100, 11L),
+            executionOfTenant("AUTO_APPROVE", "SUCCESS", 900, 22L),
+            executionOfTenant("MANUAL_REQUIRED", "FALLBACK", 800, 22L));
+    when(decisionExecutionRepository.findConvergedInWindow(FROM, TO)).thenReturn(rows);
+    when(tenantPort.currentTenantId()).thenReturn(11L);
+
+    var grouped = service.summaryByTenant(FROM, TO);
+
+    assertThat(grouped.converged()).isEqualTo(1L);
+    assertThat(grouped.avgDurationMs()).isEqualTo(100.0);
+    assertThat(grouped.fallbackCount()).isZero();
+  }
+
+  @Test
+  @DisplayName("无维度原 summary 不受影响，仍返回全量口径（向后兼容）")
+  void summaryWithoutTenantStaysFullScope() {
+    List<DecisionExecution> rows =
+        List.of(
+            execution("AUTO_APPROVE", "SUCCESS", 100),
+            execution("MANUAL_REQUIRED", "FALLBACK", 800));
+    when(decisionExecutionRepository.findConvergedInWindow(FROM, TO)).thenReturn(rows);
+
+    var full = service.summary(FROM, TO);
+
+    assertThat(full.converged()).isEqualTo(2L);
+    assertThat(full.fallbackCount()).isEqualTo(1L);
+    verifyNoInteractions(tenantPort);
+  }
+
   private static DecisionExecution execution(String result, String status, Integer durationMs) {
     DecisionExecution e = mock(DecisionExecution.class);
-    when(e.getDecisionResult()).thenReturn(result);
-    when(e.getStatus()).thenReturn(status);
-    when(e.getDurationMs()).thenReturn(durationMs);
+    lenient().when(e.getDecisionResult()).thenReturn(result);
+    lenient().when(e.getStatus()).thenReturn(status);
+    lenient().when(e.getDurationMs()).thenReturn(durationMs);
+    return e;
+  }
+
+  private static DecisionExecution executionOfTenant(
+      String result, String status, Integer durationMs, Long tenantId) {
+    DecisionExecution e = execution(result, status, durationMs);
+    lenient().when(e.getTenantId()).thenReturn(tenantId);
     return e;
   }
 }

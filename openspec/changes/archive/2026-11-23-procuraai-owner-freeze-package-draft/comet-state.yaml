@@ -1,0 +1,3238 @@
+# comet-execution: managed-run
+change_id: 6bc2d03d-7514-4d7d-88d0-b92569f44d1b
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: standard
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: 6577b293a1165dea5b4d741b3b989808fc3349d3
+design_doc: openspec/changes/archive/2026-11-23-procuraai-owner-freeze-package-draft/design.md
+plan: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-23-procuraai-owner-freeze-package-draft-verify.md
+branch_status: pending
+created_at: 2026-11-23
+verified_at: 2026-11-23
+archive_confirmation: confirmed
+archived: true
+bound_branch: dev
+direct_override: false
+handoff_context: openspec/changes/archive/2026-11-23-procuraai-owner-freeze-package-draft/.comet/handoff/design-context.json
+handoff_hash: 75f4ef758806dbc6f8edc374713b75ad985c46b1ab8cda03c96946d933a91e70
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: d680d951eb30b0c379c0b8ce8604eaa8241b10bb02e89911e6945580e08d4744
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: procuraai-owner-freeze-package-draft
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    definitionHashes:
+      '["comet-classic-full","1"]': 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    initialStateHash: 172082ed836bcb0c6d78465a77ba7fa980ab15e986ec7315bb8be711ae1c7bf4
+    input:
+      change: procuraai-owner-freeze-package-draft
+      changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+      workspaceBaseline:
+        ref: b7a65465-daa5-4a82-9485-3029c09244b7
+    state:
+      archiveConfirmation: confirmed
+      archived: true
+      autoTransition: true
+      baseRef: 6577b293a1165dea5b4d741b3b989808fc3349d3
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 7
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-23
+      designDoc: openspec/changes/archive/2026-11-23-procuraai-owner-freeze-package-draft/design.md
+      directOverride: false
+      handoffContext: openspec/changes/archive/2026-11-23-procuraai-owner-freeze-package-draft/.comet/handoff/design-context.json
+      handoffHash: 75f4ef758806dbc6f8edc374713b75ad985c46b1ab8cda03c96946d933a91e70
+      isolation: current
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-23-procuraai-owner-freeze-package-draft-verify.md
+      verifiedAt: 2026-11-23
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 31
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-1eccd8daaa29bd25f2dd3b9f1c634f2869c2aea8f60a2f90c416cd53852cfc34
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:1
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: ce56e56dbdc8ce869da38b107178f99a7ac91b4d0955bbe7ac097f534c092771
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:1
+          attempt: 1
+          claimToken: portable-1eccd8daaa29bd25f2dd3b9f1c634f2869c2aea8f60a2f90c416cd53852cfc34
+          inputHash: ce56e56dbdc8ce869da38b107178f99a7ac91b4d0955bbe7ac097f534c092771
+          outcomeId: e4306550-641f-4884-8234-582abda8abdb
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 09211fcc5aa5ed6a5f5c55499c41a33c42dd4a3cc46952abe8096c41486a84fd
+            outcomeId: e4306550-641f-4884-8234-582abda8abdb
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-9fcfaceb6543bd81687c7f337f1b29627bb51a37f9fc04be66c9fa3ddcad5dd8
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:4
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: 2a5a593455ad5478e986bc406d03662e17debd93aa061fd937ecac04e7a4ccb2
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:4
+          attempt: 1
+          claimToken: portable-9fcfaceb6543bd81687c7f337f1b29627bb51a37f9fc04be66c9fa3ddcad5dd8
+          inputHash: 2a5a593455ad5478e986bc406d03662e17debd93aa061fd937ecac04e7a4ccb2
+          outcomeId: procuraai-owner-freeze-package-draft:4:1:executor-result
+          output:
+            contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 05b1354fb1675983aa56cd24a7d876606ab8e4065ac6da05433b665f05c8ef48
+            outcomeId: procuraai-owner-freeze-package-draft:4:1:executor-result
+        reconciliations: []
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-c633f1dcf4d28670bae3444fb5e6d5cc8bd20de83445350b0813a880a799781b
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:5
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: 24de4af2f7304c57230a74345a991e3541f30e4f0c07995ea7bd7af037310ee3
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:5
+          attempt: 1
+          claimToken: portable-c633f1dcf4d28670bae3444fb5e6d5cc8bd20de83445350b0813a880a799781b
+          inputHash: 24de4af2f7304c57230a74345a991e3541f30e4f0c07995ea7bd7af037310ee3
+          outcomeId: 1d139e99-73ba-4473-a572-9e2e892fa911
+          output:
+            handoffContext: openspec/changes/procuraai-owner-freeze-package-draft/.comet/handoff/design-context.json
+            handoffHash: 57fcc95edff9bf681e26050d2888dc8f18c68b148ffe6e79d8adfca779fde8ac
+            proposal: 方案：在 change 目录新建 owner-freeze-package-draft.md，作为唯一 owner
+              待签草案；OpenSpec delta
+              只定义草案行为，不改运行时。每项用六字段（状态、owner、验收判据、未闭合风险、真源锚点、待裁决动作），正文覆盖契约冻结评审、评测扩容、法务书面结论输入、D-01至D-18索引。取舍：A
+              单文件不改现有真源（采用，避免污染 DECISION-REGISTER/D3-v2/README 锚点）；B
+              直接改现有真源（放弃，会伪造状态与破坏历史快照）；C 在产品族新建长期真源（放弃，扩大资产登记与 frontmatter
+              守护面）。风险：change 目录可见性需交付说明补强；file:line 漂移需章节名与 JSON 字段并行；D-06/D-11
+              只引用工程证据不冒充 owner 签署。状态诚实：evalset 保持
+              seededDraft/notStarted/27，不改契约冻结状态，不写法务/模型达标结论；本地确定性检查与注入反证即可验收，不接
+              CI 三入口、不扩 FULL_GATE_KEYS。无 Spec Patch。授权依据：用户此前确认最大范围含草案、拆成 3 个
+              change、继续完成第 2/3 个，并给出 autonomous + tdd + standard 与提交推送
+              origin/dev 的持续授权；当前方案未超范围。
+            requirementsEvidence:
+              contentHash: cbf1e80e76be0e1fe1f713701a1566b23c1e5777a843a717d524b4913fbccb95
+              ref: openspec/changes/procuraai-owner-freeze-package-draft
+            sourceEvidence:
+              contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+              ref: openspec/changes/procuraai-owner-freeze-package-draft
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: a70cffb04566a1af541e21593e579df91857045106197cab10dcaeeb7de75d41
+            outcomeId: 1d139e99-73ba-4473-a572-9e2e892fa911
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-7f4bf97d2d9698bf0517907eacdbd19e953927ea463a1dcd30f3ab3c41c8d50b
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:7
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: c93aa9fd51fb33de9f1e727482fff01839ed4b6a1ad1f8381f76b8569b49f737
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:7
+          attempt: 1
+          claimToken: portable-7f4bf97d2d9698bf0517907eacdbd19e953927ea463a1dcd30f3ab3c41c8d50b
+          inputHash: c93aa9fd51fb33de9f1e727482fff01839ed4b6a1ad1f8381f76b8569b49f737
+          outcomeId: f1170dba-2d3d-4951-aff7-a120c642ccef
+          output:
+            designDoc: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 01ae2c855854521e459bf1670dda4ebdd8f42fc84f2f1d98ac0add3b74bad4f5
+            outcomeId: f1170dba-2d3d-4951-aff7-a120c642ccef
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-257597bb9e28f6bd8c0973c9e68040ceea94462dbeb0a2fafdd2a9bc92bf28d5
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:9
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: 17bbeb7c28fe3b5546f889d5e59438c04fa1d37b366c05f247e4ce5c1c442344
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:9
+          attempt: 1
+          claimToken: portable-257597bb9e28f6bd8c0973c9e68040ceea94462dbeb0a2fafdd2a9bc92bf28d5
+          inputHash: 17bbeb7c28fe3b5546f889d5e59438c04fa1d37b366c05f247e4ce5c1c442344
+          outcomeId: 9d2e8be7-6ab3-4a77-9239-57d6a0fbe154
+          output:
+            boundBranch: dev
+            buildMode: autonomous
+            directOverride: false
+            isolation: current
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: df9206b2c908eb3435b5de697991813bc7fc9733c0ae33f5e341b07b08522fe4
+            outcomeId: 9d2e8be7-6ab3-4a77-9239-57d6a0fbe154
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-7a7c4a7f30216742d57c912c638ee704296f6d35b8fdc930ef90f16bf2c2d1f4
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:11
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: a098d5b070c8750a122ddd16ef02deba8d10b7a4c11aa0badb0614e7d010c941
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:11
+          attempt: 1
+          claimToken: portable-7a7c4a7f30216742d57c912c638ee704296f6d35b8fdc930ef90f16bf2c2d1f4
+          inputHash: a098d5b070c8750a122ddd16ef02deba8d10b7a4c11aa0badb0614e7d010c941
+          outcomeId: 2ffa3d8a-6689-441b-9b90-771e135df2b5
+          output:
+            designEvidence:
+              contentHash: 1b0a4301a25ed8701233b7f103f427433cc73248a51fe5e16d0f828c0e3bfcb9
+              ref: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+            plan: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+            planEvidence:
+              contentHash: 785fb3306769f2735a38d211c70a92e377468652d62ab68ccd72bdf7aa7898b3
+              ref: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+            taskRevision: 92f5be540d9c508d582bed0d559028a452461ffea5f225e3f06dc091104c0e50
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: de62e9619f7524aa8d4a172177e699ab5986894f03a8c0bba8042aa36e68a4a4
+            outcomeId: 2ffa3d8a-6689-441b-9b90-771e135df2b5
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        id: procuraai-owner-freeze-package-draft:13
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: e770b0d270c8cc02268bae438f097577e607497a2690ddfa32b8eca33e33eebd
+        protocolVersion: 1
+        reason: 命令 revise-design 已取代待执行 Action
+        receipts: []
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: cancelled
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-486d6aad2b99e080f2a1bad15f752f0410fed3bd84890202678cb6cedcdcc3ce
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:14
+        input:
+          activation:
+            expectedRevision: 19
+            fromPhase: build
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: b2639495a465238e307b6800a8284143287e6d40732538117125c1d8044975f0
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:14
+          attempt: 1
+          claimToken: portable-486d6aad2b99e080f2a1bad15f752f0410fed3bd84890202678cb6cedcdcc3ce
+          inputHash: b2639495a465238e307b6800a8284143287e6d40732538117125c1d8044975f0
+          outcomeId: 5e52032a-587b-43fb-9466-77eeaa2c2b2b
+          output:
+            handoffContext: openspec/changes/procuraai-owner-freeze-package-draft/.comet/handoff/design-context.json
+            handoffHash: 75f4ef758806dbc6f8edc374713b75ad985c46b1ab8cda03c96946d933a91e70
+            proposal: 方案：在 change 目录保留 owner-freeze-package-draft.md 作为唯一 owner
+              待签草案；OpenSpec delta
+              只定义草案行为，不改运行时。每项用六字段（状态、owner、验收判据、未闭合风险、真源锚点、待裁决动作），正文覆盖契约冻结评审、评测扩容、法务书面结论输入、D-01至D-18索引。本轮修订依据唯一最终集成审查：proposal
+              范围由 D-01…D-13 更正为 D-01…D-18；spec 字段数由五更正为六，补回「待裁决动作」；两处臆造 slug
+              改为真实章节引用。取舍：A 单文件不改现有真源（采用，避免污染 DECISION-REGISTER/D3-v2/README
+              锚点）；B 直接改现有真源（放弃，会伪造状态与破坏历史快照）；C 在产品族新建长期真源（放弃，扩大资产登记与 frontmatter
+              守护面）。风险：change 目录可见性需交付说明补强；file:line 漂移需章节名与 JSON
+              字段并行；已落地项只引用工程证据不冒充 owner 签署。状态诚实：evalset 保持
+              seededDraft/notStarted/27，不改契约冻结状态，不写法务/模型达标结论；本地确定性检查与注入反证即可验收，不接
+              CI 三入口、不扩 FULL_GATE_KEYS。无 Spec Patch。授权依据：用户此前确认最大范围含草案、拆成 3 个
+              change、继续完成第 2/3 个，并给出 autonomous + tdd + standard 与提交推送
+              origin/dev 的持续授权；本次修订仅为审查发现的口径更正，未超范围。
+            requirementsEvidence:
+              contentHash: 762f682f0053765e0a36f87c2cdeee02d5bc7596743d29b113ef78ca01ddd245
+              ref: openspec/changes/procuraai-owner-freeze-package-draft
+            sourceEvidence:
+              contentHash: b7da9d1b258534fc854167c0b03e4e161bc399323097e2ded5bebdd9eef82f09
+              ref: openspec/changes/procuraai-owner-freeze-package-draft
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 99eb79fa89f631dfc92a2e5b02c89cbfb0c1f02af6fef799d7d29e0dbd9dc3d2
+            outcomeId: 5e52032a-587b-43fb-9466-77eeaa2c2b2b
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-bf48a5a4539a9345f3828fd395cba0579ff1678de30b89f733df3bb52f92c2b5
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:16
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: a9f41c228c2b2673e19e8ac23ea9b3edf7ae1fde6cb5e49bc1db9d314dd01ef8
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:16
+          attempt: 1
+          claimToken: portable-bf48a5a4539a9345f3828fd395cba0579ff1678de30b89f733df3bb52f92c2b5
+          inputHash: a9f41c228c2b2673e19e8ac23ea9b3edf7ae1fde6cb5e49bc1db9d314dd01ef8
+          outcomeId: 7d917b4e-084b-4bbf-a545-35d553563548
+          output:
+            designDoc: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f37cf3dbeb3bf9a806f4cf46559789ea30b4b3bd1795e08a37d1fc16fa3781d7
+            outcomeId: 7d917b4e-084b-4bbf-a545-35d553563548
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-c0f09de4cda4eca0bcc80bbadcc4c9c95168b278eb05676790f7d6dc0fdb4e77
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:18
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: 34e2c89339a7f6daf1ee9c83aded20b84a914700951b015409ee0bd384cc48e7
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:18
+          attempt: 1
+          claimToken: portable-c0f09de4cda4eca0bcc80bbadcc4c9c95168b278eb05676790f7d6dc0fdb4e77
+          inputHash: 34e2c89339a7f6daf1ee9c83aded20b84a914700951b015409ee0bd384cc48e7
+          outcomeId: 3462d2ae-d949-45bd-8fa0-796d0e1b7ea3
+          output:
+            designEvidence:
+              contentHash: 1b0a4301a25ed8701233b7f103f427433cc73248a51fe5e16d0f828c0e3bfcb9
+              ref: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+            plan: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+            planEvidence:
+              contentHash: 785fb3306769f2735a38d211c70a92e377468652d62ab68ccd72bdf7aa7898b3
+              ref: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+            taskRevision: 92f5be540d9c508d582bed0d559028a452461ffea5f225e3f06dc091104c0e50
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: fda4f129d9c9bbd574161e66129ec74e153c85fb75f1b559eaf6892b59df6dc1
+            outcomeId: 3462d2ae-d949-45bd-8fa0-796d0e1b7ea3
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/procuraai-owner-freeze-package-draft:20/1
+          token: portable-3d83e7d7bef2c14e202cc643366e54f9d65de5d239ddbc3ef11dbd72a77d3ed0
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:20
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: e13e763f67103303c033f44601fc692220faef79229ceba4a70d8e22b598131d
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:20
+          attempt: 1
+          claimToken: portable-3d83e7d7bef2c14e202cc643366e54f9d65de5d239ddbc3ef11dbd72a77d3ed0
+          inputHash: e13e763f67103303c033f44601fc692220faef79229ceba4a70d8e22b598131d
+          outcomeId: b727eb67-f61c-4457-a91b-998ae9e07228
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 29ef255e4cbc3da12ed9490217b282580ac0e9c11f3682d2d548c9ff16dbf942
+            outcomeId: b727eb67-f61c-4457-a91b-998ae9e07228
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-fe16af5e9f779a2c70764d956ac97bbdaa2b8f6f2c05d31304d338f331b4a5e6
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:21
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: 335333e426712a4bbd0feb48b1e4c8531f9fa84a594232fbde5ee4304bdfdf06
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:21
+          attempt: 1
+          claimToken: portable-fe16af5e9f779a2c70764d956ac97bbdaa2b8f6f2c05d31304d338f331b4a5e6
+          inputHash: 335333e426712a4bbd0feb48b1e4c8531f9fa84a594232fbde5ee4304bdfdf06
+          outcomeId: 93389163-2495-44a0-8b91-2a609fff33c8
+          output:
+            argv:
+              - python3
+              - /tmp/comet_owner_freeze_check.py
+              - /Users/renhui.trh/code/bone/openspec/changes/procuraai-owner-freeze-package-draft/owner-freeze-package-draft.md
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: c229c53350486ff74d4cb79cbf68df58ce535e64178799968d9edd0ccf250e0f
+            cwd: .
+            environment: eff47e683cab4377b5cb850a1358c9769edc7972ba069fa0e7a5bc5f2d0feaf4
+            exitCode: 0
+            inputAfter: 4e7de6947942f8c7fc9b8f6ac646b1ad1fca041ab1afdc766a00baf07c12c14c
+            inputBefore: 4e7de6947942f8c7fc9b8f6ac646b1ad1fca041ab1afdc766a00baf07c12c14c
+            manifestHash: 12efb8758c1dfdfe3d24f4da220e92ef908b890ecafc993553d52ac842268836
+            manifestRef: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/3c8df912-204a-47e9-a05d-215d7c2da3c7.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/54dd8fa0-e962-471c-a01c-e29c10bd05cc.log
+            reusable: true
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 451f615d5fbe2d2e0257ccebd4a2695be296c0a95f495aab15fbfe372d9e4ab1
+            outcomeId: 93389163-2495-44a0-8b91-2a609fff33c8
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-7bc4400cb1950e9a8826453e08c19a20fde3387e48ef6ca6bde86dec919cdb01
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:23
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: 4cb7c5fd724066a033209dd86914bc44650518aee29789d0e45e72d3c7f2e02f
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:23
+          attempt: 1
+          claimToken: portable-7bc4400cb1950e9a8826453e08c19a20fde3387e48ef6ca6bde86dec919cdb01
+          inputHash: 4cb7c5fd724066a033209dd86914bc44650518aee29789d0e45e72d3c7f2e02f
+          outcomeId: bb5d079c-5dc2-4db7-9870-5069ad9f0a70
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-23-procuraai-owner-freeze-package-draft-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 8814457c673c6c2cb3ce21b6923e4600d9af9e0483429a3b53d69fea08557220
+            outcomeId: bb5d079c-5dc2-4db7-9870-5069ad9f0a70
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-18ac0458db6a219b52129d73880b9a1986fca1aff1ceb4bdbd1d8f3de98af172
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:25
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: 094e645c1bf0c4f882c71a742f5042d1c9d9ec693b4af9d54038c9c7ac8f7069
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:25
+          attempt: 2
+          claimToken: portable-18ac0458db6a219b52129d73880b9a1986fca1aff1ceb4bdbd1d8f3de98af172
+          inputHash: 094e645c1bf0c4f882c71a742f5042d1c9d9ec693b4af9d54038c9c7ac8f7069
+          outcomeId: 973e5e92-75fd-4bd4-a843-82a5e7e1e619
+          output:
+            argv:
+              - python3
+              - /tmp/comet_owner_freeze_check.py
+              - /Users/renhui.trh/code/bone/openspec/changes/procuraai-owner-freeze-package-draft/owner-freeze-package-draft.md
+            changedDuringExecution: []
+            checkEpoch: 4
+            contentHash: c229c53350486ff74d4cb79cbf68df58ce535e64178799968d9edd0ccf250e0f
+            cwd: .
+            deliveryInputs: {}
+            environment: eff47e683cab4377b5cb850a1358c9769edc7972ba069fa0e7a5bc5f2d0feaf4
+            exitCode: 0
+            inputAfter: 4e7de6947942f8c7fc9b8f6ac646b1ad1fca041ab1afdc766a00baf07c12c14c
+            inputBefore: 4e7de6947942f8c7fc9b8f6ac646b1ad1fca041ab1afdc766a00baf07c12c14c
+            manifestHash: 12efb8758c1dfdfe3d24f4da220e92ef908b890ecafc993553d52ac842268836
+            manifestRef: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/3c8df912-204a-47e9-a05d-215d7c2da3c7.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/54dd8fa0-e962-471c-a01c-e29c10bd05cc.log
+            reusable: true
+            reused: true
+            reusedFrom: procuraai-owner-freeze-package-draft:21
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 35ea0b59d6b1076fed3ec5aaa078cd1f4f0c857d5b3d2931f045b7e23eb89ff5
+            outcomeId: 973e5e92-75fd-4bd4-a843-82a5e7e1e619
+        reconciliations:
+          - attempt: 1
+            evidence: 原 guard 执行器进程已退出；state next/details 显示 Action :25 无
+              outcome/receipt；find .comet/runtime/classic-sdk-checks -mmin -20
+              无新增日志或 manifest，因此该检查未产生实际执行收据；现按协议重置为 pending 并真实重跑。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-0703fec40bba836874b54ab9881e6109ffd8db813fc277c01ea4756307de6a6a
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:27
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: 17d73a5f19cc6a1615168d81f161f84951096ba604383b3ea9573c08caf549d7
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:27
+          attempt: 1
+          claimToken: portable-0703fec40bba836874b54ab9881e6109ffd8db813fc277c01ea4756307de6a6a
+          inputHash: 17d73a5f19cc6a1615168d81f161f84951096ba604383b3ea9573c08caf549d7
+          outcomeId: 84c0c752-54ed-4ebe-828c-10e92273015a
+          output:
+            prBaseBranch: dev
+            remote: origin
+            summary: 交付 owner 冻结包草案：四类待签材料与 18 项开口项索引齐全；保持 evalset seededDraft/notStarted/27
+              与契约冻结状态不变；OpenSpec 严格校验、本地正例/双注入反证、8 项既有门禁与最终独立审查全部通过；不改运行时、DDL、CI
+              三入口判据集合。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 33d016d0d978d77be3ec093cfdbd9c291484a163cc3790d809f44baa89d921d0
+            outcomeId: 84c0c752-54ed-4ebe-828c-10e92273015a
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-bb37684de055bac87f2c329fb8db2eae8284a47dcb9d667511819c4e5e235556
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:29
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: 59081b083ba8a2ffdf6d7d69c8eb21ab46a276057b7d097ba5c83c7209171207
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:29
+          attempt: 1
+          claimToken: portable-bb37684de055bac87f2c329fb8db2eae8284a47dcb9d667511819c4e5e235556
+          inputHash: 59081b083ba8a2ffdf6d7d69c8eb21ab46a276057b7d097ba5c83c7209171207
+          outcomeId: 0ece6591-aa0d-44b9-af72-bd07ed49719d
+          output:
+            baseCommit: 6577b293a1165dea5b4d741b3b989808fc3349d3
+            deliveryAction: push
+            prBaseBranch: dev
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 6f48d02a167514f86ea5c5f3c39f134a72fe12a3b4c90bca1990817c259044a7
+            outcomeId: 0ece6591-aa0d-44b9-af72-bd07ed49719d
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-90def34ec30cf207169b090bec294fa1e340a32ea1863c0a291ceaf6c52ec3ca
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-owner-freeze-package-draft:30
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: 1b96e929fd2a3df314e3f5457700b5ec790887eb754bfe784aa1615a0d2a0f87
+        outcome:
+          actionId: procuraai-owner-freeze-package-draft:30
+          artifacts:
+            - sha256: 75fca9ed6d174a272e6e93a2cbfb8b5f0a3185bcccd2e402c36ab66a62dd541a
+              uri: openspec/changes/archive/2026-11-23-procuraai-owner-freeze-package-draft/.comet/archive-manifest.json
+          attempt: 1
+          claimToken: portable-90def34ec30cf207169b090bec294fa1e340a32ea1863c0a291ceaf6c52ec3ca
+          inputHash: 1b96e929fd2a3df314e3f5457700b5ec790887eb754bfe784aa1615a0d2a0f87
+          outcomeId: procuraai-owner-freeze-package-draft:30:1:recovered:50
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-23-procuraai-owner-freeze-package-draft
+          status: succeeded
+        protocolVersion: 1
+        reason: 原执行器中断，正在核对本次执行结果
+        receipts:
+          - hash: 78bc509d2a5f72664d39e7f9e0b04399b45ed8482d05a38eb7cb15c124b0495c
+            outcomeId: procuraai-owner-freeze-package-draft:30:1:recovered:50
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: succeeded
+        stepId: full.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: procuraai-owner-freeze-package-draft:31
+        input:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs: {}
+        inputHash: 5eea1021eaba5be94cd3e228f8794c7cbf64b085b93d4af1e649ba46ec722e08
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-owner-freeze-package-draft
+        status: pending
+        stepId: full.archive.deliver
+        type: invoke_skill
+    commands:
+      - id: 163adde6a0273655b819338661cf075e4e09fb6377d2882b2ba0e5960344196a
+        name: revise-design
+        inputHash: ed99e8b6701dcdfa2c40efa491ca6d0bbfa20eb28942fae559abfefdd83169a1
+        actionId: procuraai-owner-freeze-package-draft:14
+    actionContexts:
+      procuraai-owner-freeze-package-draft:1:
+        results: {}
+        sequence: 1
+      procuraai-owner-freeze-package-draft:11:
+        results: {}
+        sequence: 11
+      procuraai-owner-freeze-package-draft:13:
+        results: {}
+        sequence: 13
+      procuraai-owner-freeze-package-draft:14:
+        results: {}
+        sequence: 14
+      procuraai-owner-freeze-package-draft:16:
+        results: {}
+        sequence: 16
+      procuraai-owner-freeze-package-draft:18:
+        results: {}
+        sequence: 18
+      procuraai-owner-freeze-package-draft:20:
+        results: {}
+        sequence: 20
+      procuraai-owner-freeze-package-draft:21:
+        results: {}
+        sequence: 21
+      procuraai-owner-freeze-package-draft:23:
+        results: {}
+        sequence: 23
+      procuraai-owner-freeze-package-draft:25:
+        results: {}
+        sequence: 25
+      procuraai-owner-freeze-package-draft:27:
+        results: {}
+        sequence: 27
+      procuraai-owner-freeze-package-draft:29:
+        results: {}
+        sequence: 29
+      procuraai-owner-freeze-package-draft:30:
+        results: {}
+        sequence: 30
+      procuraai-owner-freeze-package-draft:31:
+        results: {}
+        sequence: 31
+      procuraai-owner-freeze-package-draft:4:
+        results: {}
+        sequence: 4
+      procuraai-owner-freeze-package-draft:5:
+        results: {}
+        sequence: 5
+      procuraai-owner-freeze-package-draft:7:
+        results: {}
+        sequence: 7
+      procuraai-owner-freeze-package-draft:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: procuraai-owner-freeze-package-draft:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+              ref: openspec/changes/procuraai-owner-freeze-package-draft
+        proposalHash: b205d8444bda074145533a3ad660576bbdf81aa072d8ff239afa7a50e17a4e22
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+          choice: approved
+          proposalHash: b205d8444bda074145533a3ad660576bbdf81aa072d8ff239afa7a50e17a4e22
+      - id: procuraai-owner-freeze-package-draft:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-owner-freeze-package-draft/.comet/handoff/design-context.json
+              handoffHash: 57fcc95edff9bf681e26050d2888dc8f18c68b148ffe6e79d8adfca779fde8ac
+              proposal: 方案：在 change 目录新建 owner-freeze-package-draft.md，作为唯一 owner
+                待签草案；OpenSpec delta
+                只定义草案行为，不改运行时。每项用六字段（状态、owner、验收判据、未闭合风险、真源锚点、待裁决动作），正文覆盖契约冻结评审、评测扩容、法务书面结论输入、D-01至D-18索引。取舍：A
+                单文件不改现有真源（采用，避免污染 DECISION-REGISTER/D3-v2/README 锚点）；B
+                直接改现有真源（放弃，会伪造状态与破坏历史快照）；C 在产品族新建长期真源（放弃，扩大资产登记与 frontmatter
+                守护面）。风险：change 目录可见性需交付说明补强；file:line 漂移需章节名与 JSON
+                字段并行；D-06/D-11 只引用工程证据不冒充 owner 签署。状态诚实：evalset 保持
+                seededDraft/notStarted/27，不改契约冻结状态，不写法务/模型达标结论；本地确定性检查与注入反证即可验收，不接
+                CI 三入口、不扩 FULL_GATE_KEYS。无 Spec Patch。授权依据：用户此前确认最大范围含草案、拆成 3 个
+                change、继续完成第 2/3 个，并给出 autonomous + tdd + standard 与提交推送
+                origin/dev 的持续授权；当前方案未超范围。
+              requirementsEvidence:
+                contentHash: cbf1e80e76be0e1fe1f713701a1566b23c1e5777a843a717d524b4913fbccb95
+                ref: openspec/changes/procuraai-owner-freeze-package-draft
+              sourceEvidence:
+                contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+                ref: openspec/changes/procuraai-owner-freeze-package-draft
+        proposalHash: 85b53998f623b4a7f2a05e25cdfe6c8e05efde43b4dc050c8edefb881525725b
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-85b53998f623b4a7f2a05e25cdfe6c8e05efde43b4dc050c8edefb881525725b-approved
+          choice: approved
+          proposalHash: 85b53998f623b4a7f2a05e25cdfe6c8e05efde43b4dc050c8edefb881525725b
+      - id: procuraai-owner-freeze-package-draft:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: 7bc1da071c4c9f7941d7c12fd82eca4e817f77d03daacb705ed4db71a44c8946
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-build-7bc1da071c4c9f7941d7c12fd82eca4e817f77d03daacb705ed4db71a44c8946-approved
+          choice: approved
+          proposalHash: 7bc1da071c4c9f7941d7c12fd82eca4e817f77d03daacb705ed4db71a44c8946
+      - id: procuraai-owner-freeze-package-draft:15
+        stepId: full.design.confirm
+        sequence: 15
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-owner-freeze-package-draft/.comet/handoff/design-context.json
+              handoffHash: 75f4ef758806dbc6f8edc374713b75ad985c46b1ab8cda03c96946d933a91e70
+              proposal: 方案：在 change 目录保留 owner-freeze-package-draft.md 作为唯一 owner
+                待签草案；OpenSpec delta
+                只定义草案行为，不改运行时。每项用六字段（状态、owner、验收判据、未闭合风险、真源锚点、待裁决动作），正文覆盖契约冻结评审、评测扩容、法务书面结论输入、D-01至D-18索引。本轮修订依据唯一最终集成审查：proposal
+                范围由 D-01…D-13 更正为 D-01…D-18；spec 字段数由五更正为六，补回「待裁决动作」；两处臆造 slug
+                改为真实章节引用。取舍：A 单文件不改现有真源（采用，避免污染 DECISION-REGISTER/D3-v2/README
+                锚点）；B 直接改现有真源（放弃，会伪造状态与破坏历史快照）；C 在产品族新建长期真源（放弃，扩大资产登记与
+                frontmatter 守护面）。风险：change 目录可见性需交付说明补强；file:line 漂移需章节名与 JSON
+                字段并行；已落地项只引用工程证据不冒充 owner 签署。状态诚实：evalset 保持
+                seededDraft/notStarted/27，不改契约冻结状态，不写法务/模型达标结论；本地确定性检查与注入反证即可验收，不接
+                CI 三入口、不扩 FULL_GATE_KEYS。无 Spec Patch。授权依据：用户此前确认最大范围含草案、拆成 3 个
+                change、继续完成第 2/3 个，并给出 autonomous + tdd + standard 与提交推送
+                origin/dev 的持续授权；本次修订仅为审查发现的口径更正，未超范围。
+              requirementsEvidence:
+                contentHash: 762f682f0053765e0a36f87c2cdeee02d5bc7596743d29b113ef78ca01ddd245
+                ref: openspec/changes/procuraai-owner-freeze-package-draft
+              sourceEvidence:
+                contentHash: b7da9d1b258534fc854167c0b03e4e161bc399323097e2ded5bebdd9eef82f09
+                ref: openspec/changes/procuraai-owner-freeze-package-draft
+        proposalHash: da6673971c093eec77e987d19566f059c2f7768e6b96e4f81167229a04270802
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-da6673971c093eec77e987d19566f059c2f7768e6b96e4f81167229a04270802-approved
+          choice: approved
+          proposalHash: da6673971c093eec77e987d19566f059c2f7768e6b96e4f81167229a04270802
+      - id: procuraai-owner-freeze-package-draft:28
+        stepId: full.archive.confirm
+        sequence: 28
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs:
+            full.archive.prepare:
+              prBaseBranch: dev
+              remote: origin
+              summary: 交付 owner 冻结包草案：四类待签材料与 18 项开口项索引齐全；保持 evalset seededDraft/notStarted/27
+                与契约冻结状态不变；OpenSpec 严格校验、本地正例/双注入反证、8
+                项既有门禁与最终独立审查全部通过；不改运行时、DDL、CI 三入口判据集合。
+              targetBranch: dev
+        proposalHash: 2c72b9469df5c09b0e0503ad01c877f651c7a4041ac203a2cd3fc131be083be7
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-2c72b9469df5c09b0e0503ad01c877f651c7a4041ac203a2cd3fc131be083be7-push
+          choice: push
+          proposalHash: 2c72b9469df5c09b0e0503ad01c877f651c7a4041ac203a2cd3fc131be083be7
+    evidenceWaits:
+      - id: procuraai-owner-freeze-package-draft:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-owner-freeze-package-draft
+          contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+          submissionId: 912e10b0-1bdb-45ef-8269-252ecfeb1c7f
+      - id: procuraai-owner-freeze-package-draft:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+          contentHash: 1b0a4301a25ed8701233b7f103f427433cc73248a51fe5e16d0f828c0e3bfcb9
+          submissionId: fd807a53-dddc-4af6-b317-1d34e25a6a2f
+      - id: procuraai-owner-freeze-package-draft:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+          contentHash: 785fb3306769f2735a38d211c70a92e377468652d62ab68ccd72bdf7aa7898b3
+          submissionId: 57196770-8fab-40cc-af81-de13fc770aaa
+      - id: procuraai-owner-freeze-package-draft:17
+        stepId: full.design.evidence
+        sequence: 17
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+          contentHash: 1b0a4301a25ed8701233b7f103f427433cc73248a51fe5e16d0f828c0e3bfcb9
+          submissionId: d4bb8639-05c6-4663-bd18-e25ced7a7f98
+      - id: procuraai-owner-freeze-package-draft:19
+        stepId: full.build.plan.evidence
+        sequence: 19
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+          contentHash: 785fb3306769f2735a38d211c70a92e377468652d62ab68ccd72bdf7aa7898b3
+          submissionId: db652445-6907-4632-b1ec-9f82dc54af9d
+      - id: procuraai-owner-freeze-package-draft:22
+        stepId: full.build.check.evidence
+        sequence: 22
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/54dd8fa0-e962-471c-a01c-e29c10bd05cc.log
+          contentHash: c229c53350486ff74d4cb79cbf68df58ce535e64178799968d9edd0ccf250e0f
+          submissionId: 49164b2a-0f3a-4eba-81e3-a18d75a02d91
+      - id: procuraai-owner-freeze-package-draft:24
+        stepId: full.verify.report.evidence
+        sequence: 24
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-23-procuraai-owner-freeze-package-draft-verify.md
+          contentHash: ab627994aeea9c297d4a39dc87475e3d02c771bad821bac31121f34ea64050bc
+          submissionId: 7fdaf3dc-520c-4e4e-8165-4b0ba4bdeeb6
+      - id: procuraai-owner-freeze-package-draft:26
+        stepId: full.verify.check.evidence
+        sequence: 26
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/54dd8fa0-e962-471c-a01c-e29c10bd05cc.log
+          contentHash: c229c53350486ff74d4cb79cbf68df58ce535e64178799968d9edd0ccf250e0f
+          submissionId: 888f680c-dd8b-407d-af79-d0ce8f71c3b1
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 51
+  sourceHash: f94bbf2b959d7caeb52ccb81a9573e58241fb00c72ed05e6c9ef1e853917b970
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+              ref: openspec/changes/procuraai-owner-freeze-package-draft
+      - contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+        ref: openspec/changes/procuraai-owner-freeze-package-draft
+      - contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-owner-freeze-package-draft/.comet/handoff/design-context.json
+              handoffHash: 57fcc95edff9bf681e26050d2888dc8f18c68b148ffe6e79d8adfca779fde8ac
+              proposal: 方案：在 change 目录新建 owner-freeze-package-draft.md，作为唯一 owner
+                待签草案；OpenSpec delta
+                只定义草案行为，不改运行时。每项用六字段（状态、owner、验收判据、未闭合风险、真源锚点、待裁决动作），正文覆盖契约冻结评审、评测扩容、法务书面结论输入、D-01至D-18索引。取舍：A
+                单文件不改现有真源（采用，避免污染 DECISION-REGISTER/D3-v2/README 锚点）；B
+                直接改现有真源（放弃，会伪造状态与破坏历史快照）；C 在产品族新建长期真源（放弃，扩大资产登记与 frontmatter
+                守护面）。风险：change 目录可见性需交付说明补强；file:line 漂移需章节名与 JSON
+                字段并行；D-06/D-11 只引用工程证据不冒充 owner 签署。状态诚实：evalset 保持
+                seededDraft/notStarted/27，不改契约冻结状态，不写法务/模型达标结论；本地确定性检查与注入反证即可验收，不接
+                CI 三入口、不扩 FULL_GATE_KEYS。无 Spec Patch。授权依据：用户此前确认最大范围含草案、拆成 3 个
+                change、继续完成第 2/3 个，并给出 autonomous + tdd + standard 与提交推送
+                origin/dev 的持续授权；当前方案未超范围。
+              requirementsEvidence:
+                contentHash: cbf1e80e76be0e1fe1f713701a1566b23c1e5777a843a717d524b4913fbccb95
+                ref: openspec/changes/procuraai-owner-freeze-package-draft
+              sourceEvidence:
+                contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+                ref: openspec/changes/procuraai-owner-freeze-package-draft
+      - handoffContext: openspec/changes/procuraai-owner-freeze-package-draft/.comet/handoff/design-context.json
+        handoffHash: 57fcc95edff9bf681e26050d2888dc8f18c68b148ffe6e79d8adfca779fde8ac
+        proposal: 方案：在 change 目录新建 owner-freeze-package-draft.md，作为唯一 owner
+          待签草案；OpenSpec delta
+          只定义草案行为，不改运行时。每项用六字段（状态、owner、验收判据、未闭合风险、真源锚点、待裁决动作），正文覆盖契约冻结评审、评测扩容、法务书面结论输入、D-01至D-18索引。取舍：A
+          单文件不改现有真源（采用，避免污染 DECISION-REGISTER/D3-v2/README 锚点）；B
+          直接改现有真源（放弃，会伪造状态与破坏历史快照）；C 在产品族新建长期真源（放弃，扩大资产登记与 frontmatter
+          守护面）。风险：change 目录可见性需交付说明补强；file:line 漂移需章节名与 JSON 字段并行；D-06/D-11
+          只引用工程证据不冒充 owner 签署。状态诚实：evalset 保持
+          seededDraft/notStarted/27，不改契约冻结状态，不写法务/模型达标结论；本地确定性检查与注入反证即可验收，不接 CI
+          三入口、不扩 FULL_GATE_KEYS。无 Spec Patch。授权依据：用户此前确认最大范围含草案、拆成 3 个
+          change、继续完成第 2/3 个，并给出 autonomous + tdd + standard 与提交推送 origin/dev
+          的持续授权；当前方案未超范围。
+        requirementsEvidence:
+          contentHash: cbf1e80e76be0e1fe1f713701a1566b23c1e5777a843a717d524b4913fbccb95
+          ref: openspec/changes/procuraai-owner-freeze-package-draft
+        sourceEvidence:
+          contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+          ref: openspec/changes/procuraai-owner-freeze-package-draft
+      - designDoc: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+      - contentHash: 1b0a4301a25ed8701233b7f103f427433cc73248a51fe5e16d0f828c0e3bfcb9
+        ref: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+      - boundBranch: dev
+        buildMode: autonomous
+        directOverride: false
+        isolation: current
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 1b0a4301a25ed8701233b7f103f427433cc73248a51fe5e16d0f828c0e3bfcb9
+          ref: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+        plan: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+        planEvidence:
+          contentHash: 785fb3306769f2735a38d211c70a92e377468652d62ab68ccd72bdf7aa7898b3
+          ref: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+        taskRevision: 92f5be540d9c508d582bed0d559028a452461ffea5f225e3f06dc091104c0e50
+      - contentHash: 785fb3306769f2735a38d211c70a92e377468652d62ab68ccd72bdf7aa7898b3
+        ref: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-owner-freeze-package-draft/.comet/handoff/design-context.json
+              handoffHash: 75f4ef758806dbc6f8edc374713b75ad985c46b1ab8cda03c96946d933a91e70
+              proposal: 方案：在 change 目录保留 owner-freeze-package-draft.md 作为唯一 owner
+                待签草案；OpenSpec delta
+                只定义草案行为，不改运行时。每项用六字段（状态、owner、验收判据、未闭合风险、真源锚点、待裁决动作），正文覆盖契约冻结评审、评测扩容、法务书面结论输入、D-01至D-18索引。本轮修订依据唯一最终集成审查：proposal
+                范围由 D-01…D-13 更正为 D-01…D-18；spec 字段数由五更正为六，补回「待裁决动作」；两处臆造 slug
+                改为真实章节引用。取舍：A 单文件不改现有真源（采用，避免污染 DECISION-REGISTER/D3-v2/README
+                锚点）；B 直接改现有真源（放弃，会伪造状态与破坏历史快照）；C 在产品族新建长期真源（放弃，扩大资产登记与
+                frontmatter 守护面）。风险：change 目录可见性需交付说明补强；file:line 漂移需章节名与 JSON
+                字段并行；已落地项只引用工程证据不冒充 owner 签署。状态诚实：evalset 保持
+                seededDraft/notStarted/27，不改契约冻结状态，不写法务/模型达标结论；本地确定性检查与注入反证即可验收，不接
+                CI 三入口、不扩 FULL_GATE_KEYS。无 Spec Patch。授权依据：用户此前确认最大范围含草案、拆成 3 个
+                change、继续完成第 2/3 个，并给出 autonomous + tdd + standard 与提交推送
+                origin/dev 的持续授权；本次修订仅为审查发现的口径更正，未超范围。
+              requirementsEvidence:
+                contentHash: 762f682f0053765e0a36f87c2cdeee02d5bc7596743d29b113ef78ca01ddd245
+                ref: openspec/changes/procuraai-owner-freeze-package-draft
+              sourceEvidence:
+                contentHash: b7da9d1b258534fc854167c0b03e4e161bc399323097e2ded5bebdd9eef82f09
+                ref: openspec/changes/procuraai-owner-freeze-package-draft
+      - handoffContext: openspec/changes/procuraai-owner-freeze-package-draft/.comet/handoff/design-context.json
+        handoffHash: 75f4ef758806dbc6f8edc374713b75ad985c46b1ab8cda03c96946d933a91e70
+        proposal: 方案：在 change 目录保留 owner-freeze-package-draft.md 作为唯一 owner
+          待签草案；OpenSpec delta
+          只定义草案行为，不改运行时。每项用六字段（状态、owner、验收判据、未闭合风险、真源锚点、待裁决动作），正文覆盖契约冻结评审、评测扩容、法务书面结论输入、D-01至D-18索引。本轮修订依据唯一最终集成审查：proposal
+          范围由 D-01…D-13 更正为 D-01…D-18；spec 字段数由五更正为六，补回「待裁决动作」；两处臆造 slug
+          改为真实章节引用。取舍：A 单文件不改现有真源（采用，避免污染 DECISION-REGISTER/D3-v2/README 锚点）；B
+          直接改现有真源（放弃，会伪造状态与破坏历史快照）；C 在产品族新建长期真源（放弃，扩大资产登记与 frontmatter
+          守护面）。风险：change 目录可见性需交付说明补强；file:line 漂移需章节名与 JSON 字段并行；已落地项只引用工程证据不冒充
+          owner 签署。状态诚实：evalset 保持
+          seededDraft/notStarted/27，不改契约冻结状态，不写法务/模型达标结论；本地确定性检查与注入反证即可验收，不接 CI
+          三入口、不扩 FULL_GATE_KEYS。无 Spec Patch。授权依据：用户此前确认最大范围含草案、拆成 3 个
+          change、继续完成第 2/3 个，并给出 autonomous + tdd + standard 与提交推送 origin/dev
+          的持续授权；本次修订仅为审查发现的口径更正，未超范围。
+        requirementsEvidence:
+          contentHash: 762f682f0053765e0a36f87c2cdeee02d5bc7596743d29b113ef78ca01ddd245
+          ref: openspec/changes/procuraai-owner-freeze-package-draft
+        sourceEvidence:
+          contentHash: b7da9d1b258534fc854167c0b03e4e161bc399323097e2ded5bebdd9eef82f09
+          ref: openspec/changes/procuraai-owner-freeze-package-draft
+      - event: build-complete
+      - argv:
+          - python3
+          - /tmp/comet_owner_freeze_check.py
+          - /Users/renhui.trh/code/bone/openspec/changes/procuraai-owner-freeze-package-draft/owner-freeze-package-draft.md
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: c229c53350486ff74d4cb79cbf68df58ce535e64178799968d9edd0ccf250e0f
+        cwd: .
+        environment: eff47e683cab4377b5cb850a1358c9769edc7972ba069fa0e7a5bc5f2d0feaf4
+        exitCode: 0
+        inputAfter: 4e7de6947942f8c7fc9b8f6ac646b1ad1fca041ab1afdc766a00baf07c12c14c
+        inputBefore: 4e7de6947942f8c7fc9b8f6ac646b1ad1fca041ab1afdc766a00baf07c12c14c
+        manifestHash: 12efb8758c1dfdfe3d24f4da220e92ef908b890ecafc993553d52ac842268836
+        manifestRef: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/3c8df912-204a-47e9-a05d-215d7c2da3c7.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/54dd8fa0-e962-471c-a01c-e29c10bd05cc.log
+        reusable: true
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: c229c53350486ff74d4cb79cbf68df58ce535e64178799968d9edd0ccf250e0f
+        ref: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/54dd8fa0-e962-471c-a01c-e29c10bd05cc.log
+      - contentHash: ab627994aeea9c297d4a39dc87475e3d02c771bad821bac31121f34ea64050bc
+        ref: docs/superpowers/reports/2026-11-23-procuraai-owner-freeze-package-draft-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-23-procuraai-owner-freeze-package-draft-verify.md
+      - argv:
+          - python3
+          - /tmp/comet_owner_freeze_check.py
+          - /Users/renhui.trh/code/bone/openspec/changes/procuraai-owner-freeze-package-draft/owner-freeze-package-draft.md
+        changedDuringExecution: []
+        checkEpoch: 4
+        contentHash: c229c53350486ff74d4cb79cbf68df58ce535e64178799968d9edd0ccf250e0f
+        cwd: .
+        deliveryInputs: {}
+        environment: eff47e683cab4377b5cb850a1358c9769edc7972ba069fa0e7a5bc5f2d0feaf4
+        exitCode: 0
+        inputAfter: 4e7de6947942f8c7fc9b8f6ac646b1ad1fca041ab1afdc766a00baf07c12c14c
+        inputBefore: 4e7de6947942f8c7fc9b8f6ac646b1ad1fca041ab1afdc766a00baf07c12c14c
+        manifestHash: 12efb8758c1dfdfe3d24f4da220e92ef908b890ecafc993553d52ac842268836
+        manifestRef: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/3c8df912-204a-47e9-a05d-215d7c2da3c7.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/54dd8fa0-e962-471c-a01c-e29c10bd05cc.log
+        reusable: true
+        reused: true
+        reusedFrom: procuraai-owner-freeze-package-draft:21
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - choice: push
+        proposal:
+          input:
+            change: procuraai-owner-freeze-package-draft
+            changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+            workspaceBaseline:
+              ref: b7a65465-daa5-4a82-9485-3029c09244b7
+          outputs:
+            full.archive.prepare:
+              prBaseBranch: dev
+              remote: origin
+              summary: 交付 owner 冻结包草案：四类待签材料与 18 项开口项索引齐全；保持 evalset seededDraft/notStarted/27
+                与契约冻结状态不变；OpenSpec 严格校验、本地正例/双注入反证、8
+                项既有门禁与最终独立审查全部通过；不改运行时、DDL、CI 三入口判据集合。
+              targetBranch: dev
+      - prBaseBranch: dev
+        remote: origin
+        summary: 交付 owner 冻结包草案：四类待签材料与 18 项开口项索引齐全；保持 evalset seededDraft/notStarted/27
+          与契约冻结状态不变；OpenSpec 严格校验、本地正例/双注入反证、8 项既有门禁与最终独立审查全部通过；不改运行时、DDL、CI
+          三入口判据集合。
+        targetBranch: dev
+      - baseCommit: 6577b293a1165dea5b4d741b3b989808fc3349d3
+        deliveryAction: push
+        prBaseBranch: dev
+        remote: origin
+        remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+        targetBranch: dev
+        verifiedBranch: dev
+      - archiveDirectory: openspec/changes/archive/2026-11-23-procuraai-owner-freeze-package-draft
+      - sequence: 9
+        value:
+          boundBranch: dev
+          buildMode: autonomous
+          directOverride: false
+          isolation: current
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-owner-freeze-package-draft
+              changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+              workspaceBaseline:
+                ref: b7a65465-daa5-4a82-9485-3029c09244b7
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: autonomous
+                directOverride: false
+                isolation: current
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-owner-freeze-package-draft
+              changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+              workspaceBaseline:
+                ref: b7a65465-daa5-4a82-9485-3029c09244b7
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/procuraai-owner-freeze-package-draft/.comet/handoff/design-context.json
+                handoffHash: 57fcc95edff9bf681e26050d2888dc8f18c68b148ffe6e79d8adfca779fde8ac
+                proposal: 方案：在 change 目录新建 owner-freeze-package-draft.md，作为唯一 owner
+                  待签草案；OpenSpec delta
+                  只定义草案行为，不改运行时。每项用六字段（状态、owner、验收判据、未闭合风险、真源锚点、待裁决动作），正文覆盖契约冻结评审、评测扩容、法务书面结论输入、D-01至D-18索引。取舍：A
+                  单文件不改现有真源（采用，避免污染 DECISION-REGISTER/D3-v2/README 锚点）；B
+                  直接改现有真源（放弃，会伪造状态与破坏历史快照）；C 在产品族新建长期真源（放弃，扩大资产登记与 frontmatter
+                  守护面）。风险：change 目录可见性需交付说明补强；file:line 漂移需章节名与 JSON
+                  字段并行；D-06/D-11 只引用工程证据不冒充 owner 签署。状态诚实：evalset 保持
+                  seededDraft/notStarted/27，不改契约冻结状态，不写法务/模型达标结论；本地确定性检查与注入反证即可验收，不接
+                  CI 三入口、不扩 FULL_GATE_KEYS。无 Spec Patch。授权依据：用户此前确认最大范围含草案、拆成 3
+                  个 change、继续完成第 2/3 个，并给出 autonomous + tdd + standard 与提交推送
+                  origin/dev 的持续授权；当前方案未超范围。
+                requirementsEvidence:
+                  contentHash: cbf1e80e76be0e1fe1f713701a1566b23c1e5777a843a717d524b4913fbccb95
+                  ref: openspec/changes/procuraai-owner-freeze-package-draft
+                sourceEvidence:
+                  contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+                  ref: openspec/changes/procuraai-owner-freeze-package-draft
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+      - sequence: 8
+        value:
+          contentHash: 1b0a4301a25ed8701233b7f103f427433cc73248a51fe5e16d0f828c0e3bfcb9
+          ref: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/procuraai-owner-freeze-package-draft/.comet/handoff/design-context.json
+          handoffHash: 57fcc95edff9bf681e26050d2888dc8f18c68b148ffe6e79d8adfca779fde8ac
+          proposal: 方案：在 change 目录新建 owner-freeze-package-draft.md，作为唯一 owner
+            待签草案；OpenSpec delta
+            只定义草案行为，不改运行时。每项用六字段（状态、owner、验收判据、未闭合风险、真源锚点、待裁决动作），正文覆盖契约冻结评审、评测扩容、法务书面结论输入、D-01至D-18索引。取舍：A
+            单文件不改现有真源（采用，避免污染 DECISION-REGISTER/D3-v2/README 锚点）；B
+            直接改现有真源（放弃，会伪造状态与破坏历史快照）；C 在产品族新建长期真源（放弃，扩大资产登记与 frontmatter
+            守护面）。风险：change 目录可见性需交付说明补强；file:line 漂移需章节名与 JSON 字段并行；D-06/D-11
+            只引用工程证据不冒充 owner 签署。状态诚实：evalset 保持
+            seededDraft/notStarted/27，不改契约冻结状态，不写法务/模型达标结论；本地确定性检查与注入反证即可验收，不接
+            CI 三入口、不扩 FULL_GATE_KEYS。无 Spec Patch。授权依据：用户此前确认最大范围含草案、拆成 3 个
+            change、继续完成第 2/3 个，并给出 autonomous + tdd + standard 与提交推送 origin/dev
+            的持续授权；当前方案未超范围。
+          requirementsEvidence:
+            contentHash: cbf1e80e76be0e1fe1f713701a1566b23c1e5777a843a717d524b4913fbccb95
+            ref: openspec/changes/procuraai-owner-freeze-package-draft
+          sourceEvidence:
+            contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+            ref: openspec/changes/procuraai-owner-freeze-package-draft
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-owner-freeze-package-draft
+              changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+              workspaceBaseline:
+                ref: b7a65465-daa5-4a82-9485-3029c09244b7
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+                ref: openspec/changes/procuraai-owner-freeze-package-draft
+      - sequence: 2
+        value:
+          contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+          ref: openspec/changes/procuraai-owner-freeze-package-draft
+      - sequence: 4
+        value:
+          contentHash: 0a165e82d049cbc1fed9ccf325d7b5a0ef93a30309f2bfd508170bf97d9e361f
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 1b0a4301a25ed8701233b7f103f427433cc73248a51fe5e16d0f828c0e3bfcb9
+            ref: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+          plan: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+          planEvidence:
+            contentHash: 785fb3306769f2735a38d211c70a92e377468652d62ab68ccd72bdf7aa7898b3
+            ref: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+          taskRevision: 92f5be540d9c508d582bed0d559028a452461ffea5f225e3f06dc091104c0e50
+      - sequence: 12
+        value:
+          contentHash: 785fb3306769f2735a38d211c70a92e377468652d62ab68ccd72bdf7aa7898b3
+          ref: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+      - sequence: 15
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-owner-freeze-package-draft
+              changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+              workspaceBaseline:
+                ref: b7a65465-daa5-4a82-9485-3029c09244b7
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/procuraai-owner-freeze-package-draft/.comet/handoff/design-context.json
+                handoffHash: 75f4ef758806dbc6f8edc374713b75ad985c46b1ab8cda03c96946d933a91e70
+                proposal: 方案：在 change 目录保留 owner-freeze-package-draft.md 作为唯一 owner
+                  待签草案；OpenSpec delta
+                  只定义草案行为，不改运行时。每项用六字段（状态、owner、验收判据、未闭合风险、真源锚点、待裁决动作），正文覆盖契约冻结评审、评测扩容、法务书面结论输入、D-01至D-18索引。本轮修订依据唯一最终集成审查：proposal
+                  范围由 D-01…D-13 更正为 D-01…D-18；spec 字段数由五更正为六，补回「待裁决动作」；两处臆造 slug
+                  改为真实章节引用。取舍：A 单文件不改现有真源（采用，避免污染 DECISION-REGISTER/D3-v2/README
+                  锚点）；B 直接改现有真源（放弃，会伪造状态与破坏历史快照）；C 在产品族新建长期真源（放弃，扩大资产登记与
+                  frontmatter 守护面）。风险：change 目录可见性需交付说明补强；file:line 漂移需章节名与 JSON
+                  字段并行；已落地项只引用工程证据不冒充 owner 签署。状态诚实：evalset 保持
+                  seededDraft/notStarted/27，不改契约冻结状态，不写法务/模型达标结论；本地确定性检查与注入反证即可验收，不接
+                  CI 三入口、不扩 FULL_GATE_KEYS。无 Spec Patch。授权依据：用户此前确认最大范围含草案、拆成 3
+                  个 change、继续完成第 2/3 个，并给出 autonomous + tdd + standard 与提交推送
+                  origin/dev 的持续授权；本次修订仅为审查发现的口径更正，未超范围。
+                requirementsEvidence:
+                  contentHash: 762f682f0053765e0a36f87c2cdeee02d5bc7596743d29b113ef78ca01ddd245
+                  ref: openspec/changes/procuraai-owner-freeze-package-draft
+                sourceEvidence:
+                  contentHash: b7da9d1b258534fc854167c0b03e4e161bc399323097e2ded5bebdd9eef82f09
+                  ref: openspec/changes/procuraai-owner-freeze-package-draft
+      - sequence: 14
+        value:
+          handoffContext: openspec/changes/procuraai-owner-freeze-package-draft/.comet/handoff/design-context.json
+          handoffHash: 75f4ef758806dbc6f8edc374713b75ad985c46b1ab8cda03c96946d933a91e70
+          proposal: 方案：在 change 目录保留 owner-freeze-package-draft.md 作为唯一 owner
+            待签草案；OpenSpec delta
+            只定义草案行为，不改运行时。每项用六字段（状态、owner、验收判据、未闭合风险、真源锚点、待裁决动作），正文覆盖契约冻结评审、评测扩容、法务书面结论输入、D-01至D-18索引。本轮修订依据唯一最终集成审查：proposal
+            范围由 D-01…D-13 更正为 D-01…D-18；spec 字段数由五更正为六，补回「待裁决动作」；两处臆造 slug
+            改为真实章节引用。取舍：A 单文件不改现有真源（采用，避免污染 DECISION-REGISTER/D3-v2/README 锚点）；B
+            直接改现有真源（放弃，会伪造状态与破坏历史快照）；C 在产品族新建长期真源（放弃，扩大资产登记与 frontmatter
+            守护面）。风险：change 目录可见性需交付说明补强；file:line 漂移需章节名与 JSON
+            字段并行；已落地项只引用工程证据不冒充 owner 签署。状态诚实：evalset 保持
+            seededDraft/notStarted/27，不改契约冻结状态，不写法务/模型达标结论；本地确定性检查与注入反证即可验收，不接
+            CI 三入口、不扩 FULL_GATE_KEYS。无 Spec Patch。授权依据：用户此前确认最大范围含草案、拆成 3 个
+            change、继续完成第 2/3 个，并给出 autonomous + tdd + standard 与提交推送 origin/dev
+            的持续授权；本次修订仅为审查发现的口径更正，未超范围。
+          requirementsEvidence:
+            contentHash: 762f682f0053765e0a36f87c2cdeee02d5bc7596743d29b113ef78ca01ddd245
+            ref: openspec/changes/procuraai-owner-freeze-package-draft
+          sourceEvidence:
+            contentHash: b7da9d1b258534fc854167c0b03e4e161bc399323097e2ded5bebdd9eef82f09
+            ref: openspec/changes/procuraai-owner-freeze-package-draft
+      - sequence: 16
+        value:
+          designDoc: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+      - sequence: 17
+        value:
+          contentHash: 1b0a4301a25ed8701233b7f103f427433cc73248a51fe5e16d0f828c0e3bfcb9
+          ref: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+      - sequence: 18
+        value:
+          designEvidence:
+            contentHash: 1b0a4301a25ed8701233b7f103f427433cc73248a51fe5e16d0f828c0e3bfcb9
+            ref: openspec/changes/procuraai-owner-freeze-package-draft/design.md
+          plan: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+          planEvidence:
+            contentHash: 785fb3306769f2735a38d211c70a92e377468652d62ab68ccd72bdf7aa7898b3
+            ref: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+          taskRevision: 92f5be540d9c508d582bed0d559028a452461ffea5f225e3f06dc091104c0e50
+      - sequence: 19
+        value:
+          contentHash: 785fb3306769f2735a38d211c70a92e377468652d62ab68ccd72bdf7aa7898b3
+          ref: docs/superpowers/plans/2026-11-23-procuraai-owner-freeze-package-draft.md
+      - sequence: 20
+        value:
+          event: build-complete
+      - sequence: 21
+        value:
+          argv:
+            - python3
+            - /tmp/comet_owner_freeze_check.py
+            - /Users/renhui.trh/code/bone/openspec/changes/procuraai-owner-freeze-package-draft/owner-freeze-package-draft.md
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: c229c53350486ff74d4cb79cbf68df58ce535e64178799968d9edd0ccf250e0f
+          cwd: .
+          environment: eff47e683cab4377b5cb850a1358c9769edc7972ba069fa0e7a5bc5f2d0feaf4
+          exitCode: 0
+          inputAfter: 4e7de6947942f8c7fc9b8f6ac646b1ad1fca041ab1afdc766a00baf07c12c14c
+          inputBefore: 4e7de6947942f8c7fc9b8f6ac646b1ad1fca041ab1afdc766a00baf07c12c14c
+          manifestHash: 12efb8758c1dfdfe3d24f4da220e92ef908b890ecafc993553d52ac842268836
+          manifestRef: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/3c8df912-204a-47e9-a05d-215d7c2da3c7.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/54dd8fa0-e962-471c-a01c-e29c10bd05cc.log
+          reusable: true
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 22
+        value:
+          contentHash: c229c53350486ff74d4cb79cbf68df58ce535e64178799968d9edd0ccf250e0f
+          ref: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/54dd8fa0-e962-471c-a01c-e29c10bd05cc.log
+      - sequence: 24
+        value:
+          contentHash: ab627994aeea9c297d4a39dc87475e3d02c771bad821bac31121f34ea64050bc
+          ref: docs/superpowers/reports/2026-11-23-procuraai-owner-freeze-package-draft-verify.md
+      - sequence: 23
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-23-procuraai-owner-freeze-package-draft-verify.md
+      - sequence: 25
+        value:
+          argv:
+            - python3
+            - /tmp/comet_owner_freeze_check.py
+            - /Users/renhui.trh/code/bone/openspec/changes/procuraai-owner-freeze-package-draft/owner-freeze-package-draft.md
+          changedDuringExecution: []
+          checkEpoch: 4
+          contentHash: c229c53350486ff74d4cb79cbf68df58ce535e64178799968d9edd0ccf250e0f
+          cwd: .
+          deliveryInputs: {}
+          environment: eff47e683cab4377b5cb850a1358c9769edc7972ba069fa0e7a5bc5f2d0feaf4
+          exitCode: 0
+          inputAfter: 4e7de6947942f8c7fc9b8f6ac646b1ad1fca041ab1afdc766a00baf07c12c14c
+          inputBefore: 4e7de6947942f8c7fc9b8f6ac646b1ad1fca041ab1afdc766a00baf07c12c14c
+          manifestHash: 12efb8758c1dfdfe3d24f4da220e92ef908b890ecafc993553d52ac842268836
+          manifestRef: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/3c8df912-204a-47e9-a05d-215d7c2da3c7.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/54dd8fa0-e962-471c-a01c-e29c10bd05cc.log
+          reusable: true
+          reused: true
+          reusedFrom: procuraai-owner-freeze-package-draft:21
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 26
+        value:
+          contentHash: c229c53350486ff74d4cb79cbf68df58ce535e64178799968d9edd0ccf250e0f
+          ref: .comet/runtime/classic-sdk-checks/8414c5445c51201f00d2c723557b439ab10eea47898e043f7437b17a9191fd07/54dd8fa0-e962-471c-a01c-e29c10bd05cc.log
+      - sequence: 28
+        value:
+          choice: push
+          proposal:
+            input:
+              change: procuraai-owner-freeze-package-draft
+              changeDir: openspec/changes/procuraai-owner-freeze-package-draft
+              workspaceBaseline:
+                ref: b7a65465-daa5-4a82-9485-3029c09244b7
+            outputs:
+              full.archive.prepare:
+                prBaseBranch: dev
+                remote: origin
+                summary: 交付 owner 冻结包草案：四类待签材料与 18 项开口项索引齐全；保持 evalset seededDraft/notStarted/27
+                  与契约冻结状态不变；OpenSpec 严格校验、本地正例/双注入反证、8
+                  项既有门禁与最终独立审查全部通过；不改运行时、DDL、CI 三入口判据集合。
+                targetBranch: dev
+      - sequence: 27
+        value:
+          prBaseBranch: dev
+          remote: origin
+          summary: 交付 owner 冻结包草案：四类待签材料与 18 项开口项索引齐全；保持 evalset seededDraft/notStarted/27
+            与契约冻结状态不变；OpenSpec 严格校验、本地正例/双注入反证、8 项既有门禁与最终独立审查全部通过；不改运行时、DDL、CI
+            三入口判据集合。
+          targetBranch: dev
+      - sequence: 29
+        value:
+          baseCommit: 6577b293a1165dea5b4d741b3b989808fc3349d3
+          deliveryAction: push
+          prBaseBranch: dev
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: dev
+          verifiedBranch: dev
+      - sequence: 30
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-23-procuraai-owner-freeze-package-draft
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.design.handoff
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 12
+        left: null
+        right: 27
+        height: 2
+      - key: full.design.confirm
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 13
+        left: 30
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 29
+        right: 31
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 33
+        right: 34
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 35
+        right: 31
+        height: 3
+      - key: full.build.execute
+        value: 14
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 10
+        left: 37
+        right: null
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: 38
+        right: 34
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 39
+        right: 31
+        height: 4
+      - key: full.build.check.evidence
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 15
+        left: null
+        right: 41
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 43
+        right: 34
+        height: 2
+      - key: full.build.execute
+        value: 14
+        left: 42
+        right: 44
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 45
+        right: 31
+        height: 4
+      - key: full.verify.run
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 17
+        left: null
+        right: 47
+        height: 2
+      - key: full.design.handoff
+        value: 13
+        left: 30
+        right: 48
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 45
+        right: 49
+        height: 4
+      - key: full.design.handoff
+        value: 13
+        left: 30
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 17
+        left: 52
+        right: 47
+        height: 2
+      - key: full.verify.check
+        value: 19
+        left: 51
+        right: 53
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 45
+        right: 54
+        height: 4
+      - key: full.archive.prepare
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 20
+        left: null
+        right: 56
+        height: 2
+      - key: full.build.check
+        value: 15
+        left: 57
+        right: 41
+        height: 3
+      - key: full.build.execute
+        value: 14
+        left: 58
+        right: 44
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 59
+        right: 54
+        height: 5
+      - key: full.archive.confirm
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 22
+        left: 61
+        right: 62
+        height: 2
+      - key: full.build.check
+        value: 15
+        left: 63
+        right: 41
+        height: 3
+      - key: full.build.execute
+        value: 14
+        left: 64
+        right: 44
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 65
+        right: 54
+        height: 5
+      - key: full.archive.execute
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 20
+        left: null
+        right: 67
+        height: 2
+      - key: full.build.check
+        value: 15
+        left: 62
+        right: 41
+        height: 2
+      - key: full.archive.preflight
+        value: 22
+        left: 68
+        right: 69
+        height: 3
+      - key: full.build.execute
+        value: 14
+        left: 70
+        right: 44
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 71
+        right: 54
+        height: 5
+      - key: full.build.configure
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 25
+        left: 73
+        right: 74
+        height: 2
+      - key: full.design.evidence
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 29
+        left: 76
+        right: 77
+        height: 2
+      - key: full.open.revalidate
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 32
+        left: null
+        right: 79
+        height: 2
+      - key: full.open.confirm
+        value: 31
+        left: 78
+        right: 80
+        height: 3
+      - key: full.design.document
+        value: 27
+        left: 75
+        right: 81
+        height: 4
+      - key: full.build.plan
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 35
+        left: 83
+        right: 84
+        height: 2
+      - key: full.build.confirm
+        value: 25
+        left: 73
+        right: 85
+        height: 3
+      - key: full.design.document
+        value: 27
+        left: 86
+        right: 81
+        height: 4
+      - key: full.design.handoff
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 36
+        left: null
+        right: 88
+        height: 2
+      - key: full.design.confirm
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 37
+        left: 91
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 38
+        left: 90
+        right: 92
+        height: 3
+      - key: full.build.plan
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 41
+        left: 94
+        right: 95
+        height: 2
+      - key: full.design.document
+        value: 38
+        left: 96
+        right: 92
+        height: 3
+      - key: full.build.execute
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 40
+        left: 98
+        right: null
+        height: 2
+      - key: full.build.plan.evidence
+        value: 41
+        left: 99
+        right: 95
+        height: 3
+      - key: full.design.document
+        value: 38
+        left: 100
+        right: 92
+        height: 4
+      - key: full.build.check.evidence
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 43
+        left: null
+        right: 102
+        height: 2
+      - key: full.build.plan
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 41
+        left: 104
+        right: 95
+        height: 2
+      - key: full.build.execute
+        value: 42
+        left: 103
+        right: 105
+        height: 3
+      - key: full.design.document
+        value: 38
+        left: 106
+        right: 92
+        height: 4
+      - key: full.verify.run
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 45
+        left: null
+        right: 108
+        height: 2
+      - key: full.design.handoff
+        value: 37
+        left: 91
+        right: 109
+        height: 3
+      - key: full.design.document
+        value: 38
+        left: 106
+        right: 110
+        height: 4
+      - key: full.design.handoff
+        value: 37
+        left: 91
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 45
+        left: 113
+        right: 108
+        height: 2
+      - key: full.verify.check
+        value: 47
+        left: 112
+        right: 114
+        height: 3
+      - key: full.design.document
+        value: 38
+        left: 106
+        right: 115
+        height: 4
+      - key: full.archive.prepare
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 49
+        left: null
+        right: 117
+        height: 2
+      - key: full.build.check
+        value: 43
+        left: 118
+        right: 102
+        height: 3
+      - key: full.build.execute
+        value: 42
+        left: 119
+        right: 105
+        height: 4
+      - key: full.design.document
+        value: 38
+        left: 120
+        right: 115
+        height: 5
+      - key: full.archive.confirm
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 51
+        left: 122
+        right: 123
+        height: 2
+      - key: full.build.check
+        value: 43
+        left: 124
+        right: 102
+        height: 3
+      - key: full.build.execute
+        value: 42
+        left: 125
+        right: 105
+        height: 4
+      - key: full.design.document
+        value: 38
+        left: 126
+        right: 115
+        height: 5
+      - key: full.archive.execute
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 49
+        left: null
+        right: 128
+        height: 2
+      - key: full.build.check
+        value: 43
+        left: 123
+        right: 102
+        height: 2
+      - key: full.archive.preflight
+        value: 51
+        left: 129
+        right: 130
+        height: 3
+      - key: full.build.execute
+        value: 42
+        left: 131
+        right: 105
+        height: 4
+      - key: full.design.document
+        value: 38
+        left: 132
+        right: 115
+        height: 5
+      - key: full.open
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 31
+        left: 134
+        right: 135
+        height: 2
+      - key: full.open.revalidate
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 32
+        left: null
+        right: 137
+        height: 2
+      - key: full.open.confirm
+        value: 31
+        left: 134
+        right: 138
+        height: 3
+      - key: full.design.confirm
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 29
+        left: 140
+        right: 141
+        height: 2
+      - key: full.open.confirm
+        value: 31
+        left: 142
+        right: 138
+        height: 3
+      - key: full.design.confirm
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 27
+        left: 144
+        right: 145
+        height: 2
+      - key: full.design.handoff
+        value: 29
+        left: 146
+        right: 141
+        height: 3
+      - key: full.open.confirm
+        value: 31
+        left: 147
+        right: 138
+        height: 4
+      - key: full.archive.confirm
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 52
+        left: 149
+        right: 150
+        height: 2
+      - key: full.build.check
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 44
+        left: 152
+        right: 153
+        height: 2
+      - key: full.archive.prepare
+        value: 50
+        left: 151
+        right: 154
+        height: 3
+      - key: full.build.execute
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 36
+        left: 157
+        right: null
+        height: 2
+      - key: full.build.plan
+        value: 40
+        left: 156
+        right: 158
+        height: 3
+      - key: full.build.confirm
+        value: 25
+        left: 155
+        right: 159
+        height: 4
+      - key: full.design.evidence
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 37
+        left: 161
+        right: 141
+        height: 2
+      - key: full.open.evidence
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 33
+        left: 163
+        right: 164
+        height: 2
+      - key: full.verify.run
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 45
+        left: null
+        right: 166
+        height: 2
+      - key: full.verify.check.evidence
+        value: 48
+        left: 165
+        right: 167
+        height: 3
+      - key: full.open.confirm
+        value: 31
+        left: 162
+        right: 168
+        height: 4
+      - key: full.design.document
+        value: 38
+        left: 160
+        right: 169
+        height: 5
+      - key: full.open.evidence
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 30
+        left: null
+        right: 171
+        height: 2
+      - key: full.design.handoff
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 32
+        left: 174
+        right: 175
+        height: 2
+      - key: full.open
+        value: 30
+        left: 173
+        right: 176
+        height: 3
+      - key: full.build.configure
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 28
+        left: 179
+        right: 180
+        height: 2
+      - key: full.design.confirm
+        value: 26
+        left: 178
+        right: 181
+        height: 3
+      - key: full.open
+        value: 30
+        left: 182
+        right: 176
+        height: 4
+      - key: full.design.handoff
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 43
+        left: 185
+        right: 186
+        height: 2
+      - key: full.build.plan
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 41
+        left: 188
+        right: 189
+        height: 2
+      - key: full.build.execute
+        value: 42
+        left: 187
+        right: 190
+        height: 3
+      - key: full.design.evidence
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 37
+        left: 192
+        right: 193
+        height: 2
+      - key: full.verify.run
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 45
+        left: null
+        right: 195
+        height: 2
+      - key: full.verify.check.evidence
+        value: 48
+        left: 194
+        right: 196
+        height: 3
+      - key: full.design.document
+        value: 38
+        left: 191
+        right: 197
+        height: 4
+      - key: full.open
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 27
+        left: 200
+        right: 201
+        height: 2
+      - key: full.open.confirm
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 32
+        left: 203
+        right: 204
+        height: 2
+      - key: full.open
+        value: 30
+        left: 202
+        right: 205
+        height: 3
+      - key: full.build.configure
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 25
+        left: 207
+        right: 208
+        height: 2
+      - key: full.design.document
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 28
+        left: 210
+        right: 211
+        height: 2
+      - key: full.design.confirm
+        value: 26
+        left: 209
+        right: 212
+        height: 3
+      - key: full.open
+        value: 30
+        left: 213
+        right: 205
+        height: 4
+      - key: full.design.confirm
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 38
+        left: 215
+        right: 216
+        height: 2
+      - key: full.build.plan
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 36
+        left: 218
+        right: null
+        height: 2
+      - key: full.design.evidence
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 37
+        left: 220
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 38
+        left: 219
+        right: 221
+        height: 3
+      - key: full.build.execute
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 43
+        left: null
+        right: 223
+        height: 2
+      - key: full.build.plan.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 36
+        left: 225
+        right: null
+        height: 2
+      - key: full.build.plan
+        value: 40
+        left: 224
+        right: 226
+        height: 3
+      - key: full.design.document
+        value: 38
+        left: 227
+        right: 221
+        height: 4
+      - key: full.build.check
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.execute
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 44
+        left: 229
+        right: 230
+        height: 2
+      - key: full.build.plan
+        value: 40
+        left: 231
+        right: 226
+        height: 3
+      - key: full.verify.run
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 37
+        left: 220
+        right: 233
+        height: 2
+      - key: full.design.document
+        value: 38
+        left: 232
+        right: 234
+        height: 4
+      - key: full.verify.check
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 45
+        left: 236
+        right: 237
+        height: 2
+      - key: full.design.handoff
+        value: 37
+        left: 220
+        right: 238
+        height: 3
+      - key: full.design.document
+        value: 38
+        left: 232
+        right: 239
+        height: 4
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 28
+      - 32
+      - 36
+      - 40
+      - 46
+      - 50
+      - 55
+      - 60
+      - 66
+      - 72
+      - 82
+      - 87
+      - 89
+      - 93
+      - 97
+      - 101
+      - 107
+      - 111
+      - 116
+      - 121
+      - 127
+      - 133
+      - 136
+      - 139
+      - 143
+      - 148
+      - 170
+      - 172
+      - 177
+      - 183
+      - 184
+      - 198
+      - 199
+      - 206
+      - 214
+      - 217
+      - 222
+      - 228
+      - 235
+      - 240
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "14"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actions
+          - "15"
+          - input
+          - outputs
+        map: 14
+      - path:
+          - actions
+          - "16"
+          - input
+          - outputs
+        map: 15
+      - path:
+          - actions
+          - "17"
+          - input
+          - outputs
+        map: 16
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:11
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:13
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:14
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:16
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:18
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:20
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:21
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:23
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:25
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:27
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:29
+          - results
+        map: 26
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:30
+          - results
+        map: 27
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:31
+          - results
+        map: 28
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:4
+          - results
+        map: 29
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:5
+          - results
+        map: 30
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:7
+          - results
+        map: 31
+      - path:
+          - actionContexts
+          - procuraai-owner-freeze-package-draft:9
+          - results
+        map: 32
+      - path:
+          - outputs
+        map: 33
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 34
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 35
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 36
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 37
+      - path:
+          - waits
+          - "4"
+          - results
+        map: 38
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 39
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 40
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 41
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 42
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 43
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 44
+      - path:
+          - evidenceWaits
+          - "6"
+          - results
+        map: 45
+      - path:
+          - evidenceWaits
+          - "7"
+          - results
+        map: 46
+  storageHash: 3039a75a4d2f63cbeb38178fe9af09945f40acbb0d2d1c330f72caf21d55c281
+check_epoch: 7

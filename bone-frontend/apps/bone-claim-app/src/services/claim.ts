@@ -19,6 +19,7 @@ import type {
   ClaimCaseResp,
   ClaimDecisionReq,
   ClaimHeadProjection,
+  ClaimQueryParams,
   ClaimReportDetail,
   ClaimStatusName,
   ClaimWithItemsProjection,
@@ -88,10 +89,11 @@ function stableSubmitKey(req: SubmitClaimReq): string {
  *
  * <p>后端决策/自动通过按可选幂等接入（同键重放首次结果）。同一案件状态未变时的重试必须同键；
  * 状态推进后再次决策是另一个业务动作，自然换键。请求体本身还参与后端指纹校验，防止同键换内容。
+ * 签收回执/确认也走同一约定：businessKey 或 batchId 作为稳定标识，动作名区分键空间。
  */
 export function stableClaimActionKey(
   claimId: string,
-  action: 'decide' | 'auto-approve' | 'review-decide',
+  action: 'decide' | 'auto-approve' | 'review-decide' | 'sign-ack' | 'sign-confirm',
   status?: string,
 ): string {
   const parts = [claimId, action, status].filter((v): v is string => Boolean(v && v.trim()));
@@ -139,6 +141,18 @@ export const claimApi = {
        * 后果：绑定失败时后端把空集兜底成"待核赔 40"，默认视图看着是对的，
        * 而切到"已结案/复核中"筛选时列表纹丝不动——典型的"配了不生效"。
        */
+      paramsSerializer: { indexes: null },
+    });
+  },
+
+  /**
+   * 案件灵活查询（工作台 / 全局案件速查共用）。
+   *
+   * 服务端真分页 + 真过滤，禁止把筛选留在前端只切当前页：那会让「共 N 条」与可见行自相矛盾。
+   */
+  query(params: ClaimQueryParams): Promise<ApiResponse<PageResult<ClaimHeadProjection>>> {
+    return client.get<never, ApiResponse<PageResult<ClaimHeadProjection>>>('/query', {
+      params,
       paramsSerializer: { indexes: null },
     });
   },

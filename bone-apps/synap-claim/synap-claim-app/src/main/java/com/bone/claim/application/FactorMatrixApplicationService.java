@@ -3,6 +3,9 @@ package com.bone.claim.application;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
+import com.bone.claim.domain.model.adjustment.engine.FactorMatrixRatioLoader;
+import com.bone.claim.domain.model.adjustment.engine.PayRatioTable;
+import com.bone.claim.domain.model.liability.AdjLiability;
 import com.bone.claim.domain.model.liability.FactorMatrix;
 import com.bone.claim.domain.model.liability.FactorMatrix.Cell;
 import com.bone.claim.domain.repository.FactorMatrixRepository;
@@ -110,6 +113,13 @@ public class FactorMatrixApplicationService {
     return published;
   }
 
+  /**
+   * 加载矩阵视图。
+   *
+   * <p><b>状态取自真实行而非 {@code draft()} 壳</b>：发布是整版操作，全部行 PUBLISHED 才对外显示 PUBLISHED；任一行仍 DRAFT 则显示
+   * DRAFT ——如实暴露"有未发布改动"，避免用户 publish 后刷新仍看到 DRAFT 误判发布失败而重复发布。此前用 {@code draft()} 造壳（status 恒
+   * DRAFT）+ {@code replaceCells()} 只并格不同步状态，导致已发布版本 load 出来恒 DRAFT，是确定性缺陷。
+   */
   @Transactional(readOnly = true)
   public MatrixView load(Long liabilityId, String dimensionSet, Integer version) {
     long tenantId = tenantPort.currentTenantId();
@@ -117,7 +127,62 @@ public class FactorMatrixApplicationService {
         repository.findByLiabilityAndVersion(tenantId, liabilityId, dimensionSet, version);
     FactorMatrix matrix = FactorMatrix.draft(tenantId, liabilityId, "", dimensionSet, version);
     matrix.replaceCells(rows.stream().map(FactorMatrix::asCell).toList());
-    return toView(matrix);
+    String status = deriveStatus(rows);
+    return new MatrixView(
+        matrix.getLiabilityId(),
+        matrix.getDimensionSet(),
+        matrix.getVersion(),
+        status,
+        matrix.cells());
+  }
+
+  /**
+   * 责任的当前生效赔付比例表（供理算装配）。
+   *
+   * <p><b>口径</b>：取该责任 {@code PUBLISHED} 矩阵中<b>最大 version</b> 的全部行装载；无已发布行 ⇒ 回落 {@code payPercent} 的
+   * uniform 表，行为与引入矩阵前逐字一致。matrix 行只影响比例，不改计算管线。
+   *
+   * <p><b>为什么按 liabilityId 而非 uuid</b>：矩阵行按 {@code liability_id} 归属具体版本责任（DDL
+   * 注释）；复算绑定历史版本时查到的也是该历史责任 的 id，故按 id 查询天然满足"配置变更不影响在途案件"。
+   */
+  @Transactional(readOnly = true)
+  public PayRatioTable activeRatiosFor(AdjLiability liability) {
+    BigDecimal payPercent = liability == null ? null : liability.getPayPercent();
+    if (liability == null || liability.getId() == null) {
+      return PayRatioTable.uniform(payPercent);
+    }
+    long tenantId = tenantPort.currentTenantId();
+    List<FactorMatrix> published = repository.findPublishedByLiability(tenantId, liability.getId());
+    // null 也按"无矩阵"处理（仓储异常/未装配场景）：回落统一比例，绝不因查不到矩阵就让理算 NPE。
+    if (published == null || published.isEmpty()) {
+      return PayRatioTable.uniform(payPercent);
+    }
+    int activeVersion =
+        published.stream()
+            .map(FactorMatrix::getVersion)
+            .filter(java.util.Objects::nonNull)
+            .max(Integer::compareTo)
+            .orElse(1);
+    List<FactorMatrix> rows =
+        repository.findByLiabilityAndVersion(tenantId, liability.getId(), null, activeVersion);
+    if (rows == null || rows.isEmpty()) {
+      return PayRatioTable.uniform(payPercent);
+    }
+    String label =
+        liability.getLiabilityUuid() == null
+            ? "liability#" + liability.getId()
+            : liability.getLiabilityUuid();
+    return FactorMatrixRatioLoader.load(rows, payPercent, label);
+  }
+
+  /** 全部行已发布才算 PUBLISHED；空矩阵或任一行未发布均为 DRAFT（不虚报生效）。 */
+  private static String deriveStatus(List<FactorMatrix> rows) {
+    if (rows.isEmpty()) {
+      return FactorMatrix.STATUS_DRAFT;
+    }
+    return rows.stream().allMatch(FactorMatrix::isPublished)
+        ? FactorMatrix.STATUS_PUBLISHED
+        : FactorMatrix.STATUS_DRAFT;
   }
 
   /**

@@ -1,0 +1,16 @@
+{
+  "change": "claim-tenant-analytics",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "d22a61d430bc9013fb343bbfa888f1de452e9e190a5a0dd313554e033d159e68",
+  "files": [
+    { "path": "openspec/changes/claim-tenant-analytics/proposal.md", "sha256": "601fb27c2e1ae4dc06e2abeff4aa215525ff10ffa1b69074f07f237e26be6fd1" },
+    { "path": "openspec/changes/claim-tenant-analytics/design.md", "sha256": "2ef5bb1b022a9fbcf241d54f318fbaacbd3d6cf77f1dbce159b6006d6c48b38d" },
+    { "path": "openspec/changes/claim-tenant-analytics/tasks.md", "sha256": "8dcb2e36e9b42bb698a0f68ec954c6c87c8eba27bf9ee2e728b4e95a33a5b400" },
+    { "path": "openspec/changes/claim-tenant-analytics/.openspec.yaml", "sha256": "01c3365f21ad2129d7e1db5577bc59c382883cdcbfece60900a8ac86293e3398" },
+    { "path": "openspec/changes/claim-tenant-analytics/specs/claim/tenant-analytics/spec.md", "sha256": "3f6d97ada8705de6f19f7003633a81ac83f675ac1b7a48819d04affaf0875c39" }
+  ]
+}

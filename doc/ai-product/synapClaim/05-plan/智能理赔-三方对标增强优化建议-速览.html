@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>synapClaim 智能理赔 · 原型 / 实现 / 原理赔三方对标增强建议（速览）</title>
+<style>
+  :root{
+    --bg:#f6f7f9;--card:#fff;--border:#e4e7ec;--text:#1f2329;--muted:#646a73;
+    --primary:#1f6feb;--primary-soft:#eef4ff;--red:#d4380d;--red-soft:#fff1ed;
+    --green:#237804;--green-soft:#f0f9e8;--purple:#722ed1;--purple-soft:#f7efff;
+    --amber:#ad6800;--amber-soft:#fff8e6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 28px 80px}
+  header{border-bottom:2px solid var(--text);padding-bottom:22px;margin-bottom:28px}
+  .eyebrow{font-size:12px;letter-spacing:.16em;color:var(--primary);font-weight:700}
+  h1{font-size:29px;margin:8px 0 10px;letter-spacing:-.02em}
+  .meta{font-size:13px;color:var(--muted)}
+  .badge{display:inline-block;padding:2px 9px;border-radius:4px;font-size:12px;font-weight:600;
+    background:var(--amber-soft);color:var(--amber);border:1px solid #f0d9a8;margin-left:8px}
+  h2{font-size:20px;margin:46px 0 6px;padding-left:12px;border-left:4px solid var(--primary)}
+  .sub{font-size:13px;color:var(--muted);margin:0 0 18px 16px}
+  h3{font-size:15px;margin:0 0 8px}
+  .lead{background:linear-gradient(135deg,#eef4ff 0%,#f7fbff 100%);
+    border:1px solid #cfe0ff;border-radius:12px;padding:22px 24px}
+  .lead strong{font-size:17px}
+  .lead p{margin:8px 0 0;color:#33405c;font-size:14px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
+  .kpi{background:#fff;border:1px solid #dbe6ff;border-radius:8px;padding:12px 14px}
+  .kpi b{display:block;font-size:22px;color:var(--primary);line-height:1.25}
+  .kpi span{font-size:12px;color:var(--muted)}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .col{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px}
+  .col.hi{border-top:3px solid var(--green)}
+  .col.mid{border-top:3px solid var(--amber)}
+  .col.low{border-top:3px solid var(--red)}
+  .col ul{margin:0;padding-left:18px;font-size:13px;color:#3c4350}
+  .col li{margin-bottom:7px}
+  .diag{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--red);
+    border-radius:8px;padding:16px 18px}
+  .diag .no{font-size:11px;font-weight:700;color:var(--red);letter-spacing:.1em}
+  .diag p{font-size:13px;color:#4b5563;margin:6px 0 0}
+  code{background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:11px;color:#414855}
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden;
+    font-size:12.5px;border:1px solid var(--border)}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:#f3f6fb;font-weight:600;color:#344054}
+  tr:last-child td{border-bottom:none}
+  .tag{display:inline-block;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap}
+  .tag.g{background:var(--green-soft);color:var(--green)}
+  .tag.r{background:var(--red-soft);color:var(--red)}
+  .tag.a{background:var(--amber-soft);color:var(--amber)}
+  .tag.b{background:var(--primary-soft);color:var(--primary)}
+  .tag.p{background:var(--purple-soft);color:var(--purple)}
+  .note{background:var(--amber-soft);border:1px solid #f0d9a8;border-radius:8px;
+    padding:14px 16px;font-size:13px;color:#6b4b12;margin-top:14px}
+  .note.ok{background:var(--green-soft);border-color:#c9e8b0;color:#2c5c14}
+  .note.red{background:var(--red-soft);border-color:#ffccc7;color:#8c2a0a}
+  .ask{background:#fff;border:1px solid #dbe6ff;border-radius:10px;padding:6px 0}
+  .ask ol{margin:0;padding-left:26px}
+  .ask li{padding:11px 18px 11px 6px;border-bottom:1px solid #eef1f5;font-size:13.5px}
+  .ask li:last-child{border-bottom:none}
+  .ask b{color:var(--primary)}
+  footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+  @media(max-width:900px){.kpis,.grid3,.grid2{grid-template-columns:1fr 1fr}}
+  @media(max-width:600px){.kpis,.grid3,.grid2{grid-template-columns:1fr}.wrap{padding:24px 16px 60px}h1{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">SYNAPCLAIM · 三方对标 / 增强优化建议</div>
+    <h1>原型 · 当前实现 · 原理赔系统：建议做哪些增强，为什么<span class="badge">研判稿 · 待拍板</span></h1>
+    <div class="meta">2026-11-24 ｜ 三方源码逐页研读：交付原型 <code>07-delivery/prototypes/claim-workbench</code>（9 页 / 4,623 行）· 当前实现 <code>bone-claim-app</code>（22 路由 / ≈2.26 万行）· 原理赔 <code>tpa-sass-vue3/src/views</code>（96 个 vue / ≈2.34 万行）</div>
+  </header>
+
+  <div class="lead">
+    <strong>核心结论：三方存在「倒挂」——最该被演示的能力没有原型，最该被吸收的规则在旧系统里</strong>
+    <p><b>① 叙事倒挂：</b>原型的「智能叙事」领先实现——原型会讲 AI 初审、决策回放、拒赔四要素；实现里 AI 是 fail-closed 披露 + 治理面板，作业页仍是人工工作台，直通率没做成一等公民。</p>
+    <p><b>② 覆盖倒挂：</b>实现的工程能力远超原型——22 路由里有资金结算、申诉、挂起、后督、盲标、AI 治理、主数据映射；原型 9 页一个都没有。签约演示讲不出已有的护城河。</p>
+    <p><b>③ 深度倒挂：</b>原理赔的业务规则颗粒度不低于实现——9 组责任配置、医保自付一公式、免赔抵扣、次期定义 8 种、反洗钱 9 要素。这些是保司「能不能配出我们的条款」的签单门槛。</p>
+    <div class="kpis">
+      <div class="kpi"><b>P0 · 5 项</b><span>可信度硬伤与实证 bug，零成本高收益，先做</span></div>
+      <div class="kpi"><b>P1 · 4 项</b><span>业务深度与产品叙事，1–2 个迭代补齐</span></div>
+      <div class="kpi"><b>P2 · 4 项</b><span>产品化打磨：角色视角、结案支付、横切能力、MRM</span></div>
+      <div class="kpi"><b>6 项不做</b><span>原理赔历史包袱，明确排除，照搬即倒退</span></div>
+    </div>
+  </div>
+
+  <h2>一、三方定位：各自强在哪、弱在哪</h2>
+  <p class="sub">先厘清角色，否则会拿「演示稿」的标准去要求「实现」，或把「旧系统的包袱」误当成「业务真理」。</p>
+  <div class="grid3">
+    <div class="col hi">
+      <h3><span class="tag g">原型</span> 签约叙事载体 · 9 页</h3>
+      <ul>
+        <li><b>强：</b>设计主张清晰——AI 不碰钱、确定性规则算钱、人工终审留痕、决策回放、配置继承三态、评测口径诚实。</li>
+        <li><b>弱：</b>动作几乎全是 toast 示意；跨页数据自相矛盾；缺结案支付、非审核环节、角色切换；规则配置后 3 个 Tab 为空。</li>
+        <li><b>定位：</b>可运行的规格说明（executable spec），必须自洽，否则演示现场一问即穿帮。</li>
+      </ul>
+    </div>
+    <div class="col hi">
+      <h3><span class="tag b">当前实现</span> 真实工程 · 22 路由</h3>
+      <ul>
+        <li><b>强：</b>全真实 API 零业务 mock；单一真源文化（路由/字典 codegen/错误码/权限码/深链/UI Schema）；幂等键、服务端真分页、AI fail-closed 四态披露、双复核阈值运行时、盲标防反馈环、案件 360 对象内聚。</li>
+        <li><b>弱：</b>查询基座只接 1 页；2 个静默失效 bug；半国际化；无主题 token；a11y 未系统化；无错误监控上报。</li>
+        <li><b>定位：</b>工程纪律已是护城河，不要推倒重来，只需接线与补齐。</li>
+      </ul>
+    </div>
+    <div class="col mid">
+      <h3><span class="tag a">原理赔</span> 业务规则深矿 · Vue3</h3>
+      <ul>
+        <li><b>强：</b>责任 9 维配置、医保结算自付一公式、绝对/相对免赔、免赔抵扣、次期定义 8 种、区间四种开闭、先后赔付 TYPE1/2/3、共保、单证自动生成、反洗钱 9 要素、17 类驳回原因。</li>
+        <li><b>弱：</b>1900 行巨型重复组件、3 套状态机字符串、配置化掏空前端、localStorage 当数据源、6 道串行人工关卡、无真 AI。</li>
+        <li><b>定位：</b>只挖规则模型与字段口径，架构包袱一概不继承。</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>二、四个结构性落差（带证据）</h2>
+  <p class="sub">下面每条都是源码实证，不是概括判断；括号里是定位文件。</p>
+  <div class="grid2">
+    <div class="diag"><span class="no">落差 A · 演示自相矛盾</span>
+      <p>同一票号 <code>0020137719</code>：详情页发票 <b>¥1,280.00</b>（<code>claim-detail.html</code> 发票表），影像页 <b>¥12,860.50</b>（<code>claim-image-detail.html</code>）；详情影像「0 张 / 未上传」vs 影像页「共 12 张」；管理页「处理中 156：初审 62 / 理算 94」，但七节点链路里根本没有「理算」节点。</p>
+    </div>
+    <div class="diag"><span class="no">落差 B · 能力建了没接线</span>
+      <p><code>useClaimQuery</code> + <code>useSavedViews</code> + <code>ClaimQueryBar</code>（URL 真源 + 保存视图）只接了 <code>LibraryPage</code>；核赔/初审/保单/额度仍各自 <code>useState</code>，浏览器前进后退丢条件。<code>WorkbenchPage.tsx:190</code> 还写「保存视图 P1 未交付」，能力其实已建。</p>
+    </div>
+    <div class="diag"><span class="no">落差 C · 静默失效 / 静默截断</span>
+      <p><code>PolicyManagementPage.tsx:791-794</code>：编辑保单时 <code>InsurerSelect onChange</code> 调用 <code>form.setFieldsValue</code>（create 表单实例），而编辑表单绑的是 <code>editForm</code>——选承保主体不生效且无报错。<code>MappingPage.tsx:81-99</code> 固定 <code>size:200</code>，超 200 个标准码静默缺项。</p>
+    </div>
+    <div class="diag"><span class="no">落差 D · 签单规则颗粒度</span>
+      <p>原理赔 <code>policyRuleConfig/components/EditLiabilityDialog/section/</code> 下 9 个配置文件（津贴三算法、PayPercent 区间四种开闭、LiabilityDeduct 免赔抵扣、TimesLimit 次期 8 种、RestricOutInsure 医保自付一公式）；实现的 <code>LiabilityConfigPage.tsx</code>（1631 行，11 维）未在界面上逐项暴露这些口径。</p>
+    </div>
+  </div>
+
+  <h2>三、P0｜立即修：可信度与事实性缺陷</h2>
+  <p class="sub">共同特征：成本低、收益直接、且都伤害「单一真源 / 可审计」这个产品最核心的承诺。</p>
+  <table>
+    <thead><tr><th style="width:15%">建议</th><th style="width:36%">证据（现状）</th><th style="width:34%">为什么（依据）</th><th style="width:15%">落地动作</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag r">P0-1</span> 原型跨页数据一致性</td>
+        <td>发票金额 10 倍差、影像 0 vs 12、环节与节点名矛盾（见落差 A）</td>
+        <td>原型是「可运行的规格说明」，是签约演示的第三幕收口。一处对不上，「可审计」卖点整体崩塌；<code>evaluation-report.html</code> 已立「不预置实测值」的诚实规矩，数据一致性是同一纪律。</td>
+        <td>抽一份 demo fixture 作单一事实源喂 9 页；最低限度在交付 README 钉「跨页一致话术表」。</td></tr>
+      <tr><td><span class="tag r">P0-2</span> 修两个静默 bug</td>
+        <td>编辑保单 <code>form</code>/<code>editForm</code> 混用；标准码 <code>size:200</code> 截断（见落差 C）</td>
+        <td>「配了不生效 / 静默丢失」比报错更危险，与本项目反复强调的「假绿」同族。用户以为改了其实没改，排查成本极高。</td>
+        <td>改用 <code>editForm.setFieldsValue</code>；复用 <code>fetchAllPages</code>；各补一条单测钉住。</td></tr>
+      <tr><td><span class="tag r">P0-3</span> 打通查询基座</td>
+        <td>查询基座只接 <code>LibraryPage</code>（见落差 B）</td>
+        <td>提案 §五已设计但未执行；URL 真源让作业上下文可恢复、可分享深链，是 Fiori / Guidewire ClaimCenter 工作台的基本能力。已建未接线等于白做。</td>
+        <td>铺到核赔/初审/保单/额度 4 个主列表；保存视图从 localStorage 升后端；同步改掉失真的注释。</td></tr>
+      <tr><td><span class="tag r">P0-4</span> 批量拒赔五要素来源对齐</td>
+        <td><code>ReviewWorkbenchPage.runBatch</code> 只发 <code>{claimId, decision}</code>，五要素依赖「单案中已填」；单案 <code>decide</code> 走结构化五要素路径。</td>
+        <td>拒赔五要素是合规硬要求（规则 R-MAN-03）。批量路径缺要素会让整批进 failed 列表，或产出无要素的不合规拒赔。</td>
+        <td>批量决策要求预置结构化五要素，或显式拒绝并提示先补单案；补集成测试。</td></tr>
+      <tr><td><span class="tag r">P0-5</span> 文档口径漂移</td>
+        <td><code>AnalyticsDashboardPage.tsx:21-25</code> 自称 hidden 路由，<code>routes.tsx:153-154</code> 已提升为正式菜单；<code>WorkbenchPage</code> 保存视图说明同样失真。</td>
+        <td>注释与路由现状漂移会误导后续开发与原型对比；与「删除后仍称存在」同族的腐化。</td>
+        <td>随 P0-3 一并改注释；纳入 code review 清单。</td></tr>
+    </tbody>
+  </table>
+
+  <h2>四、P1｜增强：补业务深度与产品叙事</h2>
+  <p class="sub">共同特征：决定「能不能签下来」，而不是「好不好用」。</p>
+  <table>
+    <thead><tr><th style="width:15%">建议</th><th style="width:36%">证据（现状）</th><th style="width:34%">为什么（依据）</th><th style="width:15%">落地动作</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag a">P1-1</span> 原型补齐「已有但没原型」的页</td>
+        <td>实现 22 路由 vs 原型 9 页；缺资金结算/四向对账、AI 治理、申诉复议、挂起恢复、后督抽检、盲标、主数据映射。</td>
+        <td>资金两段式幂等 + 四向对账 + 乐观锁是护城河，而原理赔「推送即结束」——这正是最强差异化，却完全没有原型页可演示。签约现场讲不出来＝自废武功。</td>
+        <td>优先新增 3 页：①资金结算与四向对账 ②AI 治理/评测回放（把 eval-report 升级为可操作面板）③主数据映射；其余作导航占位并标注「实现已就绪」。</td></tr>
+      <tr><td><span class="tag a">P1-2</span> 选择性吸收签单级规则颗粒度</td>
+        <td>原理赔 9 组责任 section（见落差 D）；实现 <code>LiabilityConfigPage</code> 未逐项确认覆盖。</td>
+        <td>保司签单第一问是「我们的条款你能不能配出来」。规则配不出，AI 再强也进不了场。医保结算公式在中国医疗险 TPA 几乎是必做项。<b>只吸收规则模型/字段口径，不吸收配置化架构。</b></td>
+        <td>出「责任配置字段对账表」：原理赔 9 section ↔ 规则书 ↔ 实现，标出「规则书有/实现无」，按签单频次补齐，医保公式优先。</td></tr>
+      <tr><td><span class="tag a">P1-3</span> 反洗钱 9 要素 + 驳回原因受控码</td>
+        <td>原理赔 <code>ReviewRejectionDialog.vue</code> 有「赔付超一万元反洗钱缺 9 要素」及 17 类细分驳回；实现拒赔码偏业务原因。</td>
+        <td>这是合规硬门槛而非体验优化：超万元无 9 要素＝监管处罚敞口。业界对标台账已列金发〔2026〕8 号 / MRM，但需落到写入校验。</td>
+        <td>决策写入前加「金额阈值 → 9 要素齐备」校验（确定性代码，AI 不碰钱）；驳回去重到受控码表 + 双语文案。</td></tr>
+      <tr><td><span class="tag a">P1-4</span> OCR 字段 ↔ 影像坐标反查</td>
+        <td>实现影像页已做真上传（SHA-256 + fileRef）、清晰度三态、不清晰阻断锁定；原理赔有 OCR 标记/发票绑定。客户旅程原型已有「解析字段可点看证据」文案，但实现未做成一等公民。</td>
+        <td>影像是证据链的根，OCR 预填的可信度取决于「字段能定位回原图」。这是可解释 AI 最实的落点，比画决策图更有说服力。</td>
+        <td>OCR 字段携带 <code>bbox + fileRef + page</code>；审核页字段旁一键定位影像并高亮命中区域。</td></tr>
+    </tbody>
+  </table>
+
+  <h2>五、P2｜产品化打磨：角色、闭环与横切</h2>
+  <table>
+    <thead><tr><th style="width:15%">建议</th><th style="width:36%">证据（现状）</th><th style="width:34%">为什么（依据）</th><th style="width:15%">落地动作</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag b">P2-1</span> 原型加角色视角切换</td>
+        <td>原型 9 页全站 admin；实现有权限码与 <code>ROLE_PERSONA</code> 画像裁剪，但没有「同一案件多角色视图」演示。</td>
+        <td>客户最想看的是「我方初审员/核赔员看到什么、权限如何隔离」；双复核「复核人≠第一审核人」是卖点却讲不出来。既有《易用性与角色工作台设计提案》已定 IA 方案，缺的是原型呈现。</td>
+        <td>原型加视角切换器（客户/初审/核赔/复核/资金/管理员）；把职责分离做成可演示的「拒答」——同一账号看不到复核按钮。</td></tr>
+      <tr><td><span class="tag b">P2-2</span> 补结案支付原型页</td>
+        <td>原型 5 步流程第 5 步、七节点「推送」之后无页面；实现 <code>FundWorkbenchPage</code> 已完整。</td>
+        <td>见 P1-1：资金闭环是护城河，原型必须收口到演示，否则三幕叙事缺最后一幕。</td>
+        <td>新增资金结算页，呈现结算单状态机、额度三值、支付/撤销/退款四向对账。</td></tr>
+      <tr><td><span class="tag b">P2-3</span> 横切能力补齐</td>
+        <td>页面文案硬编码中文、仅错误码双语；<code>AppAntdProvider</code> 无 theme token；a11y 仅影像页系统化；<code>ErrorBoundary.tsx:27</code> 只 <code>console.error</code>。</td>
+        <td>多保司 SaaS 面向外资/出海主体需要 en-US 全量；无障碍是政企采购项；无监控＝线上故障不可见。错误码三处必齐的门禁已在，双语只是最后一段。</td>
+        <td>页面文案抽 i18n key；接 APM/错误上报；Modal 焦点陷阱 + 表格 label 关联；补暗色主题 token。</td></tr>
+      <tr><td><span class="tag b">P2-4</span> 评测诚实性前移 + MRM 面板</td>
+        <td><code>evaluation-report.html</code> 已立「目标线/现场生成分列、不预置实测值」；实现 <code>AiGovernancePage</code> 已有就绪/校准/放量/探活，但漂移/公平性未成面板。</td>
+        <td>「防假绿」是项目一贯品牌。业界对标台账已列 MRM 闭环（漂移 PSI、champion/challenger、公平性），应把它从文档口径变成可现场生成的界面。</td>
+        <td>评测页 ↔ 治理页数据同源；漂移/公平性按「现场生成」口径展示，禁止写死数值。</td></tr>
+    </tbody>
+  </table>
+
+  <h2>六、明确不做：原理赔的 6 项历史包袱</h2>
+  <p class="sub">这些正是因为「智能原生」要跨越的东西，照搬即倒退。列入边界，避免后续被误当成成熟实践引入。</p>
+  <table>
+    <thead><tr><th style="width:34%">不做</th><th>证据与原因</th></tr></thead>
+    <tbody>
+      <tr><td>1900 行级巨型重复组件</td><td><code>claimImageDetail/index.vue</code>(1952 行) 与 <code>Edit.vue</code>(1890 行) 近乎完全复制，改一处要改两遍。实现的 <code>EvidenceUploadPage</code> 已用共享组件 + 真上传，保持现状。</td></tr>
+      <tr><td>三套状态机字符串</td><td><code>ClaimStageEnum</code> 用 INIT/SIGNING/…，<code>precheck</code> 硬编码 <code>PRE_EXAM</code>，影像页写中文「复核」，<code>event/modules/claim.js</code> 又用另一套映射。实现的 <code>claimStatus.ts</code> 单一真源已解决。</td></tr>
+      <tr><td>localStorage 当数据源</td><td><code>claimDetail/index.vue:50-71</code> 先读 localStorage，非空直接 return 不再请求服务端——多人协作会读到过期草稿。实现的 localStorage 只存偏好/最近访问，且明确标注。</td></tr>
+      <tr><td>6 道串行人工关卡 + 双轨录入</td><td>签收→初审→录入→质检→审核→复核，再加「先技力再传统录入」，同一张发票录两遍。智能理赔应以「自动提取 + 异常人工复核」替代全量串行。</td></tr>
+      <tr><td>setTimeout DOM 轮询 / 启动 hack</td><td><code>handleImageViewerTransform</code> 用 <code>setTimeout(...,30)</code> 找 DOM；<code>main.ts</code> 挂载失败重试 5 次并打大量 log。脆弱且污染生产。</td></tr>
+      <tr><td>disabled 空壳 Tab / 开发期工具进前台</td><td>医院库/疾病库/药品库等 5 个 tab 为 disabled 空壳；<code>codeTools/codeGeneration</code> 是低代码开发期工具，与理赔业务无关。</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note ok">
+    <b>与既有文档的关系（不重复造轮子）：</b>本稿是「三方代码库对比产生的新落差」，刻意不重复已有结论——信息架构 / 案件 360 / 全局搜索 / AI 每一屏见《易用性与角色工作台设计提案 v2.2》§三–§六；反欺诈图谱/直付/100% 质检/MRM 的行业对标见《业界对标整改台账》§二–§四；护城河清单见同台账 §一。P0-3 属于「提案已立但未执行」的执行缺口，不是新提案。
+  </div>
+
+  <h2>七、待你拍板</h2>
+  <p class="sub">以下条目可直接按编号裁定，作为下一轮输入。</p>
+  <div class="ask"><ol>
+    <li><b>跨页数据基线：</b>原型跨页一致性（P0-1）以哪页为准？建议以 <code>claim-detail.html</code> 的 ¥1,280 为事实源，影像页改金额与张数；还是反过来统一到 ¥12,860.50？</li>
+    <li><b>规则对账交付：</b>是否要我正式产出「原理赔 9 section ↔ 规则书 ↔ 实现」逐项对账表？这会新建一份 L9 evidence 文档，需登记 manifest、重跑 AI-INDEX 与全套门禁。</li>
+    <li><b>原型新增范围：</b>P1-1 的 3 页（资金对账 / AI 治理 / 主数据映射）是全做，还是先做资金 1 页验证签约叙事？</li>
+    <li><b>角色视角粒度：</b>P2-1 做 6 视图（客户/初审/核赔/复核/资金/管理员）还是 3 视图（客户/核赔/管理员）？前者更完整，后者更快出片。</li>
+    <li><b>落地形态：</b>本稿目前是 05-plan 下的 HTML 速览（不进 manifest、不触发文档门禁）。是否需要我把它同步落成一份正式评审文档（L9 review，登记 manifest 并过全套门禁）？</li>
+  </ol></div>
+
+  <div class="note red">
+    <b>纪律边界：</b>本稿是研判建议，未改动任何代码或原型。所有 P0–P2 建议均须遵守既定护城河——AI 只出建议不碰钱、拒赔人工确认 + 五要素、规则热更过回归门禁、资金两段式幂等 + 乐观锁（禁 FOR UPDATE）、不把超 MVP 容量的工作伪装进 I0–I4。反欺诈图/视觉与直付试点仍属 V1.0（Phase B）增量，需另行排期与架构评审。
+  </div>
+
+  <footer>
+    研判范围：三方源码逐页研读（未运行构建 / 未改文件）。证据均来自直接读取源码，关键路径已在正文标注。<br>
+    关联文档：<code>../05-plan/智能理赔-易用性与角色工作台设计提案.md</code> · <code>../09-records/reviews/业界对标整改台账.md</code> · <code>../09-records/reviews/TPA-SAAS基线差距分析.md</code> · <code>../00-governance/01-文档治理规约.md</code>
+  </footer>
+</div>
+</body>
+</html>

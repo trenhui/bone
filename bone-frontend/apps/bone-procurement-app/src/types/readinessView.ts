@@ -15,7 +15,7 @@ export interface AiReadinessDTO {
 const KNOWN: Record<string, { text: string; color: string }> = {
   AVAILABLE: { text: '可判定可用', color: 'green' },
   DEGRADED: { text: '受限可用', color: 'orange' },
-  UNKNOWN: { text: '无法确认', color: 'default' },
+  UNKNOWN: { text: '无法确认', color: 'red' },
 };
 
 /** 反假绿：只有 AVAILABLE 才显示可用；未知判词一律「无法确认」，不乐观映射。 */
@@ -24,9 +24,10 @@ export function readinessText(code: string | null | undefined): string {
   return KNOWN[code]?.text ?? '无法确认';
 }
 
+/** 告警样式：UNKNOWN、缺失与未映射判词一律红色告警，只有明确-known 的成功/受限态才用其颜色。 */
 export function verdictColor(code: string | null | undefined): string {
-  if (!code) return 'default';
-  return KNOWN[code]?.color ?? 'default';
+  if (!code) return 'red';
+  return KNOWN[code]?.color ?? 'red';
 }
 
 /** 展示含原始判词码：未知判词必须原样显示便于排障，缺失显示无法确认。 */

@@ -16,11 +16,66 @@ public class AiGovernanceProperties {
 
   private boolean enabled = false;
 
+  /** 漂移判定阈值（owner 通过线）；null 表示未配置，任何漂移判词 fail-closed 到 UNDETERMINED。 */
+  private Double driftThreshold = null;
+
+  /** 漂移判定最小样本量；默认 20。 */
+  private int driftMinSampleSize = 20;
+
+  /** 监督有效性：复核耗时下限（ms）；null 表示未配置，判词 fail-closed 到 UNDETERMINED。 */
+  private Long oversightReviewDurationFloorMs = null;
+
+  /** 监督有效性：最小样本量；默认 20。 */
+  private int oversightMinSampleSize = 20;
+
+  /** 监督有效性：橡皮图章占比阈值；null 表示未配置，判词 fail-closed 到 UNDETERMINED。 */
+  private Double oversightFastReviewRatio = null;
+
   public boolean isEnabled() {
     return enabled;
   }
 
   public void setEnabled(boolean enabled) {
     this.enabled = enabled;
+  }
+
+  public Double getDriftThreshold() {
+    return driftThreshold;
+  }
+
+  public void setDriftThreshold(Double driftThreshold) {
+    this.driftThreshold = driftThreshold;
+  }
+
+  public int getDriftMinSampleSize() {
+    return driftMinSampleSize;
+  }
+
+  public void setDriftMinSampleSize(int driftMinSampleSize) {
+    this.driftMinSampleSize = driftMinSampleSize;
+  }
+
+  public Long getOversightReviewDurationFloorMs() {
+    return oversightReviewDurationFloorMs;
+  }
+
+  public void setOversightReviewDurationFloorMs(Long oversightReviewDurationFloorMs) {
+    this.oversightReviewDurationFloorMs = oversightReviewDurationFloorMs;
+  }
+
+  public int getOversightMinSampleSize() {
+    return oversightMinSampleSize;
+  }
+
+  public void setOversightMinSampleSize(int oversightMinSampleSize) {
+    this.oversightMinSampleSize = oversightMinSampleSize;
+  }
+
+  public Double getOversightFastReviewRatio() {
+    return oversightFastReviewRatio;
+  }
+
+  public void setOversightFastReviewRatio(Double oversightFastReviewRatio) {
+    this.oversightFastReviewRatio = oversightFastReviewRatio;
   }
 }

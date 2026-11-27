@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><title>变更说明 · 为 AI 决策治理补上漂移信号三态判词与治理指标只读观测，基于真实台账/追溯计数，fail-closed 且从不声明模型达标。</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --page: #fafbfc;
+  --ink: #202a35;
+  --muted: #566575;
+  --line: #dbe2e8;
+  --accent: #245b85;
+  --highlight: #edf3f7;
+  --hover: #e9eef3;
+  --code-bg: #edf0f4;
+  --code-ink: #263443;
+  --success: #236d4f;
+  --failure: #a83131;
+  --text: 15px;
+  --small: 13px;
+  --label: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #181d23;
+    --ink: #e4eaf0;
+    --muted: #a4b1be;
+    --line: #35404b;
+    --accent: #94c6ec;
+    --highlight: #222e39;
+    --hover: #27323d;
+    --code-bg: #10161d;
+    --code-ink: #e0e8f0;
+    --success: #8ed8b5;
+    --failure: #ffb0a8;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: var(--text)/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1040px; margin: auto; padding: 32px 32px 48px; }
+.eyebrow { color: var(--accent); font-size: var(--label); font-weight: 500; letter-spacing: .08em; }
+h1 { margin: 8px 0 12px; max-width: 32em; font-size: 28px; font-weight: 500; line-height: 1.4; letter-spacing: -.02em; overflow-wrap: anywhere; }
+h2 { margin: 0; font-size: 18px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+h3 { margin: 0 0 4px; color: var(--muted); font-size: var(--label); font-weight: 500; }
+p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+strong { font-weight: 500; }
+.meta { margin-bottom: 24px; color: var(--muted); font-size: var(--small); overflow-wrap: anywhere; }
+.meta p + p { margin-top: 2px; }
+article { padding: 20px 0 12px; border-top: 1px solid var(--line); }
+article header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+.number { color: var(--muted); font: var(--label)/1.5 ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.comparison { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.comparison section { min-width: 0; padding: 12px; }
+.after { background: var(--highlight); border-radius: 4px; }
+.after h3 { color: var(--accent); }
+.reason { margin-top: 12px; font-size: var(--small); color: var(--muted); }
+.reason strong { margin-right: 8px; color: var(--ink); }
+summary { min-height: 44px; padding: 10px 4px; cursor: pointer; font-size: var(--small); font-weight: 500; border-radius: 4px; }
+summary:hover { background: var(--hover); }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.count, .tag { color: var(--muted); font-size: var(--label); font-weight: 400; }
+.count { margin-left: 4px; font-variant-numeric: tabular-nums; }
+.file { min-width: 0; padding: 0 0 16px; scroll-margin-top: 20px; }
+.file:target { outline: 2px solid var(--accent); outline-offset: 4px; }
+.file-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.file-heading code { min-width: 0; font-size: var(--small); overflow-wrap: anywhere; }
+.tag { white-space: nowrap; }
+pre { margin: 8px 0 0; padding: 12px 16px; overflow: auto; background: var(--code-bg); color: var(--code-ink); border-radius: 4px; font: var(--small)/1.65 ui-monospace, Consolas, monospace; tab-size: 2; }
+footer { margin-top: 12px; padding-top: 20px; border-top: 1px solid var(--line); }
+footer h2 { margin-bottom: 8px; }
+.check { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.status { padding-top: 2px; font-size: var(--label); font-weight: 500; }
+.passed { color: var(--success); }
+.failed { color: var(--failure); }
+.not-run, .unknown { color: var(--muted); }
+.check p { margin-top: 2px; color: var(--muted); font-size: var(--small); }
+.more { border-top: 1px solid var(--line); }
+.more > summary { padding-block: 12px; }
+.diagram { margin: 0; padding: 20px 0; border-top: 1px solid var(--line); }
+.diagram figcaption { margin-bottom: 12px; font-size: 18px; font-weight: 500; overflow-wrap: anywhere; }
+.diagram-svg { display: block; max-width: 100%; height: auto; margin: auto; overflow: visible; font: 13px system-ui, -apple-system, "Segoe UI", sans-serif; }
+.diagram-svg text { fill: var(--ink); }
+.diagram-edge { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.diagram-svg marker path { fill: var(--muted); }
+.diagram-edge-label { fill: var(--page); }
+.diagram-svg .diagram-edge-text { fill: var(--muted); font-size: 12px; }
+.diagram-node rect { fill: var(--page); stroke: var(--line); stroke-width: 1.5; }
+.diagram-node.modified rect { fill: var(--highlight); stroke: var(--accent); }
+.diagram-node.added rect { stroke: var(--success); }
+.diagram-node.deleted rect { stroke: var(--failure); stroke-dasharray: 4 3; }
+.diagram-svg .diagram-kind { fill: var(--muted); font-size: 11px; }
+.diagram-node[href] { cursor: pointer; }
+.diagram-node[href]:hover rect, .diagram-node[href]:focus-visible rect { stroke: var(--accent); stroke-width: 2.5; }
+.diagram-node[href]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.diagram-hint { margin-top: 12px; color: var(--muted); font-size: var(--small); text-align: center; }
+.diagram-comparison { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 16px; }
+.diagram-comparison > section { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 4px; }
+.diagram-comparison > section > h3 { margin-bottom: 12px; }
+.diagram-compact { display: none; }
+@media (max-width: 999px) {
+  .diagram-wide { display: none; }
+  .diagram-compact { display: block; }
+}
+@media (max-width: 640px) {
+  main { padding: 24px 16px 32px; }
+  h1 { font-size: 24px; }
+  .meta { margin-bottom: 20px; }
+  article { padding-top: 16px; }
+  article header { gap: 8px; }
+  .comparison { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .check { grid-template-columns: 60px minmax(0, 1fr); gap: 8px; }
+  pre { padding: 12px; }
+  .diagram-comparison { grid-template-columns: minmax(0,1fr); }
+  .diagram-comparison > section { padding: 12px 0; border: 0; }
+}
+</style></head><body><main><div class="eyebrow">COMET / 变更说明</div><h1>为 AI 决策治理补上漂移信号三态判词与治理指标只读观测，基于真实台账/追溯计数，fail-closed 且从不声明模型达标。</h1><div class="meta"><p>比较范围 · HEAD(e6e84a86b) 与本次工作区差异；仅限 bone-procurement-ai-governance 模块 + change 文档 + POC 报告，未改 DDL/CI。</p><p>生成时间 · 2026-11-25T01:12:07.395Z</p></div><figure class="diagram"><figcaption>漂移信号判词路径</figcaption><div class="diagram-wide"><svg class="diagram-svg" width="784" height="102" viewBox="0 0 784 102" role="group" aria-labelledby="walkthrough-diagram-0-wide-title walkthrough-diagram-0-wide-description"><title id="walkthrough-diagram-0-wide-title">漂移信号判词路径</title><desc id="walkthrough-diagram-0-wide-description">GET drift(code) → 服务端配置阈值(默认未配置); 服务端配置阈值(默认未配置) → driftSignal 真实计数; driftSignal 真实计数 → 三态裁决; 三态裁决 → 只读投影 modelHealthClaim=NONE</desc><defs><marker id="walkthrough-diagram-0-wide-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z"/></marker></defs><path class="diagram-edge" d="M 132 51 C 152 51, 152 51, 169 51" marker-end="url(#walkthrough-diagram-0-wide-arrow)"/><path class="diagram-edge" d="M 292 51 C 312 51, 312 51, 329 51" marker-end="url(#walkthrough-diagram-0-wide-arrow)"/><path class="diagram-edge" d="M 452 51 C 472 51, 472 51, 489 51" marker-end="url(#walkthrough-diagram-0-wide-arrow)"/><path class="diagram-edge" d="M 612 51 C 632 51, 632 51, 649 51" marker-end="url(#walkthrough-diagram-0-wide-arrow)"/><g class="diagram-node "><rect x="12" y="12" width="120" height="78" rx="5"/><text class="" x="72" y="46" text-anchor="middle"><tspan x="72" dy="0">GET</tspan><tspan x="72" dy="18">drift(code)</tspan></text></g><g class="diagram-node "><rect x="172" y="12" width="120" height="78" rx="5"/><text class="" x="232" y="46" text-anchor="middle"><tspan x="232" dy="0">服务端配置阈值</tspan><tspan x="232" dy="18">(默认未配置)</tspan></text></g><a class="diagram-node modified" href="#walkthrough-file-1-2" aria-label="driftSignal 真实计数 · bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/application/AiGovernanceApplicationService.java"><rect x="332" y="12" width="120" height="78" rx="5"/><text class="diagram-kind" x="392" y="29" text-anchor="middle"><tspan x="392" dy="0">修改</tspan></text><text class="" x="392" y="47" text-anchor="middle"><tspan x="392" dy="0">driftSignal</tspan><tspan x="392" dy="18">真实计数</tspan></text></a><a class="diagram-node added" href="#walkthrough-file-0-0" aria-label="三态裁决 · bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/service/DriftSignalPolicy.java"><rect x="492" y="12" width="120" height="78" rx="5"/><text class="diagram-kind" x="552" y="29" text-anchor="middle"><tspan x="552" dy="0">新增</tspan></text><text class="" x="552" y="47" text-anchor="middle"><tspan x="552" dy="0">三态裁决</tspan></text></a><g class="diagram-node "><rect x="652" y="12" width="120" height="78" rx="5"/><text class="" x="712" y="37" text-anchor="middle"><tspan x="712" dy="0">只读投影</tspan><tspan x="712" dy="18">modelHealthCl</tspan><tspan x="712" dy="18">aim=NONE</tspan></text></g></svg></div><div class="diagram-compact"><svg class="diagram-svg" width="272" height="558" viewBox="0 0 272 558" role="group" aria-labelledby="walkthrough-diagram-0-compact-title walkthrough-diagram-0-compact-description"><title id="walkthrough-diagram-0-compact-title">漂移信号判词路径</title><desc id="walkthrough-diagram-0-compact-description">GET drift(code) → 服务端配置阈值(默认未配置); 服务端配置阈值(默认未配置) → driftSignal 真实计数; driftSignal 真实计数 → 三态裁决; 三态裁决 → 只读投影 modelHealthClaim=NONE</desc><defs><marker id="walkthrough-diagram-0-compact-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z"/></marker></defs><path class="diagram-edge" d="M 136 90 C 136 108, 136 108, 136 123" marker-end="url(#walkthrough-diagram-0-compact-arrow)"/><path class="diagram-edge" d="M 136 204 C 136 222, 136 222, 136 237" marker-end="url(#walkthrough-diagram-0-compact-arrow)"/><path class="diagram-edge" d="M 136 318 C 136 336, 136 336, 136 351" marker-end="url(#walkthrough-diagram-0-compact-arrow)"/><path class="diagram-edge" d="M 136 432 C 136 450, 136 450, 136 465" marker-end="url(#walkthrough-diagram-0-compact-arrow)"/><g class="diagram-node "><rect x="80" y="12" width="112" height="78" rx="5"/><text class="" x="136" y="46" text-anchor="middle"><tspan x="136" dy="0">GET</tspan><tspan x="136" dy="18">drift(code)</tspan></text></g><g class="diagram-node "><rect x="80" y="126" width="112" height="78" rx="5"/><text class="" x="136" y="151" text-anchor="middle"><tspan x="136" dy="0">服务端配置阈</tspan><tspan x="136" dy="18">值(默认未配置</tspan><tspan x="136" dy="18">)</tspan></text></g><a class="diagram-node modified" href="#walkthrough-file-1-2" aria-label="driftSignal 真实计数 · bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/application/AiGovernanceApplicationService.java"><rect x="80" y="240" width="112" height="78" rx="5"/><text class="diagram-kind" x="136" y="257" text-anchor="middle"><tspan x="136" dy="0">修改</tspan></text><text class="" x="136" y="275" text-anchor="middle"><tspan x="136" dy="0">driftSignal</tspan><tspan x="136" dy="18">真实计数</tspan></text></a><a class="diagram-node added" href="#walkthrough-file-0-0" aria-label="三态裁决 · bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/service/DriftSignalPolicy.java"><rect x="80" y="354" width="112" height="78" rx="5"/><text class="diagram-kind" x="136" y="371" text-anchor="middle"><tspan x="136" dy="0">新增</tspan></text><text class="" x="136" y="389" text-anchor="middle"><tspan x="136" dy="0">三态裁决</tspan></text></a><g class="diagram-node "><rect x="80" y="468" width="112" height="78" rx="5"/><text class="" x="136" y="493" text-anchor="middle"><tspan x="136" dy="0">只读投影</tspan><tspan x="136" dy="18">modelHealthC</tspan><tspan x="136" dy="18">laim=NONE</tspan></text></g></svg></div><p class="diagram-hint">点击带链接的节点查看相关代码。</p></figure><article><header><span class="number">01</span><h2>漂移判词引擎</h2></header><div class="comparison"><section><h3>原来</h3><p>只有 countOverrides 计数，没有判词；阈值未配置时无法 fail-closed，容易被误读为模型健康。</p></section><section class="after"><h3>现在</h3><p>三态判词 UNDETERMINED/NO_ACTIONABLE_SIGNAL/REVIEW_REQUIRED；阈值未配置、样本不足、计数非法一律 UNDETERMINED；任何判词 claimsModelHealthy() 恒 false。</p></section></div><p class="reason"><strong>原因</strong> 监管 §6/§9 要求漂移监测闭环，且不可判定时不得压成无漂移。</p><details><summary>查看文件和关键代码 <span class="count">3</span></summary><div class="file" id="walkthrough-file-0-0"><div class="file-heading"><span class="tag">新增</span><code>bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/service/DriftSignalPolicy.java</code></div><pre><code>public DriftSignal evaluate(...){ if (sample&lt;0||override&lt;0||override&gt;sample) throw...; if (!thresholds.configured()) return undetermined(...THRESHOLD_NOT_CONFIGURED); if (sample &lt; min) return undetermined(...INSUFFICIENT_SAMPLE); double rate=...; return rate&gt;=threshold ? REVIEW_REQUIRED : NO_ACTIONABLE_SIGNAL; }</code></pre></div><div class="file" id="walkthrough-file-0-1"><div class="file-heading"><span class="tag">新增</span><code>bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/model/capability/DriftVerdict.java</code></div><pre><code>UNDETERMINED, NO_ACTIONABLE_SIGNAL, REVIEW_REQUIRED; isActionable() 仅触阈为真</code></pre></div><div class="file" id="walkthrough-file-0-2"><div class="file-heading"><span class="tag">新增</span><code>bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/model/capability/DriftThresholds.java</code></div><pre><code>record(overrideRateThreshold, minSampleSize); unconfigured() 阈值=null; (0,1] 与 min&gt;0 校验</code></pre></div></details></article><article><header><span class="number">02</span><h2>只读指标查询与 owner 通过线保护</h2></header><div class="comparison"><section><h3>原来</h3><p>无对外指标面；初版曾想用客户端 query 传阈值（会让 read 用户自设 owner 通过线）。</p></section><section class="after"><h3>现在</h3><p>GET /capabilities/{code}/drift 返回只读投影（count/率/判词/原因码，modelHealthClaim=NONE）；阈值只由服务端配置属性提供，默认未配置→UNDETERMINED。</p></section></div><p class="reason"><strong>原因</strong> 阈值属 owner 通过线（D-10 未闭合），不得由被治理方自设；读操作不得有副作用。</p><details><summary>查看文件和关键代码 <span class="count">3</span></summary><div class="file" id="walkthrough-file-1-0"><div class="file-heading"><span class="tag">修改</span><code>bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java</code></div><pre><code>public ApiResponse&lt;DriftMetricsView&gt; drift(@PathVariable(&quot;code&quot;) String code) { DriftThresholds t = properties.getDriftThreshold()==null ? unconfigured() : new DriftThresholds(...); }</code></pre></div><div class="file" id="walkthrough-file-1-1"><div class="file-heading"><span class="tag">修改</span><code>bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/application/AiGovernanceProperties.java</code></div><pre><code>private Double driftThreshold = null; private int driftMinSampleSize = 20;</code></pre></div><div class="file" id="walkthrough-file-1-2"><div class="file-heading"><span class="tag">修改</span><code>bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/application/AiGovernanceApplicationService.java</code></div><pre><code>public DriftSignal driftSignal(code, thresholds){ 未登记拒绝; sample=trace 终决事件数; override=ledger.countOverrides; 纯计算无写 }</code></pre></div></details></article><footer><h2>实际验证</h2><div class="check"><span class="status passed">通过</span><div><strong>Builder 自检</strong><p>ai-governance 模块 mvn test 106 例/0 失败（含 ArchitectureTest 13）；采购聚合 10 模块全 SUCCESS；领域 RED→GREEN。</p></div></div><div class="check"><span class="status passed">通过</span><div><strong>Runtime 检查</strong><p>build guard --apply 真实 mvn test 收据 ALL CHECKS PASSED → phase=verify。</p></div></div><div class="check"><span class="status passed">通过</span><div><strong>门禁验证</strong><p>alignment 10/10、evalset PASS(seededDraft 未改)、frontmatter 33 份、persistence 9 表、event-chain 4 探针全绿。</p></div></div><div class="check"><span class="status passed">通过</span><div><strong>独立验收</strong><p>standard 独立审查初评 1 IMPORTANT(阈值经 HTTP 暴露)，已修复为服务端配置属性并补测试；复审 0 CRITICAL/0 IMPORTANT。</p></div></div></footer></main><template id="walkthrough-data">eyJzdW1tYXJ5Ijoi5Li6IEFJIOWGs+etluayu+eQhuihpeS4iua8guenu+S/oeWPt+S4ieaAgeWIpOivjeS4juayu+eQhuaMh+agh+WPquivu+ingua1i++8jOWfuuS6juecn+WunuWPsOi0pi/ov73muq/orqHmlbDvvIxmYWlsLWNsb3NlZCDkuJTku47kuI3lo7DmmI7mqKHlnovovr7moIfjgIIiLCJzY29wZSI6IkhFQUQoZTZlODRhODZiKSDkuI7mnKzmrKHlt6XkvZzljLrlt67lvILvvJvku4XpmZAgYm9uZS1wcm9jdXJlbWVudC1haS1nb3Zlcm5hbmNlIOaooeWdlyArIGNoYW5nZSDmlofmoaMgKyBQT0Mg5oql5ZGK77yM5pyq5pS5IERETC9DSeOAgiIsImNoYW5nZXMiOlt7InRpdGxlIjoi5ryC56e75Yik6K+N5byV5pOOIiwiYmVmb3JlIjoi5Y+q5pyJIGNvdW50T3ZlcnJpZGVzIOiuoeaVsO+8jOayoeacieWIpOivje+8m+mYiOWAvOacqumFjee9ruaXtuaXoOazlSBmYWlsLWNsb3NlZO+8jOWuueaYk+iiq+ivr+ivu+S4uuaooeWei+WBpeW6t+OAgiIsImFmdGVyIjoi5LiJ5oCB5Yik6K+NIFVOREVURVJNSU5FRC9OT19BQ1RJT05BQkxFX1NJR05BTC9SRVZJRVdfUkVRVUlSRUTvvJvpmIjlgLzmnKrphY3nva7jgIHmoLfmnKzkuI3otrPjgIHorqHmlbDpnZ7ms5XkuIDlvosgVU5ERVRFUk1JTkVE77yb5Lu75L2V5Yik6K+NIGNsYWltc01vZGVsSGVhbHRoeSgpIOaBkiBmYWxzZeOAgiIsInJlYXNvbiI6IuebkeeuoSDCpzYvwqc5IOimgeaxgua8guenu+ebkea1i+mXreeOr++8jOS4lOS4jeWPr+WIpOWumuaXtuS4jeW+l+WOi+aIkOaXoOa8guenu+OAgiIsImZpbGVzIjpbeyJwYXRoIjoiYm9uZS1hcHBzL2JvbmUtcHJvY3VyZW1lbnQvYm9uZS1wcm9jdXJlbWVudC1haS1nb3Zlcm5hbmNlL3NyYy9tYWluL2phdmEvY29tL2JvbmUvcHJvY3VyZW1lbnQvZ292ZXJuYW5jZS9kb21haW4vc2VydmljZS9EcmlmdFNpZ25hbFBvbGljeS5qYXZhIiwia2luZCI6ImFkZGVkIiwiY29kZSI6InB1YmxpYyBEcmlmdFNpZ25hbCBldmFsdWF0ZSguLi4peyBpZiAoc2FtcGxlPDB8fG92ZXJyaWRlPDB8fG92ZXJyaWRlPnNhbXBsZSkgdGhyb3cuLi47IGlmICghdGhyZXNob2xkcy5jb25maWd1cmVkKCkpIHJldHVybiB1bmRldGVybWluZWQoLi4uVEhSRVNIT0xEX05PVF9DT05GSUdVUkVEKTsgaWYgKHNhbXBsZSA8IG1pbikgcmV0dXJuIHVuZGV0ZXJtaW5lZCguLi5JTlNVRkZJQ0lFTlRfU0FNUExFKTsgZG91YmxlIHJhdGU9Li4uOyByZXR1cm4gcmF0ZT49dGhyZXNob2xkID8gUkVWSUVXX1JFUVVJUkVEIDogTk9fQUNUSU9OQUJMRV9TSUdOQUw7IH0ifSx7InBhdGgiOiJib25lLWFwcHMvYm9uZS1wcm9jdXJlbWVudC9ib25lLXByb2N1cmVtZW50LWFpLWdvdmVybmFuY2Uvc3JjL21haW4vamF2YS9jb20vYm9uZS9wcm9jdXJlbWVudC9nb3Zlcm5hbmNlL2RvbWFpbi9tb2RlbC9jYXBhYmlsaXR5L0RyaWZ0VmVyZGljdC5qYXZhIiwia2luZCI6ImFkZGVkIiwiY29kZSI6IlVOREVURVJNSU5FRCwgTk9fQUNUSU9OQUJMRV9TSUdOQUwsIFJFVklFV19SRVFVSVJFRDsgaXNBY3Rpb25hYmxlKCkg5LuF6Kem6ZiI5Li655yfIn0seyJwYXRoIjoiYm9uZS1hcHBzL2JvbmUtcHJvY3VyZW1lbnQvYm9uZS1wcm9jdXJlbWVudC1haS1nb3Zlcm5hbmNlL3NyYy9tYWluL2phdmEvY29tL2JvbmUvcHJvY3VyZW1lbnQvZ292ZXJuYW5jZS9kb21haW4vbW9kZWwvY2FwYWJpbGl0eS9EcmlmdFRocmVzaG9sZHMuamF2YSIsImtpbmQiOiJhZGRlZCIsImNvZGUiOiJyZWNvcmQob3ZlcnJpZGVSYXRlVGhyZXNob2xkLCBtaW5TYW1wbGVTaXplKTsgdW5jb25maWd1cmVkKCkg6ZiI5YC8PW51bGw7ICgwLDFdIOS4jiBtaW4+MCDmoKHpqowifV19LHsidGl0bGUiOiLlj6ror7vmjIfmoIfmn6Xor6LkuI4gb3duZXIg6YCa6L+H57q/5L+d5oqkIiwiYmVmb3JlIjoi5peg5a+55aSW5oyH5qCH6Z2i77yb5Yid54mI5pu+5oOz55So5a6i5oi356uvIHF1ZXJ5IOS8oOmYiOWAvO+8iOS8muiuqSByZWFkIOeUqOaIt+iHquiuviBvd25lciDpgJrov4fnur/vvInjgIIiLCJhZnRlciI6IkdFVCAvY2FwYWJpbGl0aWVzL3tjb2RlfS9kcmlmdCDov5Tlm57lj6ror7vmipXlvbHvvIhjb3VudC/njocv5Yik6K+NL+WOn+WboOegge+8jG1vZGVsSGVhbHRoQ2xhaW09Tk9ORe+8ie+8m+mYiOWAvOWPqueUseacjeWKoeerr+mFjee9ruWxnuaAp+aPkOS+m++8jOm7mOiupOacqumFjee9ruKGklVOREVURVJNSU5FROOAgiIsInJlYXNvbiI6IumYiOWAvOWxniBvd25lciDpgJrov4fnur/vvIhELTEwIOacqumXreWQiO+8ie+8jOS4jeW+l+eUseiiq+ayu+eQhuaWueiHquiuvu+8m+ivu+aTjeS9nOS4jeW+l+acieWJr+S9nOeUqOOAgiIsImZpbGVzIjpbeyJwYXRoIjoiYm9uZS1hcHBzL2JvbmUtcHJvY3VyZW1lbnQvYm9uZS1wcm9jdXJlbWVudC1haS1nb3Zlcm5hbmNlL3NyYy9tYWluL2phdmEvY29tL2JvbmUvcHJvY3VyZW1lbnQvZ292ZXJuYW5jZS9hZGFwdGVyL3dlYi9jb250cm9sbGVyL0FpR292ZXJuYW5jZUNvbnRyb2xsZXIuamF2YSIsImtpbmQiOiJtb2RpZmllZCIsImNvZGUiOiJwdWJsaWMgQXBpUmVzcG9uc2U8RHJpZnRNZXRyaWNzVmlldz4gZHJpZnQoQFBhdGhWYXJpYWJsZShcImNvZGVcIikgU3RyaW5nIGNvZGUpIHsgRHJpZnRUaHJlc2hvbGRzIHQgPSBwcm9wZXJ0aWVzLmdldERyaWZ0VGhyZXNob2xkKCk9PW51bGwgPyB1bmNvbmZpZ3VyZWQoKSA6IG5ldyBEcmlmdFRocmVzaG9sZHMoLi4uKTsgfSJ9LHsicGF0aCI6ImJvbmUtYXBwcy9ib25lLXByb2N1cmVtZW50L2JvbmUtcHJvY3VyZW1lbnQtYWktZ292ZXJuYW5jZS9zcmMvbWFpbi9qYXZhL2NvbS9ib25lL3Byb2N1cmVtZW50L2dvdmVybmFuY2UvYXBwbGljYXRpb24vQWlHb3Zlcm5hbmNlUHJvcGVydGllcy5qYXZhIiwia2luZCI6Im1vZGlmaWVkIiwiY29kZSI6InByaXZhdGUgRG91YmxlIGRyaWZ0VGhyZXNob2xkID0gbnVsbDsgcHJpdmF0ZSBpbnQgZHJpZnRNaW5TYW1wbGVTaXplID0gMjA7In0seyJwYXRoIjoiYm9uZS1hcHBzL2JvbmUtcHJvY3VyZW1lbnQvYm9uZS1wcm9jdXJlbWVudC1haS1nb3Zlcm5hbmNlL3NyYy9tYWluL2phdmEvY29tL2JvbmUvcHJvY3VyZW1lbnQvZ292ZXJuYW5jZS9hcHBsaWNhdGlvbi9BaUdvdmVybmFuY2VBcHBsaWNhdGlvblNlcnZpY2UuamF2YSIsImtpbmQiOiJtb2RpZmllZCIsImNvZGUiOiJwdWJsaWMgRHJpZnRTaWduYWwgZHJpZnRTaWduYWwoY29kZSwgdGhyZXNob2xkcyl7IOacqueZu+iusOaLkue7nTsgc2FtcGxlPXRyYWNlIOe7iOWGs+S6i+S7tuaVsDsgb3ZlcnJpZGU9bGVkZ2VyLmNvdW50T3ZlcnJpZGVzOyDnuq/orqHnrpfml6DlhpkgfSJ9XX1dLCJ2ZXJpZmljYXRpb24iOlt7ImxhYmVsIjoiQnVpbGRlciDoh6rmo4AiLCJzdGF0dXMiOiJwYXNzZWQiLCJkZXRhaWwiOiJhaS1nb3Zlcm5hbmNlIOaooeWdlyBtdm4gdGVzdCAxMDYg5L6LLzAg5aSx6LSl77yI5ZCrIEFyY2hpdGVjdHVyZVRlc3QgMTPvvInvvJvph4fotK3ogZrlkIggMTAg5qih5Z2X5YWoIFNVQ0NFU1PvvJvpoobln58gUkVE4oaSR1JFRU7jgIIifSx7ImxhYmVsIjoiUnVudGltZSDmo4Dmn6UiLCJzdGF0dXMiOiJwYXNzZWQiLCJkZXRhaWwiOiJidWlsZCBndWFyZCAtLWFwcGx5IOecn+WuniBtdm4gdGVzdCDmlLbmja4gQUxMIENIRUNLUyBQQVNTRUQg4oaSIHBoYXNlPXZlcmlmeeOAgiJ9LHsibGFiZWwiOiLpl6jnpoHpqozor4EiLCJzdGF0dXMiOiJwYXNzZWQiLCJkZXRhaWwiOiJhbGlnbm1lbnQgMTAvMTDjgIFldmFsc2V0IFBBU1Moc2VlZGVkRHJhZnQg5pyq5pS5KeOAgWZyb250bWF0dGVyIDMzIOS7veOAgXBlcnNpc3RlbmNlIDkg6KGo44CBZXZlbnQtY2hhaW4gNCDmjqLpkojlhajnu7/jgIIifSx7ImxhYmVsIjoi54us56uL6aqM5pS2Iiwic3RhdHVzIjoicGFzc2VkIiwiZGV0YWlsIjoic3RhbmRhcmQg54us56uL5a6h5p+l5Yid6K+EIDEgSU1QT1JUQU5UKOmYiOWAvOe7jyBIVFRQIOaatOmcsinvvIzlt7Lkv67lpI3kuLrmnI3liqHnq6/phY3nva7lsZ7mgKflubbooaXmtYvor5XvvJvlpI3lrqEgMCBDUklUSUNBTC8wIElNUE9SVEFOVOOAgiJ9XSwiZGlhZ3JhbXMiOlt7InR5cGUiOiJmbG93IiwidGl0bGUiOiLmvILnp7vkv6Hlj7fliKTor43ot6/lvoQiLCJub2RlcyI6W3siaWQiOiJxdWVyeSIsImxhYmVsIjoiR0VUIGRyaWZ0KGNvZGUpIn0seyJpZCI6ImNvbmZpZyIsImxhYmVsIjoi5pyN5Yqh56uv6YWN572u6ZiI5YC8KOm7mOiupOacqumFjee9rikifSx7ImlkIjoic2VydmljZSIsImxhYmVsIjoiZHJpZnRTaWduYWwg55yf5a6e6K6h5pWwIiwiZmlsZSI6ImJvbmUtYXBwcy9ib25lLXByb2N1cmVtZW50L2JvbmUtcHJvY3VyZW1lbnQtYWktZ292ZXJuYW5jZS9zcmMvbWFpbi9qYXZhL2NvbS9ib25lL3Byb2N1cmVtZW50L2dvdmVybmFuY2UvYXBwbGljYXRpb24vQWlHb3Zlcm5hbmNlQXBwbGljYXRpb25TZXJ2aWNlLmphdmEiLCJraW5kIjoibW9kaWZpZWQifSx7ImlkIjoicG9saWN5IiwibGFiZWwiOiLkuInmgIHoo4HlhrMiLCJmaWxlIjoiYm9uZS1hcHBzL2JvbmUtcHJvY3VyZW1lbnQvYm9uZS1wcm9jdXJlbWVudC1haS1nb3Zlcm5hbmNlL3NyYy9tYWluL2phdmEvY29tL2JvbmUvcHJvY3VyZW1lbnQvZ292ZXJuYW5jZS9kb21haW4vc2VydmljZS9EcmlmdFNpZ25hbFBvbGljeS5qYXZhIiwia2luZCI6ImFkZGVkIn0seyJpZCI6InZpZXciLCJsYWJlbCI6IuWPquivu+aKleW9sSBtb2RlbEhlYWx0aENsYWltPU5PTkUifV0sImVkZ2VzIjpbeyJmcm9tIjoicXVlcnkiLCJ0byI6ImNvbmZpZyJ9LHsiZnJvbSI6ImNvbmZpZyIsInRvIjoic2VydmljZSJ9LHsiZnJvbSI6InNlcnZpY2UiLCJ0byI6InBvbGljeSJ9LHsiZnJvbSI6InBvbGljeSIsInRvIjoidmlldyJ9XX1dfQ==</template></body></html>

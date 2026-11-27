@@ -50,6 +50,15 @@ public class ClaimStakeholderRecorder {
               // 未携带被保人假名化 ID（不应发生）：不写空锚点行，避免噪音台账。
               return;
             }
+            // 自动建案链路已按实名口径写入 INSURED 行（明文姓名/证件号，用户裁决）；
+            // 这里只补普通报案缺失的干系人，避免把实名行覆盖成空遮蔽字段。
+            java.util.List<ClaimStakeholder> existing =
+                stakeholderRepository.findByClaimId(event.tenantId(), event.claimId());
+            if (existing != null
+                && existing.stream()
+                    .anyMatch(s -> ClaimStakeholder.ROLE_INSURED.equals(s.getRole()))) {
+              return;
+            }
             // TODO(claim 干系人富化): 受理命令携报案人/申请人/领款人后，将下方「只落 INSURED」改为遍历事件中的
             //   stakeholder 列表按 role 逐条 create+save（ClaimStakeholder.create 入参已对齐，零新依赖）。
             stakeholderRepository.save(

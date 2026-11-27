@@ -7,8 +7,9 @@
  *
  * <p>为什么四组恰好是声明顺序上的**连续区段**：单导航探针要求「菜单顺序 = routes.tsx 声明
  * 顺序」。若按语义把某条菜单跨段搬动，视觉顺序就会和真源不一致。故边界按现有链路切分：
- * 作业 1–8 / 查询 9–10 / 配置 11–13 / 治理 14–17，分组只加标题、不重排任何一项。
- * （2026-11-22：AI 治理 / 运营分析看板由工作台深链提升为正式菜单，接入治理组末尾。）
+ * 作业 1–8 / 查询 9–10 / 配置 11–13 / 治理 14–18，分组只加标题、不重排任何一项。
+ * （2026-11-22：AI 治理 / 运营分析看板由工作台深链提升为正式菜单，接入治理组末尾；
+ *  2026-11-25：案件签收 order_no=20 接入治理组末尾。）
  *
  * <p>业界依据：NN/g 隐藏导航实验显示隐藏后使用率 48–50% → 27%、任务时间至少 +39%，
  * 因此这里只用 `type: 'group'` 常驻标题，不用折叠 SubMenu；SAP Fiori Spaces/Pages/Sections
@@ -26,7 +27,7 @@ export const CLAIM_NAV_GROUP_ORDER: readonly ClaimNavGroup[] = [
   ...CLAIM_NAV_GROUP_TITLES, UNGROUPED_TITLE,
 ];
 
-/** 17 条可见理赔菜单 hash → 四空间。新增菜单必须同批登记，否则落「未分组」而非消失。 */
+/** 18 条可见理赔菜单 hash → 四空间。新增菜单必须同批登记，否则落「未分组」而非消失。 */
 export const CLAIM_MENU_GROUP_BY_HASH: Readonly<Record<string, ClaimNavGroupTitle>> = {
   // 作业（1–8）：逐单流转的单案作业链路
   '/pre-exam': '作业',
@@ -44,11 +45,12 @@ export const CLAIM_MENU_GROUP_BY_HASH: Readonly<Record<string, ClaimNavGroupTitl
   '/policy': '配置',
   '/quota': '配置',
   '/library': '配置',
-  // 治理（14–17）：多保司主数据 + AI 治理 + 运营分析看板
+  // 治理（14–18）：多保司主数据 + AI 治理 + 运营分析看板 + 案件签收
   '/insurers': '治理',
   '/mappings': '治理',
   '/ai-governance': '治理',
   '/analytics': '治理',
+  '/sign': '治理',
 };
 
 /** SynapClaim 规范内嵌菜单页前缀（无 hash）。与 App.tsx / claim-app sclaimRoutes.ts 一致。 */

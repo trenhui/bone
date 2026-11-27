@@ -145,11 +145,33 @@ export function durationText(ms: NumericLike | null | undefined): string {
   return n < 1000 ? `${Math.round(n)} ms` : `${(n / 1000).toFixed(2)} s`;
 }
 
+/**
+ * 当前租户分组指标（只读、服务端强制隔离）。
+ *
+ * 租户身份由后端从认证主体（TenantPort）读取，端点不接受前端 tenantId；前端无法越权切换租户。
+ * 只含可按租户拆分的可复算指标；case 时长分位/复核率/推送无 tenant 维度，不在此结果内（勿臆造）。
+ */
+export interface TenantAnalyticsSummary {
+  tenantId: NumericLike;
+  windowFrom: string;
+  windowTo: string;
+  converged: NumericLike;
+  byDecisionResult: Record<string, NumericLike>;
+  fallbackCount: NumericLike;
+  shadowAutomationRate: number;
+  avgDurationMs: number;
+  scopeNote: string;
+}
+
 const client = createApiClient('/api/v1/claims');
 
 export const analyticsApi = {
   /** 只读聚合；时间窗由调用方用 analyticsWindow 生成，服务端再做 31 天上限校验。 */
   summary(from: string, to: string): Promise<ApiResponse<AnalyticsSummary>> {
     return client.get<never, ApiResponse<AnalyticsSummary>>('/analytics/summary', { params: { from, to } });
+  },
+  /** 当前租户只读视图；租户从认证主体取，前端不传 tenantId（防越权）。 */
+  byTenant(from: string, to: string): Promise<ApiResponse<TenantAnalyticsSummary>> {
+    return client.get<never, ApiResponse<TenantAnalyticsSummary>>('/analytics/by-tenant', { params: { from, to } });
   },
 };

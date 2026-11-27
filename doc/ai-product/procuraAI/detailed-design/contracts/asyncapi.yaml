@@ -191,7 +191,7 @@ channels:
     x-status: Frozen
     x-inbound: true
     x-domain-segment-deviation: true
-    x-note: "Frozen；`INBOUND` + L31；不消费 `output` 原文"
+    x-note: "Frozen；`INBOUND` + L31；不消费 `output` 原文；Outbox 发布 / Inbox 幂等消费 / DLQ 失败隔离"
 
   domain.procurement.risk_alert.v1:
     address: domain.procurement.risk_alert.v1

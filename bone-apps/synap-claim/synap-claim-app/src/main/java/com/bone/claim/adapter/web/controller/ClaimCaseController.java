@@ -1,8 +1,10 @@
 package com.bone.claim.adapter.web.controller;
 
+import com.bone.claim.adapter.web.ReviewTaskStatusMapper;
 import com.bone.claim.adapter.web.assembler.ClaimCaseAssembler;
 import com.bone.claim.adapter.web.dto.request.ClaimDecisionReq;
 import com.bone.claim.adapter.web.dto.request.ClaimPageReq;
+import com.bone.claim.adapter.web.dto.request.ClaimQueryReq;
 import com.bone.claim.adapter.web.dto.request.SubmitClaimReq;
 import com.bone.claim.adapter.web.dto.response.ClaimCaseResp;
 import com.bone.claim.application.AutoApprovalApplicationService;
@@ -138,6 +140,51 @@ public class ClaimCaseController {
     return ApiResponse.success(
         claimCaseApplicationService.page(
             statuses, qry.sourceChannel(), qry.pageOrDefault(), qry.sizeOrDefault()));
+  }
+
+  @Operation(
+      summary = "案件灵活查询",
+      description = "工作台/全局案件速查共用：跨键关键字、赔案号/报案号/保单号、状态/任务维、阶段、渠道、" + "处理人、挂起、受理时间区间、金额区间；服务端真分页。")
+  @PreAuthorize("hasAuthority('claim:claims:read')")
+  @GetMapping("/query")
+  public ApiResponse<PageResult<ClaimHeadProjection>> query(
+      @Valid @ModelAttribute ClaimQueryReq qry) {
+    List<ClaimStatus> statuses = qry.statuses();
+    if (qry.taskStatus() != null) {
+      statuses = ReviewTaskStatusMapper.toClaimStatuses(qry.taskStatus());
+    }
+    return ApiResponse.success(
+        claimCaseApplicationService.query(
+            new ClaimCaseApplicationService.ClaimQueryCommand(
+                parseOptionalId(qry.claimId()),
+                qry.keyword(),
+                qry.claimNo(),
+                qry.reportNo(),
+                qry.policyNo(),
+                statuses,
+                qry.stage(),
+                qry.sourceChannel(),
+                qry.sourceSystem(),
+                qry.assigneeId(),
+                qry.hangUpStatus(),
+                qry.fromDate(),
+                qry.toDate(),
+                qry.amountMin(),
+                qry.amountMax()),
+            qry.pageOrDefault(),
+            qry.sizeOrDefault()));
+  }
+
+  /** 案件 ID 非数字时不构造过滤条件（由关键字模糊检索兜底），不把非法值静默变成 0。 */
+  private static Long parseOptionalId(String raw) {
+    if (raw == null || !raw.trim().matches("\\d{1,19}")) {
+      return null;
+    }
+    try {
+      return Long.valueOf(raw.trim());
+    } catch (NumberFormatException e) {
+      return null;
+    }
   }
 
   @Operation(

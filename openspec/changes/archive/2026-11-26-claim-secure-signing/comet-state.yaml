@@ -1,0 +1,4489 @@
+# comet-execution: managed-run
+change_id: 4e4d4e9a-ee5f-461a-9a83-0a1e3db41e29
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: direct
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: standard
+isolation: worktree
+verify_mode: null
+auto_transition: true
+base_ref: 62e589b3c74ca83e237d3a3a3207f0f56e1a2b97
+design_doc: openspec/changes/archive/2026-11-26-claim-secure-signing/design.md
+plan: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+branch_status: pending
+created_at: 2026-11-25
+verified_at: 2026-11-26
+archive_confirmation: confirmed
+archived: true
+bound_branch: comet/claim-secure-signing
+direct_override: true
+handoff_context: openspec/changes/archive/2026-11-26-claim-secure-signing/.comet/handoff/design-context.json
+handoff_hash: 675917e4f5c800a66e5d1659c453d7d057bfd83d7f9a798a51d5d2e3096787e6
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: d2fd2330927b1f9b4a87febe1aeb332ed1be8043703864fec38c0145d4fb11d2
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: claim-secure-signing
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    definitionHashes:
+      '["comet-classic-full","1"]': 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    initialStateHash: f667d5051ac07b887ca3f506b3b2b8d082519c6923b0afea2471af754d1dd003
+    input:
+      change: claim-secure-signing
+      changeDir: openspec/changes/claim-secure-signing
+      workspaceBaseline:
+        ref: e1020201-4e42-488b-8355-fedb9a375fb1
+    state:
+      archiveConfirmation: confirmed
+      archived: true
+      autoTransition: true
+      baseRef: 62e589b3c74ca83e237d3a3a3207f0f56e1a2b97
+      boundBranch: comet/claim-secure-signing
+      branchStatus: pending
+      buildMode: direct
+      buildPause: null
+      checkEpoch: 10
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-25
+      designDoc: openspec/changes/archive/2026-11-26-claim-secure-signing/design.md
+      directOverride: true
+      handoffContext: openspec/changes/archive/2026-11-26-claim-secure-signing/.comet/handoff/design-context.json
+      handoffHash: 675917e4f5c800a66e5d1659c453d7d057bfd83d7f9a798a51d5d2e3096787e6
+      isolation: worktree
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+      verifiedAt: 2026-11-26
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 45
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-1d0d3b06905f01cb5e58d827da51e63b3aa2a9406e24ddd54d6993842e71972d
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:1
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: ab5e8791f1096c062fd54d76cb2425631dbff9998c028363c8e343eb065c4b7f
+        outcome:
+          actionId: claim-secure-signing:1
+          attempt: 1
+          claimToken: portable-1d0d3b06905f01cb5e58d827da51e63b3aa2a9406e24ddd54d6993842e71972d
+          inputHash: ab5e8791f1096c062fd54d76cb2425631dbff9998c028363c8e343eb065c4b7f
+          outcomeId: claim-secure-signing-open-20261125-02
+          output:
+            artifacts:
+              - proposal
+              - specs
+              - design
+              - tasks
+            change: claim-secure-signing
+            contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+            event: open-complete
+            userApproval: 已按用户拍板的四项决策（独立worktree、前后端全链路、线上双触发、正式菜单）生成产物
+          status: succeeded
+          summary: Open 阶段完成：proposal/specs(2)/design/tasks(16) 全部生成，openspec validate
+            --strict 通过，guard 预览 1/1 通过
+        protocolVersion: 1
+        receipts:
+          - hash: b198f455123749a9b818df566cb87afe5ad694a28d7a7ed39bd48dd9e7bf8136
+            outcomeId: claim-secure-signing-open-20261125-02
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-087635138cac878d944c143c61d8996ba61c9ad9f846fc21519f3c1a0bfd7480
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:4
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 666101310c21c7be6e287ac77095f720f699d16706e9af9505596b44876e1a4e
+        outcome:
+          actionId: claim-secure-signing:4
+          attempt: 1
+          claimToken: portable-087635138cac878d944c143c61d8996ba61c9ad9f846fc21519f3c1a0bfd7480
+          inputHash: 666101310c21c7be6e287ac77095f720f699d16706e9af9505596b44876e1a4e
+          outcomeId: claim-secure-signing-revalidate-20261125-01
+          output:
+            contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+          status: succeeded
+          summary: Open 产物重新校验通过：内容与批准哈希一致
+        protocolVersion: 1
+        receipts:
+          - hash: f298f485c45d5113d4f6effc74bded4196201b9a5c00d722197b3c0c0f030f64
+            outcomeId: claim-secure-signing-revalidate-20261125-01
+        reconciliations: []
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-c516a1dd6ca08e20797a7590934e0c07dd2445cbbcefcd8968153c60134271f3
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:5
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 268b01af43930bcd753509c08528b2941d0afe4077e61cb6d40207f807579d13
+        outcome:
+          actionId: claim-secure-signing:5
+          attempt: 2
+          claimToken: portable-c516a1dd6ca08e20797a7590934e0c07dd2445cbbcefcd8968153c60134271f3
+          inputHash: 268b01af43930bcd753509c08528b2941d0afe4077e61cb6d40207f807579d13
+          outcomeId: fed6b719-ab8a-4fb3-a3c2-dd29cbc36e90
+          output:
+            handoffContext: openspec/changes/claim-secure-signing/.comet/handoff/design-context.json
+            handoffHash: 675917e4f5c800a66e5d1659c453d7d057bfd83d7f9a798a51d5d2e3096787e6
+            proposal: 案件签收设计候选方案：独立批次聚合ClaimSignBatch+子集合SignBatchItem/SignTrackLog，四态状态机；线上自动签收统一用例signOnAcceptance（内部报案+外部回执共调用，businessKey幂等、signChannel留痕）；线下批次四步签收（建批→名单→影像→二次确认，CAS前置态+影像完备+意见≥10字+案件推进PRE_EXAM+轨迹）；并发用CAS条件更新+@Version兜底禁FOR
+              UPDATE；幂等键boundedStableKey≤64；前端React18+antd5常规页面CaseSignPage（线上/线下Tab+批次列表+新建+名单+影像+二次确认+轨迹），visible路由/sign+IAM菜单SQL+单导航E2E探针。取舍：批次聚合换完整审计；CAS免外部锁；报案新增签收副作用事务内不吞错；常规页面符合微应用范式。风险验证：并发单测、幂等键≤64、影像口径真实复核、菜单探针三处同步、双触发本地联调。Spec
+              Patch无。详见brainstorm-summary.md与design.md。
+            requirementsEvidence:
+              contentHash: 52e16422fcfa831b7f3498806e84374d6d602457d35ab356c6422b95fca9f7df
+              ref: openspec/changes/claim-secure-signing
+            sourceEvidence:
+              contentHash: 48b9bf985bfb727f04c58576dec6205c4394b28db66ccde4dc1f706138783834
+              ref: openspec/changes/claim-secure-signing
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: e916cbf365fade521c1393215ea601d632cee42d1cc0e2ddaea64568ec9b207f
+            outcomeId: fed6b719-ab8a-4fb3-a3c2-dd29cbc36e90
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: "首次 propose-design 命令在等待 edit-reviews/.approved-evidence.lock
+                时超时退出（stderr: Timed out waiting for file lock，exitCode 70），未生成任何
+                Design 提案；持锁进程 pid 55025 已死亡，陈旧锁已清理。第二次尝试因 claimed Action
+                unknown 被拒。原执行器已停止，设计工作可安全重做。"
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-253644f148b15d5c478c1c8cbf0e9ad84e73b6622c04c2389c18b073a3f9da99
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:7
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: e37fe9abf6d2b8c837ee482199e2da40d1ba1e3625ca652dbfd65c65e1ddb783
+        outcome:
+          actionId: claim-secure-signing:7
+          attempt: 1
+          claimToken: portable-253644f148b15d5c478c1c8cbf0e9ad84e73b6622c04c2389c18b073a3f9da99
+          inputHash: e37fe9abf6d2b8c837ee482199e2da40d1ba1e3625ca652dbfd65c65e1ddb783
+          outcomeId: dbfdc2b9-6eb1-466d-87e7-ec39fc9c0590
+          output:
+            designDoc: openspec/changes/claim-secure-signing/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f691708ab08470e60086689eef7b3527f0a481bbfffaa8b223139783a2e17512
+            outcomeId: dbfdc2b9-6eb1-466d-87e7-ec39fc9c0590
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-b4502c622b2d612b9b9b89cd055fc77f4e016f4c285ed4dedba7d023912158da
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:9
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: c94eca3f35a3b8c3c863bbf62f25e7af4d6c91d8e53d4df359993b9f6b12b882
+        outcome:
+          actionId: claim-secure-signing:9
+          attempt: 2
+          claimToken: portable-b4502c622b2d612b9b9b89cd055fc77f4e016f4c285ed4dedba7d023912158da
+          inputHash: c94eca3f35a3b8c3c863bbf62f25e7af4d6c91d8e53d4df359993b9f6b12b882
+          outcomeId: claim-secure-signing-build-config-20261125-01
+          output:
+            boundBranch: comet/claim-secure-signing
+            buildMode: direct
+            directOverride: true
+            isolation: worktree
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+          summary: 用户已确认 Build 配置：direct + tdd + standard，full direct_override=true
+        protocolVersion: 1
+        reason: propose-build 的 --confirmed 调用领取 Action 后因时序问题退出，未产生配置提案；直接提交配置结果
+        receipts:
+          - hash: 18743e232a3b142d79575a5ace14e6148ab50883759636737edb5b3538b9d2e6
+            outcomeId: claim-secure-signing-build-config-20261125-01
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 该 Action 由 Design transition 预创建，尚未执行任何配置提案工作；此前所有 propose-build 调用均被其
+                claimed 状态直接拒绝（Classic SDK has a claimed Action with an unknown
+                outcome），未产生配置提案或 Wait。用户已明确选择 direct+tdd+standard，现重做配置。
+            resolution: not-executed
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-1ec8f4663306005fdd82c40077d9ca8684d5ccb87756504d697858bc19360559
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:11
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: abab3e679ada82286efa867326f2f3edde649417344240d3d886925c4de5b544
+        outcome:
+          actionId: claim-secure-signing:11
+          attempt: 1
+          claimToken: portable-1ec8f4663306005fdd82c40077d9ca8684d5ccb87756504d697858bc19360559
+          inputHash: abab3e679ada82286efa867326f2f3edde649417344240d3d886925c4de5b544
+          outcomeId: 7c13d73d-9937-4d81-8522-1a7528daa407
+          output:
+            designEvidence:
+              contentHash: 8b25400388cf9a4135975914e662595979aaf8486084e7a630195dca98d4fc75
+              ref: openspec/changes/claim-secure-signing/design.md
+            plan: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+            planEvidence:
+              contentHash: 5f52af37428c57e5a10312050608c0e3e45cd603b4ed6b1abdef6c56358f48e5
+              ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+            taskRevision: d14d9cb3f4f29f5a9d504a5bb01ede76f5c5f31b48c1b9b189a42bbad57b8043
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: a6eb3e48d58833536ec31b9d8ef1b95500d8d445807bf3413d3adf63eb8b5b84
+            outcomeId: 7c13d73d-9937-4d81-8522-1a7528daa407
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/claim-secure-signing:13/1
+          token: portable-6f1a1fd808f17982d22613d5c87e2a98f463351d5fed04cd01dc61455c38e70b
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:13
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 9e45caf3fb4214928fd69ab2e80aa7ddf13a3a77ca8dd23f5d9393ea0dbe1984
+        outcome:
+          actionId: claim-secure-signing:13
+          attempt: 1
+          claimToken: portable-6f1a1fd808f17982d22613d5c87e2a98f463351d5fed04cd01dc61455c38e70b
+          inputHash: 9e45caf3fb4214928fd69ab2e80aa7ddf13a3a77ca8dd23f5d9393ea0dbe1984
+          outcomeId: claim-secure-signing-build-execute-20261126-02
+          output:
+            event: build-complete
+            summary: Build 实现完成：后端签收聚合/用例/控制器/迁移、前端页面与服务、菜单与权限守卫；后端 1711 测试、前端 284 测试、全量门禁
+              59/59、API 联调与单导航探针 143/143 全绿
+          status: succeeded
+          summary: Build 执行完成并提交完整验证证据
+        protocolVersion: 1
+        receipts:
+          - hash: a2555d90ac5a2b88f6d85398aa561320852f48dc6ab3258507182fe50e4c09d6
+            outcomeId: claim-secure-signing-build-execute-20261126-02
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-881b2b0580cf18234c9b4f5fcf07eca6acfad3aa1fc85932029dea7520ffe602
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:14
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: e13ba6bfcd96e860c4d456ba610f4a77ed4129b40665767c10fcc40fa31dc80c
+        outcome:
+          actionId: claim-secure-signing:14
+          attempt: 1
+          claimToken: portable-881b2b0580cf18234c9b4f5fcf07eca6acfad3aa1fc85932029dea7520ffe602
+          inputHash: e13ba6bfcd96e860c4d456ba610f4a77ed4129b40665767c10fcc40fa31dc80c
+          outcomeId: ded019bd-8851-4a51-aa0d-0db2483dbfd2
+          output:
+            argv:
+              - ./scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 4c79d15c9fc1ed71440407cf12bd1b9dc9378918da61ae5af2550af766007ad7
+            cwd: .
+            environment: 4f9d0bd0b8f81fce59a5c52dfdc286c23dc550513f1948025ef38c16a4946ced
+            exitCode: 0
+            inputAfter: ab6a20516d411558b90059f11ddaaf05ba5da39b7a6eab28700dd2fb9b2644bb
+            inputBefore: ab6a20516d411558b90059f11ddaaf05ba5da39b7a6eab28700dd2fb9b2644bb
+            manifestHash: 9917ac91199500a8ec3064bda83e6c045c45125bbdfa9673dcdcc35b902f925d
+            manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/4a6909d9-f3c9-460e-9c84-53240e509c0f.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/f95b78b9-4b6a-489d-a884-7c79aed01b2a.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: a92ad1b6dd17c941c76f45ff547a7fad48b3b1384011e70636cb39604020443f
+            outcomeId: ded019bd-8851-4a51-aa0d-0db2483dbfd2
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-2353b18bb9036ecc678378e5a55d307cc11734da6fb9bd3da990ec72d5ca4866
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:16
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 14973c970a841fac817633d8492b34eb7526679769ff25b11b3c2aac5d5924cf
+        outcome:
+          actionId: claim-secure-signing:16
+          attempt: 1
+          claimToken: portable-2353b18bb9036ecc678378e5a55d307cc11734da6fb9bd3da990ec72d5ca4866
+          inputHash: 14973c970a841fac817633d8492b34eb7526679769ff25b11b3c2aac5d5924cf
+          outcomeId: fdd2a0c0-d439-45ef-80cd-89510125c6c5
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3ca50d9b39db74f89bb01fb10e21375947d5e6d19be8c7b9869436650e0ff2e7
+            outcomeId: fdd2a0c0-d439-45ef-80cd-89510125c6c5
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-f3a586540cbf6da588cb442cf6046f7134a3dc01cfcdf61aa256c08bccac1231
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:18
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 2f1abbc4f556717d05cb51e252d7c577d672eaf93571c024449e0be0b54d7019
+        outcome:
+          actionId: claim-secure-signing:18
+          attempt: 1
+          claimToken: portable-f3a586540cbf6da588cb442cf6046f7134a3dc01cfcdf61aa256c08bccac1231
+          inputHash: 2f1abbc4f556717d05cb51e252d7c577d672eaf93571c024449e0be0b54d7019
+          outcomeId: 0a18cae5-8182-4eb3-9421-2f6b41f2098e
+          output:
+            argv:
+              - bash
+              - docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.sh
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: 634953f16b9c3ccdbb0628aff47975bc106fb494df514c027f54af3041e85212
+            cwd: .
+            deliveryInputs:
+              .comet-build-config.json: git:28b190e2676bd519d601270fb6d50687e14ba4ac
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/assembler/ClaimSignAssembler.java: git:0fc081eb88f6da7ebd5169f66f8d1814dc242d32
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java: git:6e895f180a6d3b3a277be1541e93a9c09c28e969
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/ClaimSignPageReq.java: git:43bcd2eb69620403731bf542f0e23b2b2241fc7c
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/ClaimSignRequests.java: git:31dc0ae2609c0d01de3875d15a291bddf319ef4f
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/SignBatchResp.java: git:11cd50358b64ada515530da785d608a8cc2a7fc6
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/SignTrackResp.java: git:673f74b3595226d96e6af8ed5f206828aeeb149f
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimCaseApplicationService.java: git:f67b443a5bce0f40ca15e82b17856d45e7b56bcd
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimSignApplicationService.java: git:4a721e8103ce249b956b8c14d5a4b31407c1f226
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrorCodes.java: git:5e6e98947c06831205b64160648d2200a1071398
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrors.java: git:3c4bafd7d0ca126c2d53bc74fefaeeae8d69b4ae
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/ClaimSignBatch.java: git:410b1a2b890bc83b021e275ac18e1c8292b65493
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/SignBatchItem.java: git:7f9c1a5aa70be70d0581c0260825bf04d17e25a4
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/SignTrackLog.java: git:35ad0261fcb39b47c97041bf754709d862396cc9
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/event/SignStatusChangedEvent.java: git:a7bf4450581f4e4dd9a2f61e607c69f4c2773a35
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignChannel.java: git:4ab6aa0624554f3417f73c74f3d52a2d42142fc7
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignSource.java: git:7b93d96bcd298351d88d23d8fb96840a136e5bbe
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignStatus.java: git:3a500fafcf9d3700c58c45befd4ad54eed84b935
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignType.java: git:c52ed9c1be2efa5d1fd4942a59d92d21078d5c6e
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimSignBatchRepository.java: git:103eaa5316dca0bb579f541de90990c6866bfa45
+              bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/confirmWithCas.sql: git:e0d28dd3af87854fb4870009764296b4885bb53e
+              bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/findTracksByBatchId.sql: git:9db11ebc146b109ba1ca4883bb6733732f9a207d
+              bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/saveTrack.sql: git:703a78bd57bf2b9a18b4e3bc422efc69706434f8
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimCaseApplicationServiceTest.java: git:87c3cbef6104208a0c54d8abee160695a36ad67d
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimSignApplicationServiceTest.java: git:2456f571700e4de0d567c59d62a31a1789889ded
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/common/PageBoundsClampTest.java: git:264427879bdfb3c97e2da840da7510414bc27bbf
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/sign/ClaimSignBatchTest.java: git:e89bd954ba6d234f01548e31fcf68ccc4c983ece
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/scenario/ScenarioHarness.java: git:d3f2d7942a8710b3daa9ece26235ed7fc43c84fe
+              bone-frontend/apps/bone-claim-app/src/App.tsx: git:26fbfd9c30defc7af0679ec7b4dbfaac3aa77de9
+              bone-frontend/apps/bone-claim-app/src/pages/CaseSignPage.test.tsx: git:d3fe9bf45b083da8ad463c2f6e25c6cb88f51441
+              bone-frontend/apps/bone-claim-app/src/pages/CaseSignPage.tsx: git:a91899f95ffdf76bc18e8589e92d788f4f068318
+              bone-frontend/apps/bone-claim-app/src/routes.tsx: git:ed774f6202187afcc6bba067e487716136d6c62d
+              bone-frontend/apps/bone-claim-app/src/services/claim.ts: git:9d574449362d73e7c16106c8d03e1c45af02b04a
+              bone-frontend/apps/bone-claim-app/src/services/claimSign.test.ts: git:5f636d5b0da3c890f38d55b5dd967f8d791e874a
+              bone-frontend/apps/bone-claim-app/src/services/claimSign.ts: git:0e9c729823909d9d948f0b196f7daf700df48eca
+              bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:405012bc423d3666ccbb44b995b89cae05de8525
+              bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:41b5a99d912e7f2936e0ff26b91a85fa9bbf698d
+              bone-frontend/packages/shared-utils/src/i18n/locales/en-US.json: git:74e56bdd650c5450960b0967bd271840f314fd50
+              bone-frontend/packages/shared-utils/src/i18n/locales/zh-CN.json: git:b247a81f70e12c931ea1cbb9add08d22e46f5050
+              bone-init.sql: git:2bad3b092c1a959af7b85782b7cf39f54cdf11aa
+              doc/architecture/Bone-错误码登记.md: git:a6169c6dbd67ba03a87d1bada6f95782051bba5d
+              doc/architecture/数据库开发规范.md: git:ac84c1791c1599a2ee930e45d2bc27dbfe1f126e
+              scripts/migration/0142_claim_secure_signing.sql: git:2902aa57af35ba1ef5d243f2339f5280fc48fe49
+              scripts/migration/0143_seed_claim_sign_menu.sql: git:5650a1cf951f2701bf98dce724d5f2118f94f04a
+              scripts/migration/0144_fix_claim_sign_tenant_id.sql: git:39137c0214fd5a6a723c6fbe11e533afa414ffd9
+              scripts/migration/migration-manifest.json: git:f31ee1f3b97e091d289dd7530778c9db909671da
+              scripts/seed/bootstrap/10_bootstrap_seed.sql: git:319c2771627c5f1832e3e5a31239c07ad71acd6e
+              scripts/seed/bootstrap/seed-manifest.json: git:99c567a792137dc04a9f40353ce8ced5ef207f0f
+              scripts/synapclaim-domain-context-map.json: git:28fefe1978c671b6135531eae3308ce76e2d98b7
+            environment: 11d66dd321ffc151dde0240bfa44ad7f59fc9672d008b933f1257c4788192d4e
+            exitCode: 1
+            inputAfter: 8d6e221e62d1d4792aeb2f0aabe3e29657c99ba6f729a46fa6e3273523615336
+            inputBefore: 8d6e221e62d1d4792aeb2f0aabe3e29657c99ba6f729a46fa6e3273523615336
+            manifestHash: c677b815a28d8353243e5f4548cb18fe176f8eff6373ac549a97d801353266d6
+            manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/6f018300-2503-47aa-952e-2c7423a7f657.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/a65a44ec-1d73-4e4c-8856-08fe3d17363a.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: failed
+        protocolVersion: 1
+        receipts:
+          - hash: 4e53d4405e02787fffe7aa51ce94bc5657ec8e650ecf4c10b9ef6834c16cfa1e
+            outcomeId: 0a18cae5-8182-4eb3-9421-2f6b41f2098e
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: failed
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-f2c6d1156a677c7d3ef448935debfa1c5b595e9e46b6fa605cbe1929404101e9
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:19
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 9625026207f72098bffbd2ffb15dd467436a58e8df8f3e860633e680e4effc10
+        outcome:
+          actionId: claim-secure-signing:19
+          attempt: 1
+          claimToken: portable-f2c6d1156a677c7d3ef448935debfa1c5b595e9e46b6fa605cbe1929404101e9
+          inputHash: 9625026207f72098bffbd2ffb15dd467436a58e8df8f3e860633e680e4effc10
+          outcomeId: claim-secure-signing-build-plan-recovery-20261126-01
+          output:
+            designEvidence:
+              contentHash: 8b25400388cf9a4135975914e662595979aaf8486084e7a630195dca98d4fc75
+              ref: openspec/changes/claim-secure-signing/design.md
+            plan: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+            planEvidence:
+              contentHash: 5f52af37428c57e5a10312050608c0e3e45cd603b4ed6b1abdef6c56358f48e5
+              ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+            taskRevision: d14d9cb3f4f29f5a9d504a5bb01ede76f5c5f31b48c1b9b189a42bbad57b8043
+          status: succeeded
+          summary: Verify 报告修正后重建 Build 计划交接；计划与 16 项任务不变
+        protocolVersion: 1
+        receipts:
+          - hash: 40e4855c0dfce40ca3def3d6e964bbc04570813cb6ca8b116d50ab710db473a1
+            outcomeId: claim-secure-signing-build-plan-recovery-20261126-01
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-f08fc987d11db01c735f5b7bf62cd12894fd3a90c54fcc192b1be25b673322c3
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:21
+        input:
+          activation:
+            expectedRevision: 39
+            fromPhase: build
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 2676e7d83117c4e7ea5225ff217fc25763856c1090de7ccbd22c0dcc0f2ef628
+        outcome:
+          actionId: claim-secure-signing:21
+          attempt: 1
+          claimToken: portable-f08fc987d11db01c735f5b7bf62cd12894fd3a90c54fcc192b1be25b673322c3
+          inputHash: 2676e7d83117c4e7ea5225ff217fc25763856c1090de7ccbd22c0dcc0f2ef628
+          outcomeId: claim-secure-signing-plan-resubmit-20261126-01
+          output:
+            designEvidence:
+              contentHash: 8b25400388cf9a4135975914e662595979aaf8486084e7a630195dca98d4fc75
+              ref: openspec/changes/claim-secure-signing/design.md
+            plan: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+            planEvidence:
+              contentHash: cd7aaddc8a315cf249f941e256d3a263cdd32105177533f48eb6c86091137eeb
+              ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+            taskRevision: d14d9cb3f4f29f5a9d504a5bb01ede76f5c5f31b48c1b9b189a42bbad57b8043
+          status: succeeded
+          summary: 修订后重新提交 Build 计划：任务映射使用真实 UUID，16/16 任务已完成
+        protocolVersion: 1
+        receipts:
+          - hash: a4e0bf923bb600ab23898174d4ffab00083f9a61e3a6bcf61a9a35f6981bf4ac
+            outcomeId: claim-secure-signing-plan-resubmit-20261126-01
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-e73172c35422c4525724b9b253f51fc877ded4eacdd8d0872a2c36f1083597b7
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:23
+        input:
+          activation:
+            expectedRevision: 42
+            fromPhase: build
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: c1957a71e5c0c911222e73a539e476a15db1e910884c0ba84a9134173cf77a3d
+        outcome:
+          actionId: claim-secure-signing:23
+          attempt: 1
+          claimToken: portable-e73172c35422c4525724b9b253f51fc877ded4eacdd8d0872a2c36f1083597b7
+          inputHash: c1957a71e5c0c911222e73a539e476a15db1e910884c0ba84a9134173cf77a3d
+          outcomeId: claim-secure-signing-plan-final-20261126-01
+          output:
+            designEvidence:
+              contentHash: 8b25400388cf9a4135975914e662595979aaf8486084e7a630195dca98d4fc75
+              ref: openspec/changes/claim-secure-signing/design.md
+            plan: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+            planEvidence:
+              contentHash: cd7aaddc8a315cf249f941e256d3a263cdd32105177533f48eb6c86091137eeb
+              ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+            taskRevision: 1657bb7db05d8f81c6af0945e6438ca46c6d26861cbc658f597adea3433c724f
+          status: succeeded
+          summary: 按 16/16 已勾选任务的当前内容重新提交 Build 计划
+        protocolVersion: 1
+        receipts:
+          - hash: 1987470663024c1d47fe5b6940f1cc24b8cdaf10b8ac685121e4f12339e1988b
+            outcomeId: claim-secure-signing-plan-final-20261126-01
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-0fa8d55433de736567682e2b16b533f5363059f91ca76fe148210cae46ba2611
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:25
+        input:
+          activation:
+            expectedRevision: 45
+            fromPhase: build
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 4049bb69504de35b2611a9bc72adf639fdc2c1c48dcc114cf8bcc351b00b7121
+        outcome:
+          actionId: claim-secure-signing:25
+          attempt: 1
+          claimToken: portable-0fa8d55433de736567682e2b16b533f5363059f91ca76fe148210cae46ba2611
+          inputHash: 4049bb69504de35b2611a9bc72adf639fdc2c1c48dcc114cf8bcc351b00b7121
+          outcomeId: claim-secure-signing-plan-correct-20261126-01
+          output:
+            designEvidence:
+              contentHash: 8b25400388cf9a4135975914e662595979aaf8486084e7a630195dca98d4fc75
+              ref: openspec/changes/claim-secure-signing/design.md
+            plan: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+            planEvidence:
+              contentHash: 5f52af37428c57e5a10312050608c0e3e45cd603b4ed6b1abdef6c56358f48e5
+              ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+            taskRevision: d14d9cb3f4f29f5a9d504a5bb01ede76f5c5f31b48c1b9b189a42bbad57b8043
+          status: succeeded
+          summary: 按 Comet 复合证据摘要重新登记计划与 16 项已完成任务
+        protocolVersion: 1
+        receipts:
+          - hash: f4931b3ea5f0fdc286d8d501ecdd4dadf06767eaff07dc30c3a7354e7aed9f2c
+            outcomeId: claim-secure-signing-plan-correct-20261126-01
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-8f908bb0147d2e7a50165f94a5ffeeafd3f79d979205d710f4b1d0f8329730a4
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:27
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: d6435db3fcd440860c8c59bceef177dedba1f7ab40767379494300eed5e56afe
+        outcome:
+          actionId: claim-secure-signing:27
+          attempt: 1
+          claimToken: portable-8f908bb0147d2e7a50165f94a5ffeeafd3f79d979205d710f4b1d0f8329730a4
+          inputHash: d6435db3fcd440860c8c59bceef177dedba1f7ab40767379494300eed5e56afe
+          outcomeId: claim-secure-signing-build-exec-final-20261126-01
+          output:
+            event: build-complete
+            summary: Build 实现完成：16/16 任务已完成；后端 1711 测试、前端 284 测试、全量门禁 59/59、API 联调与单导航探针
+              143/143 全绿
+          status: succeeded
+          summary: 恢复后重新提交 Build 完成结果
+        protocolVersion: 1
+        receipts:
+          - hash: 39df54431dc0be380fb7c92b6d813ca92e088a425cdc78c6c1bdc64fec3561bf
+            outcomeId: claim-secure-signing-build-exec-final-20261126-01
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-e7e1341ca10088f32676e47a1d18735186fbea130fefacb9c1c1e7b947e7056b
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:28
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 921818c96e5e80cd037cb1fd0f1a6efff4d2803c5504fe80ed9a1193d43327db
+        outcome:
+          actionId: claim-secure-signing:28
+          attempt: 1
+          claimToken: portable-e7e1341ca10088f32676e47a1d18735186fbea130fefacb9c1c1e7b947e7056b
+          inputHash: 921818c96e5e80cd037cb1fd0f1a6efff4d2803c5504fe80ed9a1193d43327db
+          outcomeId: claim-secure-signing-build-check-final-20261126-01
+          output:
+            argv:
+              - ./scripts/check.sh
+            changedDuringExecution: []
+            checkEpoch: 4
+            contentHash: 624ebfe93188cbaae44c9f758c5ba0742a3c537d168c16c38ac410b7cf9ceed2
+            cwd: .
+            environment: 4f9d0bd0b8f81fce59a5c52dfdc286c23dc550513f1948025ef38c16a4946ced
+            exitCode: 0
+            inputAfter: d15fc0c1d6ada52f02c0094d0f9090e05cfa41b3962daec94047021bb0ad73ee
+            inputBefore: d15fc0c1d6ada52f02c0094d0f9090e05cfa41b3962daec94047021bb0ad73ee
+            manifestHash: e1618a8991ae9c79b21f9808a7a4b1f54448de64c5515119134c559baa3c395e
+            manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/47ee9ed5-a8a8-41a2-99d1-141f12adf130.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/7ccbdaec-35ca-466f-b18e-3d49b19adf0b.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+          summary: 全量门禁 59/59 通过；检查收据已由 SDK 写入，锁清理失败仅影响 CLI 退出码
+        protocolVersion: 1
+        receipts:
+          - hash: 1a814c478804f492193c755a17d9f75717033c25b7f9d88815c51a23c9810cbb
+            outcomeId: claim-secure-signing-build-check-final-20261126-01
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-4307eac1e0d1c24b4ed5c756ee235526b73a2645a389d0ed08f6ebc06e2fc605
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:30
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 77dd58bf2ceb09f0cac446fe6048e252b48942f05df16bc7c7f7110454a34b08
+        outcome:
+          actionId: claim-secure-signing:30
+          attempt: 1
+          claimToken: portable-4307eac1e0d1c24b4ed5c756ee235526b73a2645a389d0ed08f6ebc06e2fc605
+          inputHash: 77dd58bf2ceb09f0cac446fe6048e252b48942f05df16bc7c7f7110454a34b08
+          outcomeId: claim-secure-signing-verify-run-final-20261126-01
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+          status: succeeded
+          summary: 验证报告已修正并通过关键证据自检，准备 Verify 检查
+        protocolVersion: 1
+        receipts:
+          - hash: fcc66b2be1c8a45fcfe800f6aa5207cfed931b7c7a292a69792ff5edc96cea9f
+            outcomeId: claim-secure-signing-verify-run-final-20261126-01
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-7c040bcc1db7df1f59b9379fa4e73c2cd9a0e007a97cb4d3ee446c030bca51a9
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:32
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 69d9992f141b9923d35fab7847a718f059cf1736259f2b60d28ed6fbf0b69a5c
+        outcome:
+          actionId: claim-secure-signing:32
+          attempt: 1
+          claimToken: portable-7c040bcc1db7df1f59b9379fa4e73c2cd9a0e007a97cb4d3ee446c030bca51a9
+          inputHash: 69d9992f141b9923d35fab7847a718f059cf1736259f2b60d28ed6fbf0b69a5c
+          outcomeId: adcd8f21-83d3-4dfd-9f74-ce1a66a92a77
+          output:
+            argv:
+              - bash
+              - docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.sh
+            changedDuringExecution: []
+            checkEpoch: 5
+            contentHash: 170d900af3727548c25405b4e10b30ff6d558944118a642f9fd0e279c98257c9
+            cwd: .
+            deliveryInputs:
+              .comet-build-config.json: git:28b190e2676bd519d601270fb6d50687e14ba4ac
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/assembler/ClaimSignAssembler.java: git:0fc081eb88f6da7ebd5169f66f8d1814dc242d32
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java: git:6e895f180a6d3b3a277be1541e93a9c09c28e969
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/ClaimSignPageReq.java: git:43bcd2eb69620403731bf542f0e23b2b2241fc7c
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/ClaimSignRequests.java: git:31dc0ae2609c0d01de3875d15a291bddf319ef4f
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/SignBatchResp.java: git:11cd50358b64ada515530da785d608a8cc2a7fc6
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/SignTrackResp.java: git:673f74b3595226d96e6af8ed5f206828aeeb149f
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimCaseApplicationService.java: git:f67b443a5bce0f40ca15e82b17856d45e7b56bcd
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimSignApplicationService.java: git:4a721e8103ce249b956b8c14d5a4b31407c1f226
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrorCodes.java: git:5e6e98947c06831205b64160648d2200a1071398
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrors.java: git:3c4bafd7d0ca126c2d53bc74fefaeeae8d69b4ae
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/ClaimSignBatch.java: git:410b1a2b890bc83b021e275ac18e1c8292b65493
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/SignBatchItem.java: git:7f9c1a5aa70be70d0581c0260825bf04d17e25a4
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/SignTrackLog.java: git:35ad0261fcb39b47c97041bf754709d862396cc9
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/event/SignStatusChangedEvent.java: git:a7bf4450581f4e4dd9a2f61e607c69f4c2773a35
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignChannel.java: git:4ab6aa0624554f3417f73c74f3d52a2d42142fc7
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignSource.java: git:7b93d96bcd298351d88d23d8fb96840a136e5bbe
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignStatus.java: git:3a500fafcf9d3700c58c45befd4ad54eed84b935
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignType.java: git:c52ed9c1be2efa5d1fd4942a59d92d21078d5c6e
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimSignBatchRepository.java: git:103eaa5316dca0bb579f541de90990c6866bfa45
+              bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/confirmWithCas.sql: git:e0d28dd3af87854fb4870009764296b4885bb53e
+              bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/findTracksByBatchId.sql: git:9db11ebc146b109ba1ca4883bb6733732f9a207d
+              bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/saveTrack.sql: git:703a78bd57bf2b9a18b4e3bc422efc69706434f8
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimCaseApplicationServiceTest.java: git:87c3cbef6104208a0c54d8abee160695a36ad67d
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimSignApplicationServiceTest.java: git:2456f571700e4de0d567c59d62a31a1789889ded
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/common/PageBoundsClampTest.java: git:264427879bdfb3c97e2da840da7510414bc27bbf
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/sign/ClaimSignBatchTest.java: git:e89bd954ba6d234f01548e31fcf68ccc4c983ece
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/scenario/ScenarioHarness.java: git:d3f2d7942a8710b3daa9ece26235ed7fc43c84fe
+              bone-frontend/apps/bone-claim-app/src/App.tsx: git:26fbfd9c30defc7af0679ec7b4dbfaac3aa77de9
+              bone-frontend/apps/bone-claim-app/src/pages/CaseSignPage.test.tsx: git:d3fe9bf45b083da8ad463c2f6e25c6cb88f51441
+              bone-frontend/apps/bone-claim-app/src/pages/CaseSignPage.tsx: git:a91899f95ffdf76bc18e8589e92d788f4f068318
+              bone-frontend/apps/bone-claim-app/src/routes.tsx: git:ed774f6202187afcc6bba067e487716136d6c62d
+              bone-frontend/apps/bone-claim-app/src/services/claim.ts: git:9d574449362d73e7c16106c8d03e1c45af02b04a
+              bone-frontend/apps/bone-claim-app/src/services/claimSign.test.ts: git:5f636d5b0da3c890f38d55b5dd967f8d791e874a
+              bone-frontend/apps/bone-claim-app/src/services/claimSign.ts: git:0e9c729823909d9d948f0b196f7daf700df48eca
+              bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:405012bc423d3666ccbb44b995b89cae05de8525
+              bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:41b5a99d912e7f2936e0ff26b91a85fa9bbf698d
+              bone-frontend/packages/shared-utils/src/i18n/locales/en-US.json: git:74e56bdd650c5450960b0967bd271840f314fd50
+              bone-frontend/packages/shared-utils/src/i18n/locales/zh-CN.json: git:b247a81f70e12c931ea1cbb9add08d22e46f5050
+              bone-init.sql: git:2bad3b092c1a959af7b85782b7cf39f54cdf11aa
+              doc/architecture/Bone-错误码登记.md: git:a6169c6dbd67ba03a87d1bada6f95782051bba5d
+              doc/architecture/数据库开发规范.md: git:ac84c1791c1599a2ee930e45d2bc27dbfe1f126e
+              scripts/migration/0142_claim_secure_signing.sql: git:2902aa57af35ba1ef5d243f2339f5280fc48fe49
+              scripts/migration/0143_seed_claim_sign_menu.sql: git:5650a1cf951f2701bf98dce724d5f2118f94f04a
+              scripts/migration/0144_fix_claim_sign_tenant_id.sql: git:39137c0214fd5a6a723c6fbe11e533afa414ffd9
+              scripts/migration/migration-manifest.json: git:f31ee1f3b97e091d289dd7530778c9db909671da
+              scripts/seed/bootstrap/10_bootstrap_seed.sql: git:319c2771627c5f1832e3e5a31239c07ad71acd6e
+              scripts/seed/bootstrap/seed-manifest.json: git:99c567a792137dc04a9f40353ce8ced5ef207f0f
+              scripts/synapclaim-domain-context-map.json: git:28fefe1978c671b6135531eae3308ce76e2d98b7
+            environment: 11d66dd321ffc151dde0240bfa44ad7f59fc9672d008b933f1257c4788192d4e
+            exitCode: 0
+            inputAfter: 8d6e221e62d1d4792aeb2f0aabe3e29657c99ba6f729a46fa6e3273523615336
+            inputBefore: 8d6e221e62d1d4792aeb2f0aabe3e29657c99ba6f729a46fa6e3273523615336
+            manifestHash: c677b815a28d8353243e5f4548cb18fe176f8eff6373ac549a97d801353266d6
+            manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/e6858de6-3b6e-41dc-b4bd-5e24c29aaa33.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/93dae65c-bb85-456a-bfc7-9c108a1a8ebe.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 9c6f95a71490bceefaa908bc6534679181564df9e2e5e01acf1251460bb1656f
+            outcomeId: adcd8f21-83d3-4dfd-9f74-ce1a66a92a77
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-98d7e260d36e2c90325f7c5eccc43853f43bcd5001e58ea203621191d146d42d
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:34
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 3678f3ace5c17af1b472cdad595a69b3921a978d721f6f3dc19ab7b9b65443a4
+        outcome:
+          actionId: claim-secure-signing:34
+          attempt: 1
+          claimToken: portable-98d7e260d36e2c90325f7c5eccc43853f43bcd5001e58ea203621191d146d42d
+          inputHash: 3678f3ace5c17af1b472cdad595a69b3921a978d721f6f3dc19ab7b9b65443a4
+          outcomeId: claim-secure-signing-archive-proposal-20261126-01
+          output:
+            remote: origin
+            summary: 案件签收：线上自动签收（内部报案+外部推送）与线下批次四态签收全链路落地；后端1711测试、前端284测试、全量门禁59/59、API联调与单导航探针143/143全绿
+            targetBranch: comet/claim-secure-signing
+          status: succeeded
+          summary: 归档提案：提交 worktree 分支并推送 origin（Gitee+GitHub 双远程）
+        protocolVersion: 1
+        receipts:
+          - hash: 38869ea913d62f4037cdff187a08412769b98f1d5a56714c6f8cd0665608cff7
+            outcomeId: claim-secure-signing-archive-proposal-20261126-01
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        id: claim-secure-signing:36
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: ef0828e0d1e908ce9854adf8981f9274a1981e61700693e77328f60359740f56
+        protocolVersion: 1
+        reason: 命令 reopen-verification 已取代待执行 Action
+        receipts: []
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: cancelled
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-d707c889ff2e34d5a9966e0738843fdadd8c10e18bb3c0421cf5c622204ed8e8
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:37
+        input:
+          activation:
+            expectedRevision: 63
+            fromPhase: archive
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 392de0645368d68428014d19f8c12e8a0b687813e4404aeb9de54e28f5711a7c
+        outcome:
+          actionId: claim-secure-signing:37
+          attempt: 1
+          claimToken: portable-d707c889ff2e34d5a9966e0738843fdadd8c10e18bb3c0421cf5c622204ed8e8
+          inputHash: 392de0645368d68428014d19f8c12e8a0b687813e4404aeb9de54e28f5711a7c
+          outcomeId: claim-secure-signing-verify-run-reopen-20261126-01
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+          status: succeeded
+          summary: 重开验证后复用未变更的验证报告，聚焦验证脚本重跑通过（VERIFY_SCRIPT_ALL_OK）
+        protocolVersion: 1
+        receipts:
+          - hash: a8e6b977809895873ac2a01690f250723f45fc5b8870e8527a5960655814a021
+            outcomeId: claim-secure-signing-verify-run-reopen-20261126-01
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-6042e4b6f45e3cb06c0ed683e27bb2de50da78ea3b6bb5a83c595a1d924631b8
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:39
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: d390174d9a78614aa75b236d8e1a739fced00cd06fac4588132867b520c8ce9c
+        outcome:
+          actionId: claim-secure-signing:39
+          attempt: 1
+          claimToken: portable-6042e4b6f45e3cb06c0ed683e27bb2de50da78ea3b6bb5a83c595a1d924631b8
+          inputHash: d390174d9a78614aa75b236d8e1a739fced00cd06fac4588132867b520c8ce9c
+          outcomeId: 121a31aa-9b24-4ec7-b06f-f306934617ee
+          output:
+            argv:
+              - bash
+              - docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.sh
+            changedDuringExecution: []
+            checkEpoch: 7
+            contentHash: e9120063217afed6d82a3d919d834b723c57d785bf617369f361c09044772bb7
+            cwd: .
+            deliveryInputs: {}
+            environment: 11d66dd321ffc151dde0240bfa44ad7f59fc9672d008b933f1257c4788192d4e
+            exitCode: 0
+            inputAfter: e7b7493a5736be056f0775c7073b4d101f6826372c30d4da2cdc80627c1bca49
+            inputBefore: e7b7493a5736be056f0775c7073b4d101f6826372c30d4da2cdc80627c1bca49
+            manifestHash: 29a32bbdea90d65c99239e6ba55025c9567f4b23aac89243476f3acc85330042
+            manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/47a5b48d-c3fd-424b-9284-72889f4bbf41.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/84f426b8-658c-4720-8287-c9254fae32fa.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 0ad38b2dfd0719054c9f6e03b41854f86a0f5fedffd20022c93937117492e907
+            outcomeId: 121a31aa-9b24-4ec7-b06f-f306934617ee
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-555c4aee1acb6aa73fec5660144eaa84c3e02779f1941cf5cfe6ba0cfb9555d1
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:41
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 69d915ade191abdd23a65db490446f785e267ff70e39c0ea81adf965a49d88c6
+        outcome:
+          actionId: claim-secure-signing:41
+          attempt: 1
+          claimToken: portable-555c4aee1acb6aa73fec5660144eaa84c3e02779f1941cf5cfe6ba0cfb9555d1
+          inputHash: 69d915ade191abdd23a65db490446f785e267ff70e39c0ea81adf965a49d88c6
+          outcomeId: claim-secure-signing-archive-proposal-reopen-20261126-01
+          output:
+            remote: origin
+            summary: 案件签收：线上自动签收（内部报案+外部推送）与线下批次四态签收全链路落地；后端1711测试、前端284测试、全量门禁59/59、API联调与单导航探针143/143全绿
+            targetBranch: comet/claim-secure-signing
+          status: succeeded
+          summary: 归档提案：提交 worktree 分支并推送 origin（Gitee+GitHub 双远程）
+        protocolVersion: 1
+        receipts:
+          - hash: cdae939d54c9755caeb1837974f056ad6a13672efb78a0b9de476eaa02438c96
+            outcomeId: claim-secure-signing-archive-proposal-reopen-20261126-01
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-53beb82eeddcfbea71fd50d43a5d80100ece0ff7644365a1a0242e108cc10314
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:43
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 0a5b25ca1757e220139934ff7ace2306a776352b25be2fa7aba6280a3a8b322b
+        outcome:
+          actionId: claim-secure-signing:43
+          attempt: 1
+          claimToken: portable-53beb82eeddcfbea71fd50d43a5d80100ece0ff7644365a1a0242e108cc10314
+          inputHash: 0a5b25ca1757e220139934ff7ace2306a776352b25be2fa7aba6280a3a8b322b
+          outcomeId: claim-secure-signing-archive-preflight-20261126-01
+          output:
+            baseCommit: b0cf0753a0a21e7d2f074bb831b055de3cf8909e
+            deliveryAction: push
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: comet/claim-secure-signing
+            verifiedBranch: comet/claim-secure-signing
+          status: succeeded
+          summary: 归档预检通过：目标分支、Verify 证据、远端 origin 身份与交付方式 push 均校验一致
+        protocolVersion: 1
+        receipts:
+          - hash: e6b02de7b39e2fe9a53939edd596db4f59a5cb097eb94b3346c6f3b4d9fe4a4f
+            outcomeId: claim-secure-signing-archive-preflight-20261126-01
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-2168b8c4f4f3ad92dbeca478824f7c1aa884d3a160f366b327dc7135dffdfc96
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-secure-signing:44
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 626fa6ca8b6eef3ea39ba2d3a5d11b44c623845f93fd209490e63fc9a90cb650
+        outcome:
+          actionId: claim-secure-signing:44
+          artifacts:
+            - sha256: 8a5b88d256a19616da1767dcd1327a0f71eb3b314cd7520c242f353c03133762
+              uri: openspec/changes/archive/2026-11-26-claim-secure-signing/.comet/archive-manifest.json
+          attempt: 1
+          claimToken: portable-2168b8c4f4f3ad92dbeca478824f7c1aa884d3a160f366b327dc7135dffdfc96
+          inputHash: 626fa6ca8b6eef3ea39ba2d3a5d11b44c623845f93fd209490e63fc9a90cb650
+          outcomeId: 6a653867-2b19-4dce-80aa-e57f96a22d15
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-26-claim-secure-signing
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: b6f2d31514d099eaee6a383dee8daf036554b177952ff9cf363d347061d36047
+            outcomeId: 6a653867-2b19-4dce-80aa-e57f96a22d15
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: succeeded
+        stepId: full.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: claim-secure-signing:45
+        input:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs: {}
+        inputHash: 5e44874752be5faa12055ad3fc39f624a4607fcd49867247e7ed57d614318bad
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-secure-signing
+        status: pending
+        stepId: full.archive.deliver
+        type: invoke_skill
+    commands:
+      - id: f8c8be3739bc8c66727d7f51c334ab0eb75abff5d3fcd44437ec91f5fa67fa6e
+        name: revise-plan
+        inputHash: b049e3af5bf14c4d2da809a8723c0080c8ea17ddce5ed60153ca77c71f9ed5c9
+        actionId: claim-secure-signing:21
+      - id: 08d45a48e80851b2fcc37f8fcbc93a0c9aeaec4869a42c8d35d6b2ae65604af4
+        name: revise-plan
+        inputHash: fb4f6498212f16b480776a9e292f20e8d79c72dab4195b8dbc302cadc48195cc
+        actionId: claim-secure-signing:23
+      - id: 2c2c1e40f2b06de3837ddfb299a8b15bf7dbfd954a58f0a9e7b2ff788fd07e97
+        name: revise-plan
+        inputHash: dde924fc4bea2f97a80841a7a59c422d5c59d4667c3907be7d0f40b0b81d8791
+        actionId: claim-secure-signing:25
+      - id: 4afbd0354424d4a2af7d6e998451cb6ed62bba3f7bf29234b8b5348c60ade9e9
+        name: reopen-verification
+        inputHash: a9a48a0517af981187f3dccc10d484f064badf3b872adc3b3c3ee3066b5159ab
+        actionId: claim-secure-signing:37
+    actionContexts:
+      claim-secure-signing:1:
+        results: {}
+        sequence: 1
+      claim-secure-signing:11:
+        results: {}
+        sequence: 11
+      claim-secure-signing:13:
+        results: {}
+        sequence: 13
+      claim-secure-signing:14:
+        results: {}
+        sequence: 14
+      claim-secure-signing:16:
+        results: {}
+        sequence: 16
+      claim-secure-signing:18:
+        results: {}
+        sequence: 18
+      claim-secure-signing:19:
+        results: {}
+        sequence: 19
+      claim-secure-signing:21:
+        results: {}
+        sequence: 21
+      claim-secure-signing:23:
+        results: {}
+        sequence: 23
+      claim-secure-signing:25:
+        results: {}
+        sequence: 25
+      claim-secure-signing:27:
+        results: {}
+        sequence: 27
+      claim-secure-signing:28:
+        results: {}
+        sequence: 28
+      claim-secure-signing:30:
+        results: {}
+        sequence: 30
+      claim-secure-signing:32:
+        results: {}
+        sequence: 32
+      claim-secure-signing:34:
+        results: {}
+        sequence: 34
+      claim-secure-signing:36:
+        results: {}
+        sequence: 36
+      claim-secure-signing:37:
+        results: {}
+        sequence: 37
+      claim-secure-signing:39:
+        results: {}
+        sequence: 39
+      claim-secure-signing:4:
+        results: {}
+        sequence: 4
+      claim-secure-signing:41:
+        results: {}
+        sequence: 41
+      claim-secure-signing:43:
+        results: {}
+        sequence: 43
+      claim-secure-signing:44:
+        results: {}
+        sequence: 44
+      claim-secure-signing:45:
+        results: {}
+        sequence: 45
+      claim-secure-signing:5:
+        results: {}
+        sequence: 5
+      claim-secure-signing:7:
+        results: {}
+        sequence: 7
+      claim-secure-signing:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: claim-secure-signing:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs:
+            full.open:
+              artifacts:
+                - proposal
+                - specs
+                - design
+                - tasks
+              change: claim-secure-signing
+              contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+              event: open-complete
+              userApproval: 已按用户拍板的四项决策（独立worktree、前后端全链路、线上双触发、正式菜单）生成产物
+            full.open.evidence:
+              contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+              ref: openspec/changes/claim-secure-signing
+        proposalHash: 1505c891e9d0b8b5ab5c54f3edbd47e356245c2c255f9a53497d5fc69e1d971a
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+          choice: approved
+          proposalHash: 1505c891e9d0b8b5ab5c54f3edbd47e356245c2c255f9a53497d5fc69e1d971a
+      - id: claim-secure-signing:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-secure-signing/.comet/handoff/design-context.json
+              handoffHash: 675917e4f5c800a66e5d1659c453d7d057bfd83d7f9a798a51d5d2e3096787e6
+              proposal: 案件签收设计候选方案：独立批次聚合ClaimSignBatch+子集合SignBatchItem/SignTrackLog，四态状态机；线上自动签收统一用例signOnAcceptance（内部报案+外部回执共调用，businessKey幂等、signChannel留痕）；线下批次四步签收（建批→名单→影像→二次确认，CAS前置态+影像完备+意见≥10字+案件推进PRE_EXAM+轨迹）；并发用CAS条件更新+@Version兜底禁FOR
+                UPDATE；幂等键boundedStableKey≤64；前端React18+antd5常规页面CaseSignPage（线上/线下Tab+批次列表+新建+名单+影像+二次确认+轨迹），visible路由/sign+IAM菜单SQL+单导航E2E探针。取舍：批次聚合换完整审计；CAS免外部锁；报案新增签收副作用事务内不吞错；常规页面符合微应用范式。风险验证：并发单测、幂等键≤64、影像口径真实复核、菜单探针三处同步、双触发本地联调。Spec
+                Patch无。详见brainstorm-summary.md与design.md。
+              requirementsEvidence:
+                contentHash: 52e16422fcfa831b7f3498806e84374d6d602457d35ab356c6422b95fca9f7df
+                ref: openspec/changes/claim-secure-signing
+              sourceEvidence:
+                contentHash: 48b9bf985bfb727f04c58576dec6205c4394b28db66ccde4dc1f706138783834
+                ref: openspec/changes/claim-secure-signing
+        proposalHash: c8e413b7fab5e9f3c2434c9eee85143117e2b4f680bfef5568e30e73e9891284
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-c8e413b7fab5e9f3c2434c9eee85143117e2b4f680bfef5568e30e73e9891284-approved
+          choice: approved
+          proposalHash: c8e413b7fab5e9f3c2434c9eee85143117e2b4f680bfef5568e30e73e9891284
+      - id: claim-secure-signing:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs:
+            full.build.configure:
+              boundBranch: comet/claim-secure-signing
+              buildMode: direct
+              directOverride: true
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: af4018bff62df0baa047ad7c59244c8a1646f69559174c06788e6ea0ed79f015
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-build-af4018bff62df0baa047ad7c59244c8a1646f69559174c06788e6ea0ed79f015-approved
+          choice: approved
+          proposalHash: af4018bff62df0baa047ad7c59244c8a1646f69559174c06788e6ea0ed79f015
+      - id: claim-secure-signing:35
+        stepId: full.archive.confirm
+        sequence: 35
+        status: resolved
+        proposal:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: 案件签收：线上自动签收（内部报案+外部推送）与线下批次四态签收全链路落地；后端1711测试、前端284测试、全量门禁59/59、API联调与单导航探针143/143全绿
+              targetBranch: comet/claim-secure-signing
+        proposalHash: 744c97b4fcccc51109c126a8fcc2ddfb09727d7c613fd4c6324a2e512f2ad0a7
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-744c97b4fcccc51109c126a8fcc2ddfb09727d7c613fd4c6324a2e512f2ad0a7-push
+          choice: push
+          proposalHash: 744c97b4fcccc51109c126a8fcc2ddfb09727d7c613fd4c6324a2e512f2ad0a7
+      - id: claim-secure-signing:42
+        stepId: full.archive.confirm
+        sequence: 42
+        status: resolved
+        proposal:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: 案件签收：线上自动签收（内部报案+外部推送）与线下批次四态签收全链路落地；后端1711测试、前端284测试、全量门禁59/59、API联调与单导航探针143/143全绿
+              targetBranch: comet/claim-secure-signing
+        proposalHash: 744c97b4fcccc51109c126a8fcc2ddfb09727d7c613fd4c6324a2e512f2ad0a7
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-744c97b4fcccc51109c126a8fcc2ddfb09727d7c613fd4c6324a2e512f2ad0a7-push
+          choice: push
+          proposalHash: 744c97b4fcccc51109c126a8fcc2ddfb09727d7c613fd4c6324a2e512f2ad0a7
+    evidenceWaits:
+      - id: claim-secure-signing:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/claim-secure-signing
+          contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+          submissionId: 34748e41-076d-44b5-a9ac-9320364c5d95
+      - id: claim-secure-signing:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/claim-secure-signing/design.md
+          contentHash: 8b25400388cf9a4135975914e662595979aaf8486084e7a630195dca98d4fc75
+          submissionId: f99f5e89-6196-4273-bcab-a9ab003160ca
+      - id: claim-secure-signing:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+          contentHash: 5f52af37428c57e5a10312050608c0e3e45cd603b4ed6b1abdef6c56358f48e5
+          submissionId: b023f772-af11-4e9c-aa67-3bdafc4d92f8
+      - id: claim-secure-signing:15
+        stepId: full.build.check.evidence
+        sequence: 15
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/f95b78b9-4b6a-489d-a884-7c79aed01b2a.log
+          contentHash: 4c79d15c9fc1ed71440407cf12bd1b9dc9378918da61ae5af2550af766007ad7
+          submissionId: 24d21006-2f4a-4506-b1b6-43d21f1cac5f
+      - id: claim-secure-signing:17
+        stepId: full.verify.report.evidence
+        sequence: 17
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+          contentHash: faf5fb1e7c6ffffa298ec141d963764d57785f00fc1757c19ca2768f57d74875
+          submissionId: claim-secure-signing-verify-20261126-01
+      - id: claim-secure-signing:20
+        stepId: full.build.plan.evidence
+        sequence: 20
+        kind: classic-build-plan
+        status: cancelled
+        results: {}
+      - id: claim-secure-signing:22
+        stepId: full.build.plan.evidence
+        sequence: 22
+        kind: classic-build-plan
+        status: cancelled
+        results: {}
+      - id: claim-secure-signing:24
+        stepId: full.build.plan.evidence
+        sequence: 24
+        kind: classic-build-plan
+        status: cancelled
+        results: {}
+      - id: claim-secure-signing:26
+        stepId: full.build.plan.evidence
+        sequence: 26
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+          contentHash: 5f52af37428c57e5a10312050608c0e3e45cd603b4ed6b1abdef6c56358f48e5
+          submissionId: claim-secure-signing-plan-correct-20261126-01
+      - id: claim-secure-signing:29
+        stepId: full.build.check.evidence
+        sequence: 29
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/7ccbdaec-35ca-466f-b18e-3d49b19adf0b.log
+          contentHash: 624ebfe93188cbaae44c9f758c5ba0742a3c537d168c16c38ac410b7cf9ceed2
+          submissionId: claim-secure-signing-build-check-final-20261126-01
+      - id: claim-secure-signing:31
+        stepId: full.verify.report.evidence
+        sequence: 31
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+          contentHash: 8b57bf65940f816cd47d6f94ddd688626ae076413dc80f7fd3282001a26f3737
+          submissionId: claim-secure-signing-verify-final-20261126-01
+      - id: claim-secure-signing:33
+        stepId: full.verify.check.evidence
+        sequence: 33
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/93dae65c-bb85-456a-bfc7-9c108a1a8ebe.log
+          contentHash: 170d900af3727548c25405b4e10b30ff6d558944118a642f9fd0e279c98257c9
+          submissionId: 86b5d5fa-bda3-41f3-b34e-5e6961acd42e
+      - id: claim-secure-signing:38
+        stepId: full.verify.report.evidence
+        sequence: 38
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+          contentHash: 8b57bf65940f816cd47d6f94ddd688626ae076413dc80f7fd3282001a26f3737
+          submissionId: claim-secure-signing-verify-report-reopen-20261126-01
+      - id: claim-secure-signing:40
+        stepId: full.verify.check.evidence
+        sequence: 40
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/84f426b8-658c-4720-8287-c9254fae32fa.log
+          contentHash: e9120063217afed6d82a3d919d834b723c57d785bf617369f361c09044772bb7
+          submissionId: 6203b3ea-1378-467c-bfeb-ce5f09d54f50
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 77
+  sourceHash: f9ea12b0ea6655870150d433e21dd0827aa48de3f978fa1ed871a99ebaa3cbeb
+  pool:
+    version: 3
+    values:
+      - artifacts:
+          - proposal
+          - specs
+          - design
+          - tasks
+        change: claim-secure-signing
+        contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+        event: open-complete
+        userApproval: 已按用户拍板的四项决策（独立worktree、前后端全链路、线上双触发、正式菜单）生成产物
+      - choice: approved
+        proposal:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs:
+            full.open:
+              artifacts:
+                - proposal
+                - specs
+                - design
+                - tasks
+              change: claim-secure-signing
+              contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+              event: open-complete
+              userApproval: 已按用户拍板的四项决策（独立worktree、前后端全链路、线上双触发、正式菜单）生成产物
+            full.open.evidence:
+              contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+              ref: openspec/changes/claim-secure-signing
+      - contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+        ref: openspec/changes/claim-secure-signing
+      - contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+      - choice: approved
+        proposal:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-secure-signing/.comet/handoff/design-context.json
+              handoffHash: 675917e4f5c800a66e5d1659c453d7d057bfd83d7f9a798a51d5d2e3096787e6
+              proposal: 案件签收设计候选方案：独立批次聚合ClaimSignBatch+子集合SignBatchItem/SignTrackLog，四态状态机；线上自动签收统一用例signOnAcceptance（内部报案+外部回执共调用，businessKey幂等、signChannel留痕）；线下批次四步签收（建批→名单→影像→二次确认，CAS前置态+影像完备+意见≥10字+案件推进PRE_EXAM+轨迹）；并发用CAS条件更新+@Version兜底禁FOR
+                UPDATE；幂等键boundedStableKey≤64；前端React18+antd5常规页面CaseSignPage（线上/线下Tab+批次列表+新建+名单+影像+二次确认+轨迹），visible路由/sign+IAM菜单SQL+单导航E2E探针。取舍：批次聚合换完整审计；CAS免外部锁；报案新增签收副作用事务内不吞错；常规页面符合微应用范式。风险验证：并发单测、幂等键≤64、影像口径真实复核、菜单探针三处同步、双触发本地联调。Spec
+                Patch无。详见brainstorm-summary.md与design.md。
+              requirementsEvidence:
+                contentHash: 52e16422fcfa831b7f3498806e84374d6d602457d35ab356c6422b95fca9f7df
+                ref: openspec/changes/claim-secure-signing
+              sourceEvidence:
+                contentHash: 48b9bf985bfb727f04c58576dec6205c4394b28db66ccde4dc1f706138783834
+                ref: openspec/changes/claim-secure-signing
+      - handoffContext: openspec/changes/claim-secure-signing/.comet/handoff/design-context.json
+        handoffHash: 675917e4f5c800a66e5d1659c453d7d057bfd83d7f9a798a51d5d2e3096787e6
+        proposal: 案件签收设计候选方案：独立批次聚合ClaimSignBatch+子集合SignBatchItem/SignTrackLog，四态状态机；线上自动签收统一用例signOnAcceptance（内部报案+外部回执共调用，businessKey幂等、signChannel留痕）；线下批次四步签收（建批→名单→影像→二次确认，CAS前置态+影像完备+意见≥10字+案件推进PRE_EXAM+轨迹）；并发用CAS条件更新+@Version兜底禁FOR
+          UPDATE；幂等键boundedStableKey≤64；前端React18+antd5常规页面CaseSignPage（线上/线下Tab+批次列表+新建+名单+影像+二次确认+轨迹），visible路由/sign+IAM菜单SQL+单导航E2E探针。取舍：批次聚合换完整审计；CAS免外部锁；报案新增签收副作用事务内不吞错；常规页面符合微应用范式。风险验证：并发单测、幂等键≤64、影像口径真实复核、菜单探针三处同步、双触发本地联调。Spec
+          Patch无。详见brainstorm-summary.md与design.md。
+        requirementsEvidence:
+          contentHash: 52e16422fcfa831b7f3498806e84374d6d602457d35ab356c6422b95fca9f7df
+          ref: openspec/changes/claim-secure-signing
+        sourceEvidence:
+          contentHash: 48b9bf985bfb727f04c58576dec6205c4394b28db66ccde4dc1f706138783834
+          ref: openspec/changes/claim-secure-signing
+      - designDoc: openspec/changes/claim-secure-signing/design.md
+      - contentHash: 8b25400388cf9a4135975914e662595979aaf8486084e7a630195dca98d4fc75
+        ref: openspec/changes/claim-secure-signing/design.md
+      - boundBranch: comet/claim-secure-signing
+        buildMode: direct
+        directOverride: true
+        isolation: worktree
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs:
+            full.build.configure:
+              boundBranch: comet/claim-secure-signing
+              buildMode: direct
+              directOverride: true
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 8b25400388cf9a4135975914e662595979aaf8486084e7a630195dca98d4fc75
+          ref: openspec/changes/claim-secure-signing/design.md
+        plan: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+        planEvidence:
+          contentHash: 5f52af37428c57e5a10312050608c0e3e45cd603b4ed6b1abdef6c56358f48e5
+          ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+        taskRevision: d14d9cb3f4f29f5a9d504a5bb01ede76f5c5f31b48c1b9b189a42bbad57b8043
+      - contentHash: 5f52af37428c57e5a10312050608c0e3e45cd603b4ed6b1abdef6c56358f48e5
+        ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+      - event: build-complete
+        summary: Build 实现完成：后端签收聚合/用例/控制器/迁移、前端页面与服务、菜单与权限守卫；后端 1711 测试、前端 284 测试、全量门禁
+          59/59、API 联调与单导航探针 143/143 全绿
+      - argv:
+          - ./scripts/check.sh
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 4c79d15c9fc1ed71440407cf12bd1b9dc9378918da61ae5af2550af766007ad7
+        cwd: .
+        environment: 4f9d0bd0b8f81fce59a5c52dfdc286c23dc550513f1948025ef38c16a4946ced
+        exitCode: 0
+        inputAfter: ab6a20516d411558b90059f11ddaaf05ba5da39b7a6eab28700dd2fb9b2644bb
+        inputBefore: ab6a20516d411558b90059f11ddaaf05ba5da39b7a6eab28700dd2fb9b2644bb
+        manifestHash: 9917ac91199500a8ec3064bda83e6c045c45125bbdfa9673dcdcc35b902f925d
+        manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/4a6909d9-f3c9-460e-9c84-53240e509c0f.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/f95b78b9-4b6a-489d-a884-7c79aed01b2a.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 4c79d15c9fc1ed71440407cf12bd1b9dc9378918da61ae5af2550af766007ad7
+        ref: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/f95b78b9-4b6a-489d-a884-7c79aed01b2a.log
+      - contentHash: faf5fb1e7c6ffffa298ec141d963764d57785f00fc1757c19ca2768f57d74875
+        ref: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+      - argv:
+          - bash
+          - docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.sh
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: 634953f16b9c3ccdbb0628aff47975bc106fb494df514c027f54af3041e85212
+        cwd: .
+        deliveryInputs:
+          .comet-build-config.json: git:28b190e2676bd519d601270fb6d50687e14ba4ac
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/assembler/ClaimSignAssembler.java: git:0fc081eb88f6da7ebd5169f66f8d1814dc242d32
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java: git:6e895f180a6d3b3a277be1541e93a9c09c28e969
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/ClaimSignPageReq.java: git:43bcd2eb69620403731bf542f0e23b2b2241fc7c
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/ClaimSignRequests.java: git:31dc0ae2609c0d01de3875d15a291bddf319ef4f
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/SignBatchResp.java: git:11cd50358b64ada515530da785d608a8cc2a7fc6
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/SignTrackResp.java: git:673f74b3595226d96e6af8ed5f206828aeeb149f
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimCaseApplicationService.java: git:f67b443a5bce0f40ca15e82b17856d45e7b56bcd
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimSignApplicationService.java: git:4a721e8103ce249b956b8c14d5a4b31407c1f226
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrorCodes.java: git:5e6e98947c06831205b64160648d2200a1071398
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrors.java: git:3c4bafd7d0ca126c2d53bc74fefaeeae8d69b4ae
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/ClaimSignBatch.java: git:410b1a2b890bc83b021e275ac18e1c8292b65493
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/SignBatchItem.java: git:7f9c1a5aa70be70d0581c0260825bf04d17e25a4
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/SignTrackLog.java: git:35ad0261fcb39b47c97041bf754709d862396cc9
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/event/SignStatusChangedEvent.java: git:a7bf4450581f4e4dd9a2f61e607c69f4c2773a35
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignChannel.java: git:4ab6aa0624554f3417f73c74f3d52a2d42142fc7
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignSource.java: git:7b93d96bcd298351d88d23d8fb96840a136e5bbe
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignStatus.java: git:3a500fafcf9d3700c58c45befd4ad54eed84b935
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignType.java: git:c52ed9c1be2efa5d1fd4942a59d92d21078d5c6e
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimSignBatchRepository.java: git:103eaa5316dca0bb579f541de90990c6866bfa45
+          bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/confirmWithCas.sql: git:e0d28dd3af87854fb4870009764296b4885bb53e
+          bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/findTracksByBatchId.sql: git:9db11ebc146b109ba1ca4883bb6733732f9a207d
+          bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/saveTrack.sql: git:703a78bd57bf2b9a18b4e3bc422efc69706434f8
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimCaseApplicationServiceTest.java: git:87c3cbef6104208a0c54d8abee160695a36ad67d
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimSignApplicationServiceTest.java: git:2456f571700e4de0d567c59d62a31a1789889ded
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/common/PageBoundsClampTest.java: git:264427879bdfb3c97e2da840da7510414bc27bbf
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/sign/ClaimSignBatchTest.java: git:e89bd954ba6d234f01548e31fcf68ccc4c983ece
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/scenario/ScenarioHarness.java: git:d3f2d7942a8710b3daa9ece26235ed7fc43c84fe
+          bone-frontend/apps/bone-claim-app/src/App.tsx: git:26fbfd9c30defc7af0679ec7b4dbfaac3aa77de9
+          bone-frontend/apps/bone-claim-app/src/pages/CaseSignPage.test.tsx: git:d3fe9bf45b083da8ad463c2f6e25c6cb88f51441
+          bone-frontend/apps/bone-claim-app/src/pages/CaseSignPage.tsx: git:a91899f95ffdf76bc18e8589e92d788f4f068318
+          bone-frontend/apps/bone-claim-app/src/routes.tsx: git:ed774f6202187afcc6bba067e487716136d6c62d
+          bone-frontend/apps/bone-claim-app/src/services/claim.ts: git:9d574449362d73e7c16106c8d03e1c45af02b04a
+          bone-frontend/apps/bone-claim-app/src/services/claimSign.test.ts: git:5f636d5b0da3c890f38d55b5dd967f8d791e874a
+          bone-frontend/apps/bone-claim-app/src/services/claimSign.ts: git:0e9c729823909d9d948f0b196f7daf700df48eca
+          bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:405012bc423d3666ccbb44b995b89cae05de8525
+          bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:41b5a99d912e7f2936e0ff26b91a85fa9bbf698d
+          bone-frontend/packages/shared-utils/src/i18n/locales/en-US.json: git:74e56bdd650c5450960b0967bd271840f314fd50
+          bone-frontend/packages/shared-utils/src/i18n/locales/zh-CN.json: git:b247a81f70e12c931ea1cbb9add08d22e46f5050
+          bone-init.sql: git:2bad3b092c1a959af7b85782b7cf39f54cdf11aa
+          doc/architecture/Bone-错误码登记.md: git:a6169c6dbd67ba03a87d1bada6f95782051bba5d
+          doc/architecture/数据库开发规范.md: git:ac84c1791c1599a2ee930e45d2bc27dbfe1f126e
+          scripts/migration/0142_claim_secure_signing.sql: git:2902aa57af35ba1ef5d243f2339f5280fc48fe49
+          scripts/migration/0143_seed_claim_sign_menu.sql: git:5650a1cf951f2701bf98dce724d5f2118f94f04a
+          scripts/migration/0144_fix_claim_sign_tenant_id.sql: git:39137c0214fd5a6a723c6fbe11e533afa414ffd9
+          scripts/migration/migration-manifest.json: git:f31ee1f3b97e091d289dd7530778c9db909671da
+          scripts/seed/bootstrap/10_bootstrap_seed.sql: git:319c2771627c5f1832e3e5a31239c07ad71acd6e
+          scripts/seed/bootstrap/seed-manifest.json: git:99c567a792137dc04a9f40353ce8ced5ef207f0f
+          scripts/synapclaim-domain-context-map.json: git:28fefe1978c671b6135531eae3308ce76e2d98b7
+        environment: 11d66dd321ffc151dde0240bfa44ad7f59fc9672d008b933f1257c4788192d4e
+        exitCode: 1
+        inputAfter: 8d6e221e62d1d4792aeb2f0aabe3e29657c99ba6f729a46fa6e3273523615336
+        inputBefore: 8d6e221e62d1d4792aeb2f0aabe3e29657c99ba6f729a46fa6e3273523615336
+        manifestHash: c677b815a28d8353243e5f4548cb18fe176f8eff6373ac549a97d801353266d6
+        manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/6f018300-2503-47aa-952e-2c7423a7f657.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/a65a44ec-1d73-4e4c-8856-08fe3d17363a.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - event: build-complete
+        summary: Build 实现完成：16/16 任务已完成；后端 1711 测试、前端 284 测试、全量门禁 59/59、API 联调与单导航探针
+          143/143 全绿
+      - argv:
+          - ./scripts/check.sh
+        changedDuringExecution: []
+        checkEpoch: 4
+        contentHash: 624ebfe93188cbaae44c9f758c5ba0742a3c537d168c16c38ac410b7cf9ceed2
+        cwd: .
+        environment: 4f9d0bd0b8f81fce59a5c52dfdc286c23dc550513f1948025ef38c16a4946ced
+        exitCode: 0
+        inputAfter: d15fc0c1d6ada52f02c0094d0f9090e05cfa41b3962daec94047021bb0ad73ee
+        inputBefore: d15fc0c1d6ada52f02c0094d0f9090e05cfa41b3962daec94047021bb0ad73ee
+        manifestHash: e1618a8991ae9c79b21f9808a7a4b1f54448de64c5515119134c559baa3c395e
+        manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/47ee9ed5-a8a8-41a2-99d1-141f12adf130.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/7ccbdaec-35ca-466f-b18e-3d49b19adf0b.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 624ebfe93188cbaae44c9f758c5ba0742a3c537d168c16c38ac410b7cf9ceed2
+        ref: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/7ccbdaec-35ca-466f-b18e-3d49b19adf0b.log
+      - contentHash: 8b57bf65940f816cd47d6f94ddd688626ae076413dc80f7fd3282001a26f3737
+        ref: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+      - argv:
+          - bash
+          - docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.sh
+        changedDuringExecution: []
+        checkEpoch: 5
+        contentHash: 170d900af3727548c25405b4e10b30ff6d558944118a642f9fd0e279c98257c9
+        cwd: .
+        deliveryInputs:
+          .comet-build-config.json: git:28b190e2676bd519d601270fb6d50687e14ba4ac
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/assembler/ClaimSignAssembler.java: git:0fc081eb88f6da7ebd5169f66f8d1814dc242d32
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java: git:6e895f180a6d3b3a277be1541e93a9c09c28e969
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/ClaimSignPageReq.java: git:43bcd2eb69620403731bf542f0e23b2b2241fc7c
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/ClaimSignRequests.java: git:31dc0ae2609c0d01de3875d15a291bddf319ef4f
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/SignBatchResp.java: git:11cd50358b64ada515530da785d608a8cc2a7fc6
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/SignTrackResp.java: git:673f74b3595226d96e6af8ed5f206828aeeb149f
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimCaseApplicationService.java: git:f67b443a5bce0f40ca15e82b17856d45e7b56bcd
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimSignApplicationService.java: git:4a721e8103ce249b956b8c14d5a4b31407c1f226
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrorCodes.java: git:5e6e98947c06831205b64160648d2200a1071398
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrors.java: git:3c4bafd7d0ca126c2d53bc74fefaeeae8d69b4ae
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/ClaimSignBatch.java: git:410b1a2b890bc83b021e275ac18e1c8292b65493
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/SignBatchItem.java: git:7f9c1a5aa70be70d0581c0260825bf04d17e25a4
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/SignTrackLog.java: git:35ad0261fcb39b47c97041bf754709d862396cc9
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/event/SignStatusChangedEvent.java: git:a7bf4450581f4e4dd9a2f61e607c69f4c2773a35
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignChannel.java: git:4ab6aa0624554f3417f73c74f3d52a2d42142fc7
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignSource.java: git:7b93d96bcd298351d88d23d8fb96840a136e5bbe
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignStatus.java: git:3a500fafcf9d3700c58c45befd4ad54eed84b935
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignType.java: git:c52ed9c1be2efa5d1fd4942a59d92d21078d5c6e
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimSignBatchRepository.java: git:103eaa5316dca0bb579f541de90990c6866bfa45
+          bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/confirmWithCas.sql: git:e0d28dd3af87854fb4870009764296b4885bb53e
+          bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/findTracksByBatchId.sql: git:9db11ebc146b109ba1ca4883bb6733732f9a207d
+          bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/saveTrack.sql: git:703a78bd57bf2b9a18b4e3bc422efc69706434f8
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimCaseApplicationServiceTest.java: git:87c3cbef6104208a0c54d8abee160695a36ad67d
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimSignApplicationServiceTest.java: git:2456f571700e4de0d567c59d62a31a1789889ded
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/common/PageBoundsClampTest.java: git:264427879bdfb3c97e2da840da7510414bc27bbf
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/sign/ClaimSignBatchTest.java: git:e89bd954ba6d234f01548e31fcf68ccc4c983ece
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/scenario/ScenarioHarness.java: git:d3f2d7942a8710b3daa9ece26235ed7fc43c84fe
+          bone-frontend/apps/bone-claim-app/src/App.tsx: git:26fbfd9c30defc7af0679ec7b4dbfaac3aa77de9
+          bone-frontend/apps/bone-claim-app/src/pages/CaseSignPage.test.tsx: git:d3fe9bf45b083da8ad463c2f6e25c6cb88f51441
+          bone-frontend/apps/bone-claim-app/src/pages/CaseSignPage.tsx: git:a91899f95ffdf76bc18e8589e92d788f4f068318
+          bone-frontend/apps/bone-claim-app/src/routes.tsx: git:ed774f6202187afcc6bba067e487716136d6c62d
+          bone-frontend/apps/bone-claim-app/src/services/claim.ts: git:9d574449362d73e7c16106c8d03e1c45af02b04a
+          bone-frontend/apps/bone-claim-app/src/services/claimSign.test.ts: git:5f636d5b0da3c890f38d55b5dd967f8d791e874a
+          bone-frontend/apps/bone-claim-app/src/services/claimSign.ts: git:0e9c729823909d9d948f0b196f7daf700df48eca
+          bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:405012bc423d3666ccbb44b995b89cae05de8525
+          bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:41b5a99d912e7f2936e0ff26b91a85fa9bbf698d
+          bone-frontend/packages/shared-utils/src/i18n/locales/en-US.json: git:74e56bdd650c5450960b0967bd271840f314fd50
+          bone-frontend/packages/shared-utils/src/i18n/locales/zh-CN.json: git:b247a81f70e12c931ea1cbb9add08d22e46f5050
+          bone-init.sql: git:2bad3b092c1a959af7b85782b7cf39f54cdf11aa
+          doc/architecture/Bone-错误码登记.md: git:a6169c6dbd67ba03a87d1bada6f95782051bba5d
+          doc/architecture/数据库开发规范.md: git:ac84c1791c1599a2ee930e45d2bc27dbfe1f126e
+          scripts/migration/0142_claim_secure_signing.sql: git:2902aa57af35ba1ef5d243f2339f5280fc48fe49
+          scripts/migration/0143_seed_claim_sign_menu.sql: git:5650a1cf951f2701bf98dce724d5f2118f94f04a
+          scripts/migration/0144_fix_claim_sign_tenant_id.sql: git:39137c0214fd5a6a723c6fbe11e533afa414ffd9
+          scripts/migration/migration-manifest.json: git:f31ee1f3b97e091d289dd7530778c9db909671da
+          scripts/seed/bootstrap/10_bootstrap_seed.sql: git:319c2771627c5f1832e3e5a31239c07ad71acd6e
+          scripts/seed/bootstrap/seed-manifest.json: git:99c567a792137dc04a9f40353ce8ced5ef207f0f
+          scripts/synapclaim-domain-context-map.json: git:28fefe1978c671b6135531eae3308ce76e2d98b7
+        environment: 11d66dd321ffc151dde0240bfa44ad7f59fc9672d008b933f1257c4788192d4e
+        exitCode: 0
+        inputAfter: 8d6e221e62d1d4792aeb2f0aabe3e29657c99ba6f729a46fa6e3273523615336
+        inputBefore: 8d6e221e62d1d4792aeb2f0aabe3e29657c99ba6f729a46fa6e3273523615336
+        manifestHash: c677b815a28d8353243e5f4548cb18fe176f8eff6373ac549a97d801353266d6
+        manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/e6858de6-3b6e-41dc-b4bd-5e24c29aaa33.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/93dae65c-bb85-456a-bfc7-9c108a1a8ebe.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 170d900af3727548c25405b4e10b30ff6d558944118a642f9fd0e279c98257c9
+        ref: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/93dae65c-bb85-456a-bfc7-9c108a1a8ebe.log
+      - choice: push
+        proposal:
+          input:
+            change: claim-secure-signing
+            changeDir: openspec/changes/claim-secure-signing
+            workspaceBaseline:
+              ref: e1020201-4e42-488b-8355-fedb9a375fb1
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: 案件签收：线上自动签收（内部报案+外部推送）与线下批次四态签收全链路落地；后端1711测试、前端284测试、全量门禁59/59、API联调与单导航探针143/143全绿
+              targetBranch: comet/claim-secure-signing
+      - remote: origin
+        summary: 案件签收：线上自动签收（内部报案+外部推送）与线下批次四态签收全链路落地；后端1711测试、前端284测试、全量门禁59/59、API联调与单导航探针143/143全绿
+        targetBranch: comet/claim-secure-signing
+      - argv:
+          - bash
+          - docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.sh
+        changedDuringExecution: []
+        checkEpoch: 7
+        contentHash: e9120063217afed6d82a3d919d834b723c57d785bf617369f361c09044772bb7
+        cwd: .
+        deliveryInputs: {}
+        environment: 11d66dd321ffc151dde0240bfa44ad7f59fc9672d008b933f1257c4788192d4e
+        exitCode: 0
+        inputAfter: e7b7493a5736be056f0775c7073b4d101f6826372c30d4da2cdc80627c1bca49
+        inputBefore: e7b7493a5736be056f0775c7073b4d101f6826372c30d4da2cdc80627c1bca49
+        manifestHash: 29a32bbdea90d65c99239e6ba55025c9567f4b23aac89243476f3acc85330042
+        manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/47a5b48d-c3fd-424b-9284-72889f4bbf41.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/84f426b8-658c-4720-8287-c9254fae32fa.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: e9120063217afed6d82a3d919d834b723c57d785bf617369f361c09044772bb7
+        ref: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/84f426b8-658c-4720-8287-c9254fae32fa.log
+      - baseCommit: b0cf0753a0a21e7d2f074bb831b055de3cf8909e
+        deliveryAction: push
+        remote: origin
+        remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+        targetBranch: comet/claim-secure-signing
+        verifiedBranch: comet/claim-secure-signing
+      - archiveDirectory: openspec/changes/archive/2026-11-26-claim-secure-signing
+      - sequence: 9
+        value:
+          boundBranch: comet/claim-secure-signing
+          buildMode: direct
+          directOverride: true
+          isolation: worktree
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-secure-signing
+              changeDir: openspec/changes/claim-secure-signing
+              workspaceBaseline:
+                ref: e1020201-4e42-488b-8355-fedb9a375fb1
+            outputs:
+              full.build.configure:
+                boundBranch: comet/claim-secure-signing
+                buildMode: direct
+                directOverride: true
+                isolation: worktree
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-secure-signing
+              changeDir: openspec/changes/claim-secure-signing
+              workspaceBaseline:
+                ref: e1020201-4e42-488b-8355-fedb9a375fb1
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/claim-secure-signing/.comet/handoff/design-context.json
+                handoffHash: 675917e4f5c800a66e5d1659c453d7d057bfd83d7f9a798a51d5d2e3096787e6
+                proposal: 案件签收设计候选方案：独立批次聚合ClaimSignBatch+子集合SignBatchItem/SignTrackLog，四态状态机；线上自动签收统一用例signOnAcceptance（内部报案+外部回执共调用，businessKey幂等、signChannel留痕）；线下批次四步签收（建批→名单→影像→二次确认，CAS前置态+影像完备+意见≥10字+案件推进PRE_EXAM+轨迹）；并发用CAS条件更新+@Version兜底禁FOR
+                  UPDATE；幂等键boundedStableKey≤64；前端React18+antd5常规页面CaseSignPage（线上/线下Tab+批次列表+新建+名单+影像+二次确认+轨迹），visible路由/sign+IAM菜单SQL+单导航E2E探针。取舍：批次聚合换完整审计；CAS免外部锁；报案新增签收副作用事务内不吞错；常规页面符合微应用范式。风险验证：并发单测、幂等键≤64、影像口径真实复核、菜单探针三处同步、双触发本地联调。Spec
+                  Patch无。详见brainstorm-summary.md与design.md。
+                requirementsEvidence:
+                  contentHash: 52e16422fcfa831b7f3498806e84374d6d602457d35ab356c6422b95fca9f7df
+                  ref: openspec/changes/claim-secure-signing
+                sourceEvidence:
+                  contentHash: 48b9bf985bfb727f04c58576dec6205c4394b28db66ccde4dc1f706138783834
+                  ref: openspec/changes/claim-secure-signing
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/claim-secure-signing/design.md
+      - sequence: 8
+        value:
+          contentHash: 8b25400388cf9a4135975914e662595979aaf8486084e7a630195dca98d4fc75
+          ref: openspec/changes/claim-secure-signing/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/claim-secure-signing/.comet/handoff/design-context.json
+          handoffHash: 675917e4f5c800a66e5d1659c453d7d057bfd83d7f9a798a51d5d2e3096787e6
+          proposal: 案件签收设计候选方案：独立批次聚合ClaimSignBatch+子集合SignBatchItem/SignTrackLog，四态状态机；线上自动签收统一用例signOnAcceptance（内部报案+外部回执共调用，businessKey幂等、signChannel留痕）；线下批次四步签收（建批→名单→影像→二次确认，CAS前置态+影像完备+意见≥10字+案件推进PRE_EXAM+轨迹）；并发用CAS条件更新+@Version兜底禁FOR
+            UPDATE；幂等键boundedStableKey≤64；前端React18+antd5常规页面CaseSignPage（线上/线下Tab+批次列表+新建+名单+影像+二次确认+轨迹），visible路由/sign+IAM菜单SQL+单导航E2E探针。取舍：批次聚合换完整审计；CAS免外部锁；报案新增签收副作用事务内不吞错；常规页面符合微应用范式。风险验证：并发单测、幂等键≤64、影像口径真实复核、菜单探针三处同步、双触发本地联调。Spec
+            Patch无。详见brainstorm-summary.md与design.md。
+          requirementsEvidence:
+            contentHash: 52e16422fcfa831b7f3498806e84374d6d602457d35ab356c6422b95fca9f7df
+            ref: openspec/changes/claim-secure-signing
+          sourceEvidence:
+            contentHash: 48b9bf985bfb727f04c58576dec6205c4394b28db66ccde4dc1f706138783834
+            ref: openspec/changes/claim-secure-signing
+      - sequence: 1
+        value:
+          artifacts:
+            - proposal
+            - specs
+            - design
+            - tasks
+          change: claim-secure-signing
+          contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+          event: open-complete
+          userApproval: 已按用户拍板的四项决策（独立worktree、前后端全链路、线上双触发、正式菜单）生成产物
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-secure-signing
+              changeDir: openspec/changes/claim-secure-signing
+              workspaceBaseline:
+                ref: e1020201-4e42-488b-8355-fedb9a375fb1
+            outputs:
+              full.open:
+                artifacts:
+                  - proposal
+                  - specs
+                  - design
+                  - tasks
+                change: claim-secure-signing
+                contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+                event: open-complete
+                userApproval: 已按用户拍板的四项决策（独立worktree、前后端全链路、线上双触发、正式菜单）生成产物
+              full.open.evidence:
+                contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+                ref: openspec/changes/claim-secure-signing
+      - sequence: 2
+        value:
+          contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+          ref: openspec/changes/claim-secure-signing
+      - sequence: 4
+        value:
+          contentHash: a85296d8bdb3b328dfe081efa81995457fa696fdba6f034de9e6707e30c3b19f
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 8b25400388cf9a4135975914e662595979aaf8486084e7a630195dca98d4fc75
+            ref: openspec/changes/claim-secure-signing/design.md
+          plan: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+          planEvidence:
+            contentHash: 5f52af37428c57e5a10312050608c0e3e45cd603b4ed6b1abdef6c56358f48e5
+            ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+          taskRevision: d14d9cb3f4f29f5a9d504a5bb01ede76f5c5f31b48c1b9b189a42bbad57b8043
+      - sequence: 12
+        value:
+          contentHash: 5f52af37428c57e5a10312050608c0e3e45cd603b4ed6b1abdef6c56358f48e5
+          ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+      - sequence: 13
+        value:
+          event: build-complete
+          summary: Build 实现完成：后端签收聚合/用例/控制器/迁移、前端页面与服务、菜单与权限守卫；后端 1711 测试、前端 284 测试、全量门禁
+            59/59、API 联调与单导航探针 143/143 全绿
+      - sequence: 14
+        value:
+          argv:
+            - ./scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 4c79d15c9fc1ed71440407cf12bd1b9dc9378918da61ae5af2550af766007ad7
+          cwd: .
+          environment: 4f9d0bd0b8f81fce59a5c52dfdc286c23dc550513f1948025ef38c16a4946ced
+          exitCode: 0
+          inputAfter: ab6a20516d411558b90059f11ddaaf05ba5da39b7a6eab28700dd2fb9b2644bb
+          inputBefore: ab6a20516d411558b90059f11ddaaf05ba5da39b7a6eab28700dd2fb9b2644bb
+          manifestHash: 9917ac91199500a8ec3064bda83e6c045c45125bbdfa9673dcdcc35b902f925d
+          manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/4a6909d9-f3c9-460e-9c84-53240e509c0f.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/f95b78b9-4b6a-489d-a884-7c79aed01b2a.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 15
+        value:
+          contentHash: 4c79d15c9fc1ed71440407cf12bd1b9dc9378918da61ae5af2550af766007ad7
+          ref: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/f95b78b9-4b6a-489d-a884-7c79aed01b2a.log
+      - sequence: 17
+        value:
+          contentHash: faf5fb1e7c6ffffa298ec141d963764d57785f00fc1757c19ca2768f57d74875
+          ref: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+      - sequence: 16
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+      - sequence: 18
+        value:
+          argv:
+            - bash
+            - docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.sh
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: 634953f16b9c3ccdbb0628aff47975bc106fb494df514c027f54af3041e85212
+          cwd: .
+          deliveryInputs:
+            .comet-build-config.json: git:28b190e2676bd519d601270fb6d50687e14ba4ac
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/assembler/ClaimSignAssembler.java: git:0fc081eb88f6da7ebd5169f66f8d1814dc242d32
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java: git:6e895f180a6d3b3a277be1541e93a9c09c28e969
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/ClaimSignPageReq.java: git:43bcd2eb69620403731bf542f0e23b2b2241fc7c
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/ClaimSignRequests.java: git:31dc0ae2609c0d01de3875d15a291bddf319ef4f
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/SignBatchResp.java: git:11cd50358b64ada515530da785d608a8cc2a7fc6
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/SignTrackResp.java: git:673f74b3595226d96e6af8ed5f206828aeeb149f
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimCaseApplicationService.java: git:f67b443a5bce0f40ca15e82b17856d45e7b56bcd
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimSignApplicationService.java: git:4a721e8103ce249b956b8c14d5a4b31407c1f226
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrorCodes.java: git:5e6e98947c06831205b64160648d2200a1071398
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrors.java: git:3c4bafd7d0ca126c2d53bc74fefaeeae8d69b4ae
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/ClaimSignBatch.java: git:410b1a2b890bc83b021e275ac18e1c8292b65493
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/SignBatchItem.java: git:7f9c1a5aa70be70d0581c0260825bf04d17e25a4
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/SignTrackLog.java: git:35ad0261fcb39b47c97041bf754709d862396cc9
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/event/SignStatusChangedEvent.java: git:a7bf4450581f4e4dd9a2f61e607c69f4c2773a35
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignChannel.java: git:4ab6aa0624554f3417f73c74f3d52a2d42142fc7
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignSource.java: git:7b93d96bcd298351d88d23d8fb96840a136e5bbe
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignStatus.java: git:3a500fafcf9d3700c58c45befd4ad54eed84b935
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignType.java: git:c52ed9c1be2efa5d1fd4942a59d92d21078d5c6e
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimSignBatchRepository.java: git:103eaa5316dca0bb579f541de90990c6866bfa45
+            bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/confirmWithCas.sql: git:e0d28dd3af87854fb4870009764296b4885bb53e
+            bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/findTracksByBatchId.sql: git:9db11ebc146b109ba1ca4883bb6733732f9a207d
+            bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/saveTrack.sql: git:703a78bd57bf2b9a18b4e3bc422efc69706434f8
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimCaseApplicationServiceTest.java: git:87c3cbef6104208a0c54d8abee160695a36ad67d
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimSignApplicationServiceTest.java: git:2456f571700e4de0d567c59d62a31a1789889ded
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/common/PageBoundsClampTest.java: git:264427879bdfb3c97e2da840da7510414bc27bbf
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/sign/ClaimSignBatchTest.java: git:e89bd954ba6d234f01548e31fcf68ccc4c983ece
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/scenario/ScenarioHarness.java: git:d3f2d7942a8710b3daa9ece26235ed7fc43c84fe
+            bone-frontend/apps/bone-claim-app/src/App.tsx: git:26fbfd9c30defc7af0679ec7b4dbfaac3aa77de9
+            bone-frontend/apps/bone-claim-app/src/pages/CaseSignPage.test.tsx: git:d3fe9bf45b083da8ad463c2f6e25c6cb88f51441
+            bone-frontend/apps/bone-claim-app/src/pages/CaseSignPage.tsx: git:a91899f95ffdf76bc18e8589e92d788f4f068318
+            bone-frontend/apps/bone-claim-app/src/routes.tsx: git:ed774f6202187afcc6bba067e487716136d6c62d
+            bone-frontend/apps/bone-claim-app/src/services/claim.ts: git:9d574449362d73e7c16106c8d03e1c45af02b04a
+            bone-frontend/apps/bone-claim-app/src/services/claimSign.test.ts: git:5f636d5b0da3c890f38d55b5dd967f8d791e874a
+            bone-frontend/apps/bone-claim-app/src/services/claimSign.ts: git:0e9c729823909d9d948f0b196f7daf700df48eca
+            bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:405012bc423d3666ccbb44b995b89cae05de8525
+            bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:41b5a99d912e7f2936e0ff26b91a85fa9bbf698d
+            bone-frontend/packages/shared-utils/src/i18n/locales/en-US.json: git:74e56bdd650c5450960b0967bd271840f314fd50
+            bone-frontend/packages/shared-utils/src/i18n/locales/zh-CN.json: git:b247a81f70e12c931ea1cbb9add08d22e46f5050
+            bone-init.sql: git:2bad3b092c1a959af7b85782b7cf39f54cdf11aa
+            doc/architecture/Bone-错误码登记.md: git:a6169c6dbd67ba03a87d1bada6f95782051bba5d
+            doc/architecture/数据库开发规范.md: git:ac84c1791c1599a2ee930e45d2bc27dbfe1f126e
+            scripts/migration/0142_claim_secure_signing.sql: git:2902aa57af35ba1ef5d243f2339f5280fc48fe49
+            scripts/migration/0143_seed_claim_sign_menu.sql: git:5650a1cf951f2701bf98dce724d5f2118f94f04a
+            scripts/migration/0144_fix_claim_sign_tenant_id.sql: git:39137c0214fd5a6a723c6fbe11e533afa414ffd9
+            scripts/migration/migration-manifest.json: git:f31ee1f3b97e091d289dd7530778c9db909671da
+            scripts/seed/bootstrap/10_bootstrap_seed.sql: git:319c2771627c5f1832e3e5a31239c07ad71acd6e
+            scripts/seed/bootstrap/seed-manifest.json: git:99c567a792137dc04a9f40353ce8ced5ef207f0f
+            scripts/synapclaim-domain-context-map.json: git:28fefe1978c671b6135531eae3308ce76e2d98b7
+          environment: 11d66dd321ffc151dde0240bfa44ad7f59fc9672d008b933f1257c4788192d4e
+          exitCode: 1
+          inputAfter: 8d6e221e62d1d4792aeb2f0aabe3e29657c99ba6f729a46fa6e3273523615336
+          inputBefore: 8d6e221e62d1d4792aeb2f0aabe3e29657c99ba6f729a46fa6e3273523615336
+          manifestHash: c677b815a28d8353243e5f4548cb18fe176f8eff6373ac549a97d801353266d6
+          manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/6f018300-2503-47aa-952e-2c7423a7f657.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/a65a44ec-1d73-4e4c-8856-08fe3d17363a.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 25
+        value:
+          designEvidence:
+            contentHash: 8b25400388cf9a4135975914e662595979aaf8486084e7a630195dca98d4fc75
+            ref: openspec/changes/claim-secure-signing/design.md
+          plan: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+          planEvidence:
+            contentHash: 5f52af37428c57e5a10312050608c0e3e45cd603b4ed6b1abdef6c56358f48e5
+            ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+          taskRevision: d14d9cb3f4f29f5a9d504a5bb01ede76f5c5f31b48c1b9b189a42bbad57b8043
+      - sequence: 26
+        value:
+          contentHash: 5f52af37428c57e5a10312050608c0e3e45cd603b4ed6b1abdef6c56358f48e5
+          ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+      - sequence: 27
+        value:
+          event: build-complete
+          summary: Build 实现完成：16/16 任务已完成；后端 1711 测试、前端 284 测试、全量门禁 59/59、API 联调与单导航探针
+            143/143 全绿
+      - sequence: 28
+        value:
+          argv:
+            - ./scripts/check.sh
+          changedDuringExecution: []
+          checkEpoch: 4
+          contentHash: 624ebfe93188cbaae44c9f758c5ba0742a3c537d168c16c38ac410b7cf9ceed2
+          cwd: .
+          environment: 4f9d0bd0b8f81fce59a5c52dfdc286c23dc550513f1948025ef38c16a4946ced
+          exitCode: 0
+          inputAfter: d15fc0c1d6ada52f02c0094d0f9090e05cfa41b3962daec94047021bb0ad73ee
+          inputBefore: d15fc0c1d6ada52f02c0094d0f9090e05cfa41b3962daec94047021bb0ad73ee
+          manifestHash: e1618a8991ae9c79b21f9808a7a4b1f54448de64c5515119134c559baa3c395e
+          manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/47ee9ed5-a8a8-41a2-99d1-141f12adf130.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/7ccbdaec-35ca-466f-b18e-3d49b19adf0b.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 29
+        value:
+          contentHash: 624ebfe93188cbaae44c9f758c5ba0742a3c537d168c16c38ac410b7cf9ceed2
+          ref: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/7ccbdaec-35ca-466f-b18e-3d49b19adf0b.log
+      - sequence: 31
+        value:
+          contentHash: 8b57bf65940f816cd47d6f94ddd688626ae076413dc80f7fd3282001a26f3737
+          ref: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+      - sequence: 30
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+      - sequence: 32
+        value:
+          argv:
+            - bash
+            - docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.sh
+          changedDuringExecution: []
+          checkEpoch: 5
+          contentHash: 170d900af3727548c25405b4e10b30ff6d558944118a642f9fd0e279c98257c9
+          cwd: .
+          deliveryInputs:
+            .comet-build-config.json: git:28b190e2676bd519d601270fb6d50687e14ba4ac
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/assembler/ClaimSignAssembler.java: git:0fc081eb88f6da7ebd5169f66f8d1814dc242d32
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java: git:6e895f180a6d3b3a277be1541e93a9c09c28e969
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/ClaimSignPageReq.java: git:43bcd2eb69620403731bf542f0e23b2b2241fc7c
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/request/ClaimSignRequests.java: git:31dc0ae2609c0d01de3875d15a291bddf319ef4f
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/SignBatchResp.java: git:11cd50358b64ada515530da785d608a8cc2a7fc6
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/dto/response/SignTrackResp.java: git:673f74b3595226d96e6af8ed5f206828aeeb149f
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimCaseApplicationService.java: git:f67b443a5bce0f40ca15e82b17856d45e7b56bcd
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimSignApplicationService.java: git:4a721e8103ce249b956b8c14d5a4b31407c1f226
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrorCodes.java: git:5e6e98947c06831205b64160648d2200a1071398
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/common/ClaimErrors.java: git:3c4bafd7d0ca126c2d53bc74fefaeeae8d69b4ae
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/ClaimSignBatch.java: git:410b1a2b890bc83b021e275ac18e1c8292b65493
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/SignBatchItem.java: git:7f9c1a5aa70be70d0581c0260825bf04d17e25a4
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/SignTrackLog.java: git:35ad0261fcb39b47c97041bf754709d862396cc9
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/event/SignStatusChangedEvent.java: git:a7bf4450581f4e4dd9a2f61e607c69f4c2773a35
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignChannel.java: git:4ab6aa0624554f3417f73c74f3d52a2d42142fc7
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignSource.java: git:7b93d96bcd298351d88d23d8fb96840a136e5bbe
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignStatus.java: git:3a500fafcf9d3700c58c45befd4ad54eed84b935
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/model/sign/valueobject/SignType.java: git:c52ed9c1be2efa5d1fd4942a59d92d21078d5c6e
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimSignBatchRepository.java: git:103eaa5316dca0bb579f541de90990c6866bfa45
+            bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/confirmWithCas.sql: git:e0d28dd3af87854fb4870009764296b4885bb53e
+            bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/findTracksByBatchId.sql: git:9db11ebc146b109ba1ca4883bb6733732f9a207d
+            bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimSignBatchRepository/saveTrack.sql: git:703a78bd57bf2b9a18b4e3bc422efc69706434f8
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimCaseApplicationServiceTest.java: git:87c3cbef6104208a0c54d8abee160695a36ad67d
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimSignApplicationServiceTest.java: git:2456f571700e4de0d567c59d62a31a1789889ded
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/common/PageBoundsClampTest.java: git:264427879bdfb3c97e2da840da7510414bc27bbf
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/sign/ClaimSignBatchTest.java: git:e89bd954ba6d234f01548e31fcf68ccc4c983ece
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/scenario/ScenarioHarness.java: git:d3f2d7942a8710b3daa9ece26235ed7fc43c84fe
+            bone-frontend/apps/bone-claim-app/src/App.tsx: git:26fbfd9c30defc7af0679ec7b4dbfaac3aa77de9
+            bone-frontend/apps/bone-claim-app/src/pages/CaseSignPage.test.tsx: git:d3fe9bf45b083da8ad463c2f6e25c6cb88f51441
+            bone-frontend/apps/bone-claim-app/src/pages/CaseSignPage.tsx: git:a91899f95ffdf76bc18e8589e92d788f4f068318
+            bone-frontend/apps/bone-claim-app/src/routes.tsx: git:ed774f6202187afcc6bba067e487716136d6c62d
+            bone-frontend/apps/bone-claim-app/src/services/claim.ts: git:9d574449362d73e7c16106c8d03e1c45af02b04a
+            bone-frontend/apps/bone-claim-app/src/services/claimSign.test.ts: git:5f636d5b0da3c890f38d55b5dd967f8d791e874a
+            bone-frontend/apps/bone-claim-app/src/services/claimSign.ts: git:0e9c729823909d9d948f0b196f7daf700df48eca
+            bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.test.ts: git:405012bc423d3666ccbb44b995b89cae05de8525
+            bone-frontend/apps/bone-shell/src/utils/claimMenuGroups.ts: git:41b5a99d912e7f2936e0ff26b91a85fa9bbf698d
+            bone-frontend/packages/shared-utils/src/i18n/locales/en-US.json: git:74e56bdd650c5450960b0967bd271840f314fd50
+            bone-frontend/packages/shared-utils/src/i18n/locales/zh-CN.json: git:b247a81f70e12c931ea1cbb9add08d22e46f5050
+            bone-init.sql: git:2bad3b092c1a959af7b85782b7cf39f54cdf11aa
+            doc/architecture/Bone-错误码登记.md: git:a6169c6dbd67ba03a87d1bada6f95782051bba5d
+            doc/architecture/数据库开发规范.md: git:ac84c1791c1599a2ee930e45d2bc27dbfe1f126e
+            scripts/migration/0142_claim_secure_signing.sql: git:2902aa57af35ba1ef5d243f2339f5280fc48fe49
+            scripts/migration/0143_seed_claim_sign_menu.sql: git:5650a1cf951f2701bf98dce724d5f2118f94f04a
+            scripts/migration/0144_fix_claim_sign_tenant_id.sql: git:39137c0214fd5a6a723c6fbe11e533afa414ffd9
+            scripts/migration/migration-manifest.json: git:f31ee1f3b97e091d289dd7530778c9db909671da
+            scripts/seed/bootstrap/10_bootstrap_seed.sql: git:319c2771627c5f1832e3e5a31239c07ad71acd6e
+            scripts/seed/bootstrap/seed-manifest.json: git:99c567a792137dc04a9f40353ce8ced5ef207f0f
+            scripts/synapclaim-domain-context-map.json: git:28fefe1978c671b6135531eae3308ce76e2d98b7
+          environment: 11d66dd321ffc151dde0240bfa44ad7f59fc9672d008b933f1257c4788192d4e
+          exitCode: 0
+          inputAfter: 8d6e221e62d1d4792aeb2f0aabe3e29657c99ba6f729a46fa6e3273523615336
+          inputBefore: 8d6e221e62d1d4792aeb2f0aabe3e29657c99ba6f729a46fa6e3273523615336
+          manifestHash: c677b815a28d8353243e5f4548cb18fe176f8eff6373ac549a97d801353266d6
+          manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/e6858de6-3b6e-41dc-b4bd-5e24c29aaa33.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/93dae65c-bb85-456a-bfc7-9c108a1a8ebe.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 33
+        value:
+          contentHash: 170d900af3727548c25405b4e10b30ff6d558944118a642f9fd0e279c98257c9
+          ref: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/93dae65c-bb85-456a-bfc7-9c108a1a8ebe.log
+      - sequence: 35
+        value:
+          choice: push
+          proposal:
+            input:
+              change: claim-secure-signing
+              changeDir: openspec/changes/claim-secure-signing
+              workspaceBaseline:
+                ref: e1020201-4e42-488b-8355-fedb9a375fb1
+            outputs:
+              full.archive.prepare:
+                remote: origin
+                summary: 案件签收：线上自动签收（内部报案+外部推送）与线下批次四态签收全链路落地；后端1711测试、前端284测试、全量门禁59/59、API联调与单导航探针143/143全绿
+                targetBranch: comet/claim-secure-signing
+      - sequence: 34
+        value:
+          remote: origin
+          summary: 案件签收：线上自动签收（内部报案+外部推送）与线下批次四态签收全链路落地；后端1711测试、前端284测试、全量门禁59/59、API联调与单导航探针143/143全绿
+          targetBranch: comet/claim-secure-signing
+      - sequence: 38
+        value:
+          contentHash: 8b57bf65940f816cd47d6f94ddd688626ae076413dc80f7fd3282001a26f3737
+          ref: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+      - sequence: 37
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.md
+      - sequence: 39
+        value:
+          argv:
+            - bash
+            - docs/superpowers/reports/2026-11-26-claim-secure-signing-verify.sh
+          changedDuringExecution: []
+          checkEpoch: 7
+          contentHash: e9120063217afed6d82a3d919d834b723c57d785bf617369f361c09044772bb7
+          cwd: .
+          deliveryInputs: {}
+          environment: 11d66dd321ffc151dde0240bfa44ad7f59fc9672d008b933f1257c4788192d4e
+          exitCode: 0
+          inputAfter: e7b7493a5736be056f0775c7073b4d101f6826372c30d4da2cdc80627c1bca49
+          inputBefore: e7b7493a5736be056f0775c7073b4d101f6826372c30d4da2cdc80627c1bca49
+          manifestHash: 29a32bbdea90d65c99239e6ba55025c9567f4b23aac89243476f3acc85330042
+          manifestRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/47a5b48d-c3fd-424b-9284-72889f4bbf41.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/84f426b8-658c-4720-8287-c9254fae32fa.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 40
+        value:
+          contentHash: e9120063217afed6d82a3d919d834b723c57d785bf617369f361c09044772bb7
+          ref: .comet/runtime/classic-sdk-checks/5c0855982813b4a5a336af0939900e560ac14aa8533bf61445f39ed723b6fc60/84f426b8-658c-4720-8287-c9254fae32fa.log
+      - sequence: 42
+        value:
+          choice: push
+          proposal:
+            input:
+              change: claim-secure-signing
+              changeDir: openspec/changes/claim-secure-signing
+              workspaceBaseline:
+                ref: e1020201-4e42-488b-8355-fedb9a375fb1
+            outputs:
+              full.archive.prepare:
+                remote: origin
+                summary: 案件签收：线上自动签收（内部报案+外部推送）与线下批次四态签收全链路落地；后端1711测试、前端284测试、全量门禁59/59、API联调与单导航探针143/143全绿
+                targetBranch: comet/claim-secure-signing
+      - sequence: 41
+        value:
+          remote: origin
+          summary: 案件签收：线上自动签收（内部报案+外部推送）与线下批次四态签收全链路落地；后端1711测试、前端284测试、全量门禁59/59、API联调与单导航探针143/143全绿
+          targetBranch: comet/claim-secure-signing
+      - sequence: 43
+        value:
+          baseCommit: b0cf0753a0a21e7d2f074bb831b055de3cf8909e
+          deliveryAction: push
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: comet/claim-secure-signing
+          verifiedBranch: comet/claim-secure-signing
+      - sequence: 44
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-26-claim-secure-signing
+      - sequence: 19
+        value:
+          designEvidence:
+            contentHash: 8b25400388cf9a4135975914e662595979aaf8486084e7a630195dca98d4fc75
+            ref: openspec/changes/claim-secure-signing/design.md
+          plan: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+          planEvidence:
+            contentHash: 5f52af37428c57e5a10312050608c0e3e45cd603b4ed6b1abdef6c56358f48e5
+            ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+          taskRevision: d14d9cb3f4f29f5a9d504a5bb01ede76f5c5f31b48c1b9b189a42bbad57b8043
+      - sequence: 21
+        value:
+          designEvidence:
+            contentHash: 8b25400388cf9a4135975914e662595979aaf8486084e7a630195dca98d4fc75
+            ref: openspec/changes/claim-secure-signing/design.md
+          plan: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+          planEvidence:
+            contentHash: cd7aaddc8a315cf249f941e256d3a263cdd32105177533f48eb6c86091137eeb
+            ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+          taskRevision: d14d9cb3f4f29f5a9d504a5bb01ede76f5c5f31b48c1b9b189a42bbad57b8043
+      - sequence: 23
+        value:
+          designEvidence:
+            contentHash: 8b25400388cf9a4135975914e662595979aaf8486084e7a630195dca98d4fc75
+            ref: openspec/changes/claim-secure-signing/design.md
+          plan: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+          planEvidence:
+            contentHash: cd7aaddc8a315cf249f941e256d3a263cdd32105177533f48eb6c86091137eeb
+            ref: docs/superpowers/plans/2026-11-25-claim-secure-signing.md
+          taskRevision: 1657bb7db05d8f81c6af0945e6438ca46c6d26861cbc658f597adea3433c724f
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 14
+        left: 32
+        right: 33
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 34
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 35
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 25
+        height: 5
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: null
+        right: 39
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: 40
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 41
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 42
+        height: 5
+      - key: full.verify.check
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: 44
+        right: 39
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: 45
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 46
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 47
+        height: 5
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: 49
+        height: 2
+      - key: full.build.execute
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 10
+        left: 51
+        right: 49
+        height: 2
+      - key: full.build.check
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.build.execute
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 20
+        left: 53
+        right: 54
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 55
+        right: 49
+        height: 3
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 21
+        left: 57
+        right: 58
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 55
+        right: 59
+        height: 3
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check.evidence
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 22
+        left: 61
+        right: 62
+        height: 2
+      - key: full.verify.report.evidence
+        value: 21
+        left: 63
+        right: 58
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 55
+        right: 64
+        height: 4
+      - key: full.archive.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 25
+        left: 66
+        right: 67
+        height: 2
+      - key: full.build.check.evidence
+        value: 20
+        left: 68
+        right: 54
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 69
+        right: 64
+        height: 4
+      - key: full.verify.run
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 21
+        left: null
+        right: 71
+        height: 2
+      - key: full.verify.check.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 26
+        left: null
+        right: 73
+        height: 2
+      - key: full.verify.report.evidence
+        value: 21
+        left: 74
+        right: 71
+        height: 3
+      - key: full.archive.prepare
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 24
+        left: null
+        right: 76
+        height: 2
+      - key: full.verify.report.evidence
+        value: 21
+        left: 73
+        right: 71
+        height: 2
+      - key: full.verify.check
+        value: 26
+        left: 77
+        right: 78
+        height: 3
+      - key: full.archive.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 28
+        left: 80
+        right: 81
+        height: 2
+      - key: full.verify.check
+        value: 26
+        left: 82
+        right: 78
+        height: 3
+      - key: full.archive.execute
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 24
+        left: null
+        right: 84
+        height: 2
+      - key: full.archive.preflight
+        value: 28
+        left: 85
+        right: 81
+        height: 3
+      - key: full.verify.check
+        value: 26
+        left: 86
+        right: 78
+        height: 4
+      - key: full.build.configure
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 31
+        left: 88
+        right: 89
+        height: 2
+      - key: full.design.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 35
+        left: 91
+        right: 92
+        height: 2
+      - key: full.open.revalidate
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 38
+        left: null
+        right: 94
+        height: 2
+      - key: full.open.confirm
+        value: 37
+        left: 93
+        right: 95
+        height: 3
+      - key: full.design.document
+        value: 33
+        left: 90
+        right: 96
+        height: 4
+      - key: full.build.plan
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 41
+        left: 98
+        right: 99
+        height: 2
+      - key: full.build.confirm
+        value: 31
+        left: 88
+        right: 100
+        height: 3
+      - key: full.design.document
+        value: 33
+        left: 101
+        right: 96
+        height: 4
+      - key: full.build.execute
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 31
+        left: 88
+        right: 103
+        height: 2
+      - key: full.build.plan.evidence
+        value: 41
+        left: null
+        right: 99
+        height: 2
+      - key: full.build.plan
+        value: 40
+        left: 104
+        right: 105
+        height: 3
+      - key: full.design.document
+        value: 33
+        left: 106
+        right: 96
+        height: 4
+      - key: full.build.check
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 44
+        left: 108
+        right: 109
+        height: 2
+      - key: full.build.confirm
+        value: 31
+        left: 110
+        right: 103
+        height: 3
+      - key: full.build.plan
+        value: 40
+        left: 111
+        right: 105
+        height: 4
+      - key: full.design.document
+        value: 33
+        left: 112
+        right: 96
+        height: 5
+      - key: full.open.evidence
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 45
+        left: null
+        right: 115
+        height: 2
+      - key: full.open.revalidate
+        value: 39
+        left: 114
+        right: 116
+        height: 3
+      - key: full.open.confirm
+        value: 37
+        left: 93
+        right: 117
+        height: 4
+      - key: full.design.document
+        value: 33
+        left: 112
+        right: 118
+        height: 5
+      - key: full.verify.check
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 45
+        left: 120
+        right: 115
+        height: 2
+      - key: full.open.revalidate
+        value: 39
+        left: 114
+        right: 121
+        height: 3
+      - key: full.open.confirm
+        value: 37
+        left: 93
+        right: 122
+        height: 4
+      - key: full.design.document
+        value: 33
+        left: 112
+        right: 123
+        height: 5
+      - key: full.build.plan.evidence
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 48
+        left: null
+        right: 125
+        height: 2
+      - key: full.build.execute
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 48
+        left: 127
+        right: 125
+        height: 2
+      - key: full.build.check
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.build.execute
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 52
+        left: 129
+        right: 130
+        height: 2
+      - key: full.build.plan
+        value: 48
+        left: 131
+        right: 125
+        height: 3
+      - key: full.build.plan.evidence
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 53
+        left: 133
+        right: 134
+        height: 2
+      - key: full.build.plan
+        value: 48
+        left: 131
+        right: 135
+        height: 3
+      - key: full.build.plan.evidence
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check.evidence
+        value: 56
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 55
+        left: 137
+        right: 138
+        height: 2
+      - key: full.verify.report.evidence
+        value: 53
+        left: 139
+        right: 134
+        height: 3
+      - key: full.build.plan
+        value: 48
+        left: 131
+        right: 140
+        height: 4
+      - key: full.archive.confirm
+        value: 57
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 58
+        left: 142
+        right: 143
+        height: 2
+      - key: full.build.check.evidence
+        value: 52
+        left: 144
+        right: 130
+        height: 3
+      - key: full.build.plan
+        value: 48
+        left: 145
+        right: 140
+        height: 4
+      - key: full.verify.run
+        value: 60
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 59
+        left: null
+        right: 147
+        height: 2
+      - key: full.open
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 37
+        left: 149
+        right: 150
+        height: 2
+      - key: full.verify.check
+        value: 61
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 60
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 59
+        left: null
+        right: 153
+        height: 2
+      - key: full.verify.check.evidence
+        value: 62
+        left: 152
+        right: 154
+        height: 3
+      - key: full.archive.confirm
+        value: 63
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 61
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 64
+        left: 156
+        right: 157
+        height: 2
+      - key: full.verify.check.evidence
+        value: 62
+        left: 158
+        right: 154
+        height: 3
+      - key: full.archive.preflight
+        value: 65
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 63
+        left: null
+        right: 160
+        height: 2
+      - key: full.archive.prepare
+        value: 64
+        left: 161
+        right: 157
+        height: 3
+      - key: full.verify.check.evidence
+        value: 62
+        left: 162
+        right: 154
+        height: 4
+      - key: full.archive.confirm
+        value: 63
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 65
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 66
+        left: 164
+        right: 165
+        height: 2
+      - key: full.archive.prepare
+        value: 64
+        left: 166
+        right: 157
+        height: 3
+      - key: full.verify.check.evidence
+        value: 62
+        left: 167
+        right: 154
+        height: 4
+      - key: full.open
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 38
+        left: null
+        right: 170
+        height: 2
+      - key: full.open.confirm
+        value: 37
+        left: 169
+        right: 171
+        height: 3
+      - key: full.design.confirm
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 35
+        left: 173
+        right: 174
+        height: 2
+      - key: full.open.confirm
+        value: 37
+        left: 175
+        right: 171
+        height: 3
+      - key: full.design.confirm
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 33
+        left: 177
+        right: 178
+        height: 2
+      - key: full.design.handoff
+        value: 35
+        left: 179
+        right: 174
+        height: 3
+      - key: full.open.confirm
+        value: 37
+        left: 180
+        right: 171
+        height: 4
+      - key: full.archive.confirm
+        value: 63
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 65
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 66
+        left: 182
+        right: 183
+        height: 2
+      - key: full.build.check
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 52
+        left: 185
+        right: 186
+        height: 2
+      - key: full.archive.prepare
+        value: 64
+        left: 184
+        right: 187
+        height: 3
+      - key: full.build.execute
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 32
+        left: 190
+        right: null
+        height: 2
+      - key: full.build.plan
+        value: 48
+        left: 189
+        right: 191
+        height: 3
+      - key: full.build.confirm
+        value: 31
+        left: 188
+        right: 192
+        height: 4
+      - key: full.design.handoff
+        value: 35
+        left: 178
+        right: 174
+        height: 2
+      - key: full.open.evidence
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 61
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 39
+        left: 195
+        right: 196
+        height: 2
+      - key: full.verify.run
+        value: 60
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 59
+        left: null
+        right: 198
+        height: 2
+      - key: full.verify.check.evidence
+        value: 62
+        left: 197
+        right: 199
+        height: 3
+      - key: full.open.confirm
+        value: 37
+        left: 194
+        right: 200
+        height: 4
+      - key: full.design.document
+        value: 33
+        left: 193
+        right: 201
+        height: 5
+      - key: full.open.evidence
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 36
+        left: null
+        right: 203
+        height: 2
+      - key: full.design.handoff
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 38
+        left: 206
+        right: 207
+        height: 2
+      - key: full.open
+        value: 36
+        left: 205
+        right: 208
+        height: 3
+      - key: full.build.configure
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 34
+        left: 211
+        right: 212
+        height: 2
+      - key: full.design.confirm
+        value: 32
+        left: 210
+        right: 213
+        height: 3
+      - key: full.open
+        value: 36
+        left: 214
+        right: 208
+        height: 4
+      - key: full.archive.prepare
+        value: 58
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 51
+        left: 216
+        right: 217
+        height: 2
+      - key: full.build.plan
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 49
+        left: 219
+        right: 220
+        height: 2
+      - key: full.verify.run
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 53
+        left: null
+        right: 222
+        height: 2
+      - key: full.verify.check.evidence
+        value: 56
+        left: 221
+        right: 223
+        height: 3
+      - key: full.build.execute
+        value: 50
+        left: 218
+        right: 224
+        height: 4
+      - key: full.archive.prepare
+        value: 64
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check.evidence
+        value: 62
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 60
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 59
+        left: 227
+        right: 228
+        height: 2
+      - key: full.verify.check
+        value: 61
+        left: 226
+        right: 229
+        height: 3
+      - key: full.open
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 33
+        left: 232
+        right: 233
+        height: 2
+      - key: full.open.confirm
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 38
+        left: 235
+        right: 236
+        height: 2
+      - key: full.open
+        value: 36
+        left: 234
+        right: 237
+        height: 3
+      - key: full.build.configure
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 31
+        left: 239
+        right: 240
+        height: 2
+      - key: full.design.document
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 34
+        left: 242
+        right: 243
+        height: 2
+      - key: full.design.confirm
+        value: 32
+        left: 241
+        right: 244
+        height: 3
+      - key: full.open
+        value: 36
+        left: 245
+        right: 237
+        height: 4
+      - key: full.build.check
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 30
+        left: 247
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 40
+        left: 249
+        right: 250
+        height: 2
+      - key: full.build.confirm
+        value: 31
+        left: 248
+        right: 251
+        height: 3
+      - key: full.open
+        value: 36
+        left: 244
+        right: 237
+        height: 3
+      - key: full.design.confirm
+        value: 32
+        left: 252
+        right: 253
+        height: 4
+      - key: full.build.check
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 44
+        left: 255
+        right: 256
+        height: 2
+      - key: full.build.confirm
+        value: 31
+        left: 257
+        right: 251
+        height: 3
+      - key: full.verify.run
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 39
+        left: null
+        right: 259
+        height: 2
+      - key: full.open.evidence
+        value: 38
+        left: 235
+        right: 260
+        height: 3
+      - key: full.open
+        value: 36
+        left: 244
+        right: 261
+        height: 4
+      - key: full.design.confirm
+        value: 32
+        left: 258
+        right: 262
+        height: 5
+      - key: full.build.plan
+        value: 67
+        left: 249
+        right: 250
+        height: 2
+      - key: full.build.confirm
+        value: 31
+        left: 257
+        right: 264
+        height: 3
+      - key: full.open.revalidate
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 38
+        left: 235
+        right: 266
+        height: 2
+      - key: full.verify.report.evidence
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 46
+        left: 268
+        right: null
+        height: 2
+      - key: full.verify.check
+        value: 47
+        left: 267
+        right: 269
+        height: 3
+      - key: full.open
+        value: 36
+        left: 244
+        right: 270
+        height: 4
+      - key: full.design.confirm
+        value: 32
+        left: 265
+        right: 271
+        height: 5
+      - key: full.build.plan
+        value: 68
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 69
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 48
+        left: null
+        right: 277
+        height: 2
+      - key: full.build.execute
+        value: 50
+        left: 276
+        right: 278
+        height: 3
+      - key: full.build.check.evidence
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 51
+        left: null
+        right: 280
+        height: 2
+      - key: full.build.plan
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 49
+        left: 282
+        right: 283
+        height: 2
+      - key: full.build.execute
+        value: 50
+        left: 281
+        right: 284
+        height: 3
+      - key: full.verify.check
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 53
+        left: 286
+        right: 287
+        height: 2
+      - key: full.build.plan.evidence
+        value: 49
+        left: 282
+        right: 288
+        height: 3
+      - key: full.build.execute
+        value: 50
+        left: 281
+        right: 289
+        height: 4
+      - key: full.verify.run
+        value: 60
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 61
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 60
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 59
+        left: 292
+        right: 293
+        height: 2
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 37
+      - 43
+      - 48
+      - 50
+      - 52
+      - 56
+      - 60
+      - 65
+      - 70
+      - 72
+      - 75
+      - 79
+      - 83
+      - 87
+      - 97
+      - 102
+      - 107
+      - 113
+      - 119
+      - 124
+      - 126
+      - 128
+      - 132
+      - 136
+      - 141
+      - 146
+      - 148
+      - 151
+      - 155
+      - 159
+      - 163
+      - 168
+      - 172
+      - 176
+      - 181
+      - 202
+      - 204
+      - 209
+      - 215
+      - 225
+      - 230
+      - 231
+      - 238
+      - 246
+      - 254
+      - 263
+      - 272
+      - 273
+      - 274
+      - 275
+      - 279
+      - 285
+      - 290
+      - 291
+      - 294
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "14"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "15"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "16"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actions
+          - "17"
+          - input
+          - outputs
+        map: 14
+      - path:
+          - actions
+          - "18"
+          - input
+          - outputs
+        map: 15
+      - path:
+          - actions
+          - "19"
+          - input
+          - outputs
+        map: 16
+      - path:
+          - actions
+          - "20"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "21"
+          - input
+          - outputs
+        map: 17
+      - path:
+          - actions
+          - "22"
+          - input
+          - outputs
+        map: 18
+      - path:
+          - actions
+          - "23"
+          - input
+          - outputs
+        map: 19
+      - path:
+          - actions
+          - "24"
+          - input
+          - outputs
+        map: 20
+      - path:
+          - actions
+          - "25"
+          - input
+          - outputs
+        map: 21
+      - path:
+          - actionContexts
+          - claim-secure-signing:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - claim-secure-signing:11
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - claim-secure-signing:13
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - claim-secure-signing:14
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - claim-secure-signing:16
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - claim-secure-signing:18
+          - results
+        map: 26
+      - path:
+          - actionContexts
+          - claim-secure-signing:19
+          - results
+        map: 27
+      - path:
+          - actionContexts
+          - claim-secure-signing:21
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - claim-secure-signing:23
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - claim-secure-signing:25
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - claim-secure-signing:27
+          - results
+        map: 28
+      - path:
+          - actionContexts
+          - claim-secure-signing:28
+          - results
+        map: 29
+      - path:
+          - actionContexts
+          - claim-secure-signing:30
+          - results
+        map: 30
+      - path:
+          - actionContexts
+          - claim-secure-signing:32
+          - results
+        map: 31
+      - path:
+          - actionContexts
+          - claim-secure-signing:34
+          - results
+        map: 32
+      - path:
+          - actionContexts
+          - claim-secure-signing:36
+          - results
+        map: 33
+      - path:
+          - actionContexts
+          - claim-secure-signing:37
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - claim-secure-signing:39
+          - results
+        map: 34
+      - path:
+          - actionContexts
+          - claim-secure-signing:4
+          - results
+        map: 35
+      - path:
+          - actionContexts
+          - claim-secure-signing:41
+          - results
+        map: 36
+      - path:
+          - actionContexts
+          - claim-secure-signing:43
+          - results
+        map: 37
+      - path:
+          - actionContexts
+          - claim-secure-signing:44
+          - results
+        map: 38
+      - path:
+          - actionContexts
+          - claim-secure-signing:45
+          - results
+        map: 39
+      - path:
+          - actionContexts
+          - claim-secure-signing:5
+          - results
+        map: 40
+      - path:
+          - actionContexts
+          - claim-secure-signing:7
+          - results
+        map: 41
+      - path:
+          - actionContexts
+          - claim-secure-signing:9
+          - results
+        map: 42
+      - path:
+          - outputs
+        map: 43
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 44
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 45
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 46
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 47
+      - path:
+          - waits
+          - "4"
+          - results
+        map: 48
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 49
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 50
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 51
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 52
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 53
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 54
+      - path:
+          - evidenceWaits
+          - "6"
+          - results
+        map: 55
+      - path:
+          - evidenceWaits
+          - "7"
+          - results
+        map: 56
+      - path:
+          - evidenceWaits
+          - "8"
+          - results
+        map: 57
+      - path:
+          - evidenceWaits
+          - "9"
+          - results
+        map: 58
+      - path:
+          - evidenceWaits
+          - "10"
+          - results
+        map: 59
+      - path:
+          - evidenceWaits
+          - "11"
+          - results
+        map: 60
+      - path:
+          - evidenceWaits
+          - "12"
+          - results
+        map: 61
+      - path:
+          - evidenceWaits
+          - "13"
+          - results
+        map: 62
+  storageHash: 7fd2570de853daef8984493cccea61a1d6e5fbab080bad4045e89d1eb3d77c69
+check_epoch: 10

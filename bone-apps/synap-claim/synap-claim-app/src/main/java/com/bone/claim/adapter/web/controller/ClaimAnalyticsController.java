@@ -41,4 +41,24 @@ public class ClaimAnalyticsController {
           Instant to) {
     return ApiResponse.success(claimAnalyticsApplicationService.summary(from, to));
   }
+
+  @Operation(
+      summary = "当前租户运营指标汇总（租户隔离）",
+      description =
+          "按当前认证租户过滤后聚合：终态分布、FALLBACK 降级数、影子自动化率、平均决策耗时。"
+              + "租户身份取自认证主体（TenantPort），不接受前端传入 tenantId，无法越权查他人租户。"
+              + "只含可按租户拆分的可复算指标；scopeNote 必随结果返回，影子自动化率不等于实际出金率。时间窗最多 31 天。")
+  @PreAuthorize("hasAuthority('claim:claims:read')")
+  @GetMapping("/by-tenant")
+  public ApiResponse<ClaimAnalyticsApplicationService.TenantAnalyticsSummary> byTenant(
+      @Parameter(description = "窗口起点（含），ISO-8601")
+          @RequestParam
+          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+          Instant from,
+      @Parameter(description = "窗口终点（不含），ISO-8601")
+          @RequestParam
+          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+          Instant to) {
+    return ApiResponse.success(claimAnalyticsApplicationService.summaryByTenant(from, to));
+  }
 }

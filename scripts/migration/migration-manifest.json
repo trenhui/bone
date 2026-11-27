@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 146,
+  "executableCount": 154,
   "retired": [],
   "entries": [
     {
@@ -927,6 +927,54 @@
       "file": "0140_synap_claim_drop_case_report_no_redundant.sql",
       "kind": "ddl",
       "summary": "清理并行分支遗留在 t_claim_case 上的孤儿列 report_no（对方 0139 作为「冗余展示键」添加，本方案不消费，报案号唯一真源是 t_claim_report.report_no，读侧 LEFT JOIN 取真值）。危险不在占空间而在于它是「报案号有两个真源」的物证：本方案所有写入路径都不写它，它只会越来越旧且无任何约束能发现分叉。不回改已发 0139，按 journal 纪律写新迁移。安全前提 fail-closed：列不存在则整条 no-op（幂等可重复）；列存在且有值则先打印有值行清单再 SIGNAL 中止，存量脏数据不自动删；列存在且全空才 DROP COLUMN，并用独立的 §6 终态断言确认列已消失（动态 SQL 的 IF 写反会以无害的 DO 0 通过而列还在）。bone-init.sql 与模块参考态 V25 本就没有该列，无需改动。"
+    },
+    {
+      "order": 147,
+      "file": "0141_procura_contract_review_event_chain.sql",
+      "kind": "ddl",
+      "summary": "ContractReviewed 持久化事件闭环三表（Outbox/Inbox/DLQ）：以 (tenant_id, review_id) 唯一键实现事务发布、幂等消费与失败重放，审计八列齐全；payload 仅存 7 字段快照禁 PII/正文。init-only 本地基线，不接生产 MQ、不执行生产库，投递由显式驱动模拟。对应 bone-init.sql 同名三表。"
+    },
+    {
+      "order": 148,
+      "file": "0142_procura_business_aggregates.sql",
+      "kind": "ddl",
+      "summary": "procuraAI 持久业务聚合四表（Bid/Quotation/Award/CAPA）：租户锚定业务唯一键 + 审计八列；授标确认人只来自登录态，报价 AI 字段只存建议，CAPA 关闭证据只存引用；终态回写由 DDL 与 Adapter 双层拒绝。仓库内增量脚本，不执行生产库。对应 bone-init.sql 同名四表。"
+    },
+    {
+      "order": 149,
+      "file": "0142_claim_secure_signing.sql",
+      "kind": "ddl",
+      "summary": "案件签收三表（批次/明细/轨迹）：批次号 batch_no 全局唯一、四态状态机 sign_status 落枚举 name、CAS 前置态条件更新；明细按 (batch_id,claim_id) 唯一并带 image_ready 影像完备标记；轨迹 append-only 无 version 列。审计八列齐全；CREATE TABLE IF NOT EXISTS 幂等；information_schema 终态断言 + 存储过程 SIGNAL(1644)（PREPARE 不能 SIGNAL）。对应 bone-init.sql 三表与模块参考态。线上自动签收（内部报案+外部推送）与线下人工签收共用此模型。"
+    },
+    {
+      "order": 150,
+      "file": "0143_seed_claim_sign_menu.sql",
+      "kind": "mixed",
+      "summary": "案件签收正式菜单：/sclaim/claim/sign，名称「案件签收」与 routes.tsx 逐字一致，order_no=20 接在治理组之后避免重排；id=目录+29，permission=claim:claims:read，icon 在 shell 白名单。幂等 + 终态断言（含临时表/存储过程 DDL 与 INSERT DML，kind=mixed）。"
+    },
+    {
+      "order": 151,
+      "file": "0144_fix_claim_sign_tenant_id.sql",
+      "kind": "ddl",
+      "summary": "修正 0142 签收三表 tenant_id：VARCHAR(64) → BIGINT，对齐 TenantAggregateRoot<Long> 与全仓 t_claim_case 口径；否则线下批次 requireBatch 比较租户时 ClassCastException。幂等条件 ALTER + 终态 SIGNAL(1644)，不改已记账的 0142。同步 bone-init.sql 三表定义。"
+    },
+    {
+      "order": 152,
+      "file": "0145_claim_sign_auto_case.sql",
+      "kind": "ddl",
+      "summary": "扩展签收明细表 t_claim_sign_batch_item 以承载自动建案要素：新增 policy_no/plan_id/insured_name/insured_id_no/out_insure_time/claim_type/source_channel/business_key/case_status/created_case_id 共 10 列，并加 (tenant_id,business_key) 唯一索引保证重复签收与事件重放幂等。实名明文落库为用户显式裁决（偏离 PIPL 假名化，仅限本地开发库）。幂等 information_schema 条件 ADD COLUMN/INDEX + 存储过程 SIGNAL(1644) 终态断言。同步 bone-init.sql 明细表定义。"
+    },
+    {
+      "order": 153,
+      "file": "0146_claim_sign_case_status_backfill.sql",
+      "kind": "mixed",
+      "summary": "签收明细 case_status 存量语义回填：0145 已记账故新建迁移，不修改其 sha256；claim_id 非空的存量明细置 SKIPPED、为空的置 AWAIT_MANUAL，新行 DEFAULT PENDING；幂等 UPDATE + 条件 MODIFY COLUMN + 存储过程 SIGNAL(1644) 终态断言无 NULL。同步 bone-init.sql 明细表默认值。"
+    },
+    {
+      "order": 154,
+      "file": "0147_claim_sign_tpa_parity.sql",
+      "kind": "ddl",
+      "summary": "TPA 签收对齐：批次补保司三方与紧急程度，明细补证件类型与影像要素"
     }
   ],
   "ordinalConflicts": [
@@ -1051,6 +1099,15 @@
       ],
       "independentChanges": true,
       "verdict": "两个独立变更共用四位变更号：claim DDL 与 procuraAI seed 触及对象无交集，claim 迁移先落库保持原 order，procuraAI 追加在末尾，相对顺序无语义。"
+    },
+    {
+      "ordinal": "0142",
+      "files": [
+        "0142_claim_secure_signing.sql",
+        "0142_procura_business_aggregates.sql"
+      ],
+      "independentChanges": true,
+      "verdict": "并行合流撞号：procura 四表(t_proc_*)与案件签收三表(t_claim_sign_*)触及表无交集，二者相对顺序无语义依赖；合并时按『撞号调末尾』把签收的 0142 登记为 order=149，procura 保持已记账 order=148 不动，保护已应用(或已记账)环境的顺序真源。"
     }
   ],
   "appliesTo": "store-incremental",
@@ -1183,6 +1240,14 @@
     {
       "file": "0134_seed_procurement_ai_readiness_menus.sql",
       "reason": "0133/0134 为两个独立变更共用的变更号；claim 迁移先落库且 order 137-140 不回写，procuraAI 两个 seed 按新增顺序追加为 141/142。词典序相对位移由并行合流引起，不调整既有 order 以保护已应用环境。"
+    },
+    {
+      "file": "0142_procura_business_aggregates.sql",
+      "reason": "并行合流撞号：procura 与 claim_sign 两脚本同为 0142 前缀；procura 的 order=148 已由 18:41 提交记账，合并时不改其 order 以保护已应用环境，词典序相对位移由签收脚本追加引起。"
+    },
+    {
+      "file": "0142_claim_secure_signing.sql",
+      "reason": "并行合流撞号：本脚本 order 从签收分支的 148 调为 149（撞号调末尾，procura 保持 148）；文件前缀仍为 0142 不改 sha256/文件名，因 journal 主键是 file、order_no 可变，保持原文件名即保持已记账身份。"
     }
   ]
 }

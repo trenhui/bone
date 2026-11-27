@@ -1,0 +1,17 @@
+{
+  "change": "procuraai-durable-business-aggregates-rebaseline",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "0538f52cf436a2efae3eb3cbbbdf5d2bad2a8000b5b46dc535883e8f1470754e",
+  "files": [
+    { "path": "openspec/changes/procuraai-durable-business-aggregates-rebaseline/proposal.md", "sha256": "beb0c9e8d86558f152f5386fc3c3ecb604a036c3c3205502d65b08d3ad711071" },
+    { "path": "openspec/changes/procuraai-durable-business-aggregates-rebaseline/design.md", "sha256": "e725c60d295248e4038bd2c9f8c98f41d443c23b33e30c2313e824ed964d9cd8" },
+    { "path": "openspec/changes/procuraai-durable-business-aggregates-rebaseline/tasks.md", "sha256": "419956b681018ecdf62feb4711fcb77754fcfae59db26fe7eda0aede76593444" },
+    { "path": "openspec/changes/procuraai-durable-business-aggregates-rebaseline/.openspec.yaml", "sha256": "4492318684c90914e715dee55afe9b23f60f7465350ada31d1d9437964f126f8" },
+    { "path": "openspec/changes/procuraai-durable-business-aggregates-rebaseline/specs/procurement/business-module-skeleton/spec.md", "sha256": "f12fa0e51d770f4a7ff1deba1397a7ac87725850e8a909597ea794c137d094ce" },
+    { "path": "openspec/changes/procuraai-durable-business-aggregates-rebaseline/specs/procurement/production-persistence/spec.md", "sha256": "d8a036075a1e90f88f9f0ca3be5af46d76a2dcb41aadb48e8f502fe997946fdf" }
+  ]
+}

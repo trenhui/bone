@@ -202,6 +202,10 @@
       <a href="customer-journey.html"><span class="ic">▣</span>客户旅程（小程序）<span class="cur-tag">NEW</span></a>
       <a href="form-config.html"><span class="ic">▤</span>表单配置中心<span class="cur-tag">NEW</span></a>
       <a href="evaluation-report.html"><span class="ic">◫</span>评测报告</a>
+      <a href="settlement.html"><span class="ic">￥</span>资金结算与四向对账<span class="cur-tag">NEW</span></a>
+      <a href="ai-governance.html"><span class="ic">◈</span>AI 治理与评测回放<span class="cur-tag">NEW</span></a>
+      <a href="mapping.html"><span class="ic">⇄</span>主数据映射<span class="cur-tag">NEW</span></a>
+      <a href="role-views.html"><span class="ic">◉</span>角色视角切换<span class="cur-tag">NEW</span></a>
     </div>
   </div>
   <div class="right">
@@ -214,7 +218,7 @@
   <div class="subhead">
     <h1>赔案影像详情</h1>
     <span class="badge a">等待审核</span>
-    <span style="font-size:12.5px;color:var(--txt-3)">复核阶段 · 共 12 张影像</span>
+    <span style="font-size:12.5px;color:var(--txt-3)">当前环节：审核 · 共 12 张影像</span>
     <div class="acts">
       <button class="btn plain" onclick="toast('查看特约信息')">查看特约信息</button>
       <button class="btn plain" onclick="toast('查看特殊信息')">查看特殊信息</button>
@@ -235,7 +239,7 @@
       <div class="it"><span class="k">保险公司</span><span class="v">示例财险</span></div>
       <div class="it"><span class="k">VIP</span><span class="v">普通</span></div>
       <div class="it"><span class="k">时效</span><span class="v">正常</span></div>
-      <div class="it"><span class="k">当前作业</span><span class="v">初审 / 录入 / 质检 / 审核 / 复核</span></div>
+      <div class="it"><span class="k">当前作业</span><span class="v">审核</span></div>
     </div>
 
     <div class="body">
@@ -304,10 +308,12 @@
             </table>
             <div class="sec">费用明细</div>
             <table>
-              <tr><td class="lbl">发票总费用</td><td class="amount">¥ 12,860.50</td><td class="lbl">医保基金支付</td><td class="amount">¥ 6,420.25</td></tr>
-              <tr><td class="lbl">个人自付</td><td class="amount">¥ 6,440.25</td><td class="lbl">合理费用</td><td class="amount">¥ 12,860.50</td></tr>
+              <tr><td class="lbl">发票总费用</td><td class="amount">¥ 1,280.00</td><td class="lbl">医保基金支付</td><td class="amount">¥ 0.00</td></tr>
+              <tr><td class="lbl">个人自付</td><td class="amount">¥ 1,280.00</td><td class="lbl">合理费用</td><td class="amount">¥ 1,280.00</td></tr>
             </table>
-            <div class="amount" style="margin-top:14px;font-size:15px">合计（大写）壹万贰仟捌佰陆拾元伍角　¥ 12,860.50</div>
+            <div class="amount" style="margin-top:14px;font-size:15px">合计（大写）壹仟贰佰捌拾元整　¥ 1,280.00</div>
+            <div class="sec">理算口径（与赔案详情一致）</div>
+            <div style="font-size:12px;color:var(--txt-3);line-height:1.8">医保基金支付 ¥0.00 → 个人自付 ¥1,280.00 = 发票总费用 − 医保基金；合理费用 ¥1,280.00。确定性理算：(¥1,280.00 − ¥100.00 免赔) × 90% = ¥1,062.00 赔付金额。AI 只抽取字段与给建议、不碰钱。</div>
             <div class="stamp">收费专用章</div>
           </div>
         </div>
@@ -422,7 +428,7 @@
   window.uxOpenHelp=function(){mask.classList.add('show');drawer.classList.add('show');};
   window.uxCloseAll=function(){mask.classList.remove('show','cmd-open');drawer.classList.remove('show');cmd.classList.remove('show');};
   window.uxOpenCmd=function(){mask.classList.add('show','cmd-open');cmd.classList.add('show');inp.value='';uxCmdRender();setTimeout(function(){inp.focus();},30);};
-  var items=[['claim-manage.html','▤','赔案管理列表','列表'],['claim-detail.html','▣','理赔审核详情','详情'],['claim-image-detail.html','▧','赔案影像详情','影像'],['claim-rule-config.html','∑','理算规则配置','规则'],['job-config.html','⚙','主体专属作业配置','配置'],['import-record.html','⇩','导入记录','导入'],['customer-journey.html','▣','客户旅程（小程序）','客户'],['form-config.html','▤','表单配置中心','表单'],['evaluation-report.html','◫','评测报告','评测']];
+  var items=[['claim-manage.html','▤','赔案管理列表','列表'],['claim-detail.html','▣','理赔审核详情','详情'],['claim-image-detail.html','▧','赔案影像详情','影像'],['claim-rule-config.html','∑','理算规则配置','规则'],['job-config.html','⚙','主体专属作业配置','配置'],['import-record.html','⇩','导入记录','导入'],['customer-journey.html','▣','客户旅程（小程序）','客户'],['form-config.html','▤','表单配置中心','表单'],['evaluation-report.html','◫','评测报告','评测'],['settlement.html','￥','资金结算与四向对账','结算'],['ai-governance.html','◈','AI 治理与评测回放','治理'],['mapping.html','⇄','主数据映射','映射'],['role-views.html','◉','角色视角切换','角色']];
   var sel=0,shown=[];
   window.uxCmdRender=function(){
     var q=(inp.value||'').trim().toLowerCase();

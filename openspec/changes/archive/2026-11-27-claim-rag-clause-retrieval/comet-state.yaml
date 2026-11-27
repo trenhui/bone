@@ -1,0 +1,2685 @@
+# comet-execution: managed-run
+change_id: 734c01ba-4628-45ae-8617-388a75464f80
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: executing-plans
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: thorough
+isolation: worktree
+verify_mode: null
+auto_transition: true
+base_ref: 879a5352808e7bab457f3eca4f77a01aa99d2a3b
+design_doc: openspec/changes/archive/2026-11-27-claim-rag-clause-retrieval/design.md
+plan: docs/superpowers/plans/2026-11-27-claim-rag-clause-retrieval.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-27-claim-rag-clause-retrieval-verify.md
+branch_status: pending
+created_at: 2026-11-23
+verified_at: 2026-11-27
+archive_confirmation: confirmed
+archived: true
+bound_branch: comet/claim-rag-clause-retrieval
+direct_override: false
+handoff_context: openspec/changes/archive/2026-11-27-claim-rag-clause-retrieval/.comet/handoff/design-context.json
+handoff_hash: 781107bb848fd1d2ca0070770e51babb34c1716db7f4d9c00af485c7effd84a7
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: 95c96debce7797e33b51a0605c6924dd544489d2fb9125330ebca6422e64c25c
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: claim-rag-clause-retrieval
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: eb17171d34beb0c19aadf728e47d64fd2003a8cba35ce2071e26a58eb8be15bc
+    input:
+      change: claim-rag-clause-retrieval
+      changeDir: openspec/changes/claim-rag-clause-retrieval
+      workspaceBaseline:
+        ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+    state:
+      archiveConfirmation: confirmed
+      archived: true
+      autoTransition: true
+      baseRef: 879a5352808e7bab457f3eca4f77a01aa99d2a3b
+      boundBranch: comet/claim-rag-clause-retrieval
+      branchStatus: pending
+      buildMode: executing-plans
+      buildPause: null
+      checkEpoch: 6
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-23
+      designDoc: openspec/changes/archive/2026-11-27-claim-rag-clause-retrieval/design.md
+      directOverride: false
+      handoffContext: openspec/changes/archive/2026-11-27-claim-rag-clause-retrieval/.comet/handoff/design-context.json
+      handoffHash: 781107bb848fd1d2ca0070770e51babb34c1716db7f4d9c00af485c7effd84a7
+      isolation: worktree
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/2026-11-27-claim-rag-clause-retrieval.md
+      reviewMode: thorough
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-27-claim-rag-clause-retrieval-verify.md
+      verifiedAt: 2026-11-27
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 24
+    actions:
+      - attempt: 2
+        claim:
+          executorId: comet-classic-guard
+          token: portable-45374cf18e2da677f38c0a2ce6e6f18c306dae298ab0f19dabacf7e8837d4d94
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-rag-clause-retrieval:1
+        input:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs: {}
+        inputHash: 241de242de48bab3dfd3ca5b0e3d35725ca6f86eb607b3010a6564dc7052b262
+        outcome:
+          actionId: claim-rag-clause-retrieval:1
+          attempt: 2
+          claimToken: portable-45374cf18e2da677f38c0a2ce6e6f18c306dae298ab0f19dabacf7e8837d4d94
+          inputHash: 241de242de48bab3dfd3ca5b0e3d35725ca6f86eb607b3010a6564dc7052b262
+          outcomeId: 1fac4e6c-716c-4491-87e8-b720986b9d14
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3cab43474a5b1d3a0dc9866515aebeddaec0e4f5afe5695fb1dfadf1361b8efa
+            outcomeId: 1fac4e6c-716c-4491-87e8-b720986b9d14
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 已核实原尝试完全未执行且无副作用：该 action 是进程内只读 Open
+                重校验(ref=classic-open-revalidate)，仅计算 change
+                目录内容哈希、不派发外部命令；recovery 显示
+                command=null、record.status=missing、receiptRef=null、manifestRef=null，无收据；原
+                guard --apply 执行器已结束无残留进程。重放该幂等只读计算安全。
+            resolution: not-executed
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-rag-clause-retrieval
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-b24945aaed56091b4be1ce72850b0ffe55f0f020b9517f0c81f0588450a0f99f
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-rag-clause-retrieval:4
+        input:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs: {}
+        inputHash: 16166f7854508ccc68da5c422abe96304197a333a29633577f2de1fd3d78a563
+        outcome:
+          actionId: claim-rag-clause-retrieval:4
+          attempt: 2
+          claimToken: portable-b24945aaed56091b4be1ce72850b0ffe55f0f020b9517f0c81f0588450a0f99f
+          inputHash: 16166f7854508ccc68da5c422abe96304197a333a29633577f2de1fd3d78a563
+          outcomeId: claim-rag-clause-retrieval:4:2:executor-result
+          output:
+            contentHash: d54bf5525623ea53b88405939cfcbe5f8f0c1962b14c44c8dfcf1ced0ca04564
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 5d40a0fba6e14774629d57b1ccfaef334701517f0902e3df5a194417306c3547
+            outcomeId: claim-rag-clause-retrieval:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 已核实原尝试完全未执行且无副作用：无外部收据(command=null/record=missing/receiptRef=null/manifestRef=null)，原执行器已结束；Open
+                产物已完整生成并通过 openspec validate --strict，重放幂等安全。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-rag-clause-retrieval
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 3
+        claim:
+          executorId: comet-classic-state
+          token: portable-502a29fefe8fe00d6e4bf9b6b34009ee38e434327e7f0467036147b3ab6e7661
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-rag-clause-retrieval:5
+        input:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs: {}
+        inputHash: 39a3827f51ae73df819d56399d3e7b1261573fe81a59e7703c80e6f95d1b4c50
+        outcome:
+          actionId: claim-rag-clause-retrieval:5
+          attempt: 3
+          claimToken: portable-502a29fefe8fe00d6e4bf9b6b34009ee38e434327e7f0467036147b3ab6e7661
+          inputHash: 39a3827f51ae73df819d56399d3e7b1261573fe81a59e7703c80e6f95d1b4c50
+          outcomeId: 8ddd6ac7-a0b7-4093-abbf-53ed91e35789
+          output:
+            handoffContext: openspec/changes/claim-rag-clause-retrieval/.comet/handoff/design-context.json
+            handoffHash: 781107bb848fd1d2ca0070770e51babb34c1716db7f4d9c00af485c7effd84a7
+            proposal: 采用内部模拟 provider（internal-simulated）验证现网已接线的
+              RagKnowledgeRetrievalPortAdapter：覆盖门控双态（默认 false 保持关闭行为不变 / 打开态经模拟
+              embedding+rerank 跑通检索→引用→ACL）、引用强制 fail-closed、ACL
+              deny、语料缺失/服务不可用四态。取舍：复用现网实现只补验证证据与变异双向钉子，不改任何 spec
+              行为（skip_specs=true）、不改默认门控、不接真实凭证、不新增
+              DDL、不碰资金闸。风险与缓解：内部模拟可能被误读为真实语义能力→所有证据标注
+              internal-simulated；门控打开影响现网→默认 false 不变、双态测试钉死。已授权 Spec
+              Patch：无（纯工程验证）。
+            requirementsEvidence:
+              contentHash: efcf7d52d5d43ec597a920887c5cd68e08f9731bf161be6135ae57de7a32f5fc
+              ref: openspec/changes/claim-rag-clause-retrieval
+            sourceEvidence:
+              contentHash: d567e117c7c9a904d4d625d652544313cdeafbce3b4bfabc024354678c9dfc49
+              ref: openspec/changes/claim-rag-clause-retrieval
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 95d9e8efce631bd1cfcc6155d83354f83b7786f490115feae13b0a75bff34416
+            outcomeId: 8ddd6ac7-a0b7-4093-abbf-53ed91e35789
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核对 comet runtime inspect：action :5 由 state next
+                自动认领(executorId=comet-classic-state,
+                token=30f4b2d8...)后中断；command=null、record.status=missing、receiptRef=null、manifestRef=null、证据目录不存在、无残留执行进程。与同
+                run action :1 已成功 not-executed reconcile 先例一致，原尝试完全未执行且无副作用。
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: 核对 runtime inspect：state next 自动认领的 attempt 2 从未执行 design
+                工作（无命令/收据/记录/证据目录/残留进程），与同 run action :1 的 not-executed
+                先例一致，安全重放。
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-rag-clause-retrieval
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-432c40fc086efd269ca3030ab79e8e04193e6efa395fb8924ca027469f83f12e
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-rag-clause-retrieval:7
+        input:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs: {}
+        inputHash: 6196d3de9329cfaac5875bd48aba8c2519298995aa3444b19b4cf2971b79024a
+        outcome:
+          actionId: claim-rag-clause-retrieval:7
+          attempt: 2
+          claimToken: portable-432c40fc086efd269ca3030ab79e8e04193e6efa395fb8924ca027469f83f12e
+          inputHash: 6196d3de9329cfaac5875bd48aba8c2519298995aa3444b19b4cf2971b79024a
+          outcomeId: 6d47aa03-b179-4fc9-9a10-b656e4abbc67
+          output:
+            designDoc: openspec/changes/claim-rag-clause-retrieval/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: d5423e47551ab388b64c1d95208a98c46314a60ed394f990835e8e6bdc397c45
+            outcomeId: 6d47aa03-b179-4fc9-9a10-b656e4abbc67
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核对 runtime：该 action 由 CLI 自动认领后从未执行对应 Skill 工作，无命令/收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-rag-clause-retrieval
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-0796f5e10e2e1a78369cce1b2706e668305ebbafa4bda339acb46add7bb0957a
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-rag-clause-retrieval:9
+        input:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs: {}
+        inputHash: a960e65f8a14e420ac38d5e18d2a0a5bd0f81b5ddf3f639e8667bad605e7a1ad
+        outcome:
+          actionId: claim-rag-clause-retrieval:9
+          attempt: 1
+          claimToken: portable-0796f5e10e2e1a78369cce1b2706e668305ebbafa4bda339acb46add7bb0957a
+          inputHash: a960e65f8a14e420ac38d5e18d2a0a5bd0f81b5ddf3f639e8667bad605e7a1ad
+          outcomeId: 6c723524-cc7f-4511-865d-505b182b9fa0
+          output:
+            boundBranch: comet/claim-rag-clause-retrieval
+            buildMode: executing-plans
+            directOverride: false
+            isolation: worktree
+            reviewMode: thorough
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: dc2a8e3e353063001e21a3292721b539d827a4ed18adc95f0d0f87a0ba6d28af
+            outcomeId: 6c723524-cc7f-4511-865d-505b182b9fa0
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-rag-clause-retrieval
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 3
+        claim:
+          executorId: comet-classic-state
+          token: portable-c486dc05d237de606a049094eb24e43c9d002d5cc904dc0e396bc40a92733a60
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-rag-clause-retrieval:11
+        input:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs: {}
+        inputHash: 9ba873b2b46676043b0a153aabe9fbf1e83e20838c3d007ce023e681a033e1ad
+        outcome:
+          actionId: claim-rag-clause-retrieval:11
+          attempt: 3
+          claimToken: portable-c486dc05d237de606a049094eb24e43c9d002d5cc904dc0e396bc40a92733a60
+          inputHash: 9ba873b2b46676043b0a153aabe9fbf1e83e20838c3d007ce023e681a033e1ad
+          outcomeId: a5d26fc9-ca16-45f8-8774-99061c987f6d
+          output:
+            designEvidence:
+              contentHash: 522cb7b48d6de4f5aeb3d8ad8efe3f90784461c38a73e530026acde35d3dced6
+              ref: openspec/changes/claim-rag-clause-retrieval/design.md
+            plan: docs/superpowers/plans/2026-11-27-claim-rag-clause-retrieval.md
+            planEvidence:
+              contentHash: c1251e0ee18524a397784ee1bb7f55fdd6a53a557723cb1dff739cf913952ff3
+              ref: docs/superpowers/plans/2026-11-27-claim-rag-clause-retrieval.md
+            taskRevision: f048117ffe5567230c6487306674bb2599184a7e317c01b307bfea68f6a03bd1
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: a6d1d63b43c4fac61ca1f3826a4f72ce54ed10762b36475b8c283f41b6825789
+            outcomeId: a5d26fc9-ca16-45f8-8774-99061c987f6d
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核对 runtime：该 action 由 CLI 自动认领后从未执行对应 Skill 工作，无命令/收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: 核对 runtime：该 action 由 CLI 自动认领后从未执行对应 Skill 工作，无命令/收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-rag-clause-retrieval
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 3
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/claim-rag-clause-retrieval:13/3
+          token: portable-562a2da89258a95a015d8a1c0446d41ae9512d9428175a89538d2bcaa3cc4947
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-rag-clause-retrieval:13
+        input:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs: {}
+        inputHash: e85a2baf3ec38920bdde2cbde100ca7201554b5d33db56bb18f2b6047bbb9e1e
+        outcome:
+          actionId: claim-rag-clause-retrieval:13
+          attempt: 3
+          claimToken: portable-562a2da89258a95a015d8a1c0446d41ae9512d9428175a89538d2bcaa3cc4947
+          inputHash: e85a2baf3ec38920bdde2cbde100ca7201554b5d33db56bb18f2b6047bbb9e1e
+          outcomeId: ea9a5bd9-b4ce-4468-bbe0-44654be92e18
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3992579a90a42fe492470ad068a496e411c3c8472f53ec72ab5b068f7c0c78b5
+            outcomeId: ea9a5bd9-b4ce-4468-bbe0-44654be92e18
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核对 runtime：该 action 由 CLI 自动认领后从未执行对应 Skill 工作，无命令/收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: 核对 runtime：该 action 由 CLI 自动认领后从未执行对应 Skill 工作，无命令/收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-rag-clause-retrieval
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-c4b247ce8f9196e2c70509d2527d59e7943e8f1f02e2a0e73c6dff77ca9c254c
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-rag-clause-retrieval:14
+        input:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs: {}
+        inputHash: 640517f83933095b00f1c6423f251dfa57e073b9d3a5051a4e2d04159de4f146
+        outcome:
+          actionId: claim-rag-clause-retrieval:14
+          attempt: 1
+          claimToken: portable-c4b247ce8f9196e2c70509d2527d59e7943e8f1f02e2a0e73c6dff77ca9c254c
+          inputHash: 640517f83933095b00f1c6423f251dfa57e073b9d3a5051a4e2d04159de4f146
+          outcomeId: de3e6b29-f3d2-4831-90c7-4ffdc7e1f631
+          output:
+            argv:
+              - mvn
+              - -o
+              - -q
+              - -pl
+              - bone-apps/synap-claim/synap-claim-app
+              - -am
+              - -Dtest=RagKnowledgeRetrievalPortAdapterTest
+              - -Dsurefire.failIfNoSpecifiedTests=false
+              - test
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 3be785a87064e412c324df2cd4eb9d99a5f12b68e2f3d1384ea06a9442d319f8
+            cwd: .
+            environment: 453e1243ae162ae4c52e1133f9f62a3a29c7b2ce2bc68477dcc8443c1a47d570
+            exitCode: 0
+            inputAfter: 7d49006de0496ad40207fae5882f1227d27babd35913da608de8c78f7fa034fe
+            inputBefore: 7d49006de0496ad40207fae5882f1227d27babd35913da608de8c78f7fa034fe
+            manifestHash: 4d14cb8459c701be1d728366303ca26f39872afd623135015c254fbb41cd4714
+            manifestRef: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/81b81a51-e203-4d14-a8ab-c6d5c459fb40.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/81846836-858d-4086-b453-eb46dca1667d.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: b8c43a74c0de5c1ebda3b823650c8c57d5c645d3bae55f11e7a7ab0f1e3604f0
+            outcomeId: de3e6b29-f3d2-4831-90c7-4ffdc7e1f631
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-rag-clause-retrieval
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-6484c5cbf12ce37e6175db6b7cea252e5d568ce90706e1b7d6901f639629a628
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-rag-clause-retrieval:16
+        input:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs: {}
+        inputHash: 8e5b0da4af97904918c5f2c47bc4fd43f9f796b090f74024acc59bc73d4db7e5
+        outcome:
+          actionId: claim-rag-clause-retrieval:16
+          attempt: 1
+          claimToken: portable-6484c5cbf12ce37e6175db6b7cea252e5d568ce90706e1b7d6901f639629a628
+          inputHash: 8e5b0da4af97904918c5f2c47bc4fd43f9f796b090f74024acc59bc73d4db7e5
+          outcomeId: d0ed0b66-c58e-4260-934a-88e34b52e4cb
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-27-claim-rag-clause-retrieval-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: b25dd0bb7f9be9d0dcbbb8637ae4b5ddc5b3f201a3821da612d972a22e777af1
+            outcomeId: d0ed0b66-c58e-4260-934a-88e34b52e4cb
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-rag-clause-retrieval
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-f494c10bb6c134c4cafdef8d7785b90b96ab5c432675ed8d4473ad68a41d7cb2
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-rag-clause-retrieval:18
+        input:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs: {}
+        inputHash: 5733e46eeddc8544651502b0ba8d7a3a14517a30397d36cfe64e06312aa717ee
+        outcome:
+          actionId: claim-rag-clause-retrieval:18
+          attempt: 1
+          claimToken: portable-f494c10bb6c134c4cafdef8d7785b90b96ab5c432675ed8d4473ad68a41d7cb2
+          inputHash: 5733e46eeddc8544651502b0ba8d7a3a14517a30397d36cfe64e06312aa717ee
+          outcomeId: 63e4deba-77e2-4d94-b239-53998077f5af
+          output:
+            argv:
+              - sh
+              - -c
+              - grep -q "tests=\"6\" errors=\"0\" skipped=\"0\" failures=\"0\""
+                bone-apps/synap-claim/synap-claim-app/target/surefire-reports/TEST-com.bone.claim.infrastructure.knowledge.RagKnowledgeRetrievalPortAdapterTest.xml
+                && echo VERIFY_OK
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: 01ea8fe3ef4e2db89a56f3a2b41e81e1d12252a696f06ca0ae4b9baac76aa787
+            cwd: .
+            deliveryInputs: {}
+            environment: 1b049d52177ca39c1700e2186e4d447bb8b4e8187b63b0f6ab4ca41e51afc659
+            exitCode: 0
+            inputAfter: 7d49006de0496ad40207fae5882f1227d27babd35913da608de8c78f7fa034fe
+            inputBefore: 7d49006de0496ad40207fae5882f1227d27babd35913da608de8c78f7fa034fe
+            manifestHash: 4d14cb8459c701be1d728366303ca26f39872afd623135015c254fbb41cd4714
+            manifestRef: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/507dae46-c3df-47e4-8792-c3dfdb5612d9.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/604d0161-e08e-4940-be60-d92c0b52b958.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 004955979df65db68b48e30271df2ea30f24246491baf3296a16b4d28dac3c88
+            outcomeId: 63e4deba-77e2-4d94-b239-53998077f5af
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-rag-clause-retrieval
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-82c9e8ee5174472604fb9a0e3d63e1c68058185cdf3a18d5f9687ba529c1c570
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-rag-clause-retrieval:20
+        input:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs: {}
+        inputHash: e5cfb441a8397a93c4f30ab73ed907f0403cca28ccc28b2b7d751af178d5c401
+        outcome:
+          actionId: claim-rag-clause-retrieval:20
+          attempt: 1
+          claimToken: portable-82c9e8ee5174472604fb9a0e3d63e1c68058185cdf3a18d5f9687ba529c1c570
+          inputHash: e5cfb441a8397a93c4f30ab73ed907f0403cca28ccc28b2b7d751af178d5c401
+          outcomeId: bf4f419c-a805-4cae-b5e3-a8455c16e7bd
+          output:
+            summary: 纯工程验证型 change 收口：11/11 任务完成，门控双态/引用强制/ACL/fail-closed
+              四态证据齐全（RagKnowledgeRetrievalPortAdapterTest 6/6 绿 + 2026-11-06
+              ai-native-closeout verify 四态 PASS），无 DDL/资金/默认配置变更，无真实凭证，标注
+              internal-simulated。实现与验证证据已在 dev，本 change
+              归档文档（proposal/design/tasks/plan/verify report）。
+            targetBranch: comet/claim-rag-clause-retrieval
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 7661f67db013850c6ae21b065ae8dd855c6b048b48ebf0cf2a1c2470585af1a1
+            outcomeId: bf4f419c-a805-4cae-b5e3-a8455c16e7bd
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-rag-clause-retrieval
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-a0c935009d0ac5ae78633496e7ac26c1ea3ffe6e46b4c54d348da4dfc7c2c7da
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-rag-clause-retrieval:22
+        input:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs: {}
+        inputHash: 8293f005ffe89fcbe967406114263d191f2d02b9b29b087d50b7cac2d431df67
+        outcome:
+          actionId: claim-rag-clause-retrieval:22
+          attempt: 1
+          claimToken: portable-a0c935009d0ac5ae78633496e7ac26c1ea3ffe6e46b4c54d348da4dfc7c2c7da
+          inputHash: 8293f005ffe89fcbe967406114263d191f2d02b9b29b087d50b7cac2d431df67
+          outcomeId: c1b608ed-128f-415f-a4cf-a7f3f2d770a7
+          output:
+            baseCommit: cd17f5472d20c0f1e54f6a917a8eaa2362db1649
+            deliveryAction: local
+            targetBranch: comet/claim-rag-clause-retrieval
+            verifiedBranch: comet/claim-rag-clause-retrieval
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 98b9559c0ade3a01b1e4ddaa13f243867eb992dffb343b8ed269a09aa3c8b78b
+            outcomeId: c1b608ed-128f-415f-a4cf-a7f3f2d770a7
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-rag-clause-retrieval
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-1e7f40577375c5f4b1638620652f33ffb161291e1b40a1816a95f9b982ab8585
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-rag-clause-retrieval:23
+        input:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs: {}
+        inputHash: 1f2e78475e945e1d10fdfd330dc7f6b0eaabb45e77f153e7c1d448c21cde5c37
+        outcome:
+          actionId: claim-rag-clause-retrieval:23
+          artifacts:
+            - sha256: 32e3e8e674ca387afe2e3a5327e0885a2def1d3e16cfbba894771eed68dbdab8
+              uri: openspec/changes/archive/2026-11-27-claim-rag-clause-retrieval/.comet/archive-manifest.json
+          attempt: 1
+          claimToken: portable-1e7f40577375c5f4b1638620652f33ffb161291e1b40a1816a95f9b982ab8585
+          inputHash: 1f2e78475e945e1d10fdfd330dc7f6b0eaabb45e77f153e7c1d448c21cde5c37
+          outcomeId: claim-rag-clause-retrieval:23:1:recovered:64
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-27-claim-rag-clause-retrieval
+          status: succeeded
+        protocolVersion: 1
+        reason: 原 guard archive 执行器已停止且返回；核对磁盘确认 OpenSpec Archive
+          已实际完成（openspec/changes/claim-rag-clause-retrieval/ 已移至
+          archive/2026-11-27-claim-rag-clause-retrieval/），仅收据因共享 file lock
+          竞争未写回。标记 unknown 后用 archive --recover 协调已移动结果，不重放归档。
+        receipts:
+          - hash: 5a911438b2fb0e4395d2c8b4573ec372038907d08e1972affa66c49403118da0
+            outcomeId: claim-rag-clause-retrieval:23:1:recovered:64
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-rag-clause-retrieval
+        status: succeeded
+        stepId: full.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: claim-rag-clause-retrieval:24
+        input:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs: {}
+        inputHash: bcd1a35de8be129a334267411472f7f2133f73259f828646e79dd553747e33a9
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-rag-clause-retrieval
+        status: pending
+        stepId: full.archive.deliver
+        type: invoke_skill
+    actionContexts:
+      claim-rag-clause-retrieval:1:
+        results: {}
+        sequence: 1
+      claim-rag-clause-retrieval:11:
+        results: {}
+        sequence: 11
+      claim-rag-clause-retrieval:13:
+        results: {}
+        sequence: 13
+      claim-rag-clause-retrieval:14:
+        results: {}
+        sequence: 14
+      claim-rag-clause-retrieval:16:
+        results: {}
+        sequence: 16
+      claim-rag-clause-retrieval:18:
+        results: {}
+        sequence: 18
+      claim-rag-clause-retrieval:20:
+        results: {}
+        sequence: 20
+      claim-rag-clause-retrieval:22:
+        results: {}
+        sequence: 22
+      claim-rag-clause-retrieval:23:
+        results: {}
+        sequence: 23
+      claim-rag-clause-retrieval:24:
+        results: {}
+        sequence: 24
+      claim-rag-clause-retrieval:4:
+        results: {}
+        sequence: 4
+      claim-rag-clause-retrieval:5:
+        results: {}
+        sequence: 5
+      claim-rag-clause-retrieval:7:
+        results: {}
+        sequence: 7
+      claim-rag-clause-retrieval:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: claim-rag-clause-retrieval:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: d54bf5525623ea53b88405939cfcbe5f8f0c1962b14c44c8dfcf1ced0ca04564
+              ref: openspec/changes/claim-rag-clause-retrieval
+        proposalHash: c2636513a7082e74aa59cd4306ce826a6b8fb3a6860da4fb8ca14392d69cde81
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: <decision-id>
+          choice: approved
+          proposalHash: c2636513a7082e74aa59cd4306ce826a6b8fb3a6860da4fb8ca14392d69cde81
+      - id: claim-rag-clause-retrieval:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-rag-clause-retrieval/.comet/handoff/design-context.json
+              handoffHash: 781107bb848fd1d2ca0070770e51babb34c1716db7f4d9c00af485c7effd84a7
+              proposal: 采用内部模拟 provider（internal-simulated）验证现网已接线的
+                RagKnowledgeRetrievalPortAdapter：覆盖门控双态（默认 false 保持关闭行为不变 /
+                打开态经模拟 embedding+rerank 跑通检索→引用→ACL）、引用强制 fail-closed、ACL
+                deny、语料缺失/服务不可用四态。取舍：复用现网实现只补验证证据与变异双向钉子，不改任何 spec
+                行为（skip_specs=true）、不改默认门控、不接真实凭证、不新增
+                DDL、不碰资金闸。风险与缓解：内部模拟可能被误读为真实语义能力→所有证据标注
+                internal-simulated；门控打开影响现网→默认 false 不变、双态测试钉死。已授权 Spec
+                Patch：无（纯工程验证）。
+              requirementsEvidence:
+                contentHash: efcf7d52d5d43ec597a920887c5cd68e08f9731bf161be6135ae57de7a32f5fc
+                ref: openspec/changes/claim-rag-clause-retrieval
+              sourceEvidence:
+                contentHash: d567e117c7c9a904d4d625d652544313cdeafbce3b4bfabc024354678c9dfc49
+                ref: openspec/changes/claim-rag-clause-retrieval
+        proposalHash: 2d4dd2bc328ad95b5358c23e5e733da267027424801ffedc326cba9c18ca361b
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-2d4dd2bc328ad95b5358c23e5e733da267027424801ffedc326cba9c18ca361b-approved
+          choice: approved
+          proposalHash: 2d4dd2bc328ad95b5358c23e5e733da267027424801ffedc326cba9c18ca361b
+      - id: claim-rag-clause-retrieval:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs:
+            full.build.configure:
+              boundBranch: comet/claim-rag-clause-retrieval
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: b30d3e3b8c06e2f5ed8e330cf604a235f945e392171723281976a2ffc5f4c4b0
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-build-b30d3e3b8c06e2f5ed8e330cf604a235f945e392171723281976a2ffc5f4c4b0-approved
+          choice: approved
+          proposalHash: b30d3e3b8c06e2f5ed8e330cf604a235f945e392171723281976a2ffc5f4c4b0
+      - id: claim-rag-clause-retrieval:21
+        stepId: full.archive.confirm
+        sequence: 21
+        status: resolved
+        proposal:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs:
+            full.archive.prepare:
+              summary: 纯工程验证型 change 收口：11/11 任务完成，门控双态/引用强制/ACL/fail-closed
+                四态证据齐全（RagKnowledgeRetrievalPortAdapterTest 6/6 绿 + 2026-11-06
+                ai-native-closeout verify 四态 PASS），无 DDL/资金/默认配置变更，无真实凭证，标注
+                internal-simulated。实现与验证证据已在 dev，本 change
+                归档文档（proposal/design/tasks/plan/verify report）。
+              targetBranch: comet/claim-rag-clause-retrieval
+        proposalHash: 57f24d5cd03b34f147235c77f99a81dcc93aae094cdb7c383cf9117d2ed4c0bd
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-57f24d5cd03b34f147235c77f99a81dcc93aae094cdb7c383cf9117d2ed4c0bd-local
+          choice: local
+          proposalHash: 57f24d5cd03b34f147235c77f99a81dcc93aae094cdb7c383cf9117d2ed4c0bd
+    evidenceWaits:
+      - id: claim-rag-clause-retrieval:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/claim-rag-clause-retrieval
+          contentHash: d54bf5525623ea53b88405939cfcbe5f8f0c1962b14c44c8dfcf1ced0ca04564
+          submissionId: sub-claim-rag-clause-retrieval-e05cfe4b03a4
+      - id: claim-rag-clause-retrieval:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/claim-rag-clause-retrieval/design.md
+          contentHash: 522cb7b48d6de4f5aeb3d8ad8efe3f90784461c38a73e530026acde35d3dced6
+          submissionId: e95fa136-f11c-48cf-b3e5-a04b9ae3090d
+      - id: claim-rag-clause-retrieval:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-27-claim-rag-clause-retrieval.md
+          contentHash: c1251e0ee18524a397784ee1bb7f55fdd6a53a557723cb1dff739cf913952ff3
+          submissionId: 8f815164-4dd3-4405-a729-df0817c28f5f
+      - id: claim-rag-clause-retrieval:15
+        stepId: full.build.check.evidence
+        sequence: 15
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/81846836-858d-4086-b453-eb46dca1667d.log
+          contentHash: 3be785a87064e412c324df2cd4eb9d99a5f12b68e2f3d1384ea06a9442d319f8
+          submissionId: 3cb7f094-a7db-48e6-9586-e9b9783afe19
+      - id: claim-rag-clause-retrieval:17
+        stepId: full.verify.report.evidence
+        sequence: 17
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-27-claim-rag-clause-retrieval-verify.md
+          contentHash: 22a558f0993a56fd6cd5ab63b3df6ca6e87ad07a02d994a9e19ff40547ff5b83
+          submissionId: 4ca2e446-208a-411b-8c24-59e472e78f0c
+      - id: claim-rag-clause-retrieval:19
+        stepId: full.verify.check.evidence
+        sequence: 19
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/604d0161-e08e-4940-be60-d92c0b52b958.log
+          contentHash: 01ea8fe3ef4e2db89a56f3a2b41e81e1d12252a696f06ca0ae4b9baac76aa787
+          submissionId: 5ca1f97d-a964-494e-a2ea-d372250b1c1c
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 65
+  sourceHash: ff2754b85f7c35ebaf80e5174fc407c76199a9269e206e97bbe2a539bd380514
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: d54bf5525623ea53b88405939cfcbe5f8f0c1962b14c44c8dfcf1ced0ca04564
+              ref: openspec/changes/claim-rag-clause-retrieval
+      - contentHash: d54bf5525623ea53b88405939cfcbe5f8f0c1962b14c44c8dfcf1ced0ca04564
+        ref: openspec/changes/claim-rag-clause-retrieval
+      - contentHash: d54bf5525623ea53b88405939cfcbe5f8f0c1962b14c44c8dfcf1ced0ca04564
+      - choice: approved
+        proposal:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-rag-clause-retrieval/.comet/handoff/design-context.json
+              handoffHash: 781107bb848fd1d2ca0070770e51babb34c1716db7f4d9c00af485c7effd84a7
+              proposal: 采用内部模拟 provider（internal-simulated）验证现网已接线的
+                RagKnowledgeRetrievalPortAdapter：覆盖门控双态（默认 false 保持关闭行为不变 /
+                打开态经模拟 embedding+rerank 跑通检索→引用→ACL）、引用强制 fail-closed、ACL
+                deny、语料缺失/服务不可用四态。取舍：复用现网实现只补验证证据与变异双向钉子，不改任何 spec
+                行为（skip_specs=true）、不改默认门控、不接真实凭证、不新增
+                DDL、不碰资金闸。风险与缓解：内部模拟可能被误读为真实语义能力→所有证据标注
+                internal-simulated；门控打开影响现网→默认 false 不变、双态测试钉死。已授权 Spec
+                Patch：无（纯工程验证）。
+              requirementsEvidence:
+                contentHash: efcf7d52d5d43ec597a920887c5cd68e08f9731bf161be6135ae57de7a32f5fc
+                ref: openspec/changes/claim-rag-clause-retrieval
+              sourceEvidence:
+                contentHash: d567e117c7c9a904d4d625d652544313cdeafbce3b4bfabc024354678c9dfc49
+                ref: openspec/changes/claim-rag-clause-retrieval
+      - handoffContext: openspec/changes/claim-rag-clause-retrieval/.comet/handoff/design-context.json
+        handoffHash: 781107bb848fd1d2ca0070770e51babb34c1716db7f4d9c00af485c7effd84a7
+        proposal: 采用内部模拟 provider（internal-simulated）验证现网已接线的
+          RagKnowledgeRetrievalPortAdapter：覆盖门控双态（默认 false 保持关闭行为不变 / 打开态经模拟
+          embedding+rerank 跑通检索→引用→ACL）、引用强制 fail-closed、ACL
+          deny、语料缺失/服务不可用四态。取舍：复用现网实现只补验证证据与变异双向钉子，不改任何 spec
+          行为（skip_specs=true）、不改默认门控、不接真实凭证、不新增
+          DDL、不碰资金闸。风险与缓解：内部模拟可能被误读为真实语义能力→所有证据标注 internal-simulated；门控打开影响现网→默认
+          false 不变、双态测试钉死。已授权 Spec Patch：无（纯工程验证）。
+        requirementsEvidence:
+          contentHash: efcf7d52d5d43ec597a920887c5cd68e08f9731bf161be6135ae57de7a32f5fc
+          ref: openspec/changes/claim-rag-clause-retrieval
+        sourceEvidence:
+          contentHash: d567e117c7c9a904d4d625d652544313cdeafbce3b4bfabc024354678c9dfc49
+          ref: openspec/changes/claim-rag-clause-retrieval
+      - designDoc: openspec/changes/claim-rag-clause-retrieval/design.md
+      - contentHash: 522cb7b48d6de4f5aeb3d8ad8efe3f90784461c38a73e530026acde35d3dced6
+        ref: openspec/changes/claim-rag-clause-retrieval/design.md
+      - boundBranch: comet/claim-rag-clause-retrieval
+        buildMode: executing-plans
+        directOverride: false
+        isolation: worktree
+        reviewMode: thorough
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs:
+            full.build.configure:
+              boundBranch: comet/claim-rag-clause-retrieval
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 522cb7b48d6de4f5aeb3d8ad8efe3f90784461c38a73e530026acde35d3dced6
+          ref: openspec/changes/claim-rag-clause-retrieval/design.md
+        plan: docs/superpowers/plans/2026-11-27-claim-rag-clause-retrieval.md
+        planEvidence:
+          contentHash: c1251e0ee18524a397784ee1bb7f55fdd6a53a557723cb1dff739cf913952ff3
+          ref: docs/superpowers/plans/2026-11-27-claim-rag-clause-retrieval.md
+        taskRevision: f048117ffe5567230c6487306674bb2599184a7e317c01b307bfea68f6a03bd1
+      - contentHash: c1251e0ee18524a397784ee1bb7f55fdd6a53a557723cb1dff739cf913952ff3
+        ref: docs/superpowers/plans/2026-11-27-claim-rag-clause-retrieval.md
+      - event: build-complete
+      - argv:
+          - mvn
+          - -o
+          - -q
+          - -pl
+          - bone-apps/synap-claim/synap-claim-app
+          - -am
+          - -Dtest=RagKnowledgeRetrievalPortAdapterTest
+          - -Dsurefire.failIfNoSpecifiedTests=false
+          - test
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 3be785a87064e412c324df2cd4eb9d99a5f12b68e2f3d1384ea06a9442d319f8
+        cwd: .
+        environment: 453e1243ae162ae4c52e1133f9f62a3a29c7b2ce2bc68477dcc8443c1a47d570
+        exitCode: 0
+        inputAfter: 7d49006de0496ad40207fae5882f1227d27babd35913da608de8c78f7fa034fe
+        inputBefore: 7d49006de0496ad40207fae5882f1227d27babd35913da608de8c78f7fa034fe
+        manifestHash: 4d14cb8459c701be1d728366303ca26f39872afd623135015c254fbb41cd4714
+        manifestRef: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/81b81a51-e203-4d14-a8ab-c6d5c459fb40.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/81846836-858d-4086-b453-eb46dca1667d.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 3be785a87064e412c324df2cd4eb9d99a5f12b68e2f3d1384ea06a9442d319f8
+        ref: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/81846836-858d-4086-b453-eb46dca1667d.log
+      - contentHash: 22a558f0993a56fd6cd5ab63b3df6ca6e87ad07a02d994a9e19ff40547ff5b83
+        ref: docs/superpowers/reports/2026-11-27-claim-rag-clause-retrieval-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-27-claim-rag-clause-retrieval-verify.md
+      - argv:
+          - sh
+          - -c
+          - grep -q "tests=\"6\" errors=\"0\" skipped=\"0\" failures=\"0\""
+            bone-apps/synap-claim/synap-claim-app/target/surefire-reports/TEST-com.bone.claim.infrastructure.knowledge.RagKnowledgeRetrievalPortAdapterTest.xml
+            && echo VERIFY_OK
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: 01ea8fe3ef4e2db89a56f3a2b41e81e1d12252a696f06ca0ae4b9baac76aa787
+        cwd: .
+        deliveryInputs: {}
+        environment: 1b049d52177ca39c1700e2186e4d447bb8b4e8187b63b0f6ab4ca41e51afc659
+        exitCode: 0
+        inputAfter: 7d49006de0496ad40207fae5882f1227d27babd35913da608de8c78f7fa034fe
+        inputBefore: 7d49006de0496ad40207fae5882f1227d27babd35913da608de8c78f7fa034fe
+        manifestHash: 4d14cb8459c701be1d728366303ca26f39872afd623135015c254fbb41cd4714
+        manifestRef: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/507dae46-c3df-47e4-8792-c3dfdb5612d9.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/604d0161-e08e-4940-be60-d92c0b52b958.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 01ea8fe3ef4e2db89a56f3a2b41e81e1d12252a696f06ca0ae4b9baac76aa787
+        ref: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/604d0161-e08e-4940-be60-d92c0b52b958.log
+      - choice: local
+        proposal:
+          input:
+            change: claim-rag-clause-retrieval
+            changeDir: openspec/changes/claim-rag-clause-retrieval
+            workspaceBaseline:
+              ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+          outputs:
+            full.archive.prepare:
+              summary: 纯工程验证型 change 收口：11/11 任务完成，门控双态/引用强制/ACL/fail-closed
+                四态证据齐全（RagKnowledgeRetrievalPortAdapterTest 6/6 绿 + 2026-11-06
+                ai-native-closeout verify 四态 PASS），无 DDL/资金/默认配置变更，无真实凭证，标注
+                internal-simulated。实现与验证证据已在 dev，本 change
+                归档文档（proposal/design/tasks/plan/verify report）。
+              targetBranch: comet/claim-rag-clause-retrieval
+      - summary: 纯工程验证型 change 收口：11/11 任务完成，门控双态/引用强制/ACL/fail-closed
+          四态证据齐全（RagKnowledgeRetrievalPortAdapterTest 6/6 绿 + 2026-11-06
+          ai-native-closeout verify 四态 PASS），无 DDL/资金/默认配置变更，无真实凭证，标注
+          internal-simulated。实现与验证证据已在 dev，本 change
+          归档文档（proposal/design/tasks/plan/verify report）。
+        targetBranch: comet/claim-rag-clause-retrieval
+      - baseCommit: cd17f5472d20c0f1e54f6a917a8eaa2362db1649
+        deliveryAction: local
+        targetBranch: comet/claim-rag-clause-retrieval
+        verifiedBranch: comet/claim-rag-clause-retrieval
+      - archiveDirectory: openspec/changes/archive/2026-11-27-claim-rag-clause-retrieval
+      - sequence: 9
+        value:
+          boundBranch: comet/claim-rag-clause-retrieval
+          buildMode: executing-plans
+          directOverride: false
+          isolation: worktree
+          reviewMode: thorough
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-rag-clause-retrieval
+              changeDir: openspec/changes/claim-rag-clause-retrieval
+              workspaceBaseline:
+                ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+            outputs:
+              full.build.configure:
+                boundBranch: comet/claim-rag-clause-retrieval
+                buildMode: executing-plans
+                directOverride: false
+                isolation: worktree
+                reviewMode: thorough
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-rag-clause-retrieval
+              changeDir: openspec/changes/claim-rag-clause-retrieval
+              workspaceBaseline:
+                ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/claim-rag-clause-retrieval/.comet/handoff/design-context.json
+                handoffHash: 781107bb848fd1d2ca0070770e51babb34c1716db7f4d9c00af485c7effd84a7
+                proposal: 采用内部模拟 provider（internal-simulated）验证现网已接线的
+                  RagKnowledgeRetrievalPortAdapter：覆盖门控双态（默认 false 保持关闭行为不变 /
+                  打开态经模拟 embedding+rerank 跑通检索→引用→ACL）、引用强制 fail-closed、ACL
+                  deny、语料缺失/服务不可用四态。取舍：复用现网实现只补验证证据与变异双向钉子，不改任何 spec
+                  行为（skip_specs=true）、不改默认门控、不接真实凭证、不新增
+                  DDL、不碰资金闸。风险与缓解：内部模拟可能被误读为真实语义能力→所有证据标注
+                  internal-simulated；门控打开影响现网→默认 false 不变、双态测试钉死。已授权 Spec
+                  Patch：无（纯工程验证）。
+                requirementsEvidence:
+                  contentHash: efcf7d52d5d43ec597a920887c5cd68e08f9731bf161be6135ae57de7a32f5fc
+                  ref: openspec/changes/claim-rag-clause-retrieval
+                sourceEvidence:
+                  contentHash: d567e117c7c9a904d4d625d652544313cdeafbce3b4bfabc024354678c9dfc49
+                  ref: openspec/changes/claim-rag-clause-retrieval
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/claim-rag-clause-retrieval/design.md
+      - sequence: 8
+        value:
+          contentHash: 522cb7b48d6de4f5aeb3d8ad8efe3f90784461c38a73e530026acde35d3dced6
+          ref: openspec/changes/claim-rag-clause-retrieval/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/claim-rag-clause-retrieval/.comet/handoff/design-context.json
+          handoffHash: 781107bb848fd1d2ca0070770e51babb34c1716db7f4d9c00af485c7effd84a7
+          proposal: 采用内部模拟 provider（internal-simulated）验证现网已接线的
+            RagKnowledgeRetrievalPortAdapter：覆盖门控双态（默认 false 保持关闭行为不变 / 打开态经模拟
+            embedding+rerank 跑通检索→引用→ACL）、引用强制 fail-closed、ACL
+            deny、语料缺失/服务不可用四态。取舍：复用现网实现只补验证证据与变异双向钉子，不改任何 spec
+            行为（skip_specs=true）、不改默认门控、不接真实凭证、不新增
+            DDL、不碰资金闸。风险与缓解：内部模拟可能被误读为真实语义能力→所有证据标注
+            internal-simulated；门控打开影响现网→默认 false 不变、双态测试钉死。已授权 Spec
+            Patch：无（纯工程验证）。
+          requirementsEvidence:
+            contentHash: efcf7d52d5d43ec597a920887c5cd68e08f9731bf161be6135ae57de7a32f5fc
+            ref: openspec/changes/claim-rag-clause-retrieval
+          sourceEvidence:
+            contentHash: d567e117c7c9a904d4d625d652544313cdeafbce3b4bfabc024354678c9dfc49
+            ref: openspec/changes/claim-rag-clause-retrieval
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-rag-clause-retrieval
+              changeDir: openspec/changes/claim-rag-clause-retrieval
+              workspaceBaseline:
+                ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: d54bf5525623ea53b88405939cfcbe5f8f0c1962b14c44c8dfcf1ced0ca04564
+                ref: openspec/changes/claim-rag-clause-retrieval
+      - sequence: 2
+        value:
+          contentHash: d54bf5525623ea53b88405939cfcbe5f8f0c1962b14c44c8dfcf1ced0ca04564
+          ref: openspec/changes/claim-rag-clause-retrieval
+      - sequence: 4
+        value:
+          contentHash: d54bf5525623ea53b88405939cfcbe5f8f0c1962b14c44c8dfcf1ced0ca04564
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 522cb7b48d6de4f5aeb3d8ad8efe3f90784461c38a73e530026acde35d3dced6
+            ref: openspec/changes/claim-rag-clause-retrieval/design.md
+          plan: docs/superpowers/plans/2026-11-27-claim-rag-clause-retrieval.md
+          planEvidence:
+            contentHash: c1251e0ee18524a397784ee1bb7f55fdd6a53a557723cb1dff739cf913952ff3
+            ref: docs/superpowers/plans/2026-11-27-claim-rag-clause-retrieval.md
+          taskRevision: f048117ffe5567230c6487306674bb2599184a7e317c01b307bfea68f6a03bd1
+      - sequence: 12
+        value:
+          contentHash: c1251e0ee18524a397784ee1bb7f55fdd6a53a557723cb1dff739cf913952ff3
+          ref: docs/superpowers/plans/2026-11-27-claim-rag-clause-retrieval.md
+      - sequence: 13
+        value:
+          event: build-complete
+      - sequence: 14
+        value:
+          argv:
+            - mvn
+            - -o
+            - -q
+            - -pl
+            - bone-apps/synap-claim/synap-claim-app
+            - -am
+            - -Dtest=RagKnowledgeRetrievalPortAdapterTest
+            - -Dsurefire.failIfNoSpecifiedTests=false
+            - test
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 3be785a87064e412c324df2cd4eb9d99a5f12b68e2f3d1384ea06a9442d319f8
+          cwd: .
+          environment: 453e1243ae162ae4c52e1133f9f62a3a29c7b2ce2bc68477dcc8443c1a47d570
+          exitCode: 0
+          inputAfter: 7d49006de0496ad40207fae5882f1227d27babd35913da608de8c78f7fa034fe
+          inputBefore: 7d49006de0496ad40207fae5882f1227d27babd35913da608de8c78f7fa034fe
+          manifestHash: 4d14cb8459c701be1d728366303ca26f39872afd623135015c254fbb41cd4714
+          manifestRef: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/81b81a51-e203-4d14-a8ab-c6d5c459fb40.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/81846836-858d-4086-b453-eb46dca1667d.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 15
+        value:
+          contentHash: 3be785a87064e412c324df2cd4eb9d99a5f12b68e2f3d1384ea06a9442d319f8
+          ref: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/81846836-858d-4086-b453-eb46dca1667d.log
+      - sequence: 17
+        value:
+          contentHash: 22a558f0993a56fd6cd5ab63b3df6ca6e87ad07a02d994a9e19ff40547ff5b83
+          ref: docs/superpowers/reports/2026-11-27-claim-rag-clause-retrieval-verify.md
+      - sequence: 16
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-27-claim-rag-clause-retrieval-verify.md
+      - sequence: 18
+        value:
+          argv:
+            - sh
+            - -c
+            - grep -q "tests=\"6\" errors=\"0\" skipped=\"0\" failures=\"0\""
+              bone-apps/synap-claim/synap-claim-app/target/surefire-reports/TEST-com.bone.claim.infrastructure.knowledge.RagKnowledgeRetrievalPortAdapterTest.xml
+              && echo VERIFY_OK
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: 01ea8fe3ef4e2db89a56f3a2b41e81e1d12252a696f06ca0ae4b9baac76aa787
+          cwd: .
+          deliveryInputs: {}
+          environment: 1b049d52177ca39c1700e2186e4d447bb8b4e8187b63b0f6ab4ca41e51afc659
+          exitCode: 0
+          inputAfter: 7d49006de0496ad40207fae5882f1227d27babd35913da608de8c78f7fa034fe
+          inputBefore: 7d49006de0496ad40207fae5882f1227d27babd35913da608de8c78f7fa034fe
+          manifestHash: 4d14cb8459c701be1d728366303ca26f39872afd623135015c254fbb41cd4714
+          manifestRef: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/507dae46-c3df-47e4-8792-c3dfdb5612d9.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/604d0161-e08e-4940-be60-d92c0b52b958.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 19
+        value:
+          contentHash: 01ea8fe3ef4e2db89a56f3a2b41e81e1d12252a696f06ca0ae4b9baac76aa787
+          ref: .comet/runtime/classic-sdk-checks/48a877f49a951934633b8491683cfe6cdfb125d83da9a63e16da9780052ba454/604d0161-e08e-4940-be60-d92c0b52b958.log
+      - sequence: 21
+        value:
+          choice: local
+          proposal:
+            input:
+              change: claim-rag-clause-retrieval
+              changeDir: openspec/changes/claim-rag-clause-retrieval
+              workspaceBaseline:
+                ref: cc47d0ff-52fd-48fb-889d-14c85e0ab87a
+            outputs:
+              full.archive.prepare:
+                summary: 纯工程验证型 change 收口：11/11 任务完成，门控双态/引用强制/ACL/fail-closed
+                  四态证据齐全（RagKnowledgeRetrievalPortAdapterTest 6/6 绿 + 2026-11-06
+                  ai-native-closeout verify 四态 PASS），无 DDL/资金/默认配置变更，无真实凭证，标注
+                  internal-simulated。实现与验证证据已在 dev，本 change
+                  归档文档（proposal/design/tasks/plan/verify report）。
+                targetBranch: comet/claim-rag-clause-retrieval
+      - sequence: 20
+        value:
+          summary: 纯工程验证型 change 收口：11/11 任务完成，门控双态/引用强制/ACL/fail-closed
+            四态证据齐全（RagKnowledgeRetrievalPortAdapterTest 6/6 绿 + 2026-11-06
+            ai-native-closeout verify 四态 PASS），无 DDL/资金/默认配置变更，无真实凭证，标注
+            internal-simulated。实现与验证证据已在 dev，本 change
+            归档文档（proposal/design/tasks/plan/verify report）。
+          targetBranch: comet/claim-rag-clause-retrieval
+      - sequence: 22
+        value:
+          baseCommit: cd17f5472d20c0f1e54f6a917a8eaa2362db1649
+          deliveryAction: local
+          targetBranch: comet/claim-rag-clause-retrieval
+          verifiedBranch: comet/claim-rag-clause-retrieval
+      - sequence: 23
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-27-claim-rag-clause-retrieval
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 14
+        left: 32
+        right: 33
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 34
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 35
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 25
+        height: 5
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: null
+        right: 39
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: 40
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 41
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 42
+        height: 5
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: 45
+        right: 39
+        height: 2
+      - key: full.verify.check
+        value: 17
+        left: 44
+        right: 46
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 47
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 48
+        height: 5
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 20
+        left: 50
+        right: 51
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 33
+        right: 27
+        height: 2
+      - key: full.build.check.evidence
+        value: 14
+        left: 52
+        right: 53
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 54
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 55
+        right: 48
+        height: 5
+      - key: full.archive.preflight
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: 57
+        height: 2
+      - key: full.archive.prepare
+        value: 20
+        left: 58
+        right: 51
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 53
+        right: 29
+        height: 3
+      - key: full.build.check.evidence
+        value: 14
+        left: 59
+        right: 60
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 61
+        right: 48
+        height: 5
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 22
+        left: 63
+        right: 64
+        height: 2
+      - key: full.archive.prepare
+        value: 20
+        left: 65
+        right: 51
+        height: 3
+      - key: full.build.check.evidence
+        value: 14
+        left: 66
+        right: 60
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 67
+        right: 48
+        height: 5
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 70
+        height: 2
+      - key: full.design.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: 72
+        right: 73
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: 75
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 76
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 71
+        right: 77
+        height: 4
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: 79
+        right: 80
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 81
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 82
+        right: 77
+        height: 4
+      - key: full.build.execute
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 84
+        height: 2
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: 80
+        height: 2
+      - key: full.build.plan
+        value: 33
+        left: 85
+        right: 86
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 87
+        right: 77
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: 89
+        right: 90
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 91
+        right: 84
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 92
+        right: 86
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 77
+        height: 5
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: null
+        right: 96
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: 95
+        right: 97
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 98
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 99
+        height: 5
+      - key: full.open.revalidate
+        value: 32
+        left: 95
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: 102
+        right: 96
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 101
+        right: 103
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 104
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 105
+        height: 5
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 43
+        left: 107
+        right: 108
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 90
+        right: 84
+        height: 2
+      - key: full.build.check.evidence
+        value: 37
+        left: 109
+        right: 110
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 111
+        right: 86
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 112
+        right: 105
+        height: 5
+      - key: full.archive.preflight
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: 114
+        height: 2
+      - key: full.archive.prepare
+        value: 43
+        left: 115
+        right: 108
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 110
+        right: 86
+        height: 3
+      - key: full.build.check.evidence
+        value: 37
+        left: 116
+        right: 117
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 118
+        right: 105
+        height: 5
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 45
+        left: 120
+        right: 121
+        height: 2
+      - key: full.archive.prepare
+        value: 43
+        left: 122
+        right: 108
+        height: 3
+      - key: full.build.check.evidence
+        value: 37
+        left: 123
+        right: 117
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 124
+        right: 105
+        height: 5
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 30
+        left: 126
+        right: 127
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: 129
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 126
+        right: 130
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: 132
+        right: 133
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 134
+        right: 130
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: 136
+        right: 137
+        height: 2
+      - key: full.design.handoff
+        value: 28
+        left: 138
+        right: 133
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 139
+        right: 130
+        height: 4
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: 141
+        height: 2
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 144
+        right: 145
+        height: 2
+      - key: full.open
+        value: 29
+        left: 143
+        right: 146
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: 149
+        right: 150
+        height: 2
+      - key: full.design.confirm
+        value: 25
+        left: 148
+        right: 151
+        height: 3
+      - key: full.open
+        value: 29
+        left: 152
+        right: 146
+        height: 4
+      - key: full.archive.prepare
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 36
+        left: 154
+        right: 155
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: 158
+        height: 2
+      - key: full.build.execute
+        value: 35
+        left: 157
+        right: 159
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: 156
+        right: 160
+        height: 4
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 144
+        right: 162
+        height: 2
+      - key: full.verify.check.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: 164
+        right: 165
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 163
+        right: 166
+        height: 3
+      - key: full.open
+        value: 29
+        left: 151
+        right: 167
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 161
+        right: 168
+        height: 5
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: 171
+        right: 172
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 175
+        height: 2
+      - key: full.open
+        value: 29
+        left: 173
+        right: 176
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 178
+        right: 179
+        height: 2
+      - key: full.design.document
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: 181
+        right: 182
+        height: 2
+      - key: full.design.confirm
+        value: 25
+        left: 180
+        right: 183
+        height: 3
+      - key: full.open
+        value: 29
+        left: 184
+        right: 176
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: 186
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: 188
+        right: 189
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 187
+        right: 190
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 176
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: 191
+        right: 192
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: 194
+        right: 195
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 196
+        right: 190
+        height: 3
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: 198
+        height: 2
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 199
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 200
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 197
+        right: 201
+        height: 5
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 203
+        height: 2
+      - key: full.verify.report.evidence
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: 205
+        right: null
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 204
+        right: 206
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 207
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 197
+        right: 208
+        height: 5
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 37
+      - 43
+      - 49
+      - 56
+      - 62
+      - 68
+      - 78
+      - 83
+      - 88
+      - 94
+      - 100
+      - 106
+      - 113
+      - 119
+      - 125
+      - 128
+      - 131
+      - 135
+      - 140
+      - 142
+      - 147
+      - 153
+      - 169
+      - 170
+      - 177
+      - 185
+      - 193
+      - 202
+      - 209
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actionContexts
+          - claim-rag-clause-retrieval:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - claim-rag-clause-retrieval:11
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - claim-rag-clause-retrieval:13
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - claim-rag-clause-retrieval:14
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - claim-rag-clause-retrieval:16
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - claim-rag-clause-retrieval:18
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - claim-rag-clause-retrieval:20
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - claim-rag-clause-retrieval:22
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - claim-rag-clause-retrieval:23
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - claim-rag-clause-retrieval:24
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - claim-rag-clause-retrieval:4
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - claim-rag-clause-retrieval:5
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - claim-rag-clause-retrieval:7
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - claim-rag-clause-retrieval:9
+          - results
+        map: 26
+      - path:
+          - outputs
+        map: 22
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 27
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 28
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 29
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 30
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 31
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 32
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 33
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 34
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 35
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 36
+  storageHash: 6f4a2ac88edea5c348da4f32372c97253cfd42edb94c9d69ee9e05887eda022f
+check_epoch: 6

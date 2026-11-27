@@ -179,6 +179,16 @@
       "currency": "historical"
     },
     {
+      "id": "record.synapclaim.four-phase-alignment",
+      "path": "09-records/synapClaim-四阶段落地对齐说明.md",
+      "layer": "L9",
+      "diataxis": "explanation",
+      "status": "active",
+      "summary": "synapClaim 四阶段路线图逐节点落地程度与解锁前置（四态登记），供架构/产品评审使用的过程证据",
+      "role": "record",
+      "currency": "historical"
+    },
+    {
       "id": "contract.rules-v1",
       "path": "03-contract/智能理算引擎业务规则V1.md",
       "layer": "L3",

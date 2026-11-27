@@ -153,6 +153,28 @@ export interface ClaimDecisionReq {
   approvedAmount?: number;
 }
 
+/** 案件灵活查询参数（GET /api/v1/claims/query）。 */
+export interface ClaimQueryParams {
+  keyword?: string;
+  claimId?: string;
+  claimNo?: string;
+  reportNo?: string;
+  policyNo?: string;
+  statuses?: ClaimStatusName[];
+  taskStatus?: string;
+  stage?: string;
+  sourceChannel?: string;
+  sourceSystem?: string;
+  assigneeId?: string;
+  hangUpStatus?: number;
+  createdFrom?: string;
+  createdTo?: string;
+  amountMin?: number;
+  amountMax?: number;
+  page?: number;
+  size?: number;
+}
+
 /** 赔案头（工作台列表行）。 */
 export interface ClaimHeadProjection {
   claimId: string;
@@ -162,6 +184,7 @@ export interface ClaimHeadProjection {
   insuredIdHash: string;
   claimType: string;
   status: ClaimStatusName;
+  stage?: string;
   externalStatus: string;
   hangUpStatus: number;
   sourceChannel: string;
@@ -325,11 +348,27 @@ export interface EvidenceResp {
   clearType?: 'CLEAR' | 'UNCLEAR' | 'INCOMPLETE';
 }
 
+/** 上传时 canvas 提取的影像版式信号（后端 DocTypeClassifier 的内容证据）。 */
+export interface DocTypeImageSignals {
+  inkRatio?: number;
+  inkConcentration?: number;
+  tableLineRatio?: number;
+  aspectPercent?: number;
+}
+
 export interface RegisterEvidenceReq {
   fileRef: string;
   contentHash: string;
   docType?: string;
   verifyValid?: string;
+  /** 上传时的原始文件名，仅用于后端自动分类，不落库。 */
+  originalName?: string;
+  /** true 时按文件名 + 版式信号自动识别；用户显式选择 docType 时忽略此标志。 */
+  autoClassify?: boolean;
+  /** TPA imageType 元数据，仅作弱证据。 */
+  imageType?: string;
+  /** canvas 提取的版式信号，能识别 hash 文件名的签名图。 */
+  imageSignals?: DocTypeImageSignals;
 }
 
 /* ===================== 资金 ===================== */
