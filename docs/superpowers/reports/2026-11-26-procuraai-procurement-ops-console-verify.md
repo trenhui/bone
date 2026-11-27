@@ -44,3 +44,25 @@
 ## 5. 结论
 
 全部可执行验证通过，前端代码与规格和设计一致，独立审查无 CRITICAL/IMPORTANT。验证通过；归档与交付方式由 Archive 阶段按用户当前授权处理。
+
+
+## 6. 交付执行与 SDK 状态机缺口（2026-11-26 收尾）
+
+**工程交付已完成并验证：**
+
+- 归档产物与实现精确暂存 38 项（无 `.comet-state.lock/`、无非本 change 文件），初始提交 `bb5192580`（基于批准基线 `e64ad175a`）。
+- `origin/dev` 已被并行 claim 域推进 12 提交（含 3 个 merge：`e986650f2`/`2a69f4489`/`2bf67fbc8`）。经逐提交 `git show --name-only` 与 `git diff --name-only e64ad175a..origin/dev -- <我的38路径>` 双重确认：远端 12 提交与本次 38 路径**零重叠**，我的新文件远端均不存在。
+- 无冲突 rebase 到 `origin/dev`：交付提交 `bd83745e5c44a9a27c42203c66d6597e34191fde`，父提交为 `e986650f2`，ahead 1 / behind 0，快进 push 成功。
+- 三方 SHA 一致：本地 HEAD = `origin/dev` = `git ls-remote origin refs/heads/dev` = `bd83745e5`。逐文件复核：本 change 交付物（门禁脚本、三页面、API 客户端、两条主 spec、归档 comet-state）全部存在于远端提交；claim owner 文件完整保留；工作区干净。全程未 force push、未改写历史、未夹带他人提交。
+
+**SDK 交付状态机缺口（结构性，非执行问题）：**
+
+- `comet state delivery ... --verify` 返回 exitCode=70，真实判定：
+  `Classic 交付提交 d4d153af2 的父提交 879a5352 不等于 e64ad175a；交付范围必须从已批准基线 e64ad175a 连续开始`。
+- 根因（源码实证 `classic-sdk-application.js:323-348,430-438,466-473`）：SDK 要求 `baseCommit..HEAD` 为连续单父提交链、逐提交路径在白名单内、且远端分支 HEAD 恰等于交付 commit。批准基线 `e64ad175a` 与当前远端之间夹了 claim 域 12 提交（含 merge），三条件不可同时满足：
+  - 在 `e64ad175a` 上直接提交 → push 非快进（被拒）；
+  - rebase 到 `origin/dev` → push 可快进，但 `baseCommit..HEAD` 混入 claim 提交，连续链校验必红。
+- 尝试用 `delivery --verify` 作只读探测（校验在 claim 之前，`classic-sdk-delivery.js:39-45`），确认无副作用：`full.archive.deliver` 仍为 `pending`，未污染为 running/unknown。
+- SDK Run 停在 `phase=archive / archived=true / deliver=pending`。**这是 SDK 记账缺口，不代表工程未交付**——代码已 push 到 `origin/dev` 并逐文件验证。
+
+**收敛决策（用户确认）：** 如实记录缺口并转 backlog。与 `procuraai-durable-business-aggregates-rebaseline` 的收敛方式一致：不伪造 SDK 闭环、不改历史、不 force push、不重复 whole-lifecycle 仅为补记账。若未来需 SDK 状态机闭环，唯一合规路径是以最新 `origin/dev` 为基线新建 rebaseline change 重走全流程（属纯记账成本，另立 backlog 项）。
